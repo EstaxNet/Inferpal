@@ -119,7 +119,7 @@ Open the generated `.vsix` from `Inferpal\bin\Debug\net8.0-windows\` (or `Releas
 
 ### 3. Open the tool window
 
-In Visual Studio: **View → Other Windows → Inferpal** (or **Alt+B** / **Alt+O**).
+In Visual Studio: **Tools → Inferpal** (or **Alt+B** / **Alt+O**).
 
 ### 4. Configure and connect
 
@@ -156,15 +156,16 @@ Right-click any selection in the editor → **Inferpal** submenu:
 | Action | Description |
 |---|---|
 | **Edit with AI…** | Inline Edit — rewrite the selection in place from an instruction (**Ctrl+Shift+I**) |
-| **Explain** | Explain what the selected code does |
-| **Fix** | Fix bugs in the selected code |
-| **Refactor** | Refactor the selected code |
-| **Add Tests** | Generate unit tests for the selection |
-| **Add Docstring** | Generate XML documentation comment |
+| **Explain** | Explain what the selected code does (answers in the chat) |
+| **Fix** | Fix bugs in the selected code — applied in place |
+| **Refactor** | Refactor the selected code — applied in place |
+| **Add Tests** | Generate unit tests into a separate test file |
+| **Add Docstring** | Add an XML documentation comment in place |
 
 > [!NOTE]
-> **Edit with AI…** edits the code directly in the editor. The other five actions answer in
-> the chat window.
+> **Edit with AI…**, **Fix**, **Refactor** and **Add Docstring** edit the code directly in
+> the editor (undoable with Ctrl+Z). **Add Tests** writes to a separate test file. Only
+> **Explain** answers in the chat window.
 
 All code actions use the **Code Actions model** (configurable separately from the chat model) and run without tool calling.
 
@@ -214,12 +215,12 @@ Type `/` in the prompt field to open the autocomplete popup. Available commands:
 | `/agent-step` | Toggle agent step mode (pause between tool calls) |
 | `/resume` | Resume the agent after a step-mode pause |
 | `/help` | Show all available commands |
-| `/explain` | Explain the code in the active editor |
-| `/fix` | Fix the code in the active editor |
-| `/review` | Review the code in the active editor |
-| `/refactor` | Refactor the code in the active editor |
-| `/test` | Generate tests for the active code |
-| `/doc` | Generate XML documentation for the active code |
+| `/explain` | Explain the active code — read-only, answers in the chat |
+| `/fix` | Fix bugs in the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
+| `/review` | Review the active code — read-only, answers in the chat |
+| `/refactor` | Refactor the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
+| `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists) |
+| `/doc` | Add XML documentation to the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
 
 ---
 

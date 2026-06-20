@@ -55,7 +55,7 @@ double-click it to install into Visual Studio.
 
 ## 4. Open the tool window
 
-In Visual Studio: **View → Other Windows → Inferpal**, or press **Alt+B** / **Alt+O** from
+In Visual Studio: **Tools → Inferpal**, or press **Alt+B** / **Alt+O** from
 anywhere.
 
 ## 5. Configure and connect
