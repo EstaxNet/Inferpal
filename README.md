@@ -479,3 +479,9 @@ internal class MyTool : ITool
 ## Contributing
 
 Contributions are welcome! Quick version: implement `ITool`, register it in `ToolRegistry.cs`, add any new strings to all 10 `.resx` files **and** to `Strings.cs`.
+
+---
+
+## Acknowledgments
+
+This project was developed with the assistance of **Claude Opus 4.8** (Anthropic).
