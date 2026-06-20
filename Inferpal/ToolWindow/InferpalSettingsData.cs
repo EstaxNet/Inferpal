@@ -20,9 +20,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     // ── Inference backend list (code → display name, fixed — never localized) ─────
     private static readonly (string Code, string Name)[] ProviderOptions =
     [
-        (Services.InferenceProviderFactory.Ollama,           "Ollama"),
-        (Services.InferenceProviderFactory.LmStudio,         "LM Studio"),
-        (Services.InferenceProviderFactory.OpenAiCompatible, "OpenAI-compatible (generic)"),
+        (Services.Inference.InferenceProviderFactory.Ollama,           "Ollama"),
+        (Services.Inference.InferenceProviderFactory.LmStudio,         "LM Studio"),
+        (Services.Inference.InferenceProviderFactory.OpenAiCompatible, "OpenAI-compatible (generic)"),
     ];
 
     // ── Inline completion mode list (code → display name, fixed) ─────────────
@@ -708,12 +708,12 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private void ApplyProviderCapabilities()
     {
         var code = ProviderOptions.FirstOrDefault(p => p.Name == _selectedProvider).Code
-                   ?? Services.InferenceProviderFactory.Ollama;
-        var caps = Services.InferenceProviderFactory.CapabilitiesFor(code);
+                   ?? Services.Inference.InferenceProviderFactory.Ollama;
+        var caps = Services.Inference.InferenceProviderFactory.CapabilitiesFor(code);
 
         ShowKeepAliveSettings = caps.KeepAlive;
         ShowInlineCompletions = caps.Fim;
-        HintContextWindowSize = code == Services.InferenceProviderFactory.Ollama
+        HintContextWindowSize = code == Services.Inference.InferenceProviderFactory.Ollama
             ? Strings.HintContextWindowSize
             : Strings.HintContextWindowSizeClientTrim;
     }
@@ -752,7 +752,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     // ── Embedding model keyword filter ────────────────────────────────────────
     // Shared with the tool-window VM's first-run discovery (see ModelCatalog).
     private static bool IsEmbeddingModel(string name) =>
-        Services.ModelCatalog.IsEmbeddingModel(name);
+        Services.Inference.ModelCatalog.IsEmbeddingModel(name);
 
     // ── Collections ────────────────────────────────────────────────────────────
     [DataMember] public ObservableCollection<string> AvailableLanguages       { get; } = [];
@@ -1267,7 +1267,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         var inlineModeCode = InlineModeOptions.FirstOrDefault(m => m.Name == selectedInlineModeName).Code ?? "Default";
 
         var providerCode = ProviderOptions.FirstOrDefault(p => p.Name == selectedProviderName).Code
-                           ?? Services.InferenceProviderFactory.Ollama;
+                           ?? Services.Inference.InferenceProviderFactory.Ollama;
 
         _config.Language              = langCode;
         _config.Provider              = providerCode;

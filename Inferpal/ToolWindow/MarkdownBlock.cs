@@ -56,6 +56,6 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
     private async Task SaveSnippetAsync(object? _, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(Text)) return;
-        await Inferpal.Services.SnippetStore.SaveAsync(Language, Text, ct);
+        await Inferpal.Services.Persistence.SnippetStore.SaveAsync(Language, Text, ct);
     }
 }

@@ -7,7 +7,7 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 /// <remarks>
 /// Implement this interface to add a new capability to the assistant.
-/// Register the implementation in <see cref="Inferpal.Services.ToolRegistry"/>.
+/// Register the implementation in <see cref="Inferpal.Services.Execution.ToolRegistry"/>.
 /// <para>
 /// Rules:
 /// <list type="bullet">

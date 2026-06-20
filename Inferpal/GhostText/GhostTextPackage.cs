@@ -14,8 +14,8 @@ namespace Inferpal.GhostText;
 ///         discovers the ghost-text components (<see cref="GhostTextViewListener"/>,
 ///         <c>GhostTextAdornmentLayer</c>, …).</item>
 ///   <item>Subscribe to <c>IVsUpdateSolutionEvents</c> so that build failures trigger
-///         a cross-process signal (via <see cref="Services.BuildSignalFile"/>) that is
-///         consumed by the out-of-process <see cref="Services.VsBuildMonitor"/>.</item>
+///         a cross-process signal (via <see cref="Services.VsIntegration.BuildSignalFile"/>) that is
+///         consumed by the out-of-process <see cref="Services.VsIntegration.VsBuildMonitor"/>.</item>
 /// </list>
 /// The package is auto-loaded (no solution required) via the <c>pkgdef</c> entry:
 /// <c>AutoLoadPackages\{f1536ef8-…}</c>.

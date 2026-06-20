@@ -521,7 +521,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
     /// </summary>
     private void UpdateContextBudget()
     {
-        var budget = Services.ContextBudgetGauge.Compute(_lastPromptTokens, _config.ContextWindowSize);
+        var budget = Services.Presentation.ContextBudgetGauge.Compute(_lastPromptTokens, _config.ContextWindowSize);
         if (budget is null)
         {
             HasContextBudget = false;
@@ -726,7 +726,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         try
         {
             // Build context-enriched history message (not shown in chat bubble)
-            historyText = Services.ChatTurnPolicy.BuildHistoryText(userText, attachments);
+            historyText = Services.Agent.ChatTurnPolicy.BuildHistoryText(userText, attachments);
 
             _sessionStartTime ??= DateTime.Now;
 
@@ -857,7 +857,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
             // (~4 chars/token, matching EstimateTokens) as answer and reasoning tokens stream in.
             // These are provisional (prefixed "~"); the run's final block snaps both to the real
             // prompt_eval_count + eval_count once the provider reports them.
-            var runBasePromptTokens = Services.AgentOrchestrator.EstimateTokens(_history);
+            var runBasePromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(_history);
             Post(() => { _lastPromptTokens = runBasePromptTokens; UpdateContextBudget(); });
 
             var liveGenChars    = 0;
@@ -887,8 +887,8 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
             {
                 // Start a change-tracking run so this turn's file writes can be reverted via /undo-run.
                 _tools.History.BeginRun();
-                if (_planMode)      effectiveTools = new Services.PlanModeToolRegistry(_tools);
-                if (_agentStepMode) effectiveTools = new Services.StepModeToolRegistry(effectiveTools, PauseForStepAsync);
+                if (_planMode)      effectiveTools = new Services.Execution.PlanModeToolRegistry(_tools);
+                if (_agentStepMode) effectiveTools = new Services.Execution.StepModeToolRegistry(effectiveTools, PauseForStepAsync);
             }
 
             // Common result variables filled by whichever path runs.
@@ -904,7 +904,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
             // (shared by the live stream below and the final render pass).
             ChatMessageItem BuildToolBubble(ToolExecution exec)
             {
-                var preview  = Services.ChatTurnPolicy.BuildToolPreview(exec.Output);
+                var preview  = Services.Agent.ChatTurnPolicy.BuildToolPreview(exec.Output);
                 var toolItem = ChatMessageItem.ToolMsg(exec.Name, Strings.MsgToolOutput(exec.Input, preview), _config.ToolBubblesExpanded);
                 if (exec.Diff is not null)
                     toolItem.InitDiff(exec.Diff);
@@ -933,7 +933,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
             // reads as "the model is working" instead of a blank bubble. This deliberately never
             // touches the streaming/answer bubble, so the empty-bubble guards (see bug history)
             // are unaffected.
-            var thinkingPreview = new Services.ThinkingPreview();
+            var thinkingPreview = new Services.Presentation.ThinkingPreview();
             void OnThinking(string delta)
             {
                 // Reasoning tokens are generated too — count them so the gauge moves during a long
@@ -1060,7 +1060,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
                         Messages.Insert(insertIdx++, BuildToolBubble(exec));
 
                 // Multi-file recap: if ≥2 files were written/patched, add a summary bubble with "Restore All"
-                var modifiedPaths = Services.ChatTurnPolicy.ModifiedFilePaths(agentExecutions);
+                var modifiedPaths = Services.Agent.ChatTurnPolicy.ModifiedFilePaths(agentExecutions);
                 if (modifiedPaths.Count >= 2)
                 {
                     var fileNames    = modifiedPaths.Select(Path.GetFileName).ToList();
@@ -1082,28 +1082,28 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
 
                 // Fallback chain when the streamed bubble was absent or visibly empty:
                 // stored final response → tool summary → absolute "empty response" fallback.
-                switch (Services.ChatTurnPolicy.DecideFinalAnswer(
+                switch (Services.Agent.ChatTurnPolicy.DecideFinalAnswer(
                             streamingBubbleVisible: streamingMsg is not null,
                             finalResponse:          agentFinalResponse,
                             executionCount:         agentExecutions.Count))
                 {
-                    case Services.FinalAnswerKind.FinalText:
+                    case Services.Agent.FinalAnswerKind.FinalText:
                         var finalMsg = ChatMessageItem.AssistantMsg(
-                            Services.MarkdownParser.StripThinkTags(agentFinalResponse));
+                            Services.Presentation.MarkdownParser.StripThinkTags(agentFinalResponse));
                         ApplyItemTheme(finalMsg);
                         Messages.Insert(Messages.Count - 2, finalMsg);
                         lastAssistant = finalMsg;
                         break;
 
-                    case Services.FinalAnswerKind.ToolSummary:
+                    case Services.Agent.FinalAnswerKind.ToolSummary:
                         var summaryMsg = ChatMessageItem.AssistantMsg(
-                            Strings.MsgAgentDone(Services.ChatTurnPolicy.BuildToolSummary(agentExecutions)));
+                            Strings.MsgAgentDone(Services.Agent.ChatTurnPolicy.BuildToolSummary(agentExecutions)));
                         ApplyItemTheme(summaryMsg);
                         Messages.Insert(Messages.Count - 2, summaryMsg);
                         lastAssistant = summaryMsg;
                         break;
 
-                    case Services.FinalAnswerKind.EmptyFallback:
+                    case Services.Agent.FinalAnswerKind.EmptyFallback:
                         var emptyMsg = ChatMessageItem.AssistantMsg(Strings.MsgEmptyResponse);
                         Messages.Insert(Messages.Count - 2, emptyMsg);
                         lastAssistant = emptyMsg;
@@ -1124,14 +1124,14 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
                 // example to replay its previous final answer verbatim instead of answering the
                 // new question (observed with devstral: turn 2 returned turn 1's answer
                 // word-for-word). This also matches what a session save/reload would rebuild.
-                var persistedAnswer = Services.ChatTurnPolicy.ChoosePersistedAnswer(
+                var persistedAnswer = Services.Agent.ChatTurnPolicy.ChoosePersistedAnswer(
                     lastAssistant?.Content, agentFinalResponse);
                 if (persistedAnswer.Length > 0)
                     _history.Add(new ChatMessageDto("assistant", persistedAnswer));
                 // The real prompt size of the run's last call reflects the discarded internal
                 // transcript, not what the next turn will send — estimate from the durable
                 // history instead so CompactOrTruncateAsync and the budget badge stay honest.
-                _lastPromptTokens = Services.AgentOrchestrator.EstimateTokens(_history);
+                _lastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(_history);
                 _sessionTokens   += agentTokensUsed;
                 _conversationTurnCount++;
                 if (agentTokensUsed > 0)
@@ -1236,7 +1236,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
     /// </summary>
     private void OnModelsRefreshed(IReadOnlyList<RunningModelInfo> models)
     {
-        var text = Services.ModelCatalog.FormatVramBadge(models);
+        var text = Services.Inference.ModelCatalog.FormatVramBadge(models);
 
         SynchronizationContext.Post(_ =>
         {
@@ -2346,7 +2346,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
     /// <summary>
     /// Finalizes a streaming bubble (must run on the VM context): stops streaming —
     /// which triggers ParseMarkdown — then either discards the bubble when it is
-    /// visually empty (returns <c>null</c>; see <see cref="Services.ChatTurnPolicy.IsVisiblyEmpty"/>
+    /// visually empty (returns <c>null</c>; see <see cref="Services.Agent.ChatTurnPolicy.IsVisiblyEmpty"/>
     /// and the empty-bubble bug history) or themes it and returns it. Replaces the
     /// triple guard that used to be copy-pasted at every stream completion/cancel/error.
     /// </summary>
@@ -2354,7 +2354,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
     {
         if (item is null) return null;
         item.IsStreaming = false;
-        if (Services.ChatTurnPolicy.IsVisiblyEmpty(item.Content))
+        if (Services.Agent.ChatTurnPolicy.IsVisiblyEmpty(item.Content))
         {
             var idx = Messages.IndexOf(item);
             if (idx >= 0) Messages.RemoveAt(idx);
@@ -2434,12 +2434,12 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
 
     private async Task ExportConversationAsync(CancellationToken ct)
     {
-        List<Services.ExportMessage> snapshot = [];
+        List<Services.Persistence.ExportMessage> snapshot = [];
         await RunOnVMContextAsync(() =>
         {
             snapshot = Messages
                 .Where(m => m.Role is "user" or "assistant" or "tool")
-                .Select(m => new Services.ExportMessage(m.Role, m.Label, m.Content, m.Timestamp))
+                .Select(m => new Services.Persistence.ExportMessage(m.Role, m.Label, m.Content, m.Timestamp))
                 .ToList();
         });
 
@@ -2468,9 +2468,9 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
             var duration = _sessionStartTime.HasValue
                 ? (DateTime.Now - _sessionStartTime.Value) : (TimeSpan?)null;
 
-            var document = Services.ConversationExporter.Build(
+            var document = Services.Persistence.ConversationExporter.Build(
                 snapshot, isTxt, modelName, sessionTokens, date,
-                Services.ConversationExporter.FormatDuration(duration));
+                Services.Persistence.ConversationExporter.FormatDuration(duration));
 
             await File.WriteAllTextAsync(filePath, document, System.Text.Encoding.UTF8, ct);
             await ShowInfoAsync(Strings.ExportSuccess(Path.GetFileName(filePath)));
@@ -2810,13 +2810,13 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
                 {
                     // Read the signal directly (not via the tool) so "not paused" can be a
                     // notification instead of a useless attachment chip.
-                    var snap = Services.DebuggerStateSignal.TryRead();
+                    var snap = Services.VsIntegration.DebuggerStateSignal.TryRead();
                     if (snap is null)
                     {
                         await NotifyMentionAsync(Strings.MentionDebuggerNone);
                         return;
                     }
-                    var state = Services.DebuggerStateSignal.Format(snap);
+                    var state = Services.VsIntegration.DebuggerStateSignal.Format(snap);
                     await RunOnVMContextAsync(() => AddAttachment("🐞 @debugger", state));
                     break;
                 }
@@ -3016,7 +3016,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
     // Prompt formatting and diagnostic parsing live in FixPromptBuilder (unit-tested);
     // the VM only supplies the file reader.
     private static string BuildFixPrompt(string rawErrors) =>
-        Services.FixPromptBuilder.Build(rawErrors, path =>
+        Services.CodeActions.FixPromptBuilder.Build(rawErrors, path =>
         {
             if (!File.Exists(path)) return null;
             try { return File.ReadAllText(path, System.Text.Encoding.UTF8); }
@@ -3038,7 +3038,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         // If offline, clicking "Fix with AI" will surface the offline error naturally.
 
         // Extract first line for display; truncate if it is too wide for the banner.
-        var firstError = Services.FixPromptBuilder.FirstErrorLine(errorLines);
+        var firstError = Services.CodeActions.FixPromptBuilder.FirstErrorLine(errorLines);
 
         _buildFailedErrorLines = errorLines;
 
@@ -3177,14 +3177,14 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         // Probe the URL to pick the right backend (Ollama / LM Studio / OpenAI-compatible) without
         // the user choosing manually. When it differs from the configured one, persist it and use a
         // matching client for discovery; the active singleton is rebuilt on the next VS reload.
-        var detected = await Services.ProviderProbe.DetectAsync(url, _config.ApiKey, CancellationToken.None)
+        var detected = await Services.Inference.ProviderProbe.DetectAsync(url, _config.ApiKey, CancellationToken.None)
             .ConfigureAwait(false);
         if (detected is not null && !string.Equals(detected, _config.Provider, StringComparison.OrdinalIgnoreCase))
         {
             _config.Provider = detected;
             _config.Save();
         }
-        var client = detected is not null ? Services.InferenceProviderFactory.Create(_config) : _client;
+        var client = detected is not null ? Services.Inference.InferenceProviderFactory.Create(_config) : _client;
 
         // ── 1. Connectivity check ─────────────────────────────────────────────
         // A successful probe already proves reachability; otherwise fall back to the client's own check.
@@ -3203,8 +3203,8 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         var allModels  = await client.ListModelsAsync(CancellationToken.None)
             .ConfigureAwait(false);
 
-        var chatModels = allModels.Where(m => !Services.ModelCatalog.IsEmbeddingModel(m)).ToList();
-        var embModels  = allModels.Where(m =>  Services.ModelCatalog.IsEmbeddingModel(m)).ToList();
+        var chatModels = allModels.Where(m => !Services.Inference.ModelCatalog.IsEmbeddingModel(m)).ToList();
+        var embModels  = allModels.Where(m =>  Services.Inference.ModelCatalog.IsEmbeddingModel(m)).ToList();
 
         if (chatModels.Count == 0)
         {
@@ -3215,7 +3215,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         }
 
         // ── 3. Auto-configure ─────────────────────────────────────────────────
-        var best = Services.ModelCatalog.PickBestChatModel(chatModels);
+        var best = Services.Inference.ModelCatalog.PickBestChatModel(chatModels);
         _config.DefaultModel = best;
         await RunOnVMContextAsync(() => ActiveModelLabel = best);
 
@@ -3230,7 +3230,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         // Auto-seed the VRAM budget if Ollama is local, then warn when the auto-picked
         // chat + embedding set is estimated to overflow it. Silent when the budget is
         // unknown (remote host) or the models comfortably fit.
-        await Services.HardwareProfile.EnsureBudgetAsync(_config, CancellationToken.None)
+        await Services.Hardware.HardwareProfile.EnsureBudgetAsync(_config, CancellationToken.None)
             .ConfigureAwait(false);
 
         var vramWarning = await BuildFirstRunVramWarningAsync(best).ConfigureAwait(false);
@@ -3267,7 +3267,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
             .Select(n => sizeByName.TryGetValue(n, out var s) ? s : 0L)
             .ToList();
 
-        if (Services.ModelCatalog.TrioFitsBudget(_config.VramBudgetGb, sizes, out var neededGb))
+        if (Services.Inference.ModelCatalog.TrioFitsBudget(_config.VramBudgetGb, sizes, out var neededGb))
             return null;
 
         return Strings.MsgFirstRunVramWarning(
@@ -3380,21 +3380,21 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
     // and the chat notices.
     private async Task CompactOrTruncateAsync(CancellationToken ct)
     {
-        var plan = Services.HistoryCompaction.Decide(
+        var plan = Services.Agent.HistoryCompaction.Decide(
             _history,
             _config.ContextWindowSize,
             _lastPromptTokens,
             _config.ContextWindowKeepTurns,
             _config.KvCacheAnchorMessages,
             _config.CompactionEnabled);
-        if (plan.Action == Services.CompactionAction.None) return;
+        if (plan.Action == Services.Agent.CompactionAction.None) return;
 
         // ── Path A: hard truncation (compaction disabled or nothing to compact) ──
-        if (plan.Action == Services.CompactionAction.Truncate)
+        if (plan.Action == Services.Agent.CompactionAction.Truncate)
         {
             await RunOnVMContextAsync(() =>
             {
-                Services.HistoryCompaction.ApplyTruncation(_history, plan);
+                Services.Agent.HistoryCompaction.ApplyTruncation(_history, plan);
                 _lastPromptTokens = 0;
                 var warn = ChatMessageItem.AssistantMsg(Strings.MsgContextTruncated(plan.Count, plan.KeepTurns));
                 ApplyItemTheme(warn);
@@ -3407,8 +3407,8 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         // ── Path B: smart compaction ───────────────────────────────────────────
         Post(() => CurrentStep = Strings.StatusCompacting);
 
-        var toCompact        = Services.HistoryCompaction.SliceToCompact(_history, plan);
-        var summarizeHistory = Services.HistoryCompaction.BuildSummarizeRequest(_history, toCompact);
+        var toCompact        = Services.Agent.HistoryCompaction.SliceToCompact(_history, plan);
+        var summarizeHistory = Services.Agent.HistoryCompaction.BuildSummarizeRequest(_history, toCompact);
 
         string? summary = null;
         try
@@ -3435,7 +3435,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         {
             await RunOnVMContextAsync(() =>
             {
-                Services.HistoryCompaction.ApplyTruncation(_history, plan);
+                Services.Agent.HistoryCompaction.ApplyTruncation(_history, plan);
                 _lastPromptTokens = 0;
                 var fallback = ChatMessageItem.AssistantMsg(Strings.MsgContextCompactionFallback);
                 ApplyItemTheme(fallback);
@@ -3448,7 +3448,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
         // ── Path B2: compaction succeeded — replace compacted range with summary ──
         await RunOnVMContextAsync(() =>
         {
-            Services.HistoryCompaction.ApplySummary(_history, plan, summary);
+            Services.Agent.HistoryCompaction.ApplySummary(_history, plan, summary);
             _lastPromptTokens = 0;
 
             var note = plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty;
@@ -3502,7 +3502,7 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
 
     // Resolution order and walk limits live in ProjectRootLocator (unit-tested); the VM
     // only supplies the open editor paths, the authoritative signal, and the CWD.
-    private static readonly Services.ProjectRootLocator _rootLocator = new();
+    private static readonly Services.VsIntegration.ProjectRootLocator _rootLocator = new();
 
     private string FindProjectRoot(IReadOnlyList<string>? openPaths = null) =>
         _rootLocator.Locate(
@@ -3851,8 +3851,8 @@ internal class InferpalToolWindowData : NotifyPropertyChangedObject
 
             if (streamItem is null)
             {
-                var visibleFinal = Services.MarkdownParser.StripThinkTags(result.FinalResponse);
-                if (Services.MarkdownParser.HasPrintableText(visibleFinal))
+                var visibleFinal = Services.Presentation.MarkdownParser.StripThinkTags(result.FinalResponse);
+                if (Services.Presentation.MarkdownParser.HasPrintableText(visibleFinal))
                 {
                     var msg = ChatMessageItem.AssistantMsg(visibleFinal);
                     ApplyItemTheme(msg);

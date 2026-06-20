@@ -116,7 +116,7 @@ public class AgentPlan
 
 // ── Orchestrator result ───────────────────────────────────────────────────────
 
-/// <summary>Full result returned by <see cref="Inferpal.Services.AgentOrchestrator"/>.</summary>
+/// <summary>Full result returned by <see cref="Inferpal.Services.Agent.AgentOrchestrator"/>.</summary>
 internal record OrchestratorResult(
     string               FinalResponse,
     AgentPlan?           Plan,

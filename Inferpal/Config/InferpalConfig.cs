@@ -25,7 +25,7 @@ internal class InferpalConfig
     /// <summary>
     /// Inference backend: <c>"ollama"</c> (default, native Ollama API + full hardware-aware features)
     /// or <c>"openai-compatible"</c> (LM Studio, llama.cpp server, vLLM, Jan, LiteLLM… via the OpenAI
-    /// <c>/v1</c> API). Resolved at startup by <see cref="Services.InferenceProviderFactory"/>;
+    /// <c>/v1</c> API). Resolved at startup by <see cref="Services.Inference.InferenceProviderFactory"/>;
     /// changing it takes effect on the next VS reload.
     /// </summary>
     [JsonPropertyName("provider")]
@@ -112,7 +112,7 @@ internal class InferpalConfig
 
     /// <summary>
     /// Per-machine permission rules for tool approval, one per line in the DSL
-    /// <c>allow|deny &lt;tool|*&gt; &lt;regex&gt;</c> (see <see cref="Services.PermissionPolicy"/>).
+    /// <c>allow|deny &lt;tool|*&gt; &lt;regex&gt;</c> (see <see cref="Services.Execution.PermissionPolicy"/>).
     /// An <c>allow</c> match auto-approves the call (no prompt); a <c>deny</c> match blocks it
     /// outright (even under <see cref="SecurityAlertsDisabled"/>); no match falls back to the
     /// interactive prompt. Evaluated before the workspace <c>.inferpal/permissions.json</c> overlay;
@@ -187,7 +187,7 @@ internal class InferpalConfig
     /// When <c>true</c>, a quick build / typecheck is triggered automatically after each
     /// <c>write_file</c> or <c>apply_diff</c> on a build-relevant file. The ecosystem is chosen from
     /// the file extension (built-in .NET / TypeScript / Rust / Go validators, extendable via the
-    /// workspace <c>.inferpal/validators.json</c> overlay — see <see cref="Services.BuildValidators"/>).
+    /// workspace <c>.inferpal/validators.json</c> overlay — see <see cref="Services.CodeActions.BuildValidators"/>).
     /// Compilation errors are returned inline so the agent can fix them in the same loop.
     /// </summary>
     [JsonPropertyName("smartFixEnabled")]
@@ -289,7 +289,7 @@ internal class InferpalConfig
 
     /// <summary>
     /// When <c>true</c>, every agentic request goes through the
-    /// <see cref="Inferpal.Services.AgentOrchestrator"/> which generates an explicit JSON plan
+    /// <see cref="Inferpal.Services.Agent.AgentOrchestrator"/> which generates an explicit JSON plan
     /// before calling any tools, then runs a Plan → Act → Observe loop with live step tracking.
     /// Disable for simpler / faster queries that don't need structured planning.
     /// </summary>
@@ -315,7 +315,7 @@ internal class InferpalConfig
 
     /// <summary>
     /// Maximum number of Plan → Act → Observe iterations the agent is allowed to run.
-    /// <c>0</c> falls back to the default cap (<see cref="Services.AgentOrchestrator.DefaultMaxIterations"/>,
+    /// <c>0</c> falls back to the default cap (<see cref="Services.Agent.AgentOrchestrator.DefaultMaxIterations"/>,
     /// 20) — there is no unlimited mode.
     /// </summary>
     [JsonPropertyName("agentMaxIterations")]
