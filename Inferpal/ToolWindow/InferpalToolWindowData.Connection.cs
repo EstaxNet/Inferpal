@@ -272,6 +272,10 @@ internal partial class InferpalToolWindowData
         AgentModeLabel = enabled ? Strings.LabelModeAgent : Strings.LabelModeChat;
     });
 
+    /// <summary>The Settings window changed the UI language → re-localize every bound label live
+    /// (welcome cards, input hints, tooltips) instead of waiting for the next window load.</summary>
+    private void OnLanguageChanged() => Post(() => ApplyLabels());
+
     /// <summary>Releases a step-mode pause, letting the agent proceed to its next action.</summary>
     private void ResumeStep() => _stepResume?.TrySetResult(true);
 

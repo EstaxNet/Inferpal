@@ -1322,6 +1322,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
         // Apply the culture override and refresh all labels immediately.
         Strings.ApplyLanguage(langCode);
+        _config.NotifyLanguageChanged();   // re-localize the already-open chat window live
         await RunOnVMContextAsync(() => { ApplyLabels(); SaveStatus = "✓"; });
     }
 

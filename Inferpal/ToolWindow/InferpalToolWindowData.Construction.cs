@@ -45,6 +45,7 @@ internal partial class InferpalToolWindowData
         _buildMonitor.BuildFailed += OnVsBuildFailed;
         _lifetimeService.ModelsRefreshed += OnModelsRefreshed;
         _config.AgentModeEnabledChanged += OnAgentModeConfigChanged;   // live-sync with the Settings checkbox
+        _config.LanguageChanged         += OnLanguageChanged;          // re-localize labels when the Settings language changes
         _baseSystemPrompt = BuildSystemPrompt();
         _history          = [new("system", _baseSystemPrompt)];
         LoadPromptHistory();

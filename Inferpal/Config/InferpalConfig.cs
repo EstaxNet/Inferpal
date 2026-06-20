@@ -314,6 +314,18 @@ internal class InferpalConfig
     public event Action<bool>? AgentModeEnabledChanged;
 
     /// <summary>
+    /// Raised after the UI language changes at runtime (Settings save, once the culture override is
+    /// applied). Lets already-open surfaces — notably the chat tool window — re-localize their bound
+    /// labels live instead of only on next load. Not serialized; handlers must marshal to their own
+    /// UI context.
+    /// </summary>
+    public event Action? LanguageChanged;
+
+    /// <summary>Raises <see cref="LanguageChanged"/>. Call only after <c>Strings.ApplyLanguage</c>
+    /// has updated the active culture, so handlers read the new strings.</summary>
+    internal void NotifyLanguageChanged() => LanguageChanged?.Invoke();
+
+    /// <summary>
     /// Maximum number of Plan → Act → Observe iterations the agent is allowed to run.
     /// <c>0</c> falls back to the default cap (<see cref="Services.Agent.AgentOrchestrator.DefaultMaxIterations"/>,
     /// 20) — there is no unlimited mode.
