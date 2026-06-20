@@ -54,7 +54,12 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IDisposable
                 // Only publish once the .sln actually exists on disk — avoids recording a path the
                 // OOP reader would reject (it validates File.Exists) for a not-yet-saved solution.
                 if (File.Exists(full))
+                {
                     ActiveSolutionSignal.Write(full);
+                    // Also seed the durable last-known cache so detection survives this signal being
+                    // cleared on close (or the package not loading in a later session).
+                    LastKnownSolutionFile.Record(full);
+                }
             }
         }
         catch { /* non-critical */ }

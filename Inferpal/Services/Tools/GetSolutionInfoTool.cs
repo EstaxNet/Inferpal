@@ -53,6 +53,10 @@ internal class GetSolutionInfoTool : ITool
         if (slnPath is null)
             return Strings.SolutionNoSln;
 
+        // Remember this resolution so a later /solution still works when no editor is open and the
+        // in-process active-solution signal is absent (package not loaded / solution closed).
+        LastKnownSolutionFile.Record(slnPath);
+
         var slnDir     = Path.GetDirectoryName(slnPath)!;
         var slnContent = await File.ReadAllTextAsync(slnPath, ct);
         var projects   = ParseSolutionProjects(slnContent, slnDir);
@@ -152,45 +156,27 @@ internal class GetSolutionInfoTool : ITool
 
     private string? FindSolutionFile()
     {
-        // 0. Authoritative: the in-process package reports the actually-open solution.
-        //    This is the only source that follows solution open/close in an OOP extension.
+        // 0. Authoritative: the in-process package reports the actually-open solution. This is the
+        //    only source that follows solution open/close in an OOP extension, so it wins, and it
+        //    carries the exact .sln path (correct even when a directory holds several .sln files).
         var active = ActiveSolutionSignal.TryReadSolutionPath();
         if (active is not null) return active;
 
-        // 1. Walk up from each open editor file. The open documents reflect the solution the user
-        //    is actually working in, so they are far more reliable than CWD (which, in an OOP
-        //    extension host, never follows solution open/close and may sit near an unrelated .sln).
-        foreach (var p in _contextHolder.GetOpenPaths())
-        {
-            var dir = Path.GetDirectoryName(p);
-            if (string.IsNullOrEmpty(dir)) continue;
-            var hit = FindSlnInTree(dir);
-            if (hit is not null) return hit;
-        }
+        // 1. Live probes via the shared, unit-tested locator: walk up from each open editor file,
+        //    then a .sln search anchored near CWD. Returns the directory containing a .sln (or null
+        //    when none is reachable) — we then pick the .sln inside it.
+        var liveDir = new ProjectRootLocator().LocateReliable(
+            _contextHolder.GetOpenPaths(),
+            activeSolutionDir: null,                 // step 0 already handled the signal above
+            Directory.GetCurrentDirectory());
+        if (liveDir is not null &&
+            Directory.GetFiles(liveDir, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault() is { } liveSln)
+            return liveSln;
 
-        // 2. Last resort: walk up from CWD. Unreliable in out-of-process extensions, hence last.
-        return FindSlnInTree(Directory.GetCurrentDirectory());
-    }
-
-    private static string? FindSlnInTree(string startDir)
-    {
-        var dir = startDir;
-        for (int depth = 0; depth < 8; depth++)
-        {
-            var found = Directory.GetFiles(dir, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault();
-            if (found is not null) return found;
-
-            foreach (var sub in Directory.GetDirectories(dir))
-            {
-                found = Directory.GetFiles(sub, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                if (found is not null) return found;
-            }
-
-            var parent = Directory.GetParent(dir)?.FullName;
-            if (parent is null || parent == dir) break;
-            dir = parent;
-        }
-        return null;
+        // 2. Durable last resort: the last solution Inferpal resolved this/previous session. Covers
+        //    the common case where the user is in the chat window with no document open and the
+        //    active-solution signal is absent — every live source above then comes up empty.
+        return LastKnownSolutionFile.TryReadSolutionPath();
     }
 
     // ── Types ─────────────────────────────────────────────────────────────────
