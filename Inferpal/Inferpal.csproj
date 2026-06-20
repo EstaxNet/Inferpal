@@ -1,0 +1,222 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ── Propriétés communes ─────────────────────────────────────────────── -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Inferpal</RootNamespace>
+    <AssemblyName>Inferpal</AssemblyName>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Numérotation -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.0</Version>
+
+    <!-- Reproductibilité des binaires -->
+    <Deterministic>true</Deterministic>
+
+    <!-- Langue neutre pour le fallback ResourceManager (EN) -->
+    <NeutralLanguage>en</NeutralLanguage>
+
+    <!-- Supprime les avertissements connus et sûrs :
+         VSEXTPREVIEW_SETTINGS — SDK preview feature
+         NU1701 — packages VS SDK restaurés pour .NETFramework (fournis par VS à l'exécution)
+         MSB4011  — re-import des targets VSSDK, bug connu de l'infrastructure de build -->
+    <NoWarn>$(NoWarn);VSEXTPREVIEW_SETTINGS;NU1701</NoWarn>
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB4011</MSBuildWarningsAsMessages>
+
+    <!-- Active le pipeline VSSDK complet (GeneratePkgDef, CreateVsixContainer…) -->
+    <VSSDKBuildToolsAutoSetup>true</VSSDKBuildToolsAutoSetup>
+
+    <!-- Copie les DLLs NuGet dans le répertoire de sortie pour que le VSIX les embarque -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <!-- VSIX packaging — commun aux deux configs -->
+    <!-- GeneratePkgDefFile=false : CreatePkgDef.exe (.NET Framework) ne peut pas charger
+         les assemblies .NET 8. Le pkgdef est fourni manuellement (Inferpal.pkgdef). -->
+    <GeneratePkgDefFile>false</GeneratePkgDefFile>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+    <CreateVsixContainer>true</CreateVsixContainer>
+    <!-- Le déploiement est géré par deploy-debug.ps1, pas par le build -->
+    <DeployExtension>false</DeployExtension>
+  </PropertyGroup>
+
+  <!-- ── Debug ───────────────────────────────────────────────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <Optimize>false</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <!-- PDB inclus dans le VSIX debug pour le débogage avec Attach to Process -->
+    <IncludeDebugSymbolsInVSIXContainer>true</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
+  </PropertyGroup>
+
+  <!-- ── Release ─────────────────────────────────────────────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- Optimisations compilateur C# -->
+    <Optimize>true</Optimize>
+
+    <!-- Pas de PDB en Release — réduit la taille du VSIX -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>false</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
+
+    <!-- Warnings = erreurs en Release pour garantir la qualité du build distribué -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Conserver la suppression des warnings d'infrastructure même en mode strict -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);VSEXTPREVIEW_SETTINGS;NU1701;MSB4011</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Inferpal.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- RemoteUserControl cherche la ressource par <Namespace>.<ClassName>.xaml -->
+    <!-- Ces XAML sont des DataTemplate purs (pas des UserControl WPF), donc EmbeddedResource,
+         pas Page — sinon le compilateur WPF essaierait de les compiler en BAML et échouerait. -->
+    <EmbeddedResource Include="ToolWindow\InferpalToolWindowContent.xaml">
+      <LogicalName>Inferpal.InferpalToolWindowContent.xaml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ToolWindow\InferpalSettingsContent.xaml">
+      <LogicalName>Inferpal.ToolWindow.InferpalSettingsContent.xaml</LogicalName>
+    </EmbeddedResource>
+    <!-- Exclure ces fichiers du pipeline WPF (Page) pour éviter la double compilation -->
+    <Page Remove="ToolWindow\InferpalToolWindowContent.xaml" />
+    <Page Remove="ToolWindow\InferpalSettingsContent.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Le pkgdef est REQUIS pour que VSIXInstaller écrive l'entrée de registre
+         VisualStudio\Extensibility\Extensions\Inferpal... dans le registre privé.
+         Sans cette entrée, VisualStudioExtensibilityPackage ne découvre pas l'extension.
+         Note : VSSDK BuildTools changera ExtensionType en VSSDK+VisualStudio.Extensibility,
+         mais notre pkgdef n'a pas de clé Packages → VSSDK ne tente aucun chargement en mémoire.
+         VisX utilise l'entrée Extensibility\Extensions pour démarrer le host hors-process. -->
+    <!-- string-resources.json doit être dans .vsextension/ (à côté de extension.json)
+         pour que VS résolve les tokens %key% dans les menus/commandes. -->
+    <!-- string-resources.json (default EN) -->
+    <Content Include="Localization\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension</VSIXSubPath>
+    </Content>
+    <!-- Localized string resources — VS resolves %tokens% from {locale}/string-resources.json -->
+    <Content Include="Localization\fr\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\fr</VSIXSubPath>
+    </Content>
+    <Content Include="Localization\de\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\de</VSIXSubPath>
+    </Content>
+    <Content Include="Localization\es\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\es</VSIXSubPath>
+    </Content>
+    <Content Include="Localization\it\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\it</VSIXSubPath>
+    </Content>
+    <Content Include="Localization\ru\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\ru</VSIXSubPath>
+    </Content>
+    <Content Include="Localization\ja\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\ja</VSIXSubPath>
+    </Content>
+    <Content Include="Localization\ko\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\ko</VSIXSubPath>
+    </Content>
+    <Content Include="Localization\pl\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\pl</VSIXSubPath>
+    </Content>
+    <Content Include="Localization\zh-CN\string-resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.vsextension\zh-CN</VSIXSubPath>
+    </Content>
+    <Content Include="Inferpal.pkgdef">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- Extension icon — place a 128x128 PNG at Inferpal/assets/icon.png before publishing -->
+    <Content Include="assets\icon.png" Condition="Exists('assets\icon.png')">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>assets</VSIXSubPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- extension.json est généré automatiquement par Microsoft.VisualStudio.Extensibility.Build -->
+    <!-- Ne pas copier manuellement : le SDK génère le fichier correct dans le bin -->
+  </ItemGroup>
+
+  <!-- string-resources.json (+ locales) doivent être dans .vsextension/{locale}/ pour que VS résolve les %tokens% -->
+  <Target Name="CopyStringResourcesToVsExtension" AfterTargets="Build">
+    <MakeDir Directories="$(OutputPath).vsextension;$(OutputPath).vsextension\fr;$(OutputPath).vsextension\de;$(OutputPath).vsextension\es;$(OutputPath).vsextension\it;$(OutputPath).vsextension\ru;$(OutputPath).vsextension\ja;$(OutputPath).vsextension\ko;$(OutputPath).vsextension\pl;$(OutputPath).vsextension\zh-CN" />
+    <Copy SourceFiles="$(ProjectDir)Localization\string-resources.json"       DestinationFolder="$(OutputPath).vsextension"          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\fr\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\fr"       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\de\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\de"       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\es\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\es"       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\it\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\it"       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\ru\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\ru"       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\ja\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\ja"       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\ko\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\ko"       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\pl\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\pl"       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Localization\zh-CN\string-resources.json" DestinationFolder="$(OutputPath).vsextension\zh-CN"   SkipUnchangedFiles="true" />
+  </Target>
+
+  <ItemGroup>
+    <!--
+      SDK VS 2026 (18.x) — nouveau modèle out-of-process recommandé.
+      Si dotnet restore échoue, lance : dotnet add package Microsoft.VisualStudio.Extensibility
+      pour récupérer la dernière version stable compatible.
+    -->
+    <PackageReference Include="Markdig" Version="1.2.0" />
+    <!-- DPAPI for the MCP OAuth token store (System.Security.Cryptography.ProtectedData is a
+         separate runtime assembly even on Windows targets, so the package must be deployed). -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.16" />
+    <PackageReference Include="Microsoft.VisualStudio.Extensibility.Sdk" Version="17.14.40608" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.Extensibility.Build" Version="17.14.40608" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="18.5.40034">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!--
+      Ghost-text in-process MEF components require two classic VSSDK packages.
+      PrivateAssets="all" → compile-time reference only; VS provides these assemblies
+      at runtime (they ship with the IDE and must NOT be copied into the VSIX).
+    -->
+    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.14.40264" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.Text.UI.Wpf"  Version="17.14.249"   PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

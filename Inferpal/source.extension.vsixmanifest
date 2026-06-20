@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0"
+                 xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011"
+                 xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="Inferpal.bf3c1a2e-4d5f-4b8c-9e2a-1f7d3c6e8b4a"
+              Version="1.0.0.0"
+              Language="en-US"
+              Publisher="EstaxNet" />
+    <DisplayName>Inferpal</DisplayName>
+    <Description xml:space="preserve">AI developer assistant for self-hosted LLMs — Ollama, LM Studio, or any OpenAI-compatible server, on your machine or your own remote host. Autonomous agentic loop with 26 built-in tools: read/write files, run builds and tests, semantic codebase search, inline ghost-text completions, query Git, browse the web — no mandatory cloud, no telemetry.</Description>
+    <Tags>AI, LLM, Ollama, LM Studio, Assistant, Code, Local, Agentic, Copilot, Autocomplete, RAG</Tags>
+    <Icon>assets\icon.png</Icon>
+    <License>https://www.gnu.org/licenses/gpl-3.0.txt</License>
+  </Metadata>
+
+  <Installation ExtensionType="VisualStudio.Extensibility">
+    <!-- VS 2022 (17.x) -->
+    <InstallationTarget Id="Microsoft.VisualStudio.Community"    Version="[17.9, 18.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[17.9, 18.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise"   Version="[17.9, 18.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <!-- VS 2026 (18.x) -->
+    <InstallationTarget Id="Microsoft.VisualStudio.Community"    Version="[18.0, 19.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[18.0, 19.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise"   Version="[18.0, 19.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <DotnetTargetVersions>net8.0-windows</DotnetTargetVersions>
+  </Installation>
+
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor"
+                  Version="[17.9,)"
+                  DisplayName="Visual Studio core editor" />
+  </Prerequisites>
+
+
+</PackageManifest>

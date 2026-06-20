@@ -1,0 +1,846 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- Settings section headers -->
+  <data name="SectionConnection" xml:space="preserve"><value>Connection</value></data>
+  <data name="SettingsTabConnection" xml:space="preserve"><value>Connection</value></data>
+  <data name="SettingsTabBehavior" xml:space="preserve"><value>Behavior</value></data>
+  <data name="SettingsTabContext" xml:space="preserve"><value>Context</value></data>
+  <data name="SettingsTabTools" xml:space="preserve"><value>Tools</value></data>
+  <data name="SectionBehavior" xml:space="preserve"><value>Behavior</value></data>
+  <data name="SectionInlineCompletions" xml:space="preserve"><value>Inline Completions</value></data>
+  <data name="LabelInlineCompletionMode" xml:space="preserve"><value>Performance mode:</value></data>
+  <data name="HintInlineCompletionMode" xml:space="preserve"><value>Fast: 128 tokens, debounce 300 ms — Low latency, shorter suggestions. Default: 256 tokens, debounce 600 ms — Balanced. High Accuracy: 512 tokens, debounce 1 s — Best quality, slower response.</value></data>
+  <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>Enable ghost-text completions</value></data>
+  <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>When checked, Inferpal shows AI-generated code suggestions inline as you type (ghost text). Press Tab to accept, Escape to dismiss.</value></data>
+  <data name="LabelInlineCompletionModel" xml:space="preserve"><value>FIM model (empty = use chat model):</value></data>
+  <data name="HintInlineCompletionModel" xml:space="preserve"><value>Model used for Fill-in-the-Middle completions. Leave empty to reuse the chat model. Set a faster or code-specific model (e.g. qwen2.5-coder) for better inline suggestions.</value></data>
+  <data name="LabelCodeActionsModel" xml:space="preserve"><value>Code actions model (empty = use chat model):</value></data>
+  <data name="HintCodeActionsModel" xml:space="preserve"><value>Model used for Explain, Fix, and Refactor commands. Leave empty to reuse the chat model. Set a larger, more capable model for better code analysis.</value></data>
+  <data name="LabelInlineEditModel" xml:space="preserve"><value>Inline Edit model (empty = use code actions model):</value></data>
+  <data name="HintInlineEditModel" xml:space="preserve"><value>Model used for the Inline Edit feature (Ctrl+Shift+I). Leave empty to fall back to the Code Actions model, then the Chat model. A fast instruction-following model (e.g. qwen2.5-coder) works well here.</value></data>
+  <data name="InlineEditDlgTitle" xml:space="preserve"><value>Inferpal — Edit with AI</value></data>
+  <data name="InlineEditDlgHeader" xml:space="preserve"><value>✏  Describe the edit  (Enter to apply, Esc to cancel)</value></data>
+  <data name="InlineEditDlgHint" xml:space="preserve"><value>e.g. "Add null checks", "Convert to async", "Translate comments to English"</value></data>
+  <data name="InlineEditWorking" xml:space="preserve"><value>AI is generating…</value></data>
+  <data name="BtnApply" xml:space="preserve"><value>Apply</value></data>
+  <data name="SectionRag" xml:space="preserve"><value>RAG / Semantic Index</value></data>
+  <data name="LabelRagEnabled" xml:space="preserve"><value>Enable background indexing (RAG)</value></data>
+  <data name="LabelRagAutoContext" xml:space="preserve"><value>Auto-inject relevant code each turn</value></data>
+  <data name="HintRagAutoContext" xml:space="preserve"><value>When enabled, each code question silently retrieves the most relevant indexed snippets and adds them to the prompt (skipping anything already attached). Requires background indexing.</value></data>
+  <data name="HintRagEnabled" xml:space="preserve"><value>When enabled, Inferpal indexes all source files in the solution in the background and uses semantic search to provide relevant code context to the AI. Disable to save memory or CPU on large repositories.</value></data>
+  <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Embedding model:</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Ollama model used to generate embeddings for semantic search. Only dedicated embedding models are listed (nomic-embed-text, mxbai-embed-large, bge-m3, …). Falls back to nomic-embed-text if none is selected.</value></data>
+  <data name="LabelRagTopK" xml:space="preserve"><value>Results per query (top-K):</value></data>
+  <data name="HintRagTopK" xml:space="preserve"><value>Maximum number of code chunks returned by the semantic search tool. Higher values provide more context but increase token usage. Recommended: 3–10.</value></data>
+  <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>Similarity threshold (0–1):</value></data>
+  <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>Minimum cosine similarity score for a chunk to be included in search results. Chunks below this threshold are discarded as low-quality matches. Recommended: 0.20.</value></data>
+  <data name="LabelLspEnabled" xml:space="preserve"><value>LSP semantic chunking (TypeScript, Python, Go, Rust)</value></data>
+  <data name="HintLspEnabled" xml:space="preserve"><value>When enabled, Inferpal uses installed language servers (typescript-language-server, pylsp/pyright-langserver, gopls, rust-analyzer) to extract precise symbol boundaries from non-C# files during RAG indexing, replacing the sliding-window heuristic with accurate function/class/method chunks. Requires the relevant server to be on PATH.</value></data>
+  <data name="LabelModelAutoUnload" xml:space="preserve"><value>Auto-unload idle models</value></data>
+  <data name="HintModelAutoUnload" xml:space="preserve"><value>When enabled, Inferpal instructs Ollama to unload models from VRAM after a period of inactivity. This frees GPU memory when the AI is idle. The VRAM usage of currently loaded models is shown in the chat header.</value></data>
+  <data name="LabelModelIdleTimeout" xml:space="preserve"><value>Unload after (minutes):</value></data>
+  <data name="HintModelIdleTimeout" xml:space="preserve"><value>Minutes of inactivity before Ollama unloads the model from VRAM. Lower values free GPU memory sooner; higher values reduce reload time on the next request. Minimum: 1 minute.</value></data>
+  <data name="SectionContext" xml:space="preserve"><value>Context &amp; Memory</value></data>
+  <data name="SectionPersona" xml:space="preserve"><value>Persona</value></data>
+  <data name="SectionInterface" xml:space="preserve"><value>Interface</value></data>
+
+  <!-- UI labels -->
+  <data name="LabelLanguage" xml:space="preserve"><value>Interface language (overrides Visual Studio):</value></data>
+  <data name="HintLanguage" xml:space="preserve"><value>By default Inferpal uses Visual Studio's display language. Select a language here to force a different one. The change takes effect immediately after saving.</value></data>
+  <data name="LangAuto" xml:space="preserve"><value>Auto (Visual Studio)</value></data>
+  <data name="LabelProvider" xml:space="preserve"><value>Inference backend:</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>Local model server to use: Ollama (full hardware-aware features) or an OpenAI-compatible server such as LM Studio, llama.cpp, or vLLM. Takes effect after reloading Visual Studio.</value></data>
+  <data name="LabelApiKey" xml:space="preserve"><value>API key (optional):</value></data>
+  <data name="HintApiKey" xml:space="preserve"><value>Sent as a Bearer token to OpenAI-compatible servers that require authentication. Leave empty for Ollama and LM Studio (no key needed).</value></data>
+  <data name="LabelUrl" xml:space="preserve"><value>Server URL:</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>Base URL of your local Ollama instance. Default is http://localhost:11434. Change this if Ollama runs on a different host or port.</value></data>
+  <data name="LabelChatModel" xml:space="preserve"><value>Chat model:</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>Default model used for all conversations. This field is required. Use /model &lt;name&gt; to switch models mid-session.</value></data>
+  <data name="LabelSession" xml:space="preserve"><value>Session:</value></data>
+  <data name="BtnTest" xml:space="preserve"><value>Test</value></data>
+  <data name="BtnClear" xml:space="preserve"><value>Clear</value></data>
+  <data name="BtnLoadSession" xml:space="preserve"><value>Load ↩</value></data>
+  <data name="BtnCancel" xml:space="preserve"><value>✕ Cancel</value></data>
+  <data name="BtnSave" xml:space="preserve"><value>Save</value></data>
+  <data name="BtnSend" xml:space="preserve"><value>Send →</value></data>
+  <data name="TooltipRefreshModels" xml:space="preserve"><value>Refresh the model list</value></data>
+  <data name="TooltipExport" xml:space="preserve"><value>Export conversation to .md or .txt</value></data>
+  <data name="TooltipClear" xml:space="preserve"><value>Save and clear the conversation</value></data>
+  <data name="TooltipSessionPicker" xml:space="preserve"><value>Select a past session to restore</value></data>
+  <data name="TooltipLoadSession" xml:space="preserve"><value>Load the selected session (or the last one if none)</value></data>
+  <data name="TooltipDeleteSession" xml:space="preserve"><value>Delete the selected session</value></data>
+  <data name="DeleteSessionConfirm" xml:space="preserve"><value>Delete session "{0}"?
+
+This cannot be undone.</value></data>
+  <data name="TooltipCopy" xml:space="preserve"><value>Copy message</value></data>
+  <data name="BtnDismiss" xml:space="preserve"><value>Dismiss</value></data>
+  <data name="BtnFixWithAi" xml:space="preserve"><value>Fix with AI</value></data>
+  <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Restore All</value></data>
+  <data name="BtnRegenerate" xml:space="preserve"><value>↺ Regenerate</value></data>
+  <data name="BtnResume" xml:space="preserve"><value>▶ Resume</value></data>
+  <data name="TooltipStepMode" xml:space="preserve"><value>Step mode — pause the agent after each tool call (toggle)</value></data>
+  <data name="TooltipPlanMode" xml:space="preserve"><value>Plan mode — read-only: the agent explores and proposes a plan without editing files (toggle)</value></data>
+  <data name="MultiFileRecapTitle" xml:space="preserve"><value>**{0} file(s) modified:** {1}</value></data>
+  <data name="PromptFixErrors" xml:space="preserve"><value>Fix the following build errors:
+
+{0}</value></data>
+
+  <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
+  <data name="PromptExplainSelection" xml:space="preserve"><value>Explain the code from `{0}` with these four sections:
+
+**LOGIC FLOW** — describe the execution path step by step.
+**KEY COMPONENTS** — identify the main functions, types, and dependencies.
+**EDGE CASES** — point out inputs or conditions that could cause unexpected behavior.
+**ARCHITECTURAL ROLE** — explain how this fits into the broader system.
+
+{1}</value></data>
+  <data name="PromptRefactorSelection" xml:space="preserve"><value>Refactor the code from `{0}` without changing its behavior:
+
+**IDENTIFY** — list what makes this code hard to read, maintain, or extend.
+**PLAN** — describe the targeted improvements: naming, structure, patterns, duplication.
+**APPLY** — show the refactored code in full.
+**VALIDATE** — confirm the behavior is preserved and state any assumptions made.
+
+{1}</value></data>
+  <data name="PromptAddTestsSelection" xml:space="preserve"><value>Write unit tests for the code from `{0}` using the project's existing test framework:
+
+**COVERAGE MAP** — identify all public methods and branches that need testing.
+**HAPPY PATH** — tests for normal, expected inputs and behavior.
+**EDGE CASES** — tests for boundary values, empty inputs, and nulls.
+**FAILURE MODES** — tests for invalid inputs and expected exceptions.
+
+Provide the complete, ready-to-compile test code.
+
+{1}</value></data>
+  <data name="PromptFixSelection" xml:space="preserve"><value>Analyze and fix the code from `{0}`:
+
+**REPRODUCE** — identify the exact bug, issue, or code smell and explain why it occurs.
+**HYPOTHESIZE** — state your diagnosis: root cause and affected execution paths.
+**SURGICAL FIX** — apply the minimal change that corrects the issue. Show the fixed code.
+**SELF-HEAL** — verify the fix is sound and list any follow-up risks or assumptions.
+
+{1}</value></data>
+  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>Add XML documentation comments to all public types, methods, properties, and parameters in `{0}`:
+
+- &lt;summary&gt; — one sentence: WHAT it does, not HOW. No restating the name.
+- &lt;param&gt; / &lt;returns&gt; — describe the contract: units, null-safety, valid ranges.
+- &lt;exception&gt; — document any thrown exceptions and the conditions that trigger them.
+- &lt;remarks&gt; — only when behavior would surprise a reader: side effects, threading, invariants.
+
+Show the fully documented code.
+
+{1}</value></data>
+  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>Add documentation comments to all public members in `{0}`.
+
+**Documentation rules:**
+- Summary — one sentence: WHAT it does, not HOW. Never restate the name.
+- Parameters / return value — describe the contract: units, null-safety, valid ranges.
+- Exceptions / errors — document what can go wrong and the exact triggering conditions.
+- Remarks / notes — only for surprising behavior: side effects, threading, invariants.
+- Inherited and interface-implementation members → defer to the parent doc (`&lt;inheritdoc/&gt;` or `&lt;inheritdoc cref="IFoo.Member"/&gt;`) unless adding extra remarks.
+
+{1}
+
+Output the **complete source file** with all documentation added. Preserve all original code exactly — add documentation only, never refactor.</value></data>
+  <data name="PromptReviewSelection" xml:space="preserve"><value>Review the code in `{0}` and provide a structured critique:
+
+- **Bugs and edge cases** — logic errors, null dereferences, off-by-one, resource leaks.
+- **Design and clarity** — naming, single-responsibility, complexity, duplication.
+- **Performance** — unnecessary allocations, inefficient loops, missing caching.
+- **Security** — injection risks, improper input validation, secrets in code.
+- **Tests** — missing coverage, untestable design.
+
+For each issue cite the line or symbol, explain the risk, and suggest a concrete fix.
+
+{1}</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Command timeout:</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>Maximum time to wait for a single tool call (e.g. a shell command or build). Does not affect AI response time. Increase if your builds take longer.</value></data>
+  <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Expand tool calls by default</value></data>
+  <data name="HintToolBubblesExpanded" xml:space="preserve"><value>When checked, tool call details (inputs and outputs) are shown expanded in the chat. Uncheck to keep them collapsed by default.</value></data>
+  <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>Disable security alerts (approve all tool calls silently)</value></data>
+  <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>When checked, all tool calls (file writes, shell commands, etc.) are approved automatically without any confirmation prompt. Use only in trusted environments.</value></data>
+  <data name="LabelContextWindowSize" xml:space="preserve"><value>Context window (tokens, 0 = disabled):</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>Match your model's num_ctx setting. Common values: 2048 (small 7B), 4096 (default), 8192, 16384. When the conversation reaches 80% of this limit, the oldest messages are automatically removed and a warning is shown.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>On LM Studio / OpenAI-compatible servers the context length is fixed at model load, not per request — this value only drives client-side trimming, so keep it at or below the context the model is loaded with. When the conversation reaches 80% of this limit, the oldest messages are automatically removed and a warning is shown.</value></data>
+  <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Turns to always keep when truncating:</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Number of recent user/assistant exchanges to preserve when the context is truncated. The system prompt is always kept regardless. Increase this if the model needs more recent context to stay coherent.</value></data>
+  <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Context window: removed {0} old message(s) — keeping last {1} turn(s). Older context is lost.</value></data>
+  <data name="LabelCompactionEnabled" xml:space="preserve"><value>Smart context compaction (summarize instead of truncate)</value></data>
+  <data name="HintCompactionEnabled" xml:space="preserve"><value>When checked, old messages are summarized by the model before being removed, preserving key information. A safety fuse cancels the summary call if it takes too long and falls back to hard truncation.</value></data>
+  <data name="LabelCompactionTimeout" xml:space="preserve"><value>Compaction timeout (safety fuse):</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Maximum seconds to wait for the compaction model call. If it exceeds this limit, the safety fuse fires and hard truncation is used instead. Default: 45.</value></data>
+  <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KV-cache anchor messages:</value></data>
+  <data name="HintKvCacheAnchor" xml:space="preserve"><value>Number of opening messages (after the system prompt) kept verbatim at the start of every compacted context. Ollama reuses its KV cache for these tokens, saving recalculation time. 0 = disabled. Default: 3.</value></data>
+  <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} KV anchor message(s) preserved)</value></data>
+  <data name="StatusCompacting" xml:space="preserve"><value>Compacting context…</value></data>
+  <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Context compacted: {0} message(s) summarized — keeping last {1} turn(s).</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Context compaction timed out — fell back to hard truncation.</value></data>
+  <data name="CompactionSummarizePrompt" xml:space="preserve"><value>The following is the beginning of our conversation. Summarize it densely, preserving all key decisions, facts, modified files, and context needed for future messages. Be concise but complete — this summary will replace the original messages:
+
+{0}</value></data>
+  <data name="LabelCustomSystemPrompt" xml:space="preserve"><value>Custom system prompt (appended to the base prompt, before project context):</value></data>
+  <data name="HintCustomSystemPrompt" xml:space="preserve"><value>Additional instructions appended to the built-in system prompt. Use this to set the assistant's tone, restrict its scope, or add domain knowledge specific to your project.</value></data>
+  <data name="LabelPinnedContextFiles" xml:space="preserve"><value>Pinned context files (one path per line, max 3 — always injected into the prompt):</value></data>
+  <data name="HintPinnedContextFiles" xml:space="preserve"><value>Absolute file paths always injected into the system prompt before each request. Use this to keep important architecture docs, interfaces, or schemas in context at all times.</value></data>
+  <data name="LabelPromptTemplates" xml:space="preserve"><value>Custom slash commands (one per line: /name=text, use {args} for extra words):</value></data>
+  <data name="HintPromptTemplates" xml:space="preserve"><value>Define your own slash commands. Format: /mycommand=Explain this in detail: {args}. The {args} placeholder is replaced by any words typed after the command name. Templates appear in autocomplete suggestions.</value></data>
+  <data name="LabelPermissionRules" xml:space="preserve"><value>Permission rules (one per line: allow|deny &lt;tool|*&gt; &lt;regex&gt;):</value></data>
+  <data name="HintPermissionRules" xml:space="preserve"><value>Rules evaluated before the approval prompt. 'allow' auto-approves a matching tool call, 'deny' blocks it, no match falls back to the prompt; first match wins. The regex is matched against the command or file path. Applied on top of the committable .inferpal/permissions.json overlay, plus a built-in non-bypassable denylist of catastrophic commands. Example: allow run_command ^dotnet</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>Custom agent tools (one per line: name=powershell_command):</value></data>
+  <data name="HintCustomTools" xml:space="preserve"><value>Define shell tools the agent can call. Format: my_tool=dotnet test. The tool name must be snake_case. An optional {args} parameter will be appended when the model provides extra arguments. Requires approval before running.</value></data>
+  <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Auto-switch persona by file language</value></data>
+  <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>When checked, the system prompt is automatically enriched with a language-specific hint (C#, Python, TypeScript…) when the active editor document changes.</value></data>
+  <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>OODA recap every N turns (0 = disabled):</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Every N conversation turns, the model generates a brief session recap (goal, progress, open questions) injected into the system prompt to prevent context amnesia on long sessions. Set to 0 to disable. Recommended: 10.</value></data>
+  <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generating session recap…</value></data>
+  <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA Session Recap** (turn {0})</value></data>
+  <data name="OodaSummarizePrompt" xml:space="preserve"><value>Summarize our conversation so far. Produce a short OODA-style recap with three labeled sections — Goal (what the user wants to achieve), Progress (steps already completed), and Open (remaining tasks or unresolved questions). Keep the total under 150 words.</value></data>
+  <data name="HintSend" xml:space="preserve"><value>Enter to send  ·  Shift+Enter for newline  ·  Shift+↑↓ history</value></data>
+  <data name="TooltipAttachFile" xml:space="preserve"><value>Attach active file to next prompt</value></data>
+  <data name="TooltipAttachSelection" xml:space="preserve"><value>Attach selection to next prompt (full file if no selection)</value></data>
+  <data name="TooltipBrowseFile" xml:space="preserve"><value>Browse and attach a file from disk</value></data>
+  <data name="TooltipPinFile" xml:space="preserve"><value>Pin the active file — always kept in context</value></data>
+  <data name="MenuAddContext" xml:space="preserve"><value>Add context to your prompt</value></data>
+  <data name="MenuAttachFile" xml:space="preserve"><value>Active file</value></data>
+  <data name="MenuAttachSelection" xml:space="preserve"><value>Selection</value></data>
+  <data name="MenuBrowseFile" xml:space="preserve"><value>Browse from disk…</value></data>
+  <data name="MenuPinFile" xml:space="preserve"><value>Pin active file</value></data>
+  <data name="TooltipPinChip" xml:space="preserve"><value>Pin this file permanently</value></data>
+  <data name="PinLimitReached" xml:space="preserve"><value>⚠ Pinned files limit reached (max {0}). Unpin one first.</value></data>
+  <data name="TooltipSearchConversation" xml:space="preserve"><value>Search conversation (Ctrl+F)</value></data>
+  <data name="TooltipCloseSearch" xml:space="preserve"><value>Close search</value></data>
+  <data name="TooltipSaveSnippet" xml:space="preserve"><value>Save to snippet library (/snippets to view)</value></data>
+
+
+  <!-- System prompt -->
+  <data name="SystemPrompt" xml:space="preserve"><value>You are Inferpal, a local AI developer assistant integrated in Visual Studio 2026. You have access to tools to read/write files, list directories, search code, and run PowerShell commands. Use these tools as much as needed before replying. Respond in the same language as the user.</value></data>
+
+  <!-- Connection status -->
+  <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
+  <data name="StatusConnected" xml:space="preserve"><value>✓ Connected</value></data>
+  <data name="StatusUnreachable" xml:space="preserve"><value>✗ Unreachable</value></data>
+  <data name="StatusThinking" xml:space="preserve"><value>Thinking…</value></data>
+  <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
+
+  <!-- ViewModel messages -->
+  <data name="MsgCancelled" xml:space="preserve"><value>(cancelled)</value></data>
+  <data name="MsgTruncated" xml:space="preserve"><value>
+…(truncated)</value></data>
+  <data name="MsgError" xml:space="preserve"><value>Error: {0}</value></data>
+  <data name="MsgToolOutput" xml:space="preserve"><value>[input]
+{0}
+
+[output]
+{1}</value></data>
+  <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(iteration limit reached — 20 turns)</value></data>
+  <data name="MsgLoopDetected" xml:space="preserve"><value>(loop detected — identical tool calls repeated, stopping)</value></data>
+  <data name="MsgCircuitOpen" xml:space="preserve"><value>(circuit breaker open — retries paused for 5 min after repeated failures)</value></data>
+  <data name="MsgAgentDone" xml:space="preserve"><value>✓ Done — {0}</value></data>
+  <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  session : {1}</value></data>
+  <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL not configured. Open Settings to set it.</value></data>
+  <data name="MsgEmptyResponse" xml:space="preserve"><value>The model returned no response. The configured model may not support text generation — try the default chat model.</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>Connection timed out — Ollama did not respond at {0} within 30 minutes.</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>Cannot reach Ollama at {0}. Check the URL in Settings.</value></data>
+  <data name="MsgServerError" xml:space="preserve"><value>The inference server at {0} returned an error:
+
+{1}</value></data>
+  <data name="MsgContextOverflow" xml:space="preserve"><value>The request is too large for the model's context window in agent mode — the tool definitions alone take several thousand tokens. Increase the model's context length (16384 or more recommended in LM Studio), or reduce the number of enabled agent tools.
+
+Server detail: {0}</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>The request (~{0} tokens) is larger than the context the model is loaded with ({1} tokens) in agent mode — the tool definitions alone take several thousand tokens. Increase the loaded context length (16384 or more recommended in LM Studio), or reduce the number of enabled agent tools.</value></data>
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Cannot reach Ollama at {0}
+
+Troubleshooting steps:
+  1. Start Ollama — open a terminal and run:  ollama serve
+  2. Verify the URL in Settings (currently: {0})
+  3. If Ollama runs on another machine, update the URL in Settings
+  4. Check that port 11434 is not blocked by a firewall or antivirus
+
+Click ↻ Retry in the header once Ollama is running.</value></data>
+  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconnected to Ollama — ready.</value></data>
+  <data name="TooltipRetryConnection" xml:space="preserve"><value>Check connection to Ollama now</value></data>
+
+  <!-- Approval dialog -->
+  <data name="ApprovalMessage" xml:space="preserve"><value>Inferpal wants to execute: {0}
+
+{1}
+
+Continue?</value></data>
+
+  <!-- Tool messages -->
+  <data name="ToolPathRequired" xml:space="preserve"><value>missing path</value></data>
+  <data name="ToolFileNotFound" xml:space="preserve"><value>File not found: {0}</value></data>
+  <data name="DirNotFound" xml:space="preserve"><value>Directory not found: {0}</value></data>
+  <data name="ToolPathInvalid" xml:space="preserve"><value>Invalid path '{0}': {1}</value></data>
+  <data name="NoResults" xml:space="preserve"><value>No results.</value></data>
+  <data name="WriteOverwrite" xml:space="preserve"><value>Overwrite: {0}
+({1} characters)</value></data>
+  <data name="WriteCreate" xml:space="preserve"><value>Create: {0}
+({1} characters)</value></data>
+  <data name="WriteCancelled" xml:space="preserve"><value>Write cancelled by user.</value></data>
+  <data name="WriteOk" xml:space="preserve"><value>OK — {0} ({1} characters written)</value></data>
+  <data name="DeleteConfirm" xml:space="preserve"><value>Delete: {0}</value></data>
+  <data name="DeleteCancelled" xml:space="preserve"><value>Delete cancelled by user.</value></data>
+  <data name="DeleteOk" xml:space="preserve"><value>OK — {0} deleted</value></data>
+  <data name="RunCancelled" xml:space="preserve"><value>Command cancelled by user.</value></data>
+  <data name="DiffConfirm" xml:space="preserve"><value>Apply change to: {0}</value></data>
+  <data name="DiffCancelled" xml:space="preserve"><value>Change cancelled by user.</value></data>
+  <data name="DiffOldNotFound" xml:space="preserve"><value>old_content not found in {0}. Check spaces, line breaks and indentation.</value></data>
+  <data name="DiffAmbiguous" xml:space="preserve"><value>old_content found {0} times in {1}. Provide more context to make the match unique.</value></data>
+  <data name="DiffOk" xml:space="preserve"><value>Change applied in {0}.</value></data>
+  <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits requires at least one edit.</value></data>
+  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Apply edits to {0} file(s)?</value></data>
+  <data name="ApplyEditsAborted" xml:space="preserve"><value>No changes applied — {0}.</value></data>
+  <data name="ApplyEditsOk" xml:space="preserve"><value>Applied {0} edit(s) across {1} file(s).</value></data>
+  <data name="HistoryNote" xml:space="preserve"><value>
+Backup: {0}</value></data>
+  <data name="RestoreOk" xml:space="preserve"><value>Restored {0} from {1}.</value></data>
+  <data name="RestoreNotFound" xml:space="preserve"><value>No backup found for: {0}</value></data>
+  <data name="DiagNoProject" xml:space="preserve"><value>No .sln or .csproj file found. Provide the path parameter.</value></data>
+  <data name="DiagBuildOk" xml:space="preserve"><value>✓ Build successful — 0 errors, 0 warnings ({0})</value></data>
+  <data name="DiagBuildFailed" xml:space="preserve"><value>Build failed (code {0}) with no parseable diagnostics.
+
+{1}</value></data>
+  <data name="DiagSummary" xml:space="preserve"><value>Build: {0} error(s), {1} warning(s) — {2}</value></data>
+  <data name="ActiveDocNoContext" xml:space="preserve"><value>VS context unavailable — open the Inferpal window via the View menu.</value></data>
+  <data name="ActiveDocNoFile" xml:space="preserve"><value>No file open in the editor.</value></data>
+  <data name="ActiveDocResult" xml:space="preserve"><value>Active file: {0}
+
+{1}</value></data>
+
+  <!-- Attachment / Browse errors -->
+  <data name="AttachError" xml:space="preserve"><value>⚠ Attach error: {0}</value></data>
+  <data name="AttachReadError" xml:space="preserve"><value>⚠ Attach read error: {0}</value></data>
+  <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Attach selection error: {0}</value></data>
+  <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ Attach selection read error: {0}</value></data>
+  <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ File too large to attach (max 500 KB).</value></data>
+  <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ No active file found. Open a file in the editor first.</value></data>
+  <data name="MentionFileDesc" xml:space="preserve"><value>search &amp; attach a file</value></data>
+  <data name="MentionCodeDesc" xml:space="preserve"><value>semantic code search (RAG)</value></data>
+  <data name="MentionCodeHint" xml:space="preserve"><value>type what to look for…</value></data>
+  <data name="MentionFolderDesc" xml:space="preserve"><value>attach a folder's files</value></data>
+  <data name="MentionClipboardDesc" xml:space="preserve"><value>attach clipboard text</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>attach the project tree</value></data>
+  <data name="MentionDiffDesc" xml:space="preserve"><value>attach the current git diff</value></data>
+  <data name="MentionProblemsDesc" xml:space="preserve"><value>attach build diagnostics</value></data>
+  <data name="MentionDebuggerDesc" xml:space="preserve"><value>attach debugger state (stack, locals, exception)</value></data>
+  <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No paused debug session. Hit a breakpoint or exception first, then use @debugger.</value></data>
+  <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Clipboard is empty.</value></data>
+  <data name="BrowseError" xml:space="preserve"><value>⚠ Browse error: {0}</value></data>
+
+  <!-- Export -->
+  <data name="ExportNoMessages" xml:space="preserve"><value>⚠ No messages to export.</value></data>
+  <data name="ExportSuccess" xml:space="preserve"><value>Exported to `{0}`</value></data>
+  <data name="ExportFailed" xml:space="preserve"><value>⚠ Export failed: {0}</value></data>
+
+  <!-- Slash commands -->
+  <data name="SlashModelCurrent" xml:space="preserve"><value>Usage: `/model &lt;name&gt;`  —  current: **{0}**</value></data>
+  <data name="SlashModelChanged" xml:space="preserve"><value>Model → **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Usage: `/tools on|off`  —  current: **{0}**</value></data>
+  <data name="SlashToolsChanged" xml:space="preserve"><value>Tools → **{0}**</value></data>
+  <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ No active document. Open a file in the editor first.</value></data>
+  <data name="TestsGenerated" xml:space="preserve"><value>✅ Tests generated → **{0}** (opened in the editor).</value></data>
+  <data name="TestsExtended" xml:space="preserve"><value>✅ Tests added to **{0}** (open — undo with Ctrl+Z).</value></data>
+  <data name="TestsGenerateFailed" xml:space="preserve"><value>⚠ Test generation failed. Check the model and try again.</value></data>
+  <data name="RefactorNoChange" xml:space="preserve"><value>✅ The code is already clear — no refactor needed.</value></data>
+  <data name="FixNoChange" xml:space="preserve"><value>✅ No bug or issue found — nothing to fix.</value></data>
+  <data name="DocNoChange" xml:space="preserve"><value>✅ The code is already adequately documented.</value></data>
+  <data name="TestsNoChange" xml:space="preserve"><value>✅ Nothing useful to test — every meaningful case is already covered.</value></data>
+  <data name="SlashUsage" xml:space="preserve"><value>Usage: `{0}`</value></data>
+  <data name="SlashUsageRestore" xml:space="preserve"><value>Usage: `/restore &lt;path&gt;` — restores the most recent backup from `.inferpal/history/`</value></data>
+  <data name="SlashHelp" xml:space="preserve"><value>Unknown command: `{0}`
+
+**Meta**
+- `/clear` — clear the conversation
+- `/model &lt;name&gt;` — switch model
+- `/tools on|off` — enable or disable tool calling
+- `/export` — export conversation to a file
+- `/restore &lt;path&gt;` — restore a file from its most recent backup
+- `/help` — show all available commands
+
+**File system**
+- `/read &lt;path&gt;` — attach a file as context
+- `/ls &lt;path&gt; [pattern]` — list files in a directory
+- `/grep &lt;dir&gt; &lt;pattern&gt; [ext]` — search text in files
+
+**Code actions**
+- `/explain` — explain the active file (or selection)
+- `/fix` — suggest fixes for the active file
+- `/review` — structured code review
+- `/refactor` — refactor suggestions
+- `/test` — generate unit tests
+- `/doc` — generate documentation with namespace/inheritance context (C#/TS/Python/Go/Rust)
+
+**Shell**
+- `/run &lt;command&gt;` — run a PowerShell command
+
+**Web**
+- `/fetch &lt;url&gt;` — show a web page as text
+- `/search &lt;query&gt;` — DuckDuckGo web search
+
+**Git**
+- `/commit` — analyse the diff, propose a commit message and pre-fill the prompt to confirm
+- `/git [path]` — show git status, log, and diff summary
+
+**Visual Studio / Build**
+- `/map` — show project dependency graph
+- `/solution [path]` — show solution structure
+- `/build [path]` — compile and show errors
+- `/fix-build [path]` — compile → AI fixes errors → recompile, repeat until clean (max 5 rounds)
+
+**Project context**
+- `/context` — show the active `.inferpal/context.md` (injected into every system prompt)
+- `/memory` — view agent memory (`.inferpal/memory.md`, injected into every system prompt)</value></data>
+
+  <data name="SlashHelpAll" xml:space="preserve"><value>**Meta**
+- `/clear` — clear the conversation
+- `/model &lt;name&gt;` — switch model
+- `/tools on|off` — enable or disable tool calling
+- `/export` — export conversation to a file
+- `/restore &lt;path&gt;` — restore a file from its most recent backup
+- `/help` — show all available commands
+
+**File system**
+- `/read &lt;path&gt;` — attach a file as context
+- `/ls &lt;path&gt; [pattern]` — list files in a directory
+- `/grep &lt;dir&gt; &lt;pattern&gt; [ext]` — search text in files
+
+**Code actions**
+- `/explain` — explain the active file (or selection)
+- `/fix` — suggest fixes for the active file
+- `/review` — structured code review
+- `/refactor` — refactor suggestions
+- `/test` — generate unit tests
+- `/doc` — generate documentation with namespace/inheritance context (C#/TS/Python/Go/Rust)
+
+**Shell**
+- `/run &lt;command&gt;` — run a PowerShell command
+
+**Web**
+- `/fetch &lt;url&gt;` — show a web page as text
+- `/search &lt;query&gt;` — DuckDuckGo web search
+
+**Git**
+- `/commit` — analyse the diff, propose a commit message and pre-fill the prompt to confirm
+- `/git [path]` — show git status, log, and diff summary
+- `/diff [path]` — attach full git diff as a context chip
+
+**Visual Studio / Build**
+- `/map` — show project dependency graph
+- `/solution [path]` — show solution structure
+- `/build [path]` — compile and show errors
+- `/fix-build [path]` — compile → AI fixes errors → recompile, repeat until clean (max 5 rounds)
+
+**Project context**
+- `/context` — show the active `.inferpal/context.md` (injected into every system prompt)
+- `/memory` — view agent memory (`.inferpal/memory.md`, injected into every system prompt)
+- `/note &lt;text&gt;` — append a timestamped note to `.inferpal/notes.md`
+- `/notes [clear]` — list or clear project notes (injected into every system prompt)
+
+**Semantic index**
+- `/index` — show RAG index status (chunks, model, root)
+- `/index rebuild` — force a full re-indexing of the solution
+
+**Snippets &amp; History**
+- `/snippets` — list saved code snippets (⭐ button on code blocks to save)
+- `/snippets copy &lt;n&gt;` / `/snippets delete &lt;n&gt;` / `/snippets clear`
+- `/history` — list all saved sessions with date and first message preview
+- `/history &lt;term&gt;` — full-text search across all saved sessions
+- `/phistory [term]` — search prompt input history; `/phistory use &lt;n&gt;` to re-use
+
+**Session templates**
+- `/template` — list available session presets (code-review, bug-hunt, architecture…)
+- `/template &lt;id&gt;` — start a new session with the selected template
+
+**Models**
+- `/models` — list installed Ollama models with VRAM status
+- `/models pull &lt;name&gt;` — download a model from the registry
+- `/models delete &lt;name&gt;` — remove a model
+- `/models running` — show models currently loaded in VRAM
+- `/hardware` — show the GPU/VRAM profile; `/hardware &lt;gb&gt;` to set the VRAM budget
+- `/setup` — re-run first-run setup: re-detect backend, re-pick chat and embedding models
+
+**Documentation (@Docs)**
+- `/docs add &lt;url&gt; [title]` — crawl &amp; index an external doc site for the `search_docs` tool
+- `/docs list` — list indexed documentation sources
+- `/docs remove &lt;id&gt;` — remove a documentation source
+- `/docs reindex [id]` — re-crawl all sources (or one by id)
+
+**Agent**
+- `/agent-step` — toggle step mode: agent pauses after each tool call
+- `/resume` — resume agent after a step-mode pause
+- `/plan` — toggle plan mode: read-only, the agent explores and proposes a plan without editing files
+
+**Rules &amp; Checks**
+- `/rules` — list project rules (`.inferpal/rules`, glob-scoped, injected into the system prompt)
+- `/rules init` — create an example rule
+- `/checks` — list review checks (`.inferpal/checks`)
+- `/checks init` — create an example check
+- `/check [name]` — AI-review the current git diff against the checks (100% local)
+
+**Prompt files**
+- `/prompts` — list reusable prompt files (`.inferpal/prompts/*.md`); each file is a slash command, `{args}` expands
+- `/prompts init` — create an example prompt file</value></data>
+
+  <!-- History search -->
+  <data name="HistoryNoSessions" xml:space="preserve"><value>No saved sessions found. Sessions are archived automatically on `/clear`.</value></data>
+  <data name="HistoryNoResults" xml:space="preserve"><value>No sessions match "{0}".</value></data>
+
+  <!-- Project context -->
+  <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ No .sln file found — cannot locate `.inferpal/context.md`.</value></data>
+  <data name="SlashContextNotFound" xml:space="preserve"><value>No project context file found.
+
+Create `{0}` to document your project conventions (coding style, architecture decisions, etc.). It will be injected automatically into every system prompt.
+
+Use `/clear` after creating or editing the file to reload it.</value></data>
+  <data name="SlashContextLoaded" xml:space="preserve"><value>**Project context** — `{0}` ({1} chars)
+
+```
+{2}
+```
+
+Use `/clear` after editing the file to reload it.</value></data>
+
+  <!-- Git / Solution tool outputs -->
+  <data name="GitNotRepo" xml:space="preserve"><value>Not a git repository (no .git folder found).</value></data>
+  <data name="SolutionNoSln" xml:space="preserve"><value>No .sln file found. Try providing the path explicitly.</value></data>
+  <data name="SolutionPathNotFound" xml:space="preserve"><value>Path not found or not a .sln file: {0}</value></data>
+
+  <!-- Editor insertion / replacement -->
+  <data name="InsertOk" xml:space="preserve"><value>Inserted {1} characters at cursor in {0}.</value></data>
+  <data name="ReplaceOk" xml:space="preserve"><value>Replaced selection with {1} characters in {0}.</value></data>
+
+  <!-- Fix-build loop -->
+  <data name="FixBuildSuccess" xml:space="preserve"><value>✅ Build succeeded after {0} round(s) — no more errors.</value></data>
+  <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ Build still failing after {0} attempt(s) — manual intervention required.</value></data>
+  <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **Build failed** — {0} compilation error(s) detected.
+
+Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</value></data>
+
+  <!-- Smart Fix Protocol -->
+  <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: build OK — no compilation errors.</value></data>
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} compilation error(s) detected — please fix before continuing:
+{1}</value></data>
+  <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: build check timed out (60 s) — verify manually.</value></data>
+  <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Auto build-check after write (Smart Fix)</value></data>
+  <data name="HintSmartFixEnabled" xml:space="preserve"><value>When checked, a quick dotnet build is run automatically after each write_file or apply_diff on a C#/project file. Compilation errors are returned inline so the agent can correct them immediately in the same loop.</value></data>
+
+  <!-- Git commit assistant -->
+  <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ No git changes detected.</value></data>
+  <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nothing staged — analysing unstaged changes.</value></data>
+  <data name="CommitProposingLabel" xml:space="preserve"><value>💬 commit message</value></data>
+  <data name="CommitConfirmHint" xml:space="preserve"><value>Message pre-filled below — edit if needed, then press **Enter** to commit.</value></data>
+  <data name="RulesNone" xml:space="preserve"><value>No project rules. Create `.inferpal/rules/*.md` or run `/rules init`.</value></data>
+  <data name="ChecksNone" xml:space="preserve"><value>No review checks. Create `.inferpal/checks/*.md` or run `/checks init`.</value></data>
+  <data name="RulesListHeader" xml:space="preserve"><value>**Project rules** (`.inferpal/rules`):</value></data>
+  <data name="ChecksListHeader" xml:space="preserve"><value>**Review checks** (`.inferpal/checks`):</value></data>
+  <data name="CheckNoDiff" xml:space="preserve"><value>Nothing to review — the working tree is clean.</value></data>
+  <data name="CheckReviewingLabel" xml:space="preserve"><value>Reviewing the diff…</value></data>
+  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>You are a meticulous, fully local code reviewer. Review the git diff below ONLY against the review checks provided. For each check, state whether it PASSES, or list concrete violations. For every violation give the file and line (file:line), a severity (blocker / warning / nit), and a short, actionable fix. Be concise. Do not invent issues and do not comment on anything outside the checks or the diff. If every check passes, say so clearly.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>No check named '{0}'. Run `/checks` to list them.</value></data>
+  <data name="RulesScaffolded" xml:space="preserve"><value>Example rule ready at {0}. Edit it — matching rules are injected into the system prompt.</value></data>
+  <data name="ChecksScaffolded" xml:space="preserve"><value>Example check ready at {0}. Edit it, then run `/check` to review your diff.</value></data>
+  <data name="PromptsNone" xml:space="preserve"><value>No prompt files. Create `.inferpal/prompts/*.md` or run `/prompts init`.</value></data>
+  <data name="PromptsListHeader" xml:space="preserve"><value>**Prompt files** (`.inferpal/prompts`) — each file is a slash command, `{args}` expands:</value></data>
+  <data name="PromptsScaffolded" xml:space="preserve"><value>Example prompt ready at {0}. Edit it, then type `/review-security` (file name = command).</value></data>
+
+  <!-- analyze_impact tool -->
+  <data name="ImpactHeader"         xml:space="preserve"><value>Impact Analysis — {0}</value></data>
+  <data name="ImpactNoPublicApi"    xml:space="preserve"><value>No public types or exported symbols found in {0}.</value></data>
+  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>Symbol '{0}' not found in the public API of {1}.</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Blast radius: {0} direct · {1} transitive · {2} tests · {3} entry points</value></data>
+
+  <!-- trace_dependency tool -->
+  <data name="TraceDepsHeader"          xml:space="preserve"><value>Call Graph — {0}</value></data>
+  <data name="TraceDepsNoMethods"       xml:space="preserve"><value>No methods or functions detected in {0}.</value></data>
+  <data name="TraceDepsSymbolNotFound"  xml:space="preserve"><value>Symbol '{0}' not found in {1}.</value></data>
+  <data name="TraceDepsFooter"          xml:space="preserve"><value>{0} method(s) · {1} unique callee(s) · {2} resolved across files</value></data>
+
+  <!-- RAG / semantic search -->
+  <data name="RagIndexNotReady" xml:space="preserve"><value>⚠ Codebase index not available. Status: {0}
+
+Use `/index rebuild` to start indexing or wait for the background pass to complete.
+If RAG is disabled, set `ragEnabled = true` in settings.</value></data>
+  <data name="RagNoResults" xml:space="preserve"><value>No relevant code found for: "{0}"</value></data>
+
+  <!-- Agent memory -->
+  <data name="UpdateMemoryNoProject" xml:space="preserve"><value>No .sln or .inferpal folder found — cannot locate the memory file.</value></data>
+  <data name="UpdateMemoryNoContent" xml:space="preserve"><value>Content is required for append and replace modes.</value></data>
+  <data name="UpdateMemoryOk" xml:space="preserve"><value>Memory updated — {0} ({1} chars total).</value></data>
+  <data name="UpdateMemoryClear" xml:space="preserve"><value>Memory cleared — {0}</value></data>
+  <data name="SlashMemoryNotFound" xml:space="preserve"><value>No agent memory found.
+
+Ask the agent to use `update_memory` to write its first note, or create the file manually.
+
+Expected path: `{0}`</value></data>
+  <data name="SlashMemoryLoaded" xml:space="preserve"><value>**Agent memory** — `{0}` ({1} chars)
+
+```
+{2}
+```
+
+Edit the file or ask the agent to use `update_memory`. Use `/clear` to reload.</value></data>
+
+  <!-- Agent Mode -->
+  <data name="LabelAgentModeEnabled" xml:space="preserve"><value>Enable autonomous agent mode (Plan → Act → Observe)</value></data>
+  <data name="HintAgentModeEnabled" xml:space="preserve"><value>When enabled, Inferpal generates an explicit step-by-step plan before executing any tools, then runs a structured Plan → Act → Observe loop with live step tracking. Best for complex multi-step tasks. Disable for simple, fast queries.</value></data>
+  <data name="LabelAgentModel" xml:space="preserve"><value>Agent / tools model (empty = use chat model):</value></data>
+  <data name="HintAgentModel" xml:space="preserve"><value>Model used whenever tools are enabled — the agent (Plan → Act → Observe) loop and the basic tool-calling loop. Leave empty to reuse the chat model. A smaller, non-multimodal model with prompt-cache reuse (e.g. qwen2.5-coder) runs multi-turn tool loops far faster than a large multimodal model, which reprocesses the whole prompt every turn.</value></data>
+  <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>Use a separate model per role (advanced)</value></data>
+  <data name="LabelAdvancedBehavior" xml:space="preserve"><value>Show advanced settings (timeouts, iterations)</value></data>
+  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>By default the chat model is used everywhere. Enable this to assign a different model to the agent, code actions, inline completion (FIM) and inline edit.</value></data>
+  <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Max iterations</value></data>
+  <data name="HintAgentMaxIterations" xml:space="preserve"><value>Maximum number of Plan → Act → Observe cycles the agent may run per request. 0 falls back to the default (20). Default: 20.</value></data>
+  <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Quick task timeout (actions, inline edit)</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Deadline for short tasks: explain, fix, doc, inline edit, agent plan. Default: 120 s.</value></data>
+  <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Normal task timeout (agent turns)</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Deadline per agent turn for tool-enabled chat and orchestrator steps. Default: 300 s.</value></data>
+  <data name="LabelTaskTimeoutDeep" xml:space="preserve"><value>Deep task timeout (reserved)</value></data>
+  <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>Reserved for extended reasoning tasks. Default: 600 s.</value></data>
+  <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planning…</value></data>
+  <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Observing…</value></data>
+  <data name="AgentPlanPrompt" xml:space="preserve"><value>Before using any tools, output ONLY a JSON object with the following structure (no prose, no markdown fences):
+{"goal":"one-sentence description of what you will do","steps":[{"i":1,"desc":"what this step does","tool":"expected_tool_name_or_null"},{"i":2,"desc":"..."}]}
+Include 2–6 concrete steps. Use null for "tool" if no specific tool is expected.
+After outputting the JSON, stop — do not call any tools yet.</value></data>
+  <data name="AgentExecutePlan" xml:space="preserve"><value>Good. Now execute the plan step by step, starting from step 1. Do NOT write any explanatory text — immediately call the appropriate tool for step 1 right now.</value></data>
+  <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Execute the request</value></data>
+  <data name="AgentPlanFallbackStep" xml:space="preserve"><value>Execute the request using available tools</value></data>
+  <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 Agent Plan</value></data>
+  <data name="AgentObservePrompt" xml:space="preserve"><value>[OBSERVE — {0}/{1}] Tools executed: {2}. Remaining plan steps: {3}.
+Immediately call the tool for the next step — no preamble, no explanation. If the goal is fully achieved, write the final answer to my most recent request without calling any more tools — do not repeat an earlier answer from this conversation.</value></data>
+  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[OBSERVE — {0}/{1}] Tools executed: {2}. All plan steps are complete.
+Now write the complete final answer to my most recent request, which was: "{3}" — directly, in full, and in my language, WITHOUT calling any more tools. Only call another tool if essential information is still missing. Do not repeat an answer given to an earlier, different question.</value></data>
+  <data name="AgentNudgeToolCall" xml:space="preserve"><value>You described your intentions but did not call any tools. Do NOT produce any text — call the first tool from your plan RIGHT NOW.</value></data>
+  <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ Writing answer…</value></data>
+  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>You have gathered enough information with the tools above. Do NOT call any more tools. Using those results, write the complete final answer to my most recent request, which was: "{0}" — directly, in full, and in my language. Answer THAT request specifically; do not repeat an earlier answer from this conversation.</value></data>
+
+  <!-- First-run auto-discovery -->
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **First launch** — {0} available. Auto-selected **{1}** as default model.
+
+Open **Settings** to change the model or configure a dedicated model for code actions and inline completions.</value></data>
+  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **First launch** — Ollama is running but no chat models were found.
+
+Pull a model to get started:
+```
+ollama pull llama3.1
+```
+Then restart Visual Studio (or open Settings and click **Test**).</value></data>
+  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **First launch** — the model server is not reachable at **{0}**.
+
+Start Ollama and click **↻ Retry** in the header:
+```
+ollama serve
+```</value></data>
+  <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — the selected models need about **{0} GB** together, more than your **{1} GB** budget. They may spill to system RAM and run slowly. Consider a smaller model, or run `/hardware` to review.</value></data>
+  <data name="SectionMcp" xml:space="preserve"><value>MCP servers</value></data>
+  <data name="LabelMcpEnabled" xml:space="preserve"><value>Enable MCP servers</value></data>
+  <data name="HintMcpEnabled" xml:space="preserve"><value>When enabled, the configured Model Context Protocol (MCP) servers are launched on startup and their tools become available to the agent. The server commands (e.g. npx, uvx) must be installed on this machine.</value></data>
+  <data name="LabelMcpServers" xml:space="preserve"><value>MCP servers (JSON):</value></data>
+  <data name="HintMcpServers" xml:space="preserve"><value>MCP server definitions as a JSON object keyed by server name (Claude Desktop / Continue format), each with command, args and env. Stdio transport only. Discovered tools are exposed to the agent prefixed with mcp__.</value></data>
+  <data name="McpNoServers" xml:space="preserve"><value>No MCP server configured.</value></data>
+  <data name="McpCancelled" xml:space="preserve"><value>MCP tool call cancelled by user.</value></data>
+  <data name="ApprovalAllowOnce" xml:space="preserve"><value>Allow once</value></data>
+  <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Always allow this tool</value></data>
+  <data name="ApprovalDeny" xml:space="preserve"><value>Cancel</value></data>
+  <data name="PermissionBlockedRule" xml:space="preserve"><value>Blocked by a permission rule (deny): {0}</value></data>
+  <data name="PermissionBlockedHard" xml:space="preserve"><value>Blocked by the built-in safety denylist (catastrophic command): {0}</value></data>
+  <data name="McpAddServer" xml:space="preserve"><value>+ Add a server</value></data>
+  <data name="McpAddTitle" xml:space="preserve"><value>Add a server</value></data>
+  <data name="McpEditTitle" xml:space="preserve"><value>Editing: {0}</value></data>
+  <data name="LabelMcpName" xml:space="preserve"><value>Name</value></data>
+  <data name="LabelMcpCommand" xml:space="preserve"><value>Command</value></data>
+  <data name="LabelMcpArgs" xml:space="preserve"><value>Arguments (space-separated)</value></data>
+  <data name="LabelMcpEnv" xml:space="preserve"><value>Environment (KEY=value, one per line)</value></data>
+  <data name="LabelMcpHttpServer" xml:space="preserve"><value>HTTP server (use a URL instead of a command)</value></data>
+  <data name="LabelMcpUrl" xml:space="preserve"><value>URL (Streamable HTTP endpoint)</value></data>
+  <data name="LabelMcpHeaders" xml:space="preserve"><value>Headers (Key=value, one per line; ${ENV_VAR} expanded)</value></data>
+  <data name="BtnMcpSaveServer" xml:space="preserve"><value>Save</value></data>
+  <data name="BtnMcpCancelServer" xml:space="preserve"><value>Cancel</value></data>
+  <data name="McpAdvancedJson" xml:space="preserve"><value>Advanced (JSON)</value></data>
+  <data name="McpImportJson" xml:space="preserve"><value>⟳ Import JSON into list</value></data>
+  <data name="McpServerDisabled" xml:space="preserve"><value>— disabled</value></data>
+  <data name="McpValidationNameCommand" xml:space="preserve"><value>Name and Command are required.</value></data>
+  <data name="McpValidationNameUrl" xml:space="preserve"><value>Name and URL are required.</value></data>
+  <data name="BtnMcpAuthorize" xml:space="preserve"><value>Authorize…</value></data>
+  <data name="McpAuthRequired" xml:space="preserve"><value>🔒 authorization required</value></data>
+  <data name="McpValidationDuplicate" xml:space="preserve"><value>A server with this name already exists.</value></data>
+  <data name="HintMcpEditServer" xml:space="preserve"><value>Edit this MCP server's settings (name, command, arguments, environment variables).</value></data>
+  <data name="HintMcpDeleteServer" xml:space="preserve"><value>Remove this MCP server from the list.</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ List</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ Text</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>No MCP server configured</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>No pinned file</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>No custom command</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>No custom tool</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>Commands &amp; tools</value></data>
+
+  <!-- Editable lists (pinned files / slash commands / custom tools) -->
+  <data name="HintRowEdit" xml:space="preserve"><value>Edit this entry.</value></data>
+  <data name="HintRowDelete" xml:space="preserve"><value>Remove this entry from the list.</value></data>
+  <data name="LabelRowAdvanced" xml:space="preserve"><value>Advanced (raw text)</value></data>
+  <data name="BtnRowImport" xml:space="preserve"><value>⟳ Import into list</value></data>
+  <data name="RowEditTitle" xml:space="preserve"><value>Editing: {0}</value></data>
+  <data name="PinnedAddFile" xml:space="preserve"><value>+ Add a file</value></data>
+  <data name="PinnedAddTitle" xml:space="preserve"><value>Add a pinned file</value></data>
+  <data name="LabelPinnedPath" xml:space="preserve"><value>File path (absolute)</value></data>
+  <data name="PinnedBrowse" xml:space="preserve"><value>Browse…</value></data>
+  <data name="PinnedPickerTitle" xml:space="preserve"><value>Select a file to pin</value></data>
+  <data name="PinnedValidationPath" xml:space="preserve"><value>A file path is required.</value></data>
+  <data name="PinnedValidationDuplicate" xml:space="preserve"><value>This file is already pinned.</value></data>
+  <data name="SlashAddCmd" xml:space="preserve"><value>+ Add a command</value></data>
+  <data name="SlashAddTitle" xml:space="preserve"><value>Add a slash command</value></data>
+  <data name="LabelSlashName" xml:space="preserve"><value>Name (e.g. /refactor)</value></data>
+  <data name="LabelSlashText" xml:space="preserve"><value>Prompt text — use {args} for extra words</value></data>
+  <data name="SlashValidationNameText" xml:space="preserve"><value>A name starting with / and prompt text are required.</value></data>
+  <data name="SlashValidationDuplicate" xml:space="preserve"><value>A command with this name already exists.</value></data>
+  <data name="ToolAddTool" xml:space="preserve"><value>+ Add a tool</value></data>
+  <data name="ToolAddTitle" xml:space="preserve"><value>Add a custom tool</value></data>
+  <data name="LabelToolName" xml:space="preserve"><value>Name (snake_case)</value></data>
+  <data name="LabelToolCommand" xml:space="preserve"><value>PowerShell command (use {args} for arguments)</value></data>
+  <data name="ToolValidationNameCommand" xml:space="preserve"><value>A tool name and command are required.</value></data>
+  <data name="ToolValidationDuplicate" xml:space="preserve"><value>A tool with this name already exists.</value></data>
+
+  <!-- @Docs (external documentation indexing) -->
+  <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Indexed documentation</value></data>
+  <data name="DocsNoSites" xml:space="preserve"><value>No documentation indexed yet. Add a source with `/docs add &lt;url&gt; [title]`.</value></data>
+  <data name="DocsUsage" xml:space="preserve"><value>**Usage:** `/docs add &lt;url&gt; [title]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
+  <data name="DocsAdded" xml:space="preserve"><value>📚 Added **{0}** — crawling and indexing in the background…</value></data>
+  <data name="DocsRemoved" xml:space="preserve"><value>🗑 Removed documentation source **{0}**.</value></data>
+  <data name="DocsReindexing" xml:space="preserve"><value>🔄 Re-indexing **{0}** in the background…</value></data>
+  <data name="DocsNotReady" xml:space="preserve"><value>No documentation is indexed yet. Add one with `/docs add &lt;url&gt;`. ({0})</value></data>
+  <data name="DocsNoResults" xml:space="preserve"><value>No documentation passages found for "{0}".</value></data>
+  <data name="SlashHintExplain" xml:space="preserve"><value>explain active file (or selection)</value></data>
+  <data name="SlashHintFix" xml:space="preserve"><value>suggest fixes for active file</value></data>
+  <data name="SlashHintReview" xml:space="preserve"><value>structured code review</value></data>
+  <data name="SlashHintRefactor" xml:space="preserve"><value>refactor suggestions</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>generate unit tests</value></data>
+  <data name="SlashHintDoc" xml:space="preserve"><value>generate XML documentation comments</value></data>
+  <data name="SlashHintClear" xml:space="preserve"><value>clear the conversation</value></data>
+  <data name="SlashHintModel" xml:space="preserve"><value>switch model</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>enable or disable tool calling</value></data>
+  <data name="SlashHintExport" xml:space="preserve"><value>export conversation to a file</value></data>
+  <data name="SlashHintRestore" xml:space="preserve"><value>restore a file from backup</value></data>
+  <data name="SlashHintHelp" xml:space="preserve"><value>show all available commands</value></data>
+  <data name="SlashHintRead" xml:space="preserve"><value>attach a file as context</value></data>
+  <data name="SlashHintLs" xml:space="preserve"><value>list files in a directory</value></data>
+  <data name="SlashHintGrep" xml:space="preserve"><value>search text in files</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>run a PowerShell command</value></data>
+  <data name="SlashHintFetch" xml:space="preserve"><value>show a web page as text</value></data>
+  <data name="SlashHintSearch" xml:space="preserve"><value>DuckDuckGo web search</value></data>
+  <data name="SlashHintSearchCode" xml:space="preserve"><value>semantic codebase search</value></data>
+  <data name="SlashHintCommit" xml:space="preserve"><value>propose a commit message</value></data>
+  <data name="SlashHintGit" xml:space="preserve"><value>git status, log and diff summary</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>show project architecture map (namespaces, types, hotspots)</value></data>
+  <data name="SlashHintSolution" xml:space="preserve"><value>show solution structure</value></data>
+  <data name="SlashHintBuild" xml:space="preserve"><value>compile and show errors</value></data>
+  <data name="SlashHintFixBuild" xml:space="preserve"><value>compile → AI fixes → recompile until clean</value></data>
+  <data name="SlashHintContext" xml:space="preserve"><value>show project context</value></data>
+  <data name="SlashHintMemory" xml:space="preserve"><value>view agent memory</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>show or rebuild the RAG codebase index</value></data>
+  <data name="SlashHintHistory" xml:space="preserve"><value>list saved sessions — /history &lt;term&gt; to search</value></data>
+  <data name="SlashHintTemplate" xml:space="preserve"><value>start a session from a preset template — /template &lt;id&gt;</value></data>
+  <data name="SlashHintDiff" xml:space="preserve"><value>attach full git diff as context chip — /diff [path]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>AI-review the current git diff against .inferpal/checks — /check [name|init]</value></data>
+  <data name="SlashHintRules" xml:space="preserve"><value>list project rules in .inferpal/rules — /rules [init]</value></data>
+  <data name="SlashHintChecks" xml:space="preserve"><value>list review checks in .inferpal/checks — /checks [init]</value></data>
+  <data name="SlashHintSnippets" xml:space="preserve"><value>list saved code snippets — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
+  <data name="SlashHintNote" xml:space="preserve"><value>save a project note — /note &lt;text&gt;</value></data>
+  <data name="SlashHintNotes" xml:space="preserve"><value>list project notes — /notes [clear]</value></data>
+  <data name="SlashHintPhistory" xml:space="preserve"><value>search prompt history — /phistory [term] or /phistory use &lt;n&gt;</value></data>
+  <data name="SlashHintModels" xml:space="preserve"><value>Ollama model manager — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
+  <data name="SlashHintAgentStep" xml:space="preserve"><value>toggle agent step mode — pause after each tool call</value></data>
+  <data name="SlashHintResume" xml:space="preserve"><value>resume agent after a step-mode pause</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>toggle plan mode — read-only: explore and propose a plan, no edits</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>list reusable prompt files (.inferpal/prompts) — /prompts [init]</value></data>
+  <data name="SlashHintHardware" xml:space="preserve"><value>show GPU/VRAM profile — /hardware [gb] to set the VRAM budget</value></data>
+  <data name="SlashHintSetup" xml:space="preserve"><value>re-run first-run setup — re-detect backend, re-pick models</value></data>
+  <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ Live VRAM and per-model monitoring isn't available with this backend. The manual VRAM budget (`/hardware &lt;gb&gt;`) still drives fit-checks.</value></data>
+  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ Model management (pull, delete, running) is only available with the Ollama backend.</value></data>
+  <data name="SnippetsCleared" xml:space="preserve"><value>Snippet library cleared.</value></data>
+  <data name="SnippetsNoSuch" xml:space="preserve"><value>No snippet #{0}.</value></data>
+  <data name="SnippetsCopied" xml:space="preserve"><value>Snippet #{0} copied to clipboard.</value></data>
+  <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet #{0} deleted.</value></data>
+  <data name="SnippetsNone" xml:space="preserve"><value>No snippets saved yet. Use the ⭐ button on any code block to save one.</value></data>
+  <data name="NoteUsage" xml:space="preserve"><value>Usage: `/note &lt;text&gt;` — appends a timestamped note to `.inferpal/notes.md`.</value></data>
+  <data name="NoteSaved" xml:space="preserve"><value>Note saved: *{0}*</value></data>
+  <data name="NotesCleared" xml:space="preserve"><value>Project notes cleared.</value></data>
+  <data name="NotesNoneYet" xml:space="preserve"><value>No project notes yet. Use `/note &lt;text&gt;` to add one.</value></data>
+  <data name="NotesEmpty" xml:space="preserve"><value>Project notes file is empty.</value></data>
+  <data name="NotesHeading" xml:space="preserve"><value>## Project notes</value></data>
+  <data name="PHistoryNoEntry" xml:space="preserve"><value>No history entry #{0}.</value></data>
+  <data name="PHistoryEmpty" xml:space="preserve"><value>Prompt history is empty.</value></data>
+  <data name="PHistoryNoMatch" xml:space="preserve"><value>No history entries matching `{0}`.</value></data>
+  <data name="ModelsDeleteUsage" xml:space="preserve"><value>Usage: `/models delete &lt;model-name&gt;`</value></data>
+  <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` deleted.</value></data>
+  <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ Failed to delete `{0}`.</value></data>
+  <data name="ModelsNoneRunning" xml:space="preserve"><value>No models currently loaded in VRAM.</value></data>
+  <data name="ModelsNoneInstalled" xml:space="preserve"><value>No models installed. Use `/models pull &lt;name&gt;` to download one.</value></data>
+  <data name="ModelsPullUsage" xml:space="preserve"><value>Usage: `/models pull &lt;model-name&gt;`</value></data>
+  <data name="ModelsPulling" xml:space="preserve"><value>⬇ Pulling `{0}`…</value></data>
+  <data name="ModelsPullingStatus" xml:space="preserve"><value>⬇ Pulling `{0}` — {1}</value></data>
+  <data name="ModelsPulled" xml:space="preserve"><value>✅ `{0}` pulled successfully.</value></data>
+  <data name="ModelsPullFailed" xml:space="preserve"><value>❌ Failed to pull `{0}`.</value></data>
+  <data name="SnippetsListHeader" xml:space="preserve"><value>## Saved snippets</value></data>
+  <data name="SnippetsSavedAt" xml:space="preserve"><value>*Saved {0}*</value></data>
+  <data name="PHistoryListHeader" xml:space="preserve"><value>## Prompt history</value></data>
+  <data name="PHistoryListHeaderTerm" xml:space="preserve"><value>## Prompt history — `{0}`</value></data>
+  <data name="ModelsRunningHeader" xml:space="preserve"><value>## Running models</value></data>
+  <data name="ModelsInstalledHeader" xml:space="preserve"><value>## Installed models</value></data>
+  <data name="ModelsTableModel" xml:space="preserve"><value>Model</value></data>
+  <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Show recent diagnostics — `clear`/`on`/`off`</value></data>
+  <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostics</value></data>
+  <data name="DiagnosticsEmpty" xml:space="preserve"><value>No diagnostics recorded.</value></data>
+  <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnostics cleared.</value></data>
+  <data name="DiagnosticsFileOn" xml:space="preserve"><value>Diagnostics file logging enabled.</value></data>
+  <data name="DiagnosticsFileOff" xml:space="preserve"><value>Diagnostics file logging disabled.</value></data>
+  <data name="SlashHintUndoRun" xml:space="preserve"><value>Undo all file changes from the last agent run</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>No agent run with file changes to undo in this session.</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
+  <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} file(s) restored, {1} deleted.</value></data>
+  <data name="HardwareUsage" xml:space="preserve"><value>Usage: `/hardware &lt;gb&gt;` — a positive number, e.g. `/hardware 24`.</value></data>
+  <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM budget set to {0} GB.</value></data>
+  <data name="HardwareReportHeading" xml:space="preserve"><value>## Hardware profile</value></data>
+  <data name="HardwareBudgetLine" xml:space="preserve"><value>**VRAM budget:** {0} GB</value></data>
+  <data name="HardwareBudgetNotSet" xml:space="preserve"><value>**VRAM budget:** not set — run `/hardware &lt;gb&gt;` (e.g. `/hardware 24`)</value></data>
+  <data name="HardwareLoadedLine" xml:space="preserve"><value>**Currently loaded:** {0} GB{1}{2}</value></data>
+  <data name="HardwareOfBudget" xml:space="preserve"><value> / {0} GB</value></data>
+  <data name="HardwareHeadroom" xml:space="preserve"><value> · headroom {0} GB</value></data>
+  <data name="HardwareCompute" xml:space="preserve"><value>**Compute:** {0}</value></data>
+  <data name="HardwareLoadedNone" xml:space="preserve"><value>**Currently loaded:** none</value></data>
+  <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Loaded models
+
+| Model | VRAM |
+|---|---|</value></data>
+  <data name="HardwareInstalledModelsTable" xml:space="preserve"><value>### Installed models
+
+| Model | Disk | Est. VRAM |
+|---|---|---|</value></data>
+  <data name="HardwareInstalledNote" xml:space="preserve"><value>_Installed-model VRAM figures are estimates (disk size × 1.2, covering KV-cache + runtime)._</value></data>
+  <data name="HardwareContextHeading" xml:space="preserve"><value>### Context window</value></data>
+  <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**Configured num_ctx:** {0}</value></data>
+  <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Recommended max for `{0}`:** {1}{2}</value></data>
+  <data name="HardwareModelMax" xml:space="preserve"><value> (model max {0})</value></data>
+  <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Your num_ctx ({0}) exceeds what fits the VRAM budget — the KV-cache may spill to system RAM and slow generation. Consider lowering it to {1}.</value></data>
+  <data name="LabelVramBudget" xml:space="preserve"><value>VRAM budget</value></data>
+  <data name="HintVramBudget" xml:space="preserve"><value>Total VRAM (in GB) available on the Ollama host. Used to recommend a safe num_ctx and to warn when the selected models won't fit. Leave empty to auto-detect on a local host; a manual value is required for remote hosts. Also settable with `/hardware &lt;gb&gt;`.</value></data>
+  <data name="TooltipAgentMode" xml:space="preserve"><value>Switch between Chat and Agent mode (autonomous Plan → Act → Observe). Wired to the 'Enable autonomous agent mode' setting.</value></data>
+  <data name="LabelModeChat" xml:space="preserve"><value>💬 Chat</value></data>
+  <data name="LabelModeAgent" xml:space="preserve"><value>🤖 Agent</value></data>
+  <data name="WelcomeSubtitle" xml:space="preserve"><value>Ask anything about your code</value></data>
+  <data name="WelcomeCardExplain" xml:space="preserve"><value>Explain the selection</value></data>
+  <data name="WelcomeCardFix" xml:space="preserve"><value>Fix an error</value></data>
+  <data name="WelcomeCardTest" xml:space="preserve"><value>Generate a test</value></data>
+  <data name="WelcomeCardHelp" xml:space="preserve"><value>See all commands</value></data>
+  <data name="BuildBannerTitle" xml:space="preserve"><value>Build Failed</value></data>
+  <data name="BuildBannerDismiss" xml:space="preserve"><value>Dismiss</value></data>
+  <data name="BuildBannerFix" xml:space="preserve"><value>Fix with AI</value></data>
+</root>

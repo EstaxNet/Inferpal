@@ -1,0 +1,841 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- Settings section headers -->
+  <data name="SectionConnection" xml:space="preserve"><value>Connessione</value></data>
+  <data name="SettingsTabConnection" xml:space="preserve"><value>Connessione</value></data>
+  <data name="SettingsTabBehavior" xml:space="preserve"><value>Comportamento</value></data>
+  <data name="SettingsTabContext" xml:space="preserve"><value>Contesto</value></data>
+  <data name="SettingsTabTools" xml:space="preserve"><value>Strumenti</value></data>
+  <data name="SectionBehavior" xml:space="preserve"><value>Comportamento</value></data>
+  <data name="SectionInlineCompletions" xml:space="preserve"><value>Completamenti inline</value></data>
+  <data name="LabelInlineCompletionMode" xml:space="preserve"><value>Modalità prestazioni:</value></data>
+  <data name="HintInlineCompletionMode" xml:space="preserve"><value>Veloce: 128 token, ritardo 300 ms — Bassa latenza, suggerimenti brevi. Predefinito: 256 token, ritardo 600 ms — Bilanciato. Alta precisione: 512 token, ritardo 1 s — Qualità migliore, più lento.</value></data>
+  <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>Abilita completamenti ghost-text</value></data>
+  <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>Se abilitato, Inferpal mostra suggerimenti di codice generati dall'IA inline mentre si digita (ghost text). Tab per accettare, Escape per ignorare.</value></data>
+  <data name="LabelInlineCompletionModel" xml:space="preserve"><value>Modello FIM (vuoto = modello chat):</value></data>
+  <data name="HintInlineCompletionModel" xml:space="preserve"><value>Modello per i completamenti Fill-in-the-Middle. Lascia vuoto per riutilizzare il modello chat. Scegli un modello più veloce o dedicato al codice (es. qwen2.5-coder) per migliori suggerimenti inline.</value></data>
+  <data name="LabelCodeActionsModel" xml:space="preserve"><value>Modello per le azioni codice (vuoto = modello chat):</value></data>
+  <data name="HintCodeActionsModel" xml:space="preserve"><value>Modello usato per i comandi Spiega, Correggi e Refactoring. Lascia vuoto per riutilizzare il modello chat. Un modello più potente fornisce analisi del codice migliori.</value></data>
+  <data name="LabelInlineEditModel" xml:space="preserve"><value>Modello modifica inline (vuoto = modello azioni codice):</value></data>
+  <data name="HintInlineEditModel" xml:space="preserve"><value>Modello usato per la modifica inline (Ctrl+Maiusc+I). Lascia vuoto per usare il modello azioni codice, poi il modello chat. Un modello codice veloce (es. qwen2.5-coder) è consigliato.</value></data>
+  <data name="InlineEditDlgTitle" xml:space="preserve"><value>Inferpal — Modifica con IA</value></data>
+  <data name="InlineEditDlgHeader" xml:space="preserve"><value>✏  Descrivi la modifica  (Invio per applicare, Esc per annullare)</value></data>
+  <data name="InlineEditDlgHint" xml:space="preserve"><value>es. "Aggiungere controlli null", "Convertire in async", "Tradurre i commenti in italiano"</value></data>
+  <data name="InlineEditWorking" xml:space="preserve"><value>L'IA sta generando…</value></data>
+  <data name="BtnApply" xml:space="preserve"><value>Applica</value></data>
+  <data name="SectionRag" xml:space="preserve"><value>RAG / Indice semantico</value></data>
+  <data name="LabelRagEnabled" xml:space="preserve"><value>Abilita indicizzazione in background (RAG)</value></data>
+  <data name="LabelRagAutoContext" xml:space="preserve"><value>Inietta il codice pertinente a ogni turno</value></data>
+  <data name="HintRagAutoContext" xml:space="preserve"><value>Se attivato, ogni domanda di codice recupera gli snippet indicizzati più pertinenti e li aggiunge al prompt (saltando quelli già allegati). Richiede l'indicizzazione in background.</value></data>
+  <data name="HintRagEnabled" xml:space="preserve"><value>Se abilitato, Inferpal indicizza tutti i file sorgente della soluzione in background e usa la ricerca semantica per fornire contesto di codice rilevante all'IA. Disabilitare per risparmiare memoria o CPU su repository di grandi dimensioni.</value></data>
+  <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Modello di embedding:</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Modello Ollama utilizzato per generare embedding per la ricerca semantica. Vengono elencati solo i modelli di embedding dedicati (nomic-embed-text, mxbai-embed-large, bge-m3, …). Ripiego su nomic-embed-text se nessuno è selezionato.</value></data>
+  <data name="LabelRagTopK" xml:space="preserve"><value>Risultati per query (top-K):</value></data>
+  <data name="HintRagTopK" xml:space="preserve"><value>Numero massimo di frammenti di codice restituiti dallo strumento di ricerca semantica. Valori più alti forniscono più contesto ma aumentano l'utilizzo dei token. Consigliato: 3–10.</value></data>
+  <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>Soglia di similarità (0–1):</value></data>
+  <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>Punteggio minimo di similarità coseno affinché un frammento venga incluso nei risultati. I frammenti sotto questa soglia vengono scartati come corrispondenze di bassa qualità. Consigliato: 0,20.</value></data>
+  <data name="LabelLspEnabled" xml:space="preserve"><value>Chunking semantico LSP (TypeScript, Python, Go, Rust)</value></data>
+  <data name="HintLspEnabled" xml:space="preserve"><value>Se abilitato, Inferpal usa i language server installati (typescript-language-server, pylsp/pyright-langserver, gopls, rust-analyzer) per estrarre delimitazioni precise di simboli dai file non-C# durante l'indicizzazione RAG. Richiede il server corrispondente nel PATH.</value></data>
+  <data name="LabelModelAutoUnload" xml:space="preserve"><value>Scarica automaticamente i modelli inattivi</value></data>
+  <data name="HintModelAutoUnload" xml:space="preserve"><value>Se attivato, Inferpal istruisce Ollama a scaricare i modelli dalla VRAM dopo un periodo di inattività. Questo libera la memoria GPU quando l'IA è inattiva. L'utilizzo VRAM dei modelli caricati è mostrato nell'intestazione della chat.</value></data>
+  <data name="LabelModelIdleTimeout" xml:space="preserve"><value>Scarica dopo (minuti):</value></data>
+  <data name="HintModelIdleTimeout" xml:space="preserve"><value>Minuti di inattività prima che Ollama scarichi il modello dalla VRAM. Valori più bassi liberano la GPU prima; valori più alti riducono il tempo di ricaricamento alla prossima richiesta. Minimo: 1 minuto.</value></data>
+  <data name="SectionContext" xml:space="preserve"><value>Contesto e memoria</value></data>
+  <data name="SectionPersona" xml:space="preserve"><value>Persona</value></data>
+  <data name="SectionInterface" xml:space="preserve"><value>Interfaccia</value></data>
+
+  <!-- UI labels -->
+  <data name="LabelProvider" xml:space="preserve"><value>Backend di inferenza:</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>Server di modelli locale da usare: Ollama (funzioni hardware-aware complete) o un server compatibile con OpenAI come LM Studio, llama.cpp o vLLM. Ha effetto dopo il ricaricamento di Visual Studio.</value></data>
+  <data name="LabelApiKey" xml:space="preserve"><value>Chiave API (facoltativa):</value></data>
+  <data name="HintApiKey" xml:space="preserve"><value>Inviata come token Bearer ai server compatibili con OpenAI che richiedono autenticazione. Lasciare vuoto per Ollama e LM Studio (nessuna chiave necessaria).</value></data>
+  <data name="LabelUrl" xml:space="preserve"><value>URL del server:</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>URL base dell'istanza locale di Ollama. Predefinito: http://localhost:11434. Cambia se Ollama è in esecuzione su un host o una porta diversi.</value></data>
+  <data name="LabelChatModel" xml:space="preserve"><value>Modello chat:</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>Modello predefinito usato per tutte le conversazioni. Questo campo è obbligatorio. Usa /model &lt;nome&gt; per cambiare modello a metà sessione.</value></data>
+  <data name="LabelSession" xml:space="preserve"><value>Sessione:</value></data>
+  <data name="BtnTest" xml:space="preserve"><value>Testa</value></data>
+  <data name="BtnClear" xml:space="preserve"><value>Cancella</value></data>
+  <data name="BtnLoadSession" xml:space="preserve"><value>Carica ↩</value></data>
+  <data name="BtnCancel" xml:space="preserve"><value>✕ Annulla</value></data>
+  <data name="BtnSave" xml:space="preserve"><value>Salva</value></data>
+  <data name="BtnSend" xml:space="preserve"><value>Invia →</value></data>
+  <data name="TooltipRefreshModels" xml:space="preserve"><value>Aggiorna la lista dei modelli</value></data>
+  <data name="TooltipExport" xml:space="preserve"><value>Esporta la conversazione in .md o .txt</value></data>
+  <data name="TooltipClear" xml:space="preserve"><value>Salva e cancella la conversazione</value></data>
+  <data name="TooltipSessionPicker" xml:space="preserve"><value>Seleziona una sessione passata da ripristinare</value></data>
+  <data name="TooltipLoadSession" xml:space="preserve"><value>Carica la sessione selezionata (o l'ultima se nessuna)</value></data>
+  <data name="TooltipDeleteSession" xml:space="preserve"><value>Elimina la sessione selezionata</value></data>
+  <data name="DeleteSessionConfirm" xml:space="preserve"><value>Eliminare la sessione «{0}»?
+
+Questa azione non può essere annullata.</value></data>
+  <data name="TooltipCopy" xml:space="preserve"><value>Copia messaggio</value></data>
+  <data name="BtnDismiss" xml:space="preserve"><value>Ignora</value></data>
+  <data name="BtnFixWithAi" xml:space="preserve"><value>Correggi con l'IA</value></data>
+  <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Ripristina tutto</value></data>
+  <data name="BtnRegenerate" xml:space="preserve"><value>↺ Rigenera</value></data>
+  <data name="BtnResume" xml:space="preserve"><value>▶ Riprendi</value></data>
+  <data name="TooltipStepMode" xml:space="preserve"><value>Modalità passo-passo — mette in pausa l'agente dopo ogni strumento (attiva/disattiva)</value></data>
+  <data name="TooltipPlanMode" xml:space="preserve"><value>Modalità piano — sola lettura: l'agente esplora e propone un piano senza modificare i file (attiva/disattiva)</value></data>
+  <data name="MultiFileRecapTitle" xml:space="preserve"><value>**{0} file modificato/i:** {1}</value></data>
+  <data name="PromptFixErrors" xml:space="preserve"><value>Correggi i seguenti errori di build:
+
+{0}</value></data>
+
+  <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
+  <data name="PromptExplainSelection" xml:space="preserve"><value>Spiega il codice da `{0}` con queste quattro sezioni:
+
+**FLUSSO LOGICO** — descrivi il percorso di esecuzione passo per passo.
+**COMPONENTI CHIAVE** — identifica le funzioni, i tipi e le dipendenze principali.
+**CASI LIMITE** — segnala input o condizioni che potrebbero causare comportamenti imprevisti.
+**RUOLO ARCHITETTURALE** — spiega come questo codice si inserisce nel sistema più ampio.
+
+{1}</value></data>
+  <data name="PromptRefactorSelection" xml:space="preserve"><value>Refactorizza il codice da `{0}` senza modificarne il comportamento:
+
+**IDENTIFICARE** — elenca cosa rende difficile leggere, mantenere o estendere questo codice.
+**PIANIFICARE** — descrivi i miglioramenti mirati: nomi, struttura, pattern, duplicazioni.
+**APPLICARE** — mostra il codice refactorizzato per intero.
+**VALIDARE** — conferma che il comportamento è preservato e indica le assunzioni fatte.
+
+{1}</value></data>
+  <data name="PromptAddTestsSelection" xml:space="preserve"><value>Scrivi test unitari per il codice da `{0}` usando il framework di test esistente nel progetto:
+
+**MAPPA DI COPERTURA** — identifica tutti i metodi pubblici e i rami da testare.
+**PERCORSO NORMALE** — test per input e comportamenti normali attesi.
+**CASI LIMITE** — test per valori limite, input vuoti e null.
+**MODALITÀ DI ERRORE** — test per input non validi ed eccezioni attese.
+
+Fornisci il codice di test completo, pronto per la compilazione.
+
+{1}</value></data>
+  <data name="PromptFixSelection" xml:space="preserve"><value>Analizza e correggi il codice da `{0}`:
+
+**RIPRODURRE** — identifica il bug, il problema o il code smell esatto e spiega perché si verifica.
+**IPOTESI** — formula la tua diagnosi: causa radice e percorsi di esecuzione coinvolti.
+**CORREZIONE CHIRURGICA** — applica la modifica minima che risolve il problema. Mostra il codice corretto.
+**AUTO-VERIFICA** — conferma che la correzione è corretta ed elenca i rischi residui.
+
+{1}</value></data>
+  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>Aggiungi commenti di documentazione XML a tutti i tipi pubblici, metodi, proprietà e parametri in `{0}`:
+
+- &lt;summary&gt; — una frase: COSA fa, non COME. Non ripetere il nome.
+- &lt;param&gt; / &lt;returns&gt; — descrivi il contratto: unità, sicurezza null, intervalli validi.
+- &lt;exception&gt; — documenta le eccezioni sollevate e le condizioni che le scatenano.
+- &lt;remarks&gt; — solo quando il comportamento sorprenderebbe un lettore: effetti collaterali, threading, invarianti.
+
+Mostra il codice completamente documentato.
+
+{1}</value></data>
+  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>Aggiungi commenti di documentazione a tutti i membri pubblici di `{0}`.
+
+**Regole di documentazione:**
+- Riepilogo — una frase: COSA fa, non COME. Non ripetere mai il nome.
+- Parametri / valore di ritorno — descrivi il contratto: unità, sicurezza null, intervalli validi.
+- Eccezioni / errori — documenta cosa può andare storto e le condizioni esatte.
+- Note — solo per comportamenti sorprendenti: effetti collaterali, threading, invarianti.
+- Membri ereditati e implementazioni di interfaccia → delega alla doc del genitore (`&lt;inheritdoc/&gt;`) a meno che non aggiunga note extra.
+
+{1}
+
+Restituisci il **file sorgente completo** con tutta la documentazione aggiunta. Preserva il codice originale esattamente — aggiungi solo documentazione, non fare mai refactoring.</value></data>
+  <data name="PromptReviewSelection" xml:space="preserve"><value>Esamina il codice in `{0}` e fornisci una critica strutturata:
+
+- **Bug e casi limite** — errori logici, dereferenziazioni nulle, off-by-one, perdite di risorse.
+- **Design e leggibilità** — denominazione, responsabilità unica, complessità, duplicazione.
+- **Performance** — allocazioni inutili, cicli inefficienti, cache mancante.
+- **Sicurezza** — rischi di injection, validazione degli input non corretta, segreti nel codice.
+- **Test** — copertura insufficiente, design difficile da testare.
+
+Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una correzione concreta.
+
+{1}</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Timeout comando:</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>Tempo massimo di attesa per una singola chiamata a strumento (es. comando shell o build). Non influisce sul tempo di risposta dell'IA. Aumenta se le tue build richiedono più tempo.</value></data>
+  <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Espandi chiamate agli strumenti per impostazione predefinita</value></data>
+  <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Se attivato, i dettagli delle chiamate agli strumenti (input e output) vengono mostrati espansi nella chat. Disattiva per tenerli compressi per impostazione predefinita.</value></data>
+  <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>Disabilita avvisi di sicurezza (approva tutte le chiamate silenziosamente)</value></data>
+  <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>Se attivato, tutte le chiamate agli strumenti (scrittura file, comandi shell, ecc.) vengono approvate automaticamente senza richiesta di conferma. Usa solo in ambienti affidabili.</value></data>
+  <data name="LabelContextWindowSize" xml:space="preserve"><value>Finestra di contesto (token, 0 = disabilitato):</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>Deve corrispondere al parametro num_ctx del modello. Valori comuni: 2048 (7B piccolo), 4096 (predefinito), 8192, 16384. Quando la conversazione raggiunge l'80% di questo limite, i messaggi più vecchi vengono rimossi automaticamente e viene mostrato un avviso.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Su LM Studio / server compatibili OpenAI la lunghezza del contesto si imposta al caricamento del modello, non per richiesta: questo valore controlla solo il taglio lato client, quindi mantienilo uguale o inferiore al contesto con cui è caricato il modello. Quando la conversazione raggiunge l'80% di questo limite, i messaggi più vecchi vengono rimossi automaticamente e viene mostrato un avviso.</value></data>
+  <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Turni da mantenere sempre durante il taglio:</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Numero di scambi utente/assistente recenti da preservare durante il taglio. Il prompt di sistema viene sempre mantenuto. Aumenta se il modello ha bisogno di più contesto recente per restare coerente.</value></data>
+  <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Finestra di contesto: rimosso/i {0} messaggio/i vecchio/i — mantenuti gli ultimi {1} turno/i. Il contesto precedente è perso.</value></data>
+  <data name="LabelCompactionEnabled" xml:space="preserve"><value>Compattazione intelligente del contesto (riassumere invece di troncare)</value></data>
+  <data name="HintCompactionEnabled" xml:space="preserve"><value>Se attivo, i vecchi messaggi vengono riassunti dal modello prima di essere rimossi, preservando le informazioni chiave. Un fusibile di sicurezza annulla la chiamata di riepilogo se richiede troppo tempo e ricade sul troncamento forzato.</value></data>
+  <data name="LabelCompactionTimeout" xml:space="preserve"><value>Timeout compattazione (fusibile di sicurezza):</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Secondi massimi per la chiamata di compattazione. Se supera questo limite, il fusibile di sicurezza scatta e viene usato il troncamento forzato. Predefinito: 45.</value></data>
+  <data name="LabelKvCacheAnchor" xml:space="preserve"><value>Messaggi di ancoraggio KV-cache:</value></data>
+  <data name="HintKvCacheAnchor" xml:space="preserve"><value>Numero di messaggi di apertura (dopo il prompt di sistema) conservati invariati all'inizio di ogni contesto compattato. Ollama può riutilizzare il suo KV cache per questi token, risparmiando tempo di ricalcolo. 0 = disabilitato. Predefinito: 3.</value></data>
+  <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} messaggio/i di ancoraggio KV conservato/i)</value></data>
+  <data name="StatusCompacting" xml:space="preserve"><value>Compattazione del contesto…</value></data>
+  <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contesto compattato: {0} messaggio/i riassunto/i — mantenuti gli ultimi {1} turno/i.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Timeout compattazione contesto — ripristino al troncamento forzato.</value></data>
+  <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Di seguito è l'inizio della nostra conversazione. Riassumilo in modo denso, preservando tutte le decisioni chiave, i fatti, i file modificati e il contesto necessario per i messaggi futuri. Sii conciso ma completo — questo riepilogo sostituirà i messaggi originali:
+
+{0}</value></data>
+  <data name="LabelCustomSystemPrompt" xml:space="preserve"><value>Prompt di sistema personalizzato (aggiunto dopo il prompt base, prima del contesto progetto):</value></data>
+  <data name="HintCustomSystemPrompt" xml:space="preserve"><value>Istruzioni aggiuntive aggiunte al prompt di sistema integrato. Usale per impostare il tono dell'assistente, limitarne l'ambito o aggiungere conoscenze di dominio specifiche del progetto.</value></data>
+  <data name="LabelPinnedContextFiles" xml:space="preserve"><value>File di contesto fissi (un percorso per riga, max 3 — sempre iniettati nel prompt):</value></data>
+  <data name="HintPinnedContextFiles" xml:space="preserve"><value>Percorsi assoluti di file sempre iniettati nel prompt di sistema prima di ogni richiesta. Utile per tenere sempre in contesto documenti di architettura, interfacce o schemi importanti.</value></data>
+  <data name="LabelPromptTemplates" xml:space="preserve"><value>Comandi slash personalizzati (uno per riga: /nome=testo, usa {args} per parole aggiuntive):</value></data>
+  <data name="HintPromptTemplates" xml:space="preserve"><value>Definisci i tuoi comandi slash. Formato: /miocomando=Spiega questo in dettaglio: {args}. {args} viene sostituito dalle parole digitate dopo il nome del comando. I template appaiono nei suggerimenti di completamento automatico.</value></data>
+  <data name="LabelPermissionRules" xml:space="preserve"><value>Regole di autorizzazione (una per riga: allow|deny &lt;strumento|*&gt; &lt;regex&gt;):</value></data>
+  <data name="HintPermissionRules" xml:space="preserve"><value>Regole valutate prima della richiesta di approvazione. «allow» approva automaticamente una chiamata corrispondente, «deny» la blocca, altrimenti viene mostrata la richiesta; vince la prima corrispondenza. La regex viene confrontata con il comando o il percorso del file. Si aggiunge all'overlay versionabile .inferpal/permissions.json, più una denylist integrata non aggirabile di comandi catastrofici. Esempio: allow run_command ^dotnet</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>Strumenti agente personalizzati (uno per riga: nome=comando_powershell):</value></data>
+  <data name="HintCustomTools" xml:space="preserve"><value>Definisci strumenti shell che l'agente può chiamare. Formato: mio_strumento=dotnet test. Il nome deve essere snake_case. Un parametro {args} opzionale viene aggiunto quando il modello lo fornisce. Richiede approvazione prima dell'esecuzione.</value></data>
+  <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Cambio automatico persona per linguaggio</value></data>
+  <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Quando attivo, il prompt di sistema viene arricchito automaticamente con un suggerimento specifico del linguaggio (C#, Python, TypeScript…) al cambio del documento attivo.</value></data>
+  <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>Riepilogo OODA ogni N turni (0 = disabilitato):</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Ogni N turni di conversazione, il modello genera un breve riepilogo di sessione (obiettivo, progresso, domande aperte) iniettato nel prompt di sistema per prevenire l'amnesia di contesto nelle sessioni lunghe. Impostare a 0 per disabilitare. Consigliato: 10.</value></data>
+  <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generazione riepilogo sessione…</value></data>
+  <data name="MsgOodaRecap" xml:space="preserve"><value>**Riepilogo sessione OODA** (turno {0})</value></data>
+  <data name="OodaSummarizePrompt" xml:space="preserve"><value>Riassumi la nostra conversazione finora. Produci un riepilogo in stile OODA con tre sezioni — Obiettivo (cosa vuole fare l'utente), Progresso (passi già completati) e Aperto (compiti rimanenti o domande irrisolte). Massimo 150 parole.</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>Lingua dell'interfaccia (sovrascrive Visual Studio):</value></data>
+  <data name="HintLanguage" xml:space="preserve"><value>Forza una lingua di visualizzazione indipendentemente dalla lingua di Visual Studio. «Automatico» utilizza la lingua di Visual Studio.</value></data>
+  <data name="LangAuto" xml:space="preserve"><value>Automatico (Visual Studio)</value></data>
+  <data name="HintSend" xml:space="preserve"><value>Invio per mandare  ·  Maiusc+Invio per a capo  ·  Maiusc+↑↓ cronologia</value></data>
+  <data name="TooltipAttachFile" xml:space="preserve"><value>Allega il file attivo al prossimo messaggio</value></data>
+  <data name="TooltipAttachSelection" xml:space="preserve"><value>Allega la selezione al prossimo messaggio (file intero se nessuna selezione)</value></data>
+  <data name="TooltipBrowseFile" xml:space="preserve"><value>Sfoglia e allega un file dal disco</value></data>
+  <data name="TooltipPinFile" xml:space="preserve"><value>Fissa il file attivo — sempre mantenuto nel contesto</value></data>
+  <data name="MenuAddContext" xml:space="preserve"><value>Aggiungi contesto al prompt</value></data>
+  <data name="MenuAttachFile" xml:space="preserve"><value>File attivo</value></data>
+  <data name="MenuAttachSelection" xml:space="preserve"><value>Selezione</value></data>
+  <data name="MenuBrowseFile" xml:space="preserve"><value>Sfoglia dal disco…</value></data>
+  <data name="MenuPinFile" xml:space="preserve"><value>Fissa il file attivo</value></data>
+  <data name="TooltipPinChip" xml:space="preserve"><value>Fissa questo file in modo permanente</value></data>
+  <data name="PinLimitReached" xml:space="preserve"><value>⚠ Limite di file fissati raggiunto (max {0}). Rimuovine uno prima.</value></data>
+  <data name="TooltipSearchConversation" xml:space="preserve"><value>Cerca nella conversazione (Ctrl+F)</value></data>
+  <data name="TooltipCloseSearch" xml:space="preserve"><value>Chiudi ricerca</value></data>
+  <data name="TooltipSaveSnippet" xml:space="preserve"><value>Salva nella libreria (/snippets per visualizzare)</value></data>
+
+
+  <!-- System prompt -->
+  <data name="SystemPrompt" xml:space="preserve"><value>Sei Inferpal, un assistente sviluppatore IA locale integrato in Visual Studio 2026. Hai accesso a strumenti per leggere/scrivere file, elencare directory, cercare nel codice ed eseguire comandi PowerShell. Usa questi strumenti quanto necessario prima di rispondere. Rispondi nella stessa lingua dell'utente.</value></data>
+
+  <!-- Connection status -->
+  <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
+  <data name="StatusConnected" xml:space="preserve"><value>✓ Connesso</value></data>
+  <data name="StatusUnreachable" xml:space="preserve"><value>✗ Non raggiungibile</value></data>
+  <data name="StatusThinking" xml:space="preserve"><value>Elaborazione…</value></data>
+  <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
+
+  <!-- ViewModel messages -->
+  <data name="MsgCancelled" xml:space="preserve"><value>(annullato)</value></data>
+  <data name="MsgTruncated" xml:space="preserve"><value>
+…(troncato)</value></data>
+  <data name="MsgError" xml:space="preserve"><value>Errore: {0}</value></data>
+  <data name="MsgToolOutput" xml:space="preserve"><value>[input]
+{0}
+
+[output]
+{1}</value></data>
+  <data name="DefaultSessionSnippet" xml:space="preserve"><value>sessione</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(limite di iterazioni raggiunto — 20 turni)</value></data>
+  <data name="MsgLoopDetected" xml:space="preserve"><value>(ciclo rilevato — chiamate strumento identiche ripetute, interruzione)</value></data>
+  <data name="MsgCircuitOpen" xml:space="preserve"><value>(circuit breaker aperto — tentativi sospesi per 5 min dopo errori ripetuti)</value></data>
+  <data name="MsgAgentDone" xml:space="preserve"><value>✓ Fatto — {0}</value></data>
+  <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  sessione: {1}</value></data>
+  <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama non configurato. Apri le impostazioni per impostarlo.</value></data>
+  <data name="MsgEmptyResponse" xml:space="preserve"><value>Il modello non ha restituito alcuna risposta. Il modello configurato potrebbe non supportare la generazione di testo — prova il modello chat predefinito.</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>Timeout connessione — Ollama non ha risposto a {0} entro 30 minuti.</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>Impossibile raggiungere Ollama su {0}. Controlla l'URL nelle impostazioni.</value></data>
+  <data name="MsgServerError" xml:space="preserve"><value>Il server di inferenza su {0} ha restituito un errore:
+
+{1}</value></data>
+  <data name="MsgContextOverflow" xml:space="preserve"><value>La richiesta è troppo grande per la finestra di contesto del modello in modalità agente: le sole definizioni degli strumenti occupano diverse migliaia di token. Aumenta la lunghezza del contesto del modello (consigliato 16384 o più in LM Studio) oppure riduci il numero di strumenti agente abilitati.
+
+Dettaglio del server: {0}</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>La richiesta (~{0} token) è più grande del contesto con cui è caricato il modello ({1} token) in modalità agente: le sole definizioni degli strumenti occupano diverse migliaia di token. Aumenta la lunghezza del contesto caricata (consigliato 16384 o più in LM Studio) oppure riduci il numero di strumenti agente abilitati.</value></data>
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Impossibile raggiungere Ollama su {0}
+
+Procedura di risoluzione dei problemi:
+  1. Avvia Ollama — apri un terminale ed esegui:  ollama serve
+  2. Verifica l'URL nelle impostazioni (attualmente: {0})
+  3. Se Ollama è su un'altra macchina, aggiorna l'URL nelle impostazioni
+  4. Verifica che la porta 11434 non sia bloccata da un firewall o antivirus
+
+Clicca su ↻ Riprova nell'intestazione una volta avviato Ollama.</value></data>
+  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Riconnesso a Ollama — pronto.</value></data>
+  <data name="TooltipRetryConnection" xml:space="preserve"><value>Verifica la connessione a Ollama ora</value></data>
+
+  <!-- Approval dialog -->
+  <data name="ApprovalMessage" xml:space="preserve"><value>Inferpal vuole eseguire: {0}
+
+{1}
+
+Continuare?</value></data>
+
+  <!-- Tool messages -->
+  <data name="ToolPathRequired" xml:space="preserve"><value>percorso mancante</value></data>
+  <data name="ToolFileNotFound" xml:space="preserve"><value>File non trovato: {0}</value></data>
+  <data name="DirNotFound" xml:space="preserve"><value>Directory non trovata: {0}</value></data>
+  <data name="ToolPathInvalid" xml:space="preserve"><value>Percorso non valido '{0}': {1}</value></data>
+  <data name="NoResults" xml:space="preserve"><value>Nessun risultato.</value></data>
+  <data name="WriteOverwrite" xml:space="preserve"><value>Sovrascrivi: {0}
+({1} caratteri)</value></data>
+  <data name="WriteCreate" xml:space="preserve"><value>Crea: {0}
+({1} caratteri)</value></data>
+  <data name="WriteCancelled" xml:space="preserve"><value>Scrittura annullata dall'utente.</value></data>
+  <data name="WriteOk" xml:space="preserve"><value>OK — {0} ({1} caratteri scritti)</value></data>
+  <data name="DeleteConfirm" xml:space="preserve"><value>Elimina: {0}</value></data>
+  <data name="DeleteCancelled" xml:space="preserve"><value>Eliminazione annullata dall'utente.</value></data>
+  <data name="DeleteOk" xml:space="preserve"><value>OK — {0} eliminato</value></data>
+  <data name="RunCancelled" xml:space="preserve"><value>Comando annullato dall'utente.</value></data>
+  <data name="DiffConfirm" xml:space="preserve"><value>Applica modifica a: {0}</value></data>
+  <data name="DiffCancelled" xml:space="preserve"><value>Modifica annullata dall'utente.</value></data>
+  <data name="DiffOldNotFound" xml:space="preserve"><value>old_content non trovato in {0}. Controlla spazi, interruzioni di riga e indentazione.</value></data>
+  <data name="DiffAmbiguous" xml:space="preserve"><value>old_content trovato {0} volte in {1}. Fornisci più contesto per rendere la corrispondenza univoca.</value></data>
+  <data name="DiffOk" xml:space="preserve"><value>Modifica applicata in {0}.</value></data>
+  <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits richiede almeno una modifica.</value></data>
+  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Applicare le modifiche a {0} file?</value></data>
+  <data name="ApplyEditsAborted" xml:space="preserve"><value>Nessuna modifica applicata — {0}.</value></data>
+  <data name="ApplyEditsOk" xml:space="preserve"><value>{0} modifica/e applicata/e su {1} file.</value></data>
+  <data name="HistoryNote" xml:space="preserve"><value>
+Backup: {0}</value></data>
+  <data name="RestoreOk" xml:space="preserve"><value>{0} ripristinato da {1}.</value></data>
+  <data name="RestoreNotFound" xml:space="preserve"><value>Nessun backup trovato per: {0}</value></data>
+  <data name="DiagNoProject" xml:space="preserve"><value>Nessun file .sln o .csproj trovato. Fornisci il parametro path.</value></data>
+  <data name="DiagBuildOk" xml:space="preserve"><value>✓ Build riuscita — 0 errori, 0 avvisi ({0})</value></data>
+  <data name="DiagBuildFailed" xml:space="preserve"><value>Build fallita (codice {0}) senza diagnostiche analizzabili.
+
+{1}</value></data>
+  <data name="DiagSummary" xml:space="preserve"><value>Build: {0} errore/i, {1} avviso/i — {2}</value></data>
+  <data name="ActiveDocNoContext" xml:space="preserve"><value>Contesto VS non disponibile — apri la finestra Inferpal dal menu Visualizza.</value></data>
+  <data name="ActiveDocNoFile" xml:space="preserve"><value>Nessun file aperto nell'editor.</value></data>
+  <data name="ActiveDocResult" xml:space="preserve"><value>File attivo: {0}
+
+{1}</value></data>
+
+  <!-- Attachment / Browse errors -->
+  <data name="AttachError" xml:space="preserve"><value>⚠ Errore allegato: {0}</value></data>
+  <data name="AttachReadError" xml:space="preserve"><value>⚠ Errore di lettura allegato: {0}</value></data>
+  <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Errore allegato selezione: {0}</value></data>
+  <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ Errore lettura selezione allegata: {0}</value></data>
+  <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ File troppo grande da allegare (max 500 KB).</value></data>
+  <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ Nessun file attivo. Apri prima un file nell'editor.</value></data>
+  <data name="MentionFileDesc" xml:space="preserve"><value>cerca e allega un file</value></data>
+  <data name="MentionCodeDesc" xml:space="preserve"><value>ricerca semantica del codice (RAG)</value></data>
+  <data name="MentionCodeHint" xml:space="preserve"><value>digita cosa cercare…</value></data>
+  <data name="MentionFolderDesc" xml:space="preserve"><value>allega i file di una cartella</value></data>
+  <data name="MentionClipboardDesc" xml:space="preserve"><value>allega gli appunti</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>allega l'albero del progetto</value></data>
+  <data name="MentionDiffDesc" xml:space="preserve"><value>allega il diff git corrente</value></data>
+  <data name="MentionProblemsDesc" xml:space="preserve"><value>allega le diagnostiche di build</value></data>
+  <data name="MentionDebuggerDesc" xml:space="preserve"><value>allega lo stato del debugger (stack, variabili, eccezione)</value></data>
+  <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Nessuna sessione di debug in pausa. Raggiungi prima un breakpoint o un'eccezione, poi usa @debugger.</value></data>
+  <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Appunti vuoti.</value></data>
+  <data name="BrowseError" xml:space="preserve"><value>⚠ Errore navigazione: {0}</value></data>
+
+  <!-- Export -->
+  <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Nessun messaggio da esportare.</value></data>
+  <data name="ExportSuccess" xml:space="preserve"><value>Esportato in `{0}`</value></data>
+  <data name="ExportFailed" xml:space="preserve"><value>⚠ Esportazione fallita: {0}</value></data>
+
+  <!-- Slash commands -->
+  <data name="SlashModelCurrent" xml:space="preserve"><value>Uso: `/model &lt;nome&gt;`  —  attuale: **{0}**</value></data>
+  <data name="SlashModelChanged" xml:space="preserve"><value>Modello → **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Uso: `/tools on|off`  —  attuale: **{0}**</value></data>
+  <data name="SlashToolsChanged" xml:space="preserve"><value>Strumenti → **{0}**</value></data>
+  <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ Nessun documento attivo. Apri prima un file nell'editor.</value></data>
+  <data name="TestsGenerated" xml:space="preserve"><value>✅ Test generati → **{0}** (aperto nell'editor).</value></data>
+  <data name="TestsExtended" xml:space="preserve"><value>✅ Test aggiunti a **{0}** (aperto: annulla con Ctrl+Z).</value></data>
+  <data name="TestsGenerateFailed" xml:space="preserve"><value>⚠ Generazione dei test non riuscita. Controlla il modello e riprova.</value></data>
+  <data name="RefactorNoChange" xml:space="preserve"><value>✅ Il codice è già chiaro: nessun refactoring necessario.</value></data>
+  <data name="FixNoChange" xml:space="preserve"><value>✅ Nessun bug o problema rilevato: niente da correggere.</value></data>
+  <data name="DocNoChange" xml:space="preserve"><value>✅ Il codice è già documentato a sufficienza.</value></data>
+  <data name="TestsNoChange" xml:space="preserve"><value>✅ Niente di utile da testare: tutti i casi rilevanti sono già coperti.</value></data>
+  <data name="SlashUsage" xml:space="preserve"><value>Uso: `{0}`</value></data>
+  <data name="SlashUsageRestore" xml:space="preserve"><value>Uso: `/restore &lt;percorso&gt;` — ripristina il backup più recente da `.inferpal/history/`</value></data>
+  <data name="SlashHelp" xml:space="preserve"><value>Comando sconosciuto: `{0}`
+
+**Meta**
+- `/clear` — cancella la conversazione
+- `/model &lt;nome&gt;` — cambia modello
+- `/tools on|off` — abilita o disabilita gli strumenti
+- `/export` — esporta la conversazione in un file
+- `/restore &lt;percorso&gt;` — ripristina un file dal suo backup più recente
+- `/help` — mostra tutti i comandi disponibili
+
+**File system**
+- `/read &lt;percorso&gt;` — allega un file come contesto
+- `/ls &lt;percorso&gt; [pattern]` — elenca i file in una directory
+- `/grep &lt;dir&gt; &lt;pattern&gt; [ext]` — cerca testo nei file
+
+**Azioni sul codice**
+- `/explain` — spiega il file attivo (o la selezione)
+- `/fix` — suggerisci correzioni per il file attivo
+- `/review` — revisione del codice strutturata
+- `/refactor` — suggerimenti di refactoring
+- `/test` — genera unit test
+- `/doc` — genera commenti di documentazione XML
+
+**Shell**
+- `/run &lt;comando&gt;` — esegui un comando PowerShell
+
+**Web**
+- `/fetch &lt;url&gt;` — mostra una pagina web come testo
+- `/search &lt;query&gt;` — ricerca web DuckDuckGo
+
+**Git**
+- `/commit` — analizza il diff, propone un messaggio di commit e lo precompila
+- `/git [percorso]` — mostra stato git, log e riepilogo modifiche
+
+**Visual Studio / Build**
+- `/map` — mostra il grafo delle dipendenze del progetto
+- `/solution [percorso]` — mostra la struttura della soluzione
+- `/build [percorso]` — compila e mostra gli errori
+- `/fix-build [percorso]` — compila → l'IA corregge gli errori → ricompila finché pulito (max 5 cicli)
+
+**Contesto progetto**
+- `/context` — mostra il `.inferpal/context.md` attivo (iniettato in ogni prompt di sistema)
+- `/memory` — visualizza la memoria dell'agente (`.inferpal/memory.md`, iniettata in ogni prompt di sistema)
+
+**Cronologia**
+- `/history` — elencare tutte le sessioni salvate con data e anteprima
+- `/history &lt;termine&gt;` — ricerca full-text in tutte le sessioni salvate</value></data>
+
+  <data name="SlashHelpAll" xml:space="preserve"><value>**Meta**
+- `/clear` — cancella la conversazione
+- `/model &lt;nome&gt;` — cambia modello
+- `/tools on|off` — abilita o disabilita gli strumenti
+- `/export` — esporta la conversazione in un file
+- `/restore &lt;percorso&gt;` — ripristina un file dal suo backup più recente
+- `/help` — mostra tutti i comandi disponibili
+
+**File system**
+- `/read &lt;percorso&gt;` — allega un file come contesto
+- `/ls &lt;percorso&gt; [pattern]` — elenca i file in una directory
+- `/grep &lt;dir&gt; &lt;pattern&gt; [ext]` — cerca testo nei file
+
+**Azioni sul codice**
+- `/explain` — spiega il file attivo (o la selezione)
+- `/fix` — suggerisci correzioni per il file attivo
+- `/review` — revisione del codice strutturata
+- `/refactor` — suggerimenti di refactoring
+- `/test` — genera unit test
+- `/doc` — genera commenti di documentazione XML
+
+**Shell**
+- `/run &lt;comando&gt;` — esegui un comando PowerShell
+
+**Web**
+- `/fetch &lt;url&gt;` — mostra una pagina web come testo
+- `/search &lt;query&gt;` — ricerca web DuckDuckGo
+
+**Git**
+- `/commit` — analizza il diff, propone un messaggio di commit e lo precompila
+- `/git [percorso]` — mostra stato git, log e riepilogo modifiche
+
+**Visual Studio / Build**
+- `/map` — mostra il grafo delle dipendenze del progetto
+- `/solution [percorso]` — mostra la struttura della soluzione
+- `/build [percorso]` — compila e mostra gli errori
+- `/fix-build [percorso]` — compila → l'IA corregge gli errori → ricompila finché pulito (max 5 cicli)
+
+**Contesto progetto**
+- `/context` — mostra il `.inferpal/context.md` attivo (iniettato in ogni prompt di sistema)
+- `/memory` — visualizza la memoria dell'agente (`.inferpal/memory.md`, iniettata in ogni prompt di sistema)
+
+**Indice semantico**
+- `/index` — mostrare lo stato dell'indice RAG (chunk, modello, radice)
+- `/index rebuild` — forzare una reindicizzazione completa della soluzione
+
+**Git**
+- `/diff [percorso]` — allegare il diff git completo come chip di contesto
+
+**Contesto progetto**
+- `/note &lt;testo&gt;` — aggiungere nota con timestamp a `.inferpal/notes.md`
+- `/notes [clear]` — elencare o cancellare le note del progetto
+
+**Snippet e Cronologia**
+- `/snippets` — elencare snippet di codice salvati (pulsante ⭐ sui blocchi di codice)
+- `/snippets copy &lt;n&gt;` / `/snippets delete &lt;n&gt;` / `/snippets clear`
+- `/history` — elencare tutte le sessioni salvate con data e anteprima
+- `/history &lt;termine&gt;` — ricerca full-text in tutte le sessioni salvate
+- `/phistory [termine]` — cercare nella cronologia input; `/phistory use &lt;n&gt;` per riutilizzare
+
+**Template di sessione**
+- `/template` — elencare i preset disponibili (code-review, bug-hunt, architecture…)
+- `/template &lt;id&gt;` — avviare una sessione con il template selezionato
+
+**Modelli**
+- `/models` — elencare i modelli Ollama installati con stato VRAM
+- `/models pull &lt;nome&gt;` / `/models delete &lt;nome&gt;` / `/models running`
+- `/hardware` — mostra il profilo GPU/VRAM; `/hardware &lt;gb&gt;` per impostare il budget VRAM
+- `/setup` — rieseguire la configurazione iniziale: rilevare di nuovo il backend, riselezionare i modelli
+
+**Agente**
+- `/agent-step` — modalità passo-passo: l'agente si ferma dopo ogni tool
+- `/resume` — riprendere l'agente dopo una pausa
+- `/plan` — modalità piano: sola lettura, l'agente esplora e propone un piano senza modificare i file
+
+**Documentazione (@Docs)**
+- `/docs add &lt;url&gt; [titolo]` — scansiona e indicizza un sito di documentazione esterno per lo strumento `search_docs`
+- `/docs list` — elenca le fonti di documentazione indicizzate
+- `/docs remove &lt;id&gt;` — rimuovi una fonte di documentazione
+- `/docs reindex [id]` — ri-scansiona tutte le fonti (o una per id)
+
+**Regole &amp; Checks**
+- `/rules` — elenca le regole di progetto (`.inferpal/rules`, per glob, iniettate nel prompt di sistema)
+- `/rules init` — crea una regola di esempio
+- `/checks` — elenca i check di revisione (`.inferpal/checks`)
+- `/checks init` — crea un check di esempio
+- `/check [nome]` — revisione IA del diff git corrente secondo i check (100% locale)
+
+**File di prompt**
+- `/prompts` — elenca i file di prompt riutilizzabili (`.inferpal/prompts/*.md`); ogni file è un comando slash, `{args}` viene sostituito
+- `/prompts init` — crea un file di prompt di esempio</value></data>
+
+  <!-- History search -->
+  <data name="HistoryNoSessions" xml:space="preserve"><value>Nessuna sessione salvata. Le sessioni vengono archiviate automaticamente con `/clear`.</value></data>
+  <data name="HistoryNoResults" xml:space="preserve"><value>Nessuna sessione corrisponde a "{0}".</value></data>
+
+  <!-- Project context -->
+  <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Nessun file .sln trovato — impossibile localizzare `.inferpal/context.md`.</value></data>
+  <data name="SlashContextNotFound" xml:space="preserve"><value>Nessun file di contesto progetto trovato.
+
+Crea `{0}` per documentare le convenzioni del progetto (stile del codice, decisioni architetturali, ecc.). Verrà iniettato automaticamente in ogni prompt di sistema.
+
+Usa `/clear` dopo aver creato o modificato il file per ricaricarlo.</value></data>
+  <data name="SlashContextLoaded" xml:space="preserve"><value>**Contesto progetto** — `{0}` ({1} caratteri)
+
+```
+{2}
+```
+
+Usa `/clear` dopo aver modificato il file per ricaricarlo.</value></data>
+
+  <!-- Git / Solution tool outputs -->
+  <data name="GitNotRepo" xml:space="preserve"><value>Non è un repository git (nessuna cartella .git trovata).</value></data>
+  <data name="SolutionNoSln" xml:space="preserve"><value>Nessun file .sln trovato. Fornisci esplicitamente il percorso.</value></data>
+  <data name="SolutionPathNotFound" xml:space="preserve"><value>Percorso non trovato o non è un file .sln: {0}</value></data>
+
+  <!-- Editor insertion / replacement -->
+  <data name="InsertOk" xml:space="preserve"><value>Inseriti {1} caratteri al cursore in {0}.</value></data>
+  <data name="ReplaceOk" xml:space="preserve"><value>Selezione sostituita con {1} caratteri in {0}.</value></data>
+
+  <!-- Fix-build loop -->
+  <data name="FixBuildSuccess" xml:space="preserve"><value>✅ Build riuscita dopo {0} ciclo/i — nessun errore.</value></data>
+  <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ Build ancora fallita dopo {0} tentativo/i — intervento manuale necessario.</value></data>
+  <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **Build fallita** — rilevato/i {0} errore/i di compilazione.
+
+Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digita `/fix-build`.</value></data>
+
+  <!-- Smart Fix Protocol -->
+  <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: build OK — nessun errore di compilazione.</value></data>
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: rilevato/i {0} errore/i di compilazione — correggere prima di continuare:
+{1}</value></data>
+  <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: verifica build scaduta (60 s) — verificare manualmente.</value></data>
+  <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Verifica build automatica dopo la scrittura (Smart Fix)</value></data>
+  <data name="HintSmartFixEnabled" xml:space="preserve"><value>Se selezionato, viene eseguita automaticamente una build rapida dopo ogni write_file o apply_diff su un file C#/progetto. Gli errori di compilazione vengono restituiti inline affinché l'agente possa correggerli immediatamente.</value></data>
+
+  <!-- Git commit assistant -->
+  <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Nessuna modifica git rilevata.</value></data>
+  <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nulla in staging — analisi delle modifiche non staged.</value></data>
+  <data name="CommitProposingLabel" xml:space="preserve"><value>💬 messaggio di commit</value></data>
+  <data name="CommitConfirmHint" xml:space="preserve"><value>Messaggio precompilato sotto — modifica se necessario, poi premi **Invio** per committare.</value></data>
+  <data name="RulesNone" xml:space="preserve"><value>Nessuna regola di progetto. Crea `.inferpal/rules/*.md` o esegui `/rules init`.</value></data>
+  <data name="ChecksNone" xml:space="preserve"><value>Nessun check di revisione. Crea `.inferpal/checks/*.md` o esegui `/checks init`.</value></data>
+  <data name="RulesListHeader" xml:space="preserve"><value>**Regole di progetto** (`.inferpal/rules`):</value></data>
+  <data name="ChecksListHeader" xml:space="preserve"><value>**Check di revisione** (`.inferpal/checks`):</value></data>
+  <data name="CheckNoDiff" xml:space="preserve"><value>Niente da revisionare — l'albero di lavoro è pulito.</value></data>
+  <data name="CheckReviewingLabel" xml:space="preserve"><value>Revisione del diff in corso…</value></data>
+  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Sei un revisore di codice meticoloso e completamente locale. Revisiona il diff git qui sotto SOLO rispetto ai check di revisione forniti. Per ogni check, indica se PASSA oppure elenca le violazioni concrete. Per ogni violazione indica il file e la riga (file:riga), una severità (blocker / warning / nit) e una correzione breve e attuabile. Sii conciso. Non inventare problemi e non commentare nulla al di fuori dei check o del diff. Se tutti i check passano, dillo chiaramente.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>Nessun check chiamato «{0}». Esegui `/checks` per elencarli.</value></data>
+  <data name="RulesScaffolded" xml:space="preserve"><value>Regola di esempio creata in {0}. Modificala — le regole corrispondenti vengono iniettate nel prompt di sistema.</value></data>
+  <data name="ChecksScaffolded" xml:space="preserve"><value>Check di esempio creato in {0}. Modificalo, poi esegui `/check` per revisionare il tuo diff.</value></data>
+  <data name="PromptsNone" xml:space="preserve"><value>Nessun file di prompt. Crea `.inferpal/prompts/*.md` o esegui `/prompts init`.</value></data>
+  <data name="PromptsListHeader" xml:space="preserve"><value>**File di prompt** (`.inferpal/prompts`) — ogni file è un comando slash, `{args}` viene sostituito:</value></data>
+  <data name="PromptsScaffolded" xml:space="preserve"><value>Prompt di esempio creato in {0}. Modificalo, poi digita `/review-security` (nome del file = comando).</value></data>
+
+  <!-- analyze_impact tool -->
+  <data name="ImpactHeader"         xml:space="preserve"><value>Analisi d'impatto — {0}</value></data>
+  <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Nessun tipo pubblico o simbolo esportato trovato in {0}.</value></data>
+  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>Simbolo '{0}' non trovato nell'API pubblica di {1}.</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Raggio di impatto: {0} diretto/i · {1} transitivo/i · {2} test · {3} punto/i di ingresso</value></data>
+
+  <!-- trace_dependency tool -->
+  <data name="TraceDepsHeader"          xml:space="preserve"><value>Grafo delle chiamate — {0}</value></data>
+  <data name="TraceDepsNoMethods"       xml:space="preserve"><value>Nessun metodo o funzione rilevato in {0}.</value></data>
+  <data name="TraceDepsSymbolNotFound"  xml:space="preserve"><value>Simbolo '{0}' non trovato in {1}.</value></data>
+  <data name="TraceDepsFooter"          xml:space="preserve"><value>{0} metodo/i · {1} destinazione/i unica/e · {2} risolto/i tra i file</value></data>
+
+  <!-- RAG / ricerca semantica -->
+  <data name="RagIndexNotReady" xml:space="preserve"><value>⚠ Indice del codice non disponibile. Stato: {0}
+
+Usare `/index rebuild` per avviare l'indicizzazione o attendere il processo in background.
+Se RAG è disabilitato, impostare `ragEnabled = true` nelle impostazioni.</value></data>
+  <data name="RagNoResults" xml:space="preserve"><value>Nessun codice pertinente trovato per: «{0}»</value></data>
+
+  <!-- Agent memory -->
+  <data name="UpdateMemoryNoProject" xml:space="preserve"><value>Nessun file .sln o cartella .inferpal trovata — impossibile localizzare il file di memoria.</value></data>
+  <data name="UpdateMemoryNoContent" xml:space="preserve"><value>Il contenuto è obbligatorio per le modalità append e replace.</value></data>
+  <data name="UpdateMemoryOk" xml:space="preserve"><value>Memoria aggiornata — {0} ({1} caratteri totali).</value></data>
+  <data name="UpdateMemoryClear" xml:space="preserve"><value>Memoria cancellata — {0}</value></data>
+  <data name="SlashMemoryNotFound" xml:space="preserve"><value>Nessuna memoria agente trovata.
+
+Chiedi all'agente di usare `update_memory` per scrivere la prima nota, o crea il file manualmente.
+
+Percorso atteso: `{0}`</value></data>
+  <data name="SlashMemoryLoaded" xml:space="preserve"><value>**Memoria agente** — `{0}` ({1} caratteri)
+
+```
+{2}
+```
+
+Modifica il file o chiedi all'agente di usare `update_memory`. Usa `/clear` per ricaricare.</value></data>
+
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Primo avvio** — {0} disponibile/i. **{1}** selezionato automaticamente come modello predefinito.
+
+Apri **Impostazioni** per cambiare il modello o configurare un modello dedicato per le azioni sul codice e i completamenti inline.</value></data>
+  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Primo avvio** — Ollama è in esecuzione ma non sono stati trovati modelli di chat.
+
+Scarica un modello per iniziare:
+```
+ollama pull llama3.1
+```
+Riavvia Visual Studio (oppure apri le Impostazioni e clicca su **Test**).</value></data>
+  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Primo avvio** — il server dei modelli non è raggiungibile all'indirizzo **{0}**.
+
+Avvia Ollama e clicca su **↻ Riprova** nell'intestazione:
+```
+ollama serve
+```</value></data>
+  <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — i modelli selezionati richiedono circa **{0} GB** insieme, più del tuo budget di **{1} GB**. Potrebbero riversarsi nella RAM di sistema ed essere lenti. Valuta un modello più piccolo o esegui `/hardware` per controllare.</value></data>
+
+  <!-- Agent Mode -->
+  <data name="LabelAgentModeEnabled" xml:space="preserve"><value>Abilita modalità agente autonomo (Pianifica → Agisci → Osserva)</value></data>
+  <data name="HintAgentModeEnabled" xml:space="preserve"><value>Quando abilitato, Inferpal genera un piano passo-passo prima di usare gli strumenti, poi esegue un ciclo strutturato Pianifica → Agisci → Osserva con tracciamento live. Ideale per attività complesse con più passaggi. Disabilita per query semplici e veloci.</value></data>
+  <data name="LabelAgentModel" xml:space="preserve"><value>Modello agente / strumenti (vuoto = modello di chat):</value></data>
+  <data name="HintAgentModel" xml:space="preserve"><value>Modello usato quando gli strumenti sono abilitati: il ciclo dell'agente (Plan → Act → Observe) e il ciclo base di chiamata agli strumenti. Lascia vuoto per riutilizzare il modello di chat. Un modello più piccolo e non multimodale con riuso della cache del prompt (es. qwen2.5-coder) esegue i cicli di strumenti multi-turno molto più velocemente di un grande modello multimodale, che rielabora l'intero prompt a ogni turno.</value></data>
+  <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>Usa un modello distinto per ruolo (avanzato)</value></data>
+  <data name="LabelAdvancedBehavior" xml:space="preserve"><value>Mostra impostazioni avanzate (timeout, iterazioni)</value></data>
+  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>Per impostazione predefinita il modello di chat è usato ovunque. Attiva questa opzione per assegnare un modello diverso all'agente, alle azioni sul codice, al completamento inline (FIM) e alla modifica inline.</value></data>
+  <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Iterazioni max</value></data>
+  <data name="HintAgentMaxIterations" xml:space="preserve"><value>Numero massimo di cicli Pianifica → Agisci → Osserva per richiesta. 0 = valore predefinito (20). Predefinito: 20.</value></data>
+  <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Timeout attività rapide (azioni, modifica inline)</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Limite per attività brevi: spiega, correggi, documenta, modifica inline, pianificazione agente. Predefinito: 120 s.</value></data>
+  <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Timeout attività normali (turni agente)</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Limite per turno agente per chat con strumenti e orchestratore. Predefinito: 300 s.</value></data>
+  <data name="LabelTaskTimeoutDeep" xml:space="preserve"><value>Timeout attività approfondite (riservato)</value></data>
+  <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>Riservato per attività di ragionamento esteso. Predefinito: 600 s.</value></data>
+  <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Pianificazione…</value></data>
+  <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Osservazione…</value></data>
+  <data name="AgentPlanPrompt" xml:space="preserve"><value>Prima di usare qualsiasi strumento, genera SOLO un oggetto JSON con la seguente struttura (senza prosa, senza delimitatori markdown):
+{"goal":"descrizione in una frase di cosa farai","steps":[{"i":1,"desc":"cosa fa questo passaggio","tool":"nome_strumento_atteso_o_null"},{"i":2,"desc":"..."}]}
+Includi 2–6 passaggi concreti. Usa null per "tool" se non si prevede uno strumento specifico.
+Dopo aver generato il JSON, fermati — non chiamare ancora strumenti.</value></data>
+  <data name="AgentExecutePlan" xml:space="preserve"><value>Bene. Ora esegui il piano passo dopo passo, iniziando dal passaggio 1. Non scrivere testo esplicativo — chiama immediatamente lo strumento appropriato per il passaggio 1.</value></data>
+  <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Eseguire la richiesta</value></data>
+  <data name="AgentPlanFallbackStep" xml:space="preserve"><value>Eseguire la richiesta usando gli strumenti disponibili</value></data>
+  <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 Piano agente</value></data>
+  <data name="AgentObservePrompt" xml:space="preserve"><value>[OSSERVA — {0}/{1}] Strumenti eseguiti: {2}. Passaggi rimanenti: {3}.
+Chiama immediatamente lo strumento del prossimo passaggio — senza preambolo né spiegazione. Se l'obiettivo è completamente raggiunto, scrivi la risposta finale alla mia richiesta più recente senza chiamare altri strumenti — non ripetere una risposta precedente di questa conversazione.</value></data>
+  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[OSSERVA — {0}/{1}] Strumenti eseguiti: {2}. Tutti i passaggi del piano sono completati.
+Scrivi ora la risposta finale completa alla mia richiesta più recente, che era: «{3}» — direttamente, per intero e nella mia lingua, SENZA chiamare altri strumenti. Chiama un altro strumento solo se mancano ancora informazioni essenziali. Non ripetere una risposta data a una domanda precedente diversa.</value></data>
+  <data name="AgentNudgeToolCall" xml:space="preserve"><value>Hai descritto le tue intenzioni ma non hai chiamato nessuno strumento. Non produrre alcun testo — chiama subito il primo strumento del tuo piano.</value></data>
+  <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ Stesura della risposta…</value></data>
+  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>Hai raccolto abbastanza informazioni con gli strumenti qui sopra. Non chiamare altri strumenti. Usando quei risultati, scrivi la risposta finale completa alla mia richiesta più recente, ovvero: «{0}» — in modo diretto, completo e nella mia lingua. Rispondi esattamente a QUELLA richiesta; non ripetere una risposta precedente di questa conversazione.</value></data>
+  <data name="SectionMcp" xml:space="preserve"><value>Server MCP</value></data>
+  <data name="LabelMcpEnabled" xml:space="preserve"><value>Abilita i server MCP</value></data>
+  <data name="HintMcpEnabled" xml:space="preserve"><value>Se abilitato, i server Model Context Protocol (MCP) configurati vengono avviati all'avvio e i loro strumenti diventano disponibili per l'agente. I comandi dei server (es. npx, uvx) devono essere installati su questa macchina.</value></data>
+  <data name="LabelMcpServers" xml:space="preserve"><value>Server MCP (JSON):</value></data>
+  <data name="HintMcpServers" xml:space="preserve"><value>Definizioni dei server MCP come oggetto JSON con chiave il nome del server (formato Claude Desktop / Continue), ciascuno con command, args ed env. Solo trasporto stdio. Gli strumenti rilevati sono esposti all'agente con prefisso mcp__.</value></data>
+  <data name="McpNoServers" xml:space="preserve"><value>Nessun server MCP configurato.</value></data>
+  <data name="McpCancelled" xml:space="preserve"><value>Chiamata allo strumento MCP annullata dall'utente.</value></data>
+  <data name="ApprovalAllowOnce" xml:space="preserve"><value>Consenti una volta</value></data>
+  <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Consenti sempre questo strumento</value></data>
+  <data name="ApprovalDeny" xml:space="preserve"><value>Annulla</value></data>
+  <data name="PermissionBlockedRule" xml:space="preserve"><value>Bloccato da una regola di autorizzazione (deny): {0}</value></data>
+  <data name="PermissionBlockedHard" xml:space="preserve"><value>Bloccato dalla denylist di sicurezza integrata (comando catastrofico): {0}</value></data>
+  <data name="McpAddServer" xml:space="preserve"><value>+ Aggiungi un server</value></data>
+  <data name="McpAddTitle" xml:space="preserve"><value>Aggiungi un server</value></data>
+  <data name="McpEditTitle" xml:space="preserve"><value>Modifica: {0}</value></data>
+  <data name="LabelMcpName" xml:space="preserve"><value>Nome</value></data>
+  <data name="LabelMcpCommand" xml:space="preserve"><value>Comando</value></data>
+  <data name="LabelMcpArgs" xml:space="preserve"><value>Argomenti (separati da spazi)</value></data>
+  <data name="LabelMcpEnv" xml:space="preserve"><value>Ambiente (CHIAVE=valore, uno per riga)</value></data>
+  <data name="LabelMcpHttpServer" xml:space="preserve"><value>Server HTTP (usa un URL invece di un comando)</value></data>
+  <data name="LabelMcpUrl" xml:space="preserve"><value>URL (endpoint Streamable HTTP)</value></data>
+  <data name="LabelMcpHeaders" xml:space="preserve"><value>Intestazioni (Chiave=valore, una per riga; ${ENV_VAR} viene espanso)</value></data>
+  <data name="BtnMcpSaveServer" xml:space="preserve"><value>Salva</value></data>
+  <data name="BtnMcpCancelServer" xml:space="preserve"><value>Annulla</value></data>
+  <data name="McpAdvancedJson" xml:space="preserve"><value>Avanzate (JSON)</value></data>
+  <data name="McpImportJson" xml:space="preserve"><value>⟳ Importa il JSON nell'elenco</value></data>
+  <data name="McpServerDisabled" xml:space="preserve"><value>— disabilitato</value></data>
+  <data name="McpValidationNameCommand" xml:space="preserve"><value>Nome e comando sono obbligatori.</value></data>
+  <data name="McpValidationNameUrl" xml:space="preserve"><value>Nome e URL sono obbligatori.</value></data>
+  <data name="BtnMcpAuthorize" xml:space="preserve"><value>Autorizza…</value></data>
+  <data name="McpAuthRequired" xml:space="preserve"><value>🔒 autorizzazione richiesta</value></data>
+  <data name="McpValidationDuplicate" xml:space="preserve"><value>Esiste già un server con questo nome.</value></data>
+  <data name="HintMcpEditServer" xml:space="preserve"><value>Modifica le impostazioni di questo server MCP (nome, comando, argomenti, variabili d'ambiente).</value></data>
+  <data name="HintMcpDeleteServer" xml:space="preserve"><value>Rimuovi questo server MCP dall'elenco.</value></data>
+  <data name="HintRowEdit" xml:space="preserve"><value>Modifica questa voce.</value></data>
+  <data name="HintRowDelete" xml:space="preserve"><value>Rimuovi questa voce dall'elenco.</value></data>
+  <data name="LabelRowAdvanced" xml:space="preserve"><value>Avanzate (testo grezzo)</value></data>
+  <data name="BtnRowImport" xml:space="preserve"><value>⟳ Importa nell'elenco</value></data>
+  <data name="RowEditTitle" xml:space="preserve"><value>Modifica: {0}</value></data>
+  <data name="PinnedAddFile" xml:space="preserve"><value>+ Aggiungi un file</value></data>
+  <data name="PinnedAddTitle" xml:space="preserve"><value>Aggiungi un file fissato</value></data>
+  <data name="LabelPinnedPath" xml:space="preserve"><value>Percorso del file (assoluto)</value></data>
+  <data name="PinnedBrowse" xml:space="preserve"><value>Sfoglia…</value></data>
+  <data name="PinnedPickerTitle" xml:space="preserve"><value>Seleziona un file da fissare</value></data>
+  <data name="PinnedValidationPath" xml:space="preserve"><value>È richiesto un percorso file.</value></data>
+  <data name="PinnedValidationDuplicate" xml:space="preserve"><value>Questo file è già fissato.</value></data>
+  <data name="SlashAddCmd" xml:space="preserve"><value>+ Aggiungi un comando</value></data>
+  <data name="SlashAddTitle" xml:space="preserve"><value>Aggiungi un comando slash</value></data>
+  <data name="LabelSlashName" xml:space="preserve"><value>Nome (es. /refactor)</value></data>
+  <data name="LabelSlashText" xml:space="preserve"><value>Testo del prompt — usa {args} per le parole aggiuntive</value></data>
+  <data name="SlashValidationNameText" xml:space="preserve"><value>Sono richiesti un nome che inizia con / e un testo del prompt.</value></data>
+  <data name="SlashValidationDuplicate" xml:space="preserve"><value>Esiste già un comando con questo nome.</value></data>
+  <data name="ToolAddTool" xml:space="preserve"><value>+ Aggiungi uno strumento</value></data>
+  <data name="ToolAddTitle" xml:space="preserve"><value>Aggiungi uno strumento personalizzato</value></data>
+  <data name="LabelToolName" xml:space="preserve"><value>Nome (snake_case)</value></data>
+  <data name="LabelToolCommand" xml:space="preserve"><value>Comando PowerShell (usa {args} per gli argomenti)</value></data>
+  <data name="ToolValidationNameCommand" xml:space="preserve"><value>Sono richiesti un nome dello strumento e un comando.</value></data>
+  <data name="ToolValidationDuplicate" xml:space="preserve"><value>Esiste già uno strumento con questo nome.</value></data>
+
+  <!-- @Docs -->
+  <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Documentazione indicizzata</value></data>
+  <data name="DocsNoSites" xml:space="preserve"><value>Nessuna documentazione indicizzata. Aggiungi una fonte con `/docs add &lt;url&gt; [titolo]`.</value></data>
+  <data name="DocsUsage" xml:space="preserve"><value>**Uso:** `/docs add &lt;url&gt; [titolo]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
+  <data name="DocsAdded" xml:space="preserve"><value>📚 Aggiunto **{0}** — scansione e indicizzazione in background…</value></data>
+  <data name="DocsRemoved" xml:space="preserve"><value>🗑 Fonte di documentazione **{0}** rimossa.</value></data>
+  <data name="DocsReindexing" xml:space="preserve"><value>🔄 Re-indicizzazione di **{0}** in background…</value></data>
+  <data name="DocsNotReady" xml:space="preserve"><value>Nessuna documentazione indicizzata. Aggiungine una con `/docs add &lt;url&gt;`. ({0})</value></data>
+  <data name="DocsNoResults" xml:space="preserve"><value>Nessun passaggio di documentazione trovato per "{0}".</value></data>
+  <data name="SlashHintExplain" xml:space="preserve"><value>spiegare il file attivo (o la selezione)</value></data>
+  <data name="SlashHintFix" xml:space="preserve"><value>suggerire correzioni per il file attivo</value></data>
+  <data name="SlashHintReview" xml:space="preserve"><value>revisione del codice strutturata</value></data>
+  <data name="SlashHintRefactor" xml:space="preserve"><value>suggerimenti di refactoring</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>generare test unitari</value></data>
+  <data name="SlashHintDoc" xml:space="preserve"><value>generare commenti di documentazione XML</value></data>
+  <data name="SlashHintClear" xml:space="preserve"><value>cancellare la conversazione</value></data>
+  <data name="SlashHintModel" xml:space="preserve"><value>cambiare modello</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>abilitare o disabilitare la chiamata di strumenti</value></data>
+  <data name="SlashHintExport" xml:space="preserve"><value>esportare la conversazione in un file</value></data>
+  <data name="SlashHintRestore" xml:space="preserve"><value>ripristinare un file da un backup</value></data>
+  <data name="SlashHintHelp" xml:space="preserve"><value>mostrare tutti i comandi disponibili</value></data>
+  <data name="SlashHintRead" xml:space="preserve"><value>allegare un file come contesto</value></data>
+  <data name="SlashHintLs" xml:space="preserve"><value>elencare i file di una directory</value></data>
+  <data name="SlashHintGrep" xml:space="preserve"><value>cercare testo nei file</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>eseguire un comando PowerShell</value></data>
+  <data name="SlashHintFetch" xml:space="preserve"><value>mostrare una pagina web come testo</value></data>
+  <data name="SlashHintSearch" xml:space="preserve"><value>ricerca web DuckDuckGo</value></data>
+  <data name="SlashHintSearchCode" xml:space="preserve"><value>ricerca semantica nel codice</value></data>
+  <data name="SlashHintCommit" xml:space="preserve"><value>proporre un messaggio di commit</value></data>
+  <data name="SlashHintGit" xml:space="preserve"><value>riepilogo di git status, log e diff</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>mostrare la mappa dell'architettura del progetto (namespace, tipi, hotspot)</value></data>
+  <data name="SlashHintSolution" xml:space="preserve"><value>mostrare la struttura della soluzione</value></data>
+  <data name="SlashHintBuild" xml:space="preserve"><value>compilare e mostrare gli errori</value></data>
+  <data name="SlashHintFixBuild" xml:space="preserve"><value>compilare → l'IA corregge → ricompilare fino a zero errori</value></data>
+  <data name="SlashHintContext" xml:space="preserve"><value>mostrare il contesto del progetto</value></data>
+  <data name="SlashHintMemory" xml:space="preserve"><value>visualizzare la memoria dell'agente</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>mostrare o ricostruire l'indice RAG del codice</value></data>
+  <data name="SlashHintHistory" xml:space="preserve"><value>elencare le sessioni salvate — /history &lt;termine&gt; per cercare</value></data>
+  <data name="SlashHintTemplate" xml:space="preserve"><value>avviare una sessione da un modello predefinito — /template &lt;id&gt;</value></data>
+  <data name="SlashHintDiff" xml:space="preserve"><value>allegare il diff git completo come chip di contesto — /diff [percorso]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>far revisionare all'IA il diff git attuale secondo .inferpal/checks — /check [nome|init]</value></data>
+  <data name="SlashHintRules" xml:space="preserve"><value>elencare le regole del progetto in .inferpal/rules — /rules [init]</value></data>
+  <data name="SlashHintChecks" xml:space="preserve"><value>elencare i controlli di revisione in .inferpal/checks — /checks [init]</value></data>
+  <data name="SlashHintSnippets" xml:space="preserve"><value>elencare gli snippet di codice salvati — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
+  <data name="SlashHintNote" xml:space="preserve"><value>salvare una nota di progetto — /note &lt;testo&gt;</value></data>
+  <data name="SlashHintNotes" xml:space="preserve"><value>elencare le note del progetto — /notes [clear]</value></data>
+  <data name="SlashHintPhistory" xml:space="preserve"><value>cercare nella cronologia dei prompt — /phistory [termine] o /phistory use &lt;n&gt;</value></data>
+  <data name="SlashHintModels" xml:space="preserve"><value>gestore dei modelli Ollama — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
+  <data name="SlashHintAgentStep" xml:space="preserve"><value>attivare/disattivare la modalità passo-passo dell'agente — pausa dopo ogni chiamata di strumento</value></data>
+  <data name="SlashHintResume" xml:space="preserve"><value>riprendere l'agente dopo una pausa in modalità passo-passo</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>attivare/disattivare la modalità piano — sola lettura: esplorare e proporre un piano, senza modifiche</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>elencare i file di prompt riutilizzabili (.inferpal/prompts) — /prompts [init]</value></data>
+  <data name="SlashHintHardware" xml:space="preserve"><value>mostrare il profilo GPU/VRAM — /hardware [gb] per impostare il budget VRAM</value></data>
+  <data name="SlashHintSetup" xml:space="preserve"><value>rieseguire la configurazione iniziale — rilevare di nuovo il backend, riselezionare i modelli</value></data>
+  <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ Il monitoraggio della VRAM in tempo reale e per modello non è disponibile con questo backend. Il budget VRAM manuale (`/hardware &lt;gb&gt;`) continua a guidare i controlli di compatibilità.</value></data>
+  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ La gestione dei modelli (pull, delete, running) è disponibile solo con il backend Ollama.</value></data>
+  <data name="SnippetsCleared" xml:space="preserve"><value>Libreria di snippet svuotata.</value></data>
+  <data name="SnippetsNoSuch" xml:space="preserve"><value>Nessuno snippet n. {0}.</value></data>
+  <data name="SnippetsCopied" xml:space="preserve"><value>Snippet n. {0} copiato negli appunti.</value></data>
+  <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet n. {0} eliminato.</value></data>
+  <data name="SnippetsNone" xml:space="preserve"><value>Nessuno snippet salvato. Usa il pulsante ⭐ su un blocco di codice per salvarne uno.</value></data>
+  <data name="NoteUsage" xml:space="preserve"><value>Uso: `/note &lt;testo&gt;` — aggiunge una nota con data e ora a `.inferpal/notes.md`.</value></data>
+  <data name="NoteSaved" xml:space="preserve"><value>Nota salvata: *{0}*</value></data>
+  <data name="NotesCleared" xml:space="preserve"><value>Note di progetto cancellate.</value></data>
+  <data name="NotesNoneYet" xml:space="preserve"><value>Ancora nessuna nota di progetto. Usa `/note &lt;testo&gt;` per aggiungerne una.</value></data>
+  <data name="NotesEmpty" xml:space="preserve"><value>Il file delle note di progetto è vuoto.</value></data>
+  <data name="NotesHeading" xml:space="preserve"><value>## Note di progetto</value></data>
+  <data name="PHistoryNoEntry" xml:space="preserve"><value>Nessuna voce di cronologia n. {0}.</value></data>
+  <data name="PHistoryEmpty" xml:space="preserve"><value>La cronologia dei prompt è vuota.</value></data>
+  <data name="PHistoryNoMatch" xml:space="preserve"><value>Nessuna voce di cronologia corrispondente a `{0}`.</value></data>
+  <data name="ModelsDeleteUsage" xml:space="preserve"><value>Uso: `/models delete &lt;nome-modello&gt;`</value></data>
+  <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` eliminato.</value></data>
+  <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ Eliminazione di `{0}` non riuscita.</value></data>
+  <data name="ModelsNoneRunning" xml:space="preserve"><value>Nessun modello attualmente caricato in VRAM.</value></data>
+  <data name="ModelsNoneInstalled" xml:space="preserve"><value>Nessun modello installato. Usa `/models pull &lt;nome&gt;` per scaricarne uno.</value></data>
+  <data name="ModelsPullUsage" xml:space="preserve"><value>Uso: `/models pull &lt;nome-modello&gt;`</value></data>
+  <data name="ModelsPulling" xml:space="preserve"><value>⬇ Download di `{0}`…</value></data>
+  <data name="ModelsPullingStatus" xml:space="preserve"><value>⬇ Download di `{0}` — {1}</value></data>
+  <data name="ModelsPulled" xml:space="preserve"><value>✅ `{0}` scaricato correttamente.</value></data>
+  <data name="ModelsPullFailed" xml:space="preserve"><value>❌ Download di `{0}` non riuscito.</value></data>
+  <data name="SnippetsListHeader" xml:space="preserve"><value>## Snippet salvati</value></data>
+  <data name="SnippetsSavedAt" xml:space="preserve"><value>*Salvato {0}*</value></data>
+  <data name="PHistoryListHeader" xml:space="preserve"><value>## Cronologia dei prompt</value></data>
+  <data name="PHistoryListHeaderTerm" xml:space="preserve"><value>## Cronologia dei prompt — `{0}`</value></data>
+  <data name="ModelsRunningHeader" xml:space="preserve"><value>## Modelli in esecuzione</value></data>
+  <data name="ModelsInstalledHeader" xml:space="preserve"><value>## Modelli installati</value></data>
+  <data name="ModelsTableModel" xml:space="preserve"><value>Modello</value></data>
+  <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Mostra le diagnostiche recenti — `clear`/`on`/`off`</value></data>
+  <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostica</value></data>
+  <data name="DiagnosticsEmpty" xml:space="preserve"><value>Nessuna diagnostica registrata.</value></data>
+  <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnostica cancellata.</value></data>
+  <data name="DiagnosticsFileOn" xml:space="preserve"><value>Registrazione su file della diagnostica attivata.</value></data>
+  <data name="DiagnosticsFileOff" xml:space="preserve"><value>Registrazione su file della diagnostica disattivata.</value></data>
+  <data name="SlashHintUndoRun" xml:space="preserve"><value>Annulla tutte le modifiche ai file dell'ultimo run dell'agente</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>Nessun run dell'agente con modifiche ai file da annullare in questa sessione.</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questa sessione ({0}):</value></data>
+  <data name="UndoRunResult" xml:space="preserve"><value>↩ Ultimo run annullato — {0} file ripristinato/i, {1} eliminato/i.</value></data>
+  <data name="HardwareUsage" xml:space="preserve"><value>Uso: `/hardware &lt;gb&gt;` — un numero positivo, ad es. `/hardware 24`.</value></data>
+  <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budget VRAM impostato a {0} GB.</value></data>
+  <data name="HardwareReportHeading" xml:space="preserve"><value>## Profilo hardware</value></data>
+  <data name="HardwareBudgetLine" xml:space="preserve"><value>**Budget VRAM:** {0} GB</value></data>
+  <data name="HardwareBudgetNotSet" xml:space="preserve"><value>**Budget VRAM:** non impostato — esegui `/hardware &lt;gb&gt;` (ad es. `/hardware 24`)</value></data>
+  <data name="HardwareLoadedLine" xml:space="preserve"><value>**Attualmente caricato:** {0} GB{1}{2}</value></data>
+  <data name="HardwareOfBudget" xml:space="preserve"><value> / {0} GB</value></data>
+  <data name="HardwareHeadroom" xml:space="preserve"><value> · margine {0} GB</value></data>
+  <data name="HardwareCompute" xml:space="preserve"><value>**Elaborazione:** {0}</value></data>
+  <data name="HardwareLoadedNone" xml:space="preserve"><value>**Attualmente caricato:** nessuno</value></data>
+  <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Modelli caricati
+
+| Modello | VRAM |
+|---|---|</value></data>
+  <data name="HardwareInstalledModelsTable" xml:space="preserve"><value>### Modelli installati
+
+| Modello | Disco | VRAM stim. |
+|---|---|---|</value></data>
+  <data name="HardwareInstalledNote" xml:space="preserve"><value>_Le cifre di VRAM dei modelli installati sono stime (dimensione su disco × 1,2, comprendendo KV-cache + runtime)._</value></data>
+  <data name="HardwareContextHeading" xml:space="preserve"><value>### Finestra di contesto</value></data>
+  <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**num_ctx configurato:** {0}</value></data>
+  <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Massimo consigliato per `{0}`:** {1}{2}</value></data>
+  <data name="HardwareModelMax" xml:space="preserve"><value> (max del modello {0})</value></data>
+  <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Il tuo num_ctx ({0}) supera quanto entra nel budget VRAM — la KV-cache potrebbe riversarsi nella RAM di sistema e rallentare la generazione. Valuta di ridurlo a {1}.</value></data>
+  <data name="LabelVramBudget" xml:space="preserve"><value>Budget VRAM</value></data>
+  <data name="HintVramBudget" xml:space="preserve"><value>VRAM totale (in GB) disponibile sull'host Ollama. Serve a consigliare un num_ctx sicuro e ad avvisare quando i modelli selezionati non entrano. Lascia vuoto per il rilevamento automatico su un host locale; per host remoti è richiesto un valore manuale. Impostabile anche con `/hardware &lt;gb&gt;`.</value></data>
+  <data name="TooltipAgentMode" xml:space="preserve"><value>Alterna tra modalità Chat e Agente (Plan → Act → Observe autonomo). Collegato all'impostazione «Abilita la modalità agente autonoma».</value></data>
+  <data name="LabelModeChat" xml:space="preserve"><value>💬 Chat</value></data>
+  <data name="LabelModeAgent" xml:space="preserve"><value>🤖 Agente</value></data>
+  <data name="WelcomeSubtitle" xml:space="preserve"><value>Fai una domanda sul tuo codice</value></data>
+  <data name="WelcomeCardExplain" xml:space="preserve"><value>Spiega la selezione</value></data>
+  <data name="WelcomeCardFix" xml:space="preserve"><value>Correggi un errore</value></data>
+  <data name="WelcomeCardTest" xml:space="preserve"><value>Genera un test</value></data>
+  <data name="WelcomeCardHelp" xml:space="preserve"><value>Vedi tutti i comandi</value></data>
+  <data name="BuildBannerTitle" xml:space="preserve"><value>Compilazione non riuscita</value></data>
+  <data name="BuildBannerDismiss" xml:space="preserve"><value>Ignora</value></data>
+  <data name="BuildBannerFix" xml:space="preserve"><value>Correggi con l'IA</value></data>
+</root>

@@ -1,0 +1,12 @@
+{
+  "InferpalMenu": "Inferpal",
+  "InferpalChatCommand": "Inferpal 聊天",
+  "InferpalSettingsCommand": "Inferpal 设置...",
+  "ContextMenuAskInferpal": "询问 Inferpal",
+  "ContextMenuExplain": "解释",
+  "ContextMenuRefactor": "重构",
+  "ContextMenuAddTests": "添加测试",
+  "ContextMenuFix": "修复",
+  "ContextMenuAddDocstring": "添加文档",
+  "ContextMenuInlineEdit": "使用 AI 编辑…"
+}

@@ -1,0 +1,1547 @@
+<DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vs="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0">
+
+    <DataTemplate.Resources>
+        <BooleanToVisibilityConverter x:Key="b2v" />
+        <Style TargetType="Button"   BasedOn="{StaticResource {x:Static vs:VsResourceKeys.ButtonStyleKey}}" />
+        <Style TargetType="TextBox"  BasedOn="{StaticResource {x:Static vs:VsResourceKeys.TextBoxStyleKey}}" />
+        <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Static vs:VsResourceKeys.ComboBoxStyleKey}}" />
+    </DataTemplate.Resources>
+
+    <ScrollViewer x:Name="root" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="14,10" MinWidth="340">
+
+        <!-- ══ Language ════════════════════════════════════════════════════ -->
+        <Grid Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                <TextBlock Text="{Binding LabelLanguage}" Foreground="{Binding TextForeground}"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintLanguage}"/>
+            </StackPanel>
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding AvailableLanguages}"
+                      SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"
+                      IsEditable="False"/>
+        </Grid>
+
+        <!-- ══ Tabs ═══════════════════════════════════════════════════════ -->
+        <!-- Lateral-tab navigation over the accordion sections: one group visible at a time
+             (Visibility bound to a per-tab VM flag), active tab gets the brand accent + underline. -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+            <Button Command="{Binding SelectTabConnectionCommand}" Cursor="Hand"
+                    Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,16,0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border BorderBrush="{Binding TabConnectionUnderline}" BorderThickness="0,0,0,2" Padding="2,3">
+                            <TextBlock Text="{Binding LabelTabConnection}" Foreground="{Binding TabConnectionFg}"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <Button Command="{Binding SelectTabBehaviorCommand}" Cursor="Hand"
+                    Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,16,0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border BorderBrush="{Binding TabBehaviorUnderline}" BorderThickness="0,0,0,2" Padding="2,3">
+                            <TextBlock Text="{Binding LabelTabBehavior}" Foreground="{Binding TabBehaviorFg}"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <Button Command="{Binding SelectTabContextCommand}" Cursor="Hand"
+                    Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,16,0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border BorderBrush="{Binding TabContextUnderline}" BorderThickness="0,0,0,2" Padding="2,3">
+                            <TextBlock Text="{Binding LabelTabContext}" Foreground="{Binding TabContextFg}"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <Button Command="{Binding SelectTabToolsCommand}" Cursor="Hand"
+                    Background="Transparent" BorderThickness="0" Padding="0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border BorderBrush="{Binding TabToolsUnderline}" BorderThickness="0,0,0,2" Padding="2,3">
+                            <TextBlock Text="{Binding LabelTabTools}" Foreground="{Binding TabToolsFg}"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+
+        <!-- ══ TAB: Connection ═════════════════════════════════════════════ -->
+        <StackPanel Visibility="{Binding TabConnectionVisible, Converter={StaticResource b2v}}">
+
+        <!-- ══ Connection ══════════════════════════════════════════════════ -->
+        <Grid Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Rectangle Grid.Column="0" Fill="#569CD6" RadiusX="1.5" RadiusY="1.5"/>
+            <TextBlock Grid.Column="1" Text="{Binding LabelSectionConnection}"
+                       Foreground="{Binding TextForeground}"
+                       FontWeight="Bold" FontSize="12" Margin="8,0,0,0"/>
+        </Grid>
+        <Rectangle Height="1" Fill="#25808080" Margin="0,0,0,10"/>
+
+        <!-- Inference backend (Ollama / OpenAI-compatible) -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelProvider}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintProvider}"/>
+        </StackPanel>
+        <ComboBox Margin="0,0,0,10"
+                  ItemsSource="{Binding AvailableProviders}"
+                  SelectedItem="{Binding SelectedProvider, Mode=TwoWay}"
+                  IsEditable="False"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelUrl}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintUrl}"/>
+        </StackPanel>
+        <Grid Margin="0,0,0,3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Column="0"
+                     Text="{Binding BaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            <Button Grid.Column="1" Content="{Binding BtnTest}"
+                    Command="{Binding TestConnectionCommand}"
+                    Padding="10,4" Margin="6,0,0,0"/>
+        </Grid>
+        <TextBlock Text="{Binding ConnectionStatus}"
+                   Foreground="{Binding TextForeground}"
+                   FontStyle="Italic" FontSize="11" Margin="2,2,0,3"/>
+
+        <!-- Optional API key (OpenAI-compatible servers that require auth) -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelApiKey}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintApiKey}"/>
+        </StackPanel>
+        <TextBox Margin="0,0,0,17"
+                 Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelChatModel}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintChatModel}"/>
+        </StackPanel>
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ComboBox Grid.Column="0"
+                      ItemsSource="{Binding AvailableModels}"
+                      SelectedItem="{Binding SelectedModel, Mode=TwoWay}"
+                      IsEditable="False"/>
+            <Button Grid.Column="1" Content="↻"
+                    Command="{Binding RefreshModelsCommand}"
+                    Padding="8,4" Margin="6,0,0,0"
+                    ToolTip="{Binding TooltipRefreshModels}"/>
+        </Grid>
+
+        <!-- Simple vs per-role models: by default the chat model is used everywhere; this reveals the
+             agent / code-action / FIM / inline-edit pickers for power users who want to split roles. -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <CheckBox Content="{Binding LabelModelRolesAdvanced}"
+                      IsChecked="{Binding ShowModelRoles, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintModelRolesAdvanced}"/>
+        </StackPanel>
+
+        <!-- Per-role model pickers — collapsed unless "advanced" is on (FIM also gated on backend FIM) -->
+        <StackPanel Visibility="{Binding ShowModelRoles, Converter={StaticResource b2v}}">
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelAgentModel}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintAgentModel}"/>
+        </StackPanel>
+        <ComboBox ItemsSource="{Binding AvailableOptionalModels}"
+                  SelectedItem="{Binding AgentModel, Mode=TwoWay}"
+                  IsEditable="False"
+                  Margin="0,0,0,10"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelCodeActionsModel}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintCodeActionsModel}"/>
+        </StackPanel>
+        <ComboBox ItemsSource="{Binding AvailableOptionalModels}"
+                  SelectedItem="{Binding CodeActionsModel, Mode=TwoWay}"
+                  IsEditable="False"
+                  Margin="0,0,0,10"/>
+
+        <!-- FIM ghost-text model — hidden when the selected backend has no FIM (generic OpenAI servers) -->
+        <StackPanel Visibility="{Binding ShowInlineCompletions, Converter={StaticResource b2v}}">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                <TextBlock Text="{Binding LabelInlineCompletionModel}" Foreground="{Binding TextForeground}"
+                           FontSize="11" Opacity="0.75"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintInlineCompletionModel}"/>
+            </StackPanel>
+            <ComboBox ItemsSource="{Binding AvailableOptionalModels}"
+                      SelectedItem="{Binding InlineCompletionModel, Mode=TwoWay}"
+                      IsEditable="False"
+                      Margin="0,0,0,10"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelInlineEditModel}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintInlineEditModel}"/>
+        </StackPanel>
+        <ComboBox ItemsSource="{Binding AvailableOptionalModels}"
+                  SelectedItem="{Binding InlineEditModel, Mode=TwoWay}"
+                  IsEditable="False"
+                  Margin="0,0,0,10"/>
+
+        </StackPanel>
+        <!-- end per-role model pickers -->
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelRagEmbeddingModel}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintRagEmbeddingModel}"/>
+        </StackPanel>
+        <ComboBox ItemsSource="{Binding AvailableEmbeddingModels}"
+                  SelectedItem="{Binding RagEmbeddingModel, Mode=TwoWay}"
+                  IsEditable="False"
+                  Margin="0,0,0,20"/>
+
+        </StackPanel>
+        <!-- end TAB: Connection -->
+
+        <!-- ══ TAB: Behavior (Behavior + Inline Completions) ═══════════════ -->
+        <StackPanel Visibility="{Binding TabBehaviorVisible, Converter={StaticResource b2v}}">
+
+        <!-- ══ Behavior ════════════════════════════════════════════════════ -->
+        <Button Command="{Binding ToggleSectionBehaviorCommand}" Margin="0,0,0,4"
+                HorizontalContentAlignment="Stretch" Cursor="Hand"
+                Background="Transparent" BorderThickness="0" Padding="0">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="Transparent" Padding="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding SectionBehaviorChevron}"
+                                       Foreground="#569CD6" FontSize="9" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding LabelSectionBehavior}"
+                                       Foreground="{Binding TextForeground}"
+                                       FontWeight="Bold" FontSize="12"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#15808080"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Rectangle Height="1" Fill="#25808080" Margin="0,0,0,10"/>
+
+        <StackPanel Visibility="{Binding SectionBehaviorExpanded, Converter={StaticResource b2v}}">
+
+        <!-- Advanced toggle: folds the timing knobs (timeout, iterations, task delays) away by default -->
+        <CheckBox Content="{Binding LabelAdvancedBehavior}"
+                  IsChecked="{Binding ShowAdvancedBehavior, Mode=TwoWay}"
+                  Foreground="{Binding TextForeground}" Margin="0,0,0,10"/>
+
+        <Grid Margin="0,0,0,12"
+              Visibility="{Binding ShowAdvancedBehavior, Converter={StaticResource b2v}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="{Binding LabelCommandTimeout}" Foreground="{Binding TextForeground}"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintCommandTimeout}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding TimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding TimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding TimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox Content="{Binding LabelToolBubblesExpanded}"
+                      IsChecked="{Binding ToolBubblesExpanded, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintToolBubblesExpanded}"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox Content="{Binding LabelSecurityAlertsDisabled}"
+                      IsChecked="{Binding SecurityAlertsDisabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintSecurityAlertsDisabled}"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+            <TextBlock Text="{Binding LabelPermissionRules}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintPermissionRules}"/>
+        </StackPanel>
+        <TextBox Text="{Binding PermissionRules, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="60"
+                 FontFamily="Consolas" FontSize="11"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                 Margin="0,0,0,10"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+            <CheckBox Content="{Binding LabelSmartFixEnabled}"
+                      IsChecked="{Binding SmartFixEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintSmartFixEnabled}"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+            <CheckBox Content="{Binding LabelAgentModeEnabled}"
+                      IsChecked="{Binding AgentModeEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintAgentModeEnabled}"/>
+        </StackPanel>
+
+        <Grid Margin="18,0,0,12" ToolTip="{Binding HintAgentMaxIterations}"
+              Visibility="{Binding ShowAdvancedBehavior, Converter={StaticResource b2v}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelAgentMaxIterations}"
+                       Foreground="{Binding TextForeground}"
+                       VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding AgentMaxIterationsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="46" Foreground="{Binding TextForeground}"
+                         Padding="4,2" VerticalContentAlignment="Center" TextAlignment="Right"/>
+                <TextBlock Text="iter" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="18,0,0,6" ToolTip="{Binding HintTaskTimeoutQuick}"
+              Visibility="{Binding ShowAdvancedBehavior, Converter={StaticResource b2v}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelTaskTimeoutQuick}"
+                       Foreground="{Binding TextForeground}"
+                       VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding QuickTimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding QuickTimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding QuickTimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="18,0,0,6" ToolTip="{Binding HintTaskTimeoutNormal}"
+              Visibility="{Binding ShowAdvancedBehavior, Converter={StaticResource b2v}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelTaskTimeoutNormal}"
+                       Foreground="{Binding TextForeground}"
+                       VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding NormalTimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding NormalTimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding NormalTimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="18,0,0,12" ToolTip="{Binding HintTaskTimeoutDeep}"
+              Visibility="{Binding ShowAdvancedBehavior, Converter={StaticResource b2v}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelTaskTimeoutDeep}"
+                       Foreground="{Binding TextForeground}"
+                       VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding DeepTimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding DeepTimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding DeepTimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- keep_alive idle auto-unload — Ollama only (OpenAI chat wire has no per-request keep_alive) -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,6"
+                    Visibility="{Binding ShowKeepAliveSettings, Converter={StaticResource b2v}}">
+            <CheckBox Content="{Binding LabelModelAutoUnload}"
+                      IsChecked="{Binding ModelAutoUnloadEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintModelAutoUnload}"/>
+        </StackPanel>
+
+        <Grid Margin="18,0,0,20" ToolTip="{Binding HintModelIdleTimeout}"
+              Visibility="{Binding ShowKeepAliveSettings, Converter={StaticResource b2v}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelModelIdleTimeout}"
+                       Foreground="{Binding TextForeground}"
+                       VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding ModelIdleTimeoutText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="46" MaxLength="3" TextAlignment="Center"/>
+                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        </StackPanel>
+
+        <!-- ══ Inline Completions ══════════════════════════════════════════ -->
+        <!-- Whole FIM section hidden when the selected backend has no FIM (generic OpenAI servers) -->
+        <StackPanel Visibility="{Binding ShowInlineCompletions, Converter={StaticResource b2v}}">
+        <Button Command="{Binding ToggleSectionInlineCommand}" Margin="0,0,0,4"
+                HorizontalContentAlignment="Stretch" Cursor="Hand"
+                Background="Transparent" BorderThickness="0" Padding="0">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="Transparent" Padding="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding SectionInlineChevron}"
+                                       Foreground="#569CD6" FontSize="9" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding LabelSectionInlineCompletions}"
+                                       Foreground="{Binding TextForeground}"
+                                       FontWeight="Bold" FontSize="12"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#15808080"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Rectangle Height="1" Fill="#25808080" Margin="0,0,0,10"/>
+
+        <StackPanel Visibility="{Binding SectionInlineExpanded, Converter={StaticResource b2v}}">
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox Content="{Binding LabelInlineCompletionEnabled}"
+                      IsChecked="{Binding InlineCompletionEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintInlineCompletionEnabled}"/>
+        </StackPanel>
+
+        <Grid Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                <TextBlock Text="{Binding LabelInlineCompletionMode}" Foreground="{Binding TextForeground}"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintInlineCompletionMode}"/>
+            </StackPanel>
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding AvailableInlineModes}"
+                      SelectedItem="{Binding SelectedInlineMode, Mode=TwoWay}"
+                      IsEditable="False"/>
+        </Grid>
+
+        </StackPanel>
+        </StackPanel>
+
+        </StackPanel>
+        <!-- end TAB: Behavior -->
+
+        <!-- ══ TAB: Context (RAG + Context & Memory) ═══════════════════════ -->
+        <StackPanel Visibility="{Binding TabContextVisible, Converter={StaticResource b2v}}">
+
+        <!-- ══ RAG / Semantic Index ════════════════════════════════════════ -->
+        <Button Command="{Binding ToggleSectionRagCommand}" Margin="0,0,0,4"
+                HorizontalContentAlignment="Stretch" Cursor="Hand"
+                Background="Transparent" BorderThickness="0" Padding="0">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="Transparent" Padding="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding SectionRagChevron}"
+                                       Foreground="#569CD6" FontSize="9" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding LabelSectionRag}"
+                                       Foreground="{Binding TextForeground}"
+                                       FontWeight="Bold" FontSize="12"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#15808080"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Rectangle Height="1" Fill="#25808080" Margin="0,0,0,10"/>
+
+        <StackPanel Visibility="{Binding SectionRagExpanded, Converter={StaticResource b2v}}">
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox Content="{Binding LabelRagEnabled}"
+                      IsChecked="{Binding RagEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintRagEnabled}"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox Content="{Binding LabelRagAutoContext}"
+                      IsChecked="{Binding RagAutoContextEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintRagAutoContext}"/>
+        </StackPanel>
+
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="{Binding LabelRagTopK}" Foreground="{Binding TextForeground}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintRagTopK}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding RagTopKText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="40" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="chunks" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="{Binding LabelRagSimilarityThreshold}" Foreground="{Binding TextForeground}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintRagSimilarityThreshold}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding RagSimilarityThresholdText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="48" MaxLength="4" TextAlignment="Center"/>
+                <TextBlock Text="0–1" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+            <CheckBox Content="{Binding LabelLspEnabled}"
+                      IsChecked="{Binding LspEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintLspEnabled}"/>
+        </StackPanel>
+
+        </StackPanel>
+
+        </StackPanel>
+        <!-- end TAB: Context (RAG part) -->
+
+        <!-- ══ TAB: Tools (MCP + Persona) ══════════════════════════════════ -->
+        <StackPanel Visibility="{Binding TabToolsVisible, Converter={StaticResource b2v}}">
+
+        <!-- ══ MCP (Model Context Protocol) ════════════════════════════════ -->
+        <Button Command="{Binding ToggleSectionMcpCommand}" Margin="0,0,0,4"
+                HorizontalContentAlignment="Stretch" Cursor="Hand"
+                Background="Transparent" BorderThickness="0" Padding="0">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="Transparent" Padding="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding SectionMcpChevron}"
+                                       Foreground="#569CD6" FontSize="9" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding LabelSectionMcp}"
+                                       Foreground="{Binding TextForeground}"
+                                       FontWeight="Bold" FontSize="12"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#15808080"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Rectangle Height="1" Fill="#25808080" Margin="0,0,0,10"/>
+
+        <StackPanel Visibility="{Binding SectionMcpExpanded, Converter={StaticResource b2v}}">
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox Content="{Binding LabelMcpEnabled}"
+                      IsChecked="{Binding McpEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintMcpEnabled}"/>
+        </StackPanel>
+
+        <!-- List header: label · count badge · view-mode toggle (Liste ⇄ JSON) -->
+        <Grid Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelMcpServers}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintMcpServers}"/>
+            <TextBlock Grid.Column="2" Text="{Binding McpCountText}" Foreground="#569CD6"
+                       FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            <Button Grid.Column="4" Command="{Binding ToggleSectionMcpJsonCommand}" Cursor="Hand"
+                    Content="{Binding McpViewLabel}" Padding="8,2" FontSize="10">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{Binding SecondaryButtonFg}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+
+        <!-- List view (rows / empty state / add / inline editor) — hidden in JSON view -->
+        <StackPanel Visibility="{Binding McpListViewVisible, Converter={StaticResource b2v}}">
+
+        <!-- Empty state: carries the explanation so the bare ⓘ + label is enough above -->
+        <Border Visibility="{Binding McpEmpty, Converter={StaticResource b2v}}"
+                BorderBrush="{Binding McpRowBorder}" BorderThickness="1" CornerRadius="6"
+                Background="{Binding EditPanelBg}" Padding="14,16" Margin="0,0,0,8">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="{Binding McpEmptyTitle}" Foreground="{Binding TextForeground}"
+                           FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBlock Text="{Binding HintMcpServers}" Foreground="{Binding McpSubtleForeground}"
+                           FontSize="11" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="300"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Server list -->
+        <ItemsControl ItemsSource="{Binding McpServers}" Margin="0,0,0,6">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{Binding DataContext.McpRowBackground, ElementName=root}"
+                            BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="1"
+                            CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}"
+                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ServerName}" FontWeight="SemiBold" FontSize="12"
+                                           Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Summary}" FontSize="10"
+                                           Foreground="{Binding DataContext.McpSubtleForeground, ElementName=root}"
+                                           FontFamily="Consolas" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,8,0">
+                                <TextBlock Text="{Binding StatusText}" FontSize="10"
+                                           Foreground="{Binding DataContext.McpSubtleForeground, ElementName=root}" VerticalAlignment="Center"/>
+                                <Button Command="{Binding AuthorizeCommand}" Content="{Binding DataContext.LabelMcpAuthorize, ElementName=root}"
+                                        Visibility="{Binding AuthRequired, Converter={StaticResource b2v}}"
+                                        FontSize="10" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="bd" CornerRadius="3" Background="#1B6B35" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                  TextElement.Foreground="White"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="bd" Property="Background" Value="#28A047"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </StackPanel>
+                            <Button Grid.Column="3" Command="{Binding EditCommand}" ToolTip="{Binding DataContext.HintMcpEditServer, ElementName=root}"
+                                    Width="26" Height="24" Margin="0,0,2,0">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="3" Background="Transparent">
+                                            <TextBlock Text="✎" FontSize="12" Foreground="{Binding DataContext.McpEditGlyph, ElementName=root}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Grid.Column="4" Command="{Binding DeleteCommand}" ToolTip="{Binding DataContext.HintMcpDeleteServer, ElementName=root}"
+                                    Width="26" Height="24">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="3" Background="Transparent">
+                                            <TextBlock Text="🗑" FontSize="12" Foreground="#CC6666"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="bd" Property="Background" Value="#5A2D2D"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Add server -->
+        <Button Content="{Binding LabelMcpAddServer}" Command="{Binding AddServerCommand}"
+                HorizontalAlignment="Left" Padding="10,4" FontSize="11" Margin="0,0,0,6">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" CornerRadius="4" Background="#0E639C" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="White"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#1177BB"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+
+        <!-- Add / Edit form -->
+        <Border Visibility="{Binding IsEditingServer, Converter={StaticResource b2v}}"
+                Background="{Binding EditPanelBg}" BorderBrush="{Binding McpRowBorder}" BorderThickness="1"
+                CornerRadius="4" Padding="8" Margin="0,0,0,8">
+            <StackPanel>
+                <TextBlock Text="{Binding EditingTitle}" Foreground="{Binding TextForeground}"
+                           FontWeight="SemiBold" FontSize="12" Margin="0,0,0,6"/>
+                <TextBlock Text="{Binding LabelMcpName}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                <TextBox Text="{Binding EditServerName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         FontSize="11" Margin="0,2,0,6"/>
+                <CheckBox Content="{Binding LabelMcpHttpServer}" IsChecked="{Binding EditServerIsHttp, Mode=TwoWay}"
+                          Foreground="{Binding TextForeground}" FontSize="11" Margin="0,0,0,6"/>
+                <!-- stdio transport fields -->
+                <StackPanel Visibility="{Binding EditServerIsStdio, Converter={StaticResource b2v}}">
+                    <TextBlock Text="{Binding LabelMcpCommand}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                    <TextBox Text="{Binding EditServerCommand, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="11" FontFamily="Consolas" Margin="0,2,0,6"/>
+                    <TextBlock Text="{Binding LabelMcpArgs}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                    <TextBox Text="{Binding EditServerArgs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="11" FontFamily="Consolas" Margin="0,2,0,6"/>
+                    <TextBlock Text="{Binding LabelMcpEnv}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                    <TextBox Text="{Binding EditServerEnv, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="40"
+                             FontSize="11" FontFamily="Consolas" Margin="0,2,0,6"
+                             VerticalScrollBarVisibility="Auto"/>
+                </StackPanel>
+                <!-- Streamable HTTP transport fields -->
+                <StackPanel Visibility="{Binding EditServerIsHttp, Converter={StaticResource b2v}}">
+                    <TextBlock Text="{Binding LabelMcpUrl}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                    <TextBox Text="{Binding EditServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="11" FontFamily="Consolas" Margin="0,2,0,6"/>
+                    <TextBlock Text="{Binding LabelMcpHeaders}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                    <TextBox Text="{Binding EditServerHeaders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="40"
+                             FontSize="11" FontFamily="Consolas" Margin="0,2,0,6"
+                             VerticalScrollBarVisibility="Auto"/>
+                </StackPanel>
+                <TextBlock Text="{Binding EditServerError}" Foreground="#F48771" FontSize="10"
+                           TextWrapping="Wrap" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="{Binding BtnMcpSaveServer}" Command="{Binding SaveServerCommand}"
+                            Padding="10,4" FontSize="11" Margin="0,0,6,0">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bd" CornerRadius="4" Background="#1B6B35" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                      TextElement.Foreground="White"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bd" Property="Background" Value="#28A047"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button Content="{Binding BtnMcpCancelServer}" Command="{Binding CancelEditServerCommand}"
+                            Padding="10,4" FontSize="11">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                      TextElement.Foreground="{Binding SecondaryButtonFg}"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        </StackPanel>
+        <!-- end MCP list view -->
+
+        <TextBlock Text="{Binding McpStatusText}" Foreground="{Binding TextForeground}"
+                   FontSize="11" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+        <!-- JSON view (raw editor) — the other face of the header toggle -->
+        <StackPanel Visibility="{Binding SectionMcpJsonExpanded, Converter={StaticResource b2v}}" Margin="0,0,0,20">
+            <TextBox Text="{Binding McpServersJson, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="90"
+                     FontFamily="Consolas" FontSize="11"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     Margin="0,0,0,6"/>
+            <Button Content="{Binding BtnMcpImportJson}" Command="{Binding ImportJsonCommand}"
+                    HorizontalAlignment="Left" Padding="10,4" FontSize="11">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{Binding SecondaryButtonFg}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+
+        </StackPanel>
+
+        </StackPanel>
+        <!-- end TAB: Tools (MCP part) -->
+
+        <!-- ══ TAB: Context (Context & Memory part) ════════════════════════ -->
+        <StackPanel Visibility="{Binding TabContextVisible, Converter={StaticResource b2v}}">
+
+        <!-- ══ Context & Memory ════════════════════════════════════════════ -->
+        <Button Command="{Binding ToggleSectionContextCommand}" Margin="0,0,0,4"
+                HorizontalContentAlignment="Stretch" Cursor="Hand"
+                Background="Transparent" BorderThickness="0" Padding="0">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="Transparent" Padding="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding SectionContextChevron}"
+                                       Foreground="#569CD6" FontSize="9" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding LabelSectionContext}"
+                                       Foreground="{Binding TextForeground}"
+                                       FontWeight="Bold" FontSize="12"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#15808080"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Rectangle Height="1" Fill="#25808080" Margin="0,0,0,10"/>
+
+        <StackPanel Visibility="{Binding SectionContextExpanded, Converter={StaticResource b2v}}">
+
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="{Binding LabelVramBudget}" Foreground="{Binding TextForeground}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintVramBudget}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding VramBudgetText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="68" MaxLength="6" TextAlignment="Center"/>
+                <TextBlock Text="GB" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="{Binding LabelContextWindowSize}" Foreground="{Binding TextForeground}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintContextWindowSize}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding ContextWindowSizeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="68" MaxLength="6" TextAlignment="Center"/>
+                <TextBlock Text="tokens" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="{Binding LabelContextWindowKeepTurns}" Foreground="{Binding TextForeground}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintContextWindowKeepTurns}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding ContextWindowKeepTurnsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="40" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="turns" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <CheckBox Content="{Binding LabelCompactionEnabled}"
+                      IsChecked="{Binding CompactionEnabled, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintCompactionEnabled}"/>
+        </StackPanel>
+
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="{Binding LabelCompactionTimeout}" Foreground="{Binding TextForeground}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintCompactionTimeout}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding CompactionTimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding CompactionTimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
+                <TextBox Text="{Binding CompactionTimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="36" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="{Binding LabelKvCacheAnchor}" Foreground="{Binding TextForeground}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintKvCacheAnchor}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding KvCacheAnchorMessagesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="40" MaxLength="2" TextAlignment="Center"/>
+                <TextBlock Text="msg" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="{Binding LabelOodaTurnThreshold}" Foreground="{Binding TextForeground}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                           Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintOodaTurnThreshold}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBox Text="{Binding OodaTurnThresholdText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="40" MaxLength="3" TextAlignment="Center"/>
+                <TextBlock Text="turns" Foreground="{Binding TextForeground}"
+                           VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
+            </StackPanel>
+        </Grid>
+
+        </StackPanel>
+
+        </StackPanel>
+        <!-- end TAB: Context (Context & Memory part) -->
+
+        <!-- ══ TAB: Behavior (Persona part) ════════════════════════════════ -->
+        <StackPanel Visibility="{Binding TabBehaviorVisible, Converter={StaticResource b2v}}">
+
+        <!-- ══ Persona ══════════════════════════════════════════════════════ -->
+        <Button Command="{Binding ToggleSectionPersonaCommand}" Margin="0,0,0,4"
+                HorizontalContentAlignment="Stretch" Cursor="Hand"
+                Background="Transparent" BorderThickness="0" Padding="0">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="Transparent" Padding="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding SectionPersonaChevron}"
+                                       Foreground="#569CD6" FontSize="9" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding LabelSectionPersona}"
+                                       Foreground="{Binding TextForeground}"
+                                       FontWeight="Bold" FontSize="12"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#15808080"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Rectangle Height="1" Fill="#25808080" Margin="0,0,0,10"/>
+
+        <StackPanel Visibility="{Binding SectionPersonaExpanded, Converter={StaticResource b2v}}">
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+            <CheckBox Content="{Binding LabelPersonaAutoSwitch}"
+                      IsChecked="{Binding PersonaAutoSwitch, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintPersonaAutoSwitch}"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+            <TextBlock Text="{Binding LabelCustomSystemPrompt}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintCustomSystemPrompt}"/>
+        </StackPanel>
+        <TextBox Text="{Binding CustomSystemPrompt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 Height="88" VerticalScrollBarVisibility="Auto"
+                 Margin="0,0,0,20"/>
+
+        </StackPanel>
+        <!-- end Persona (SectionPersonaExpanded) -->
+
+        </StackPanel>
+        <!-- end TAB: Behavior (Persona part) -->
+
+        <!-- ══ TAB: Context (Pinned context files) ═════════════════════════ -->
+        <StackPanel Visibility="{Binding TabContextVisible, Converter={StaticResource b2v}}">
+
+        <!-- Pinned files: list header (label · count badge · view toggle) -->
+        <Grid Margin="0,2,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelPinnedContextFiles}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintPinnedContextFiles}"/>
+            <TextBlock Grid.Column="2" Text="{Binding PinnedCountText}" Foreground="#569CD6"
+                       FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            <Button Grid.Column="4" Command="{Binding ToggleSectionPinnedRawCommand}" Cursor="Hand"
+                    Content="{Binding PinnedViewLabel}" Padding="8,2" FontSize="10">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{Binding SecondaryButtonFg}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+
+        <!-- List view (rows / empty state / add / inline editor) — hidden in Text view -->
+        <StackPanel Visibility="{Binding PinnedListViewVisible, Converter={StaticResource b2v}}">
+        <Border Visibility="{Binding PinnedEmpty, Converter={StaticResource b2v}}"
+                BorderBrush="{Binding McpRowBorder}" BorderThickness="1" CornerRadius="6"
+                Background="{Binding EditPanelBg}" Padding="14,16" Margin="0,0,0,8">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="{Binding PinnedEmptyTitle}" Foreground="{Binding TextForeground}"
+                           FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBlock Text="{Binding HintPinnedContextFiles}" Foreground="{Binding McpSubtleForeground}"
+                           FontSize="11" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="300"/>
+            </StackPanel>
+        </Border>
+        <ItemsControl ItemsSource="{Binding PinnedFileRows}" Margin="0,0,0,6">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{Binding DataContext.McpRowBackground, ElementName=root}"
+                            BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="1"
+                            CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="12"
+                                           Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Summary}" FontSize="10"
+                                           Foreground="{Binding DataContext.McpSubtleForeground, ElementName=root}"
+                                           FontFamily="Consolas" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Command="{Binding EditCommand}" ToolTip="{Binding DataContext.HintRowEdit, ElementName=root}" Width="26" Height="24" Margin="0,0,2,0">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="3" Background="Transparent">
+                                            <TextBlock Text="✎" FontSize="12" Foreground="{Binding DataContext.McpEditGlyph, ElementName=root}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/></Trigger></ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Grid.Column="3" Command="{Binding DeleteCommand}" ToolTip="{Binding DataContext.HintRowDelete, ElementName=root}" Width="26" Height="24">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="3" Background="Transparent">
+                                            <TextBlock Text="🗑" FontSize="12" Foreground="#CC6666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#5A2D2D"/></Trigger></ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="{Binding LabelPinnedAddFile}" Command="{Binding AddPinnedCommand}" HorizontalAlignment="Left" Padding="10,4" FontSize="11" Margin="0,0,0,6">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" CornerRadius="4" Background="#0E639C" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="White"/></Border>
+                    <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#1177BB"/></Trigger></ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Border Visibility="{Binding IsEditingPinned, Converter={StaticResource b2v}}" Background="{Binding EditPanelBg}" BorderBrush="{Binding McpRowBorder}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+            <StackPanel>
+                <TextBlock Text="{Binding PinnedEditingTitle}" Foreground="{Binding TextForeground}" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,6"/>
+                <TextBlock Text="{Binding LabelPinnedPath}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                <Grid Margin="0,2,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding EditPinnedPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontSize="11" FontFamily="Consolas" VerticalContentAlignment="Center"/>
+                    <Button Grid.Column="1" Content="{Binding LabelPinnedBrowse}" Command="{Binding BrowsePinnedCommand}" Padding="10,4" FontSize="11" Margin="6,0,0,0">
+                        <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{Binding SecondaryButtonFg}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                    </Button>
+                </Grid>
+                <TextBlock Text="{Binding EditPinnedError}" Foreground="#F48771" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="{Binding BtnMcpSaveServer}" Command="{Binding SavePinnedCommand}" Padding="10,4" FontSize="11" Margin="0,0,6,0">
+                        <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="#1B6B35" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="White"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#28A047"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                    </Button>
+                    <Button Content="{Binding BtnMcpCancelServer}" Command="{Binding CancelEditPinnedCommand}" Padding="10,4" FontSize="11">
+                        <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{Binding SecondaryButtonFg}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        </StackPanel>
+        <!-- end pinned list view -->
+
+        <!-- Text view (raw editor) — the other face of the header toggle -->
+        <StackPanel Visibility="{Binding SectionPinnedRawExpanded, Converter={StaticResource b2v}}" Margin="0,0,0,12">
+            <TextBox Text="{Binding PinnedContextFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="56" FontFamily="Consolas" FontSize="11" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="0,0,0,6"/>
+            <Button Content="{Binding BtnRowImport}" Command="{Binding ImportPinnedCommand}" HorizontalAlignment="Left" Padding="10,4" FontSize="11">
+                <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{Binding SecondaryButtonFg}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+            </Button>
+        </StackPanel>
+
+        </StackPanel>
+        <!-- end TAB: Context (Pinned files) -->
+
+        <!-- ══ TAB: Tools (Commands & tools) ═══════════════════════════════ -->
+        <StackPanel Visibility="{Binding TabToolsVisible, Converter={StaticResource b2v}}">
+
+        <!-- Static group header -->
+        <Grid Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Rectangle Grid.Column="0" Fill="#569CD6" RadiusX="1.5" RadiusY="1.5"/>
+            <TextBlock Grid.Column="1" Text="{Binding LabelSectionCommandsTools}" Foreground="{Binding TextForeground}"
+                       FontWeight="Bold" FontSize="12" Margin="8,0,0,0"/>
+        </Grid>
+        <Rectangle Height="1" Fill="#25808080" Margin="0,0,0,12"/>
+
+        <!-- Slash commands: list header (label · count badge · view toggle) -->
+        <Grid Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelPromptTemplates}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintPromptTemplates}"/>
+            <TextBlock Grid.Column="2" Text="{Binding SlashCountText}" Foreground="#569CD6"
+                       FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            <Button Grid.Column="4" Command="{Binding ToggleSectionSlashRawCommand}" Cursor="Hand"
+                    Content="{Binding SlashViewLabel}" Padding="8,2" FontSize="10">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{Binding SecondaryButtonFg}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+
+        <!-- List view — hidden in Text view -->
+        <StackPanel Visibility="{Binding SlashListViewVisible, Converter={StaticResource b2v}}">
+        <Border Visibility="{Binding SlashEmpty, Converter={StaticResource b2v}}"
+                BorderBrush="{Binding McpRowBorder}" BorderThickness="1" CornerRadius="6"
+                Background="{Binding EditPanelBg}" Padding="14,16" Margin="0,0,0,8">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="{Binding SlashEmptyTitle}" Foreground="{Binding TextForeground}"
+                           FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBlock Text="{Binding HintPromptTemplates}" Foreground="{Binding McpSubtleForeground}"
+                           FontSize="11" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="300"/>
+            </StackPanel>
+        </Border>
+        <ItemsControl ItemsSource="{Binding SlashCommandRows}" Margin="0,0,0,6">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{Binding DataContext.McpRowBackground, ElementName=root}" BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="1" CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="12" FontFamily="Consolas" Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Summary}" FontSize="10" Foreground="{Binding DataContext.McpSubtleForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Command="{Binding EditCommand}" ToolTip="{Binding DataContext.HintRowEdit, ElementName=root}" Width="26" Height="24" Margin="0,0,2,0">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="3" Background="Transparent"><TextBlock Text="✎" FontSize="12" Foreground="{Binding DataContext.McpEditGlyph, ElementName=root}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Grid.Column="3" Command="{Binding DeleteCommand}" ToolTip="{Binding DataContext.HintRowDelete, ElementName=root}" Width="26" Height="24">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="3" Background="Transparent"><TextBlock Text="🗑" FontSize="12" Foreground="#CC6666" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#5A2D2D"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="{Binding LabelSlashAddCmd}" Command="{Binding AddSlashCommand}" HorizontalAlignment="Left" Padding="10,4" FontSize="11" Margin="0,0,0,6">
+            <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="#0E639C" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="White"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#1177BB"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+        </Button>
+        <Border Visibility="{Binding IsEditingSlash, Converter={StaticResource b2v}}" Background="{Binding EditPanelBg}" BorderBrush="{Binding McpRowBorder}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+            <StackPanel>
+                <TextBlock Text="{Binding SlashEditingTitle}" Foreground="{Binding TextForeground}" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,6"/>
+                <TextBlock Text="{Binding LabelSlashName}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                <TextBox Text="{Binding EditSlashName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontSize="11" FontFamily="Consolas" Margin="0,2,0,6"/>
+                <TextBlock Text="{Binding LabelSlashText}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                <TextBox Text="{Binding EditSlashText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="48" FontSize="11" Margin="0,2,0,6" VerticalScrollBarVisibility="Auto"/>
+                <TextBlock Text="{Binding EditSlashError}" Foreground="#F48771" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="{Binding BtnMcpSaveServer}" Command="{Binding SaveSlashCommand}" Padding="10,4" FontSize="11" Margin="0,0,6,0">
+                        <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="#1B6B35" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="White"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#28A047"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                    </Button>
+                    <Button Content="{Binding BtnMcpCancelServer}" Command="{Binding CancelEditSlashCommand}" Padding="10,4" FontSize="11">
+                        <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{Binding SecondaryButtonFg}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        </StackPanel>
+        <!-- end slash list view -->
+
+        <!-- Text view (raw editor) — the other face of the header toggle -->
+        <StackPanel Visibility="{Binding SectionSlashRawExpanded, Converter={StaticResource b2v}}" Margin="0,0,0,12">
+            <TextBox Text="{Binding PromptTemplates, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="72" FontFamily="Consolas" FontSize="11" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="0,0,0,6"/>
+            <Button Content="{Binding BtnRowImport}" Command="{Binding ImportSlashCommand}" HorizontalAlignment="Left" Padding="10,4" FontSize="11">
+                <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{Binding SecondaryButtonFg}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+            </Button>
+        </StackPanel>
+
+        <!-- Custom agent tools: list header (label · count badge · view toggle) -->
+        <Grid Margin="0,8,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding LabelCustomTools}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintCustomTools}"/>
+            <TextBlock Grid.Column="2" Text="{Binding ToolCountText}" Foreground="#569CD6"
+                       FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            <Button Grid.Column="4" Command="{Binding ToggleSectionToolRawCommand}" Cursor="Hand"
+                    Content="{Binding ToolViewLabel}" Padding="8,2" FontSize="10">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{Binding SecondaryButtonFg}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+
+        <!-- List view — hidden in Text view -->
+        <StackPanel Visibility="{Binding ToolListViewVisible, Converter={StaticResource b2v}}">
+        <Border Visibility="{Binding ToolEmpty, Converter={StaticResource b2v}}"
+                BorderBrush="{Binding McpRowBorder}" BorderThickness="1" CornerRadius="6"
+                Background="{Binding EditPanelBg}" Padding="14,16" Margin="0,0,0,8">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="{Binding ToolEmptyTitle}" Foreground="{Binding TextForeground}"
+                           FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBlock Text="{Binding HintCustomTools}" Foreground="{Binding McpSubtleForeground}"
+                           FontSize="11" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="300"/>
+            </StackPanel>
+        </Border>
+        <ItemsControl ItemsSource="{Binding CustomToolRows}" Margin="0,0,0,6">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{Binding DataContext.McpRowBackground, ElementName=root}" BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="1" CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="12" FontFamily="Consolas" Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Summary}" FontSize="10" Foreground="{Binding DataContext.McpSubtleForeground, ElementName=root}" FontFamily="Consolas" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Command="{Binding EditCommand}" ToolTip="{Binding DataContext.HintRowEdit, ElementName=root}" Width="26" Height="24" Margin="0,0,2,0">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="3" Background="Transparent"><TextBlock Text="✎" FontSize="12" Foreground="{Binding DataContext.McpEditGlyph, ElementName=root}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Grid.Column="3" Command="{Binding DeleteCommand}" ToolTip="{Binding DataContext.HintRowDelete, ElementName=root}" Width="26" Height="24">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="3" Background="Transparent"><TextBlock Text="🗑" FontSize="12" Foreground="#CC6666" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#5A2D2D"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="{Binding LabelToolAddTool}" Command="{Binding AddToolCommand}" HorizontalAlignment="Left" Padding="10,4" FontSize="11" Margin="0,0,0,6">
+            <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="#0E639C" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="White"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#1177BB"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+        </Button>
+        <Border Visibility="{Binding IsEditingTool, Converter={StaticResource b2v}}" Background="{Binding EditPanelBg}" BorderBrush="{Binding McpRowBorder}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+            <StackPanel>
+                <TextBlock Text="{Binding ToolEditingTitle}" Foreground="{Binding TextForeground}" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,6"/>
+                <TextBlock Text="{Binding LabelToolName}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                <TextBox Text="{Binding EditToolName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontSize="11" FontFamily="Consolas" Margin="0,2,0,6"/>
+                <TextBlock Text="{Binding LabelToolCommand}" Foreground="{Binding TextForeground}" FontSize="10" Opacity="0.75"/>
+                <TextBox Text="{Binding EditToolCommand, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="48" FontSize="11" FontFamily="Consolas" Margin="0,2,0,6" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
+                <TextBlock Text="{Binding EditToolError}" Foreground="#F48771" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="{Binding BtnMcpSaveServer}" Command="{Binding SaveToolCommand}" Padding="10,4" FontSize="11" Margin="0,0,6,0">
+                        <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="#1B6B35" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="White"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#28A047"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                    </Button>
+                    <Button Content="{Binding BtnMcpCancelServer}" Command="{Binding CancelEditToolCommand}" Padding="10,4" FontSize="11">
+                        <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{Binding SecondaryButtonFg}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        </StackPanel>
+        <!-- end tools list view -->
+
+        <!-- Text view (raw editor) — the other face of the header toggle -->
+        <StackPanel Visibility="{Binding SectionToolRawExpanded, Converter={StaticResource b2v}}" Margin="0,0,0,20">
+            <TextBox Text="{Binding CustomTools, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="60" FontFamily="Consolas" FontSize="11" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="0,0,0,6"/>
+            <Button Content="{Binding BtnRowImport}" Command="{Binding ImportToolCommand}" HorizontalAlignment="Left" Padding="10,4" FontSize="11">
+                <Button.Template><ControlTemplate TargetType="Button"><Border x:Name="bd" CornerRadius="4" Background="{Binding SecondaryButtonBg}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{Binding SecondaryButtonFg}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{Binding SecondaryButtonHover}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+            </Button>
+        </StackPanel>
+
+        </StackPanel>
+        <!-- end TAB: Tools (Commands & tools) -->
+
+        <!-- ══ Save bar (always visible) ═══════════════════════════════════ -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+            <Button Content="{Binding BtnSave}"
+                    Command="{Binding SaveCommand}"
+                    Padding="16,6"/>
+            <TextBlock Text="{Binding SaveStatus}"
+                       Foreground="{Binding TextForeground}"
+                       VerticalAlignment="Center"
+                       FontSize="12" Margin="10,0,0,0"/>
+        </StackPanel>
+
+    </StackPanel>
+    </ScrollViewer>
+
+</DataTemplate>

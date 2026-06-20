@@ -1,0 +1,12 @@
+{
+  "InferpalMenu": "Inferpal",
+  "InferpalChatCommand": "Inferpal 채팅",
+  "InferpalSettingsCommand": "Inferpal 설정...",
+  "ContextMenuAskInferpal": "Inferpal에게 질문",
+  "ContextMenuExplain": "설명",
+  "ContextMenuRefactor": "리팩터링",
+  "ContextMenuAddTests": "테스트 추가",
+  "ContextMenuFix": "수정",
+  "ContextMenuAddDocstring": "문서 추가",
+  "ContextMenuInlineEdit": "AI로 편집…"
+}

@@ -1,0 +1,12 @@
+{
+  "InferpalMenu": "Inferpal",
+  "InferpalChatCommand": "Inferpal チャット",
+  "InferpalSettingsCommand": "Inferpal 設定...",
+  "ContextMenuAskInferpal": "Inferpal に質問",
+  "ContextMenuExplain": "説明",
+  "ContextMenuRefactor": "リファクタリング",
+  "ContextMenuAddTests": "テストを追加",
+  "ContextMenuFix": "修正",
+  "ContextMenuAddDocstring": "ドキュメントを追加",
+  "ContextMenuInlineEdit": "AIで編集…"
+}

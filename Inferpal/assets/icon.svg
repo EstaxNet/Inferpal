@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Inferpal">
+  <title>Inferpal — two pals, one inference</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#241B3F"/>
+      <stop offset="1" stop-color="#120C20"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#9B6DFF" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#9B6DFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="dglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#C9B6FF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#C9B6FF" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="lensL"><circle cx="51" cy="64" r="27"/></clipPath>
+  </defs>
+
+  <!-- dark squircle -->
+  <rect x="2" y="2" width="124" height="124" rx="30" fill="url(#bg)"/>
+  <circle cx="64" cy="64" r="38" fill="url(#glow)"/>
+
+  <!-- two pals -->
+  <circle cx="51" cy="64" r="27" fill="#7C4DFF" fill-opacity="0.16" stroke="#8A5CFF" stroke-width="5.5"/>
+  <circle cx="77" cy="64" r="27" fill="#B69CFF" fill-opacity="0.12" stroke="#C2A9FF" stroke-width="5.5"/>
+
+  <!-- the shared lens, lit brighter where they meet -->
+  <circle cx="77" cy="64" r="27" clip-path="url(#lensL)" fill="#9B6DFF" fill-opacity="0.55"/>
+
+  <!-- the inference, glowing in the lens -->
+  <circle cx="64" cy="64" r="20" fill="url(#dglow)"/>
+  <rect x="52" y="52" width="24" height="24" rx="5" transform="rotate(45 64 64)" fill="#F4EFFF"/>
+  <rect x="57.5" y="57.5" width="13" height="13" rx="3" transform="rotate(45 64 64)" fill="#7C4DFF"/>
+</svg>

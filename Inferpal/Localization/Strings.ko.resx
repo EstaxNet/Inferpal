@@ -1,0 +1,841 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- Settings section headers -->
+  <data name="SectionConnection" xml:space="preserve"><value>연결</value></data>
+  <data name="SettingsTabConnection" xml:space="preserve"><value>연결</value></data>
+  <data name="SettingsTabBehavior" xml:space="preserve"><value>동작</value></data>
+  <data name="SettingsTabContext" xml:space="preserve"><value>컨텍스트</value></data>
+  <data name="SettingsTabTools" xml:space="preserve"><value>도구</value></data>
+  <data name="SectionBehavior" xml:space="preserve"><value>동작</value></data>
+  <data name="SectionInlineCompletions" xml:space="preserve"><value>인라인 완성</value></data>
+  <data name="LabelInlineCompletionMode" xml:space="preserve"><value>성능 모드:</value></data>
+  <data name="HintInlineCompletionMode" xml:space="preserve"><value>빠름: 128토큰, 지연 300ms — 낮은 지연, 짧은 제안. 기본: 256토큰, 지연 600ms — 균형. 높은 정확도: 512토큰, 지연 1s — 최고 품질, 느림.</value></data>
+  <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>고스트 텍스트 완성 활성화</value></data>
+  <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>활성화하면 Inferpal가 입력 중에 AI가 생성한 코드 제안을 인라인으로 표시합니다(고스트 텍스트). Tab으로 수락, Escape로 닫기.</value></data>
+  <data name="LabelInlineCompletionModel" xml:space="preserve"><value>FIM 모델 (비어 있으면 채팅 모델 사용):</value></data>
+  <data name="HintInlineCompletionModel" xml:space="preserve"><value>Fill-in-the-Middle 완성에 사용할 모델. 비워 두면 채팅 모델을 재사용합니다. 더 빠르거나 전용 코드 모델(예: qwen2.5-coder)을 설정하면 인라인 제안이 향상됩니다.</value></data>
+  <data name="LabelCodeActionsModel" xml:space="preserve"><value>코드 액션 모델 (비어 있으면 채팅 모델 사용):</value></data>
+  <data name="HintCodeActionsModel" xml:space="preserve"><value>설명, 수정, 리팩터링 명령에 사용할 모델입니다. 비워 두면 채팅 모델을 재사용합니다. 더 강력한 모델을 지정하면 코드 분석 품질이 향상됩니다.</value></data>
+  <data name="LabelInlineEditModel" xml:space="preserve"><value>인라인 편집 모델 (비어 있으면 코드 액션 모델 사용):</value></data>
+  <data name="HintInlineEditModel" xml:space="preserve"><value>인라인 편집 기능(Ctrl+Shift+I)에 사용할 모델입니다. 비워 두면 코드 액션 모델, 채팅 모델 순으로 대체됩니다. 빠른 코드 전용 모델(예: qwen2.5-coder)을 권장합니다.</value></data>
+  <data name="InlineEditDlgTitle" xml:space="preserve"><value>Inferpal — AI로 편집</value></data>
+  <data name="InlineEditDlgHeader" xml:space="preserve"><value>✏  편집 내용 설명  (Enter로 적용, Esc로 취소)</value></data>
+  <data name="InlineEditDlgHint" xml:space="preserve"><value>예: "null 검사 추가", "async로 변환", "주석을 한국어로 번역"</value></data>
+  <data name="InlineEditWorking" xml:space="preserve"><value>AI 생성 중…</value></data>
+  <data name="BtnApply" xml:space="preserve"><value>적용</value></data>
+  <data name="SectionRag" xml:space="preserve"><value>RAG / 의미 인덱스</value></data>
+  <data name="LabelRagEnabled" xml:space="preserve"><value>백그라운드 인덱싱 활성화 (RAG)</value></data>
+  <data name="LabelRagAutoContext" xml:space="preserve"><value>턴마다 관련 코드 자동 삽입</value></data>
+  <data name="HintRagAutoContext" xml:space="preserve"><value>활성화하면 코드 질문마다 가장 관련 있는 인덱싱된 스니펫을 가져와 프롬프트에 추가합니다(이미 첨부된 항목은 제외). 백그라운드 인덱싱이 필요합니다.</value></data>
+  <data name="HintRagEnabled" xml:space="preserve"><value>활성화하면 Inferpal가 백그라운드에서 솔루션의 모든 소스 파일을 인덱싱하고 의미 검색을 사용하여 AI에 관련 코드 컨텍스트를 제공합니다. 대규모 리포지토리에서 메모리 또는 CPU를 절약하려면 비활성화하세요.</value></data>
+  <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>임베딩 모델:</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>의미 검색을 위한 임베딩 생성에 사용되는 Ollama 모델입니다. 전용 임베딩 모델만 표시됩니다(nomic-embed-text, mxbai-embed-large, bge-m3 등). 선택하지 않으면 nomic-embed-text로 대체됩니다.</value></data>
+  <data name="LabelRagTopK" xml:space="preserve"><value>쿼리당 결과 수 (top-K):</value></data>
+  <data name="HintRagTopK" xml:space="preserve"><value>의미 검색 도구가 반환하는 최대 코드 청크 수입니다. 값이 높을수록 더 많은 컨텍스트를 제공하지만 토큰 사용량이 증가합니다. 권장: 3–10.</value></data>
+  <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>유사도 임계값 (0–1):</value></data>
+  <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>청크가 검색 결과에 포함되기 위한 최소 코사인 유사도 점수입니다. 이 임계값 미만의 청크는 저품질 일치로 제외됩니다. 권장값: 0.20.</value></data>
+  <data name="LabelLspEnabled" xml:space="preserve"><value>LSP 시맨틱 청킹 (TypeScript, Python, Go, Rust)</value></data>
+  <data name="HintLspEnabled" xml:space="preserve"><value>활성화하면 Inferpal는 설치된 언어 서버(typescript-language-server, pylsp/pyright-langserver, gopls, rust-analyzer)를 사용하여 RAG 인덱싱 중 C# 이외의 파일에서 정확한 기호 경계를 추출합니다. PATH에 해당 서버가 있어야 합니다.</value></data>
+  <data name="LabelModelAutoUnload" xml:space="preserve"><value>유휴 모델 자동 언로드</value></data>
+  <data name="HintModelAutoUnload" xml:space="preserve"><value>활성화하면 Inferpal가 비활성 기간 후 모델을 VRAM에서 언로드하도록 Ollama에 지시합니다. AI가 사용되지 않을 때 GPU 메모리를 해제합니다. 로드된 모델의 VRAM 사용량은 채팅 헤더에 표시됩니다.</value></data>
+  <data name="LabelModelIdleTimeout" xml:space="preserve"><value>언로드까지 시간 (분):</value></data>
+  <data name="HintModelIdleTimeout" xml:space="preserve"><value>Ollama가 VRAM에서 모델을 언로드하기 전 비활성 분 수입니다. 낮은 값은 GPU 메모리를 더 빨리 해제하고, 높은 값은 다음 요청 시 재로드 시간을 줄입니다. 최소: 1분.</value></data>
+  <data name="SectionContext" xml:space="preserve"><value>컨텍스트 및 메모리</value></data>
+  <data name="SectionPersona" xml:space="preserve"><value>페르소나</value></data>
+  <data name="SectionInterface" xml:space="preserve"><value>인터페이스</value></data>
+
+  <!-- UI labels -->
+  <data name="LabelProvider" xml:space="preserve"><value>추론 백엔드:</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>사용할 로컬 모델 서버: Ollama(전체 하드웨어 인식 기능) 또는 LM Studio, llama.cpp, vLLM 같은 OpenAI 호환 서버. Visual Studio를 다시 로드한 후 적용됩니다.</value></data>
+  <data name="LabelApiKey" xml:space="preserve"><value>API 키(선택 사항):</value></data>
+  <data name="HintApiKey" xml:space="preserve"><value>인증이 필요한 OpenAI 호환 서버에 Bearer 토큰으로 전송됩니다. Ollama와 LM Studio에서는 비워 두세요(키 불필요).</value></data>
+  <data name="LabelUrl" xml:space="preserve"><value>서버 URL:</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>로컬 Ollama 인스턴스의 기본 URL입니다. 기본값은 http://localhost:11434 입니다. Ollama가 다른 호스트나 포트에서 실행 중인 경우 변경하세요.</value></data>
+  <data name="LabelChatModel" xml:space="preserve"><value>채팅 모델:</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>모든 대화에 사용되는 기본 모델입니다. 이 필드는 필수입니다. /model &lt;이름&gt;을 사용하여 세션 중 모델을 전환하세요.</value></data>
+  <data name="LabelSession" xml:space="preserve"><value>세션:</value></data>
+  <data name="BtnTest" xml:space="preserve"><value>테스트</value></data>
+  <data name="BtnClear" xml:space="preserve"><value>지우기</value></data>
+  <data name="BtnLoadSession" xml:space="preserve"><value>불러오기 ↩</value></data>
+  <data name="BtnCancel" xml:space="preserve"><value>✕ 취소</value></data>
+  <data name="BtnSave" xml:space="preserve"><value>저장</value></data>
+  <data name="BtnSend" xml:space="preserve"><value>보내기 →</value></data>
+  <data name="TooltipRefreshModels" xml:space="preserve"><value>모델 목록 새로 고침</value></data>
+  <data name="TooltipExport" xml:space="preserve"><value>대화를 .md 또는 .txt로 내보내기</value></data>
+  <data name="TooltipClear" xml:space="preserve"><value>대화를 저장하고 지우기</value></data>
+  <data name="TooltipSessionPicker" xml:space="preserve"><value>복원할 이전 세션 선택</value></data>
+  <data name="TooltipLoadSession" xml:space="preserve"><value>선택한 세션 불러오기 (없으면 마지막 세션)</value></data>
+  <data name="TooltipDeleteSession" xml:space="preserve"><value>선택한 세션 삭제</value></data>
+  <data name="DeleteSessionConfirm" xml:space="preserve"><value>세션 「{0}」을 삭제하시겠습니까?
+
+이 작업은 되돌릴 수 없습니다.</value></data>
+  <data name="TooltipCopy" xml:space="preserve"><value>메시지 복사</value></data>
+  <data name="BtnDismiss" xml:space="preserve"><value>닫기</value></data>
+  <data name="BtnFixWithAi" xml:space="preserve"><value>AI로 수정</value></data>
+  <data name="BtnRestoreAll" xml:space="preserve"><value>↩ 모두 복원</value></data>
+  <data name="BtnRegenerate" xml:space="preserve"><value>↺ 재생성</value></data>
+  <data name="BtnResume" xml:space="preserve"><value>▶ 재개</value></data>
+  <data name="TooltipStepMode" xml:space="preserve"><value>단계별 모드 — 각 도구 호출 후 에이전트 일시 중지(토글)</value></data>
+  <data name="TooltipPlanMode" xml:space="preserve"><value>플랜 모드 — 읽기 전용: 에이전트가 파일을 수정하지 않고 탐색하며 계획을 제안합니다(토글)</value></data>
+  <data name="MultiFileRecapTitle" xml:space="preserve"><value>**{0}개 파일 수정됨:** {1}</value></data>
+  <data name="PromptFixErrors" xml:space="preserve"><value>다음 빌드 오류를 수정해 주세요:
+
+{0}</value></data>
+
+  <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
+  <data name="PromptExplainSelection" xml:space="preserve"><value>`{0}`의 코드를 다음 네 섹션으로 설명해 주세요:
+
+**논리 흐름** — 실행 경로를 단계별로 설명하세요.
+**핵심 구성 요소** — 주요 함수, 타입, 의존성을 파악하세요.
+**엣지 케이스** — 예상치 못한 동작을 유발할 수 있는 입력이나 조건을 지적하세요.
+**아키텍처 역할** — 이 코드가 전체 시스템에서 어떤 역할을 하는지 설명하세요.
+
+{1}</value></data>
+  <data name="PromptRefactorSelection" xml:space="preserve"><value>`{0}`의 코드를 동작을 바꾸지 않고 리팩토링해 주세요:
+
+**파악** — 이 코드를 읽기 어렵고 유지보수하기 힘들고 확장하기 어렵게 만드는 것을 나열하세요.
+**계획** — 구체적인 개선 사항을 설명하세요: 명명, 구조, 패턴, 중복.
+**적용** — 리팩토링된 코드 전체를 보여주세요.
+**검증** — 동작이 보존되었음을 확인하고 가정한 사항을 명시하세요.
+
+{1}</value></data>
+  <data name="PromptAddTestsSelection" xml:space="preserve"><value>프로젝트의 기존 테스트 프레임워크를 사용하여 `{0}`의 코드에 대한 단위 테스트를 작성해 주세요:
+
+**커버리지 맵** — 테스트가 필요한 모든 공개 메서드와 분기를 파악하세요.
+**정상 경로** — 정상적이고 예상되는 입력과 동작에 대한 테스트.
+**엣지 케이스** — 경계값, 빈 입력, null에 대한 테스트.
+**실패 모드** — 잘못된 입력과 예상되는 예외에 대한 테스트.
+
+컴파일 가능한 완전한 테스트 코드를 제공해 주세요.
+
+{1}</value></data>
+  <data name="PromptFixSelection" xml:space="preserve"><value>`{0}`의 코드를 분석하고 수정해 주세요:
+
+**재현** — 정확한 버그, 문제, 또는 코드 스멜을 파악하고 왜 발생하는지 설명하세요.
+**가설** — 진단을 제시하세요: 근본 원인과 영향받는 실행 경로.
+**정밀 수정** — 문제를 해결하는 최소한의 변경을 적용하세요. 수정된 코드를 보여주세요.
+**자가 검증** — 수정이 올바른지 확인하고 남은 위험이나 가정을 나열하세요.
+
+{1}</value></data>
+  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>`{0}`의 모든 공개 타입, 메서드, 속성, 매개변수에 XML 문서 주석을 추가해 주세요:
+
+- &lt;summary&gt; — 한 문장: 무엇을 하는지 (어떻게가 아닌 무엇을). 이름을 반복하지 마세요.
+- &lt;param&gt; / &lt;returns&gt; — 계약을 설명하세요: 단위, null 안전성, 유효 범위.
+- &lt;exception&gt; — 발생하는 예외와 트리거 조건을 문서화하세요.
+- &lt;remarks&gt; — 독자를 놀라게 할 동작에만: 부작용, 스레딩, 불변 조건.
+
+완전히 문서화된 코드를 보여주세요.
+
+{1}</value></data>
+  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>`{0}` 의 모든 공개 멤버에 문서 주석을 추가하세요.
+
+**문서화 규칙:**
+- 요약 — 한 문장: 무엇을 하는지 (HOW가 아닌 WHAT). 이름 반복 금지.
+- 매개변수 / 반환값 — 계약을 설명: 단위, null 안전성, 유효한 범위.
+- 예외 / 오류 — 무엇이 잘못될 수 있는지와 정확한 조건을 문서화.
+- 비고 — 놀라운 동작에만: 부수 효과, 스레딩, 불변성.
+- 상속 멤버 및 인터페이스 구현 → 추가 비고가 없으면 부모 문서에 위임 (`&lt;inheritdoc/&gt;`).
+
+{1}
+
+모든 문서가 추가된 **완전한 소스 파일**을 출력하세요. 원본 코드를 정확히 보존하고, 문서만 추가하며, 절대 리팩토링하지 마세요.</value></data>
+  <data name="PromptReviewSelection" xml:space="preserve"><value>`{0}`의 코드를 검토하고 구조화된 비평을 제공하세요:
+
+- **버그와 엣지 케이스** — 논리 오류, null 역참조, 인덱스 오류, 리소스 누수.
+- **설계와 가독성** — 명명, 단일 책임, 복잡성, 중복.
+- **성능** — 불필요한 할당, 비효율적인 루프, 캐싱 부재.
+- **보안** — 인젝션 위험, 잘못된 입력 유효성 검사, 코드 내 비밀 정보.
+- **테스트** — 불충분한 커버리지, 테스트하기 어려운 설계.
+
+각 문제에 대해 줄 또는 기호를 인용하고 위험을 설명하며 구체적인 수정 사항을 제안하세요.
+
+{1}</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>명령 시간 초과:</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>단일 도구 호출(예: 셸 명령 또는 빌드)의 최대 대기 시간입니다. AI 응답 시간에는 영향을 주지 않습니다. 빌드 시간이 오래 걸리는 경우 늘리세요.</value></data>
+  <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>도구 호출을 기본적으로 펼치기</value></data>
+  <data name="HintToolBubblesExpanded" xml:space="preserve"><value>활성화하면 도구 호출 세부 정보(입력 및 출력)가 채팅에서 펼쳐진 상태로 표시됩니다. 기본적으로 접힌 상태로 유지하려면 비활성화하세요.</value></data>
+  <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>보안 경고 비활성화 (모든 도구 호출 자동 승인)</value></data>
+  <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>활성화하면 모든 도구 호출(파일 쓰기, 셸 명령 등)이 확인 없이 자동으로 승인됩니다. 신뢰할 수 있는 환경에서만 사용하세요.</value></data>
+  <data name="LabelContextWindowSize" xml:space="preserve"><value>컨텍스트 창 (토큰, 0 = 비활성화):</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>모델의 num_ctx 설정과 일치시켜야 합니다. 일반적인 값: 2048(소형 7B), 4096(기본값), 8192, 16384. 대화가 이 제한의 80%에 도달하면 오래된 메시지가 자동으로 제거되고 경고가 표시됩니다.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>LM Studio / OpenAI 호환 서버에서는 컨텍스트 길이가 요청마다가 아니라 모델 로드 시 고정됩니다. 이 값은 클라이언트 측 자르기만 제어하므로 모델이 로드된 컨텍스트 이하로 유지하세요. 대화가 이 제한의 80%에 도달하면 오래된 메시지가 자동으로 제거되고 경고가 표시됩니다.</value></data>
+  <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>잘라낼 때 항상 유지할 턴 수:</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>잘라낼 때 보존할 최근 사용자/어시스턴트 교환 횟수입니다. 시스템 프롬프트는 항상 유지됩니다. 모델이 일관성을 유지하기 위해 더 많은 최근 컨텍스트가 필요한 경우 늘리세요.</value></data>
+  <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ 컨텍스트 창: 오래된 메시지 {0}개 제거 — 마지막 {1}개 턴 유지. 이전 컨텍스트는 손실되었습니다.</value></data>
+  <data name="LabelCompactionEnabled" xml:space="preserve"><value>스마트 컨텍스트 압축(잘라내기 대신 요약)</value></data>
+  <data name="HintCompactionEnabled" xml:space="preserve"><value>활성화하면 오래된 메시지가 삭제되기 전에 모델에 의해 요약되어 핵심 정보가 보존됩니다. 요약 호출이 너무 오래 걸리면 안전 퓨즈가 작동하여 하드 자르기로 폴백됩니다.</value></data>
+  <data name="LabelCompactionTimeout" xml:space="preserve"><value>압축 타임아웃(안전 퓨즈):</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>압축 모델 호출을 위한 최대 대기 시간(초). 이 한도를 초과하면 안전 퓨즈가 작동하여 하드 자르기가 대신 사용됩니다. 기본값: 45.</value></data>
+  <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KV 캐시 앵커 메시지:</value></data>
+  <data name="HintKvCacheAnchor" xml:space="preserve"><value>압축된 컨텍스트 시작 부분에 변경 없이 유지되는 첫 메시지 수(시스템 프롬프트 제외). Ollama는 이 토큰들에 대한 KV 캐시를 재사용하여 재계산 시간을 절약합니다. 0 = 비활성화. 기본값: 3.</value></data>
+  <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0}개 KV 앵커 메시지 보존됨)</value></data>
+  <data name="StatusCompacting" xml:space="preserve"><value>컨텍스트 압축 중…</value></data>
+  <data name="MsgContextCompacted" xml:space="preserve"><value>📦 컨텍스트 압축됨: {0}개 메시지 요약 — 마지막 {1}턴 유지.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 컨텍스트 압축 타임아웃 — 하드 자르기로 폴백.</value></data>
+  <data name="CompactionSummarizePrompt" xml:space="preserve"><value>다음은 우리 대화의 시작 부분입니다. 향후 메시지에 필요한 모든 주요 결정, 사실, 수정된 파일 및 컨텍스트를 보존하면서 밀도 있게 요약하세요. 간결하지만 완전하게 — 이 요약이 원본 메시지를 대체합니다:
+
+{0}</value></data>
+  <data name="LabelCustomSystemPrompt" xml:space="preserve"><value>사용자 지정 시스템 프롬프트 (기본 프롬프트 뒤, 프로젝트 컨텍스트 앞에 추가):</value></data>
+  <data name="HintCustomSystemPrompt" xml:space="preserve"><value>내장 시스템 프롬프트에 추가되는 추가 지침입니다. 어시스턴트의 어조를 설정하거나 범위를 제한하거나 프로젝트별 도메인 지식을 추가하는 데 사용하세요.</value></data>
+  <data name="LabelPinnedContextFiles" xml:space="preserve"><value>고정 컨텍스트 파일(줄당 경로 1개, 최대 3개 — 항상 프롬프트에 주입):</value></data>
+  <data name="HintPinnedContextFiles" xml:space="preserve"><value>모든 요청 전에 시스템 프롬프트에 항상 삽입되는 절대 파일 경로입니다. 중요한 아키텍처 문서, 인터페이스 또는 스키마를 항상 컨텍스트에 유지하는 데 유용합니다.</value></data>
+  <data name="LabelPromptTemplates" xml:space="preserve"><value>사용자 정의 슬래시 명령(줄당 1개: /이름=텍스트, {args}로 추가 단어 사용):</value></data>
+  <data name="HintPromptTemplates" xml:space="preserve"><value>나만의 슬래시 명령을 정의하세요. 형식: /mycommand=자세히 설명해주세요: {args}. {args}는 명령 이름 뒤에 입력한 단어로 대체됩니다. 템플릿은 자동 완성 제안에 표시됩니다.</value></data>
+  <data name="LabelPermissionRules" xml:space="preserve"><value>권한 규칙(줄당 1개: allow|deny &lt;도구|*&gt; &lt;정규식&gt;):</value></data>
+  <data name="HintPermissionRules" xml:space="preserve"><value>승인 프롬프트 전에 평가되는 규칙입니다. 'allow'는 일치하는 도구 호출을 자동 승인하고 'deny'는 차단하며, 일치하지 않으면 프롬프트로 돌아갑니다. 첫 번째 일치가 우선합니다. 정규식은 명령 또는 파일 경로와 대조됩니다. 커밋 가능한 오버레이 .inferpal/permissions.json에 더해 적용되며, 우회할 수 없는 내장 치명적 명령 차단 목록이 항상 적용됩니다. 예: allow run_command ^dotnet</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>사용자 정의 에이전트 도구(줄당 1개: 이름=powershell_명령):</value></data>
+  <data name="HintCustomTools" xml:space="preserve"><value>에이전트가 호출할 수 있는 셸 도구를 정의하세요. 형식: my_tool=dotnet test. 이름은 snake_case여야 합니다. 모델이 인수를 제공하면 선택적 {args} 매개변수가 추가됩니다. 실행 전 승인이 필요합니다.</value></data>
+  <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>파일 언어에 따라 페르소나 자동 전환</value></data>
+  <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>활성화하면, 활성 문서가 변경될 때 언어별 힌트(C#, Python, TypeScript…)로 시스템 프롬프트가 자동으로 보강됩니다.</value></data>
+  <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>OODA 세션 요약 (N 턴마다, 0 = 비활성화):</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>N 번의 대화 턴마다 모델이 세션 요약(목표, 진행 상황, 미해결 질문)을 생성하여 시스템 프롬프트에 주입함으로써 긴 세션에서의 컨텍스트 건망증을 방지합니다. 비활성화하려면 0으로 설정하세요. 권장값: 10.</value></data>
+  <data name="StatusOodaSummarizing" xml:space="preserve"><value>세션 요약 생성 중…</value></data>
+  <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA 세션 요약** (턴 {0})</value></data>
+  <data name="OodaSummarizePrompt" xml:space="preserve"><value>지금까지의 대화를 요약해 주세요. OODA 스타일 요약을 세 섹션으로 작성하세요 — 목표(사용자가 달성하려는 것), 진행(이미 완료된 단계), 미해결(남은 작업 또는 해결되지 않은 질문). 총 150단어 이내로 작성하세요.</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>인터페이스 언어 (Visual Studio 재정의):</value></data>
+  <data name="HintLanguage" xml:space="preserve"><value>Visual Studio 언어와 관계없이 표시 언어를 강제합니다. «자동»은 Visual Studio 언어를 사용합니다.</value></data>
+  <data name="LangAuto" xml:space="preserve"><value>자동 (Visual Studio)</value></data>
+  <data name="HintSend" xml:space="preserve"><value>Enter로 보내기  ·  Shift+Enter로 줄바꿈  ·  Shift+↑↓ 기록</value></data>
+  <data name="TooltipAttachFile" xml:space="preserve"><value>다음 메시지에 활성 파일 첨부</value></data>
+  <data name="TooltipAttachSelection" xml:space="preserve"><value>다음 메시지에 선택 영역 첨부 (선택 없으면 전체 파일)</value></data>
+  <data name="TooltipBrowseFile" xml:space="preserve"><value>디스크에서 파일을 찾아 첨부</value></data>
+  <data name="TooltipPinFile" xml:space="preserve"><value>활성 파일 고정 — 항상 컨텍스트에 유지</value></data>
+  <data name="MenuAddContext" xml:space="preserve"><value>프롬프트에 컨텍스트 추가</value></data>
+  <data name="MenuAttachFile" xml:space="preserve"><value>활성 파일</value></data>
+  <data name="MenuAttachSelection" xml:space="preserve"><value>선택 영역</value></data>
+  <data name="MenuBrowseFile" xml:space="preserve"><value>디스크에서 찾아보기…</value></data>
+  <data name="MenuPinFile" xml:space="preserve"><value>활성 파일 고정</value></data>
+  <data name="TooltipPinChip" xml:space="preserve"><value>이 파일을 영구적으로 고정</value></data>
+  <data name="PinLimitReached" xml:space="preserve"><value>⚠ 고정 파일 한도에 도달했습니다(최대 {0}). 먼저 하나를 고정 해제하세요.</value></data>
+  <data name="TooltipSearchConversation" xml:space="preserve"><value>대화 검색 (Ctrl+F)</value></data>
+  <data name="TooltipCloseSearch" xml:space="preserve"><value>검색 닫기</value></data>
+  <data name="TooltipSaveSnippet" xml:space="preserve"><value>스니펫 라이브러리에 저장 (/snippets 로 보기)</value></data>
+
+
+  <!-- System prompt -->
+  <data name="SystemPrompt" xml:space="preserve"><value>당신은 Inferpal입니다. Visual Studio 2026에 통합된 로컬 AI 개발 어시스턴트입니다. 파일 읽기/쓰기, 디렉터리 목록 표시, 코드 검색, PowerShell 명령 실행 도구에 접근할 수 있습니다. 응답하기 전에 필요한 만큼 이 도구들을 사용하세요. 사용자와 같은 언어로 응답하세요.</value></data>
+
+  <!-- Connection status -->
+  <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
+  <data name="StatusConnected" xml:space="preserve"><value>✓ 연결됨</value></data>
+  <data name="StatusUnreachable" xml:space="preserve"><value>✗ 연결 불가</value></data>
+  <data name="StatusThinking" xml:space="preserve"><value>처리 중…</value></data>
+  <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
+
+  <!-- ViewModel messages -->
+  <data name="MsgCancelled" xml:space="preserve"><value>(취소됨)</value></data>
+  <data name="MsgTruncated" xml:space="preserve"><value>
+…(잘림)</value></data>
+  <data name="MsgError" xml:space="preserve"><value>오류: {0}</value></data>
+  <data name="MsgToolOutput" xml:space="preserve"><value>[입력]
+{0}
+
+[출력]
+{1}</value></data>
+  <data name="DefaultSessionSnippet" xml:space="preserve"><value>세션</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(반복 한도에 도달했습니다 — 20턴)</value></data>
+  <data name="MsgLoopDetected" xml:space="preserve"><value>(루프 감지 — 동일한 도구 호출이 반복되어 중지합니다)</value></data>
+  <data name="MsgCircuitOpen" xml:space="preserve"><value>(회로 차단기 열림 — 반복 실패 후 5분간 재시도 일시 중지)</value></data>
+  <data name="MsgAgentDone" xml:space="preserve"><value>✓ 완료 — {0}</value></data>
+  <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 토큰  ·  세션: {1}</value></data>
+  <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL이 구성되지 않았습니다. 설정을 열어 설정하세요.</value></data>
+  <data name="MsgEmptyResponse" xml:space="preserve"><value>모델이 응답을 반환하지 않았습니다. 구성된 모델이 텍스트 생성을 지원하지 않을 수 있습니다 — 기본 채팅 모델을 사용해 보세요.</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>연결 시간 초과 — Ollama가 {0}에서 30분 내에 응답하지 않았습니다.</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>{0}의 Ollama에 연결할 수 없습니다. 설정에서 URL을 확인하세요.</value></data>
+  <data name="MsgServerError" xml:space="preserve"><value>{0}의 추론 서버가 오류를 반환했습니다:
+
+{1}</value></data>
+  <data name="MsgContextOverflow" xml:space="preserve"><value>에이전트 모드에서 요청이 모델의 컨텍스트 창에 비해 너무 큽니다. 도구 정의만으로도 수천 토큰을 차지합니다. 모델의 컨텍스트 길이를 늘리거나(LM Studio에서 16384 이상 권장) 활성화된 에이전트 도구 수를 줄이세요.
+
+서버 세부 정보: {0}</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>에이전트 모드에서 요청(~{0} 토큰)이 모델이 로드된 컨텍스트({1} 토큰)보다 큽니다. 도구 정의만으로도 수천 토큰을 차지합니다. 로드된 컨텍스트 길이를 늘리거나(LM Studio에서 16384 이상 권장) 활성화된 에이전트 도구 수를 줄이세요.</value></data>
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{0}의 Ollama에 연결할 수 없습니다
+
+문제 해결 단계:
+  1. Ollama를 시작하세요 — 터미널을 열고 다음을 실행하세요:  ollama serve
+  2. 설정에서 URL을 확인하세요 (현재: {0})
+  3. Ollama가 다른 머신에서 실행 중이라면 설정에서 URL을 업데이트하세요
+  4. 방화벽이나 바이러스 백신 소프트웨어가 포트 11434를 차단하고 있지 않은지 확인하세요
+
+Ollama가 실행되면 헤더의 ↻ 다시 시도를 클릭하세요.</value></data>
+  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Ollama에 다시 연결되었습니다 — 준비 완료.</value></data>
+  <data name="TooltipRetryConnection" xml:space="preserve"><value>지금 Ollama 연결 확인</value></data>
+
+  <!-- Approval dialog -->
+  <data name="ApprovalMessage" xml:space="preserve"><value>Inferpal가 실행하려고 합니다: {0}
+
+{1}
+
+계속하시겠습니까?</value></data>
+
+  <!-- Tool messages -->
+  <data name="ToolPathRequired" xml:space="preserve"><value>경로가 필요합니다</value></data>
+  <data name="ToolFileNotFound" xml:space="preserve"><value>파일을 찾을 수 없습니다: {0}</value></data>
+  <data name="DirNotFound" xml:space="preserve"><value>디렉터리를 찾을 수 없습니다: {0}</value></data>
+  <data name="ToolPathInvalid" xml:space="preserve"><value>잘못된 경로 '{0}': {1}</value></data>
+  <data name="NoResults" xml:space="preserve"><value>결과 없음.</value></data>
+  <data name="WriteOverwrite" xml:space="preserve"><value>덮어쓰기: {0}
+({1}자)</value></data>
+  <data name="WriteCreate" xml:space="preserve"><value>만들기: {0}
+({1}자)</value></data>
+  <data name="WriteCancelled" xml:space="preserve"><value>사용자가 쓰기를 취소했습니다.</value></data>
+  <data name="WriteOk" xml:space="preserve"><value>OK — {0} ({1}자 작성됨)</value></data>
+  <data name="DeleteConfirm" xml:space="preserve"><value>삭제: {0}</value></data>
+  <data name="DeleteCancelled" xml:space="preserve"><value>사용자가 삭제를 취소했습니다.</value></data>
+  <data name="DeleteOk" xml:space="preserve"><value>OK — {0} 삭제됨</value></data>
+  <data name="RunCancelled" xml:space="preserve"><value>사용자가 명령을 취소했습니다.</value></data>
+  <data name="DiffConfirm" xml:space="preserve"><value>변경 적용: {0}</value></data>
+  <data name="DiffCancelled" xml:space="preserve"><value>사용자가 변경을 취소했습니다.</value></data>
+  <data name="DiffOldNotFound" xml:space="preserve"><value>{0}에서 old_content를 찾을 수 없습니다. 공백, 줄 바꿈, 들여쓰기를 확인하세요.</value></data>
+  <data name="DiffAmbiguous" xml:space="preserve"><value>old_content가 {1}에서 {0}번 발견되었습니다. 일치를 고유하게 만들기 위해 더 많은 컨텍스트를 제공하세요.</value></data>
+  <data name="DiffOk" xml:space="preserve"><value>{0}에 변경이 적용되었습니다.</value></data>
+  <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits에는 최소 한 개의 편집이 필요합니다.</value></data>
+  <data name="ApplyEditsConfirm" xml:space="preserve"><value>{0}개 파일에 편집을 적용할까요?</value></data>
+  <data name="ApplyEditsAborted" xml:space="preserve"><value>변경이 적용되지 않음 — {0}.</value></data>
+  <data name="ApplyEditsOk" xml:space="preserve"><value>{1}개 파일에 {0}개 편집을 적용했습니다.</value></data>
+  <data name="HistoryNote" xml:space="preserve"><value>
+백업: {0}</value></data>
+  <data name="RestoreOk" xml:space="preserve"><value>{1}에서 {0}을 복원했습니다.</value></data>
+  <data name="RestoreNotFound" xml:space="preserve"><value>백업을 찾을 수 없습니다: {0}</value></data>
+  <data name="DiagNoProject" xml:space="preserve"><value>.sln 또는 .csproj 파일을 찾을 수 없습니다. path 매개변수를 제공하세요.</value></data>
+  <data name="DiagBuildOk" xml:space="preserve"><value>✓ 빌드 성공 — 오류 0, 경고 0 ({0})</value></data>
+  <data name="DiagBuildFailed" xml:space="preserve"><value>빌드 실패 (코드 {0}), 파싱 가능한 진단 없음.
+
+{1}</value></data>
+  <data name="DiagSummary" xml:space="preserve"><value>빌드: 오류 {0}개, 경고 {1}개 — {2}</value></data>
+  <data name="ActiveDocNoContext" xml:space="preserve"><value>VS 컨텍스트를 사용할 수 없습니다 — 보기 메뉴에서 Inferpal 창을 여세요.</value></data>
+  <data name="ActiveDocNoFile" xml:space="preserve"><value>편집기에 열린 파일이 없습니다.</value></data>
+  <data name="ActiveDocResult" xml:space="preserve"><value>활성 파일: {0}
+
+{1}</value></data>
+
+  <!-- Attachment / Browse errors -->
+  <data name="AttachError" xml:space="preserve"><value>⚠ 첨부 오류: {0}</value></data>
+  <data name="AttachReadError" xml:space="preserve"><value>⚠ 첨부 읽기 오류: {0}</value></data>
+  <data name="AttachSelectionError" xml:space="preserve"><value>⚠ 선택 영역 첨부 오류: {0}</value></data>
+  <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ 첨부된 선택 영역 읽기 오류: {0}</value></data>
+  <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ 파일이 너무 커서 첨부할 수 없습니다 (최대 500KB).</value></data>
+  <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ 활성 파일을 찾을 수 없습니다. 먼저 편집기에서 파일을 여세요.</value></data>
+  <data name="MentionFileDesc" xml:space="preserve"><value>파일 검색 및 첨부</value></data>
+  <data name="MentionCodeDesc" xml:space="preserve"><value>시맨틱 코드 검색 (RAG)</value></data>
+  <data name="MentionCodeHint" xml:space="preserve"><value>검색할 내용을 입력하세요…</value></data>
+  <data name="MentionFolderDesc" xml:space="preserve"><value>폴더의 파일 첨부</value></data>
+  <data name="MentionClipboardDesc" xml:space="preserve"><value>클립보드 첨부</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>프로젝트 트리 첨부</value></data>
+  <data name="MentionDiffDesc" xml:space="preserve"><value>현재 git diff 첨부</value></data>
+  <data name="MentionProblemsDesc" xml:space="preserve"><value>빌드 진단 첨부</value></data>
+  <data name="MentionDebuggerDesc" xml:space="preserve"><value>디버거 상태 첨부(스택, 변수, 예외)</value></data>
+  <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 일시 중지된 디버그 세션이 없습니다. 먼저 중단점이나 예외에서 멈춘 후 @debugger를 사용하세요.</value></data>
+  <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ 클립보드가 비어 있습니다.</value></data>
+  <data name="BrowseError" xml:space="preserve"><value>⚠ 찾아보기 오류: {0}</value></data>
+
+  <!-- Export -->
+  <data name="ExportNoMessages" xml:space="preserve"><value>⚠ 내보낼 메시지가 없습니다.</value></data>
+  <data name="ExportSuccess" xml:space="preserve"><value>`{0}`으로 내보냈습니다</value></data>
+  <data name="ExportFailed" xml:space="preserve"><value>⚠ 내보내기 실패: {0}</value></data>
+
+  <!-- Slash commands -->
+  <data name="SlashModelCurrent" xml:space="preserve"><value>사용법: `/model &lt;이름&gt;`  —  현재: **{0}**</value></data>
+  <data name="SlashModelChanged" xml:space="preserve"><value>모델 → **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>사용법: `/tools on|off`  —  현재: **{0}**</value></data>
+  <data name="SlashToolsChanged" xml:space="preserve"><value>도구 → **{0}**</value></data>
+  <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ 활성 문서가 없습니다. 먼저 편집기에서 파일을 여세요.</value></data>
+  <data name="TestsGenerated" xml:space="preserve"><value>✅ 테스트를 생성했습니다 → **{0}** (편집기에서 열림).</value></data>
+  <data name="TestsExtended" xml:space="preserve"><value>✅ **{0}**에 테스트를 추가했습니다 (열림 — Ctrl+Z로 실행 취소).</value></data>
+  <data name="TestsGenerateFailed" xml:space="preserve"><value>⚠ 테스트 생성에 실패했습니다. 모델을 확인하고 다시 시도하세요.</value></data>
+  <data name="RefactorNoChange" xml:space="preserve"><value>✅ 코드가 이미 명확합니다 — 리팩터링이 필요하지 않습니다.</value></data>
+  <data name="FixNoChange" xml:space="preserve"><value>✅ 버그나 문제를 찾지 못했습니다 — 수정할 것이 없습니다.</value></data>
+  <data name="DocNoChange" xml:space="preserve"><value>✅ 코드가 이미 충분히 문서화되어 있습니다.</value></data>
+  <data name="TestsNoChange" xml:space="preserve"><value>✅ 테스트할 만한 것이 없습니다 — 의미 있는 모든 경우가 이미 다뤄졌습니다.</value></data>
+  <data name="SlashUsage" xml:space="preserve"><value>사용법: `{0}`</value></data>
+  <data name="SlashUsageRestore" xml:space="preserve"><value>사용법: `/restore &lt;경로&gt;` — `.inferpal/history/`에서 최신 백업을 복원합니다</value></data>
+  <data name="SlashHelp" xml:space="preserve"><value>알 수 없는 명령: `{0}`
+
+**메타**
+- `/clear` — 대화 지우기
+- `/model &lt;이름&gt;` — 모델 전환
+- `/tools on|off` — 도구 활성화 또는 비활성화
+- `/export` — 대화를 파일로 내보내기
+- `/restore &lt;경로&gt;` — 최신 백업에서 파일 복원
+- `/help` — 사용 가능한 모든 명령 표시
+
+**파일 시스템**
+- `/read &lt;경로&gt;` — 파일을 컨텍스트로 첨부
+- `/ls &lt;경로&gt; [패턴]` — 디렉터리의 파일 목록 표시
+- `/grep &lt;디렉터리&gt; &lt;패턴&gt; [확장자]` — 파일에서 텍스트 검색
+
+**코드 액션**
+- `/explain` — 활성 파일(또는 선택 영역) 설명
+- `/fix` — 활성 파일에 대한 수정 제안
+- `/review` — 구조화된 코드 리뷰
+- `/refactor` — 리팩터링 제안
+- `/test` — 단위 테스트 생성
+- `/doc` — 네임스페이스/상속 컨텍스트를 포함한 문서 생성（C#/TS/Python/Go/Rust）
+
+**셸**
+- `/run &lt;명령&gt;` — PowerShell 명령 실행
+
+**웹**
+- `/fetch &lt;url&gt;` — 웹 페이지를 텍스트로 표시
+- `/search &lt;쿼리&gt;` — DuckDuckGo 웹 검색
+
+**Git**
+- `/commit` — diff 분석, 커밋 메시지 제안, 입력란 미리 채우기
+- `/git [경로]` — git 상태, 로그, 변경 요약 표시
+
+**Visual Studio / 빌드**
+- `/map` — 프로젝트 의존성 그래프 표시
+- `/solution [경로]` — 솔루션 구조 표시
+- `/build [경로]` — 컴파일 및 오류 표시
+- `/fix-build [경로]` — 컴파일 → AI가 오류 수정 → 재컴파일, 깨끗해질 때까지 반복 (최대 5회)
+
+**프로젝트 컨텍스트**
+- `/context` — 활성 `.inferpal/context.md` 표시 (각 시스템 프롬프트에 주입)
+- `/memory` — 에이전트 메모리 보기 (`.inferpal/memory.md`, 각 시스템 프롬프트에 주입)
+
+**기록**
+- `/history` — 날짜 및 미리보기와 함께 저장된 모든 세션 나열
+- `/history &lt;검색어&gt;` — 저장된 모든 세션에서 전체 텍스트 검색</value></data>
+
+  <data name="SlashHelpAll" xml:space="preserve"><value>**메타**
+- `/clear` — 대화 지우기
+- `/model &lt;이름&gt;` — 모델 전환
+- `/tools on|off` — 도구 활성화 또는 비활성화
+- `/export` — 대화를 파일로 내보내기
+- `/restore &lt;경로&gt;` — 최신 백업에서 파일 복원
+- `/help` — 사용 가능한 모든 명령 표시
+
+**파일 시스템**
+- `/read &lt;경로&gt;` — 파일을 컨텍스트로 첨부
+- `/ls &lt;경로&gt; [패턴]` — 디렉터리의 파일 목록 표시
+- `/grep &lt;디렉터리&gt; &lt;패턴&gt; [확장자]` — 파일에서 텍스트 검색
+
+**코드 액션**
+- `/explain` — 활성 파일(또는 선택 영역) 설명
+- `/fix` — 활성 파일에 대한 수정 제안
+- `/review` — 구조화된 코드 리뷰
+- `/refactor` — 리팩터링 제안
+- `/test` — 단위 테스트 생성
+- `/doc` — 네임스페이스/상속 컨텍스트를 포함한 문서 생성（C#/TS/Python/Go/Rust）
+
+**셸**
+- `/run &lt;명령&gt;` — PowerShell 명령 실행
+
+**웹**
+- `/fetch &lt;url&gt;` — 웹 페이지를 텍스트로 표시
+- `/search &lt;쿼리&gt;` — DuckDuckGo 웹 검색
+
+**Git**
+- `/commit` — diff 분석, 커밋 메시지 제안, 입력란 미리 채우기
+- `/git [경로]` — git 상태, 로그, 변경 요약 표시
+
+**Visual Studio / 빌드**
+- `/map` — 프로젝트 의존성 그래프 표시
+- `/solution [경로]` — 솔루션 구조 표시
+- `/build [경로]` — 컴파일 및 오류 표시
+- `/fix-build [경로]` — 컴파일 → AI가 오류 수정 → 재컴파일, 깨끗해질 때까지 반복 (최대 5회)
+
+**프로젝트 컨텍스트**
+- `/context` — 활성 `.inferpal/context.md` 표시 (각 시스템 프롬프트에 주입)
+- `/memory` — 에이전트 메모리 보기 (`.inferpal/memory.md`, 각 시스템 프롬프트에 주입)
+
+**의미 인덱스**
+- `/index` — RAG 인덱스 상태 표시 (청크, 모델, 루트)
+- `/index rebuild` — 솔루션의 전체 재인덱싱 강제 실행
+
+**Git**
+- `/diff [경로]` — 전체 git diff를 컨텍스트 칩으로 첨부
+
+**프로젝트 컨텍스트**
+- `/note &lt;텍스트&gt;` — `.inferpal/notes.md`에 타임스탬프가 있는 메모 추가
+- `/notes [clear]` — 프로젝트 메모 나열 또는 지우기
+
+**스니펫 &amp; 기록**
+- `/snippets` — 저장된 코드 스니펫 나열 (코드 블록의 ⭐ 버튼으로 저장)
+- `/snippets copy &lt;n&gt;` / `/snippets delete &lt;n&gt;` / `/snippets clear`
+- `/history` — 날짜 및 미리보기와 함께 저장된 모든 세션 나열
+- `/history &lt;검색어&gt;` — 저장된 모든 세션에서 전체 텍스트 검색
+- `/phistory [검색어]` — 입력 기록 검색; `/phistory use &lt;n&gt;`으로 재사용
+
+**세션 템플릿**
+- `/template` — 사용 가능한 프리셋 나열 (code-review, bug-hunt, architecture…)
+- `/template &lt;id&gt;` — 선택한 템플릿으로 세션 시작
+
+**모델**
+- `/models` — VRAM 상태와 함께 설치된 Ollama 모델 나열
+- `/models pull &lt;이름&gt;` / `/models delete &lt;이름&gt;` / `/models running`
+- `/hardware` — GPU/VRAM 프로필 표시. `/hardware &lt;gb&gt;`로 VRAM 예산 설정
+- `/setup` — 초기 설정 다시 실행: 백엔드 재감지, 모델 재선택
+
+**에이전트**
+- `/agent-step` — 단계별 모드: 각 도구 호출 후 일시 중지
+- `/resume` — 일시 중지 후 에이전트 재개
+- `/plan` — 플랜 모드: 읽기 전용, 에이전트가 파일을 수정하지 않고 탐색하며 계획을 제안
+
+**문서 (@Docs)**
+- `/docs add &lt;url&gt; [제목]` — 외부 문서 사이트를 크롤링·인덱싱하여 `search_docs` 도구에서 사용
+- `/docs list` — 인덱싱된 문서 소스 목록 표시
+- `/docs remove &lt;id&gt;` — 문서 소스 제거
+- `/docs reindex [id]` — 모든 소스 다시 크롤링(또는 id로 하나)
+
+**규칙 &amp; 체크**
+- `/rules` — 프로젝트 규칙 목록(`.inferpal/rules`, glob 범위, 시스템 프롬프트에 주입)
+- `/rules init` — 예시 규칙 생성
+- `/checks` — 리뷰 체크 목록(`.inferpal/checks`)
+- `/checks init` — 예시 체크 생성
+- `/check [이름]` — 현재 git diff를 체크에 대해 AI 리뷰(100% 로컬)
+
+**프롬프트 파일**
+- `/prompts` — 재사용 가능한 프롬프트 파일 목록(`.inferpal/prompts/*.md`); 각 파일은 슬래시 명령이 되며 `{args}`가 치환됩니다
+- `/prompts init` — 예시 프롬프트 파일 만들기</value></data>
+
+  <!-- History search -->
+  <data name="HistoryNoSessions" xml:space="preserve"><value>저장된 세션이 없습니다. 세션은 `/clear` 시 자동으로 아카이브됩니다.</value></data>
+  <data name="HistoryNoResults" xml:space="preserve"><value>"{0}"에 일치하는 세션이 없습니다.</value></data>
+
+  <!-- Project context -->
+  <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ .sln 파일을 찾을 수 없습니다 — `.inferpal/context.md`를 찾을 수 없습니다.</value></data>
+  <data name="SlashContextNotFound" xml:space="preserve"><value>프로젝트 컨텍스트 파일을 찾을 수 없습니다.
+
+`{0}`을 만들어 프로젝트 규칙(코딩 스타일, 아키텍처 결정 등)을 문서화하세요. 각 시스템 프롬프트에 자동으로 주입됩니다.
+
+파일을 만들거나 편집한 후 `/clear`를 사용하여 다시 로드하세요.</value></data>
+  <data name="SlashContextLoaded" xml:space="preserve"><value>**프로젝트 컨텍스트** — `{0}` ({1}자)
+
+```
+{2}
+```
+
+파일 편집 후 `/clear`를 사용하여 다시 로드하세요.</value></data>
+
+  <!-- Git / Solution tool outputs -->
+  <data name="GitNotRepo" xml:space="preserve"><value>git 저장소가 아닙니다 (.git 폴더를 찾을 수 없습니다).</value></data>
+  <data name="SolutionNoSln" xml:space="preserve"><value>.sln 파일을 찾을 수 없습니다. 경로를 명시적으로 제공하세요.</value></data>
+  <data name="SolutionPathNotFound" xml:space="preserve"><value>경로를 찾을 수 없거나 .sln 파일이 아닙니다: {0}</value></data>
+
+  <!-- Editor insertion / replacement -->
+  <data name="InsertOk" xml:space="preserve"><value>{0}의 커서 위치에 {1}자를 삽입했습니다.</value></data>
+  <data name="ReplaceOk" xml:space="preserve"><value>{0}의 선택 영역을 {1}자로 교체했습니다.</value></data>
+
+  <!-- Fix-build loop -->
+  <data name="FixBuildSuccess" xml:space="preserve"><value>✅ {0}번의 라운드 후 빌드 성공 — 더 이상 오류 없음.</value></data>
+  <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ {0}번 시도 후에도 빌드 실패 — 수동 개입이 필요합니다.</value></data>
+  <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **빌드 실패** — {0}개의 컴파일 오류가 감지되었습니다.
+
+**AI로 수정**을 클릭하여 루프로 자동 수정하거나 `/fix-build`를 입력하세요.</value></data>
+
+  <!-- Smart Fix Protocol -->
+  <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: 빌드 OK — 컴파일 오류 없음.</value></data>
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0}개의 컴파일 오류 감지 — 계속하기 전에 수정하세요:
+{1}</value></data>
+  <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: 빌드 확인 시간 초과 (60초) — 수동으로 확인하세요.</value></data>
+  <data name="LabelSmartFixEnabled" xml:space="preserve"><value>쓰기 후 자동 빌드 검사 (Smart Fix)</value></data>
+  <data name="HintSmartFixEnabled" xml:space="preserve"><value>체크하면 C#/프로젝트 파일에 대한 write_file 또는 apply_diff 후 자동으로 빠른 빌드가 실행됩니다. 컴파일 오류는 인라인으로 반환되어 에이전트가 즉시 수정할 수 있습니다.</value></data>
+
+  <!-- Git commit assistant -->
+  <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ git 변경 사항이 감지되지 않았습니다.</value></data>
+  <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ 스테이징된 항목 없음 — 스테이징되지 않은 변경 사항 분석 중.</value></data>
+  <data name="CommitProposingLabel" xml:space="preserve"><value>💬 커밋 메시지</value></data>
+  <data name="CommitConfirmHint" xml:space="preserve"><value>아래에 메시지가 미리 채워져 있습니다 — 필요하면 편집한 후 **Enter**를 눌러 커밋하세요.</value></data>
+  <data name="RulesNone" xml:space="preserve"><value>프로젝트 규칙이 없습니다. `.inferpal/rules/*.md`를 만들거나 `/rules init`를 실행하세요.</value></data>
+  <data name="ChecksNone" xml:space="preserve"><value>리뷰 체크가 없습니다. `.inferpal/checks/*.md`를 만들거나 `/checks init`를 실행하세요.</value></data>
+  <data name="RulesListHeader" xml:space="preserve"><value>**프로젝트 규칙** (`.inferpal/rules`):</value></data>
+  <data name="ChecksListHeader" xml:space="preserve"><value>**리뷰 체크** (`.inferpal/checks`):</value></data>
+  <data name="CheckNoDiff" xml:space="preserve"><value>검토할 내용이 없습니다 — 작업 트리가 깨끗합니다.</value></data>
+  <data name="CheckReviewingLabel" xml:space="preserve"><value>diff 검토 중…</value></data>
+  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>당신은 꼼꼼하고 완전히 로컬에서 동작하는 코드 리뷰어입니다. 아래 git diff를 제공된 리뷰 체크에 대해서만 검토하세요. 각 체크에 대해 통과(PASS) 여부를 밝히거나 구체적인 위반 사항을 나열하세요. 위반마다 파일과 줄(파일:줄), 심각도(blocker / warning / nit), 짧고 실행 가능한 수정안을 제시하세요. 간결하게. 문제를 지어내지 말고 체크나 diff 범위 밖의 내용은 언급하지 마세요. 모든 체크가 통과하면 명확히 말하세요.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>'{0}'(이)라는 체크가 없습니다. `/checks`를 실행해 목록을 확인하세요.</value></data>
+  <data name="RulesScaffolded" xml:space="preserve"><value>예시 규칙을 {0}에 만들었습니다. 편집하세요 — 일치하는 규칙은 시스템 프롬프트에 주입됩니다.</value></data>
+  <data name="ChecksScaffolded" xml:space="preserve"><value>예시 체크를 {0}에 만들었습니다. 편집한 후 `/check`를 실행해 diff를 검토하세요.</value></data>
+  <data name="PromptsNone" xml:space="preserve"><value>프롬프트 파일이 없습니다. `.inferpal/prompts/*.md`를 만들거나 `/prompts init`를 실행하세요.</value></data>
+  <data name="PromptsListHeader" xml:space="preserve"><value>**프롬프트 파일** (`.inferpal/prompts`) — 각 파일은 슬래시 명령이 되며 `{args}`가 치환됩니다:</value></data>
+  <data name="PromptsScaffolded" xml:space="preserve"><value>예시 프롬프트를 {0}에 만들었습니다. 편집한 후 `/review-security`를 입력하세요(파일 이름 = 명령).</value></data>
+
+  <!-- analyze_impact tool -->
+  <data name="ImpactHeader"         xml:space="preserve"><value>영향 분석 — {0}</value></data>
+  <data name="ImpactNoPublicApi"    xml:space="preserve"><value>{0}에서 공개 타입 또는 내보낸 심볼을 찾을 수 없습니다.</value></data>
+  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>심볼 '{0}'이(가) {1}의 공개 API에 없습니다.</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 영향 범위: {0} 직접 · {1} 간접 · {2} 테스트 · {3} 진입점</value></data>
+
+  <!-- trace_dependency tool -->
+  <data name="TraceDepsHeader"          xml:space="preserve"><value>호출 그래프 — {0}</value></data>
+  <data name="TraceDepsNoMethods"       xml:space="preserve"><value>{0}에서 메서드 또는 함수를 찾을 수 없습니다.</value></data>
+  <data name="TraceDepsSymbolNotFound"  xml:space="preserve"><value>심볼 '{0}'을(를) {1}에서 찾을 수 없습니다.</value></data>
+  <data name="TraceDepsFooter"          xml:space="preserve"><value>{0}개 메서드 · {1}개 고유 피호출자 · {2}개 파일 간 해석됨</value></data>
+
+  <!-- RAG / 시맨틱 검색 -->
+  <data name="RagIndexNotReady" xml:space="preserve"><value>⚠ 코드베이스 인덱스를 사용할 수 없습니다. 상태: {0}
+
+`/index rebuild`를 사용하여 인덱싱을 시작하거나 백그라운드 작업이 완료될 때까지 기다리세요.
+RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세요.</value></data>
+  <data name="RagNoResults" xml:space="preserve"><value>"{0}"에 대한 관련 코드를 찾을 수 없습니다</value></data>
+
+  <!-- Agent memory -->
+  <data name="UpdateMemoryNoProject" xml:space="preserve"><value>.sln 파일이나 .inferpal 폴더를 찾을 수 없습니다 — 메모리 파일을 찾을 수 없습니다.</value></data>
+  <data name="UpdateMemoryNoContent" xml:space="preserve"><value>append 및 replace 모드에는 콘텐츠가 필요합니다.</value></data>
+  <data name="UpdateMemoryOk" xml:space="preserve"><value>메모리 업데이트됨 — {0} (총 {1}자).</value></data>
+  <data name="UpdateMemoryClear" xml:space="preserve"><value>메모리 지워짐 — {0}</value></data>
+  <data name="SlashMemoryNotFound" xml:space="preserve"><value>에이전트 메모리를 찾을 수 없습니다.
+
+에이전트에게 `update_memory`를 사용하여 첫 번째 메모를 작성하도록 요청하거나 파일을 직접 만드세요.
+
+예상 경로: `{0}`</value></data>
+  <data name="SlashMemoryLoaded" xml:space="preserve"><value>**에이전트 메모리** — `{0}` ({1}자)
+
+```
+{2}
+```
+
+파일을 편집하거나 에이전트에게 `update_memory`를 사용하도록 요청하세요. `/clear`로 다시 로드할 수 있습니다.</value></data>
+
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **첫 실행** — {0}개의 모델이 사용 가능합니다. **{1}**이(가) 기본 모델로 자동 선택되었습니다.
+
+**설정**을 열어 모델을 변경하거나 코드 작업 및 인라인 완성을 위한 전용 모델을 구성하세요.</value></data>
+  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **첫 실행** — Ollama가 실행 중이지만 채팅 모델을 찾을 수 없습니다.
+
+시작하려면 모델을 다운로드하세요:
+```
+ollama pull llama3.1
+```
+Visual Studio를 다시 시작하거나, 설정을 열고 **Test**를 클릭하세요.</value></data>
+  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **첫 실행** — **{0}**에서 모델 서버에 연결할 수 없습니다.
+
+Ollama를 시작하고 헤더의 **↻ 다시 시도**를 클릭하세요:
+```
+ollama serve
+```</value></data>
+  <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — 선택한 모델들이 합쳐서 약 **{0} GB**가 필요하며 예산 **{1} GB**를 초과합니다. 시스템 RAM으로 넘쳐 느려질 수 있습니다. 더 작은 모델을 고려하거나 `/hardware`로 확인하세요.</value></data>
+
+  <!-- Agent Mode -->
+  <data name="LabelAgentModeEnabled" xml:space="preserve"><value>자율 에이전트 모드 활성화 (계획 → 실행 → 관찰)</value></data>
+  <data name="HintAgentModeEnabled" xml:space="preserve"><value>활성화하면 Inferpal가 도구를 사용하기 전에 명시적인 단계별 계획을 생성한 후, 실시간 단계 추적과 함께 구조화된 계획 → 실행 → 관찰 루프를 실행합니다. 복잡한 다단계 작업에 적합합니다. 간단하고 빠른 쿼리에는 비활성화하세요.</value></data>
+  <data name="LabelAgentModel" xml:space="preserve"><value>에이전트 / 도구 모델 (비움 = 채팅 모델):</value></data>
+  <data name="HintAgentModel" xml:space="preserve"><value>도구가 활성화될 때 사용되는 모델 — 에이전트(Plan → Act → Observe) 루프와 기본 도구 호출 루프. 비워 두면 채팅 모델을 사용합니다. 프롬프트 캐시를 재사용하는 더 작은 비멀티모달 모델(예: qwen2.5-coder)은 매 턴마다 전체 프롬프트를 다시 처리하는 대형 멀티모달 모델보다 다중 턴 도구 루프를 훨씬 빠르게 실행합니다.</value></data>
+  <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>역할별로 별도 모델 사용(고급)</value></data>
+  <data name="LabelAdvancedBehavior" xml:space="preserve"><value>고급 설정 표시(시간 초과, 반복 횟수)</value></data>
+  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>기본적으로 채팅 모델이 모든 곳에 사용됩니다. 이 옵션을 켜면 에이전트, 코드 작업, 인라인 완성(FIM), 인라인 편집에 다른 모델을 지정할 수 있습니다.</value></data>
+  <data name="LabelAgentMaxIterations" xml:space="preserve"><value>최대 반복 횟수</value></data>
+  <data name="HintAgentMaxIterations" xml:space="preserve"><value>요청당 계획 → 실행 → 관찰 사이클의 최대 횟수. 0은 기본값(20)을 사용합니다. 기본값: 20.</value></data>
+  <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>빠른 작업 타임아웃 (액션, 인라인 편집)</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>짧은 작업 제한 시간: 설명, 수정, 문서화, 인라인 편집, 에이전트 계획. 기본값: 120초.</value></data>
+  <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>일반 작업 타임아웃 (에이전트 턴)</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>도구가 있는 채팅 및 오케스트레이터의 에이전트 턴당 제한 시간. 기본값: 300초.</value></data>
+  <data name="LabelTaskTimeoutDeep" xml:space="preserve"><value>딥 작업 타임아웃 (예약됨)</value></data>
+  <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>확장 추론 작업을 위해 예약됨. 기본값: 600초.</value></data>
+  <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 계획 중…</value></data>
+  <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 관찰 중…</value></data>
+  <data name="AgentPlanPrompt" xml:space="preserve"><value>도구를 사용하기 전에 다음 구조의 JSON 객체만 출력하세요 (산문 없음, 마크다운 펜스 없음):
+{"goal":"수행할 내용의 한 문장 설명","steps":[{"i":1,"desc":"이 단계의 내용","tool":"예상 도구 이름 또는 null"},{"i":2,"desc":"..."}]}
+2~6개의 구체적인 단계를 포함하세요. 특정 도구가 예상되지 않으면 "tool"에 null을 사용하세요.
+JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value></data>
+  <data name="AgentExecutePlan" xml:space="preserve"><value>좋습니다. 이제 1단계부터 계획을 순서대로 실행하세요. 설명 텍스트를 작성하지 말고 — 지금 바로 1단계에 적합한 도구를 호출하세요.</value></data>
+  <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>요청 실행</value></data>
+  <data name="AgentPlanFallbackStep" xml:space="preserve"><value>사용 가능한 도구를 사용하여 요청 실행</value></data>
+  <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 에이전트 계획</value></data>
+  <data name="AgentObservePrompt" xml:space="preserve"><value>[관찰 — {0}/{1}] 실행된 도구: {2}. 남은 계획 단계: {3}.
+전문이나 설명 없이 다음 단계의 도구를 즉시 호출하세요. 목표가 완전히 달성된 경우 도구를 더 호출하지 않고 제 가장 최근 요청에 대한 최종 답변을 작성하세요 — 이 대화에서 이미 한 답변을 반복하지 마세요.</value></data>
+  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[관찰 — {0}/{1}] 실행된 도구: {2}. 계획의 모든 단계가 완료되었습니다.
+이제 제 가장 최근 요청인 "{3}"에 대한 완전한 최종 답변을 직접, 전체적으로, 제 언어로 작성하세요 — 더 이상 도구를 호출하지 마세요. 필수 정보가 아직 부족한 경우에만 추가 도구를 호출하세요. 이전의 다른 질문에 대한 답변을 반복하지 마세요.</value></data>
+  <data name="AgentNudgeToolCall" xml:space="preserve"><value>의도를 설명했지만 도구를 호출하지 않았습니다. 텍스트를 생성하지 말고 — 지금 바로 계획의 첫 번째 도구를 호출하세요.</value></data>
+  <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ 답변 작성 중…</value></data>
+  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>위 도구로 충분한 정보를 수집했습니다. 더 이상 도구를 호출하지 마세요. 그 결과를 사용하여 제 가장 최근 요청인 "{0}"에 대한 완전한 최종 답변을 — 직접적으로, 빠짐없이, 제 언어로 작성하세요. 바로 그 요청에 답하세요. 이 대화에서 이미 한 답변을 반복하지 마세요.</value></data>
+  <data name="SectionMcp" xml:space="preserve"><value>MCP 서버</value></data>
+  <data name="LabelMcpEnabled" xml:space="preserve"><value>MCP 서버 활성화</value></data>
+  <data name="HintMcpEnabled" xml:space="preserve"><value>활성화하면 구성된 Model Context Protocol(MCP) 서버가 시작 시 실행되고 해당 도구를 에이전트에서 사용할 수 있습니다. 서버 명령(예: npx, uvx)이 이 컴퓨터에 설치되어 있어야 합니다.</value></data>
+  <data name="LabelMcpServers" xml:space="preserve"><value>MCP 서버 (JSON):</value></data>
+  <data name="HintMcpServers" xml:space="preserve"><value>서버 이름을 키로 하는 JSON 객체 형식의 MCP 서버 정의(Claude Desktop / Continue 형식)이며 각각 command, args, env를 가집니다. stdio 전송만 지원합니다. 발견된 도구는 mcp__ 접두사로 에이전트에 노출됩니다.</value></data>
+  <data name="McpNoServers" xml:space="preserve"><value>구성된 MCP 서버가 없습니다.</value></data>
+  <data name="McpCancelled" xml:space="preserve"><value>사용자가 MCP 도구 호출을 취소했습니다.</value></data>
+  <data name="ApprovalAllowOnce" xml:space="preserve"><value>한 번 허용</value></data>
+  <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>이 도구 항상 허용</value></data>
+  <data name="ApprovalDeny" xml:space="preserve"><value>취소</value></data>
+  <data name="PermissionBlockedRule" xml:space="preserve"><value>권한 규칙(deny)에 의해 차단됨: {0}</value></data>
+  <data name="PermissionBlockedHard" xml:space="preserve"><value>내장 보안 차단 목록(치명적 명령)에 의해 차단됨: {0}</value></data>
+  <data name="McpAddServer" xml:space="preserve"><value>+ 서버 추가</value></data>
+  <data name="McpAddTitle" xml:space="preserve"><value>서버 추가</value></data>
+  <data name="McpEditTitle" xml:space="preserve"><value>편집: {0}</value></data>
+  <data name="LabelMcpName" xml:space="preserve"><value>이름</value></data>
+  <data name="LabelMcpCommand" xml:space="preserve"><value>명령</value></data>
+  <data name="LabelMcpArgs" xml:space="preserve"><value>인수(공백으로 구분)</value></data>
+  <data name="LabelMcpEnv" xml:space="preserve"><value>환경 변수(KEY=값, 한 줄에 하나)</value></data>
+  <data name="LabelMcpHttpServer" xml:space="preserve"><value>HTTP 서버 (명령 대신 URL 사용)</value></data>
+  <data name="LabelMcpUrl" xml:space="preserve"><value>URL (Streamable HTTP 엔드포인트)</value></data>
+  <data name="LabelMcpHeaders" xml:space="preserve"><value>헤더 (키=값, 한 줄에 하나씩, ${ENV_VAR} 확장됨)</value></data>
+  <data name="BtnMcpSaveServer" xml:space="preserve"><value>저장</value></data>
+  <data name="BtnMcpCancelServer" xml:space="preserve"><value>취소</value></data>
+  <data name="McpAdvancedJson" xml:space="preserve"><value>고급 (JSON)</value></data>
+  <data name="McpImportJson" xml:space="preserve"><value>⟳ JSON을 목록으로 가져오기</value></data>
+  <data name="McpServerDisabled" xml:space="preserve"><value>— 비활성화됨</value></data>
+  <data name="McpValidationNameCommand" xml:space="preserve"><value>이름과 명령은 필수입니다.</value></data>
+  <data name="McpValidationNameUrl" xml:space="preserve"><value>이름과 URL은 필수입니다.</value></data>
+  <data name="BtnMcpAuthorize" xml:space="preserve"><value>인증…</value></data>
+  <data name="McpAuthRequired" xml:space="preserve"><value>🔒 인증 필요</value></data>
+  <data name="McpValidationDuplicate" xml:space="preserve"><value>같은 이름의 서버가 이미 있습니다.</value></data>
+  <data name="HintMcpEditServer" xml:space="preserve"><value>이 MCP 서버의 설정(이름, 명령, 인수, 환경 변수)을 편집합니다.</value></data>
+  <data name="HintMcpDeleteServer" xml:space="preserve"><value>이 MCP 서버를 목록에서 제거합니다.</value></data>
+  <data name="HintRowEdit" xml:space="preserve"><value>이 항목을 편집합니다.</value></data>
+  <data name="HintRowDelete" xml:space="preserve"><value>이 항목을 목록에서 제거합니다.</value></data>
+  <data name="LabelRowAdvanced" xml:space="preserve"><value>고급 (원시 텍스트)</value></data>
+  <data name="BtnRowImport" xml:space="preserve"><value>⟳ 목록으로 가져오기</value></data>
+  <data name="RowEditTitle" xml:space="preserve"><value>편집 중: {0}</value></data>
+  <data name="PinnedAddFile" xml:space="preserve"><value>+ 파일 추가</value></data>
+  <data name="PinnedAddTitle" xml:space="preserve"><value>고정 파일 추가</value></data>
+  <data name="LabelPinnedPath" xml:space="preserve"><value>파일 경로 (절대 경로)</value></data>
+  <data name="PinnedBrowse" xml:space="preserve"><value>찾아보기…</value></data>
+  <data name="PinnedPickerTitle" xml:space="preserve"><value>고정할 파일 선택</value></data>
+  <data name="PinnedValidationPath" xml:space="preserve"><value>파일 경로가 필요합니다.</value></data>
+  <data name="PinnedValidationDuplicate" xml:space="preserve"><value>이 파일은 이미 고정되어 있습니다.</value></data>
+  <data name="SlashAddCmd" xml:space="preserve"><value>+ 명령 추가</value></data>
+  <data name="SlashAddTitle" xml:space="preserve"><value>슬래시 명령 추가</value></data>
+  <data name="LabelSlashName" xml:space="preserve"><value>이름 (예: /refactor)</value></data>
+  <data name="LabelSlashText" xml:space="preserve"><value>프롬프트 텍스트 — 추가 단어에는 {args} 사용</value></data>
+  <data name="SlashValidationNameText" xml:space="preserve"><value>/로 시작하는 이름과 프롬프트 텍스트가 필요합니다.</value></data>
+  <data name="SlashValidationDuplicate" xml:space="preserve"><value>이 이름의 명령이 이미 있습니다.</value></data>
+  <data name="ToolAddTool" xml:space="preserve"><value>+ 도구 추가</value></data>
+  <data name="ToolAddTitle" xml:space="preserve"><value>사용자 지정 도구 추가</value></data>
+  <data name="LabelToolName" xml:space="preserve"><value>이름 (snake_case)</value></data>
+  <data name="LabelToolCommand" xml:space="preserve"><value>PowerShell 명령 (인수에는 {args} 사용)</value></data>
+  <data name="ToolValidationNameCommand" xml:space="preserve"><value>도구 이름과 명령이 필요합니다.</value></data>
+  <data name="ToolValidationDuplicate" xml:space="preserve"><value>이 이름의 도구가 이미 있습니다.</value></data>
+
+  <!-- @Docs -->
+  <data name="DocsListHeader" xml:space="preserve"><value>### 📚 인덱싱된 문서</value></data>
+  <data name="DocsNoSites" xml:space="preserve"><value>아직 인덱싱된 문서가 없습니다. `/docs add &lt;url&gt; [제목]`(으)로 소스를 추가하세요.</value></data>
+  <data name="DocsUsage" xml:space="preserve"><value>**사용법:** `/docs add &lt;url&gt; [제목]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
+  <data name="DocsAdded" xml:space="preserve"><value>📚 **{0}** 추가됨 — 백그라운드에서 크롤링 및 인덱싱 중…</value></data>
+  <data name="DocsRemoved" xml:space="preserve"><value>🗑 문서 소스 **{0}**을(를) 제거했습니다.</value></data>
+  <data name="DocsReindexing" xml:space="preserve"><value>🔄 **{0}**을(를) 백그라운드에서 다시 인덱싱 중…</value></data>
+  <data name="DocsNotReady" xml:space="preserve"><value>아직 인덱싱된 문서가 없습니다. `/docs add &lt;url&gt;`(으)로 추가하세요. ({0})</value></data>
+  <data name="DocsNoResults" xml:space="preserve"><value>"{0}"에 대한 문서 구절을 찾지 못했습니다.</value></data>
+  <data name="SlashHintExplain" xml:space="preserve"><value>활성 파일(또는 선택 영역) 설명</value></data>
+  <data name="SlashHintFix" xml:space="preserve"><value>활성 파일에 대한 수정 제안</value></data>
+  <data name="SlashHintReview" xml:space="preserve"><value>구조화된 코드 리뷰</value></data>
+  <data name="SlashHintRefactor" xml:space="preserve"><value>리팩터링 제안</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>단위 테스트 생성</value></data>
+  <data name="SlashHintDoc" xml:space="preserve"><value>XML 문서 주석 생성</value></data>
+  <data name="SlashHintClear" xml:space="preserve"><value>대화 지우기</value></data>
+  <data name="SlashHintModel" xml:space="preserve"><value>모델 전환</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>도구 호출 활성화 또는 비활성화</value></data>
+  <data name="SlashHintExport" xml:space="preserve"><value>대화를 파일로 내보내기</value></data>
+  <data name="SlashHintRestore" xml:space="preserve"><value>백업에서 파일 복원</value></data>
+  <data name="SlashHintHelp" xml:space="preserve"><value>사용 가능한 모든 명령 표시</value></data>
+  <data name="SlashHintRead" xml:space="preserve"><value>파일을 컨텍스트로 첨부</value></data>
+  <data name="SlashHintLs" xml:space="preserve"><value>디렉터리의 파일 나열</value></data>
+  <data name="SlashHintGrep" xml:space="preserve"><value>파일에서 텍스트 검색</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>PowerShell 명령 실행</value></data>
+  <data name="SlashHintFetch" xml:space="preserve"><value>웹 페이지를 텍스트로 표시</value></data>
+  <data name="SlashHintSearch" xml:space="preserve"><value>DuckDuckGo 웹 검색</value></data>
+  <data name="SlashHintSearchCode" xml:space="preserve"><value>코드베이스 시맨틱 검색</value></data>
+  <data name="SlashHintCommit" xml:space="preserve"><value>커밋 메시지 제안</value></data>
+  <data name="SlashHintGit" xml:space="preserve"><value>git status, log 및 diff 요약</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>프로젝트 아키텍처 맵 표시 (네임스페이스, 타입, 핫스팟)</value></data>
+  <data name="SlashHintSolution" xml:space="preserve"><value>솔루션 구조 표시</value></data>
+  <data name="SlashHintBuild" xml:space="preserve"><value>컴파일하고 오류 표시</value></data>
+  <data name="SlashHintFixBuild" xml:space="preserve"><value>컴파일 → AI 수정 → 오류가 없어질 때까지 재컴파일</value></data>
+  <data name="SlashHintContext" xml:space="preserve"><value>프로젝트 컨텍스트 표시</value></data>
+  <data name="SlashHintMemory" xml:space="preserve"><value>에이전트 메모리 보기</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>RAG 코드베이스 인덱스 표시 또는 재구축</value></data>
+  <data name="SlashHintHistory" xml:space="preserve"><value>저장된 세션 나열 — 검색하려면 /history &lt;검색어&gt;</value></data>
+  <data name="SlashHintTemplate" xml:space="preserve"><value>사전 설정 템플릿에서 세션 시작 — /template &lt;id&gt;</value></data>
+  <data name="SlashHintDiff" xml:space="preserve"><value>전체 git diff를 컨텍스트 칩으로 첨부 — /diff [경로]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>현재 git diff를 .inferpal/checks 기준으로 AI 검토 — /check [이름|init]</value></data>
+  <data name="SlashHintRules" xml:space="preserve"><value>.inferpal/rules의 프로젝트 규칙 나열 — /rules [init]</value></data>
+  <data name="SlashHintChecks" xml:space="preserve"><value>.inferpal/checks의 리뷰 검사 나열 — /checks [init]</value></data>
+  <data name="SlashHintSnippets" xml:space="preserve"><value>저장된 코드 스니펫 나열 — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
+  <data name="SlashHintNote" xml:space="preserve"><value>프로젝트 메모 저장 — /note &lt;텍스트&gt;</value></data>
+  <data name="SlashHintNotes" xml:space="preserve"><value>프로젝트 메모 나열 — /notes [clear]</value></data>
+  <data name="SlashHintPhistory" xml:space="preserve"><value>프롬프트 기록 검색 — /phistory [검색어] 또는 /phistory use &lt;n&gt;</value></data>
+  <data name="SlashHintModels" xml:space="preserve"><value>Ollama 모델 관리자 — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
+  <data name="SlashHintAgentStep" xml:space="preserve"><value>에이전트 단계 모드 전환 — 각 도구 호출 후 일시 정지</value></data>
+  <data name="SlashHintResume" xml:space="preserve"><value>단계 모드 일시 정지 후 에이전트 재개</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>플랜 모드 전환 — 읽기 전용: 탐색하고 계획 제안, 편집 없음</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>재사용 가능한 프롬프트 파일 나열 (.inferpal/prompts) — /prompts [init]</value></data>
+  <data name="SlashHintHardware" xml:space="preserve"><value>GPU/VRAM 프로필 표시 — /hardware [gb]로 VRAM 예산 설정</value></data>
+  <data name="SlashHintSetup" xml:space="preserve"><value>초기 설정 다시 실행 — 백엔드 재감지, 모델 재선택</value></data>
+  <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ 이 백엔드에서는 실시간 VRAM 및 모델별 모니터링을 사용할 수 없습니다. 수동 VRAM 예산(`/hardware &lt;gb&gt;`)은 계속 적합성 검사를 수행합니다.</value></data>
+  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ 모델 관리(pull, delete, running)는 Ollama 백엔드에서만 사용할 수 있습니다.</value></data>
+  <data name="SnippetsCleared" xml:space="preserve"><value>스니펫 라이브러리를 비웠습니다.</value></data>
+  <data name="SnippetsNoSuch" xml:space="preserve"><value>{0}번 스니펫이 없습니다.</value></data>
+  <data name="SnippetsCopied" xml:space="preserve"><value>{0}번 스니펫을 클립보드에 복사했습니다.</value></data>
+  <data name="SnippetsDeleted" xml:space="preserve"><value>{0}번 스니펫을 삭제했습니다.</value></data>
+  <data name="SnippetsNone" xml:space="preserve"><value>저장된 스니펫이 아직 없습니다. 코드 블록의 ⭐ 버튼으로 저장하세요.</value></data>
+  <data name="NoteUsage" xml:space="preserve"><value>사용법: `/note &lt;텍스트&gt;` — 타임스탬프가 있는 메모를 `.inferpal/notes.md`에 추가합니다.</value></data>
+  <data name="NoteSaved" xml:space="preserve"><value>메모를 저장했습니다: *{0}*</value></data>
+  <data name="NotesCleared" xml:space="preserve"><value>프로젝트 메모를 지웠습니다.</value></data>
+  <data name="NotesNoneYet" xml:space="preserve"><value>프로젝트 메모가 아직 없습니다. `/note &lt;텍스트&gt;`로 추가하세요.</value></data>
+  <data name="NotesEmpty" xml:space="preserve"><value>프로젝트 메모 파일이 비어 있습니다.</value></data>
+  <data name="NotesHeading" xml:space="preserve"><value>## 프로젝트 메모</value></data>
+  <data name="PHistoryNoEntry" xml:space="preserve"><value>{0}번 기록 항목이 없습니다.</value></data>
+  <data name="PHistoryEmpty" xml:space="preserve"><value>프롬프트 기록이 비어 있습니다.</value></data>
+  <data name="PHistoryNoMatch" xml:space="preserve"><value>`{0}`과(와) 일치하는 기록 항목이 없습니다.</value></data>
+  <data name="ModelsDeleteUsage" xml:space="preserve"><value>사용법: `/models delete &lt;모델-이름&gt;`</value></data>
+  <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}`을(를) 삭제했습니다.</value></data>
+  <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ `{0}` 삭제에 실패했습니다.</value></data>
+  <data name="ModelsNoneRunning" xml:space="preserve"><value>현재 VRAM에 로드된 모델이 없습니다.</value></data>
+  <data name="ModelsNoneInstalled" xml:space="preserve"><value>설치된 모델이 없습니다. `/models pull &lt;이름&gt;`으로 다운로드하세요.</value></data>
+  <data name="ModelsPullUsage" xml:space="preserve"><value>사용법: `/models pull &lt;모델-이름&gt;`</value></data>
+  <data name="ModelsPulling" xml:space="preserve"><value>⬇ `{0}` 다운로드 중…</value></data>
+  <data name="ModelsPullingStatus" xml:space="preserve"><value>⬇ `{0}` 다운로드 중 — {1}</value></data>
+  <data name="ModelsPulled" xml:space="preserve"><value>✅ `{0}` 다운로드를 완료했습니다.</value></data>
+  <data name="ModelsPullFailed" xml:space="preserve"><value>❌ `{0}` 다운로드에 실패했습니다.</value></data>
+  <data name="SnippetsListHeader" xml:space="preserve"><value>## 저장된 스니펫</value></data>
+  <data name="SnippetsSavedAt" xml:space="preserve"><value>*저장됨 {0}*</value></data>
+  <data name="PHistoryListHeader" xml:space="preserve"><value>## 프롬프트 기록</value></data>
+  <data name="PHistoryListHeaderTerm" xml:space="preserve"><value>## 프롬프트 기록 — `{0}`</value></data>
+  <data name="ModelsRunningHeader" xml:space="preserve"><value>## 실행 중인 모델</value></data>
+  <data name="ModelsInstalledHeader" xml:space="preserve"><value>## 설치된 모델</value></data>
+  <data name="ModelsTableModel" xml:space="preserve"><value>모델</value></data>
+  <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>최근 진단 표시 — `clear`/`on`/`off`</value></data>
+  <data name="DiagnosticsHeader" xml:space="preserve"><value>## 진단</value></data>
+  <data name="DiagnosticsEmpty" xml:space="preserve"><value>기록된 진단이 없습니다.</value></data>
+  <data name="DiagnosticsCleared" xml:space="preserve"><value>진단을 지웠습니다.</value></data>
+  <data name="DiagnosticsFileOn" xml:space="preserve"><value>진단 파일 로깅을 활성화했습니다.</value></data>
+  <data name="DiagnosticsFileOff" xml:space="preserve"><value>진단 파일 로깅을 비활성화했습니다.</value></data>
+  <data name="SlashHintUndoRun" xml:space="preserve"><value>마지막 에이전트 실행의 모든 파일 변경 취소</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>이 세션에는 취소할 파일 변경이 있는 에이전트 실행이 없습니다.</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>이 세션에서 추적된 실행({0}):</value></data>
+  <data name="UndoRunResult" xml:space="preserve"><value>↩ 마지막 실행을 취소함 — {0}개 복원, {1}개 삭제.</value></data>
+  <data name="HardwareUsage" xml:space="preserve"><value>사용법: `/hardware &lt;gb&gt;` — 양수, 예: `/hardware 24`.</value></data>
+  <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM 예산을 {0} GB로 설정했습니다.</value></data>
+  <data name="HardwareReportHeading" xml:space="preserve"><value>## 하드웨어 프로필</value></data>
+  <data name="HardwareBudgetLine" xml:space="preserve"><value>**VRAM 예산:** {0} GB</value></data>
+  <data name="HardwareBudgetNotSet" xml:space="preserve"><value>**VRAM 예산:** 설정되지 않음 — `/hardware &lt;gb&gt;` 실행 (예: `/hardware 24`)</value></data>
+  <data name="HardwareLoadedLine" xml:space="preserve"><value>**현재 로드됨:** {0} GB{1}{2}</value></data>
+  <data name="HardwareOfBudget" xml:space="preserve"><value> / {0} GB</value></data>
+  <data name="HardwareHeadroom" xml:space="preserve"><value> · 여유 {0} GB</value></data>
+  <data name="HardwareCompute" xml:space="preserve"><value>**연산:** {0}</value></data>
+  <data name="HardwareLoadedNone" xml:space="preserve"><value>**현재 로드됨:** 없음</value></data>
+  <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### 로드된 모델
+
+| 모델 | VRAM |
+|---|---|</value></data>
+  <data name="HardwareInstalledModelsTable" xml:space="preserve"><value>### 설치된 모델
+
+| 모델 | 디스크 | 예상 VRAM |
+|---|---|---|</value></data>
+  <data name="HardwareInstalledNote" xml:space="preserve"><value>_설치된 모델의 VRAM 수치는 추정치입니다 (디스크 크기 × 1.2, KV-cache + 런타임 포함)._</value></data>
+  <data name="HardwareContextHeading" xml:space="preserve"><value>### 컨텍스트 창</value></data>
+  <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**구성된 num_ctx:** {0}</value></data>
+  <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**`{0}` 권장 최대값:** {1}{2}</value></data>
+  <data name="HardwareModelMax" xml:space="preserve"><value> (모델 최대 {0})</value></data>
+  <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ num_ctx ({0})가 VRAM 예산에 맞는 범위를 초과합니다 — KV-cache가 시스템 RAM으로 넘쳐 생성 속도가 느려질 수 있습니다. {1}(으)로 낮추는 것을 고려하세요.</value></data>
+  <data name="LabelVramBudget" xml:space="preserve"><value>VRAM 예산</value></data>
+  <data name="HintVramBudget" xml:space="preserve"><value>Ollama 호스트에서 사용 가능한 총 VRAM(GB). 안전한 num_ctx를 권장하고 선택한 모델이 맞지 않을 때 경고하는 데 사용됩니다. 로컬 호스트에서는 비워 두면 자동 감지됩니다. 원격 호스트에서는 수동 값이 필요합니다. `/hardware &lt;gb&gt;`로도 설정할 수 있습니다.</value></data>
+  <data name="TooltipAgentMode" xml:space="preserve"><value>채팅 모드와 에이전트 모드를 전환합니다(자율 Plan → Act → Observe). '자율 에이전트 모드 활성화' 설정과 연동됩니다.</value></data>
+  <data name="LabelModeChat" xml:space="preserve"><value>💬 채팅</value></data>
+  <data name="LabelModeAgent" xml:space="preserve"><value>🤖 에이전트</value></data>
+  <data name="WelcomeSubtitle" xml:space="preserve"><value>코드에 대해 무엇이든 물어보세요</value></data>
+  <data name="WelcomeCardExplain" xml:space="preserve"><value>선택 영역 설명</value></data>
+  <data name="WelcomeCardFix" xml:space="preserve"><value>오류 수정</value></data>
+  <data name="WelcomeCardTest" xml:space="preserve"><value>테스트 생성</value></data>
+  <data name="WelcomeCardHelp" xml:space="preserve"><value>모든 명령 보기</value></data>
+  <data name="BuildBannerTitle" xml:space="preserve"><value>빌드 실패</value></data>
+  <data name="BuildBannerDismiss" xml:space="preserve"><value>닫기</value></data>
+  <data name="BuildBannerFix" xml:space="preserve"><value>AI로 수정</value></data>
+</root>

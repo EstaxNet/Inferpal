@@ -1,0 +1,12 @@
+{
+  "InferpalMenu": "Inferpal",
+  "InferpalChatCommand": "Chat Inferpal",
+  "InferpalSettingsCommand": "Paramètres Inferpal...",
+  "ContextMenuAskInferpal": "Demander à Inferpal",
+  "ContextMenuExplain": "Expliquer",
+  "ContextMenuRefactor": "Refactoriser",
+  "ContextMenuAddTests": "Ajouter des tests",
+  "ContextMenuFix": "Corriger",
+  "ContextMenuAddDocstring": "Ajouter une documentation",
+  "ContextMenuInlineEdit": "Modifier avec l'IA…"
+}

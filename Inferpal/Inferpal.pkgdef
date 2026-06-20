@@ -1,0 +1,38 @@
+// Enregistrement de l'extension Inferpal
+//
+// $RootKey$       → registre prive VS (privateregistry.bin, monte sur HKCU\...\{ver})
+// $PackageFolder$ → repertoire d'installation de l'extension
+
+// ── OOP host (commandes, tool windows — nouveau modele) ──────────────────────────
+[$RootKey$\VisualStudio\Extensibility\Extensions\Inferpal.bf3c1a2e-4d5f-4b8c-9e2a-1f7d3c6e8b4a]
+"CodeBase"="$PackageFolder$\Inferpal.dll"
+"FriendlyName"="Inferpal"
+"Version"="1.0"
+"Publisher"="EstaxNet"
+
+// ── MEF in-process : DLL à scanner pour les exports (GhostTextViewListener, etc.) ─
+// VS lit cette clé depuis privateregistry.bin pour constituer le catalogue MEF.
+// Le deploy-debug.ps1 écrit cette clé directement dans privateregistry.bin car VS
+// ne traite pas les pkgdefs des extensions VSExtensions\ (nouveau modele OOP).
+[$RootKey$\MEFComponent]
+@="$PackageFolder$\Inferpal.dll"
+
+// ── AsyncPackage in-process (GhostTextPackage) ───────────────────────────────────
+// Enregistrement du package traditionnel qui force VS a charger Inferpal.dll
+// en mode in-process au demarrage. Necessaire pour que les exports MEF soient
+// instanties (GhostTextViewListener.TextViewCreated, InlineEditController, etc.).
+[$RootKey$\Packages\{6a7b2c3d-4e5f-4a8b-9c0d-1e2f3a4b5c6d}]
+@="Inferpal GhostText"
+"InprocServer32"="$WinDir$\SYSTEM32\MSCOREE.DLL"
+"Class"="Inferpal.GhostText.GhostTextPackage"
+"CodeBase"="$PackageFolder$\Inferpal.dll"
+"AllowsBackgroundLoading"=dword:00000001
+
+// ── AutoLoadPackages ─────────────────────────────────────────────────────────────
+// Charge GhostTextPackage automatiquement quand VS a une solution ouverte.
+[$RootKey$\AutoLoadPackages\{adfc4e64-0397-11d1-9f4e-00a0c911004f}]
+"{6a7b2c3d-4e5f-4a8b-9c0d-1e2f3a4b5c6d}"=dword:00000002
+
+// Charge GhostTextPackage aussi quand VS est ouvert sans solution.
+[$RootKey$\AutoLoadPackages\{f1536ef8-92ec-443c-9ed7-fdadf150da82}]
+"{6a7b2c3d-4e5f-4a8b-9c0d-1e2f3a4b5c6d}"=dword:00000002
