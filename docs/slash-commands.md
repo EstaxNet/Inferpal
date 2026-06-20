@@ -108,9 +108,9 @@ These run against the active editor selection with tool calling disabled (see
 
 | Command | Description |
 |---|---|
-| `/explain` | Explain the active code |
-| `/fix` | Fix the active code |
-| `/review` | Review the active code |
-| `/refactor` | Refactor the active code |
-| `/test` | Generate tests for the active code |
-| `/doc` | Generate an XML documentation comment for the active code |
+| `/explain` | Explain the active code — read-only, answers in the chat |
+| `/fix` | Fix bugs in the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
+| `/review` | Review the active code — read-only, answers in the chat |
+| `/refactor` | Refactor the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
+| `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists) |
+| `/doc` | Add an XML documentation comment to the active code — **applied directly in the editor** (undoable with Ctrl+Z) |

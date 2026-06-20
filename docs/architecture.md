@@ -123,4 +123,4 @@ IPC channels:
 | Markdown | Markdig 1.2.0 |
 | Vector store | SQLite WAL (`Microsoft.Data.Sqlite` 8.0.16) |
 | C# analysis | `Microsoft.CodeAnalysis.CSharp` 4.14.0 (Roslyn) |
-| MCP client | Home-grown JSON-RPC 2.0 over stdio (zero extra dependencies) |
+| MCP client | Home-grown JSON-RPC 2.0 — stdio + Streamable HTTP (with OAuth 2.1), zero extra dependencies |

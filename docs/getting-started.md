@@ -22,7 +22,7 @@ This guide takes you from nothing to a working Inferpal chat in Visual Studio.
 Pick whichever backend you already use — see **[Providers](providers.md)** for the
 differences.
 
-- **Ollama**
+- **Ollama** (default `:11434`)
   ```powershell
   ollama serve
   ollama pull llama3.1
@@ -30,7 +30,12 @@ differences.
   ollama pull qwen2.5-coder:7b   # inline completions
   ollama pull nomic-embed-text   # semantic search
   ```
-- **LM Studio** — start the local server and load a tool-calling model.
+- **LM Studio** (default `:1234`)
+  1. Open the **Developer** tab (the server view) and **Start** the server.
+  2. **Load** a tool-calling chat model — and, optionally, a FIM model (`qwen2.5-coder`) and
+     an embedding model for semantic search.
+  3. Inferpal uses LM Studio's native `/api/v1/*` API for the model list and load/unload, so
+     `/models` works here too. Point the **Server URL** at `http://localhost:1234`.
 - **OpenAI-compatible** — expose the server's `/v1` endpoint (and an API key if it needs one).
 
 The backend does not have to run on the machine hosting Visual Studio — see

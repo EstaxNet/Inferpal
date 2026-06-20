@@ -1,22 +1,32 @@
 # Remote Inference Guide
 
-Inferpal talks to Ollama over plain HTTP, so the Ollama host does **not** have to be
+Inferpal talks to its model server over plain HTTP, so the server does **not** have to be
 the machine running Visual Studio. Pointing the extension at a remote box — a workstation
 with a big GPU, a home server, another machine on your LAN — lets you keep Visual Studio
 light while a beefier machine does the inference.
 
-This guide covers how to expose a remote Ollama instance, point Inferpal at it, and the
-one setting you must configure by hand because the Ollama API cannot report it: the **VRAM
-budget**.
+This works with **any** provider: **Ollama**, **LM Studio**, or any **OpenAI-compatible**
+server. The only thing that changes per provider is *how you expose the server on the
+network* and the *default port*. This guide covers both Ollama and LM Studio, points
+Inferpal at the host, and explains the one setting you must configure by hand because the
+backend can't report it: the **VRAM budget**.
+
+| Provider | Default port | Inferpal Server URL | How to expose on the network |
+|---|---|---|---|
+| **Ollama** | `11434` | `http://<host>:11434` | `OLLAMA_HOST=0.0.0.0:11434` env var |
+| **LM Studio** | `1234` | `http://<host>:1234` (a `/v1` suffix is also accepted) | **Serve on Local Network** toggle in the Developer/Server tab |
+| **OpenAI-compatible** | varies | your `/v1` base URL | per-server (llama.cpp `--host 0.0.0.0`, vLLM, …) |
 
 ---
 
-## 1. Expose Ollama on the remote host
+## 1. Expose the server on the remote host
+
+### Option A — Ollama
 
 By default Ollama only listens on `127.0.0.1:11434`, which is unreachable from other
 machines. Bind it to all interfaces with the `OLLAMA_HOST` environment variable.
 
-### Windows (remote host)
+**Windows (remote host)**
 
 ```powershell
 # Set it permanently for the current user, then restart Ollama
@@ -25,7 +35,7 @@ setx OLLAMA_HOST "0.0.0.0:11434"
 # Stop-Process -Name ollama -Force ; ollama serve
 ```
 
-### Linux / macOS (remote host)
+**Linux / macOS (remote host)**
 
 ```bash
 # One-off
@@ -36,18 +46,39 @@ OLLAMA_HOST=0.0.0.0:11434 ollama serve
 # then: sudo systemctl daemon-reload && sudo systemctl restart ollama
 ```
 
+### Option B — LM Studio
+
+LM Studio ships a built-in server that speaks the OpenAI `/v1` wire (plus a native
+`/api/v1/*` surface that Inferpal uses for model management and loaded-state). By default
+it listens only on `localhost:1234`; you expose it to the LAN with a single toggle.
+
+1. Open LM Studio and switch to the **Developer** tab (the server view).
+2. **Load** the model(s) you want to serve (a tool-calling chat model, and optionally an
+   embedding model for semantic search).
+3. **Start** the server.
+4. In the server settings, enable **Serve on Local Network** — this rebinds it from
+   `localhost` to `0.0.0.0` so other machines can reach it. Note the **port** (default
+   `1234`).
+
+Prefer the CLI? `lms server start` boots the server; enable the *Serve on Local Network*
+option in the app (or the app settings) so it binds to all interfaces.
+
+> LM Studio has no `keep_alive` idle-unload, so a loaded model stays resident until you
+> unload it or stop the server. That's usually what you want on a dedicated host.
+
 ### Open the firewall
 
-Allow inbound TCP on the Ollama port (default `11434`) on the remote host:
+Allow inbound TCP on the server's port — `11434` for Ollama, `1234` for LM Studio:
 
 ```powershell
-# Windows (run as admin on the remote host)
-New-NetFirewallRule -DisplayName "Ollama" -Direction Inbound -Protocol TCP -LocalPort 11434 -Action Allow
+# Windows (run as admin on the remote host) — adjust the port per provider
+New-NetFirewallRule -DisplayName "Inferpal backend" -Direction Inbound -Protocol TCP -LocalPort 11434 -Action Allow
 ```
 
 ```bash
 # Linux (ufw)
-sudo ufw allow 11434/tcp
+sudo ufw allow 11434/tcp   # Ollama
+sudo ufw allow 1234/tcp    # LM Studio
 ```
 
 ### Verify from the client machine
@@ -55,18 +86,23 @@ sudo ufw allow 11434/tcp
 From the machine running Visual Studio, confirm the host is reachable (replace the IP):
 
 ```powershell
+# Ollama
 curl http://192.168.1.2:11434/api/tags
+# LM Studio (OpenAI-compatible)
+curl http://192.168.1.2:1234/v1/models
 ```
 
-A JSON list of installed models means you're good.
+A JSON list of models means you're good.
 
 ---
 
 ## 2. Point Inferpal at the remote host
 
 1. Open **Inferpal Settings**.
-2. Under **Connection**, leave the provider on **Ollama** and set **Server URL** to the
-   remote address, e.g. `http://192.168.1.2:11434`.
+2. Under **Connection**, set the **Provider** to match the remote server (**Ollama** or
+   **LM Studio**) and set **Server URL** to the remote address:
+   - Ollama → `http://192.168.1.2:11434`
+   - LM Studio → `http://192.168.1.2:1234` (a trailing `/v1` is accepted and normalized)
 3. Click **Test** — it should report **Connected** and the model dropdown should populate
    with the remote host's models.
 4. Pick a chat model (and, optionally, a separate code-actions / FIM / embedding model).
@@ -82,10 +118,11 @@ does locally; the requests just travel over the network.
 
 ## 3. Set the VRAM budget (required for remote hosts)
 
-The Ollama API exposes how much VRAM each **loaded** model currently uses (`/api/ps`), but
-it has **no endpoint that reports the GPU's total VRAM**. On a local host Inferpal can
-auto-detect it via `nvidia-smi`; on a remote host that probe can't run, so the total is
-unknown unless you tell it.
+Neither backend reports the GPU's **total** VRAM over the network. Ollama exposes how much
+VRAM each *loaded* model currently uses (`/api/ps`) but has no total-VRAM endpoint; LM
+Studio reports loaded-state but not a per-model GB figure either. On a **local** host
+Inferpal auto-detects the total via `nvidia-smi`; on a **remote** host that probe can't
+run, so the total is unknown unless you tell it — regardless of provider.
 
 The VRAM budget powers three things:
 
@@ -112,10 +149,10 @@ models, headroom, per-model VRAM estimates, and the context-window recommendatio
 
 ## 4. GPU scheduling across a single backend
 
-A remote host is typically a **single Ollama backend** shared by everything Inferpal
-does: chat/agent requests, background RAG indexing, `@Docs` embedding, and inline
-completions. To stop background work from starving the interactive model, Inferpal
-routes all of it through a central GPU scheduler:
+A remote host is typically a **single backend** (one Ollama or one LM Studio server) shared
+by everything Inferpal does: chat/agent requests, background RAG indexing, `@Docs`
+embedding, and inline completions. To stop background work from starving the interactive
+model, Inferpal routes all of it through a central GPU scheduler:
 
 - a chat/agent run takes a lease for its whole duration;
 - RAG and `@Docs` embedding loops wait while a chat/agent run holds the lease and resume
@@ -124,7 +161,8 @@ routes all of it through a central GPU scheduler:
   don't compete with an active chat.
 
 The practical effect: the interactive model always loads first and you never wait 30
-minutes for a prompt because indexing monopolised the remote GPU.
+minutes for a prompt because indexing monopolised the remote GPU. This is provider-agnostic
+— it applies whether the remote backend is Ollama or LM Studio.
 
 ---
 
@@ -132,17 +170,20 @@ minutes for a prompt because indexing monopolised the remote GPU.
 
 | Symptom | Likely cause / fix |
 |---|---|
-| **Test** fails / Send button greys out | Host not reachable. Re-check `OLLAMA_HOST=0.0.0.0`, the firewall rule, and the IP/port. Confirm with `curl http://<host>:11434/api/tags` from the client. |
-| Connects but no models listed | Ollama is running but has no models pulled. On the remote host: `ollama pull <model>`. |
-| `/hardware` shows "VRAM budget: not set" | Expected on a remote host — set it manually (section 3). Auto-detection only works on loopback. |
-| First completion is slow, then fast | Cold model load on the remote host. The model stays resident per its `keep_alive`; subsequent calls are fast. |
-| AMD GPU: driver crashes or corrupted output | Some ROCm builds are unstable on certain AMD cards. Check Ollama's own GPU / AMD documentation for supported cards and any experimental backends, and make sure both Ollama and the GPU driver are up to date. |
+| **Test** fails / Send button greys out | Host not reachable. For Ollama re-check `OLLAMA_HOST=0.0.0.0`; for LM Studio confirm **Serve on Local Network** is on. Re-check the firewall rule and the IP/port. Confirm with `curl http://<host>:11434/api/tags` (Ollama) or `curl http://<host>:1234/v1/models` (LM Studio) from the client. |
+| Connects but no models listed | The server is running but no model is available. Ollama: `ollama pull <model>` on the host. LM Studio: **load** a model in the Developer tab. |
+| `/hardware` shows "VRAM budget: not set" | Expected on a remote host with either backend — set it manually (section 3). Auto-detection only works on loopback. |
+| First completion is slow, then fast | Cold model load on the remote host. With Ollama the model stays resident per its `keep_alive`; with LM Studio it stays resident until unloaded. Subsequent calls are fast. |
+| LM Studio: model unloads itself unexpectedly | Check the app's auto-unload / JIT settings; LM Studio can evict idle models depending on configuration. |
+| AMD GPU: driver crashes or corrupted output | Some ROCm builds are unstable on certain AMD cards. Check your backend's GPU / AMD documentation for supported cards, and keep both the backend and the GPU driver up to date. |
 
 ---
 
 ## Security note
 
-Binding Ollama to `0.0.0.0` exposes an **unauthenticated** inference API to everyone who
-can reach that port — Ollama has no built-in auth. Only do this on a trusted private
-network. To expose it beyond the LAN, put it behind a reverse proxy that adds TLS and
-authentication, or tunnel it over a VPN / SSH rather than opening the port to the internet.
+Binding a backend to `0.0.0.0` exposes an **unauthenticated** inference API to everyone who
+can reach that port — neither Ollama nor LM Studio has built-in auth on the local-network
+server. Only do this on a trusted private network. To expose it beyond the LAN, put it
+behind a reverse proxy that adds TLS and authentication (then use the OpenAI-compatible
+provider with an **API key** if the proxy expects a bearer token), or tunnel it over a
+VPN / SSH rather than opening the port to the internet.

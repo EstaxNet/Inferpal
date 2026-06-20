@@ -25,8 +25,10 @@ exists.
 ## Code editing & fixing
 
 - **Code actions** (editor context menu → **Inferpal**) — **Explain**, **Fix**, **Refactor**,
-  **Add Tests**, **Add Docstring**. They use a dedicated model, run without tool calling, and
-  answer in the chat window.
+  **Add Tests**, **Add Docstring**. All use a dedicated model and run without tool calling.
+  **Fix**, **Refactor** and **Add Docstring** apply their result **directly in the editor**
+  (undoable with Ctrl+Z); **Add Tests** writes into a **separate test file** (created/opened,
+  or extended if it already exists); only **Explain** answers in the chat window.
 - **Inline Edit (Edit with AI)** — select code (or place the caret on a line), press
   **Ctrl+Shift+I** (or pick **Edit with AI…** from the context menu), type an instruction, and
   the model rewrites the selection **directly in the editor** (re-indented to match the

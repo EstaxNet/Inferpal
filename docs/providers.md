@@ -34,7 +34,8 @@ capability is missing.
 ## Configuring a provider
 
 1. **Settings → Connection → Provider** — choose Ollama / LM Studio / OpenAI-compatible.
-2. **Server URL** — e.g. `http://localhost:11434` (Ollama) or your `/v1` base URL.
+2. **Server URL** — e.g. `http://localhost:11434` (Ollama), `http://localhost:1234`
+   (LM Studio — a trailing `/v1` is accepted), or your `/v1` base URL (OpenAI-compatible).
 3. **API key** — only needed for OpenAI-compatible endpoints that require auth.
 4. **Test** — verifies connectivity and lists models.
 
