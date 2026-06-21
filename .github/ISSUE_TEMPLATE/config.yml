@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/EstaxNet/Inferpal/tree/master/docs
+    about: Setup, configuration, features, slash commands, tools, and architecture.
+  - name: Security vulnerability
+    url: https://github.com/EstaxNet/Inferpal/security/advisories/new
+    about: Report security issues privately (do not open a public issue).

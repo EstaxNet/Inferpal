@@ -1,0 +1,30 @@
+version: 2
+
+updates:
+  # NuGet dependencies (extension + test project share the same lockfile graph).
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Collapse the noisy VS SDK family and routine minor/patch bumps into
+      # single PRs; security updates always get their own PR regardless.
+      visualstudio-sdk:
+        patterns:
+          - "Microsoft.VisualStudio.*"
+          - "Microsoft.VSSDK.*"
+          - "Microsoft.ServiceHub.*"
+          - "StreamJsonRpc"
+          - "MessagePack"
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Keep the GitHub Actions used by CI / CodeQL current.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

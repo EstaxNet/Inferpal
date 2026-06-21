@@ -217,6 +217,24 @@
     -->
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.14.40264" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Text.UI.Wpf"  Version="17.14.249"   PrivateAssets="all" />
+
+    <!-- ── Security remediation ─────────────────────────────────────────────
+         MessagePack is pulled in transitively by the VS Extensibility SDK at 2.5.198,
+         which GHSA-hv8m-jj95-wg3x flags (LZ4 decompression out-of-bounds read). Pin the
+         patched 2.5.301. PrivateAssets="all" keeps it compile/restore-only: like the rest
+         of the SDK, VS provides MessagePack at runtime and it is not shipped in the VSIX. -->
+    <PackageReference Include="MessagePack" Version="2.5.301" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Reviewed NuGet audit suppressions (vulnerable path not reachable in this app) -->
+  <ItemGroup>
+    <!-- GHSA-2m69-gcr7-jv3q / CVE-2025-6965 — SQLite < 3.50.2, reachable only through
+         malicious SQL or an untrusted database file. SQLitePCLRaw ships no fixed bundle
+         yet (every version ≤ 2.1.11 is affected). Inferpal opens only its own local index
+         databases (RAG / @Docs), builds every query itself, and never enables SQLite
+         extension loading, so the vulnerable path is unreachable. Re-evaluate once a
+         patched SQLitePCLRaw.bundle_e_sqlite3 ships. -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
   </ItemGroup>
 
 </Project>

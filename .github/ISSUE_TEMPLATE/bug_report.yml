@@ -1,0 +1,51 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! Please search existing issues first, and include enough
+        detail to reproduce.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: Steps to reproduce → expected → actual
+    validations:
+      required: true
+  - type: input
+    id: vs-version
+    attributes:
+      label: Visual Studio version
+      placeholder: "e.g. 2026 18.0 / 2022 17.12"
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Model provider
+      options:
+        - Ollama
+        - LM Studio
+        - OpenAI-compatible
+        - Not applicable
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model(s) involved
+      placeholder: "e.g. qwen2.5-coder:7b, nomic-embed-text"
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Logs / diagnostics
+      description: Relevant output from `/diagnostics`, the Output window, or any exception text.
+      render: text
+  - type: input
+    id: inferpal-version
+    attributes:
+      label: Inferpal version / commit
+      placeholder: "e.g. v1.0.0 or commit sha"
