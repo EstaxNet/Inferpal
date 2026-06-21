@@ -82,6 +82,11 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
 
     private List<ChatMessageDto>     _history = [];
     private CancellationTokenSource? _currentCts;
+    // Atomic send claim, touched only on the (FIFO, single-threaded) VM context. Guards the
+    // startup window between a send being claimed and IsLoading taking over as the re-entrancy
+    // guard — without it, a burst of Enter presses while the backend is slow to start
+    // responding would each fire a full SendCoreAsync. See SendAsync.
+    private bool                     _sendStarting;
     private ChatMessageItem?         _lastRegenerableMsg;
     private CancellationTokenSource? _mentionCts;
     private CancellationTokenSource? _shadowSearchCts;

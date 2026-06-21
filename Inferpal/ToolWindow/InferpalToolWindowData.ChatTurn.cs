@@ -32,6 +32,9 @@ internal partial class InferpalToolWindowData
     {
         // The send button doubles as a stop button: while a request is running it cancels
         // the in-flight request instead of starting a new one (the XAML shows a red square).
+        // _currentCts is only wired once the request is actually in flight, so an extra Enter
+        // during the brief startup window (before there is anything to cancel) is a no-op here
+        // and is instead absorbed by the atomic claim below.
         if (IsLoading)
         {
             if (_currentCts is { } cts)
@@ -54,24 +57,48 @@ internal partial class InferpalToolWindowData
             }
         }
 
+        // ── Atomic send claim ──────────────────────────────────────────────────────
+        // SendAsync runs off the VM thread, and IsLoading only flips true deep inside
+        // SendCoreAsync (after workspace + RAG context is built, which can be slow on a busy
+        // backend). So two Enter presses arriving in that window would both pass the IsLoading
+        // check above and send the prompt twice. The check-and-claim is therefore done on the
+        // single-threaded, FIFO VM context: the first caller wins and sets _sendStarting; any
+        // duplicate sees it (or IsLoading) already set and bails out. The claim is released
+        // either here (slash / empty / unreachable paths) or, for a normal send, the instant
+        // SendCoreAsync flips IsLoading on — from which point IsLoading is the guard.
         string               userText    = string.Empty;
         List<AttachmentItem> attachments = [];
+        var                  claimed     = false;
 
         await RunOnVMContextAsync(() =>
         {
-            userText    = Prompt.Trim();
-            attachments = [..Attachments];
+            if (_sendStarting || IsLoading) return;
+            userText = Prompt.Trim();
+            if (userText.Length == 0) return;
+            attachments   = [..Attachments];
+            _sendStarting = true;
+            claimed       = true;
         });
-        if (string.IsNullOrEmpty(userText)) return;
+        if (!claimed) return;
 
-        if (userText.StartsWith('/'))
+        try
         {
-            await RunOnVMContextAsync(() => Prompt = string.Empty);
-            await HandleSlashCommandAsync(userText, ct);
-            return;
-        }
+            if (userText.StartsWith('/'))
+            {
+                await RunOnVMContextAsync(() => Prompt = string.Empty);
+                await HandleSlashCommandAsync(userText, ct);
+                return;
+            }
 
-        await SendCoreAsync(userText, oneTimeModel: null, attachments, ct, clearPrompt: true);
+            await SendCoreAsync(userText, oneTimeModel: null, attachments, ct, clearPrompt: true);
+        }
+        finally
+        {
+            // Safety net: release the claim for any path that returned before SendCoreAsync
+            // handed the guard over to IsLoading (slash command, backend unreachable, error).
+            // For a normal send this is already false by now, so it is a harmless no-op.
+            await RunOnVMContextAsync(() => _sendStarting = false);
+        }
     }
 
     /// <param name="clearPrompt">
@@ -107,10 +134,35 @@ internal partial class InferpalToolWindowData
 
         try
         {
+            _sessionStartTime ??= DateTime.Now;
+
+            // ── Instant feedback ─────────────────────────────────────────────────────
+            // Echo the user's message, clear the input and flip into the loading state NOW —
+            // before the (potentially slow) workspace + RAG context building below. A slow
+            // backend used to leave the UI looking frozen for that whole window, which is what
+            // tempted users to press Enter again. From this point IsLoading is the single
+            // re-entrancy guard, so the startup claim (_sendStarting) is handed off / released.
+            await RunOnVMContextAsync(() =>
+            {
+                _config.Save();
+                if (_promptHistory.Append(userText)) // also resets navigation state
+                    SavePromptHistory();
+                if (clearPrompt)
+                {
+                    Prompt         = string.Empty;
+                    Attachments.Clear();
+                    HasAttachments = false;
+                }
+                IsLoading     = true;
+                _sendStarting = false;
+                var userItem  = ChatMessageItem.UserMsg(userText);
+                ApplyItemTheme(userItem);
+                Messages.Insert(Messages.Count - 2, userItem);
+                ScrollToBottom();
+            });
+
             // Build context-enriched history message (not shown in chat bubble)
             historyText = Services.Agent.ChatTurnPolicy.BuildHistoryText(userText, attachments);
-
-            _sessionStartTime ??= DateTime.Now;
 
             // First-turn workspace context: silently prepend solution + open editors
             if (!_workspaceContextInjected && !userText.StartsWith('/'))
@@ -130,20 +182,6 @@ internal partial class InferpalToolWindowData
 
             await RunOnVMContextAsync(() =>
             {
-                _config.Save();
-                if (_promptHistory.Append(userText)) // also resets navigation state
-                    SavePromptHistory();
-                if (clearPrompt)
-                {
-                    Prompt         = string.Empty;
-                    Attachments.Clear();
-                    HasAttachments = false;
-                }
-                IsLoading      = true;
-                var userItem   = ChatMessageItem.UserMsg(userText);
-                ApplyItemTheme(userItem);
-                Messages.Insert(Messages.Count - 2, userItem);
-                ScrollToBottom();
                 _history.Add(new ChatMessageDto("user", historyText));
                 localCts    = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 _currentCts = localCts;
@@ -157,9 +195,15 @@ internal partial class InferpalToolWindowData
         }
         catch (Exception ex)
         {
+            // IsLoading may already be true (set in the instant-feedback block above), so it
+            // must be reset here — this catch is outside the main finally that normally clears it.
             var msg = ex.Message;
             await RunOnVMContextAsync(() =>
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgError(msg))));
+            {
+                IsLoading     = false;
+                _sendStarting = false;
+                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
+            });
             return;
         }
 
