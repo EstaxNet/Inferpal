@@ -55,8 +55,9 @@ Open the generated `.vsix` from `Inferpal\bin\Debug\net8.0-windows\` (or `Releas
 double-click it to install into Visual Studio.
 
 > [!TIP]
-> During development you can deploy straight to the VS experimental hive with
-> `./deploy-debug.ps1` (it auto-detects the hive).
+> Contributors who already have the extension installed can skip the reinstall and push code
+> changes straight into the installed extension with `./deploy-debug.ps1` — see
+> **[Development → Fast redeploy](development.md#fast-redeploy-with-deploy-debugps1)**.
 
 ## 4. Open the tool window
 

@@ -22,14 +22,48 @@ dotnet build Inferpal/Inferpal.csproj -c Release
 
 The VSIX is produced under `Inferpal\bin\Debug\net8.0-windows\` (or `Release\`).
 
-### Deploy to the experimental hive
+### Fast redeploy with `deploy-debug.ps1`
+
+During development, reinstalling the whole `.vsix` after every change is slow. `deploy-debug.ps1`
+is the inner-loop alternative: it rebuilds, copies the fresh `Inferpal.dll` (plus its
+dependencies and resources) straight into the already-installed extension directory, fixes up
+the `GhostTextPackage` registration, and clears the VS caches — so a code change is live after a
+single VS restart.
+
+**Prerequisites**
+
+- **Windows PowerShell 5.1+** (the script declares `#Requires -Version 5.1`).
+- **Visual Studio 2026 (18.x)** — the script resolves MSBuild/`devenv` via `vswhere` in the
+  `[18.0,19.0)` range only. It does **not** target VS 2022; for 2022, reinstall the `.vsix`
+  manually.
+- **The VSIX already installed once, system-wide**, on your main VS 2026 instance. The script
+  refuses to run until it finds an installed `Inferpal.dll` and prints the exact steps if it
+  can't: close VS → double-click the built `.vsix` → **select the main instance (not the
+  Experimental one)** → accept the admin elevation → re-run. A *user-only* (AppData) install is
+  detected and warned about, because the menu labels break (`extensionDir` won't resolve).
+- **Run from the repository root** (the script anchors paths on its own location) and **as
+  Administrator** when the extension lives under `Program Files` (it writes the DLLs there).
+
+**Usage**
 
 ```powershell
-./deploy-debug.ps1      # builds Debug and installs into the VS experimental hive
-./deploy-release.ps1    # Release variant
+./deploy-debug.ps1          # build Debug + deploy; you then restart VS yourself
+./deploy-debug.ps1 -Launch  # also closes VS first and relaunches the main instance at the end
 ```
 
-The script auto-detects the machine-specific experimental hive id — never hard-code it.
+`-Exp` is accepted for backward compatibility but is a no-op.
+
+**What it deploys** — `Inferpal.dll` (+ `.pdb` for Attach-to-Process), third-party dependencies
+and the `runtimes/` native assets synced from the freshly built VSIX (so a newly added NuGet
+package isn't missing at runtime), the per-locale satellite resources, `.vsextension/`
+string-resources, a corrected `manifest.json`, and `Inferpal.pkgdef`. It then registers
+`GhostTextPackage` (`MEFComponent` / `Packages` / `AutoLoadPackages`) in `HKCU` and, when VS is
+closed, in `privateregistry.bin`, and purges the `ComponentModelCache` and `*.mpack` caches.
+
+> [!IMPORTANT]
+> VS must be **restarted** to pick up the changes — the package keys are read from
+> `privateregistry.bin` at startup. The hive id is auto-detected; never hard-code it. To debug
+> the running extension, attach to **`ServiceHub.Host.dotnet.exe`**.
 
 ## Tests
 
