@@ -71,7 +71,7 @@ closed, in `privateregistry.bin`, and purges the `ComponentModelCache` and `*.mp
 dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 ```
 
-The suite has **662 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
+The suite has **969 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
 extension's `internal` types are testable directly. Most services are written as static,
 side-effect-free helpers specifically so they can be unit-tested without Visual Studio (e.g.
 `DiffComputer`, `ContextBudgetGauge`, `ThemePalette`, `ConnectionStatusPresenter`,

@@ -58,6 +58,6 @@ flowchart LR
 | Visual Studio | 2022 (17.9+) or 2026 (18.x) — Community / Professional / Enterprise |
 | Runtime | .NET 8 (`net8.0-windows`) |
 | Extension model | `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x (out-of-process) + in-process MEF for ghost text |
-| Built-in tools | 25 (+ MCP servers + user shell tools) |
+| Built-in tools | 26 (+ MCP servers + user shell tools) |
 | Languages (UI) | 10 |
-| Tests | 662 xUnit tests |
+| Tests | 969 xUnit tests |
