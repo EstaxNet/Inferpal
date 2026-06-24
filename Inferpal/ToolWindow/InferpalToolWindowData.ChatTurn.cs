@@ -309,7 +309,7 @@ internal partial class InferpalToolWindowData
 
             // Decorators when tools are enabled: plan mode filters to read-only tools
             // first, then step mode wraps whatever remains.
-            if (effectiveTools == (IToolRegistry)_tools)
+            if (ReferenceEquals(effectiveTools, _tools))
             {
                 // Start a change-tracking run so this turn's file writes can be reverted via /undo-run.
                 _tools.History.BeginRun();
@@ -495,7 +495,7 @@ internal partial class InferpalToolWindowData
                     var capturedPaths = modifiedPaths;
                     recapItem.InitRestoreCallback(() => Post(() => _ = RestoreAllFilesAsync(capturedPaths)));
                     ApplyItemTheme(recapItem);
-                    Messages.Insert(insertIdx++, recapItem);
+                    Messages.Insert(insertIdx, recapItem);
                 }
 
                 ChatMessageItem? lastAssistant = null;

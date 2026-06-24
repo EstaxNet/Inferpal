@@ -328,7 +328,7 @@ internal partial class InferpalToolWindowData
             result = await _client.RunAgentAsync(
                 model:   _config.DefaultModel,
                 history: fixHistory,
-                tools:   (IToolRegistry)_tools,
+                tools:   _tools,
                 onStep:  step  => Post(() => CurrentStep = step),
                 onToken: token => sink.Append(token),
                 ct:      ct);

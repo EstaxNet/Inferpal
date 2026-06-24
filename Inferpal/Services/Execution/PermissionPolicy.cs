@@ -134,11 +134,11 @@ internal sealed class PermissionPolicy
         var first = line.IndexOf(' ');
         if (first <= 0) return null;
         var decisionTok = line[..first].ToLowerInvariant();
-        var decision = decisionTok switch
+        PermissionDecision? decision = decisionTok switch
         {
             "allow" => PermissionDecision.Allow,
             "deny"  => PermissionDecision.Deny,
-            _       => (PermissionDecision?)null,
+            _       => null,
         };
         if (decision is null) return null;
 

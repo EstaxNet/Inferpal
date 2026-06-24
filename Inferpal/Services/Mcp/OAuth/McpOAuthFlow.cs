@@ -141,9 +141,8 @@ internal sealed class McpOAuthFlow
             response_types           = new[] { "code" },
             token_endpoint_auth_method = "none",
         };
-        using var resp = await _http.PostAsync(endpoint,
-            new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"), ct)
-            .ConfigureAwait(false);
+        using var content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json");
+        using var resp = await _http.PostAsync(endpoint, content, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
 
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
@@ -160,7 +159,8 @@ internal sealed class McpOAuthFlow
 
     private async Task<TokenResponse> PostTokenAsync(string endpoint, Dictionary<string, string> form, CancellationToken ct)
     {
-        using var resp = await _http.PostAsync(endpoint, new FormUrlEncodedContent(form), ct).ConfigureAwait(false);
+        using var content = new FormUrlEncodedContent(form);
+        using var resp = await _http.PostAsync(endpoint, content, ct).ConfigureAwait(false);
         var json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException($"Token endpoint returned {(int)resp.StatusCode}: {json}");

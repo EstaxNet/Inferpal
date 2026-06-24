@@ -155,7 +155,11 @@ internal static class InlineEditReindenter
             {
                 var j  = i;
                 var at = false;
-                while (j < n && (line[j] == '$' || line[j] == '@')) { if (line[j] == '@') at = true; j++; }
+                while (j < n && (line[j] == '$' || line[j] == '@'))
+                {
+                    if (line[j] == '@') at = true;
+                    j++;
+                }
 
                 if (j < n && line[j] == '"')
                 {

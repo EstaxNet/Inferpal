@@ -72,11 +72,6 @@ public class StepModeToolRegistryTests
     [Fact]
     public async Task ExecuteAsync_CallbackInvokedAfterInner()
     {
-        var order = new List<string>();
-        var fake  = new FakeRegistry { ResultToReturn = "r" };
-        fake.Definitions.ToString(); // just to use fake
-
-        // Patch via lambda to record ordering
         var callbackInvoked = false;
 
         var inner = new FakeRegistry();

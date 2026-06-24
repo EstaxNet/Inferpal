@@ -18,7 +18,7 @@ public class HardwareProfileTests
     public void LoadedVramBytes_SumsRunningModels()
     {
         var p = new HardwareProfile(24, [Running("a", 4), Running("b", 2)], []);
-        Assert.Equal((long)(6 * Gb), p.LoadedVramBytes);
+        Assert.Equal(6 * Gb, p.LoadedVramBytes);
         Assert.Equal(6, p.LoadedGb, precision: 1);
     }
 

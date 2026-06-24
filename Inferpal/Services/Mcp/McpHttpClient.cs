@@ -148,30 +148,24 @@ internal sealed partial class McpHttpClient : IMcpClient
             ["params"]  = @params.DeepClone(),
         };
 
-        var resp = await PostAsync(payload, ct).ConfigureAwait(false);
-        try
-        {
-            // A 404 on a request that carried a session id means the server expired it: start a fresh
-            // session and replay the request once (allowReinit guards against looping).
-            if (allowReinit && resp.StatusCode == HttpStatusCode.NotFound && _sessionId is not null)
-            {
-                _sessionId = null;
-                await HandshakeAsync(ct).ConfigureAwait(false);
-                return await SendRequestAsync(method, @params, ct, allowReinit: false).ConfigureAwait(false);
-            }
+        using var resp = await PostAsync(payload, ct).ConfigureAwait(false);
 
-            // 401 with OAuth configured ⇒ token absent/rejected; surface "authorize required".
-            if (resp.StatusCode == HttpStatusCode.Unauthorized && _tokenProvider is not null)
-                NeedsAuthorization = true;
-
-            CaptureSession(resp);
-            resp.EnsureSuccessStatusCode();
-            return await ReadResultAsync(resp, id, ct).ConfigureAwait(false);
-        }
-        finally
+        // A 404 on a request that carried a session id means the server expired it: start a fresh
+        // session and replay the request once (allowReinit guards against looping).
+        if (allowReinit && resp.StatusCode == HttpStatusCode.NotFound && _sessionId is not null)
         {
-            resp.Dispose();
+            _sessionId = null;
+            await HandshakeAsync(ct).ConfigureAwait(false);
+            return await SendRequestAsync(method, @params, ct, allowReinit: false).ConfigureAwait(false);
         }
+
+        // 401 with OAuth configured ⇒ token absent/rejected; surface "authorize required".
+        if (resp.StatusCode == HttpStatusCode.Unauthorized && _tokenProvider is not null)
+            NeedsAuthorization = true;
+
+        CaptureSession(resp);
+        resp.EnsureSuccessStatusCode();
+        return await ReadResultAsync(resp, id, ct).ConfigureAwait(false);
     }
 
     private async Task SendNotificationAsync(string method, CancellationToken ct)
@@ -184,7 +178,7 @@ internal sealed partial class McpHttpClient : IMcpClient
 
     private async Task<HttpResponseMessage> PostAsync(JsonNode payload, CancellationToken ct)
     {
-        var req = new HttpRequestMessage(HttpMethod.Post, _url)
+        using var req = new HttpRequestMessage(HttpMethod.Post, _url)
         {
             Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json"),
         };
@@ -294,7 +288,7 @@ internal sealed partial class McpHttpClient : IMcpClient
             HttpResponseMessage resp;
             try
             {
-                var req = new HttpRequestMessage(HttpMethod.Get, _url);
+                using var req = new HttpRequestMessage(HttpMethod.Get, _url);
                 req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
                 if (_sessionId is not null)
                     req.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);

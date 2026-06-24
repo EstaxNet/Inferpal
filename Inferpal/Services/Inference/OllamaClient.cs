@@ -382,11 +382,11 @@ internal class OllamaClient : InferenceProviderBase
         try
         {
             var base_ = _config.BaseUrl.TrimEnd('/');
-            var req   = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Delete, $"{base_}/api/delete")
+            using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Delete, $"{base_}/api/delete")
             {
                 Content = System.Net.Http.Json.JsonContent.Create(new { name = model }, options: _jsonOpts)
             };
-            var response = await _http.SendAsync(req, ct);
+            using var response = await _http.SendAsync(req, ct);
             return response.IsSuccessStatusCode;
         }
         catch { return false; }

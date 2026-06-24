@@ -524,16 +524,16 @@ internal sealed class NexusIntelligenceTool : ITool
 
     private sealed class CsBridges
     {
-        public List<RestEndpoint> Endpoints    = [];
-        public List<InteropCall>  InteropCalls = [];
-        public List<HubMethod>    HubMethods   = [];
+        public readonly List<RestEndpoint> Endpoints    = [];
+        public readonly List<InteropCall>  InteropCalls = [];
+        public readonly List<HubMethod>    HubMethods   = [];
     }
 
     private sealed class TsBridges
     {
-        public List<RestCaller>  RestCallers  = [];
-        public List<JsFuncDef>   JsFuncDefs   = [];
-        public List<SignalRCall>  SignalRCalls = [];
+        public readonly List<RestCaller>  RestCallers  = [];
+        public readonly List<JsFuncDef>   JsFuncDefs   = [];
+        public readonly List<SignalRCall>  SignalRCalls = [];
     }
 
     // ── Bridge records ─────────────────────────────────────────────────────────

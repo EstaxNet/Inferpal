@@ -108,10 +108,6 @@ internal class AnalyzeImpactTool : ITool
         // ── 4. Classify ───────────────────────────────────────────────────────
         var tests        = layer1.Concat(transitive).Where(d => d.Role == FileRole.Test).ToList();
         var entryPoints  = layer1.Concat(transitive).Where(d => d.Role is FileRole.Command or FileRole.Controller or FileRole.EntryPoint).ToList();
-        var directSrc    = layer1.Where(d => d.Role == FileRole.Source).ToList();
-        var directSpec   = layer1.Where(d => d.Role == FileRole.Test).ToList();
-        var directEntry  = layer1.Where(d => d.Role is FileRole.Command or FileRole.Controller or FileRole.EntryPoint).ToList();
-        var transitiveSrc = transitive.Where(d => d.Role == FileRole.Source).ToList();
 
         // ── 5. Risk calculation ───────────────────────────────────────────────
         var (riskLevel, riskBullets) = RiskCalculator.Compute(
@@ -204,7 +200,6 @@ internal class AnalyzeImpactTool : ITool
                 sb.AppendLine($"  🧪 {t.RelPath}");
 
         // Blast radius summary
-        int total = layer1.Count + transitive.Count;
         sb.AppendLine();
         sb.AppendLine("---");
         sb.AppendLine(Strings.ImpactFooter(layer1.Count, transitive.Count, tests.Count, entryPoints.Count));
@@ -279,7 +274,6 @@ internal class AnalyzeImpactTool : ITool
 
             // Build a mini-API from the layer-1 file's public type names
             // (we just search for references to the layer-1 filename / class names)
-            var depFileName = Path.GetFileNameWithoutExtension(dep.FilePath);
             var depSource   = string.Empty;
             try { depSource = await File.ReadAllTextAsync(dep.FilePath, ct); }
             catch { continue; }

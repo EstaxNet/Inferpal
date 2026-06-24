@@ -132,7 +132,7 @@ internal sealed class GhostTextController
                     {
                         if (token.IsCancellationRequested) return;
                         // Discard if the buffer changed since we triggered.
-                        if (_view.TextBuffer.CurrentSnapshot != snapshot) return;
+                        if (!ReferenceEquals(_view.TextBuffer.CurrentSnapshot, snapshot)) return;
                         _adornment.Append(chunk, anchor);
                     });
                 },
@@ -191,7 +191,7 @@ internal sealed class GhostTextController
             // Guard: if the buffer changed since the completion was triggered, the insertion
             // position would be wrong — discard the stale completion instead of misplacing it.
             var triggered = _triggerSnapshot;
-            if (triggered is not null && _view.TextBuffer.CurrentSnapshot != triggered)
+            if (triggered is not null && !ReferenceEquals(_view.TextBuffer.CurrentSnapshot, triggered))
                 return;
 
             _triggerSnapshot = null; // consumed
@@ -252,7 +252,11 @@ internal sealed class GhostTextController
         var span  = text.AsSpan();
         var found = 0;
         var idx   = 0;
-        while (idx < span.Length && found < count) { if (span[idx] == '\n') found++; idx++; }
+        while (idx < span.Length && found < count)
+        {
+            if (span[idx] == '\n') found++;
+            idx++;
+        }
         return text[..idx];
     }
 }

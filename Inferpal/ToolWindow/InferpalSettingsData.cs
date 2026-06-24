@@ -1522,8 +1522,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         // invisible until the next reload. Rebuilding re-emits a complete snapshot.
         var defs = McpServers.Select(ToConfig).ToList();
         var enabled = _editingOriginalName is null
-            ? true
-            : McpServers.FirstOrDefault(r => r.ServerName == _editingOriginalName)?.Enabled ?? true;
+            || (McpServers.FirstOrDefault(r => r.ServerName == _editingOriginalName)?.Enabled ?? true);
         var newDef = EditServerIsHttp
             ? new Services.Mcp.McpServerConfig(name, null, [], new Dictionary<string, string>(),
                                                Url: url, Headers: ParseEnv(EditServerHeaders), Enabled: enabled)
@@ -1691,8 +1690,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
         var entries = PinnedFileRows.Select(r => (r.Enabled, r.Field1)).ToList();
         var enabled = _editingPinnedOriginal is null
-            ? true
-            : PinnedFileRows.FirstOrDefault(r => r.Field1 == _editingPinnedOriginal)?.Enabled ?? true;
+            || (PinnedFileRows.FirstOrDefault(r => r.Field1 == _editingPinnedOriginal)?.Enabled ?? true);
         var idx = _editingPinnedOriginal is null ? -1 : entries.FindIndex(e => e.Field1 == _editingPinnedOriginal);
         if (idx >= 0) entries[idx] = (enabled, path); else entries.Add((true, path));
 
@@ -1836,8 +1834,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
         var entries = SlashCommandRows.Select(r => (r.Enabled, r.Field1, r.Field2)).ToList();
         var enabled = _editingSlashOriginal is null
-            ? true
-            : SlashCommandRows.FirstOrDefault(r => r.Field1 == _editingSlashOriginal)?.Enabled ?? true;
+            || (SlashCommandRows.FirstOrDefault(r => r.Field1 == _editingSlashOriginal)?.Enabled ?? true);
         var idx = _editingSlashOriginal is null ? -1 : entries.FindIndex(e => e.Field1 == _editingSlashOriginal);
         if (idx >= 0) entries[idx] = (enabled, name, tmpl); else entries.Add((true, name, tmpl));
 
@@ -1913,8 +1910,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
         var entries = CustomToolRows.Select(r => (r.Enabled, r.Field1, r.Field2)).ToList();
         var enabled = _editingToolOriginal is null
-            ? true
-            : CustomToolRows.FirstOrDefault(r => r.Field1 == _editingToolOriginal)?.Enabled ?? true;
+            || (CustomToolRows.FirstOrDefault(r => r.Field1 == _editingToolOriginal)?.Enabled ?? true);
         var idx = _editingToolOriginal is null ? -1 : entries.FindIndex(e => e.Field1 == _editingToolOriginal);
         if (idx >= 0) entries[idx] = (enabled, name, cmd); else entries.Add((true, name, cmd));
 

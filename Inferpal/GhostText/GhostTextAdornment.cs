@@ -59,7 +59,7 @@ internal sealed class GhostTextAdornment
         if (string.IsNullOrEmpty(_pending)) return;
 
         // Guard: anchor might have become invalid if the snapshot rolled forward.
-        if (_anchor.Snapshot != _view.TextBuffer.CurrentSnapshot) return;
+        if (!ReferenceEquals(_anchor.Snapshot, _view.TextBuffer.CurrentSnapshot)) return;
 
         var caretLine = _view.GetTextViewLineContainingBufferPosition(_anchor);
         if (caretLine is null) return;

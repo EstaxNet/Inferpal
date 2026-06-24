@@ -537,14 +537,12 @@ internal class TraceDependencyTool : ITool
 
         public static List<MethodInfo> ParsePython(string source)
         {
-            var lines     = source.Split('\n');
             var methods   = new List<MethodInfo>();
             var matchList = _pyDecl.Matches(source).Cast<Match>().ToList();
 
             for (int i = 0; i < matchList.Count; i++)
             {
                 var m      = matchList[i];
-                var indent = m.Groups[1].Value.Length;
                 var name   = m.Groups[2].Value;
                 var paramStr = m.Groups[3].Value.Trim();
                 int lineNo = CountNewlines(source, m.Index) + 1;
