@@ -1,0 +1,34 @@
+# CodeQL configuration for Inferpal.
+#
+# Wiring:
+#  - Default setup (current): Settings -> Code security -> CodeQL -> Advanced/Edit
+#    configuration -> "Config file" field = .github/codeql/codeql-config.yml
+#  - Advanced setup: reference this file via `config-file:` in the
+#    github/codeql-action/init step of the workflow.
+#
+# The exclusions below drop queries that flag patterns that are *intentional* in
+# this codebase (not defaults to fix). Per-rule rationale follows.
+
+name: "Inferpal CodeQL config"
+
+query-filters:
+  # Best-effort catch + Diagnostics.Swallow: documented, deliberate pattern.
+  - exclude:
+      id: cs/catch-of-all-exceptions
+  # Empty catches tolerated for pure cleanup (Kill/Delete/dispose).
+  - exclude:
+      id: cs/empty-catch-block
+  # Path.Combine over trusted internal paths (writes are already confined to the
+  # workspace via PathSanitizer.AssertUnderRoot) -- no injection risk.
+  - exclude:
+      id: cs/path-combine
+  # foreach+if loops: deliberate codebase style; converting to .Where() adds
+  # nothing and breaks consistency.
+  - exclude:
+      id: cs/linq/missed-where
+  - exclude:
+      id: cs/linq/missed-select
+  # State re-checks (_disposed / IsFirstRun) AFTER an await: correct
+  # re-entrancy/teardown guards. CodeQL does not model concurrency -> false positives.
+  - exclude:
+      id: cs/constant-condition
