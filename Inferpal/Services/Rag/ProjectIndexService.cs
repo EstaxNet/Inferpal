@@ -273,7 +273,7 @@ internal sealed class ProjectIndexService : IDisposable
             var loaded = await db.LoadAsync(ct);
             if (loaded.Count > 0)
             {
-                await ApplyChunksAsync(loaded, ct);
+                await ApplyChunksAsync(loaded, replaceAll: true, ct);
                 Status = $"RAG: {ChunkCount} chunks loaded (verifying changes…)";
             }
 
@@ -344,9 +344,10 @@ internal sealed class ProjectIndexService : IDisposable
                 catch (OperationCanceledException) { throw; }
                 catch { /* skip unreadable files */ }
 
-                // Update in-memory index every 20 files and at the end
+                // Refresh the in-memory index every 20 files (merge — keep the boot-loaded
+                // entries for files not yet verified); the authoritative replace happens below.
                 if (fi % 20 == 0 || fi == files.Count - 1)
-                    await ApplyChunksAsync(newChunks, ct);
+                    await ApplyChunksAsync(newChunks, replaceAll: false, ct);
 
                 // Small throttle every 5 files to avoid flooding Ollama
                 if (fi % 5 == 4)
@@ -354,7 +355,7 @@ internal sealed class ProjectIndexService : IDisposable
             }
 
             // ── Persist final index ───────────────────────────────────────────
-            await ApplyChunksAsync(newChunks, ct);
+            await ApplyChunksAsync(newChunks, replaceAll: true, ct);
             await db.SaveAsync(newChunks, ct);
             var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
             Status = $"RAG: ✅ {ChunkCount} chunks from {files.Count} files{embStatus}";
@@ -408,6 +409,10 @@ internal sealed class ProjectIndexService : IDisposable
 
     private void OnFileChangedCore(string path)
     {
+        // Same exclusions as the full pass — without this, every agent write triggers a
+        // re-index of the .inferpal/history snapshot it just created.
+        if (IsExcluded(path)) return;
+
         lock (_pendingRebuild) _pendingRebuild.Add(path);
 
         // Debounce — wait 5 s after the last change before re-indexing
@@ -500,19 +505,22 @@ internal sealed class ProjectIndexService : IDisposable
             ? "nomic-embed-text"
             : _config.RagEmbeddingModel;
 
-    private async Task ApplyChunksAsync(List<RagChunk> chunks, CancellationToken ct)
+    /// <param name="chunks">Chunks to publish to the in-memory index.</param>
+    /// <param name="replaceAll">
+    /// <c>true</c> replaces the whole index (authoritative end-of-pass state, drops deleted files);
+    /// <c>false</c> merges per file — used for the periodic mid-pass refresh, so the index loaded
+    /// from SQLite at boot keeps serving files the verify pass has not reached yet instead of
+    /// being wiped after the first batch.
+    /// </param>
+    private async Task ApplyChunksAsync(List<RagChunk> chunks, bool replaceAll, CancellationToken ct)
     {
         await _chunkLock.WaitAsync(ct);
         try
         {
-            _chunksByFile.Clear();
-            foreach (var c in chunks)
-            {
-                if (!_chunksByFile.TryGetValue(c.FilePath, out var list))
-                    _chunksByFile[c.FilePath] = list = [];
-                list.Add(c);
-            }
-            ChunkCount = chunks.Count;
+            if (replaceAll) _chunksByFile.Clear();
+            foreach (var group in chunks.GroupBy(c => c.FilePath, StringComparer.OrdinalIgnoreCase))
+                _chunksByFile[group.Key] = [.. group];
+            ChunkCount = _chunksByFile.Values.Sum(l => l.Count);
         }
         finally
         {
@@ -543,24 +551,29 @@ internal sealed class ProjectIndexService : IDisposable
             : 0f;
     }
 
+    // Directory names whose contents must never be indexed: build artifacts, VCS/IDE metadata,
+    // and Inferpal's own data dir — .inferpal/history/ holds snapshot COPIES of source files
+    // (same extensions), which would otherwise pollute the RAG index with stale duplicates.
+    private static readonly string[] ExcludedDirNames =
+        ["obj", "bin", ".git", "node_modules", ".vs", "dist", ".inferpal"];
+
+    private static bool IsExcluded(string path)
+    {
+        foreach (var dir in ExcludedDirNames)
+        {
+            if (path.Contains($@"\{dir}\", StringComparison.OrdinalIgnoreCase) ||
+                path.Contains($"/{dir}/",  StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// Collects source files under <paramref name="rootDir"/>, skipping generated
-    /// artifacts (bin, obj, .git, node_modules, .vs) and oversized files.
+    /// artifacts (bin, obj, .git, node_modules, .vs, .inferpal) and oversized files.
     /// </summary>
     private static List<string> EnumerateSourceFiles(string rootDir)
     {
-        static bool IsExcluded(string path) =>
-            path.Contains(@"\obj\",          StringComparison.Ordinal) ||
-            path.Contains(@"\bin\",          StringComparison.Ordinal) ||
-            path.Contains(@"\.git\",         StringComparison.Ordinal) ||
-            path.Contains(@"\node_modules\", StringComparison.Ordinal) ||
-            path.Contains(@"\.vs\",          StringComparison.Ordinal) ||
-            path.Contains(@"\dist\",         StringComparison.Ordinal) ||
-            path.Contains("/obj/",           StringComparison.Ordinal) ||
-            path.Contains("/bin/",           StringComparison.Ordinal) ||
-            path.Contains("/node_modules/",  StringComparison.Ordinal) ||
-            path.Contains("/.git/",          StringComparison.Ordinal);
-
         var result = new List<string>();
         try
         {

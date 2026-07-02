@@ -242,9 +242,9 @@ internal partial class InferpalToolWindowData
             statusBubble = null;
         }
 
-        // Background RAG indexing yields to this turn automatically: RunAgentAsync now holds a
-        // GpuScheduler chat lease for its whole duration (covers every chat entrypoint, not just
-        // this one), so the chat model is never starved by the embedding workload.
+        // Background RAG indexing yields to this turn automatically: RunAgentAsync and
+        // AgentOrchestrator.RunAsync each hold a GpuScheduler chat lease for their whole duration
+        // (covers every chat entrypoint), so the chat model is never starved by the embedding workload.
         try
         {
             await CompactOrTruncateAsync(localCts!.Token);

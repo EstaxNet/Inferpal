@@ -152,9 +152,10 @@ internal class FetchUrlTool : ITool
 
         if (ip.AddressFamily == AddressFamily.InterNetworkV6)
         {
-            if (ip.Equals(IPAddress.IPv6Loopback)) return true;
+            if (ip.Equals(IPAddress.IPv6Loopback) || ip.Equals(IPAddress.IPv6Any)) return true;
             var b = ip.GetAddressBytes();
-            return (b[0] & 0xFE) == 0xFE && (b[1] & 0xC0) == 0x80; // fe80::/10
+            return ((b[0] & 0xFE) == 0xFE && (b[1] & 0xC0) == 0x80) // fe80::/10 link-local
+                || (b[0] & 0xFE) == 0xFC;                            // fc00::/7  unique-local (ULA)
         }
 
         return false;

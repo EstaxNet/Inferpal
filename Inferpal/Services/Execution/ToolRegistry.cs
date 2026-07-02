@@ -48,7 +48,7 @@ internal class ToolRegistry : IToolRegistry
         Register(new RunCommandTool(approval, config, () => indexService.RootDir));
         Register(new ApplyDiffTool(approval, history, () => indexService.RootDir, smartFix, setDiff));
         Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix));
-        Register(new RestoreFileTool(history));
+        Register(new RestoreFileTool(approval, history, () => indexService.RootDir));
         Register(new DeleteFileTool(approval, history, () => indexService.RootDir));
         Register(new GetDiagnosticsTool());
         Register(new GetActiveDocumentTool(extensibility, contextHolder));

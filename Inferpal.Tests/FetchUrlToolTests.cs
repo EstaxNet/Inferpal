@@ -23,6 +23,10 @@ public class FetchUrlToolTests
     [InlineData("http://169.254.169.254/latest/meta-data/")]
     [InlineData("http://100.64.0.1/")]
     [InlineData("http://[fe80::1]/")]
+    // IPv6 unique-local fc00::/7 (private LANs) and the unspecified address
+    [InlineData("http://[fc00::1]/")]
+    [InlineData("http://[fd12:3456:789a::1]/")]
+    [InlineData("http://[::]/")]
     // 0.0.0.0/8 "this host" and IPv4-mapped IPv6 smuggling a private v4 address
     [InlineData("http://0.0.0.0/")]
     [InlineData("http://[::ffff:127.0.0.1]/")]

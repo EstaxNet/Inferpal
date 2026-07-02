@@ -58,7 +58,11 @@ internal sealed class RunCommandTool : ITool
         var rawWorkDir = args.TryGetProperty("working_directory", out var wd) ? wd.GetString() : null;
         var workDir    = string.IsNullOrWhiteSpace(rawWorkDir) ? null : PathSanitizer.Sanitize(rawWorkDir);
 
-        if (!await _approval.RequestApprovalAsync("run_command", command, ct))
+        // Surface a model-chosen working directory in the prompt: approving "git clean -fdx"
+        // reads very differently when it runs outside the session cwd the user has in mind.
+        // Permission rules keep matching the raw command (the documented subject for run_command).
+        var details = workDir is null ? command : $"{command}\n[cwd: {workDir}]";
+        if (!await _approval.RequestApprovalAsync("run_command", details, ct, subject: command))
             return Strings.RunCancelled;
 
         var background = args.TryGetProperty("background", out var bg) && bg.ValueKind == JsonValueKind.True;

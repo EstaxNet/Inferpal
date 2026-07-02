@@ -93,18 +93,29 @@ internal sealed class BackgroundShellRegistry
         lock (_lock) _jobs.TryGetValue(id, out job);
         if (job is null) return new PollResult(false, string.Empty, false, null);
 
+        // Snapshot the exited flag BEFORE draining and reading: if the process exits after this
+        // point, this poll reports it as still running and the next poll does the drained read.
+        var exited = job.Exited;
+
+        // The Exited event can fire before the async stdout/stderr callbacks have delivered the
+        // last lines. Parameterless WaitForExit() on an already-exited process blocks only until
+        // those redirected streams are drained — without it the tail of the output is lost.
+        if (exited)
+            try { job.Process.WaitForExit(); } catch { }
+
         string chunk;
-        bool exited;
         int? exit;
         lock (job.Lock)
         {
             chunk = job.Buffer.ToString(job.ReadOffset, job.Buffer.Length - job.ReadOffset);
             job.ReadOffset = job.Buffer.Length;
-            exited = job.Exited;
             exit   = job.ExitCode;
         }
         if (exited)
+        {
             lock (_lock) _jobs.Remove(id);
+            try { job.Process.Dispose(); } catch { }
+        }
 
         return new PollResult(true, chunk, !exited, exit);
     }

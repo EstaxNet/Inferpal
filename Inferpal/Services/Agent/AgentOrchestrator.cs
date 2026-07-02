@@ -1,4 +1,4 @@
-using Inferpal.Config;
+﻿using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services.Tools;
@@ -63,7 +63,7 @@ internal sealed class AgentOrchestrator
     // within a single agent run. Uses the arguments' raw JSON text: models re-issue byte-identical
     // calls when looping, so exact-text matching is sufficient and avoids false merges.
     internal static string ToolCallKey(string toolName, System.Text.Json.JsonElement args) =>
-        toolName + "" + args.GetRawText();
+        toolName + "\u0001" + args.GetRawText();
 
     internal const int MaxToolResultCharsInContext = 8000;
 
@@ -404,6 +404,12 @@ internal sealed class AgentOrchestrator
         CancellationToken          ct,
         Action<string>?            onThinking = null)
     {
+        // Claim the shared GPU for the whole run, like InferenceProviderBase.RunAgentAsync does for
+        // the basic loop: this path calls SendChatAsync directly, so without its own lease the
+        // background embedding loops keep the GPU busy and the cross-process FIM never yields
+        // during an orchestrated (Agent mode) run. Re-entrant, so nesting under RunAgentAsync is safe.
+        using var gpuLease = GpuScheduler.AcquireChatLease();
+
         // Early-exit checks (circuit breaker, URL) are handled inside SendChatAsync.
         var messages    = new List<ChatMessageDto>(history);
         // The user's current request (last user turn) — quoted in the synthesis prompt so the

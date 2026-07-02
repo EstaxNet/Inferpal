@@ -29,8 +29,10 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
 
         try
         {
-            // Encode the whole script as Base64 UTF-16 so LLM-supplied `args` can't break
-            // out of the command via shell metacharacters (mirrors RunCommandTool).
+            // Base64 UTF-16 keeps the script intact across the process command line (quoting,
+            // '&', newlines…). It does NOT sandbox `args`: they are appended INTO the script and
+            // may contain arbitrary PowerShell by design — the approval prompt above (which shows
+            // the full command, args included) and the permission rules are the actual guard.
             var encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(fullCmd));
 
             var psi = new ProcessStartInfo
