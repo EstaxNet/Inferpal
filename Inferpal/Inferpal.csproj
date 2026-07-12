@@ -167,6 +167,13 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- Licence GPL-3.0 embarquée à la racine du VSIX — requise par le schéma VSIX 2.0 :
+         <License> doit référencer un fichier .txt/.rtf DANS le package (pas une URL),
+         sinon la validation Marketplace échoue. Copie de ..\LICENSE. -->
+    <Content Include="LICENSE.txt">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <!-- Extension icon — place a 128x128 PNG at Inferpal/assets/icon.png before publishing -->
     <Content Include="assets\icon.png" Condition="Exists('assets\icon.png')">
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -190,6 +197,22 @@
     <Copy SourceFiles="$(ProjectDir)Localization\ko\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\ko"       SkipUnchangedFiles="true" />
     <Copy SourceFiles="$(ProjectDir)Localization\pl\string-resources.json"    DestinationFolder="$(OutputPath).vsextension\pl"       SkipUnchangedFiles="true" />
     <Copy SourceFiles="$(ProjectDir)Localization\zh-CN\string-resources.json" DestinationFolder="$(OutputPath).vsextension\zh-CN"   SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- ── Purge des runtimes non-Windows du VSIX ──────────────────────────────
+       SQLitePCLRaw (via Microsoft.Data.Sqlite) tire ~15 Mo de natifs Linux/macOS/wasm
+       (libe_sqlite3.so/.dylib/.a). Inutiles (extension Windows amd64 uniquement) et
+       surtout : des binaires ELF/Mach-O dans un VSIX déclenchent le flag
+       « suspicious content » du scan anti-malware du Marketplace.
+       On ne conserve que runtimes\win\ (managés Windows) et les natifs win-x64/win-arm64
+       (le manifest généré par le SDK cible amd64 ET arm64). -->
+  <Target Name="PruneNonWindowsRuntimeAssets" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)"
+        Condition="!$([System.String]::Copy('%(RuntimeTargetsCopyLocalItems.DestinationSubDirectory)').Replace('/','\').StartsWith('runtimes\win\')) And !$([System.String]::Copy('%(RuntimeTargetsCopyLocalItems.DestinationSubDirectory)').Replace('/','\').StartsWith('runtimes\win-x64\')) And !$([System.String]::Copy('%(RuntimeTargetsCopyLocalItems.DestinationSubDirectory)').Replace('/','\').StartsWith('runtimes\win-arm64\'))" />
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)"
+        Condition="'%(NativeCopyLocalItems.DestinationSubDirectory)' != '' And !$([System.String]::Copy('%(NativeCopyLocalItems.DestinationSubDirectory)').Replace('/','\').StartsWith('runtimes\win\')) And !$([System.String]::Copy('%(NativeCopyLocalItems.DestinationSubDirectory)').Replace('/','\').StartsWith('runtimes\win-x64\')) And !$([System.String]::Copy('%(NativeCopyLocalItems.DestinationSubDirectory)').Replace('/','\').StartsWith('runtimes\win-arm64\'))" />
+    </ItemGroup>
   </Target>
 
   <ItemGroup>

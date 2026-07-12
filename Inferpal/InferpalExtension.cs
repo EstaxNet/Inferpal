@@ -23,13 +23,25 @@ public class InferpalExtension : Extension
 {
     public override ExtensionConfiguration ExtensionConfiguration => new()
     {
+        // ⚠ C'est CE bloc (pas source.extension.vsixmanifest) que le SDK Extensibility
+        // sérialise en extension.vsixmanifest dans le VSIX. La validation Marketplace
+        // exige que License pointe vers un fichier .txt/.rtf embarqué dans le package.
+        // ⚠ La qualification `this.ExtensionAssemblyVersion` est OBLIGATOIRE : non qualifié,
+        // le générateur du SDK ne substitue pas la version → Identity Version="0.0.0.0".
         Metadata = new(
             id: "Inferpal.bf3c1a2e-4d5f-4b8c-9e2a-1f7d3c6e8b4a",
-            version: ExtensionAssemblyVersion,
+            version: this.ExtensionAssemblyVersion,
             publisherName: "EstaxNet",
             displayName: "Inferpal",
             description: "AI developer assistant for self-hosted LLMs — Ollama, LM Studio, or any OpenAI-compatible server, on your machine or your own remote host. Autonomous agentic loop with 26 built-in tools: read/write files, run builds and tests, semantic codebase search, inline completions, query Git, browse the web — no mandatory cloud, no telemetry."
         )
+        {
+            License = "LICENSE.txt",
+            Icon = @"assets\icon.png",
+            MoreInfo = "https://github.com/EstaxNet/Inferpal",
+            Tags = ["AI", "LLM", "Ollama", "LM Studio", "Assistant", "Code", "Local", "Agentic", "Autocomplete", "RAG"],
+            Preview = false,
+        }
     };
 
     protected override void InitializeServices(IServiceCollection services)

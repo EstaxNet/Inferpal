@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ⚠ ATTENTION : ce fichier N'EST PAS le manifest packagé dans le VSIX.
+     Le SDK VisualStudio.Extensibility GÉNÈRE extension.vsixmanifest depuis
+     ExtensionConfiguration.Metadata dans InferpalExtension.cs — c'est LÀ que
+     License/Icon/Tags/MoreInfo doivent être déclarés. Ce fichier est conservé
+     comme documentation d'intention (cibles d'installation souhaitées). -->
 <PackageManifest Version="2.0.0"
                  xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011"
                  xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
@@ -9,9 +14,12 @@
               Publisher="EstaxNet" />
     <DisplayName>Inferpal</DisplayName>
     <Description xml:space="preserve">AI developer assistant for self-hosted LLMs — Ollama, LM Studio, or any OpenAI-compatible server, on your machine or your own remote host. Autonomous agentic loop with 26 built-in tools: read/write files, run builds and tests, semantic codebase search, inline ghost-text completions, query Git, browse the web — no mandatory cloud, no telemetry.</Description>
-    <Tags>AI, LLM, Ollama, LM Studio, Assistant, Code, Local, Agentic, Copilot, Autocomplete, RAG</Tags>
+    <MoreInfo>https://github.com/EstaxNet/Inferpal</MoreInfo>
+    <!-- La licence DOIT être un fichier .txt/.rtf embarqué dans le VSIX (schéma VSIX 2.0),
+         pas une URL — une URL fait échouer la validation Marketplace. -->
+    <License>LICENSE.txt</License>
     <Icon>assets\icon.png</Icon>
-    <License>https://www.gnu.org/licenses/gpl-3.0.txt</License>
+    <Tags>AI, LLM, Ollama, LM Studio, Assistant, Code, Local, Agentic, Autocomplete, RAG</Tags>
   </Metadata>
 
   <Installation ExtensionType="VisualStudio.Extensibility">
