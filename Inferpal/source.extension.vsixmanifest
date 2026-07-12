@@ -9,7 +9,7 @@
                  xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
     <Identity Id="Inferpal.bf3c1a2e-4d5f-4b8c-9e2a-1f7d3c6e8b4a"
-              Version="1.0.0.0"
+              Version="1.0.1.0"
               Language="en-US"
               Publisher="EstaxNet" />
     <DisplayName>Inferpal</DisplayName>
