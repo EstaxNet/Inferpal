@@ -25,12 +25,9 @@
   — double-click to install. Visual Studio Marketplace listing coming soon.
 </p>
 
-<!-- TODO: drop a demo capture at docs/assets/demo.gif (agent completing a task:
-     prompt → tool calls → approval card → diff) and uncomment:
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="Inferpal completing a task with local tools" width="800">
+  <img src="docs/assets/demo.gif" alt="Inferpal agent adding validation and tests to a C# method: plan, approval-gated diffs, live edits, test run — all on a local model" width="820">
 </p>
--->
 
 ---
 
