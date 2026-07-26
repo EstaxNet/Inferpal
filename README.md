@@ -20,6 +20,18 @@
   <img src="https://img.shields.io/badge/Visual%20Studio-2022%20%2F%202026-5C2D91" alt="Visual Studio 2022 / 2026">
 </p>
 
+<p align="center">
+  <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><b>⬇ Download the latest Inferpal.vsix</b></a>
+  — double-click to install. Visual Studio Marketplace listing coming soon.
+</p>
+
+<!-- TODO: drop a demo capture at docs/assets/demo.gif (agent completing a task:
+     prompt → tool calls → approval card → diff) and uncomment:
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="Inferpal completing a task with local tools" width="800">
+</p>
+-->
+
 ---
 
 ## What is Inferpal?
@@ -61,18 +73,17 @@ key, no telemetry, no cloud required.
 
 ## Quick Start
 
-```powershell
-# 1. Start a model server (Ollama shown; LM Studio / OpenAI-compatible also work)
-ollama serve
-ollama pull llama3.1
+1. Download **[the latest `Inferpal.vsix`](https://github.com/EstaxNet/Inferpal/releases/latest)** and double-click it to install
+   (or build from source: `dotnet build Inferpal/Inferpal.csproj` — see [Development](docs/development.md)).
+2. Start a model server:
 
-# 2. Build the extension
-dotnet build Inferpal/Inferpal.csproj
-```
+   ```powershell
+   ollama serve          # LM Studio / any OpenAI-compatible server also work
+   ollama pull llama3.1
+   ```
 
-3. Double-click the generated `.vsix` in `Inferpal\bin\Debug\net8.0-windows\` to install.
-4. In Visual Studio open **Tools → Inferpal** (or **Alt+B** / **Alt+O**).
-5. Open **Inferpal Settings**, pick the provider, set the server URL, select a model, click **Test**, then start chatting.
+3. In Visual Studio open **Tools → Inferpal** (or **Alt+B** / **Alt+O**).
+4. Open **Inferpal Settings**, pick the provider, set the server URL, select a model, click **Test**, then start chatting.
 
 Full walkthrough: **[Getting Started](docs/getting-started.md)**.
 
