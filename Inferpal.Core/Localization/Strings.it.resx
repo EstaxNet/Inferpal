@@ -654,6 +654,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Consenti una volta</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Consenti sempre questo strumento</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Annulla</value></data>
+  <data name="ApprovalDialogTitle" xml:space="preserve"><value>Approvazione richiesta</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>Bloccato da una regola di autorizzazione (deny): {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>Bloccato dalla denylist di sicurezza integrata (comando catastrofico): {0}</value></data>
   <data name="McpAddServer" xml:space="preserve"><value>+ Aggiungi un server</value></data>

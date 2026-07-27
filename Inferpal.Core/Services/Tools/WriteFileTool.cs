@@ -47,11 +47,10 @@ internal class WriteFileTool : ITool
             ? Strings.WriteOverwrite(path, content.Length)
             : Strings.WriteCreate(path, content.Length);
 
-        // Show the change in the approval prompt so the user confirms the actual diff, not just a path.
-        var diffText = DiffComputer.ComputeText(oldContent, content);
-        if (diffText is not null) details += "\n\n" + diffText;
-
-        if (!await _approval.RequestApprovalAsync("write_file", details, ct, subject: path))
+        // Pass the structured change so the approval prompt shows the actual diff, not just a path
+        // (colored viewer in VS; textual fallback elsewhere).
+        if (!await _approval.RequestApprovalAsync("write_file", details, ct, subject: path,
+                diff: new DiffInfo(oldContent, content, path)))
             return Strings.WriteCancelled;
 
         var snapNote = string.Empty;

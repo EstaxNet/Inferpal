@@ -108,6 +108,7 @@ internal partial class InferpalToolWindowData
     private void ApplyThemeColors(bool isDark)
     {
         _isDark          = isDark;
+        VsThemeDetector.CurrentIsDark = isDark;
         var p            = ThemePalette.For(isDark);
         ThemeWindowBg    = p.WindowBg;
         ThemeText        = p.Text;
@@ -147,15 +148,7 @@ internal partial class InferpalToolWindowData
         }
 
         // Diff viewer: green-background additions / red-background deletions per the active theme.
-        foreach (var d in item.DiffLines)
-        {
-            (d.Background, d.Foreground) = d.Prefix switch
-            {
-                "+" => (p.DiffAddBg,    p.DiffAddText),
-                "-" => (p.DiffRemoveBg, p.DiffRemoveText),
-                _   => ("Transparent",  p.BubbleSubtleText),
-            };
-        }
+        DiffLine.ApplyTheme(item.DiffLines, p);
     }
 
     private void UpdateMessageBubbles()

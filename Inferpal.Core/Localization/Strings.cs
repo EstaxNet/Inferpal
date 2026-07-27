@@ -439,6 +439,9 @@ internal static class Strings
     public static string ApprovalAlwaysAllow => Get(nameof(ApprovalAlwaysAllow));
     public static string ApprovalDeny        => Get(nameof(ApprovalDeny));
 
+    /// <summary>Title of the modal approval dialog showing the colored diff preview.</summary>
+    public static string ApprovalDialogTitle => Get(nameof(ApprovalDialogTitle));
+
     /// <summary>Action blocked by a user-defined <c>deny</c> permission rule.</summary>
     public static string PermissionBlockedRule(string subject) =>
         string.Format(Get(nameof(PermissionBlockedRule)), subject);

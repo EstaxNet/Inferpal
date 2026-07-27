@@ -654,6 +654,7 @@ ollama serve
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Разрешить один раз</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Всегда разрешать этот инструмент</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Отмена</value></data>
+  <data name="ApprovalDialogTitle" xml:space="preserve"><value>Требуется подтверждение</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>Заблокировано правилом разрешений (deny): {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>Заблокировано встроенным защитным чёрным списком (катастрофическая команда): {0}</value></data>
   <data name="McpAddServer" xml:space="preserve"><value>+ Добавить сервер</value></data>

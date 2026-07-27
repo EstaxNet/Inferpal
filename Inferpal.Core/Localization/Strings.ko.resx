@@ -654,6 +654,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>한 번 허용</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>이 도구 항상 허용</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>취소</value></data>
+  <data name="ApprovalDialogTitle" xml:space="preserve"><value>승인 필요</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>권한 규칙(deny)에 의해 차단됨: {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>내장 보안 차단 목록(치명적 명령)에 의해 차단됨: {0}</value></data>
   <data name="McpAddServer" xml:space="preserve"><value>+ 서버 추가</value></data>

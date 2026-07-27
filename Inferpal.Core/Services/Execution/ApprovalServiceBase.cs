@@ -43,9 +43,11 @@ internal abstract class ApprovalServiceBase : IApprovalService
     }
 
     /// <summary>Shows the editor-specific approval prompt and returns the user's decision.</summary>
-    protected abstract Task<ApprovalDecision> PromptUserAsync(string message, CancellationToken ct);
+    /// <param name="diff">Structured change to preview; renderers without a rich surface flatten
+    /// it via <c>DiffComputer.ComputeText</c>, rich ones show the colored diff viewer.</param>
+    protected abstract Task<ApprovalDecision> PromptUserAsync(string message, Services.CodeActions.DiffInfo? diff, CancellationToken ct);
 
-    public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null)
+    public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null)
     {
         // The value the rules match against: the explicit subject (raw path for file tools) when
         // provided, otherwise the details (already the raw command/url/query for the other tools).
@@ -72,7 +74,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
         var message = Strings.ApprovalMessage(toolName, details);
 
-        var promptDecision = await PromptUserAsync(message, ct);
+        var promptDecision = await PromptUserAsync(message, diff, ct);
         if (promptDecision == ApprovalDecision.Always)
             _sessionAllowed[toolName] = 0;
 

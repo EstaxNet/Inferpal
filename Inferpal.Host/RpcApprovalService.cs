@@ -17,10 +17,18 @@ internal sealed class RpcApprovalService : ApprovalServiceBase
     public RpcApprovalService(InferpalConfig config, Func<string?> rootDir, JsonRpc rpc)
         : base(config, rootDir) => _rpc = rpc;
 
-    protected override async Task<ApprovalDecision> PromptUserAsync(string message, CancellationToken ct)
+    protected override async Task<ApprovalDecision> PromptUserAsync(string message, Services.CodeActions.DiffInfo? diff, CancellationToken ct)
     {
         try
         {
+            // No rich diff surface over the wire yet: flatten the structured change to the
+            // prefixed text the VS Code approval card already renders.
+            if (diff is not null)
+            {
+                var diffText = Services.CodeActions.DiffComputer.ComputeText(diff.OldText, diff.NewText);
+                if (diffText is not null) message += "\n\n" + diffText;
+            }
+
             var answer = await _rpc.InvokeWithParameterObjectAsync<int>(
                 "approval/request", new { message }, ct);
             return answer switch

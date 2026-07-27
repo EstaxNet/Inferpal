@@ -12,7 +12,7 @@ public class ApplyEditsToolTests
 {
     private sealed class StubApproval(bool approve) : IApprovalService
     {
-        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null)
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, DiffInfo? diff = null)
             => Task.FromResult(approve);
     }
 

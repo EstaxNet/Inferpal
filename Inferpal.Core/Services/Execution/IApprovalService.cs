@@ -23,5 +23,10 @@ internal interface IApprovalService
     /// the raw value for <c>run_command</c>/<c>fetch_url</c>/<c>web_search</c>); pass it explicitly for
     /// tools whose <paramref name="details"/> is a localized sentence (file writes/deletes).
     /// </param>
-    Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null);
+    /// <param name="diff">
+    /// Structured old→new change for file-mutating tools, so the prompt can render a rich
+    /// colored diff. Implementations without a rich surface flatten it to text
+    /// (<c>DiffComputer.ComputeText</c>); <c>null</c> for tools with nothing to preview.
+    /// </param>
+    Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null);
 }

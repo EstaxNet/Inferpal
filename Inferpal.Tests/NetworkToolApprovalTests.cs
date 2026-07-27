@@ -15,7 +15,7 @@ public class NetworkToolApprovalTests
     {
         public int Calls { get; private set; }
         public string? LastTool { get; private set; }
-        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null)
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, DiffInfo? diff = null)
         {
             Calls++;
             LastTool = toolName;

@@ -13,7 +13,7 @@ public class McpToolServiceTests
 
     private sealed class AutoApprove : IApprovalService
     {
-        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null)
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, DiffInfo? diff = null)
             => Task.FromResult(true);
     }
 

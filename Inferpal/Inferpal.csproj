@@ -91,9 +91,13 @@
     <EmbeddedResource Include="ToolWindow\InferpalSettingsContent.xaml">
       <LogicalName>Inferpal.ToolWindow.InferpalSettingsContent.xaml</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="ToolWindow\ApprovalDialogControl.xaml">
+      <LogicalName>Inferpal.ToolWindow.ApprovalDialogControl.xaml</LogicalName>
+    </EmbeddedResource>
     <!-- Exclude these files from the WPF (Page) pipeline to avoid double compilation -->
     <Page Remove="ToolWindow\InferpalToolWindowContent.xaml" />
     <Page Remove="ToolWindow\InferpalSettingsContent.xaml" />
+    <Page Remove="ToolWindow\ApprovalDialogControl.xaml" />
   </ItemGroup>
 
   <ItemGroup>

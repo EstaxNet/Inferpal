@@ -654,6 +654,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>1回だけ許可</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>このツールを常に許可</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="ApprovalDialogTitle" xml:space="preserve"><value>承認が必要です</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>権限ルール（deny）によりブロックされました：{0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>組み込みの安全拒否リスト（破壊的コマンド）によりブロックされました：{0}</value></data>
   <data name="McpAddServer" xml:space="preserve"><value>+ サーバーを追加</value></data>

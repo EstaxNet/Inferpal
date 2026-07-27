@@ -654,6 +654,7 @@ ollama serve
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>允许一次</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>始终允许此工具</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>取消</value></data>
+  <data name="ApprovalDialogTitle" xml:space="preserve"><value>需要批准</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>被权限规则（deny）阻止：{0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>被内置安全拒绝列表（灾难性命令）阻止：{0}</value></data>
   <data name="McpAddServer" xml:space="preserve"><value>+ 添加服务器</value></data>

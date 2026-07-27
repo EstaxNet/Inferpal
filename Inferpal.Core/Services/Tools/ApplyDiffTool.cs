@@ -61,12 +61,11 @@ internal class ApplyDiffTool : ITool
 
         var modified = resolution.Modified;
 
-        // Show the change in the approval prompt so the user confirms the actual diff, not just a path.
-        var details  = Strings.DiffConfirm(path);
-        var diffText = DiffComputer.ComputeText(fileContent, modified);
-        if (diffText is not null) details += "\n\n" + diffText;
-
-        if (!await _approval.RequestApprovalAsync("apply_diff", details, ct, subject: path))
+        // Pass the structured change so the approval prompt shows the actual diff, not just a path
+        // (colored viewer in VS; textual fallback elsewhere).
+        var details = Strings.DiffConfirm(path);
+        if (!await _approval.RequestApprovalAsync("apply_diff", details, ct, subject: path,
+                diff: new DiffInfo(fileContent, modified, path)))
             return Strings.DiffCancelled;
 
         var snapPath = await _history.SnapshotAsync(path, ct);

@@ -11,6 +11,14 @@ namespace Inferpal.ToolWindow;
 /// </summary>
 internal static class VsThemeDetector
 {
+    /// <summary>
+    /// Last theme resolved by the tool-window subscription (<c>ApplyThemeColors</c>), so
+    /// transient UI created outside the VM hierarchy (the approval dialog) can pick the
+    /// right palette without its own settings subscription. Initialized from the OS theme
+    /// until the first VS notification lands.
+    /// </summary>
+    internal static volatile bool CurrentIsDark = OsDarkMode();
+
     // Legacy per-theme GUIDs (VS 2012–2022); still emitted by older settings stores.
     private const string LightThemeGuid = "de3dbbcd-f642-433c-8353-8f1df4370aba";
     private const string BlueThemeGuid  = "a4d9300f-a12c-4592-9606-be6f4e1a22ca";

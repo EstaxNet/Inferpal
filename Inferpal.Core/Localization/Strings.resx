@@ -649,6 +649,7 @@ ollama serve
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Allow once</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Always allow this tool</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Cancel</value></data>
+  <data name="ApprovalDialogTitle" xml:space="preserve"><value>Approval required</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>Blocked by a permission rule (deny): {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>Blocked by the built-in safety denylist (catastrophic command): {0}</value></data>
   <data name="McpAddServer" xml:space="preserve"><value>+ Add a server</value></data>

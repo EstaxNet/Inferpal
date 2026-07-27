@@ -21,4 +21,22 @@ internal sealed class DiffLine : NotifyPropertyChangedObject
     /// to this Remote-UI observable type. Pure mapping, no logic — colours come from the theme.</summary>
     internal static DiffLine FromModel(DiffLineModel model) =>
         new() { Prefix = model.Prefix, Text = model.Text };
+
+    /// <summary>
+    /// Applies the palette's diff colouring (green-background additions / red-background
+    /// deletions) to a set of lines. Shared by the chat tool bubbles (ApplyItemTheme) and
+    /// the approval dialog so both render the diff identically.
+    /// </summary>
+    internal static void ApplyTheme(IEnumerable<DiffLine> lines, ThemePalette palette)
+    {
+        foreach (var d in lines)
+        {
+            (d.Background, d.Foreground) = d.Prefix switch
+            {
+                "+" => (palette.DiffAddBg,    palette.DiffAddText),
+                "-" => (palette.DiffRemoveBg, palette.DiffRemoveText),
+                _   => ("Transparent",        palette.BubbleSubtleText),
+            };
+        }
+    }
 }

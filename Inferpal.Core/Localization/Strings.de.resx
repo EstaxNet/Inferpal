@@ -654,6 +654,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Einmal zulassen</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Dieses Tool immer zulassen</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="ApprovalDialogTitle" xml:space="preserve"><value>Genehmigung erforderlich</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>Durch eine Berechtigungsregel (deny) blockiert: {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>Durch die integrierte Sicherheits-Sperrliste (katastrophaler Befehl) blockiert: {0}</value></data>
   <data name="McpAddServer" xml:space="preserve"><value>+ Server hinzufügen</value></data>
