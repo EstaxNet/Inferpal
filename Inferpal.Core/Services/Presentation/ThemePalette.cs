@@ -32,7 +32,13 @@ internal sealed record ThemePalette(
     // Pinned-file chip (gold)
     string PinChipBg,
     string PinChipText,
-    string PinChipBorder)
+    string PinChipBorder,
+    // Diff viewer (tool bubbles): classic green-background additions / red-background deletions,
+    // tuned per theme so the diff stays legible on both dark and light bubbles.
+    string DiffAddBg,
+    string DiffAddText,
+    string DiffRemoveBg,
+    string DiffRemoveText)
 {
     private static readonly ThemePalette Dark = new(
         WindowBg:         "#1E1E1E",
@@ -57,7 +63,11 @@ internal sealed record ThemePalette(
         AttachChipBorder:     "#4A4E7A",
         PinChipBg:            "#3A2E1A",
         PinChipText:          "#E0B050",
-        PinChipBorder:        "#7A5A2A");
+        PinChipBorder:        "#7A5A2A",
+        DiffAddBg:            "#1C4428",
+        DiffAddText:          "#7EE787",
+        DiffRemoveBg:         "#542426",
+        DiffRemoveText:       "#FFA198");
 
     private static readonly ThemePalette Light = new(
         WindowBg:         "#F5F5F5",
@@ -82,7 +92,11 @@ internal sealed record ThemePalette(
         AttachChipBorder:     "#9CB8DC",
         PinChipBg:            "#FBF3DC",
         PinChipText:          "#9A6E00",
-        PinChipBorder:        "#E0C68A");
+        PinChipBorder:        "#E0C68A",
+        DiffAddBg:            "#CFEAD4",
+        DiffAddText:          "#116329",
+        DiffRemoveBg:         "#F5D0D4",
+        DiffRemoveText:       "#82071E");
 
     /// <summary>The palette for the active VS theme mode.</summary>
     public static ThemePalette For(bool isDark) => isDark ? Dark : Light;

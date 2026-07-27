@@ -43,6 +43,20 @@ public class ThemePaletteTests
     }
 
     [Fact]
+    public void DiffColours_AreCentralised()
+    {
+        var dark  = ThemePalette.For(isDark: true);
+        var light = ThemePalette.For(isDark: false);
+
+        // Classic diff colouring (green background = addition, red background = deletion),
+        // moved here from hardcoded dark-only hex in DiffComputer so both themes render it.
+        Assert.Equal("#1C4428", dark.DiffAddBg);
+        Assert.Equal("#542426", dark.DiffRemoveBg);
+        Assert.Equal("#CFEAD4", light.DiffAddBg);
+        Assert.Equal("#F5D0D4", light.DiffRemoveBg);
+    }
+
+    [Fact]
     public void For_ReturnsDistinctPalettes()
     {
         Assert.NotEqual(ThemePalette.For(isDark: true), ThemePalette.For(isDark: false));

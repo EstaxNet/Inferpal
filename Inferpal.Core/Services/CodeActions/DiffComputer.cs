@@ -43,7 +43,7 @@ internal static class DiffComputer
         if (old.Length > MaxLines || @new.Length > MaxLines)
             return
             [
-                new DiffLineModel { Prefix = "…", Text = $"Fichier trop grand pour afficher le diff ({old.Length} → {@new.Length} lignes)", Background = "Transparent", Foreground = "#555555" }
+                new DiffLineModel { Prefix = "…", Text = $"Fichier trop grand pour afficher le diff ({old.Length} → {@new.Length} lignes)" }
             ];
 
         var m  = old.Length;
@@ -68,17 +68,17 @@ internal static class DiffComputer
         {
             if (i > 0 && j > 0 && old[i - 1] == @new[j - 1])
             {
-                path.Add(new DiffLineModel { Prefix = " ", Text = old[i - 1], Background = "Transparent",  Foreground = "#808080" });
+                path.Add(new DiffLineModel { Prefix = " ", Text = old[i - 1] });
                 i--; j--;
             }
             else if (j > 0 && (i == 0 || dp[i, j - 1] >= dp[i - 1, j]))
             {
-                path.Add(new DiffLineModel { Prefix = "+", Text = @new[j - 1], Background = "#1A3A1A", Foreground = "#6DB96D" });
+                path.Add(new DiffLineModel { Prefix = "+", Text = @new[j - 1] });
                 j--;
             }
             else
             {
-                path.Add(new DiffLineModel { Prefix = "-", Text = old[i - 1], Background = "#3A1A1A",  Foreground = "#F47C7C" });
+                path.Add(new DiffLineModel { Prefix = "-", Text = old[i - 1] });
                 i--;
             }
         }
@@ -108,7 +108,7 @@ internal static class DiffComputer
             {
                 if (skipped > 0)
                 {
-                    result.Add(new DiffLineModel { Prefix = "…", Text = $"  {skipped} unchanged line(s)", Background = "Transparent", Foreground = "#444444" });
+                    result.Add(new DiffLineModel { Prefix = "…", Text = $"  {skipped} unchanged line(s)" });
                     skipped = 0;
                 }
                 result.Add(lines[i]);
@@ -119,7 +119,7 @@ internal static class DiffComputer
             }
         }
         if (skipped > 0)
-            result.Add(new DiffLineModel { Prefix = "…", Text = $"  {skipped} unchanged line(s)", Background = "Transparent", Foreground = "#444444" });
+            result.Add(new DiffLineModel { Prefix = "…", Text = $"  {skipped} unchanged line(s)" });
 
         return result;
     }

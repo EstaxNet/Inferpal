@@ -6,13 +6,19 @@ namespace Inferpal.ToolWindow;
 [DataContract]
 internal sealed class DiffLine : NotifyPropertyChangedObject
 {
-    [DataMember] public string Prefix     { get; init; } = " ";
-    [DataMember] public string Text       { get; init; } = "";
-    [DataMember] public string Background { get; init; } = "Transparent";
-    [DataMember] public string Foreground { get; init; } = "#808080";
+    private string _background = "Transparent";
+    private string _foreground = "#808080";
+
+    [DataMember] public string Prefix { get; init; } = " ";
+    [DataMember] public string Text   { get; init; } = "";
+
+    // Settable + notifying: assigned from the active ThemePalette by ApplyItemTheme, both at
+    // bubble creation and when the VS theme flips while the diff is on screen.
+    [DataMember] public string Background { get => _background; set => SetProperty(ref _background, value); }
+    [DataMember] public string Foreground { get => _foreground; set => SetProperty(ref _foreground, value); }
 
     /// <summary>Maps the editor-agnostic diff line (<see cref="Services.CodeActions.DiffComputer"/>)
-    /// to this Remote-UI observable type. Pure mapping, no logic.</summary>
+    /// to this Remote-UI observable type. Pure mapping, no logic — colours come from the theme.</summary>
     internal static DiffLine FromModel(DiffLineModel model) =>
-        new() { Prefix = model.Prefix, Text = model.Text, Background = model.Background, Foreground = model.Foreground };
+        new() { Prefix = model.Prefix, Text = model.Text };
 }

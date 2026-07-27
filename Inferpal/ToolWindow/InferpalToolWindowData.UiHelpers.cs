@@ -145,6 +145,17 @@ internal partial class InferpalToolWindowData
             foreach (var run in b.Inlines)
                 run.Foreground = run.IsCode ? item.ThemeCodeText : item.ThemeText;
         }
+
+        // Diff viewer: green-background additions / red-background deletions per the active theme.
+        foreach (var d in item.DiffLines)
+        {
+            (d.Background, d.Foreground) = d.Prefix switch
+            {
+                "+" => (p.DiffAddBg,    p.DiffAddText),
+                "-" => (p.DiffRemoveBg, p.DiffRemoveText),
+                _   => ("Transparent",  p.BubbleSubtleText),
+            };
+        }
     }
 
     private void UpdateMessageBubbles()

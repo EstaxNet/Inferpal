@@ -85,26 +85,6 @@ public class DiffComputerTests
         Assert.DoesNotContain(result, l => l.Prefix == "…");
     }
 
-    [Fact]
-    public void Compute_AddedLine_ForegroundGreen()
-    {
-        var result = DiffComputer.Compute("old", "new");
-        var added = result.First(l => l.Prefix == "+");
-
-        Assert.Equal("#6DB96D", added.Foreground);
-        Assert.Equal("#1A3A1A", added.Background);
-    }
-
-    [Fact]
-    public void Compute_RemovedLine_ForegroundRed()
-    {
-        var result = DiffComputer.Compute("old", "new");
-        var removed = result.First(l => l.Prefix == "-");
-
-        Assert.Equal("#F47C7C", removed.Foreground);
-        Assert.Equal("#3A1A1A", removed.Background);
-    }
-
     // ── ComputeText (approval-prompt rendering) ──────────────────────────────
 
     [Fact]
