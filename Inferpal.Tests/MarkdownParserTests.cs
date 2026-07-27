@@ -1,6 +1,5 @@
 using System.Linq;
 using Inferpal.Services;
-using Inferpal.ToolWindow;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -11,7 +10,7 @@ public class MarkdownParserTests
     private const string Nbsp = " ";
 
     // Concatenated plain text of a block's inline runs (what the user actually sees rendered).
-    private static string InlineText(MarkdownBlock b) =>
+    private static string InlineText(MarkdownBlockModel b) =>
         string.Concat(b.Inlines.Select(r => r.Text));
 
     [Fact]

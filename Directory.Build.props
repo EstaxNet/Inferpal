@@ -1,5 +1,36 @@
 <Project>
+
+  <!-- ── Properties shared by every project in the repo ────────────────────
+       (Inferpal VSIX, Inferpal.Core, Inferpal.Tests). Per-project concerns —
+       TargetFramework, TreatWarningsAsErrors/WarningsNotAsErrors, packaging —
+       stay in each csproj. -->
   <PropertyGroup>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Version numbering (bumped by deploy-release.ps1) -->
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.0.1</Version>
+
+    <!-- Binary reproducibility -->
+    <Deterministic>true</Deterministic>
+
+    <!-- Neutral fallback culture for the ResourceManager (EN) -->
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
+
+  <!-- Reviewed NuGet audit suppressions (vulnerable path not reachable in this app) -->
+  <ItemGroup>
+    <!-- GHSA-2m69-gcr7-jv3q / CVE-2025-6965 — SQLite < 3.50.2, reachable only through
+         malicious SQL or an untrusted database file. SQLitePCLRaw ships no fixed bundle
+         yet (every version ≤ 2.1.11 is affected). Inferpal opens only its own local index
+         databases (RAG / @Docs), builds every query itself, and never enables SQLite
+         extension loading, so the vulnerable path is unreachable. Re-evaluate once a
+         patched SQLitePCLRaw.bundle_e_sqlite3 ships. -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
+  </ItemGroup>
+
 </Project>

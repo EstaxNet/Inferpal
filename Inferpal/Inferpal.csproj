@@ -1,48 +1,36 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- ── Propriétés communes ─────────────────────────────────────────────── -->
+  <!-- ── Common properties ───────────────────────────────────────────────── -->
+  <!-- Versioning, LangVersion, Nullable, ImplicitUsings, Deterministic and
+       NeutralLanguage are inherited from Directory.Build.props (repo root). -->
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <RootNamespace>Inferpal</RootNamespace>
     <AssemblyName>Inferpal</AssemblyName>
-    <LangVersion>latest</LangVersion>
 
-    <!-- Numérotation -->
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
-    <Version>1.0.1</Version>
-
-    <!-- Reproductibilité des binaires -->
-    <Deterministic>true</Deterministic>
-
-    <!-- Langue neutre pour le fallback ResourceManager (EN) -->
-    <NeutralLanguage>en</NeutralLanguage>
-
-    <!-- Supprime les avertissements connus et sûrs :
+    <!-- Suppress known, safe warnings:
          VSEXTPREVIEW_SETTINGS — SDK preview feature
-         NU1701 — packages VS SDK restaurés pour .NETFramework (fournis par VS à l'exécution)
-         MSB4011  — re-import des targets VSSDK, bug connu de l'infrastructure de build -->
+         NU1701 — VS SDK packages restored for .NETFramework (provided by VS at runtime)
+         MSB4011  — VSSDK targets re-import, known build-infrastructure bug -->
     <NoWarn>$(NoWarn);VSEXTPREVIEW_SETTINGS;NU1701</NoWarn>
     <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB4011</MSBuildWarningsAsMessages>
 
-    <!-- Active le pipeline VSSDK complet (GeneratePkgDef, CreateVsixContainer…) -->
+    <!-- Enables the full VSSDK pipeline (GeneratePkgDef, CreateVsixContainer…) -->
     <VSSDKBuildToolsAutoSetup>true</VSSDKBuildToolsAutoSetup>
 
-    <!-- Copie les DLLs NuGet dans le répertoire de sortie pour que le VSIX les embarque -->
+    <!-- Copy NuGet DLLs to the output directory so the VSIX embeds them -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
-    <!-- VSIX packaging — commun aux deux configs -->
-    <!-- GeneratePkgDefFile=false : CreatePkgDef.exe (.NET Framework) ne peut pas charger
-         les assemblies .NET 8. Le pkgdef est fourni manuellement (Inferpal.pkgdef). -->
+    <!-- VSIX packaging — shared by both configs -->
+    <!-- GeneratePkgDefFile=false: CreatePkgDef.exe (.NET Framework) cannot load
+         .NET 8 assemblies. The pkgdef is provided manually (Inferpal.pkgdef). -->
     <GeneratePkgDefFile>false</GeneratePkgDefFile>
     <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
     <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
     <CreateVsixContainer>true</CreateVsixContainer>
-    <!-- Le déploiement est géré par deploy-debug.ps1, pas par le build -->
+    <!-- Deployment is handled by deploy-dev.ps1, not by the build -->
     <DeployExtension>false</DeployExtension>
   </PropertyGroup>
 
@@ -51,7 +39,7 @@
     <Optimize>false</Optimize>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <!-- PDB inclus dans le VSIX debug pour le débogage avec Attach to Process -->
+    <!-- PDBs included in the debug VSIX for Attach-to-Process debugging -->
     <IncludeDebugSymbolsInVSIXContainer>true</IncludeDebugSymbolsInVSIXContainer>
     <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
     <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
@@ -59,19 +47,19 @@
 
   <!-- ── Release ─────────────────────────────────────────────────────────── -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <!-- Optimisations compilateur C# -->
+    <!-- C# compiler optimizations -->
     <Optimize>true</Optimize>
 
-    <!-- Pas de PDB en Release — réduit la taille du VSIX -->
+    <!-- No PDBs in Release — reduces VSIX size -->
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
     <IncludeDebugSymbolsInLocalVSIXDeployment>false</IncludeDebugSymbolsInLocalVSIXDeployment>
     <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
 
-    <!-- Warnings = erreurs en Release pour garantir la qualité du build distribué -->
+    <!-- Warnings = errors in Release to guarantee the quality of the shipped build -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- Conserver la suppression des warnings d'infrastructure même en mode strict -->
+    <!-- Keep the infrastructure-warning suppressions even in strict mode -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);VSEXTPREVIEW_SETTINGS;NU1701;MSB4011</WarningsNotAsErrors>
   </PropertyGroup>
 
@@ -82,35 +70,41 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Editor-agnostic logic core (Markdig, Roslyn, SQLite and ProtectedData flow in
+         transitively and are still copied into the VSIX via CopyLocalLockFileAssemblies). -->
+    <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
 
   <ItemGroup>
-    <!-- RemoteUserControl cherche la ressource par <Namespace>.<ClassName>.xaml -->
-    <!-- Ces XAML sont des DataTemplate purs (pas des UserControl WPF), donc EmbeddedResource,
-         pas Page — sinon le compilateur WPF essaierait de les compiler en BAML et échouerait. -->
+    <!-- RemoteUserControl looks the resource up by <Namespace>.<ClassName>.xaml -->
+    <!-- These XAML files are pure DataTemplates (not WPF UserControls), hence EmbeddedResource,
+         not Page — otherwise the WPF compiler would try to compile them to BAML and fail. -->
     <EmbeddedResource Include="ToolWindow\InferpalToolWindowContent.xaml">
       <LogicalName>Inferpal.InferpalToolWindowContent.xaml</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="ToolWindow\InferpalSettingsContent.xaml">
       <LogicalName>Inferpal.ToolWindow.InferpalSettingsContent.xaml</LogicalName>
     </EmbeddedResource>
-    <!-- Exclure ces fichiers du pipeline WPF (Page) pour éviter la double compilation -->
+    <!-- Exclude these files from the WPF (Page) pipeline to avoid double compilation -->
     <Page Remove="ToolWindow\InferpalToolWindowContent.xaml" />
     <Page Remove="ToolWindow\InferpalSettingsContent.xaml" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Le pkgdef est REQUIS pour que VSIXInstaller écrive l'entrée de registre
-         VisualStudio\Extensibility\Extensions\Inferpal... dans le registre privé.
-         Sans cette entrée, VisualStudioExtensibilityPackage ne découvre pas l'extension.
-         Note : VSSDK BuildTools changera ExtensionType en VSSDK+VisualStudio.Extensibility,
-         mais notre pkgdef n'a pas de clé Packages → VSSDK ne tente aucun chargement en mémoire.
-         VisX utilise l'entrée Extensibility\Extensions pour démarrer le host hors-process. -->
-    <!-- string-resources.json doit être dans .vsextension/ (à côté de extension.json)
-         pour que VS résolve les tokens %key% dans les menus/commandes. -->
+    <!-- The pkgdef is REQUIRED for VSIXInstaller to write the registry entry
+         VisualStudio\Extensibility\Extensions\Inferpal... into the private registry.
+         Without that entry, VisualStudioExtensibilityPackage does not discover the extension.
+         Note: VSSDK BuildTools rewrites ExtensionType to VSSDK+VisualStudio.Extensibility,
+         but our pkgdef has no Packages key → VSSDK attempts no in-memory load.
+         VisX uses the Extensibility\Extensions entry to start the out-of-process host. -->
+    <!-- string-resources.json must live in .vsextension/ (next to extension.json)
+         for VS to resolve the %key% tokens in menus/commands. -->
     <!-- string-resources.json (default EN) -->
     <Content Include="Localization\string-resources.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -167,9 +161,9 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- Licence GPL-3.0 embarquée à la racine du VSIX — requise par le schéma VSIX 2.0 :
-         <License> doit référencer un fichier .txt/.rtf DANS le package (pas une URL),
-         sinon la validation Marketplace échoue. Copie de ..\LICENSE. -->
+    <!-- GPL-3.0 license embedded at the VSIX root — required by the VSIX 2.0 schema:
+         <License> must reference a .txt/.rtf file INSIDE the package (not a URL),
+         otherwise Marketplace validation fails. Copy of ..\LICENSE. -->
     <Content Include="LICENSE.txt">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -180,11 +174,11 @@
       <VSIXSubPath>assets</VSIXSubPath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- extension.json est généré automatiquement par Microsoft.VisualStudio.Extensibility.Build -->
-    <!-- Ne pas copier manuellement : le SDK génère le fichier correct dans le bin -->
+    <!-- extension.json is generated automatically by Microsoft.VisualStudio.Extensibility.Build -->
+    <!-- Do not copy it manually: the SDK generates the correct file in bin -->
   </ItemGroup>
 
-  <!-- string-resources.json (+ locales) doivent être dans .vsextension/{locale}/ pour que VS résolve les %tokens% -->
+  <!-- string-resources.json (+ locales) must be in .vsextension/{locale}/ for VS to resolve the %tokens% -->
   <Target Name="CopyStringResourcesToVsExtension" AfterTargets="Build">
     <MakeDir Directories="$(OutputPath).vsextension;$(OutputPath).vsextension\fr;$(OutputPath).vsextension\de;$(OutputPath).vsextension\es;$(OutputPath).vsextension\it;$(OutputPath).vsextension\ru;$(OutputPath).vsextension\ja;$(OutputPath).vsextension\ko;$(OutputPath).vsextension\pl;$(OutputPath).vsextension\zh-CN" />
     <Copy SourceFiles="$(ProjectDir)Localization\string-resources.json"       DestinationFolder="$(OutputPath).vsextension"          SkipUnchangedFiles="true" />
@@ -199,13 +193,12 @@
     <Copy SourceFiles="$(ProjectDir)Localization\zh-CN\string-resources.json" DestinationFolder="$(OutputPath).vsextension\zh-CN"   SkipUnchangedFiles="true" />
   </Target>
 
-  <!-- ── Purge des runtimes non-Windows du VSIX ──────────────────────────────
-       SQLitePCLRaw (via Microsoft.Data.Sqlite) tire ~15 Mo de natifs Linux/macOS/wasm
-       (libe_sqlite3.so/.dylib/.a). Inutiles (extension Windows amd64 uniquement) et
-       surtout : des binaires ELF/Mach-O dans un VSIX déclenchent le flag
-       « suspicious content » du scan anti-malware du Marketplace.
-       On ne conserve que runtimes\win\ (managés Windows) et les natifs win-x64/win-arm64
-       (le manifest généré par le SDK cible amd64 ET arm64). -->
+  <!-- ── Prune non-Windows runtime assets from the VSIX ──────────────────────
+       SQLitePCLRaw (via Microsoft.Data.Sqlite) pulls ~15 MB of Linux/macOS/wasm natives
+       (libe_sqlite3.so/.dylib/.a). Useless (Windows amd64-only extension) and worse:
+       ELF/Mach-O binaries inside a VSIX trigger the "suspicious content" flag of the
+       Marketplace anti-malware scan. Keep only runtimes\win\ (Windows managed) and the
+       win-x64/win-arm64 natives (the SDK-generated manifest targets amd64 AND arm64). -->
   <Target Name="PruneNonWindowsRuntimeAssets" AfterTargets="ResolvePackageAssets">
     <ItemGroup>
       <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)"
@@ -217,16 +210,10 @@
 
   <ItemGroup>
     <!--
-      SDK VS 2026 (18.x) — nouveau modèle out-of-process recommandé.
-      Si dotnet restore échoue, lance : dotnet add package Microsoft.VisualStudio.Extensibility
-      pour récupérer la dernière version stable compatible.
+      VS 2026 SDK (18.x) — new recommended out-of-process model.
+      If dotnet restore fails, run: dotnet add package Microsoft.VisualStudio.Extensibility
+      to fetch the latest compatible stable version.
     -->
-    <PackageReference Include="Markdig" Version="1.2.0" />
-    <!-- DPAPI for the MCP OAuth token store (System.Security.Cryptography.ProtectedData is a
-         separate runtime assembly even on Windows targets, so the package must be deployed). -->
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.16" />
     <PackageReference Include="Microsoft.VisualStudio.Extensibility.Sdk" Version="17.14.40608" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Extensibility.Build" Version="17.14.40608" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="18.5.40034">
@@ -247,17 +234,6 @@
          patched 2.5.301. PrivateAssets="all" keeps it compile/restore-only: like the rest
          of the SDK, VS provides MessagePack at runtime and it is not shipped in the VSIX. -->
     <PackageReference Include="MessagePack" Version="2.5.301" PrivateAssets="all" />
-  </ItemGroup>
-
-  <!-- Reviewed NuGet audit suppressions (vulnerable path not reachable in this app) -->
-  <ItemGroup>
-    <!-- GHSA-2m69-gcr7-jv3q / CVE-2025-6965 — SQLite < 3.50.2, reachable only through
-         malicious SQL or an untrusted database file. SQLitePCLRaw ships no fixed bundle
-         yet (every version ≤ 2.1.11 is affected). Inferpal opens only its own local index
-         databases (RAG / @Docs), builds every query itself, and never enables SQLite
-         extension loading, so the vulnerable path is unreachable. Re-evaluate once a
-         patched SQLitePCLRaw.bundle_e_sqlite3 ships. -->
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
   </ItemGroup>
 
 </Project>

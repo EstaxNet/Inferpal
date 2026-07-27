@@ -3,8 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Nullable/ImplicitUsings/LangVersion inherited from the repo-root Directory.Build.props -->
     <IsPackable>false</IsPackable>
     <!-- Prevent VSIX generation in the test project -->
     <CreateVsixContainer>false</CreateVsixContainer>
@@ -29,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Inferpal\Inferpal.csproj" />
+    <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -161,8 +161,12 @@ internal partial class InferpalToolWindowData
                 ScrollToBottom();
             });
 
-            // Build context-enriched history message (not shown in chat bubble)
-            historyText = Services.Agent.ChatTurnPolicy.BuildHistoryText(userText, attachments);
+            // Build context-enriched history message (not shown in chat bubble).
+            // The observable attachment chips are projected to the neutral (label, content)
+            // pairs the pure policy works with.
+            historyText = Services.Agent.ChatTurnPolicy.BuildHistoryText(
+                userText,
+                attachments.Select(a => new Services.Agent.AttachmentContent(a.Label, a.Content)).ToList());
 
             // First-turn workspace context: silently prepend solution + open editors
             if (!_workspaceContextInjected && !userText.StartsWith('/'))

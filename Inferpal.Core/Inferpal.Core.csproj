@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ── Editor-agnostic core ──────────────────────────────────────────────
+       Everything here must stay free of editor SDK references (Visual Studio,
+       WPF/MEF). The VS 2026 extension consumes this library in-process.
+       Target is plain net8.0 on purpose: the library must be loadable and
+       testable outside Visual Studio.
+       Versioning, LangVersion, Nullable, ImplicitUsings, Deterministic and
+       NeutralLanguage are inherited from the repo-root Directory.Build.props. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Types keep their historical Inferpal.* namespaces (and the embedded
+         Localization/Strings resources their Inferpal.Localization.* names). -->
+    <RootNamespace>Inferpal</RootNamespace>
+    <AssemblyName>Inferpal.Core</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <!-- Warnings = errors in Release, same quality bar as the VS extension -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The VS adapter and the tests both consume internal core types. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Inferpal</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Inferpal.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="1.2.0" />
+    <!-- DPAPI for the MCP OAuth token store (Windows-only at runtime; the call sites
+         are already guarded). -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.16" />
+    <!-- Keep the same System.Text.Json the VS extension runs with (VS SDK pulls 9.x);
+         net8.0 alone would compile against the inbox 8.x. -->
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

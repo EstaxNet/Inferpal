@@ -52,6 +52,7 @@ public class InferpalExtension : Extension
         services.AddSingleton<IInferenceProvider>(sp =>
             InferenceProviderFactory.Create(sp.GetRequiredService<InferpalConfig>()));
         services.AddSingleton<VsContextHolder>();
+        services.AddSingleton<Services.Editor.IEditorSurface, VsEditorSurface>();
         services.AddSingleton<IApprovalService, VsApprovalService>();
         services.AddSingleton<ProjectIndexService>();
         services.AddSingleton<ProjectMapService>();

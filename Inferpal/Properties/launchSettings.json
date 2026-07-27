@@ -1,8 +1,11 @@
-﻿{
+{
+  // F5: launches the VS Experimental instance with the extension deployed there.
+  // The devenv path is machine-specific (edition/channel vary) — deploy-dev.ps1
+  // auto-heals this file via vswhere when the path below doesn't exist.
   "profiles": {
     "VS Experimental": {
       "commandName": "Executable",
-      "executablePath": "C:\\Program Files\\Microsoft Visual Studio\\18\\Professional\\Common7\\IDE\\devenv.exe",
+      "executablePath": "C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\Common7\\IDE\\devenv.exe",
       "commandLineArgs": "/rootsuffix Exp"
     }
   }

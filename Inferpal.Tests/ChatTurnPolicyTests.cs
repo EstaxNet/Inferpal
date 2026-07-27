@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Inferpal.Localization;
 using Inferpal.Services;
-using Inferpal.ToolWindow;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -136,7 +135,7 @@ public class ChatTurnPolicyTests
     [Fact]
     public void BuildHistoryText_WrapsAttachmentsInLabelledFences()
     {
-        var att  = new AttachmentItem("Foo.cs", "var x = 1;", onRemove: () => { });
+        var att  = new AttachmentContent("Foo.cs", "var x = 1;");
         var text = ChatTurnPolicy.BuildHistoryText("explain", [att]);
 
         Assert.Contains("[Attached: Foo.cs]", text);

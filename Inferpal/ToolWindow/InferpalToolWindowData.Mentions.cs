@@ -329,13 +329,13 @@ internal partial class InferpalToolWindowData
                 {
                     // Read the signal directly (not via the tool) so "not paused" can be a
                     // notification instead of a useless attachment chip.
-                    var snap = Services.VsIntegration.DebuggerStateSignal.TryRead();
+                    var snap = Services.Signals.DebuggerStateSignal.TryRead();
                     if (snap is null)
                     {
                         await NotifyMentionAsync(Strings.MentionDebuggerNone);
                         return;
                     }
-                    var state = Services.VsIntegration.DebuggerStateSignal.Format(snap);
+                    var state = Services.Signals.DebuggerStateSignal.Format(snap);
                     await RunOnVMContextAsync(() => AddAttachment("🐞 @debugger", state));
                     break;
                 }

@@ -144,7 +144,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     {
         DiffLines.Clear();
         foreach (var line in DiffComputer.Compute(diff.OldText, diff.NewText))
-            DiffLines.Add(line);
+            DiffLines.Add(DiffLine.FromModel(line));
         HasDiff = DiffLines.Count > 0;
     }
 
@@ -188,8 +188,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         var tableBorder    = isDark ? "#3F3F46" : "#CCCCCC";
         var tableHeaderBg  = isDark ? "#1E1E1E" : "#F0F0F0";
 
-        foreach (var b in MarkdownParser.Parse(Content))
+        foreach (var model in MarkdownParser.Parse(Content))
         {
+            // Map the neutral parse result to the Remote-UI observable block, then theme it.
+            var b = MarkdownBlock.FromModel(model);
             b.ThemeText        = _themeText;
             b.ThemeCodeText    = _themeCodeText;
             b.ThemeCodeBg      = _themeCodeBg;

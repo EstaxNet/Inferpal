@@ -460,7 +460,7 @@ internal partial class InferpalToolWindowData
 
     // Resolution order and walk limits live in ProjectRootLocator (unit-tested); the VM
     // only supplies the open editor paths, the authoritative signal, and the CWD.
-    private static readonly Services.VsIntegration.ProjectRootLocator _rootLocator = new();
+    private static readonly Services.Signals.ProjectRootLocator _rootLocator = new();
 
     private string FindProjectRoot(IReadOnlyList<string>? openPaths = null) =>
         _rootLocator.Locate(

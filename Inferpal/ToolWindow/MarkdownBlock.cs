@@ -39,6 +39,27 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
         SaveSnippetCommand = new AsyncCommand(SaveSnippetAsync);
     }
 
+    /// <summary>
+    /// Maps the editor-agnostic parse result (<see cref="Services.Presentation.MarkdownParser"/>)
+    /// to this Remote-UI observable type. Pure mapping — theming is applied afterwards by the
+    /// owning <see cref="ChatMessageItem"/> which knows the current VS theme.
+    /// </summary>
+    internal static MarkdownBlock FromModel(MarkdownBlockModel model)
+    {
+        var block = new MarkdownBlock
+        {
+            Type       = model.Type,
+            Text       = model.Text,
+            Language   = model.Language,
+            HasInlines = model.HasInlines,
+        };
+        foreach (var run in model.Inlines)
+            block.Inlines.Add(new InlineRun { Text = run.Text, IsBold = run.IsBold, IsItalic = run.IsItalic, IsCode = run.IsCode });
+        foreach (var cell in model.Cells)
+            block.Cells.Add(new TableCell { Text = cell.Text, IsHeader = cell.IsHeader });
+        return block;
+    }
+
     private Task CopyCodeAsync(object? _, CancellationToken ct)
     {
         var text = Text;

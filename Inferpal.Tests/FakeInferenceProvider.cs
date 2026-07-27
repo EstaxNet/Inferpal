@@ -21,6 +21,11 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public bool                     ConnectionOk { get; set; } = true;
     public bool                     IsEmbeddingCircuitOpen { get; set; }
 
+    /// <summary>Optional override of <see cref="SendChatAsync"/> (token callback + ct);
+    /// null keeps the default constant <see cref="ChatResult"/>. Lets protocol tests
+    /// stream tokens and honour cancellation.</summary>
+    public Func<Action<string>?, CancellationToken, Task<ChatTurnResult>>? OnChat { get; set; }
+
     /// <summary>Result of <see cref="DeleteModelAsync"/> (keyed by model name).</summary>
     public Func<string, bool>          OnDelete { get; set; } = _ => true;
     /// <summary>Result of <see cref="PullModelAsync"/> (keyed by model name).</summary>
@@ -37,7 +42,8 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<ChatTurnResult> SendChatAsync(
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
         CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
-        string? toolChoice = null, Action<string>? onThinking = null) => Task.FromResult(ChatResult);
+        string? toolChoice = null, Action<string>? onThinking = null) =>
+        OnChat?.Invoke(onToken, ct) ?? Task.FromResult(ChatResult);
 
     // ── IInferenceProvider ──────────────────────────────────────────────────────
     public Task<AgentResult> RunAgentAsync(
