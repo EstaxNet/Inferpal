@@ -55,9 +55,9 @@ Open the generated `.vsix` from `Inferpal\bin\Debug\net8.0-windows\` (or `Releas
 double-click it to install into Visual Studio.
 
 > [!TIP]
-> Contributors who already have the extension installed can skip the reinstall and push code
-> changes straight into the installed extension with `./deploy-debug.ps1` — see
-> **[Development → Fast redeploy](development.md#fast-redeploy-with-deploy-debugps1)**.
+> Contributors can build and deploy straight into the installed extension with
+> `./deploy-dev.ps1` (silent first-install bootstrap, skip-if-fresh, hot apply without
+> restarting VS) — see **[Development → Deploy (dev)](development.md#deploy-dev-and-status)**.
 
 ## 4. Open the tool window
 

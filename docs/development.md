@@ -22,48 +22,36 @@ dotnet build Inferpal/Inferpal.csproj -c Release
 
 The VSIX is produced under `Inferpal\bin\Debug\net8.0-windows\` (or `Release\`).
 
-### Fast redeploy with `deploy-debug.ps1`
-
-During development, reinstalling the whole `.vsix` after every change is slow. `deploy-debug.ps1`
-is the inner-loop alternative: it rebuilds, copies the fresh `Inferpal.dll` (plus its
-dependencies and resources) straight into the already-installed extension directory, fixes up
-the `GhostTextPackage` registration, and clears the VS caches — so a code change is live after a
-single VS restart.
-
-**Prerequisites**
-
-- **Windows PowerShell 5.1+** (the script declares `#Requires -Version 5.1`).
-- **Visual Studio 2026 (18.x)** — the script resolves MSBuild/`devenv` via `vswhere` in the
-  `[18.0,19.0)` range only. It does **not** target VS 2022; for 2022, reinstall the `.vsix`
-  manually.
-- **The VSIX already installed once, system-wide**, on your main VS 2026 instance. The script
-  refuses to run until it finds an installed `Inferpal.dll` and prints the exact steps if it
-  can't: close VS → double-click the built `.vsix` → **select the main instance (not the
-  Experimental one)** → accept the admin elevation → re-run. A *user-only* (AppData) install is
-  detected and warned about, because the menu labels break (`extensionDir` won't resolve).
-- **Run from the repository root** (the script anchors paths on its own location) and **as
-  Administrator** when the extension lives under `Program Files` (it writes the DLLs there).
-
-**Usage**
+### Deploy (dev) and status
 
 ```powershell
-./deploy-debug.ps1          # build Debug + deploy; you then restart VS yourself
-./deploy-debug.ps1 -Launch  # also closes VS first and relaunches the main instance at the end
+./deploy-dev.ps1        # build + deploy into the installed VS extension
+./status.ps1            # deployed version, artifact freshness, backend reachability
 ```
 
-`-Exp` is accepted for backward compatibility but is a no-op.
-
-**What it deploys** — `Inferpal.dll` (+ `.pdb` for Attach-to-Process), third-party dependencies
-and the `runtimes/` native assets synced from the freshly built VSIX (so a newly added NuGet
-package isn't missing at runtime), the per-locale satellite resources, `.vsextension/`
-string-resources, a corrected `manifest.json`, and `Inferpal.pkgdef`. It then registers
-`GhostTextPackage` (`MEFComponent` / `Packages` / `AutoLoadPackages`) in `HKCU` and, when VS is
-closed, in `privateregistry.bin`, and purges the `ComponentModelCache` and `*.mpack` caches.
+`deploy-dev.ps1` builds and deploys straight into the installed VS extension:
+- **first run**: silent `VSIXInstaller /q /a` bootstrap (no manual VSIX dance);
+- **skip-if-fresh**: nothing changed since the deployed DLL → nothing happens (`-Force` overrides);
+- **auto-elevation**: the install dir lives under Program Files, so the script relaunches
+  itself elevated (one UAC prompt) instead of failing halfway; a transcript is kept in
+  `%TEMP%\inferpal-deploy-vs.log`;
+- **hot apply**: works with Visual Studio running — locked assemblies are swapped via
+  rename (live processes keep the old mapping), then the ServiceHub Extensibility host
+  is restarted on the fresh DLL. Close/reopen the Inferpal tool window to pick it up.
+  Only the in-proc ghost text (MEF) needs a real VS restart: use `-Launch`.
+- F5 on the `Inferpal` project launches the VS Experimental instance
+  (`Properties\launchSettings.json` — its machine-specific devenv path is auto-healed).
 
 > [!IMPORTANT]
-> VS must be **restarted** to pick up the changes — the package keys are read from
-> `privateregistry.bin` at startup. The hive id is auto-detected; never hard-code it. To debug
-> the running extension, attach to **`ServiceHub.Host.dotnet.exe`**.
+> To debug the running extension, attach to **`ServiceHub.Host.dotnet.exe`** (the chat runs
+> out-of-process); the in-proc ghost text lives in `devenv.exe`.
+
+### Releases
+
+**The product version lives in one place** — `Directory.Build.props`. Pushing a `v<version>`
+tag (matching that version) triggers the CI release workflow
+(`.github/workflows/release.yml`): it runs the tests, builds the Release VSIX, and attaches
+it — plus `SHA256SUMS.txt` — to a GitHub Release.
 
 ## Tests
 
@@ -71,38 +59,52 @@ closed, in `privateregistry.bin`, and purges the `ComponentModelCache` and `*.mp
 dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 ```
 
-The suite has **969 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
-extension's `internal` types are testable directly. Most services are written as static,
-side-effect-free helpers specifically so they can be unit-tested without Visual Studio (e.g.
-`DiffComputer`, `ContextBudgetGauge`, `ThemePalette`, `ConnectionStatusPresenter`,
-`PromptHistoryNavigator`, `ModelCatalog`, `RulesService`, `ChecksService`, `FixPromptBuilder`,
-`HistoryCompaction`).
+The suite has **982 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
+extension's `internal` types are testable directly. All the logic lives in `Inferpal.Core`,
+a pure net8.0 library with no editor SDK or WPF dependency (guarded by `CoreIsolationTests`),
+specifically so it can be unit-tested without Visual Studio (e.g. `DiffComputer`,
+`ContextBudgetGauge`, `ThemePalette`, `ConnectionStatusPresenter`, `PromptHistoryNavigator`,
+`ModelCatalog`, `RulesService`, `ChecksService`, `FixPromptBuilder`, `HistoryCompaction`).
 
 ## Project layout
 
+Two layers: `Inferpal.Core` is the editor-agnostic logic (net8.0 class library), `Inferpal`
+is the Visual Studio adapter (VSIX).
+
 ```
-Inferpal/
-├── Commands/        VS menu commands + editor context-menu code actions
+Inferpal.Core/
 ├── Config/          InferpalConfig — all persisted settings
-├── GhostText/       In-process MEF: inline completions, auto-scroll, VS event trackers
 ├── Localization/    Strings.resx (+ 9 locales) and the manual Strings.cs wrapper
 ├── Models/          Ollama / OpenAI DTOs
-├── Services/        Providers, tools, RAG, @Docs, MCP, scheduling, parsing
-│   ├── Tools/       The 26 built-in ITool implementations
-│   ├── Rag/         CodeChunker, RagDatabase, ProjectIndexService
-│   ├── Docs/        @Docs crawler/index
-│   ├── Lsp/         LSP semantic-chunking tier
-│   └── Mcp/         MCP stdio JSON-RPC client
+└── Services/        One sub-namespace per responsibility:
+    ├── Agent/       Plan→Act→Observe orchestrator, policies, compaction
+    ├── Inference/   Providers (Ollama, LM Studio, OpenAI-compatible) + ModelCatalog
+    ├── Execution/   Tool registries, approval, pattern permissions, file history
+    ├── Tools/       The 26 built-in ITool implementations
+    ├── Rag/         CodeChunker, RagDatabase, ProjectIndexService (hybrid search)
+    ├── Docs/        @Docs crawler/index
+    ├── Lsp/         LSP semantic-chunking tier
+    ├── Mcp/         MCP stdio + HTTP JSON-RPC client (with OAuth)
+    ├── Editor/      IEditorSurface port (implemented by the VS adapter)
+    ├── Signals/     File-based IPC signals (chat-busy, build, debugger…)
+    └── …            CodeActions, Commands, Governance, Hardware, Persistence,
+                     Presentation, Prompting, Shell
+Inferpal/
+├── Commands/        VS menu commands + editor context-menu code actions
+├── GhostText/       In-process MEF: inline completions, auto-scroll, VS event trackers
+├── Localization/    string-resources.json (%key% tokens for VS commands)
+├── Services/
+│   └── VsIntegration/  VsContextHolder, VsEditorSurface, VsApprovalService…
 └── ToolWindow/      RemoteUI view models, content, settings
 Inferpal.Tests/      xUnit test project
 ```
 
 ## Adding a built-in tool
 
-1. Create `Services/Tools/MyTool.cs` implementing `ITool`.
+1. Create `Inferpal.Core/Services/Tools/MyTool.cs` implementing `ITool`.
 2. Use **English** for `Name`, `Description`, and `Parameters` (best model compatibility).
 3. Use `Strings.X(...)` for any user-facing return text (localization).
-4. Register it in `ToolRegistry.cs`: `Register(new MyTool())`.
+4. Register it in `Services/Execution/ToolRegistry.cs`: `Register(new MyTool())`.
 
 ```csharp
 internal sealed class MyTool : ITool
@@ -124,9 +126,9 @@ If the tool touches the filesystem, runs commands, or reaches the network, take 
 
 ## Adding a language
 
-1. Create `Localization/Strings.XX-YY.resx` with the **same keys** as `Strings.resx`.
+1. Create `Inferpal.Core/Localization/Strings.XX-YY.resx` with the **same keys** as `Strings.resx`.
 2. Add the culture code and display name to `LanguageOptions` in `InferpalSettingsData.cs`.
-3. Build — the satellite `XX-YY/Inferpal.resources.dll` is generated and included in the VSIX.
+3. Build — the satellite `XX-YY/Inferpal.Core.resources.dll` is generated and included in the VSIX.
 
 > [!IMPORTANT]
 > `Strings.cs` is written **by hand** (not auto-generated). Every new `.resx` key must be

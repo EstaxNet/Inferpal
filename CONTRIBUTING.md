@@ -10,8 +10,8 @@ dotnet build Inferpal/Inferpal.csproj -c Release   # warnings-as-errors
 dotnet test  Inferpal.Tests/Inferpal.Tests.csproj
 ```
 
-If you already have the extension installed, push code changes into it without a full reinstall
-with [`deploy-debug.ps1`](docs/development.md#fast-redeploy-with-deploy-debugps1).
+Build and deploy straight into the installed extension (hot apply, no VS restart) with
+[`deploy-dev.ps1`](docs/development.md#deploy-dev-and-status).
 
 ## Before opening a PR
 

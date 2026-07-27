@@ -60,4 +60,4 @@ flowchart LR
 | Extension model | `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x (out-of-process) + in-process MEF for ghost text |
 | Built-in tools | 26 (+ MCP servers + user shell tools) |
 | Languages (UI) | 10 |
-| Tests | 969 xUnit tests |
+| Tests | 982 xUnit tests |

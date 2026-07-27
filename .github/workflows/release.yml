@@ -1,0 +1,61 @@
+name: Release
+
+# Push a tag v<version> (matching <Version> in Directory.Build.props) and this
+# builds the VS 2026 extension and attaches it — plus SHA256SUMS.txt — to a
+# GitHub Release. Local equivalent: .\release.ps1
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write   # create the release and upload assets
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Check tag matches Directory.Build.props
+        shell: pwsh
+        run: |
+          $props = Get-Content Directory.Build.props -Raw
+          if ($props -notmatch '<Version>([^<]+)</Version>') { throw 'No <Version> in Directory.Build.props' }
+          $version = $Matches[1]
+          $tag = '${{ github.ref_name }}'.TrimStart('v')
+          if ($tag -ne $version) { throw "Tag v$tag does not match Directory.Build.props <Version>$version</Version> - bump the props (or the tag) first." }
+          "VERSION=$version" | Out-File $env:GITHUB_ENV -Append
+
+      - name: Restore
+        run: dotnet restore Inferpal.sln
+
+      - name: Test
+        run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
+
+      - name: Build VS 2026 VSIX
+        run: dotnet build Inferpal/Inferpal.csproj -c Release --no-restore
+
+      - name: Assemble deliverables + checksums
+        shell: pwsh
+        run: |
+          $dist = "dist/$env:VERSION"
+          New-Item -ItemType Directory -Force -Path $dist | Out-Null
+          Copy-Item "Inferpal/bin/Release/net8.0-windows/Inferpal.vsix" "$dist/Inferpal-vs2026-$env:VERSION.vsix"
+          $sums = Get-ChildItem $dist -Filter '*.vsix' | ForEach-Object {
+              "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
+          }
+          [System.IO.File]::WriteAllText("$dist/SHA256SUMS.txt", ($sums -join "`n") + "`n")
+          Get-ChildItem $dist | ForEach-Object { Write-Host "  $($_.Name)  ($([math]::Round($_.Length/1MB,1)) MB)" }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Inferpal ${{ env.VERSION }}
+          files: dist/${{ env.VERSION }}/*
+          generate_release_notes: true
