@@ -193,6 +193,24 @@
     <Copy SourceFiles="$(ProjectDir)Localization\zh-CN\string-resources.json" DestinationFolder="$(OutputPath).vsextension\zh-CN"   SkipUnchangedFiles="true" />
   </Target>
 
+  <!-- ── Prune the satellite flattened at the VSIX root ──────────────────────
+       The SatelliteDllsProjectOutputGroup output group of the Inferpal.Core
+       ProjectReference adds a copy of Inferpal.Core.resources.dll WITHOUT a culture
+       subfolder at the VSIX root (in addition to the correct {locale}/... copies).
+       That file has the identity Culture=de: at runtime, the Extensibility host ALC
+       finds it first when resolving "Inferpal.Core.resources", the culture mismatch
+       makes the bind fail and ALL languages fall back to neutral English. So remove
+       every entry of that satellite whose target path has no culture subfolder. -->
+  <Target Name="PruneFlattenedCoreSatelliteFromVsix"
+          BeforeTargets="GenerateTemplatesManifest;GenerateFileManifest">
+    <ItemGroup>
+      <VSIXSourceItem Remove="@(VSIXSourceItem)"
+        Condition="'%(Filename)%(Extension)' == 'Inferpal.Core.resources.dll'
+               And !$([System.String]::Copy('%(VSIXSourceItem.TargetPath)').Contains('\'))
+               And !$([System.String]::Copy('%(VSIXSourceItem.TargetPath)').Contains('/'))" />
+    </ItemGroup>
+  </Target>
+
   <!-- ── Prune non-Windows runtime assets from the VSIX ──────────────────────
        SQLitePCLRaw (via Microsoft.Data.Sqlite) pulls ~15 MB of Linux/macOS/wasm natives
        (libe_sqlite3.so/.dylib/.a). Useless (Windows amd64-only extension) and worse:
