@@ -8,6 +8,7 @@ How to build, test, extend, and contribute to Inferpal. For how the pieces fit t
 - **.NET 8 SDK**
 - **Visual Studio 2022 (17.9+) or 2026 (18.x)** with the Visual Studio extension development
   workload
+- **Node.js 20+** — only for the VS Code extension (`vscode/`)
 - A running model server for manual testing — see [Getting Started](getting-started.md)
 
 ## Build
@@ -21,6 +22,20 @@ dotnet build Inferpal/Inferpal.csproj -c Release
 ```
 
 The VSIX is produced under `Inferpal\bin\Debug\net8.0-windows\` (or `Release\`).
+
+### VS Code extension
+
+The `vscode/` folder hosts the TypeScript front-end. It talks to `Inferpal.Host`, a small
+console app that exposes the same `Inferpal.Core` logic over JSON-RPC on stdio — both
+extensions share one brain.
+
+```powershell
+cd vscode
+npm ci
+npm run typecheck                  # tsc --noEmit
+npm run build                      # esbuild bundle
+./package.ps1 -Target win32-x64    # VSIX embedding a self-contained Inferpal.Host
+```
 
 ### Deploy (dev) and status
 
@@ -50,8 +65,8 @@ The VSIX is produced under `Inferpal\bin\Debug\net8.0-windows\` (or `Release\`).
 
 **The product version lives in one place** — `Directory.Build.props`. Pushing a `v<version>`
 tag (matching that version) triggers the CI release workflow
-(`.github/workflows/release.yml`): it runs the tests, builds the Release VSIX, and attaches
-it — plus `SHA256SUMS.txt` — to a GitHub Release.
+(`.github/workflows/release.yml`): it runs the tests, builds both extensions (VS 2026 VSIX
+and VS Code VSIX), and attaches them — plus `SHA256SUMS.txt` — to a GitHub Release.
 
 ## Tests
 
@@ -96,6 +111,8 @@ Inferpal/
 ├── Services/
 │   └── VsIntegration/  VsContextHolder, VsEditorSurface, VsApprovalService…
 └── ToolWindow/      RemoteUI view models, content, settings
+Inferpal.Host/       Console host exposing Inferpal.Core over JSON-RPC/stdio (VS Code backend)
+vscode/              VS Code extension (TypeScript): webview chat, FIM, editor bridge
 Inferpal.Tests/      xUnit test project
 ```
 

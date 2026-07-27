@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ── Headless host for editor adapters ─────────────────────────────────
+       Thin console app exposing Inferpal.Core over header-framed JSON-RPC 2.0
+       on stdio (StreamJsonRpc ⇄ vscode-jsonrpc interop). Spawned and supervised
+       by the VS Code extension; the VS 2026 extension keeps consuming the Core
+       in-process and never runs this executable. Discipline: stdout belongs to
+       JSON-RPC — Program.cs reroutes Console.Out to stderr at startup. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Inferpal.Host</RootNamespace>
+    <AssemblyName>Inferpal.Host</AssemblyName>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <!-- Warnings = errors in Release, same quality bar as the other projects -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Headless protocol tests drive HostServer over in-memory duplex streams. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Inferpal.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StreamJsonRpc" Version="2.22.11" />
+  </ItemGroup>
+
+</Project>

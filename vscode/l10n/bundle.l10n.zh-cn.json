@@ -1,0 +1,15 @@
+{
+  "Allow once": "允许一次",
+  "Always allow (session)": "始终允许（会话）",
+  "Inferpal needs an open folder to start.": "Inferpal 需要打开一个文件夹才能启动。",
+  "Inferpal.Host binary not found. Set \"inferpal.hostPath\" in settings.": "未找到 Inferpal.Host 二进制文件。请在设置中配置 “inferpal.hostPath”。",
+  "Inferpal host stopped unexpectedly.": "Inferpal 主机意外停止。",
+  "Restart": "重启",
+  "Inferpal host failed to start: {0}": "Inferpal 主机启动失败：{0}",
+  "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Inferpal 主机未运行 — 请使用 “Inferpal: 重启主机”。",
+  "Session name": "会话名称",
+  "Session saved: {0}": "会话已保存：{0}",
+  "Pick a session to load": "选择要加载的会话",
+  "Pick a session to delete": "选择要删除的会话",
+  "No saved sessions.": "没有已保存的会话。"
+}

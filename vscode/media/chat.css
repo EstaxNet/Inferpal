@@ -1,0 +1,227 @@
+/* Theme-aware chat: everything derives from --vscode-* variables so light/dark/high
+   contrast all work with zero extra code (replaces the WPF color-propagation hack). */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: var(--vscode-sideBar-background);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bubble {
+  max-width: 95%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  line-height: 1.45;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.bubble.assistant {
+  align-self: flex-start;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-editorWidget-border, transparent);
+}
+
+.bubble.assistant.streaming::after {
+  content: '▍';
+  opacity: 0.6;
+}
+
+.bubble.tool {
+  align-self: flex-start;
+  font-size: 0.9em;
+  opacity: 0.85;
+  background: transparent;
+  padding: 2px 10px;
+}
+
+.bubble.error {
+  align-self: stretch;
+  background: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+}
+
+pre {
+  background: var(--vscode-textCodeBlock-background);
+  padding: 6px 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 4px 0;
+}
+
+code {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.95em;
+}
+
+.bubble.approval {
+  align-self: stretch;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-inputValidation-warningBorder, var(--vscode-editorWidget-border));
+}
+
+.approval-message {
+  margin-bottom: 6px;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.approval-actions button.deny {
+  background: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder, transparent);
+}
+
+.bubble.approval.answered {
+  opacity: 0.75;
+}
+
+.approval-text {
+  background: var(--vscode-textCodeBlock-background);
+  padding: 6px 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  white-space: pre;
+}
+
+.approval-text .diff-add {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #4caf50);
+}
+
+.approval-text .diff-del {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #f44336);
+}
+
+#mentions {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  background: var(--vscode-editorWidget-background);
+}
+
+.mention-item {
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl; /* ellipsis on the left: the filename tail is what matters */
+  text-align: left;
+}
+
+.mention-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.mention-item.selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.approval-actions button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.approval-actions button.chosen {
+  opacity: 1;
+  outline: 1px solid var(--vscode-focusBorder);
+}
+
+#composer {
+  border-top: 1px solid var(--vscode-sideBarSectionHeader-border, var(--vscode-panel-border));
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#statusline {
+  font-size: 0.85em;
+  opacity: 0.8;
+  padding: 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#prompt {
+  resize: vertical;
+  min-height: 2.2em;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 4px;
+  padding: 6px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+#prompt:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+}
+
+#toolbar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+#model {
+  flex: 1;
+  min-width: 0;
+  background: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-dropdown-border, transparent);
+  border-radius: 4px;
+  padding: 3px;
+}
+
+button {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+#reset, #cancel {
+  background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+}

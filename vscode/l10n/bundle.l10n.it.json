@@ -1,0 +1,15 @@
+{
+  "Allow once": "Consenti una volta",
+  "Always allow (session)": "Consenti sempre (sessione)",
+  "Inferpal needs an open folder to start.": "Inferpal richiede una cartella aperta per avviarsi.",
+  "Inferpal.Host binary not found. Set \"inferpal.hostPath\" in settings.": "Binario Inferpal.Host non trovato. Impostare «inferpal.hostPath» nelle impostazioni.",
+  "Inferpal host stopped unexpectedly.": "L’host Inferpal si è arrestato in modo imprevisto.",
+  "Restart": "Riavvia",
+  "Inferpal host failed to start: {0}": "Avvio dell’host Inferpal non riuscito: {0}",
+  "Inferpal host is not running — use \"Inferpal: Restart Host\".": "L’host Inferpal non è in esecuzione — usare «Inferpal: Riavvia host».",
+  "Session name": "Nome della sessione",
+  "Session saved: {0}": "Sessione salvata: {0}",
+  "Pick a session to load": "Scegli una sessione da caricare",
+  "Pick a session to delete": "Scegli una sessione da eliminare",
+  "No saved sessions.": "Nessuna sessione salvata."
+}

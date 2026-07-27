@@ -1,8 +1,8 @@
 name: Release
 
 # Push a tag v<version> (matching <Version> in Directory.Build.props) and this
-# builds the VS 2026 extension and attaches it — plus SHA256SUMS.txt — to a
-# GitHub Release. Local equivalent: .\release.ps1
+# builds BOTH extensions and attaches them — plus SHA256SUMS.txt — to a GitHub
+# Release. Local equivalent: .\release.ps1
 on:
   push:
     tags: ['v*']
@@ -21,6 +21,13 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
 
       - name: Check tag matches Directory.Build.props
         shell: pwsh
@@ -41,12 +48,21 @@ jobs:
       - name: Build VS 2026 VSIX
         run: dotnet build Inferpal/Inferpal.csproj -c Release --no-restore
 
+      - name: Install extension dependencies
+        working-directory: vscode
+        run: npm ci
+
+      - name: Build VS Code VSIX (win32-x64, bundled self-contained host)
+        shell: pwsh
+        run: ./vscode/package.ps1 -Target win32-x64
+
       - name: Assemble deliverables + checksums
         shell: pwsh
         run: |
           $dist = "dist/$env:VERSION"
           New-Item -ItemType Directory -Force -Path $dist | Out-Null
           Copy-Item "Inferpal/bin/Release/net8.0-windows/Inferpal.vsix" "$dist/Inferpal-vs2026-$env:VERSION.vsix"
+          Copy-Item "vscode/inferpal-win32-x64-$env:VERSION.vsix" "$dist/inferpal-vscode-win32-x64-$env:VERSION.vsix"
           $sums = Get-ChildItem $dist -Filter '*.vsix' | ForEach-Object {
               "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
           }

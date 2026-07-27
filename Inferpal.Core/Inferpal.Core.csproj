@@ -2,9 +2,10 @@
 
   <!-- ── Editor-agnostic core ──────────────────────────────────────────────
        Everything here must stay free of editor SDK references (Visual Studio,
-       WPF/MEF). The VS 2026 extension consumes this library in-process.
-       Target is plain net8.0 on purpose: the library must be loadable and
-       testable outside Visual Studio.
+       VS Code host, WPF/MEF). The VS 2026 extension consumes this library
+       in-process; the future VS Code backend (Inferpal.Host) will host it
+       behind JSON-RPC. Target is plain net8.0 on purpose: the library must be
+       loadable outside Visual Studio and, eventually, outside Windows.
        Versioning, LangVersion, Nullable, ImplicitUsings, Deterministic and
        NeutralLanguage are inherited from the repo-root Directory.Build.props. -->
   <PropertyGroup>
@@ -30,6 +31,9 @@
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>Inferpal.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Inferpal.Host</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 

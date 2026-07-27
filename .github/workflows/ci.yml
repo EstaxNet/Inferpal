@@ -34,3 +34,29 @@ jobs:
 
       - name: Test
         run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
+
+  # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
+  vscode-extension:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
+
+      - name: Install dependencies
+        working-directory: vscode
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: vscode
+        run: npm run typecheck
+
+      - name: Bundle
+        working-directory: vscode
+        run: npm run build

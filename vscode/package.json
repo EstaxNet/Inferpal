@@ -1,0 +1,126 @@
+{
+  "name": "inferpal",
+  "displayName": "Inferpal",
+  "description": "%inferpal.description%",
+  "l10n": "./l10n",
+  "version": "0.0.0-dev",
+  "publisher": "EstaxNet",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EstaxNet/Inferpal"
+  },
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "ai",
+    "llm",
+    "ollama",
+    "lm studio",
+    "local",
+    "agent",
+    "assistant"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "%inferpal.untrustedWorkspaces%"
+    }
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "inferpal",
+          "title": "Inferpal",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "inferpal": [
+        {
+          "type": "webview",
+          "id": "inferpal.chat",
+          "name": "%inferpal.view.chat%"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "inferpal.restartHost",
+        "title": "%inferpal.command.restartHost%"
+      },
+      {
+        "command": "inferpal.resetChat",
+        "title": "%inferpal.command.resetChat%"
+      },
+      {
+        "command": "inferpal.saveSession",
+        "title": "%inferpal.command.saveSession%"
+      },
+      {
+        "command": "inferpal.loadSession",
+        "title": "%inferpal.command.loadSession%"
+      },
+      {
+        "command": "inferpal.deleteSession",
+        "title": "%inferpal.command.deleteSession%"
+      }
+    ],
+    "configuration": {
+      "title": "Inferpal",
+      "properties": {
+        "inferpal.hostPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%inferpal.config.hostPath%"
+        },
+        "inferpal.model": {
+          "type": "string",
+          "default": "",
+          "description": "%inferpal.config.model%"
+        },
+        "inferpal.agentMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "%inferpal.config.agentMode%"
+        },
+        "inferpal.fim.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%inferpal.config.fimEnabled%"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "vscode:prepublish": "npm run build"
+  },
+  "dependencies": {
+    "vscode-jsonrpc": "^8.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.6.0"
+  }
+}

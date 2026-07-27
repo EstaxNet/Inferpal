@@ -1,0 +1,15 @@
+{
+  "Allow once": "1 回許可",
+  "Always allow (session)": "常に許可（セッション）",
+  "Inferpal needs an open folder to start.": "Inferpal を開始するには開いたフォルダーが必要です。",
+  "Inferpal.Host binary not found. Set \"inferpal.hostPath\" in settings.": "Inferpal.Host バイナリが見つかりません。設定で「inferpal.hostPath」を指定してください。",
+  "Inferpal host stopped unexpectedly.": "Inferpal ホストが予期せず停止しました。",
+  "Restart": "再起動",
+  "Inferpal host failed to start: {0}": "Inferpal ホストの起動に失敗しました: {0}",
+  "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Inferpal ホストが実行されていません。「Inferpal: ホストを再起動」を使用してください。",
+  "Session name": "セッション名",
+  "Session saved: {0}": "セッションを保存しました: {0}",
+  "Pick a session to load": "読み込むセッションを選択",
+  "Pick a session to delete": "削除するセッションを選択",
+  "No saved sessions.": "保存されたセッションはありません。"
+}

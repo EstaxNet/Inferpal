@@ -1,0 +1,15 @@
+{
+  "Allow once": "Разрешить один раз",
+  "Always allow (session)": "Разрешать всегда (сеанс)",
+  "Inferpal needs an open folder to start.": "Для запуска Inferpal нужна открытая папка.",
+  "Inferpal.Host binary not found. Set \"inferpal.hostPath\" in settings.": "Двоичный файл Inferpal.Host не найден. Укажите «inferpal.hostPath» в настройках.",
+  "Inferpal host stopped unexpectedly.": "Хост Inferpal неожиданно остановился.",
+  "Restart": "Перезапустить",
+  "Inferpal host failed to start: {0}": "Не удалось запустить хост Inferpal: {0}",
+  "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Хост Inferpal не запущен — используйте «Inferpal: перезапустить хост».",
+  "Session name": "Имя сеанса",
+  "Session saved: {0}": "Сеанс сохранён: {0}",
+  "Pick a session to load": "Выберите сеанс для загрузки",
+  "Pick a session to delete": "Выберите сеанс для удаления",
+  "No saved sessions.": "Нет сохранённых сеансов."
+}

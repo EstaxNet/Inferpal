@@ -1,0 +1,16 @@
+{
+  // F5 from the vscode/ folder: opens an Extension Development Host with Inferpal
+  // loaded from sources — no packaging, no install. Reload the dev window (Ctrl+R)
+  // after edits, or run the "watch" task for automatic rebuilds.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Inferpal Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      "preLaunchTask": "npm: build"
+    }
+  ]
+}

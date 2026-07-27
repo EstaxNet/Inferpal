@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Inferpal\Inferpal.csproj" />
+    <ProjectReference Include="..\Inferpal.Host\Inferpal.Host.csproj" />
     <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
   </ItemGroup>
 

@@ -1,0 +1,14 @@
+{
+  "inferpal.description": "Asistente de desarrollo con IA para LLM autoalojados — Ollama, LM Studio o cualquier servidor compatible con OpenAI. Agente con llamadas a herramientas, 100 % local, sin telemetría.",
+  "inferpal.view.chat": "Chat",
+  "inferpal.command.restartHost": "Inferpal: Reiniciar el host",
+  "inferpal.command.resetChat": "Inferpal: Nueva conversación",
+  "inferpal.config.hostPath": "Ruta a `Inferpal.Host`. Dejar vacío para detección automática (host incluido, luego un build `Inferpal.Host/bin/**` en el workspace).",
+  "inferpal.config.model": "Modelo para el chat. Dejar vacío para usar el modelo predeterminado configurado en el host.",
+  "inferpal.config.agentMode": "Ejecutar los turnos mediante el bucle agéntico (herramientas activadas). Desactivar para chat simple.",
+  "inferpal.config.fimEnabled": "Completados fantasma en línea (Fill-in-the-Middle). Solo activo cuando el backend admite FIM.",
+  "inferpal.untrustedWorkspaces": "Inferpal ejecuta un agente que lee/escribe archivos del workspace y ejecuta comandos; permanece desactivado hasta que se confíe en la carpeta.",
+  "inferpal.command.saveSession": "Inferpal: Guardar sesión",
+  "inferpal.command.loadSession": "Inferpal: Cargar sesión",
+  "inferpal.command.deleteSession": "Inferpal: Eliminar sesión"
+}
