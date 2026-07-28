@@ -25,7 +25,8 @@ internal sealed class ModelLifetimeService : IDisposable
     private readonly IInferenceProvider _client;
     private readonly InferpalConfig _config;
     private readonly Timer             _timer;
-    private          bool              _disposed;
+    // volatile: read by thread-pool timer ticks after Dispose runs on another thread.
+    private volatile bool              _disposed;
 
     // ── Public state ──────────────────────────────────────────────────────────
 

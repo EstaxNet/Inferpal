@@ -30,7 +30,11 @@ jobs:
           # Source-level analysis — no project build needed, which avoids dragging
           # the full VS Extensibility SDK build into the scanner.
           build-mode: none
-          queries: security-and-quality
+          # Security-focused suite. The quality suite was tried and retired: its
+          # note-level style rules (generic catch, missed .Where, …) contradict
+          # deliberate house conventions (best-effort catches traced via
+          # Diagnostics.Swallow) and drowned the Security tab in non-security noise.
+          queries: security-extended
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4

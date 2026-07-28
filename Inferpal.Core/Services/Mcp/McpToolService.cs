@@ -56,7 +56,8 @@ internal sealed class McpToolService : IAsyncDisposable
     private IReadOnlyList<McpServerStatus> _failed = [];   // servers that could not be started at all
     private volatile IReadOnlyList<ITool> _tools = [];
     private volatile IReadOnlyList<McpServerStatus> _status = [];
-    private bool _disposed;
+    // volatile: re-checked after awaits on threads other than the disposing one.
+    private volatile bool _disposed;
 
     public McpToolService(InferpalConfig config, IApprovalService approval)
         : this(config, approval, clientFactory: null) { }

@@ -44,6 +44,12 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.16" />
+    <!-- ── Security remediation ─────────────────────────────────────────────
+         Microsoft.Data.Sqlite 8.x pulls SQLitePCLRaw 2.1.6, whose bundled native
+         SQLite is flagged (GHSA on SQLitePCLRaw.lib.e_sqlite3 <= 2.1.11). 2.1.12
+         ships the patched SQLite; the top-level bundle pin raises core/provider/lib
+         together so the natives actually shipped (VSIX + Host) are the fixed ones. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <!-- Keep the same System.Text.Json the VS extension runs with (VS SDK pulls 9.x);
          net8.0 alone would compile against the inbox 8.x. -->
     <PackageReference Include="System.Text.Json" Version="9.0.0" />

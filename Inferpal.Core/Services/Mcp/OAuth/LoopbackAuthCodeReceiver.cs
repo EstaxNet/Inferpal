@@ -59,10 +59,9 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
 
     private static int FreeLoopbackPort()
     {
-        var probe = new TcpListener(IPAddress.Loopback, 0);
+        using var probe = new TcpListener(IPAddress.Loopback, 0);
         probe.Start();
-        try { return ((IPEndPoint)probe.LocalEndpoint).Port; }
-        finally { probe.Stop(); }
+        return ((IPEndPoint)probe.LocalEndpoint).Port;   // Dispose closes the probe socket
     }
 
     private static void OpenBrowser(string url)

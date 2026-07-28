@@ -33,6 +33,12 @@
 
   <ItemGroup>
     <PackageReference Include="StreamJsonRpc" Version="2.22.11" />
+    <!-- ── Security remediation ─────────────────────────────────────────────
+         StreamJsonRpc 2.22.x pulls MessagePack transitively below 2.5.301, which a
+         batch of GHSA advisories flags (LZ4 decompression AccessViolation, unbounded
+         recursion in MessagePackReader.Skip, …). Top-level pin raises the resolved
+         version to the first patched release. -->
+    <PackageReference Include="MessagePack" Version="2.5.301" />
   </ItemGroup>
 
 </Project>
