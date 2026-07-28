@@ -74,7 +74,7 @@ and VS Code VSIX), and attaches them — plus `SHA256SUMS.txt` — to a GitHub R
 dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 ```
 
-The suite has **982 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
+The suite has **998 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
 extension's `internal` types are testable directly. All the logic lives in `Inferpal.Core`,
 a pure net8.0 library with no editor SDK or WPF dependency (guarded by `CoreIsolationTests`),
 specifically so it can be unit-tested without Visual Studio (e.g. `DiffComputer`,

@@ -5,24 +5,27 @@
 <h1 align="center">Inferpal</h1>
 
 <p align="center">
-  An agentic developer assistant for Visual Studio 2022/2026, powered entirely by
-  <b>local LLMs</b> — Ollama, LM Studio, or any OpenAI-compatible server. Full tool
-  calling, inline ghost-text completions, semantic codebase search, and zero required
-  cloud dependency.
+  An agentic developer assistant for Visual Studio 2022/2026 — and now
+  <b>VS Code (preview)</b> — powered entirely by <b>local LLMs</b>: Ollama, LM Studio,
+  or any OpenAI-compatible server. Full tool calling, inline ghost-text completions,
+  semantic codebase search, and zero required cloud dependency.
 </p>
 
 <p align="center">
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-969%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-998%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2022%20%2F%202026-5C2D91" alt="Visual Studio 2022 / 2026">
+  <img src="https://img.shields.io/badge/VS%20Code-preview-007ACC" alt="VS Code (preview)">
 </p>
 
 <p align="center">
-  <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><b>⬇ Download the latest Inferpal.vsix</b></a>
-  — double-click to install. Visual Studio Marketplace listing coming soon.
+  <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><b>⬇ Download the latest release</b></a>
+  — <code>Inferpal-vs2026-*.vsix</code> for Visual Studio (double-click to install)
+  or <code>inferpal-vscode-win32-x64-*.vsix</code> for VS Code.
+  Visual Studio Marketplace listing coming soon.
 </p>
 
 <p align="center">
@@ -33,11 +36,14 @@
 
 ## What is Inferpal?
 
-Inferpal turns a local model into a fully agentic coding assistant living inside Visual
-Studio. The model autonomously chains tool calls — reading and writing files, running
-commands, building, testing, and searching your codebase — to complete real tasks, while
-every write and every command stays behind an approval gate and a workspace sandbox. No API
-key, no telemetry, no cloud required.
+Inferpal turns a local model into a fully agentic coding assistant living inside your IDE.
+The model autonomously chains tool calls — reading and writing files, running commands,
+building, testing, and searching your codebase — to complete real tasks, while every write
+and every command stays behind an approval gate and a workspace sandbox. No API key, no
+telemetry, no cloud required.
+
+It ships as a **Visual Studio 2022/2026 extension** (the primary target) and a
+**VS Code extension (preview)** — one shared engine (`Inferpal.Core`), two editors.
 
 ### Highlights
 
@@ -50,6 +56,7 @@ key, no telemetry, no cloud required.
 - **Safety by default** — approval-gated writes/commands, a non-bypassable catastrophic-command denylist, committable permission rules, and a hardened SSRF guard.
 - **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, `@`-mentions, and 30+ slash commands.
 - **Built for the IDE** — live debugger awareness, VRAM monitoring, VS theme adaptation, and 10 UI languages.
+- **VS Code preview** — sidebar chat, agentic loop with approvals, inline FIM completions, unsaved-buffer awareness and live diagnostics, backed by a bundled self-contained host (no .NET install needed).
 
 > See **[docs/features.md](docs/features.md)** for the full functional tour.
 
@@ -59,8 +66,8 @@ key, no telemetry, no cloud required.
 
 | Requirement | Details |
 |---|---|
-| Visual Studio | 2022 (17.9+) **or** 2026 (18.x) — Community / Professional / Enterprise |
-| .NET SDK | .NET 8 |
+| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community / Professional / Enterprise — or **VS Code** (preview, win32-x64) |
+| .NET SDK | .NET 8 (building from source only — the VS Code VSIX bundles its own runtime) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 
 > Tool calling is required (e.g. `llama3.1`, `qwen2.5-coder`, `mistral-nemo`; `llama3` v1 does not).
@@ -70,8 +77,11 @@ key, no telemetry, no cloud required.
 
 ## Quick Start
 
-1. Download **[the latest `Inferpal.vsix`](https://github.com/EstaxNet/Inferpal/releases/latest)** and double-click it to install
-   (or build from source: `dotnet build Inferpal/Inferpal.csproj` — see [Development](docs/development.md)).
+1. Download the extension from **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)**:
+   - **Visual Studio**: double-click `Inferpal-vs2026-<version>.vsix`;
+   - **VS Code (preview)**: `code --install-extension inferpal-vscode-win32-x64-<version>.vsix`
+     (or Extensions view → `…` → *Install from VSIX…*);
+   - or build from source: `dotnet build Inferpal/Inferpal.csproj` — see [Development](docs/development.md).
 2. Start a model server:
 
    ```powershell
@@ -79,8 +89,8 @@ key, no telemetry, no cloud required.
    ollama pull llama3.1
    ```
 
-3. In Visual Studio open **Tools → Inferpal** (or **Alt+B** / **Alt+O**).
-4. Open **Inferpal Settings**, pick the provider, set the server URL, select a model, click **Test**, then start chatting.
+3. In Visual Studio open **Tools → Inferpal** (or **Alt+B** / **Alt+O**); in VS Code, open the **Inferpal** view in the Activity Bar.
+4. Open **Inferpal Settings**, pick the provider, set the server URL, select a model, click **Test**, then start chatting. (Both editors share the same Inferpal configuration.)
 
 Full walkthrough: **[Getting Started](docs/getting-started.md)**.
 

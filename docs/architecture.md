@@ -3,6 +3,25 @@
 This page describes how Inferpal is put together. For build/test/contribution mechanics see
 **[Development](development.md)**.
 
+## Two front-ends, one engine
+
+All the logic — providers, tools, agent orchestrator, RAG, MCP, localization — lives in
+**`Inferpal.Core`**, a plain `net8.0` class library with **zero editor-SDK or WPF
+dependency** (enforced by `CoreIsolationTests`). Editor access goes through ports:
+`IEditorSurface` for the editor surface and `ApprovalServiceBase` for the approval
+pipeline.
+
+Two adapters consume it:
+
+- **Visual Studio** (`Inferpal/`) — the primary target, described in the rest of this page
+  (`VsEditorSurface`, `VsApprovalService`, Remote UI tool window, in-process MEF ghost text).
+- **VS Code (preview)** (`vscode/` + `Inferpal.Host/`) — `Inferpal.Host` is a console
+  process hosting the Core behind **header-framed JSON-RPC on stdio** (`initialize`,
+  `chat/send` with streamed notifications, `models/list`, `fim/complete`, `textDocument/did*`
+  sync…), with reverse ports `RpcEditorSurface` and `RpcApprovalService` (fail-closed). The
+  TypeScript extension spawns and supervises it, renders the sidebar webview chat, and feeds
+  dirty buffers through `OpenDocumentOverlay` so `read_file` sees unsaved edits.
+
 ## Process model
 
 Inferpal uses the **out-of-process** Visual Studio Extensibility model

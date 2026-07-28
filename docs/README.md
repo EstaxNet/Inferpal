@@ -4,10 +4,12 @@
 
 # Inferpal Documentation
 
-Inferpal is a Visual Studio 2022/2026 extension that turns a **local LLM** — served by
-[Ollama](https://ollama.com), [LM Studio](https://lmstudio.ai), or any OpenAI-compatible
-server — into an **agentic developer assistant** with tool calling, inline completions,
-semantic codebase search, and zero required cloud dependency.
+Inferpal turns a **local LLM** — served by [Ollama](https://ollama.com),
+[LM Studio](https://lmstudio.ai), or any OpenAI-compatible server — into an **agentic
+developer assistant** with tool calling, inline completions, semantic codebase search, and
+zero required cloud dependency. It ships as a **Visual Studio 2022/2026 extension** (the
+primary target) and a **VS Code extension (preview)**, both driven by the same
+`Inferpal.Core` engine.
 
 This folder is the full documentation set, split into **functional** guides (how to use it)
 and **technical** references (how it works).
@@ -56,8 +58,9 @@ flowchart LR
 | | |
 |---|---|
 | Visual Studio | 2022 (17.9+) or 2026 (18.x) — Community / Professional / Enterprise |
-| Runtime | .NET 8 (`net8.0-windows`) |
-| Extension model | `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x (out-of-process) + in-process MEF for ghost text |
+| VS Code | preview — win32-x64 VSIX with a bundled self-contained backend (`Inferpal.Host`) |
+| Runtime | .NET 8 (`net8.0-windows`; core engine is plain `net8.0`) |
+| Extension model | VS: `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x (out-of-process) + in-process MEF for ghost text · VS Code: TypeScript + JSON-RPC host |
 | Built-in tools | 26 (+ MCP servers + user shell tools) |
 | Languages (UI) | 10 |
-| Tests | 982 xUnit tests |
+| Tests | 998 xUnit tests |
