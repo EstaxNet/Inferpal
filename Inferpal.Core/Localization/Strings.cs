@@ -571,6 +571,7 @@ internal static class Strings
     public static string SlashUsageRestore                => Get(nameof(SlashUsageRestore));
     public static string SlashHelp(string unknownCmd)     => string.Format(Get(nameof(SlashHelp)),         unknownCmd);
     public static string SlashHelpAll                     => Get(nameof(SlashHelpAll));
+    public static string SlashHeadlessUnavailable         => Get(nameof(SlashHeadlessUnavailable));
     public static string HistoryNoSessions                => Get(nameof(HistoryNoSessions));
     public static string HistoryNoResults(string term)    => string.Format(Get(nameof(HistoryNoResults)),   term);
 

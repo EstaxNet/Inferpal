@@ -903,4 +903,7 @@ ollama serve
   <data name="BuildBannerTitle" xml:space="preserve"><value>生成失败</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>关闭</value></data>
   <data name="BuildBannerFix" xml:space="preserve"><value>用 AI 修复</value></data>
+  <data name="SlashHeadlessUnavailable" xml:space="preserve">
+    <value>此命令在此编辑器中尚不可用——请在 Visual Studio 中使用。</value>
+  </data>
 </root>

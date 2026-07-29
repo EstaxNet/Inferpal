@@ -23,7 +23,7 @@ namespace Inferpal.Host;
 /// overlay) and `editor/didChangeActiveDocument`. Host→editor requests are issued by
 /// <see cref="RpcEditorSurface"/> and <see cref="RpcApprovalService"/>.
 /// </summary>
-internal sealed class HostServer : IDisposable
+internal sealed partial class HostServer : IDisposable
 {
     private readonly Func<InferpalConfig, IInferenceProvider> _providerFactory;
     private readonly Func<InferpalConfig> _configFactory;
@@ -119,14 +119,8 @@ internal sealed class HostServer : IDisposable
     [JsonRpcMethod("chat/send", UseSingleObjectParameterDeserialization = true)]
     public async Task<ChatSendResult> ChatSendAsync(ChatSendParams p, CancellationToken ct)
     {
-        var s = Session();
-        CancellationTokenSource cts;
-        lock (_gate)
-        {
-            if (_chatCts is not null)
-                throw new InvalidOperationException("A chat turn is already running.");
-            cts = _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        }
+        var s   = Session();
+        var cts = AcquireTurn(ct);
 
         // Mirror of the streamed text: returned as the partial answer on cancellation.
         var streamed = new StringBuilder();
@@ -136,7 +130,8 @@ internal sealed class HostServer : IDisposable
         try
         {
             s.History.Add(new ChatMessageDto("user", p.Prompt));
-            var agentMode = p.AgentMode ?? s.Config.AgentModeEnabled;
+            // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
+            var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
             // An explicit per-request model always wins; otherwise the Model Router applies the
             // same role chains as the VS adapter (agent loop → AgentModel, plain chat → DefaultModel).
             var model     = !string.IsNullOrWhiteSpace(p.Model)
@@ -184,8 +179,7 @@ internal sealed class HostServer : IDisposable
         }
         finally
         {
-            lock (_gate) _chatCts = null;
-            cts.Dispose();
+            ReleaseTurn(cts);
         }
     }
 
@@ -194,78 +188,6 @@ internal sealed class HostServer : IDisposable
 
     [JsonRpcMethod("chat/reset")]
     public void ChatReset() => ResetHistory(Session());
-
-    /// <summary>
-    /// Executes the slash commands the host can serve headlessly (routing = the same
-    /// <see cref="SlashCommandRouter"/> as the VS extension; execution = the shared pure
-    /// handlers). Unhandled commands return <c>Handled = false</c> so the adapter falls
-    /// back to sending the text as a normal chat prompt.
-    /// </summary>
-    [JsonRpcMethod("command/slash", UseSingleObjectParameterDeserialization = true)]
-    public async Task<SlashCommandResult> CommandSlashAsync(SlashCommandParams p, CancellationToken ct)
-    {
-        var s = Session();
-        if (SlashCommandRouter.Route(p.Text, []) is not SlashDelegatedAction delegated)
-            return new SlashCommandResult(Handled: false);
-
-        switch (delegated.Id)
-        {
-            case SlashCommandId.Replay:
-                return new SlashCommandResult(true,
-                    Services.Commands.ReplayCommandHandler.Handle(s.Tools.History.Runs, delegated.Parts, s.RootDir));
-
-            case SlashCommandId.Bench:
-            {
-                // Long-running (a full micro-eval suite per model). Progress is surfaced through
-                // the same chat/step notifications the agent loop uses.
-                var result = await Services.Commands.BenchCommandHandler.HandleAsync(
-                    s.Client, delegated.Parts,
-                    progress => Notify("chat/step", new { text = progress }), ct);
-                return new SlashCommandResult(true, result.Message);
-            }
-
-            case SlashCommandId.Arena:
-            {
-                // Two sequential inference calls; progress goes through the same chat/step
-                // notifications as /bench.
-                var result = await Services.Commands.ArenaCommandHandler.HandleAsync(
-                    s.Client, s.Config, delegated.Parts,
-                    progress => Notify("chat/step", new { text = progress }), ct);
-                return new SlashCommandResult(true, result.Message);
-            }
-
-            case SlashCommandId.Tdd:
-            {
-                // "Fix until green" loop; test reports, agent steps and per-round fix summaries
-                // all flow through the same chat/step notifications as the agent loop.
-                var result = await Services.Commands.TddCommandHandler.HandleAsync(
-                    s.Client, s.Config, s.Tools,
-                    BuildSystemPromptText(s), delegated.Parts,
-                    string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
-                    onProgress:   p => Notify("chat/step", new { text = p }),
-                    onTestReport: (output, _) => Notify("chat/step", new { text = output }),
-                    onStep:       st => Notify("chat/step", new { text = st }),
-                    onToken:      null,
-                    onFixResult:  null,
-                    ct);
-                return new SlashCommandResult(true, result.Message);
-            }
-
-            case SlashCommandId.Xray:
-                var sections = new SystemPromptBuilder(s.Config).BuildSections(
-                    Strings.SystemPrompt,
-                    projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
-                return new SlashCommandResult(true,
-                    Services.Commands.XRayCommandHandler.Handle(
-                        sections,
-                        AgentOrchestrator.EstimateTokens(s.History),
-                        s.Config.ContextWindowSize,
-                        s.Config.RagAutoContextEnabled));
-
-            default:
-                return new SlashCommandResult(Handled: false);
-        }
-    }
 
     /// <summary>Full slash-command list for the adapter's autocomplete popup: built-ins (hints
     /// localized by the `initialize` locale handshake) then user templates — the same sources
@@ -488,13 +410,34 @@ internal sealed class HostServer : IDisposable
     private HostSession Session()
         => _session ?? throw new InvalidOperationException("Call 'initialize' first.");
 
+    /// <summary>Claims the single-turn slot (chat turn or long slash command); throws when one
+    /// is already running. The returned CTS is cancelled by `chat/cancel` and `shutdown`.</summary>
+    private CancellationTokenSource AcquireTurn(CancellationToken ct)
+    {
+        lock (_gate)
+        {
+            if (_chatCts is not null)
+                throw new InvalidOperationException("A chat turn is already running.");
+            return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        }
+    }
+
+    private void ReleaseTurn(CancellationTokenSource cts)
+    {
+        lock (_gate) _chatCts = null;
+        cts.Dispose();
+    }
+
     /// <summary>Layered system prompt (same builder as the VS VM), honouring the sections
-    /// switched off from the Context X-Ray panel.</summary>
-    private static string BuildSystemPromptText(HostSession s) =>
-        new SystemPromptBuilder(s.Config).Build(
+    /// switched off from the Context X-Ray panel and the active `/template` suffix.</summary>
+    private static string BuildSystemPromptText(HostSession s)
+    {
+        var prompt = new SystemPromptBuilder(s.Config).Build(
             Strings.SystemPrompt,
             projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
             disabledSectionIds: s.XrayDisabledSections);
+        return string.IsNullOrEmpty(s.TemplateSuffix) ? prompt : prompt + "\n\n" + s.TemplateSuffix;
+    }
 
     /// <summary>Prompt layers for the X-Ray panel — same inputs as <see cref="BuildSystemPromptText"/>.</summary>
     private static IReadOnlyList<PromptSection> BuildPromptSections(HostSession s) =>

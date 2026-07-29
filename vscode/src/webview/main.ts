@@ -795,6 +795,11 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
     case 'agentMode':
       applyAgentMode(msg.enabled);
       break;
+    case 'setPrompt':
+      promptEl.value = msg.text;
+      promptEl.focus();
+      promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
+      break;
     case 'turnEnded': {
       if (streamEl) {
         // Replace the stream bubble content with the authoritative final text.

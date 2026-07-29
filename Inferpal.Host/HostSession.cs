@@ -38,6 +38,14 @@ internal sealed class HostSession : IDisposable
     /// consumed by the system-prompt builder so the next turns skip those layers).</summary>
     public HashSet<string> XrayDisabledSections { get; } = [];
 
+    /// <summary>Session-scoped `/tools on|off` switch (mirror of the VS VM's <c>_toolsEnabled</c>):
+    /// when off, `chat/send` runs plain chat even if agent mode is configured on.</summary>
+    public bool ToolsEnabled { get; set; } = true;
+
+    /// <summary>System-prompt suffix of the active `/template` (mirror of the VS VM's
+    /// <c>_activeTemplateSuffix</c>); appended by the host's system-prompt builder.</summary>
+    public string? TemplateSuffix { get; set; }
+
     public void Dispose()
     {
         // McpToolService owns no disposable state (its stdio clients die with the process).

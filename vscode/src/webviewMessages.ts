@@ -77,7 +77,8 @@ export type ExtToWebview =
   | { type: 'streamReset' }
   | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string }
   | { type: 'backendStatus'; status: WvBackendStatus }
-  | { type: 'agentMode'; enabled: boolean };
+  | { type: 'agentMode'; enabled: boolean }
+  | { type: 'setPrompt'; text: string };
 
 export type WebviewToExt =
   | { type: 'ready' }

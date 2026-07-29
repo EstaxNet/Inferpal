@@ -85,10 +85,21 @@ export interface SlashCommandInfo {
   hint: string;
 }
 
+/** One editor-side effect a handled slash command asks the adapter to apply.
+ * Kinds: setPrompt | sendAsPrompt | attachChip (name = chip label) | copyToClipboard |
+ * clearTranscript | stateChange (name = key) | openFile | exportRequest.
+ * Unknown kinds must be ignored (forward compatibility). */
+export interface SlashEffect {
+  kind: string;
+  value?: string | null;
+  name?: string | null;
+}
+
 /** `command/slash` answer: `handled: false` ⇒ send the text as a normal chat prompt. */
 export interface SlashCommandResult {
   handled: boolean;
   markdown?: string | null;
+  effects?: SlashEffect[] | null;
 }
 
 /** `codeAction/run` — headless in-place code action over the active document. */

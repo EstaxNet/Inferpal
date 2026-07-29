@@ -911,4 +911,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="BuildBannerTitle" xml:space="preserve"><value>Échec de la build</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>Ignorer</value></data>
   <data name="BuildBannerFix" xml:space="preserve"><value>Corriger avec l'IA</value></data>
+  <data name="SlashHeadlessUnavailable" xml:space="preserve">
+    <value>Cette commande n’est pas encore disponible dans cet éditeur — utilisez-la depuis Visual Studio.</value>
+  </data>
 </root>

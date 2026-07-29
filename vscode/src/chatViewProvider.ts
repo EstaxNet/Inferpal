@@ -3,7 +3,7 @@
 // on hide and is re-hydrated on every resolveWebviewView.
 import * as vscode from 'vscode';
 import { HostClient } from './hostClient';
-import { CodeActionResult, SavedMessage } from './protocol';
+import { CodeActionResult, SavedMessage, SlashEffect } from './protocol';
 import { WebviewToExt, WvBackendStatus, WvPlan, WvSlashCommand, WvTranscriptItem } from './webviewMessages';
 
 const HISTORY_KEY = 'inferpal.promptHistory';
@@ -31,6 +31,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private promptTokens = 0;
   private lastTokens = 0;
   private statusTimer: NodeJS.Timeout | undefined;
+  /** Context chips produced by slash effects (attachChip), consumed by the next chat turn. */
+  private pendingAttachments: { name: string; content: string }[] = [];
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -578,13 +580,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // Slash commands the host serves headlessly (/replay, /bench, …): rendered as an
-    // instant bubble, never sent to the model. Unhandled ones fall through to chat.
+    // Slash commands the host serves headlessly: rendered as an instant bubble (with
+    // optional editor-side effects), never sent to the model. Unhandled ones fall through.
     if (prompt.startsWith('/')) {
       try {
-        const slash = await host.commandSlash(prompt);
+        const slash = await host.commandSlash(prompt, this.historyEntries());
         if (slash.handled) {
-          this.finishTurn(slash.markdown ?? '', null, false, 0);
+          const outcome = await this.applySlashEffects(slash.effects ?? []);
+          if (outcome.chatPrompt !== null) {
+            // sendAsPrompt (expanded user template): continue as a normal chat turn.
+            await this.chatTurn(outcome.chatPrompt, host);
+            return;
+          }
+          const text = [slash.markdown ?? '', ...outcome.notes].filter((s) => s.length > 0).join('\n\n');
+          this.finishTurn(text, null, false, 0);
+          if (outcome.rehydrate) {
+            this.hydrate();
+          }
           return;
         }
       } catch (err) {
@@ -593,9 +605,79 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     }
 
+    await this.chatTurn(prompt, host);
+  }
+
+  /** Applies the editor-side effects of a handled slash command. */
+  private async applySlashEffects(
+    effects: SlashEffect[],
+  ): Promise<{ chatPrompt: string | null; notes: string[]; rehydrate: boolean }> {
+    let chatPrompt: string | null = null;
+    const notes: string[] = [];
+    let rehydrate = false;
+    for (const e of effects) {
+      switch (e.kind) {
+        case 'sendAsPrompt':
+          chatPrompt = e.value ?? null;
+          break;
+        case 'setPrompt':
+          this.post({ type: 'setPrompt', text: e.value ?? '' });
+          break;
+        case 'attachChip':
+          if (e.value) {
+            const name = e.name ?? 'attachment';
+            this.pendingAttachments.push({ name, content: e.value });
+            notes.push(vscode.l10n.t('📎 {0} attached to the next message.', name));
+          }
+          break;
+        case 'copyToClipboard':
+          await vscode.env.clipboard.writeText(e.value ?? '');
+          break;
+        case 'clearTranscript':
+          this.transcript.length = 0;
+          this.streamText = '';
+          this.plan = null;
+          this.promptTokens = 0;
+          this.lastTokens = 0;
+          rehydrate = true;
+          break;
+        case 'stateChange':
+          if (e.name === 'model' && e.value) {
+            this.model = e.value;
+            await vscode.workspace.getConfiguration('inferpal').update('model', e.value, vscode.ConfigurationTarget.Workspace);
+            rehydrate = true;
+          }
+          break;
+        case 'openFile':
+          if (e.value) {
+            try {
+              await vscode.window.showTextDocument(vscode.Uri.file(e.value));
+            } catch (err) {
+              this.log(`[chat] openFile effect failed: ${String(err)}`);
+            }
+          }
+          break;
+        case 'exportRequest':
+          void this.exportCommand();
+          break;
+        default:
+          break; // unknown kinds are ignored (forward compatibility)
+      }
+    }
+    return { chatPrompt, notes, rehydrate };
+  }
+
+  /** One model turn (agent or plain chat) with @-mention and pending-chip expansion. */
+  private async chatTurn(prompt: string, host: HostClient): Promise<void> {
     try {
       const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', true);
-      const expanded = await this.expandMentions(prompt);
+      let expanded = await this.expandMentions(prompt);
+      if (this.pendingAttachments.length > 0) {
+        for (const a of this.pendingAttachments) {
+          expanded += `\n\n## Attached: ${a.name}\n\`\`\`\n${a.content}\n\`\`\``;
+        }
+        this.pendingAttachments = [];
+      }
       const result = await host.chatSend({
         prompt: expanded,
         model: this.model || undefined,

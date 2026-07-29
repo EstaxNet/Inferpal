@@ -903,4 +903,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="BuildBannerTitle" xml:space="preserve"><value>빌드 실패</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>닫기</value></data>
   <data name="BuildBannerFix" xml:space="preserve"><value>AI로 수정</value></data>
+  <data name="SlashHeadlessUnavailable" xml:space="preserve">
+    <value>이 명령은 아직 이 편집기에서 사용할 수 없습니다 — Visual Studio에서 사용하세요.</value>
+  </data>
 </root>

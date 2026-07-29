@@ -66,12 +66,24 @@ internal sealed record SlashCommandInfoDto(string Command, string Hint);
 
 /// <summary>`command/slash` — a chat input starting with <c>/</c>. The host executes the
 /// commands it can serve headlessly; <c>Handled = false</c> tells the adapter to send the
-/// text as a normal chat prompt instead.</summary>
-internal sealed record SlashCommandParams(string Text);
+/// text as a normal chat prompt instead. <paramref name="PromptHistory"/> is the adapter's
+/// prompt-box history (most-recent-last), consumed by <c>/phistory</c>.</summary>
+internal sealed record SlashCommandParams(string Text, List<string>? PromptHistory = null);
+
+/// <summary>One editor-side effect a handled slash command asks the adapter to apply.
+/// <paramref name="Kind"/> ∈ <c>setPrompt</c> (Value = text to put in the prompt box) |
+/// <c>sendAsPrompt</c> (Value = expanded template to send as a normal chat turn) |
+/// <c>attachChip</c> (Name = chip label, Value = content to attach to the next turn) |
+/// <c>copyToClipboard</c> (Value) | <c>clearTranscript</c> | <c>stateChange</c>
+/// (Name = key e.g. <c>model</c>, Value) | <c>openFile</c> (Value = absolute path) |
+/// <c>exportRequest</c>. Unknown kinds must be ignored (forward compatibility).</summary>
+internal sealed record SlashEffectDto(string Kind, string? Value = null, string? Name = null);
 
 /// <summary>`command/slash` answer: <paramref name="Markdown"/> is the bubble to render
-/// when <paramref name="Handled"/> is true.</summary>
-internal sealed record SlashCommandResult(bool Handled, string? Markdown = null);
+/// when <paramref name="Handled"/> is true; <paramref name="Effects"/> are the editor-side
+/// side effects to apply (null/empty = none).</summary>
+internal sealed record SlashCommandResult(
+    bool Handled, string? Markdown = null, List<SlashEffectDto>? Effects = null);
 
 /// <summary>`config/update` — full config JSON, as previously returned by `config/get`.</summary>
 internal sealed record ConfigUpdateParams(string Json);

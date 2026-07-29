@@ -59,5 +59,6 @@
   "window {0}% full": "ventana llena al {0} %",
   "Unchecked sections are excluded from the next turn.": "Las secciones desmarcadas se excluyen del próximo turno.",
   "Nothing to export — the conversation is empty.": "Nada que exportar — la conversación está vacía.",
-  "Conversation exported: {0}": "Conversación exportada: {0}"
+  "Conversation exported: {0}": "Conversación exportada: {0}",
+  "📎 {0} attached to the next message.": "📎 {0} adjuntado al próximo mensaje."
 }

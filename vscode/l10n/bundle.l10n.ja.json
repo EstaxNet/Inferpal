@@ -59,5 +59,6 @@
   "window {0}% full": "ウィンドウ使用率 {0}%",
   "Unchecked sections are excluded from the next turn.": "チェックを外したセクションは次のターンから除外されます。",
   "Nothing to export — the conversation is empty.": "エクスポートするものがありません — 会話が空です。",
-  "Conversation exported: {0}": "会話をエクスポートしました: {0}"
+  "Conversation exported: {0}": "会話をエクスポートしました: {0}",
+  "📎 {0} attached to the next message.": "📎 {0} を次のメッセージに添付しました。"
 }

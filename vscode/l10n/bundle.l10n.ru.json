@@ -59,5 +59,6 @@
   "window {0}% full": "окно заполнено на {0} %",
   "Unchecked sections are excluded from the next turn.": "Снятые с отметки разделы исключаются из следующего хода.",
   "Nothing to export — the conversation is empty.": "Нечего экспортировать — беседа пуста.",
-  "Conversation exported: {0}": "Беседа экспортирована: {0}"
+  "Conversation exported: {0}": "Беседа экспортирована: {0}",
+  "📎 {0} attached to the next message.": "📎 {0} прикреплено к следующему сообщению."
 }

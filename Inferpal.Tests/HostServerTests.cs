@@ -386,18 +386,18 @@ public class HostServerTests
     // ── command/slash ──────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task CommandSlash_UnknownOrChatOnlyCommand_IsNotHandled()
+    public async Task CommandSlash_UnknownCommand_ReturnsHelpBubble()
     {
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
+        // Since slash V2 the unknown-command help is served headlessly (VS parity) —
+        // the raw "/…" text is never forwarded to the model.
         var unknown = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
             "command/slash", new { text = "/definitely-not-a-command" });
-        var vsOnly = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
-            "command/slash", new { text = "/models" });   // delegated id the host doesn't serve
 
-        Assert.False(unknown.Handled);
-        Assert.False(vsOnly.Handled);
+        Assert.True(unknown.Handled);
+        Assert.Contains("/definitely-not-a-command", unknown.Markdown, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -593,6 +593,166 @@ public class HostServerTests
 
         Assert.True(status.Connected);
         Assert.Equal(string.Empty, status.VramBadge);
+    }
+
+    // ── command/slash V2 (headless commands + typed effects) ──────────────────
+
+    [Fact]
+    public async Task Slash_Help_ReturnsHandledMarkdown()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/help" });
+
+        Assert.True(result.Handled);
+        Assert.False(string.IsNullOrWhiteSpace(result.Markdown));
+    }
+
+    [Fact]
+    public async Task Slash_UserTemplate_ReturnsSendAsPromptEffect()
+    {
+        using var h = CreateHarness(cfg => cfg.PromptTemplates = "/standup=Summarize {args} for me");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/standup today" });
+
+        Assert.True(result.Handled);
+        var effect = Assert.Single(result.Effects!);
+        Assert.Equal("sendAsPrompt", effect.Kind);
+        Assert.Equal("Summarize today for me", effect.Value);
+    }
+
+    [Fact]
+    public async Task Slash_Model_ChangesDefaultAndEmitsStateChange()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/model llama3.2:3b" });
+
+        Assert.True(result.Handled);
+        Assert.Equal("llama3.2:3b", h.Server.CurrentSession!.Config.DefaultModel);
+        var effect = Assert.Single(result.Effects!);
+        Assert.Equal("stateChange", effect.Kind);
+        Assert.Equal("model", effect.Name);
+        Assert.Equal("llama3.2:3b", effect.Value);
+    }
+
+    [Fact]
+    public async Task Slash_Clear_ResetsHistoryAndEmitsClearTranscript()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Server.CurrentSession!.History.Add(new ChatMessageDto("user", "hello"));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/clear" });
+
+        Assert.True(result.Handled);
+        Assert.Equal("clearTranscript", Assert.Single(result.Effects!).Kind);
+        var history = h.Server.CurrentSession!.History;
+        Assert.Single(history);
+        Assert.Equal("system", history[0].Role);
+    }
+
+    [Fact]
+    public async Task Slash_ToolsOff_ForcesPlainChatOnNextTurn()
+    {
+        using var h = CreateHarness(cfg => cfg.AgentModeEnabled = true);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/tools off" });
+        Assert.True(result.Handled);
+
+        await h.Client.InvokeWithParameterObjectAsync<Host.ChatSendResult>(
+            "chat/send", new { prompt = "hi" });
+
+        // Plain chat path records into ChatModels; the agent path would record into AgentRuns.
+        Assert.Empty(h.Fake.AgentRuns);
+        Assert.Single(h.Fake.ChatModels);
+    }
+
+    [Fact]
+    public async Task Slash_PHistory_FillsPromptFromAdapterHistory()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/phistory use 1", promptHistory = new[] { "first prompt", "second prompt" } });
+
+        Assert.True(result.Handled);
+        var effect = Assert.Single(result.Effects!);
+        Assert.Equal("setPrompt", effect.Kind);
+    }
+
+    [Fact]
+    public async Task Slash_ReadTool_AttachesAsChip()
+    {
+        using var h = CreateHarness();
+        var root = Directory.CreateTempSubdirectory("inferpal-slash-").FullName;
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "hello.txt"), "file content");
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+                "command/slash", new { text = $"/read {Path.Combine(root, "hello.txt")}" });
+
+            Assert.True(result.Handled);
+            var effect = Assert.Single(result.Effects!);
+            Assert.Equal("attachChip", effect.Kind);
+            Assert.Equal("hello.txt", effect.Name);
+            Assert.Contains("file content", effect.Value, StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task Slash_Export_EmitsExportRequestEffect()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/export" });
+
+        Assert.True(result.Handled);
+        Assert.Equal("exportRequest", Assert.Single(result.Effects!).Kind);
+    }
+
+    [Fact]
+    public async Task Slash_Setup_ReturnsHeadlessUnavailableNotFallthrough()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/setup" });
+
+        // Handled with a deterministic message — never sent to the model as a raw "/setup".
+        Assert.True(result.Handled);
+        Assert.False(string.IsNullOrWhiteSpace(result.Markdown));
+    }
+
+    [Fact]
+    public async Task Slash_CodeActions_FallThroughToTheAdapter()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/explain" });
+
+        Assert.False(result.Handled);
     }
 
     // ── command/list ───────────────────────────────────────────────────────────

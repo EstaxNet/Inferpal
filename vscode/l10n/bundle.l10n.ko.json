@@ -59,5 +59,6 @@
   "window {0}% full": "윈도우 {0}% 사용",
   "Unchecked sections are excluded from the next turn.": "선택 해제된 섹션은 다음 턴에서 제외됩니다.",
   "Nothing to export — the conversation is empty.": "내보낼 항목 없음 — 대화가 비어 있습니다.",
-  "Conversation exported: {0}": "대화를 내보냈습니다: {0}"
+  "Conversation exported: {0}": "대화를 내보냈습니다: {0}",
+  "📎 {0} attached to the next message.": "📎 {0}이(가) 다음 메시지에 첨부되었습니다."
 }

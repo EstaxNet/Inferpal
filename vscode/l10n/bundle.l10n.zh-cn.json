@@ -59,5 +59,6 @@
   "window {0}% full": "窗口已用 {0}%",
   "Unchecked sections are excluded from the next turn.": "未勾选的部分将从下一轮中排除。",
   "Nothing to export — the conversation is empty.": "没有可导出的内容——对话为空。",
-  "Conversation exported: {0}": "对话已导出：{0}"
+  "Conversation exported: {0}": "对话已导出：{0}",
+  "📎 {0} attached to the next message.": "📎 {0} 已附加到下一条消息。"
 }

@@ -903,4 +903,7 @@ ollama serve
   <data name="BuildBannerTitle" xml:space="preserve"><value>Сборка не удалась</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>Закрыть</value></data>
   <data name="BuildBannerFix" xml:space="preserve"><value>Исправить с ИИ</value></data>
+  <data name="SlashHeadlessUnavailable" xml:space="preserve">
+    <value>Эта команда пока недоступна в этом редакторе — используйте её в Visual Studio.</value>
+  </data>
 </root>

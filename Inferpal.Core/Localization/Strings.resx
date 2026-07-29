@@ -908,4 +908,7 @@ ollama serve
   <data name="BuildBannerTitle" xml:space="preserve"><value>Build Failed</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="BuildBannerFix" xml:space="preserve"><value>Fix with AI</value></data>
+  <data name="SlashHeadlessUnavailable" xml:space="preserve">
+    <value>This command is not available in this editor yet — use it from Visual Studio.</value>
+  </data>
 </root>

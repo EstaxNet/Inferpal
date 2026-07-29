@@ -903,4 +903,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="BuildBannerTitle" xml:space="preserve"><value>Kompilacja nie powiodła się</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>Odrzuć</value></data>
   <data name="BuildBannerFix" xml:space="preserve"><value>Napraw z AI</value></data>
+  <data name="SlashHeadlessUnavailable" xml:space="preserve">
+    <value>To polecenie nie jest jeszcze dostępne w tym edytorze — użyj go w programie Visual Studio.</value>
+  </data>
 </root>

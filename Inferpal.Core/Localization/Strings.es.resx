@@ -903,4 +903,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="BuildBannerTitle" xml:space="preserve"><value>Compilación fallida</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>Descartar</value></data>
   <data name="BuildBannerFix" xml:space="preserve"><value>Corregir con IA</value></data>
+  <data name="SlashHeadlessUnavailable" xml:space="preserve">
+    <value>Este comando aún no está disponible en este editor — úselo desde Visual Studio.</value>
+  </data>
 </root>

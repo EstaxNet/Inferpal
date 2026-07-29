@@ -213,9 +213,10 @@ export class HostClient {
     return this.connection().sendRequest('chat/reset');
   }
 
-  /** Slash commands the host serves headlessly (/replay, …). */
-  commandSlash(text: string): Promise<SlashCommandResult> {
-    return this.connection().sendRequest<SlashCommandResult>('command/slash', { text });
+  /** Slash commands the host serves headlessly. `promptHistory` (most-recent-last)
+   * feeds /phistory; long commands are cancellable via chatCancel(). */
+  commandSlash(text: string, promptHistory?: string[]): Promise<SlashCommandResult> {
+    return this.connection().sendRequest<SlashCommandResult>('command/slash', { text, promptHistory });
   }
 
   /** Context X-Ray panel model (interactive /xray V2). */
