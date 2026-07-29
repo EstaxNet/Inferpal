@@ -18,6 +18,15 @@ internal class InferpalConfig
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Inferpal", "config.json");
 
+    /// <summary>
+    /// Test seam: redirects <see cref="Load"/>/<see cref="Save"/> to another file. Set once by the
+    /// test assembly's module initializer so no test can ever clobber the developer's real
+    /// %AppData% config (handlers legitimately call <see cref="Save"/>). Null = production path.
+    /// </summary>
+    internal static string? OverridePathForTests;
+
+    private static string EffectiveConfigPath => OverridePathForTests ?? ConfigPath;
+
     /// <summary>BCP-47 culture code for the UI language (e.g. <c>"fr"</c>, <c>"zh-CN"</c>). Empty string = follow VS.</summary>
     [JsonPropertyName("language")]
     public string Language { get; set; } = string.Empty;
@@ -394,7 +403,7 @@ internal class InferpalConfig
     public static InferpalConfig Load()
     {
         InferpalConfig cfg;
-        if (!File.Exists(ConfigPath))
+        if (!File.Exists(EffectiveConfigPath))
         {
             cfg = new InferpalConfig();
         }
@@ -402,7 +411,7 @@ internal class InferpalConfig
         {
             try
             {
-                var json = File.ReadAllText(ConfigPath);
+                var json = File.ReadAllText(EffectiveConfigPath);
                 cfg = JsonSerializer.Deserialize<InferpalConfig>(json) ?? new InferpalConfig();
             }
             catch { cfg = new InferpalConfig(); }
@@ -413,8 +422,8 @@ internal class InferpalConfig
 
     public void Save()
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(EffectiveConfigPath)!);
         var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(ConfigPath, json);
+        File.WriteAllText(EffectiveConfigPath, json);
     }
 }

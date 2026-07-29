@@ -755,6 +755,42 @@ public class HostServerTests
         Assert.False(result.Handled);
     }
 
+    // ── config round trip (settings panel contract) ────────────────────────────
+
+    /// <summary>The VS Code settings webview round-trips the FULL config JSON through
+    /// `config/update`; every property must survive unchanged (absent fields reset).</summary>
+    [Fact]
+    public async Task ConfigUpdate_FullRoundTrip_PreservesEveryProperty()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var node = System.Text.Json.Nodes.JsonNode.Parse(
+            await h.Client.InvokeAsync<string>("config/get"))!.AsObject();
+
+        // Mutate every primitive to a non-default value (reflexive: new config properties
+        // are covered automatically).
+        foreach (var key in node.Select(kv => kv.Key).ToList())
+        {
+            var value = node[key];
+            node[key] = value?.GetValueKind() switch
+            {
+                System.Text.Json.JsonValueKind.String => key + "-mutated",
+                System.Text.Json.JsonValueKind.True   => false,
+                System.Text.Json.JsonValueKind.False  => true,
+                System.Text.Json.JsonValueKind.Number => value.GetValue<double>() + 7,
+                _ => value,
+            };
+        }
+
+        await h.Client.InvokeWithParameterObjectAsync("config/update", new { json = node.ToJsonString() });
+        var after = System.Text.Json.Nodes.JsonNode.Parse(
+            await h.Client.InvokeAsync<string>("config/get"))!.AsObject();
+
+        foreach (var kv in node)
+            Assert.Equal(kv.Value?.ToJsonString(), after[kv.Key]?.ToJsonString());
+    }
+
     // ── command/list ───────────────────────────────────────────────────────────
 
     [Fact]
