@@ -15,7 +15,7 @@ Two adapters consume it:
 
 - **Visual Studio** (`Inferpal/`) — the primary target, described in the rest of this page
   (`VsEditorSurface`, `VsApprovalService`, Remote UI tool window, in-process MEF ghost text).
-- **VS Code (preview)** (`vscode/` + `Inferpal.Host/`) — `Inferpal.Host` is a console
+- **VS Code** (`vscode/` + `Inferpal.Host/`, at feature parity since 1.2.0) — `Inferpal.Host` is a console
   process hosting the Core behind **header-framed JSON-RPC on stdio** (`initialize`,
   `chat/send` with streamed notifications, `models/list`, `fim/complete`, `textDocument/did*`
   sync…), with reverse ports `RpcEditorSurface` and `RpcApprovalService` (fail-closed). The

@@ -3,6 +3,23 @@
 A functional tour of what Inferpal does. Each area links to a deeper reference where one
 exists.
 
+## Two editors, one engine
+
+- The **Visual Studio extension** (primary) and the **VS Code extension** run the same
+  `Inferpal.Core` engine and share the same configuration. Since 1.2.0 the VS Code front-end
+  is at **feature parity**: full markdown rendering, welcome screen, connection + VRAM badge,
+  collapsible tool bubbles (input/output, "Fix with AI" on errors), live agent-plan block,
+  slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context
+  gauge (opens the X-Ray panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I
+  keybinding, and a localized webview (10 languages).
+- **Headless slash commands** — ~40 commands are served by the host over JSON-RPC with the
+  same approval/permission pipeline; long commands are cancellable. VS-only for now:
+  `/commit`, `/commit-exec`, `/fix-build`, `/check`, `/setup`, `/test`.
+- **Settings panel in VS Code** — an "Inferpal Settings" webview mirroring the four VS tabs
+  (Connection / Behavior / Context / Tools), backed by the shared config.
+- **Typed @-mentions, `/plan` and `/agent-step` modes, and per-turn RAG auto-context** all
+  work in VS Code too.
+
 ## Agent & tools
 
 - **Agentic loop** — the model autonomously chains tool calls (read/write files, run
@@ -21,6 +38,8 @@ exists.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
   (restores edited files, deletes files created that run); `/undo-run list` shows the
   session's tracked runs.
+- **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
+  call with its target and duration, then the files it touched.
 
 ## Code editing & fixing
 
@@ -48,9 +67,18 @@ exists.
 - **Build Failed banner** — when Visual Studio finishes a solution build with errors, a banner
   appears above the input with the first error and a one-click **Fix with AI** / `/fix-build`
   entry point.
+- **Inline diff preview for code actions** — `/fix`, `/refactor` and `/doc` no longer rewrite
+  the buffer blind: the change is shown in the editor with per-hunk accept/reject (Visual
+  Studio: a red/green adornment with ✓/✗ per hunk; VS Code: the native Refactor Preview).
+  Accepted hunks apply as a single undo step. Toggle with `inlineDiffPreviewEnabled`
+  (default on).
 - **Inline diff viewer** — an LCS-based diff is shown in the chat bubble after every
   write/apply (added green, removed red, unchanged collapsed).
 - **`/fix-build`** — compile → AI fixes errors → recompile, repeated until clean (max 5 rounds).
+- **`/tdd [filter]`** — "fix until green", the test-side twin of `/fix-build`: runs the test
+  suite (`run_tests` auto-detects dotnet / pytest / npm / cargo / go), hands the failure
+  report to the agent, re-runs, up to 5 rounds. Writes go through the usual approval
+  pipeline and `/undo-run` applies.
 
 ## Inline completions
 
@@ -86,6 +114,11 @@ exists.
   the first N messages verbatim.
 - **Workspace auto-context** — the first message of every session silently attaches solution
   info + open editors.
+- **Context X-Ray** — `/xray` (or a click on the context gauge) opens an interactive panel
+  breaking down everything composing the system prompt: token bars per layer (base, custom,
+  pinned, project files, scoped rules), the exact content of each section, per-section on/off
+  toggles for the next turn, copy of the raw prompt, and an overhead warning when the fixed
+  layers dominate the budget.
 - **Project rules & AI checks** — repo-versioned governance. See
   **[Rules & Checks](rules-and-checks.md)**.
 
@@ -119,6 +152,18 @@ exists.
   `ModelLifetimeService` auto-unloads idle ones.
 - **Hardware profile** — `/hardware` reports budget, loaded models, headroom, and a
   recommended `num_ctx`.
+- **Model bench** — `/bench [model…]` runs a local test bench of installed models: warm
+  time-to-first-token, tokens/s, VRAM pressure and a 5-task quality micro-eval scored by
+  programmatic assertions (no LLM judge), with per-role recommendations (agent / utility /
+  FIM) feeding the Model Router. `/bench last` redisplays the persisted run.
+- **Model arena** — `/arena <prompt>` sends the same prompt to two models (sequentially — one
+  GPU) and shows both answers blind-labelled A/B; `/arena a|b|tie` records the vote and
+  reveals the models, `/arena stats` shows the cumulative local standings.
+- **Model Router** — a dedicated **utility model** role (`utilityModel`) handles session
+  titles, `/commit` message proposals and compaction summaries instead of the chat model.
+  Opt-in **auto mode** (`modelRouterAuto`): with no utility model set, background tasks use
+  the model `/bench` recommended for the utility role — but only when it is already warm in
+  VRAM; a cold model is never loaded for a title or commit message.
 - **Dynamic timeout engine** — Quick / Normal / Deep thresholds per task complexity.
 - **Heartbeat & connection guard** — a silent pre-flight before every send; the Send button
   greys out when the server is unreachable, and recovers automatically.
@@ -132,10 +177,13 @@ exists.
   each prompt **Allow once / Always allow this tool / Cancel** (session-scoped, never
   persisted). Edit prompts show the **actual diff** before you confirm.
 - **Permission rules** — `allow` / `deny` patterns (per-machine + committable
-  `.inferpal/permissions.json`) classify a call before the prompt; a built-in,
-  **hard denylist** of catastrophic shell commands always applies, and indirect execution
-  (`iex`, `-EncodedCommand`, …) is force-prompted rather than auto-approved. See
-  **[Tools → Permission rules](tools.md)**.
+  `.inferpal/permissions.json`) classify a call before the prompt; a built-in denylist of
+  catastrophic shell commands always applies (an **accident guard**, not a security boundary —
+  it matches text, so obfuscation defeats it), and indirect execution (`iex`,
+  `-EncodedCommand`, `FromBase64String`, `[scriptblock]::Create`, `& $var`) is
+  **force-prompted**: never auto-approved by any rule, session grant or setting, never
+  blocked — the approval prompt, where the raw command is visible, is the actual boundary.
+  See **[Tools → Permission rules](tools.md)**.
 - **Hardened SSRF guard** on outbound fetches (DNS rebinding, IPv4-mapped IPv6, `0.0.0.0/8`,
   loopback/private ranges, ReDoS-safe timeout).
 - **Circuit breaker** on backend failures and **loop detection** to stop infinite agent loops.

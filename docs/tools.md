@@ -83,8 +83,11 @@ deny  * \.env$                                       # never touch secrets, any 
   `/diagnostics`); no match falls back to the prompt.
 - Sources, evaluated in order: the per-machine **Permission rules** setting, then the
   committable workspace overlay `.inferpal/permissions.json` (`{ "rules": ["allow …", …] }`).
-- A built-in **hard denylist** of catastrophic shell commands (recursive root
-  deletes, disk formatting, fork bombs, …) always applies — even with security alerts disabled.
+- A built-in denylist of catastrophic shell commands (recursive root deletes, disk
+  formatting, fork bombs, …) always applies — even with security alerts disabled. It is an
+  **accident guard, not a security boundary**: it matches submitted text, so obfuscation
+  defeats it by construction. The actual boundary is the approval prompt, where the raw
+  command is visible.
 - **Force-prompt** on indirect execution (`iex`, `-EncodedCommand`, `FromBase64String`,
   `[scriptblock]::Create`, `& $var`): what runs is not the text the rules read, so no
   auto-approval path applies (allow rule, session grant, security alerts disabled) — the

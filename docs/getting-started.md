@@ -1,13 +1,13 @@
 # Getting Started
 
 This guide takes you from nothing to a working Inferpal chat in Visual Studio — the last
-sections cover the **VS Code extension (preview)**.
+sections cover the **VS Code extension** (at feature parity since 1.2.0).
 
 ## 1. Requirements
 
 | Requirement | Details |
 |---|---|
-| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community, Professional or Enterprise — or **VS Code** (preview, win32-x64) |
+| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community, Professional or Enterprise — or **VS Code** (win32-x64) |
 | .NET SDK | .NET 8 (building from source only) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 
@@ -82,22 +82,27 @@ anywhere.
 
 See **[Configuration](configuration.md)** for every available setting.
 
-## VS Code (preview)
+## VS Code
 
 The VS Code extension shares the same engine and the same Inferpal configuration as the
-Visual Studio extension — configure once, use in both editors.
+Visual Studio extension — configure once, use in both editors. Since 1.2.0 it is at
+**feature parity** with the Visual Studio front-end.
 
 1. Download `inferpal-vscode-win32-x64-<version>.vsix` from
    **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)** and install it:
    `code --install-extension inferpal-vscode-win32-x64-<version>.vsix`
    (or Extensions view → `…` → *Install from VSIX…*). The backend (`Inferpal.Host`) is
    bundled and self-contained — no .NET installation required.
-2. Open the **Inferpal** view in the Activity Bar and start chatting: streaming replies,
-   the agentic loop with approvals, inline FIM completions, unsaved-buffer awareness and
-   live diagnostics from the Problems panel are all wired.
-3. Extension settings (`inferpal.*`): `hostPath` (leave empty for the bundled host),
-   `model`, `agentMode`, `fim.enabled`. Backend selection (server URL / provider) lives in
-   Inferpal's own configuration, shared with Visual Studio.
+2. Open the **Inferpal** view in the Activity Bar (or press **Ctrl+Alt+I**) and start
+   chatting: streaming replies with full markdown, the agentic loop with approvals and a
+   live plan block, collapsible tool bubbles, typed `@`-mentions, slash-command
+   autocomplete, inline FIM completions, unsaved-buffer awareness and live diagnostics from
+   the Problems panel are all wired. Nearly all slash commands work headless through the
+   host — see **[Slash Commands](slash-commands.md)** for the few still VS-only.
+3. Configure through the **Inferpal Settings** panel (four tabs — Connection / Behavior /
+   Context / Tools — backed by the configuration shared with Visual Studio). VS Code-side
+   extension settings (`inferpal.*`) cover only `hostPath` (leave empty for the bundled
+   host) and editor-local toggles such as `fim.enabled`.
 
 To build it from source, see **[Development → VS Code extension](development.md#vs-code-extension)**.
 

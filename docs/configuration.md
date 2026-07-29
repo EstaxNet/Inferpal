@@ -10,7 +10,7 @@ The Settings window is organized into collapsible sections:
 
 | Section | Contains |
 |---|---|
-| **Connection** | Provider, Server URL, API key, Chat model, Code Actions model, FIM model, Embedding model, **Test** |
+| **Connection** | Provider, Server URL, API key, Chat model, Code Actions model, FIM model, Embedding model, model roles (Agent model, Utility model, Model Router auto), **Test** |
 | **Behavior** | Command timeout, expand tool bubbles, disable security alerts, permission rules, Smart Fix |
 | **Inline Completions** | Enable ghost text, preset (Fast / Default / High Accuracy) |
 | **RAG / Semantic Index** | Enable semantic indexing, auto-inject context per turn, Top-K |
@@ -42,6 +42,8 @@ Every persisted setting, its type, and default value.
 | `inlineCompletionModel` | string | `""` | Dedicated FIM model (empty = `defaultModel`) |
 | `inlineEditModel` | string | `""` | Inline Edit model (fallback: `codeActionsModel` → `defaultModel`) |
 | `agentModel` | string | `""` | AgentOrchestrator model (empty = `defaultModel`) |
+| `utilityModel` | string | `""` | Model for background utility tasks — session titles, `/commit` message proposals, compaction summaries (empty = `defaultModel`). A small fast model is ideal; resolution is centralized in `ModelRouter` |
+| `modelRouterAuto` | bool | `false` | Model Router auto mode: when no `utilityModel` is set, utility tasks use the model `/bench` recommended for the utility role — but only if it is already warm in VRAM (a cold model is never loaded for a title or commit message; falls back to the chat model). An explicit `utilityModel` always wins |
 | `ragEmbeddingModel` | string | `""` | Embedding model (empty = `nomic-embed-text`) |
 
 ### Behavior & safety
@@ -53,6 +55,7 @@ Every persisted setting, its type, and default value.
 | `securityAlertsDisabled` | bool | `false` | Auto-approve the calls that would otherwise prompt (the built-in catastrophic-command denylist still applies) |
 | `permissionRules` | string | `""` | Allow/deny rules, one per line: `allow\|deny <tool\|*> <regex>` (see [Tools → Permission rules](tools.md)) |
 | `smartFixEnabled` | bool | `true` | Auto build/typecheck after `write_file`/`apply_diff`/`apply_edits` — .NET / TypeScript / Rust / Go (see workspace overlays) |
+| `inlineDiffPreviewEnabled` | bool | `true` | Inline diff preview for in-place code actions (`/fix` `/refactor` `/doc`): per-hunk ✓/✗ accept/reject in the editor (VS adornment; native Refactor Preview in VS Code) instead of an immediate rewrite. Falls back to direct apply when no renderer is available; orthogonal to tool approval |
 
 ### Inline completions
 

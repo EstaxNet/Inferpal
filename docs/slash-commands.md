@@ -7,6 +7,13 @@ editor with tools disabled).
 > [!TIP]
 > `/help` lists everything available in your build.
 
+> [!NOTE]
+> **VS Code:** nearly all commands below also work in the VS Code extension, served headless
+> by the host process (same approval and permission pipeline; long commands such as `/tdd`,
+> `/bench`, `/models pull` and `/docs` are cancellable). Still VS-only for now: `/commit`,
+> `/commit-exec`, `/fix-build`, `/check`, `/setup` and `/test` (they answer "not available in
+> this editor yet").
+
 ## Conversation
 
 | Command | Description |
@@ -16,6 +23,7 @@ editor with tools disabled).
 | `/tools on\|off` | Enable or disable tool calling |
 | `/export` | Export the conversation to `.md` or `.txt` |
 | `/help` | Show all available commands |
+| `/diagnostics [clear\|on\|off]` | List the background errors swallowed best-effort (in-memory ring buffer, includes permission-rule denials); `clear` empties it, `on`/`off` toggles the opt-in file log |
 
 ## Context & memory
 

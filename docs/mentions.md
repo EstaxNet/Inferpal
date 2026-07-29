@@ -11,7 +11,7 @@ replaced with the corresponding attachment.
 | `@code` | The active editor selection |
 | `@diff` | The current `git diff` |
 | `@problems` | The current build errors |
-| `@debugger` | The live Visual Studio break state (via `get_debugger_state`) |
+| `@debugger` | The live debugger break state (via `get_debugger_state`) |
 | `@clipboard` | The clipboard contents |
 | `@tree` | The solution tree |
 | `@token` | A token counter |
@@ -19,6 +19,12 @@ replaced with the corresponding attachment.
 > [!TIP]
 > The `@`-mention popup and the `/`-command popup are mutually exclusive — typing `@` opens
 > the mention picker, `/` opens the command list.
+
+> [!NOTE]
+> **VS Code:** typed mentions work there too (since 1.2.0) — the eight categories from
+> `@file` to `@tree` are offered in a two-level popup, and resolved mentions appear as
+> context chips in the composer, alongside a "+" attach menu (active file, selection, file
+> from disk).
 
 ## Related
 
