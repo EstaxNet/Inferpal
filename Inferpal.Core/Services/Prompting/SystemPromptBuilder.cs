@@ -47,13 +47,20 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
     /// Active file relative to the root (forward slashes) used to scope rules by glob;
     /// null matches only <c>alwaysApply</c> / glob-less rules.
     /// </param>
+    /// <param name="disabledSectionIds">
+    /// Section ids (<see cref="Presentation.XRayPanelPresenter.SectionId"/>) switched off from the
+    /// Context X-Ray panel — those layers are skipped; null/empty keeps everything.
+    /// </param>
     public string Build(
         string  basePrompt,
         string? language          = null,
         string? templateSuffix    = null,
         string? projectRoot       = null,
-        string? activeFileRelPath = null)
+        string? activeFileRelPath = null,
+        IReadOnlySet<string>? disabledSectionIds = null)
         => string.Concat(BuildSections(basePrompt, language, templateSuffix, projectRoot, activeFileRelPath)
+                         .Where(s => disabledSectionIds is null
+                                     || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(s)))
                          .Select(s => s.Content));
 
     /// <summary>

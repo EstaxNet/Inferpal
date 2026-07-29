@@ -430,7 +430,8 @@ internal partial class InferpalToolWindowData
             language,
             _activeTemplateSuffix,
             dir,
-            ActiveFileRelativeTo(dir));
+            ActiveFileRelativeTo(dir),
+            _xrayDisabledSections);   // sections switched off from the Context X-Ray panel
         return _planMode ? prompt + PlanModeToolRegistry.SystemPromptSuffix : prompt;
     }
 

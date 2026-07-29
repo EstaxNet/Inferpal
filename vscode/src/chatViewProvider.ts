@@ -20,7 +20,9 @@ type InboundMessage =
   | { type: 'pickModel'; model: string }
   | { type: 'approvalAnswer'; id: number; answer: number }
   | { type: 'mentionQuery'; query: string }
-  | { type: 'openApprovalDiff'; text: string };
+  | { type: 'openApprovalDiff'; text: string }
+  | { type: 'xrayToggle'; id: string; enabled: boolean }
+  | { type: 'xrayCopy'; text: string };
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = 'inferpal.chat';
@@ -286,6 +288,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await vscode.window.showTextDocument(doc, { preview: true });
         return;
       }
+      case 'xrayToggle': {
+        // Applies the toggle host-side (next turns) and re-renders the refreshed panel.
+        const host = this.getHost();
+        if (!host?.isRunning) {
+          return;
+        }
+        try {
+          const panel = await host.xrayToggle(msg.id, msg.enabled);
+          this.post({ type: 'xrayPanel', panel });
+        } catch (err) {
+          this.log(`[chat] xray/toggle failed: ${String(err)}`);
+        }
+        return;
+      }
+      case 'xrayCopy':
+        await vscode.env.clipboard.writeText(msg.text);
+        return;
     }
   }
 
@@ -368,6 +387,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!host?.isRunning) {
       this.transcript.push({ role: 'error', text: vscode.l10n.t('Inferpal host is not running — use "Inferpal: Restart Host".') });
       this.hydrate();
+      return;
+    }
+
+    // /xray opens the interactive panel (ephemeral overlay — no transcript entry, no model call).
+    if (prompt.split(/\s+/, 1)[0].toLowerCase() === '/xray') {
+      try {
+        const panel = await host.xrayPanel();
+        this.post({ type: 'xrayPanel', panel });
+      } catch (err) {
+        this.log(`[chat] xray/panel failed: ${String(err)}`);
+      }
       return;
     }
 

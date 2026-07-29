@@ -225,3 +225,113 @@ button:hover {
   background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
   color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
 }
+
+/* ── Context X-Ray panel (interactive /xray V2) ─────────────────────────────── */
+#xray {
+  position: absolute;
+  inset: 0 0 auto 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--vscode-sideBar-background);
+  border-bottom: 1px solid var(--vscode-editorWidget-border, transparent);
+  padding: 8px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.xray-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.xray-title {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xray-header button {
+  padding: 2px 8px;
+  font-size: 0.9em;
+}
+
+.xray-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.xray-row {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.2));
+}
+
+.xray-row.off .xray-label {
+  opacity: 0.5;
+}
+
+.xray-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xray-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.xray-tokens {
+  opacity: 0.7;
+  font-size: 0.9em;
+}
+
+.xray-chevron {
+  background: transparent;
+  color: var(--vscode-foreground);
+  padding: 0 4px;
+  font-size: 0.85em;
+}
+
+.xray-bar {
+  height: 3px;
+  margin-top: 4px;
+  background: var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.2));
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xray-fill {
+  height: 100%;
+  background: var(--vscode-progressBar-background, #7c4dff);
+}
+
+.xray-content {
+  max-height: 150px;
+  overflow: auto;
+  margin: 5px 0 0;
+  padding: 6px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  background: var(--vscode-textCodeBlock-background, rgba(128, 128, 128, 0.1));
+  border-radius: 4px;
+}
+
+.xray-footer {
+  margin-top: 6px;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.xray-warning {
+  color: var(--vscode-editorWarning-foreground, #d06000);
+  opacity: 1;
+}

@@ -822,6 +822,11 @@ ollama serve
   <data name="XrayHistory" xml:space="preserve"><value>Conversation history: {0} tokens (estimate)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG auto-context: {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Context window: {0} / {1} tokens ({2}%)</value></data>
+  <data name="XrayPanelHint" xml:space="preserve"><value>Unchecked sections are excluded from the next turn.</value></data>
+  <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.</value></data>
+  <data name="XrayPanelCopy" xml:space="preserve"><value>Copy prompt</value></data>
+  <data name="TooltipXrayGauge" xml:space="preserve"><value>Context usage — click to open the X-Ray panel</value></data>
+  <data name="TooltipXrayClose" xml:space="preserve"><value>Close</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Review the proposed changes in the editor — ✓/✗ on each change (✓✓/✗✗ for all). Typing dismisses the preview.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Usage: `/hardware &lt;gb&gt;` — a positive number, e.g. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM budget set to {0} GB.</value></data>

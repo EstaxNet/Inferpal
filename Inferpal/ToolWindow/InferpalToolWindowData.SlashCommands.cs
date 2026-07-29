@@ -225,15 +225,14 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
             case SlashCommandId.Xray:
             {
-                // Same inputs as BuildSystemPrompt so the breakdown matches what the next turn sends.
-                var xrayRoot = FindProjectRoot();
-                var sections = new SystemPromptBuilder(_config).BuildSections(
-                    Strings.SystemPrompt, null, _activeTemplateSuffix, xrayRoot, ActiveFileRelativeTo(xrayRoot));
-                await ShowInfoAsync(Services.Commands.XRayCommandHandler.Handle(
-                    sections,
-                    Services.Agent.AgentOrchestrator.EstimateTokens(_history),
-                    _config.ContextWindowSize,
-                    _config.RagAutoContextEnabled));
+                // V2: opens the interactive panel (the markdown rendering remains the headless
+                // path — VS Code / host). RefreshXrayPanel reads the same inputs as
+                // BuildSystemPrompt so the breakdown matches what the next turn sends.
+                await RunOnVMContextAsync(() =>
+                {
+                    RefreshXrayPanel();
+                    IsXrayPanelOpen = true;
+                });
                 break;
             }
         }

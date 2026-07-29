@@ -24,6 +24,7 @@ import {
   StepUpdateNotice,
   TextNote,
   ToolNotice,
+  XRayPanel,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -210,9 +211,19 @@ export class HostClient {
     return this.connection().sendRequest('chat/reset');
   }
 
-  /** Slash commands the host serves headlessly (/replay, /xray, …). */
+  /** Slash commands the host serves headlessly (/replay, …). */
   commandSlash(text: string): Promise<SlashCommandResult> {
     return this.connection().sendRequest<SlashCommandResult>('command/slash', { text });
+  }
+
+  /** Context X-Ray panel model (interactive /xray V2). */
+  xrayPanel(): Promise<XRayPanel> {
+    return this.connection().sendRequest<XRayPanel>('xray/panel');
+  }
+
+  /** Switches one prompt section on/off for the next turns; returns the refreshed panel. */
+  xrayToggle(id: string, enabled: boolean): Promise<XRayPanel> {
+    return this.connection().sendRequest<XRayPanel>('xray/toggle', { id, enabled });
   }
 
   /** In-place code action (fix / refactor / doc): the host runs the model step and returns

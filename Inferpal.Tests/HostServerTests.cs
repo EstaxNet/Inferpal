@@ -75,12 +75,17 @@ public class HostServerTests
         }
     }
 
-    private static Harness CreateHarness()
+    private static Harness CreateHarness(Action<InferpalConfig>? configure = null)
     {
         var (clientStream, serverStream) = FullDuplexStream.CreatePair();
 
         var fake   = new FakeInferenceProvider();
-        var server = new HostServer(_ => fake, () => new InferpalConfig());
+        var server = new HostServer(_ => fake, () =>
+        {
+            var cfg = new InferpalConfig();
+            configure?.Invoke(cfg);
+            return cfg;
+        });
         var serverRpc = HostRpc.Create(serverStream, serverStream, server);
         server.Attach(serverRpc);
         serverRpc.StartListening();
@@ -420,6 +425,43 @@ public class HostServerTests
         Assert.True(result.Handled);
         Assert.Contains("🩻", result.Markdown);
         Assert.Contains(Strings.XrayLabelBase, result.Markdown);
+    }
+
+    [Fact]
+    public async Task XrayPanel_ReturnsSections_WithBaseNotToggleable()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var panel = await h.Client.InvokeAsync<Host.XRayPanelDto>("xray/panel");
+
+        var baseRow = Assert.Single(panel.Sections, s => s.Id == "Base");
+        Assert.False(baseRow.CanToggle);
+        Assert.True(baseRow.Enabled);
+        Assert.True(panel.TotalTokens > 0);
+        Assert.Equal(panel.RawPrompt.Length > 0, panel.TotalTokens > 0);
+    }
+
+    [Fact]
+    public async Task XrayToggle_DisablesSection_AndRefreshesSystemPrompt()
+    {
+        using var h = CreateHarness(cfg => cfg.CustomSystemPrompt = "Always answer in haiku.");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var before = await h.Client.InvokeAsync<Host.XRayPanelDto>("xray/panel");
+        Assert.Contains("haiku", before.RawPrompt);
+
+        var after = await h.Client.InvokeWithParameterObjectAsync<Host.XRayPanelDto>(
+            "xray/toggle", new { id = "Custom", enabled = false });
+
+        Assert.DoesNotContain("haiku", after.RawPrompt);
+        Assert.False(after.Sections.Single(s => s.Id == "Custom").Enabled);
+        Assert.True(after.TotalTokens < before.TotalTokens);
+
+        // Re-enable → back to the full prompt.
+        var restored = await h.Client.InvokeWithParameterObjectAsync<Host.XRayPanelDto>(
+            "xray/toggle", new { id = "Custom", enabled = true });
+        Assert.Contains("haiku", restored.RawPrompt);
     }
 
     // ── codeAction/run ─────────────────────────────────────────────────────────

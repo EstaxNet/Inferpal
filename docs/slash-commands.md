@@ -22,7 +22,7 @@ editor with tools disabled).
 | Command | Description |
 |---|---|
 | `/context` | Show the active `.inferpal/context.md` |
-| `/xray` | Context X-Ray: token breakdown of everything composing the system prompt (base, custom, pinned, project files, scoped rules) + history estimate and context-window fill |
+| `/xray` | Context X-Ray: interactive panel breaking down everything composing the system prompt (base, custom, pinned, project files, scoped rules) — token bars, exact content per section, per-section on/off toggle for the next turn, copy of the raw prompt. Also opens by clicking the context gauge. Headless adapters get the markdown breakdown instead |
 | `/memory` | Show `.inferpal/memory.md` (the agent's persistent memory) |
 | `/note <text>` | Append a timestamped note to `.inferpal/notes.md` |
 | `/notes [clear]` | List or clear all project notes |

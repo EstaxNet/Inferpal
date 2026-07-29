@@ -761,6 +761,12 @@ internal static class Strings
     public static string XrayHistory(string tokens)          => string.Format(Get(nameof(XrayHistory)), tokens);
     public static string XrayRag(string state)               => string.Format(Get(nameof(XrayRag)), state);
     public static string XrayBudget(string used, string limit, string pct) => string.Format(Get(nameof(XrayBudget)), used, limit, pct);
+    // Interactive X-Ray panel (V2)
+    public static string XrayPanelHint                       => Get(nameof(XrayPanelHint));
+    public static string XrayPanelWarning                    => Get(nameof(XrayPanelWarning));
+    public static string XrayPanelCopy                       => Get(nameof(XrayPanelCopy));
+    public static string TooltipXrayGauge                    => Get(nameof(TooltipXrayGauge));
+    public static string TooltipXrayClose                    => Get(nameof(TooltipXrayClose));
 
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));

@@ -817,6 +817,11 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="XrayHistory" xml:space="preserve"><value>대화 기록: {0} 토큰(추정)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 자동 컨텍스트: {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>컨텍스트 창: {0} / {1} 토큰({2}%)</value></data>
+  <data name="XrayPanelHint" xml:space="preserve"><value>선택 해제된 섹션은 다음 턴에서 제외됩니다.</value></data>
+  <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ 프로젝트 레이어(규칙, 메모리, 노트)가 컨텍스트의 큰 부분을 차지합니다 — 줄이는 것을 고려하세요.</value></data>
+  <data name="XrayPanelCopy" xml:space="preserve"><value>프롬프트 복사</value></data>
+  <data name="TooltipXrayGauge" xml:space="preserve"><value>컨텍스트 사용량 — 클릭하면 X-Ray 패널이 열립니다</value></data>
+  <data name="TooltipXrayClose" xml:space="preserve"><value>닫기</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 에디터에서 제안된 변경 사항을 검토하세요 — 각 변경에 ✓/✗(전체는 ✓✓/✗✗). 입력하면 미리보기가 닫힙니다.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>사용법: `/hardware &lt;gb&gt;` — 양수, 예: `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM 예산을 {0} GB로 설정했습니다.</value></data>

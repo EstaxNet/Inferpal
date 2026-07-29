@@ -817,6 +817,11 @@ ollama serve
   <data name="XrayHistory" xml:space="preserve"><value>История разговора: {0} токенов (оценка)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Автоконтекст RAG: {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Контекстное окно: {0} / {1} токенов ({2} %)</value></data>
+  <data name="XrayPanelHint" xml:space="preserve"><value>Снятые с отметки секции исключаются из следующего хода.</value></data>
+  <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Слои проекта (правила, память, заметки) занимают большую часть контекста — стоит их сократить.</value></data>
+  <data name="XrayPanelCopy" xml:space="preserve"><value>Копировать промпт</value></data>
+  <data name="TooltipXrayGauge" xml:space="preserve"><value>Использование контекста — нажмите, чтобы открыть панель X-Ray</value></data>
+  <data name="TooltipXrayClose" xml:space="preserve"><value>Закрыть</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Просмотрите предложенные изменения в редакторе — ✓/✗ для каждого изменения (✓✓/✗✗ для всех). Ввод текста закрывает предпросмотр.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Использование: `/hardware &lt;gb&gt;` — положительное число, например `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Бюджет VRAM установлен на {0} GB.</value></data>

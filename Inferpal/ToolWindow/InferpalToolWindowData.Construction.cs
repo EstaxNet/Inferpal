@@ -72,6 +72,8 @@ internal partial class InferpalToolWindowData
         HistoryUpCommand          = new AsyncCommand(HistoryUpAsync)   { CanExecute = false };
         HistoryDownCommand        = new AsyncCommand(HistoryDownAsync) { CanExecute = false };
         RetryConnectionCommand    = new AsyncCommand(RetryConnectionAsync);
+        ToggleXrayPanelCommand    = new AsyncCommand(ToggleXrayPanelAsync);
+        CopyXrayPromptCommand     = new AsyncCommand(CopyXrayPromptAsync);
         DismissBuildBannerCommand = new AsyncCommand(DismissBuildBannerAsync);
         FixBuildBannerCommand     = new AsyncCommand(FixBuildBannerAsync);
 
@@ -136,6 +138,10 @@ internal partial class InferpalToolWindowData
         BuildBannerDismiss        = Strings.BuildBannerDismiss;
         BuildBannerFix            = Strings.BuildBannerFix;
         ActiveModelLabel          = _config.DefaultModel;
+        XrayPanelHint             = Strings.XrayPanelHint;
+        XrayPanelWarning          = Strings.XrayPanelWarning;
+        BtnXrayCopy               = Strings.XrayPanelCopy;
+        TooltipXrayClose          = Strings.TooltipXrayClose;
     }
 
     /// <summary>Welcome-card handler: drops the card's slash command into the prompt and sends it,

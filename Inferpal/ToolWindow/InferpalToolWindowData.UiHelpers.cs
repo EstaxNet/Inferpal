@@ -43,7 +43,8 @@ internal partial class InferpalToolWindowData
 
         ContextFillPercent   = budget.FillPercent;
         ContextBudgetColor   = budget.Color;
-        ContextBudgetTooltip = budget.Tooltip;
+        // Numeric readout + the "click to open the X-Ray panel" affordance (the bar is a button).
+        ContextBudgetTooltip = budget.Tooltip + "\n" + Strings.TooltipXrayGauge;
         HasContextBudget     = true;
     }
 

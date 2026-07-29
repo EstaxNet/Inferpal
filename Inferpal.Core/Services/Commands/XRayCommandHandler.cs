@@ -71,15 +71,6 @@ internal static class XRayCommandHandler
         return new string('█', filled) + new string('░', BarWidth - filled);
     }
 
-    private static string Label(PromptSection s) => s.Kind switch
-    {
-        PromptSectionKind.Base           => Strings.XrayLabelBase,
-        PromptSectionKind.Persona        => Strings.XrayLabelPersona + (s.Detail is null ? "" : $" ({s.Detail})"),
-        PromptSectionKind.Custom         => Strings.XrayLabelCustom,
-        PromptSectionKind.Template       => Strings.XrayLabelTemplate,
-        PromptSectionKind.Pinned         => "📌 " + s.Detail,
-        PromptSectionKind.Rules          => Strings.XrayLabelRules(s.Detail ?? "?"),
-        // File-backed layers: the path is the clearest, language-neutral label.
-        _                                => s.Detail ?? s.Kind.ToString(),
-    };
+    // Labels are shared with the interactive panel so both renderings use the same wording.
+    private static string Label(PromptSection s) => Presentation.XRayPanelPresenter.Label(s);
 }

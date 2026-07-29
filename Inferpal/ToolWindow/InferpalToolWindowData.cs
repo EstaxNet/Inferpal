@@ -209,6 +209,21 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _tooltipPlanMode           = string.Empty;
     private string _tooltipAgentMode          = string.Empty;
 
+    // ── Context X-Ray panel (V2) ───────────────────────────────────────────────
+    private bool   _isXrayPanelOpen;
+    private bool   _hasXrayWarning;
+    private string _xrayTotalText    = string.Empty;
+    private string _xrayHistoryText  = string.Empty;
+    private string _xrayPanelHint    = string.Empty;
+    private string _xrayPanelWarning = string.Empty;
+    private string _btnXrayCopy      = string.Empty;
+    private string _tooltipXrayClose = string.Empty;
+    /// <summary>Exact system prompt of the next turn (enabled sections) — for the copy button.</summary>
+    private string _xrayRawPrompt    = string.Empty;
+    /// <summary>Section ids switched off from the X-Ray panel — session-scoped, consumed by
+    /// <c>BuildSystemPrompt</c> so the next turn skips those layers.</summary>
+    private readonly HashSet<string> _xrayDisabledSections = [];
+
     // ── Build Failed banner ────────────────────────────────────────────────────
     // Shown when VS finishes a solution build with at least one compilation error.
     // Dismissed when the user clicks "Dismiss" or "Fix with AI".

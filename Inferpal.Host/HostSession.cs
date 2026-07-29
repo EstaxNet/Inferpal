@@ -34,6 +34,10 @@ internal sealed class HostSession : IDisposable
     /// <summary>Conversation history, seeded with the layered system prompt (index 0).</summary>
     public List<ChatMessageDto> History { get; set; } = [];
 
+    /// <summary>Prompt-section ids switched off from the Context X-Ray panel (session-scoped;
+    /// consumed by the system-prompt builder so the next turns skip those layers).</summary>
+    public HashSet<string> XrayDisabledSections { get; } = [];
+
     public void Dispose()
     {
         // McpToolService owns no disposable state (its stdio clients die with the process).

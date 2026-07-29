@@ -105,6 +105,28 @@ export interface CodeActionResult {
   failureDetail?: string | null;
 }
 
+/** One prompt layer of the Context X-Ray panel (`xray/panel` / `xray/toggle`). */
+export interface XRaySection {
+  id: string;
+  label: string;
+  tokens: number;
+  percent: number;
+  content: string;
+  enabled: boolean;
+  canToggle: boolean;
+}
+
+/** Full X-Ray panel model, ready to render in the webview. */
+export interface XRayPanel {
+  sections: XRaySection[];
+  totalTokens: number;
+  historyTokens: number;
+  contextWindow: number;
+  fillPercent: number;
+  overheadWarning: boolean;
+  rawPrompt: string;
+}
+
 export interface ApprovalNote {
   message: string;
 }

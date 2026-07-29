@@ -367,6 +367,27 @@ internal sealed class HostServer : IDisposable
     [JsonRpcMethod("session/delete", UseSingleObjectParameterDeserialization = true)]
     public bool SessionDelete(SessionRefParams p) => Session().Store.Delete(p.Name);
 
+    // ── Context X-Ray panel (interactive /xray V2) ─────────────────────────────
+
+    /// <summary>Full panel model (sections, totals, warning, raw prompt) for the webview.</summary>
+    [JsonRpcMethod("xray/panel")]
+    public XRayPanelDto XrayPanel() => ToXRayPanelDto(Session());
+
+    /// <summary>Switches one prompt section on/off for the session's next turns, refreshes the
+    /// in-memory system prompt and returns the updated panel model.</summary>
+    [JsonRpcMethod("xray/toggle", UseSingleObjectParameterDeserialization = true)]
+    public XRayPanelDto XrayToggle(XRayToggleParams p)
+    {
+        var s = Session();
+        if (p.Enabled) s.XrayDisabledSections.Remove(p.Id);
+        else           s.XrayDisabledSections.Add(p.Id);
+
+        if (s.History.Count > 0 && s.History[0].Role == "system")
+            s.History[0] = new ChatMessageDto("system", BuildSystemPromptText(s));
+
+        return ToXRayPanelDto(s);
+    }
+
     // ── Open-document overlay & active editor (notifications from the adapter) ─
 
     [JsonRpcMethod("textDocument/didOpen", UseSingleObjectParameterDeserialization = true)]
@@ -387,11 +408,31 @@ internal sealed class HostServer : IDisposable
     private HostSession Session()
         => _session ?? throw new InvalidOperationException("Call 'initialize' first.");
 
-    /// <summary>Layered system prompt (same builder as the VS VM).</summary>
+    /// <summary>Layered system prompt (same builder as the VS VM), honouring the sections
+    /// switched off from the Context X-Ray panel.</summary>
     private static string BuildSystemPromptText(HostSession s) =>
         new SystemPromptBuilder(s.Config).Build(
             Strings.SystemPrompt,
+            projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
+            disabledSectionIds: s.XrayDisabledSections);
+
+    /// <summary>Prompt layers for the X-Ray panel — same inputs as <see cref="BuildSystemPromptText"/>.</summary>
+    private static IReadOnlyList<PromptSection> BuildPromptSections(HostSession s) =>
+        new SystemPromptBuilder(s.Config).BuildSections(
+            Strings.SystemPrompt,
             projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
+
+    private static XRayPanelDto ToXRayPanelDto(HostSession s)
+    {
+        var model = XRayPanelPresenter.Build(
+            BuildPromptSections(s), s.XrayDisabledSections,
+            AgentOrchestrator.EstimateTokens(s.History), s.Config.ContextWindowSize);
+        return new XRayPanelDto(
+            model.Sections.Select(x => new XRaySectionDto(
+                x.Id, x.Label, x.Tokens, x.Percent, x.Content, x.Enabled, x.CanToggle)).ToList(),
+            model.TotalTokens, model.HistoryTokens, model.ContextWindow,
+            model.FillPercent, model.OverheadWarning, model.RawPrompt);
+    }
 
     /// <summary>Reseeds the history with the layered system prompt.</summary>
     private static void ResetHistory(HostSession s) =>

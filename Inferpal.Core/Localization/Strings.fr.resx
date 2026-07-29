@@ -825,6 +825,11 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="XrayHistory" xml:space="preserve"><value>Historique de conversation : {0} tokens (estimation)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Auto-contexte RAG : {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Fenêtre de contexte : {0} / {1} tokens ({2} %)</value></data>
+  <data name="XrayPanelHint" xml:space="preserve"><value>Les sections décochées sont exclues du prochain tour.</value></data>
+  <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Les couches projet (règles, mémoire, notes) occupent une grande part du contexte — pensez à les alléger.</value></data>
+  <data name="XrayPanelCopy" xml:space="preserve"><value>Copier le prompt</value></data>
+  <data name="TooltipXrayGauge" xml:space="preserve"><value>Utilisation du contexte — cliquez pour ouvrir le panneau X-Ray</value></data>
+  <data name="TooltipXrayClose" xml:space="preserve"><value>Fermer</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Examinez les modifications proposées dans l'éditeur — ✓/✗ sur chaque changement (✓✓/✗✗ pour tout). Taper du texte ferme l'aperçu.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Utilisation : `/hardware &lt;gb&gt;` — un nombre positif, p. ex. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budget VRAM réglé sur {0} GB.</value></data>

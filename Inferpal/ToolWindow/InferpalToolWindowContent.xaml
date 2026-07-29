@@ -969,6 +969,164 @@
             </StackPanel>
         </Grid>
 
+        <!-- ── Context X-Ray panel (interactive /xray V2) ── -->
+        <!-- Overlays the messages list; opened from the context gauge or /xray. Rows are
+             cross-boundary primitives (XRaySectionItem) with per-item theme colours. -->
+        <Border Grid.Row="2" Background="{Binding ThemePanelBg}"
+                Visibility="{Binding IsXrayPanelOpen, Converter={StaticResource b2v}}">
+            <DockPanel Margin="10,8">
+                <!-- Header: title/total + copy + close -->
+                <DockPanel DockPanel.Dock="Top" LastChildFill="True" Margin="0,0,0,6">
+                    <Button DockPanel.Dock="Right" Padding="6,2" Margin="4,0,0,0"
+                            Content="✕" Foreground="{Binding ThemeSubtleText}"
+                            ToolTip="{Binding TooltipXrayClose}"
+                            Command="{Binding ToggleXrayPanelCommand}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bd" CornerRadius="4" Background="Transparent"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button DockPanel.Dock="Right" Padding="8,2" Margin="8,0,0,0"
+                            Content="{Binding BtnXrayCopy}" Foreground="{Binding ThemeText}" FontSize="11"
+                            Command="{Binding CopyXrayPromptCommand}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bd" CornerRadius="4" Background="Transparent"
+                                        BorderThickness="1" BorderBrush="{Binding ThemeInputBorder}"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <TextBlock Text="{Binding XrayTotalText}" Foreground="{Binding ThemeText}"
+                               FontSize="12" FontWeight="SemiBold"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </DockPanel>
+
+                <!-- Footer: history estimate + toggle hint + overhead warning -->
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                    <TextBlock Text="{Binding XrayPanelWarning}" Foreground="#D06000" FontSize="11"
+                               TextWrapping="Wrap" Margin="0,0,0,2"
+                               Visibility="{Binding HasXrayWarning, Converter={StaticResource b2v}}"/>
+                    <TextBlock Text="{Binding XrayHistoryText}" Foreground="{Binding ThemeSubtleText}" FontSize="10"/>
+                    <TextBlock Text="{Binding XrayPanelHint}"   Foreground="{Binding ThemeSubtleText}" FontSize="10"/>
+                </StackPanel>
+
+                <!-- Section rows -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding XraySections}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderThickness="0,0,0,1" BorderBrush="{Binding ThemeCodeBorder}" Padding="0,5">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <!-- Enabled toggle (hidden for the base prompt) -->
+                                            <Button Grid.Column="0" Padding="2,0" Margin="0,0,6,0"
+                                                    Command="{Binding ToggleEnabledCommand}"
+                                                    Visibility="{Binding CanToggle, Converter={StaticResource b2v}}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                                                            <TextBlock FontSize="12" Foreground="{Binding ThemeText}">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="☑"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding Enabled}" Value="False">
+                                                                                <Setter Property="Text" Value="☐"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                            <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="12"
+                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{Binding ThemeText}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Enabled}" Value="False">
+                                                                <Setter Property="Foreground" Value="{Binding ThemeSubtleText}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="2" Text="{Binding TokensText}" FontSize="11"
+                                                       Foreground="{Binding ThemeSubtleText}"
+                                                       VerticalAlignment="Center" Margin="8,0"/>
+                                            <!-- Expand/collapse the exact section content -->
+                                            <Button Grid.Column="3" Padding="4,0"
+                                                    Command="{Binding ToggleExpandCommand}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                                                            <TextBlock FontSize="10" Foreground="{Binding ThemeSubtleText}">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="▸"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                                                <Setter Property="Text" Value="▾"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </Grid>
+                                        <ProgressBar Value="{Binding Percent}" Minimum="0" Maximum="100"
+                                                     Height="3" Margin="0,4,0,0"
+                                                     Foreground="#7C4DFF" BorderThickness="0"/>
+                                        <!-- Exact content preview (read-only, scrollable) -->
+                                        <Border Margin="0,5,0,0" CornerRadius="4"
+                                                Background="{Binding ThemeCodeBg}"
+                                                BorderThickness="1" BorderBrush="{Binding ThemeCodeBorder}"
+                                                Visibility="{Binding IsExpanded, Converter={StaticResource b2v}}">
+                                            <TextBox Text="{Binding Content, Mode=OneWay}" IsReadOnly="True"
+                                                     Background="Transparent" BorderThickness="0"
+                                                     Foreground="{Binding ThemeText}" FontSize="11"
+                                                     FontFamily="Cascadia Mono, Consolas"
+                                                     TextWrapping="Wrap" MaxHeight="150" Padding="6"
+                                                     VerticalScrollBarVisibility="Auto"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
         <!-- ── Loading ── -->
         <!-- The old status label + Cancel button were removed: progress is now shown on the
              tool/plan bubbles, and Cancel folded into the send button (becomes a Stop button
@@ -1636,14 +1794,26 @@
                            Foreground="{Binding ThemeSubtleText}" FontSize="10"
                            VerticalAlignment="Center" />
             </DockPanel>
-            <!-- Context-window fill bar — only visible when ContextWindowSize > 0 -->
-            <ProgressBar Value="{Binding ContextFillPercent}"
-                         Minimum="0" Maximum="100"
-                         Height="3" Margin="12,0,8,4"
-                         Foreground="{Binding ContextBudgetColor}"
-                         BorderThickness="0"
-                         Visibility="{Binding HasContextBudget, Converter={StaticResource b2v}}"
-                         ToolTip="{Binding ContextBudgetTooltip}" />
+            <!-- Context-window fill bar — only visible when ContextWindowSize > 0.
+                 Clickable: opens the Context X-Ray panel (transparent padding = hit area). -->
+            <Button Margin="12,0,8,2" Padding="0,2"
+                    Command="{Binding ToggleXrayPanelCommand}"
+                    ToolTip="{Binding ContextBudgetTooltip}"
+                    Cursor="Hand" FocusVisualStyle="{x:Null}"
+                    Visibility="{Binding HasContextBudget, Converter={StaticResource b2v}}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ProgressBar Value="{Binding ContextFillPercent}"
+                                         Minimum="0" Maximum="100"
+                                         Height="3"
+                                         Foreground="{Binding ContextBudgetColor}"
+                                         BorderThickness="0"
+                                         IsHitTestVisible="False" />
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
         </StackPanel>
     </Grid>
 

@@ -92,6 +92,25 @@ internal sealed record CodeActionResultDto(
     string?                 NewText = null,
     string?                 FailureDetail = null);
 
+// ── Context X-Ray panel (interactive /xray V2) ───────────────────────────────
+
+/// <summary>One prompt layer of the X-Ray panel (wire mirror of the Core's <c>XRaySectionModel</c>).</summary>
+internal sealed record XRaySectionDto(
+    string Id, string Label, int Tokens, double Percent, string Content, bool Enabled, bool CanToggle);
+
+/// <summary>`xray/panel` (and `xray/toggle`) answer: the full panel model, ready to render.</summary>
+internal sealed record XRayPanelDto(
+    List<XRaySectionDto> Sections,
+    int    TotalTokens,
+    int    HistoryTokens,
+    int    ContextWindow,
+    double FillPercent,
+    bool   OverheadWarning,
+    string RawPrompt);
+
+/// <summary>`xray/toggle` — switches one section on/off for the next turns of this session.</summary>
+internal sealed record XRayToggleParams(string Id, bool Enabled);
+
 // ── Sessions (persisted in %AppData%/Inferpal/sessions/, shared with the VS extension) ──
 
 /// <summary>One display message of a saved session (wire mirror of <c>SavedMessage</c>).</summary>

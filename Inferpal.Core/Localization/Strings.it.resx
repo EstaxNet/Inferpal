@@ -817,6 +817,11 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="XrayHistory" xml:space="preserve"><value>Cronologia della conversazione: {0} token (stima)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Auto-contesto RAG: {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Finestra di contesto: {0} / {1} token ({2} %)</value></data>
+  <data name="XrayPanelHint" xml:space="preserve"><value>Le sezioni deselezionate sono escluse dal prossimo turno.</value></data>
+  <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ I livelli di progetto (regole, memoria, note) occupano gran parte del contesto — valuta di ridurli.</value></data>
+  <data name="XrayPanelCopy" xml:space="preserve"><value>Copia prompt</value></data>
+  <data name="TooltipXrayGauge" xml:space="preserve"><value>Uso del contesto — fai clic per aprire il pannello X-Ray</value></data>
+  <data name="TooltipXrayClose" xml:space="preserve"><value>Chiudi</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Rivedi le modifiche proposte nell'editor — ✓/✗ su ogni modifica (✓✓/✗✗ per tutte). Digitare chiude l'anteprima.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Uso: `/hardware &lt;gb&gt;` — un numero positivo, ad es. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budget VRAM impostato a {0} GB.</value></data>

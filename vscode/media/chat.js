@@ -195,6 +195,109 @@
   promptEl.addEventListener('input', detectMention);
   promptEl.addEventListener('blur', () => setTimeout(closeMentions, 150));
 
+  // ── Context X-Ray panel (interactive /xray V2) ─────────────────────────────
+  // Ephemeral overlay above the transcript; state lives host-side, this only renders
+  // the pushed panel model. Expansion state survives toggle-driven re-renders.
+  const xrayEl = document.createElement('div');
+  xrayEl.id = 'xray';
+  xrayEl.hidden = true;
+  document.body.appendChild(xrayEl);
+  const xrayExpanded = new Set();
+
+  function renderXray(panel) {
+    xrayEl.textContent = '';
+
+    const header = document.createElement('div');
+    header.className = 'xray-header';
+    const title = document.createElement('span');
+    title.className = 'xray-title';
+    title.textContent = '🩻 Context X-Ray — ~' + panel.totalTokens.toLocaleString() + ' tokens';
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = 'Copy prompt';
+    copyBtn.title = 'Copy the exact system prompt of the next turn';
+    copyBtn.addEventListener('click', () => vscode.postMessage({ type: 'xrayCopy', text: panel.rawPrompt }));
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.addEventListener('click', () => { xrayEl.hidden = true; });
+    header.appendChild(title);
+    header.appendChild(copyBtn);
+    header.appendChild(closeBtn);
+    xrayEl.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'xray-list';
+    for (const s of panel.sections) {
+      const row = document.createElement('div');
+      row.className = 'xray-row' + (s.enabled ? '' : ' off');
+
+      const line = document.createElement('div');
+      line.className = 'xray-line';
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.checked = s.enabled;
+      check.disabled = !s.canToggle;
+      check.title = s.canToggle ? 'Include in the next turn' : '';
+      check.addEventListener('change', () =>
+        vscode.postMessage({ type: 'xrayToggle', id: s.id, enabled: check.checked }));
+      const label = document.createElement('span');
+      label.className = 'xray-label';
+      label.textContent = s.label;
+      const tokens = document.createElement('span');
+      tokens.className = 'xray-tokens';
+      tokens.textContent = '~' + s.tokens.toLocaleString();
+      const chevron = document.createElement('button');
+      chevron.className = 'xray-chevron';
+      chevron.textContent = xrayExpanded.has(s.id) ? '▾' : '▸';
+      const toggleContent = () => {
+        if (xrayExpanded.has(s.id)) { xrayExpanded.delete(s.id); } else { xrayExpanded.add(s.id); }
+        renderXray(panel);
+      };
+      chevron.addEventListener('click', toggleContent);
+      label.addEventListener('click', toggleContent);
+      line.appendChild(check);
+      line.appendChild(label);
+      line.appendChild(tokens);
+      line.appendChild(chevron);
+      row.appendChild(line);
+
+      const bar = document.createElement('div');
+      bar.className = 'xray-bar';
+      const fill = document.createElement('div');
+      fill.className = 'xray-fill';
+      fill.style.width = Math.max(0, Math.min(100, s.percent)) + '%';
+      bar.appendChild(fill);
+      row.appendChild(bar);
+
+      if (xrayExpanded.has(s.id)) {
+        const pre = document.createElement('pre');
+        pre.className = 'xray-content';
+        pre.textContent = s.content;
+        row.appendChild(pre);
+      }
+      list.appendChild(row);
+    }
+    xrayEl.appendChild(list);
+
+    const footer = document.createElement('div');
+    footer.className = 'xray-footer';
+    if (panel.overheadWarning) {
+      const warn = document.createElement('div');
+      warn.className = 'xray-warning';
+      warn.textContent = '⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.';
+      footer.appendChild(warn);
+    }
+    const info = document.createElement('div');
+    info.textContent = 'History: ~' + panel.historyTokens.toLocaleString() + ' tokens'
+      + (panel.contextWindow > 0 ? ' · window ' + panel.fillPercent.toFixed(0) + '% full' : '');
+    footer.appendChild(info);
+    const hint = document.createElement('div');
+    hint.textContent = 'Unchecked sections are excluded from the next turn.';
+    footer.appendChild(hint);
+    xrayEl.appendChild(footer);
+
+    xrayEl.hidden = false;
+  }
+
   // ── Intents → extension ────────────────────────────────────────────────────
   function send() {
     const text = promptEl.value;
@@ -301,6 +404,9 @@
         break;
       case 'mentionSuggestions':
         renderMentions(msg.items);
+        break;
+      case 'xrayPanel':
+        renderXray(msg.panel);
         break;
       case 'streamReset':
         if (streamEl) {
