@@ -103,11 +103,17 @@ internal class ToolRegistry : IToolRegistry
                 ?? _mcp.Tools.FirstOrDefault(t => t.Name == name);
 
         if (tool is null)
+        {
+            _fileHistory.RecordToolCall(name, subject: null, durationMs: 0, error: true);
             return $"Unknown tool: {name}";
+        }
 
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            return await tool.ExecuteAsync(args, ct);
+            var result = await tool.ExecuteAsync(args, ct);
+            _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);
+            return result;
         }
         catch (OperationCanceledException)
         {
@@ -115,8 +121,26 @@ internal class ToolRegistry : IToolRegistry
         }
         catch (Exception ex)
         {
+            _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: true);
             return $"Tool '{name}' error: {ex.Message}";
         }
+    }
+
+    /// <summary>Best-effort human-readable target of a tool call for the run journal:
+    /// the first well-known string argument (path, command, query…), <c>null</c> when none.</summary>
+    private static string? ExtractSubject(JsonElement args)
+    {
+        if (args.ValueKind != JsonValueKind.Object) return null;
+
+        foreach (var key in (string[])["path", "file_path", "command", "url", "query", "target", "name"])
+        {
+            if (args.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String)
+            {
+                var s = v.GetString();
+                if (!string.IsNullOrWhiteSpace(s)) return s;
+            }
+        }
+        return null;
     }
 
     private void Register(ITool tool) => _tools[tool.Name] = tool;

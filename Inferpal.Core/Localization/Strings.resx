@@ -807,6 +807,10 @@ ollama serve
   <data name="UndoRunNone" xml:space="preserve"><value>No agent run with file changes to undo in this session.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} file(s) restored, {1} deleted.</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>Timeline of the last agent run (tools, durations, files)</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 Agent run {0} — {1} tool call(s), {2} file(s) changed</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**Files touched:**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Usage: `/hardware &lt;gb&gt;` — a positive number, e.g. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM budget set to {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Hardware profile</value></data>

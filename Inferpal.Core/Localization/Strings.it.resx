@@ -802,6 +802,10 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="UndoRunNone" xml:space="preserve"><value>Nessun run dell'agente con modifiche ai file da annullare in questa sessione.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questa sessione ({0}):</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Ultimo run annullato — {0} file ripristinato/i, {1} eliminato/i.</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>Cronologia dell'ultimo run dell'agente (strumenti, durate, file)</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>Nessun run dell'agente con chiamate a strumenti registrato in questa sessione.</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run dell'agente {0} — {1} chiamata/e a strumenti, {2} file modificato/i</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**File coinvolti:**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Uso: `/hardware &lt;gb&gt;` — un numero positivo, ad es. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budget VRAM impostato a {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Profilo hardware</value></data>

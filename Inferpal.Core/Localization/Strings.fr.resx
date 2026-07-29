@@ -810,6 +810,10 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="UndoRunNone" xml:space="preserve"><value>Aucun run agent avec des modifications de fichiers à annuler dans cette session.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Runs suivis cette session ({0}) :</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Dernier run annulé — {0} fichier(s) restauré(s), {1} supprimé(s).</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>Chronologie du dernier run agent (outils, durées, fichiers)</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>Aucun run agent avec appels d'outils enregistré dans cette session.</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run agent {0} — {1} appel(s) d'outil, {2} fichier(s) modifié(s)</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**Fichiers touchés :**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Utilisation : `/hardware &lt;gb&gt;` — un nombre positif, p. ex. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budget VRAM réglé sur {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Profil matériel</value></data>

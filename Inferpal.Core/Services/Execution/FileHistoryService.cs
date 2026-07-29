@@ -124,6 +124,13 @@ internal class FileHistoryService
         lock (_runLock) _currentRun?.RecordFirst(filePath, snapshot: null);
     }
 
+    /// <summary>Appends a tool invocation to the current run's journal (for <c>/replay</c>).
+    /// No-op when no run is active (e.g. code actions, tools disabled).</summary>
+    internal void RecordToolCall(string tool, string? subject, long durationMs, bool error)
+    {
+        lock (_runLock) _currentRun?.RecordToolCall(tool, subject, durationMs, error);
+    }
+
     private void RecordInRun(string filePath, string snapPath)
     {
         lock (_runLock) _currentRun?.RecordFirst(filePath, snapPath);
@@ -195,6 +202,11 @@ internal class FileHistoryService
 /// was <em>created</em> during the run (no prior content — undo deletes it).</summary>
 internal sealed record RunChange(string OriginalPath, string? SnapshotPath);
 
+/// <summary>One tool invocation in a run's journal (for <c>/replay</c>). <see cref="Subject"/> is the
+/// best-effort target extracted from the arguments (path, command, query…), <c>null</c> when none.
+/// <see cref="Error"/> is <c>true</c> only for tool exceptions, not for in-band refusals.</summary>
+internal sealed record ToolCallRecord(int Seq, string Tool, string? Subject, long DurationMs, bool Error);
+
 /// <summary>Outcome of <see cref="FileHistoryService.UndoRunAsync"/>.</summary>
 internal sealed record RunUndoResult(List<string> Restored, List<string> Deleted, List<string> Failed);
 
@@ -210,6 +222,12 @@ internal sealed class HistoryRun
 
     private readonly Dictionary<string, RunChange> _firstByPath = new(StringComparer.OrdinalIgnoreCase);
 
+    // Tool-call journal (for /replay). Guarded by its own lock: read-only tool batches execute in
+    // parallel (ShouldRunParallel), so records can arrive concurrently — and /replay may read while
+    // a later run is still writing.
+    private readonly List<ToolCallRecord> _toolCalls = [];
+    private readonly object _toolCallLock = new();
+
     public HistoryRun(string id) { Id = id; StartedAt = DateTime.Now; }
 
     public void RecordFirst(string originalPath, string? snapshot)
@@ -218,6 +236,23 @@ internal sealed class HistoryRun
             _firstByPath[originalPath] = new RunChange(originalPath, snapshot);
     }
 
+    public void RecordToolCall(string tool, string? subject, long durationMs, bool error)
+    {
+        lock (_toolCallLock)
+            _toolCalls.Add(new ToolCallRecord(_toolCalls.Count + 1, tool, subject, durationMs, error));
+    }
+
     public IReadOnlyCollection<RunChange> Changes => _firstByPath.Values;
     public int FileCount => _firstByPath.Count;
+
+    /// <summary>Snapshot copy — safe to enumerate while the run is still recording.</summary>
+    public IReadOnlyList<ToolCallRecord> ToolCalls
+    {
+        get { lock (_toolCallLock) return _toolCalls.ToList(); }
+    }
+
+    public int ToolCallCount
+    {
+        get { lock (_toolCallLock) return _toolCalls.Count; }
+    }
 }

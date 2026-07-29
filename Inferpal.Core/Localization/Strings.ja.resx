@@ -802,6 +802,10 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="UndoRunNone" xml:space="preserve"><value>このセッションには元に戻せるファイル変更を伴うエージェント実行がありません。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>このセッションで追跡された実行（{0}）：</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 直近の実行を取り消しました — 復元 {0} 件、削除 {1} 件。</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>直近のエージェント実行のタイムライン（ツール・所要時間・ファイル）</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>このセッションにはツール呼び出しのあるエージェント実行が記録されていません。</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 エージェント実行 {0} — ツール呼び出し {1} 件、変更ファイル {2} 件</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**変更されたファイル:**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>使い方: `/hardware &lt;gb&gt;` — 正の数、例: `/hardware 24`。</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM バジェットを {0} GB に設定しました。</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## ハードウェアプロファイル</value></data>

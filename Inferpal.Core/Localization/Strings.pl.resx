@@ -802,6 +802,10 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="UndoRunNone" xml:space="preserve"><value>Brak uruchomienia agenta ze zmianami plików do cofnięcia w tej sesji.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Śledzone uruchomienia w tej sesji ({0}):</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Cofnięto ostatnie uruchomienie — przywrócono {0} plik(ów), usunięto {1}.</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>Oś czasu ostatniego przebiegu agenta (narzędzia, czasy, pliki)</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>W tej sesji nie zarejestrowano przebiegu agenta z wywołaniami narzędzi.</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 Przebieg agenta {0} — wywołań narzędzi: {1}, zmienionych plików: {2}</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**Zmienione pliki:**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Użycie: `/hardware &lt;gb&gt;` — liczba dodatnia, np. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budżet VRAM ustawiony na {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Profil sprzętu</value></data>

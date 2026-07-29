@@ -802,6 +802,10 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="UndoRunNone" xml:space="preserve"><value>No hay ningún run del agente con cambios de archivos que deshacer en esta sesión.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Runs rastreados en esta sesión ({0}):</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Último run deshecho — {0} archivo(s) restaurado(s), {1} eliminado(s).</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>Cronología del último run del agente (herramientas, duraciones, archivos)</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>No hay ningún run del agente con llamadas a herramientas registrado en esta sesión.</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run del agente {0} — {1} llamada(s) a herramientas, {2} archivo(s) modificado(s)</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**Archivos afectados:**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Uso: `/hardware &lt;gb&gt;` — un número positivo, p. ej. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Presupuesto de VRAM establecido en {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Perfil de hardware</value></data>

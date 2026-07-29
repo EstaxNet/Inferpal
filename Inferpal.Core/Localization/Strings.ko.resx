@@ -802,6 +802,10 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="UndoRunNone" xml:space="preserve"><value>이 세션에는 취소할 파일 변경이 있는 에이전트 실행이 없습니다.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>이 세션에서 추적된 실행({0}):</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 마지막 실행을 취소함 — {0}개 복원, {1}개 삭제.</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>최근 에이전트 실행의 타임라인(도구, 소요 시간, 파일)</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>이 세션에는 도구 호출이 있는 에이전트 실행이 기록되어 있지 않습니다.</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 에이전트 실행 {0} — 도구 호출 {1}건, 변경된 파일 {2}개</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**변경된 파일:**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>사용법: `/hardware &lt;gb&gt;` — 양수, 예: `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM 예산을 {0} GB로 설정했습니다.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## 하드웨어 프로필</value></data>

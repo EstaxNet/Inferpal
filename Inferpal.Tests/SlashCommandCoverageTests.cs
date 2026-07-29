@@ -119,6 +119,7 @@ public class SlashCommandCoverageTests
     [InlineData("/checks",            "Checks")]
     [InlineData("/diagnostics",       "Diagnostics")]
     [InlineData("/undo-run",          "UndoRun")]
+    [InlineData("/replay",            "Replay")]
     public void StatefulCommand_DelegatesWithExpectedId(string prompt, string id)
     {
         var action = Assert.IsType<SlashDelegatedAction>(Route(prompt));

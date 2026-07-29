@@ -217,6 +217,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Rules:      await HandleRulesCommandAsync(parts, ct);    break;
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
             case SlashCommandId.Diagnostics: await ShowInfoAsync(Services.Commands.DiagnosticsCommandHandler.Handle(parts)); break;
+            case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
         }
     }
 

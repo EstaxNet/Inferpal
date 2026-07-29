@@ -802,6 +802,10 @@ ollama serve
   <data name="UndoRunNone" xml:space="preserve"><value>В этой сессии нет запуска агента с изменениями файлов для отмены.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Отслеживаемые запуски в этой сессии ({0}):</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Последний запуск отменён — восстановлено файлов: {0}, удалено: {1}.</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>Хронология последнего запуска агента (инструменты, длительность, файлы)</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>В этой сессии не записано ни одного запуска агента с вызовами инструментов.</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 Запуск агента {0} — вызовов инструментов: {1}, изменённых файлов: {2}</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**Затронутые файлы:**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Использование: `/hardware &lt;gb&gt;` — положительное число, например `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Бюджет VRAM установлен на {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Профиль оборудования</value></data>

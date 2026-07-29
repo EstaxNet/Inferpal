@@ -802,6 +802,10 @@ ollama serve
   <data name="UndoRunNone" xml:space="preserve"><value>本会话中没有可撤销文件更改的代理运行。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>本会话跟踪的运行（{0}）：</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 已撤销上一次运行 — 恢复 {0} 个文件，删除 {1} 个。</value></data>
+  <data name="SlashHintReplay" xml:space="preserve"><value>最近一次代理运行的时间线（工具、耗时、文件）</value></data>
+  <data name="ReplayNone" xml:space="preserve"><value>本会话中没有记录包含工具调用的代理运行。</value></data>
+  <data name="ReplayHeader" xml:space="preserve"><value>🎬 代理运行 {0} — {1} 次工具调用，{2} 个文件被修改</value></data>
+  <data name="ReplayFilesHeader" xml:space="preserve"><value>**涉及的文件：**</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>用法：`/hardware &lt;gb&gt;` — 正数，例如 `/hardware 24`。</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM 预算已设置为 {0} GB。</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## 硬件配置</value></data>
