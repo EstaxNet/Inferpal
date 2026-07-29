@@ -11,5 +11,14 @@
   "Session saved: {0}": "세션 저장됨: {0}",
   "Pick a session to load": "불러올 세션 선택",
   "Pick a session to delete": "삭제할 세션 선택",
-  "No saved sessions.": "저장된 세션이 없습니다."
+  "No saved sessions.": "저장된 세션이 없습니다.",
+  "Open a file in the editor to use /{0}.": "/{0}을(를) 사용하려면 편집기에서 파일을 여세요.",
+  "Running /{0} on {1}…": "{1}에서 /{0} 실행 중…",
+  "Nothing to change — the code already looks good.": "변경할 것이 없습니다 — 코드는 이미 좋아 보입니다.",
+  "The code action failed — check the backend connection and the model.": "코드 작업이 실패했습니다 — 백엔드 연결과 모델을 확인하세요.",
+  "The document changed while the model was working — run /{0} again.": "모델이 작업하는 동안 문서가 변경되었습니다 — /{0}을(를) 다시 실행하세요.",
+  "Inferpal /{0} — change {1}": "Inferpal /{0} — 변경 {1}",
+  "Rewrite discarded — no changes were applied.": "재작성이 취소되었습니다 — 적용된 변경 사항이 없습니다.",
+  "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "미리 보기에서 재작성을 적용했습니다 — 필요하면 Ctrl+Z로 되돌리세요.",
+  "Rewrite applied — undo with Ctrl+Z if needed.": "재작성을 적용했습니다 — 필요하면 Ctrl+Z로 되돌리세요."
 }

@@ -421,4 +421,90 @@ public class HostServerTests
         Assert.Contains("🩻", result.Markdown);
         Assert.Contains(Strings.XrayLabelBase, result.Markdown);
     }
+
+    // ── codeAction/run ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CodeActionRun_Rewrite_ReturnsPerHunkOffsetEdits()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ChatResult = new ChatTurnResult("int y = 2;\nint z = 3;", null, 0, 0);
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
+            "codeAction/run", new { kind = "fix", text = "int x = 1;\nint z = 3;", selStart = 0, selEnd = 0 });
+
+        Assert.Equal("edited", result.Outcome);
+        Assert.Equal("int y = 2;\nint z = 3;", result.NewText);
+        var edit = Assert.Single(result.Edits);
+        Assert.Equal(0, edit.Start);
+        Assert.Equal(11, edit.End);                 // "int x = 1;\n" replaced
+        Assert.Equal("int y = 2;\n", edit.NewText);
+    }
+
+    [Fact]
+    public async Task CodeActionRun_SentinelReply_ReportsNoChange()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ChatResult = new ChatTurnResult(CodeActionSentinel.Token, null, 0, 0);
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
+            "codeAction/run", new { kind = "refactor", text = "int x = 1;", selStart = 0, selEnd = 0 });
+
+        Assert.Equal("noChange", result.Outcome);
+        Assert.Empty(result.Edits);
+    }
+
+    [Fact]
+    public async Task CodeActionRun_IdenticalRewrite_ReportsNoChange()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ChatResult = new ChatTurnResult("int x = 1;", null, 0, 0);
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
+            "codeAction/run", new { kind = "doc", text = "int x = 1;", selStart = 0, selEnd = 0 });
+
+        Assert.Equal("noChange", result.Outcome);
+    }
+
+    [Fact]
+    public async Task CodeActionRun_ProviderFailure_ReportsFailedNotFault()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.OnChat = (_, _) => throw new HttpRequestException("backend down");
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
+            "codeAction/run", new { kind = "fix", text = "int x = 1;", selStart = 0, selEnd = 0 });
+
+        Assert.Equal("failed", result.Outcome);
+    }
+
+    [Fact]
+    public async Task CodeActionRun_Selection_RewritesOnlyTheRange()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ChatResult = new ChatTurnResult("BB", null, 0, 0);
+
+        // doc "aa\nbb\ncc", selection over "bb" ([3,5)).
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
+            "codeAction/run", new { kind = "fix", text = "aa\nbb\ncc", selStart = 3, selEnd = 5 });
+
+        Assert.Equal("edited", result.Outcome);
+        Assert.Equal("aa\nBB\ncc", result.NewText);
+    }
+
+    [Fact]
+    public async Task CodeActionRun_UnknownKind_Faults()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        await Assert.ThrowsAsync<RemoteInvocationException>(() =>
+            h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
+                "codeAction/run", new { kind = "explain", text = "int x = 1;", selStart = 0, selEnd = 0 }));
+    }
 }

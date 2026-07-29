@@ -19,7 +19,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   bridge = new EditorBridge();
   context.subscriptions.push(bridge);
 
-  const chatView = new ChatViewProvider(context.extensionUri, () => host, log);
+  const chatView = new ChatViewProvider(context.extensionUri, () => host, () => bridge?.activeEditor(), log);
   bridge.setApprovalCard((message) => chatView.requestApproval(message));
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(ChatViewProvider.viewId, chatView, {

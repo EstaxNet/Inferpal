@@ -79,6 +79,30 @@ export interface SlashCommandResult {
   markdown?: string | null;
 }
 
+/** `codeAction/run` — headless in-place code action over the active document. */
+export interface CodeActionParams {
+  kind: 'fix' | 'refactor' | 'doc';
+  text: string;
+  selStart: number;
+  selEnd: number;
+  model?: string;
+}
+
+/** One independently acceptable hunk: replace [start, end) of the submitted text. */
+export interface CodeActionEdit {
+  index: number;
+  start: number;
+  end: number;
+  newText: string;
+}
+
+/** `codeAction/run` answer; `newText` is the full rewritten document when edited. */
+export interface CodeActionResult {
+  outcome: 'edited' | 'noChange' | 'failed';
+  edits: CodeActionEdit[];
+  newText?: string | null;
+}
+
 export interface ApprovalNote {
   message: string;
 }

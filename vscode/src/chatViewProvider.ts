@@ -3,7 +3,7 @@
 // on hide and is re-hydrated on every resolveWebviewView.
 import * as vscode from 'vscode';
 import { HostClient } from './hostClient';
-import { SavedMessage } from './protocol';
+import { CodeActionResult, SavedMessage } from './protocol';
 
 interface TranscriptItem {
   role: 'user' | 'assistant' | 'status' | 'tool' | 'error';
@@ -37,6 +37,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly getHost: () => HostClient | undefined,
+    private readonly getActiveEditor: () => vscode.TextEditor | undefined,
     private readonly log: (line: string) => void,
   ) {}
 
@@ -375,6 +376,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.transcript.push({ role: 'user', text: prompt });
     this.post({ type: 'turnStarted', prompt });
 
+    // In-place code actions (/fix /refactor /doc): rewrite the active editor's file (or
+    // selection) with a native per-hunk preview — never sent to the chat history.
+    const codeAction = ChatViewProvider.codeActionKind(prompt);
+    if (codeAction) {
+      try {
+        await this.runCodeAction(codeAction, host);
+      } finally {
+        this.busy = false;
+        this.autoSaveLast();
+      }
+      return;
+    }
+
     // Slash commands the host serves headlessly (/replay, /xray, …): rendered as an
     // instant bubble, never sent to the model. Unhandled ones fall through to chat.
     if (prompt.startsWith('/')) {
@@ -421,6 +435,110 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     } finally {
       this.busy = false;
       this.autoSaveLast();
+    }
+  }
+
+  // ── In-place code actions (/fix /refactor /doc) ─────────────────────────────
+
+  /** The in-place action a prompt requests, or undefined (first token match, VS parity). */
+  private static codeActionKind(prompt: string): 'fix' | 'refactor' | 'doc' | undefined {
+    switch (prompt.split(/\s+/, 1)[0].toLowerCase()) {
+      case '/fix':
+        return 'fix';
+      case '/refactor':
+        return 'refactor';
+      case '/doc':
+        return 'doc';
+      default:
+        return undefined;
+    }
+  }
+
+  /**
+   * VS Code side of the inline diff preview (ROADMAP 1.2.0 §1): the host runs the model step
+   * (`codeAction/run`) and returns per-hunk offset edits; they are shown in the native
+   * Refactor Preview (one confirmable entry per hunk — the ✓/✗ of the VS adornment).
+   * Preview disabled (`inlineDiffPreviewEnabled: false`) ⇒ direct apply, one undo step.
+   * Comfort only, never a control: these paths never went through approvals (VS parity).
+   */
+  private async runCodeAction(kind: 'fix' | 'refactor' | 'doc', host: HostClient): Promise<void> {
+    const finish = (role: 'assistant' | 'error', text: string) => {
+      this.transcript.push({ role, text });
+      this.post({ type: 'turnEnded', text, error: role === 'error' ? text : null, cancelled: false, tokens: 0 });
+    };
+
+    const editor = this.getActiveEditor();
+    if (!editor || editor.document.uri.scheme !== 'file') {
+      finish('error', vscode.l10n.t('Open a file in the editor to use /{0}.', kind));
+      return;
+    }
+
+    const document = editor.document;
+    const before = document.getText();
+    this.post({ type: 'status', text: vscode.l10n.t('Running /{0} on {1}…', kind, vscode.workspace.asRelativePath(document.uri, false)) });
+
+    let result: CodeActionResult;
+    try {
+      result = await host.codeActionRun({
+        kind,
+        text: before,
+        selStart: document.offsetAt(editor.selection.start),
+        selEnd: document.offsetAt(editor.selection.end),
+        model: this.model || undefined,
+      });
+    } catch (err) {
+      finish('error', err instanceof Error ? err.message : String(err));
+      return;
+    }
+
+    if (result.outcome === 'noChange') {
+      finish('assistant', vscode.l10n.t('Nothing to change — the code already looks good.'));
+      return;
+    }
+    if (result.outcome !== 'edited' || result.edits.length === 0) {
+      finish('error', vscode.l10n.t('The code action failed — check the backend connection and the model.'));
+      return;
+    }
+    // The offsets were computed against the text we sent; a buffer that moved meanwhile
+    // would misplace every hunk (same freshness guard as the VS renderer).
+    if (document.getText() !== before) {
+      finish('error', vscode.l10n.t('The document changed while the model was working — run /{0} again.', kind));
+      return;
+    }
+
+    const preview = await this.inlineDiffPreviewEnabled(host);
+    const edit = new vscode.WorkspaceEdit();
+    for (const e of result.edits) {
+      const range = new vscode.Range(document.positionAt(e.start), document.positionAt(e.end));
+      if (preview) {
+        edit.replace(document.uri, range, e.newText, {
+          needsConfirmation: true,
+          label: vscode.l10n.t('Inferpal /{0} — change {1}', kind, e.index),
+        });
+      } else {
+        edit.replace(document.uri, range, e.newText);
+      }
+    }
+
+    // With confirmable entries this opens the Refactor Preview and resolves on the user's
+    // decision; false = discarded (or nothing left checked).
+    const applied = await vscode.workspace.applyEdit(edit, { isRefactoring: true });
+    if (!applied) {
+      finish('assistant', vscode.l10n.t('Rewrite discarded — no changes were applied.'));
+    } else if (preview) {
+      finish('assistant', vscode.l10n.t('Rewrite applied from the preview — undo with Ctrl+Z if needed.'));
+    } else {
+      finish('assistant', vscode.l10n.t('Rewrite applied — undo with Ctrl+Z if needed.'));
+    }
+  }
+
+  /** Host-side config gate of the preview (camelCase JSON); defaults on, like VS. */
+  private async inlineDiffPreviewEnabled(host: HostClient): Promise<boolean> {
+    try {
+      const cfg = JSON.parse(await host.configGet()) as { inlineDiffPreviewEnabled?: boolean };
+      return cfg.inlineDiffPreviewEnabled !== false;
+    } catch {
+      return true; // unreadable config — preview is the safe, non-destructive default
     }
   }
 

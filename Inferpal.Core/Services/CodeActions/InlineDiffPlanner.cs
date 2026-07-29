@@ -17,6 +17,13 @@ internal sealed record DiffPlan(string OldText, string NewText, IReadOnlyList<Di
     public bool HasChanges => Hunks.Count > 0;
 }
 
+/// <summary>One hunk of a <see cref="DiffPlan"/> as a character-offset edit against
+/// <see cref="DiffPlan.OldText"/>: replace [<see cref="Start"/>, <see cref="End"/>) with
+/// <see cref="NewText"/>. Edits never overlap and are ordered by position, so a front-end
+/// can hand any accepted subset to its native edit API (e.g. a VS Code WorkspaceEdit)
+/// without offset arithmetic of its own.</summary>
+internal sealed record DiffEdit(int Index, int Start, int End, string NewText);
+
 /// <summary>
 /// Builds a <see cref="DiffPlan"/> (LCS line diff, contiguous changes grouped into hunks) and
 /// applies a per-hunk accept/reject decision to produce the merged text. Pure and deterministic:
@@ -102,6 +109,64 @@ internal static class InlineDiffPlanner
             result.Add(old[cursor]);
 
         return string.Join('\n', result);
+    }
+
+    /// <summary>
+    /// Converts every hunk into a character-offset <see cref="DiffEdit"/> against
+    /// <see cref="DiffPlan.OldText"/>. Applying every edit reproduces the new text exactly,
+    /// applying a subset matches <see cref="Apply"/> on that subset — locked by tests.
+    /// The delicate cases live here (last line without trailing newline, deletions and
+    /// insertions touching EOF) so front-ends never re-derive them.
+    /// </summary>
+    public static IReadOnlyList<DiffEdit> ToEdits(DiffPlan plan)
+    {
+        if (!plan.HasChanges) return [];
+
+        var old = plan.OldText.Split('\n');
+
+        // lineOffset[i] = offset of line i's first character; the virtual entry at old.Length
+        // overshoots by one (no '\n' after the last line) and is never dereferenced — hunks
+        // reaching EOF clamp to OldText.Length instead.
+        var lineOffset = new int[old.Length + 1];
+        for (var i = 0; i < old.Length; i++)
+            lineOffset[i + 1] = lineOffset[i] + old[i].Length + 1;
+
+        var edits = new List<DiffEdit>(plan.Hunks.Count);
+        foreach (var hunk in plan.Hunks)
+        {
+            var count = hunk.OldLines.Count;
+
+            if (count == 0 && hunk.OldStart >= old.Length)
+            {
+                // Append after a last line that has no trailing '\n'.
+                edits.Add(new DiffEdit(hunk.Index, plan.OldText.Length, plan.OldText.Length,
+                    "\n" + string.Join('\n', hunk.NewLines)));
+                continue;
+            }
+
+            if (count == 0)
+            {
+                // Insertion before an existing line — the block carries its own trailing '\n'.
+                edits.Add(new DiffEdit(hunk.Index, lineOffset[hunk.OldStart], lineOffset[hunk.OldStart],
+                    string.Join('\n', hunk.NewLines) + "\n"));
+                continue;
+            }
+
+            var reachesEof = hunk.OldStart + count == old.Length;
+            var start      = lineOffset[hunk.OldStart];
+            var end        = reachesEof ? plan.OldText.Length : lineOffset[hunk.OldStart + count];
+            var newText    = hunk.NewLines.Count == 0
+                ? string.Empty
+                : string.Join('\n', hunk.NewLines) + (reachesEof ? string.Empty : "\n");
+
+            // Deleting the trailing lines outright must also swallow the '\n' that used to
+            // precede them, or the file would keep a dangling final newline.
+            if (reachesEof && hunk.NewLines.Count == 0 && hunk.OldStart > 0)
+                start--;
+
+            edits.Add(new DiffEdit(hunk.Index, start, end, newText));
+        }
+        return edits;
     }
 
     private static int[,] LcsTable(string[] old, string[] @new)

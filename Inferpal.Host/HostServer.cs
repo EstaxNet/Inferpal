@@ -18,7 +18,7 @@ namespace Inferpal.Host;
 /// <summary>
 /// JSON-RPC target exposing the Core to an editor adapter over stdio. Editor→host requests:
 /// `initialize`, `chat/send` (streamed via `chat/*` notifications), `chat/cancel`, `chat/reset`,
-/// `command/slash`, `models/list`, `connection/check`, `config/get|update`, `fim/complete`,
+/// `command/slash`, `codeAction/run`, `models/list`, `connection/check`, `config/get|update`, `fim/complete`,
 /// `index/start|status`, `shutdown`; editor→host notifications: `textDocument/didOpen|didChange|didClose` (dirty-buffer
 /// overlay) and `editor/didChangeActiveDocument`. Host→editor requests are issued by
 /// <see cref="RpcEditorSurface"/> and <see cref="RpcApprovalService"/>.
@@ -224,6 +224,41 @@ internal sealed class HostServer : IDisposable
             default:
                 return new SlashCommandResult(Handled: false);
         }
+    }
+
+    /// <summary>
+    /// Runs an in-place code action headlessly (same pipeline as the VS commands) and returns
+    /// the rewrite as independent per-hunk edits — the adapter previews/applies them natively
+    /// (VS Code: WorkspaceEdit + Refactor Preview). Never applies anything host-side.
+    /// </summary>
+    [JsonRpcMethod("codeAction/run", UseSingleObjectParameterDeserialization = true)]
+    public async Task<CodeActionResultDto> CodeActionRunAsync(CodeActionParams p, CancellationToken ct)
+    {
+        var s = Session();
+        var (system, instruction) = p.Kind switch
+        {
+            "fix"      => (InPlaceCodeActionPrompts.FixSystem,       InPlaceCodeActionPrompts.FixInstruction),
+            "refactor" => (InPlaceCodeActionPrompts.RefactorSystem,  InPlaceCodeActionPrompts.RefactorInstruction),
+            "doc"      => (InPlaceCodeActionPrompts.DocstringSystem, InPlaceCodeActionPrompts.DocstringInstruction),
+            _          => throw new ArgumentException($"Unknown code action kind '{p.Kind}'."),
+        };
+
+        var model = string.IsNullOrWhiteSpace(p.Model) ? s.Config.DefaultModel : p.Model!;
+        var run   = await CodeActionPipeline.RunAsync(
+            s.Client, model, system, instruction,
+            p.Text, p.SelStart, p.SelEnd, selectionEmpty: p.SelStart == p.SelEnd, ct);
+
+        if (run.Outcome == CodeActionOutcome.NoChangeNeeded) return new("noChange", []);
+        if (run.Outcome != CodeActionOutcome.Edited)         return new("failed",   []);
+
+        var edits = InlineDiffPlanner.ToEdits(InlineDiffPlanner.Plan(p.Text, run.NewDocText!))
+            .Select(e => new CodeActionEditDto(e.Index, e.Start, e.End, e.NewText))
+            .ToList();
+
+        // The model rewrote the code identically — treat as a no-op rather than an empty preview.
+        return edits.Count == 0
+            ? new CodeActionResultDto("noChange", [])
+            : new CodeActionResultDto("edited", edits, run.NewDocText);
     }
 
     // ── Backend ────────────────────────────────────────────────────────────────

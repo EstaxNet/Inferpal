@@ -11,5 +11,14 @@
   "Session saved: {0}": "セッションを保存しました: {0}",
   "Pick a session to load": "読み込むセッションを選択",
   "Pick a session to delete": "削除するセッションを選択",
-  "No saved sessions.": "保存されたセッションはありません。"
+  "No saved sessions.": "保存されたセッションはありません。",
+  "Open a file in the editor to use /{0}.": "/{0} を使うにはエディターでファイルを開いてください。",
+  "Running /{0} on {1}…": "{1} で /{0} を実行中…",
+  "Nothing to change — the code already looks good.": "変更の必要はありません — コードはすでに良好です。",
+  "The code action failed — check the backend connection and the model.": "コードアクションが失敗しました — バックエンド接続とモデルを確認してください。",
+  "The document changed while the model was working — run /{0} again.": "モデルの処理中にドキュメントが変更されました — /{0} をもう一度実行してください。",
+  "Inferpal /{0} — change {1}": "Inferpal /{0} — 変更 {1}",
+  "Rewrite discarded — no changes were applied.": "書き換えは破棄されました — 変更は適用されていません。",
+  "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "プレビューから書き換えを適用しました — 必要なら Ctrl+Z で元に戻せます。",
+  "Rewrite applied — undo with Ctrl+Z if needed.": "書き換えを適用しました — 必要なら Ctrl+Z で元に戻せます。"
 }

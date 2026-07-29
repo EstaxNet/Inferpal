@@ -68,6 +68,28 @@ internal sealed record SlashCommandResult(bool Handled, string? Markdown = null)
 /// <summary>`config/update` — full config JSON, as previously returned by `config/get`.</summary>
 internal sealed record ConfigUpdateParams(string Json);
 
+/// <summary>`codeAction/run` — headless in-place code action (<paramref name="Kind"/> =
+/// <c>fix</c> | <c>refactor</c> | <c>doc</c>) over the adapter's document text and selection
+/// offsets. The host only runs the model step; applying (and previewing) stays editor-side.</summary>
+internal sealed record CodeActionParams(
+    string  Kind,
+    string  Text,
+    int     SelStart,
+    int     SelEnd,
+    string? Model = null);
+
+/// <summary>One accepted-or-rejected-independently hunk of a code action rewrite, as a
+/// character-offset edit against the submitted text (mirror of the Core's <c>DiffEdit</c>).</summary>
+internal sealed record CodeActionEditDto(int Index, int Start, int End, string NewText);
+
+/// <summary>`codeAction/run` answer. <paramref name="Outcome"/> is <c>edited</c> (apply or
+/// preview <paramref name="Edits"/>), <c>noChange</c> (model judged the code already good) or
+/// <c>failed</c>. <paramref name="NewText"/> is the full rewritten document when edited.</summary>
+internal sealed record CodeActionResultDto(
+    string                  Outcome,
+    List<CodeActionEditDto> Edits,
+    string?                 NewText = null);
+
 // ── Sessions (persisted in %AppData%/Inferpal/sessions/, shared with the VS extension) ──
 
 /// <summary>One display message of a saved session (wire mirror of <c>SavedMessage</c>).</summary>

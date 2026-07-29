@@ -1,5 +1,3 @@
-using Inferpal.Models;
-using Inferpal.Services;
 using Microsoft.VisualStudio.Extensibility;
 using Microsoft.VisualStudio.Extensibility.Editor;
 
@@ -20,45 +18,18 @@ internal enum InPlaceEditOutcome
 }
 
 /// <summary>
-/// Shared pipeline for code actions that <b>apply their result directly to the document</b>
+/// VS side of the code actions that <b>apply their result directly to the document</b>
 /// (Refactor / Fix / Add-docs), used both by the editor context-menu commands
 /// (<see cref="InPlaceCodeActionBase"/>) and the equivalent chat slash commands.
-///
-/// <para>Scope follows the selection: a non-empty selection is rewritten on its own;
-/// otherwise the whole file is. Tools are disabled — the model must reply with code only.</para>
+/// The model step is the shared <see cref="CodeActionPipeline"/>; this wrapper adds the
+/// spinner, the inline diff preview detour and the actual <c>EditAsync</c> apply.
 /// </summary>
 internal static class InPlaceCodeEdit
 {
     /// <summary>
-    /// Resolves the target text and range from a document's text and the selection offsets.
-    /// Pure (offset arithmetic only) so it can be unit-tested without the editor.
-    /// </summary>
-    /// <returns>The original code, its [start,end) offsets, and whether a selection drove it.</returns>
-    public static (string Code, int Start, int End, bool HasSelection) ResolveTarget(
-        string docText, int selStart, int selEnd, bool selectionEmpty)
-    {
-        if (!selectionEmpty && selEnd > selStart)
-        {
-            // Expand the start back over leading whitespace to the line start so the captured
-            // snippet carries its first line's indentation — otherwise the reindenter rebuilds
-            // continuation lines one level too shallow.
-            var ls        = selStart > 0 ? docText.LastIndexOf('\n', selStart - 1) : -1;
-            var lineStart = ls < 0 ? 0 : ls + 1;
-            if (IsAllWhitespace(docText, lineStart, selStart))
-                selStart = lineStart;
-
-            return (docText[selStart..selEnd], selStart, selEnd, true);
-        }
-
-        return (docText, 0, docText.Length, false);
-    }
-
-    /// <summary>
-    /// Runs the full pipeline: spinner → model (tools off) → strip fences → reindent (selection
-    /// only) → replace the range via <c>EditAsync</c> (undoable with Ctrl+Z).
-    /// Never throws; returns the <see cref="InPlaceEditOutcome"/>. When the model decides the code
-    /// is already good (sentinel reply), nothing is applied and <see cref="InPlaceEditOutcome.NoChangeNeeded"/>
-    /// is returned.
+    /// Runs the full pipeline: spinner → <see cref="CodeActionPipeline.RunAsync"/> → inline diff
+    /// preview detour (config-gated) → replace the range via <c>EditAsync</c> (undoable with Ctrl+Z).
+    /// Never throws; returns the <see cref="InPlaceEditOutcome"/>.
     /// </summary>
     public static async Task<InPlaceEditOutcome> RunAsync(
         VisualStudioExtensibility vs,
@@ -72,66 +43,50 @@ internal static class InPlaceCodeEdit
     {
         var docText = view.Document.Text.CopyToString();
         var sel     = view.Selection;
-        var (originalCode, start, end, hasSelection) =
-            ResolveTarget(docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty);
 
+        // No code to work on (empty file / whitespace selection) — fail before the spinner.
+        var (originalCode, _, _, _) = CodeActionPipeline.ResolveTarget(
+            docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty);
         if (string.IsNullOrWhiteSpace(originalCode)) return InPlaceEditOutcome.Failed;
-
-        var editRange = new TextRange(
-            new TextPosition(view.Document, start),
-            new TextPosition(view.Document, end));
 
         // Spinner overlay while the model generates.
         InlineEditInputWindow dlg;
         try { dlg = await InlineEditInputWindow.CreateAndShowSpinnerAsync(); }
         catch { return InPlaceEditOutcome.Failed; }
 
-        var messages = new List<ChatMessageDto>
-        {
-            new("system", systemPrompt),
-            new("user",   $"{instruction}\n\n{originalCode}"),
-        };
-
-        ChatTurnResult result;
+        CodeActionRun run;
         try
         {
-            result = await client.SendChatAsync(
-                model, messages, EmptyToolRegistry.Instance, onToken: null, ct, TaskComplexity.Quick);
+            run = await CodeActionPipeline.RunAsync(
+                client, model, systemPrompt, instruction,
+                docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty, ct);
         }
-        catch
+        catch (OperationCanceledException)
         {
-            dlg.CloseFromThread();
-            return InPlaceEditOutcome.Failed;
+            return InPlaceEditOutcome.Failed;   // cancelled mid-generation — nothing applied
         }
         finally
         {
             dlg.CloseFromThread();
         }
 
-        var cleaned = InlineEditResponse.Clean(result.TextContent);
+        if (run.Outcome == CodeActionOutcome.NoChangeNeeded) return InPlaceEditOutcome.NoChangeNeeded;
+        if (run.Outcome != CodeActionOutcome.Edited)         return InPlaceEditOutcome.Failed;
 
-        // The model signalled the action would bring nothing — leave the document untouched.
-        if (CodeActionSentinel.IsNoChange(cleaned)) return InPlaceEditOutcome.NoChangeNeeded;
-
-        // Reindent re-anchors a snippet to its original base indent — meaningful only for a
-        // selection. A whole-file rewrite is emitted at column 0 by the model and applied as-is
-        // (reindenting it would reformat the whole file).
-        var editedCode = hasSelection
-            ? InlineEditReindenter.Reindent(originalCode, cleaned)
-            : cleaned;
-        if (string.IsNullOrWhiteSpace(editedCode)) return InPlaceEditOutcome.Failed;
+        var editRange = new TextRange(
+            new TextPosition(view.Document, run.Start),
+            new TextPosition(view.Document, run.End));
 
         // Inline diff preview detour (comfort only — never a control, see ROADMAP design rules):
         // hand the whole-document rewrite to the in-process renderer; if no renderer claims it
         // within the pickup window (view closed, MEF component absent), fall back to the direct
         // apply below — the feature degrades to today's behaviour.
-        if ((config?.InlineDiffPreviewEnabled ?? false) && editedCode != originalCode)
+        if ((config?.InlineDiffPreviewEnabled ?? false) && run.NewDocText != docText)
         {
             var filePath = TryGetLocalPath(view);
             if (filePath is not null)
             {
-                var newDocText = docText[..start] + editedCode + docText[end..];
-                var requestId  = Services.Signals.InlineDiffPreviewSignal.WriteRequest(filePath, docText, newDocText);
+                var requestId = Services.Signals.InlineDiffPreviewSignal.WriteRequest(filePath, docText, run.NewDocText!);
                 try
                 {
                     if (await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(
@@ -153,7 +108,7 @@ internal static class InPlaceCodeEdit
                 batch =>
                 {
                     var doc = view.Document.AsEditable(batch);
-                    doc.Replace(editRange, editedCode);
+                    doc.Replace(editRange, run.EditedCode!);
                 },
                 ct);
             return InPlaceEditOutcome.Applied;
@@ -174,13 +129,5 @@ internal static class InPlaceCodeEdit
             return string.IsNullOrEmpty(path) ? null : System.IO.Path.GetFullPath(path);
         }
         catch { return null; }
-    }
-
-    /// <summary>True if <c>text[start..end]</c> contains only whitespace (or is empty).</summary>
-    private static bool IsAllWhitespace(string text, int start, int end)
-    {
-        for (var i = start; i < end; i++)
-            if (!char.IsWhiteSpace(text[i])) return false;
-        return true;
     }
 }

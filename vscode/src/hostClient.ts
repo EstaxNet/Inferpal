@@ -9,6 +9,8 @@ import {
   ApprovalNote,
   ChatSendParams,
   ChatSendResult,
+  CodeActionParams,
+  CodeActionResult,
   DocumentParams,
   EditResultDto,
   IndexStatusResult,
@@ -211,6 +213,18 @@ export class HostClient {
   /** Slash commands the host serves headlessly (/replay, /xray, …). */
   commandSlash(text: string): Promise<SlashCommandResult> {
     return this.connection().sendRequest<SlashCommandResult>('command/slash', { text });
+  }
+
+  /** In-place code action (fix / refactor / doc): the host runs the model step and returns
+   * per-hunk offset edits; previewing and applying stay editor-side. Flagged as chat-busy
+   * so FIM requests skip instead of queueing behind the rewrite on the shared GPU. */
+  async codeActionRun(params: CodeActionParams): Promise<CodeActionResult> {
+    this.isChatBusy = true;
+    try {
+      return await this.connection().sendRequest<CodeActionResult>('codeAction/run', params);
+    } finally {
+      this.isChatBusy = false;
+    }
   }
 
   modelsList(): Promise<string[]> {

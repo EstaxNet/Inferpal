@@ -192,6 +192,13 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     return lines.join('\n');
   }
 
+  /** Last real text editor (live or cached) — what the code actions operate on:
+   * focus sits in the chat webview when a slash command is typed, so the cache is
+   * the only truthful answer to "the file the user means". */
+  activeEditor(): vscode.TextEditor | undefined {
+    return this.currentEditor();
+  }
+
   // ── Internals ──────────────────────────────────────────────────────────────
 
   /** Live active editor when there is one, else the cached last active editor

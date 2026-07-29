@@ -12,7 +12,7 @@ public class InPlaceCodeEditTests
     public void NoSelection_TargetsWholeFile()
     {
         var doc = "line1\nline2\nline3";
-        var (code, start, end, hasSel) = InPlaceCodeEdit.ResolveTarget(doc, 0, 0, selectionEmpty: true);
+        var (code, start, end, hasSel) = CodeActionPipeline.ResolveTarget(doc, 0, 0, selectionEmpty: true);
         Assert.Equal(doc, code);
         Assert.Equal(0, start);
         Assert.Equal(doc.Length, end);
@@ -24,7 +24,7 @@ public class InPlaceCodeEditTests
     {
         //            0123456789012
         var doc = "ab\nXXXX\ncd";   // select "XXXX" (offsets 3..7)
-        var (code, start, end, hasSel) = InPlaceCodeEdit.ResolveTarget(doc, 3, 7, selectionEmpty: false);
+        var (code, start, end, hasSel) = CodeActionPipeline.ResolveTarget(doc, 3, 7, selectionEmpty: false);
         Assert.Equal("XXXX", code);
         Assert.Equal(3, start);
         Assert.Equal(7, end);
@@ -37,7 +37,7 @@ public class InPlaceCodeEditTests
         // Line "    foo" — selection starts at 'f' (offset 4) past the 4 leading spaces.
         // The start expands back to the line start so the snippet carries its indentation.
         var doc = "    foo";
-        var (code, start, _, hasSel) = InPlaceCodeEdit.ResolveTarget(doc, 4, 7, selectionEmpty: false);
+        var (code, start, _, hasSel) = CodeActionPipeline.ResolveTarget(doc, 4, 7, selectionEmpty: false);
         Assert.Equal("    foo", code);
         Assert.Equal(0, start);
         Assert.True(hasSel);
@@ -47,7 +47,7 @@ public class InPlaceCodeEditTests
     public void EmptySpanSelection_FallsBackToWholeFile()
     {
         var doc = "abc";
-        var (code, _, _, hasSel) = InPlaceCodeEdit.ResolveTarget(doc, 2, 2, selectionEmpty: false);
+        var (code, _, _, hasSel) = CodeActionPipeline.ResolveTarget(doc, 2, 2, selectionEmpty: false);
         Assert.Equal(doc, code);
         Assert.False(hasSel);
     }

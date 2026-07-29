@@ -11,5 +11,14 @@
   "Session saved: {0}": "Sesja zapisana: {0}",
   "Pick a session to load": "Wybierz sesję do wczytania",
   "Pick a session to delete": "Wybierz sesję do usunięcia",
-  "No saved sessions.": "Brak zapisanych sesji."
+  "No saved sessions.": "Brak zapisanych sesji.",
+  "Open a file in the editor to use /{0}.": "Otwórz plik w edytorze, aby użyć /{0}.",
+  "Running /{0} on {1}…": "Wykonywanie /{0} na {1}…",
+  "Nothing to change — the code already looks good.": "Nic do zmiany — kod już wygląda dobrze.",
+  "The code action failed — check the backend connection and the model.": "Akcja kodu nie powiodła się — sprawdź połączenie z backendem i model.",
+  "The document changed while the model was working — run /{0} again.": "Dokument zmienił się podczas pracy modelu — uruchom /{0} ponownie.",
+  "Inferpal /{0} — change {1}": "Inferpal /{0} — zmiana {1}",
+  "Rewrite discarded — no changes were applied.": "Przepisanie odrzucone — nie zastosowano żadnych zmian.",
+  "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "Przepisanie zastosowane z podglądu — w razie potrzeby cofnij za pomocą Ctrl+Z.",
+  "Rewrite applied — undo with Ctrl+Z if needed.": "Przepisanie zastosowane — w razie potrzeby cofnij za pomocą Ctrl+Z."
 }

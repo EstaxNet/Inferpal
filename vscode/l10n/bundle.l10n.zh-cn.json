@@ -11,5 +11,14 @@
   "Session saved: {0}": "会话已保存：{0}",
   "Pick a session to load": "选择要加载的会话",
   "Pick a session to delete": "选择要删除的会话",
-  "No saved sessions.": "没有已保存的会话。"
+  "No saved sessions.": "没有已保存的会话。",
+  "Open a file in the editor to use /{0}.": "请在编辑器中打开一个文件以使用 /{0}。",
+  "Running /{0} on {1}…": "正在对 {1} 运行 /{0}…",
+  "Nothing to change — the code already looks good.": "无需更改 — 代码已经很好。",
+  "The code action failed — check the backend connection and the model.": "代码操作失败 — 请检查后端连接和模型。",
+  "The document changed while the model was working — run /{0} again.": "模型处理期间文档已更改 — 请重新运行 /{0}。",
+  "Inferpal /{0} — change {1}": "Inferpal /{0} — 更改 {1}",
+  "Rewrite discarded — no changes were applied.": "已放弃重写 — 未应用任何更改。",
+  "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "已从预览应用重写 — 如需撤销请按 Ctrl+Z。",
+  "Rewrite applied — undo with Ctrl+Z if needed.": "已应用重写 — 如需撤销请按 Ctrl+Z。"
 }

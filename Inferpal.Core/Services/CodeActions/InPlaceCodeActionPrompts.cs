@@ -1,11 +1,9 @@
-using Inferpal.Services;
-
-namespace Inferpal.Commands;
+namespace Inferpal.Services.CodeActions;
 
 /// <summary>
 /// System prompts + short instructions for the in-place code actions (Refactor / Fix /
-/// Add-docs), shared by the context-menu commands (<see cref="InPlaceCodeActionBase"/>)
-/// and the equivalent chat slash commands (<c>/refactor</c>, <c>/fix</c>, <c>/doc</c>).
+/// Add-docs), shared by the VS context-menu commands, the equivalent chat slash commands
+/// (<c>/refactor</c>, <c>/fix</c>, <c>/doc</c>) and the headless host (`codeAction/run`).
 ///
 /// <para>These are internal prompts (never shown to the user), so they stay in English —
 /// the output is code only, language-agnostic — and are not localized.</para>
