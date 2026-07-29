@@ -21,6 +21,10 @@ namespace Inferpal;
 [VisualStudioContribution]
 public class InferpalExtension : Extension
 {
+    // Hooked as early as possible: WPF windows (code-action spinner, inline-edit dialog)
+    // lazily bind System.Windows.Extensions, unresolvable in the host's extension ALC.
+    static InferpalExtension() => WpfAssemblyResolver.Install();
+
     public override ExtensionConfiguration ExtensionConfiguration => new()
     {
         // ⚠ C'est CE bloc (pas source.extension.vsixmanifest) que le SDK Extensibility
