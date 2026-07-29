@@ -50,7 +50,7 @@ internal sealed class SmartFixValidator
         var command = validator.Command.Replace("{project}", projectFile);
 
         // Safety: never auto-run a catastrophic command sourced from a (possibly committed)
-        // validators.json. Shares the non-bypassable denylist with the approval policy (axe 1).
+        // validators.json. Shares the built-in hard denylist with the approval policy (axe 1).
         if (PermissionPolicy.IsHardDenied(command)) return null;
 
         try

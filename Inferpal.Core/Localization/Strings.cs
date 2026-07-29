@@ -446,7 +446,7 @@ internal static class Strings
     public static string PermissionBlockedRule(string subject) =>
         string.Format(Get(nameof(PermissionBlockedRule)), subject);
 
-    /// <summary>Action blocked by the built-in, non-bypassable catastrophic-command denylist.</summary>
+    /// <summary>Action blocked by the built-in catastrophic-command hard denylist.</summary>
     public static string PermissionBlockedHard(string subject) =>
         string.Format(Get(nameof(PermissionBlockedHard)), subject);
 
@@ -741,6 +741,27 @@ internal static class Strings
     public static string UndoRunNone                         => Get(nameof(UndoRunNone));
     public static string UndoRunListHeader(int count)        => string.Format(Get(nameof(UndoRunListHeader)), count);
     public static string UndoRunResult(int restored, int deleted) => string.Format(Get(nameof(UndoRunResult)), restored, deleted);
+
+    // ── /replay command ─────────────────────────────────────────────────────────
+    public static string SlashHintReplay                     => Get(nameof(SlashHintReplay));
+    public static string ReplayNone                          => Get(nameof(ReplayNone));
+    public static string ReplayHeader(string time, int tools, int files) => string.Format(Get(nameof(ReplayHeader)), time, tools, files);
+    public static string ReplayFilesHeader                   => Get(nameof(ReplayFilesHeader));
+
+    // ── /xray command ───────────────────────────────────────────────────────────
+    public static string SlashHintXray                       => Get(nameof(SlashHintXray));
+    public static string XrayHeader(string tokens)           => string.Format(Get(nameof(XrayHeader)), tokens);
+    public static string XrayLabelBase                       => Get(nameof(XrayLabelBase));
+    public static string XrayLabelPersona                    => Get(nameof(XrayLabelPersona));
+    public static string XrayLabelCustom                     => Get(nameof(XrayLabelCustom));
+    public static string XrayLabelTemplate                   => Get(nameof(XrayLabelTemplate));
+    public static string XrayLabelRules(string count)        => string.Format(Get(nameof(XrayLabelRules)), count);
+    public static string XrayHistory(string tokens)          => string.Format(Get(nameof(XrayHistory)), tokens);
+    public static string XrayRag(string state)               => string.Format(Get(nameof(XrayRag)), state);
+    public static string XrayBudget(string used, string limit, string pct) => string.Format(Get(nameof(XrayBudget)), used, limit, pct);
+
+    // ── Inline diff preview ─────────────────────────────────────────────────────
+    public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));
 
     // ── /hardware command ──────────────────────────────────────────────────────
     public static string HardwareUsage                       => Get(nameof(HardwareUsage));

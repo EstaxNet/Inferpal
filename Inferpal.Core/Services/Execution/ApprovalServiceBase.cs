@@ -66,11 +66,24 @@ internal abstract class ApprovalServiceBase : IApprovalService
                     ? Strings.PermissionBlockedHard(matchOn)
                     : Strings.PermissionBlockedRule(matchOn));
         }
-        if (decision == PermissionDecision.Allow)            return true;   // rule auto-approved
+        // Indirect execution (iex, -EncodedCommand, FromBase64String…) defeats text matching:
+        // the rules engine cannot know what actually runs. No auto-approval path may apply —
+        // not an allow rule, not SecurityAlertsDisabled, not a session grant. The call is NOT
+        // blocked: it falls through to the prompt, where the human reads the raw text.
+        var opaque = PermissionPolicy.IsOpaqueExecution(matchOn);
+        if (opaque && (decision == PermissionDecision.Allow
+                       || _config.SecurityAlertsDisabled
+                       || _sessionAllowed.ContainsKey(toolName)))
+            Diagnostics.Record("Permission", $"Force-prompt (opaque execution) {toolName}: {matchOn}");
 
-        // decision == Prompt — fall through to the global YOLO switch, then the session grant.
-        if (_config.SecurityAlertsDisabled)        return true;
-        if (_sessionAllowed.ContainsKey(toolName)) return true;
+        if (!opaque)
+        {
+            if (decision == PermissionDecision.Allow)  return true;   // rule auto-approved
+
+            // decision == Prompt — fall through to the global YOLO switch, then the session grant.
+            if (_config.SecurityAlertsDisabled)        return true;
+            if (_sessionAllowed.ContainsKey(toolName)) return true;
+        }
 
         var message = Strings.ApprovalMessage(toolName, details);
 

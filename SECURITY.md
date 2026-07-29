@@ -23,8 +23,14 @@ Inferpal is local-first and runs untrusted model output, so several mitigations 
 
 - **Workspace sandbox** — every path-taking tool goes through a single `AssertUnderRoot` guard.
 - **Approval gates** — file writes, deletes, shell commands, `fetch_url`, `web_search`, custom
-  shell tools, and MCP calls each require explicit approval; a non-bypassable denylist blocks
+  shell tools, and MCP calls each require explicit approval; a built-in hard denylist blocks
   catastrophic shell commands.
+- **The denylist is an accident guard, not a security boundary.** It matches the submitted
+  text, and no text matcher survives obfuscation (`$c = '…'; iex $c`, `-EncodedCommand`,
+  `FromBase64String`, `[scriptblock]::Create`, `& $var`). Rather than claim otherwise, those
+  constructs are **force-prompted**: no `allow` rule, session grant or *Disable security
+  alerts* can auto-approve them, so a human always reads the raw command. The approval prompt
+  is the boundary.
 - **Hardened SSRF guard** on outbound fetches (DNS rebinding, IPv4-mapped IPv6, loopback/private
   ranges) with a ReDoS-safe timeout.
 - **Secrets** — MCP OAuth tokens are encrypted at rest with DPAPI.

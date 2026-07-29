@@ -83,8 +83,12 @@ deny  * \.env$                                       # never touch secrets, any 
   `/diagnostics`); no match falls back to the prompt.
 - Sources, evaluated in order: the per-machine **Permission rules** setting, then the
   committable workspace overlay `.inferpal/permissions.json` (`{ "rules": ["allow …", …] }`).
-- A built-in, **non-bypassable denylist** of catastrophic shell commands (recursive root
+- A built-in **hard denylist** of catastrophic shell commands (recursive root
   deletes, disk formatting, fork bombs, …) always applies — even with security alerts disabled.
+- **Force-prompt** on indirect execution (`iex`, `-EncodedCommand`, `FromBase64String`,
+  `[scriptblock]::Create`, `& $var`): what runs is not the text the rules read, so no
+  auto-approval path applies (allow rule, session grant, security alerts disabled) — the
+  call is never blocked, it simply always reaches the approval prompt.
 
 See **[Configuration → Permission rules](configuration.md)**.
 

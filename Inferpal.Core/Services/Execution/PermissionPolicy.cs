@@ -50,8 +50,9 @@ internal sealed class PermissionRule
 /// <summary>
 /// Pure, testable permission engine for tool approval. Classifies a tool call into
 /// <see cref="PermissionDecision.Allow"/> / <see cref="PermissionDecision.Deny"/> /
-/// <see cref="PermissionDecision.Prompt"/> from a list of user rules plus a built-in,
-/// non-bypassable denylist of catastrophic shell commands.
+/// <see cref="PermissionDecision.Prompt"/> from a list of user rules plus a built-in
+/// hard denylist of catastrophic shell commands (a floor that no configuration can
+/// switch off — see the honest-scope note on <see cref="IsHardDenied"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -81,10 +82,16 @@ internal sealed class PermissionPolicy
     /// <summary>An empty policy — every call falls through to <see cref="PermissionDecision.Prompt"/>.</summary>
     public static PermissionPolicy Empty { get; } = new([]);
 
-    // Built-in, non-bypassable denylist of catastrophic / unrecoverable shell commands. Kept
+    // Built-in hard denylist of catastrophic / unrecoverable shell commands. Kept
     // deliberately narrow so it never blocks ordinary dev work (a recursive delete of bin/ or
     // node_modules does NOT match — only deletes targeting a drive root or the home directory do).
     // Users layer their own, looser deny rules on top via the DSL; these are the floor.
+    //
+    // Honest scope: this is an accident guard, NOT a security boundary. Regexes match the
+    // submitted text, and text matching cannot see through indirection ($c='…'; iex $c,
+    // -EncodedCommand, FromBase64String…). Those constructs are handled one tier up:
+    // IsOpaqueExecution forces the human prompt so no auto-approval path applies. The
+    // approval prompt — where a human reads the raw command — is the actual boundary.
     private static readonly Regex[] HardDeny =
     [
         // rm -rf targeting filesystem root / home / wildcard root, or with --no-preserve-root
@@ -100,9 +107,41 @@ internal sealed class PermissionPolicy
         new(@":\(\)\s*\{\s*:\s*\|\s*:", RegexOptions.Compiled),
     ];
 
-    /// <summary>True when <paramref name="subject"/> hits the built-in non-bypassable denylist.</summary>
+    /// <summary>True when <paramref name="subject"/> hits the built-in hard denylist — the
+    /// catastrophic-command floor that no rule, config switch or session grant can disable.
+    /// It matches literal text only; obfuscated equivalents are caught by the force-prompt
+    /// tier (<see cref="IsOpaqueExecution"/>), not blocked.</summary>
     public static bool IsHardDenied(string? subject) =>
         !string.IsNullOrEmpty(subject) && HardDeny.Any(r => r.IsMatch(subject));
+
+    // Indirect-execution constructs that defeat text-based matching: what actually runs is
+    // not the text the rules engine read. Matching one of these never *blocks* — it only
+    // removes every auto-approval path (allow rules, SecurityAlertsDisabled, session grants)
+    // so a human always reads the raw text before it runs. Kept short and specific: a false
+    // positive costs exactly one approval prompt.
+    private static readonly Regex[] OpaqueExecution =
+    [
+        // Invoke-Expression and its alias run a string the rules engine never saw
+        new(@"\b(iex|Invoke-Expression)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Nested PowerShell with an -Encoded* switch (-e, -ec, -enc, -EncodedCommand…);
+        // (?![px]) keeps the legitimate -ExecutionPolicy / -ep flags out of the match
+        new(@"\b(powershell|pwsh)(\.exe)?\b[^|&;]*[\s'""]-e(?![px])\w*", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Base64 payload decoded at run time, feeding whatever comes next
+        new(@"FromBase64String", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Script block built from a string at run time
+        new(@"\[\s*scriptblock\s*\]\s*::\s*Create", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Call operator on a variable/subexpression (& $cmd, & $(…)) or dot-sourcing one (. $script)
+        new(@"(&\s*|(?<=^|[;|&(\s])\.\s+)\$", RegexOptions.Compiled),
+    ];
+
+    /// <summary>
+    /// True when <paramref name="subject"/> contains an indirect-execution construct
+    /// (<c>iex</c>, encoded nested shell, Base64 decoding, runtime script blocks, call
+    /// operator on a variable) whose effect the rules cannot read from the text. Callers
+    /// use it to force the interactive prompt instead of any auto-approval — never to block.
+    /// </summary>
+    public static bool IsOpaqueExecution(string? subject) =>
+        !string.IsNullOrEmpty(subject) && OpaqueExecution.Any(r => r.IsMatch(subject));
 
     /// <summary>Classifies a tool call. See the type remarks for the evaluation order.</summary>
     public PermissionDecision Evaluate(string toolName, string? subject)

@@ -4,7 +4,7 @@ using Xunit;
 namespace Inferpal.Tests;
 
 // Pure permission engine: rule parsing (DSL + JSON overlay), allow/deny/prompt evaluation,
-// first-match-wins ordering, tool scoping, and the non-bypassable hard denylist.
+// first-match-wins ordering, tool scoping, and the built-in hard denylist.
 public class PermissionPolicyTests
 {
     private static PermissionPolicy FromDsl(string dsl) =>
@@ -90,7 +90,7 @@ public class PermissionPolicyTests
         Assert.Equal(PermissionDecision.Deny,  policy.Evaluate("run_command", "git push --force"));
     }
 
-    // ── Hard denylist (non-bypassable) ─────────────────────────────────────────
+    // ── Hard denylist (built-in floor) ─────────────────────────────────────────
 
     [Theory]
     [InlineData("rm -rf /")]

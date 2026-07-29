@@ -133,7 +133,8 @@ exists.
   persisted). Edit prompts show the **actual diff** before you confirm.
 - **Permission rules** — `allow` / `deny` patterns (per-machine + committable
   `.inferpal/permissions.json`) classify a call before the prompt; a built-in,
-  **non-bypassable denylist** of catastrophic shell commands always applies. See
+  **hard denylist** of catastrophic shell commands always applies, and indirect execution
+  (`iex`, `-EncodedCommand`, …) is force-prompted rather than auto-approved. See
   **[Tools → Permission rules](tools.md)**.
 - **Hardened SSRF guard** on outbound fetches (DNS rebinding, IPv4-mapped IPv6, `0.0.0.0/8`,
   loopback/private ranges, ReDoS-safe timeout).
