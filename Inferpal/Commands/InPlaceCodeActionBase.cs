@@ -1,4 +1,5 @@
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Services;
 using Microsoft.VisualStudio.Extensibility;
 using Microsoft.VisualStudio.Extensibility.Commands;
@@ -52,10 +53,12 @@ internal abstract class InPlaceCodeActionBase : Command
         var outcome = await InPlaceCodeEdit.RunAsync(
             Extensibility, view, _client, ResolveModel(), SystemPrompt, Instruction, ct, _config);
 
-        // No chat to write to here — surface the "nothing to do" verdict as a dismissable prompt so
-        // the unchanged document doesn't look like the command silently failed.
+        // No chat to write to here — surface the "nothing to do" and failure verdicts as dismissable
+        // prompts so the unchanged document doesn't look like the command silently did nothing.
         if (outcome == InPlaceEditOutcome.NoChangeNeeded)
             await Extensibility.Shell().ShowPromptAsync(NoChangeMessage, PromptOptions.OK, ct);
+        else if (outcome == InPlaceEditOutcome.Failed)
+            await Extensibility.Shell().ShowPromptAsync(Strings.CodeActionFailed, PromptOptions.OK, ct);
     }
 
     private string ResolveModel() =>

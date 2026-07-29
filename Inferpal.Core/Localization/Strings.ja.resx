@@ -352,6 +352,7 @@ Ollama が起動したら、ヘッダーの ↻ 再試行 をクリックして�
   <data name="FixNoChange" xml:space="preserve"><value>✅ バグや問題は見つかりませんでした。修正は不要です。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ コードはすでに十分に文書化されています。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ テストすべき有用なものはありません。重要なケースはすべて網羅済みです。</value></data>
+  <data name="CodeActionFailed" xml:space="preserve"><value>⚠ コードアクションに失敗しました。バックエンド接続とモデルを確認してください。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>使用法：`{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>使用法：`/restore &lt;パス&gt;` — `.inferpal/history/` から最新のバックアップを復元します</value></data>
   <data name="SlashHelp" xml:space="preserve"><value>不明なコマンド：`{0}`

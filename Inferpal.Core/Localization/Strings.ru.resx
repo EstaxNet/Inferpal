@@ -352,6 +352,7 @@
   <data name="FixNoChange" xml:space="preserve"><value>✅ Ошибок или проблем не найдено — исправлять нечего.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Код уже достаточно документирован.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Тестировать нечего — все значимые случаи уже покрыты.</value></data>
+  <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Не удалось выполнить действие с кодом — проверьте подключение к бэкенду и модель.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Использование: `{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>Использование: `/restore &lt;путь&gt;` — восстанавливает последнюю резервную копию из `.inferpal/history/`</value></data>
   <data name="SlashHelp" xml:space="preserve"><value>Неизвестная команда: `{0}`

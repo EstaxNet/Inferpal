@@ -352,6 +352,7 @@ Backup: {0}</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Nessun bug o problema rilevato: niente da correggere.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Il codice è già documentato a sufficienza.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Niente di utile da testare: tutti i casi rilevanti sono già coperti.</value></data>
+  <data name="CodeActionFailed" xml:space="preserve"><value>⚠ L'azione sul codice non è riuscita: controlla la connessione al backend e il modello.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Uso: `{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>Uso: `/restore &lt;percorso&gt;` — ripristina il backup più recente da `.inferpal/history/`</value></data>
   <data name="SlashHelp" xml:space="preserve"><value>Comando sconosciuto: `{0}`

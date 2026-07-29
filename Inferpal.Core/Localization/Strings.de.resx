@@ -352,6 +352,7 @@ Sicherung: {0}</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Kein Fehler oder Problem gefunden — nichts zu beheben.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Der Code ist bereits ausreichend dokumentiert.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nichts Sinnvolles zu testen — alle relevanten Fälle sind bereits abgedeckt.</value></data>
+  <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Die Codeaktion ist fehlgeschlagen — prüfen Sie die Backend-Verbindung und das Modell.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Verwendung: `{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>Verwendung: `/restore &lt;Pfad&gt;` — stellt die neueste Sicherung aus `.inferpal/history/` wieder her</value></data>
   <data name="SlashHelp" xml:space="preserve"><value>Unbekannter Befehl: `{0}`

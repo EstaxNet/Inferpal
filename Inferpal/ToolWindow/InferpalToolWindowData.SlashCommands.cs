@@ -153,6 +153,9 @@ internal partial class InferpalToolWindowData
             });
         else if (outcome == InPlaceEditOutcome.PreviewShown)
             await ShowInfoAsync(Strings.CodeActionPreviewShown);
+        // Model/network failure: tell the chat instead of leaving the turn silent.
+        else if (outcome == InPlaceEditOutcome.Failed)
+            await ShowInfoAsync(Strings.CodeActionFailed);
     }
 
     /// <summary>Executes the stateful commands the router hands back to the VM.</summary>

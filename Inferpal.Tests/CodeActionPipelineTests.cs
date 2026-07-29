@@ -61,6 +61,31 @@ public class CodeActionPipelineTests
     }
 
     [Fact]
+    public async Task Run_IdenticalRewrite_ReturnsNoChangeNeeded()
+    {
+        // Small models often echo the code unchanged instead of emitting the sentinel: the
+        // pipeline must classify that as a no-op, not as an invisible edit.
+        var run = await RunAsync(ProviderReplying("int x = 1;"), "int x = 1;");
+
+        Assert.Equal(CodeActionOutcome.NoChangeNeeded, run.Outcome);
+        Assert.Null(run.NewDocText);
+    }
+
+    [Fact]
+    public async Task Run_SelectionIdenticalAfterReindent_ReturnsNoChangeNeeded()
+    {
+        // Selection "    return 1;" — the model echoes it at column 0; once reindented back it
+        // matches the original exactly, so nothing changed.
+        const string doc = "void M()\n{\n    return 1;\n}";
+        var start = doc.IndexOf("    return 1;", StringComparison.Ordinal);
+        var end   = start + "    return 1;".Length;
+
+        var run = await RunAsync(ProviderReplying("return 1;"), doc, start, end, selectionEmpty: false);
+
+        Assert.Equal(CodeActionOutcome.NoChangeNeeded, run.Outcome);
+    }
+
+    [Fact]
     public async Task Run_EmptyDocument_Fails()
     {
         var run = await RunAsync(ProviderReplying("whatever"), "   \n  ");

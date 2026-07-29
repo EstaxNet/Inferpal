@@ -112,6 +112,8 @@ internal static class Strings
     public static string FixNoChange      => Get(nameof(FixNoChange));
     public static string DocNoChange      => Get(nameof(DocNoChange));
     public static string TestsNoChange    => Get(nameof(TestsNoChange));
+    /// <summary>Shown when an in-place code action fails (model/network error, empty reply).</summary>
+    public static string CodeActionFailed => Get(nameof(CodeActionFailed));
 
     public static string LabelCommandTimeout      => Get(nameof(LabelCommandTimeout));
     public static string HintCommandTimeout       => Get(nameof(HintCommandTimeout));

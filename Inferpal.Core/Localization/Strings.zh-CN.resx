@@ -352,6 +352,7 @@ Ollama 启动后，点击标题栏的 ↻ 重试按钮。</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ 未发现错误或问题，无需修复。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ 代码已有足够的文档说明。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ 没有需要测试的内容，所有重要情况都已覆盖。</value></data>
+  <data name="CodeActionFailed" xml:space="preserve"><value>⚠ 代码操作失败。请检查后端连接和模型。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>用法：`{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>用法：`/restore &lt;路径&gt;` — 从 `.inferpal/history/` 还原最近的备份</value></data>
   <data name="SlashHelp" xml:space="preserve"><value>未知命令：`{0}`

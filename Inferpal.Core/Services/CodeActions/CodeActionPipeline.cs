@@ -112,6 +112,12 @@ internal static class CodeActionPipeline
         if (string.IsNullOrWhiteSpace(editedCode))
             return new CodeActionRun(CodeActionOutcome.Failed);
 
+        // Small models often skip the sentinel and echo the code unchanged instead: applying it
+        // would be an invisible no-op edit ("nothing happened"). Detect the identity here so every
+        // front-end reports "nothing to change" like a sentinel reply.
+        if (editedCode == originalCode)
+            return new CodeActionRun(CodeActionOutcome.NoChangeNeeded);
+
         return new CodeActionRun(
             CodeActionOutcome.Edited, editedCode, start, end, hasSelection,
             NewDocText: docText[..start] + editedCode + docText[end..]);
