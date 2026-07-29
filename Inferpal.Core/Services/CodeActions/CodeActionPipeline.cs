@@ -1,3 +1,4 @@
+using Inferpal.Localization;
 using Inferpal.Models;
 
 namespace Inferpal.Services.CodeActions;
@@ -112,8 +113,10 @@ internal static class CodeActionPipeline
         var editedCode = hasSelection
             ? InlineEditReindenter.Reindent(originalCode, cleaned)
             : cleaned;
+        // An empty reply is a model-side condition (wrong model kind, aborted stream) — name it,
+        // so the failure prompt carries a cause instead of the bare generic verdict.
         if (string.IsNullOrWhiteSpace(editedCode))
-            return new CodeActionRun(CodeActionOutcome.Failed);
+            return new CodeActionRun(CodeActionOutcome.Failed, FailureDetail: Strings.MsgEmptyResponse);
 
         // Small models often skip the sentinel and echo the code unchanged instead: applying it
         // would be an invisible no-op edit ("nothing happened"). Detect the identity here so every

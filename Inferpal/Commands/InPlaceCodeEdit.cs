@@ -57,7 +57,13 @@ internal static class InPlaceCodeEdit
         // Spinner overlay while the model generates.
         InlineEditInputWindow dlg;
         try { dlg = await InlineEditInputWindow.CreateAndShowSpinnerAsync(); }
-        catch { return new(InPlaceEditOutcome.Failed); }
+        catch (Exception ex)
+        {
+            // The spinner is a plain WPF window on its own STA thread — if it fails to open
+            // the model was never even called; name the cause instead of the generic verdict.
+            Services.Diagnostics.Swallow("InPlaceCodeEdit.Spinner", ex);
+            return new(InPlaceEditOutcome.Failed, ex.Message);
+        }
 
         CodeActionRun run;
         try
@@ -68,7 +74,9 @@ internal static class InPlaceCodeEdit
         }
         catch (OperationCanceledException)
         {
-            return new(InPlaceEditOutcome.Failed);   // cancelled mid-generation — nothing applied
+            // Cancelled mid-generation (user or VS command deadline) — nothing applied. Carry the
+            // cause: an unexplained cancellation otherwise surfaces as the bare generic failure.
+            return new(InPlaceEditOutcome.Failed, Strings.MsgCancelled);
         }
         finally
         {
