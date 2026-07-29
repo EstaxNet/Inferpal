@@ -224,6 +224,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Diagnostics: await ShowInfoAsync(Services.Commands.DiagnosticsCommandHandler.Handle(parts)); break;
             case SlashCommandId.Bench:       await HandleBenchCommandAsync(parts, ct);    break;
             case SlashCommandId.Arena:       await HandleArenaCommandAsync(parts, ct);    break;
+            case SlashCommandId.Tdd:         await HandleTddCommandAsync(parts, ct);      break;
             case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
             case SlashCommandId.Xray:
             {
@@ -402,6 +403,68 @@ internal partial class InferpalToolWindowData
             {
                 var idx = Messages.IndexOf(statusBbl);
                 if (idx >= 0) Messages.RemoveAt(idx);
+            });
+        }
+    }
+
+    // /tdd [filter] — "fix until green" loop (twin of /fix-build, test side). The shared handler
+    // owns the loop; this method only maps its callbacks to chat UI: CurrentStep for progress and
+    // agent steps, a tool bubble per test round (expanded while red), an assistant bubble per fix
+    // summary. Cancellable via the regular stop button (_currentCts), like /fix-build.
+    private async Task HandleTddCommandAsync(string[] parts, CancellationToken ct)
+    {
+        CancellationTokenSource? localCts = null;
+        await RunOnVMContextAsync(() =>
+        {
+            localCts    = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _currentCts = localCts;
+            IsLoading   = true;
+        });
+        if (localCts is null) return;
+        var tok = localCts.Token;
+
+        try
+        {
+            var systemPrompt = _history.Count > 0 && _history[0].Role == "system"
+                ? _history[0].Content : null;
+
+            var result = await Services.Commands.TddCommandHandler.HandleAsync(
+                _client, _config, _tools, systemPrompt, parts, FindProjectRoot(),
+                onProgress:   p => Post(() => CurrentStep = p),
+                onTestReport: (output, green) => Post(() =>
+                {
+                    var item = ChatMessageItem.ToolMsg(
+                        green ? "✅ run_tests" : "❌ run_tests", output, expanded: !green);
+                    ApplyItemTheme(item);
+                    Messages.Insert(Messages.Count - 2, item);
+                    ScrollToBottom();
+                }),
+                onStep:      s => Post(() => CurrentStep = s),
+                onToken:     null,
+                onFixResult: text => Post(() =>
+                {
+                    var visible = Services.Presentation.MarkdownParser.StripThinkTags(text);
+                    if (!Services.Presentation.MarkdownParser.HasPrintableText(visible)) return;
+                    var msg = ChatMessageItem.AssistantMsg(visible);
+                    ApplyItemTheme(msg);
+                    Messages.Insert(Messages.Count - 2, msg);
+                    ScrollToBottom();
+                }),
+                tok);
+            await ShowInfoAsync(result.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            await ShowInfoAsync(Strings.MsgCancelled);
+        }
+        finally
+        {
+            await RunOnVMContextAsync(() =>
+            {
+                localCts?.Dispose();
+                _currentCts = null;
+                IsLoading   = false;
+                CurrentStep = string.Empty;
             });
         }
     }

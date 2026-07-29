@@ -844,6 +844,11 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="ArenaColWinRate" xml:space="preserve"><value>Percentuale di vittorie</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Nessun voto dell'arena registrato finora.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena non riuscita: {0}</value></data>
+  <data name="SlashHintTdd" xml:space="preserve"><value>esegui i test → l'IA corregge → riesegui fino al verde (filtro test opzionale)</value></data>
+  <data name="TddRunningTests" xml:space="preserve"><value>🧪 Test {0}/{1}…</value></data>
+  <data name="TddFixing" xml:space="preserve"><value>🔧 Correzione {0}…</value></data>
+  <data name="TddSuccess" xml:space="preserve"><value>✅ Suite di test verde dopo {0} round.</value></data>
+  <data name="TddGiveUp" xml:space="preserve"><value>❌ I test falliscono ancora dopo {0} round — è necessario un intervento manuale.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Radiografia del contesto — prompt di sistema ≈ {0} token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Prompt di sistema di base</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Frammento persona</value></data>

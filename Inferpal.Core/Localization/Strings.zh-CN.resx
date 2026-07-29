@@ -844,6 +844,11 @@ ollama serve
   <data name="ArenaColWinRate" xml:space="preserve"><value>胜率</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>尚未记录任何竞技场投票。</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>竞技场失败：{0}</value></data>
+  <data name="SlashHintTdd" xml:space="preserve"><value>运行测试 → AI 修复 → 重新运行直到通过（可选测试过滤器）</value></data>
+  <data name="TddRunningTests" xml:space="preserve"><value>🧪 测试 {0}/{1}…</value></data>
+  <data name="TddFixing" xml:space="preserve"><value>🔧 修复 {0}…</value></data>
+  <data name="TddSuccess" xml:space="preserve"><value>✅ 经过 {0} 轮后测试套件全部通过。</value></data>
+  <data name="TddGiveUp" xml:space="preserve"><value>❌ 经过 {0} 轮后测试仍然失败 — 需要手动干预。</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 上下文透视 — 系统提示词 ≈ {0} 个 token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基础系统提示词</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>角色片段</value></data>

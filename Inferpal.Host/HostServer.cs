@@ -234,6 +234,23 @@ internal sealed class HostServer : IDisposable
                 return new SlashCommandResult(true, result.Message);
             }
 
+            case SlashCommandId.Tdd:
+            {
+                // "Fix until green" loop; test reports, agent steps and per-round fix summaries
+                // all flow through the same chat/step notifications as the agent loop.
+                var result = await Services.Commands.TddCommandHandler.HandleAsync(
+                    s.Client, s.Config, s.Tools,
+                    BuildSystemPromptText(s), delegated.Parts,
+                    string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
+                    onProgress:   p => Notify("chat/step", new { text = p }),
+                    onTestReport: (output, _) => Notify("chat/step", new { text = output }),
+                    onStep:       st => Notify("chat/step", new { text = st }),
+                    onToken:      null,
+                    onFixResult:  null,
+                    ct);
+                return new SlashCommandResult(true, result.Message);
+            }
+
             case SlashCommandId.Xray:
                 var sections = new SystemPromptBuilder(s.Config).BuildSections(
                     Strings.SystemPrompt,

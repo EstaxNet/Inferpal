@@ -47,6 +47,8 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public List<string> Unloaded   { get; } = [];
     /// <summary>Model name of every <see cref="SendChatAsync"/> call, in order.</summary>
     public List<string> ChatModels { get; } = [];
+    /// <summary>Every <see cref="RunAgentAsync"/> call (model + the history it received), in order.</summary>
+    public List<(string Model, List<ChatMessageDto> History)> AgentRuns { get; } = [];
 
     // ── IOllamaChatClient ───────────────────────────────────────────────────────
     public Task<ChatTurnResult> SendChatAsync(
@@ -64,8 +66,11 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<AgentResult> RunAgentAsync(
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string> onStep,
         Action<string>? onToken, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
-        Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null) =>
-        Task.FromResult(new AgentResult(ChatResult.TextContent, [], history));
+        Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null)
+    {
+        AgentRuns.Add((model, history));
+        return Task.FromResult(new AgentResult(ChatResult.TextContent, [], history));
+    }
 
     public Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct) =>
         Task.FromResult(Embedding);

@@ -849,6 +849,11 @@ ollama serve
   <data name="ArenaColWinRate" xml:space="preserve"><value>Win rate</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>No arena vote recorded yet.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena failed: {0}</value></data>
+  <data name="SlashHintTdd" xml:space="preserve"><value>run the tests → AI fixes → re-run until green (optional test filter)</value></data>
+  <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>
+  <data name="TddFixing" xml:space="preserve"><value>🔧 Fix {0}…</value></data>
+  <data name="TddSuccess" xml:space="preserve"><value>✅ Test suite green after {0} round(s).</value></data>
+  <data name="TddGiveUp" xml:space="preserve"><value>❌ Tests still failing after {0} round(s) — manual intervention required.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Context X-Ray — system prompt ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Base system prompt</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Persona snippet</value></data>

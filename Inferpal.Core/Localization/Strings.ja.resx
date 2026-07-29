@@ -844,6 +844,11 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ArenaColWinRate" xml:space="preserve"><value>勝率</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>アリーナの投票はまだ記録されていません。</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>アリーナが失敗しました: {0}</value></data>
+  <data name="SlashHintTdd" xml:space="preserve"><value>テスト実行 → AI が修正 → グリーンになるまで再実行（テストフィルター任意）</value></data>
+  <data name="TddRunningTests" xml:space="preserve"><value>🧪 テスト {0}/{1}…</value></data>
+  <data name="TddFixing" xml:space="preserve"><value>🔧 修正 {0}…</value></data>
+  <data name="TddSuccess" xml:space="preserve"><value>✅ {0} ラウンド後にテストスイートがグリーンになりました。</value></data>
+  <data name="TddGiveUp" xml:space="preserve"><value>❌ {0} ラウンド後もテストが失敗しています — 手動での対応が必要です。</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 コンテキスト X 線 — システムプロンプト ≈ {0} トークン</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基本システムプロンプト</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>ペルソナスニペット</value></data>

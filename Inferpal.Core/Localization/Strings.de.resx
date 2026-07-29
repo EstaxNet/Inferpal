@@ -844,6 +844,11 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="ArenaColWinRate" xml:space="preserve"><value>Siegquote</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Noch keine Arena-Stimme erfasst.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena fehlgeschlagen: {0}</value></data>
+  <data name="SlashHintTdd" xml:space="preserve"><value>Tests ausführen → KI korrigiert → erneut ausführen bis grün (optionaler Testfilter)</value></data>
+  <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>
+  <data name="TddFixing" xml:space="preserve"><value>🔧 Korrektur {0}…</value></data>
+  <data name="TddSuccess" xml:space="preserve"><value>✅ Testsuite nach {0} Runde(n) grün.</value></data>
+  <data name="TddGiveUp" xml:space="preserve"><value>❌ Tests schlagen nach {0} Runde(n) immer noch fehl — manueller Eingriff erforderlich.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Kontext-Röntgen — System-Prompt ≈ {0} Token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Basis-System-Prompt</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Persona-Snippet</value></data>

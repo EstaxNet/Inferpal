@@ -844,6 +844,11 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="ArenaColWinRate" xml:space="preserve"><value>승률</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>아직 기록된 아레나 투표가 없습니다.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>아레나 실패: {0}</value></data>
+  <data name="SlashHintTdd" xml:space="preserve"><value>테스트 실행 → AI 수정 → 통과할 때까지 재실행(테스트 필터 선택)</value></data>
+  <data name="TddRunningTests" xml:space="preserve"><value>🧪 테스트 {0}/{1}…</value></data>
+  <data name="TddFixing" xml:space="preserve"><value>🔧 수정 {0}…</value></data>
+  <data name="TddSuccess" xml:space="preserve"><value>✅ {0}번의 라운드 후 테스트 스위트가 통과했습니다.</value></data>
+  <data name="TddGiveUp" xml:space="preserve"><value>❌ {0}번의 라운드 후에도 테스트 실패 — 수동 개입이 필요합니다.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 컨텍스트 엑스레이 — 시스템 프롬프트 ≈ {0} 토큰</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>기본 시스템 프롬프트</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>페르소나 스니펫</value></data>

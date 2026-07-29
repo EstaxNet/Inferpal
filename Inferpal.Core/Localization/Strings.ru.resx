@@ -844,6 +844,11 @@ ollama serve
   <data name="ArenaColWinRate" xml:space="preserve"><value>Доля побед</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Голосов арены пока нет.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Сбой арены: {0}</value></data>
+  <data name="SlashHintTdd" xml:space="preserve"><value>запустить тесты → ИИ исправляет → перезапуск до зелёного (необязательный фильтр тестов)</value></data>
+  <data name="TddRunningTests" xml:space="preserve"><value>🧪 Тесты {0}/{1}…</value></data>
+  <data name="TddFixing" xml:space="preserve"><value>🔧 Исправление {0}…</value></data>
+  <data name="TddSuccess" xml:space="preserve"><value>✅ Тесты зелёные после {0} раунда(ов).</value></data>
+  <data name="TddGiveUp" xml:space="preserve"><value>❌ Тесты всё ещё падают после {0} раунда(ов) — требуется ручное вмешательство.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Рентген контекста — системный промпт ≈ {0} токенов</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Базовый системный промпт</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Фрагмент персоны</value></data>

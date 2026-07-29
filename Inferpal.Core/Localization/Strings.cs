@@ -793,6 +793,13 @@ internal static class Strings
     public static string ArenaColWinRate                     => Get(nameof(ArenaColWinRate));
     public static string ArenaNoStats                        => Get(nameof(ArenaNoStats));
     public static string ArenaFailed(string error)           => string.Format(Get(nameof(ArenaFailed)), error);
+
+    // ── /tdd command ────────────────────────────────────────────────────────────
+    public static string SlashHintTdd                        => Get(nameof(SlashHintTdd));
+    public static string TddRunningTests(int round, int max) => string.Format(Get(nameof(TddRunningTests)), round, max);
+    public static string TddFixing(int round)                => string.Format(Get(nameof(TddFixing)), round);
+    public static string TddSuccess(int rounds)              => string.Format(Get(nameof(TddSuccess)), rounds);
+    public static string TddGiveUp(int maxRounds)            => string.Format(Get(nameof(TddGiveUp)), maxRounds);
     public static string XrayHeader(string tokens)           => string.Format(Get(nameof(XrayHeader)), tokens);
     public static string XrayLabelBase                       => Get(nameof(XrayLabelBase));
     public static string XrayLabelPersona                    => Get(nameof(XrayLabelPersona));

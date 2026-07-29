@@ -844,6 +844,11 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="ArenaColWinRate" xml:space="preserve"><value>Odsetek zwycięstw</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Nie zapisano jeszcze żadnego głosu areny.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena nie powiodła się: {0}</value></data>
+  <data name="SlashHintTdd" xml:space="preserve"><value>uruchom testy → AI poprawia → ponowne uruchomienie aż do zieleni (opcjonalny filtr testów)</value></data>
+  <data name="TddRunningTests" xml:space="preserve"><value>🧪 Testy {0}/{1}…</value></data>
+  <data name="TddFixing" xml:space="preserve"><value>🔧 Poprawka {0}…</value></data>
+  <data name="TddSuccess" xml:space="preserve"><value>✅ Zestaw testów zielony po {0} rundzie/rundach.</value></data>
+  <data name="TddGiveUp" xml:space="preserve"><value>❌ Testy nadal nie przechodzą po {0} rundach — wymagana ręczna interwencja.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Prześwietlenie kontekstu — prompt systemowy ≈ {0} tokenów</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Bazowy prompt systemowy</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Fragment persony</value></data>
