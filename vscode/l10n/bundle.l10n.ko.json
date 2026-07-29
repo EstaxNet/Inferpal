@@ -130,5 +130,6 @@
   "Resume": "재개",
   "Fix with AI": "AI로 수정",
   "Fix the following errors:": "다음 오류를 수정하세요:",
-  "Open Folder": "폴더 열기"
+  "Open Folder": "폴더 열기",
+  "Refresh models": "모델 새로 고침"
 }

@@ -42,6 +42,27 @@ html, body {
   border-bottom-color: var(--vscode-focusBorder, #7c4dff);
 }
 
+/* Language selector row on top, like the VS window. */
+#langrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#langrow select {
+  flex: 1;
+  max-width: 320px;
+}
+
+/* Section header: bold with the accent bar, like the VS window. */
+.section {
+  font-weight: 600;
+  margin: 18px 0 10px;
+  padding-left: 8px;
+  border-left: 3px solid var(--vscode-focusBorder, #7c4dff);
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -53,6 +74,72 @@ html, body {
   flex-direction: row;
   align-items: center;
   gap: 8px;
+}
+
+/* VS layout for numbers: label left, compact right-aligned field + unit on one line. */
+.field.compact {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.field.compact .labelline {
+  flex: 1;
+}
+
+input.num {
+  width: 90px;
+  text-align: right;
+}
+
+.unit {
+  opacity: 0.65;
+  font-size: 0.9em;
+  min-width: 42px;
+}
+
+.labelline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info {
+  opacity: 0.55;
+  cursor: help;
+  font-size: 0.9em;
+}
+
+.inputline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inputline input {
+  flex: 1;
+}
+
+.sidebtn {
+  background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+  border: none;
+  border-radius: 3px;
+  padding: 5px 14px;
+  cursor: pointer;
+}
+
+.teststatus {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.teststatus.ok {
+  color: var(--vscode-testing-iconPassed, #4ec94e);
+}
+
+.teststatus.ko {
+  color: var(--vscode-errorForeground, #f44747);
 }
 
 .field label {

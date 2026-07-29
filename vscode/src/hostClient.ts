@@ -291,6 +291,12 @@ export class HostClient {
     return this.connection().sendRequest<string>('config/get');
   }
 
+  /** Localized labels/hints/sections of the settings UI — the same .resx strings as the
+   * Visual Studio settings window (keys = resx resource names). */
+  settingsStrings(): Promise<Record<string, string>> {
+    return this.connection().sendRequest<Record<string, string>>('settings/strings');
+  }
+
   configUpdate(json: string): Promise<void> {
     return this.connection().sendRequest('config/update', { json });
   }

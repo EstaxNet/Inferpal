@@ -349,6 +349,10 @@ internal sealed partial class HostServer : IDisposable
                 prop.SetValue(s.Config, prop.GetValue(incoming));
 
         s.Config.Save();
+        // A language override takes effect immediately (settings/strings, slash hints, …),
+        // like the VS settings window; empty falls back to the initialize-handshake locale.
+        if (!string.IsNullOrEmpty(s.Config.Language))
+            Strings.ApplyLanguage(s.Config.Language);
         ResetHistory(s);   // custom prompt / pinned files may have changed
     }
 

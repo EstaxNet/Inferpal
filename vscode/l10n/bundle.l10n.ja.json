@@ -130,5 +130,6 @@
   "Resume": "再開",
   "Fix with AI": "AI で修正",
   "Fix the following errors:": "次のエラーを修正してください:",
-  "Open Folder": "フォルダーを開く"
+  "Open Folder": "フォルダーを開く",
+  "Refresh models": "モデルを更新"
 }

@@ -7,8 +7,9 @@ import * as vscode from 'vscode';
 import { HostClient } from './hostClient';
 
 interface SettingsInbound {
-  type: 'ready' | 'save';
+  type: 'ready' | 'save' | 'testConnection' | 'refreshModels';
   json?: string;
+  baseUrl?: string;
 }
 
 export class SettingsPanel {
@@ -69,9 +70,41 @@ export class SettingsPanel {
           } catch {
             // backend unreachable — the model inputs stay free-text
           }
-          this.post({ type: 'init', configJson: this.lastConfigJson, models });
+          // Labels/hints/sections from the host's .resx — identical wording to the VS window.
+          let strings: Record<string, string> = {};
+          try {
+            strings = await host.settingsStrings();
+          } catch (err) {
+            this.log(`[settings] settings/strings failed: ${String(err)}`);
+          }
+          this.post({ type: 'init', configJson: this.lastConfigJson, models, strings });
         } catch (err) {
           this.post({ type: 'error', message: String(err) });
+        }
+        return;
+      }
+      case 'testConnection': {
+        if (!host?.isRunning) {
+          this.post({ type: 'testResult', ok: false });
+          return;
+        }
+        try {
+          // Checks the host's configured URL (like the VS Test button, which probes after save).
+          const ok = await host.connectionCheck();
+          this.post({ type: 'testResult', ok });
+        } catch {
+          this.post({ type: 'testResult', ok: false });
+        }
+        return;
+      }
+      case 'refreshModels': {
+        if (!host?.isRunning) {
+          return;
+        }
+        try {
+          this.post({ type: 'models', models: await host.modelsList() });
+        } catch (err) {
+          this.log(`[settings] models/list failed: ${String(err)}`);
         }
         return;
       }
@@ -130,65 +163,19 @@ export class SettingsPanel {
     void this.panel.webview.postMessage(message);
   }
 
-  /** Localized strings injected into the settings webview (same D2 mechanism as the chat). */
+  /** Adapter-side strings injected into the settings webview (window.__l10n). The field
+   * labels/hints/sections come from the host instead (`settings/strings`, same .resx as VS). */
   private static strings(): Record<string, string> {
     const t = vscode.l10n.t;
     return {
-      tabConnection: t('Connection'),
-      tabBehavior: t('Behavior'),
-      tabContext: t('Context'),
-      tabTools: t('Tools'),
-      save: t('Save'),
-      saved: t('Settings saved.'),
-      loading: t('Loading settings…'),
-      advancedRoles: t('Advanced model roles'),
-      // Connection
-      provider: t('Inference engine'),
-      baseUrl: t('Server URL'),
-      apiKey: t('API key (optional)'),
-      defaultModel: t('Chat model'),
-      agentModel: t('Agent / tools model (empty = chat model)'),
-      codeActionsModel: t('Code actions model (empty = chat model)'),
-      inlineCompletionModel: t('Inline completion (FIM) model (empty = chat model)'),
-      inlineEditModel: t('Inline edit model (empty = code actions model)'),
-      utilityModel: t('Utility model (empty = chat model)'),
-      modelRouterAuto: t('Auto-route utility tasks (via /bench)'),
-      ragEmbeddingModel: t('Embeddings model'),
-      // Behavior
-      commandTimeoutSeconds: t('Command timeout (seconds)'),
-      quickTimeoutSeconds: t('Quick task timeout (seconds)'),
-      normalTimeoutSeconds: t('Normal task timeout (seconds)'),
-      deepTimeoutSeconds: t('Deep task timeout (seconds)'),
-      toolBubblesExpanded: t('Tool bubbles expanded by default'),
-      securityAlertsDisabled: t('Disable security alerts'),
-      permissionRules: t('Permission rules (allow|deny <tool|*> <regex>, one per line)'),
-      smartFixEnabled: t('Smart Fix (validate code actions with a build)'),
-      agentMaxIterations: t('Max agent iterations'),
-      modelAutoUnloadEnabled: t('Auto-unload idle model'),
-      modelIdleTimeoutMinutes: t('Model idle timeout (minutes)'),
-      inlineCompletionEnabled: t('Inline completions (ghost text)'),
-      inlineDiffPreviewEnabled: t('Inline diff preview for code actions'),
-      // Context
-      vramBudgetGb: t('VRAM budget (GB, 0 = auto)'),
-      contextWindowSize: t('Context window size (tokens)'),
-      contextWindowKeepTurns: t('Turns kept verbatim'),
-      compactionEnabled: t('History compaction'),
-      compactionTimeoutSeconds: t('Compaction timeout (seconds)'),
-      kvCacheAnchorMessages: t('KV-cache anchor messages'),
-      oodaTurnThreshold: t('OODA turn threshold'),
-      personaAutoSwitch: t('Automatic persona switch'),
-      customSystemPrompt: t('Custom system prompt'),
-      pinnedContextFiles: t('Pinned context files (one path per line, max 3)'),
-      // Tools
-      ragEnabled: t('Semantic search (RAG)'),
-      ragAutoContextEnabled: t('Automatic RAG context per turn'),
-      ragTopK: t('RAG Top-K'),
-      ragSimilarityThreshold: t('RAG similarity threshold'),
-      lspEnabled: t('LSP semantic analysis'),
-      mcpEnabled: t('MCP servers'),
-      mcpServersJson: t('MCP servers (JSON)'),
-      promptTemplates: t('Prompt templates (/name=text, one per line)'),
-      customTools: t('Custom tools (name=command, one per line)'),
+      'Tools': t('Tools'),
+      'Save': t('Save'),
+      'Settings saved.': t('Settings saved.'),
+      'Loading settings…': t('Loading settings…'),
+      'Connected': t('Connected'),
+      'Backend unreachable': t('Backend unreachable'),
+      'Refresh models': t('Refresh models'),
+      'Inline diff preview for code actions': t('Inline diff preview for code actions'),
     };
   }
 

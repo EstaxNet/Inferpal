@@ -1,0 +1,4 @@
+{
+    "inferpal.model": "mistralai/devstral-small-2-2512",
+    "inferpal.agentMode": true
+}

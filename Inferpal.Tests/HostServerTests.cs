@@ -796,6 +796,23 @@ public class HostServerTests
         Assert.Contains("No agent step", resume.Markdown, StringComparison.Ordinal);
     }
 
+    // ── settings/strings (localized labels served to the VS Code settings panel) ──
+
+    [Fact]
+    public async Task SettingsStrings_ReturnsLocalizedResxEntries()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync(locale: "fr").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var strings = await h.Client.InvokeAsync<Dictionary<string, string>>("settings/strings");
+
+        Assert.True(strings.Count > 50);
+        Assert.Contains("LabelProvider", strings.Keys);
+        Assert.Contains("HintProvider", strings.Keys);
+        Assert.Contains("SectionRag", strings.Keys);
+        Assert.All(strings.Values, v => Assert.False(string.IsNullOrWhiteSpace(v)));
+    }
+
     // ── config round trip (settings panel contract) ────────────────────────────
 
     /// <summary>The VS Code settings webview round-trips the FULL config JSON through
