@@ -115,5 +115,15 @@
   "MCP servers": "Serwery MCP",
   "MCP servers (JSON)": "Serwery MCP (JSON)",
   "Prompt templates (/name=text, one per line)": "Szablony promptów (/nazwa=tekst, jeden na wiersz)",
-  "Custom tools (name=command, one per line)": "Narzędzia niestandardowe (nazwa=polecenie, jedno na wiersz)"
+  "Custom tools (name=command, one per line)": "Narzędzia niestandardowe (nazwa=polecenie, jedno na wiersz)",
+  "Search the codebase for \"{0}\"": "Szukaj „{0}” w kodzie",
+  "Remove": "Usuń",
+  "Add context": "Dodaj kontekst",
+  "Attach the active file": "Dołącz aktywny plik",
+  "Attach the selection": "Dołącz zaznaczenie",
+  "Attach a file from disk": "Dołącz plik z dysku",
+  "No file is open in the editor.": "Brak otwartego pliku w edytorze.",
+  "The selection is empty.": "Zaznaczenie jest puste.",
+  "No problems in the Problems panel.": "Brak problemów w panelu Problemy.",
+  "No debugger session is active.": "Brak aktywnej sesji debugowania."
 }

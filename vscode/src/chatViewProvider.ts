@@ -4,7 +4,14 @@
 import * as vscode from 'vscode';
 import { HostClient } from './hostClient';
 import { CodeActionResult, SavedMessage, SlashEffect } from './protocol';
-import { WebviewToExt, WvBackendStatus, WvPlan, WvSlashCommand, WvTranscriptItem } from './webviewMessages';
+import {
+  WebviewToExt,
+  WvBackendStatus,
+  WvMentionCategory,
+  WvPlan,
+  WvSlashCommand,
+  WvTranscriptItem,
+} from './webviewMessages';
 
 const HISTORY_KEY = 'inferpal.promptHistory';
 const HISTORY_MAX = 50;
@@ -31,13 +38,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private promptTokens = 0;
   private lastTokens = 0;
   private statusTimer: NodeJS.Timeout | undefined;
-  /** Context chips produced by slash effects (attachChip), consumed by the next chat turn. */
+  /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
   private pendingAttachments: { name: string; content: string }[] = [];
+  private mentionCats: WvMentionCategory[] = [];
 
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly getHost: () => HostClient | undefined,
     private readonly getActiveEditor: () => vscode.TextEditor | undefined,
+    private readonly getDiagnostics: () => Promise<string | null>,
     private readonly log: (line: string) => void,
   ) {}
 
@@ -171,6 +180,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     } catch (err) {
       this.log(`[chat] command/list failed: ${String(err)}`);
       this.commands = [];
+    }
+    try {
+      this.mentionCats = await host.mentionCategories();
+    } catch (err) {
+      this.log(`[chat] mention/categories failed: ${String(err)}`);
+      this.mentionCats = [];
     }
     try {
       const cfg = JSON.parse(await host.configGet()) as { contextWindowSize?: number; toolBubblesExpanded?: boolean };
@@ -483,6 +498,122 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'openXray':
         await this.openXray();
         return;
+      case 'mentionSearch': {
+        const host = this.getHost();
+        if (!host?.isRunning) {
+          return;
+        }
+        try {
+          const items = await host.mentionSearch(msg.category, msg.query);
+          this.post({ type: 'mentionResults', category: msg.category, items });
+        } catch (err) {
+          this.log(`[chat] mention/search failed: ${String(err)}`);
+        }
+        return;
+      }
+      case 'resolveMention':
+        await this.resolveMention(msg.category, msg.value);
+        return;
+      case 'removeChip':
+        if (msg.index >= 0 && msg.index < this.pendingAttachments.length) {
+          this.pendingAttachments.splice(msg.index, 1);
+          this.postChips();
+        }
+        return;
+      case 'attachActive': {
+        const editor = this.getActiveEditor();
+        if (!editor || editor.document.uri.scheme !== 'file') {
+          void vscode.window.showInformationMessage(vscode.l10n.t('No file is open in the editor.'));
+          return;
+        }
+        this.addChip('📄 ' + vscode.workspace.asRelativePath(editor.document.uri, false), editor.document.getText());
+        return;
+      }
+      case 'attachSelection': {
+        const editor = this.getActiveEditor();
+        const text = editor && !editor.selection.isEmpty ? editor.document.getText(editor.selection) : '';
+        if (!editor || text.length === 0) {
+          void vscode.window.showInformationMessage(vscode.l10n.t('The selection is empty.'));
+          return;
+        }
+        this.addChip('✂ ' + vscode.workspace.asRelativePath(editor.document.uri, false), text);
+        return;
+      }
+      case 'attachBrowse': {
+        const picked = await vscode.window.showOpenDialog({ canSelectMany: false });
+        if (!picked || picked.length === 0) {
+          return;
+        }
+        try {
+          const doc = await vscode.workspace.openTextDocument(picked[0]);
+          this.addChip('📄 ' + (picked[0].path.split('/').pop() ?? picked[0].fsPath), doc.getText());
+        } catch (err) {
+          this.log(`[chat] attachBrowse failed: ${String(err)}`);
+        }
+        return;
+      }
+    }
+  }
+
+  // ── Typed mentions: chip resolution ─────────────────────────────────────────
+
+  private addChip(name: string, content: string): void {
+    const MAX_CHARS = 60_000;
+    this.pendingAttachments.push({
+      name,
+      content: content.length > MAX_CHARS ? content.slice(0, MAX_CHARS) + '\n…(truncated)' : content,
+    });
+    this.postChips();
+  }
+
+  private postChips(): void {
+    this.post({ type: 'chips', chips: this.pendingAttachments.map((a) => ({ name: a.name })) });
+  }
+
+  /** Materializes an instant/selected mention: clipboard/problems/debugger are editor-side,
+   * tree/diff/folder/code go through the host (mention/resolve). */
+  private async resolveMention(category: string, value?: string): Promise<void> {
+    switch (category) {
+      case 'clipboard': {
+        const text = await vscode.env.clipboard.readText();
+        if (text.trim().length > 0) {
+          this.addChip('📋 clipboard', text);
+        }
+        return;
+      }
+      case 'problems': {
+        const report = await this.getDiagnostics();
+        if (report && report.trim().length > 0) {
+          this.addChip('⚠ problems', report);
+        } else {
+          void vscode.window.showInformationMessage(vscode.l10n.t('No problems in the Problems panel.'));
+        }
+        return;
+      }
+      case 'debugger': {
+        const session = vscode.debug.activeDebugSession;
+        if (!session) {
+          void vscode.window.showInformationMessage(vscode.l10n.t('No debugger session is active.'));
+          return;
+        }
+        this.addChip('🐞 ' + session.name, `Debug session: ${session.name} (type: ${session.type})`);
+        return;
+      }
+      default: {
+        const host = this.getHost();
+        if (!host?.isRunning) {
+          return;
+        }
+        try {
+          const result = await host.mentionResolve(category, value);
+          if (result.name && result.content) {
+            this.addChip(result.name, result.content);
+          }
+        } catch (err) {
+          this.log(`[chat] mention/resolve failed: ${String(err)}`);
+        }
+        return;
+      }
     }
   }
 
@@ -666,7 +797,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         case 'attachChip':
           if (e.value) {
             const name = e.name ?? 'attachment';
-            this.pendingAttachments.push({ name, content: e.value });
+            this.addChip(name, e.value);
             notes.push(vscode.l10n.t('📎 {0} attached to the next message.', name));
           }
           break;
@@ -734,6 +865,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           expanded += `\n\n## Attached: ${a.name}\n\`\`\`\n${a.content}\n\`\`\``;
         }
         this.pendingAttachments = [];
+        this.postChips();
       }
       const result = await host.chatSend({
         prompt: expanded,
@@ -934,6 +1066,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       plan: this.busy ? this.plan : null,
       history: this.historyEntries(),
       toolBubblesExpanded: this.toolBubblesExpanded,
+      mentionCategories: this.mentionCats,
+      chips: this.pendingAttachments.map((a) => ({ name: a.name })),
     });
   }
 
@@ -988,6 +1122,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       xrayHistory: t('History: ~{0} tokens'),
       xrayWindow: t('window {0}% full'),
       xrayHint: t('Unchecked sections are excluded from the next turn.'),
+      mentionSearchCode: t('Search the codebase for "{0}"'),
+      chipRemove: t('Remove'),
+      attachMenuTitle: t('Add context'),
+      attachActiveFile: t('Attach the active file'),
+      attachSelection: t('Attach the selection'),
+      attachBrowse: t('Attach a file from disk'),
     };
   }
 

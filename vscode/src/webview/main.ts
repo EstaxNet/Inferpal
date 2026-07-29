@@ -6,6 +6,9 @@ import type {
   ExtToWebview,
   WebviewToExt,
   WvBackendStatus,
+  WvChip,
+  WvMentionCategory,
+  WvMentionItem,
   WvPlan,
   WvSlashCommand,
   WvTranscriptItem,
@@ -111,7 +114,45 @@ function setBackendStatus(status: WvBackendStatus | null): void {
   vramEl.title = status.vramBadge;
 }
 
-// ── Toolbar: model picker + mode toggle + send/stop ─────────────────────────
+// ── Toolbar: attach menu + model picker + mode toggle + send/stop ───────────
+const plusBtn = document.createElement('button');
+plusBtn.id = 'plus';
+plusBtn.textContent = '+';
+const plusMenu = document.createElement('div');
+plusMenu.id = 'plusmenu';
+plusMenu.hidden = true;
+
+function buildPlusMenu(): void {
+  plusMenu.textContent = '';
+  const entries: { label: string; msg: WebviewToExt }[] = [
+    { label: t('attachActiveFile'), msg: { type: 'attachActive' } },
+    { label: t('attachSelection'), msg: { type: 'attachSelection' } },
+    { label: t('attachBrowse'), msg: { type: 'attachBrowse' } },
+  ];
+  for (const entry of entries) {
+    const item = document.createElement('div');
+    item.className = 'popup-item';
+    item.textContent = entry.label;
+    item.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      plusMenu.hidden = true;
+      post(entry.msg);
+    });
+    plusMenu.appendChild(item);
+  }
+}
+plusBtn.addEventListener('click', () => {
+  plusMenu.hidden = !plusMenu.hidden;
+  if (!plusMenu.hidden) {
+    buildPlusMenu();
+  }
+});
+document.addEventListener('mousedown', (e) => {
+  if (!plusMenu.hidden && e.target !== plusBtn && !plusMenu.contains(e.target as Node)) {
+    plusMenu.hidden = true;
+  }
+});
+
 const modelEl = document.createElement('select');
 modelEl.id = 'model';
 modelEl.title = t('modelTitle');
@@ -131,7 +172,9 @@ sendBtn.addEventListener('click', () => {
     send();
   }
 });
-toolbarEl.append(modelEl, modeBtn, sendBtn);
+plusBtn.title = t('attachMenuTitle');
+toolbarEl.append(plusBtn, modelEl, modeBtn, sendBtn);
+composerEl.insertBefore(plusMenu, promptEl);
 
 function applyAgentMode(enabled: boolean): void {
   agentMode = enabled;
@@ -479,26 +522,129 @@ function makePopup(id: string): Popup {
   return { el, index: 0, items: [] };
 }
 
+// Two-level typed mentions (VS parity): '@' opens the category menu (8 categories from the
+// host + free file suggestions), a committed '@file/@code/@folder ' drills into a sub-search.
 const mentions = makePopup('mentions');
+let mentionCategories: WvMentionCategory[] = [];
 let mentionStart = -1; // offset of '@' in the textarea, -1 = popup closed
+let mentionActions: (() => void)[] = [];
+let mentionDebounce: ReturnType<typeof setTimeout> | undefined;
+
+const COMMITTED_RE = /@(file|code|folder) ([^\n@]*)$/i;
+const TYPING_RE = /@([\w.]*)$/;
 
 function closeMentions(): void {
   mentions.el.hidden = true;
   mentions.el.textContent = '';
   mentionStart = -1;
   mentions.index = 0;
+  mentionActions = [];
+  if (mentionDebounce) {
+    clearTimeout(mentionDebounce);
+  }
+}
+
+function openMentionRows(rows: { build: (row: HTMLElement) => void; action: () => void }[]): void {
+  if (rows.length === 0) {
+    closeMentions();
+    return;
+  }
+  mentions.el.textContent = '';
+  mentionActions = rows.map((r) => r.action);
+  mentions.items = rows.map(() => '');
+  mentions.index = Math.min(mentions.index, rows.length - 1);
+  rows.forEach((spec, i) => {
+    const row = document.createElement('div');
+    row.className = 'popup-item mention-item' + (i === mentions.index ? ' selected' : '');
+    spec.build(row);
+    row.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // keep textarea focus
+      spec.action();
+    });
+    mentions.el.appendChild(row);
+  });
+  mentions.el.hidden = false;
 }
 
 function detectMention(): void {
   const caret = promptEl.selectionStart;
   const before = promptEl.value.slice(0, caret);
-  const match = before.match(/@([^\s@]*)$/);
-  if (!match) {
+
+  const committed = before.match(COMMITTED_RE);
+  if (committed) {
+    mentionStart = caret - committed[0].length;
+    const category = committed[1].toLowerCase();
+    const query = committed[2];
+    if (category === 'code') {
+      // Semantic search has no intermediate hits: one action row running the query.
+      openMentionRows(query.trim().length === 0 ? [] : [{
+        build: (row) => { row.textContent = '🔮 ' + t('mentionSearchCode', query); },
+        action: () => {
+          stripMentionToken();
+          post({ type: 'resolveMention', category: 'code', value: query.trim() });
+        },
+      }]);
+      return;
+    }
+    if (mentionDebounce) {
+      clearTimeout(mentionDebounce);
+    }
+    mentionDebounce = setTimeout(() => post({ type: 'mentionSearch', category, query }), 120);
+    return;
+  }
+
+  const typing = before.match(TYPING_RE);
+  if (!typing) {
     closeMentions();
     return;
   }
-  mentionStart = caret - match[0].length;
-  post({ type: 'mentionQuery', query: match[1] });
+  mentionStart = caret - typing[0].length;
+  renderMentionCategories(typing[1].toLowerCase());
+  // Free file suggestions under the categories, like the VS popup's open-file list.
+  post({ type: 'mentionQuery', query: typing[1] });
+}
+
+function renderMentionCategories(partial: string): void {
+  const matches = mentionCategories.filter((c) => c.token.slice(1).startsWith(partial));
+  openMentionRows(matches.map((c) => ({
+    build: (row) => {
+      const tok = document.createElement('span');
+      tok.className = 'slash-cmd';
+      tok.textContent = c.token;
+      const desc = document.createElement('span');
+      desc.className = 'slash-hint';
+      desc.textContent = c.description;
+      row.append(tok, desc);
+    },
+    action: () => selectMentionCategory(c),
+  })));
+}
+
+function selectMentionCategory(c: WvMentionCategory): void {
+  if (c.queryBased) {
+    // Commit '@file ' etc. so the user types the sub-query.
+    const caret = promptEl.selectionStart;
+    const value = promptEl.value;
+    const before = value.slice(0, caret).replace(TYPING_RE, c.token + ' ');
+    promptEl.value = before + value.slice(caret);
+    promptEl.setSelectionRange(before.length, before.length);
+    promptEl.focus();
+    detectMention(); // @folder lists everything on an empty query
+    return;
+  }
+  stripMentionToken();
+  post({ type: 'resolveMention', category: c.token.slice(1) });
+}
+
+/** Removes the trailing @mention token (committed or bare) from the prompt. */
+function stripMentionToken(): void {
+  const caret = promptEl.selectionStart;
+  const value = promptEl.value;
+  const before = value.slice(0, caret).replace(COMMITTED_RE, '').replace(TYPING_RE, '').trimEnd();
+  promptEl.value = before + value.slice(caret);
+  promptEl.setSelectionRange(before.length, before.length);
+  promptEl.focus();
+  closeMentions();
 }
 
 function insertMention(path: string): void {
@@ -511,25 +657,94 @@ function insertMention(path: string): void {
   closeMentions();
 }
 
+/** Free file suggestions for a bare '@…' (open editors + workspace glob) — appended
+ * under the category rows so both stay reachable. */
 function renderMentions(items: string[]): void {
-  if (mentionStart < 0 || items.length === 0) {
-    closeMentions();
+  if (mentionStart < 0) {
     return;
   }
-  mentions.el.textContent = '';
-  mentions.items = items;
-  mentions.index = Math.min(mentions.index, items.length - 1);
-  items.forEach((path, i) => {
-    const row = document.createElement('div');
-    row.className = 'popup-item mention-item' + (i === mentions.index ? ' selected' : '');
-    row.textContent = path;
-    row.addEventListener('mousedown', (e) => {
-      e.preventDefault(); // keep textarea focus
-      insertMention(path);
-    });
-    mentions.el.appendChild(row);
+  const caret = promptEl.selectionStart;
+  const typing = promptEl.value.slice(0, caret).match(TYPING_RE);
+  if (!typing) {
+    return;
+  }
+  const partial = typing[1].toLowerCase();
+  const categories = mentionCategories.filter((c) => c.token.slice(1).startsWith(partial));
+  openMentionRows([
+    ...categories.map((c) => ({
+      build: (row: HTMLElement) => {
+        const tok = document.createElement('span');
+        tok.className = 'slash-cmd';
+        tok.textContent = c.token;
+        const desc = document.createElement('span');
+        desc.className = 'slash-hint';
+        desc.textContent = c.description;
+        row.append(tok, desc);
+      },
+      action: () => selectMentionCategory(c),
+    })),
+    ...items.map((path) => ({
+      build: (row: HTMLElement) => { row.textContent = path; },
+      action: () => insertMention(path),
+    })),
+  ]);
+}
+
+/** @file / @folder sub-search results pushed back by the extension. */
+function renderMentionResults(category: string, items: WvMentionItem[]): void {
+  if (mentionStart < 0) {
+    return;
+  }
+  openMentionRows(items.map((item) => ({
+    build: (row: HTMLElement) => {
+      const label = document.createElement('span');
+      label.className = 'slash-cmd';
+      label.textContent = item.label;
+      const detail = document.createElement('span');
+      detail.className = 'slash-hint';
+      detail.textContent = item.detail;
+      row.append(label, detail);
+    },
+    action: () => {
+      if (category === 'file') {
+        // Files stay in the prompt as '@rel/path' — expanded into an attachment at send.
+        const caret = promptEl.selectionStart;
+        const value = promptEl.value;
+        const rel = item.detail.replace(/\\/g, '/');
+        const before = value.slice(0, caret).replace(COMMITTED_RE, '@' + rel + ' ');
+        promptEl.value = before + value.slice(caret);
+        promptEl.setSelectionRange(before.length, before.length);
+        promptEl.focus();
+        closeMentions();
+      } else {
+        stripMentionToken();
+        post({ type: 'resolveMention', category, value: item.value });
+      }
+    },
+  })));
+}
+
+// ── Context chips + "+" attach menu ──────────────────────────────────────────
+const chipsEl = document.createElement('div');
+chipsEl.id = 'chips';
+chipsEl.hidden = true;
+composerEl.insertBefore(chipsEl, promptEl);
+
+function renderChips(chips: WvChip[]): void {
+  chipsEl.textContent = '';
+  chipsEl.hidden = chips.length === 0;
+  chips.forEach((chip, i) => {
+    const el = document.createElement('span');
+    el.className = 'chip';
+    const name = document.createElement('span');
+    name.textContent = chip.name;
+    const close = document.createElement('button');
+    close.textContent = '✕';
+    close.title = t('chipRemove');
+    close.addEventListener('click', () => post({ type: 'removeChip', index: i }));
+    el.append(name, close);
+    chipsEl.appendChild(el);
   });
-  mentions.el.hidden = false;
 }
 
 const slash = makePopup('slash');
@@ -655,11 +870,36 @@ promptEl.addEventListener('input', () => {
   historyIndex = -1; // editing resets history navigation, like the VS guard
 });
 promptEl.addEventListener('blur', () => setTimeout(() => { closeMentions(); closeSlash(); }, 150));
+/** Keyboard navigation of the mention popup — rows carry their own actions. */
+function mentionKey(e: KeyboardEvent): boolean {
+  if (mentions.el.hidden) {
+    return false;
+  }
+  const rows = mentions.el.querySelectorAll('.popup-item');
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    mentions.index = (mentions.index + (e.key === 'ArrowDown' ? 1 : rows.length - 1)) % rows.length;
+    rows.forEach((r, i) => r.classList.toggle('selected', i === mentions.index));
+    return true;
+  }
+  if (e.key === 'Tab' || e.key === 'Enter') {
+    e.preventDefault();
+    mentionActions[mentions.index]?.();
+    return true;
+  }
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeMentions();
+    return true;
+  }
+  return false;
+}
+
 promptEl.addEventListener('keydown', (e) => {
   if (popupKey(slash, e, applySlash, closeSlash)) {
     return;
   }
-  if (popupKey(mentions, e, insertMention, closeMentions)) {
+  if (mentionKey(e)) {
     return;
   }
   // Shift+↑↓ prompt history — only while the prompt is single-line (VS parity:
@@ -707,6 +947,8 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       contextWindow = msg.contextWindow;
       historyEntries = msg.history;
       currentModel = msg.model;
+      mentionCategories = msg.mentionCategories;
+      renderChips(msg.chips);
       renderTranscript(msg.transcript);
 
       modelEl.textContent = '';
@@ -799,6 +1041,12 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       promptEl.value = msg.text;
       promptEl.focus();
       promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
+      break;
+    case 'mentionResults':
+      renderMentionResults(msg.category, msg.items);
+      break;
+    case 'chips':
+      renderChips(msg.chips);
       break;
     case 'turnEnded': {
       if (streamEl) {

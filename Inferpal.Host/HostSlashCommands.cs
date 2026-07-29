@@ -518,4 +518,83 @@ internal sealed partial class HostServer
         if (s.History.Count > 0 && s.History[0].Role == "system")
             s.History[0] = new Models.ChatMessageDto("system", BuildSystemPromptText(s));
     }
+
+    // ── Typed @-mentions ─────────────────────────────────────────────────────────
+
+    /// <summary>The @mention categories with their localized descriptions (Core's
+    /// MentionController — the same list as the VS popup).</summary>
+    [JsonRpcMethod("mention/categories")]
+    public List<MentionCategoryDto> MentionCategories()
+        => MentionController.Categories
+            .Select(c => new MentionCategoryDto(c.Token, c.Desc(), c.QueryBased))
+            .ToList();
+
+    /// <summary>Sub-search of @file / @folder under the workspace root (fuzzy, best 8).</summary>
+    [JsonRpcMethod("mention/search", UseSingleObjectParameterDeserialization = true)]
+    public List<MentionItemDto> MentionSearch(MentionSearchParams p, CancellationToken ct)
+    {
+        var s = Session();
+        if (string.IsNullOrEmpty(s.RootDir))
+            return [];
+
+        var query = p.Query.Trim().ToLowerInvariant();
+        var paths = p.Category.ToLowerInvariant() switch
+        {
+            "file"   => MentionController.FindFiles(s.RootDir, query, ct),
+            "folder" => MentionController.FindFolders(s.RootDir, query, ct),
+            _        => [],
+        };
+        return paths
+            .Select(full => new MentionItemDto(
+                Path.GetFileName(full) is { Length: > 0 } name ? name : full,
+                MentionController.RelLabel(full, s.RootDir),
+                full))
+            .ToList();
+    }
+
+    /// <summary>Materializes a mention host-side: @tree (project map), @diff (git diff),
+    /// @folder (folder context body) and @code (semantic search). Tool-backed categories run
+    /// through the registry, so permission rules apply as usual.</summary>
+    [JsonRpcMethod("mention/resolve", UseSingleObjectParameterDeserialization = true)]
+    public async Task<MentionResolveResult> MentionResolveAsync(MentionResolveParams p, CancellationToken ct)
+    {
+        var s = Session();
+        try
+        {
+            switch (p.Category.ToLowerInvariant())
+            {
+                case "tree":
+                {
+                    var map = await s.Tools.ExecuteAsync(
+                        "generate_project_map", JsonSerializer.SerializeToElement(new { }), ct);
+                    return new MentionResolveResult("🌲 tree", map);
+                }
+                case "diff":
+                {
+                    var diff = await s.Tools.ExecuteAsync(
+                        "get_git_status", JsonSerializer.SerializeToElement(new { include_diff = true }), ct);
+                    return new MentionResolveResult("📊 git diff", diff);
+                }
+                case "folder" when !string.IsNullOrEmpty(p.Value):
+                {
+                    var content = MentionController.BuildFolderContext(p.Value!, ct);
+                    return new MentionResolveResult("📁 " + Path.GetFileName(p.Value!.TrimEnd('\\', '/')), content);
+                }
+                case "code" when !string.IsNullOrWhiteSpace(p.Value):
+                {
+                    var hits = await s.Tools.ExecuteAsync(
+                        "search_codebase", JsonSerializer.SerializeToElement(new { query = p.Value }), ct);
+                    return new MentionResolveResult("🔮 " + p.Value, hits);
+                }
+                default:
+                    return new MentionResolveResult(null, null);
+            }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("HostServer.MentionResolve", ex);
+            return new MentionResolveResult(null, null);
+        }
+    }
 }

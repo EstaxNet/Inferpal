@@ -17,6 +17,9 @@ import {
   IndexStatusResult,
   InitializeParams,
   InitializeResult,
+  MentionCategory,
+  MentionItem,
+  MentionResolveResult,
   PlanNotice,
   SavedMessage,
   SessionLoadResult,
@@ -258,6 +261,21 @@ export class HostClient {
   /** Slash commands for the autocomplete popup (built-ins + user templates). */
   commandList(): Promise<SlashCommandInfo[]> {
     return this.connection().sendRequest<SlashCommandInfo[]>('command/list');
+  }
+
+  /** Typed @mention categories (localized by the host). */
+  mentionCategories(): Promise<MentionCategory[]> {
+    return this.connection().sendRequest<MentionCategory[]>('mention/categories');
+  }
+
+  /** @file / @folder fuzzy sub-search under the workspace root. */
+  mentionSearch(category: string, query: string): Promise<MentionItem[]> {
+    return this.connection().sendRequest<MentionItem[]>('mention/search', { category, query });
+  }
+
+  /** Materializes a mention host-side (@tree, @diff, @folder, @code). */
+  mentionResolve(category: string, value?: string): Promise<MentionResolveResult> {
+    return this.connection().sendRequest<MentionResolveResult>('mention/resolve', { category, value });
   }
 
   configGet(): Promise<string> {

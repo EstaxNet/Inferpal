@@ -115,5 +115,15 @@
   "MCP servers": "MCP 服务器",
   "MCP servers (JSON)": "MCP 服务器（JSON）",
   "Prompt templates (/name=text, one per line)": "提示词模板（/名称=文本，每行一个）",
-  "Custom tools (name=command, one per line)": "自定义工具（名称=命令，每行一个）"
+  "Custom tools (name=command, one per line)": "自定义工具（名称=命令，每行一个）",
+  "Search the codebase for \"{0}\"": "在代码库中搜索“{0}”",
+  "Remove": "移除",
+  "Add context": "添加上下文",
+  "Attach the active file": "附加当前文件",
+  "Attach the selection": "附加所选内容",
+  "Attach a file from disk": "从磁盘附加文件",
+  "No file is open in the editor.": "编辑器中没有打开的文件。",
+  "The selection is empty.": "所选内容为空。",
+  "No problems in the Problems panel.": "问题面板中没有问题。",
+  "No debugger session is active.": "没有活动的调试会话。"
 }

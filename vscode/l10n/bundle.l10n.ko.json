@@ -115,5 +115,15 @@
   "MCP servers": "MCP 서버",
   "MCP servers (JSON)": "MCP 서버(JSON)",
   "Prompt templates (/name=text, one per line)": "프롬프트 템플릿(/이름=텍스트, 한 줄에 하나)",
-  "Custom tools (name=command, one per line)": "사용자 지정 도구(이름=명령, 한 줄에 하나)"
+  "Custom tools (name=command, one per line)": "사용자 지정 도구(이름=명령, 한 줄에 하나)",
+  "Search the codebase for \"{0}\"": "코드베이스에서 \"{0}\" 검색",
+  "Remove": "제거",
+  "Add context": "컨텍스트 추가",
+  "Attach the active file": "활성 파일 첨부",
+  "Attach the selection": "선택 영역 첨부",
+  "Attach a file from disk": "디스크에서 파일 첨부",
+  "No file is open in the editor.": "편집기에 열린 파일이 없습니다.",
+  "The selection is empty.": "선택 영역이 비어 있습니다.",
+  "No problems in the Problems panel.": "문제 패널에 문제가 없습니다.",
+  "No debugger session is active.": "활성 디버그 세션이 없습니다."
 }

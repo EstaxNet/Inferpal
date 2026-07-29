@@ -64,6 +64,28 @@ internal sealed record BackendStatusResult(bool Connected, string VramBadge);
 /// (built-ins with their localized hints, then user templates).</summary>
 internal sealed record SlashCommandInfoDto(string Command, string Hint);
 
+// ── Typed @-mentions (categories served by the Core's MentionController) ─────
+
+/// <summary>`mention/categories` entry — one @mention category with its localized
+/// description. Query-based categories (@file/@code/@folder) drill into a sub-search;
+/// instant ones attach their context directly.</summary>
+internal sealed record MentionCategoryDto(string Token, string Description, bool QueryBased);
+
+/// <summary>`mention/search` — sub-search of a query-based category (<c>file</c> | <c>folder</c>).</summary>
+internal sealed record MentionSearchParams(string Category, string Query);
+
+/// <summary>One `mention/search` hit: display label + relative detail + the value to
+/// resolve or insert (full path for files/folders).</summary>
+internal sealed record MentionItemDto(string Label, string Detail, string Value);
+
+/// <summary>`mention/resolve` — materializes an instant or selected mention host-side.
+/// <paramref name="Category"/> ∈ <c>tree</c> | <c>diff</c> | <c>folder</c> (Value = full path) |
+/// <c>code</c> (Value = semantic query).</summary>
+internal sealed record MentionResolveParams(string Category, string? Value = null);
+
+/// <summary>`mention/resolve` answer: the chip label + attached content (null = nothing).</summary>
+internal sealed record MentionResolveResult(string? Name, string? Content);
+
 /// <summary>`command/slash` — a chat input starting with <c>/</c>. The host executes the
 /// commands it can serve headlessly; <c>Handled = false</c> tells the adapter to send the
 /// text as a normal chat prompt instead. <paramref name="PromptHistory"/> is the adapter's

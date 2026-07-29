@@ -85,6 +85,26 @@ export interface SlashCommandInfo {
   hint: string;
 }
 
+/** `mention/categories` entry — one typed @mention category. */
+export interface MentionCategory {
+  token: string;
+  description: string;
+  queryBased: boolean;
+}
+
+/** One `mention/search` hit (file/folder sub-search). */
+export interface MentionItem {
+  label: string;
+  detail: string;
+  value: string;
+}
+
+/** `mention/resolve` answer: chip label + content (nulls = nothing to attach). */
+export interface MentionResolveResult {
+  name: string | null;
+  content: string | null;
+}
+
 /** One editor-side effect a handled slash command asks the adapter to apply.
  * Kinds: setPrompt | sendAsPrompt | attachChip (name = chip label) | copyToClipboard |
  * clearTranscript | stateChange (name = key) | openFile | exportRequest.

@@ -602,6 +602,53 @@ button:hover {
   font-size: 0.9em;
 }
 
+/* ── Context chips + attach menu ────────────────────────────────────────────── */
+#chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px 1px 8px;
+  font-size: 0.8em;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 10px;
+  background: var(--vscode-editorWidget-background);
+  max-width: 100%;
+}
+
+.chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.chip button {
+  background: transparent;
+  color: var(--vscode-foreground);
+  padding: 0 3px;
+  font-size: 0.9em;
+  opacity: 0.7;
+}
+
+#plus {
+  background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+  min-width: 26px;
+  padding: 4px 6px;
+}
+
+#plusmenu {
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  background: var(--vscode-editorWidget-background);
+}
+
 /* ── Context X-Ray panel (interactive /xray V2) ─────────────────────────────── */
 #xray {
   position: absolute;

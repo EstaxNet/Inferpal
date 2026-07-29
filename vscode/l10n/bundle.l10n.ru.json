@@ -115,5 +115,15 @@
   "MCP servers": "Серверы MCP",
   "MCP servers (JSON)": "Серверы MCP (JSON)",
   "Prompt templates (/name=text, one per line)": "Шаблоны промптов (/имя=текст, по одному на строку)",
-  "Custom tools (name=command, one per line)": "Пользовательские инструменты (имя=команда, по одному на строку)"
+  "Custom tools (name=command, one per line)": "Пользовательские инструменты (имя=команда, по одному на строку)",
+  "Search the codebase for \"{0}\"": "Искать «{0}» в кодовой базе",
+  "Remove": "Убрать",
+  "Add context": "Добавить контекст",
+  "Attach the active file": "Прикрепить активный файл",
+  "Attach the selection": "Прикрепить выделение",
+  "Attach a file from disk": "Прикрепить файл с диска",
+  "No file is open in the editor.": "В редакторе нет открытого файла.",
+  "The selection is empty.": "Выделение пусто.",
+  "No problems in the Problems panel.": "В панели «Проблемы» нет проблем.",
+  "No debugger session is active.": "Нет активного сеанса отладки."
 }

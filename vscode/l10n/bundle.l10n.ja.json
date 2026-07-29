@@ -115,5 +115,15 @@
   "MCP servers": "MCP サーバー",
   "MCP servers (JSON)": "MCP サーバー（JSON）",
   "Prompt templates (/name=text, one per line)": "プロンプトテンプレート（/名前=テキスト、1 行に 1 つ）",
-  "Custom tools (name=command, one per line)": "カスタムツール（名前=コマンド、1 行に 1 つ）"
+  "Custom tools (name=command, one per line)": "カスタムツール（名前=コマンド、1 行に 1 つ）",
+  "Search the codebase for \"{0}\"": "コードベースで「{0}」を検索",
+  "Remove": "削除",
+  "Add context": "コンテキストを追加",
+  "Attach the active file": "アクティブなファイルを添付",
+  "Attach the selection": "選択範囲を添付",
+  "Attach a file from disk": "ディスクからファイルを添付",
+  "No file is open in the editor.": "エディターで開いているファイルがありません。",
+  "The selection is empty.": "選択範囲が空です。",
+  "No problems in the Problems panel.": "問題パネルに問題はありません。",
+  "No debugger session is active.": "アクティブなデバッグセッションがありません。"
 }

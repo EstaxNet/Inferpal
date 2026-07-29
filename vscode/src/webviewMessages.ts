@@ -27,6 +27,25 @@ export interface WvSlashCommand {
   hint: string;
 }
 
+/** One typed @mention category (host-localized description). */
+export interface WvMentionCategory {
+  token: string;
+  description: string;
+  queryBased: boolean;
+}
+
+/** One @file/@folder sub-search hit. */
+export interface WvMentionItem {
+  label: string;
+  detail: string;
+  value: string;
+}
+
+/** One context chip in the composer (attachment pending for the next turn). */
+export interface WvChip {
+  name: string;
+}
+
 export interface WvPlanStep {
   text: string;
   /** Free-form status from the agent loop ('pending' | 'running' | 'done' | …). */
@@ -61,6 +80,8 @@ export interface WvHydrate {
   history: string[];
   /** Default expansion of tool bubbles (host config ToolBubblesExpanded). */
   toolBubblesExpanded: boolean;
+  mentionCategories: WvMentionCategory[];
+  chips: WvChip[];
 }
 
 export type ExtToWebview =
@@ -78,7 +99,9 @@ export type ExtToWebview =
   | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string }
   | { type: 'backendStatus'; status: WvBackendStatus }
   | { type: 'agentMode'; enabled: boolean }
-  | { type: 'setPrompt'; text: string };
+  | { type: 'setPrompt'; text: string }
+  | { type: 'mentionResults'; category: string; items: WvMentionItem[] }
+  | { type: 'chips'; chips: WvChip[] };
 
 export type WebviewToExt =
   | { type: 'ready' }
@@ -94,4 +117,10 @@ export type WebviewToExt =
   | { type: 'regenerate' }
   | { type: 'toggleAgentMode' }
   | { type: 'retryConnection' }
-  | { type: 'openXray' };
+  | { type: 'openXray' }
+  | { type: 'mentionSearch'; category: string; query: string }
+  | { type: 'resolveMention'; category: string; value?: string }
+  | { type: 'removeChip'; index: number }
+  | { type: 'attachActive' }
+  | { type: 'attachSelection' }
+  | { type: 'attachBrowse' };
