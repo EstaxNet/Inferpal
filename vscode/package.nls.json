@@ -6,6 +6,7 @@
   "inferpal.config.hostPath": "Path to `Inferpal.Host`. Leave empty to auto-detect (bundled host, then a `Inferpal.Host/bin/**` build under the workspace).",
   "inferpal.config.model": "Model to chat with. Leave empty to use the host's configured default model.",
   "inferpal.config.utilityModel": "Small fast model for background tasks (session titles, commit messages, compaction summaries). Leave empty to use the chat model.",
+  "inferpal.config.modelRouterAuto": "Model Router auto mode: when no utility model is set, background tasks use the model /bench recommended for the utility role — only if it is already loaded in VRAM (a cold model is never loaded for a title or commit message).",
   "inferpal.config.agentMode": "Run turns through the agentic loop (tools enabled). Turn off for plain chat.",
   "inferpal.config.fimEnabled": "Inline ghost-text completions (Fill-in-the-Middle). Only active when the backend supports FIM.",
   "inferpal.untrustedWorkspaces": "Inferpal runs an agent that reads/writes workspace files and executes commands; it stays disabled until the folder is trusted.",

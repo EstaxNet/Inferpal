@@ -42,8 +42,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.refactorSelection', () => chatView.runSlashCommand('/refactor')),
     vscode.commands.registerCommand('inferpal.docSelection', () => chatView.runSlashCommand('/doc')),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('inferpal.utilityModel')) {
-        void pushUtilityModel(log);
+      if (e.affectsConfiguration('inferpal.utilityModel') || e.affectsConfiguration('inferpal.modelRouterAuto')) {
+        void pushModelRouterSettings(log);
       }
     }),
   );
@@ -52,30 +52,41 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 /**
- * Pushes the explicitly-set utility model (Model Router: session titles, commit messages,
- * compaction summaries) into the host's shared config. Read-modify-write on the full JSON:
- * `config/update` replaces the whole config object, so a partial payload would wipe the rest.
- * When the setting was never touched in VS Code, the shared config (e.g. set from VS) wins.
+ * Pushes the explicitly-set Model Router settings (utility model + auto mode) into the host's
+ * shared config. Read-modify-write on the full JSON: `config/update` replaces the whole config
+ * object, so a partial payload would wipe the rest. When a setting was never touched in VS Code,
+ * the shared config (e.g. set from VS) wins for that setting.
  */
-async function pushUtilityModel(log: (line: string) => void): Promise<void> {
+async function pushModelRouterSettings(log: (line: string) => void): Promise<void> {
   if (!host) {
     return;
   }
-  const inspected = vscode.workspace.getConfiguration('inferpal').inspect<string>('utilityModel');
-  const value = inspected?.workspaceValue ?? inspected?.globalValue;
-  if (value === undefined) {
+  const config = vscode.workspace.getConfiguration('inferpal');
+  const utilityInspected = config.inspect<string>('utilityModel');
+  const utility = utilityInspected?.workspaceValue ?? utilityInspected?.globalValue;
+  const autoInspected = config.inspect<boolean>('modelRouterAuto');
+  const auto = autoInspected?.workspaceValue ?? autoInspected?.globalValue;
+  if (utility === undefined && auto === undefined) {
     return;
   }
   try {
-    const cfg = JSON.parse(await host.configGet()) as { utilityModel?: string };
-    if (cfg.utilityModel === value) {
-      return;
+    const cfg = JSON.parse(await host.configGet()) as { utilityModel?: string; modelRouterAuto?: boolean };
+    let changed = false;
+    if (utility !== undefined && cfg.utilityModel !== utility) {
+      cfg.utilityModel = utility;
+      changed = true;
+      log(`[inferpal] utility model → "${utility || '(chat model)'}"`);
     }
-    cfg.utilityModel = value;
-    await host.configUpdate(JSON.stringify(cfg));
-    log(`[inferpal] utility model → "${value || '(chat model)'}"`);
+    if (auto !== undefined && cfg.modelRouterAuto !== auto) {
+      cfg.modelRouterAuto = auto;
+      changed = true;
+      log(`[inferpal] model router auto → ${auto}`);
+    }
+    if (changed) {
+      await host.configUpdate(JSON.stringify(cfg));
+    }
   } catch (err) {
-    log(`[inferpal] utility model sync failed: ${String(err)}`);
+    log(`[inferpal] model router settings sync failed: ${String(err)}`);
   }
 }
 
@@ -141,7 +152,7 @@ async function startHost(
     host = client;
     bridge!.attach(client);
     await chatView.onHostReady();
-    await pushUtilityModel(log);
+    await pushModelRouterSettings(log);
     log(`[inferpal] host ready (${hostPath})`);
   } catch (err) {
     log(`[inferpal] host start failed: ${String(err)}`);

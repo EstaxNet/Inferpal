@@ -6,6 +6,7 @@
   "inferpal.config.hostPath": "Percorso di `Inferpal.Host`. Lasciare vuoto per il rilevamento automatico (host incluso, poi una build `Inferpal.Host/bin/**` nel workspace).",
   "inferpal.config.model": "Modello per la chat. Lasciare vuoto per usare il modello predefinito configurato nell’host.",
   "inferpal.config.utilityModel": "Modello piccolo e veloce per le attività in background (titoli di sessione, messaggi di commit, riepiloghi di compattazione). Lasciare vuoto per usare il modello di chat.",
+  "inferpal.config.modelRouterAuto": "Modalità automatica del Model Router: senza un modello di utilità impostato, le attività in background usano il modello raccomandato da /bench per il ruolo di utilità — solo se è già caricato in VRAM (nessun modello freddo viene caricato per un titolo o un messaggio di commit).",
   "inferpal.config.agentMode": "Esegui i turni tramite il ciclo agentico (strumenti abilitati). Disattivare per la chat semplice.",
   "inferpal.config.fimEnabled": "Completamenti ghost-text inline (Fill-in-the-Middle). Attivo solo se il backend supporta il FIM.",
   "inferpal.untrustedWorkspaces": "Inferpal esegue un agente che legge/scrive i file del workspace ed esegue comandi; resta disabilitato finché la cartella non è attendibile.",

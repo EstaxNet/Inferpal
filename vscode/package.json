@@ -130,6 +130,11 @@
           "default": "",
           "description": "%inferpal.config.utilityModel%"
         },
+        "inferpal.modelRouterAuto": {
+          "type": "boolean",
+          "default": false,
+          "description": "%inferpal.config.modelRouterAuto%"
+        },
         "inferpal.agentMode": {
           "type": "boolean",
           "default": true,

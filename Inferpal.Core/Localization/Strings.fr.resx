@@ -622,6 +622,8 @@ ollama serve
   <data name="HintModelRolesAdvanced" xml:space="preserve"><value>Par défaut, le modèle de chat est utilisé partout. Activez pour assigner un modèle différent à l'agent, aux actions code, à la complétion inline (FIM), à l'édition inline et aux tâches utilitaires (titres, commits, synthèses).</value></data>
   <data name="LabelUtilityModel" xml:space="preserve"><value>Modèle utilitaire (vide = modèle de chat) :</value></data>
   <data name="HintUtilityModel" xml:space="preserve"><value>Petit modèle rapide pour les tâches d'arrière-plan : titres de session, propositions de message /commit et synthèses de compaction d'historique. Laissez vide pour réutiliser le modèle de chat. Un modèle 3-7B y répond en quelques secondes, et le keep-alive le garde chaud entre les appels.</value></data>
+  <data name="LabelModelRouterAuto" xml:space="preserve"><value>Routage auto des tâches utilitaires (via /bench)</value></data>
+  <data name="HintModelRouterAuto" xml:space="preserve"><value>Sans modèle utilitaire défini, les tâches d'arrière-plan utilisent le modèle recommandé par /bench pour le rôle utilitaire — mais seulement s'il est déjà chargé en VRAM. Aucun modèle froid n'est chargé pour un titre ou un message de commit (le swap coûterait plus qu'il ne rapporte) : le modèle de chat est utilisé à la place.</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Itérations max</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>Nombre maximum de cycles Plan → Agir → Observer par requête. 0 = valeur par défaut (20). Défaut : 20.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Délai tâches rapides (actions, édition inline)</value></data>

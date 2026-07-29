@@ -622,6 +622,8 @@ ollama serve
   <data name="HintModelRolesAdvanced" xml:space="preserve"><value>デフォルトではチャットモデルがすべてに使われます。これを有効にすると、エージェント、コードアクション、インライン補完（FIM）、インライン編集、ユーティリティタスク（タイトル、コミット、要約）に別々のモデルを割り当てられます。</value></data>
   <data name="LabelUtilityModel" xml:space="preserve"><value>ユーティリティモデル（空 = チャットモデルを使用）：</value></data>
   <data name="HintUtilityModel" xml:space="preserve"><value>バックグラウンドタスク（セッションタイトル、/commit メッセージの提案、履歴コンパクションの要約）に使う小型で高速なモデル。空のままにするとチャットモデルを再利用します。3〜7B のモデルなら数秒で応答し、keep-alive により呼び出し間もロードされたままになります。</value></data>
+  <data name="LabelModelRouterAuto" xml:space="preserve"><value>ユーティリティタスクの自動ルーティング（/bench 由来）</value></data>
+  <data name="HintModelRouterAuto" xml:space="preserve"><value>ユーティリティモデルが未設定の場合、バックグラウンドタスクは /bench がユーティリティ役割に推奨したモデルを使います — ただし、すでに VRAM にロードされている場合のみ。タイトルやコミットメッセージのためにコールドなモデルをロードすることはありません（スワップのコストが利得を上回るため）。その場合はチャットモデルを使用します。</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>最大イテレーション数</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>リクエストごとの計画 → 実行 → 観察サイクルの最大回数。0 はデフォルト値（20）になります。デフォルト：20。</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>クイックタスクのタイムアウト（アクション、インライン編集）</value></data>

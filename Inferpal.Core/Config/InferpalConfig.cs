@@ -200,6 +200,16 @@ internal class InferpalConfig
     [JsonPropertyName("utilityModel")]
     public string UtilityModel { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Model Router "auto" mode (V2). When <c>true</c> and no explicit <see cref="UtilityModel"/>
+    /// is set, utility tasks are routed to the model <c>/bench</c> recommended for the utility
+    /// role — but only when that model is already loaded (warm): swapping a model in VRAM costs
+    /// more than a title or commit message saves, so a cold candidate falls back to the chat
+    /// model. Resolution lives in <see cref="Services.Inference.ModelRouter.ResolveUtilityAsync"/>.
+    /// </summary>
+    [JsonPropertyName("modelRouterAuto")]
+    public bool ModelRouterAuto { get; set; } = false;
+
     // ── Smart Fix Protocol ────────────────────────────────────────────────────
 
     /// <summary>

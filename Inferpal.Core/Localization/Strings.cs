@@ -197,6 +197,8 @@ internal static class Strings
     public static string HintAgentModel                      => Get(nameof(HintAgentModel));
     public static string LabelUtilityModel                   => Get(nameof(LabelUtilityModel));
     public static string HintUtilityModel                    => Get(nameof(HintUtilityModel));
+    public static string LabelModelRouterAuto                => Get(nameof(LabelModelRouterAuto));
+    public static string HintModelRouterAuto                 => Get(nameof(HintModelRouterAuto));
     public static string LabelModelRolesAdvanced             => Get(nameof(LabelModelRolesAdvanced));
     public static string HintModelRolesAdvanced              => Get(nameof(HintModelRolesAdvanced));
     public static string LabelAdvancedBehavior               => Get(nameof(LabelAdvancedBehavior));

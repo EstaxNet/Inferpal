@@ -849,6 +849,8 @@ ollama serve
   <data name="TddFixing" xml:space="preserve"><value>🔧 Исправление {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Тесты зелёные после {0} раунда(ов).</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Тесты всё ещё падают после {0} раунда(ов) — требуется ручное вмешательство.</value></data>
+  <data name="LabelModelRouterAuto" xml:space="preserve"><value>Автомаршрутизация служебных задач (по /bench)</value></data>
+  <data name="HintModelRouterAuto" xml:space="preserve"><value>Если служебная модель не задана, фоновые задачи используют модель, рекомендованную /bench для служебной роли — но только если она уже загружена в VRAM. Холодная модель никогда не загружается ради заголовка или сообщения коммита (обмен обошёлся бы дороже выгоды); вместо неё используется модель чата.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Рентген контекста — системный промпт ≈ {0} токенов</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Базовый системный промпт</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Фрагмент персоны</value></data>

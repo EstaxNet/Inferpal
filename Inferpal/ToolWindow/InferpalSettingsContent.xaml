@@ -231,6 +231,15 @@
                   IsEditable="False"
                   Margin="0,0,0,10"/>
 
+        <!-- Model Router auto mode: /bench-recommended utility model, only when already warm -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox Content="{Binding LabelModelRouterAuto}"
+                      IsChecked="{Binding ModelRouterAuto, Mode=TwoWay}"
+                      Foreground="{Binding TextForeground}"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintModelRouterAuto}"/>
+        </StackPanel>
+
         </StackPanel>
         <!-- end per-role model pickers -->
 

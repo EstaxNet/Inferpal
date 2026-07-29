@@ -622,6 +622,8 @@ ollama serve
   <data name="HintModelRolesAdvanced" xml:space="preserve"><value>기본적으로 채팅 모델이 모든 곳에 사용됩니다. 이 옵션을 켜면 에이전트, 코드 작업, 인라인 완성(FIM), 인라인 편집, 유틸리티 작업(제목, 커밋, 요약)에 다른 모델을 지정할 수 있습니다.</value></data>
   <data name="LabelUtilityModel" xml:space="preserve"><value>유틸리티 모델(비워 두면 채팅 모델 사용):</value></data>
   <data name="HintUtilityModel" xml:space="preserve"><value>백그라운드 작업(세션 제목, /commit 메시지 제안, 히스토리 압축 요약)에 사용하는 작고 빠른 모델입니다. 비워 두면 채팅 모델을 재사용합니다. 3~7B 모델이면 몇 초 안에 응답하며 keep-alive가 호출 사이에 모델을 로드된 상태로 유지합니다.</value></data>
+  <data name="LabelModelRouterAuto" xml:space="preserve"><value>유틸리티 작업 자동 라우팅(/bench 기반)</value></data>
+  <data name="HintModelRouterAuto" xml:space="preserve"><value>유틸리티 모델이 설정되지 않은 경우 백그라운드 작업은 /bench가 유틸리티 역할로 추천한 모델을 사용합니다 — 단, 이미 VRAM에 로드되어 있을 때만입니다. 제목이나 커밋 메시지를 위해 콜드 모델을 로드하지 않습니다(스왑 비용이 이득보다 큼). 대신 채팅 모델을 사용합니다.</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>최대 반복 횟수</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>요청당 계획 → 실행 → 관찰 사이클의 최대 횟수. 0은 기본값(20)을 사용합니다. 기본값: 20.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>빠른 작업 타임아웃 (액션, 인라인 편집)</value></data>

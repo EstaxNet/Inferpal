@@ -622,6 +622,8 @@ ollama serve
   <data name="HintModelRolesAdvanced" xml:space="preserve"><value>默认情况下，聊天模型用于所有场景。启用此项可为代理、代码操作、内联补全（FIM）、内联编辑和实用任务（标题、提交、摘要）分配不同的模型。</value></data>
   <data name="LabelUtilityModel" xml:space="preserve"><value>实用模型（留空 = 使用聊天模型）：</value></data>
   <data name="HintUtilityModel" xml:space="preserve"><value>用于后台任务的小型快速模型：会话标题、/commit 提交信息建议和历史压缩摘要。留空则复用聊天模型。3-7B 的模型几秒内即可响应，keep-alive 会在两次调用之间保持其加载状态。</value></data>
+  <data name="LabelModelRouterAuto" xml:space="preserve"><value>自动路由实用任务（基于 /bench）</value></data>
+  <data name="HintModelRouterAuto" xml:space="preserve"><value>未设置实用模型时，后台任务将使用 /bench 为实用角色推荐的模型 — 但仅当该模型已加载到 VRAM 中时。绝不会为了一个标题或提交信息而加载冷模型（交换的代价高于收益），此时改用聊天模型。</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>最大迭代次数</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>每次请求允许的最大计划 → 行动 → 观察循环次数。设为 0 表示使用默认值（20）。默认值：20。</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>快速任务超时（操作、内联编辑）</value></data>

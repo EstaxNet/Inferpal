@@ -50,6 +50,62 @@ internal static class ModelRouter
         _                     => config.DefaultModel,
     };
 
+    /// <summary>
+    /// V2 "auto" mode for the utility role, pure core (unit-tested directly): route to the
+    /// <c>/bench</c>-recommended utility model only when it is already warm. An explicit
+    /// <see cref="InferpalConfig.UtilityModel"/> always wins; a cold candidate falls back to the
+    /// plain resolution — the VRAM swap a cold load triggers costs more than a title or commit
+    /// message saves ("only route to the small model when the gain is net", ROADMAP §4).
+    /// </summary>
+    /// <param name="benchRecommended">Utility pick of the last persisted <c>/bench</c> run.</param>
+    /// <param name="warmModels">Names currently loaded on the backend (tag-tolerant match).</param>
+    public static string ResolveUtility(
+        InferpalConfig config, string? benchRecommended, IEnumerable<string> warmModels)
+    {
+        var configured = Resolve(config, ModelRole.Utility);
+        if (!config.ModelRouterAuto)                          return configured;
+        if (!string.IsNullOrWhiteSpace(config.UtilityModel))  return configured;
+        if (string.IsNullOrWhiteSpace(benchRecommended))      return configured;
+        return warmModels.Any(m => SameModel(m, benchRecommended!)) ? benchRecommended! : configured;
+    }
+
+    /// <summary>
+    /// Gathers the auto-mode inputs (persisted <c>/bench</c> recommendation, currently running
+    /// models) and delegates to <see cref="ResolveUtility"/>. Cheap when auto mode is off or an
+    /// explicit utility model is set (no I/O); best-effort otherwise — any backend hiccup degrades
+    /// to the plain resolution. <c>/api/ps</c> is a plain HTTP call, not gated by the
+    /// <see cref="GpuScheduler"/>, so this is safe to call while holding the chat lease.
+    /// </summary>
+    public static async Task<string> ResolveUtilityAsync(
+        InferpalConfig config, IOllamaChatClient client, CancellationToken ct)
+    {
+        if (!config.ModelRouterAuto || !string.IsNullOrWhiteSpace(config.UtilityModel))
+            return Resolve(config, ModelRole.Utility);
+
+        string? recommended = null;
+        if (await Bench.BenchStore.LoadAsync() is { } saved)
+            recommended = Commands.BenchCommandHandler.Recommend(saved.Results).Utility;
+
+        // The orchestrator only holds the chat-client view; without the full provider there is
+        // no warm-model info and the pure core falls back to the plain resolution.
+        IEnumerable<string> warm = [];
+        try
+        {
+            if (client is IInferenceProvider provider && provider.Capabilities.VramMonitoring)
+                warm = (await provider.GetRunningModelsAsync(ct)).Select(m => m.Name);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("ModelRouter.ResolveUtilityAsync", ex); }
+
+        return ResolveUtility(config, recommended, warm);
+    }
+
+    /// <summary>Tag-tolerant model name comparison (<c>llama3.1</c> vs <c>llama3.1:latest</c>),
+    /// same rule as the bench runner and the arena.</summary>
+    internal static bool SameModel(string x, string y) =>
+        string.Equals(x, y, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(x.Split(':')[0], y.Split(':')[0], StringComparison.OrdinalIgnoreCase);
+
     private static string FirstNonEmpty(params string?[] candidates)
     {
         foreach (var c in candidates)

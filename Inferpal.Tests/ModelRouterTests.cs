@@ -72,4 +72,63 @@ public class ModelRouterTests
         cfg.UtilityModel = " small-model ";
         Assert.Equal("small-model", ModelRouter.Resolve(cfg, ModelRole.Utility));
     }
+
+    // ── V2 auto mode (utility role) ─────────────────────────────────────────────
+    // BenchStore-backed plumbing stays untested here on purpose: the store's global path override
+    // belongs to BenchTests (xUnit parallelises across classes). The decision logic is pure.
+
+    [Fact]
+    public void Auto_RoutesToBenchRecommendation_OnlyWhenWarm()
+    {
+        var cfg = Config();
+        cfg.ModelRouterAuto = true;
+
+        // Warm (tag-tolerant match against /api/ps names) → recommendation wins.
+        Assert.Equal("small-model",
+            ModelRouter.ResolveUtility(cfg, "small-model", ["small-model:latest", "chat-model"]));
+
+        // Cold → never load a model for a title/commit; fall back to the chat model.
+        Assert.Equal("chat-model",
+            ModelRouter.ResolveUtility(cfg, "small-model", ["chat-model"]));
+        Assert.Equal("chat-model",
+            ModelRouter.ResolveUtility(cfg, "small-model", []));
+    }
+
+    [Fact]
+    public void Auto_ExplicitUtilityModel_AlwaysWins()
+    {
+        var cfg = Config();
+        cfg.ModelRouterAuto = true;
+        cfg.UtilityModel    = "my-pick";
+        Assert.Equal("my-pick",
+            ModelRouter.ResolveUtility(cfg, "small-model", ["small-model"]));
+    }
+
+    [Fact]
+    public void Auto_Disabled_OrNoRecommendation_UsesPlainResolution()
+    {
+        var cfg = Config();
+        Assert.Equal("chat-model",
+            ModelRouter.ResolveUtility(cfg, "small-model", ["small-model"]));   // auto off
+
+        cfg.ModelRouterAuto = true;
+        Assert.Equal("chat-model", ModelRouter.ResolveUtility(cfg, null, ["small-model"]));
+        Assert.Equal("chat-model", ModelRouter.ResolveUtility(cfg, "  ",  ["small-model"]));
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task AutoAsync_ShortCircuits_WithoutBackendCalls()
+    {
+        // Auto off / explicit model → plain resolution, no /api/ps call and no store read.
+        var fake = new Inferpal.Tests.FakeInferenceProvider { Running = [new Inferpal.Models.RunningModelInfo("x", 1, "")] };
+
+        var cfg = Config();
+        Assert.Equal("chat-model",
+            await ModelRouter.ResolveUtilityAsync(cfg, fake, System.Threading.CancellationToken.None));
+
+        cfg.ModelRouterAuto = true;
+        cfg.UtilityModel    = "my-pick";
+        Assert.Equal("my-pick",
+            await ModelRouter.ResolveUtilityAsync(cfg, fake, System.Threading.CancellationToken.None));
+    }
 }

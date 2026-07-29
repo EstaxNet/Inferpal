@@ -425,7 +425,7 @@ internal partial class InferpalToolWindowData
 
             using var sink = new ThrottledTokenSink(chunk => Post(() => { if (streamItem is not null) streamItem.Content += chunk; }));
             var result = await _client.RunAgentAsync(
-                model:   ModelRouter.Resolve(_config, ModelRole.Utility),
+                model:   await ModelRouter.ResolveUtilityAsync(_config, _client, ct),
                 history: commitHistory,
                 tools:   EmptyToolRegistry.Instance,
                 onStep:  _ => { },

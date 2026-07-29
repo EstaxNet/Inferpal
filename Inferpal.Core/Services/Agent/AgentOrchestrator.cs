@@ -228,10 +228,11 @@ internal sealed class AgentOrchestrator
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(timeoutSec));
 
-            // Model Router: the summary is an auxiliary task — a small utility model (when
-            // configured) answers in seconds where the agent model would burn its own GPU time.
+            // Model Router: the summary is an auxiliary task — a small utility model (explicit or
+            // auto-picked from the /bench recommendation when already warm) answers in seconds
+            // where the agent model would burn its own GPU time.
             var turn = await _client.SendChatAsync(
-                ModelRouter.Resolve(_config, ModelRole.Utility), summarizeMessages,
+                await ModelRouter.ResolveUtilityAsync(_config, _client, cts.Token), summarizeMessages,
                 EmptyToolRegistry.Instance, null, cts.Token, TaskComplexity.Quick);
             summary = MarkdownParser.StripThinkTags(turn.TextContent);
         }

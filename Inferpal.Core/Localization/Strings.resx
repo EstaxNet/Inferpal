@@ -598,6 +598,8 @@ Edit the file or ask the agent to use `update_memory`. Use `/clear` to reload.</
   <data name="HintModelRolesAdvanced" xml:space="preserve"><value>By default the chat model is used everywhere. Enable this to assign a different model to the agent, code actions, inline completion (FIM), inline edit and utility tasks (titles, commits, summaries).</value></data>
   <data name="LabelUtilityModel" xml:space="preserve"><value>Utility model (empty = use chat model):</value></data>
   <data name="HintUtilityModel" xml:space="preserve"><value>Small fast model for background tasks: session titles, /commit message proposals and history-compaction summaries. Leave empty to reuse the chat model. A 3-7B model answers these in seconds, and keep-alive keeps it warm between calls.</value></data>
+  <data name="LabelModelRouterAuto" xml:space="preserve"><value>Auto-route utility tasks (from /bench)</value></data>
+  <data name="HintModelRouterAuto" xml:space="preserve"><value>When no utility model is set, background tasks use the model /bench recommended for the utility role — but only if it is already loaded in VRAM. A cold model is never loaded for a title or a commit message (the swap would cost more than it saves); the chat model is used instead.</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Max iterations</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>Maximum number of Plan → Act → Observe cycles the agent may run per request. 0 falls back to the default (20). Default: 20.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Quick task timeout (actions, inline edit)</value></data>

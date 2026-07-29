@@ -246,6 +246,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _utilityModel                        = string.Empty;
     private string _labelUtilityModel                   = string.Empty;
     private string _hintUtilityModel                    = string.Empty;
+    private bool   _modelRouterAuto;
+    private string _labelModelRouterAuto                = string.Empty;
+    private string _hintModelRouterAuto                 = string.Empty;
     // Simple vs per-role models: collapse the 4 chat-derived role pickers (agent, code actions, FIM,
     // inline edit) behind a toggle so the default view shows just the chat + embedding models.
     private bool   _showModelRoles;
@@ -427,6 +430,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _inlineEditModel         = config.InlineEditModel;
         _agentModel              = config.AgentModel;
         _utilityModel            = config.UtilityModel;
+        _modelRouterAuto         = config.ModelRouterAuto;
         // Start expanded only when a power user has already assigned a per-role model — otherwise the
         // simple view (chat + embeddings) is the default and the 4 role pickers stay folded.
         _showModelRoles          = !string.IsNullOrEmpty(config.AgentModel)
@@ -636,6 +640,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         HintAgentModel                  = Strings.HintAgentModel;
         LabelUtilityModel               = Strings.LabelUtilityModel;
         HintUtilityModel                = Strings.HintUtilityModel;
+        LabelModelRouterAuto            = Strings.LabelModelRouterAuto;
+        HintModelRouterAuto             = Strings.HintModelRouterAuto;
         LabelModelRolesAdvanced         = Strings.LabelModelRolesAdvanced;
         HintModelRolesAdvanced          = Strings.HintModelRolesAdvanced;
         LabelAdvancedBehavior           = Strings.LabelAdvancedBehavior;
@@ -994,6 +1000,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string UtilityModel                  { get => _utilityModel;                  set => SetProperty(ref _utilityModel,                  value); }
     [DataMember] public string LabelUtilityModel             { get => _labelUtilityModel;             set => SetProperty(ref _labelUtilityModel,             value); }
     [DataMember] public string HintUtilityModel              { get => _hintUtilityModel;              set => SetProperty(ref _hintUtilityModel,              value); }
+    [DataMember] public bool   ModelRouterAuto               { get => _modelRouterAuto;               set => SetProperty(ref _modelRouterAuto,               value); }
+    [DataMember] public string LabelModelRouterAuto          { get => _labelModelRouterAuto;          set => SetProperty(ref _labelModelRouterAuto,          value); }
+    [DataMember] public string HintModelRouterAuto           { get => _hintModelRouterAuto;           set => SetProperty(ref _hintModelRouterAuto,           value); }
     /// <summary>When <c>false</c> (default), only the chat + embedding models show; the 4 per-role
     /// pickers (agent, code actions, FIM, inline edit) collapse behind the "advanced" toggle.</summary>
     [DataMember] public bool   ShowModelRoles                { get => _showModelRoles;                set => SetProperty(ref _showModelRoles,                value); }
@@ -1214,7 +1223,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         int quickTimeoutSec = 0, normalTimeoutSec = 0, deepTimeoutSec = 0, compactTimeoutSec = 0;
         string modelIdleTimeoutText = string.Empty;
         string mcpServersJson = string.Empty;
-        bool toolExpanded = false, secAlertsDisabled = false, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, mcpEnabled = false;
+        bool toolExpanded = false, secAlertsDisabled = false, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, mcpEnabled = false, modelRouterAuto = false;
         await RunOnVMContextAsync(() =>
         {
             url                  = BaseUrl.Trim();
@@ -1256,6 +1265,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             inlineEditModel        = InlineEditModel;
             agentModel             = AgentModel;
             utilityModel           = UtilityModel;
+            modelRouterAuto        = ModelRouterAuto;
             ragEnabled             = RagEnabled;
             ragAutoContextEnabled  = RagAutoContextEnabled;
             ragEmbeddingModel      = RagEmbeddingModel;
@@ -1316,6 +1326,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _config.InlineEditModel           = inlineEditModel.Trim();
         _config.AgentModel                = agentModel.Trim();
         _config.UtilityModel              = utilityModel.Trim();
+        _config.ModelRouterAuto           = modelRouterAuto;
         _config.RagEnabled                = ragEnabled;
         _config.RagAutoContextEnabled     = ragAutoContextEnabled;
         _config.RagEmbeddingModel         = ragEmbeddingModel.Trim();
