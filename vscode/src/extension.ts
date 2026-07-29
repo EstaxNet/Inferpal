@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
+import { SettingsPanel } from './settingsPanel';
 import { EditorBridge } from './editorBridge';
 import { HostClient } from './hostClient';
 import { FimProvider } from './inlineCompletions';
@@ -39,6 +40,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.loadSession', () => chatView.loadSessionCommand()),
     vscode.commands.registerCommand('inferpal.deleteSession', () => chatView.deleteSessionCommand()),
     vscode.commands.registerCommand('inferpal.exportChat', () => chatView.exportCommand()),
+    vscode.commands.registerCommand('inferpal.openSettings', () =>
+      SettingsPanel.open(
+        context.extensionUri,
+        () => host,
+        () => chatView.hasConversation(),
+        () => void chatView.configSaved(),
+        log,
+      )),
     // Editor context menu → same pipeline as typing the slash command in the chat.
     vscode.commands.registerCommand('inferpal.fixSelection', () => chatView.runSlashCommand('/fix')),
     vscode.commands.registerCommand('inferpal.refactorSelection', () => chatView.runSlashCommand('/refactor')),

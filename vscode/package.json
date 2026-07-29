@@ -89,6 +89,11 @@
         "icon": "$(export)"
       },
       {
+        "command": "inferpal.openSettings",
+        "title": "%inferpal.command.openSettings%",
+        "icon": "$(gear)"
+      },
+      {
         "command": "inferpal.fixSelection",
         "title": "%inferpal.command.fixSelection%"
       },
@@ -122,6 +127,11 @@
           "command": "inferpal.exportChat",
           "when": "view == inferpal.chat",
           "group": "navigation@4"
+        },
+        {
+          "command": "inferpal.openSettings",
+          "when": "view == inferpal.chat",
+          "group": "navigation@5"
         }
       ],
       "editor/context": [

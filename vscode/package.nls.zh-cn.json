@@ -16,5 +16,6 @@
   "inferpal.command.fixSelection": "Inferpal：修复此代码",
   "inferpal.command.refactorSelection": "Inferpal：重构此代码",
   "inferpal.command.docSelection": "Inferpal：为此代码添加文档",
-  "inferpal.command.exportChat": "Inferpal：导出对话"
+  "inferpal.command.exportChat": "Inferpal：导出对话",
+  "inferpal.command.openSettings": "Inferpal：设置"
 }

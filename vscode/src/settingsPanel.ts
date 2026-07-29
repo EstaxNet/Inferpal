@@ -1,0 +1,217 @@
+// "Inferpal Settings" panel: a singleton WebviewPanel mirroring the VS settings window
+// (4 tabs — Connection / Behavior / Context / Tools). The form is rendered by
+// src/webview/settings.ts from the host's config JSON (config/get); Save round-trips the
+// FULL JSON through config/update (absent fields would reset — the webview mutates the
+// parsed original object, never rebuilds it).
+import * as vscode from 'vscode';
+import { HostClient } from './hostClient';
+
+interface SettingsInbound {
+  type: 'ready' | 'save';
+  json?: string;
+}
+
+export class SettingsPanel {
+  private static current: SettingsPanel | undefined;
+
+  private lastConfigJson = '';
+
+  private constructor(
+    private readonly panel: vscode.WebviewPanel,
+    private readonly extensionUri: vscode.Uri,
+    private readonly getHost: () => HostClient | undefined,
+    private readonly hasConversation: () => boolean,
+    private readonly onSaved: () => void,
+    private readonly log: (line: string) => void,
+  ) {
+    panel.webview.html = this.renderHtml(panel.webview);
+    panel.webview.onDidReceiveMessage((msg: SettingsInbound) => void this.onMessage(msg));
+    panel.onDidDispose(() => {
+      if (SettingsPanel.current === this) {
+        SettingsPanel.current = undefined;
+      }
+    });
+  }
+
+  static open(
+    extensionUri: vscode.Uri,
+    getHost: () => HostClient | undefined,
+    hasConversation: () => boolean,
+    onSaved: () => void,
+    log: (line: string) => void,
+  ): void {
+    if (SettingsPanel.current) {
+      SettingsPanel.current.panel.reveal();
+      return;
+    }
+    const panel = vscode.window.createWebviewPanel(
+      'inferpal.settings',
+      vscode.l10n.t('Inferpal Settings'),
+      vscode.ViewColumn.Active,
+      { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')] },
+    );
+    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, hasConversation, onSaved, log);
+  }
+
+  private async onMessage(msg: SettingsInbound): Promise<void> {
+    const host = this.getHost();
+    switch (msg.type) {
+      case 'ready': {
+        if (!host?.isRunning) {
+          this.post({ type: 'error', message: vscode.l10n.t('Inferpal host is not running — use "Inferpal: Restart Host".') });
+          return;
+        }
+        try {
+          this.lastConfigJson = await host.configGet();
+          let models: string[] = [];
+          try {
+            models = await host.modelsList();
+          } catch {
+            // backend unreachable — the model inputs stay free-text
+          }
+          this.post({ type: 'init', configJson: this.lastConfigJson, models });
+        } catch (err) {
+          this.post({ type: 'error', message: String(err) });
+        }
+        return;
+      }
+      case 'save': {
+        if (!host?.isRunning || !msg.json) {
+          return;
+        }
+        // config/update resets the host conversation context — confirm when one is running.
+        if (this.hasConversation()) {
+          const proceed = await vscode.window.showWarningMessage(
+            vscode.l10n.t('Saving the settings resets the conversation context. Continue?'),
+            { modal: true },
+            vscode.l10n.t('Save'),
+          );
+          if (!proceed) {
+            this.post({ type: 'saveDone', ok: false });
+            return;
+          }
+        }
+        try {
+          const before = this.parseKeys(this.lastConfigJson);
+          await host.configUpdate(msg.json);
+          this.lastConfigJson = msg.json;
+          this.post({ type: 'saveDone', ok: true });
+          this.onSaved();
+
+          // Provider/BaseUrl changes only take effect after a new `initialize`.
+          const after = this.parseKeys(msg.json);
+          if (before && after && (before.provider !== after.provider || before.baseUrl !== after.baseUrl)) {
+            const restart = await vscode.window.showInformationMessage(
+              vscode.l10n.t('Provider or server URL changed — restart the Inferpal host to apply it.'),
+              vscode.l10n.t('Restart'),
+            );
+            if (restart) {
+              void vscode.commands.executeCommand('inferpal.restartHost');
+            }
+          }
+        } catch (err) {
+          this.log(`[settings] save failed: ${String(err)}`);
+          this.post({ type: 'error', message: String(err) });
+        }
+        return;
+      }
+    }
+  }
+
+  private parseKeys(json: string): { provider?: string; baseUrl?: string } | null {
+    try {
+      return JSON.parse(json) as { provider?: string; baseUrl?: string };
+    } catch {
+      return null;
+    }
+  }
+
+  private post(message: unknown): void {
+    void this.panel.webview.postMessage(message);
+  }
+
+  /** Localized strings injected into the settings webview (same D2 mechanism as the chat). */
+  private static strings(): Record<string, string> {
+    const t = vscode.l10n.t;
+    return {
+      tabConnection: t('Connection'),
+      tabBehavior: t('Behavior'),
+      tabContext: t('Context'),
+      tabTools: t('Tools'),
+      save: t('Save'),
+      saved: t('Settings saved.'),
+      loading: t('Loading settings…'),
+      advancedRoles: t('Advanced model roles'),
+      // Connection
+      provider: t('Inference engine'),
+      baseUrl: t('Server URL'),
+      apiKey: t('API key (optional)'),
+      defaultModel: t('Chat model'),
+      agentModel: t('Agent / tools model (empty = chat model)'),
+      codeActionsModel: t('Code actions model (empty = chat model)'),
+      inlineCompletionModel: t('Inline completion (FIM) model (empty = chat model)'),
+      inlineEditModel: t('Inline edit model (empty = code actions model)'),
+      utilityModel: t('Utility model (empty = chat model)'),
+      modelRouterAuto: t('Auto-route utility tasks (via /bench)'),
+      ragEmbeddingModel: t('Embeddings model'),
+      // Behavior
+      commandTimeoutSeconds: t('Command timeout (seconds)'),
+      quickTimeoutSeconds: t('Quick task timeout (seconds)'),
+      normalTimeoutSeconds: t('Normal task timeout (seconds)'),
+      deepTimeoutSeconds: t('Deep task timeout (seconds)'),
+      toolBubblesExpanded: t('Tool bubbles expanded by default'),
+      securityAlertsDisabled: t('Disable security alerts'),
+      permissionRules: t('Permission rules (allow|deny <tool|*> <regex>, one per line)'),
+      smartFixEnabled: t('Smart Fix (validate code actions with a build)'),
+      agentMaxIterations: t('Max agent iterations'),
+      modelAutoUnloadEnabled: t('Auto-unload idle model'),
+      modelIdleTimeoutMinutes: t('Model idle timeout (minutes)'),
+      inlineCompletionEnabled: t('Inline completions (ghost text)'),
+      inlineDiffPreviewEnabled: t('Inline diff preview for code actions'),
+      // Context
+      vramBudgetGb: t('VRAM budget (GB, 0 = auto)'),
+      contextWindowSize: t('Context window size (tokens)'),
+      contextWindowKeepTurns: t('Turns kept verbatim'),
+      compactionEnabled: t('History compaction'),
+      compactionTimeoutSeconds: t('Compaction timeout (seconds)'),
+      kvCacheAnchorMessages: t('KV-cache anchor messages'),
+      oodaTurnThreshold: t('OODA turn threshold'),
+      personaAutoSwitch: t('Automatic persona switch'),
+      customSystemPrompt: t('Custom system prompt'),
+      pinnedContextFiles: t('Pinned context files (one path per line, max 3)'),
+      // Tools
+      ragEnabled: t('Semantic search (RAG)'),
+      ragAutoContextEnabled: t('Automatic RAG context per turn'),
+      ragTopK: t('RAG Top-K'),
+      ragSimilarityThreshold: t('RAG similarity threshold'),
+      lspEnabled: t('LSP semantic analysis'),
+      mcpEnabled: t('MCP servers'),
+      mcpServersJson: t('MCP servers (JSON)'),
+      promptTemplates: t('Prompt templates (/name=text, one per line)'),
+      customTools: t('Custom tools (name=command, one per line)'),
+    };
+  }
+
+  private renderHtml(webview: vscode.Webview): string {
+    const script = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'settings.js'));
+    const style = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'settings.css'));
+    const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+    const l10n = JSON.stringify(SettingsPanel.strings()).replace(/</g, '\\u003c');
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; img-src ${webview.cspSource};">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="${style}" rel="stylesheet">
+<title>Inferpal Settings</title>
+</head>
+<body>
+<div id="app"></div>
+<script nonce="${nonce}">window.__l10n = ${l10n};</script>
+<script nonce="${nonce}" src="${script}"></script>
+</body>
+</html>`;
+  }
+}

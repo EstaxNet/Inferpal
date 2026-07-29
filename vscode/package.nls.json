@@ -16,5 +16,6 @@
   "inferpal.command.fixSelection": "Inferpal: Fix This Code",
   "inferpal.command.refactorSelection": "Inferpal: Refactor This Code",
   "inferpal.command.docSelection": "Inferpal: Document This Code",
-  "inferpal.command.exportChat": "Inferpal: Export Conversation"
+  "inferpal.command.exportChat": "Inferpal: Export Conversation",
+  "inferpal.command.openSettings": "Inferpal: Settings"
 }

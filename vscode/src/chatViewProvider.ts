@@ -198,6 +198,38 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hydrate();
   }
 
+  /** True when there is something in the transcript (settings panel warns before reset). */
+  hasConversation(): boolean {
+    return this.transcript.length > 0;
+  }
+
+  /** Called after the settings panel saved: re-reads the UI-relevant config bits. */
+  async configSaved(): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      return;
+    }
+    try {
+      const cfg = JSON.parse(await host.configGet()) as { contextWindowSize?: number; toolBubblesExpanded?: boolean };
+      this.contextWindow = cfg.contextWindowSize ?? 0;
+      this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
+    } catch (err) {
+      this.log(`[chat] config/get failed: ${String(err)}`);
+    }
+    try {
+      this.commands = await host.commandList();
+    } catch {
+      // keep the previous autocomplete list
+    }
+    try {
+      this.models = await host.modelsList();
+    } catch {
+      // backend unreachable — keep the previous list
+    }
+    this.hydrate();
+    void this.pollBackendStatus();
+  }
+
   // ── Backend status badge (connection + VRAM) ───────────────────────────────
 
   private startStatusPolling(): void {
