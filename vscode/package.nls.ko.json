@@ -15,5 +15,6 @@
   "inferpal.command.deleteSession": "Inferpal: 세션 삭제",
   "inferpal.command.fixSelection": "Inferpal: 이 코드 수정",
   "inferpal.command.refactorSelection": "Inferpal: 이 코드 리팩터링",
-  "inferpal.command.docSelection": "Inferpal: 이 코드 문서화"
+  "inferpal.command.docSelection": "Inferpal: 이 코드 문서화",
+  "inferpal.command.exportChat": "Inferpal: 대화 내보내기"
 }

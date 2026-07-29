@@ -7,6 +7,7 @@ import type { CancellationToken } from 'vscode-jsonrpc';
 import {
   ActiveDocumentDto,
   ApprovalNote,
+  BackendStatusResult,
   ChatSendParams,
   ChatSendResult,
   CodeActionParams,
@@ -20,6 +21,7 @@ import {
   SavedMessage,
   SessionLoadResult,
   SessionSummary,
+  SlashCommandInfo,
   SlashCommandResult,
   StepUpdateNotice,
   TextNote,
@@ -244,6 +246,17 @@ export class HostClient {
 
   connectionCheck(): Promise<boolean> {
     return this.connection().sendRequest<boolean>('connection/check');
+  }
+
+  /** Connection badge for the header (reachability + VRAM line). Polled — never throws
+   * into the UI, the caller treats a rejection as "unreachable". */
+  backendStatus(): Promise<BackendStatusResult> {
+    return this.connection().sendRequest<BackendStatusResult>('backend/status');
+  }
+
+  /** Slash commands for the autocomplete popup (built-ins + user templates). */
+  commandList(): Promise<SlashCommandInfo[]> {
+    return this.connection().sendRequest<SlashCommandInfo[]>('command/list');
   }
 
   configGet(): Promise<string> {

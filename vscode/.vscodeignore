@@ -2,6 +2,7 @@
 src/**
 node_modules/**
 out/**/*.map
+media/**/*.map
 esbuild.js
 tsconfig.json
 package.ps1

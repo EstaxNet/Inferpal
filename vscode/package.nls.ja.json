@@ -15,5 +15,6 @@
   "inferpal.command.deleteSession": "Inferpal: セッションを削除",
   "inferpal.command.fixSelection": "Inferpal: このコードを修正",
   "inferpal.command.refactorSelection": "Inferpal: このコードをリファクタリング",
-  "inferpal.command.docSelection": "Inferpal: このコードにドキュメントを追加"
+  "inferpal.command.docSelection": "Inferpal: このコードにドキュメントを追加",
+  "inferpal.command.exportChat": "Inferpal: 会話をエクスポート"
 }

@@ -73,6 +73,18 @@ export interface IndexStatusResult {
   rootDir: string;
 }
 
+/** `backend/status` answer — connection badge + compact VRAM line ("model · X.X GB"). */
+export interface BackendStatusResult {
+  connected: boolean;
+  vramBadge: string;
+}
+
+/** `command/list` entry — one slash command for the autocomplete popup. */
+export interface SlashCommandInfo {
+  command: string;
+  hint: string;
+}
+
 /** `command/slash` answer: `handled: false` ⇒ send the text as a normal chat prompt. */
 export interface SlashCommandResult {
   handled: boolean;

@@ -15,5 +15,6 @@
   "inferpal.command.deleteSession": "Inferpal: Delete Session",
   "inferpal.command.fixSelection": "Inferpal: Fix This Code",
   "inferpal.command.refactorSelection": "Inferpal: Refactor This Code",
-  "inferpal.command.docSelection": "Inferpal: Document This Code"
+  "inferpal.command.docSelection": "Inferpal: Document This Code",
+  "inferpal.command.exportChat": "Inferpal: Export Conversation"
 }

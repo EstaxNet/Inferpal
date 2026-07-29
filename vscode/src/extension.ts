@@ -19,9 +19,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   bridge = new EditorBridge();
   context.subscriptions.push(bridge);
 
-  const chatView = new ChatViewProvider(context.extensionUri, () => host, () => bridge?.activeEditor(), log);
+  const chatView = new ChatViewProvider(context, () => host, () => bridge?.activeEditor(), log);
   bridge.setApprovalCard((message) => chatView.requestApproval(message));
   context.subscriptions.push(
+    chatView,
     vscode.window.registerWebviewViewProvider(ChatViewProvider.viewId, chatView, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
@@ -37,6 +38,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.saveSession', () => chatView.saveSessionCommand()),
     vscode.commands.registerCommand('inferpal.loadSession', () => chatView.loadSessionCommand()),
     vscode.commands.registerCommand('inferpal.deleteSession', () => chatView.deleteSessionCommand()),
+    vscode.commands.registerCommand('inferpal.exportChat', () => chatView.exportCommand()),
     // Editor context menu → same pipeline as typing the slash command in the chat.
     vscode.commands.registerCommand('inferpal.fixSelection', () => chatView.runSlashCommand('/fix')),
     vscode.commands.registerCommand('inferpal.refactorSelection', () => chatView.runSlashCommand('/refactor')),

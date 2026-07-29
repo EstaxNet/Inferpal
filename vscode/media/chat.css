@@ -221,9 +221,385 @@ button:hover {
   background: var(--vscode-button-hoverBackground);
 }
 
-#reset, #cancel {
+/* ── Topbar: connection badge + VRAM + search ───────────────────────────────── */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border, var(--vscode-panel-border));
+  font-size: 0.85em;
+}
+
+#topbar .spacer {
+  flex: 1;
+}
+
+#connDot::before {
+  content: '●';
+  opacity: 0.4;
+}
+
+#connDot.ok::before {
+  color: var(--vscode-testing-iconPassed, #4ec94e);
+  opacity: 1;
+}
+
+#connDot.ko::before {
+  color: var(--vscode-errorForeground, #f44747);
+  opacity: 1;
+}
+
+#connRetry, #searchToggle {
+  background: transparent;
+  color: var(--vscode-foreground);
+  padding: 1px 6px;
+}
+
+#vram {
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#searchbar {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border, var(--vscode-panel-border));
+}
+
+#searchInput {
+  flex: 1;
+  min-width: 0;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+
+#searchbar button {
+  background: transparent;
+  color: var(--vscode-foreground);
+  padding: 1px 6px;
+}
+
+.bubble.search-dim {
+  opacity: 0.25;
+}
+
+/* ── Welcome screen ─────────────────────────────────────────────────────────── */
+#welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: auto 0;
+  padding: 24px 8px;
+  text-align: center;
+}
+
+.welcome-title {
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.welcome-subtitle {
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+
+.welcome-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.welcome-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px;
+  background: var(--vscode-editorWidget-background);
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 6px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.welcome-card:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.welcome-emoji {
+  font-size: 1.2em;
+}
+
+.welcome-footer {
+  margin-top: 12px;
+  font-size: 0.85em;
+  opacity: 0.6;
+}
+
+/* ── Bubble meta (timestamp, copy, regenerate) ──────────────────────────────── */
+.bubble-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 0.8em;
+}
+
+.bubble:hover .bubble-meta {
+  opacity: 0.8;
+}
+
+.bubble-time {
+  opacity: 0.6;
+}
+
+.bubble-action {
+  background: transparent;
+  color: var(--vscode-foreground);
+  padding: 0 4px;
+  font-size: inherit;
+}
+
+.bubble-action:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+/* ── Tool bubbles (collapsible) ─────────────────────────────────────────────── */
+.bubble.tool {
+  align-self: stretch;
+  max-width: 100%;
+}
+
+.tool-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tool-chevron {
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+.tool-errbadge {
+  color: var(--vscode-errorForeground, #f44747);
+  font-size: 0.85em;
+}
+
+.tool-header .bubble-time {
+  margin-left: auto;
+}
+
+.tool-body {
+  margin-top: 4px;
+}
+
+.tool-input, .tool-output {
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.9em;
+}
+
+.bubble.tool-error .tool-output {
+  border-left: 2px solid var(--vscode-errorForeground, #f44747);
+}
+
+/* ── Plan block ─────────────────────────────────────────────────────────────── */
+#plan {
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.85em;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.plan-goal {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.plan-step.done {
+  opacity: 0.6;
+}
+
+.plan-step.running {
+  color: var(--vscode-progressBar-background, #7c4dff);
+}
+
+.plan-step.failed {
+  color: var(--vscode-errorForeground, #f44747);
+}
+
+/* ── Code blocks with copy button ───────────────────────────────────────────── */
+.codeblock {
+  position: relative;
+}
+
+.codeblock-copy {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 6px;
+  font-size: 0.75em;
+  opacity: 0;
+  transition: opacity 0.15s;
   background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
   color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+}
+
+.codeblock:hover .codeblock-copy {
+  opacity: 0.9;
+}
+
+/* ── Markdown parity bits ───────────────────────────────────────────────────── */
+.bubble-body h1, .bubble-body h2, .bubble-body h3 {
+  margin: 6px 0 4px;
+  font-size: 1.1em;
+}
+
+.bubble-body h1 { font-size: 1.25em; }
+.bubble-body h2 { font-size: 1.15em; }
+
+.bubble-body p {
+  margin: 4px 0;
+}
+
+.bubble-body ul, .bubble-body ol {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.bubble-body table {
+  border-collapse: collapse;
+  margin: 4px 0;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+.bubble-body th, .bubble-body td {
+  border: 1px solid var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.35));
+  padding: 3px 8px;
+}
+
+.bubble-body th {
+  background: var(--vscode-editorWidget-background);
+}
+
+.bubble-body hr {
+  border: none;
+  border-top: 1px solid var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.35));
+  margin: 6px 0;
+}
+
+.bubble-body a {
+  color: var(--vscode-textLink-foreground);
+}
+
+/* ── Toolbar buttons ────────────────────────────────────────────────────────── */
+#mode {
+  background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+  font-size: 0.85em;
+}
+
+#mode.agent {
+  outline: 1px solid var(--vscode-focusBorder, #7c4dff);
+}
+
+#send {
+  min-width: 34px;
+  border-radius: 12px;
+}
+
+#send.stop {
+  background: var(--vscode-errorForeground, #cc2222);
+  color: #ffffff;
+}
+
+/* ── Footer: hint · tokens · context gauge ──────────────────────────────────── */
+#footerbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75em;
+  opacity: 0.85;
+}
+
+#hint {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+#ctxbar {
+  width: 60px;
+  height: 5px;
+  background: var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.25));
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+#ctxfill {
+  height: 100%;
+}
+
+/* ── Composer popups (mentions + slash autocomplete) ────────────────────────── */
+.composer-popup {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  background: var(--vscode-editorWidget-background);
+}
+
+.popup-item {
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.popup-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.popup-item.selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.slash-cmd {
+  font-family: var(--vscode-editor-font-family);
+  margin-right: 8px;
+}
+
+.slash-hint {
+  opacity: 0.6;
+  font-size: 0.9em;
 }
 
 /* ── Context X-Ray panel (interactive /xray V2) ─────────────────────────────── */

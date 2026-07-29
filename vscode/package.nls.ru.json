@@ -15,5 +15,6 @@
   "inferpal.command.deleteSession": "Inferpal: удалить сеанс",
   "inferpal.command.fixSelection": "Inferpal: исправить этот код",
   "inferpal.command.refactorSelection": "Inferpal: провести рефакторинг этого кода",
-  "inferpal.command.docSelection": "Inferpal: задокументировать этот код"
+  "inferpal.command.docSelection": "Inferpal: задокументировать этот код",
+  "inferpal.command.exportChat": "Inferpal: Экспорт беседы"
 }
