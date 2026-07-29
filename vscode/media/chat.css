@@ -1,5 +1,12 @@
 /* Theme-aware chat: everything derives from --vscode-* variables so light/dark/high
    contrast all work with zero extra code (replaces the WPF color-propagation hack). */
+
+/* An author `display` (e.g. `#xray { display: flex }`) overrides the UA's plain
+   `[hidden] { display: none }` — without this, the hidden full-page X-Ray overlay
+   covers the whole chat with the sidebar color (blank-panel bug). */
+[hidden] {
+  display: none !important;
+}
 html, body {
   height: 100%;
   margin: 0;

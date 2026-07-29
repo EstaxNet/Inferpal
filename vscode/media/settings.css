@@ -1,4 +1,9 @@
 /* Inferpal Settings panel — theme-aware via --vscode-* variables, like the chat. */
+
+/* Keep the `hidden` attribute authoritative over any author `display` rule. */
+[hidden] {
+  display: none !important;
+}
 html, body {
   margin: 0;
   padding: 0;
