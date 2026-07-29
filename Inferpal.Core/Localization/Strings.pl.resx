@@ -619,7 +619,9 @@ ollama serve
   <data name="HintAgentModel" xml:space="preserve"><value>Model używany, gdy narzędzia są włączone — pętla agenta (Plan → Act → Observe) oraz podstawowa pętla wywołań narzędzi. Pozostaw puste, aby użyć modelu czatu. Mniejszy, niemultimodalny model z ponownym użyciem pamięci podręcznej promptu (np. qwen2.5-coder) wykonuje wielokrokowe pętle narzędzi znacznie szybciej niż duży model multimodalny, który przetwarza cały prompt od nowa w każdej turze.</value></data>
   <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>Użyj osobnego modelu dla każdej roli (zaawansowane)</value></data>
   <data name="LabelAdvancedBehavior" xml:space="preserve"><value>Pokaż ustawienia zaawansowane (limity czasu, iteracje)</value></data>
-  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>Domyślnie model czatu jest używany wszędzie. Włącz tę opcję, aby przypisać inny model do agenta, akcji kodu, uzupełniania w linii (FIM) i edycji w linii.</value></data>
+  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>Domyślnie model czatu jest używany wszędzie. Włącz tę opcję, aby przypisać inny model do agenta, akcji kodu, uzupełniania w linii (FIM), edycji w linii i zadań pomocniczych (tytuły, commity, podsumowania).</value></data>
+  <data name="LabelUtilityModel" xml:space="preserve"><value>Model pomocniczy (puste = model czatu):</value></data>
+  <data name="HintUtilityModel" xml:space="preserve"><value>Mały, szybki model do zadań w tle: tytuły sesji, propozycje komunikatów /commit i podsumowania kompaktowania historii. Pozostaw puste, aby użyć modelu czatu. Model 3-7B odpowiada w kilka sekund, a keep-alive utrzymuje go załadowanym między wywołaniami.</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Maks. iteracji</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>Maksymalna liczba cykli Planuj → Działaj → Obserwuj na żądanie. 0 = wartość domyślna (20). Domyślnie: 20.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Limit czasu szybkich zadań (akcje, edycja inline)</value></data>

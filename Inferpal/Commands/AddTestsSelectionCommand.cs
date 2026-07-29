@@ -42,7 +42,7 @@ internal class AddTestsSelectionCommand : Command
                 ?? await Extensibility.Editor().GetActiveTextViewAsync(context, ct);
         if (view is null) return;
 
-        var model  = string.IsNullOrEmpty(_config.CodeActionsModel) ? _config.DefaultModel : _config.CodeActionsModel;
+        var model  = ModelRouter.Resolve(_config, ModelRole.CodeActions);
         var result = await TestGenerationEdit.RunAsync(Extensibility, view, _client, model, ct);
 
         // No chat here — if the model found nothing worth testing, say so via a dismissable prompt.

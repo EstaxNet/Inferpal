@@ -5,6 +5,7 @@
   "inferpal.command.resetChat": "Inferpal: New Conversation",
   "inferpal.config.hostPath": "Path to `Inferpal.Host`. Leave empty to auto-detect (bundled host, then a `Inferpal.Host/bin/**` build under the workspace).",
   "inferpal.config.model": "Model to chat with. Leave empty to use the host's configured default model.",
+  "inferpal.config.utilityModel": "Small fast model for background tasks (session titles, commit messages, compaction summaries). Leave empty to use the chat model.",
   "inferpal.config.agentMode": "Run turns through the agentic loop (tools enabled). Turn off for plain chat.",
   "inferpal.config.fimEnabled": "Inline ghost-text completions (Fill-in-the-Middle). Only active when the backend supports FIM.",
   "inferpal.untrustedWorkspaces": "Inferpal runs an agent that reads/writes workspace files and executes commands; it stays disabled until the folder is trusted.",

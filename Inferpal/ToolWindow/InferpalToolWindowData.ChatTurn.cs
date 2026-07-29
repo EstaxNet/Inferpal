@@ -265,9 +265,9 @@ internal partial class InferpalToolWindowData
             // handles multi-turn tool work while a heavier model stays on plain chat. Chat mode keeps
             // DefaultModel even when tools are enabled (the basic tool-calling loop is still "chat").
             var effectiveModel =
-                !string.IsNullOrEmpty(oneTimeModel)                          ? oneTimeModel
-                : useOrchestrator && !string.IsNullOrEmpty(_config.AgentModel) ? _config.AgentModel
-                : _config.DefaultModel;
+                !string.IsNullOrEmpty(oneTimeModel)
+                    ? oneTimeModel
+                    : ModelRouter.Resolve(_config, useOrchestrator ? ModelRole.Agent : ModelRole.Chat);
 
             using var sink = new ThrottledTokenSink(chunk => Post(() =>
             {

@@ -136,8 +136,12 @@ internal sealed class HostServer : IDisposable
         try
         {
             s.History.Add(new ChatMessageDto("user", p.Prompt));
-            var model     = string.IsNullOrWhiteSpace(p.Model) ? s.Config.DefaultModel : p.Model!;
             var agentMode = p.AgentMode ?? s.Config.AgentModeEnabled;
+            // An explicit per-request model always wins; otherwise the Model Router applies the
+            // same role chains as the VS adapter (agent loop → AgentModel, plain chat → DefaultModel).
+            var model     = !string.IsNullOrWhiteSpace(p.Model)
+                ? p.Model!
+                : ModelRouter.Resolve(s.Config, agentMode ? ModelRole.Agent : ModelRole.Chat);
 
             if (agentMode)
             {
@@ -243,7 +247,9 @@ internal sealed class HostServer : IDisposable
             _          => throw new ArgumentException($"Unknown code action kind '{p.Kind}'."),
         };
 
-        var model = string.IsNullOrWhiteSpace(p.Model) ? s.Config.DefaultModel : p.Model!;
+        var model = string.IsNullOrWhiteSpace(p.Model)
+            ? ModelRouter.Resolve(s.Config, ModelRole.CodeActions)
+            : p.Model!;
         var run   = await CodeActionPipeline.RunAsync(
             s.Client, model, system, instruction,
             p.Text, p.SelStart, p.SelEnd, selectionEmpty: p.SelStart == p.SelEnd, ct);

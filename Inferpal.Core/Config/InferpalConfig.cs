@@ -190,6 +190,16 @@ internal class InferpalConfig
     [JsonPropertyName("agentModel")]
     public string AgentModel { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Model for auxiliary background tasks: session titles, <c>/commit</c> message proposals and
+    /// history-compaction summaries. Empty string = use <see cref="DefaultModel"/>. A small fast
+    /// model (e.g. a 3-7B) is ideal here — these tasks need seconds-level latency, not deep
+    /// reasoning, and <c>keep_alive</c> keeps it warm between calls. Resolution is centralized in
+    /// <see cref="Services.Inference.ModelRouter"/>.
+    /// </summary>
+    [JsonPropertyName("utilityModel")]
+    public string UtilityModel { get; set; } = string.Empty;
+
     // ── Smart Fix Protocol ────────────────────────────────────────────────────
 
     /// <summary>

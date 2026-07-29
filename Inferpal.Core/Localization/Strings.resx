@@ -595,7 +595,9 @@ Edit the file or ask the agent to use `update_memory`. Use `/clear` to reload.</
   <data name="HintAgentModel" xml:space="preserve"><value>Model used whenever tools are enabled — the agent (Plan → Act → Observe) loop and the basic tool-calling loop. Leave empty to reuse the chat model. A smaller, non-multimodal model with prompt-cache reuse (e.g. qwen2.5-coder) runs multi-turn tool loops far faster than a large multimodal model, which reprocesses the whole prompt every turn.</value></data>
   <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>Use a separate model per role (advanced)</value></data>
   <data name="LabelAdvancedBehavior" xml:space="preserve"><value>Show advanced settings (timeouts, iterations)</value></data>
-  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>By default the chat model is used everywhere. Enable this to assign a different model to the agent, code actions, inline completion (FIM) and inline edit.</value></data>
+  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>By default the chat model is used everywhere. Enable this to assign a different model to the agent, code actions, inline completion (FIM), inline edit and utility tasks (titles, commits, summaries).</value></data>
+  <data name="LabelUtilityModel" xml:space="preserve"><value>Utility model (empty = use chat model):</value></data>
+  <data name="HintUtilityModel" xml:space="preserve"><value>Small fast model for background tasks: session titles, /commit message proposals and history-compaction summaries. Leave empty to reuse the chat model. A 3-7B model answers these in seconds, and keep-alive keeps it warm between calls.</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Max iterations</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>Maximum number of Plan → Act → Observe cycles the agent may run per request. 0 falls back to the default (20). Default: 20.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Quick task timeout (actions, inline edit)</value></data>

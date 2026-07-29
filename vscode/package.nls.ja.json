@@ -5,6 +5,7 @@
   "inferpal.command.resetChat": "Inferpal: 新しい会話",
   "inferpal.config.hostPath": "`Inferpal.Host` へのパス。空のままにすると自動検出します（同梱ホスト、次にワークスペース内の `Inferpal.Host/bin/**` ビルド）。",
   "inferpal.config.model": "チャットに使用するモデル。空の場合はホストに設定された既定モデルを使用します。",
+  "inferpal.config.utilityModel": "バックグラウンドタスク（セッションタイトル、コミットメッセージ、コンパクション要約）用の小型で高速なモデル。空の場合はチャットモデルを使用します。",
   "inferpal.config.agentMode": "エージェント ループ（ツール有効）でターンを実行します。オフにすると通常のチャットになります。",
   "inferpal.config.fimEnabled": "インライン ゴーストテキスト補完（Fill-in-the-Middle）。バックエンドが FIM をサポートする場合のみ有効です。",
   "inferpal.untrustedWorkspaces": "Inferpal はワークスペースのファイルを読み書きしコマンドを実行するエージェントを起動します。フォルダーが信頼されるまで無効のままです。",

@@ -103,7 +103,7 @@ internal partial class InferpalToolWindowData
         var view = await ResolveActiveViewAsync(ct);
         if (view is null) { await ShowInfoAsync(Strings.SlashNoActiveDocument); return; }
 
-        var model  = string.IsNullOrEmpty(_config.CodeActionsModel) ? _config.DefaultModel : _config.CodeActionsModel;
+        var model  = ModelRouter.Resolve(_config, ModelRole.CodeActions);
         var result = await TestGenerationEdit.RunAsync(_vs, view, _client, model, ct);
 
         await ShowInfoAsync(
@@ -139,7 +139,7 @@ internal partial class InferpalToolWindowData
                 system += "\n\nContext (for reference only — do not output it):\n" + contextBlock;
         }
 
-        var model  = string.IsNullOrEmpty(_config.CodeActionsModel) ? _config.DefaultModel : _config.CodeActionsModel;
+        var model  = ModelRouter.Resolve(_config, ModelRole.CodeActions);
         var result = await InPlaceCodeEdit.RunAsync(_vs, view, _client, model, system, instruction, ct, _config);
 
         // The model judged the action a no-op (already clear / correct / documented) — tell the user

@@ -5,6 +5,7 @@
   "inferpal.command.resetChat": "Inferpal: 새 대화",
   "inferpal.config.hostPath": "`Inferpal.Host` 경로. 비워 두면 자동 감지합니다(번들 호스트, 그다음 워크스페이스의 `Inferpal.Host/bin/**` 빌드).",
   "inferpal.config.model": "채팅에 사용할 모델. 비워 두면 호스트에 구성된 기본 모델을 사용합니다.",
+  "inferpal.config.utilityModel": "백그라운드 작업(세션 제목, 커밋 메시지, 압축 요약)에 사용하는 작고 빠른 모델. 비워 두면 채팅 모델을 사용합니다.",
   "inferpal.config.agentMode": "에이전트 루프(도구 사용)로 턴을 실행합니다. 일반 채팅을 원하면 끄세요.",
   "inferpal.config.fimEnabled": "인라인 고스트 텍스트 완성(Fill-in-the-Middle). 백엔드가 FIM을 지원할 때만 활성화됩니다.",
   "inferpal.untrustedWorkspaces": "Inferpal은 워크스페이스 파일을 읽고 쓰며 명령을 실행하는 에이전트를 실행합니다. 폴더를 신뢰할 때까지 비활성화 상태로 유지됩니다.",

@@ -219,6 +219,18 @@
                   IsEditable="False"
                   Margin="0,0,0,10"/>
 
+        <!-- Utility model (Model Router): session titles, /commit messages, compaction summaries -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+            <TextBlock Text="{Binding LabelUtilityModel}" Foreground="{Binding TextForeground}"
+                       FontSize="11" Opacity="0.75"/>
+            <TextBlock Text="ⓘ" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"
+                       Margin="4,0,0,0" Cursor="Help" ToolTip="{Binding HintUtilityModel}"/>
+        </StackPanel>
+        <ComboBox ItemsSource="{Binding AvailableOptionalModels}"
+                  SelectedItem="{Binding UtilityModel, Mode=TwoWay}"
+                  IsEditable="False"
+                  Margin="0,0,0,10"/>
+
         </StackPanel>
         <!-- end per-role model pickers -->
 

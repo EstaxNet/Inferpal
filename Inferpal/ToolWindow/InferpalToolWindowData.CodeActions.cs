@@ -87,9 +87,7 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private async Task SendCodeActionAsync(string prompt, List<AttachmentItem> attachments, CancellationToken ct)
     {
-        var model = string.IsNullOrEmpty(_config.CodeActionsModel)
-            ? _config.DefaultModel
-            : _config.CodeActionsModel;
+        var model = ModelRouter.Resolve(_config, ModelRole.CodeActions);
         await SendCoreAsync(prompt, oneTimeModel: model, attachments: attachments, ct: ct, clearPrompt: true);
     }
 

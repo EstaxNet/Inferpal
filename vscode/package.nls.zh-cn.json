@@ -5,6 +5,7 @@
   "inferpal.command.resetChat": "Inferpal: 新建会话",
   "inferpal.config.hostPath": "`Inferpal.Host` 的路径。留空则自动检测（先是随附主机，然后是工作区中的 `Inferpal.Host/bin/**` 构建）。",
   "inferpal.config.model": "聊天使用的模型。留空则使用主机配置的默认模型。",
+  "inferpal.config.utilityModel": "用于后台任务（会话标题、提交信息、压缩摘要）的小型快速模型。留空则使用聊天模型。",
   "inferpal.config.agentMode": "通过智能体循环执行对话轮次（启用工具）。关闭则为普通聊天。",
   "inferpal.config.fimEnabled": "内联幽灵文本补全（Fill-in-the-Middle）。仅在后端支持 FIM 时生效。",
   "inferpal.untrustedWorkspaces": "Inferpal 会运行一个读写工作区文件并执行命令的智能体；在信任该文件夹之前保持禁用。",

@@ -301,7 +301,7 @@ internal partial class InferpalToolWindowData
         try
         {
             var result = await _client.RunAgentAsync(
-                model:   _config.DefaultModel,
+                model:   ModelRouter.Resolve(_config, ModelRole.Utility),
                 history: summarizeHistory,
                 tools:   EmptyToolRegistry.Instance,
                 onStep:  _ => { },
@@ -376,7 +376,7 @@ internal partial class InferpalToolWindowData
             compactCts.CancelAfter(TimeSpan.FromSeconds(timeoutSec));
 
             var result = await _client.RunAgentAsync(
-                model:   _config.DefaultModel,
+                model:   ModelRouter.Resolve(_config, ModelRole.Utility),
                 history: summarizeHistory,
                 tools:   EmptyToolRegistry.Instance,
                 onStep:  _ => { },

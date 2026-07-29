@@ -177,12 +177,7 @@ internal class InlineEditSelectionCommand : Command
         return true;
     }
 
-    private string ResolveModel()
-    {
-        if (!string.IsNullOrEmpty(_config.InlineEditModel))  return _config.InlineEditModel;
-        if (!string.IsNullOrEmpty(_config.CodeActionsModel)) return _config.CodeActionsModel;
-        return _config.DefaultModel;
-    }
+    private string ResolveModel() => ModelRouter.Resolve(_config, ModelRole.InlineEdit);
 
     private static List<ChatMessageDto> BuildMessages(string originalCode, string instruction)
     {

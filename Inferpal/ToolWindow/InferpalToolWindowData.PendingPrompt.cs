@@ -104,7 +104,7 @@ internal partial class InferpalToolWindowData
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             var result = await _client.RunAgentAsync(
-                model:   _config.DefaultModel,
+                model:   ModelRouter.Resolve(_config, ModelRole.Utility),
                 history:
                 [
                     new("system", SessionManager.TitleSystemPrompt),

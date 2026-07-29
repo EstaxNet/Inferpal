@@ -243,6 +243,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _agentModel                          = string.Empty;
     private string _labelAgentModel                     = string.Empty;
     private string _hintAgentModel                      = string.Empty;
+    private string _utilityModel                        = string.Empty;
+    private string _labelUtilityModel                   = string.Empty;
+    private string _hintUtilityModel                    = string.Empty;
     // Simple vs per-role models: collapse the 4 chat-derived role pickers (agent, code actions, FIM,
     // inline edit) behind a toggle so the default view shows just the chat + embedding models.
     private bool   _showModelRoles;
@@ -423,12 +426,14 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _codeActionsModel        = config.CodeActionsModel;
         _inlineEditModel         = config.InlineEditModel;
         _agentModel              = config.AgentModel;
+        _utilityModel            = config.UtilityModel;
         // Start expanded only when a power user has already assigned a per-role model — otherwise the
         // simple view (chat + embeddings) is the default and the 4 role pickers stay folded.
         _showModelRoles          = !string.IsNullOrEmpty(config.AgentModel)
                                    || !string.IsNullOrEmpty(config.CodeActionsModel)
                                    || !string.IsNullOrEmpty(config.InlineCompletionModel)
-                                   || !string.IsNullOrEmpty(config.InlineEditModel);
+                                   || !string.IsNullOrEmpty(config.InlineEditModel)
+                                   || !string.IsNullOrEmpty(config.UtilityModel);
         _ragEnabled              = config.RagEnabled;
         _ragAutoContextEnabled   = config.RagAutoContextEnabled;
         _ragEmbeddingModel       = config.RagEmbeddingModel;
@@ -629,6 +634,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         HintInlineEditModel             = Strings.HintInlineEditModel;
         LabelAgentModel                 = Strings.LabelAgentModel;
         HintAgentModel                  = Strings.HintAgentModel;
+        LabelUtilityModel               = Strings.LabelUtilityModel;
+        HintUtilityModel                = Strings.HintUtilityModel;
         LabelModelRolesAdvanced         = Strings.LabelModelRolesAdvanced;
         HintModelRolesAdvanced          = Strings.HintModelRolesAdvanced;
         LabelAdvancedBehavior           = Strings.LabelAdvancedBehavior;
@@ -984,6 +991,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string AgentModel                    { get => _agentModel;                    set => SetProperty(ref _agentModel,                    value); }
     [DataMember] public string LabelAgentModel               { get => _labelAgentModel;               set => SetProperty(ref _labelAgentModel,               value); }
     [DataMember] public string HintAgentModel                { get => _hintAgentModel;                set => SetProperty(ref _hintAgentModel,                value); }
+    [DataMember] public string UtilityModel                  { get => _utilityModel;                  set => SetProperty(ref _utilityModel,                  value); }
+    [DataMember] public string LabelUtilityModel             { get => _labelUtilityModel;             set => SetProperty(ref _labelUtilityModel,             value); }
+    [DataMember] public string HintUtilityModel              { get => _hintUtilityModel;              set => SetProperty(ref _hintUtilityModel,              value); }
     /// <summary>When <c>false</c> (default), only the chat + embedding models show; the 4 per-role
     /// pickers (agent, code actions, FIM, inline edit) collapse behind the "advanced" toggle.</summary>
     [DataMember] public bool   ShowModelRoles                { get => _showModelRoles;                set => SetProperty(ref _showModelRoles,                value); }
@@ -1197,7 +1207,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         string th = string.Empty, tm = string.Empty, ts = string.Empty;
         string ctxSizeText = string.Empty, ctxKeepText = string.Empty, oodaThreshText = string.Empty, vramBudgetText = string.Empty;
         string kvAnchorText = string.Empty, selectedLangName = string.Empty;
-        string selectedInlineModeName = string.Empty, inlineModel = string.Empty, codeActionsModel = string.Empty, inlineEditModel = string.Empty, agentModel = string.Empty;
+        string selectedInlineModeName = string.Empty, inlineModel = string.Empty, codeActionsModel = string.Empty, inlineEditModel = string.Empty, agentModel = string.Empty, utilityModel = string.Empty;
         string ragEmbeddingModel = string.Empty, ragTopKText = string.Empty, ragSimilarityThresholdText = string.Empty;
         string agentMaxIterationsText = string.Empty;
         // h/min/s composites recombined into total seconds inside the VM-context capture below.
@@ -1245,6 +1255,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             codeActionsModel       = CodeActionsModel;
             inlineEditModel        = InlineEditModel;
             agentModel             = AgentModel;
+            utilityModel           = UtilityModel;
             ragEnabled             = RagEnabled;
             ragAutoContextEnabled  = RagAutoContextEnabled;
             ragEmbeddingModel      = RagEmbeddingModel;
@@ -1304,6 +1315,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _config.CodeActionsModel          = codeActionsModel.Trim();
         _config.InlineEditModel           = inlineEditModel.Trim();
         _config.AgentModel                = agentModel.Trim();
+        _config.UtilityModel              = utilityModel.Trim();
         _config.RagEnabled                = ragEnabled;
         _config.RagAutoContextEnabled     = ragAutoContextEnabled;
         _config.RagEmbeddingModel         = ragEmbeddingModel.Trim();
@@ -2009,6 +2021,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                     AvailableOptionalModels.Add(InlineEditModel);
                 if (!string.IsNullOrEmpty(AgentModel) && !AvailableOptionalModels.Contains(AgentModel))
                     AvailableOptionalModels.Add(AgentModel);
+                if (!string.IsNullOrEmpty(UtilityModel) && !AvailableOptionalModels.Contains(UtilityModel))
+                    AvailableOptionalModels.Add(UtilityModel);
 
                 // AvailableEmbeddingModels — only models matching embedding keywords
                 var embeddingModels = models.Where(IsEmbeddingModel).ToList();

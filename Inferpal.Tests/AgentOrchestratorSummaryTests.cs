@@ -17,6 +17,7 @@ public class AgentOrchestratorSummaryTests
     {
         private readonly Func<ChatTurnResult> _respond;
         public int Calls { get; private set; }
+        public List<string> ModelsSeen { get; } = new();
 
         public FakeChatClient(Func<ChatTurnResult> respond) => _respond = respond;
 
@@ -26,6 +27,7 @@ public class AgentOrchestratorSummaryTests
             Action<string>? onThinking = null)
         {
             Calls++;
+            ModelsSeen.Add(model);
             return Task.FromResult(_respond());
         }
     }
@@ -71,6 +73,22 @@ public class AgentOrchestratorSummaryTests
         // The recent tail (5) survives verbatim.
         for (int i = msgs.Count - 5; i < msgs.Count; i++)
             Assert.Equal(8000, msgs[i].Content!.Length);
+    }
+
+    [Fact]
+    public async Task Summary_RoutesToUtilityModel_WhenConfigured()
+    {
+        var fake = new FakeChatClient(() => Reply("SUMMARY"));
+        var cfg  = Config();
+        cfg.DefaultModel = "big-model";
+        cfg.UtilityModel = "small-model";
+        var orch = new AgentOrchestrator(fake, cfg);
+        var msgs = OverBudgetMessages();
+
+        await orch.CompactRunContextAsync(msgs, 2, model: "big-model", false, _ => { }, CancellationToken.None);
+
+        // Model Router: the summary call goes to the utility model, not the run's agent model.
+        Assert.Equal("small-model", Assert.Single(fake.ModelsSeen));
     }
 
     [Fact]

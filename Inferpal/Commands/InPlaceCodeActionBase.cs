@@ -61,6 +61,5 @@ internal abstract class InPlaceCodeActionBase : Command
             await Extensibility.Shell().ShowPromptAsync(InPlaceCodeEdit.FailureMessage(result.FailureDetail), PromptOptions.OK, ct);
     }
 
-    private string ResolveModel() =>
-        string.IsNullOrEmpty(_config.CodeActionsModel) ? _config.DefaultModel : _config.CodeActionsModel;
+    private string ResolveModel() => ModelRouter.Resolve(_config, ModelRole.CodeActions);
 }

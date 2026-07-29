@@ -5,6 +5,7 @@
   "inferpal.command.resetChat": "Inferpal : Nouvelle conversation",
   "inferpal.config.hostPath": "Chemin vers `Inferpal.Host`. Laisser vide pour l’auto-détection (host embarqué, puis un build `Inferpal.Host/bin/**` sous le workspace).",
   "inferpal.config.model": "Modèle utilisé pour le chat. Laisser vide pour utiliser le modèle par défaut configuré du host.",
+  "inferpal.config.utilityModel": "Petit modèle rapide pour les tâches d'arrière-plan (titres de session, messages de commit, synthèses de compaction). Laisser vide pour utiliser le modèle de chat.",
   "inferpal.config.agentMode": "Exécuter les tours via la boucle agentique (outils activés). Désactiver pour un chat simple.",
   "inferpal.config.fimEnabled": "Complétions fantômes en ligne (Fill-in-the-Middle). Actif uniquement si le backend supporte le FIM.",
   "inferpal.untrustedWorkspaces": "Inferpal exécute un agent qui lit/écrit les fichiers du workspace et lance des commandes ; il reste désactivé tant que le dossier n’est pas approuvé.",

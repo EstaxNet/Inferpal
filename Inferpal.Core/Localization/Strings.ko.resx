@@ -619,7 +619,9 @@ ollama serve
   <data name="HintAgentModel" xml:space="preserve"><value>도구가 활성화될 때 사용되는 모델 — 에이전트(Plan → Act → Observe) 루프와 기본 도구 호출 루프. 비워 두면 채팅 모델을 사용합니다. 프롬프트 캐시를 재사용하는 더 작은 비멀티모달 모델(예: qwen2.5-coder)은 매 턴마다 전체 프롬프트를 다시 처리하는 대형 멀티모달 모델보다 다중 턴 도구 루프를 훨씬 빠르게 실행합니다.</value></data>
   <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>역할별로 별도 모델 사용(고급)</value></data>
   <data name="LabelAdvancedBehavior" xml:space="preserve"><value>고급 설정 표시(시간 초과, 반복 횟수)</value></data>
-  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>기본적으로 채팅 모델이 모든 곳에 사용됩니다. 이 옵션을 켜면 에이전트, 코드 작업, 인라인 완성(FIM), 인라인 편집에 다른 모델을 지정할 수 있습니다.</value></data>
+  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>기본적으로 채팅 모델이 모든 곳에 사용됩니다. 이 옵션을 켜면 에이전트, 코드 작업, 인라인 완성(FIM), 인라인 편집, 유틸리티 작업(제목, 커밋, 요약)에 다른 모델을 지정할 수 있습니다.</value></data>
+  <data name="LabelUtilityModel" xml:space="preserve"><value>유틸리티 모델(비워 두면 채팅 모델 사용):</value></data>
+  <data name="HintUtilityModel" xml:space="preserve"><value>백그라운드 작업(세션 제목, /commit 메시지 제안, 히스토리 압축 요약)에 사용하는 작고 빠른 모델입니다. 비워 두면 채팅 모델을 재사용합니다. 3~7B 모델이면 몇 초 안에 응답하며 keep-alive가 호출 사이에 모델을 로드된 상태로 유지합니다.</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>최대 반복 횟수</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>요청당 계획 → 실행 → 관찰 사이클의 최대 횟수. 0은 기본값(20)을 사용합니다. 기본값: 20.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>빠른 작업 타임아웃 (액션, 인라인 편집)</value></data>

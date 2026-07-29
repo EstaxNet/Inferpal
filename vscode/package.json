@@ -125,6 +125,11 @@
           "default": "",
           "description": "%inferpal.config.model%"
         },
+        "inferpal.utilityModel": {
+          "type": "string",
+          "default": "",
+          "description": "%inferpal.config.utilityModel%"
+        },
         "inferpal.agentMode": {
           "type": "boolean",
           "default": true,

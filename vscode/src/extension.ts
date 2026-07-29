@@ -41,9 +41,42 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.fixSelection', () => chatView.runSlashCommand('/fix')),
     vscode.commands.registerCommand('inferpal.refactorSelection', () => chatView.runSlashCommand('/refactor')),
     vscode.commands.registerCommand('inferpal.docSelection', () => chatView.runSlashCommand('/doc')),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('inferpal.utilityModel')) {
+        void pushUtilityModel(log);
+      }
+    }),
   );
 
   await startHost(context, chatView, log, false);
+}
+
+/**
+ * Pushes the explicitly-set utility model (Model Router: session titles, commit messages,
+ * compaction summaries) into the host's shared config. Read-modify-write on the full JSON:
+ * `config/update` replaces the whole config object, so a partial payload would wipe the rest.
+ * When the setting was never touched in VS Code, the shared config (e.g. set from VS) wins.
+ */
+async function pushUtilityModel(log: (line: string) => void): Promise<void> {
+  if (!host) {
+    return;
+  }
+  const inspected = vscode.workspace.getConfiguration('inferpal').inspect<string>('utilityModel');
+  const value = inspected?.workspaceValue ?? inspected?.globalValue;
+  if (value === undefined) {
+    return;
+  }
+  try {
+    const cfg = JSON.parse(await host.configGet()) as { utilityModel?: string };
+    if (cfg.utilityModel === value) {
+      return;
+    }
+    cfg.utilityModel = value;
+    await host.configUpdate(JSON.stringify(cfg));
+    log(`[inferpal] utility model → "${value || '(chat model)'}"`);
+  } catch (err) {
+    log(`[inferpal] utility model sync failed: ${String(err)}`);
+  }
 }
 
 export async function deactivate(): Promise<void> {
@@ -108,6 +141,7 @@ async function startHost(
     host = client;
     bridge!.attach(client);
     await chatView.onHostReady();
+    await pushUtilityModel(log);
     log(`[inferpal] host ready (${hostPath})`);
   } catch (err) {
     log(`[inferpal] host start failed: ${String(err)}`);

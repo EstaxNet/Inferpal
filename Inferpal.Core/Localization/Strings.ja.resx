@@ -619,7 +619,9 @@ ollama serve
   <data name="HintAgentModel" xml:space="preserve"><value>ツールが有効なときに使用されるモデル — エージェント（Plan → Act → Observe）ループと基本のツール呼び出しループ。空のままにするとチャットモデルを使用します。プロンプトキャッシュを再利用できる、より小さい非マルチモーダルモデル（例: qwen2.5-coder）は、毎ターン全プロンプトを再処理する大きなマルチモーダルモデルよりも、多ターンのツールループを大幅に高速に実行します。</value></data>
   <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>役割ごとに別のモデルを使用（詳細）</value></data>
   <data name="LabelAdvancedBehavior" xml:space="preserve"><value>詳細設定を表示（タイムアウト、反復回数）</value></data>
-  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>デフォルトではチャットモデルがすべてに使われます。これを有効にすると、エージェント、コードアクション、インライン補完（FIM）、インライン編集に別々のモデルを割り当てられます。</value></data>
+  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>デフォルトではチャットモデルがすべてに使われます。これを有効にすると、エージェント、コードアクション、インライン補完（FIM）、インライン編集、ユーティリティタスク（タイトル、コミット、要約）に別々のモデルを割り当てられます。</value></data>
+  <data name="LabelUtilityModel" xml:space="preserve"><value>ユーティリティモデル（空 = チャットモデルを使用）：</value></data>
+  <data name="HintUtilityModel" xml:space="preserve"><value>バックグラウンドタスク（セッションタイトル、/commit メッセージの提案、履歴コンパクションの要約）に使う小型で高速なモデル。空のままにするとチャットモデルを再利用します。3〜7B のモデルなら数秒で応答し、keep-alive により呼び出し間もロードされたままになります。</value></data>
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>最大イテレーション数</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>リクエストごとの計画 → 実行 → 観察サイクルの最大回数。0 はデフォルト値（20）になります。デフォルト：20。</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>クイックタスクのタイムアウト（アクション、インライン編集）</value></data>
