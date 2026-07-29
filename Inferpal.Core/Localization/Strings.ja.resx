@@ -810,6 +810,21 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 エージェント実行 {0} — ツール呼び出し {1} 件、変更ファイル {2} 件</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**変更されたファイル:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>モデルに送信されるコンテキストのトークン内訳</value></data>
+  <data name="SlashHintBench" xml:space="preserve"><value>インストール済みモデルのローカルベンチマーク（速度・品質・VRAM）</value></data>
+  <data name="BenchTitle" xml:space="preserve"><value>ローカルモデルベンチマーク</value></data>
+  <data name="BenchRunning" xml:space="preserve"><value>{0} をベンチマーク中（{1}/{2}）…</value></data>
+  <data name="BenchNoModels" xml:space="preserve"><value>テストするモデルがありません。/models pull &lt;名前&gt; でインストールするか、名前を指定してください：/bench &lt;モデル&gt; [モデル…]。</value></data>
+  <data name="BenchNoSaved" xml:space="preserve"><value>保存されたベンチマークはまだありません — まず /bench を実行してください。</value></data>
+  <data name="BenchSavedAt" xml:space="preserve"><value>{0} の保存済み実行 — 更新するには /bench を実行してください。</value></data>
+  <data name="BenchColModel" xml:space="preserve"><value>モデル</value></data>
+  <data name="BenchColTtft" xml:space="preserve"><value>TTFT</value></data>
+  <data name="BenchColSpeed" xml:space="preserve"><value>tok/s</value></data>
+  <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="BenchColQuality" xml:space="preserve"><value>品質</value></data>
+  <data name="BenchRecoHeader" xml:space="preserve"><value>ロール別のおすすめ</value></data>
+  <data name="BenchRecoAgent" xml:space="preserve"><value>エージェント / チャット</value></data>
+  <data name="BenchRecoUtility" xml:space="preserve"><value>ユーティリティモデル</value></data>
+  <data name="BenchRecoFim" xml:space="preserve"><value>FIM（ゴーストテキスト）</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 コンテキスト X 線 — システムプロンプト ≈ {0} トークン</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基本システムプロンプト</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>ペルソナスニペット</value></data>

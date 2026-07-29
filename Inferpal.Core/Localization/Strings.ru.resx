@@ -810,6 +810,21 @@ ollama serve
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Запуск агента {0} — вызовов инструментов: {1}, изменённых файлов: {2}</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Затронутые файлы:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>Распределение токенов контекста, отправляемого модели</value></data>
+  <data name="SlashHintBench" xml:space="preserve"><value>Локальный бенчмарк установленных моделей (скорость, качество, VRAM)</value></data>
+  <data name="BenchTitle" xml:space="preserve"><value>Локальный бенчмарк моделей</value></data>
+  <data name="BenchRunning" xml:space="preserve"><value>Тестирование {0} ({1}/{2})…</value></data>
+  <data name="BenchNoModels" xml:space="preserve"><value>Нет моделей для теста. Установите модель (/models pull &lt;имя&gt;) или укажите имена: /bench &lt;модель&gt; [модель…].</value></data>
+  <data name="BenchNoSaved" xml:space="preserve"><value>Сохранённого бенчмарка ещё нет — сначала выполните /bench.</value></data>
+  <data name="BenchSavedAt" xml:space="preserve"><value>Сохранённый запуск от {0} — выполните /bench для обновления.</value></data>
+  <data name="BenchColModel" xml:space="preserve"><value>Модель</value></data>
+  <data name="BenchColTtft" xml:space="preserve"><value>TTFT</value></data>
+  <data name="BenchColSpeed" xml:space="preserve"><value>ток/с</value></data>
+  <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="BenchColQuality" xml:space="preserve"><value>Качество</value></data>
+  <data name="BenchRecoHeader" xml:space="preserve"><value>Рекомендации по ролям</value></data>
+  <data name="BenchRecoAgent" xml:space="preserve"><value>Агент / чат</value></data>
+  <data name="BenchRecoUtility" xml:space="preserve"><value>Служебная модель</value></data>
+  <data name="BenchRecoFim" xml:space="preserve"><value>FIM (призрачный текст)</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Рентген контекста — системный промпт ≈ {0} токенов</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Базовый системный промпт</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Фрагмент персоны</value></data>

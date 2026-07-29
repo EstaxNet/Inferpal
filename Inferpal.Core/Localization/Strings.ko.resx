@@ -810,6 +810,21 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 에이전트 실행 {0} — 도구 호출 {1}건, 변경된 파일 {2}개</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**변경된 파일:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>모델로 전송되는 컨텍스트의 토큰 분석</value></data>
+  <data name="SlashHintBench" xml:space="preserve"><value>설치된 모델의 로컬 벤치마크(속도, 품질, VRAM)</value></data>
+  <data name="BenchTitle" xml:space="preserve"><value>로컬 모델 벤치마크</value></data>
+  <data name="BenchRunning" xml:space="preserve"><value>{0} 벤치마크 중({1}/{2})…</value></data>
+  <data name="BenchNoModels" xml:space="preserve"><value>테스트할 모델이 없습니다. /models pull &lt;이름&gt;으로 설치하거나 이름을 지정하세요: /bench &lt;모델&gt; [모델…].</value></data>
+  <data name="BenchNoSaved" xml:space="preserve"><value>저장된 벤치마크가 아직 없습니다 — 먼저 /bench를 실행하세요.</value></data>
+  <data name="BenchSavedAt" xml:space="preserve"><value>{0}의 저장된 실행 — 갱신하려면 /bench를 실행하세요.</value></data>
+  <data name="BenchColModel" xml:space="preserve"><value>모델</value></data>
+  <data name="BenchColTtft" xml:space="preserve"><value>TTFT</value></data>
+  <data name="BenchColSpeed" xml:space="preserve"><value>tok/s</value></data>
+  <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="BenchColQuality" xml:space="preserve"><value>품질</value></data>
+  <data name="BenchRecoHeader" xml:space="preserve"><value>역할별 추천</value></data>
+  <data name="BenchRecoAgent" xml:space="preserve"><value>에이전트 / 채팅</value></data>
+  <data name="BenchRecoUtility" xml:space="preserve"><value>유틸리티 모델</value></data>
+  <data name="BenchRecoFim" xml:space="preserve"><value>FIM(고스트 텍스트)</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 컨텍스트 엑스레이 — 시스템 프롬프트 ≈ {0} 토큰</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>기본 시스템 프롬프트</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>페르소나 스니펫</value></data>

@@ -754,6 +754,22 @@ internal static class Strings
 
     // ── /xray command ───────────────────────────────────────────────────────────
     public static string SlashHintXray                       => Get(nameof(SlashHintXray));
+    public static string SlashHintBench                      => Get(nameof(SlashHintBench));
+    public static string BenchTitle                          => Get(nameof(BenchTitle));
+    public static string BenchRunning(string model, int index, int total)
+        => string.Format(Get(nameof(BenchRunning)), model, index, total);
+    public static string BenchNoModels                       => Get(nameof(BenchNoModels));
+    public static string BenchNoSaved                        => Get(nameof(BenchNoSaved));
+    public static string BenchSavedAt(string when)           => string.Format(Get(nameof(BenchSavedAt)), when);
+    public static string BenchColModel                       => Get(nameof(BenchColModel));
+    public static string BenchColTtft                        => Get(nameof(BenchColTtft));
+    public static string BenchColSpeed                       => Get(nameof(BenchColSpeed));
+    public static string BenchColVram                        => Get(nameof(BenchColVram));
+    public static string BenchColQuality                     => Get(nameof(BenchColQuality));
+    public static string BenchRecoHeader                     => Get(nameof(BenchRecoHeader));
+    public static string BenchRecoAgent                      => Get(nameof(BenchRecoAgent));
+    public static string BenchRecoUtility                    => Get(nameof(BenchRecoUtility));
+    public static string BenchRecoFim                        => Get(nameof(BenchRecoFim));
     public static string XrayHeader(string tokens)           => string.Format(Get(nameof(XrayHeader)), tokens);
     public static string XrayLabelBase                       => Get(nameof(XrayLabelBase));
     public static string XrayLabelPersona                    => Get(nameof(XrayLabelPersona));

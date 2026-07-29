@@ -815,6 +815,21 @@ ollama serve
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Agent run {0} — {1} tool call(s), {2} file(s) changed</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Files touched:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>Token breakdown of the context sent to the model</value></data>
+  <data name="SlashHintBench" xml:space="preserve"><value>Local benchmark of installed models (speed, quality, VRAM)</value></data>
+  <data name="BenchTitle" xml:space="preserve"><value>Local model benchmark</value></data>
+  <data name="BenchRunning" xml:space="preserve"><value>Benchmarking {0} ({1}/{2})…</value></data>
+  <data name="BenchNoModels" xml:space="preserve"><value>No model to bench. Install one (/models pull &lt;name&gt;) or pass names: /bench &lt;model&gt; [model…].</value></data>
+  <data name="BenchNoSaved" xml:space="preserve"><value>No saved benchmark yet — run /bench first.</value></data>
+  <data name="BenchSavedAt" xml:space="preserve"><value>Saved run from {0} — run /bench to refresh.</value></data>
+  <data name="BenchColModel" xml:space="preserve"><value>Model</value></data>
+  <data name="BenchColTtft" xml:space="preserve"><value>TTFT</value></data>
+  <data name="BenchColSpeed" xml:space="preserve"><value>tok/s</value></data>
+  <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="BenchColQuality" xml:space="preserve"><value>Quality</value></data>
+  <data name="BenchRecoHeader" xml:space="preserve"><value>Recommended per role</value></data>
+  <data name="BenchRecoAgent" xml:space="preserve"><value>Agent / chat</value></data>
+  <data name="BenchRecoUtility" xml:space="preserve"><value>Utility model</value></data>
+  <data name="BenchRecoFim" xml:space="preserve"><value>FIM (ghost text)</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Context X-Ray — system prompt ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Base system prompt</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Persona snippet</value></data>

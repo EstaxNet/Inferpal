@@ -810,6 +810,21 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run del agente {0} — {1} llamada(s) a herramientas, {2} archivo(s) modificado(s)</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Archivos afectados:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>Desglose en tokens del contexto enviado al modelo</value></data>
+  <data name="SlashHintBench" xml:space="preserve"><value>Banco de pruebas local de los modelos instalados (velocidad, calidad, VRAM)</value></data>
+  <data name="BenchTitle" xml:space="preserve"><value>Banco de pruebas local de modelos</value></data>
+  <data name="BenchRunning" xml:space="preserve"><value>Evaluando {0} ({1}/{2})…</value></data>
+  <data name="BenchNoModels" xml:space="preserve"><value>Ningún modelo que probar. Instala uno (/models pull &lt;nombre&gt;) o pasa nombres: /bench &lt;modelo&gt; [modelo…].</value></data>
+  <data name="BenchNoSaved" xml:space="preserve"><value>Aún no hay benchmark guardado — ejecuta /bench primero.</value></data>
+  <data name="BenchSavedAt" xml:space="preserve"><value>Ejecución guardada del {0} — ejecuta /bench para actualizar.</value></data>
+  <data name="BenchColModel" xml:space="preserve"><value>Modelo</value></data>
+  <data name="BenchColTtft" xml:space="preserve"><value>TTFT</value></data>
+  <data name="BenchColSpeed" xml:space="preserve"><value>tok/s</value></data>
+  <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="BenchColQuality" xml:space="preserve"><value>Calidad</value></data>
+  <data name="BenchRecoHeader" xml:space="preserve"><value>Recomendación por rol</value></data>
+  <data name="BenchRecoAgent" xml:space="preserve"><value>Agente / chat</value></data>
+  <data name="BenchRecoUtility" xml:space="preserve"><value>Modelo utilitario</value></data>
+  <data name="BenchRecoFim" xml:space="preserve"><value>FIM (texto fantasma)</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Radiografía del contexto — prompt del sistema ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Prompt del sistema base</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Fragmento de persona</value></data>

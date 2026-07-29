@@ -26,6 +26,14 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// stream tokens and honour cancellation.</summary>
     public Func<Action<string>?, CancellationToken, Task<ChatTurnResult>>? OnChat { get; set; }
 
+    /// <summary>Richer override of <see cref="SendChatAsync"/> for tests that need the prompt and
+    /// the exposed tools (e.g. the /bench runner) — checked before <see cref="OnChat"/>.</summary>
+    public Func<string, List<ChatMessageDto>, IToolRegistry, Action<string>?, Task<ChatTurnResult>>? OnChatRequest { get; set; }
+
+    /// <summary>Scripted FIM completion (prefix, suffix → streamed text); null = no-op like a
+    /// backend without FIM output.</summary>
+    public Func<string, string, string>? OnFim { get; set; }
+
     /// <summary>Result of <see cref="DeleteModelAsync"/> (keyed by model name).</summary>
     public Func<string, bool>          OnDelete { get; set; } = _ => true;
     /// <summary>Result of <see cref="PullModelAsync"/> (keyed by model name).</summary>
@@ -34,16 +42,23 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Func<string, ModelArchInfo?> OnShow  { get; set; } = _ => null;
 
     // ── Call recording ──────────────────────────────────────────────────────────
-    public List<string> Deleted  { get; } = [];
-    public List<string> Pulled   { get; } = [];
-    public List<string> Unloaded { get; } = [];
+    public List<string> Deleted    { get; } = [];
+    public List<string> Pulled     { get; } = [];
+    public List<string> Unloaded   { get; } = [];
+    /// <summary>Model name of every <see cref="SendChatAsync"/> call, in order.</summary>
+    public List<string> ChatModels { get; } = [];
 
     // ── IOllamaChatClient ───────────────────────────────────────────────────────
     public Task<ChatTurnResult> SendChatAsync(
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
         CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
-        string? toolChoice = null, Action<string>? onThinking = null) =>
-        OnChat?.Invoke(onToken, ct) ?? Task.FromResult(ChatResult);
+        string? toolChoice = null, Action<string>? onThinking = null)
+    {
+        ChatModels.Add(model);
+        return OnChatRequest?.Invoke(model, messages, tools, onToken)
+            ?? OnChat?.Invoke(onToken, ct)
+            ?? Task.FromResult(ChatResult);
+    }
 
     // ── IInferenceProvider ──────────────────────────────────────────────────────
     public Task<AgentResult> RunAgentAsync(
@@ -64,7 +79,11 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         Task.FromResult<IReadOnlyList<InstalledModelInfo>>(Installed);
 
     public Task StreamFimAsync(string prefix, string suffix, int maxTokens, double temperature,
-        Action<string> onToken, CancellationToken ct, string? model = null) => Task.CompletedTask;
+        Action<string> onToken, CancellationToken ct, string? model = null)
+    {
+        if (OnFim?.Invoke(prefix, suffix) is { } completion) onToken(completion);
+        return Task.CompletedTask;
+    }
 
     public void ResetCircuit() { }
 

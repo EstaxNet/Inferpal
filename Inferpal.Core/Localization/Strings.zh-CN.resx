@@ -810,6 +810,21 @@ ollama serve
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 代理运行 {0} — {1} 次工具调用，{2} 个文件被修改</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**涉及的文件：**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>发送给模型的上下文的 token 明细</value></data>
+  <data name="SlashHintBench" xml:space="preserve"><value>已安装模型的本地基准测试（速度、质量、VRAM）</value></data>
+  <data name="BenchTitle" xml:space="preserve"><value>本地模型基准测试</value></data>
+  <data name="BenchRunning" xml:space="preserve"><value>正在测试 {0}（{1}/{2}）…</value></data>
+  <data name="BenchNoModels" xml:space="preserve"><value>没有可测试的模型。请先安装（/models pull &lt;名称&gt;）或指定名称：/bench &lt;模型&gt; [模型…]。</value></data>
+  <data name="BenchNoSaved" xml:space="preserve"><value>还没有已保存的基准测试 — 请先运行 /bench。</value></data>
+  <data name="BenchSavedAt" xml:space="preserve"><value>保存于 {0} 的运行结果 — 运行 /bench 可刷新。</value></data>
+  <data name="BenchColModel" xml:space="preserve"><value>模型</value></data>
+  <data name="BenchColTtft" xml:space="preserve"><value>TTFT</value></data>
+  <data name="BenchColSpeed" xml:space="preserve"><value>tok/s</value></data>
+  <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="BenchColQuality" xml:space="preserve"><value>质量</value></data>
+  <data name="BenchRecoHeader" xml:space="preserve"><value>按角色推荐</value></data>
+  <data name="BenchRecoAgent" xml:space="preserve"><value>代理 / 聊天</value></data>
+  <data name="BenchRecoUtility" xml:space="preserve"><value>实用模型</value></data>
+  <data name="BenchRecoFim" xml:space="preserve"><value>FIM（幽灵文本）</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 上下文透视 — 系统提示词 ≈ {0} 个 token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基础系统提示词</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>角色片段</value></data>

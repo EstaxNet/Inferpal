@@ -202,7 +202,7 @@ internal sealed class HostServer : IDisposable
     /// back to sending the text as a normal chat prompt.
     /// </summary>
     [JsonRpcMethod("command/slash", UseSingleObjectParameterDeserialization = true)]
-    public SlashCommandResult CommandSlash(SlashCommandParams p)
+    public async Task<SlashCommandResult> CommandSlashAsync(SlashCommandParams p, CancellationToken ct)
     {
         var s = Session();
         if (SlashCommandRouter.Route(p.Text, []) is not SlashDelegatedAction delegated)
@@ -213,6 +213,16 @@ internal sealed class HostServer : IDisposable
             case SlashCommandId.Replay:
                 return new SlashCommandResult(true,
                     Services.Commands.ReplayCommandHandler.Handle(s.Tools.History.Runs, delegated.Parts, s.RootDir));
+
+            case SlashCommandId.Bench:
+            {
+                // Long-running (a full micro-eval suite per model). Progress is surfaced through
+                // the same chat/step notifications the agent loop uses.
+                var result = await Services.Commands.BenchCommandHandler.HandleAsync(
+                    s.Client, delegated.Parts,
+                    progress => Notify("chat/step", new { text = progress }), ct);
+                return new SlashCommandResult(true, result.Message);
+            }
 
             case SlashCommandId.Xray:
                 var sections = new SystemPromptBuilder(s.Config).BuildSections(

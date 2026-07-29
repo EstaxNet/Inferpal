@@ -222,6 +222,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Rules:      await HandleRulesCommandAsync(parts, ct);    break;
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
             case SlashCommandId.Diagnostics: await ShowInfoAsync(Services.Commands.DiagnosticsCommandHandler.Handle(parts)); break;
+            case SlashCommandId.Bench:       await HandleBenchCommandAsync(parts, ct);    break;
             case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
             case SlashCommandId.Xray:
             {
@@ -356,6 +357,29 @@ internal partial class InferpalToolWindowData
         });
 
         await ShowInfoAsync(ok ? Strings.ModelsPulled(model) : Strings.ModelsPullFailed(model));
+    }
+
+    // /bench [model…] — long run (one full micro-eval suite per model): live status bubble
+    // updated per model (same pattern as /models pull), final report as a regular info bubble.
+    private async Task HandleBenchCommandAsync(string[] parts, CancellationToken ct)
+    {
+        var statusBbl = ChatMessageItem.StatusMsg(Strings.SlashHintBench);
+        await RunOnVMContextAsync(() => { ApplyItemTheme(statusBbl); Messages.Insert(Messages.Count - 2, statusBbl); });
+
+        try
+        {
+            var result = await Services.Commands.BenchCommandHandler.HandleAsync(
+                _client, parts, progress => Post(() => statusBbl.Content = progress), ct);
+            await ShowInfoAsync(result.Message);
+        }
+        finally
+        {
+            await RunOnVMContextAsync(() =>
+            {
+                var idx = Messages.IndexOf(statusBbl);
+                if (idx >= 0) Messages.RemoveAt(idx);
+            });
+        }
     }
 
     private async Task HandleHardwareCommandAsync(string[] parts, CancellationToken ct)
