@@ -50,7 +50,7 @@ internal abstract class InPlaceCodeActionBase : Command
         if (view is null) return;
 
         var outcome = await InPlaceCodeEdit.RunAsync(
-            Extensibility, view, _client, ResolveModel(), SystemPrompt, Instruction, ct);
+            Extensibility, view, _client, ResolveModel(), SystemPrompt, Instruction, ct, _config);
 
         // No chat to write to here — surface the "nothing to do" verdict as a dismissable prompt so
         // the unchanged document doesn't look like the command silently failed.

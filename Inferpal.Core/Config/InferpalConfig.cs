@@ -63,6 +63,15 @@ internal class InferpalConfig
     public bool SecurityAlertsDisabled { get; set; } = false;
 
     /// <summary>
+    /// Inline diff preview for in-place code actions (/fix /refactor /doc): the rewrite is shown
+    /// as per-hunk ✓/✗ overlays in the editor instead of being applied immediately. Falls back to
+    /// the direct apply when no in-process renderer picks the request up. Comfort feature only —
+    /// orthogonal to tool approval, which it never replaces nor bypasses (ROADMAP design rules).
+    /// </summary>
+    [JsonPropertyName("inlineDiffPreviewEnabled")]
+    public bool InlineDiffPreviewEnabled { get; set; } = true;
+
+    /// <summary>
     /// Total GPU VRAM budget in gigabytes, used by the hardware-aware features (<c>/hardware</c>,
     /// first-run trio fit-check). Ollama does not expose total VRAM and the server may be remote,
     /// so this is set manually (via <c>/hardware &lt;gb&gt;</c>) or auto-seeded only when Ollama runs

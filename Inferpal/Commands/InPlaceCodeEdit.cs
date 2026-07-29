@@ -14,6 +14,9 @@ internal enum InPlaceEditOutcome
     NoChangeNeeded,
     /// <summary>The edit could not be produced or applied (no code, model/edit error).</summary>
     Failed,
+    /// <summary>The rewrite was handed to the in-editor inline diff preview — the user decides
+    /// per hunk there; nothing has been applied yet.</summary>
+    PreviewShown,
 }
 
 /// <summary>
@@ -64,7 +67,8 @@ internal static class InPlaceCodeEdit
         string                    model,
         string                    systemPrompt,
         string                    instruction,
-        CancellationToken         ct)
+        CancellationToken         ct,
+        Inferpal.Config.InferpalConfig? config = null)
     {
         var docText = view.Document.Text.CopyToString();
         var sel     = view.Selection;
@@ -117,6 +121,32 @@ internal static class InPlaceCodeEdit
             : cleaned;
         if (string.IsNullOrWhiteSpace(editedCode)) return InPlaceEditOutcome.Failed;
 
+        // Inline diff preview detour (comfort only — never a control, see ROADMAP design rules):
+        // hand the whole-document rewrite to the in-process renderer; if no renderer claims it
+        // within the pickup window (view closed, MEF component absent), fall back to the direct
+        // apply below — the feature degrades to today's behaviour.
+        if ((config?.InlineDiffPreviewEnabled ?? false) && editedCode != originalCode)
+        {
+            var filePath = TryGetLocalPath(view);
+            if (filePath is not null)
+            {
+                var newDocText = docText[..start] + editedCode + docText[end..];
+                var requestId  = Services.Signals.InlineDiffPreviewSignal.WriteRequest(filePath, docText, newDocText);
+                try
+                {
+                    if (await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(
+                            requestId, TimeSpan.FromSeconds(2), ct))
+                        return InPlaceEditOutcome.PreviewShown;
+                }
+                finally
+                {
+                    // Claimed requests were consumed by the renderer; unclaimed ones must not
+                    // linger and pop up on a later unrelated view of the same file.
+                    Services.Signals.InlineDiffPreviewSignal.DiscardRequest();
+                }
+            }
+        }
+
         try
         {
             await vs.Editor().EditAsync(
@@ -133,6 +163,17 @@ internal static class InPlaceCodeEdit
             // EditAsync may fail if the document changed between snapshot and apply — user can retry.
             return InPlaceEditOutcome.Failed;
         }
+    }
+
+    /// <summary>Local file path of the document, or null (untitled / non-file buffers).</summary>
+    private static string? TryGetLocalPath(ITextViewSnapshot view)
+    {
+        try
+        {
+            var path = view.Document.Uri.LocalPath;
+            return string.IsNullOrEmpty(path) ? null : System.IO.Path.GetFullPath(path);
+        }
+        catch { return null; }
     }
 
     /// <summary>True if <c>text[start..end]</c> contains only whitespace (or is empty).</summary>

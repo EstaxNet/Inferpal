@@ -43,6 +43,7 @@ internal sealed class GhostTextViewListener : IWpfTextViewCreationListener
     public void TextViewCreated(IWpfTextView textView)
     {
         _ = new GhostTextController(textView);
+        _ = new InlineDiffController(textView);   // inline diff preview (self-manages via view.Closed)
 
         // Retry build-event subscription on each new editor until we succeed.
         // The Interlocked flag prevents concurrent duplicate attempts but is

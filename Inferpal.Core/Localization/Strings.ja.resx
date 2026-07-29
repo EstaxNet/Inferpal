@@ -816,6 +816,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="XrayHistory" xml:space="preserve"><value>会話履歴: {0} トークン（推定）</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 自動コンテキスト: {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>コンテキストウィンドウ: {0} / {1} トークン（{2}%）</value></data>
+  <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 エディター内で提案された変更を確認してください — 各変更に ✓/✗（すべては ✓✓/✗✗）。入力するとプレビューは閉じます。</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>使い方: `/hardware &lt;gb&gt;` — 正の数、例: `/hardware 24`。</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM バジェットを {0} GB に設定しました。</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## ハードウェアプロファイル</value></data>

@@ -140,7 +140,7 @@ internal partial class InferpalToolWindowData
         }
 
         var model   = string.IsNullOrEmpty(_config.CodeActionsModel) ? _config.DefaultModel : _config.CodeActionsModel;
-        var outcome = await InPlaceCodeEdit.RunAsync(_vs, view, _client, model, system, instruction, ct);
+        var outcome = await InPlaceCodeEdit.RunAsync(_vs, view, _client, model, system, instruction, ct, _config);
 
         // The model judged the action a no-op (already clear / correct / documented) — tell the user
         // rather than leaving the chat silent, so the absence of an edit doesn't look like a failure.
@@ -151,6 +151,8 @@ internal partial class InferpalToolWindowData
                 SlashCodeActionKind.Fix      => Strings.FixNoChange,
                 _                            => Strings.DocNoChange,
             });
+        else if (outcome == InPlaceEditOutcome.PreviewShown)
+            await ShowInfoAsync(Strings.CodeActionPreviewShown);
     }
 
     /// <summary>Executes the stateful commands the router hands back to the VM.</summary>

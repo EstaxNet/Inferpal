@@ -816,6 +816,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="XrayHistory" xml:space="preserve"><value>Historia rozmowy: {0} tokenów (szacunkowo)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Automatyczny kontekst RAG: {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Okno kontekstu: {0} / {1} tokenów ({2}%)</value></data>
+  <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Przejrzyj proponowane zmiany w edytorze — ✓/✗ przy każdej zmianie (✓✓/✗✗ dla wszystkich). Pisanie zamyka podgląd.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Użycie: `/hardware &lt;gb&gt;` — liczba dodatnia, np. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budżet VRAM ustawiony na {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Profil sprzętu</value></data>

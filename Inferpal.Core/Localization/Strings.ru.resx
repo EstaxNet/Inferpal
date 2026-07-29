@@ -816,6 +816,7 @@ ollama serve
   <data name="XrayHistory" xml:space="preserve"><value>История разговора: {0} токенов (оценка)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Автоконтекст RAG: {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Контекстное окно: {0} / {1} токенов ({2} %)</value></data>
+  <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Просмотрите предложенные изменения в редакторе — ✓/✗ для каждого изменения (✓✓/✗✗ для всех). Ввод текста закрывает предпросмотр.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Использование: `/hardware &lt;gb&gt;` — положительное число, например `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Бюджет VRAM установлен на {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Профиль оборудования</value></data>

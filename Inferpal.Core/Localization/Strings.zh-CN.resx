@@ -816,6 +816,7 @@ ollama serve
   <data name="XrayHistory" xml:space="preserve"><value>会话历史：{0} 个 token（估算）</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 自动上下文：{0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>上下文窗口：{0} / {1} 个 token（{2}%）</value></data>
+  <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 请在编辑器中查看建议的更改 — 每处更改可 ✓/✗（全部为 ✓✓/✗✗）。输入文字将关闭预览。</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>用法：`/hardware &lt;gb&gt;` — 正数，例如 `/hardware 24`。</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM 预算已设置为 {0} GB。</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## 硬件配置</value></data>

@@ -816,6 +816,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="XrayHistory" xml:space="preserve"><value>Konversationsverlauf: {0} Token (Schätzung)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG-Auto-Kontext: {0}</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Kontextfenster: {0} / {1} Token ({2} %)</value></data>
+  <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Prüfen Sie die vorgeschlagenen Änderungen im Editor — ✓/✗ je Änderung (✓✓/✗✗ für alle). Tippen schließt die Vorschau.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Verwendung: `/hardware &lt;gb&gt;` — eine positive Zahl, z. B. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM-Budget auf {0} GB gesetzt.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Hardware-Profil</value></data>
