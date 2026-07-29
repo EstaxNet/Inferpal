@@ -5,8 +5,8 @@
 <h1 align="center">Inferpal</h1>
 
 <p align="center">
-  An agentic developer assistant for Visual Studio 2022/2026 — and now
-  <b>VS Code (preview)</b> — powered entirely by <b>local LLMs</b>: Ollama, LM Studio,
+  An agentic developer assistant for Visual Studio 2022/2026 and
+  <b>VS Code</b> — powered entirely by <b>local LLMs</b>: Ollama, LM Studio,
   or any OpenAI-compatible server. Full tool calling, inline ghost-text completions,
   semantic codebase search, and zero required cloud dependency.
 </p>
@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/tests-1188%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2022%20%2F%202026-5C2D91" alt="Visual Studio 2022 / 2026">
-  <img src="https://img.shields.io/badge/VS%20Code-preview-007ACC" alt="VS Code (preview)">
+  <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
 </p>
 
 <p align="center">
@@ -43,7 +43,8 @@ and every command stays behind an approval gate and a workspace sandbox. No API 
 telemetry, no cloud required.
 
 It ships as a **Visual Studio 2022/2026 extension** (the primary target) and a
-**VS Code extension (preview)** — one shared engine (`Inferpal.Core`), two editors.
+**VS Code extension** at feature parity since 1.2.0 — one shared engine (`Inferpal.Core`),
+two editors.
 
 ### Highlights
 
@@ -54,9 +55,11 @@ It ships as a **Visual Studio 2022/2026 extension** (the primary target) and a
 - **Smart Fix Protocol** — after every edit, a polyglot build/typecheck (.NET / TypeScript / Rust / Go) feeds compile errors back so the agent fixes them in the same loop.
 - **Code actions & Inline Edit** — Explain / Fix / Refactor / Add Tests / Add Docstring, plus **Ctrl+Shift+I** to rewrite a selection in place.
 - **Safety by default** — approval-gated writes/commands, a catastrophic-command hard denylist, force-prompt on indirect execution (`iex`, `-EncodedCommand`, …), committable permission rules, and a hardened SSRF guard.
-- **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, `@`-mentions, and 30+ slash commands.
+- **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, typed `@`-mentions, and 50+ slash commands.
 - **Built for the IDE** — live debugger awareness, VRAM monitoring, VS theme adaptation, and 10 UI languages.
-- **VS Code preview** — sidebar chat, agentic loop with approvals, inline FIM completions, unsaved-buffer awareness and live diagnostics, backed by a bundled self-contained host (no .NET install needed).
+- **Multi-model toolkit** — `/bench` scores your installed models per role, `/arena` runs blind A/B duels, and the **Model Router** sends background tasks (titles, commit messages, summaries) to a small utility model — never cold-loading one.
+- **Transparency** — the **Context X-Ray** panel breaks down the exact prompt sent to the model, layer by layer, with per-layer toggles; `/replay` reconstructs an agent run post-mortem; `/fix` `/refactor` `/doc` show a per-hunk **inline diff preview** before touching your buffer.
+- **VS Code at parity** — the same chat (markdown, tool bubbles, plan display, typed `@`-mentions, slash commands with autocomplete), the same settings, the same approvals and inline FIM completions, backed by a bundled self-contained host (no .NET install needed).
 
 > See **[docs/features.md](docs/features.md)** for the full functional tour.
 
