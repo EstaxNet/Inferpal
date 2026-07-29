@@ -806,6 +806,16 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="ReplayNone" xml:space="preserve"><value>이 세션에는 도구 호출이 있는 에이전트 실행이 기록되어 있지 않습니다.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 에이전트 실행 {0} — 도구 호출 {1}건, 변경된 파일 {2}개</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**변경된 파일:**</value></data>
+  <data name="SlashHintXray" xml:space="preserve"><value>모델로 전송되는 컨텍스트의 토큰 분석</value></data>
+  <data name="XrayHeader" xml:space="preserve"><value>🩻 컨텍스트 엑스레이 — 시스템 프롬프트 ≈ {0} 토큰</value></data>
+  <data name="XrayLabelBase" xml:space="preserve"><value>기본 시스템 프롬프트</value></data>
+  <data name="XrayLabelPersona" xml:space="preserve"><value>페르소나 스니펫</value></data>
+  <data name="XrayLabelCustom" xml:space="preserve"><value>사용자 지정 시스템 프롬프트</value></data>
+  <data name="XrayLabelTemplate" xml:space="preserve"><value>세션 템플릿</value></data>
+  <data name="XrayLabelRules" xml:space="preserve"><value>규칙(적용 {0}개)</value></data>
+  <data name="XrayHistory" xml:space="preserve"><value>대화 기록: {0} 토큰(추정)</value></data>
+  <data name="XrayRag" xml:space="preserve"><value>RAG 자동 컨텍스트: {0}</value></data>
+  <data name="XrayBudget" xml:space="preserve"><value>컨텍스트 창: {0} / {1} 토큰({2}%)</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>사용법: `/hardware &lt;gb&gt;` — 양수, 예: `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM 예산을 {0} GB로 설정했습니다.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## 하드웨어 프로필</value></data>

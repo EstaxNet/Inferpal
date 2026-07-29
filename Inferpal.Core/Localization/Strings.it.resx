@@ -806,6 +806,16 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="ReplayNone" xml:space="preserve"><value>Nessun run dell'agente con chiamate a strumenti registrato in questa sessione.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run dell'agente {0} — {1} chiamata/e a strumenti, {2} file modificato/i</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**File coinvolti:**</value></data>
+  <data name="SlashHintXray" xml:space="preserve"><value>Ripartizione in token del contesto inviato al modello</value></data>
+  <data name="XrayHeader" xml:space="preserve"><value>🩻 Radiografia del contesto — prompt di sistema ≈ {0} token</value></data>
+  <data name="XrayLabelBase" xml:space="preserve"><value>Prompt di sistema di base</value></data>
+  <data name="XrayLabelPersona" xml:space="preserve"><value>Frammento persona</value></data>
+  <data name="XrayLabelCustom" xml:space="preserve"><value>Prompt di sistema personalizzato</value></data>
+  <data name="XrayLabelTemplate" xml:space="preserve"><value>Modello di sessione</value></data>
+  <data name="XrayLabelRules" xml:space="preserve"><value>Regole ({0} applicate)</value></data>
+  <data name="XrayHistory" xml:space="preserve"><value>Cronologia della conversazione: {0} token (stima)</value></data>
+  <data name="XrayRag" xml:space="preserve"><value>Auto-contesto RAG: {0}</value></data>
+  <data name="XrayBudget" xml:space="preserve"><value>Finestra di contesto: {0} / {1} token ({2} %)</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Uso: `/hardware &lt;gb&gt;` — un numero positivo, ad es. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budget VRAM impostato a {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Profilo hardware</value></data>

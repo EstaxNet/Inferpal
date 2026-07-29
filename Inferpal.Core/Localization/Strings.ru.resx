@@ -806,6 +806,16 @@ ollama serve
   <data name="ReplayNone" xml:space="preserve"><value>В этой сессии не записано ни одного запуска агента с вызовами инструментов.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Запуск агента {0} — вызовов инструментов: {1}, изменённых файлов: {2}</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Затронутые файлы:**</value></data>
+  <data name="SlashHintXray" xml:space="preserve"><value>Распределение токенов контекста, отправляемого модели</value></data>
+  <data name="XrayHeader" xml:space="preserve"><value>🩻 Рентген контекста — системный промпт ≈ {0} токенов</value></data>
+  <data name="XrayLabelBase" xml:space="preserve"><value>Базовый системный промпт</value></data>
+  <data name="XrayLabelPersona" xml:space="preserve"><value>Фрагмент персоны</value></data>
+  <data name="XrayLabelCustom" xml:space="preserve"><value>Пользовательский системный промпт</value></data>
+  <data name="XrayLabelTemplate" xml:space="preserve"><value>Шаблон сессии</value></data>
+  <data name="XrayLabelRules" xml:space="preserve"><value>Правила (применено: {0})</value></data>
+  <data name="XrayHistory" xml:space="preserve"><value>История разговора: {0} токенов (оценка)</value></data>
+  <data name="XrayRag" xml:space="preserve"><value>Автоконтекст RAG: {0}</value></data>
+  <data name="XrayBudget" xml:space="preserve"><value>Контекстное окно: {0} / {1} токенов ({2} %)</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Использование: `/hardware &lt;gb&gt;` — положительное число, например `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Бюджет VRAM установлен на {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Профиль оборудования</value></data>

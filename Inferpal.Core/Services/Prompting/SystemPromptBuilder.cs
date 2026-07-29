@@ -4,6 +4,14 @@ using Inferpal.Config;
 
 namespace Inferpal.Services.Prompting;
 
+/// <summary>Origin of one layer of the composed system prompt (for <c>/xray</c>).</summary>
+internal enum PromptSectionKind { Base, Persona, Custom, Template, Pinned, ProjectContext, Memory, Notes, Rules }
+
+/// <summary>One layer of the composed system prompt. <see cref="Content"/> includes the layer's own
+/// leading separator so concatenating all sections reproduces the exact prompt text.
+/// <see cref="Detail"/> carries the file name / rule count where relevant.</summary>
+internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, string Content);
+
 /// <summary>
 /// Builds the layered system prompt sent with every chat/agent request:
 /// base prompt → persona snippet (active language) → user custom prompt → active
@@ -45,22 +53,36 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
         string? templateSuffix    = null,
         string? projectRoot       = null,
         string? activeFileRelPath = null)
+        => string.Concat(BuildSections(basePrompt, language, templateSuffix, projectRoot, activeFileRelPath)
+                         .Select(s => s.Content));
+
+    /// <summary>
+    /// Same layering as <see cref="Build"/>, one <see cref="PromptSection"/> per contributing layer —
+    /// the <c>/xray</c> token breakdown reads these. Concatenating the sections' contents in order
+    /// reproduces the exact prompt (each content carries its own leading separator).
+    /// </summary>
+    public IReadOnlyList<PromptSection> BuildSections(
+        string  basePrompt,
+        string? language          = null,
+        string? templateSuffix    = null,
+        string? projectRoot       = null,
+        string? activeFileRelPath = null)
     {
-        var sb = new StringBuilder(basePrompt);
+        var sections = new List<PromptSection> { new(PromptSectionKind.Base, null, basePrompt) };
 
         if (config.PersonaAutoSwitch && !string.IsNullOrEmpty(language))
         {
             var snippet = PersonaSnippetFor(language);
             if (!string.IsNullOrEmpty(snippet))
-                sb.Append("\n\n").Append(snippet);
+                sections.Add(new(PromptSectionKind.Persona, language, "\n\n" + snippet));
         }
 
         var custom = config.CustomSystemPrompt?.Trim();
         if (!string.IsNullOrEmpty(custom))
-            sb.Append("\n\n").Append(custom);
+            sections.Add(new(PromptSectionKind.Custom, null, "\n\n" + custom));
 
         if (!string.IsNullOrEmpty(templateSuffix))
-            sb.Append(templateSuffix);
+            sections.Add(new(PromptSectionKind.Template, null, templateSuffix));
 
         foreach (var pinnedPath in PinnedFilesPolicy.ParseActive(config.PinnedContextFiles))
         {
@@ -69,16 +91,17 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
             {
                 var pinnedContent = File.ReadAllText(pinnedPath, Encoding.UTF8).Trim();
                 if (!string.IsNullOrEmpty(pinnedContent))
-                    sb.Append("\n\n## Pinned: ").Append(Path.GetFileName(pinnedPath)).Append("\n\n").Append(pinnedContent);
+                    sections.Add(new(PromptSectionKind.Pinned, Path.GetFileName(pinnedPath),
+                        "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n" + pinnedContent));
             }
             catch (Exception ex) { Diagnostics.Swallow($"SystemPromptBuilder.PinnedFile({Path.GetFileName(pinnedPath)})", ex); }
         }
 
         if (projectRoot is not null)
         {
-            AppendFileSection(sb, Path.Combine(projectRoot, ".inferpal", "context.md"), "Project context");
-            AppendFileSection(sb, Path.Combine(projectRoot, ".inferpal", "memory.md"),  "Agent memory");
-            AppendFileSection(sb, NotesStore.NotesPath(projectRoot),                       "Project notes");
+            AddFileSection(sections, PromptSectionKind.ProjectContext, Path.Combine(projectRoot, ".inferpal", "context.md"), "Project context", ".inferpal/context.md");
+            AddFileSection(sections, PromptSectionKind.Memory,         Path.Combine(projectRoot, ".inferpal", "memory.md"),  "Agent memory",    ".inferpal/memory.md");
+            AddFileSection(sections, PromptSectionKind.Notes,          NotesStore.NotesPath(projectRoot),                       "Project notes",   ".inferpal/notes.md");
 
             // Project rules (.inferpal/rules/*.md) — scoped by glob against the active file.
             try
@@ -88,24 +111,24 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
                 {
                     var matched = rules.Where(r => RulesService.Matches(r, activeFileRelPath)).ToList();
                     if (matched.Count > 0)
-                        sb.Append(RulesService.Render(matched));
+                        sections.Add(new(PromptSectionKind.Rules, matched.Count.ToString(), RulesService.Render(matched)));
                 }
             }
             catch (Exception ex) { Diagnostics.Swallow("SystemPromptBuilder.Rules", ex); }
         }
 
-        return sb.ToString();
+        return sections;
     }
 
-    /// <summary>Appends a <c>## header</c> section with the file's content; missing/empty/unreadable file ⇒ no-op.</summary>
-    private static void AppendFileSection(StringBuilder sb, string path, string header)
+    /// <summary>Adds a <c>## header</c> file-backed section; missing/empty/unreadable file ⇒ no-op.</summary>
+    private static void AddFileSection(List<PromptSection> sections, PromptSectionKind kind, string path, string header, string detail)
     {
         if (!File.Exists(path)) return;
         try
         {
             var text = File.ReadAllText(path, Encoding.UTF8).Trim();
             if (!string.IsNullOrEmpty(text))
-                sb.Append("\n\n## ").Append(header).Append("\n\n").Append(text);
+                sections.Add(new(kind, detail, "\n\n## " + header + "\n\n" + text));
         }
         catch (Exception ex) { Diagnostics.Swallow($"SystemPromptBuilder.FileSection({header})", ex); }
     }

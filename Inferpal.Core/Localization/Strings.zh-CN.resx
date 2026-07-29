@@ -806,6 +806,16 @@ ollama serve
   <data name="ReplayNone" xml:space="preserve"><value>本会话中没有记录包含工具调用的代理运行。</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 代理运行 {0} — {1} 次工具调用，{2} 个文件被修改</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**涉及的文件：**</value></data>
+  <data name="SlashHintXray" xml:space="preserve"><value>发送给模型的上下文的 token 明细</value></data>
+  <data name="XrayHeader" xml:space="preserve"><value>🩻 上下文透视 — 系统提示词 ≈ {0} 个 token</value></data>
+  <data name="XrayLabelBase" xml:space="preserve"><value>基础系统提示词</value></data>
+  <data name="XrayLabelPersona" xml:space="preserve"><value>角色片段</value></data>
+  <data name="XrayLabelCustom" xml:space="preserve"><value>自定义系统提示词</value></data>
+  <data name="XrayLabelTemplate" xml:space="preserve"><value>会话模板</value></data>
+  <data name="XrayLabelRules" xml:space="preserve"><value>规则（应用 {0} 条）</value></data>
+  <data name="XrayHistory" xml:space="preserve"><value>会话历史：{0} 个 token（估算）</value></data>
+  <data name="XrayRag" xml:space="preserve"><value>RAG 自动上下文：{0}</value></data>
+  <data name="XrayBudget" xml:space="preserve"><value>上下文窗口：{0} / {1} 个 token（{2}%）</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>用法：`/hardware &lt;gb&gt;` — 正数，例如 `/hardware 24`。</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM 预算已设置为 {0} GB。</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## 硬件配置</value></data>

@@ -811,6 +811,16 @@ ollama serve
   <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Agent run {0} — {1} tool call(s), {2} file(s) changed</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Files touched:**</value></data>
+  <data name="SlashHintXray" xml:space="preserve"><value>Token breakdown of the context sent to the model</value></data>
+  <data name="XrayHeader" xml:space="preserve"><value>🩻 Context X-Ray — system prompt ≈ {0} tokens</value></data>
+  <data name="XrayLabelBase" xml:space="preserve"><value>Base system prompt</value></data>
+  <data name="XrayLabelPersona" xml:space="preserve"><value>Persona snippet</value></data>
+  <data name="XrayLabelCustom" xml:space="preserve"><value>Custom system prompt</value></data>
+  <data name="XrayLabelTemplate" xml:space="preserve"><value>Session template</value></data>
+  <data name="XrayLabelRules" xml:space="preserve"><value>Rules ({0} matched)</value></data>
+  <data name="XrayHistory" xml:space="preserve"><value>Conversation history: {0} tokens (estimate)</value></data>
+  <data name="XrayRag" xml:space="preserve"><value>RAG auto-context: {0}</value></data>
+  <data name="XrayBudget" xml:space="preserve"><value>Context window: {0} / {1} tokens ({2}%)</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Usage: `/hardware &lt;gb&gt;` — a positive number, e.g. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM budget set to {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Hardware profile</value></data>
