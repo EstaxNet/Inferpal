@@ -60,5 +60,7 @@
   "Unchecked sections are excluded from the next turn.": "未勾选的部分将从下一轮中排除。",
   "Nothing to export — the conversation is empty.": "没有可导出的内容——对话为空。",
   "Conversation exported: {0}": "对话已导出：{0}",
-  "📎 {0} attached to the next message.": "📎 {0} 已附加到下一条消息。"
+  "📎 {0} attached to the next message.": "📎 {0} 已附加到下一条消息。",
+  "Explain the following code from {0} — what it does, how, and any pitfalls.": "解释来自 {0} 的以下代码——它做什么、如何做，以及可能的陷阱。",
+  "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "审查来自 {0} 的以下代码：指出错误、风险和具体改进。"
 }

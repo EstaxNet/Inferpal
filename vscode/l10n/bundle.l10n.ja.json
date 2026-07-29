@@ -60,5 +60,7 @@
   "Unchecked sections are excluded from the next turn.": "チェックを外したセクションは次のターンから除外されます。",
   "Nothing to export — the conversation is empty.": "エクスポートするものがありません — 会話が空です。",
   "Conversation exported: {0}": "会話をエクスポートしました: {0}",
-  "📎 {0} attached to the next message.": "📎 {0} を次のメッセージに添付しました。"
+  "📎 {0} attached to the next message.": "📎 {0} を次のメッセージに添付しました。",
+  "Explain the following code from {0} — what it does, how, and any pitfalls.": "{0} の次のコードを説明してください — 何を、どのように行うか、注意点も含めて。",
+  "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "{0} の次のコードをレビューしてください。バグ、リスク、具体的な改善点を指摘してください。"
 }

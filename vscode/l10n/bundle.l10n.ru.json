@@ -60,5 +60,7 @@
   "Unchecked sections are excluded from the next turn.": "Снятые с отметки разделы исключаются из следующего хода.",
   "Nothing to export — the conversation is empty.": "Нечего экспортировать — беседа пуста.",
   "Conversation exported: {0}": "Беседа экспортирована: {0}",
-  "📎 {0} attached to the next message.": "📎 {0} прикреплено к следующему сообщению."
+  "📎 {0} attached to the next message.": "📎 {0} прикреплено к следующему сообщению.",
+  "Explain the following code from {0} — what it does, how, and any pitfalls.": "Объясни следующий код из {0} — что он делает, как, и возможные подводные камни.",
+  "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "Проведи ревью следующего кода из {0}: укажи баги, риски и конкретные улучшения."
 }

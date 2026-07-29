@@ -60,5 +60,7 @@
   "Unchecked sections are excluded from the next turn.": "선택 해제된 섹션은 다음 턴에서 제외됩니다.",
   "Nothing to export — the conversation is empty.": "내보낼 항목 없음 — 대화가 비어 있습니다.",
   "Conversation exported: {0}": "대화를 내보냈습니다: {0}",
-  "📎 {0} attached to the next message.": "📎 {0}이(가) 다음 메시지에 첨부되었습니다."
+  "📎 {0} attached to the next message.": "📎 {0}이(가) 다음 메시지에 첨부되었습니다.",
+  "Explain the following code from {0} — what it does, how, and any pitfalls.": "{0}의 다음 코드를 설명하세요 — 무엇을, 어떻게 하는지, 주의할 점을 포함해서.",
+  "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "{0}의 다음 코드를 리뷰하세요: 버그, 위험 요소, 구체적인 개선점을 지적하세요."
 }

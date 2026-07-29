@@ -580,6 +580,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    // /explain and /review stay read-only and editor-side (VS parity): the active
+    // document (or selection) is attached and the answer streams into the chat.
+    const first = prompt.split(/\s+/, 1)[0].toLowerCase();
+    if (first === '/explain' || first === '/review') {
+      await this.runExplainReview(first === '/explain' ? 'explain' : 'review', host);
+      return;
+    }
+
     // Slash commands the host serves headlessly: rendered as an instant bubble (with
     // optional editor-side effects), never sent to the model. Unhandled ones fall through.
     if (prompt.startsWith('/')) {
@@ -665,6 +673,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     }
     return { chatPrompt, notes, rehydrate };
+  }
+
+  /** /explain and /review: active selection (or whole document) fenced into the prompt,
+   * answered as a normal streamed chat turn. */
+  private async runExplainReview(kind: 'explain' | 'review', host: HostClient): Promise<void> {
+    const editor = this.getActiveEditor();
+    if (!editor || editor.document.uri.scheme !== 'file') {
+      this.finishTurn('', vscode.l10n.t('Open a file in the editor to use /{0}.', kind), false, 0);
+      return;
+    }
+    const doc = editor.document;
+    const code = editor.selection.isEmpty ? doc.getText() : doc.getText(editor.selection);
+    const file = vscode.workspace.asRelativePath(doc.uri, false);
+    const instruction = kind === 'explain'
+      ? vscode.l10n.t('Explain the following code from {0} — what it does, how, and any pitfalls.', file)
+      : vscode.l10n.t('Review the following code from {0}: point out bugs, risks, and concrete improvements.', file);
+    await this.chatTurn(`${instruction}\n\n\`\`\`\n${code}\n\`\`\``, host);
   }
 
   /** One model turn (agent or plain chat) with @-mention and pending-chip expansion. */

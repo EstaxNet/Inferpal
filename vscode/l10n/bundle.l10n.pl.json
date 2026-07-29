@@ -60,5 +60,7 @@
   "Unchecked sections are excluded from the next turn.": "Odznaczone sekcje są wykluczone z następnej tury.",
   "Nothing to export — the conversation is empty.": "Nie ma nic do wyeksportowania — rozmowa jest pusta.",
   "Conversation exported: {0}": "Rozmowa wyeksportowana: {0}",
-  "📎 {0} attached to the next message.": "📎 {0} dołączono do następnej wiadomości."
+  "📎 {0} attached to the next message.": "📎 {0} dołączono do następnej wiadomości.",
+  "Explain the following code from {0} — what it does, how, and any pitfalls.": "Wyjaśnij poniższy kod z {0} — co robi, jak, i jakie ma pułapki.",
+  "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "Zrecenzuj poniższy kod z {0}: wskaż błędy, ryzyka i konkretne ulepszenia."
 }
