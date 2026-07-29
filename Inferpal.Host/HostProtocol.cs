@@ -56,6 +56,14 @@ internal sealed record EditResultDto(string? Path, bool ReplacedSelection);
 /// <summary>`index/status` snapshot.</summary>
 internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string RootDir);
 
+/// <summary>`backend/status` answer — the adapter's connection badge. <paramref name="VramBadge"/>
+/// is the compact "model · X.X GB" line (empty when unreachable, unsupported or nothing loaded).</summary>
+internal sealed record BackendStatusResult(bool Connected, string VramBadge);
+
+/// <summary>`command/list` entry — one slash command for the adapter's autocomplete popup
+/// (built-ins with their localized hints, then user templates).</summary>
+internal sealed record SlashCommandInfoDto(string Command, string Hint);
+
 /// <summary>`command/slash` — a chat input starting with <c>/</c>. The host executes the
 /// commands it can serve headlessly; <c>Handled = false</c> tells the adapter to send the
 /// text as a normal chat prompt instead.</summary>

@@ -550,4 +550,63 @@ public class HostServerTests
             h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
                 "codeAction/run", new { kind = "explain", text = "int x = 1;", selStart = 0, selEnd = 0 }));
     }
+
+    // ── backend/status ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task BackendStatus_Connected_ReportsVramBadge()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ConnectionOk = true;   // Capabilities default to Ollama (VramMonitoring = true)
+        h.Fake.Running = [new RunningModelInfo("llama3.1:8b", 4_800_000_000, "2026-01-01T00:00:00Z")];
+
+        var status = await h.Client.InvokeAsync<Host.BackendStatusResult>("backend/status");
+
+        Assert.True(status.Connected);
+        Assert.StartsWith("llama3.1 · ", status.VramBadge, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BackendStatus_Unreachable_NoBadge()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ConnectionOk = false;
+        h.Fake.Running = [new RunningModelInfo("llama3.1:8b", 4_800_000_000, "2026-01-01T00:00:00Z")];
+
+        var status = await h.Client.InvokeAsync<Host.BackendStatusResult>("backend/status");
+
+        Assert.False(status.Connected);
+        Assert.Equal(string.Empty, status.VramBadge);
+    }
+
+    [Fact]
+    public async Task BackendStatus_NoVramMonitoring_NoBadge()
+    {
+        using var h = CreateHarness();
+        h.Fake.Capabilities = ProviderCapabilities.OpenAiCompatible;
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.Running = [new RunningModelInfo("llama3.1:8b", 4_800_000_000, "2026-01-01T00:00:00Z")];
+
+        var status = await h.Client.InvokeAsync<Host.BackendStatusResult>("backend/status");
+
+        Assert.True(status.Connected);
+        Assert.Equal(string.Empty, status.VramBadge);
+    }
+
+    // ── command/list ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CommandList_ReturnsBuiltInsAndUserTemplates()
+    {
+        using var h = CreateHarness(cfg => cfg.PromptTemplates = "/standup=Summarize my day");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var list = await h.Client.InvokeAsync<List<Host.SlashCommandInfoDto>>("command/list");
+
+        Assert.Contains(list, c => c.Command == "/help" && c.Hint.Length > 0);
+        Assert.Contains(list, c => c.Command == "/xray");
+        Assert.Contains(list, c => c.Command == "/standup" && c.Hint == "Summarize my day");
+    }
 }

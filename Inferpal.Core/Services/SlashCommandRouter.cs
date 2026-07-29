@@ -284,7 +284,7 @@ internal static class SlashCommandRouter
             return [];
 
         var userCmds = userTemplates
-            .Select(t => (Cmd: t.Name, Hint: t.Hint ?? (t.Text.Length > 50 ? t.Text[..50] + "…" : t.Text)));
+            .Select(t => (Cmd: t.Name, Hint: SlashTemplates.HintOf(t)));
         return BuiltInCommands
             .Concat(userCmds)
             .Where(c => c.Cmd.StartsWith(text, StringComparison.OrdinalIgnoreCase))

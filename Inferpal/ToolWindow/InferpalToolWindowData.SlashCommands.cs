@@ -571,16 +571,10 @@ internal partial class InferpalToolWindowData
         await ShowInfoAsync(tmpl.Greeting);
     }
 
-    // Config templates first so they shadow a prompt file with the same command name
-    // (the router resolves with FirstOrDefault; built-ins always win over both).
+    // Delegates to the shared Core loader (config templates shadow prompt files; built-ins
+    // always win over both) — the same list the Host serves through `command/list`.
     private IReadOnlyList<UserSlashTemplate> GetUserTemplates()
-    {
-        var fromConfig = SlashCommandRouter.ParseUserTemplates(_config.PromptTemplates);
-        var fromFiles  = PromptFilesService.Load(PromptsDir());
-        return fromFiles.Count == 0
-            ? fromConfig
-            : fromConfig.Concat(fromFiles).DistinctBy(t => t.Name).ToList();
-    }
+        => SlashTemplates.Load(_config, FindProjectRoot());
 
     private string PromptsDir() => Path.Combine(FindProjectRoot(), ".inferpal", "prompts");
 

@@ -267,6 +267,20 @@ internal sealed class HostServer : IDisposable
         }
     }
 
+    /// <summary>Full slash-command list for the adapter's autocomplete popup: built-ins (hints
+    /// localized by the `initialize` locale handshake) then user templates — the same sources
+    /// as the VS autocomplete (<see cref="SlashCommandRouter.MatchCommands"/>).</summary>
+    [JsonRpcMethod("command/list")]
+    public List<SlashCommandInfoDto> CommandList()
+    {
+        var s = Session();
+        var templates = SlashTemplates.Load(s.Config, string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
+        return SlashCommandRouter.BuiltInCommands
+            .Concat(templates.Select(t => (Cmd: t.Name, Hint: SlashTemplates.HintOf(t))))
+            .Select(c => new SlashCommandInfoDto(c.Cmd, c.Hint))
+            .ToList();
+    }
+
     /// <summary>
     /// Runs an in-place code action headlessly (same pipeline as the VS commands) and returns
     /// the rewrite as independent per-hunk edits — the adapter previews/applies them natively
@@ -315,6 +329,29 @@ internal sealed class HostServer : IDisposable
     {
         var s = Session();
         return s.Client.CheckConnectionAsync(s.Config.BaseUrl, ct);
+    }
+
+    /// <summary>Connection badge for the adapter's header: reachability + the compact VRAM line
+    /// (only when the provider supports <c>/api/ps</c>). Best-effort — failures degrade to
+    /// "unreachable", never an RPC fault (this is polled).</summary>
+    [JsonRpcMethod("backend/status")]
+    public async Task<BackendStatusResult> BackendStatusAsync(CancellationToken ct)
+    {
+        var s = Session();
+        var connected = false;
+        try { connected = await s.Client.CheckConnectionAsync(s.Config.BaseUrl, ct); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("HostServer.BackendStatus", ex); }
+
+        var badge = string.Empty;
+        if (connected && s.Client.Capabilities.VramMonitoring)
+        {
+            // /api/ps is a plain HTTP call, not gated by the GPU scheduler — safe during a turn.
+            try { badge = ModelCatalog.FormatVramBadge(await s.Client.GetRunningModelsAsync(ct)); }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { Diagnostics.Swallow("HostServer.BackendStatus", ex); }
+        }
+        return new BackendStatusResult(connected, badge);
     }
 
     [JsonRpcMethod("fim/complete", UseSingleObjectParameterDeserialization = true)]
