@@ -17,7 +17,7 @@ import { t } from './l10n';
 import { renderMarkdownInto, setCopySink } from './markdown';
 import { renderXray, setXraySink } from './xray';
 
-const vscode = acquireVsCodeApi();
+const vscode = window.__vsapi ?? acquireVsCodeApi();
 const post = (msg: WebviewToExt) => vscode.postMessage(msg);
 setCopySink((text) => post({ type: 'copyText', text }));
 setXraySink((msg) => post(msg));

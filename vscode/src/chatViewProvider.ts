@@ -57,12 +57,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   resolveWebviewView(view: vscode.WebviewView): void {
+    this.log('[chat] resolving webview view');
     this.view = view;
     view.webview.options = {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'media')],
     };
     view.webview.html = this.renderHtml(view.webview);
+    this.log('[chat] webview html set');
     view.webview.onDidReceiveMessage((msg: WebviewToExt) => this.onMessage(msg));
     view.onDidDispose(() => {
       if (this.view === view) {
@@ -424,9 +426,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   // ── Webview → extension ─────────────────────────────────────────────────────
 
-  private async onMessage(msg: WebviewToExt): Promise<void> {
+  private async onMessage(msg: WebviewToExt | { type: 'clientError'; message: string }): Promise<void> {
     switch (msg.type) {
+      case 'clientError':
+        this.log(`[webview] ${msg.message}`);
+        return;
       case 'ready':
+        this.log('[chat] webview ready');
         this.hydrate();
         return;
       case 'send':
@@ -1174,7 +1180,27 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   <div id="toolbar"></div>
   <div id="footerbar"></div>
 </div>
-<script nonce="${nonce}">window.__l10n = ${l10n};</script>
+<script nonce="${nonce}">
+window.__l10n = ${l10n};
+// Webview crashes are invisible (no console in logs): channel them to the extension,
+// which writes them to the Inferpal output channel.
+window.__vsapi = acquireVsCodeApi();
+window.onerror = function (message, source, line, col) {
+  try { window.__vsapi.postMessage({ type: 'clientError', message: String(message) + ' @ ' + source + ':' + line + ':' + col }); } catch (e) { }
+};
+// Capture phase: resource-load failures (script/css) never reach window.onerror.
+window.addEventListener('error', function (e) {
+  try {
+    var target = e.target;
+    if (target && (target.src || target.href)) {
+      window.__vsapi.postMessage({ type: 'clientError', message: 'resource failed: ' + (target.src || target.href) });
+    }
+  } catch (err) { }
+}, true);
+window.addEventListener('unhandledrejection', function (e) {
+  try { window.__vsapi.postMessage({ type: 'clientError', message: 'unhandled rejection: ' + String(e.reason) }); } catch (err) { }
+});
+</script>
 <script nonce="${nonce}" src="${script}"></script>
 </body>
 </html>`;

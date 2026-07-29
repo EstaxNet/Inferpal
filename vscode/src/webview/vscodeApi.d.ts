@@ -5,7 +5,13 @@ declare function acquireVsCodeApi(): {
   setState(state: unknown): void;
 };
 
-// Localized strings injected by chatViewProvider.renderHtml (<script> before the bundle).
+// Injected by the renderHtml bootstrap script (before the bundle): localized strings
+// and the single acquired VS Code API (acquireVsCodeApi can only be called once).
 interface Window {
   __l10n?: Record<string, string>;
+  __vsapi?: {
+    postMessage(message: unknown): void;
+    getState(): unknown;
+    setState(state: unknown): void;
+  };
 }
