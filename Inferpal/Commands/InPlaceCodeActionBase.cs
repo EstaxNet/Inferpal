@@ -50,15 +50,15 @@ internal abstract class InPlaceCodeActionBase : Command
                 ?? await Extensibility.Editor().GetActiveTextViewAsync(context, ct);
         if (view is null) return;
 
-        var outcome = await InPlaceCodeEdit.RunAsync(
+        var result = await InPlaceCodeEdit.RunAsync(
             Extensibility, view, _client, ResolveModel(), SystemPrompt, Instruction, ct, _config);
 
         // No chat to write to here — surface the "nothing to do" and failure verdicts as dismissable
         // prompts so the unchanged document doesn't look like the command silently did nothing.
-        if (outcome == InPlaceEditOutcome.NoChangeNeeded)
+        if (result.Outcome == InPlaceEditOutcome.NoChangeNeeded)
             await Extensibility.Shell().ShowPromptAsync(NoChangeMessage, PromptOptions.OK, ct);
-        else if (outcome == InPlaceEditOutcome.Failed)
-            await Extensibility.Shell().ShowPromptAsync(Strings.CodeActionFailed, PromptOptions.OK, ct);
+        else if (result.Outcome == InPlaceEditOutcome.Failed)
+            await Extensibility.Shell().ShowPromptAsync(InPlaceCodeEdit.FailureMessage(result.FailureDetail), PromptOptions.OK, ct);
     }
 
     private string ResolveModel() =>

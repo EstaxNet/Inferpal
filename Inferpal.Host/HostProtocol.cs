@@ -84,11 +84,13 @@ internal sealed record CodeActionEditDto(int Index, int Start, int End, string N
 
 /// <summary>`codeAction/run` answer. <paramref name="Outcome"/> is <c>edited</c> (apply or
 /// preview <paramref name="Edits"/>), <c>noChange</c> (model judged the code already good) or
-/// <c>failed</c>. <paramref name="NewText"/> is the full rewritten document when edited.</summary>
+/// <c>failed</c>. <paramref name="NewText"/> is the full rewritten document when edited;
+/// <paramref name="FailureDetail"/> is the underlying error message when failed.</summary>
 internal sealed record CodeActionResultDto(
     string                  Outcome,
     List<CodeActionEditDto> Edits,
-    string?                 NewText = null);
+    string?                 NewText = null,
+    string?                 FailureDetail = null);
 
 // ── Sessions (persisted in %AppData%/Inferpal/sessions/, shared with the VS extension) ──
 

@@ -94,6 +94,9 @@ if (Test-Path $cfgPath) {
     Line 'Provider' "$provider  ($baseUrl)"
     Line 'Default model' "$($cfg.defaultModel)"
     try {
+        # PowerShell 5.1 ne charge pas System.Net.Http d'office : sans Add-Type, New-Object
+        # échoue et le catch affichait un faux « Reachable NO » backend pourtant joignable.
+        Add-Type -AssemblyName System.Net.Http -ErrorAction Stop
         $client = New-Object System.Net.Http.HttpClient
         $client.Timeout = [TimeSpan]::FromSeconds(2)
         # Any HTTP answer (even 404) proves the server is listening.

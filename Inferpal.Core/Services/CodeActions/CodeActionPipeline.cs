@@ -15,14 +15,17 @@ internal enum CodeActionOutcome
 }
 
 /// <summary>Result of <see cref="CodeActionPipeline.RunAsync"/>. <see cref="NewDocText"/> is the
-/// whole document after the rewrite — what front-ends diff against the original for the preview.</summary>
+/// whole document after the rewrite — what front-ends diff against the original for the preview.
+/// <see cref="FailureDetail"/> carries the underlying error message on <see cref="CodeActionOutcome.Failed"/>
+/// (network/model exception), so front-ends can show the cause instead of a generic verdict.</summary>
 internal sealed record CodeActionRun(
     CodeActionOutcome Outcome,
     string? EditedCode = null,
     int Start = 0,
     int End = 0,
     bool HasSelection = false,
-    string? NewDocText = null);
+    string? NewDocText = null,
+    string? FailureDetail = null);
 
 /// <summary>
 /// Editor-agnostic pipeline of the in-place code actions (Refactor / Fix / Add-docs):
@@ -94,7 +97,7 @@ internal static class CodeActionPipeline
         catch (Exception ex)
         {
             Diagnostics.Swallow("CodeActionPipeline.RunAsync", ex);
-            return new CodeActionRun(CodeActionOutcome.Failed);
+            return new CodeActionRun(CodeActionOutcome.Failed, FailureDetail: ex.Message);
         }
 
         var cleaned = InlineEditResponse.Clean(result.TextContent);

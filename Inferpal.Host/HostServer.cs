@@ -249,7 +249,7 @@ internal sealed class HostServer : IDisposable
             p.Text, p.SelStart, p.SelEnd, selectionEmpty: p.SelStart == p.SelEnd, ct);
 
         if (run.Outcome == CodeActionOutcome.NoChangeNeeded) return new("noChange", []);
-        if (run.Outcome != CodeActionOutcome.Edited)         return new("failed",   []);
+        if (run.Outcome != CodeActionOutcome.Edited)         return new("failed",   [], FailureDetail: run.FailureDetail);
 
         var edits = InlineDiffPlanner.ToEdits(InlineDiffPlanner.Plan(p.Text, run.NewDocText!))
             .Select(e => new CodeActionEditDto(e.Index, e.Start, e.End, e.NewText))

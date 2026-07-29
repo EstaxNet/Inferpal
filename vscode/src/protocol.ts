@@ -96,11 +96,13 @@ export interface CodeActionEdit {
   newText: string;
 }
 
-/** `codeAction/run` answer; `newText` is the full rewritten document when edited. */
+/** `codeAction/run` answer; `newText` is the full rewritten document when edited,
+ * `failureDetail` the underlying error message when failed. */
 export interface CodeActionResult {
   outcome: 'edited' | 'noChange' | 'failed';
   edits: CodeActionEdit[];
   newText?: string | null;
+  failureDetail?: string | null;
 }
 
 export interface ApprovalNote {

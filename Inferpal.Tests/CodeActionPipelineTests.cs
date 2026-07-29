@@ -112,6 +112,7 @@ public class CodeActionPipelineTests
         var run = await RunAsync(provider, "int x = 1;");
 
         Assert.Equal(CodeActionOutcome.Failed, run.Outcome);
+        Assert.Equal("backend down", run.FailureDetail);
     }
 
     [Fact]

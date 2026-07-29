@@ -509,7 +509,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     if (result.outcome !== 'edited' || result.edits.length === 0) {
-      finish('error', vscode.l10n.t('The code action failed — check the backend connection and the model.'));
+      const base = vscode.l10n.t('The code action failed — check the backend connection and the model.');
+      finish('error', result.failureDetail ? `${base}\n\n${result.failureDetail}` : base);
       return;
     }
     // The offsets were computed against the text we sent; a buffer that moved meanwhile

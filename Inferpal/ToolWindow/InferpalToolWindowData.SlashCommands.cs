@@ -139,23 +139,23 @@ internal partial class InferpalToolWindowData
                 system += "\n\nContext (for reference only — do not output it):\n" + contextBlock;
         }
 
-        var model   = string.IsNullOrEmpty(_config.CodeActionsModel) ? _config.DefaultModel : _config.CodeActionsModel;
-        var outcome = await InPlaceCodeEdit.RunAsync(_vs, view, _client, model, system, instruction, ct, _config);
+        var model  = string.IsNullOrEmpty(_config.CodeActionsModel) ? _config.DefaultModel : _config.CodeActionsModel;
+        var result = await InPlaceCodeEdit.RunAsync(_vs, view, _client, model, system, instruction, ct, _config);
 
         // The model judged the action a no-op (already clear / correct / documented) — tell the user
         // rather than leaving the chat silent, so the absence of an edit doesn't look like a failure.
-        if (outcome == InPlaceEditOutcome.NoChangeNeeded)
+        if (result.Outcome == InPlaceEditOutcome.NoChangeNeeded)
             await ShowInfoAsync(kind switch
             {
                 SlashCodeActionKind.Refactor => Strings.RefactorNoChange,
                 SlashCodeActionKind.Fix      => Strings.FixNoChange,
                 _                            => Strings.DocNoChange,
             });
-        else if (outcome == InPlaceEditOutcome.PreviewShown)
+        else if (result.Outcome == InPlaceEditOutcome.PreviewShown)
             await ShowInfoAsync(Strings.CodeActionPreviewShown);
         // Model/network failure: tell the chat instead of leaving the turn silent.
-        else if (outcome == InPlaceEditOutcome.Failed)
-            await ShowInfoAsync(Strings.CodeActionFailed);
+        else if (result.Outcome == InPlaceEditOutcome.Failed)
+            await ShowInfoAsync(InPlaceCodeEdit.FailureMessage(result.FailureDetail));
     }
 
     /// <summary>Executes the stateful commands the router hands back to the VM.</summary>

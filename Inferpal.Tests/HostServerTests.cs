@@ -480,6 +480,7 @@ public class HostServerTests
             "codeAction/run", new { kind = "fix", text = "int x = 1;", selStart = 0, selEnd = 0 });
 
         Assert.Equal("failed", result.Outcome);
+        Assert.Equal("backend down", result.FailureDetail);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Inferpal.Localization;
 using Microsoft.VisualStudio.Extensibility;
 using Microsoft.VisualStudio.Extensibility.Editor;
 
@@ -17,6 +18,10 @@ internal enum InPlaceEditOutcome
     PreviewShown,
 }
 
+/// <summary>Outcome of an in-place code edit plus, on <see cref="InPlaceEditOutcome.Failed"/>,
+/// the underlying error message (network/model) so callers can show the cause.</summary>
+internal readonly record struct InPlaceEditResult(InPlaceEditOutcome Outcome, string? FailureDetail = null);
+
 /// <summary>
 /// VS side of the code actions that <b>apply their result directly to the document</b>
 /// (Refactor / Fix / Add-docs), used both by the editor context-menu commands
@@ -29,9 +34,9 @@ internal static class InPlaceCodeEdit
     /// <summary>
     /// Runs the full pipeline: spinner → <see cref="CodeActionPipeline.RunAsync"/> → inline diff
     /// preview detour (config-gated) → replace the range via <c>EditAsync</c> (undoable with Ctrl+Z).
-    /// Never throws; returns the <see cref="InPlaceEditOutcome"/>.
+    /// Never throws; returns the <see cref="InPlaceEditResult"/>.
     /// </summary>
-    public static async Task<InPlaceEditOutcome> RunAsync(
+    public static async Task<InPlaceEditResult> RunAsync(
         VisualStudioExtensibility vs,
         ITextViewSnapshot         view,
         IInferenceProvider        client,
@@ -47,12 +52,12 @@ internal static class InPlaceCodeEdit
         // No code to work on (empty file / whitespace selection) — fail before the spinner.
         var (originalCode, _, _, _) = CodeActionPipeline.ResolveTarget(
             docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty);
-        if (string.IsNullOrWhiteSpace(originalCode)) return InPlaceEditOutcome.Failed;
+        if (string.IsNullOrWhiteSpace(originalCode)) return new(InPlaceEditOutcome.Failed);
 
         // Spinner overlay while the model generates.
         InlineEditInputWindow dlg;
         try { dlg = await InlineEditInputWindow.CreateAndShowSpinnerAsync(); }
-        catch { return InPlaceEditOutcome.Failed; }
+        catch { return new(InPlaceEditOutcome.Failed); }
 
         CodeActionRun run;
         try
@@ -63,15 +68,15 @@ internal static class InPlaceCodeEdit
         }
         catch (OperationCanceledException)
         {
-            return InPlaceEditOutcome.Failed;   // cancelled mid-generation — nothing applied
+            return new(InPlaceEditOutcome.Failed);   // cancelled mid-generation — nothing applied
         }
         finally
         {
             dlg.CloseFromThread();
         }
 
-        if (run.Outcome == CodeActionOutcome.NoChangeNeeded) return InPlaceEditOutcome.NoChangeNeeded;
-        if (run.Outcome != CodeActionOutcome.Edited)         return InPlaceEditOutcome.Failed;
+        if (run.Outcome == CodeActionOutcome.NoChangeNeeded) return new(InPlaceEditOutcome.NoChangeNeeded);
+        if (run.Outcome != CodeActionOutcome.Edited)         return new(InPlaceEditOutcome.Failed, run.FailureDetail);
 
         var editRange = new TextRange(
             new TextPosition(view.Document, run.Start),
@@ -91,7 +96,7 @@ internal static class InPlaceCodeEdit
                 {
                     if (await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(
                             requestId, TimeSpan.FromSeconds(2), ct))
-                        return InPlaceEditOutcome.PreviewShown;
+                        return new(InPlaceEditOutcome.PreviewShown);
                 }
                 finally
                 {
@@ -111,14 +116,20 @@ internal static class InPlaceCodeEdit
                     doc.Replace(editRange, run.EditedCode!);
                 },
                 ct);
-            return InPlaceEditOutcome.Applied;
+            return new(InPlaceEditOutcome.Applied);
         }
-        catch
+        catch (Exception ex)
         {
             // EditAsync may fail if the document changed between snapshot and apply — user can retry.
-            return InPlaceEditOutcome.Failed;
+            return new(InPlaceEditOutcome.Failed, ex.Message);
         }
     }
+
+    /// <summary>Failure message for the user: the generic verdict, plus the underlying error when known.</summary>
+    internal static string FailureMessage(string? detail) =>
+        string.IsNullOrWhiteSpace(detail)
+            ? Strings.CodeActionFailed
+            : Strings.CodeActionFailed + "\n\n" + detail;
 
     /// <summary>Local file path of the document, or null (untitled / non-file buffers).</summary>
     private static string? TryGetLocalPath(ITextViewSnapshot view)
