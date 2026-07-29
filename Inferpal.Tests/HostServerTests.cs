@@ -755,6 +755,47 @@ public class HostServerTests
         Assert.False(result.Handled);
     }
 
+    // ── plan / step mode ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Slash_Plan_TogglesModeAndInjectsPromptSuffix()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var on = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/plan" });
+
+        Assert.True(on.Handled);
+        Assert.True(h.Server.CurrentSession!.PlanMode);
+        Assert.Contains("Plan mode (read-only)", h.Server.CurrentSession!.History[0].Content, StringComparison.Ordinal);
+
+        var off = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/plan" });
+
+        Assert.True(off.Handled);
+        Assert.False(h.Server.CurrentSession!.PlanMode);
+        Assert.DoesNotContain("Plan mode (read-only)", h.Server.CurrentSession!.History[0].Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Slash_AgentStep_TogglesAndResumeIdleAnswers()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var on = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/agent-step" });
+        Assert.True(h.Server.CurrentSession!.StepMode);
+        Assert.Contains(on.Effects!, e => e.Kind == "stateChange" && e.Name == "stepMode" && e.Value == "on");
+
+        // /resume outside a pause answers deterministically (and must not need the turn gate).
+        var resume = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/resume" });
+        Assert.True(resume.Handled);
+        Assert.Contains("No agent step", resume.Markdown, StringComparison.Ordinal);
+    }
+
     // ── config round trip (settings panel contract) ────────────────────────────
 
     /// <summary>The VS Code settings webview round-trips the FULL config JSON through

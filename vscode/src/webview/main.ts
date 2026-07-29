@@ -1048,6 +1048,28 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
     case 'chips':
       renderChips(msg.chips);
       break;
+    case 'stepPaused': {
+      finishStream();
+      hideWelcome();
+      const pause = document.createElement('div');
+      pause.className = 'bubble assistant step-pause';
+      const body = document.createElement('div');
+      body.className = 'bubble-body';
+      body.textContent = t('stepPaused');
+      const resume = document.createElement('button');
+      resume.className = 'bubble-action';
+      resume.textContent = '▶ ' + t('resume');
+      resume.addEventListener('click', () => post({ type: 'resumeStep' }));
+      pause.append(body, resume);
+      messagesEl.appendChild(pause);
+      scrollToBottom();
+      break;
+    }
+    case 'stepResumed':
+      for (const el of messagesEl.querySelectorAll('.step-pause')) {
+        el.remove();
+      }
+      break;
     case 'turnEnded': {
       if (streamEl) {
         // Replace the stream bubble content with the authoritative final text.

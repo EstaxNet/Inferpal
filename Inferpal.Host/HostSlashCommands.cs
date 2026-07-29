@@ -78,6 +78,18 @@ internal sealed partial class HostServer
     private async Task<SlashCommandResult> RunDelegatedSlashAsync(
         HostSession s, SlashDelegatedAction delegated, SlashCommandParams p, CancellationToken ct)
     {
+        // /resume runs OUTSIDE the single-turn gate: during a step pause the chat turn
+        // still holds it (that pause is precisely what /resume releases).
+        if (delegated.Id == SlashCommandId.Resume)
+        {
+            if (s.StepResume is not null)
+            {
+                s.StepResume.TrySetResult(true);
+                return new SlashCommandResult(true, null);
+            }
+            return new SlashCommandResult(true, "No agent step is currently paused.");
+        }
+
         var parts = delegated.Parts;
         var cts   = AcquireTurn(ct);
         try
@@ -243,6 +255,22 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, result.Message);
                 }
 
+                case SlashCommandId.AgentStep:
+                    // Same texts as the VS toggle (deliberately English, model-adjacent UX).
+                    s.StepMode = !s.StepMode;
+                    return new SlashCommandResult(true, s.StepMode
+                        ? "🦶 **Step mode ON** — the agent will pause after each tool call. Use ▶ Resume (or `/resume`) to continue."
+                        : "Step mode **OFF**.",
+                        [new SlashEffectDto("stateChange", s.StepMode ? "on" : "off", "stepMode")]);
+
+                case SlashCommandId.Plan:
+                    s.PlanMode = !s.PlanMode;
+                    RefreshSystemMessage(s);
+                    return new SlashCommandResult(true, s.PlanMode
+                        ? "📋 **Plan mode ON** — read-only: the agent explores and proposes a plan, but cannot edit files or run commands. Toggle again (or `/plan`) to apply changes."
+                        : "Plan mode **OFF**.",
+                        [new SlashEffectDto("stateChange", s.PlanMode ? "on" : "off", "planMode")]);
+
                 // Not portable yet (VS-only UX or planned for a later phase): a deterministic
                 // localized answer beats falling through to the model with a raw "/command".
                 case SlashCommandId.Commit:
@@ -251,9 +279,6 @@ internal sealed partial class HostServer
                 case SlashCommandId.Check:
                 case SlashCommandId.Setup:
                 case SlashCommandId.TestBuildBanner:
-                case SlashCommandId.AgentStep:
-                case SlashCommandId.Plan:
-                case SlashCommandId.Resume:
                     return new SlashCommandResult(true, Strings.SlashHeadlessUnavailable);
 
                 default:

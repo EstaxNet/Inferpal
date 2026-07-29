@@ -125,5 +125,7 @@
   "No file is open in the editor.": "エディターで開いているファイルがありません。",
   "The selection is empty.": "選択範囲が空です。",
   "No problems in the Problems panel.": "問題パネルに問題はありません。",
-  "No debugger session is active.": "アクティブなデバッグセッションがありません。"
+  "No debugger session is active.": "アクティブなデバッグセッションがありません。",
+  "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ ツール呼び出し後にエージェントが一時停止しました。続行するには再開、中止するにはキャンセル。",
+  "Resume": "再開"
 }

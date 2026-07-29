@@ -101,7 +101,9 @@ export type ExtToWebview =
   | { type: 'agentMode'; enabled: boolean }
   | { type: 'setPrompt'; text: string }
   | { type: 'mentionResults'; category: string; items: WvMentionItem[] }
-  | { type: 'chips'; chips: WvChip[] };
+  | { type: 'chips'; chips: WvChip[] }
+  | { type: 'stepPaused' }
+  | { type: 'stepResumed' };
 
 export type WebviewToExt =
   | { type: 'ready' }
@@ -123,4 +125,5 @@ export type WebviewToExt =
   | { type: 'removeChip'; index: number }
   | { type: 'attachActive' }
   | { type: 'attachSelection' }
-  | { type: 'attachBrowse' };
+  | { type: 'attachBrowse' }
+  | { type: 'resumeStep' };

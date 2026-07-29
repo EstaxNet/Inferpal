@@ -164,6 +164,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.streamText = '';
         this.post({ type: 'streamReset' });
       },
+      onStepPaused: () => this.post({ type: 'stepPaused' }),
+      onStepResumed: () => this.post({ type: 'stepResumed' }),
     });
 
     this.model = vscode.workspace.getConfiguration('inferpal').get<string>('model', '') || host.info?.defaultModel || '';
@@ -513,6 +515,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       case 'resolveMention':
         await this.resolveMention(msg.category, msg.value);
+        return;
+      case 'resumeStep':
+        try {
+          await this.getHost()?.chatResumeStep();
+        } catch (err) {
+          this.log(`[chat] resumeStep failed: ${String(err)}`);
+        }
         return;
       case 'removeChip':
         if (msg.index >= 0 && msg.index < this.pendingAttachments.length) {
@@ -1123,6 +1132,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       xrayWindow: t('window {0}% full'),
       xrayHint: t('Unchecked sections are excluded from the next turn.'),
       mentionSearchCode: t('Search the codebase for "{0}"'),
+      stepPaused: t('⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.'),
+      resume: t('Resume'),
       chipRemove: t('Remove'),
       attachMenuTitle: t('Add context'),
       attachActiveFile: t('Attach the active file'),

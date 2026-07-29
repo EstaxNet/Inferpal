@@ -46,6 +46,16 @@ internal sealed class HostSession : IDisposable
     /// <c>_activeTemplateSuffix</c>); appended by the host's system-prompt builder.</summary>
     public string? TemplateSuffix { get; set; }
 
+    /// <summary>Plan mode (`/plan`): read-only tool registry + plan-mode prompt suffix.</summary>
+    public bool PlanMode { get; set; }
+
+    /// <summary>Agent step mode (`/agent-step`): pause after every tool call until
+    /// `chat/resumeStep` (or `/resume`) releases <see cref="StepResume"/>.</summary>
+    public bool StepMode { get; set; }
+
+    /// <summary>Pending step-mode pause; null when the agent is not paused.</summary>
+    public TaskCompletionSource<bool>? StepResume;
+
     public void Dispose()
     {
         // McpToolService owns no disposable state (its stdio clients die with the process).

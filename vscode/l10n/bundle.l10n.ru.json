@@ -125,5 +125,7 @@
   "No file is open in the editor.": "В редакторе нет открытого файла.",
   "The selection is empty.": "Выделение пусто.",
   "No problems in the Problems panel.": "В панели «Проблемы» нет проблем.",
-  "No debugger session is active.": "Нет активного сеанса отладки."
+  "No debugger session is active.": "Нет активного сеанса отладки.",
+  "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ Агент приостановлен после вызова инструмента. Возобновить — продолжить, Отмена — прервать.",
+  "Resume": "Возобновить"
 }

@@ -51,6 +51,8 @@ export interface ChatEvents {
   onStepUpdate?(update: StepUpdateNotice): void;
   onTool?(tool: ToolNotice): void;
   onStreamReset?(): void;
+  onStepPaused?(): void;
+  onStepResumed?(): void;
 }
 
 export interface HostClientOptions {
@@ -147,6 +149,8 @@ export class HostClient {
     conn.onNotification('chat/stepUpdate', (n: StepUpdateNotice) => this.events.onStepUpdate?.(n));
     conn.onNotification('chat/tool', (n: ToolNotice) => this.events.onTool?.(n));
     conn.onNotification('chat/streamReset', () => this.events.onStreamReset?.());
+    conn.onNotification('chat/stepPaused', () => this.events.onStepPaused?.());
+    conn.onNotification('chat/stepResumed', () => this.events.onStepResumed?.());
 
     conn.onError((err) => this.options.log?.(`[rpc] error: ${String(err)}`));
     conn.listen();
@@ -214,6 +218,11 @@ export class HostClient {
 
   chatReset(): Promise<void> {
     return this.connection().sendRequest('chat/reset');
+  }
+
+  /** Releases a step-mode pause (the agent proceeds to its next action). */
+  chatResumeStep(): Promise<void> {
+    return this.connection().sendRequest('chat/resumeStep');
   }
 
   /** Slash commands the host serves headlessly. `promptHistory` (most-recent-last)

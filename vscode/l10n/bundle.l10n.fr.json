@@ -125,5 +125,7 @@
   "No file is open in the editor.": "Aucun fichier ouvert dans l’éditeur.",
   "The selection is empty.": "La sélection est vide.",
   "No problems in the Problems panel.": "Aucun problème dans le panneau Problèmes.",
-  "No debugger session is active.": "Aucune session de débogage active."
+  "No debugger session is active.": "Aucune session de débogage active.",
+  "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ Agent en pause après un appel d’outil. Reprendre pour continuer, ou Annuler pour abandonner.",
+  "Resume": "Reprendre"
 }

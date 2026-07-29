@@ -125,5 +125,7 @@
   "No file is open in the editor.": "편집기에 열린 파일이 없습니다.",
   "The selection is empty.": "선택 영역이 비어 있습니다.",
   "No problems in the Problems panel.": "문제 패널에 문제가 없습니다.",
-  "No debugger session is active.": "활성 디버그 세션이 없습니다."
+  "No debugger session is active.": "활성 디버그 세션이 없습니다.",
+  "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ 도구 호출 후 에이전트가 일시 중지되었습니다. 계속하려면 재개, 중단하려면 취소하세요.",
+  "Resume": "재개"
 }

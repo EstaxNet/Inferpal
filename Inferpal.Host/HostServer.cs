@@ -140,10 +140,15 @@ internal sealed partial class HostServer : IDisposable
 
             if (agentMode)
             {
+                // Plan mode restricts to read-only tools; step mode pauses after each call.
+                IToolRegistry effectiveTools = s.Tools;
+                if (s.PlanMode) effectiveTools = new PlanModeToolRegistry(effectiveTools);
+                if (s.StepMode) effectiveTools = new StepModeToolRegistry(effectiveTools, tok => PauseForStepAsync(s, tok));
+
                 // Group this run's file snapshots so the adapter can offer /undo-run semantics.
                 s.Tools.History.BeginRun();
                 var result = await s.Orchestrator.RunAsync(
-                    model, s.History, s.Tools,
+                    model, s.History, effectiveTools,
                     onStep:         step => Notify("chat/step", new { text = step }),
                     onToken:        OnToken,
                     onPlanReady:    plan => Notify("chat/plan", new
@@ -185,6 +190,34 @@ internal sealed partial class HostServer : IDisposable
 
     [JsonRpcMethod("chat/cancel")]
     public void ChatCancel() { lock (_gate) _chatCts?.Cancel(); }
+
+    /// <summary>Releases a step-mode pause, letting the agent proceed to its next action.</summary>
+    [JsonRpcMethod("chat/resumeStep")]
+    public void ChatResumeStep() => Session().StepResume?.TrySetResult(true);
+
+    /// <summary>Step-mode pause: notifies the adapter (`chat/stepPaused`) and waits for
+    /// `chat/resumeStep` — mirror of the VS VM's <c>PauseForStepAsync</c>.</summary>
+    private async Task PauseForStepAsync(HostSession s, CancellationToken ct)
+    {
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        s.StepResume = tcs;
+        Notify("chat/stepPaused", new { });
+        try
+        {
+            await tcs.Task.WaitAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // Ensure the TCS is completed so any racing awaiter unblocks cleanly.
+            tcs.TrySetCanceled(ct);
+            throw;
+        }
+        finally
+        {
+            s.StepResume = null;
+            Notify("chat/stepResumed", new { });
+        }
+    }
 
     [JsonRpcMethod("chat/reset")]
     public void ChatReset() => ResetHistory(Session());
@@ -429,14 +462,17 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>Layered system prompt (same builder as the VS VM), honouring the sections
-    /// switched off from the Context X-Ray panel and the active `/template` suffix.</summary>
+    /// switched off from the Context X-Ray panel, the active `/template` suffix and the
+    /// plan-mode instructions.</summary>
     private static string BuildSystemPromptText(HostSession s)
     {
         var prompt = new SystemPromptBuilder(s.Config).Build(
             Strings.SystemPrompt,
             projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
             disabledSectionIds: s.XrayDisabledSections);
-        return string.IsNullOrEmpty(s.TemplateSuffix) ? prompt : prompt + "\n\n" + s.TemplateSuffix;
+        if (!string.IsNullOrEmpty(s.TemplateSuffix)) prompt += "\n\n" + s.TemplateSuffix;
+        if (s.PlanMode)                              prompt += PlanModeToolRegistry.SystemPromptSuffix;
+        return prompt;
     }
 
     /// <summary>Prompt layers for the X-Ray panel — same inputs as <see cref="BuildSystemPromptText"/>.</summary>
