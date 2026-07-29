@@ -377,4 +377,48 @@ public class HostServerTests
         Assert.False(overlay.TryGet(@"C:\proj\a.cs", out _));
         Assert.Single(overlay.Paths);
     }
+
+    // ── command/slash ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CommandSlash_UnknownOrChatOnlyCommand_IsNotHandled()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var unknown = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/definitely-not-a-command" });
+        var vsOnly = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/models" });   // delegated id the host doesn't serve
+
+        Assert.False(unknown.Handled);
+        Assert.False(vsOnly.Handled);
+    }
+
+    [Fact]
+    public async Task CommandSlash_Replay_WithoutRuns_ReturnsEmptyRunMessage()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/replay" });
+
+        Assert.True(result.Handled);
+        Assert.Equal(Strings.ReplayNone, result.Markdown);
+    }
+
+    [Fact]
+    public async Task CommandSlash_Xray_ReturnsTokenBreakdown()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/xray" });
+
+        Assert.True(result.Handled);
+        Assert.Contains("🩻", result.Markdown);
+        Assert.Contains(Strings.XrayLabelBase, result.Markdown);
+    }
 }

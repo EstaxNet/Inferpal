@@ -73,6 +73,12 @@ export interface IndexStatusResult {
   rootDir: string;
 }
 
+/** `command/slash` answer: `handled: false` ⇒ send the text as a normal chat prompt. */
+export interface SlashCommandResult {
+  handled: boolean;
+  markdown?: string | null;
+}
+
 export interface ApprovalNote {
   message: string;
 }

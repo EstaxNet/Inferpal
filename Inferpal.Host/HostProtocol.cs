@@ -56,6 +56,15 @@ internal sealed record EditResultDto(string? Path, bool ReplacedSelection);
 /// <summary>`index/status` snapshot.</summary>
 internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string RootDir);
 
+/// <summary>`command/slash` — a chat input starting with <c>/</c>. The host executes the
+/// commands it can serve headlessly; <c>Handled = false</c> tells the adapter to send the
+/// text as a normal chat prompt instead.</summary>
+internal sealed record SlashCommandParams(string Text);
+
+/// <summary>`command/slash` answer: <paramref name="Markdown"/> is the bubble to render
+/// when <paramref name="Handled"/> is true.</summary>
+internal sealed record SlashCommandResult(bool Handled, string? Markdown = null);
+
 /// <summary>`config/update` — full config JSON, as previously returned by `config/get`.</summary>
 internal sealed record ConfigUpdateParams(string Json);
 

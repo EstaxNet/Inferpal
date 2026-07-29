@@ -18,6 +18,7 @@ import {
   SavedMessage,
   SessionLoadResult,
   SessionSummary,
+  SlashCommandResult,
   StepUpdateNotice,
   TextNote,
   ToolNotice,
@@ -205,6 +206,11 @@ export class HostClient {
 
   chatReset(): Promise<void> {
     return this.connection().sendRequest('chat/reset');
+  }
+
+  /** Slash commands the host serves headlessly (/replay, /xray, …). */
+  commandSlash(text: string): Promise<SlashCommandResult> {
+    return this.connection().sendRequest<SlashCommandResult>('command/slash', { text });
   }
 
   modelsList(): Promise<string[]> {

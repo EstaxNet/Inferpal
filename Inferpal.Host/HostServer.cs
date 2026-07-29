@@ -18,8 +18,8 @@ namespace Inferpal.Host;
 /// <summary>
 /// JSON-RPC target exposing the Core to an editor adapter over stdio. Editor→host requests:
 /// `initialize`, `chat/send` (streamed via `chat/*` notifications), `chat/cancel`, `chat/reset`,
-/// `models/list`, `connection/check`, `config/get|update`, `fim/complete`, `index/start|status`,
-/// `shutdown`; editor→host notifications: `textDocument/didOpen|didChange|didClose` (dirty-buffer
+/// `command/slash`, `models/list`, `connection/check`, `config/get|update`, `fim/complete`,
+/// `index/start|status`, `shutdown`; editor→host notifications: `textDocument/didOpen|didChange|didClose` (dirty-buffer
 /// overlay) and `editor/didChangeActiveDocument`. Host→editor requests are issued by
 /// <see cref="RpcEditorSurface"/> and <see cref="RpcApprovalService"/>.
 /// </summary>
@@ -190,6 +190,41 @@ internal sealed class HostServer : IDisposable
 
     [JsonRpcMethod("chat/reset")]
     public void ChatReset() => ResetHistory(Session());
+
+    /// <summary>
+    /// Executes the slash commands the host can serve headlessly (routing = the same
+    /// <see cref="SlashCommandRouter"/> as the VS extension; execution = the shared pure
+    /// handlers). Unhandled commands return <c>Handled = false</c> so the adapter falls
+    /// back to sending the text as a normal chat prompt.
+    /// </summary>
+    [JsonRpcMethod("command/slash", UseSingleObjectParameterDeserialization = true)]
+    public SlashCommandResult CommandSlash(SlashCommandParams p)
+    {
+        var s = Session();
+        if (SlashCommandRouter.Route(p.Text, []) is not SlashDelegatedAction delegated)
+            return new SlashCommandResult(Handled: false);
+
+        switch (delegated.Id)
+        {
+            case SlashCommandId.Replay:
+                return new SlashCommandResult(true,
+                    Services.Commands.ReplayCommandHandler.Handle(s.Tools.History.Runs, delegated.Parts, s.RootDir));
+
+            case SlashCommandId.Xray:
+                var sections = new SystemPromptBuilder(s.Config).BuildSections(
+                    Strings.SystemPrompt,
+                    projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
+                return new SlashCommandResult(true,
+                    Services.Commands.XRayCommandHandler.Handle(
+                        sections,
+                        AgentOrchestrator.EstimateTokens(s.History),
+                        s.Config.ContextWindowSize,
+                        s.Config.RagAutoContextEnabled));
+
+            default:
+                return new SlashCommandResult(Handled: false);
+        }
+    }
 
     // ── Backend ────────────────────────────────────────────────────────────────
 

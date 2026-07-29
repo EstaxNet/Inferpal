@@ -375,6 +375,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.transcript.push({ role: 'user', text: prompt });
     this.post({ type: 'turnStarted', prompt });
 
+    // Slash commands the host serves headlessly (/replay, /xray, …): rendered as an
+    // instant bubble, never sent to the model. Unhandled ones fall through to chat.
+    if (prompt.startsWith('/')) {
+      try {
+        const slash = await host.commandSlash(prompt);
+        if (slash.handled) {
+          const text = slash.markdown ?? '';
+          this.transcript.push({ role: 'assistant', text });
+          this.post({ type: 'turnEnded', text, error: null, cancelled: false, tokens: 0 });
+          this.busy = false;
+          return;
+        }
+      } catch (err) {
+        this.log(`[chat] command/slash failed: ${String(err)}`);
+        // fall through — the prompt is sent as a normal chat turn
+      }
+    }
+
     try {
       const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', true);
       const expanded = await this.expandMentions(prompt);
