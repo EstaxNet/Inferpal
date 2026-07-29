@@ -129,5 +129,6 @@
   "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ Агент приостановлен после вызова инструмента. Возобновить — продолжить, Отмена — прервать.",
   "Resume": "Возобновить",
   "Fix with AI": "Исправить с ИИ",
-  "Fix the following errors:": "Исправь следующие ошибки:"
+  "Fix the following errors:": "Исправь следующие ошибки:",
+  "Open Folder": "Открыть папку"
 }

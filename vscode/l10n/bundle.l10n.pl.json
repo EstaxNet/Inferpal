@@ -129,5 +129,6 @@
   "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ Agent wstrzymany po wywołaniu narzędzia. Wznów, aby kontynuować, lub Anuluj, aby przerwać.",
   "Resume": "Wznów",
   "Fix with AI": "Napraw z AI",
-  "Fix the following errors:": "Napraw następujące błędy:"
+  "Fix the following errors:": "Napraw następujące błędy:",
+  "Open Folder": "Otwórz folder"
 }

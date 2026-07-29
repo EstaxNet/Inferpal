@@ -63,6 +63,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         void pushModelRouterSettings(log);
       }
     }),
+    // A folder opened (or changed) after startup: (re)start the host against the new root.
+    vscode.workspace.onDidChangeWorkspaceFolders(() => void startHost(context, chatView, log, false)),
   );
 
   await startHost(context, chatView, log, false);
@@ -126,9 +128,15 @@ async function startHost(
   const rootDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (!rootDir) {
     log('[inferpal] no workspace folder open — host not started');
-    if (interactive) {
-      void vscode.window.showWarningMessage(vscode.l10n.t('Inferpal needs an open folder to start.'));
-    }
+    // Always tell the user (not only on manual restart): the empty-looking chat and the
+    // unreachable settings panel are baffling without this hint.
+    void vscode.window
+      .showWarningMessage(vscode.l10n.t('Inferpal needs an open folder to start.'), vscode.l10n.t('Open Folder'))
+      .then((choice) => {
+        if (choice) {
+          void vscode.commands.executeCommand('vscode.openFolder');
+        }
+      });
     return;
   }
 

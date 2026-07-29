@@ -129,5 +129,6 @@
   "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ 도구 호출 후 에이전트가 일시 중지되었습니다. 계속하려면 재개, 중단하려면 취소하세요.",
   "Resume": "재개",
   "Fix with AI": "AI로 수정",
-  "Fix the following errors:": "다음 오류를 수정하세요:"
+  "Fix the following errors:": "다음 오류를 수정하세요:",
+  "Open Folder": "폴더 열기"
 }

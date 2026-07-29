@@ -129,5 +129,6 @@
   "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ ツール呼び出し後にエージェントが一時停止しました。続行するには再開、中止するにはキャンセル。",
   "Resume": "再開",
   "Fix with AI": "AI で修正",
-  "Fix the following errors:": "次のエラーを修正してください:"
+  "Fix the following errors:": "次のエラーを修正してください:",
+  "Open Folder": "フォルダーを開く"
 }

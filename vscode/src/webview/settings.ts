@@ -249,6 +249,10 @@ function onSave(): void {
 function setStatus(text: string): void {
   if (statusEl) {
     statusEl.textContent = text;
+  } else if (text) {
+    // Before the form exists (e.g. host not running at 'ready'): show the message
+    // standalone instead of leaving the page stuck on "Loading settings…".
+    app.textContent = text;
   }
 }
 

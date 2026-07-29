@@ -952,14 +952,15 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
   const msg = event.data;
   switch (msg.type) {
     case 'hydrate': {
-      slashCommands = msg.commands;
-      toolBubblesExpanded = msg.toolBubblesExpanded;
-      contextWindow = msg.contextWindow;
-      historyEntries = msg.history;
-      currentModel = msg.model;
-      mentionCategories = msg.mentionCategories;
-      renderChips(msg.chips);
-      renderTranscript(msg.transcript);
+      // Defensive defaults: survive a stale extension↔webview pair (in-place update).
+      slashCommands = msg.commands ?? [];
+      toolBubblesExpanded = msg.toolBubblesExpanded === true;
+      contextWindow = msg.contextWindow ?? 0;
+      historyEntries = msg.history ?? [];
+      currentModel = msg.model ?? '';
+      mentionCategories = msg.mentionCategories ?? [];
+      renderChips(msg.chips ?? []);
+      renderTranscript(msg.transcript ?? []);
 
       modelEl.textContent = '';
       for (const name of msg.models) {

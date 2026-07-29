@@ -1059,6 +1059,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   // ── Extension → webview ─────────────────────────────────────────────────────
 
   private hydrate(): void {
+    // No running host (e.g. no workspace folder) → surface it in the connection badge
+    // instead of an indistinct empty header.
+    const status = this.status ?? (this.getHost()?.isRunning ? null : { connected: false, vramBadge: '' });
     this.post({
       type: 'hydrate',
       transcript: this.transcript,
@@ -1066,7 +1069,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       model: this.model,
       busy: this.busy,
       stream: this.streamText,
-      status: this.status,
+      status,
       commands: this.commands,
       agentMode: vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', true),
       contextWindow: this.contextWindow,

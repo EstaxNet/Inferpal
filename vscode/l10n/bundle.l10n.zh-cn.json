@@ -129,5 +129,6 @@
   "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ 代理在工具调用后已暂停。点击继续以恢复，或取消以中止。",
   "Resume": "继续",
   "Fix with AI": "用 AI 修复",
-  "Fix the following errors:": "修复以下错误："
+  "Fix the following errors:": "修复以下错误：",
+  "Open Folder": "打开文件夹"
 }
