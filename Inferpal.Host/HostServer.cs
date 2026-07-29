@@ -224,6 +224,16 @@ internal sealed class HostServer : IDisposable
                 return new SlashCommandResult(true, result.Message);
             }
 
+            case SlashCommandId.Arena:
+            {
+                // Two sequential inference calls; progress goes through the same chat/step
+                // notifications as /bench.
+                var result = await Services.Commands.ArenaCommandHandler.HandleAsync(
+                    s.Client, s.Config, delegated.Parts,
+                    progress => Notify("chat/step", new { text = progress }), ct);
+                return new SlashCommandResult(true, result.Message);
+            }
+
             case SlashCommandId.Xray:
                 var sections = new SystemPromptBuilder(s.Config).BuildSections(
                     Strings.SystemPrompt,

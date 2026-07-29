@@ -825,6 +825,25 @@ ollama serve
   <data name="BenchRecoAgent" xml:space="preserve"><value>Агент / чат</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>Служебная модель</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM (призрачный текст)</value></data>
+  <data name="SlashHintArena" xml:space="preserve"><value>Арена моделей: один и тот же промпт двум моделям, слепое голосование A/B, локальная статистика</value></data>
+  <data name="ArenaUsage" xml:space="preserve"><value>Использование: /arena &lt;промпт&gt; — или /arena &lt;модель1&gt; &lt;модель2&gt; &lt;промпт&gt;; голосование — /arena a|b|tie; таблица — /arena stats.</value></data>
+  <data name="ArenaNeedTwoModels" xml:space="preserve"><value>Арене нужны две разные модели. Задайте служебную модель в настройках или укажите их явно: /arena &lt;модель1&gt; &lt;модель2&gt; &lt;промпт&gt;.</value></data>
+  <data name="ArenaRunning" xml:space="preserve"><value>Арена: генерируется ответ {0}…</value></data>
+  <data name="ArenaTitle" xml:space="preserve"><value>Арена моделей</value></data>
+  <data name="ArenaAnswerHeader" xml:space="preserve"><value>Ответ {0} — {1} с</value></data>
+  <data name="ArenaVotePrompt" xml:space="preserve"><value>Голосуйте: /arena a, /arena b или /arena tie.</value></data>
+  <data name="ArenaNoPending" xml:space="preserve"><value>Нет дуэли, ожидающей голосования. Начните её командой /arena &lt;промпт&gt;.</value></data>
+  <data name="ArenaReveal" xml:space="preserve"><value>Ответ A — `{0}`, ответ B — `{1}`.</value></data>
+  <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Голос учтён — победитель: `{0}`.</value></data>
+  <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Голос учтён — ничья.</value></data>
+  <data name="ArenaStatsTitle" xml:space="preserve"><value>Турнирная таблица арены</value></data>
+  <data name="ArenaColModel" xml:space="preserve"><value>Модель</value></data>
+  <data name="ArenaColBattles" xml:space="preserve"><value>Дуэли</value></data>
+  <data name="ArenaColWins" xml:space="preserve"><value>Победы</value></data>
+  <data name="ArenaColTies" xml:space="preserve"><value>Ничьи</value></data>
+  <data name="ArenaColWinRate" xml:space="preserve"><value>Доля побед</value></data>
+  <data name="ArenaNoStats" xml:space="preserve"><value>Голосов арены пока нет.</value></data>
+  <data name="ArenaFailed" xml:space="preserve"><value>Сбой арены: {0}</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Рентген контекста — системный промпт ≈ {0} токенов</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Базовый системный промпт</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Фрагмент персоны</value></data>

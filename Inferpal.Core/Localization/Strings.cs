@@ -770,6 +770,29 @@ internal static class Strings
     public static string BenchRecoAgent                      => Get(nameof(BenchRecoAgent));
     public static string BenchRecoUtility                    => Get(nameof(BenchRecoUtility));
     public static string BenchRecoFim                        => Get(nameof(BenchRecoFim));
+
+    // ── /arena command ──────────────────────────────────────────────────────────
+    public static string SlashHintArena                      => Get(nameof(SlashHintArena));
+    public static string ArenaUsage                          => Get(nameof(ArenaUsage));
+    public static string ArenaNeedTwoModels                  => Get(nameof(ArenaNeedTwoModels));
+    public static string ArenaRunning(string label)          => string.Format(Get(nameof(ArenaRunning)), label);
+    public static string ArenaTitle                          => Get(nameof(ArenaTitle));
+    public static string ArenaAnswerHeader(string label, string seconds)
+        => string.Format(Get(nameof(ArenaAnswerHeader)), label, seconds);
+    public static string ArenaVotePrompt                     => Get(nameof(ArenaVotePrompt));
+    public static string ArenaNoPending                      => Get(nameof(ArenaNoPending));
+    public static string ArenaReveal(string modelA, string modelB)
+        => string.Format(Get(nameof(ArenaReveal)), modelA, modelB);
+    public static string ArenaVoteRecordedWin(string model)  => string.Format(Get(nameof(ArenaVoteRecordedWin)), model);
+    public static string ArenaVoteRecordedTie                => Get(nameof(ArenaVoteRecordedTie));
+    public static string ArenaStatsTitle                     => Get(nameof(ArenaStatsTitle));
+    public static string ArenaColModel                       => Get(nameof(ArenaColModel));
+    public static string ArenaColBattles                     => Get(nameof(ArenaColBattles));
+    public static string ArenaColWins                        => Get(nameof(ArenaColWins));
+    public static string ArenaColTies                        => Get(nameof(ArenaColTies));
+    public static string ArenaColWinRate                     => Get(nameof(ArenaColWinRate));
+    public static string ArenaNoStats                        => Get(nameof(ArenaNoStats));
+    public static string ArenaFailed(string error)           => string.Format(Get(nameof(ArenaFailed)), error);
     public static string XrayHeader(string tokens)           => string.Format(Get(nameof(XrayHeader)), tokens);
     public static string XrayLabelBase                       => Get(nameof(XrayLabelBase));
     public static string XrayLabelPersona                    => Get(nameof(XrayLabelPersona));

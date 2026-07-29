@@ -825,6 +825,25 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="BenchRecoAgent" xml:space="preserve"><value>Agente / chat</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>Modelo utilitario</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM (texto fantasma)</value></data>
+  <data name="SlashHintArena" xml:space="preserve"><value>Arena de modelos: el mismo prompt a dos modelos, voto A/B a ciegas, estadísticas locales</value></data>
+  <data name="ArenaUsage" xml:space="preserve"><value>Uso: /arena &lt;prompt&gt; — o /arena &lt;modelo1&gt; &lt;modelo2&gt; &lt;prompt&gt;; vote con /arena a|b|tie; clasificación con /arena stats.</value></data>
+  <data name="ArenaNeedTwoModels" xml:space="preserve"><value>La arena necesita dos modelos distintos. Defina un modelo utilitario en la configuración o páselos explícitamente: /arena &lt;modelo1&gt; &lt;modelo2&gt; &lt;prompt&gt;.</value></data>
+  <data name="ArenaRunning" xml:space="preserve"><value>Arena: generando la respuesta {0}…</value></data>
+  <data name="ArenaTitle" xml:space="preserve"><value>Arena de modelos</value></data>
+  <data name="ArenaAnswerHeader" xml:space="preserve"><value>Respuesta {0} — {1} s</value></data>
+  <data name="ArenaVotePrompt" xml:space="preserve"><value>Vote con /arena a, /arena b o /arena tie.</value></data>
+  <data name="ArenaNoPending" xml:space="preserve"><value>Ningún duelo pendiente de voto. Inicie uno con /arena &lt;prompt&gt;.</value></data>
+  <data name="ArenaReveal" xml:space="preserve"><value>La respuesta A era `{0}`, la respuesta B era `{1}`.</value></data>
+  <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Voto registrado — ganador: `{0}`.</value></data>
+  <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Voto registrado — empate.</value></data>
+  <data name="ArenaStatsTitle" xml:space="preserve"><value>Clasificación de la arena</value></data>
+  <data name="ArenaColModel" xml:space="preserve"><value>Modelo</value></data>
+  <data name="ArenaColBattles" xml:space="preserve"><value>Duelos</value></data>
+  <data name="ArenaColWins" xml:space="preserve"><value>Victorias</value></data>
+  <data name="ArenaColTies" xml:space="preserve"><value>Empates</value></data>
+  <data name="ArenaColWinRate" xml:space="preserve"><value>Tasa de victorias</value></data>
+  <data name="ArenaNoStats" xml:space="preserve"><value>Aún no hay votos de arena registrados.</value></data>
+  <data name="ArenaFailed" xml:space="preserve"><value>La arena falló: {0}</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Radiografía del contexto — prompt del sistema ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Prompt del sistema base</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Fragmento de persona</value></data>

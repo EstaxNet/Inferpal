@@ -79,6 +79,7 @@ editor with tools disabled).
 | `/models` | List / pull (streaming, Ollama) / delete / show running models |
 | `/hardware [gb]` | Show the GPU/VRAM profile; `/hardware <gb>` sets the VRAM budget |
 | `/bench [model…]` | Local test bench of installed models (default: all, capped at 5) — warm TTFT, tokens/s, VRAM pressure and a 5-task quality micro-eval scored by programmatic assertions (C# fix, instruction following, summary, tool call, FIM), plus per-role recommendations (agent / utility / FIM) feeding the Model Router; `/bench last` redisplays the persisted run |
+| `/arena <prompt>` | Model arena: sends the same prompt to two models (sequentially — one GPU) and shows both answers blind-labelled A/B. Pair = chat model vs utility model, or explicit: `/arena <model1> <model2> <prompt>`. Vote with `/arena a\|b\|tie` (reveals the models), cumulative local standings with `/arena stats` |
 | `/setup` | Re-run first-run discovery: auto-detect the backend and auto-select chat + embedding models |
 
 ## Governance

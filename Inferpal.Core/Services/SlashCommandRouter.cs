@@ -32,7 +32,7 @@ internal enum SlashCommandId
     Clear, TestBuildBanner, Model, Tools, Export, Context, Memory, Index,
     Commit, CommitExec, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
-    Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench,
+    Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena,
 }
 
 /// <summary>User-defined prompt template (config <c>PromptTemplates</c>, one <c>/name=text</c> per line,
@@ -103,6 +103,7 @@ internal static class SlashCommandRouter
         ("/replay",     Strings.SlashHintReplay),
         ("/xray",       Strings.SlashHintXray),
         ("/bench",      Strings.SlashHintBench),
+        ("/arena",      Strings.SlashHintArena),
     ];
 
     /// <summary>Maps a raw <c>/command …</c> input to the action the VM must execute.</summary>
@@ -150,6 +151,7 @@ internal static class SlashCommandRouter
             case "/xray":              return new SlashDelegatedAction(SlashCommandId.Xray,            parts);
             case "/bench":
             case "/benchmark":         return new SlashDelegatedAction(SlashCommandId.Bench,           parts);
+            case "/arena":             return new SlashDelegatedAction(SlashCommandId.Arena,           parts);
 
             // ── Code actions on the active document/selection ─────────────────
             case "/explain":           return new SlashCodeAction(SlashCodeActionKind.Explain);

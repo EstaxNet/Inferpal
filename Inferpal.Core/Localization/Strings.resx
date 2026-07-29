@@ -830,6 +830,25 @@ ollama serve
   <data name="BenchRecoAgent" xml:space="preserve"><value>Agent / chat</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>Utility model</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM (ghost text)</value></data>
+  <data name="SlashHintArena" xml:space="preserve"><value>Model arena: same prompt to two models, blind A/B vote, local stats</value></data>
+  <data name="ArenaUsage" xml:space="preserve"><value>Usage: /arena &lt;prompt&gt; — or /arena &lt;model1&gt; &lt;model2&gt; &lt;prompt&gt;; vote with /arena a|b|tie; standings with /arena stats.</value></data>
+  <data name="ArenaNeedTwoModels" xml:space="preserve"><value>The arena needs two distinct models. Set a utility model in the settings or pass them explicitly: /arena &lt;model1&gt; &lt;model2&gt; &lt;prompt&gt;.</value></data>
+  <data name="ArenaRunning" xml:space="preserve"><value>Arena: generating answer {0}…</value></data>
+  <data name="ArenaTitle" xml:space="preserve"><value>Model arena</value></data>
+  <data name="ArenaAnswerHeader" xml:space="preserve"><value>Answer {0} — {1} s</value></data>
+  <data name="ArenaVotePrompt" xml:space="preserve"><value>Vote with /arena a, /arena b or /arena tie.</value></data>
+  <data name="ArenaNoPending" xml:space="preserve"><value>No arena battle awaiting a vote. Start one with /arena &lt;prompt&gt;.</value></data>
+  <data name="ArenaReveal" xml:space="preserve"><value>Answer A was `{0}`, answer B was `{1}`.</value></data>
+  <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Vote recorded — winner: `{0}`.</value></data>
+  <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Vote recorded — tie.</value></data>
+  <data name="ArenaStatsTitle" xml:space="preserve"><value>Arena standings</value></data>
+  <data name="ArenaColModel" xml:space="preserve"><value>Model</value></data>
+  <data name="ArenaColBattles" xml:space="preserve"><value>Battles</value></data>
+  <data name="ArenaColWins" xml:space="preserve"><value>Wins</value></data>
+  <data name="ArenaColTies" xml:space="preserve"><value>Ties</value></data>
+  <data name="ArenaColWinRate" xml:space="preserve"><value>Win rate</value></data>
+  <data name="ArenaNoStats" xml:space="preserve"><value>No arena vote recorded yet.</value></data>
+  <data name="ArenaFailed" xml:space="preserve"><value>Arena failed: {0}</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Context X-Ray — system prompt ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Base system prompt</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Persona snippet</value></data>

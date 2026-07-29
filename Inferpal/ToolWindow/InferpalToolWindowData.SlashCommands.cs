@@ -223,6 +223,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
             case SlashCommandId.Diagnostics: await ShowInfoAsync(Services.Commands.DiagnosticsCommandHandler.Handle(parts)); break;
             case SlashCommandId.Bench:       await HandleBenchCommandAsync(parts, ct);    break;
+            case SlashCommandId.Arena:       await HandleArenaCommandAsync(parts, ct);    break;
             case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
             case SlashCommandId.Xray:
             {
@@ -370,6 +371,29 @@ internal partial class InferpalToolWindowData
         {
             var result = await Services.Commands.BenchCommandHandler.HandleAsync(
                 _client, parts, progress => Post(() => statusBbl.Content = progress), ct);
+            await ShowInfoAsync(result.Message);
+        }
+        finally
+        {
+            await RunOnVMContextAsync(() =>
+            {
+                var idx = Messages.IndexOf(statusBbl);
+                if (idx >= 0) Messages.RemoveAt(idx);
+            });
+        }
+    }
+
+    // /arena — two sequential inference calls: live status bubble while each answer is generated
+    // (same pattern as /bench), final blind A/B report or vote/stats result as an info bubble.
+    private async Task HandleArenaCommandAsync(string[] parts, CancellationToken ct)
+    {
+        var statusBbl = ChatMessageItem.StatusMsg(Strings.SlashHintArena);
+        await RunOnVMContextAsync(() => { ApplyItemTheme(statusBbl); Messages.Insert(Messages.Count - 2, statusBbl); });
+
+        try
+        {
+            var result = await Services.Commands.ArenaCommandHandler.HandleAsync(
+                _client, _config, parts, progress => Post(() => statusBbl.Content = progress), ct);
             await ShowInfoAsync(result.Message);
         }
         finally

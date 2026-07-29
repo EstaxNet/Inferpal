@@ -825,6 +825,25 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="BenchRecoAgent" xml:space="preserve"><value>エージェント / チャット</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>ユーティリティモデル</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM（ゴーストテキスト）</value></data>
+  <data name="SlashHintArena" xml:space="preserve"><value>モデルアリーナ：同じプロンプトを2つのモデルに送り、ブラインドA/B投票、ローカル統計</value></data>
+  <data name="ArenaUsage" xml:space="preserve"><value>使い方: /arena &lt;プロンプト&gt; — または /arena &lt;モデル1&gt; &lt;モデル2&gt; &lt;プロンプト&gt;。投票は /arena a|b|tie、順位表は /arena stats。</value></data>
+  <data name="ArenaNeedTwoModels" xml:space="preserve"><value>アリーナには異なる2つのモデルが必要です。設定でユーティリティモデルを指定するか、明示的に渡してください: /arena &lt;モデル1&gt; &lt;モデル2&gt; &lt;プロンプト&gt;。</value></data>
+  <data name="ArenaRunning" xml:space="preserve"><value>アリーナ: 回答 {0} を生成中…</value></data>
+  <data name="ArenaTitle" xml:space="preserve"><value>モデルアリーナ</value></data>
+  <data name="ArenaAnswerHeader" xml:space="preserve"><value>回答 {0} — {1} 秒</value></data>
+  <data name="ArenaVotePrompt" xml:space="preserve"><value>/arena a、/arena b、または /arena tie で投票してください。</value></data>
+  <data name="ArenaNoPending" xml:space="preserve"><value>投票待ちの対戦はありません。/arena &lt;プロンプト&gt; で開始してください。</value></data>
+  <data name="ArenaReveal" xml:space="preserve"><value>回答 A は `{0}`、回答 B は `{1}` でした。</value></data>
+  <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>投票を記録しました — 勝者: `{0}`。</value></data>
+  <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>投票を記録しました — 引き分け。</value></data>
+  <data name="ArenaStatsTitle" xml:space="preserve"><value>アリーナ順位表</value></data>
+  <data name="ArenaColModel" xml:space="preserve"><value>モデル</value></data>
+  <data name="ArenaColBattles" xml:space="preserve"><value>対戦数</value></data>
+  <data name="ArenaColWins" xml:space="preserve"><value>勝利</value></data>
+  <data name="ArenaColTies" xml:space="preserve"><value>引き分け</value></data>
+  <data name="ArenaColWinRate" xml:space="preserve"><value>勝率</value></data>
+  <data name="ArenaNoStats" xml:space="preserve"><value>アリーナの投票はまだ記録されていません。</value></data>
+  <data name="ArenaFailed" xml:space="preserve"><value>アリーナが失敗しました: {0}</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 コンテキスト X 線 — システムプロンプト ≈ {0} トークン</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基本システムプロンプト</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>ペルソナスニペット</value></data>

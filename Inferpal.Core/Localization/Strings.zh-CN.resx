@@ -825,6 +825,25 @@ ollama serve
   <data name="BenchRecoAgent" xml:space="preserve"><value>代理 / 聊天</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>实用模型</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM（幽灵文本）</value></data>
+  <data name="SlashHintArena" xml:space="preserve"><value>模型竞技场：同一提示发给两个模型，盲测 A/B 投票，本地统计</value></data>
+  <data name="ArenaUsage" xml:space="preserve"><value>用法：/arena &lt;提示&gt; — 或 /arena &lt;模型1&gt; &lt;模型2&gt; &lt;提示&gt;；投票用 /arena a|b|tie，排行用 /arena stats。</value></data>
+  <data name="ArenaNeedTwoModels" xml:space="preserve"><value>竞技场需要两个不同的模型。请在设置中指定实用模型，或显式传入：/arena &lt;模型1&gt; &lt;模型2&gt; &lt;提示&gt;。</value></data>
+  <data name="ArenaRunning" xml:space="preserve"><value>竞技场：正在生成答案 {0}…</value></data>
+  <data name="ArenaTitle" xml:space="preserve"><value>模型竞技场</value></data>
+  <data name="ArenaAnswerHeader" xml:space="preserve"><value>答案 {0} — {1} 秒</value></data>
+  <data name="ArenaVotePrompt" xml:space="preserve"><value>使用 /arena a、/arena b 或 /arena tie 投票。</value></data>
+  <data name="ArenaNoPending" xml:space="preserve"><value>没有等待投票的对决。用 /arena &lt;提示&gt; 开始一场。</value></data>
+  <data name="ArenaReveal" xml:space="preserve"><value>答案 A 是 `{0}`，答案 B 是 `{1}`。</value></data>
+  <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>投票已记录 — 获胜者：`{0}`。</value></data>
+  <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>投票已记录 — 平局。</value></data>
+  <data name="ArenaStatsTitle" xml:space="preserve"><value>竞技场排行榜</value></data>
+  <data name="ArenaColModel" xml:space="preserve"><value>模型</value></data>
+  <data name="ArenaColBattles" xml:space="preserve"><value>对决</value></data>
+  <data name="ArenaColWins" xml:space="preserve"><value>胜场</value></data>
+  <data name="ArenaColTies" xml:space="preserve"><value>平局</value></data>
+  <data name="ArenaColWinRate" xml:space="preserve"><value>胜率</value></data>
+  <data name="ArenaNoStats" xml:space="preserve"><value>尚未记录任何竞技场投票。</value></data>
+  <data name="ArenaFailed" xml:space="preserve"><value>竞技场失败：{0}</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 上下文透视 — 系统提示词 ≈ {0} 个 token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基础系统提示词</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>角色片段</value></data>
