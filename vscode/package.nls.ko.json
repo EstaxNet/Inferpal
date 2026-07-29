@@ -10,5 +10,8 @@
   "inferpal.untrustedWorkspaces": "Inferpal은 워크스페이스 파일을 읽고 쓰며 명령을 실행하는 에이전트를 실행합니다. 폴더를 신뢰할 때까지 비활성화 상태로 유지됩니다.",
   "inferpal.command.saveSession": "Inferpal: 세션 저장",
   "inferpal.command.loadSession": "Inferpal: 세션 불러오기",
-  "inferpal.command.deleteSession": "Inferpal: 세션 삭제"
+  "inferpal.command.deleteSession": "Inferpal: 세션 삭제",
+  "inferpal.command.fixSelection": "Inferpal: 이 코드 수정",
+  "inferpal.command.refactorSelection": "Inferpal: 이 코드 리팩터링",
+  "inferpal.command.docSelection": "Inferpal: 이 코드 문서화"
 }

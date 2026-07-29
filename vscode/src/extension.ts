@@ -37,6 +37,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.saveSession', () => chatView.saveSessionCommand()),
     vscode.commands.registerCommand('inferpal.loadSession', () => chatView.loadSessionCommand()),
     vscode.commands.registerCommand('inferpal.deleteSession', () => chatView.deleteSessionCommand()),
+    // Editor context menu → same pipeline as typing the slash command in the chat.
+    vscode.commands.registerCommand('inferpal.fixSelection', () => chatView.runSlashCommand('/fix')),
+    vscode.commands.registerCommand('inferpal.refactorSelection', () => chatView.runSlashCommand('/refactor')),
+    vscode.commands.registerCommand('inferpal.docSelection', () => chatView.runSlashCommand('/doc')),
   );
 
   await startHost(context, chatView, log, false);

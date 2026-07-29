@@ -10,5 +10,8 @@
   "inferpal.untrustedWorkspaces": "Inferpal запускает агента, который читает/записывает файлы рабочей области и выполняет команды; он остаётся отключённым, пока папке не будет предоставлено доверие.",
   "inferpal.command.saveSession": "Inferpal: сохранить сеанс",
   "inferpal.command.loadSession": "Inferpal: загрузить сеанс",
-  "inferpal.command.deleteSession": "Inferpal: удалить сеанс"
+  "inferpal.command.deleteSession": "Inferpal: удалить сеанс",
+  "inferpal.command.fixSelection": "Inferpal: исправить этот код",
+  "inferpal.command.refactorSelection": "Inferpal: провести рефакторинг этого кода",
+  "inferpal.command.docSelection": "Inferpal: задокументировать этот код"
 }

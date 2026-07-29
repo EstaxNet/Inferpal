@@ -10,5 +10,8 @@
   "inferpal.untrustedWorkspaces": "Inferpal uruchamia agenta, który czyta/zapisuje pliki obszaru roboczego i wykonuje polecenia; pozostaje wyłączony, dopóki folder nie zostanie zaufany.",
   "inferpal.command.saveSession": "Inferpal: Zapisz sesję",
   "inferpal.command.loadSession": "Inferpal: Wczytaj sesję",
-  "inferpal.command.deleteSession": "Inferpal: Usuń sesję"
+  "inferpal.command.deleteSession": "Inferpal: Usuń sesję",
+  "inferpal.command.fixSelection": "Inferpal: napraw ten kod",
+  "inferpal.command.refactorSelection": "Inferpal: zrefaktoryzuj ten kod",
+  "inferpal.command.docSelection": "Inferpal: udokumentuj ten kod"
 }

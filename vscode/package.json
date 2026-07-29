@@ -79,8 +79,39 @@
       {
         "command": "inferpal.deleteSession",
         "title": "%inferpal.command.deleteSession%"
+      },
+      {
+        "command": "inferpal.fixSelection",
+        "title": "%inferpal.command.fixSelection%"
+      },
+      {
+        "command": "inferpal.refactorSelection",
+        "title": "%inferpal.command.refactorSelection%"
+      },
+      {
+        "command": "inferpal.docSelection",
+        "title": "%inferpal.command.docSelection%"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "inferpal.fixSelection",
+          "when": "editorTextFocus && !editorReadonly",
+          "group": "1_modification@100"
+        },
+        {
+          "command": "inferpal.refactorSelection",
+          "when": "editorTextFocus && !editorReadonly",
+          "group": "1_modification@101"
+        },
+        {
+          "command": "inferpal.docSelection",
+          "when": "editorTextFocus && !editorReadonly",
+          "group": "1_modification@102"
+        }
+      ]
+    },
     "configuration": {
       "title": "Inferpal",
       "properties": {

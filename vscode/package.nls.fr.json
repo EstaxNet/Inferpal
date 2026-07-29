@@ -10,5 +10,8 @@
   "inferpal.untrustedWorkspaces": "Inferpal exécute un agent qui lit/écrit les fichiers du workspace et lance des commandes ; il reste désactivé tant que le dossier n’est pas approuvé.",
   "inferpal.command.saveSession": "Inferpal : Enregistrer la session",
   "inferpal.command.loadSession": "Inferpal : Charger une session",
-  "inferpal.command.deleteSession": "Inferpal : Supprimer une session"
+  "inferpal.command.deleteSession": "Inferpal : Supprimer une session",
+  "inferpal.command.fixSelection": "Inferpal : corriger ce code",
+  "inferpal.command.refactorSelection": "Inferpal : refactoriser ce code",
+  "inferpal.command.docSelection": "Inferpal : documenter ce code"
 }

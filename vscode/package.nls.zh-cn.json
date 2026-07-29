@@ -10,5 +10,8 @@
   "inferpal.untrustedWorkspaces": "Inferpal 会运行一个读写工作区文件并执行命令的智能体；在信任该文件夹之前保持禁用。",
   "inferpal.command.saveSession": "Inferpal: 保存会话",
   "inferpal.command.loadSession": "Inferpal: 加载会话",
-  "inferpal.command.deleteSession": "Inferpal: 删除会话"
+  "inferpal.command.deleteSession": "Inferpal: 删除会话",
+  "inferpal.command.fixSelection": "Inferpal：修复此代码",
+  "inferpal.command.refactorSelection": "Inferpal：重构此代码",
+  "inferpal.command.docSelection": "Inferpal：为此代码添加文档"
 }

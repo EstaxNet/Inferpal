@@ -440,6 +440,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   // ── In-place code actions (/fix /refactor /doc) ─────────────────────────────
 
+  /** Editor context-menu entry point: routes the slash text through the normal send
+   * pipeline (user bubble + interception), after revealing the chat so the outcome
+   * bubble is actually seen. The bridge's last-active-editor cache keeps targeting
+   * the right file even though revealing moves focus to the webview. */
+  async runSlashCommand(text: string): Promise<void> {
+    try {
+      await vscode.commands.executeCommand('inferpal.chat.focus');
+    } catch {
+      // view can't be revealed (rare) — the action still runs, bubbles land on next open
+    }
+    await this.send(text);
+  }
+
   /** The in-place action a prompt requests, or undefined (first token match, VS parity). */
   private static codeActionKind(prompt: string): 'fix' | 'refactor' | 'doc' | undefined {
     switch (prompt.split(/\s+/, 1)[0].toLowerCase()) {
