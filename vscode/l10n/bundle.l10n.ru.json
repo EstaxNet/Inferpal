@@ -127,5 +127,7 @@
   "No problems in the Problems panel.": "В панели «Проблемы» нет проблем.",
   "No debugger session is active.": "Нет активного сеанса отладки.",
   "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ Агент приостановлен после вызова инструмента. Возобновить — продолжить, Отмена — прервать.",
-  "Resume": "Возобновить"
+  "Resume": "Возобновить",
+  "Fix with AI": "Исправить с ИИ",
+  "Fix the following errors:": "Исправь следующие ошибки:"
 }

@@ -127,5 +127,7 @@
   "No problems in the Problems panel.": "Keine Probleme im Problembereich.",
   "No debugger session is active.": "Keine aktive Debugsitzung.",
   "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ Agent nach Tool-Aufruf pausiert. Fortsetzen, um weiterzumachen, oder Abbrechen.",
-  "Resume": "Fortsetzen"
+  "Resume": "Fortsetzen",
+  "Fix with AI": "Mit KI beheben",
+  "Fix the following errors:": "Behebe die folgenden Fehler:"
 }

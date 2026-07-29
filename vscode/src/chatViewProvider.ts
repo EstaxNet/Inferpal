@@ -1134,6 +1134,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       mentionSearchCode: t('Search the codebase for "{0}"'),
       stepPaused: t('⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.'),
       resume: t('Resume'),
+      fixWithAi: t('Fix with AI'),
+      fixPrompt: t('Fix the following errors:'),
       chipRemove: t('Remove'),
       attachMenuTitle: t('Add context'),
       attachActiveFile: t('Attach the active file'),

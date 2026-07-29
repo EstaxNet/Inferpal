@@ -308,6 +308,16 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
     err.className = 'tool-errbadge';
     err.textContent = t('toolError');
     header.appendChild(err);
+    // "Fix with AI": pre-fills the prompt with the failing output (VS parity).
+    const fix = document.createElement('button');
+    fix.className = 'bubble-action';
+    fix.textContent = '🛠 ' + t('fixWithAi');
+    fix.addEventListener('click', (e) => {
+      e.stopPropagation(); // don't toggle the bubble
+      promptEl.value = t('fixPrompt') + '\n\n```\n' + (item.toolOutput ?? '') + '\n```';
+      promptEl.focus();
+    });
+    header.appendChild(fix);
   }
   if (item.timestamp) {
     const time = document.createElement('span');

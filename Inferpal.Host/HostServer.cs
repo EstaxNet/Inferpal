@@ -129,7 +129,14 @@ internal sealed partial class HostServer : IDisposable
 
         try
         {
-            s.History.Add(new ChatMessageDto("user", p.Prompt));
+            // Auto-context: inject the most relevant indexed chunks for this turn (same
+            // per-turn RAG block as the VS VM). Runs before the agent takes the GPU lease.
+            var promptText = p.Prompt;
+            var autoCtx    = await BuildRagAutoContextAsync(s, promptText, cts.Token);
+            if (!string.IsNullOrEmpty(autoCtx))
+                promptText = autoCtx + "\n\n" + promptText;
+
+            s.History.Add(new ChatMessageDto("user", promptText));
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
             var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
             // An explicit per-request model always wins; otherwise the Model Router applies the
@@ -459,6 +466,40 @@ internal sealed partial class HostServer : IDisposable
     {
         lock (_gate) _chatCts = null;
         cts.Dispose();
+    }
+
+    /// <summary>Per-turn RAG auto-context (mirror of the VS VM's <c>BuildAutoContextAsync</c>):
+    /// warm shadow result when available, else one bounded embed + search. Best-effort —
+    /// any failure yields no auto-context, never an error.</summary>
+    private static async Task<string> BuildRagAutoContextAsync(HostSession s, string userText, CancellationToken ct)
+    {
+        if (!s.Config.RagAutoContextEnabled || !s.Config.RagEnabled)   return string.Empty;
+        if (s.Index.ChunkCount == 0 || s.Client.IsEmbeddingCircuitOpen) return string.Empty;
+
+        var trimmed = userText.Trim();
+        if (trimmed.Length < 12 || trimmed.StartsWith('/')) return string.Empty;   // same gate as VS
+
+        try
+        {
+            var (_, results) = s.Index.TryGetShadow(trimmed);
+            if (results is null || results.Count == 0)
+            {
+                var model = string.IsNullOrEmpty(s.Config.RagEmbeddingModel)
+                    ? "nomic-embed-text" : s.Config.RagEmbeddingModel;
+                var embedding = await s.Client.GetEmbeddingAsync(trimmed, model, ct);
+                if (embedding is null) return string.Empty;
+                results = await s.Index.SearchAsync(embedding, trimmed, RagAutoContext.DefaultMaxChunks, ct);
+            }
+            return results is null or { Count: 0 }
+                ? string.Empty
+                : RagAutoContext.Build(results, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("HostServer.RagAutoContext", ex);
+            return string.Empty;
+        }
     }
 
     /// <summary>Layered system prompt (same builder as the VS VM), honouring the sections
