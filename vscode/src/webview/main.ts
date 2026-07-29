@@ -800,7 +800,14 @@ function detectSlash(): void {
   slash.el.hidden = false;
 }
 
-function applySlash(command: string): void {
+function applySlash(command: string, key?: string): void {
+  // Enter on an already fully-typed command sends it (VS parity) — only Tab (or a
+  // partial prefix) completes to "/command " awaiting arguments.
+  if (key === 'Enter' && promptEl.value.trim().toLowerCase() === command.toLowerCase()) {
+    closeSlash();
+    send();
+    return;
+  }
   promptEl.value = command + ' ';
   promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
   promptEl.focus();
@@ -808,7 +815,7 @@ function applySlash(command: string): void {
 }
 
 /** Shared ↑/↓/Tab/Enter/Escape navigation for a popup; true when the key was consumed. */
-function popupKey(popup: Popup, e: KeyboardEvent, apply: (item: string) => void, close: () => void): boolean {
+function popupKey(popup: Popup, e: KeyboardEvent, apply: (item: string, key?: string) => void, close: () => void): boolean {
   if (popup.el.hidden) {
     return false;
   }
@@ -821,7 +828,7 @@ function popupKey(popup: Popup, e: KeyboardEvent, apply: (item: string) => void,
   }
   if (e.key === 'Tab' || e.key === 'Enter') {
     e.preventDefault();
-    apply(popup.items[popup.index]);
+    apply(popup.items[popup.index], e.key);
     return true;
   }
   if (e.key === 'Escape') {
