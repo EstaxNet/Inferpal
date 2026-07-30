@@ -906,4 +906,15 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>このコマンドはこのエディターではまだ利用できません — Visual Studio から使用してください。</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>指定したターンで会話を分岐します（`/branch [n|名前]`）</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>分岐できる会話がありません。</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## 分岐ポイント — {0} ターン</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` はターン *n* で分岐 · `/branch &lt;名前&gt;` はブランチに切り替え</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### 会話ツリー</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>現在</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>ターン {0} で分岐</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>そのターンはありません。この会話のターン数は {0} です。</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>`{0}` という名前の保存済みセッションはありません — `/history` を参照してください。</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 ターン {1} からブランチ `{0}` を作成しました。会話はここから続きます。元は `{2}` に保存されています。</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 `{0}` に切り替えました。</value></data>
 </root>

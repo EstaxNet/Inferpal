@@ -7,6 +7,8 @@
   "Restart": "再起動",
   "Inferpal host failed to start: {0}": "Inferpal ホストの起動に失敗しました: {0}",
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Inferpal ホストが実行されていません。「Inferpal: ホストを再起動」を使用してください。",
+  "Naming the session…": "セッション名を生成しています…",
+  "{0} msg · from {1} @ turn {2}": "{0} 件 · {1} のターン {2} から",
   "Session name": "セッション名",
   "Session saved: {0}": "セッションを保存しました: {0}",
   "Pick a session to load": "読み込むセッションを選択",

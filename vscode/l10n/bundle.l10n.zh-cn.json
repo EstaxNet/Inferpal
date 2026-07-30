@@ -7,6 +7,8 @@
   "Restart": "重启",
   "Inferpal host failed to start: {0}": "Inferpal 主机启动失败：{0}",
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Inferpal 主机未运行 — 请使用 “Inferpal: 重启主机”。",
+  "Naming the session…": "正在命名会话…",
+  "{0} msg · from {1} @ turn {2}": "{0} 条 · 来自 {1} 第 {2} 轮",
   "Session name": "会话名称",
   "Session saved: {0}": "会话已保存：{0}",
   "Pick a session to load": "选择要加载的会话",

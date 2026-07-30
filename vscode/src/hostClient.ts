@@ -22,7 +22,9 @@ import {
   MentionResolveResult,
   PlanNotice,
   SavedMessage,
+  SessionBranchResult,
   SessionLoadResult,
+  SessionTitleResult,
   SessionSummary,
   SlashCommandInfo,
   SlashCommandResult,
@@ -326,6 +328,24 @@ export class HostClient {
 
   sessionDelete(name: string): Promise<boolean> {
     return this.connection().sendRequest<boolean>('session/delete', { name });
+  }
+
+  /**
+   * Forks the conversation at `turn` (`/branch <n>`): the host writes the branch (and the parent
+   * when it had no file yet), rebuilds its history from the truncated transcript and returns it.
+   * Null when the turn doesn't exist.
+   */
+  sessionBranch(turn: number, messages: SavedMessage[]): Promise<SessionBranchResult | null> {
+    return this.connection().sendRequest<SessionBranchResult | null>('session/branch', { turn, messages });
+  }
+
+  /**
+   * LLM-generated name for the conversation (utility model, Model Router). `text` empty means
+   * "the first user message of the host session". Never rejects for a backend problem — the host
+   * falls back to a snippet of the message.
+   */
+  sessionTitle(text?: string): Promise<SessionTitleResult> {
+    return this.connection().sendRequest<SessionTitleResult>('session/title', { text: text ?? '' });
   }
 
   // ── Notifications (fire-and-forget document sync) ──────────────────────────

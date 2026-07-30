@@ -104,6 +104,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** New conversation: clears both the host history and the local transcript. */
   async resetConversation(): Promise<void> {
     const host = this.getHost();
+    // Archive first, exactly like the VS `/clear` does — fire-and-forget so the UI clears
+    // immediately while the utility model names the session in the background.
+    this.archiveConversation();
     if (host?.isRunning) {
       try {
         await host.chatReset();
@@ -315,13 +318,91 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  /** Command: save the conversation under a user-chosen name. */
+  /**
+   * `/branch <n>`: forks the conversation host-side and continues in the branch. The transcript
+   * sent over is the display one (tool names and timestamps only exist here), minus the trailing
+   * `/branch …` bubble — the command itself is not part of the conversation being forked.
+   * Returns the confirmation bubble, or null when the fork was refused.
+   */
+  private async branchAtTurn(turn: number): Promise<string | null> {
+    const host = this.getHost();
+    if (!host?.isRunning || !Number.isFinite(turn)) {
+      return null;
+    }
+    const messages = this.snapshot();
+    const last = messages[messages.length - 1];
+    if (last?.role === 'user' && last.content.startsWith('/')) {
+      messages.pop();
+    }
+    try {
+      const branch = await host.sessionBranch(turn, messages);
+      if (!branch) {
+        return null;
+      }
+      this.applySession(branch.messages);
+      return branch.message;
+    } catch (err) {
+      this.log(`[chat] branch failed: ${String(err)}`);
+      return null;
+    }
+  }
+
+  /** `/branch <name>`: switching to a branch is a plain session load. */
+  private async switchToSession(name: string): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning || !name) {
+      return;
+    }
+    try {
+      const loaded = await host.sessionLoad(name);
+      if (loaded) {
+        this.applySession(loaded.messages);
+      }
+    } catch (err) {
+      this.log(`[chat] branch switch failed: ${String(err)}`);
+    }
+  }
+
+  /**
+   * Archives the conversation being discarded under an LLM-generated name (`session/title`),
+   * the way the VS front-end does on `/clear`. Snapshot and first message are captured
+   * synchronously — the caller clears the transcript right after.
+   */
+  private archiveConversation(): void {
+    const host = this.getHost();
+    if (!host?.isRunning || this.transcript.length === 0) {
+      return;
+    }
+    const messages = this.snapshot();
+    const first = this.transcript.find((m) => m.role === 'user')?.text ?? '';
+    void (async () => {
+      try {
+        const { fileName } = await host.sessionTitle(first);
+        await host.sessionSave(fileName, messages);
+      } catch (err) {
+        this.log(`[chat] archive failed: ${String(err)}`);
+      }
+    })();
+  }
+
+  /** Command: save the conversation under a user-chosen name (LLM-suggested by default). */
   async saveSessionCommand(): Promise<void> {
     const host = this.getHost();
     if (!host?.isRunning || this.transcript.length === 0) {
       return;
     }
-    const suggested = this.transcript.find((m) => m.role === 'user')?.text.slice(0, 35) ?? '';
+    const first = this.transcript.find((m) => m.role === 'user')?.text ?? '';
+    const suggested = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Naming the session…') },
+      async () => {
+        try {
+          return (await host.sessionTitle(first)).title;
+        } catch {
+          // Backend down or model missing: fall back to the plain snippet, never block the save.
+          return first.slice(0, 35);
+        }
+      },
+    );
     const name = await vscode.window.showInputBox({
       prompt: vscode.l10n.t('Session name'),
       value: suggested.replace(/[\\/:*?"<>|\n]+/g, ' ').trim(),
@@ -370,13 +451,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const picked = await vscode.window.showQuickPick(
       sessions.map((s) => ({
-        label: s.name,
-        description: `${s.messageCount} msg`,
+        // Branches (/branch) show where they were forked from, so the picker doubles as the
+        // branch navigator.
+        label: s.parent ? `$(git-branch) ${s.name}` : s.name,
+        description: s.parent
+          ? vscode.l10n.t('{0} msg · from {1} @ turn {2}', s.messageCount, s.parent, s.forkTurn ?? 0)
+          : `${s.messageCount} msg`,
         detail: s.preview,
+        name: s.name,
       })),
       { placeHolder: placeholder },
     );
-    return picked?.label;
+    return picked?.name;
   }
 
   /** Command: export the conversation to a Markdown or text file (VS toolbar parity). */
@@ -845,6 +931,21 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'exportRequest':
           void this.exportCommand();
+          break;
+        // /branch <n>: the host owns the fork but needs the full transcript (tool names and
+        // timestamps live here, not in its API history).
+        case 'branchRequest': {
+          const note = await this.branchAtTurn(Number(e.value));
+          if (note) {
+            notes.push(note);
+            rehydrate = true;
+          }
+          break;
+        }
+        // /branch <name>: switching branches is a plain session load (the host already
+        // returned the localized bubble as markdown).
+        case 'loadSession':
+          await this.switchToSession(e.value ?? '');
           break;
         default:
           break; // unknown kinds are ignored (forward compatibility)

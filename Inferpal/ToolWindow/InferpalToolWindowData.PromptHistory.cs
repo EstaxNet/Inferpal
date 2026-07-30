@@ -103,6 +103,66 @@ internal partial class InferpalToolWindowData
         }
     }
 
+    // /branch          → branch points of this conversation + the family tree
+    // /branch <n>       → fork at turn n (the conversation continues in the branch)
+    // /branch <name>    → switch to an existing session/branch
+    private async Task HandleBranchCommandAsync(string[] parts, CancellationToken ct)
+    {
+        List<SavedMessage> snapshot = [];
+        var currentName = string.Empty;
+        await RunOnVMContextAsync(() =>
+        {
+            snapshot    = SessionManager.BuildSnapshot(
+                Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
+            currentName = _currentSessionName;
+        });
+
+        var sessions = await _store.ListWithPreviewAsync(ct);
+        var result   = Services.Commands.BranchCommandHandler.Handle(parts, snapshot, currentName, sessions);
+
+        if (result.Message is { } message)
+        {
+            await ShowInfoAsync(message);
+            return;
+        }
+
+        // ── Switch to an existing branch ──────────────────────────────────────
+        if (result.SwitchTo is { } target)
+        {
+            var session = await _store.LoadAsync(target, ct);
+            if (session is null) { await ShowInfoAsync(Strings.BranchUnknown(target)); return; }
+
+            await RunOnVMContextAsync(() =>
+            {
+                RestoreConversation(session.Messages, target);
+                RefreshSessionsList();
+                ScrollToBottom();
+            });
+            await ShowInfoAsync(Strings.BranchSwitched(target));
+            return;
+        }
+
+        // ── Fork at a turn ────────────────────────────────────────────────────
+        var plan = BranchManager.Plan(snapshot, result.ForkTurn!.Value, currentName, sessions, DateTime.Now);
+        if (plan is null) { await ShowInfoAsync(Strings.BranchNoConversation); return; }
+
+        // The parent goes to disk first — with the conversation as it stands now, which may have
+        // moved on since it was loaded: forking must never be what loses the discarded half.
+        await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct,
+                               parent: plan.ParentParent, forkTurn: plan.ParentForkTurn);
+
+        await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct,
+                               parent: plan.ParentName, forkTurn: plan.ForkTurn);
+
+        await RunOnVMContextAsync(() =>
+        {
+            RestoreConversation(plan.BranchMessages, plan.BranchName);
+            RefreshSessionsList();
+            ScrollToBottom();
+        });
+        await ShowInfoAsync(Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
+    }
+
     private async Task HandleHistoryCommandAsync(string[] parts, CancellationToken ct)
     {
         if (parts.Length >= 2)

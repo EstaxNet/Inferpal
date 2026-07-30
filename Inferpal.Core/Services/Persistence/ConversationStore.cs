@@ -29,11 +29,14 @@ internal class ConversationStore
     public static string SessionsDirectory => _dir;
 
     /// Saves a named session (UI messages + API history).
-    public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct)
+    /// <param name="parent">Session this one was forked from (<c>/branch</c>); null for a root session.</param>
+    /// <param name="forkTurn">Turn the fork happened at, meaningful only with <paramref name="parent"/>.</param>
+    public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct,
+                                string? parent = null, int? forkTurn = null)
     {
         Directory.CreateDirectory(_dir);
         var file = Path.Combine(_dir, $"{Sanitize(sessionName)}.json");
-        var payload = new SessionData(DateTime.UtcNow, messages.ToList());
+        var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn);
         await File.WriteAllTextAsync(file, JsonSerializer.Serialize(payload, _opts), ct);
     }
 
@@ -90,7 +93,7 @@ internal class ConversationStore
                 var preview = data.Messages.FirstOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
                 if (preview.Length > 80) preview = preview[..80] + "…";
                 result.Add(new SessionSummary(name, data.SavedAt, data.Messages.Count,
-                    preview.Replace('\n', ' ')));
+                    preview.Replace('\n', ' '), data.Parent, data.ForkTurn));
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { Diagnostics.Swallow($"ConversationStore.ListWithPreview({name})", ex); }
@@ -144,9 +147,13 @@ internal class ConversationStore
         string.Concat(name.Select(c => _invalidChars.Contains(c) ? '_' : c));
 }
 
+/// <summary>A session file. <c>Parent</c>/<c>ForkTurn</c> are set only on a branch
+/// (<c>/branch</c>); older files simply have neither, which keeps the format backward compatible.</summary>
 internal record SessionData(
-    [property: JsonPropertyName("saved_at")] DateTime SavedAt,
-    [property: JsonPropertyName("messages")]  List<SavedMessage> Messages);
+    [property: JsonPropertyName("saved_at")]  DateTime SavedAt,
+    [property: JsonPropertyName("messages")]  List<SavedMessage> Messages,
+    [property: JsonPropertyName("parent")]    string? Parent   = null,
+    [property: JsonPropertyName("fork_turn")] int?    ForkTurn = null);
 
 internal record SavedMessage(
     [property: JsonPropertyName("role")]      string  Role,
@@ -154,8 +161,10 @@ internal record SavedMessage(
     [property: JsonPropertyName("toolName")]  string? ToolName  = null,
     [property: JsonPropertyName("timestamp")] string? Timestamp = null);
 
-/// <summary>Lightweight session descriptor returned by <see cref="ConversationStore.ListWithPreviewAsync"/>.</summary>
-internal record SessionSummary(string Name, DateTime SavedAt, int MessageCount, string FirstUserPreview);
+/// <summary>Lightweight session descriptor returned by <see cref="ConversationStore.ListWithPreviewAsync"/>.
+/// <paramref name="Parent"/>/<paramref name="ForkTurn"/> are non-null for branches.</summary>
+internal record SessionSummary(string Name, DateTime SavedAt, int MessageCount, string FirstUserPreview,
+                               string? Parent = null, int? ForkTurn = null);
 
 /// <summary>Search hit returned by <see cref="ConversationStore.SearchAsync"/>.</summary>
 internal record SessionMatch(string Name, DateTime SavedAt, List<string> Snippets);

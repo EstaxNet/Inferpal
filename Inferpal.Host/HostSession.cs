@@ -34,6 +34,11 @@ internal sealed class HostSession : IDisposable
     /// <summary>Conversation history, seeded with the layered system prompt (index 0).</summary>
     public List<ChatMessageDto> History { get; set; } = [];
 
+    /// <summary>Session file the conversation currently lives in (null = never saved, or reset).
+    /// Mirror of the VS VM's <c>_currentSessionName</c>; <c>/branch</c> records it as the parent
+    /// of a new branch. The <c>last_session</c> auto-save slot deliberately doesn't count.</summary>
+    public string? CurrentSessionName { get; set; }
+
     /// <summary>Prompt-section ids switched off from the Context X-Ray panel (session-scoped;
     /// consumed by the system-prompt builder so the next turns skip those layers).</summary>
     public HashSet<string> XrayDisabledSections { get; } = [];

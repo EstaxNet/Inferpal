@@ -161,6 +161,7 @@ internal partial class InferpalToolWindowData
             _history               = [new("system", _baseSystemPrompt)];
             _oodaSummary           = string.Empty;
             _conversationTurnCount = 0;
+            _currentSessionName    = string.Empty;   // the archived conversation keeps its own file
             _sessionTokens         = 0;
             _lastPromptTokens      = 0;
             TokenInfo              = string.Empty;
@@ -192,31 +193,42 @@ internal partial class InferpalToolWindowData
 
             await RunOnVMContextAsync(() =>
             {
-                Messages.Clear();
-                _activeTemplateSuffix     = string.Empty;
-                _workspaceContextInjected = false;
-                _sessionStartTime         = null;
-                _lastRegenerableMsg       = null;
-                _baseSystemPrompt         = BuildSystemPrompt();
-                _history                  = SessionManager.BuildRestoredHistory(_baseSystemPrompt, session.Messages);
-                _oodaSummary              = string.Empty;
-                _conversationTurnCount    = 0;
-
-                foreach (var m in session.Messages)
-                {
-                    var item = ChatMessageItem.FromSaved(m.Role, m.Content, m.ToolName ?? string.Empty, _config.ToolBubblesExpanded, m.Timestamp ?? string.Empty);
-                    ApplyItemTheme(item);
-                    Messages.Add(item);
-                }
-
-                Messages.Add(_anchor0);
-                Messages.Add(_anchor1);
+                RestoreConversation(session.Messages, name);
                 IsSessionPanelOpen = false;
                 RefreshSessionsList();
                 ScrollToBottom();
             });
         }
         catch { }
+    }
+
+    /// <summary>
+    /// Replaces the chat with a saved transcript: fresh system prompt, rebuilt API history and
+    /// re-rendered bubbles. Shared by session loading and <c>/branch</c> (which restores the
+    /// truncated transcript of the new branch). Must run on the VM context.
+    /// </summary>
+    private void RestoreConversation(IReadOnlyList<SavedMessage> messages, string sessionName)
+    {
+        Messages.Clear();
+        _activeTemplateSuffix     = string.Empty;
+        _workspaceContextInjected = false;
+        _sessionStartTime         = null;
+        _lastRegenerableMsg       = null;
+        _baseSystemPrompt         = BuildSystemPrompt();
+        _history                  = SessionManager.BuildRestoredHistory(_baseSystemPrompt, messages);
+        _oodaSummary              = string.Empty;
+        _conversationTurnCount    = 0;
+        _currentSessionName       = sessionName == "last_session" ? string.Empty : sessionName;
+
+        foreach (var m in messages)
+        {
+            var item = ChatMessageItem.FromSaved(m.Role, m.Content, m.ToolName ?? string.Empty, _config.ToolBubblesExpanded, m.Timestamp ?? string.Empty);
+            ApplyItemTheme(item);
+            Messages.Add(item);
+        }
+
+        Messages.Add(_anchor0);
+        Messages.Add(_anchor1);
     }
 
 

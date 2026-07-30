@@ -186,11 +186,30 @@ export interface SessionSummary {
   savedAt: string;
   messageCount: number;
   preview: string;
+  /** Set on branches (`/branch`): the session this one was forked from, and where. */
+  parent?: string | null;
+  forkTurn?: number | null;
 }
 
 export interface SessionLoadResult {
   name: string;
   messages: SavedMessage[];
+}
+
+/** session/branch answer: the new branch, its parent and the truncated transcript to render. */
+export interface SessionBranchResult {
+  name: string;
+  parent: string;
+  forkTurn: number;
+  messages: SavedMessage[];
+  /** Localized confirmation bubble, built host-side from the shared .resx. */
+  message: string;
+}
+
+/** session/title answer: the bare LLM title plus the timestamped save file name. */
+export interface SessionTitleResult {
+  title: string;
+  fileName: string;
 }
 
 /** approval/request answer: 0 = deny, 1 = allow once, 2 = always allow (session). */

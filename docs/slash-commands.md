@@ -113,6 +113,9 @@ editor with tools disabled).
 |---|---|
 | `/history [term]` | List saved sessions, or full-text search across them |
 | `/phistory [term]` | Search prompt history; `/phistory use <n>` to reuse an entry |
+| `/branch` | List the branch points of the conversation (one per turn) and the family tree of the current session |
+| `/branch <n>` | Fork the conversation at turn *n*: turns 1..*n* are kept, the conversation continues in the branch, the original is written back to disk first (under a generated name if it had never been saved) |
+| `/branch <name>` | Switch to another session or branch |
 
 ## Code actions
 

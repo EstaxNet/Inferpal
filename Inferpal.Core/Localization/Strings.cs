@@ -819,6 +819,20 @@ internal static class Strings
     public static string TooltipXrayGauge                    => Get(nameof(TooltipXrayGauge));
     public static string TooltipXrayClose                    => Get(nameof(TooltipXrayClose));
 
+    // ── /branch command (conversation branching) ───────────────────────────────
+    public static string SlashHintBranch                     => Get(nameof(SlashHintBranch));
+    public static string BranchNoConversation                => Get(nameof(BranchNoConversation));
+    public static string BranchHeader(int turns)             => string.Format(Get(nameof(BranchHeader)), turns);
+    public static string BranchUsage                         => Get(nameof(BranchUsage));
+    public static string BranchTreeHeader                    => Get(nameof(BranchTreeHeader));
+    public static string BranchCurrent                       => Get(nameof(BranchCurrent));
+    public static string BranchForkedAt(int turn)            => string.Format(Get(nameof(BranchForkedAt)), turn);
+    public static string BranchInvalidTurn(int turns)        => string.Format(Get(nameof(BranchInvalidTurn)), turns);
+    public static string BranchUnknown(string name)          => string.Format(Get(nameof(BranchUnknown)), name);
+    public static string BranchCreated(string branch, int turn, string parent) =>
+        string.Format(Get(nameof(BranchCreated)), branch, turn, parent);
+    public static string BranchSwitched(string name)         => string.Format(Get(nameof(BranchSwitched)), name);
+
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));
 

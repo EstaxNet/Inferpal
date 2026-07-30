@@ -906,4 +906,15 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>Este comando aún no está disponible en este editor — úselo desde Visual Studio.</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>bifurca la conversación en un turno dado (`/branch [n|nombre]`)</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>Nada que bifurcar — esta conversación está vacía.</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## Puntos de bifurcación — {0} turno(s)</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` bifurca en el turno *n* · `/branch &lt;nombre&gt;` cambia a una rama</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### Árbol de conversación</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>actual</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>bifurcada en el turno {0}</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>Ese turno no existe — esta conversación tiene {0}.</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>No hay ninguna sesión guardada llamada `{0}` — consulta `/history`.</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 Rama `{0}` creada en el turno {1}. La conversación continúa aquí; `{2}` conserva el original.</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 Ahora en `{0}`.</value></data>
 </root>

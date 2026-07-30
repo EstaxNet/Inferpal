@@ -7,6 +7,8 @@
   "Restart": "Reiniciar",
   "Inferpal host failed to start: {0}": "Error al iniciar el host de Inferpal: {0}",
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "El host de Inferpal no está en ejecución — use «Inferpal: Reiniciar el host».",
+  "Naming the session…": "Nombrando la sesión…",
+  "{0} msg · from {1} @ turn {2}": "{0} msj · de {1} @ turno {2}",
   "Session name": "Nombre de la sesión",
   "Session saved: {0}": "Sesión guardada: {0}",
   "Pick a session to load": "Elija una sesión para cargar",

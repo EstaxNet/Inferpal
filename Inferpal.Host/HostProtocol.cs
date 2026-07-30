@@ -164,8 +164,24 @@ internal sealed record SessionSaveParams(string Name, List<SavedMessageDto> Mess
 /// <summary>`session/load` / `session/delete` argument.</summary>
 internal sealed record SessionRefParams(string Name);
 
-/// <summary>`session/list` entry.</summary>
-internal sealed record SessionSummaryDto(string Name, DateTime SavedAt, int MessageCount, string Preview);
+/// <summary>`session/list` entry. <paramref name="Parent"/>/<paramref name="ForkTurn"/> are set on
+/// branches (<c>/branch</c>) so the adapter can show the family in its session picker.</summary>
+internal sealed record SessionSummaryDto(string Name, DateTime SavedAt, int MessageCount, string Preview,
+                                         string? Parent = null, int? ForkTurn = null);
 
 /// <summary>`session/load` answer: the transcript to re-render (host history already rebuilt).</summary>
 internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages);
+
+/// <summary>`session/branch` — fork the adapter's transcript at 1-based <paramref name="Turn"/>.</summary>
+internal sealed record SessionBranchParams(int Turn, List<SavedMessageDto> Messages);
+
+/// <summary>`session/branch` answer: the new branch (host history already rebuilt from it) plus the
+/// localized confirmation bubble — the adapter has no access to the shared .resx.</summary>
+internal sealed record SessionBranchResult(
+    string Name, string Parent, int ForkTurn, List<SavedMessageDto> Messages, string Message);
+
+/// <summary>`session/title` — text to summarise; empty = the session's first user message.</summary>
+internal sealed record SessionTitleParams(string? Text = null);
+
+/// <summary>`session/title` answer: the bare title plus the timestamped save file name.</summary>
+internal sealed record SessionTitleResult(string Title, string FileName);

@@ -906,4 +906,15 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>이 명령은 아직 이 편집기에서 사용할 수 없습니다 — Visual Studio에서 사용하세요.</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>지정한 턴에서 대화를 분기합니다 (`/branch [n|이름]`)</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>분기할 대화가 없습니다.</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## 분기 지점 — {0}개 턴</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` 은 턴 *n* 에서 분기 · `/branch &lt;이름&gt;` 은 브랜치로 전환</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### 대화 트리</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>현재</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>턴 {0}에서 분기됨</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>해당 턴이 없습니다 — 이 대화의 턴 수는 {0}개입니다.</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>`{0}` 이라는 저장된 세션이 없습니다 — `/history` 를 확인하세요.</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 턴 {1}에서 브랜치 `{0}` 을(를) 만들었습니다. 대화는 여기서 이어지며 원본은 `{2}` 에 남아 있습니다.</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 이제 `{0}` 입니다.</value></data>
 </root>

@@ -906,4 +906,15 @@ ollama serve
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>Эта команда пока недоступна в этом редакторе — используйте её в Visual Studio.</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>ответвляет разговор на заданном шаге (`/branch [n|имя]`)</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>Ответвлять нечего — этот разговор пуст.</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## Точки ветвления — шагов: {0}</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` создаёт ветку на шаге *n* · `/branch &lt;имя&gt;` переключает на ветку</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### Дерево разговора</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>текущая</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>ответвлена на шаге {0}</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>Такого шага нет — в этом разговоре их {0}.</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>Сохранённого сеанса с именем `{0}` нет — см. `/history`.</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 Ветка `{0}` создана на шаге {1}. Разговор продолжается здесь; `{2}` хранит оригинал.</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 Сейчас в `{0}`.</value></data>
 </root>

@@ -914,4 +914,15 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>Cette commande n’est pas encore disponible dans cet éditeur — utilisez-la depuis Visual Studio.</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>fourche la conversation à un tour donné (`/branch [n|nom]`)</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>Rien à fourcher — cette conversation est vide.</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## Points de fourche — {0} tour(s)</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` fourche au tour *n* · `/branch &lt;nom&gt;` bascule sur une branche</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### Arbre de conversation</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>courante</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>fourchée au tour {0}</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>Ce tour n'existe pas — cette conversation en compte {0}.</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>Aucune session enregistrée nommée `{0}` — voir `/history`.</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 Branche `{0}` créée au tour {1}. La conversation continue ici ; `{2}` conserve l'original.</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 Vous êtes maintenant sur `{0}`.</value></data>
 </root>

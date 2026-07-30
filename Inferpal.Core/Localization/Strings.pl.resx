@@ -906,4 +906,15 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>To polecenie nie jest jeszcze dostępne w tym edytorze — użyj go w programie Visual Studio.</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>rozgałęzia rozmowę w wybranej turze (`/branch [n|nazwa]`)</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>Nie ma czego rozgałęziać — ta rozmowa jest pusta.</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## Punkty rozgałęzienia — tury: {0}</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` rozgałęzia w turze *n* · `/branch &lt;nazwa&gt;` przełącza na gałąź</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### Drzewo rozmowy</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>bieżąca</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>rozgałęziona w turze {0}</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>Taka tura nie istnieje — ta rozmowa ma ich {0}.</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>Brak zapisanej sesji o nazwie `{0}` — zobacz `/history`.</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 Gałąź `{0}` utworzona w turze {1}. Rozmowa toczy się tutaj; `{2}` zachowuje oryginał.</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 Teraz w `{0}`.</value></data>
 </root>

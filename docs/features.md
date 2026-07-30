@@ -135,6 +135,13 @@ exists.
 - **Conversation search** — 🔍 header button; non-matching messages dim to 20 % opacity.
 - **Session persistence & export** — sessions auto-save with a 4–5 word AI-generated title;
   export to `.md` / `.txt` with a stats header (model, turns, tool calls, tokens, duration).
+- **Conversation branching** — `/branch <n>` forks the conversation at turn *n*: the branch keeps
+  turns 1..*n* and the conversation continues in it, while the original is written back to disk
+  first — exactly as it stands, under a generated name if it never had a file — so branching can
+  never lose the half left behind.
+  `/branch` lists the branch points and the family tree, `/branch <name>` switches branch.
+  A branch is a plain session file with a `parent` + `fork_turn` link — nothing else in the
+  store, the history rebuild or the picker had to learn about branching.
 - **Sound notification** — an audible ping when a run finishes after more than 30 seconds.
 - **Code snippet library** — ⭐ saves any code block; `/snippets` manages it across sessions.
 - **Session & prompt templates** — `/template` loads a preconfigured context; user prompt

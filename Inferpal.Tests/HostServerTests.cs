@@ -318,6 +318,127 @@ public class HostServerTests
     }
 
     [Fact]
+    public async Task SessionBranch_ForksAtTurn_LinksTheParentAndBecomesTheCurrentSession()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        var name = $"test-branch-{Guid.NewGuid():N}";
+        SessionBranchResult? branch = null;
+        try
+        {
+            object[] messages =
+            [
+                new { role = "user",      content = "first" },
+                new { role = "assistant", content = "answer one" },
+                new { role = "user",      content = "second" },
+                new { role = "assistant", content = "answer two" },
+            ];
+
+            // Saving makes it the current session — the branch must record it as its parent.
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name, messages })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            branch = await h.Client.InvokeWithParameterObjectAsync<SessionBranchResult>(
+                "session/branch", new { turn = 1, messages }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.Equal($"{name}__b2", branch!.Name);
+            Assert.Equal(name, branch.Parent);
+            Assert.Equal(2, branch.Messages.Count);              // turn 1 only, answer included
+            Assert.Contains(branch.Name, branch.Message);        // localized confirmation bubble
+
+            // The conversation continues in the branch: truncated history + new current session.
+            var history = h.Server.CurrentSession!.History;
+            Assert.Equal(3, history.Count);                      // system + the 2 kept messages
+            Assert.Equal("answer one", history[^1].Content);
+            Assert.Equal(branch.Name, h.Server.CurrentSession!.CurrentSessionName);
+
+            // Reloading the branch shows the parent link the store persisted.
+            var listed = await h.Client.InvokeAsync<List<SessionSummaryDto>>("session/list")
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            var summary = listed.Single(x => x.Name == branch.Name);
+            Assert.Equal(name, summary.Parent);
+            Assert.Equal(1, summary.ForkTurn);
+        }
+        finally
+        {
+            await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name });
+            if (branch is not null)
+                await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = branch.Name });
+        }
+    }
+
+    [Fact]
+    public async Task SessionBranch_UnknownTurn_ReturnsNull()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        var branch = await h.Client.InvokeWithParameterObjectAsync<SessionBranchResult?>(
+            "session/branch", new { turn = 7, messages = new object[] { new { role = "user", content = "only one" } } })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Null(branch);
+    }
+
+    [Fact]
+    public async Task SlashBranch_ListsTurnsFromTheHostHistoryAndAsksTheAdapterToFork()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Server.CurrentSession!.History.AddRange(
+        [
+            new ChatMessageDto("user", "how do I parse this?"),
+            new ChatMessageDto("assistant", "like so"),
+        ]);
+
+        var listing = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/branch" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.True(listing.Handled);
+        Assert.Contains("**1.** how do I parse this?", listing.Markdown);
+
+        var fork = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/branch 1" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        // Stateful part is an effect: the adapter owns the display transcript.
+        var effect = Assert.Single(fork.Effects!);
+        Assert.Equal("branchRequest", effect.Kind);
+        Assert.Equal("1", effect.Value);
+    }
+
+    [Fact]
+    public async Task SessionTitle_SanitizesModelAnswerAndReturnsTimestampedFileName()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Fake.ChatResult = new ChatTurnResult("\"Fix the parser bug\"", null, 0, 0);
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<SessionTitleResult>(
+            "session/title", new { text = "the parser crashes on empty input" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal("Fix_the_parser_bug", result.Title);
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}_\d{4}_Fix_the_parser_bug$", result.FileName);
+        // Named by the utility role, not the chat model (Model Router).
+        Assert.Equal(ModelRouter.Resolve(h.Server.CurrentSession!.Config, ModelRole.Utility),
+                     h.Fake.AgentRuns[^1].Model);
+    }
+
+    [Fact]
+    public async Task SessionTitle_EmptyText_FallsBackToSnippetWithoutCallingTheModel()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<SessionTitleResult>(
+            "session/title", new { text = "" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Empty(h.Fake.AgentRuns);                       // nothing to summarise
+        Assert.EndsWith(SessionManager.MakeSnippet(string.Empty), result.FileName);
+    }
+
+    [Fact]
     public async Task SessionLoad_UnknownName_ReturnsNull()
     {
         using var h = CreateHarness();

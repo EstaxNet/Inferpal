@@ -95,33 +95,10 @@ internal partial class InferpalToolWindowData
         catch { }
     }
 
-    private async Task<string> GenerateSessionTitleAsync(string firstUserContent)
-    {
-        var fallback = SessionManager.MakeSnippet(firstUserContent);
-        if (string.IsNullOrWhiteSpace(firstUserContent)) return fallback;
-
-        try
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var result = await _client.RunAgentAsync(
-                model:   await ModelRouter.ResolveUtilityAsync(_config, _client, cts.Token),
-                history:
-                [
-                    new("system", SessionManager.TitleSystemPrompt),
-                    new("user",   firstUserContent.Length > 400 ? firstUserContent[..400] : firstUserContent)
-                ],
-                tools:   EmptyToolRegistry.Instance,
-                onStep:  _ => { },
-                onToken: null,
-                ct:      cts.Token);
-
-            return SessionManager.SanitizeTitle(result.FinalResponse, fallback);
-        }
-        catch
-        {
-            return fallback;
-        }
-    }
+    // Shared with the Host (`session/title`, VS Code) — prompt, timeout and fallback live in the
+    // Core so the two front-ends can never drift apart on how a session gets named.
+    private Task<string> GenerateSessionTitleAsync(string firstUserContent) =>
+        SessionTitleGenerator.GenerateAsync(_client, _config, firstUserContent, CancellationToken.None);
 
     private async Task AutoSaveAsync()
     {

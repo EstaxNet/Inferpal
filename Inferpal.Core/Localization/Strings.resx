@@ -911,4 +911,15 @@ ollama serve
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>This command is not available in this editor yet — use it from Visual Studio.</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>fork the conversation at a given turn (`/branch [n|name]`)</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>Nothing to branch yet — this conversation is empty.</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## Branch points — {0} turn(s)</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` forks at turn *n* · `/branch &lt;name&gt;` switches to a branch</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### Conversation tree</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>current</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>forked at turn {0}</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>No such turn — this conversation has {0}.</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>No saved session named `{0}` — see `/history`.</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 Branch `{0}` created at turn {1}. The conversation continues here; `{2}` keeps the original.</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 Now on `{0}`.</value></data>
 </root>

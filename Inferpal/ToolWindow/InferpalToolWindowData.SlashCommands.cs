@@ -197,6 +197,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.CommitExec: await HandleCommitExecAsync(string.Join(" ", parts[1..]), ct); break;
             case SlashCommandId.FixBuild:   await HandleFixBuildCommandAsync(parts, ct);                  break;
             case SlashCommandId.History:    await HandleHistoryCommandAsync(parts, ct);                   break;
+            case SlashCommandId.Branch:     await HandleBranchCommandAsync(parts, ct);                    break;
             case SlashCommandId.UndoRun:    await HandleUndoRunCommandAsync(parts, ct);                   break;
             case SlashCommandId.PHistory:   await HandlePHistoryCommandAsync(parts, ct);                  break;
             case SlashCommandId.Models:     await HandleModelsCommandAsync(parts, ct);                    break;

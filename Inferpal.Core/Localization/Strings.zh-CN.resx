@@ -906,4 +906,15 @@ ollama serve
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>此命令在此编辑器中尚不可用——请在 Visual Studio 中使用。</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>在指定轮次分叉对话（`/branch [n|名称]`）</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>没有可分叉的对话。</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## 分叉点 — 共 {0} 轮</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` 在第 *n* 轮分叉 · `/branch &lt;名称&gt;` 切换到某个分支</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### 对话树</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>当前</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>在第 {0} 轮分叉</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>没有该轮次 — 本次对话共 {0} 轮。</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>找不到名为 `{0}` 的已保存会话 — 请查看 `/history`。</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 已在第 {1} 轮创建分支 `{0}`。对话将在此继续；`{2}` 保留原始记录。</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 已切换到 `{0}`。</value></data>
 </root>

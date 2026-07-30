@@ -208,6 +208,9 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true,
                         ReplayCommandHandler.Handle(s.Tools.History.Runs, parts, s.RootDir));
 
+                case SlashCommandId.Branch:
+                    return await HandleBranchSlashAsync(s, parts, cts.Token);
+
                 case SlashCommandId.Xray:
                 {
                     var sections = new SystemPromptBuilder(s.Config).BuildSections(
@@ -376,6 +379,35 @@ internal sealed partial class HostServer
         return new SlashCommandResult(true, sessions.Count == 0
             ? Strings.HistoryNoSessions
             : SessionManager.FormatHistoryList(sessions, DateTime.UtcNow));
+    }
+
+    /// <summary>
+    /// <c>/branch</c> — listing is answered from the host's own history (turn numbering only needs
+    /// the user messages, which both sides agree on); the two stateful outcomes come back as
+    /// effects the adapter applies with its full transcript: <c>branchRequest</c> (→
+    /// <c>session/branch</c>) and <c>loadSession</c> (→ <c>session/load</c>).
+    /// </summary>
+    private static async Task<SlashCommandResult> HandleBranchSlashAsync(
+        HostSession s, string[] parts, CancellationToken ct)
+    {
+        var transcript = s.History
+            .Where(m => m.Role is "user" or "assistant" or "tool")
+            .Select(m => new SavedMessage(m.Role, m.Content ?? string.Empty))
+            .ToList();
+
+        var sessions = await s.Store.ListWithPreviewAsync(ct);
+        var result   = BranchCommandHandler.Handle(parts, transcript, s.CurrentSessionName, sessions);
+
+        if (result.Message is { } message)
+            return new SlashCommandResult(true, message);
+
+        // The bubble is localized here; the adapter only has to load the session.
+        if (result.SwitchTo is { } target)
+            return new SlashCommandResult(true, Strings.BranchSwitched(target),
+                [new SlashEffectDto("loadSession", target)]);
+
+        return new SlashCommandResult(true, null,
+            [new SlashEffectDto("branchRequest", result.ForkTurn!.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))]);
     }
 
     /// <summary>/undo-run [list] — reverts (or lists) the change-tracking runs of this session.</summary>

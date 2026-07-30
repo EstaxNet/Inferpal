@@ -906,4 +906,15 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>Dieser Befehl ist in diesem Editor noch nicht verfügbar — verwenden Sie ihn in Visual Studio.</value>
   </data>
+  <data name="SlashHintBranch" xml:space="preserve"><value>verzweigt die Unterhaltung an einem Zug (`/branch [n|Name]`)</value></data>
+  <data name="BranchNoConversation" xml:space="preserve"><value>Nichts zu verzweigen — diese Unterhaltung ist leer.</value></data>
+  <data name="BranchHeader" xml:space="preserve"><value>## Verzweigungspunkte — {0} Zug/Züge</value></data>
+  <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` verzweigt bei Zug *n* · `/branch &lt;Name&gt;` wechselt zu einem Zweig</value></data>
+  <data name="BranchTreeHeader" xml:space="preserve"><value>### Unterhaltungsbaum</value></data>
+  <data name="BranchCurrent" xml:space="preserve"><value>aktuell</value></data>
+  <data name="BranchForkedAt" xml:space="preserve"><value>verzweigt bei Zug {0}</value></data>
+  <data name="BranchInvalidTurn" xml:space="preserve"><value>Diesen Zug gibt es nicht — diese Unterhaltung hat {0}.</value></data>
+  <data name="BranchUnknown" xml:space="preserve"><value>Keine gespeicherte Sitzung namens `{0}` — siehe `/history`.</value></data>
+  <data name="BranchCreated" xml:space="preserve"><value>🌿 Zweig `{0}` bei Zug {1} erstellt. Die Unterhaltung wird hier fortgesetzt; `{2}` behält das Original.</value></data>
+  <data name="BranchSwitched" xml:space="preserve"><value>🌿 Jetzt auf `{0}`.</value></data>
 </root>

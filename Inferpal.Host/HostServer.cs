@@ -378,19 +378,23 @@ internal sealed partial class HostServer : IDisposable
     public Task SessionSaveAsync(SessionSaveParams p, CancellationToken ct)
     {
         var s = Session();
-        var messages = p.Messages.Select(m => new SavedMessage(
-            m.Role, m.Content,
-            string.IsNullOrEmpty(m.ToolName)  ? null : m.ToolName,
-            string.IsNullOrEmpty(m.Timestamp) ? null : m.Timestamp));
-        return s.Store.SaveAsync(p.Name, messages, ct);
+        // The auto-save slot is not "the file this conversation lives in" (see CurrentSessionName).
+        if (p.Name != "last_session") s.CurrentSessionName = p.Name;
+        return s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct);
     }
+
+    /// <summary>Wire message → stored message (empty optional fields stay out of the JSON).</summary>
+    private static SavedMessage ToSaved(SavedMessageDto m) => new(
+        m.Role, m.Content,
+        string.IsNullOrEmpty(m.ToolName)  ? null : m.ToolName,
+        string.IsNullOrEmpty(m.Timestamp) ? null : m.Timestamp);
 
     [JsonRpcMethod("session/list")]
     public async Task<List<SessionSummaryDto>> SessionListAsync(CancellationToken ct)
     {
         var summaries = await Session().Store.ListWithPreviewAsync(ct);
         return summaries
-            .Select(x => new SessionSummaryDto(x.Name, x.SavedAt, x.MessageCount, x.FirstUserPreview))
+            .Select(x => new SessionSummaryDto(x.Name, x.SavedAt, x.MessageCount, x.FirstUserPreview, x.Parent, x.ForkTurn))
             .ToList();
     }
 
@@ -404,7 +408,8 @@ internal sealed partial class HostServer : IDisposable
         var data = await s.Store.LoadAsync(p.Name, ct);
         if (data is null) return null;
 
-        s.History = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
+        s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
+        s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;
         return new SessionLoadResult(
             p.Name,
             data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList());
@@ -412,6 +417,58 @@ internal sealed partial class HostServer : IDisposable
 
     [JsonRpcMethod("session/delete", UseSingleObjectParameterDeserialization = true)]
     public bool SessionDelete(SessionRefParams p) => Session().Store.Delete(p.Name);
+
+    /// <summary>
+    /// Forks the conversation at <paramref name="p"/>.Turn (<c>/branch &lt;n&gt;</c>, ROADMAP 1.4.0 §7):
+    /// the branch keeps turns 1..Turn, records its parent, becomes the current session and its
+    /// (truncated) history replaces the host's. The parent is written to disk first when the
+    /// conversation had no file yet — branching must not lose the discarded half. Null when the
+    /// turn doesn't exist.
+    /// </summary>
+    [JsonRpcMethod("session/branch", UseSingleObjectParameterDeserialization = true)]
+    public async Task<SessionBranchResult?> SessionBranchAsync(SessionBranchParams p, CancellationToken ct)
+    {
+        var s        = Session();
+        var messages = p.Messages.Select(ToSaved).ToList();
+        var sessions = await s.Store.ListWithPreviewAsync(ct);
+
+        var plan = BranchManager.Plan(messages, p.Turn, s.CurrentSessionName, sessions, DateTime.Now);
+        if (plan is null) return null;
+
+        // The parent is rewritten with the conversation as it stands now (it may have moved on
+        // since it was loaded), keeping its own parent link when it is itself a branch.
+        await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, ct,
+                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn);
+
+        await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, ct,
+                                parent: plan.ParentName, forkTurn: plan.ForkTurn);
+
+        s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
+        s.CurrentSessionName = plan.BranchName;
+
+        return new SessionBranchResult(
+            plan.BranchName, plan.ParentName, plan.ForkTurn,
+            plan.BranchMessages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList(),
+            Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
+    }
+
+    /// <summary>
+    /// LLM-generated name for a conversation (utility model via the Model Router) — the VS Code
+    /// counterpart of what the VS VM does when <c>/clear</c> archives a session. Falls back to a
+    /// snippet of the message when the backend can't answer, so it always returns something usable.
+    /// <paramref name="p"/>.Text is optional: empty means "the first user message of this session".
+    /// </summary>
+    [JsonRpcMethod("session/title", UseSingleObjectParameterDeserialization = true)]
+    public async Task<SessionTitleResult> SessionTitleAsync(SessionTitleParams p, CancellationToken ct)
+    {
+        var s    = Session();
+        var text = !string.IsNullOrWhiteSpace(p.Text)
+            ? p.Text!
+            : s.History.FirstOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
+
+        var title = await SessionTitleGenerator.GenerateAsync(s.Client, s.Config, text, ct);
+        return new SessionTitleResult(title, SessionManager.SessionFileName(DateTime.Now, title));
+    }
 
     // ── Context X-Ray panel (interactive /xray V2) ─────────────────────────────
 
@@ -539,8 +596,11 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>Reseeds the history with the layered system prompt.</summary>
-    private static void ResetHistory(HostSession s) =>
-        s.History = [new ChatMessageDto("system", BuildSystemPromptText(s))];
+    private static void ResetHistory(HostSession s)
+    {
+        s.History            = [new ChatMessageDto("system", BuildSystemPromptText(s))];
+        s.CurrentSessionName = null;   // the archived conversation keeps its own file
+    }
 
     /// <summary>VS Code locale ids are lowercase (`zh-cn`); .NET wants `zh-CN`. GetCultureInfo
     /// is case-insensitive, so validating through it normalizes; invalid ⇒ null (OS culture).</summary>
