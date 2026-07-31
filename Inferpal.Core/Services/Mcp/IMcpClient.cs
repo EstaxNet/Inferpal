@@ -12,6 +12,13 @@ internal interface IMcpClient : IAsyncDisposable
     /// <summary>The server name this client is bound to (for tool namespacing and diagnostics).</summary>
     string ServerName { get; }
 
+    /// <summary>
+    /// Synchronous last-resort teardown for shutdown paths that cannot await (the Visual Studio
+    /// extension disposes on a thread where blocking is forbidden — VSTHRD002). Kills the child
+    /// process tree and nothing else; transports without a process leave it a no-op.
+    /// </summary>
+    void KillNow() { }
+
     /// <summary>Last connection error, if <see cref="StartAsync"/> returned <c>false</c>.</summary>
     string? LastError { get; }
 

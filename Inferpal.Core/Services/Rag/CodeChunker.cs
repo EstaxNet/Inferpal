@@ -73,7 +73,9 @@ internal static class CodeChunker
     /// <param name="rootDir">Solution root directory (used to compute <see cref="RagChunk.RelPath"/>).</param>
     public static List<RagChunk> Chunk(string filePath, string content, string rootDir)
     {
-        var lines   = content.Split('\n');
+        // Normalise CRLF first: splitting on '\n' alone leaves a trailing '\r' on every line of a
+        // Windows file, which ends up inside the embedded text and inflates the token estimate.
+        var lines   = content.Replace("\r\n", "\n").Split('\n');
         var ext     = Path.GetExtension(filePath).ToLowerInvariant();
         var relPath = Path.GetRelativePath(rootDir, filePath);
 

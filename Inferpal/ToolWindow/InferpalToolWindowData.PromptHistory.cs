@@ -42,7 +42,7 @@ internal partial class InferpalToolWindowData
             var json = File.ReadAllText(_promptHistoryFile, System.Text.Encoding.UTF8);
             _promptHistory.Load(JsonSerializer.Deserialize<List<string>>(json) ?? []);
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("PromptHistory.Load", ex); }
     }
 
     private void SavePromptHistory()
@@ -54,7 +54,7 @@ internal partial class InferpalToolWindowData
                 JsonSerializer.Serialize(_promptHistory.Entries),
                 System.Text.Encoding.UTF8);
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("PromptHistory.Save", ex); }
     }
 
     private Task HistoryUpAsync(object? _, CancellationToken ct)
@@ -78,29 +78,15 @@ internal partial class InferpalToolWindowData
     private async Task HandleContextCommandAsync(CancellationToken ct)
     {
         var dir = FindProjectRoot();
+        // VS-specific pre-check: without a solution the root is meaningless here.
         if (Directory.GetFiles(dir, "*.sln", SearchOption.TopDirectoryOnly).Length == 0)
         {
             await ShowInfoAsync(Strings.SlashContextNoSln);
             return;
         }
 
-        var path = Path.Combine(dir, ".inferpal", "context.md");
-        if (!File.Exists(path))
-        {
-            await ShowInfoAsync(Strings.SlashContextNotFound(path));
-            return;
-        }
-
-        try
-        {
-            var content = await File.ReadAllTextAsync(path, System.Text.Encoding.UTF8, ct);
-            var preview = content.Length > 400 ? content[..400] + "…" : content;
-            await ShowInfoAsync(Strings.SlashContextLoaded(path, content.Length, preview));
-        }
-        catch (Exception ex)
-        {
-            await ShowInfoAsync(Strings.MsgError(ex.Message));
-        }
+        await ShowInfoAsync(await Services.Commands.ProjectFileCommandHandler.HandleAsync(
+            dir, "context.md", Strings.SlashContextNotFound, Strings.SlashContextLoaded, ct));
     }
 
     // /branch          → branch points of this conversation + the family tree
@@ -163,92 +149,19 @@ internal partial class InferpalToolWindowData
         await ShowInfoAsync(Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
     }
 
-    private async Task HandleHistoryCommandAsync(string[] parts, CancellationToken ct)
-    {
-        if (parts.Length >= 2)
-        {
-            // ── Search mode ───────────────────────────────────────────────────
-            var term    = string.Join(" ", parts[1..]);
-            var matches = await _store.SearchAsync(term, ct);
+    // Logique partagée avec le Host (HistoryCommandHandler) — la VM n'apporte que la bulle.
+    private async Task HandleHistoryCommandAsync(string[] parts, CancellationToken ct) =>
+        await ShowInfoAsync(await Services.Commands.HistoryCommandHandler.HandleAsync(
+            _store, parts, DateTime.UtcNow, ct));
 
-            if (matches.Count == 0)
-            {
-                await ShowInfoAsync(Strings.HistoryNoResults(term));
-                return;
-            }
+    // /undo-run [list] — logique partagée avec le Host (UndoRunCommandHandler).
+    private async Task HandleUndoRunCommandAsync(string[] parts, CancellationToken ct) =>
+        await ShowInfoAsync(await Services.Commands.UndoRunCommandHandler.HandleAsync(
+            _tools.History, parts, FindProjectRoot(), ct));
 
-            await ShowInfoAsync(SessionManager.FormatHistorySearch(term, matches, DateTime.UtcNow));
-        }
-        else
-        {
-            // ── List mode ─────────────────────────────────────────────────────
-            var sessions = await _store.ListWithPreviewAsync(ct);
-
-            if (sessions.Count == 0)
-            {
-                await ShowInfoAsync(Strings.HistoryNoSessions);
-                return;
-            }
-
-            await ShowInfoAsync(SessionManager.FormatHistoryList(sessions, DateTime.UtcNow));
-        }
-    }
-
-    // /undo-run         → revert every file changed during the most recent agent run
-    // /undo-run list    → list the change-tracking runs of this session
-    private async Task HandleUndoRunCommandAsync(string[] parts, CancellationToken ct)
-    {
-        var runs = _tools.History.Runs;
-
-        if (parts.Length >= 2 && parts[1].Equals("list", StringComparison.OrdinalIgnoreCase))
-        {
-            var withChanges = runs.Where(r => r.FileCount > 0).ToList();
-            if (withChanges.Count == 0) { await ShowInfoAsync(Strings.UndoRunNone); return; }
-
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine(Strings.UndoRunListHeader(withChanges.Count));
-            foreach (var r in withChanges)
-                sb.AppendLine($"- {r.StartedAt:HH:mm:ss} — {r.FileCount} file(s)");
-            await ShowInfoAsync(sb.ToString().TrimEnd());
-            return;
-        }
-
-        var run = runs.FirstOrDefault(r => r.FileCount > 0);
-        if (run is null) { await ShowInfoAsync(Strings.UndoRunNone); return; }
-
-        var result = await _tools.History.UndoRunAsync(run, ct);
-
-        var lines = new System.Text.StringBuilder();
-        lines.AppendLine(Strings.UndoRunResult(result.Restored.Count, result.Deleted.Count));
-        string Root() => FindProjectRoot();
-        foreach (var p in result.Restored) lines.AppendLine($"  ↩ {System.IO.Path.GetRelativePath(Root(), p)}");
-        foreach (var p in result.Deleted)  lines.AppendLine($"  🗑 {System.IO.Path.GetRelativePath(Root(), p)}");
-        foreach (var p in result.Failed)   lines.AppendLine($"  ⚠ {System.IO.Path.GetRelativePath(Root(), p)}");
-        await ShowInfoAsync(lines.ToString().TrimEnd());
-    }
-
-    private async Task HandleMemoryCommandAsync(CancellationToken ct)
-    {
-        var dir  = FindProjectRoot();
-        var path = Path.Combine(dir, ".inferpal", "memory.md");
-
-        if (!File.Exists(path))
-        {
-            await ShowInfoAsync(Strings.SlashMemoryNotFound(path));
-            return;
-        }
-
-        try
-        {
-            var content = await File.ReadAllTextAsync(path, System.Text.Encoding.UTF8, ct);
-            var preview = content.Length > 400 ? content[..400] + "…" : content;
-            await ShowInfoAsync(Strings.SlashMemoryLoaded(path, content.Length, preview));
-        }
-        catch (Exception ex)
-        {
-            await ShowInfoAsync(Strings.MsgError(ex.Message));
-        }
-    }
+    private async Task HandleMemoryCommandAsync(CancellationToken ct) =>
+        await ShowInfoAsync(await Services.Commands.ProjectFileCommandHandler.HandleAsync(
+            FindProjectRoot(), "memory.md", Strings.SlashMemoryNotFound, Strings.SlashMemoryLoaded, ct));
 
     // ── Fix-build loop ─────────────────────────────────────────────────────────
 

@@ -247,82 +247,13 @@ internal partial class InferpalToolWindowData
     /// manages external documentation sources crawled and embedded for the <c>search_docs</c> tool.
     /// Crawl/embed runs in the background with progress reported as chat bubbles.
     /// </summary>
+    /// <summary>/docs add|list|remove|reindex — shared handler (DocsCommandHandler); the VM
+    /// renders crawl progress as info bubbles.</summary>
     private async Task HandleDocsCommandAsync(string[] parts, CancellationToken ct)
     {
-        var sub   = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
-        var sites = DocSite.Parse(_config.DocSitesJson);
-
-        switch (sub)
-        {
-            case "add":
-            {
-                if (parts.Length < 3) { await ShowInfoAsync(Strings.DocsUsage); break; }
-
-                var url = parts[2];
-                if (!DocSite.IsValidHttpUrl(url))
-                {
-                    await ShowInfoAsync(Strings.DocsUsage);
-                    break;
-                }
-
-                var title = parts.Length > 3 ? string.Join(" ", parts[3..]) : null;
-                var site  = DocSite.Create(url, title);
-
-                _config.DocSitesJson = DocSite.Serialize(DocSite.Upsert(sites, site));
-                _config.Save();
-
-                await ShowInfoAsync(Strings.DocsAdded(site.Title));
-
-                // Crawl + embed in the background; progress surfaces as info bubbles.
-                var progress = new Progress<string>(msg => _ = ShowInfoAsync(msg));
-                _ = Task.Run(() => _docsIndex.AddOrReindexAsync(site, progress, CancellationToken.None));
-                break;
-            }
-
-            case "remove":
-            {
-                if (parts.Length < 3) { await ShowInfoAsync(Strings.DocsUsage); break; }
-
-                var id      = parts[2].ToLowerInvariant();
-                var updated = DocSite.Remove(sites, id);
-                if (updated is null) { await ShowInfoAsync(Strings.DocsNoSites); break; }
-
-                _config.DocSitesJson = DocSite.Serialize(updated);
-                _config.Save();
-                await _docsIndex.RemoveAsync(id, ct);
-                await ShowInfoAsync(Strings.DocsRemoved(id));
-                break;
-            }
-
-            case "reindex":
-            {
-                var target = parts.Length >= 3
-                    ? sites.FirstOrDefault(s => s.Id == parts[2].ToLowerInvariant())
-                    : null;
-                var toIndex = target is not null ? [target] : sites.ToArray();
-                if (toIndex.Length == 0) { await ShowInfoAsync(Strings.DocsNoSites); break; }
-
-                await ShowInfoAsync(Strings.DocsReindexing(target?.Title ?? $"{toIndex.Length}"));
-                var progress = new Progress<string>(msg => _ = ShowInfoAsync(msg));
-                _ = Task.Run(async () =>
-                {
-                    foreach (var s in toIndex)
-                        await _docsIndex.AddOrReindexAsync(s, progress, CancellationToken.None);
-                });
-                break;
-            }
-
-            case "list":
-            default:
-            {
-                if (sites.Count == 0) { await ShowInfoAsync(Strings.DocsNoSites); break; }
-
-                var stats = _docsIndex.Sites.ToDictionary(
-                    s => s.Site.Id, s => (s.PageCount, s.ChunkCount));
-                await ShowInfoAsync(DocSite.FormatList(sites, stats));
-                break;
-            }
-        }
+        var progress = new Progress<string>(msg => _ = ShowInfoAsync(msg));
+        await ShowInfoAsync(await Services.Commands.DocsCommandHandler.HandleAsync(
+            _config, _docsIndex, parts, progress, ct));
     }
 
     private async Task HandleModelsCommandAsync(string[] parts, CancellationToken ct)
@@ -533,7 +464,7 @@ internal partial class InferpalToolWindowData
             var thread = new Thread(() =>
             {
                 try { System.Windows.Clipboard.SetText(string.IsNullOrEmpty(code) ? " " : code); }
-                catch { }
+                catch (Exception ex) { Diagnostics.Swallow("Clipboard.CopySnippet", ex); }
             });
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
@@ -543,32 +474,24 @@ internal partial class InferpalToolWindowData
         await ShowInfoAsync(result.Message);
     }
 
+    /// <summary>/template [id] — shared decision (TemplateCommandHandler); the VM applies it by
+    /// clearing the conversation and rebuilding the system prompt with the template suffix.</summary>
     private async Task HandleTemplateCommandAsync(string[] parts, CancellationToken ct)
     {
-        if (parts.Length < 2)
+        var result = Services.Commands.TemplateCommandHandler.Handle(parts);
+        if (result.Apply is not { } tmpl)
         {
-            await ShowInfoAsync(SessionManager.FormatTemplateList());
+            await ShowInfoAsync(result.Message!);
             return;
         }
 
-        var id = parts[1].ToLowerInvariant();
-        var tmpl = SessionManager.FindTemplate(id);
-        if (tmpl is null)
-        {
-            await ShowInfoAsync($"Unknown template `{id}`. Type `/template` to see the list.");
-            return;
-        }
-
-        // Clear the conversation and apply the template
         await ClearAsync(null, ct);
-
         await RunOnVMContextAsync(() =>
         {
             _activeTemplateSuffix = tmpl.SystemSuffix;
             _baseSystemPrompt     = BuildSystemPrompt();
             _history[0]           = new ChatMessageDto("system", _baseSystemPrompt);
         });
-
         await ShowInfoAsync(tmpl.Greeting);
     }
 

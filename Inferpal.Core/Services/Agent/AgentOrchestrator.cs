@@ -195,11 +195,17 @@ internal sealed class AgentOrchestrator
     private async Task<bool> TrySummarizeOldTurnsAsync(
         List<ChatMessageDto> messages, int anchorCount, string model, CancellationToken ct)
     {
-        var rangeLen = messages.Count - KeepRecentMessages - anchorCount;
+        // Snap both ends to a tool-block boundary: removing half of an assistant(tool_calls)+tool
+        // group leaves a structurally invalid history that OpenAI-compatible backends reject
+        // outright (Ollama silently tolerates it, which is why this went unnoticed).
+        var start = ToolBlockBoundary.SnapStart(messages, anchorCount, floor: 1);
+        var end   = ToolBlockBoundary.SnapEnd(messages, start, messages.Count - KeepRecentMessages);
+
+        var rangeLen = end - start;
         if (rangeLen < 2) return false;   // not enough old turns to be worth a round-trip
 
         var sb = new System.Text.StringBuilder();
-        for (int i = anchorCount; i < anchorCount + rangeLen; i++)
+        for (int i = start; i < end; i++)
         {
             var m = messages[i];
             if (string.IsNullOrEmpty(m.Content)) continue;
@@ -243,9 +249,9 @@ internal sealed class AgentOrchestrator
         if (string.IsNullOrWhiteSpace(summary)) return false;
 
         // Replace the summarised range with a single [summary] pair.
-        messages.RemoveRange(anchorCount, rangeLen);
-        messages.Insert(anchorCount, new ChatMessageDto("assistant", summary));
-        messages.Insert(anchorCount, new ChatMessageDto("user", "[Summary of this run's earlier context]"));
+        messages.RemoveRange(start, rangeLen);
+        messages.Insert(start, new ChatMessageDto("assistant", summary));
+        messages.Insert(start, new ChatMessageDto("user", "[Summary of this run's earlier context]"));
         return true;
     }
 

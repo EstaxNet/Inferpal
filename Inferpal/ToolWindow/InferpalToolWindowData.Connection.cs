@@ -60,7 +60,7 @@ internal partial class InferpalToolWindowData
                 VramStatus    = text;
                 HasVramStatus = text.Length > 0;
             }
-            catch { }
+            catch (Exception ex) { Diagnostics.Swallow("Connection.VramBadgeUpdate", ex); }
         }, null);
     }
 
@@ -115,7 +115,7 @@ internal partial class InferpalToolWindowData
             }
         }
         catch (OperationCanceledException) { }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Connection.Heartbeat", ex); }
     }
 
     private Task ToggleSessionPanelAsync(object? _, CancellationToken ct) =>
@@ -199,7 +199,7 @@ internal partial class InferpalToolWindowData
                 ScrollToBottom();
             });
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Session.Load", ex); }
     }
 
     /// <summary>

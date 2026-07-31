@@ -819,6 +819,13 @@ internal static class Strings
     public static string TooltipXrayGauge                    => Get(nameof(TooltipXrayGauge));
     public static string TooltipXrayClose                    => Get(nameof(TooltipXrayClose));
 
+    // ── MCP OAuth ──────────────────────────────────────────────────────────────
+    public static string McpOAuthUnsupportedPlatform => Get(nameof(McpOAuthUnsupportedPlatform));
+
+    // ── Analysis-tool scan coverage ────────────────────────────────────────────
+    public static string ScanPartial(int scanned, int total) =>
+        string.Format(Get(nameof(ScanPartial)), scanned, total);
+
     // ── /branch command (conversation branching) ───────────────────────────────
     public static string SlashHintBranch                     => Get(nameof(SlashHintBranch));
     public static string BranchNoConversation                => Get(nameof(BranchNoConversation));

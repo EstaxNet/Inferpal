@@ -922,4 +922,6 @@ ollama serve
   <data name="BranchUnknown" xml:space="preserve"><value>No saved session named `{0}` — see `/history`.</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 Branch `{0}` created at turn {1}. The conversation continues here; `{2}` keeps the original.</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Now on `{0}`.</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ Partial analysis: only {0} of {1} source files were scanned (cap). Results may be incomplete.</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP OAuth authorization is only available on Windows for now: the refresh token can only be stored encrypted (DPAPI), and storing it in clear text is not an option. Use a server with a static header token instead.</value></data>
 </root>

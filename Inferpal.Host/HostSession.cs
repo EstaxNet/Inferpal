@@ -63,7 +63,15 @@ internal sealed class HostSession : IDisposable
 
     public void Dispose()
     {
-        // McpToolService owns no disposable state (its stdio clients die with the process).
+        // Every child process this session spawned must die with it: on Windows a process started
+        // with UseShellExecute=false survives its parent, so "they die with the host" was wishful
+        // thinking — closing the editor left MCP servers and detached background shells running.
+        try { Mcp.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)); }
+        catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeMcp", ex); }
+
+        try { Tools.Dispose(); }
+        catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeTools", ex); }
+
         try { Lsp.Dispose(); }
         catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeLsp", ex); }
     }

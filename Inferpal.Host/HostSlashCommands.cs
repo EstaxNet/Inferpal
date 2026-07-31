@@ -118,21 +118,24 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, null, [new SlashEffectDto("exportRequest")]);
 
                 case SlashCommandId.Context:
-                    return await ReadProjectFileAsync(s, "context.md",
-                        Strings.SlashContextNotFound, Strings.SlashContextLoaded, cts.Token);
+                    return new SlashCommandResult(true, await ProjectFileCommandHandler.HandleAsync(
+                        s.RootDir, "context.md", Strings.SlashContextNotFound, Strings.SlashContextLoaded, cts.Token));
 
                 case SlashCommandId.Memory:
-                    return await ReadProjectFileAsync(s, "memory.md",
-                        Strings.SlashMemoryNotFound, Strings.SlashMemoryLoaded, cts.Token);
+                    return new SlashCommandResult(true, await ProjectFileCommandHandler.HandleAsync(
+                        s.RootDir, "memory.md", Strings.SlashMemoryNotFound, Strings.SlashMemoryLoaded, cts.Token));
 
                 case SlashCommandId.Index:
-                    return HandleIndexSlash(s, parts);
+                    return new SlashCommandResult(true,
+                        IndexCommandHandler.Handle(s.Index, s.Config, parts, s.RootDir));
 
                 case SlashCommandId.History:
-                    return await HandleHistorySlashAsync(s, parts, cts.Token);
+                    return new SlashCommandResult(true, await HistoryCommandHandler.HandleAsync(
+                        s.Store, parts, DateTime.UtcNow, cts.Token));
 
                 case SlashCommandId.UndoRun:
-                    return await HandleUndoRunSlashAsync(s, parts, cts.Token);
+                    return new SlashCommandResult(true, await UndoRunCommandHandler.HandleAsync(
+                        s.Tools.History, parts, s.RootDir, cts.Token));
 
                 case SlashCommandId.PHistory:
                 {
@@ -306,80 +309,9 @@ internal sealed partial class HostServer
     // ── Individual handlers ──────────────────────────────────────────────────────
 
     /// <summary>/context and /memory: shows the corresponding `.inferpal/*.md` project file.</summary>
-    private static async Task<SlashCommandResult> ReadProjectFileAsync(
-        HostSession s, string fileName,
-        Func<string, string> notFound, Func<string, int, string, string> loaded, CancellationToken ct)
-    {
-        if (string.IsNullOrEmpty(s.RootDir))
-            return new SlashCommandResult(true, Strings.SlashContextNoSln);
-
-        var path = Path.Combine(s.RootDir, ".inferpal", fileName);
-        if (!File.Exists(path))
-            return new SlashCommandResult(true, notFound(path));
-
-        var content = await File.ReadAllTextAsync(path, System.Text.Encoding.UTF8, ct);
-        var preview = content.Length > 400 ? content[..400] + "…" : content;
-        return new SlashCommandResult(true, loaded(path, content.Length, preview));
-    }
 
     /// <summary>/index [rebuild] — RAG status / manual re-index (same output as the VS VM).</summary>
-    private SlashCommandResult HandleIndexSlash(HostSession s, string[] parts)
-    {
-        if (parts.Length >= 2 && parts[1].Equals("rebuild", StringComparison.OrdinalIgnoreCase))
-        {
-            if (string.IsNullOrEmpty(s.RootDir))
-                return new SlashCommandResult(true, "⚠ Cannot locate solution root — open a file first.");
-            s.Index.StartIndexing(s.RootDir);
-            return new SlashCommandResult(true, $"🔄 RAG re-indexing started: `{s.RootDir}`");
-        }
 
-        var model = string.IsNullOrEmpty(s.Config.RagEmbeddingModel) ? "nomic-embed-text" : s.Config.RagEmbeddingModel;
-        var sb    = new System.Text.StringBuilder();
-        sb.AppendLine("**RAG Index**");
-        sb.AppendLine();
-        if (!s.Config.RagEnabled)
-        {
-            sb.AppendLine("Status: **disabled** (`ragEnabled = false` in settings)");
-            sb.AppendLine();
-            sb.AppendLine("Enable it to get semantic cross-file search via `search_codebase`.");
-        }
-        else if (s.Index.ChunkCount == 0 && !s.Index.IsIndexing)
-        {
-            sb.AppendLine($"Status: {(s.Index.Status is { Length: > 0 } st ? st : "not started")}");
-            sb.AppendLine();
-            sb.AppendLine("Use `/index rebuild` to build the index manually.");
-        }
-        else
-        {
-            sb.AppendLine($"Status : {s.Index.Status}");
-            sb.AppendLine($"Chunks : {s.Index.ChunkCount:N0}");
-            sb.AppendLine($"Root   : `{s.Index.RootDir}`");
-            sb.AppendLine($"Model  : `{model}`");
-            sb.AppendLine($"Top-K  : {s.Config.RagTopK}");
-            sb.AppendLine();
-            sb.AppendLine("Use `/index rebuild` to force a full re-index.");
-        }
-        return new SlashCommandResult(true, sb.ToString().TrimEnd());
-    }
-
-    /// <summary>/history [term] — saved-session list or full-text search (same store as VS).</summary>
-    private static async Task<SlashCommandResult> HandleHistorySlashAsync(
-        HostSession s, string[] parts, CancellationToken ct)
-    {
-        if (parts.Length >= 2)
-        {
-            var term    = string.Join(" ", parts[1..]);
-            var matches = await s.Store.SearchAsync(term, ct);
-            return new SlashCommandResult(true, matches.Count == 0
-                ? Strings.HistoryNoResults(term)
-                : SessionManager.FormatHistorySearch(term, matches, DateTime.UtcNow));
-        }
-
-        var sessions = await s.Store.ListWithPreviewAsync(ct);
-        return new SlashCommandResult(true, sessions.Count == 0
-            ? Strings.HistoryNoSessions
-            : SessionManager.FormatHistoryList(sessions, DateTime.UtcNow));
-    }
 
     /// <summary>
     /// <c>/branch</c> — listing is answered from the host's own history (turn numbering only needs
@@ -410,38 +342,6 @@ internal sealed partial class HostServer
             [new SlashEffectDto("branchRequest", result.ForkTurn!.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))]);
     }
 
-    /// <summary>/undo-run [list] — reverts (or lists) the change-tracking runs of this session.</summary>
-    private static async Task<SlashCommandResult> HandleUndoRunSlashAsync(
-        HostSession s, string[] parts, CancellationToken ct)
-    {
-        var runs = s.Tools.History.Runs;
-
-        if (parts.Length >= 2 && parts[1].Equals("list", StringComparison.OrdinalIgnoreCase))
-        {
-            var withChanges = runs.Where(r => r.FileCount > 0).ToList();
-            if (withChanges.Count == 0)
-                return new SlashCommandResult(true, Strings.UndoRunNone);
-
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine(Strings.UndoRunListHeader(withChanges.Count));
-            foreach (var r in withChanges)
-                sb.AppendLine($"- {r.StartedAt:HH:mm:ss} — {r.FileCount} file(s)");
-            return new SlashCommandResult(true, sb.ToString().TrimEnd());
-        }
-
-        var run = runs.FirstOrDefault(r => r.FileCount > 0);
-        if (run is null)
-            return new SlashCommandResult(true, Strings.UndoRunNone);
-
-        var result = await s.Tools.History.UndoRunAsync(run, ct);
-        var lines  = new System.Text.StringBuilder();
-        lines.AppendLine(Strings.UndoRunResult(result.Restored.Count, result.Deleted.Count));
-        string Rel(string path) => string.IsNullOrEmpty(s.RootDir) ? path : Path.GetRelativePath(s.RootDir, path);
-        foreach (var f in result.Restored) lines.AppendLine($"  ↩ {Rel(f)}");
-        foreach (var f in result.Deleted)  lines.AppendLine($"  🗑 {Rel(f)}");
-        foreach (var f in result.Failed)   lines.AppendLine($"  ⚠ {Rel(f)}");
-        return new SlashCommandResult(true, lines.ToString().TrimEnd());
-    }
 
     /// <summary>/models … — pull streams its progress through chat/step (the adapter's status
     /// line), everything else is the shared pure handler.</summary>
@@ -466,17 +366,13 @@ internal sealed partial class HostServer
         return new SlashCommandResult(true, result.Message);
     }
 
-    /// <summary>/template [id] — lists templates or reseeds the session with one (suffix kept
-    /// for later system-prompt rebuilds, like the VS VM's <c>_activeTemplateSuffix</c>).</summary>
-    private static SlashCommandResult HandleTemplateSlash(HostSession s, string[] parts)
+    /// <summary>/template [id] — shared decision (TemplateCommandHandler); the host applies it
+    /// by resetting its history and asking the adapter to clear the transcript.</summary>
+    private SlashCommandResult HandleTemplateSlash(HostSession s, string[] parts)
     {
-        if (parts.Length < 2)
-            return new SlashCommandResult(true, SessionManager.FormatTemplateList());
-
-        var id   = parts[1].ToLowerInvariant();
-        var tmpl = SessionManager.FindTemplate(id);
-        if (tmpl is null)
-            return new SlashCommandResult(true, $"Unknown template `{id}`. Type `/template` to see the list.");
+        var result = TemplateCommandHandler.Handle(parts);
+        if (result.Apply is not { } tmpl)
+            return new SlashCommandResult(true, result.Message);
 
         s.TemplateSuffix = tmpl.SystemSuffix;
         ResetHistory(s);
@@ -485,72 +381,13 @@ internal sealed partial class HostServer
 
     /// <summary>/docs add|list|remove|reindex — external documentation sources; crawls run in
     /// the background with progress surfaced through chat/step.</summary>
+    /// <summary>/docs add|list|remove|reindex — shared handler; crawl progress is surfaced
+    /// through the same chat/step notifications the agent loop uses.</summary>
     private async Task<SlashCommandResult> HandleDocsSlashAsync(HostSession s, string[] parts, CancellationToken ct)
     {
-        var sub   = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
-        var sites = DocSite.Parse(s.Config.DocSitesJson);
-
-        switch (sub)
-        {
-            case "add":
-            {
-                if (parts.Length < 3 || !DocSite.IsValidHttpUrl(parts[2]))
-                    return new SlashCommandResult(true, Strings.DocsUsage);
-
-                var title = parts.Length > 3 ? string.Join(" ", parts[3..]) : null;
-                var site  = DocSite.Create(parts[2], title);
-                s.Config.DocSitesJson = DocSite.Serialize(DocSite.Upsert(sites, site));
-                s.Config.Save();
-
-                // Crawl + embed in the background; progress surfaces as chat/step updates.
-                var progress = new Progress<string>(msg => Notify("chat/step", new { text = msg }));
-                _ = Task.Run(() => s.Docs.AddOrReindexAsync(site, progress, CancellationToken.None));
-                return new SlashCommandResult(true, Strings.DocsAdded(site.Title));
-            }
-
-            case "remove":
-            {
-                if (parts.Length < 3)
-                    return new SlashCommandResult(true, Strings.DocsUsage);
-
-                var id      = parts[2].ToLowerInvariant();
-                var updated = DocSite.Remove(sites, id);
-                if (updated is null)
-                    return new SlashCommandResult(true, Strings.DocsNoSites);
-
-                s.Config.DocSitesJson = DocSite.Serialize(updated);
-                s.Config.Save();
-                await s.Docs.RemoveAsync(id, ct);
-                return new SlashCommandResult(true, Strings.DocsRemoved(id));
-            }
-
-            case "reindex":
-            {
-                var target = parts.Length >= 3
-                    ? sites.FirstOrDefault(x => x.Id == parts[2].ToLowerInvariant())
-                    : null;
-                var toIndex = target is not null ? [target] : sites.ToArray();
-                if (toIndex.Length == 0)
-                    return new SlashCommandResult(true, Strings.DocsNoSites);
-
-                var progress = new Progress<string>(msg => Notify("chat/step", new { text = msg }));
-                _ = Task.Run(async () =>
-                {
-                    foreach (var site in toIndex)
-                        await s.Docs.AddOrReindexAsync(site, progress, CancellationToken.None);
-                });
-                return new SlashCommandResult(true, Strings.DocsReindexing(target?.Title ?? $"{toIndex.Length}"));
-            }
-
-            default:
-            {
-                if (sites.Count == 0)
-                    return new SlashCommandResult(true, Strings.DocsNoSites);
-
-                var stats = s.Docs.Sites.ToDictionary(x => x.Site.Id, x => (x.PageCount, x.ChunkCount));
-                return new SlashCommandResult(true, DocSite.FormatList(sites, stats));
-            }
-        }
+        var progress = new Progress<string>(msg => Notify("chat/step", new { text = msg }));
+        return new SlashCommandResult(true,
+            await DocsCommandHandler.HandleAsync(s.Config, s.Docs, parts, progress, ct));
     }
 
     /// <summary>/rules /checks /prompts — list, or `init` scaffolds the example file

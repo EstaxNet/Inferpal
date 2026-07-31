@@ -41,11 +41,19 @@ internal sealed class McpTokenStore
     private readonly object _lock = new();
     private Dictionary<string, McpOAuthState>? _cache;
 
+    /// <summary>
+    /// True when this store can actually encrypt: Windows DPAPI, or an injected platform secret
+    /// store. Callers check it <b>before</b> starting an interactive authorization — otherwise the
+    /// user completes the whole browser flow and only then hits the failure, losing the token.
+    /// </summary>
+    public bool CanProtect { get; }
+
     public McpTokenStore(string path, Func<byte[], byte[]>? protect = null, Func<byte[], byte[]>? unprotect = null)
     {
         _path      = path;
         _protect   = protect   ?? DefaultProtect;
         _unprotect = unprotect ?? DefaultUnprotect;
+        CanProtect = protect is not null || OperatingSystem.IsWindows();
     }
 
     // Windows: DPAPI per-user. On other OSes the defaults FAIL LOUD on purpose: silently
@@ -111,6 +119,6 @@ internal sealed class McpTokenStore
         _cache = map;
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         var bytes = _protect(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(map, JsonOpts)));
-        File.WriteAllBytes(_path, bytes);
+        Services.Persistence.AtomicFile.WriteAllBytes(_path, bytes);
     }
 }

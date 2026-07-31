@@ -183,8 +183,9 @@ exists.
   `run_command`, `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and MCP calls
   each prompt **Allow once / Always allow this tool / Cancel** (session-scoped, never
   persisted). Edit prompts show the **actual diff** before you confirm.
-- **Permission rules** — `allow` / `deny` patterns (per-machine + committable
-  `.inferpal/permissions.json`) classify a call before the prompt; a built-in denylist of
+- **Permission rules** — `allow` / `deny` patterns classify a call before the prompt. The
+  per-machine setting can do both; the committable `.inferpal/permissions.json` overlay can only
+  *deny* (a cloned repository must not be able to grant itself auto-approval); a built-in denylist of
   catastrophic shell commands always applies (an **accident guard**, not a security boundary —
   it matches text, so obfuscation defeats it), and indirect execution (`iex`,
   `-EncodedCommand`, `FromBase64String`, `[scriptblock]::Create`, `& $var`) is

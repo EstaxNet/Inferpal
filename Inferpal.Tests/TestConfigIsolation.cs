@@ -14,6 +14,15 @@ internal static class TestConfigIsolation
 {
     [ModuleInitializer]
     internal static void Init()
-        => InferpalConfig.OverridePathForTests =
-            Path.Combine(Path.GetTempPath(), "inferpal-tests", $"config-{Environment.ProcessId}.json");
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests");
+
+        InferpalConfig.OverridePathForTests = Path.Combine(root, $"config-{Environment.ProcessId}.json");
+
+        // Same seam for the session store: /branch, /history and the host's session RPCs all write
+        // real files, and the suite would otherwise create, rewrite and delete entries in the
+        // developer's own %AppData%\Inferpal\sessions folder.
+        Inferpal.Services.Persistence.ConversationStore.OverrideDirForTests =
+            Path.Combine(root, $"sessions-{Environment.ProcessId}");
+    }
 }

@@ -12,36 +12,44 @@ const vscode = acquireVsCodeApi();
 let R: Record<string, string> = {};
 const res = (key: string): string => R[key] ?? key;
 
-type FieldType = 'text' | 'password' | 'bool' | 'int' | 'float' | 'model' | 'select' | 'textarea';
+/**
+ * The form is declared once in the Core (`SettingsSchema`) and served by the host over
+ * `settings/schema`; these are the wire shapes. Adding a setting no longer means editing a table
+ * here — it means adding it to the Core schema, where a test checks it against InferpalConfig and
+ * against the .resx.
+ */
+interface Option { value: string; text: string }
 
 interface Field {
   /** camelCase key in the config JSON. */
   key: string;
-  type: FieldType;
+  kind: 'text' | 'password' | 'bool' | 'int' | 'float' | 'model' | 'select' | 'textarea';
   /** resx resource names for the label and the ⓘ tooltip. */
   label: string;
-  hint?: string;
+  hint?: string | null;
   /** Unit suffix rendered after compact numeric fields (literal, like VS). */
-  unit?: string;
-  options?: { value: string; text: string }[];
+  unit?: string | null;
   /** UI-only reveal group: 'roles' (distinct model per role) or 'advanced' (behavior). */
-  gate?: 'roles' | 'advanced';
+  gate?: string | null;
   /** Companion button: 'test' (connection check) or 'refreshModels'. */
-  button?: 'test' | 'refreshModels';
+  button?: string | null;
+  options?: Option[] | null;
 }
 
 interface Section {
-  title: string; // resx resource name
+  title: string;
   fields: Field[];
-  /** Reveal-toggle rendered at the top of the section (label = resx name). */
-  toggle?: { gate: 'roles' | 'advanced'; label: string; hint?: string };
+  toggleGate?: string | null;
+  toggleLabel?: string | null;
+  toggleHint?: string | null;
 }
 
-const FIM_MODES = [
-  { value: 'Fast', text: 'Fast (128 tok · 300 ms)' },
-  { value: 'Default', text: 'Default (256 tok · 600 ms)' },
-  { value: 'HighAccuracy', text: 'High Accuracy (512 tok · 1 s)' },
-];
+interface Tab { key: string; title: string; sections: Section[] }
+
+interface Schema { tabs: Tab[]; headerFields: Field[] }
+
+/** Served by the host at init; empty until then. */
+let SCHEMA: Schema = { tabs: [], headerFields: [] };
 
 // Fixed like the VS list — language names are deliberately never localized.
 const LANGUAGES = [
@@ -51,132 +59,6 @@ const LANGUAGES = [
   { value: 'it', text: 'Italiano' }, { value: 'ru', text: 'Русский' },
   { value: 'ja', text: '日本語' }, { value: 'ko', text: '한국어' },
   { value: 'pl', text: 'Polski' }, { value: 'zh-CN', text: '中文(简体)' },
-];
-
-const TABS: { key: string; title: string; sections: Section[] }[] = [
-  {
-    key: 'connection',
-    title: 'SectionConnection',
-    sections: [
-      {
-        title: 'SectionConnection',
-        fields: [
-          {
-            key: 'provider', type: 'select', label: 'LabelProvider', hint: 'HintProvider',
-            options: [
-              { value: 'ollama', text: 'Ollama' },
-              { value: 'lmstudio', text: 'LM Studio' },
-              { value: 'openai-compatible', text: 'OpenAI-compatible' },
-            ],
-          },
-          { key: 'baseUrl', type: 'text', label: 'LabelUrl', hint: 'HintUrl', button: 'test' },
-          { key: 'apiKey', type: 'password', label: 'LabelApiKey', hint: 'HintApiKey' },
-          { key: 'defaultModel', type: 'model', label: 'LabelChatModel', hint: 'HintChatModel', button: 'refreshModels' },
-        ],
-      },
-      {
-        title: '',
-        toggle: { gate: 'roles', label: 'LabelModelRolesAdvanced', hint: 'HintModelRolesAdvanced' },
-        fields: [
-          { key: 'agentModel', type: 'model', label: 'LabelAgentModel', hint: 'HintAgentModel', gate: 'roles' },
-          { key: 'codeActionsModel', type: 'model', label: 'LabelCodeActionsModel', hint: 'HintCodeActionsModel', gate: 'roles' },
-          { key: 'inlineCompletionModel', type: 'model', label: 'LabelInlineCompletionModel', hint: 'HintInlineCompletionModel', gate: 'roles' },
-          { key: 'inlineEditModel', type: 'model', label: 'LabelInlineEditModel', hint: 'HintInlineEditModel', gate: 'roles' },
-          { key: 'utilityModel', type: 'model', label: 'LabelUtilityModel', hint: 'HintUtilityModel', gate: 'roles' },
-          { key: 'modelRouterAuto', type: 'bool', label: 'LabelModelRouterAuto', hint: 'HintModelRouterAuto', gate: 'roles' },
-          { key: 'ragEmbeddingModel', type: 'model', label: 'LabelRagEmbeddingModel', hint: 'HintRagEmbeddingModel' },
-        ],
-      },
-    ],
-  },
-  {
-    key: 'behavior',
-    title: 'SectionBehavior',
-    sections: [
-      {
-        title: 'SectionBehavior',
-        toggle: { gate: 'advanced', label: 'LabelAdvancedBehavior' },
-        fields: [
-          { key: 'commandTimeoutSeconds', type: 'int', label: 'LabelCommandTimeout', hint: 'HintCommandTimeout', unit: 's', gate: 'advanced' },
-          { key: 'quickTimeoutSeconds', type: 'int', label: 'LabelTaskTimeoutQuick', hint: 'HintTaskTimeoutQuick', unit: 's', gate: 'advanced' },
-          { key: 'normalTimeoutSeconds', type: 'int', label: 'LabelTaskTimeoutNormal', hint: 'HintTaskTimeoutNormal', unit: 's', gate: 'advanced' },
-          { key: 'deepTimeoutSeconds', type: 'int', label: 'LabelTaskTimeoutDeep', hint: 'HintTaskTimeoutDeep', unit: 's', gate: 'advanced' },
-          { key: 'agentMaxIterations', type: 'int', label: 'LabelAgentMaxIterations', hint: 'HintAgentMaxIterations', gate: 'advanced' },
-          { key: 'modelAutoUnloadEnabled', type: 'bool', label: 'LabelModelAutoUnload', hint: 'HintModelAutoUnload', gate: 'advanced' },
-          { key: 'modelIdleTimeoutMinutes', type: 'int', label: 'LabelModelIdleTimeout', hint: 'HintModelIdleTimeout', unit: 'min', gate: 'advanced' },
-          { key: 'toolBubblesExpanded', type: 'bool', label: 'LabelToolBubblesExpanded', hint: 'HintToolBubblesExpanded' },
-          { key: 'securityAlertsDisabled', type: 'bool', label: 'LabelSecurityAlertsDisabled', hint: 'HintSecurityAlertsDisabled' },
-          { key: 'permissionRules', type: 'textarea', label: 'LabelPermissionRules', hint: 'HintPermissionRules' },
-          { key: 'smartFixEnabled', type: 'bool', label: 'LabelSmartFixEnabled', hint: 'HintSmartFixEnabled' },
-          { key: 'agentModeEnabled', type: 'bool', label: 'LabelAgentModeEnabled', hint: 'HintAgentModeEnabled' },
-        ],
-      },
-      {
-        title: 'SectionInlineCompletions',
-        fields: [
-          { key: 'inlineCompletionEnabled', type: 'bool', label: 'LabelInlineCompletionEnabled', hint: 'HintInlineCompletionEnabled' },
-          { key: 'inlineCompletionMode', type: 'select', label: 'LabelInlineCompletionMode', hint: 'HintInlineCompletionMode', options: FIM_MODES },
-        ],
-      },
-      {
-        title: 'SectionPersona',
-        fields: [
-          { key: 'personaAutoSwitch', type: 'bool', label: 'LabelPersonaAutoSwitch', hint: 'HintPersonaAutoSwitch' },
-          { key: 'customSystemPrompt', type: 'textarea', label: 'LabelCustomSystemPrompt', hint: 'HintCustomSystemPrompt' },
-        ],
-      },
-    ],
-  },
-  {
-    key: 'context',
-    title: 'SectionContext',
-    sections: [
-      {
-        title: 'SectionRag',
-        fields: [
-          { key: 'ragEnabled', type: 'bool', label: 'LabelRagEnabled', hint: 'HintRagEnabled' },
-          { key: 'ragAutoContextEnabled', type: 'bool', label: 'LabelRagAutoContext', hint: 'HintRagAutoContext' },
-          { key: 'ragTopK', type: 'int', label: 'LabelRagTopK', hint: 'HintRagTopK', unit: 'chunks' },
-          { key: 'ragSimilarityThreshold', type: 'float', label: 'LabelRagSimilarityThreshold', hint: 'HintRagSimilarityThreshold', unit: '0–1' },
-          { key: 'lspEnabled', type: 'bool', label: 'LabelLspEnabled', hint: 'HintLspEnabled' },
-        ],
-      },
-      {
-        title: 'SectionContext',
-        fields: [
-          { key: 'vramBudgetGb', type: 'float', label: 'LabelVramBudget', hint: 'HintVramBudget', unit: 'GB' },
-          { key: 'contextWindowSize', type: 'int', label: 'LabelContextWindowSize', hint: 'HintContextWindowSize', unit: 'tokens' },
-          { key: 'contextWindowKeepTurns', type: 'int', label: 'LabelContextWindowKeepTurns', hint: 'HintContextWindowKeepTurns', unit: 'turns' },
-          { key: 'compactionEnabled', type: 'bool', label: 'LabelCompactionEnabled', hint: 'HintCompactionEnabled' },
-          { key: 'compactionTimeoutSeconds', type: 'int', label: 'LabelCompactionTimeout', hint: 'HintCompactionTimeout', unit: 's' },
-          { key: 'kvCacheAnchorMessages', type: 'int', label: 'LabelKvCacheAnchor', hint: 'HintKvCacheAnchor', unit: 'msg' },
-          { key: 'oodaTurnThreshold', type: 'int', label: 'LabelOodaTurnThreshold', hint: 'HintOodaTurnThreshold', unit: 'turns' },
-          { key: 'inlineDiffPreviewEnabled', type: 'bool', label: '__inlineDiffPreview', hint: undefined },
-          { key: 'pinnedContextFiles', type: 'textarea', label: 'LabelPinnedContextFiles', hint: 'HintPinnedContextFiles' },
-        ],
-      },
-    ],
-  },
-  {
-    key: 'tools',
-    title: '__tabTools',
-    sections: [
-      {
-        title: 'SectionMcp',
-        fields: [
-          { key: 'mcpEnabled', type: 'bool', label: 'LabelMcpEnabled', hint: 'HintMcpEnabled' },
-          { key: 'mcpServersJson', type: 'textarea', label: 'LabelMcpServers', hint: 'HintMcpServers' },
-        ],
-      },
-      {
-        title: 'SectionCommandsTools',
-        fields: [
-          { key: 'promptTemplates', type: 'textarea', label: 'LabelPromptTemplates', hint: 'HintPromptTemplates' },
-          { key: 'customTools', type: 'textarea', label: 'LabelCustomTools', hint: 'HintCustomTools' },
-        ],
-      },
-    ],
-  },
 ];
 
 const app = document.getElementById('app')!;
@@ -194,7 +76,7 @@ function label(field: Field): string {
   return res(field.label);
 }
 
-function infoIcon(hintKey?: string): HTMLElement | null {
+function infoIcon(hintKey?: string | null): HTMLElement | null {
   if (!hintKey) {
     return null;
   }
@@ -244,7 +126,7 @@ function render(): void {
   const tabbar = document.createElement('div');
   tabbar.id = 'tabbar';
   const pages: HTMLElement[] = [];
-  TABS.forEach((tab, i) => {
+  SCHEMA.tabs.forEach((tab, i) => {
     const btn = document.createElement('button');
     btn.className = 'tab' + (i === 0 ? ' active' : '');
     btn.textContent = tab.title === '__tabTools' ? t('Tools') : res(tab.title);
@@ -266,7 +148,7 @@ function render(): void {
     .some((key) => String(config[key] ?? '').length > 0) || config['modelRouterAuto'] === true;
   gateOn.advanced = false;
 
-  TABS.forEach((tab, i) => {
+  SCHEMA.tabs.forEach((tab, i) => {
     const page = document.createElement('div');
     page.className = 'page';
     page.hidden = i !== 0;
@@ -277,8 +159,8 @@ function render(): void {
         header.textContent = section.title === '__tabTools' ? t('Tools') : res(section.title);
         page.appendChild(header);
       }
-      if (section.toggle) {
-        page.appendChild(renderToggle(section.toggle));
+      if (section.toggleGate) {
+        page.appendChild(renderToggle({ gate: section.toggleGate as 'roles' | 'advanced', label: section.toggleLabel ?? '', hint: section.toggleHint ?? undefined }));
       }
       for (const field of section.fields) {
         page.appendChild(renderField(field));
@@ -335,8 +217,8 @@ function renderModelOptions(list: HTMLElement): void {
 
 function renderField(field: Field): HTMLElement {
   const row = document.createElement('div');
-  const compact = field.type === 'int' || field.type === 'float';
-  row.className = 'field' + (field.type === 'bool' ? ' inline' : compact ? ' compact' : '');
+  const compact = field.kind === 'int' || field.kind === 'float';
+  row.className = 'field' + (field.kind === 'bool' ? ' inline' : compact ? ' compact' : '');
   if (field.gate) {
     row.dataset.gate = field.gate;
   }
@@ -348,7 +230,7 @@ function renderField(field: Field): HTMLElement {
 
   let input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
   const value = config[field.key];
-  switch (field.type) {
+  switch (field.kind) {
     case 'select': {
       const select = document.createElement('select');
       for (const opt of field.options ?? []) {
@@ -378,8 +260,8 @@ function renderField(field: Field): HTMLElement {
     }
     default: {
       const box = document.createElement('input');
-      box.type = field.type === 'password' ? 'password' : 'text';
-      if (field.type === 'model') {
+      box.type = field.kind === 'password' ? 'password' : 'text';
+      if (field.kind === 'model') {
         box.setAttribute('list', 'models');
       }
       if (compact) {
@@ -393,7 +275,7 @@ function renderField(field: Field): HTMLElement {
   input.id = 'f-' + field.key;
   inputs.set(field.key, input);
 
-  if (field.type === 'bool') {
+  if (field.kind === 'bool') {
     row.append(input, lbl);
     if (icon) {
       row.append(icon);
@@ -460,14 +342,14 @@ function setTestStatus(text: string, ok?: boolean): void {
 function onSave(): void {
   // Mutate the parsed original so fields this form doesn't know about survive the
   // full-JSON round trip (config/update resets absent fields to their defaults).
-  const allFields: Field[] = TABS.flatMap((tab) => tab.sections.flatMap((s) => s.fields));
-  allFields.push({ key: 'language', type: 'select', label: 'LabelLanguage' });
+  const allFields: Field[] = SCHEMA.tabs.flatMap((tab) => tab.sections.flatMap((s) => s.fields))
+    .concat(SCHEMA.headerFields);
   for (const field of allFields) {
     const input = inputs.get(field.key);
     if (!input) {
       continue;
     }
-    switch (field.type) {
+    switch (field.kind) {
       case 'bool':
         config[field.key] = (input as HTMLInputElement).checked;
         break;
@@ -506,7 +388,7 @@ function setStatus(text: string): void {
 window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; strings?: Record<string, string>;
-    message?: string; ok?: boolean;
+    schema?: Schema; message?: string; ok?: boolean;
   };
   switch (msg.type) {
     case 'init':
@@ -517,6 +399,13 @@ window.addEventListener('message', (event: MessageEvent) => {
       }
       models = msg.models ?? [];
       R = msg.strings ?? {};
+      // The form comes from the host (Core schema). An empty one means the RPC failed: say so
+      // rather than rendering a blank page that looks like a working, empty settings window.
+      SCHEMA = msg.schema ?? { tabs: [], headerFields: [] };
+      if (SCHEMA.tabs.length === 0) {
+        app.textContent = t('Settings could not be loaded — the Inferpal host did not answer.');
+        break;
+      }
       render();
       break;
     case 'models': {

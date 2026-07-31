@@ -917,4 +917,14 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="BranchUnknown" xml:space="preserve"><value>`{0}` 이라는 저장된 세션이 없습니다 — `/history` 를 확인하세요.</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 턴 {1}에서 브랜치 `{0}` 을(를) 만들었습니다. 대화는 여기서 이어지며 원본은 `{2}` 에 남아 있습니다.</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 이제 `{0}` 입니다.</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>구성된 MCP 서버가 없습니다</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>고정된 파일이 없습니다</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>명령 및 도구</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>사용자 지정 명령이 없습니다</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>사용자 지정 도구가 없습니다</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ 목록</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ 텍스트</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ 부분 분석: 소스 파일 {1}개 중 {0}개만 검사했습니다(상한). 결과가 불완전할 수 있습니다.</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP OAuth 승인은 현재 Windows에서만 사용할 수 있습니다. 새로 고침 토큰은 암호화(DPAPI)해야만 저장할 수 있으며 평문 저장은 선택지가 아닙니다. 정적 헤더 토큰을 쓰는 서버를 사용하세요.</value></data>
 </root>

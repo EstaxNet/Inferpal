@@ -23,6 +23,9 @@ internal sealed class DocCrawler
     /// <summary>Maximum link depth from the start URL.</summary>
     public const int MaxDepth = 3;
 
+    /// <summary>Redirect hops followed per page (each one re-validated).</summary>
+    private const int MaxRedirects = 5;
+
     /// <summary>Delay between successive page fetches (politeness).</summary>
     private static readonly TimeSpan FetchDelay = TimeSpan.FromMilliseconds(100);
 
@@ -47,7 +50,10 @@ internal sealed class DocCrawler
 
     private static HttpClient CreateClient()
     {
-        var handler = new HttpClientHandler { AllowAutoRedirect = true, MaxAutomaticRedirections = 5 };
+        // Redirects are followed by hand (see FetchPageAsync): an automatic redirect would let a
+        // public documentation URL bounce the crawler onto 127.0.0.1 or 169.254.169.254 without
+        // ever passing the SSRF guard again — the exact hole FetchUrlTool closes by hand.
+        var handler = new HttpClientHandler { AllowAutoRedirect = false };
         var client  = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -58,6 +64,44 @@ internal sealed class DocCrawler
 
     /// <summary>A single fetched documentation page.</summary>
     public readonly record struct Page(string Url, string Title, string Text);
+
+    /// <summary>
+    /// GETs one page, following up to <see cref="MaxRedirects"/> redirects <b>manually</b> and
+    /// re-validating every hop against the SSRF guard (literal private ranges + DNS resolution of
+    /// host names). Returns null when the response is not HTML or the hop budget is spent.
+    /// </summary>
+    private async Task<string?> FetchPageAsync(Uri url, CancellationToken ct)
+    {
+        var current = url;
+        for (var hop = 0; hop <= MaxRedirects; hop++)
+        {
+            var target = current.ToString();
+            if (FetchUrlTool.IsPrivateOrLoopback(target) ||
+                await FetchUrlTool.ResolvesToPrivateAsync(target, ct))
+            {
+                Diagnostics.Record("DocCrawler", $"Refused a private/loopback address: {target}");
+                return null;
+            }
+
+            using var resp = await _http.GetAsync(current, ct);
+
+            if ((int)resp.StatusCode is >= 300 and < 400 && resp.Headers.Location is { } location)
+            {
+                current = location.IsAbsoluteUri ? location : new Uri(current, location);
+                continue;
+            }
+
+            if (!resp.IsSuccessStatusCode) return null;
+
+            var mediaType = resp.Content.Headers.ContentType?.MediaType ?? string.Empty;
+            if (mediaType.Length > 0 && !mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            return await resp.Content.ReadAsStringAsync(ct);
+        }
+        return null;   // redirect budget exhausted
+    }
+
 
     /// <summary>
     /// Crawls from <paramref name="startUrl"/> and returns the readable text of each visited page.
@@ -85,20 +129,14 @@ internal sealed class DocCrawler
             ct.ThrowIfCancellationRequested();
             var (url, depth) = queue.Dequeue();
 
-            string html;
+            string? html;
             try
             {
-                using var resp = await _http.GetAsync(url, ct);
-                if (!resp.IsSuccessStatusCode) continue;
-
-                var mediaType = resp.Content.Headers.ContentType?.MediaType ?? string.Empty;
-                if (!mediaType.Contains("html", StringComparison.OrdinalIgnoreCase) && mediaType.Length > 0)
-                    continue;
-
-                html = await resp.Content.ReadAsStringAsync(ct);
+                html = await FetchPageAsync(url, ct);
+                if (html is null) continue;
             }
             catch (OperationCanceledException) { throw; }
-            catch { continue; }
+            catch (Exception ex) { Diagnostics.Swallow($"DocCrawler.Fetch({url})", ex); continue; }
 
             var text = FetchUrlTool.HtmlToText(html);
             if (!string.IsNullOrWhiteSpace(text))

@@ -66,7 +66,7 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
         var thread = new Thread(() =>
         {
             try { System.Windows.Clipboard.SetText(string.IsNullOrEmpty(text) ? " " : text); }
-            catch { }
+            catch (Exception ex) { Services.Diagnostics.Swallow("Clipboard.CopyCodeBlock", ex); }
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();

@@ -9,6 +9,8 @@
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Le host Inferpal n’est pas en cours d’exécution — utilisez « Inferpal : Redémarrer le host ».",
   "Naming the session…": "Nommage de la session…",
   "{0} msg · from {1} @ turn {2}": "{0} msg · depuis {1} @ tour {2}",
+  "The command failed.": "La commande a échoué.",
+  "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "{0} messages anciens ont été retirés pour borner la mémoire — la conversation complète est dans la session enregistrée.",
   "Session name": "Nom de la session",
   "Session saved: {0}": "Session enregistrée : {0}",
   "Pick a session to load": "Choisissez une session à charger",

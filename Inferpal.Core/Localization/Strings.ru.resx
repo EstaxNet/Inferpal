@@ -917,4 +917,14 @@ ollama serve
   <data name="BranchUnknown" xml:space="preserve"><value>Сохранённого сеанса с именем `{0}` нет — см. `/history`.</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 Ветка `{0}` создана на шаге {1}. Разговор продолжается здесь; `{2}` хранит оригинал.</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Сейчас в `{0}`.</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>Серверы MCP не настроены</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>Нет закреплённых файлов</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>Команды и инструменты</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>Нет пользовательских команд</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>Нет пользовательских инструментов</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ Список</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ Текст</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ Частичный анализ: просмотрено только {0} из {1} исходных файлов (предел). Результаты могут быть неполными.</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>Авторизация OAuth для MCP пока доступна только в Windows: токен обновления можно хранить только в зашифрованном виде (DPAPI), а хранить его открытым текстом недопустимо. Используйте сервер со статическим токеном в заголовке.</value></data>
 </root>

@@ -23,6 +23,7 @@ import {
   PlanNotice,
   SavedMessage,
   SessionBranchResult,
+  SettingsSchema,
   SessionLoadResult,
   SessionTitleResult,
   SessionSummary,
@@ -42,6 +43,10 @@ export interface EditorDelegate {
   replaceSelection(text: string): Promise<EditResultDto>;
   /** Formatted Problems-panel diagnostics, or null when clean (host builds instead). */
   editorDiagnostics(): Promise<string | null>;
+  /** Stores an opaque payload in the editor's secret store and echoes back what to keep. */
+  protectSecret(key: string, value: string): Promise<string>;
+  /** Reverse of {@link protectSecret}. Throws when the payload is unknown or unreadable. */
+  unprotectSecret(key: string, value: string): Promise<string>;
 }
 
 /** Streamed chat events (host notifications) fanned out to the UI. */
@@ -142,6 +147,12 @@ export class HostClient {
     conn.onRequest('editor/insertAtCursor', (p: { text: string }) => this.delegate.insertAtCursor(p.text));
     conn.onRequest('editor/replaceSelection', (p: { text: string }) => this.delegate.replaceSelection(p.text));
     conn.onRequest('editor/diagnostics', () => this.delegate.editorDiagnostics());
+    // Non-Windows hosts have no DPAPI: MCP OAuth tokens are encrypted by the editor's own
+    // secret store (OS keychain) instead of being written in clear text.
+    conn.onRequest('secrets/protect', (p: { key: string; value: string }) =>
+      this.delegate.protectSecret(p.key, p.value));
+    conn.onRequest('secrets/unprotect', (p: { key: string; value: string }) =>
+      this.delegate.unprotectSecret(p.key, p.value));
 
     // ── Streamed chat notifications ─────────────────────────────────────────
     conn.onNotification('chat/token', (n: TextNote) => this.events.onToken?.(n.text));
@@ -231,6 +242,11 @@ export class HostClient {
    * feeds /phistory; long commands are cancellable via chatCancel(). */
   commandSlash(text: string, promptHistory?: string[]): Promise<SlashCommandResult> {
     return this.connection().sendRequest<SlashCommandResult>('command/slash', { text, promptHistory });
+  }
+
+  /** Declarative settings form (tabs → sections → fields) served from the Core. */
+  settingsSchema(): Promise<SettingsSchema> {
+    return this.connection().sendRequest<SettingsSchema>('settings/schema');
   }
 
   /** Context X-Ray panel model (interactive /xray V2). */

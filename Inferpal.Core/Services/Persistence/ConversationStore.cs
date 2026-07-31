@@ -16,9 +16,18 @@ namespace Inferpal.Services.Persistence;
 /// </remarks>
 internal class ConversationStore
 {
-    private static readonly string _dir = Path.Combine(
+    private static readonly string _defaultDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Inferpal", "sessions");
+
+    /// <summary>
+    /// Redirects the session folder in tests. Every other store here has one; without it the test
+    /// suite reads and writes the developer's real sessions — the same mistake already paid for
+    /// once with the configuration file.
+    /// </summary>
+    internal static string? OverrideDirForTests;
+
+    private static string _dir => OverrideDirForTests ?? _defaultDir;
 
     private static readonly JsonSerializerOptions _opts = new()
     {
@@ -37,7 +46,13 @@ internal class ConversationStore
         Directory.CreateDirectory(_dir);
         var file = Path.Combine(_dir, $"{Sanitize(sessionName)}.json");
         var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn);
-        await File.WriteAllTextAsync(file, JsonSerializer.Serialize(payload, _opts), ct);
+
+        // Write-then-rename: a crash (or a full disk) mid-write must not leave a truncated
+        // session behind. It matters more since /branch rewrites the parent file on every fork —
+        // the interrupted save would be of the conversation the user is keeping.
+        var temp = file + ".tmp";
+        await File.WriteAllTextAsync(temp, JsonSerializer.Serialize(payload, _opts), ct);
+        File.Move(temp, file, overwrite: true);
     }
 
     /// Auto-saves the current session to "last_session.json".
@@ -71,6 +86,9 @@ internal class ConversationStore
     {
         if (!Directory.Exists(_dir)) return [];
         return Directory.GetFiles(_dir, "*.json")
+                        // Explicit suffix check: Windows wildcard matching is looser than it
+                        // looks, and SaveAsync stages through "<name>.json.tmp".
+                        .Where(f => f.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                         .Select(f => Path.GetFileNameWithoutExtension(f)!)
                         .OrderByDescending(n => n)
                         .ToList();

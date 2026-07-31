@@ -81,7 +81,7 @@ internal partial class InferpalToolWindowData
                 }
             }
             catch (OperationCanceledException) { }         // user kept typing
-            catch { }                                      // best-effort
+            catch (Exception ex) { Diagnostics.Swallow("Mentions.Search", ex); }                                      // best-effort
         });
     }
 
@@ -296,7 +296,7 @@ internal partial class InferpalToolWindowData
                     var clip = string.Empty;
                     await RunOnVMContextAsync(() =>
                     {
-                        try { clip = System.Windows.Clipboard.GetText() ?? string.Empty; } catch { }
+                        try { clip = System.Windows.Clipboard.GetText() ?? string.Empty; } catch (Exception ex) { Diagnostics.Swallow("Clipboard.ReadForMention", ex); }
                     });
                     if (string.IsNullOrWhiteSpace(clip))
                     {

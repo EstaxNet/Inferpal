@@ -1,4 +1,5 @@
 using Inferpal.Localization;
+using Inferpal.Services.Presentation;
 using StreamJsonRpc;
 
 namespace Inferpal.Host;
@@ -11,6 +12,33 @@ namespace Inferpal.Host;
 /// </summary>
 internal sealed partial class HostServer
 {
+    /// <summary>
+    /// `settings/schema` — the declarative description of the settings form (tabs, sections,
+    /// fields, control kinds, label resource names) straight from the Core. The webview renders
+    /// whatever this returns, so adding a setting no longer means editing a TypeScript table too.
+    /// Labels are resource *names*, resolved by the adapter against `settings/strings`.
+    /// </summary>
+    [JsonRpcMethod("settings/schema")]
+    public SettingsSchemaDto SettingsSchemaModel() => new(
+        SettingsSchema.Tabs.Select(t => new SettingsTabDto(
+            t.Key,
+            t.Title,
+            t.Sections.Select(sec => new SettingsSectionDto(
+                sec.Title,
+                sec.Fields.Select(ToFieldDto).ToList(),
+                sec.ToggleGate, sec.ToggleLabel, sec.ToggleHint)).ToList())).ToList(),
+        SettingsSchema.HeaderFields.Select(ToFieldDto).ToList());
+
+    private static SettingsFieldDto ToFieldDto(SettingField f) => new(
+        f.Key,
+        f.Kind.ToString().ToLowerInvariant(),
+        f.Label,
+        f.Hint,
+        f.Unit,
+        f.Gate,
+        f.Button,
+        f.Options?.Select(o => new SettingsOptionDto(o.Value, o.Text)).ToList());
+
     [JsonRpcMethod("settings/strings")]
     public Dictionary<string, string> SettingsStrings() => new()
     {

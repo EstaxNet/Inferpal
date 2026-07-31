@@ -42,7 +42,7 @@ internal static class SnippetStore
             snippets.RemoveAt(0);
 
         Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-        await File.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(snippets, _opts), ct);
+        await AtomicFile.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(snippets, _opts), ct);
     }
 
     public static async Task<List<Snippet>> LoadAllAsync(CancellationToken ct)
@@ -61,13 +61,13 @@ internal static class SnippetStore
         var snippets = await LoadAllAsync(ct);
         if (index < 0 || index >= snippets.Count) return;
         snippets.RemoveAt(index);
-        await File.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(snippets, _opts), ct);
+        await AtomicFile.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(snippets, _opts), ct);
     }
 
     public static async Task ClearAsync(CancellationToken ct)
     {
         if (File.Exists(FilePath))
-            await File.WriteAllTextAsync(FilePath, "[]", ct);
+            await AtomicFile.WriteAllTextAsync(FilePath, "[]", ct);
     }
 
     /// <summary>

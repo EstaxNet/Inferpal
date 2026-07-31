@@ -60,7 +60,7 @@ internal partial class InferpalToolWindowData
                 }
             }
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Rag.StartIndexing", ex); }
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ internal partial class InferpalToolWindowData
             // First-run posts its bubbles directly (no user turn exists yet to attach a reply to).
             await RunSetupDiscoveryAsync(FirstRunPresentAsync).ConfigureAwait(false);
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Rag.FirstRun", ex); }
     }
 
     /// <summary>Presenter used by the automatic first-run path: inserts a themed assistant bubble.</summary>
@@ -234,56 +234,10 @@ internal partial class InferpalToolWindowData
     }
 
     /// <summary>Handles the <c>/index</c> slash command (show status or trigger a rebuild).</summary>
-    private async Task HandleRagIndexCommandAsync(string[] parts, CancellationToken ct)
-    {
-        var rebuild = parts.Length >= 2 &&
-                      parts[1].Equals("rebuild", StringComparison.OrdinalIgnoreCase);
-
-        if (rebuild)
-        {
-            var root = FindProjectRoot();
-            if (string.IsNullOrEmpty(root))
-            {
-                await ShowInfoAsync("⚠ Cannot locate solution root — open a file first.");
-                return;
-            }
-            _indexService.StartIndexing(root);
-            await ShowInfoAsync($"🔄 RAG re-indexing started: `{root}`");
-            return;
-        }
-
-        // ── Show current status ───────────────────────────────────────────────
-        var model  = string.IsNullOrEmpty(_config.RagEmbeddingModel) ? "nomic-embed-text" : _config.RagEmbeddingModel;
-        var sb     = new StringBuilder();
-
-        sb.AppendLine("**RAG Index**");
-        sb.AppendLine();
-
-        if (!_config.RagEnabled)
-        {
-            sb.AppendLine("Status: **disabled** (`ragEnabled = false` in settings)");
-            sb.AppendLine();
-            sb.AppendLine("Enable it to get semantic cross-file search via `search_codebase`.");
-        }
-        else if (_indexService.ChunkCount == 0 && !_indexService.IsIndexing)
-        {
-            sb.AppendLine($"Status: {(_indexService.Status is { Length: > 0 } s ? s : "not started")}");
-            sb.AppendLine();
-            sb.AppendLine("Use `/index rebuild` to build the index manually.");
-        }
-        else
-        {
-            sb.AppendLine($"Status : {_indexService.Status}");
-            sb.AppendLine($"Chunks : {_indexService.ChunkCount:N0}");
-            sb.AppendLine($"Root   : `{_indexService.RootDir}`");
-            sb.AppendLine($"Model  : `{model}`");
-            sb.AppendLine($"Top-K  : {_config.RagTopK}");
-            sb.AppendLine();
-            sb.AppendLine("Use `/index rebuild` to force a full re-index.");
-        }
-
-        await ShowInfoAsync(sb.ToString().TrimEnd());
-    }
+    // /index [rebuild] — logique partagée avec le Host (IndexCommandHandler).
+    private async Task HandleRagIndexCommandAsync(string[] parts, CancellationToken ct) =>
+        await ShowInfoAsync(Services.Commands.IndexCommandHandler.Handle(
+            _indexService, _config, parts, FindProjectRoot()));
 
     // ── Project context ────────────────────────────────────────────────────────
 
@@ -328,7 +282,7 @@ internal partial class InferpalToolWindowData
             }
         }
         catch (OperationCanceledException) { }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Ooda.Summary", ex); }
     }
 
     // ── Context window management ──────────────────────────────────────────────
@@ -386,7 +340,7 @@ internal partial class InferpalToolWindowData
             summary = result.FinalResponse?.Trim();
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Context.CompactOrTruncate", ex); }
 
         // ── Path B1: safety fuse fired — inline truncation, single message ─────
         if (string.IsNullOrEmpty(summary))

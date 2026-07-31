@@ -107,4 +107,24 @@ public class McpTokenStoreTests : IDisposable
         var raw = System.Text.Encoding.UTF8.GetString(File.ReadAllBytes(_path));
         Assert.DoesNotContain("secret-token", raw);
     }
+
+    [Fact]
+    public void CanProtect_IsTrue_WhenAPlatformSecretStoreIsInjected()
+    {
+        // Non-Windows hosts inject the editor's secret store (VS Code SecretStorage → OS keychain);
+        // that is what re-enables MCP OAuth outside Windows, where DPAPI does not exist.
+        var store = new McpTokenStore(Path.Combine(Path.GetTempPath(), $"t-{Guid.NewGuid():N}.dat"),
+                                      protect:   b => b,
+                                      unprotect: b => b);
+
+        Assert.True(store.CanProtect);
+    }
+
+    [Fact]
+    public void CanProtect_FollowsThePlatform_WhenNothingIsInjected()
+    {
+        var store = new McpTokenStore(Path.Combine(Path.GetTempPath(), $"t-{Guid.NewGuid():N}.dat"));
+
+        Assert.Equal(OperatingSystem.IsWindows(), store.CanProtect);
+    }
 }

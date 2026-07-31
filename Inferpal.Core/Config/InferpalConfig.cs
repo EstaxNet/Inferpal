@@ -400,7 +400,45 @@ internal class InferpalConfig
     [JsonPropertyName("lspEnabled")]
     public bool LspEnabled { get; set; } = false;
 
+    // Cached parse of the config file, invalidated by its last-write stamp. Load() sits on hot
+    // paths — the ghost-text controller calls it on every keystroke — and re-reading + re-parsing
+    // JSON from disk on the UI thread for each typed character is a stutter waiting for a slow
+    // disk or an antivirus. Same stamp-based approach as the permission-policy cache.
+    private static readonly object          _loadLock = new();
+    private static InferpalConfig?          _cached;
+    private static string?                  _cachedPath;
+    private static DateTime                 _cachedStamp;
+
+    /// <summary>Reads the configuration, reusing the last parse while the file is unchanged.</summary>
     public static InferpalConfig Load()
+    {
+        var path  = EffectiveConfigPath;
+        var stamp = StampOf(path);
+
+        lock (_loadLock)
+        {
+            if (_cached is not null && _cachedPath == path && _cachedStamp == stamp)
+                return _cached;
+        }
+
+        var fresh = LoadUncached();
+
+        lock (_loadLock)
+        {
+            _cached      = fresh;
+            _cachedPath  = path;
+            _cachedStamp = stamp;
+        }
+        return fresh;
+    }
+
+    private static DateTime StampOf(string path)
+    {
+        try { return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : default; }
+        catch (Exception ex) { Services.Diagnostics.Swallow("InferpalConfig.Stamp", ex); return default; }
+    }
+
+    private static InferpalConfig LoadUncached()
     {
         InferpalConfig cfg;
         if (!File.Exists(EffectiveConfigPath))
@@ -422,8 +460,13 @@ internal class InferpalConfig
 
     public void Save()
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(EffectiveConfigPath)!);
+        // Atomic: a torn write here leaves the user without a usable configuration, and this
+        // runs on every /model, /hardware, /docs and settings save.
         var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(EffectiveConfigPath, json);
+        Services.Persistence.AtomicFile.WriteAllText(EffectiveConfigPath, json);
+
+        // Drop the cached parse: a save within the same file-time tick would otherwise keep
+        // serving the previous values to Load().
+        lock (_loadLock) { _cached = null; _cachedPath = null; _cachedStamp = default; }
     }
 }

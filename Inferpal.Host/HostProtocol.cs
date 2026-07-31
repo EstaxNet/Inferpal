@@ -185,3 +185,25 @@ internal sealed record SessionTitleParams(string? Text = null);
 
 /// <summary>`session/title` answer: the bare title plus the timestamped save file name.</summary>
 internal sealed record SessionTitleResult(string Title, string FileName);
+
+// ── Settings schema (`settings/schema`) ──────────────────────────────────────
+
+/// <summary>One choice of a select field. Texts are product names — never localized.</summary>
+internal sealed record SettingsOptionDto(string Value, string Text);
+
+/// <summary>An editable setting: <paramref name="Label"/>/<paramref name="Hint"/> are resource
+/// names the adapter resolves against `settings/strings`.</summary>
+internal sealed record SettingsFieldDto(
+    string Key, string Kind, string Label, string? Hint, string? Unit, string? Gate, string? Button,
+    List<SettingsOptionDto>? Options);
+
+/// <summary>A titled group of fields, with an optional reveal toggle.</summary>
+internal sealed record SettingsSectionDto(
+    string Title, List<SettingsFieldDto> Fields,
+    string? ToggleGate, string? ToggleLabel, string? ToggleHint);
+
+/// <summary>One tab of the settings window.</summary>
+internal sealed record SettingsTabDto(string Key, string Title, List<SettingsSectionDto> Sections);
+
+/// <summary>`settings/schema` answer: the tabs plus the fields rendered outside them.</summary>
+internal sealed record SettingsSchemaDto(List<SettingsTabDto> Tabs, List<SettingsFieldDto> HeaderFields);

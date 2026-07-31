@@ -9,6 +9,8 @@
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Inferpal 호스트가 실행 중이 아닙니다 — \"Inferpal: 호스트 다시 시작\"을 사용하세요.",
   "Naming the session…": "세션 이름을 생성하는 중…",
   "{0} msg · from {1} @ turn {2}": "{0}개 · {1} 의 턴 {2} 에서",
+  "The command failed.": "명령이 실패했습니다.",
+  "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "메모리를 제한하기 위해 오래된 메시지 {0}개를 제거했습니다. 전체 대화는 저장된 세션에 있습니다.",
   "Session name": "세션 이름",
   "Session saved: {0}": "세션 저장됨: {0}",
   "Pick a session to load": "불러올 세션 선택",

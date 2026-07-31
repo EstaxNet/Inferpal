@@ -133,7 +133,7 @@ They layer on top of the per-machine settings above.
 
 | File | Purpose |
 |---|---|
-| `.inferpal/permissions.json` | Permission rules pushed to everyone on the repo: `{ "rules": ["allow run_command ^dotnet", "deny * \\.env$"] }`. See [Tools → Permission rules](tools.md). |
+| `.inferpal/permissions.json` | **Deny** rules pushed to everyone on the repo: `{ "rules": ["deny run_command ^curl", "deny * \\.env$"] }`. `allow` rules are ignored here — a cloned repository must not be able to auto-approve itself; auto-approval lives in the per-machine setting. See [Tools → Permission rules](tools.md). |
 | `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. |
 
 (Existing overlays — `.inferpal/context.md`, `memory.md`, `notes.md`, `rules/`, `checks/`,

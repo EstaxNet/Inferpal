@@ -37,6 +37,9 @@ internal sealed partial class McpHttpClient : IMcpClient
     private readonly HttpClient _http;
     private readonly CancellationTokenSource _listenCts = new();
     private static readonly TimeSpan ListenReopenDelay = TimeSpan.FromSeconds(1);
+
+    /// <summary>Ceiling of the exponential back-off between stream re-openings.</summary>
+    private static readonly TimeSpan ListenReopenMaxDelay = TimeSpan.FromMinutes(2);
     private Task? _listenLoop;
     private long _nextId;
     private string? _sessionId;
@@ -51,7 +54,13 @@ internal sealed partial class McpHttpClient : IMcpClient
             .ToDictionary(kv => kv.Key, kv => ExpandEnv(kv.Value), StringComparer.OrdinalIgnoreCase);
         _tokenProvider = tokenProvider;
         // An injected handler is owned by the caller (tests); a default one is owned by this client.
-        _http = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        // Redirects are NOT followed: the configured headers carry secrets (`${ENV}` expansion is
+        // documented for exactly that), and .NET only strips `Authorization` across origins — a
+        // custom `X-Api-Key` would ride along to whatever host the server redirects to. Same
+        // stance as FetchUrlTool, which validates every hop by hand.
+        _http = handler is null
+            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
+            : new HttpClient(handler, disposeHandler: false);
     }
 
     public string ServerName => _config.Name;
@@ -283,6 +292,11 @@ internal sealed partial class McpHttpClient : IMcpClient
     /// rotate it); a non-stream response or any error stops listening for good. Never throws.</summary>
     private async Task ListenForNotificationsAsync(CancellationToken ct)
     {
+        // Back-off between re-openings. A server that accepts the GET and closes the stream at once
+        // would otherwise be hammered once a second for the whole session, forever; a healthy
+        // stream that ran for a while resets the delay.
+        var delay = ListenReopenDelay;
+
         while (!ct.IsCancellationRequested && !_disposed)
         {
             HttpResponseMessage resp;
@@ -308,6 +322,7 @@ internal sealed partial class McpHttpClient : IMcpClient
                 return;   // the server doesn't offer a notification stream
             }
 
+            var openedAt = DateTime.UtcNow;
             try
             {
                 await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
@@ -318,7 +333,13 @@ internal sealed partial class McpHttpClient : IMcpClient
             catch { /* stream dropped — fall through to reopen */ }
             finally { resp.Dispose(); }
 
-            try { await Task.Delay(ListenReopenDelay, ct).ConfigureAwait(false); }
+            // A stream that lived long enough to be useful resets the back-off; one that dies
+            // immediately doubles it, up to the ceiling.
+            delay = DateTime.UtcNow - openedAt >= ListenReopenMaxDelay
+                ? ListenReopenDelay
+                : TimeSpan.FromTicks(Math.Min(delay.Ticks * 2, ListenReopenMaxDelay.Ticks));
+
+            try { await Task.Delay(delay, ct).ConfigureAwait(false); }
             catch { return; }
         }
     }

@@ -10,8 +10,17 @@ namespace Inferpal.Services.Shell;
 /// reads new output incrementally via <c>poll</c> and terminates a job via <c>stop</c>. One
 /// instance per workspace (held by the tool registry).
 /// </summary>
-internal sealed class BackgroundShellRegistry
+internal sealed class BackgroundShellRegistry : IDisposable
 {
+    /// <summary>
+    /// Cap on the captured output of a single job. A detached `dotnet watch` or dev server prints
+    /// forever; without a ceiling its buffer is an unbounded leak in the host process. Past the cap
+    /// the oldest half is dropped and replaced by a marker — never silently.
+    /// </summary>
+    private const int MaxBufferChars = 512 * 1024;
+
+    private const string TrimMarker = "[… earlier output dropped to bound memory …]\n";
+
     private sealed class Job
     {
         public required string Id;
@@ -80,7 +89,17 @@ internal sealed class BackgroundShellRegistry
     private static void Append(Job job, string? data)
     {
         if (data is null) return;
-        lock (job.Lock) job.Buffer.Append(data).Append('\n');
+        lock (job.Lock)
+        {
+            job.Buffer.Append(data).Append('\n');
+            if (job.Buffer.Length <= MaxBufferChars) return;
+
+            // Drop the oldest half, keeping whatever the model has not polled yet when possible.
+            var drop = Math.Min(job.Buffer.Length - MaxBufferChars / 2, job.Buffer.Length);
+            job.Buffer.Remove(0, drop);
+            job.Buffer.Insert(0, TrimMarker);
+            job.ReadOffset = Math.Max(0, job.ReadOffset - drop + TrimMarker.Length);
+        }
     }
 
     /// <summary>
@@ -139,5 +158,30 @@ internal sealed class BackgroundShellRegistry
     {
         lock (_lock)
             return _jobs.Values.Select(j => (j.Id, j.Command, !j.Exited)).ToList();
+    }
+
+    /// <summary>
+    /// Kills every still-running job. A detached child spawned with <c>UseShellExecute=false</c> does
+    /// NOT die with its parent on Windows: without this, closing the editor leaves the background
+    /// powershells running until the user finds them in Task Manager.
+    /// </summary>
+    public void Dispose()
+    {
+        List<Job> jobs;
+        lock (_lock)
+        {
+            jobs = _jobs.Values.ToList();
+            _jobs.Clear();
+        }
+
+        foreach (var job in jobs)
+        {
+            try
+            {
+                if (!job.Process.HasExited) job.Process.Kill(entireProcessTree: true);
+            }
+            catch (Exception ex) { Diagnostics.Swallow($"BackgroundShellRegistry.Dispose({job.Id})", ex); }
+            try { job.Process.Dispose(); } catch { }
+        }
     }
 }

@@ -3,6 +3,8 @@
 // on hide and is re-hydrated on every resolveWebviewView.
 import * as vscode from 'vscode';
 import { HostClient } from './hostClient';
+import { renderChatHtml } from './webview/chatWebviewHtml';
+import { pickSession, renderExport, toSavedMessages, toTranscript } from './chatSessions';
 import { CodeActionResult, SavedMessage, SlashEffect } from './protocol';
 import {
   WebviewToExt,
@@ -63,7 +65,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'media')],
     };
-    view.webview.html = this.renderHtml(view.webview);
+    view.webview.html = renderChatHtml(view.webview, this.context.extensionUri);
     this.log('[chat] webview html set');
     view.webview.onDidReceiveMessage((msg: WebviewToExt) => this.onMessage(msg));
     view.onDidDispose(() => {
@@ -154,7 +156,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           hasErrors: tool.hasErrors,
           timestamp: ChatViewProvider.now(),
         };
-        this.transcript.push(item);
+        this.append(item);
         this.post({
           type: 'tool',
           name: tool.name,
@@ -281,28 +283,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /** Persistable view of the transcript (same shape the VS extension saves). */
   private snapshot(): SavedMessage[] {
-    return this.transcript.map((item) =>
-      item.role === 'tool'
-        ? { role: 'tool', content: item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }
-        : { role: item.role, content: item.text, timestamp: item.timestamp },
-    );
+    return toSavedMessages(this.transcript);
   }
 
   /** Replaces the transcript with a restored session (host history already rebuilt). */
   private applySession(messages: SavedMessage[]): void {
     this.transcript.length = 0;
-    for (const m of messages) {
-      if (m.role === 'tool') {
-        this.transcript.push({
-          role: 'tool',
-          text: m.toolName ?? 'tool',
-          toolOutput: m.content,
-          timestamp: m.timestamp ?? undefined,
-        });
-      } else if (m.role === 'user' || m.role === 'assistant' || m.role === 'error') {
-        this.transcript.push({ role: m.role, text: m.content, timestamp: m.timestamp ?? undefined });
-      }
-    }
+    this.transcript.push(...toTranscript(messages));
+    this.trimTranscript();
     this.streamText = '';
     this.plan = null;
     this.hydrate();
@@ -442,27 +430,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async pickSession(placeholder: string): Promise<string | undefined> {
-    const host = this.getHost()!;
-    const sessions = await host.sessionList();
-    if (sessions.length === 0) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No saved sessions.'));
-      return undefined;
-    }
-    const picked = await vscode.window.showQuickPick(
-      sessions.map((s) => ({
-        // Branches (/branch) show where they were forked from, so the picker doubles as the
-        // branch navigator.
-        label: s.parent ? `$(git-branch) ${s.name}` : s.name,
-        description: s.parent
-          ? vscode.l10n.t('{0} msg · from {1} @ turn {2}', s.messageCount, s.parent, s.forkTurn ?? 0)
-          : `${s.messageCount} msg`,
-        detail: s.preview,
-        name: s.name,
-      })),
-      { placeHolder: placeholder },
-    );
-    return picked?.name;
+  private pickSession(placeholder: string): Promise<string | undefined> {
+    return pickSession(this.getHost()!, placeholder);
   }
 
   /** Command: export the conversation to a Markdown or text file (VS toolbar parity). */
@@ -478,16 +447,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!target) {
       return;
     }
-    const lines: string[] = [];
-    for (const item of this.transcript) {
-      if (item.role === 'tool') {
-        lines.push(`### 🔧 ${item.text}`, '', '```', item.toolOutput ?? '', '```', '');
-      } else {
-        const label = item.role === 'user' ? '## 🧑' : item.role === 'error' ? '## ⚠' : '## 🤖';
-        lines.push(`${label}${item.timestamp ? ` _${item.timestamp}_` : ''}`, '', item.text, '');
-      }
-    }
-    await vscode.workspace.fs.writeFile(target, Buffer.from(lines.join('\n'), 'utf8'));
+    await vscode.workspace.fs.writeFile(target, Buffer.from(renderExport(this.transcript), 'utf8'));
     void vscode.window.showInformationMessage(vscode.l10n.t('Conversation exported: {0}', target.fsPath));
   }
 
@@ -808,7 +768,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     if (!host?.isRunning) {
-      this.transcript.push({
+      this.append({
         role: 'error',
         text: vscode.l10n.t('Inferpal host is not running — use "Inferpal: Restart Host".'),
         timestamp: ChatViewProvider.now(),
@@ -827,7 +787,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.streamText = '';
     this.plan = null;
     const timestamp = ChatViewProvider.now();
-    this.transcript.push({ role: 'user', text: prompt, timestamp });
+    this.append({ role: 'user', text: prompt, timestamp });
     const history = this.appendHistory(prompt);
     this.post({ type: 'turnStarted', prompt, timestamp, history });
 
@@ -872,8 +832,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           return;
         }
       } catch (err) {
+        // A failed RPC is not "the host doesn't know this command" (that answer is
+        // `handled: false`, handled above): it is the host refusing or erroring — typically
+        // "a chat turn is already running". Falling through would send the raw `/branch 2`
+        // to the model as a prompt, which is both useless and confusing.
         this.log(`[chat] command/slash failed: ${String(err)}`);
-        // fall through — the prompt is sent as a normal chat turn
+        this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
+        return;
       }
     }
 
@@ -991,9 +956,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       const finalText = result.text || this.streamText;
       this.promptTokens = result.promptTokens || this.promptTokens;
       if (result.error) {
-        this.transcript.push({ role: 'error', text: result.error, timestamp: ChatViewProvider.now() });
+        this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now() });
       } else {
-        this.transcript.push({ role: 'assistant', text: finalText, timestamp: ChatViewProvider.now() });
+        this.append({ role: 'assistant', text: finalText, timestamp: ChatViewProvider.now() });
       }
       this.busy = false;
       this.lastTokens = result.tokensUsed;
@@ -1009,7 +974,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.transcript.push({ role: 'error', text: message, timestamp: ChatViewProvider.now() });
+      this.append({ role: 'error', text: message, timestamp: ChatViewProvider.now() });
       this.busy = false;
       this.post({
         type: 'turnEnded',
@@ -1027,12 +992,46 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /** Pushes an assistant/error entry and closes the turn in the webview. */
+  /** Upper bound on live transcript entries (see {@link append}). */
+  private static readonly MAX_TRANSCRIPT = 2000;
+
+  /**
+   * Appends to the transcript, keeping it bounded. A long-lived session (tool bubbles carry the
+   * full command output) would otherwise grow without limit in memory, in every `hydrate` payload
+   * and in the auto-saved session file. Trimming drops the oldest entries and leaves a marker —
+   * never a silent disappearance.
+   */
+  private append(item: WvTranscriptItem): void {
+    this.transcript.push(item);
+    this.trimTranscript();
+  }
+
+  /** Drops the oldest entries past the cap, leaving a marker in their place. */
+  private trimTranscript(): void {
+    if (this.transcript.length <= ChatViewProvider.MAX_TRANSCRIPT) {
+      return;
+    }
+    const dropped = this.transcript.length - ChatViewProvider.MAX_TRANSCRIPT;
+    this.transcript.splice(0, dropped);
+    this.transcript.unshift({
+      role: 'error',
+      text: vscode.l10n.t('{0} older messages were dropped to bound memory — the full conversation is in the saved session.', dropped),
+      timestamp: ChatViewProvider.now(),
+    });
+  }
+
+  /** Readable text for a failed RPC: JSON-RPC errors carry the host's message. */
+  private static errorText(err: unknown): string {
+    const raw = (err instanceof Error ? err.message : String(err)).trim();
+    return raw.length > 0 ? raw : vscode.l10n.t('The command failed.');
+  }
+
   private finishTurn(text: string, error: string | null, cancelled: boolean, tokens: number): void {
     const timestamp = ChatViewProvider.now();
     if (error) {
-      this.transcript.push({ role: 'error', text: error, timestamp });
+      this.append({ role: 'error', text: error, timestamp });
     } else if (text) {
-      this.transcript.push({ role: 'assistant', text, timestamp });
+      this.append({ role: 'assistant', text, timestamp });
     }
     this.busy = false;
     this.post({
@@ -1200,110 +1199,4 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /** Localized strings injected into the webview (window.__l10n). Templates keep their
    * {0} placeholders — substitution happens webview-side (t()). */
-  private static webviewStrings(): Record<string, string> {
-    const t = vscode.l10n.t;
-    return {
-      promptPlaceholder: t('Ask Inferpal…'),
-      modelTitle: t('Model'),
-      sendTitle: t('Send'),
-      cancelTitle: t('Cancel'),
-      retry: t('Retry the connection'),
-      searchTitle: t('Search in the conversation'),
-      searchPlaceholder: t('Search in the conversation…'),
-      statusConnected: t('Connected'),
-      statusUnreachable: t('Backend unreachable'),
-      modeAgent: t('Agent'),
-      modeChat: t('Chat'),
-      modeToggleTitle: t('Toggle between agent mode (tools) and plain chat'),
-      hintBar: t('Enter to send · Shift+Enter for a new line · Shift+↑↓ history'),
-      tokensInfo: t('{0} tokens'),
-      contextTooltip: t('Context: {0} / {1} tokens ({2}%) — click for the X-Ray panel'),
-      thinking: t('Thinking…'),
-      cancelled: t('Cancelled.'),
-      copy: t('Copy'),
-      copied: t('Copied!'),
-      regenerate: t('Regenerate'),
-      deny: t('Deny'),
-      allowOnce: t('Allow once'),
-      allowAlways: t('Always (session)'),
-      openInEditor: t('Open in editor'),
-      toolError: t('error'),
-      welcomeSubtitle: t('Ask a question about your code'),
-      cardExplain: t('Explain the selection'),
-      cardFix: t('Fix an error'),
-      cardTest: t('Generate a test'),
-      cardHelp: t('See all commands'),
-      xrayTitle: t('🩻 Context X-Ray — ~{0} tokens'),
-      xrayCopyPrompt: t('Copy prompt'),
-      xrayCopyPromptTitle: t('Copy the exact system prompt of the next turn'),
-      xrayInclude: t('Include in the next turn'),
-      xrayWarning: t('⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.'),
-      xrayHistory: t('History: ~{0} tokens'),
-      xrayWindow: t('window {0}% full'),
-      xrayHint: t('Unchecked sections are excluded from the next turn.'),
-      mentionSearchCode: t('Search the codebase for "{0}"'),
-      stepPaused: t('⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.'),
-      resume: t('Resume'),
-      fixWithAi: t('Fix with AI'),
-      fixPrompt: t('Fix the following errors:'),
-      chipRemove: t('Remove'),
-      attachMenuTitle: t('Add context'),
-      attachActiveFile: t('Attach the active file'),
-      attachSelection: t('Attach the selection'),
-      attachBrowse: t('Attach a file from disk'),
-    };
-  }
-
-  private renderHtml(webview: vscode.Webview): string {
-    const script = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'chat.js'));
-    const style = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'chat.css'));
-    const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
-    // </script> inside a translation would close the tag early — escape all '<'.
-    const l10n = JSON.stringify(ChatViewProvider.webviewStrings()).replace(/</g, '\\u003c');
-    // CSP: no inline scripts except the nonce'd l10n bootstrap; assets restricted to media/.
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy"
-      content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; img-src ${webview.cspSource};">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="${style}" rel="stylesheet">
-<title>Inferpal</title>
-</head>
-<body>
-<div id="topbar"></div>
-<div id="messages"></div>
-<div id="composer">
-  <div id="plan" hidden></div>
-  <div id="statusline" hidden></div>
-  <textarea id="prompt" rows="3"></textarea>
-  <div id="toolbar"></div>
-  <div id="footerbar"></div>
-</div>
-<script nonce="${nonce}">
-window.__l10n = ${l10n};
-// Webview crashes are invisible (no console in logs): channel them to the extension,
-// which writes them to the Inferpal output channel.
-window.__vsapi = acquireVsCodeApi();
-window.onerror = function (message, source, line, col) {
-  try { window.__vsapi.postMessage({ type: 'clientError', message: String(message) + ' @ ' + source + ':' + line + ':' + col }); } catch (e) { }
-};
-// Capture phase: resource-load failures (script/css) never reach window.onerror.
-window.addEventListener('error', function (e) {
-  try {
-    var target = e.target;
-    if (target && (target.src || target.href)) {
-      window.__vsapi.postMessage({ type: 'clientError', message: 'resource failed: ' + (target.src || target.href) });
-    }
-  } catch (err) { }
-}, true);
-window.addEventListener('unhandledrejection', function (e) {
-  try { window.__vsapi.postMessage({ type: 'clientError', message: 'unhandled rejection: ' + String(e.reason) }); } catch (err) { }
-});
-</script>
-<script nonce="${nonce}" src="${script}"></script>
-</body>
-</html>`;
-  }
 }

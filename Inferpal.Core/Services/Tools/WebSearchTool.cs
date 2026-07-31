@@ -68,12 +68,12 @@ internal class WebSearchTool : ITool
         var titleRx = new Regex(
             @"<a[^>]+class=""result__a""[^>]*href=""([^""]*)""[^>]*>([\s\S]*?)</a>" +
             @"|<a[^>]+href=""([^""]*)""[^>]+class=""result__a""[^>]*>([\s\S]*?)</a>",
-            RegexOptions.IgnoreCase);
+            RegexOptions.IgnoreCase, RegexBudget.Default);
 
         // Snippet: <div class="result__snippet"> or <a class="result__snippet">
         var snippetRx = new Regex(
             @"class=""result__snippet""[^>]*>([\s\S]*?)</(?:div|a)>",
-            RegexOptions.IgnoreCase);
+            RegexOptions.IgnoreCase, RegexBudget.Default);
 
         var titles   = titleRx.Matches(html);
         var snippets = snippetRx.Matches(html);
@@ -110,7 +110,7 @@ internal class WebSearchTool : ITool
     private static string DecodeUrl(string href)
     {
         // DuckDuckGo redirects: /l/?uddg=https%3A%2F%2F...&rut=...
-        var m = Regex.Match(href, @"[?&]uddg=([^&]+)", RegexOptions.IgnoreCase);
+        var m = Regex.Match(href, @"[?&]uddg=([^&]+)", RegexOptions.IgnoreCase, RegexBudget.Default);
         if (m.Success)
             return Uri.UnescapeDataString(m.Groups[1].Value);
 

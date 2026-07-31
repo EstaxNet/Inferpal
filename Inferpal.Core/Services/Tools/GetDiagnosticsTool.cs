@@ -40,7 +40,7 @@ internal class GetDiagnosticsTool : ITool
     };
 
     private static readonly Regex _diagLine = new(
-        @":\s*(error|warning)\s+\w+\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        @":\s*(error|warning)\s+\w+\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     internal static bool OutputHasErrors(string output) =>
         !string.IsNullOrEmpty(output) && _diagLine.IsMatch(output);
@@ -48,7 +48,7 @@ internal class GetDiagnosticsTool : ITool
     // Errors only — warnings don't warrant auto-fix iterations.
     // Exposed as internal so SmartFixValidator can reuse without duplicating the pattern.
     internal static readonly Regex ErrorLineRegex = new(
-        @":\s*error\s+\w+\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        @":\s*error\s+\w+\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     internal static bool OutputHasBuildErrors(string output) =>
         !string.IsNullOrEmpty(output) && ErrorLineRegex.IsMatch(output);

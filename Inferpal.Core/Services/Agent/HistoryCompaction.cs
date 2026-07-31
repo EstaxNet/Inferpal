@@ -77,8 +77,17 @@ internal static class HistoryCompaction
         var kvAnchor = (kvAnchorMessages > 0 && removed > kvAnchorMessages)
             ? kvAnchorMessages
             : 0;
-        var start = 1 + kvAnchor;
-        var count = removed - kvAnchor;
+
+        // The tail is safe by construction (it starts on a user message), but the KV-cache anchor
+        // boundary is not: it can leave an anchored assistant whose tool_calls lose their answers.
+        // Widening the removal costs one cached prefix message; not widening it produces a history
+        // OpenAI-compatible backends reject. See ToolBlockBoundary.
+        var start = ToolBlockBoundary.SnapStart(history, 1 + kvAnchor, floor: 1);
+        var count = keepFromIdx - start;
+        if (count <= 0) return CompactionPlan.None;
+
+        // Report the anchor actually preserved, so the chat notice never overstates it.
+        kvAnchor = start - 1;
 
         var action = (!compactionEnabled || count == 0)
             ? CompactionAction.Truncate

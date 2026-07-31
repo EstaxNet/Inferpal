@@ -48,6 +48,25 @@ public class InferpalExtension : Extension
         }
     };
 
+    /// <summary>
+    /// Kills the child processes this extension spawned. The DI container disposes
+    /// <see cref="IDisposable"/> singletons, but <see cref="McpToolService"/> is
+    /// <see cref="IAsyncDisposable"/>-only — a synchronous container teardown skips it, and an MCP
+    /// server started with <c>UseShellExecute=false</c> does not die with the extension host.
+    /// </summary>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            try { this.ServiceProvider?.GetService<McpToolService>()?.KillAllServers(); }
+            catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DisposeMcp", ex); }
+
+            try { this.ServiceProvider?.GetService<ToolRegistry>()?.Dispose(); }
+            catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DisposeTools", ex); }
+        }
+        base.Dispose(disposing);
+    }
+
     protected override void InitializeServices(IServiceCollection services)
     {
         base.InitializeServices(services);

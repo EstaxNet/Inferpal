@@ -92,7 +92,7 @@ internal partial class InferpalToolWindowData
             await _store.SaveAsync(SessionManager.SessionFileName(DateTime.Now, title), snapshot, CancellationToken.None);
             await RunOnVMContextAsync(RefreshSessionsList);
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Session.SaveNamed", ex); }
     }
 
     // Shared with the Host (`session/title`, VS Code) — prompt, timeout and fallback live in the
@@ -112,7 +112,7 @@ internal partial class InferpalToolWindowData
             });
             await _store.AutoSaveAsync(snapshot, CancellationToken.None);
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Session.AutoSave", ex); }
     }
 
     private async Task DeleteSessionAsync(object? _, CancellationToken ct)

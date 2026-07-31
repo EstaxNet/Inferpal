@@ -112,7 +112,7 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IDisposable
             _solution.UnadviseSolutionEvents(_cookie);
 #pragma warning restore VSTHRD010
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Solution.Unsubscribe", ex); }
         _cookie = 0;
         ActiveSolutionSignal.Clear();
     }

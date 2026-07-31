@@ -17,7 +17,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(output);
   const log = (line: string) => output.appendLine(line);
 
-  bridge = new EditorBridge();
+  bridge = new EditorBridge(context.secrets);
   context.subscriptions.push(bridge);
 
   const chatView = new ChatViewProvider(
@@ -140,7 +140,7 @@ async function startHost(
     return;
   }
 
-  const hostPath = resolveHostPath(context, rootDir);
+  const hostPath = resolveHostPath(context);
   if (!hostPath) {
     log('[inferpal] Inferpal.Host binary not found — set "inferpal.hostPath"');
     if (interactive) {
@@ -189,10 +189,11 @@ async function startHost(
 }
 
 /**
- * Host binary lookup order: explicit setting → host bundled with the extension
- * (Phase 5 packaging) → a dev build under the workspace (this repo's layout).
+ * Host binary lookup order: explicit (machine-scoped) setting → host bundled with the
+ * extension (Phase 5 packaging) → a dev build next to the extension source (F5 flow).
+ * Never anything taken from the opened workspace.
  */
-function resolveHostPath(context: vscode.ExtensionContext, rootDir: string): string | undefined {
+function resolveHostPath(context: vscode.ExtensionContext): string | undefined {
   const exe = process.platform === 'win32' ? 'Inferpal.Host.exe' : 'Inferpal.Host';
 
   const configured = vscode.workspace.getConfiguration('inferpal').get<string>('hostPath', '').trim();
@@ -200,14 +201,16 @@ function resolveHostPath(context: vscode.ExtensionContext, rootDir: string): str
     return fs.existsSync(configured) ? configured : undefined;
   }
 
+  // Every candidate is relative to the *extension*, never to the opened workspace: probing
+  // the workspace would mean spawning a binary shipped by whatever repository the user just
+  // cloned. `inferpal.hostPath` is machine-scoped for the same reason — a repo's
+  // .vscode/settings.json must not be able to choose which executable we launch.
   const candidates = [
     path.join(context.extensionUri.fsPath, 'host', exe),
     // F5 dev host: the extension runs from the repo's vscode/ source folder, so the
     // freshly built host lives one level up — works whatever workspace is opened.
     path.join(context.extensionUri.fsPath, '..', 'Inferpal.Host', 'bin', 'Release', 'net8.0', exe),
     path.join(context.extensionUri.fsPath, '..', 'Inferpal.Host', 'bin', 'Debug', 'net8.0', exe),
-    path.join(rootDir, 'Inferpal.Host', 'bin', 'Release', 'net8.0', exe),
-    path.join(rootDir, 'Inferpal.Host', 'bin', 'Debug', 'net8.0', exe),
   ];
   return candidates.find((c) => fs.existsSync(c));
 }

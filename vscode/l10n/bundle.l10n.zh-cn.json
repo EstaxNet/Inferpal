@@ -9,6 +9,8 @@
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Inferpal 主机未运行 — 请使用 “Inferpal: 重启主机”。",
   "Naming the session…": "正在命名会话…",
   "{0} msg · from {1} @ turn {2}": "{0} 条 · 来自 {1} 第 {2} 轮",
+  "The command failed.": "命令执行失败。",
+  "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "已删除 {0} 条较早的消息以限制内存占用——完整对话保存在会话文件中。",
   "Session name": "会话名称",
   "Session saved: {0}": "会话已保存：{0}",
   "Pick a session to load": "选择要加载的会话",

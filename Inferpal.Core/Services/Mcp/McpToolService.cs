@@ -2,6 +2,8 @@ using Inferpal.Config;
 using Inferpal.Services.Mcp.OAuth;
 using Inferpal.Services.Tools;
 
+using Inferpal.Localization;
+
 namespace Inferpal.Services.Mcp;
 
 /// <summary>Connection status of one configured MCP server, for the settings UI.</summary>
@@ -159,6 +161,11 @@ internal sealed class McpToolService : IAsyncDisposable
     /// </summary>
     public async Task AuthorizeAsync(string serverName, CancellationToken ct = default)
     {
+        // Refuse before opening the browser: without a platform secret store the refresh token
+        // cannot be persisted, and failing at the end would waste the whole interactive flow.
+        if (!_tokenStore.CanProtect)
+            throw new InvalidOperationException(Strings.McpOAuthUnsupportedPlatform);
+
         var cfg = McpServerConfig.Parse(_config.McpServersJson)
             .FirstOrDefault(s => s.IsHttp && string.Equals(s.Name, serverName, StringComparison.Ordinal))
             ?? throw new InvalidOperationException($"'{serverName}' is not a configured HTTP MCP server.");
@@ -299,6 +306,20 @@ internal sealed class McpToolService : IAsyncDisposable
         _tools   = [];
         foreach (var entry in old)
             await entry.Client.DisposeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Kills every server process without awaiting — for shutdown paths where blocking is
+    /// forbidden. Leaves the managed state alone: the process is exiting anyway, and an orphaned
+    /// MCP server (node, python, uvx…) outliving the editor is the failure this prevents.
+    /// </summary>
+    public void KillAllServers()
+    {
+        foreach (var entry in _servers)
+        {
+            try { entry.Client.KillNow(); }
+            catch (Exception ex) { Diagnostics.Swallow($"McpToolService.KillAllServers({entry.Client.ServerName})", ex); }
+        }
     }
 
     public async ValueTask DisposeAsync()

@@ -139,7 +139,7 @@ internal sealed class GhostTextController
                 ct: token);
         }
         catch (OperationCanceledException) { }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.Trigger", ex); }
     }
 
     private (string prefix, string suffix, SnapshotPoint anchor, ITextSnapshot snapshot)?
@@ -204,7 +204,7 @@ internal sealed class GhostTextController
             var newPos = new SnapshotPoint(applied, pos.Position + completion.Length);
             _view.Caret.MoveTo(newPos);
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.AcceptCompletion", ex); }
     }
 
     // ── Cleanup ───────────────────────────────────────────────────────────────

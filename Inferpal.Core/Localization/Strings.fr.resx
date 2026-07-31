@@ -925,4 +925,6 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="BranchUnknown" xml:space="preserve"><value>Aucune session enregistrée nommée `{0}` — voir `/history`.</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 Branche `{0}` créée au tour {1}. La conversation continue ici ; `{2}` conserve l'original.</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Vous êtes maintenant sur `{0}`.</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ Analyse partielle : seuls {0} fichiers source sur {1} ont été balayés (plafond). Les résultats peuvent être incomplets.</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>L'autorisation OAuth MCP n'est disponible que sous Windows pour l'instant : le jeton de rafraîchissement ne peut être stocké que chiffré (DPAPI), et le stocker en clair n'est pas une option. Utilisez plutôt un serveur avec un jeton d'en-tête statique.</value></data>
 </root>

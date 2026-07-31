@@ -42,7 +42,7 @@ internal partial class InferpalToolWindowData
                 sb.AppendLine("### Solution\n").AppendLine(solutionInfo).AppendLine();
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { } // timeout — skip silently
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("WorkspaceContext.SolutionInfo", ex); }
 
         try
         {
@@ -55,7 +55,7 @@ internal partial class InferpalToolWindowData
                 sb.AppendLine("### Open editors\n").AppendLine(openEditors);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { } // timeout — skip silently
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("WorkspaceContext.OpenEditors", ex); }
 
         var result = sb.ToString().TrimEnd();
         return result.Length > "## Workspace context (auto-injected on session start)".Length + 5
@@ -135,7 +135,7 @@ internal partial class InferpalToolWindowData
         if (_contextHolder.Context is not null)
         {
             try { return await _vs.Editor().GetActiveTextViewAsync(_contextHolder.Context, ct); }
-            catch { }
+            catch (Exception ex) { Diagnostics.Swallow("Editor.ResolveActiveView", ex); }
         }
         return null;
     }

@@ -79,7 +79,8 @@ internal sealed class NexusIntelligenceTool : ITool
         var csBridges = new CsBridges();
         var tsBridges = new TsBridges();
 
-        foreach (var f in csFiles.Take(MaxFilesScanned))
+        var (csScanned, csCoverage) = ScanCoverage.Take(csFiles, MaxFilesScanned);
+        foreach (var f in csScanned)
         {
             ct.ThrowIfCancellationRequested();
             try
@@ -93,7 +94,8 @@ internal sealed class NexusIntelligenceTool : ITool
             catch (Exception ex) { Diagnostics.Swallow("NexusIntelligenceTool.ScanCs", ex); }
         }
 
-        foreach (var f in tsFiles.Take(MaxFilesScanned))
+        var (tsScanned, tsCoverage) = ScanCoverage.Take(tsFiles, MaxFilesScanned);
+        foreach (var f in tsScanned)
         {
             ct.ThrowIfCancellationRequested();
             try
@@ -128,6 +130,15 @@ internal sealed class NexusIntelligenceTool : ITool
             sb.AppendLine($"*No cross-language bridges found matching `{focus}`.*");
         else if (linkCount == 0)
             sb.AppendLine("*No cross-language bridges detected. This project may not use REST/interop/SignalR, or the patterns were not recognized.*");
+
+        // "No bridges detected" on a capped scan means "none in the sample" — say which it is.
+        var combined = new ScanCoverage(csCoverage.Total + tsCoverage.Total,
+                                        csCoverage.Scanned + tsCoverage.Scanned);
+        if (combined.IsPartial)
+        {
+            sb.AppendLine();
+            sb.AppendLine(combined.Warning());
+        }
 
         return sb.ToString().TrimEnd();
     }
@@ -297,17 +308,17 @@ internal sealed class NexusIntelligenceTool : ITool
     // [HttpGet("/route")] / [HttpPost] / [Route("...")]
     private static readonly Regex _csHttpAttr = new(
         @"\[\s*(?:Http(Get|Post|Put|Delete|Patch)|Route)\s*(?:\(\s*""([^""]*)""\s*\))?\s*\]",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     // app.MapGet("route", ...) / MapPost / ...
     private static readonly Regex _csMapRoute = new(
         @"\.Map(Get|Post|Put|Delete|Patch)\s*\(\s*""([^""]+)""",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     // method name from declaration after Http* attribute
     private static readonly Regex _csMethName = new(
         @"(?:public|private|protected|internal)[^(]+?\s+(\w+)\s*\(",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexBudget.Default);
 
     private static void ScanCsRest(string src, string file, string root, CsBridges out_)
     {
@@ -358,7 +369,7 @@ internal sealed class NexusIntelligenceTool : ITool
 
     private static readonly Regex _csJsInvoke = new(
         @"Invoke(?:Async|VoidAsync)\s*(?:<[^>]+>)?\s*\(\s*""([^""]+)""",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexBudget.Default);
 
     private static void ScanCsInterop(string src, string file, string root, CsBridges out_)
     {
@@ -371,12 +382,12 @@ internal sealed class NexusIntelligenceTool : ITool
         }
     }
 
-    private static readonly Regex _csHubClass  = new(@"class\s+(\w+)\s*:\s*Hub(?:<[^>]+>)?", RegexOptions.Compiled);
+    private static readonly Regex _csHubClass  = new(@"class\s+(\w+)\s*:\s*Hub(?:<[^>]+>)?", RegexOptions.Compiled, RegexBudget.Default);
     private static readonly Regex _csHubMethod = new(
         @"(?:public|protected)\s+(?:(?:async|override|virtual|Task|ValueTask)\s+)*(?:Task<[^>]+>|Task|ValueTask|void)\s+(\w+)\s*\(",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexBudget.Default);
     private static readonly Regex _csSendAsync = new(
-        @"\.SendAsync\s*\(\s*""([^""]+)""", RegexOptions.Compiled);
+        @"\.SendAsync\s*\(\s*""([^""]+)""", RegexOptions.Compiled, RegexBudget.Default);
 
     private static void ScanCsSignalR(string src, string file, string root, CsBridges out_)
     {
@@ -407,15 +418,15 @@ internal sealed class NexusIntelligenceTool : ITool
 
     private static readonly Regex _tsFetch = new(
         @"\bfetch\s*\(\s*[""'`]([^""'`$][^""'`]*)[""'`]",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexBudget.Default);
 
     private static readonly Regex _tsAxios = new(
         @"\baxios\.(get|post|put|delete|patch)\s*(?:<[^>]+>)?\s*\(\s*[""'`]([^""'`$][^""'`]*)[""'`]",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     private static readonly Regex _tsHttp = new(
         @"\bhttp\.(get|post|put|delete|patch)\s*(?:<[^>]+>)?\s*\(\s*[""'`]([^""'`$][^""'`]*)[""'`]",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     private static void ScanTsRest(string src, string file, string root, TsBridges out_)
     {
@@ -439,7 +450,7 @@ internal sealed class NexusIntelligenceTool : ITool
         @"(?:(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s+(\w+)\s*\(" +
         @"|window\.(\w+)\s*=" +
         @"|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?\(?[^=)]*\)?\s*=>)",
-        RegexOptions.Compiled | RegexOptions.Multiline);
+        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
     private static void ScanTsInterop(string src, string file, string root, TsBridges out_)
     {
@@ -459,11 +470,11 @@ internal sealed class NexusIntelligenceTool : ITool
 
     private static readonly Regex _tsSrInvoke = new(
         @"\b\w*[Cc]onnection\b.*?\.invoke\s*\(\s*[""']([^""']+)[""']",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexBudget.Default);
 
     private static readonly Regex _tsSrOn = new(
         @"\b\w*[Cc]onnection\b.*?\.on\s*\(\s*[""']([^""']+)[""']",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexBudget.Default);
 
     private static void ScanTsSignalR(string src, string file, string root, TsBridges out_)
     {

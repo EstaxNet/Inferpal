@@ -218,3 +218,41 @@ export const enum ApprovalAnswer {
   Once = 1,
   Always = 2,
 }
+
+/** One choice of a select field (texts are product names — never localized). */
+export interface SettingsOption {
+  value: string;
+  text: string;
+}
+
+/** An editable setting. `label`/`hint` are resource names resolved via `settings/strings`. */
+export interface SettingsField {
+  key: string;
+  kind: 'text' | 'password' | 'bool' | 'int' | 'float' | 'model' | 'select' | 'textarea';
+  label: string;
+  hint?: string | null;
+  unit?: string | null;
+  gate?: string | null;
+  button?: string | null;
+  options?: SettingsOption[] | null;
+}
+
+export interface SettingsSection {
+  title: string;
+  fields: SettingsField[];
+  toggleGate?: string | null;
+  toggleLabel?: string | null;
+  toggleHint?: string | null;
+}
+
+export interface SettingsTab {
+  key: string;
+  title: string;
+  sections: SettingsSection[];
+}
+
+/** `settings/schema` answer: the form the webview renders, declared once in the Core. */
+export interface SettingsSchema {
+  tabs: SettingsTab[];
+  headerFields: SettingsField[];
+}

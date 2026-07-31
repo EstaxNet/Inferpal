@@ -36,8 +36,8 @@ internal class SearchInFilesTool : ITool
             return Task.FromResult(Strings.DirNotFound(path));
 
         Regex regex;
-        try { regex = new Regex(search, RegexOptions.IgnoreCase | RegexOptions.Compiled); }
-        catch { regex = new Regex(Regex.Escape(search), RegexOptions.IgnoreCase | RegexOptions.Compiled); }
+        try { regex = new Regex(search, RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default); }
+        catch { regex = new Regex(Regex.Escape(search), RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default); }
 
         var results = new List<string>();
 

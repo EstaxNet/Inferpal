@@ -9,6 +9,8 @@
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Хост Inferpal не запущен — используйте «Inferpal: перезапустить хост».",
   "Naming the session…": "Создание имени сеанса…",
   "{0} msg · from {1} @ turn {2}": "{0} сообщ. · из {1} @ шаг {2}",
+  "The command failed.": "Команда завершилась ошибкой.",
+  "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "Удалено старых сообщений: {0} — чтобы ограничить память; полный разговор есть в сохранённом сеансе.",
   "Session name": "Имя сеанса",
   "Session saved: {0}": "Сеанс сохранён: {0}",
   "Pick a session to load": "Выберите сеанс для загрузки",

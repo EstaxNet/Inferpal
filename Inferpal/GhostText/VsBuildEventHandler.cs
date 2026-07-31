@@ -174,7 +174,7 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
             if (!string.IsNullOrEmpty(dir) && !string.IsNullOrEmpty(file))
                 return Path.Combine(dir, file);
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Build.GetSolutionPath", ex); }
         return null;
     }
 
@@ -190,7 +190,7 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
             _buildManager.UnadviseUpdateSolutionEvents(_cookie);
 #pragma warning restore VSTHRD010
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Build.Unsubscribe", ex); }
         _cookie = 0;
     }
 }

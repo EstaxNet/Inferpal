@@ -917,4 +917,14 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="BranchUnknown" xml:space="preserve"><value>Nessuna sessione salvata chiamata `{0}` — vedi `/history`.</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 Ramo `{0}` creato al turno {1}. La conversazione prosegue qui; `{2}` conserva l'originale.</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Ora su `{0}`.</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>Nessun server MCP configurato</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>Nessun file bloccato</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>Comandi e strumenti</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>Nessun comando personalizzato</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>Nessuno strumento personalizzato</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ Elenco</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ Testo</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ Analisi parziale: sono stati esaminati solo {0} file sorgente su {1} (limite). I risultati possono essere incompleti.</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>L'autorizzazione OAuth MCP è per ora disponibile solo su Windows: il refresh token può essere salvato solo cifrato (DPAPI) e salvarlo in chiaro non è un'opzione. Usa invece un server con token di intestazione statico.</value></data>
 </root>

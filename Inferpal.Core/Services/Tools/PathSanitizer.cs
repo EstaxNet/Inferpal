@@ -50,23 +50,71 @@ internal static class PathSanitizer
     {
         if (string.IsNullOrEmpty(workspaceRoot)) return;
 
-        // Normalise the root: resolve any ./ ../ and strip any trailing separator.
-        var rootBare = Path.GetFullPath(workspaceRoot)
-                           .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        // Compare link-resolved paths: Path.GetFullPath normalises ./ and ../ but follows no
+        // symlink or junction, so a link planted inside the workspace would otherwise let a
+        // write escape it while still passing a textual prefix check.
+        var rootBare = Trim(ResolveLinks(Path.GetFullPath(workspaceRoot)));
+        var target   = Trim(ResolveLinks(fullPath));
 
         // The root directory itself is allowed.
-        if (string.Equals(fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
-                           rootBare, StringComparison.OrdinalIgnoreCase))
-            return;
+        if (string.Equals(target, rootBare, PathComparison)) return;
 
         // For descendants, require the trailing separator so that "C:\proj\src"
         // doesn't accidentally prefix-match "C:\proj\src_other".
-        var root = rootBare + Path.DirectorySeparatorChar;
-
-        if (!fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        if (!target.StartsWith(rootBare + Path.DirectorySeparatorChar, PathComparison))
             throw new ArgumentException(
                 $"Access denied: path is outside the workspace root.\n" +
                 $"  Requested : {fullPath}\n" +
                 $"  Workspace : {workspaceRoot}");
+    }
+
+    /// <summary>Windows paths are case-insensitive; Linux/macOS ones are not — and the host now
+    /// ships for all three (VS Code publishes linux-* and darwin-* builds).</summary>
+    private static StringComparison PathComparison =>
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    private static string Trim(string path) =>
+        path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+    /// <summary>
+    /// Resolves symlinks/junctions along <paramref name="path"/>. The target itself usually does
+    /// not exist yet (a file about to be written), so the deepest existing ancestor is resolved
+    /// and the remainder appended back. Best-effort: on any failure the path is returned as-is,
+    /// which keeps the caller's textual check in place rather than opening a hole.
+    /// </summary>
+    private static string ResolveLinks(string path)
+    {
+        try
+        {
+            var remainder = string.Empty;
+            var current   = path;
+
+            for (var depth = 0; depth < 64; depth++)
+            {
+                if (Directory.Exists(current))
+                {
+                    var resolved = new DirectoryInfo(current).ResolveLinkTarget(returnFinalTarget: true);
+                    var head     = resolved?.FullName ?? current;
+                    return remainder.Length == 0 ? head : Path.Combine(head, remainder);
+                }
+                if (File.Exists(current))
+                {
+                    var resolved = new FileInfo(current).ResolveLinkTarget(returnFinalTarget: true);
+                    return resolved?.FullName ?? current;
+                }
+
+                var parent = Path.GetDirectoryName(current);
+                if (string.IsNullOrEmpty(parent) || parent == current) return path;   // reached the drive root
+
+                remainder = Path.Combine(Path.GetFileName(current), remainder);
+                current   = parent;
+            }
+            return path;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow($"PathSanitizer.ResolveLinks({path})", ex);
+            return path;
+        }
     }
 }

@@ -17,6 +17,7 @@ internal class TraceDependencyTool : ITool
     private const int MaxCallsPerMethod = 30;
     private const int MaxFilesScanned   = 400;
 
+
     private readonly Func<string?> _getRoot;
 
     public TraceDependencyTool(Func<string?> getRoot) => _getRoot = getRoot;
@@ -105,12 +106,16 @@ internal class TraceDependencyTool : ITool
         bool showCallers = direction is "callers" or "both";
         bool showCallees = direction is "callees" or "both";
 
+        // How much of the tree the cross-file caller scan actually covered (default: nothing
+        // scanned, nothing to warn about — the callees-only mode reads a single file).
+        var coverage = default(ScanCoverage);
+
         if (showCallers)
         {
             sb.AppendLine();
             sb.AppendLine("### Callers");
             sb.AppendLine();
-            AppendCallers(sb, methods, rootDir, ext, filePath, ct);
+            coverage = AppendCallers(sb, methods, rootDir, ext, filePath, ct);
         }
 
         if (showCallees)
@@ -138,6 +143,9 @@ internal class TraceDependencyTool : ITool
 
         sb.AppendLine("---");
         sb.AppendLine(Strings.TraceDepsFooter(methods.Count, allCallees.Count, resolved));
+        // A capped cross-file scan must say so: an empty caller list is otherwise indistinguishable
+        // from "this method is never called".
+        if (coverage.IsPartial) sb.AppendLine(coverage.Warning());
 
         return sb.ToString().TrimEnd();
     }
@@ -202,7 +210,9 @@ internal class TraceDependencyTool : ITool
 
     // ── Callers ───────────────────────────────────────────────────────────────
 
-    private static void AppendCallers(
+    /// <summary>Appends the caller section and returns how much of the tree it actually scanned —
+    /// a capped scan must be reported, never passed off as exhaustive.</summary>
+    private static ScanCoverage AppendCallers(
         StringBuilder    sb,
         List<MethodInfo> targets,
         string           rootDir,
@@ -217,7 +227,8 @@ internal class TraceDependencyTool : ITool
         var callerMap = new Dictionary<string, List<(string caller, string relFile, int line)>>(
             StringComparer.OrdinalIgnoreCase);
 
-        foreach (var file in EnumerateSourceFiles(rootDir, ext).Take(MaxFilesScanned))
+        var (callerFiles, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
+        foreach (var file in callerFiles)
         {
             ct.ThrowIfCancellationRequested();
             if (file == targetFile) continue;
@@ -251,6 +262,8 @@ internal class TraceDependencyTool : ITool
                 sb.AppendLine("  *(no callers found in scanned files)*");
             sb.AppendLine();
         }
+
+        return coverage;
     }
 
     // ── Index building ────────────────────────────────────────────────────────
@@ -384,12 +397,12 @@ internal class TraceDependencyTool : ITool
             @"\([^)]{0,512}\)\s*" +            // params (≤512 chars to avoid catastrophic backtracking)
             @"(?:where\s+[^{;]+?)?\s*" +       // optional where clause
             @"(?:\{|=>)",                       // body opens
-            RegexOptions.Compiled | RegexOptions.Multiline);
+            RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
         // Matches invocation-like expressions: identifier( or identifier<T>(
         private static readonly Regex _call = new(
             @"\b([A-Za-z_][\w]*)\s*(?:<[^>()]{0,80}>)?\s*\(",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexBudget.Default);
 
         // C# keywords and common non-method identifiers to suppress
         private static readonly HashSet<string> _skip = new(StringComparer.OrdinalIgnoreCase)
@@ -518,11 +531,11 @@ internal class TraceDependencyTool : ITool
 
         private static readonly Regex _pyDecl = new(
             @"(?m)^([ \t]*)(?:async\s+)?def\s+([\w]+)\s*\(([^)]{0,256})\)\s*(?:->.*?)?\s*:",
-            RegexOptions.Compiled | RegexOptions.Multiline);
+            RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
         private static readonly Regex _pyCall = new(
             @"\b([a-z_][\w]*)\s*\(",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexBudget.Default);
 
         private static readonly HashSet<string> _pyKeywords = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -581,11 +594,11 @@ internal class TraceDependencyTool : ITool
             // class method: methodName( { or async methodName(
             @"(?:async\s+)?(?:get\s+|set\s+)?([\w]+)\s*\([^)]{0,256}\)\s*\{" +
             @")",
-            RegexOptions.Compiled | RegexOptions.Multiline);
+            RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
         private static readonly Regex _jsCall = new(
             @"\b([a-zA-Z_$][\w$]*)\s*\(",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexBudget.Default);
 
         private static readonly HashSet<string> _jsKeywords = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -646,7 +659,7 @@ internal class TraceDependencyTool : ITool
             @"([\w]+)\s*\([^)]{0,256}\)\s*" + // ① name
             @"(?:throws\s+[\w,\s]+)?\s*" +    // throws clause
             @"\{",
-            RegexOptions.Compiled | RegexOptions.Multiline);
+            RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
         public static List<MethodInfo> ParseJava(string source)
             => ParseWithRegex(source, _javaDecl, _jsCall, _jsKeywords, groupIdx: 1);
@@ -655,11 +668,11 @@ internal class TraceDependencyTool : ITool
 
         private static readonly Regex _goDecl = new(
             @"(?m)^func\s+(?:\([^)]+\)\s+)?([\w]+)\s*\([^)]{0,256}\)",
-            RegexOptions.Compiled | RegexOptions.Multiline);
+            RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
         private static readonly Regex _goCall = new(
             @"\b([a-zA-Z_][\w]*)\s*\(",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexBudget.Default);
 
         private static readonly HashSet<string> _goKeywords = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -677,11 +690,11 @@ internal class TraceDependencyTool : ITool
 
         private static readonly Regex _genericDecl = new(
             @"(?m)(?:function|def|func|sub|void|int|string|bool)\s+([\w]+)\s*\(",
-            RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase, RegexBudget.Default);
 
         private static readonly Regex _genericCall = new(
             @"\b([A-Za-z_][\w]*)\s*\(",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexBudget.Default);
 
         public static List<MethodInfo> ParseGeneric(string source)
             => ParseWithRegex(source, _genericDecl, _genericCall, new HashSet<string>(), groupIdx: 1);

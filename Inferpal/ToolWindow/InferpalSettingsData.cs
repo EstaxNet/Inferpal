@@ -507,7 +507,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                 CancellationToken.None,
                 value => Post(() => ApplyTheme(VsThemeDetector.IsDark(value.ValueOrDefault(string.Empty)))));
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.ThemeSubscription", ex); }
     }
 
     private void ApplyTheme(bool isDark)
@@ -748,7 +748,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         SynchronizationContext.Post(_ =>
         {
             try { action(); }
-            catch { }
+            catch (Exception ex) { Diagnostics.Swallow("Settings.PostToVm", ex); }
         }, null);
 
     private Task RunOnVMContextAsync(Action action)
@@ -2051,6 +2051,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                     RagEmbeddingModel = AvailableEmbeddingModels[0];
             });
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.Save", ex); }
     }
 }

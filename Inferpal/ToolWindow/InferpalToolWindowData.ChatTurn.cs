@@ -626,7 +626,7 @@ internal partial class InferpalToolWindowData
     private static void NotifyAgentComplete()
     {
         try { MessageBeep(0x00000040); } // MB_ICONINFORMATION — asterisk/ding
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("ChatTurn.Cleanup", ex); }
     }
 
     private Task CancelAsync(object? _, CancellationToken ct)

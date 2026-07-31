@@ -97,7 +97,7 @@ internal class GetSolutionInfoTool : ITool
 
     private static readonly Regex _projectLine = new(
         @"Project\(""\{([A-F0-9\-]+)\}""\)\s*=\s*""([^""]+)""\s*,\s*""([^""]+)""",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     private static List<ProjectEntry> ParseSolutionProjects(string slnContent, string slnDir)
     {

@@ -165,6 +165,7 @@
         "inferpal.hostPath": {
           "type": "string",
           "default": "",
+          "scope": "machine",
           "markdownDescription": "%inferpal.config.hostPath%"
         },
         "inferpal.model": {

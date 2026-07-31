@@ -211,12 +211,36 @@ internal sealed class RagDatabase
             CREATE INDEX IF NOT EXISTS idx_chunks_file
                 ON chunks (root_hash, file_path);");
 
-        // Check / stamp schema version
+        // Check / stamp the schema version. This index is a *derived cache*: rather than writing
+        // a migration per version, a mismatch drops the chunks and lets the background indexer
+        // rebuild them. Stamping without ever comparing (as before) meant the next schema bump
+        // would silently run new queries against an old table.
         using var ver = conn.CreateCommand();
         ver.CommandText = "SELECT value FROM meta WHERE key = 'schema_version'";
         var existing = ver.ExecuteScalar() as string;
 
-        if (existing is null)
+        if (existing is not null && existing != SchemaVersion.ToString())
+        {
+            Diagnostics.Record("Rag", $"Index schema {existing} ≠ {SchemaVersion} — rebuilding the index.");
+            conn.Execute("DROP TABLE IF EXISTS chunks;");
+            conn.Execute(@"
+                CREATE TABLE chunks (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    root_hash    TEXT    NOT NULL,
+                    file_path    TEXT    NOT NULL,
+                    rel_path     TEXT    NOT NULL,
+                    start_line   INTEGER NOT NULL,
+                    end_line     INTEGER NOT NULL,
+                    content      TEXT    NOT NULL,
+                    content_hash TEXT    NOT NULL,
+                    type_name    TEXT,
+                    embedding    BLOB
+                );
+                CREATE INDEX idx_chunks_root ON chunks (root_hash);
+                CREATE INDEX idx_chunks_file ON chunks (root_hash, file_path);");
+        }
+
+        if (existing is null || existing != SchemaVersion.ToString())
         {
             using var stamp = conn.CreateCommand();
             stamp.CommandText =
@@ -224,7 +248,6 @@ internal sealed class RagDatabase
             stamp.Parameters.AddWithValue("$v", SchemaVersion.ToString());
             stamp.ExecuteNonQuery();
         }
-        // Future migrations: compare int.Parse(existing) < SchemaVersion → ALTER TABLE …
     }
 
     // ── Insert helper ──────────────────────────────────────────────────────────

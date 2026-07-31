@@ -917,4 +917,14 @@ ollama serve
   <data name="BranchUnknown" xml:space="preserve"><value>找不到名为 `{0}` 的已保存会话 — 请查看 `/history`。</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 已在第 {1} 轮创建分支 `{0}`。对话将在此继续；`{2}` 保留原始记录。</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 已切换到 `{0}`。</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>未配置 MCP 服务器</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>没有固定的文件</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>命令与工具</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>没有自定义命令</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>没有自定义工具</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ 列表</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ 文本</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ 部分分析：仅扫描了 {1} 个源文件中的 {0} 个（上限）。结果可能不完整。</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP 的 OAuth 授权目前仅支持 Windows：刷新令牌只能加密存储（DPAPI），明文存储不可接受。请改用带静态请求头令牌的服务器。</value></data>
 </root>

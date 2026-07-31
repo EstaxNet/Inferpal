@@ -33,7 +33,7 @@ internal static class BenchStore
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            await File.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(run, _opts));
+            await AtomicFile.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(run, _opts));
         }
         catch (Exception ex) { Diagnostics.Swallow("BenchStore.Save", ex); }
     }

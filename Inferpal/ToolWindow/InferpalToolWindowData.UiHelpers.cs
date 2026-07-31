@@ -74,7 +74,7 @@ internal partial class InferpalToolWindowData
         SynchronizationContext.Post(_ =>
         {
             try { action(); }
-            catch { }
+            catch (Exception ex) { Diagnostics.Swallow("UiHelpers.Post", ex); }
         }, null);
 
     // Awaitable: ensures the action runs with SynchronizationContext.Current = our context.
@@ -103,7 +103,7 @@ internal partial class InferpalToolWindowData
                 value => Post(() =>
                     ApplyThemeColors(VsThemeDetector.IsDark(value.ValueOrDefault(string.Empty)))));
         }
-        catch { }
+        catch (Exception ex) { Diagnostics.Swallow("UiHelpers.Theme", ex); }
     }
 
     private void ApplyThemeColors(bool isDark)

@@ -12,7 +12,7 @@ namespace Inferpal.Services.Tools;
 /// <see cref="ShellSession"/>). Long-running commands can be launched in the <em>background</em>
 /// and then read incrementally (<c>action: "poll"</c>) or terminated (<c>action: "stop"</c>).
 /// </summary>
-internal sealed class RunCommandTool : ITool
+internal sealed class RunCommandTool : ITool, IDisposable
 {
     private readonly IApprovalService _approval;
     private readonly ShellSession _session;
@@ -116,4 +116,7 @@ internal sealed class RunCommandTool : ITool
 
     private static string? GetId(JsonElement args) =>
         args.TryGetProperty("id", out var idEl) && idEl.GetString() is { Length: > 0 } id ? id : null;
+    /// <summary>Kills the background jobs this tool started — they outlive the editor otherwise.</summary>
+    public void Dispose() => _background.Dispose();
+
 }

@@ -16,7 +16,7 @@ namespace Inferpal.Services.Execution;
 /// To add a new tool: implement <see cref="Tools.ITool"/> in <c>Services/Tools/</c>
 /// and add <c>Register(new MyTool())</c> in the constructor.
 /// </remarks>
-internal class ToolRegistry : IToolRegistry
+internal class ToolRegistry : IToolRegistry, IDisposable
 {
     private readonly Dictionary<string, ITool> _tools = [];
     private readonly InferpalConfig         _config;
@@ -119,6 +119,15 @@ internal class ToolRegistry : IToolRegistry
         {
             throw;
         }
+        catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+        {
+            // The source-scanning regexes are bounded (RegexBudget): a pathological file — usually
+            // generated or minified, one line of megabytes — turns into this instead of a hung turn.
+            // Say so explicitly; "The Regex engine has timed out" tells the model nothing actionable.
+            _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: true);
+            return $"Tool '{name}' gave up: a file in scope is too pathological to parse with the "
+                 + "language heuristics (generated or minified?). Narrow the path and retry.";
+        }
         catch (Exception ex)
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: true);
@@ -144,4 +153,18 @@ internal class ToolRegistry : IToolRegistry
     }
 
     private void Register(ITool tool) => _tools[tool.Name] = tool;
+
+    /// <summary>
+    /// Disposes the tools that own OS resources (today: <c>run_command</c> and its detached
+    /// background jobs). Called when the editor session ends — a child process spawned with
+    /// <c>UseShellExecute=false</c> does not die with its parent.
+    /// </summary>
+    public void Dispose()
+    {
+        foreach (var tool in _tools.Values.OfType<IDisposable>())
+        {
+            try { tool.Dispose(); }
+            catch (Exception ex) { Diagnostics.Swallow($"ToolRegistry.Dispose({tool.GetType().Name})", ex); }
+        }
+    }
 }

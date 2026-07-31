@@ -95,7 +95,7 @@ internal sealed class GhostTextPackage : AsyncPackage
                     _debuggerTracker = null;
                 });
             }
-            catch { }
+            catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.PackageDispose", ex); }
         }
         base.Dispose(disposing);
     }

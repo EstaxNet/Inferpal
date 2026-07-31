@@ -176,6 +176,54 @@ internal sealed class DocsDatabase
 
             INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '" + SchemaVersion + @"');";
         cmd.ExecuteNonQuery();
+
+        EnsureSchemaVersion(conn);
+    }
+
+    /// <summary>
+    /// Rebuilds the cached documentation when the schema version moves. Like the code index, this
+    /// database is <b>derived data</b> — re-crawling is cheaper to maintain than a migration per
+    /// version, and stamping a version without ever comparing it (as this did) means the next
+    /// schema change silently runs new queries against the old tables.
+    /// </summary>
+    private static void EnsureSchemaVersion(SqliteConnection conn)
+    {
+        using var read = conn.CreateCommand();
+        read.CommandText = "SELECT value FROM meta WHERE key = 'schema_version'";
+        var existing = read.ExecuteScalar() as string;
+
+        if (existing is null || existing == SchemaVersion.ToString()) return;
+
+        Diagnostics.Record("Docs", $"Docs schema {existing} != {SchemaVersion} - rebuilding the index.");
+
+        using var drop = conn.CreateCommand();
+        drop.CommandText = @"
+            DROP TABLE IF EXISTS doc_chunks;
+            DROP TABLE IF EXISTS doc_sites;
+
+            CREATE TABLE doc_sites (
+                id          TEXT PRIMARY KEY,
+                title       TEXT NOT NULL,
+                start_url   TEXT NOT NULL,
+                page_count  INTEGER NOT NULL DEFAULT 0,
+                chunk_count INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE doc_chunks (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                doc_id       TEXT NOT NULL,
+                url          TEXT NOT NULL,
+                page_title   TEXT NOT NULL,
+                heading      TEXT,
+                content      TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                embedding    BLOB
+            );
+
+            CREATE INDEX idx_doc_chunks_doc ON doc_chunks (doc_id);
+
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '" + SchemaVersion + @"');";
+        drop.ExecuteNonQuery();
     }
 
     // ── Insert helper ──────────────────────────────────────────────────────────

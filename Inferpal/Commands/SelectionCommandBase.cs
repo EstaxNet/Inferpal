@@ -62,7 +62,7 @@ internal abstract class SelectionCommandBase : Command
                     rawCode = rawCode[..MaxCodeChars] + "\n…(truncated)";
             }
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("SelectionCommand.Run", ex); }
 
         if (string.IsNullOrEmpty(rawCode)) return;
 

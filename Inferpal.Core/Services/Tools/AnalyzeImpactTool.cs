@@ -94,7 +94,7 @@ internal class AnalyzeImpactTool : ITool
             return Strings.ImpactNoPublicApi(fileName);
 
         // ── 2. Scan for direct dependants (Layer 1) ───────────────────────────
-        var allFiles  = EnumerateSourceFiles(rootDir, ext).Take(MaxFilesScanned).ToList();
+        var (allFiles, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
         var layer1    = await ScanDirectDependantsAsync(api, filePath, allFiles, ct);
 
         // ── 3. Transitive dependants (Layer 2 … depth) ───────────────────────
@@ -203,6 +203,9 @@ internal class AnalyzeImpactTool : ITool
         sb.AppendLine();
         sb.AppendLine("---");
         sb.AppendLine(Strings.ImpactFooter(layer1.Count, transitive.Count, tests.Count, entryPoints.Count));
+        // Never let a capped scan read as an exhaustive one: "0 dependants" out of a sample is not
+        // "nothing depends on this", and the agent cannot tell the difference on its own.
+        if (coverage.IsPartial) sb.AppendLine(coverage.Warning());
         sb.AppendLine($"**Risk: {riskLevel}**");
         foreach (var bullet in riskBullets)
             sb.AppendLine($"  ↳ {bullet}");
@@ -394,19 +397,19 @@ internal class AnalyzeImpactTool : ITool
         // Block-scoped namespace:            namespace X.Y.Z {
         private static readonly Regex _ns = new(
             @"(?m)^\s*namespace\s+([\w\.]+)\s*[;{]",
-            RegexOptions.Compiled | RegexOptions.Multiline);
+            RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
         // Public type declarations
         private static readonly Regex _typeDecl = new(
             @"(?m)^\s*(?:(?:public|internal)\s+)" +
             @"(?:(abstract|sealed|static|readonly|partial)\s+)*" +
             @"(class|interface|enum|struct|record)\s+([\w]+)",
-            RegexOptions.Compiled | RegexOptions.Multiline);
+            RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
         // Checks reference relationships
-        private static readonly Regex _inherits     = new(@":\s*[\w,\s<>]*\b([\w]+)\b", RegexOptions.Compiled);
-        private static readonly Regex _instantiates = new(@"\bnew\s+([\w]+)\s*[<(]",    RegexOptions.Compiled);
-        private static readonly Regex _injectsCtx   = new(@"\((.*?)\)",                   RegexOptions.Compiled);
+        private static readonly Regex _inherits     = new(@":\s*[\w,\s<>]*\b([\w]+)\b", RegexOptions.Compiled, RegexBudget.Default);
+        private static readonly Regex _instantiates = new(@"\bnew\s+([\w]+)\s*[<(]",    RegexOptions.Compiled, RegexBudget.Default);
+        private static readonly Regex _injectsCtx   = new(@"\((.*?)\)",                   RegexOptions.Compiled, RegexBudget.Default);
 
         public static PublicApi Extract(string source, string filePath)
         {
@@ -488,9 +491,9 @@ internal class AnalyzeImpactTool : ITool
 
     private static class ScriptApiExtractor
     {
-        private static readonly Regex _jsExport   = new(@"export\s+(?:default\s+)?(?:class|function|const|let|var|async\s+function)\s+([\w]+)", RegexOptions.Compiled);
-        private static readonly Regex _pyExport   = new(@"(?m)^(?:def|class)\s+([A-Z][\w]*|[a-z_][\w]*)\s*[:(]", RegexOptions.Compiled | RegexOptions.Multiline);
-        private static readonly Regex _goExport   = new(@"func\s+(?:\([^)]+\)\s+)?([\w]+)\s*\(",                  RegexOptions.Compiled);
+        private static readonly Regex _jsExport   = new(@"export\s+(?:default\s+)?(?:class|function|const|let|var|async\s+function)\s+([\w]+)", RegexOptions.Compiled, RegexBudget.Default);
+        private static readonly Regex _pyExport   = new(@"(?m)^(?:def|class)\s+([A-Z][\w]*|[a-z_][\w]*)\s*[:(]", RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
+        private static readonly Regex _goExport   = new(@"func\s+(?:\([^)]+\)\s+)?([\w]+)\s*\(",                  RegexOptions.Compiled, RegexBudget.Default);
 
         public static PublicApi Extract(string source, string filePath, string ext)
         {
@@ -606,7 +609,7 @@ internal class AnalyzeImpactTool : ITool
         // Extract a human-readable entry-point name from VS commands / controllers
         private static readonly Regex _cmdClass = new(
             @"(?:class|record)\s+([\w]+Command|[\w]+Controller|[\w]+Handler|[\w]+Endpoint)\b",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, RegexBudget.Default);
 
         public static string? ExtractEntryPointName(string filePath, string source)
         {

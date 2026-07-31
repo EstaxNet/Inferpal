@@ -26,8 +26,39 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
   private host: HostClient | undefined;
   private approvalCard: ((message: string) => Promise<number | undefined>) | undefined;
 
-  constructor() {
+  constructor(private readonly secrets?: vscode.SecretStorage) {
     this.lastActive = vscode.window.activeTextEditor;
+  }
+
+  /**
+   * Encrypts an MCP OAuth payload through the editor's secret store — the OS keychain
+   * (libsecret / Keychain / DPAPI). Only non-Windows hosts ask: Windows hosts use DPAPI directly
+   * so the token file stays shared with the Visual Studio extension.
+   *
+   * The value handed back is a receipt, not the secret: the payload itself lives in SecretStorage
+   * under `key`, and the host only persists this marker next to its config.
+   */
+  async protectSecret(key: string, value: string): Promise<string> {
+    if (!this.secrets) {
+      throw new Error('No secret storage available in this editor session.');
+    }
+    await this.secrets.store(key, value);
+    return `vscode-secret:${key}`;
+  }
+
+  /** Reverse of {@link protectSecret}; throws when the receipt is unknown (secret store cleared). */
+  async unprotectSecret(key: string, receipt: string): Promise<string> {
+    if (!this.secrets) {
+      throw new Error('No secret storage available in this editor session.');
+    }
+    if (receipt !== `vscode-secret:${key}`) {
+      throw new Error('Unknown secret receipt — the stored token cannot be read back.');
+    }
+    const value = await this.secrets.get(key);
+    if (value === undefined) {
+      throw new Error('The stored MCP token is gone from the secret store — re-authorize.');
+    }
+    return value;
   }
 
   /** Preferred approval UI (chat webview card); modal dialog stays as the fallback. */

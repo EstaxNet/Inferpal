@@ -82,7 +82,12 @@ deny  * \.env$                                       # never touch secrets, any 
 - `allow` auto-approves (no prompt); `deny` blocks the call outright (recorded in
   `/diagnostics`); no match falls back to the prompt.
 - Sources, evaluated in order: the per-machine **Permission rules** setting, then the
-  committable workspace overlay `.inferpal/permissions.json` (`{ "rules": ["allow …", …] }`).
+  committable workspace overlay `.inferpal/permissions.json` (`{ "rules": ["deny …", …] }`).
+- **The workspace overlay can only restrict, never grant.** It ships inside the repository, so
+  `allow` rules found there are ignored (and recorded in `/diagnostics`): a cloned project must
+  never be able to switch off your approval prompt. Only the per-machine setting can
+  auto-approve. `deny` rules from the overlay are honoured — a project tightening its own
+  restrictions is always safe.
 - A built-in denylist of catastrophic shell commands (recursive root deletes, disk
   formatting, fork bombs, …) always applies — even with security alerts disabled. It is an
   **accident guard, not a security boundary**: it matches submitted text, so obfuscation

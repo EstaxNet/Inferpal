@@ -9,6 +9,7 @@ using Inferpal.Services;
 using Inferpal.Services.Docs;
 using Inferpal.Services.Lsp;
 using Inferpal.Services.Mcp;
+using Inferpal.Services.Mcp.OAuth;
 using Inferpal.Services.Persistence;
 using Inferpal.Services.Rag;
 using StreamJsonRpc;
@@ -70,7 +71,15 @@ internal sealed partial class HostServer : IDisposable
         var approval = new RpcApprovalService(config, () => p.RootDir, rpc);
         var lsp      = new LspSemanticProvider();
         var index    = new ProjectIndexService(client, config, lsp);
-        var mcp      = new McpToolService(config, approval);
+        // Off Windows the default DPAPI protection is unavailable, so the token store fails loud
+        // by design and MCP OAuth is unusable; route it through the editor's own secret store
+        // (VS Code SecretStorage → OS keychain) instead. Windows keeps DPAPI: no round-trip, and
+        // the file stays shared with the Visual Studio extension.
+        var secrets  = OperatingSystem.IsWindows() ? null : new RpcSecretStore(rpc);
+        var tokens   = secrets is null
+            ? new McpTokenStore(McpTokenStore.DefaultPath)
+            : new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect);
+        var mcp      = new McpToolService(config, approval, clientFactory: null, tokenStore: tokens);
         var docs     = new DocsIndexService(client, config);
         var tools    = new ToolRegistry(editor, approval, config, index, client,
                                         new ProjectMapService(editor), mcp, docs, overlay);
@@ -227,7 +236,12 @@ internal sealed partial class HostServer : IDisposable
     }
 
     [JsonRpcMethod("chat/reset")]
-    public void ChatReset() => ResetHistory(Session());
+    public void ChatReset()
+    {
+        var s = Session();
+        AssertIdle("chat/reset");
+        ResetHistory(s);
+    }
 
     /// <summary>Full slash-command list for the adapter's autocomplete popup: built-ins (hints
     /// localized by the `initialize` locale handshake) then user templates — the same sources
@@ -405,6 +419,7 @@ internal sealed partial class HostServer : IDisposable
     public async Task<SessionLoadResult?> SessionLoadAsync(SessionRefParams p, CancellationToken ct)
     {
         var s = Session();
+        AssertIdle("session/load");
         var data = await s.Store.LoadAsync(p.Name, ct);
         if (data is null) return null;
 
@@ -429,6 +444,7 @@ internal sealed partial class HostServer : IDisposable
     public async Task<SessionBranchResult?> SessionBranchAsync(SessionBranchParams p, CancellationToken ct)
     {
         var s        = Session();
+        AssertIdle("session/branch");
         var messages = p.Messages.Select(ToSaved).ToList();
         var sessions = await s.Store.ListWithPreviewAsync(ct);
 
@@ -527,6 +543,21 @@ internal sealed partial class HostServer : IDisposable
     {
         lock (_gate) _chatCts = null;
         cts.Dispose();
+    }
+
+    /// <summary>
+    /// Refuses a conversation-history mutation while a turn is in flight. `session/load`,
+    /// `session/branch` and `chat/reset` all replace <see cref="HostSession.History"/> wholesale;
+    /// doing that under a running agent loop is a data race on a <c>List&lt;T&gt;</c> the loop is
+    /// appending to. Nothing at the protocol level orders these calls — the adapter happens to,
+    /// today — so the invariant is enforced here, where it belongs.
+    /// </summary>
+    private void AssertIdle(string operation)
+    {
+        lock (_gate)
+            if (_chatCts is not null)
+                throw new InvalidOperationException(
+                    $"'{operation}' cannot run while a chat turn is in flight — cancel it first.");
     }
 
     /// <summary>Per-turn RAG auto-context (mirror of the VS VM's <c>BuildAutoContextAsync</c>):

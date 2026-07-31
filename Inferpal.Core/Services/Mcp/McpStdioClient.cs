@@ -265,6 +265,18 @@ internal sealed class McpStdioClient : IMcpClient
         _pending.Clear();
     }
 
+    /// <summary>Synchronous kill for shutdown paths that cannot await (see <see cref="IMcpClient.KillNow"/>).</summary>
+    public void KillNow()
+    {
+        _disposed = true;
+        try
+        {
+            if (_process is { HasExited: false })
+                _process.Kill(entireProcessTree: true);
+        }
+        catch (Exception ex) { Diagnostics.Swallow($"McpStdioClient.KillNow({ServerName})", ex); }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;

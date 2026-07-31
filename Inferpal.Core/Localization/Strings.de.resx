@@ -917,4 +917,14 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="BranchUnknown" xml:space="preserve"><value>Keine gespeicherte Sitzung namens `{0}` — siehe `/history`.</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 Zweig `{0}` bei Zug {1} erstellt. Die Unterhaltung wird hier fortgesetzt; `{2}` behält das Original.</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Jetzt auf `{0}`.</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>Kein MCP-Server konfiguriert</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>Keine angehefteten Dateien</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>Befehle &amp; Werkzeuge</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>Kein benutzerdefinierter Befehl</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>Kein benutzerdefiniertes Werkzeug</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ Liste</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ Text</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ Teilanalyse: nur {0} von {1} Quelldateien wurden durchsucht (Obergrenze). Die Ergebnisse können unvollständig sein.</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>Die MCP-OAuth-Autorisierung ist derzeit nur unter Windows verfügbar: Das Refresh-Token kann nur verschlüsselt (DPAPI) gespeichert werden, und eine Klartextspeicherung kommt nicht infrage. Verwenden Sie stattdessen einen Server mit statischem Header-Token.</value></data>
 </root>

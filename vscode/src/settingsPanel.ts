@@ -4,7 +4,9 @@
 // FULL JSON through config/update (absent fields would reset — the webview mutates the
 // parsed original object, never rebuilds it).
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import { HostClient } from './hostClient';
+import { SettingsSchema } from './protocol';
 
 interface SettingsInbound {
   type: 'ready' | 'save' | 'testConnection' | 'refreshModels';
@@ -77,7 +79,15 @@ export class SettingsPanel {
           } catch (err) {
             this.log(`[settings] settings/strings failed: ${String(err)}`);
           }
-          this.post({ type: 'init', configJson: this.lastConfigJson, models, strings });
+          // The form itself is declared in the Core and served over RPC: adding a setting no
+          // longer means editing a TypeScript table too.
+          let schema: SettingsSchema | null = null;
+          try {
+            schema = await host.settingsSchema();
+          } catch (err) {
+            this.log(`[settings] settings/schema failed: ${String(err)}`);
+          }
+          this.post({ type: 'init', configJson: this.lastConfigJson, models, strings, schema });
         } catch (err) {
           this.post({ type: 'error', message: String(err) });
         }
@@ -182,7 +192,7 @@ export class SettingsPanel {
   private renderHtml(webview: vscode.Webview): string {
     const script = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'settings.js'));
     const style = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'settings.css'));
-    const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+    const nonce = crypto.randomBytes(16).toString('base64');
     const l10n = JSON.stringify(SettingsPanel.strings()).replace(/</g, '\\u003c');
     return `<!DOCTYPE html>
 <html lang="en">

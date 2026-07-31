@@ -43,7 +43,7 @@ internal static class ArenaStore
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            await File.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(state, _opts));
+            await AtomicFile.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(state, _opts));
         }
         catch (Exception ex) { Diagnostics.Swallow("ArenaStore.Save", ex); }
     }

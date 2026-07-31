@@ -34,6 +34,12 @@ internal sealed class ProjectIndexService : IDisposable
     private FileSystemWatcher?          _watcher;
     private System.Threading.Timer?     _debounceTimer;
 
+    // The watcher raises changes on several thread-pool threads at once, and Dispose can land in
+    // the middle: without this lock the debounce timer is a read-modify-write race (a leaked timer
+    // fires an extra re-index, or one is recreated after shutdown and touches a disposed CTS).
+    private readonly object _timerLock = new();
+    private volatile bool   _disposed;
+
     // ── Shadow search cache ────────────────────────────────────────────────────
     // Pre-computed while the user is still typing; consumed by SemanticSearchTool
     // to skip the embedding round-trip when the agent query matches the typed prompt.
@@ -423,10 +429,14 @@ internal sealed class ProjectIndexService : IDisposable
         lock (_pendingRebuild) _pendingRebuild.Add(path);
 
         // Debounce — wait 5 s after the last change before re-indexing
-        _debounceTimer?.Dispose();
-        _debounceTimer = new System.Threading.Timer(
-            OnDebounceElapsed, null,
-            dueTime: 5_000, period: System.Threading.Timeout.Infinite);
+        lock (_timerLock)
+        {
+            if (_disposed) return;
+            _debounceTimer?.Dispose();
+            _debounceTimer = new System.Threading.Timer(
+                OnDebounceElapsed, null,
+                dueTime: 5_000, period: System.Threading.Timeout.Infinite);
+        }
     }
 
     private void OnDebounceElapsed(object? _)
@@ -437,13 +447,26 @@ internal sealed class ProjectIndexService : IDisposable
             pending = [.. _pendingRebuild];
             _pendingRebuild.Clear();
         }
-        if (pending.Length > 0 && !string.IsNullOrEmpty(RootDir))
-            _ = Task.Run(() => ReIndexFilesAsync(pending, RootDir));
+        if (pending.Length == 0 || string.IsNullOrEmpty(RootDir) || _disposed) return;
+
+        // Capture the token here, while the CTS is guaranteed alive: reading _cts.Token inside the
+        // detached task would throw ObjectDisposedException if shutdown won the race, and that
+        // exception would vanish into an unobserved task.
+        CancellationToken ct;
+        try { ct = _cts?.Token ?? CancellationToken.None; }
+        catch (ObjectDisposedException) { return; }
+
+        var root = RootDir;
+        _ = Task.Run(async () =>
+        {
+            try { await ReIndexFilesAsync(pending, root, ct); }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.ReIndexFiles", ex); }
+        });
     }
 
-    private async Task ReIndexFilesAsync(string[] changedFiles, string rootDir)
+    private async Task ReIndexFilesAsync(string[] changedFiles, string rootDir, CancellationToken ct)
     {
-        var ct       = _cts?.Token ?? CancellationToken.None;
         var db       = new RagDatabase(rootDir);
         var embModel = EmbeddingModel;
 
@@ -651,11 +674,21 @@ internal sealed class ProjectIndexService : IDisposable
 
     public void Dispose()
     {
-        _cts?.Cancel();
+        // Flag first: a watcher callback already in flight must not resurrect the timer behind us.
+        _disposed = true;
+
+        lock (_timerLock)
+        {
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+        }
+
+        try { _cts?.Cancel(); } catch (ObjectDisposedException) { }
         _cts?.Dispose();
         _watcher?.Dispose();
-        _debounceTimer?.Dispose();
-        _chunkLock.Dispose();
-        _shadowLock.Dispose();
+
+        // Deliberately NOT disposing _chunkLock/_shadowLock: a background indexing pass may still
+        // be awaiting them, and disposing a SemaphoreSlim under a waiter turns a clean cancellation
+        // into an ObjectDisposedException in a detached task. They die with the process.
     }
 }

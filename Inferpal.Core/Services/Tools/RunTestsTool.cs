@@ -139,7 +139,7 @@ internal class RunTestsTool : ITool
         // Format: "Passed! - Failed:     0, Passed:     5, Skipped:     0, Total:     5"
         var summaryRx = new Regex(
             @"(?:Passed|Failed)!\s*-\s*Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)",
-            RegexOptions.Multiline | RegexOptions.Compiled);
+            RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
 
         int totalFailed = 0, totalPassed = 0, totalSkipped = 0, totalTotal = 0;
         foreach (Match m in summaryRx.Matches(raw))
@@ -247,7 +247,7 @@ internal class RunTestsTool : ITool
         var sb = new StringBuilder();
 
         // Summary: "= 1 failed, 5 passed in 1.23s ="
-        var summaryMatch = Regex.Match(raw, @"=+\s*(.+?in\s+[\d.]+\s*s)\s*=+", RegexOptions.Multiline);
+        var summaryMatch = Regex.Match(raw, @"=+\s*(.+?in\s+[\d.]+\s*s)\s*=+", RegexOptions.Multiline, RegexBudget.Default);
         if (summaryMatch.Success)
             sb.AppendLine(summaryMatch.Groups[1].Value.Trim());
         else if (exitCode == 0)
@@ -281,7 +281,7 @@ internal class RunTestsTool : ITool
 
         var summaryRx = new Regex(
             @"test result:\s*(?:ok|FAILED)\.\s*(\d+) passed;\s*(\d+) failed;\s*(\d+) ignored",
-            RegexOptions.Multiline | RegexOptions.Compiled);
+            RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
 
         int passed = 0, failed = 0, ignored = 0;
         bool any = false;

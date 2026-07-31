@@ -917,4 +917,14 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="BranchUnknown" xml:space="preserve"><value>No hay ninguna sesión guardada llamada `{0}` — consulta `/history`.</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 Rama `{0}` creada en el turno {1}. La conversación continúa aquí; `{2}` conserva el original.</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Ahora en `{0}`.</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>Ningún servidor MCP configurado</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>Ningún archivo anclado</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>Comandos y herramientas</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>Ningún comando personalizado</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>Ninguna herramienta personalizada</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ Lista</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ Texto</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ Análisis parcial: solo se han examinado {0} de {1} archivos fuente (límite). Los resultados pueden estar incompletos.</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>La autorización OAuth de MCP solo está disponible en Windows por ahora: el token de actualización solo puede guardarse cifrado (DPAPI) y guardarlo en texto plano no es una opción. Usa un servidor con token de cabecera estático.</value></data>
 </root>

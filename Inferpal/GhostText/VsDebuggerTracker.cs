@@ -59,7 +59,7 @@ internal sealed class VsDebuggerTracker : IVsDebuggerEvents, IDisposable
 
         var reason = "break";
         try { reason = dbg.LastBreakReason.ToString().Replace("dbgEventReason", string.Empty); }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.BreakReason", ex); }
 
         string? exception = null;
         try
@@ -69,7 +69,7 @@ internal sealed class VsDebuggerTracker : IVsDebuggerEvents, IDisposable
             if (ex is not null && ex.IsValidValue)
                 exception = $"`{ex.Type}` — {Cap(ex.Value)}";
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.CurrentFrame", ex); }
 
         var frames = new List<DebuggerFrame>();
         try
@@ -89,11 +89,11 @@ internal sealed class VsDebuggerTracker : IVsDebuggerEvents, IDisposable
                     line = (int)f2.LineNumber;
                     if (string.IsNullOrEmpty(file)) { file = null; line = null; }
                 }
-                catch { }
+                catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.CallStack", ex); }
                 frames.Add(new DebuggerFrame(frame.FunctionName, file, line));
             }
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.StackFrames", ex); }
 
         var locals = new List<DebuggerLocal>();
         try
@@ -105,11 +105,11 @@ internal sealed class VsDebuggerTracker : IVsDebuggerEvents, IDisposable
                 {
                     if (locals.Count >= MaxLocals) break;
                     try { locals.Add(new DebuggerLocal(local.Name, local.Type, Cap(local.Value))); }
-                    catch { }
+                    catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.LocalValue", ex); }
                 }
             }
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.Locals", ex); }
 
         DebuggerStateSignal.Write(new DebuggerSnapshot(
             reason, exception, frames, locals,
@@ -132,7 +132,7 @@ internal sealed class VsDebuggerTracker : IVsDebuggerEvents, IDisposable
             _debugger.UnadviseDebuggerEvents(_cookie);
 #pragma warning restore VSTHRD010
         }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.Unsubscribe", ex); }
         _cookie = 0;
         DebuggerStateSignal.Clear();
     }

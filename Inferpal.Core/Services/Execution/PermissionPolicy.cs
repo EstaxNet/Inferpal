@@ -41,10 +41,24 @@ internal sealed class PermissionRule
         Pattern  = pattern;
     }
 
-    /// <summary>True when this rule applies to <paramref name="toolName"/> and matches <paramref name="subject"/>.</summary>
-    public bool Matches(string toolName, string subject) =>
-        (Tool == "*" || string.Equals(Tool, toolName, StringComparison.OrdinalIgnoreCase))
-        && Pattern.IsMatch(subject);
+    /// <summary>
+    /// True when this rule applies to <paramref name="toolName"/> and matches <paramref name="subject"/>.
+    /// A pattern that blows past <see cref="PermissionPolicy.MatchTimeout"/> (catastrophic
+    /// backtracking) counts as "no match": a rule the engine cannot evaluate must never decide,
+    /// and it must never freeze the approval path either.
+    /// </summary>
+    public bool Matches(string toolName, string subject)
+    {
+        if (Tool != "*" && !string.Equals(Tool, toolName, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        try { return Pattern.IsMatch(subject); }
+        catch (RegexMatchTimeoutException)
+        {
+            Diagnostics.Record("Permission", $"Rule regex timed out, ignored: {Pattern}");
+            return false;
+        }
+    }
 }
 
 /// <summary>
@@ -75,6 +89,14 @@ internal sealed class PermissionRule
 /// </remarks>
 internal sealed class PermissionPolicy
 {
+    /// <summary>
+    /// Per-match budget for a user/workspace regex. Rules are matched on every tool call, and
+    /// their patterns are not necessarily written by the person running them (the workspace
+    /// overlay ships with the repository) — an unbounded match is a denial-of-service on the
+    /// approval path.
+    /// </summary>
+    public static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(100);
+
     private readonly IReadOnlyList<PermissionRule> _rules;
 
     public PermissionPolicy(IReadOnlyList<PermissionRule> rules) => _rules = rules ?? [];
@@ -190,7 +212,9 @@ internal sealed class PermissionPolicy
 
         try
         {
-            var regex = new Regex(pattern, RegexOptions.IgnoreCase);
+            // Bounded matching: rules can come from a cloned repository's permissions.json, so a
+            // catastrophic-backtracking pattern must not be able to freeze the approval path.
+            var regex = new Regex(pattern, RegexOptions.IgnoreCase, MatchTimeout);
             return new PermissionRule(decision.Value, tool, regex);
         }
         catch (ArgumentException)
@@ -214,9 +238,17 @@ internal sealed class PermissionPolicy
 
     /// <summary>
     /// Parses the workspace <c>.inferpal/permissions.json</c> overlay — a JSON object with a
-    /// <c>"rules"</c> array of DSL strings: <c>{ "rules": ["allow run_command ^dotnet", "deny * \\.env$"] }</c>.
+    /// <c>"rules"</c> array of DSL strings: <c>{ "rules": ["deny * \\.env$"] }</c>.
     /// Returns an empty list on missing/invalid JSON (never throws).
     /// </summary>
+    /// <remarks>
+    /// <b>The overlay can only restrict, never grant.</b> This file ships with the repository, so
+    /// it is attacker-controlled the moment you clone something: an <c>allow</c> rule here would
+    /// let a hostile project switch off the approval prompt for its own commands. Allow rules are
+    /// therefore dropped (and recorded, visible in <c>/diagnostics</c>) — auto-approval is a
+    /// decision only the machine's own configuration can make. Deny rules are kept: a project
+    /// tightening its own restrictions is always safe.
+    /// </remarks>
     public static IReadOnlyList<PermissionRule> ParseJsonOverlay(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return [];
@@ -230,7 +262,14 @@ internal sealed class PermissionPolicy
             {
                 if (item.ValueKind != JsonValueKind.String) continue;
                 var rule = ParseLine(item.GetString());
-                if (rule is not null) rules.Add(rule);
+                if (rule is null) continue;
+                if (rule.Decision == PermissionDecision.Allow)
+                {
+                    Diagnostics.Record("Permission",
+                        $"Ignored an 'allow' rule from the workspace overlay (deny-only): {item.GetString()}");
+                    continue;
+                }
+                rules.Add(rule);
             }
             return rules;
         }

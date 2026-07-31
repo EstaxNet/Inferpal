@@ -141,6 +141,12 @@ internal static class ReciprocalRankFusion
             for (int rank = 0; rank < ranking.Count; rank++)
                 score[ranking[rank]] = score.GetValueOrDefault(ranking[rank]) + 1.0 / (k + rank + 1);
 
-        return score.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
+        // Ties are frequent in RRF (same rank in both lists scores identically) and dictionary
+        // enumeration order is unspecified — without a tie-break the top-K wobbles between
+        // identical queries, which churns the injected RAG context and the KV-cache prefix.
+        return score.OrderByDescending(kv => kv.Value)
+                    .ThenBy(kv => kv.Key)
+                    .Select(kv => kv.Key)
+                    .ToList();
     }
 }

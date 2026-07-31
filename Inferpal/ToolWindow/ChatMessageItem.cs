@@ -161,7 +161,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         var thread = new Thread(() =>
         {
             try { System.Windows.Clipboard.SetText(string.IsNullOrEmpty(text) ? " " : text); }
-            catch { }
+            catch (Exception ex) { Diagnostics.Swallow("Clipboard.CopyMessage", ex); }
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();

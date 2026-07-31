@@ -917,4 +917,14 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="BranchUnknown" xml:space="preserve"><value>`{0}` という名前の保存済みセッションはありません — `/history` を参照してください。</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 ターン {1} からブランチ `{0}` を作成しました。会話はここから続きます。元は `{2}` に保存されています。</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 `{0}` に切り替えました。</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>MCP サーバーが未設定です</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>ピン留めされたファイルはありません</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>コマンドとツール</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>カスタムコマンドはありません</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>カスタムツールはありません</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ リスト</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ テキスト</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ 部分的な解析です: {1} 件中 {0} 件のソースファイルのみを走査しました（上限）。結果は不完全な可能性があります。</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP の OAuth 認可は現在 Windows のみ対応です。リフレッシュトークンは暗号化 (DPAPI) してのみ保存でき、平文保存は選択肢にありません。静的ヘッダートークンのサーバーをご利用ください。</value></data>
 </root>

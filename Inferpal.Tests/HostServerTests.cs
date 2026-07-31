@@ -188,6 +188,49 @@ public class HostServerTests
         Assert.Equal("par", result.Text);
     }
 
+    [Theory]
+    [InlineData("chat/reset")]
+    [InlineData("session/load")]
+    [InlineData("session/branch")]
+    public async Task HistoryMutations_AreRefusedWhileATurnIsInFlight(string method)
+    {
+        // These three replace HostSession.History wholesale; doing that under a running agent
+        // loop is a data race on the list the loop is appending to. Nothing in the protocol
+        // orders the calls, so the host refuses rather than corrupts.
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        h.Fake.OnChat = async (onToken, ct) =>
+        {
+            onToken?.Invoke("par");
+            await Task.Delay(Timeout.Infinite, ct);
+            return new ChatTurnResult(string.Empty, null, 0, 0);
+        };
+
+        var sendTask = h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false });
+        await h.Target.FirstToken.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        // Each method has its own argument shape; chat/reset takes none.
+        Task Invoke() => method switch
+        {
+            "chat/reset"   => h.Client.InvokeAsync("chat/reset"),
+            "session/load" => h.Client.InvokeWithParameterObjectAsync<object?>("session/load", new { name = "last_session" }),
+            _              => h.Client.InvokeWithParameterObjectAsync<object?>(
+                                  "session/branch", new { turn = 1, messages = Array.Empty<object>() }),
+        };
+
+        var refused = await Assert.ThrowsAsync<RemoteInvocationException>(
+            () => Invoke().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
+        Assert.Contains("chat turn", refused.Message);
+
+        await h.Client.InvokeAsync("chat/cancel");
+        await sendTask.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        // …and the same call goes through once the turn is over.
+        await Invoke().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+    }
+
     [Fact]
     public async Task ChatSend_ProviderFailure_ReturnsStructuredErrorNotRpcFault()
     {

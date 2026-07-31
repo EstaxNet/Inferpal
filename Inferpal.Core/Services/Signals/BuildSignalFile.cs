@@ -113,6 +113,6 @@ internal static class BuildSignalFile
     internal static void EnsureDir()
     {
         try { Directory.CreateDirectory(TempDir); }
-        catch { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("BuildSignal.EnsureDir", ex); }
     }
 }

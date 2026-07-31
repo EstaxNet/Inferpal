@@ -917,4 +917,14 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="BranchUnknown" xml:space="preserve"><value>Brak zapisanej sesji o nazwie `{0}` — zobacz `/history`.</value></data>
   <data name="BranchCreated" xml:space="preserve"><value>🌿 Gałąź `{0}` utworzona w turze {1}. Rozmowa toczy się tutaj; `{2}` zachowuje oryginał.</value></data>
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Teraz w `{0}`.</value></data>
+  <data name="McpEmptyTitle" xml:space="preserve"><value>Nie skonfigurowano serwera MCP</value></data>
+  <data name="PinnedEmptyTitle" xml:space="preserve"><value>Brak przypiętych plików</value></data>
+  <data name="SectionCommandsTools" xml:space="preserve"><value>Polecenia i narzędzia</value></data>
+  <data name="SlashEmptyTitle" xml:space="preserve"><value>Brak własnych poleceń</value></data>
+  <data name="ToolEmptyTitle" xml:space="preserve"><value>Brak własnych narzędzi</value></data>
+  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
+  <data name="ViewList" xml:space="preserve"><value>≡ Lista</value></data>
+  <data name="ViewText" xml:space="preserve"><value>✎ Tekst</value></data>
+  <data name="ScanPartial" xml:space="preserve"><value>⚠ Analiza częściowa: przeskanowano tylko {0} z {1} plików źródłowych (limit). Wyniki mogą być niepełne.</value></data>
+  <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>Autoryzacja OAuth dla MCP jest na razie dostępna tylko w systemie Windows: token odświeżania można przechowywać wyłącznie zaszyfrowany (DPAPI), a przechowywanie go jawnie nie wchodzi w grę. Użyj serwera ze statycznym tokenem w nagłówku.</value></data>
 </root>

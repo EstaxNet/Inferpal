@@ -85,8 +85,17 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             }
             else if (m.Role == "tool")
             {
-                var id = pendingIds.Count > 0 ? pendingIds.Dequeue() : $"call_{counter++}";
-                mapped.Add(new OpenAiRequestMessage("tool", m.Content ?? string.Empty, ToolCallId: id));
+                // No pending call ⇒ this result is orphaned (its assistant parent was removed by a
+                // history rewrite). Inventing an id here produced a tool_call_id no assistant message
+                // declares, which OpenAI-compatible servers reject with a 400 — killing the run.
+                // Dropping the message is lossy but keeps the request valid; the summary/elision that
+                // removed the parent has already accounted for the content.
+                if (pendingIds.Count == 0)
+                {
+                    Diagnostics.Record("OpenAiCompatible", "Dropped an orphaned tool result (no matching tool_call).");
+                    continue;
+                }
+                mapped.Add(new OpenAiRequestMessage("tool", m.Content ?? string.Empty, ToolCallId: pendingIds.Dequeue()));
             }
             else
             {

@@ -166,7 +166,7 @@ internal class FetchUrlTool : ITool
     /// private/loopback. Closes the DNS-rebinding gap that <see cref="IsPrivateOrLoopback"/>
     /// (IP-literal only) leaves open. IP literals are already covered, so they are skipped here.
     /// </summary>
-    private static async Task<bool> ResolvesToPrivateAsync(string url, CancellationToken ct)
+    internal static async Task<bool> ResolvesToPrivateAsync(string url, CancellationToken ct)
     {
         try
         {
