@@ -94,6 +94,18 @@ exists.
   appears when the report is ready (`/task <id>` reads it, `/task` lists, `/task stop <id>`
   cancels). Background runs are **read-only** — they explore and report, never write, execute or
   reach the network, so nothing can interrupt you with an approval prompt.
+- **`/task propose <objective>`** — a background run that can *describe* writes without making
+  them: each write is recorded at the exact point it would have asked for approval, and never
+  granted. `/task apply <id> <n>` replays one proposal through the ordinary approval prompt,
+  real diff included; a proposal whose file changed since is refused instead of applied.
+  Consent still happens at apply time, one write at a time — never in advance.
+- **`/debug [hypothesis]`** — settle a question about runtime behaviour by observing it: the
+  agent starts a **real debug session** (after asking you first), sets breakpoints, steps, and
+  reads locals and the call stack through two read-only tools (`debug_control`,
+  `debug_inspect`). Before launching, the target is built through the automation, so a solution
+  that does not compile is refused instead of freezing the IDE on a modal. Visual Studio drives
+  its own debugger in-process; VS Code goes through a DAP bridge — same command, either editor.
+  `/debug` alone reports the current break state; `/debug stop` ends the session.
 
 ## Inline completions
 
