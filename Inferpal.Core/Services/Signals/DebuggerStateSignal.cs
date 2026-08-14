@@ -41,8 +41,8 @@ internal sealed record DebuggerSnapshot(
 /// </remarks>
 internal static class DebuggerStateSignal
 {
-    /// <summary>Full path of the signal file.</summary>
-    internal static string FilePath => SignalFile.PathFor("debugger_state.json");
+    /// <summary>Full path of the signal file, scoped to the declared VS instance (§22).</summary>
+    internal static string FilePath => SignalFile.ScopedPathFor("debugger_state");
 
     // ── In-process side (VsDebuggerTracker) ────────────────────────────────────
 

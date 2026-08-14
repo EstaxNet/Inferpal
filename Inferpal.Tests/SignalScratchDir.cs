@@ -34,10 +34,10 @@ public class SignalCollection
 ///         — alive, therefore claimable — and one of them is <c>op: "start"</c>. A live
 ///         <c>VsDebugDriver</c> polls, claims it, and <b>launches a debug session</b> in that
 ///         Visual Studio.</item>
-///   <item><c>GpuSchedulerTests</c> acquires a chat lease, and releasing it calls
-///         <c>ChatBusySignal.Clear()</c>, which deletes the file whoever wrote it — clearing the
-///         busy marker of a chat in flight elsewhere, so its ghost-text FIM resumes against a busy
-///         GPU.</item>
+///   <item><c>GpuSchedulerTests</c> acquires a chat lease, and releasing it called
+///         <c>ChatBusySignal.Clear()</c> — which, before §22 G4 made the markers per-writer,
+///         deleted the single shared file whoever wrote it: the busy marker of a chat in flight
+///         elsewhere vanished and its ghost-text FIM resumed against a busy GPU.</item>
 ///   <item><c>DebuggerStateSignalTests</c> clears the break snapshot, and
 ///         <c>InlineDiffPreviewSignalTests</c> fires preview requests at the in-process renderer.</item>
 /// </list>
@@ -46,8 +46,9 @@ public class SignalCollection
 /// the real folder exactly as before.
 /// </para>
 /// <para>
-/// ⚠ <c>BuildSignalFile</c> deliberately has no seam — no test writes to it. Add one when that
-/// changes rather than pre-emptively.
+/// <c>BuildSignalFile</c> is covered too since the seam moved into <c>SignalFile.Dir</c> — every
+/// channel resolves its path through it, so redirecting the directory redirects all of them
+/// (the §22 G1 tests write build signals under the scratch directory).
 /// </para>
 /// </remarks>
 internal sealed class SignalScratchDir : IDisposable

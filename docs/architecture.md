@@ -101,9 +101,12 @@ the request times out. A central scheduler enforces priority **chat > FIM > embe
   chat, commit/title generation, synthesis, plan, and code actions.
 - Background embedding loops (`ProjectIndexService`, `DocsIndexService`) `await
   WaitForChatIdleAsync` — they pause without losing progress and resume immediately.
-- Inline completions run in `devenv.exe`, so they coordinate cross-process via a
-  `ChatBusySignal` file (`%TEMP%/Inferpal/chat_busy.json`, pid + timestamp, anti-stale): FIM
-  is skipped while the chat is busy.
+- Inline completions run in `devenv.exe`, so they coordinate cross-process via `ChatBusySignal`
+  markers (`%TEMP%/Inferpal/chat_busy.<pid>.json`, **one file per writer** — pid + timestamp,
+  anti-stale, periodically re-stamped during long runs): FIM is skipped while *any* live marker
+  is fresh. Each writer only ever deletes its own marker, so the first chat to finish cannot
+  silence another's. A legacy unscoped `chat_busy.json` from an older version is still honoured
+  read-only, never written or deleted.
 
 > [!WARNING]
 > **Query** embeddings (`search_codebase`, `search_docs`) are never gated — the agent holding
@@ -126,11 +129,20 @@ the request times out. A central scheduler enforces priority **chat > FIM > embe
 The in-process package publishes state the out-of-process agent reads via small file-based
 IPC channels:
 
-| Signal | Direction | Purpose |
-|---|---|---|
-| `ChatBusySignal` | host → devenv | FIM yields to an active chat |
-| `DebuggerStateSignal` | devenv → host | `VsDebuggerTracker` publishes the break state for `get_debugger_state` / `@debugger` |
-| `BuildSignalFile` | devenv → host | `VsBuildMonitor` surfaces VS build failures as the "Build Failed" banner |
+| Signal | Direction | Scope | Purpose |
+|---|---|---|---|
+| `ChatBusySignal` | host → devenv | machine-wide, one marker file per writer | FIM yields to an active chat anywhere on the box (one GPU) |
+| `DebuggerStateSignal` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | `VsDebuggerTracker` publishes the break state for `get_debugger_state` / `@debugger` |
+| `DebugCommandSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries `/debug` operations (breakpoints, step, continue…) to the in-process EnvDTE driver |
+| `BuildSignalFile` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | `VsBuildMonitor` surfaces VS build failures as the "Build Failed" banner |
+| `ActiveSolutionSignal` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | authoritative open-solution root for `/solution`, `/map`, RAG |
+| `InlineDiffPreviewSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries inline-diff preview requests to the in-editor renderer |
+
+Per-instance channels key their file names on the devenv PID (the in-process package declares
+its own PID; the extensibility host declares its parent PID after checking the parent is
+`devenv`), so two VS instances never read each other's state. A process that declared no key
+keeps the legacy unscoped names; a host with no in-process peer (VS Code) does not read the
+per-instance channels at all.
 
 ## Tech stack
 

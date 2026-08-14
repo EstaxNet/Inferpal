@@ -24,12 +24,15 @@ public class SignalScopeTests : IDisposable
 {
     private readonly SignalScratchDir _scratch = new();
     private readonly string _slnPath;
+    private readonly string _slnPathB;
 
     public SignalScopeTests()
     {
         // Both readers validate the recorded path exists on disk, so it has to be a real file.
-        _slnPath = Path.Combine(Path.GetTempPath(), $"Inferpal_scope_{Guid.NewGuid():N}.sln");
-        File.WriteAllText(_slnPath, "Microsoft Visual Studio Solution File");
+        _slnPath  = Path.Combine(Path.GetTempPath(), $"Inferpal_scope_{Guid.NewGuid():N}.sln");
+        _slnPathB = Path.Combine(Path.GetTempPath(), $"Inferpal_scope_{Guid.NewGuid():N}.sln");
+        File.WriteAllText(_slnPath,  "Microsoft Visual Studio Solution File");
+        File.WriteAllText(_slnPathB, "Microsoft Visual Studio Solution File");
         SignalFile._isProcessAliveOverride = _ => true;
     }
 
@@ -37,7 +40,8 @@ public class SignalScopeTests : IDisposable
     {
         SignalFile._isProcessAliveOverride = null;
         SignalScope.ResetForTests();
-        try { File.Delete(_slnPath); } catch { }
+        try { File.Delete(_slnPath); }  catch { }
+        try { File.Delete(_slnPathB); } catch { }
         _scratch.Dispose();
     }
 
@@ -124,5 +128,126 @@ public class SignalScopeTests : IDisposable
             configFactory:   () => new InferpalConfig());
 
         Assert.False(SignalScope.HasVsInProcessPeer);
+    }
+
+    // ── §22 tranche 2 (gate G1): family A scoped per instance ──────────────────────
+    // Two Visual Studios, two solutions: each reads ITS OWN.
+
+    [Fact]
+    public void TwoInstances_ActiveSolution_EachReadsItsOwn()
+    {
+        SignalScope.DeclareVsInstance(111);
+        ActiveSolutionSignal.Write(_slnPath);
+        SignalScope.DeclareVsInstance(222);
+        ActiveSolutionSignal.Write(_slnPathB);
+
+        SignalScope.DeclareVsInstance(111);
+        Assert.Equal(_slnPath, ActiveSolutionSignal.TryReadSolutionPath());
+        SignalScope.DeclareVsInstance(222);
+        Assert.Equal(_slnPathB, ActiveSolutionSignal.TryReadSolutionPath());
+    }
+
+    [Fact]
+    public void OtherInstancesSolution_IsNotRead()
+    {
+        SignalScope.DeclareVsInstance(111);
+        ActiveSolutionSignal.Write(_slnPath);
+
+        SignalScope.DeclareVsInstance(222);
+        Assert.Null(ActiveSolutionSignal.TryReadSolutionPath());
+    }
+
+    [Fact]
+    public void LegacyUnscopedActiveSolution_IgnoredOnceKeyDeclared()
+    {
+        // §22 migration (family A): the unscoped file of an earlier version is never read as
+        // this instance's own — and never deleted (an old-version pair may still be using it).
+        var legacy = SignalFile.PathFor("active_solution.json");
+        SignalFile.Write(legacy, new { solutionPath = _slnPath, ts = 0L }, "test");
+
+        SignalScope.DeclareVsInstance(111);
+        Assert.Null(ActiveSolutionSignal.TryReadSolutionPath());
+        Assert.True(File.Exists(legacy));
+    }
+
+    [Fact]
+    public void NoInstanceDeclared_KeepsLegacyNameAndBehaviour()
+    {
+        // G5: a front-end that declared no instance keeps the pre-§22 world.
+        ActiveSolutionSignal.Write(_slnPath);
+
+        Assert.EndsWith("active_solution.json", ActiveSolutionSignal.FilePath);
+        Assert.Equal(_slnPath, ActiveSolutionSignal.TryReadSolutionPath());
+    }
+
+    [Fact]
+    public void TwoInstances_BuildSignal_EachReadsItsOwn()
+    {
+        SignalScope.DeclareVsInstance(111);
+        BuildSignalFile.Write(_slnPath, new[] { "error CS0001" });
+
+        SignalScope.DeclareVsInstance(222);
+        Assert.Null(BuildSignalFile.TryRead().SolutionPath);
+
+        SignalScope.DeclareVsInstance(111);
+        Assert.Equal(_slnPath, BuildSignalFile.TryRead().SolutionPath);
+    }
+
+    [Fact]
+    public void TwoInstances_InlineDiffRequest_IsNotServedToTheOther()
+    {
+        const string target = @"C:\x\f.cs";
+        SignalScope.DeclareVsInstance(111);
+        var id = InlineDiffPreviewSignal.WriteRequest(target, "a", "b");
+
+        SignalScope.DeclareVsInstance(222);
+        Assert.Null(InlineDiffPreviewSignal.TryReadRequestFor(target));
+
+        SignalScope.DeclareVsInstance(111);
+        Assert.Equal(id, InlineDiffPreviewSignal.TryReadRequestFor(target)!.Id);
+    }
+
+    // ── §22 end of slice (gate G2): the /debug transport joins the per-instance scope ──
+    // Unlocked by the 1.6.0 human validation pass (done, 2026-08-15): a /debug emitted by
+    // instance A must NEVER be executed by instance B.
+
+    [Fact]
+    public void DebugRequestFromOneInstance_IsNeverClaimedByAnother()
+    {
+        SignalScope.DeclareVsInstance(111);
+        DebugCommandSignal.WriteRequest(new DebugCommandRequest(
+            "id1", Environment.ProcessId, SignalFile.Now.ToUnixTimeMilliseconds(), "start"));
+
+        SignalScope.DeclareVsInstance(222);
+        Assert.Null(DebugCommandSignal.ClaimRequest());   // B sees nothing to execute
+
+        SignalScope.DeclareVsInstance(111);
+        Assert.Equal("id1", DebugCommandSignal.ClaimRequest()!.Id);   // A still serves its own
+    }
+
+    [Fact]
+    public void DriverReadyAdvertisement_IsPerInstance()
+    {
+        SignalScope.DeclareVsInstance(111);
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+
+        SignalScope.DeclareVsInstance(222);
+        Assert.False(DebugCommandSignal.IsDriverReady());   // another devenv's driver is not ours
+
+        SignalScope.DeclareVsInstance(111);
+        Assert.True(DebugCommandSignal.IsDriverReady());
+    }
+
+    [Fact]
+    public void TwoInstances_DebuggerState_EachReadsItsOwn()
+    {
+        SignalScope.DeclareVsInstance(111);
+        DebuggerStateSignal.Write(Snapshot());
+
+        SignalScope.DeclareVsInstance(222);
+        Assert.Null(DebuggerStateSignal.TryRead());
+
+        SignalScope.DeclareVsInstance(111);
+        Assert.NotNull(DebuggerStateSignal.TryRead());
     }
 }

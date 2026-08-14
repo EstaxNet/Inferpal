@@ -30,8 +30,10 @@ internal sealed record InlineDiffAck(
 /// </summary>
 internal static class InlineDiffPreviewSignal
 {
-    internal static string RequestPath => SignalFile.PathFor("inline_diff_request.json");
-    internal static string AckPath     => SignalFile.PathFor("inline_diff_ack.json");
+    // Scoped to the declared VS instance (§22 tranche 2): a preview requested in one devenv
+    // must never be rendered — and consumed — by another.
+    internal static string RequestPath => SignalFile.ScopedPathFor("inline_diff_request");
+    internal static string AckPath     => SignalFile.ScopedPathFor("inline_diff_ack");
 
     /// <summary>A request older than this is ignored (host crashed between write and discard).</summary>
     internal static TimeSpan MaxAge { get; set; } = TimeSpan.FromMinutes(2);

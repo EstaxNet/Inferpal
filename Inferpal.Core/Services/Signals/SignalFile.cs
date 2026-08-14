@@ -52,6 +52,65 @@ internal static class SignalFile
     /// </remarks>
     internal static string PathFor(string fileName) => Path.Combine(Dir, fileName);
 
+    // ── Keyed file-name grammar (§22 tranche 2) ─────────────────────────────────
+    // One owner for the "<baseName>.<key>.json" shape: the path builders, the name parser and the
+    // enumeration all live here, so a future change to the grammar cannot update one copy and
+    // silently strand another (the drift this class exists to prevent).
+
+    /// <summary>Full path of a channel file keyed explicitly: <c>&lt;baseName&gt;.&lt;key&gt;.json</c>.</summary>
+    internal static string KeyedPathFor(string baseName, int key) => PathFor($"{baseName}.{key}.json");
+
+    /// <summary>
+    /// Full path of a family-A channel file, scoped to the declared VS instance:
+    /// <c>&lt;baseName&gt;.&lt;devenvPid&gt;.json</c>, or the legacy unscoped
+    /// <c>&lt;baseName&gt;.json</c> when no instance was declared.
+    /// </summary>
+    /// <remarks>
+    /// Migration rule (family A): once a key is declared, the legacy unscoped file is a different
+    /// name and is therefore never read — a leftover from an earlier version must not be mistaken
+    /// for this instance's state. It is not deleted either: an old-version pair on the same
+    /// machine may still be using it.
+    /// </remarks>
+    internal static string ScopedPathFor(string baseName) =>
+        SignalScope.VsInstanceKey is int key ? KeyedPathFor(baseName, key) : PathFor($"{baseName}.json");
+
+    /// <summary>
+    /// Whether <paramref name="fileName"/> matches the keyed grammar for
+    /// <paramref name="baseName"/>. The legacy unscoped <c>&lt;baseName&gt;.json</c> never
+    /// matches: the length guard is what keeps the overlapping prefix/suffix of that shorter name
+    /// out of the slice below (it once threw on exactly that input and a blanket catch turned the
+    /// crash into an empty enumeration).
+    /// </summary>
+    internal static bool IsKeyedName(string fileName, string baseName)
+    {
+        var prefix = baseName + ".";
+        const string suffix = ".json";
+        if (fileName.Length <= prefix.Length + suffix.Length) return false;
+        if (!fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !fileName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) return false;
+        var middle = fileName[prefix.Length..^suffix.Length];
+        return middle.All(char.IsAsciiDigit);
+    }
+
+    /// <summary>Every keyed file of <paramref name="baseName"/> currently on disk. Never throws.</summary>
+    internal static string[] EnumerateKeyedPaths(string baseName)
+    {
+        try
+        {
+            if (!Directory.Exists(Dir)) return Array.Empty<string>();
+            return Directory.EnumerateFiles(Dir, baseName + ".*")
+                            .Where(p => IsKeyedName(Path.GetFileName(p), baseName))
+                            .ToArray();
+        }
+        catch (Exception ex)
+        {
+            // A read-path fallback, not cleanup: trace it — a persistent failure here silently
+            // disables every reader of the channel, which must be visible in /diagnostics.
+            Diagnostics.Swallow("SignalFile.EnumerateKeyedPaths", ex);
+            return Array.Empty<string>();
+        }
+    }
+
     /// <summary>Whether the process that wrote a signal is still running.</summary>
     internal static bool IsProcessAlive(int pid)
     {

@@ -40,6 +40,12 @@ internal sealed class GhostTextViewListener : IWpfTextViewCreationListener
     private static VsBuildEventHandler? _staticBuildEventHandler;
 #pragma warning restore CA2213
 
+    // §22 tranche 2: in-process, this IS devenv — the family-A signal instance key is our own
+    // PID. Declared here (and in GhostTextPackage) because this MEF listener is the in-process
+    // bootstrap that always loads, and InlineDiffController reads a scoped channel.
+    static GhostTextViewListener() =>
+        Services.Signals.SignalScope.DeclareVsInstance(Environment.ProcessId);
+
     public void TextViewCreated(IWpfTextView textView)
     {
         _ = new GhostTextController(textView);

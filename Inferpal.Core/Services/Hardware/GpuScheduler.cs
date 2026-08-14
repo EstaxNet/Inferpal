@@ -53,9 +53,29 @@ internal static class GpuScheduler
                 if (_idleSignal.Task.IsCompleted)
                     _idleSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 ChatBusySignal.Write();
+                // A single agent run holds one lease for its whole loop, which can outlast the
+                // 10-minute staleness fuse of the marker — without a refresh, FIM would resume
+                // against the busy GPU mid-run on any healthy long chat (review 2026-08-15).
+                _busyRefresh = new Timer(_ => RefreshBusyMarker(), null, BusyRefreshPeriod, BusyRefreshPeriod);
             }
         }
         return new Lease();
+    }
+
+    /// <summary>Marker refresh cadence — comfortably under <see cref="ChatBusySignal.MaxAge"/>.</summary>
+    private static readonly TimeSpan BusyRefreshPeriod = TimeSpan.FromMinutes(4);
+
+    private static Timer? _busyRefresh;
+
+    /// <summary>Re-stamps this process's busy marker while chat leases are held, so a healthy
+    /// long run never trips the staleness fuse. Internal (not private) so tests can exercise the
+    /// refresh deterministically instead of waiting out a real timer period.</summary>
+    internal static void RefreshBusyMarker()
+    {
+        lock (_lock)
+        {
+            if (_chatLeases > 0) ChatBusySignal.Write();
+        }
     }
 
     private static void Release()
@@ -65,6 +85,8 @@ internal static class GpuScheduler
             if (_chatLeases > 0 && --_chatLeases == 0)
             {
                 _idleSignal.TrySetResult(true);
+                _busyRefresh?.Dispose();
+                _busyRefresh = null;
                 ChatBusySignal.Clear();
             }
         }

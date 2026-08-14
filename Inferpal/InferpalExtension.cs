@@ -70,6 +70,26 @@ public class InferpalExtension : Extension
     protected override void InitializeServices(IServiceCollection services)
     {
         base.InitializeServices(services);
+
+        // §22 tranche 2: family-A signal channels are scoped by devenv PID. Out-of-process, that
+        // key is our parent (probe 6, C2/C3) — but the direct-child topology is empirical, not
+        // contractual, so the key is only declared after checking the parent actually IS devenv.
+        // On failure (lookup error, unexpected parent) no key is declared: this host keeps the
+        // legacy unscoped names while the in-process side scopes with its own PID, so the pair is
+        // LOST until VS restarts — solution rooting, build banner and diff previews go silent.
+        // That is why both branches trace to /diagnostics instead of failing mutely.
+        try
+        {
+            var ppid = ParentProcess.GetParentProcessId();
+            using var parent = System.Diagnostics.Process.GetProcessById(ppid);
+            if (parent.ProcessName.Equals("devenv", StringComparison.OrdinalIgnoreCase))
+                SignalScope.DeclareVsInstance(ppid);
+            else
+                Diagnostics.Swallow("InferpalExtension.DeclareVsInstance", new InvalidOperationException(
+                    $"Parent '{parent.ProcessName}' (pid {ppid}) is not devenv; family-A signals stay unscoped and unpaired."));
+        }
+        catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DeclareVsInstance", ex); }
+
         services.AddSingleton(_ => InferpalConfig.Load());
         // Resolve the active inference backend (Ollama or OpenAI-compatible) from config.Provider.
         services.AddSingleton<IInferenceProvider>(sp =>

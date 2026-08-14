@@ -15,10 +15,10 @@ namespace Inferpal.Services.Signals;
 /// one VS plus one VS Code is enough, which is this repository's daily setup.
 /// </para>
 /// <para>
-/// The correction is a <b>read policy</b>, not a transport change: a process with no in-process VS
-/// peer does not consult those files at all. It deliberately leaves the §21 transport
-/// (<see cref="DebugCommandSignal"/>) untouched while its human validation pass is still pending —
-/// scoping that one by devenv PID is tranche 2, and churning it now would invalidate the pass.
+/// The first correction (reduced slice) was a <b>read policy</b>: a process with no in-process VS
+/// peer does not consult those files at all. Tranche 2 then keyed the family-A channels — the §21
+/// debug transport included, once its human validation pass was done (2026-08-15) — on the devenv
+/// PID via <see cref="VsInstanceKey"/>, so two VS instances stop reading each other's state.
 /// </para>
 /// <para>
 /// <b>Why the default is <c>true</c>, and it is not laziness.</b> Failing the other way round costs
@@ -49,6 +49,40 @@ internal static class SignalScope
     /// </remarks>
     internal static void DeclareNoVsInProcessPeer() => HasVsInProcessPeer = false;
 
-    /// <summary>Test seam: restores the default so cases can run in any order.</summary>
-    internal static void ResetForTests() => HasVsInProcessPeer = true;
+    /// <summary>
+    /// The devenv PID this process belongs to, or <c>null</c> when no instance was declared.
+    /// Family-A channels (§22 tranche 2) key their file names on it, so two Visual Studio
+    /// instances stop reading — and overwriting — each other's state.
+    /// </summary>
+    /// <remarks>
+    /// The key is the one probe 6 measured green on both sides without any VS API: the in-process
+    /// package is devenv, so it declares its <b>own</b> PID; the out-of-process extensibility host
+    /// is a direct child of its devenv, so it declares its <b>parent</b> PID. <c>null</c> keeps
+    /// the legacy unscoped file names — today's behaviour — so a front-end that forgot to declare
+    /// degrades to the pre-§22 world instead of losing its signal pairing (same "the default is
+    /// chosen, not suffered" reasoning as <see cref="HasVsInProcessPeer"/>).
+    /// </remarks>
+    internal static int? VsInstanceKey => _vsInstanceKey == 0 ? null : _vsInstanceKey;
+
+    // A volatile int with 0 as the "none" sentinel rather than a Nullable<int>: the key is
+    // declared during startup on one thread (MEF static ctor / AsyncPackage init /
+    // InitializeServices) while other threads already resolve scoped paths, and an 8-byte
+    // Nullable<int> store has no CLR atomicity guarantee — a torn read could surface as
+    // (HasValue: true, Value: 0) and resolve a ".0.json" path no peer ever touches. An int32
+    // store is atomic and PIDs are strictly positive, so 0 is free to mean "not declared".
+    private static volatile int _vsInstanceKey;
+
+    /// <summary>Declares which devenv this process belongs to. See <see cref="VsInstanceKey"/>.
+    /// A non-positive pid is ignored (0 is the "none" sentinel).</summary>
+    internal static void DeclareVsInstance(int devenvPid)
+    {
+        if (devenvPid > 0) _vsInstanceKey = devenvPid;
+    }
+
+    /// <summary>Test seam: restores the defaults so cases can run in any order.</summary>
+    internal static void ResetForTests()
+    {
+        HasVsInProcessPeer = true;
+        _vsInstanceKey     = 0;
+    }
 }

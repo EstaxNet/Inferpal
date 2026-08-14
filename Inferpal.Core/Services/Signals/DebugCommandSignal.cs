@@ -46,11 +46,13 @@ internal sealed record DebugCommandResponse(
 /// </remarks>
 internal static class DebugCommandSignal
 {
-    internal static string RequestPath  => SignalFile.PathFor("debug_request.json");
-    internal static string ResponsePath => SignalFile.PathFor("debug_response.json");
+    // Scoped to the declared VS instance (§22, gate G2 — unlocked by the 1.6.0 human validation
+    // pass): a /debug emitted against one devenv must never be claimed by another.
+    internal static string RequestPath  => SignalFile.ScopedPathFor("debug_request");
+    internal static string ResponsePath => SignalFile.ScopedPathFor("debug_response");
 
     /// <summary>Written by the in-process driver while it is able to serve requests.</summary>
-    internal static string ReadyPath => SignalFile.PathFor("debug_ready.json");
+    internal static string ReadyPath => SignalFile.ScopedPathFor("debug_ready");
 
     /// <summary>A request older than this is ignored (host died between write and read).</summary>
     internal static TimeSpan MaxAge { get; set; } = TimeSpan.FromMinutes(10);

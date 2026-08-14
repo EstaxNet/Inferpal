@@ -57,8 +57,10 @@ public class BackgroundShellRegistryTests
         // "two" is gated on a file the test creates, not on a fixed sleep: on a busy CI runner a
         // 400 ms window was short enough for both lines to land in the very first poll.
         var gate = Path.Combine(Path.GetTempPath(), $"inferpal-bg-gate-{Guid.NewGuid():N}");
+        // '' doubles any apostrophe: a profile path like C:\Users\O'Brien would otherwise
+        // terminate the single-quoted PowerShell literal and the whole script would fail to parse.
         var id = registry.Start(
-            $"Write-Output 'one'; while (-not (Test-Path '{gate}')) {{ Start-Sleep -Milliseconds 25 }}; Write-Output 'two'",
+            $"Write-Output 'one'; while (-not (Test-Path '{gate.Replace("'", "''")}')) {{ Start-Sleep -Milliseconds 25 }}; Write-Output 'two'",
             "echo twice", Path.GetTempPath());
 
         try

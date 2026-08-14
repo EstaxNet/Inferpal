@@ -33,6 +33,10 @@ internal sealed class GhostTextPackage : AsyncPackage
 
     protected override async Task InitializeAsync(CancellationToken ct, IProgress<ServiceProgressData> progress)
     {
+        // §22 tranche 2: in-process, this IS devenv — the family-A signal instance key is our own
+        // PID. Also declared by GhostTextViewListener (the MEF bootstrap, which can run first).
+        Services.Signals.SignalScope.DeclareVsInstance(Environment.ProcessId);
+
         // GetServiceAsync is explicitly designed to be called from any thread in AsyncPackage —
         // the VSTHRD010 warnings below are false positives for that API.
 #pragma warning disable VSTHRD010
