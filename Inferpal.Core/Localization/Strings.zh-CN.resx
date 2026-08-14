@@ -403,99 +403,7 @@ Ollama 启动后，点击标题栏的 ↻ 重试按钮。</value></data>
 - `/history` — 列出所有已保存的会话（含日期和预览）
 - `/history &lt;关键词&gt;` — 在所有已保存的会话中进行全文搜索</value></data>
 
-  <data name="SlashHelpAll" xml:space="preserve"><value>**Meta**
-- `/clear` — 清空对话
-- `/model &lt;名称&gt;` — 切换模型
-- `/tools on|off` — 启用或禁用工具调用
-- `/export` — 将对话导出为文件
-- `/restore &lt;路径&gt;` — 从最近备份还原文件
-- `/help` — 显示所有可用命令
-
-**文件系统**
-- `/read &lt;路径&gt;` — 将文件作为上下文附加
-- `/ls &lt;路径&gt; [模式]` — 列出目录中的文件
-- `/grep &lt;目录&gt; &lt;模式&gt; [扩展名]` — 在文件中搜索文本
-
-**代码操作**
-- `/explain` — 解释活动文件（或选区）
-- `/fix` — 为活动文件提供修复建议
-- `/review` — 结构化代码审查
-- `/refactor` — 重构建议
-- `/test` — 生成单元测试
-- `/doc` — 生成 XML 文档注释
-
-**Shell**
-- `/run &lt;命令&gt;` — 运行 PowerShell 命令
-
-**Web**
-- `/fetch &lt;url&gt;` — 以文本形式显示网页
-- `/search &lt;查询&gt;` — DuckDuckGo 网络搜索
-
-**Git**
-- `/commit` — 分析差异，生成提交信息并预填到输入框确认
-- `/git [路径]` — 显示 git 状态、日志和修改摘要
-
-**Visual Studio / Build**
-- `/map` — 显示项目依赖关系图
-- `/solution [路径]` — 显示解决方案结构
-- `/build [路径]` — 编译并显示错误
-- `/fix-build [路径]` — 编译 → AI 修复错误 → 重新编译，直到成功（最多 5 轮）
-
-**项目上下文**
-- `/context` — 显示当前 `.inferpal/context.md`（自动注入每个系统提示）
-- `/memory` — 查看代理记忆（`.inferpal/memory.md`，自动注入每个系统提示）
-
-**语义索引**
-- `/index` — 显示 RAG 索引状态（块数、模型、根目录）
-- `/index rebuild` — 强制对解决方案进行完整重新索引
-
-**Git**
-- `/diff [路径]` — 将完整 git diff 作为上下文片段附加
-
-**项目上下文**
-- `/note &lt;文本&gt;` — 向 `.inferpal/notes.md` 添加带时间戳的备注
-- `/notes [clear]` — 列出或清除项目备注
-
-**代码片段 &amp; 历史**
-- `/snippets` — 列出已保存的代码片段（代码块上的 ⭐ 按钮保存）
-- `/snippets copy &lt;n&gt;` / `/snippets delete &lt;n&gt;` / `/snippets clear`
-- `/history` — 列出所有已保存的会话（含日期和预览）
-- `/history &lt;关键词&gt;` — 在所有已保存的会话中进行全文搜索
-- `/phistory [关键词]` — 搜索输入历史；`/phistory use &lt;n&gt;` 重新使用
-
-**会话模板**
-- `/template` — 列出可用预设 (code-review, bug-hunt, architecture…)
-- `/template &lt;id&gt;` — 使用所选模板开始会话
-
-**模型**
-- `/models` — 列出已安装的 Ollama 模型及 VRAM 状态
-- `/models pull &lt;名称&gt;` / `/models delete &lt;名称&gt;` / `/models running`
-- `/hardware` — 显示 GPU/VRAM 配置；`/hardware &lt;gb&gt;` 设置 VRAM 预算
-- `/setup` — 重新运行初始设置：重新检测后端并重新选择模型
-
-**代理**
-- `/agent-step` — 单步模式：代理在每次工具调用后暂停
-- `/resume` — 暂停后恢复代理
-- `/plan` — 计划模式：只读，代理仅探索代码并提出计划，不修改文件
-
-**文档 (@Docs)**
-- `/docs add &lt;url&gt; [标题]` — 抓取并索引外部文档站点，供 `search_docs` 工具使用
-- `/docs list` — 列出已索引的文档来源
-- `/docs remove &lt;id&gt;` — 移除一个文档来源
-- `/docs reindex [id]` — 重新抓取所有来源（或按 id 抓取其一）
-
-**规则 &amp; 检查项**
-- `/rules` — 列出项目规则（`.inferpal/rules`，按 glob 限定，注入系统提示）
-- `/rules init` — 创建示例规则
-- `/checks` — 列出评审检查项（`.inferpal/checks`）
-- `/checks init` — 创建示例检查项
-- `/check [名称]` — 依据检查项对当前 git 差异进行 AI 评审（100% 本地）
-
-**提示文件**
-- `/prompts` — 列出可重用的提示文件（`.inferpal/prompts/*.md`）；每个文件都是一个斜杠命令，`{args}` 会被替换
-- `/prompts init` — 创建示例提示文件</value></data>
-
-  <!-- History search -->
+    <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>没有保存的会话。会话在 `/clear` 时自动归档。</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>没有与"{0}"匹配的会话。</value></data>
 
@@ -549,8 +457,15 @@ Ollama 启动后，点击标题栏的 ↻ 重试按钮。</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**评审检查项** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>无内容可评审 — 工作区是干净的。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>正在评审差异…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>你是一位严谨且完全本地运行的代码评审员。仅依据所提供的评审检查项来评审下面的 git 差异。对每个检查项，说明其是否通过（PASS），或列出具体的违规项。对每个违规项，给出文件与行号（文件:行）、严重级别（blocker / warning / nit）以及一条简短、可执行的修复建议。保持简洁。不要编造问题，也不要评论检查项或差异之外的任何内容。如果所有检查项都通过，请明确说明。</value></data>
+  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>你是一位细致且完全本地运行的代码审查者。仅依据所提供的审查检查项，审阅下面的 git diff。每条违规单独占一行，严格采用以下格式：`- [severity] path/to/file.ext:行号 - 问题是什么以及如何修复`，其中 severity 为 blocker、warning 或 nit，行号必须是 diff 中出现的行号。每行一条，不要嵌套或使用子项。绝不要指向 diff 未涉及的文件，不要编造问题，也不要评论检查项或 diff 之外的内容。用一句简短的话在问题行之外说明哪些检查通过。若全部通过，请明确说明，并且不报告任何问题。</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>没有名为「{0}」的检查项。运行 `/checks` 查看列表。</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>没有可定位的问题 — 检查项在此 diff 中未发现任何内容。</value></data>
+  <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} 条问题**，已定位到 diff：</value></data>
+  <data name="CheckSeverityBlocker" xml:space="preserve"><value>**阻断**</value></data>
+  <data name="CheckSeverityWarning" xml:space="preserve"><value>**警告**</value></data>
+  <data name="CheckSeverityNit" xml:space="preserve"><value>*细节*</value></data>
+  <data name="CheckAnchorAdjusted" xml:space="preserve"><value>行号已校正，原报告为 {0}</value></data>
+  <data name="CheckAnchorUnanchored" xml:space="preserve"><value>不在 diff 内 — 位置未经核实</value></data>
   <data name="RulesScaffolded" xml:space="preserve"><value>已在 {0} 创建示例规则。请编辑它 — 匹配的规则会被注入到系统提示中。</value></data>
   <data name="ChecksScaffolded" xml:space="preserve"><value>已在 {0} 创建示例检查项。请编辑它，然后运行 `/check` 评审你的差异。</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>没有提示文件。请创建 `.inferpal/prompts/*.md` 或运行 `/prompts init`。</value></data>
@@ -927,4 +842,60 @@ ollama serve
   <data name="ViewText" xml:space="preserve"><value>✎ 文本</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ 部分分析：仅扫描了 {1} 个源文件中的 {0} 个（上限）。结果可能不完整。</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP 的 OAuth 授权目前仅支持 Windows：刷新令牌只能加密存储（DPAPI），明文存储不可接受。请改用带静态请求头令牌的服务器。</value></data>
+  <data name="SlashHintTask" xml:space="preserve"><value>在后台运行智能体任务 (`/task [目标]`)</value></data>
+  <data name="TaskSubmitted" xml:space="preserve"><value>任务 **{0}** 已在后台启动：{1}</value></data>
+  <data name="TaskQueueFull" xml:space="preserve"><value>后台任务过多（最多 {0} 个）。请等待其中一个完成，或执行 `/task clear`。</value></data>
+  <data name="TaskUnknown" xml:space="preserve"><value>未知任务 `{0}`。</value></data>
+  <data name="TaskStopRequested" xml:space="preserve"><value>任务 `{0}` 已取消。</value></data>
+  <data name="TaskForgot" xml:space="preserve"><value>已清除 {0} 个已完成的任务。</value></data>
+  <data name="TaskListEmpty" xml:space="preserve"><value>暂无后台任务。使用 `/task [目标]` 启动一个。</value></data>
+  <data name="TaskListTitle" xml:space="preserve"><value>后台任务</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` 查看报告 · `/task stop [id]` 取消 · `/task clear` 清除已完成</value></data>
+  <data name="TaskColumnState" xml:space="preserve"><value>状态</value></data>
+  <data name="TaskColumnObjective" xml:space="preserve"><value>目标</value></data>
+  <data name="TaskStateQueued" xml:space="preserve"><value>排队中</value></data>
+  <data name="TaskStateQueuedAt" xml:space="preserve"><value>排队中（第 {0} 位）</value></data>
+  <data name="TaskStateRunning" xml:space="preserve"><value>运行中</value></data>
+  <data name="TaskStateSucceeded" xml:space="preserve"><value>已完成</value></data>
+  <data name="TaskStateFailed" xml:space="preserve"><value>失败</value></data>
+  <data name="TaskStateCancelled" xml:space="preserve"><value>已取消</value></data>
+  <data name="TaskStillRunning" xml:space="preserve"><value>_仍在运行 —— 完成后报告将显示在此处。_</value></data>
+  <data name="TaskStepsTitle" xml:space="preserve"><value>步骤</value></data>
+  <data name="TaskDuration" xml:space="preserve"><value>_耗时：{0}。_</value></data>
+  <data name="TaskFinishedNotice" xml:space="preserve"><value>后台任务 `{0}` 已完成 —— 使用 `/task {0}` 查看报告。</value></data>
+  <data name="SlashCategoryMeta" xml:space="preserve"><value>常规</value></data>
+  <data name="SlashCategoryCodeActions" xml:space="preserve"><value>代码操作</value></data>
+  <data name="SlashCategoryFiles" xml:space="preserve"><value>文件</value></data>
+  <data name="SlashCategoryShell" xml:space="preserve"><value>Shell</value></data>
+  <data name="SlashCategoryWeb" xml:space="preserve"><value>网络</value></data>
+  <data name="SlashCategoryGit" xml:space="preserve"><value>Git</value></data>
+  <data name="SlashCategoryBuild" xml:space="preserve"><value>构建与测试</value></data>
+  <data name="SlashCategoryKnowledge" xml:space="preserve"><value>项目知识</value></data>
+  <data name="SlashCategorySessions" xml:space="preserve"><value>会话与历史</value></data>
+  <data name="SlashCategoryModels" xml:space="preserve"><value>模型与硬件</value></data>
+  <data name="SlashCategoryAgent" xml:space="preserve"><value>智能体</value></data>
+  <data name="SlashCategoryGovernance" xml:space="preserve"><value>规则与检查</value></data>
+  <data name="SlashCategoryTransparency" xml:space="preserve"><value>透明度</value></data>
+  <data name="SlashHintDocs" xml:space="preserve"><value>为 `search_docs` 索引外部文档站点（`/docs add|list|remove|reindex`）</value></data>
+  <data name="SlashHintOnboard" xml:space="preserve"><value>读取随仓库提交的项目配置文件，并起草其上下文文件 (`/onboard [init|apply|context]`)</value></data>
+  <data name="OnboardUsage" xml:space="preserve"><value>用法： `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
+  <data name="OnboardHeading" xml:space="preserve"><value>**项目配置** — `.inferpal/project.json`</value></data>
+  <data name="OnboardNoProfile" xml:space="preserve"><value>此处没有配置文件（{0}）。`/onboard init` 会写入一个带注释的示例。</value></data>
+  <data name="OnboardAppliedHeading" xml:space="preserve"><value>**已应用** — 索引排除项。只增不减：它们把文件排除在语义索引之外，不会对 `read_file` 或 `search_in_files` 隐藏任何内容。</value></data>
+  <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**建议** — 属于本机的选择，绝不会自行应用：</value></data>
+  <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}**（当前：{2}）</value></data>
+  <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` 会把它们写入本机配置。</value></data>
+  <data name="OnboardIgnoredHeading" xml:space="preserve"><value>**已忽略** — 仓库不设置这些（⛔ = 它请求了会执行、授权或重定向的内容）：</value></data>
+  <data name="OnboardContextPresent" xml:space="preserve"><value>`.inferpal/context.md` 已存在（{0}）。`/onboard context force` 可重新生成。</value></data>
+  <data name="OnboardContextMissing" xml:space="preserve"><value>还没有 `.inferpal/context.md` — `/onboard context` 会根据仓库起草一份。</value></data>
+  <data name="OnboardNothingToApply" xml:space="preserve"><value>没有可应用的内容 — 配置文件推荐的都是本机已在使用的值。</value></data>
+  <data name="OnboardApplied" xml:space="preserve"><value>✅ 已应用到本机：{0}。</value></data>
+  <data name="OnboardContextExists" xml:space="preserve"><value>{0} 已存在且未被改动。`/onboard context force` 可重新生成。</value></data>
+  <data name="OnboardContextReadingLabel" xml:space="preserve"><value>正在读取仓库…</value></data>
+  <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>正在撰写项目上下文…</value></data>
+  <data name="OnboardContextEmpty" xml:space="preserve"><value>模型没有返回任何内容 — `.inferpal/context.md` 未被改动。</value></data>
+  <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ 已写入 {0}（{1} 个字符）。请阅读并修改：它会被注入每一轮的系统提示词。</value></data>
+  <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>你要撰写一份项目上下文文件，供一个完全本地的编码助手在每一轮之前阅读。根据下面的仓库描述，写一份带 `##` 小节的简短 markdown 文档：这个项目是什么、技术栈与目录结构、以及如何构建和测试。规则（按重要性排序）：文件、文件夹、项目、命令的名称一律照抄原样，绝不臆造；描述没有显示的，就不要写某个文件夹或项目「做什么」，列出名称即可；只陈述描述所支持的内容，不要猜测、不要凑字数、不要给泛泛的建议；不知道的就略去——简短而准确胜过冗长而似是而非。最多 40 行，不要封面，也不要用代码块包裹整个回答。 请使用与本指令相同的语言撰写。</value></data>
+  <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;现在请撰写项目上下文文件。</value></data>
+  <data name="OnboardProfileScaffolded" xml:space="preserve"><value>项目配置已创建于 {0}。它随仓库一起分发：可以建议，但绝不授予权限。</value></data>
 </root>

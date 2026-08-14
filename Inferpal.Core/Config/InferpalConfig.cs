@@ -271,6 +271,8 @@ internal class InferpalConfig
     [JsonPropertyName("ragAutoContextEnabled")]
     public bool RagAutoContextEnabled { get; set; } = true;
 
+
+
     // ── MCP (Model Context Protocol) ──────────────────────────────────────────
 
     /// <summary>

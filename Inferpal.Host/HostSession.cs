@@ -61,6 +61,22 @@ internal sealed class HostSession : IDisposable
     /// <summary>Pending step-mode pause; null when the agent is not paused.</summary>
     public TaskCompletionSource<bool>? StepResume;
 
+    private BackgroundTaskQueue? _tasks;
+
+    /// <summary>
+    /// Background agent tasks (<c>/task</c>), created on first use. The runner is supplied by the
+    /// caller because it needs the live system prompt, and the queue must outlive the turn that
+    /// submitted the task — it therefore never sees the turn's cancellation token.
+    /// </summary>
+    public BackgroundTaskQueue GetOrCreateTasks(
+        BackgroundTaskQueue.TaskRunner runner, Action<BackgroundTaskSnapshot> onFinished)
+    {
+        if (_tasks is not null) return _tasks;
+        _tasks = new BackgroundTaskQueue(runner);
+        _tasks.TaskFinished += onFinished;
+        return _tasks;
+    }
+
     public void Dispose()
     {
         // Every child process this session spawned must die with it: on Windows a process started
@@ -74,5 +90,9 @@ internal sealed class HostSession : IDisposable
 
         try { Lsp.Dispose(); }
         catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeLsp", ex); }
+
+        // Detached agent runs must not survive the window that started them either.
+        try { _tasks?.Dispose(); }
+        catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeTasks", ex); }
     }
 }

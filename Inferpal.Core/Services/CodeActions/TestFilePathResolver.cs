@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace Inferpal.Commands;
+namespace Inferpal.Services.CodeActions;
 
 /// <summary>
 /// Pure, testable resolution of the conventional unit-test file path for a source file.

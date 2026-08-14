@@ -1,6 +1,5 @@
-using Inferpal.Services;
 
-namespace Inferpal.Commands;
+namespace Inferpal.Services.CodeActions;
 
 /// <summary>
 /// Internal system prompts for the test-generation pipeline (<see cref="TestGenerationEdit"/>),

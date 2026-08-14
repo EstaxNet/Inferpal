@@ -403,99 +403,7 @@
 - `/history` — показать все сохранённые сессии с датой и предпросмотром
 - `/history &lt;запрос&gt;` — полнотекстовый поиск по всем сохранённым сессиям</value></data>
 
-  <data name="SlashHelpAll" xml:space="preserve"><value>**Мета**
-- `/clear` — очистить разговор
-- `/model &lt;имя&gt;` — сменить модель
-- `/tools on|off` — включить или отключить инструменты
-- `/export` — экспортировать разговор в файл
-- `/restore &lt;путь&gt;` — восстановить файл из последней резервной копии
-- `/help` — показать все доступные команды
-
-**Файловая система**
-- `/read &lt;путь&gt;` — прикрепить файл как контекст
-- `/ls &lt;путь&gt; [шаблон]` — список файлов в директории
-- `/grep &lt;дир&gt; &lt;шаблон&gt; [расш]` — поиск текста в файлах
-
-**Действия с кодом**
-- `/explain` — объяснить активный файл (или выделение)
-- `/fix` — предложить исправления для активного файла
-- `/review` — структурированное ревью кода
-- `/refactor` — предложения по рефакторингу
-- `/test` — сгенерировать юнит-тесты
-- `/doc` — сгенерировать XML-комментарии документации
-
-**Оболочка**
-- `/run &lt;команда&gt;` — выполнить команду PowerShell
-
-**Веб**
-- `/fetch &lt;url&gt;` — показать веб-страницу как текст
-- `/search &lt;запрос&gt;` — поиск DuckDuckGo
-
-**Git**
-- `/commit` — проанализировать diff, предложить сообщение коммита и заполнить поле ввода
-- `/git [путь]` — показать статус git, лог и сводку изменений
-
-**Visual Studio / Сборка**
-- `/map` — показать граф зависимостей проекта
-- `/solution [путь]` — показать структуру решения
-- `/build [путь]` — скомпилировать и показать ошибки
-- `/fix-build [путь]` — компиляция → ИИ исправляет ошибки → повторная компиляция до чистоты (макс. 5 раундов)
-
-**Контекст проекта**
-- `/context` — показать активный `.inferpal/context.md` (вставляется в каждый системный промпт)
-- `/memory` — просмотреть память агента (`.inferpal/memory.md`, вставляется в каждый системный промпт)
-
-**Семантический индекс**
-- `/index` — показать статус индекса RAG (фрагменты, модель, корень)
-- `/index rebuild` — принудительная полная переиндексация решения
-
-**Git**
-- `/diff [путь]` — прикрепить полный git diff как контекстный чип
-
-**Контекст проекта**
-- `/note &lt;текст&gt;` — добавить заметку с меткой времени в `.inferpal/notes.md`
-- `/notes [clear]` — просмотреть или очистить заметки проекта
-
-**Сниппеты &amp; История**
-- `/snippets` — список сохранённых фрагментов кода (кнопка ⭐ на блоках кода)
-- `/snippets copy &lt;n&gt;` / `/snippets delete &lt;n&gt;` / `/snippets clear`
-- `/history` — показать все сохранённые сессии с датой и предпросмотром
-- `/history &lt;запрос&gt;` — полнотекстовый поиск по всем сохранённым сессиям
-- `/phistory [запрос]` — поиск в истории ввода; `/phistory use &lt;n&gt;` для повторного использования
-
-**Шаблоны сессий**
-- `/template` — список доступных шаблонов (code-review, bug-hunt, architecture…)
-- `/template &lt;id&gt;` — начать сессию с выбранным шаблоном
-
-**Модели**
-- `/models` — список установленных моделей Ollama со статусом VRAM
-- `/models pull &lt;имя&gt;` / `/models delete &lt;имя&gt;` / `/models running`
-- `/hardware` — показать профиль GPU/VRAM; `/hardware &lt;gb&gt;` — задать бюджет VRAM
-- `/setup` — повторить первичную настройку: заново определить бэкенд и выбрать модели
-
-**Агент**
-- `/agent-step` — пошаговый режим: агент останавливается после каждого инструмента
-- `/resume` — возобновить агента после паузы
-- `/plan` — режим плана: только чтение, агент исследует код и предлагает план, не изменяя файлы
-
-**Документация (@Docs)**
-- `/docs add &lt;url&gt; [название]` — обойти и проиндексировать внешний сайт документации для инструмента `search_docs`
-- `/docs list` — показать проиндексированные источники документации
-- `/docs remove &lt;id&gt;` — удалить источник документации
-- `/docs reindex [id]` — переиндексировать все источники (или один по id)
-
-**Правила &amp; Проверки**
-- `/rules` — показать правила проекта (`.inferpal/rules`, по glob, внедряются в системный промпт)
-- `/rules init` — создать пример правила
-- `/checks` — показать проверки ревью (`.inferpal/checks`)
-- `/checks init` — создать пример проверки
-- `/check [имя]` — ИИ-ревью текущего git-диффа по проверкам (100% локально)
-
-**Файлы промптов**
-- `/prompts` — список переиспользуемых файлов промптов (`.inferpal/prompts/*.md`); каждый файл — slash-команда, `{args}` подставляется
-- `/prompts init` — создать пример файла промпта</value></data>
-
-  <!-- History search -->
+    <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Нет сохранённых сессий. Сессии архивируются автоматически при `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Сессий, соответствующих «{0}», не найдено.</value></data>
 
@@ -549,8 +457,15 @@
   <data name="ChecksListHeader" xml:space="preserve"><value>**Проверки ревью** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Нечего проверять — рабочее дерево чистое.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Идёт проверка диффа…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Ты — дотошный, полностью локальный рецензент кода. Проверь git-дифф ниже ТОЛЬКО по предоставленным проверкам ревью. По каждой проверке укажи, ПРОЙДЕНА ли она, либо перечисли конкретные нарушения. Для каждого нарушения укажи файл и строку (файл:строка), серьёзность (blocker / warning / nit) и краткое выполнимое исправление. Будь краток. Ничего не выдумывай и не комментируй ничего вне проверок или диффа. Если все проверки пройдены, скажи об этом ясно.</value></data>
+  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Ты — дотошный, полностью локальный ревьюер кода. Проверь приведённый ниже git-дифф ТОЛЬКО по предоставленным проверкам. Сообщай о каждом нарушении отдельной строкой строго в таком формате: `- [severity] путь/к/файлу.ext:СТРОКА - что не так и как исправить`, где severity — blocker, warning или nit, а СТРОКА — номер строки, встречающийся в диффе. Одно замечание на строку, без вложенности и подпунктов. Никогда не указывай на файл, которого нет в диффе, не выдумывай проблем и не комментируй ничего вне проверок или диффа. Одним коротким предложением вне строк замечаний укажи, какие проверки пройдены. Если пройдены все, скажи об этом прямо и не сообщай ни одного замечания.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Нет проверки с именем «{0}». Выполните `/checks`, чтобы вывести список.</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>Ни одного привязанного замечания — проверки ничего не нашли в этом диффе.</value></data>
+  <data name="CheckFindingsHeader" xml:space="preserve"><value>**Замечаний: {0}**, привязаны к диффу:</value></data>
+  <data name="CheckSeverityBlocker" xml:space="preserve"><value>**блокер**</value></data>
+  <data name="CheckSeverityWarning" xml:space="preserve"><value>**предупреждение**</value></data>
+  <data name="CheckSeverityNit" xml:space="preserve"><value>*мелочь*</value></data>
+  <data name="CheckAnchorAdjusted" xml:space="preserve"><value>строка исправлена, указана как {0}</value></data>
+  <data name="CheckAnchorUnanchored" xml:space="preserve"><value>вне диффа — расположение не проверено</value></data>
   <data name="RulesScaffolded" xml:space="preserve"><value>Пример правила создан в {0}. Отредактируйте его — подходящие правила внедряются в системный промпт.</value></data>
   <data name="ChecksScaffolded" xml:space="preserve"><value>Пример проверки создан в {0}. Отредактируйте его, затем выполните `/check`, чтобы проверить дифф.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>Нет файлов промптов. Создайте `.inferpal/prompts/*.md` или выполните `/prompts init`.</value></data>
@@ -927,4 +842,60 @@ ollama serve
   <data name="ViewText" xml:space="preserve"><value>✎ Текст</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Частичный анализ: просмотрено только {0} из {1} исходных файлов (предел). Результаты могут быть неполными.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>Авторизация OAuth для MCP пока доступна только в Windows: токен обновления можно хранить только в зашифрованном виде (DPAPI), а хранить его открытым текстом недопустимо. Используйте сервер со статическим токеном в заголовке.</value></data>
+  <data name="SlashHintTask" xml:space="preserve"><value>запустить задачу агента в фоне (`/task [цель]`)</value></data>
+  <data name="TaskSubmitted" xml:space="preserve"><value>Задача **{0}** запущена в фоне: {1}</value></data>
+  <data name="TaskQueueFull" xml:space="preserve"><value>Слишком много фоновых задач (максимум {0}). Дождитесь завершения одной или выполните `/task clear`.</value></data>
+  <data name="TaskUnknown" xml:space="preserve"><value>Неизвестная задача `{0}`.</value></data>
+  <data name="TaskStopRequested" xml:space="preserve"><value>Задача `{0}` отменена.</value></data>
+  <data name="TaskForgot" xml:space="preserve"><value>Забыто завершённых задач: {0}.</value></data>
+  <data name="TaskListEmpty" xml:space="preserve"><value>Фоновых задач нет. `/task [цель]` запускает задачу.</value></data>
+  <data name="TaskListTitle" xml:space="preserve"><value>Фоновые задачи</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` — отчёт · `/task stop [id]` — отмена · `/task clear` — забыть завершённые</value></data>
+  <data name="TaskColumnState" xml:space="preserve"><value>Состояние</value></data>
+  <data name="TaskColumnObjective" xml:space="preserve"><value>Цель</value></data>
+  <data name="TaskStateQueued" xml:space="preserve"><value>в очереди</value></data>
+  <data name="TaskStateQueuedAt" xml:space="preserve"><value>в очереди (№{0})</value></data>
+  <data name="TaskStateRunning" xml:space="preserve"><value>выполняется</value></data>
+  <data name="TaskStateSucceeded" xml:space="preserve"><value>готово</value></data>
+  <data name="TaskStateFailed" xml:space="preserve"><value>ошибка</value></data>
+  <data name="TaskStateCancelled" xml:space="preserve"><value>отменена</value></data>
+  <data name="TaskStillRunning" xml:space="preserve"><value>_Ещё выполняется — отчёт появится здесь после завершения._</value></data>
+  <data name="TaskStepsTitle" xml:space="preserve"><value>Шаги</value></data>
+  <data name="TaskDuration" xml:space="preserve"><value>_Длительность: {0}._</value></data>
+  <data name="TaskFinishedNotice" xml:space="preserve"><value>Фоновая задача `{0}` завершена — `/task {0}`, чтобы прочитать отчёт.</value></data>
+  <data name="SlashCategoryMeta" xml:space="preserve"><value>Общее</value></data>
+  <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Действия с кодом</value></data>
+  <data name="SlashCategoryFiles" xml:space="preserve"><value>Файлы</value></data>
+  <data name="SlashCategoryShell" xml:space="preserve"><value>Оболочка</value></data>
+  <data name="SlashCategoryWeb" xml:space="preserve"><value>Веб</value></data>
+  <data name="SlashCategoryGit" xml:space="preserve"><value>Git</value></data>
+  <data name="SlashCategoryBuild" xml:space="preserve"><value>Сборка и тесты</value></data>
+  <data name="SlashCategoryKnowledge" xml:space="preserve"><value>Знания о проекте</value></data>
+  <data name="SlashCategorySessions" xml:space="preserve"><value>Сессии и история</value></data>
+  <data name="SlashCategoryModels" xml:space="preserve"><value>Модели и оборудование</value></data>
+  <data name="SlashCategoryAgent" xml:space="preserve"><value>Агент</value></data>
+  <data name="SlashCategoryGovernance" xml:space="preserve"><value>Правила и проверки</value></data>
+  <data name="SlashCategoryTransparency" xml:space="preserve"><value>Прозрачность</value></data>
+  <data name="SlashHintDocs" xml:space="preserve"><value>индексировать внешние сайты документации для `search_docs` (`/docs add|list|remove|reindex`)</value></data>
+  <data name="SlashHintOnboard" xml:space="preserve"><value>прочитать профиль проекта, закоммиченный вместе с репозиторием, и составить его файл контекста (`/onboard [init|apply|context]`)</value></data>
+  <data name="OnboardUsage" xml:space="preserve"><value>Использование: `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
+  <data name="OnboardHeading" xml:space="preserve"><value>**Профиль проекта** — `.inferpal/project.json`</value></data>
+  <data name="OnboardNoProfile" xml:space="preserve"><value>Профиля здесь нет ({0}). `/onboard init` создаёт пример с комментариями.</value></data>
+  <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Применено** — исключения индекса. Только дополняющие: они убирают файлы из семантического индекса и ничего не скрывают от `read_file` и `search_in_files`.</value></data>
+  <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Рекомендовано** — выбор машины, сам по себе никогда не применяется:</value></data>
+  <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (сейчас: {2})</value></data>
+  <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` записывает это в конфигурацию данной машины.</value></data>
+  <data name="OnboardIgnoredHeading" xml:space="preserve"><value>**Проигнорировано** — репозиторий этого не задаёт (⛔ = он просил то, что выполняет, разрешает или перенаправляет):</value></data>
+  <data name="OnboardContextPresent" xml:space="preserve"><value>`.inferpal/context.md` присутствует ({0}). `/onboard context force` создаёт его заново.</value></data>
+  <data name="OnboardContextMissing" xml:space="preserve"><value>Файла `.inferpal/context.md` пока нет — `/onboard context` составит его по репозиторию.</value></data>
+  <data name="OnboardNothingToApply" xml:space="preserve"><value>Применять нечего — профиль не советует ничего, чего эта машина уже не использует.</value></data>
+  <data name="OnboardApplied" xml:space="preserve"><value>✅ Применено к этой машине: {0}.</value></data>
+  <data name="OnboardContextExists" xml:space="preserve"><value>{0} уже существует и не был изменён. `/onboard context force` создаёт его заново.</value></data>
+  <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Чтение репозитория…</value></data>
+  <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Составление контекста проекта…</value></data>
+  <data name="OnboardContextEmpty" xml:space="preserve"><value>Модель ничего не вернула — `.inferpal/context.md` остался нетронутым.</value></data>
+  <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} записан ({1} символов). Прочитайте и поправьте его: он попадает в системный промпт каждого хода.</value></data>
+  <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>Вы пишете файл контекста проекта, который полностью локальный помощник по коду читает перед каждым ходом. По описанию репозитория ниже составьте короткий документ в markdown с разделами `##`: что это за проект, его стек и структура и как он собирается и тестируется. Правила по важности: переписывайте каждое имя — файла, папки, проекта, команды — ровно так, как оно указано, и не выдумывайте новых; не пишите, что папка или проект *делает*, если описание этого не показывает — назовите и идите дальше; утверждайте только то, что подтверждается описанием, без догадок, воды и общих советов; неизвестное опускайте — короткий точный документ лучше длинного правдоподобного. Не более 40 строк, без титульной страницы и без блока кода вокруг всего ответа. Пишите его на языке этой инструкции.</value></data>
+  <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Теперь напишите файл контекста проекта.</value></data>
+  <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Профиль проекта создан в {0}. Он путешествует вместе с репозиторием: может рекомендовать, но никогда — разрешать.</value></data>
 </root>

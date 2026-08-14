@@ -57,6 +57,88 @@ internal class AnalyzeImpactTool : ITool
 
     // ── ExecuteAsync ──────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Exact references to <paramref name="symbol"/>, or null when an exact answer is not possible
+    /// (no symbol asked for, not C#, no workspace root).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Everything else in this report is a <b>heuristic</b>: a textual scan that lists files
+    /// mentioning a name. On this repository, <c>Handle(</c> appears 61 times and refers to the
+    /// handler asked about 3 of them — about 5 % precision. When the caller names a symbol and the
+    /// file is C#, that question has an exact answer, and giving the heuristic instead would be a
+    /// choice, not a limitation.
+    /// </para>
+    /// <para>
+    /// <b>The index is rebuilt on every call</b> (~750 ms here) rather than cached. A cache without
+    /// invalidation would serve answers about code that no longer exists — precisely the silent
+    /// wrongness this section exists to remove. Caching belongs with the file-watcher hook, added
+    /// as one coherent step (roadmap §14, decision (a)).
+    /// </para>
+    /// </remarks>
+    private Lsp.ReferenceResult? TryResolveSemantically(
+        string? symbol, string ext, string filePath, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(symbol)) return null;
+        if (!ext.Equals(".cs", StringComparison.OrdinalIgnoreCase)) return null;
+
+        var root = _getRoot();
+        if (string.IsNullOrEmpty(root)) return null;
+
+        try
+        {
+            return Lsp.CSharpSemanticIndex.ForWorkspace(root)
+                .FindReferences(symbol!, Path.GetFileName(filePath), ct);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            // A degraded report beats a failed tool call: the heuristic sections still stand.
+            Diagnostics.Swallow("AnalyzeImpactTool.Semantic", ex);
+            return null;
+        }
+    }
+
+    private static string RenderSemantic(Lsp.ReferenceResult result, string symbol)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine();
+        sb.AppendLine($"## Exact references to `{symbol}`  ({result.References.Count})");
+        // Say what this is, so the agent knows which lines it may trust literally and which of the
+        // sections above are name-matching guesses.
+        sb.AppendLine("  *(resolved by the C# compiler — unlike the sections above, which match names)*");
+
+        if (result.Declaration is null)
+        {
+            sb.AppendLine($"  ⚠️  `{symbol}` could not be resolved; rely on the heuristic sections above.");
+            return sb.ToString();
+        }
+
+        sb.AppendLine($"  📍 declared at {result.Declaration}");
+        if (result.References.Count == 0)
+            sb.AppendLine("  ✅ no use anywhere in the workspace");
+        else
+            foreach (var r in result.References.Take(MaxSemanticReferences))
+                sb.AppendLine($"  → {r}");
+
+        if (result.References.Count > MaxSemanticReferences)
+            sb.AppendLine($"  … +{result.References.Count - MaxSemanticReferences} more");
+
+        // Ambiguity is the one thing that must never be silent: answering about one of several
+        // same-named declarations without saying so is how a precise tool becomes a misleading one.
+        if (result.IsAmbiguous)
+        {
+            sb.AppendLine($"  ⚠️  {result.OtherDeclarations.Count} other declaration(s) share this name — "
+                        + "the list above is about the one declared above only:");
+            foreach (var d in result.OtherDeclarations.Take(5))
+                sb.AppendLine($"      • {d}");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Reference lines listed before truncating — the report is read by a model.</summary>
+    private const int MaxSemanticReferences = 40;
+
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var filePath = PathSanitizer.Sanitize(args.GetProperty("path").GetString());
@@ -69,7 +151,14 @@ internal class AnalyzeImpactTool : ITool
 
         var source   = await File.ReadAllTextAsync(filePath, ct);
         var ext      = Path.GetExtension(filePath).ToLowerInvariant();
-        var rootDir  = Path.GetDirectoryName(filePath)!;
+        // ⚠ The scan starts at the WORKSPACE root, not at the analysed file's own folder.
+        // It used to be the folder: asked about Services/Commands/TaskCommandHandler.cs, the tool
+        // only ever looked inside Services/Commands/**, so its six real dependants — in the host,
+        // the tests and the VS view-model — were structurally invisible and it answered
+        // "0 dependants · safe to refactor freely". A blast-radius tool that cannot leave the
+        // directory it was pointed at answers the wrong question. Falls back to the folder when no
+        // workspace is known, the only case the old behaviour was ever right for.
+        var rootDir  = _getRoot() is { Length: > 0 } workspace ? workspace : Path.GetDirectoryName(filePath)!;
         var fileName = Path.GetFileName(filePath);
 
         // ── 1. Extract public API of the target file ──────────────────────────
@@ -105,13 +194,26 @@ internal class AnalyzeImpactTool : ITool
             transitive = await ScanTransitiveDependantsAsync(layer1, allFiles, layer1Paths, filePath, ct);
         }
 
+        // ── 3b. Exact references, when the question allows an exact answer ────
+        var semantic = TryResolveSemantically(symbol, ext, filePath, ct);
+
         // ── 4. Classify ───────────────────────────────────────────────────────
         var tests        = layer1.Concat(transitive).Where(d => d.Role == FileRole.Test).ToList();
         var entryPoints  = layer1.Concat(transitive).Where(d => d.Role is FileRole.Command or FileRole.Controller or FileRole.EntryPoint).ToList();
 
         // ── 5. Risk calculation ───────────────────────────────────────────────
+        // The verdict must never contradict the references printed below it: "no dependants —
+        // safe to refactor freely" above six real call sites is the most harmful thing this tool
+        // could say. When the compiler found uses the heuristic missed, its count wins. Distinct
+        // FILES, because that is what the heuristic layer counts too.
+        var semanticFiles = semantic?.References
+            .Select(r => r.RelPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count() ?? 0;
+        var directCount = Math.Max(layer1.Count, semanticFiles);
+
         var (riskLevel, riskBullets) = RiskCalculator.Compute(
-            api, layer1.Count, transitive.Count, tests.Count, entryPoints.Count);
+            api, directCount, transitive.Count, tests.Count, entryPoints.Count);
 
         // ── 6. Render ─────────────────────────────────────────────────────────
         var sb = new StringBuilder();
@@ -199,10 +301,13 @@ internal class AnalyzeImpactTool : ITool
             foreach (var t in tests.OrderBy(d => d.RelPath))
                 sb.AppendLine($"  🧪 {t.RelPath}");
 
+        // Exact references — the only section of this report that is not a heuristic.
+        if (semantic is not null) sb.Append(RenderSemantic(semantic, symbol!));
+
         // Blast radius summary
         sb.AppendLine();
         sb.AppendLine("---");
-        sb.AppendLine(Strings.ImpactFooter(layer1.Count, transitive.Count, tests.Count, entryPoints.Count));
+        sb.AppendLine(Strings.ImpactFooter(directCount, transitive.Count, tests.Count, entryPoints.Count));
         // Never let a capped scan read as an exhaustive one: "0 dependants" out of a sample is not
         // "nothing depends on this", and the agent cannot tell the difference on its own.
         if (coverage.IsPartial) sb.AppendLine(coverage.Warning());

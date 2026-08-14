@@ -98,6 +98,41 @@ internal sealed class AgentOrchestrator
     internal static bool ShouldRunParallel(IReadOnlyList<ToolCallDto> calls) =>
         calls.Count > 1 && calls.All(c => ParallelSafeTools.Contains(c.Function.Name));
 
+    /// <summary>
+    /// Executes one tool call, turning any failure into a message the model can act on. Shared by
+    /// this orchestrator and the basic loop in <c>InferenceProviderBase</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Tools validate their arguments by <b>throwing</b> — <c>PathSanitizer</c> raises
+    /// <see cref="ArgumentException"/> on a missing path, for one. Unguarded, a single malformed
+    /// call (routine from a small local model that omits a required argument) escaped the agent
+    /// loop and killed the whole turn, breaking the contract that a run never throws except on
+    /// cancellation. Found by the §11 bench, where devstral called <c>search_in_files</c> without
+    /// a <c>path</c>.
+    /// </para>
+    /// <para>
+    /// Handing the error back as the tool's result is also what actually works: the model reads
+    /// "path is required" and retries correctly, exactly as it does with the <c>"Error: …"</c>
+    /// strings tools already return for the cases they validate by hand.
+    /// </para>
+    /// </remarks>
+    internal static async Task<string> ExecuteToolSafeAsync(
+        IToolRegistry tools, string name, System.Text.Json.JsonElement args, CancellationToken ct)
+    {
+        try
+        {
+            return await tools.ExecuteAsync(name, args, ct);
+        }
+        catch (OperationCanceledException) { throw; }   // cancellation is the caller's business
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow($"Agent.Tool({name})", ex);
+            return $"Error: the '{name}' call failed — {ex.Message}. "
+                 + "Check the arguments against the tool's schema and try again.";
+        }
+    }
+
     // Fallback iteration cap when AgentMaxIterations is 0/unset. There is deliberately
     // no "unlimited" mode: an uncapped agent loop on a single shared local GPU is a
     // footgun (and the settings UI documents 0 as "use the default").
@@ -594,7 +629,7 @@ internal sealed class AgentOrchestrator
                 {
                     onStep(Strings.StatusCallingTool(string.Join(", ", calls.Select(c => c.Function.Name).Distinct())));
                     var results = await Task.WhenAll(
-                        calls.Select(c => tools.ExecuteAsync(c.Function.Name, c.Function.Arguments, ct)));
+                        calls.Select(c => ExecuteToolSafeAsync(tools, c.Function.Name, c.Function.Arguments, ct)));
                     for (int i = 0; i < calls.Count; i++)
                     {
                         var toolName  = calls[i].Function.Name;
@@ -632,7 +667,7 @@ internal sealed class AgentOrchestrator
                     }
                     else
                     {
-                        result = await tools.ExecuteAsync(toolName, call.Function.Arguments, ct);
+                        result = await ExecuteToolSafeAsync(tools, toolName, call.Function.Arguments, ct);
                         diff   = tools.ConsumeDiff();
                         if (IsCacheable(toolName))
                             toolCache[cacheKey] = result;

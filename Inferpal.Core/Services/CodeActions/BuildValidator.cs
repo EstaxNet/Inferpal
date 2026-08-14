@@ -15,7 +15,11 @@ internal sealed record BuildValidator(
     IReadOnlyList<string> Extensions,   // lower-case, leading dot (".cs")
     IReadOnlyList<string> Markers,      // Directory.GetFiles globs, in preference order ("*.csproj", "go.mod")
     string Command,
-    bool UseDotnetErrorFilter = false); // .NET: parse ": error XX:" lines; others: rely on the exit code
+    bool UseDotnetErrorFilter = false,  // .NET: parse ": error XX:" lines; others: rely on the exit code
+    // True when the command came from the workspace's `.inferpal/validators.json` — i.e. from the
+    // repository rather than from us. Such a command ships with any clone, so it can never run
+    // unattended: see SmartFixValidator, which requires an explicit human approval for it.
+    bool FromWorkspace = false);
 
 /// <summary>
 /// Resolves which <see cref="BuildValidator"/> applies to an edited file and where its project root
@@ -83,7 +87,7 @@ internal static class BuildValidators
                 }
                 if (markers.Count == 0) continue;   // a marker is required to locate the project root
 
-                list.Add(new BuildValidator(exts[0], exts, markers, command!));
+                list.Add(new BuildValidator(exts[0], exts, markers, command!, FromWorkspace: true));
             }
             return list;
         }

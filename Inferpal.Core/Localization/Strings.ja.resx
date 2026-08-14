@@ -403,99 +403,7 @@ Ollama が起動したら、ヘッダーの ↻ 再試行 をクリックして�
 - `/history` — 保存されたセッションを日付とプレビュー付きで一覧表示
 - `/history &lt;キーワード&gt;` — 保存されたすべてのセッションをフルテキスト検索</value></data>
 
-  <data name="SlashHelpAll" xml:space="preserve"><value>**メタ**
-- `/clear` — 会話をクリア
-- `/model &lt;名前&gt;` — モデルを切り替え
-- `/tools on|off` — ツールを有効/無効化
-- `/export` — 会話をファイルにエクスポート
-- `/restore &lt;パス&gt;` — 最新のバックアップからファイルを復元
-- `/help` — 使用可能なコマンドをすべて表示
-
-**ファイルシステム**
-- `/read &lt;パス&gt;` — ファイルをコンテキストとして添付
-- `/ls &lt;パス&gt; [パターン]` — ディレクトリ内のファイルを一覧表示
-- `/grep &lt;ディレクトリ&gt; &lt;パターン&gt; [拡張子]` — ファイル内のテキストを検索
-
-**コードアクション**
-- `/explain` — アクティブなファイル（または選択範囲）を説明
-- `/fix` — アクティブなファイルの修正を提案
-- `/review` — 構造化されたコードレビュー
-- `/refactor` — リファクタリングの提案
-- `/test` — ユニットテストを生成
-- `/doc` — 名前空間/継承コンテキスト付きドキュメント生成（C#/TS/Python/Go/Rust）
-
-**シェル**
-- `/run &lt;コマンド&gt;` — PowerShell コマンドを実行
-
-**ウェブ**
-- `/fetch &lt;url&gt;` — ウェブページをテキストとして表示
-- `/search &lt;クエリ&gt;` — DuckDuckGo ウェブ検索
-
-**Git**
-- `/commit` — 差分を分析し、コミットメッセージを提案して入力欄に事前入力
-- `/git [パス]` — git ステータス、ログ、変更の概要を表示
-
-**Visual Studio / ビルド**
-- `/map` — プロジェクトの依存関係グラフを表示
-- `/solution [パス]` — ソリューション構造を表示
-- `/build [パス]` — コンパイルしてエラーを表示
-- `/fix-build [パス]` — コンパイル → AI がエラーを修正 → 再コンパイル、クリーンになるまで繰り返す（最大 5 ラウンド）
-
-**プロジェクトコンテキスト**
-- `/context` — アクティブな `.inferpal/context.md` を表示（各システムプロンプトに注入）
-- `/memory` — エージェントメモリを表示（`.inferpal/memory.md`、各システムプロンプトに注入）
-
-**セマンティック インデックス**
-- `/index` — RAG インデックスの状態を表示（チャンク数、モデル、ルート）
-- `/index rebuild` — ソリューションの完全な再インデックスを強制する
-
-**Git**
-- `/diff [パス]` — gitの完全な差分をコンテキストチップとして添付
-
-**プロジェクトコンテキスト**
-- `/note &lt;テキスト&gt;` — `.inferpal/notes.md` にタイムスタンプ付きメモを追加
-- `/notes [clear]` — プロジェクトメモを表示またはクリア
-
-**スニペット &amp; 履歴**
-- `/snippets` — 保存されたコードスニペットを一覧表示（コードブロックの⭐ボタンで保存）
-- `/snippets copy &lt;n&gt;` / `/snippets delete &lt;n&gt;` / `/snippets clear`
-- `/history` — 保存されたセッションを日付とプレビュー付きで一覧表示
-- `/history &lt;キーワード&gt;` — 保存されたすべてのセッションをフルテキスト検索
-- `/phistory [キーワード]` — 入力履歴を検索; `/phistory use &lt;n&gt;` で再利用
-
-**セッションテンプレート**
-- `/template` — 利用可能なプリセットを表示 (code-review, bug-hunt, architecture…)
-- `/template &lt;id&gt;` — 選択したテンプレートでセッションを開始
-
-**モデル**
-- `/models` — インストール済みOllamaモデルをVRAMステータス付きで一覧表示
-- `/models pull &lt;名前&gt;` / `/models delete &lt;名前&gt;` / `/models running`
-- `/hardware` — GPU/VRAM プロファイルを表示。`/hardware &lt;gb&gt;` で VRAM 予算を設定
-- `/setup` — 初回セットアップを再実行：バックエンドを再検出し、モデルを再選択
-
-**エージェント**
-- `/agent-step` — ステップモード: 各ツール呼び出し後に一時停止
-- `/resume` — 一時停止後にエージェントを再開
-- `/plan` — プランモード: 読み取り専用、エージェントはファイルを変更せずに探索し計画を提案
-
-**ドキュメント (@Docs)**
-- `/docs add &lt;url&gt; [タイトル]` — 外部ドキュメントサイトをクロール＆インデックス化し `search_docs` ツールで利用
-- `/docs list` — インデックス済みのドキュメントソースを一覧表示
-- `/docs remove &lt;id&gt;` — ドキュメントソースを削除
-- `/docs reindex [id]` — すべてのソースを再クロール（または id で 1 つ）
-
-**ルール &amp; チェック**
-- `/rules` — プロジェクトルールを一覧表示（`.inferpal/rules`、glob でスコープ、システムプロンプトに注入）
-- `/rules init` — サンプルルールを作成
-- `/checks` — レビューチェックを一覧表示（`.inferpal/checks`）
-- `/checks init` — サンプルチェックを作成
-- `/check [名前]` — 現在の git 差分をチェックに対して AI レビュー（100% ローカル）
-
-**プロンプトファイル**
-- `/prompts` — 再利用可能なプロンプトファイルの一覧（`.inferpal/prompts/*.md`）。各ファイルはスラッシュコマンドになり、`{args}` が展開されます
-- `/prompts init` — サンプルプロンプトファイルを作成</value></data>
-
-  <!-- History search -->
+    <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>保存されたセッションはありません。セッションは `/clear` で自動的にアーカイブされます。</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>「{0}」に一致するセッションはありません。</value></data>
 
@@ -549,8 +457,15 @@ Ollama が起動したら、ヘッダーの ↻ 再試行 をクリックして�
   <data name="ChecksListHeader" xml:space="preserve"><value>**レビューチェック** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>レビュー対象がありません — 作業ツリーはクリーンです。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>差分をレビュー中…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>あなたは綿密で完全にローカルなコードレビュアーです。以下の git 差分を、提供されたレビューチェックに対してのみレビューしてください。各チェックについて、合格（PASS）かどうかを述べるか、具体的な違反を列挙してください。違反ごとに、ファイルと行番号（ファイル:行）、重大度（blocker / warning / nit）、短く実行可能な修正を示してください。簡潔に。問題を捏造せず、チェックや差分の範囲外についてはコメントしないでください。すべてのチェックが合格なら、その旨を明確に述べてください。</value></data>
+  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>あなたは綿密で完全にローカルなコードレビュアーです。以下の git 差分を、提供されたレビューチェックの観点のみで確認してください。違反は 1 行につき 1 件、次の形式で厳密に報告します: `- [severity] path/to/file.ext:行番号 - 何が問題で、どう直すか`。severity は blocker、warning、nit のいずれかで、行番号は差分に現れる番号にしてください。入れ子や小見出しは使わないこと。差分に含まれないファイルを指してはならず、問題を捏造したり、チェックや差分の外について述べたりしないでください。どのチェックが通ったかは、指摘行とは別に短い一文で述べます。すべて通った場合はその旨を明確に述べ、指摘は 1 件も報告しないでください。</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>「{0}」という名前のチェックはありません。`/checks` で一覧を表示してください。</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>差分に紐づく指摘はありません — チェックは何も検出しませんでした。</value></data>
+  <data name="CheckFindingsHeader" xml:space="preserve"><value>差分に紐づく指摘 **{0} 件**:</value></data>
+  <data name="CheckSeverityBlocker" xml:space="preserve"><value>**ブロッカー**</value></data>
+  <data name="CheckSeverityWarning" xml:space="preserve"><value>**警告**</value></data>
+  <data name="CheckSeverityNit" xml:space="preserve"><value>*軽微*</value></data>
+  <data name="CheckAnchorAdjusted" xml:space="preserve"><value>行を補正（申告は {0} 行目）</value></data>
+  <data name="CheckAnchorUnanchored" xml:space="preserve"><value>差分の外 — 位置は未検証</value></data>
   <data name="RulesScaffolded" xml:space="preserve"><value>サンプルルールを {0} に作成しました。編集してください — 一致するルールはシステムプロンプトに注入されます。</value></data>
   <data name="ChecksScaffolded" xml:space="preserve"><value>サンプルチェックを {0} に作成しました。編集してから `/check` を実行して差分をレビューしてください。</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>プロンプトファイルがありません。`.inferpal/prompts/*.md` を作成するか `/prompts init` を実行してください。</value></data>
@@ -927,4 +842,60 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ViewText" xml:space="preserve"><value>✎ テキスト</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ 部分的な解析です: {1} 件中 {0} 件のソースファイルのみを走査しました（上限）。結果は不完全な可能性があります。</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP の OAuth 認可は現在 Windows のみ対応です。リフレッシュトークンは暗号化 (DPAPI) してのみ保存でき、平文保存は選択肢にありません。静的ヘッダートークンのサーバーをご利用ください。</value></data>
+  <data name="SlashHintTask" xml:space="preserve"><value>エージェントのタスクをバックグラウンドで実行する (`/task [目的]`)</value></data>
+  <data name="TaskSubmitted" xml:space="preserve"><value>タスク **{0}** をバックグラウンドで開始しました: {1}</value></data>
+  <data name="TaskQueueFull" xml:space="preserve"><value>バックグラウンドタスクが多すぎます (最大 {0} 件)。いずれかの完了を待つか、`/task clear` を実行してください。</value></data>
+  <data name="TaskUnknown" xml:space="preserve"><value>タスク `{0}` は見つかりません。</value></data>
+  <data name="TaskStopRequested" xml:space="preserve"><value>タスク `{0}` をキャンセルしました。</value></data>
+  <data name="TaskForgot" xml:space="preserve"><value>完了した {0} 件のタスクを破棄しました。</value></data>
+  <data name="TaskListEmpty" xml:space="preserve"><value>バックグラウンドタスクはありません。`/task [目的]` で開始できます。</value></data>
+  <data name="TaskListTitle" xml:space="preserve"><value>バックグラウンドタスク</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` でレポート表示 · `/task stop [id]` でキャンセル · `/task clear` で完了分を破棄</value></data>
+  <data name="TaskColumnState" xml:space="preserve"><value>状態</value></data>
+  <data name="TaskColumnObjective" xml:space="preserve"><value>目的</value></data>
+  <data name="TaskStateQueued" xml:space="preserve"><value>待機中</value></data>
+  <data name="TaskStateQueuedAt" xml:space="preserve"><value>待機中 (第 {0} 位)</value></data>
+  <data name="TaskStateRunning" xml:space="preserve"><value>実行中</value></data>
+  <data name="TaskStateSucceeded" xml:space="preserve"><value>完了</value></data>
+  <data name="TaskStateFailed" xml:space="preserve"><value>失敗</value></data>
+  <data name="TaskStateCancelled" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="TaskStillRunning" xml:space="preserve"><value>_実行中です。完了するとここにレポートが表示されます。_</value></data>
+  <data name="TaskStepsTitle" xml:space="preserve"><value>ステップ</value></data>
+  <data name="TaskDuration" xml:space="preserve"><value>_所要時間: {0}_</value></data>
+  <data name="TaskFinishedNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` が完了しました — `/task {0}` でレポートを確認できます。</value></data>
+  <data name="SlashCategoryMeta" xml:space="preserve"><value>全般</value></data>
+  <data name="SlashCategoryCodeActions" xml:space="preserve"><value>コードアクション</value></data>
+  <data name="SlashCategoryFiles" xml:space="preserve"><value>ファイル</value></data>
+  <data name="SlashCategoryShell" xml:space="preserve"><value>シェル</value></data>
+  <data name="SlashCategoryWeb" xml:space="preserve"><value>Web</value></data>
+  <data name="SlashCategoryGit" xml:space="preserve"><value>Git</value></data>
+  <data name="SlashCategoryBuild" xml:space="preserve"><value>ビルドとテスト</value></data>
+  <data name="SlashCategoryKnowledge" xml:space="preserve"><value>プロジェクトの知識</value></data>
+  <data name="SlashCategorySessions" xml:space="preserve"><value>セッションと履歴</value></data>
+  <data name="SlashCategoryModels" xml:space="preserve"><value>モデルとハードウェア</value></data>
+  <data name="SlashCategoryAgent" xml:space="preserve"><value>エージェント</value></data>
+  <data name="SlashCategoryGovernance" xml:space="preserve"><value>ルールとチェック</value></data>
+  <data name="SlashCategoryTransparency" xml:space="preserve"><value>透明性</value></data>
+  <data name="SlashHintDocs" xml:space="preserve"><value>`search_docs` 用に外部ドキュメントサイトをインデックスする (`/docs add|list|remove|reindex`)</value></data>
+  <data name="SlashHintOnboard" xml:space="preserve"><value>リポジトリにコミットされたプロジェクトプロファイルを読み、コンテキストファイルを起草する (`/onboard [init|apply|context]`)</value></data>
+  <data name="OnboardUsage" xml:space="preserve"><value>使い方: `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
+  <data name="OnboardHeading" xml:space="preserve"><value>**プロジェクトプロファイル** — `.inferpal/project.json`</value></data>
+  <data name="OnboardNoProfile" xml:space="preserve"><value>ここにプロファイルはありません ({0})。`/onboard init` がコメント付きの例を書き出します。</value></data>
+  <data name="OnboardAppliedHeading" xml:space="preserve"><value>**適用済み** — インデックス除外。追加のみ: セマンティックインデックスからファイルを外すだけで、`read_file` や `search_in_files` から隠すことはありません。</value></data>
+  <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**推奨** — マシン側の選択であり、単独で適用されることはありません:</value></data>
+  <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (現在: {2})</value></data>
+  <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` でこのマシンの設定に書き込みます。</value></data>
+  <data name="OnboardIgnoredHeading" xml:space="preserve"><value>**無視** — リポジトリはこれを設定しません (⛔ = 実行・許可・リダイレクトを行うものを要求していました):</value></data>
+  <data name="OnboardContextPresent" xml:space="preserve"><value>`.inferpal/context.md` があります ({0})。`/onboard context force` で再生成します。</value></data>
+  <data name="OnboardContextMissing" xml:space="preserve"><value>`.inferpal/context.md` はまだありません — `/onboard context` がリポジトリから起草します。</value></data>
+  <data name="OnboardNothingToApply" xml:space="preserve"><value>適用するものはありません — このマシンがまだ使っていない推奨はプロファイルにありません。</value></data>
+  <data name="OnboardApplied" xml:space="preserve"><value>✅ このマシンに適用しました: {0}。</value></data>
+  <data name="OnboardContextExists" xml:space="preserve"><value>{0} は既に存在し、変更していません。`/onboard context force` で再生成します。</value></data>
+  <data name="OnboardContextReadingLabel" xml:space="preserve"><value>リポジトリを読み込み中…</value></data>
+  <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>プロジェクトコンテキストを作成中…</value></data>
+  <data name="OnboardContextEmpty" xml:space="preserve"><value>モデルが何も返しませんでした — `.inferpal/context.md` は変更していません。</value></data>
+  <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} を書き出しました ({1} 文字)。読んで直してください: 毎ターンのシステムプロンプトに挿入されます。</value></data>
+  <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>あなたは、完全ローカルのコーディングアシスタントが毎ターンの前に読むプロジェクトコンテキストファイルを書きます。以下のリポジトリ説明から、`##` 見出しを使った短い markdown 文書を書いてください: このプロジェクトが何か、スタックと構成、ビルドとテストの方法。重要な順のルール: ファイル・フォルダー・プロジェクト・コマンドの名前は表記どおりに写し、決して創作しないこと。説明が示していない限り、フォルダーやプロジェクトが何を*する*かは書かず、名前を挙げるにとどめること。説明が裏付けることだけを述べ、推測・水増し・一般論は書かないこと。分からないことは省くこと——短く正確な文書は、長くもっともらしい文書に勝ります。最大 40 行、表紙なし、回答全体をコードフェンスで囲まないこと。 この指示と同じ言語で書いてください。</value></data>
+  <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;ではプロジェクトコンテキストファイルを書いてください。</value></data>
+  <data name="OnboardProfileScaffolded" xml:space="preserve"><value>プロジェクトプロファイルを {0} に作成しました。リポジトリと共に配布されます: 推奨はできますが、権限は与えられません。</value></data>
 </root>

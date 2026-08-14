@@ -47,7 +47,7 @@ public class DocCountersTests
     private sealed class NoopApproval : IApprovalService
     {
         public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct,
-                                               string? subject = null, DiffInfo? diff = null) =>
+                                               string? subject = null, DiffInfo? diff = null, bool forcePrompt = false) =>
             Task.FromResult(true);
     }
 

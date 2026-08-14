@@ -104,6 +104,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
             catch (Exception ex) { Diagnostics.Swallow($"SystemPromptBuilder.PinnedFile({Path.GetFileName(pinnedPath)})", ex); }
         }
 
+
         if (projectRoot is not null)
         {
             AddFileSection(sections, PromptSectionKind.ProjectContext, Path.Combine(projectRoot, ".inferpal", "context.md"), "Project context", ".inferpal/context.md");

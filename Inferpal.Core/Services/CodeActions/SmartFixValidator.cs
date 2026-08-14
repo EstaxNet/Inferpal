@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Inferpal.Config;
 using Inferpal.Localization;
+using Inferpal.Services.Execution;
 using Inferpal.Services.Tools;
 
 namespace Inferpal.Services.CodeActions;
@@ -22,13 +23,55 @@ namespace Inferpal.Services.CodeActions;
 /// </remarks>
 internal sealed class SmartFixValidator
 {
-    private readonly InferpalConfig _config;
-    private readonly Func<string?>  _getWorkspaceRoot;
+    private readonly InferpalConfig    _config;
+    private readonly Func<string?>     _getWorkspaceRoot;
+    private readonly IApprovalService? _approval;
 
-    public SmartFixValidator(InferpalConfig config, Func<string?>? getWorkspaceRoot = null)
+    /// <summary>Workspace commands approved during this session — asked once, not once per file.</summary>
+    private readonly HashSet<string> _approvedCommands = new(StringComparer.Ordinal);
+
+    /// <param name="approval">
+    /// Required to run a command coming from <c>.inferpal/validators.json</c>. When absent, such a
+    /// command is <b>refused</b> rather than run unattended: no approval surface, no execution.
+    /// </param>
+    public SmartFixValidator(
+        InferpalConfig config, Func<string?>? getWorkspaceRoot = null, IApprovalService? approval = null)
     {
         _config           = config;
         _getWorkspaceRoot = getWorkspaceRoot ?? (() => null);
+        _approval         = approval;
+    }
+
+    /// <summary>Asks once per session for a repository-authored build command.</summary>
+    private async Task<bool> ApproveWorkspaceCommandAsync(string command, CancellationToken ct)
+    {
+        if (_approvedCommands.Contains(command)) return true;
+
+        if (_approval is null)
+        {
+            Diagnostics.Record("Permission",
+                $"Refused workspace validator (no approval surface): {command}");
+            return false;
+        }
+
+        bool approved;
+        try
+        {
+            approved = await _approval.RequestApprovalAsync(
+                "smart_fix_validator", command, ct, subject: command, diff: null, forcePrompt: true);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            // Never let the approval path break a file write — but never fall through to running
+            // the command either.
+            Diagnostics.Swallow("SmartFixValidator.Approval", ex);
+            return false;
+        }
+
+        if (approved) _approvedCommands.Add(command);
+        else Diagnostics.Record("Permission", $"Declined workspace validator: {command}");
+        return approved;
     }
 
     // Output patterns that mean the toolchain itself is missing (npx/cargo/go/tsc not on PATH), as
@@ -52,6 +95,16 @@ internal sealed class SmartFixValidator
         // Safety: never auto-run a catastrophic command sourced from a (possibly committed)
         // validators.json. Shares the built-in hard denylist with the approval policy (axe 1).
         if (PermissionPolicy.IsHardDenied(command)) return null;
+
+        // ⚠ A validator from `.inferpal/validators.json` was written by the REPOSITORY, and Smart
+        // Fix runs it by itself after a write — so cloning a repository and letting the agent touch
+        // one file would execute that repository's command, silently. The denylist is no defence
+        // here: it matches text, and obfuscation walks around it by construction. The frontier is
+        // the approval prompt, where the human reads the raw command, so that is where this goes —
+        // force-prompted, because no consent the user gave their own agent covers a stranger's
+        // command. Built-in validators (dotnet, tsc, cargo, go) are ours and keep running silently.
+        if (validator.FromWorkspace && !await ApproveWorkspaceCommandAsync(command, ct))
+            return null;
 
         try
         {

@@ -28,5 +28,12 @@ internal interface IApprovalService
     /// colored diff. Implementations without a rich surface flatten it to text
     /// (<c>DiffComputer.ComputeText</c>); <c>null</c> for tools with nothing to preview.
     /// </param>
-    Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null);
+    /// <param name="forcePrompt">
+    /// Suppresses every auto-approval path — allow rules, session grants,
+    /// <see cref="Inferpal.Config.InferpalConfig.SecurityAlertsDisabled"/> — so the human always
+    /// reads this one. For actions whose content was authored by the <b>repository</b> rather than
+    /// by the user (a <c>.inferpal/validators.json</c> build command ships with any clone): the
+    /// consent given to one's own agent is not consent to a stranger's command.
+    /// </param>
+    Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false);
 }

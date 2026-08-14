@@ -73,6 +73,11 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
 
+    // Extra exclusion patterns contributed by .inferpal/project.json (roadmap §19). Read when the
+    // root is pinned rather than per file: this sits in the enumeration loop. Additive only — the
+    // profile can lengthen the built-in list, never shorten it (see IndexExclusions).
+    private volatile IReadOnlyList<string> _profileExcludes = [];
+
     // ── Construction ──────────────────────────────────────────────────────────
 
     public ProjectIndexService(IInferenceProvider client, InferpalConfig config, LspSemanticProvider lsp)
@@ -89,7 +94,11 @@ internal sealed class ProjectIndexService : IDisposable
     /// confinement root from <see cref="RootDir"/>, so a host embedding the Core (RAG on or off)
     /// must pin it as soon as the workspace is known; <see cref="StartIndexing"/> overwrites it.
     /// </summary>
-    public void SetRoot(string rootDir) => RootDir = rootDir;
+    public void SetRoot(string rootDir)
+    {
+        RootDir          = rootDir;
+        _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
+    }
 
     /// <summary>
     /// Starts a background indexing pass over all source files under <paramref name="rootDir"/>.
@@ -102,6 +111,7 @@ internal sealed class ProjectIndexService : IDisposable
         _cts?.Dispose();
         _cts    = new CancellationTokenSource();
         RootDir = rootDir;
+        _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
         PatchGitIgnore(rootDir);
         _ = Task.Run(() => RunIndexingAsync(rootDir, _cts.Token));
     }
@@ -422,6 +432,12 @@ internal sealed class ProjectIndexService : IDisposable
 
     private void OnFileChangedCore(string path)
     {
+        // The C# semantic index is cached per workspace, so something has to keep it honest: a
+        // saved file can add or remove a reference, and a cache nobody invalidates answers about
+        // code that no longer exists. 4 ms per file, unlike the RAG re-embedding below.
+        // ⚠ No watcher exists when RAG is disabled — see CSharpSemanticIndex.ForWorkspace.
+        Lsp.CSharpSemanticIndex.NotifyFileChanged(path);
+
         // Same exclusions as the full pass — without this, every agent write triggers a
         // re-index of the .inferpal/history snapshot it just created.
         if (IsExcluded(path)) return;
@@ -581,28 +597,14 @@ internal sealed class ProjectIndexService : IDisposable
             : 0f;
     }
 
-    // Directory names whose contents must never be indexed: build artifacts, VCS/IDE metadata,
-    // and Inferpal's own data dir — .inferpal/history/ holds snapshot COPIES of source files
-    // (same extensions), which would otherwise pollute the RAG index with stale duplicates.
-    private static readonly string[] ExcludedDirNames =
-        ["obj", "bin", ".git", "node_modules", ".vs", "dist", ".inferpal"];
-
-    private static bool IsExcluded(string path)
-    {
-        foreach (var dir in ExcludedDirNames)
-        {
-            if (path.Contains($@"\{dir}\", StringComparison.OrdinalIgnoreCase) ||
-                path.Contains($"/{dir}/",  StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-        return false;
-    }
+    private bool IsExcluded(string path) => IndexExclusions.IsExcluded(path, RootDir, _profileExcludes);
 
     /// <summary>
     /// Collects source files under <paramref name="rootDir"/>, skipping generated
-    /// artifacts (bin, obj, .git, node_modules, .vs, .inferpal) and oversized files.
+    /// artifacts (bin, obj, .git, node_modules, .vs, .inferpal), whatever the project profile
+    /// adds (<c>.inferpal/project.json</c>), and oversized files.
     /// </summary>
-    private static List<string> EnumerateSourceFiles(string rootDir)
+    private List<string> EnumerateSourceFiles(string rootDir)
     {
         var result = new List<string>();
         try

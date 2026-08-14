@@ -40,7 +40,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         _mcp      = mcp;
 
         var history  = _fileHistory;
-        var smartFix = new SmartFixValidator(config, () => indexService.RootDir);
+        // The approval service is passed so a build command coming from the workspace's
+        // `.inferpal/validators.json` — i.e. written by the repository — is shown to the user
+        // before it runs, instead of running by itself after a write.
+        var smartFix = new SmartFixValidator(config, () => indexService.RootDir, approval);
         var setDiff  = (DiffInfo? d) => { _pendingDiff = d; };
 
         Register(new ReadFileTool(() => indexService.RootDir, overlay));
@@ -71,6 +74,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new SemanticSearchTool(indexService, client, config));
         Register(new SearchDocsTool(docsIndex, client, config));
         Register(new GenerateProjectMapTool(mapService));
+
+        // ⚠ No `delegate` tool here. It was built and measured (roadmap §11) and removed on
+        // 2026-07-31: it saved 91 % of the main thread's prompt tokens but halved accuracy
+        // (4/12 → 2/12), and the pre-registered gate makes degraded accuracy fatal whatever the
+        // saving. Do not re-add it without the redesign and the new gate described in §20.
     }
 
     private IEnumerable<ITool> UserTools =>

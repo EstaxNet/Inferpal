@@ -399,97 +399,7 @@ Backup: {0}</value></data>
 - `/context` — show the active `.inferpal/context.md` (injected into every system prompt)
 - `/memory` — view agent memory (`.inferpal/memory.md`, injected into every system prompt)</value></data>
 
-  <data name="SlashHelpAll" xml:space="preserve"><value>**Meta**
-- `/clear` — clear the conversation
-- `/model &lt;name&gt;` — switch model
-- `/tools on|off` — enable or disable tool calling
-- `/export` — export conversation to a file
-- `/restore &lt;path&gt;` — restore a file from its most recent backup
-- `/help` — show all available commands
-
-**File system**
-- `/read &lt;path&gt;` — attach a file as context
-- `/ls &lt;path&gt; [pattern]` — list files in a directory
-- `/grep &lt;dir&gt; &lt;pattern&gt; [ext]` — search text in files
-
-**Code actions**
-- `/explain` — explain the active file (or selection)
-- `/fix` — suggest fixes for the active file
-- `/review` — structured code review
-- `/refactor` — refactor suggestions
-- `/test` — generate unit tests
-- `/doc` — generate documentation with namespace/inheritance context (C#/TS/Python/Go/Rust)
-
-**Shell**
-- `/run &lt;command&gt;` — run a PowerShell command
-
-**Web**
-- `/fetch &lt;url&gt;` — show a web page as text
-- `/search &lt;query&gt;` — DuckDuckGo web search
-
-**Git**
-- `/commit` — analyse the diff, propose a commit message and pre-fill the prompt to confirm
-- `/git [path]` — show git status, log, and diff summary
-- `/diff [path]` — attach full git diff as a context chip
-
-**Visual Studio / Build**
-- `/map` — show project dependency graph
-- `/solution [path]` — show solution structure
-- `/build [path]` — compile and show errors
-- `/fix-build [path]` — compile → AI fixes errors → recompile, repeat until clean (max 5 rounds)
-
-**Project context**
-- `/context` — show the active `.inferpal/context.md` (injected into every system prompt)
-- `/memory` — view agent memory (`.inferpal/memory.md`, injected into every system prompt)
-- `/note &lt;text&gt;` — append a timestamped note to `.inferpal/notes.md`
-- `/notes [clear]` — list or clear project notes (injected into every system prompt)
-
-**Semantic index**
-- `/index` — show RAG index status (chunks, model, root)
-- `/index rebuild` — force a full re-indexing of the solution
-
-**Snippets &amp; History**
-- `/snippets` — list saved code snippets (⭐ button on code blocks to save)
-- `/snippets copy &lt;n&gt;` / `/snippets delete &lt;n&gt;` / `/snippets clear`
-- `/history` — list all saved sessions with date and first message preview
-- `/history &lt;term&gt;` — full-text search across all saved sessions
-- `/phistory [term]` — search prompt input history; `/phistory use &lt;n&gt;` to re-use
-
-**Session templates**
-- `/template` — list available session presets (code-review, bug-hunt, architecture…)
-- `/template &lt;id&gt;` — start a new session with the selected template
-
-**Models**
-- `/models` — list installed Ollama models with VRAM status
-- `/models pull &lt;name&gt;` — download a model from the registry
-- `/models delete &lt;name&gt;` — remove a model
-- `/models running` — show models currently loaded in VRAM
-- `/hardware` — show the GPU/VRAM profile; `/hardware &lt;gb&gt;` to set the VRAM budget
-- `/setup` — re-run first-run setup: re-detect backend, re-pick chat and embedding models
-
-**Documentation (@Docs)**
-- `/docs add &lt;url&gt; [title]` — crawl &amp; index an external doc site for the `search_docs` tool
-- `/docs list` — list indexed documentation sources
-- `/docs remove &lt;id&gt;` — remove a documentation source
-- `/docs reindex [id]` — re-crawl all sources (or one by id)
-
-**Agent**
-- `/agent-step` — toggle step mode: agent pauses after each tool call
-- `/resume` — resume agent after a step-mode pause
-- `/plan` — toggle plan mode: read-only, the agent explores and proposes a plan without editing files
-
-**Rules &amp; Checks**
-- `/rules` — list project rules (`.inferpal/rules`, glob-scoped, injected into the system prompt)
-- `/rules init` — create an example rule
-- `/checks` — list review checks (`.inferpal/checks`)
-- `/checks init` — create an example check
-- `/check [name]` — AI-review the current git diff against the checks (100% local)
-
-**Prompt files**
-- `/prompts` — list reusable prompt files (`.inferpal/prompts/*.md`); each file is a slash command, `{args}` expands
-- `/prompts init` — create an example prompt file</value></data>
-
-  <!-- History search -->
+    <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>No saved sessions found. Sessions are archived automatically on `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>No sessions match "{0}".</value></data>
 
@@ -543,8 +453,15 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review checks** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nothing to review — the working tree is clean.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Reviewing the diff…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>You are a meticulous, fully local code reviewer. Review the git diff below ONLY against the review checks provided. For each check, state whether it PASSES, or list concrete violations. For every violation give the file and line (file:line), a severity (blocker / warning / nit), and a short, actionable fix. Be concise. Do not invent issues and do not comment on anything outside the checks or the diff. If every check passes, say so clearly.</value></data>
+  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>You are a meticulous, fully local code reviewer. Review the git diff below ONLY against the review checks provided. Report every violation on its own line, in exactly this format: `- [severity] path/to/file.ext:LINE - what is wrong and how to fix it`, where severity is blocker, warning or nit, and LINE is a line number that appears in the diff. One finding per line, no nesting, no sub-bullets. Never point at a file the diff does not touch, and do not invent issues or comment on anything outside the checks or the diff. Say in a short sentence, outside the finding lines, which checks pass. If every check passes, say so clearly and report no finding.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>No check named '{0}'. Run `/checks` to list them.</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>No anchored finding — the checks turned up nothing on this diff.</value></data>
+  <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} finding(s)** anchored to the diff:</value></data>
+  <data name="CheckSeverityBlocker" xml:space="preserve"><value>**blocker**</value></data>
+  <data name="CheckSeverityWarning" xml:space="preserve"><value>**warning**</value></data>
+  <data name="CheckSeverityNit" xml:space="preserve"><value>*nit*</value></data>
+  <data name="CheckAnchorAdjusted" xml:space="preserve"><value>line adjusted, reported as {0}</value></data>
+  <data name="CheckAnchorUnanchored" xml:space="preserve"><value>outside the diff — location unverified</value></data>
   <data name="RulesScaffolded" xml:space="preserve"><value>Example rule ready at {0}. Edit it — matching rules are injected into the system prompt.</value></data>
   <data name="ChecksScaffolded" xml:space="preserve"><value>Example check ready at {0}. Edit it, then run `/check` to review your diff.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>No prompt files. Create `.inferpal/prompts/*.md` or run `/prompts init`.</value></data>
@@ -924,4 +841,60 @@ ollama serve
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Now on `{0}`.</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Partial analysis: only {0} of {1} source files were scanned (cap). Results may be incomplete.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP OAuth authorization is only available on Windows for now: the refresh token can only be stored encrypted (DPAPI), and storing it in clear text is not an option. Use a server with a static header token instead.</value></data>
+  <data name="SlashHintTask" xml:space="preserve"><value>run an agent task in the background (`/task [objective]`)</value></data>
+  <data name="TaskSubmitted" xml:space="preserve"><value>Task **{0}** started in the background: {1}</value></data>
+  <data name="TaskQueueFull" xml:space="preserve"><value>Too many background tasks ({0} max). Wait for one to finish, or run `/task clear`.</value></data>
+  <data name="TaskUnknown" xml:space="preserve"><value>Unknown task `{0}`.</value></data>
+  <data name="TaskStopRequested" xml:space="preserve"><value>Task `{0}` cancelled.</value></data>
+  <data name="TaskForgot" xml:space="preserve"><value>{0} finished task(s) forgotten.</value></data>
+  <data name="TaskListEmpty" xml:space="preserve"><value>No background task yet. `/task [objective]` starts one.</value></data>
+  <data name="TaskListTitle" xml:space="preserve"><value>Background tasks</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` shows a report · `/task stop [id]` cancels · `/task clear` forgets the finished ones</value></data>
+  <data name="TaskColumnState" xml:space="preserve"><value>State</value></data>
+  <data name="TaskColumnObjective" xml:space="preserve"><value>Objective</value></data>
+  <data name="TaskStateQueued" xml:space="preserve"><value>queued</value></data>
+  <data name="TaskStateQueuedAt" xml:space="preserve"><value>queued (#{0})</value></data>
+  <data name="TaskStateRunning" xml:space="preserve"><value>running</value></data>
+  <data name="TaskStateSucceeded" xml:space="preserve"><value>done</value></data>
+  <data name="TaskStateFailed" xml:space="preserve"><value>failed</value></data>
+  <data name="TaskStateCancelled" xml:space="preserve"><value>cancelled</value></data>
+  <data name="TaskStillRunning" xml:space="preserve"><value>_Still running — its report will appear here once it finishes._</value></data>
+  <data name="TaskStepsTitle" xml:space="preserve"><value>Steps</value></data>
+  <data name="TaskDuration" xml:space="preserve"><value>_Ran for {0}._</value></data>
+  <data name="TaskFinishedNotice" xml:space="preserve"><value>Background task `{0}` finished — `/task {0}` to read its report.</value></data>
+  <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
+  <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code actions</value></data>
+  <data name="SlashCategoryFiles" xml:space="preserve"><value>Files</value></data>
+  <data name="SlashCategoryShell" xml:space="preserve"><value>Shell</value></data>
+  <data name="SlashCategoryWeb" xml:space="preserve"><value>Web</value></data>
+  <data name="SlashCategoryGit" xml:space="preserve"><value>Git</value></data>
+  <data name="SlashCategoryBuild" xml:space="preserve"><value>Build &amp; tests</value></data>
+  <data name="SlashCategoryKnowledge" xml:space="preserve"><value>Project knowledge</value></data>
+  <data name="SlashCategorySessions" xml:space="preserve"><value>Sessions &amp; history</value></data>
+  <data name="SlashCategoryModels" xml:space="preserve"><value>Models &amp; hardware</value></data>
+  <data name="SlashCategoryAgent" xml:space="preserve"><value>Agent</value></data>
+  <data name="SlashCategoryGovernance" xml:space="preserve"><value>Rules &amp; checks</value></data>
+  <data name="SlashCategoryTransparency" xml:space="preserve"><value>Transparency</value></data>
+  <data name="SlashHintDocs" xml:space="preserve"><value>index external documentation sites for `search_docs` (`/docs add|list|remove|reindex`)</value></data>
+  <data name="SlashHintOnboard" xml:space="preserve"><value>read the project profile committed with the repository and draft its context file (`/onboard [init|apply|context]`)</value></data>
+  <data name="OnboardUsage" xml:space="preserve"><value>Usage: `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
+  <data name="OnboardHeading" xml:space="preserve"><value>**Project profile** — `.inferpal/project.json`</value></data>
+  <data name="OnboardNoProfile" xml:space="preserve"><value>No profile here ({0}). `/onboard init` writes a commented example.</value></data>
+  <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Applied** — index exclusions. Additive only: they keep files out of the semantic index and hide nothing from `read_file` or `search_in_files`.</value></data>
+  <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Recommended** — machine choices, never applied on their own:</value></data>
+  <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (current: {2})</value></data>
+  <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` writes these into this machine's configuration.</value></data>
+  <data name="OnboardIgnoredHeading" xml:space="preserve"><value>**Ignored** — a repository does not set these (⛔ = it asked for something that executes, authorises or redirects):</value></data>
+  <data name="OnboardContextPresent" xml:space="preserve"><value>`.inferpal/context.md` is present ({0}). `/onboard context force` regenerates it.</value></data>
+  <data name="OnboardContextMissing" xml:space="preserve"><value>No `.inferpal/context.md` yet — `/onboard context` drafts one from the repository.</value></data>
+  <data name="OnboardNothingToApply" xml:space="preserve"><value>Nothing to apply — the profile recommends nothing this machine is not already using.</value></data>
+  <data name="OnboardApplied" xml:space="preserve"><value>✅ Applied to this machine: {0}.</value></data>
+  <data name="OnboardContextExists" xml:space="preserve"><value>{0} already exists and was left untouched. `/onboard context force` regenerates it.</value></data>
+  <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Reading the repository…</value></data>
+  <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Drafting the project context…</value></data>
+  <data name="OnboardContextEmpty" xml:space="preserve"><value>The model returned nothing — `.inferpal/context.md` was left untouched.</value></data>
+  <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} written ({1} characters). Read it and correct it: it is injected into the system prompt of every turn.</value></data>
+  <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>You write the project context file that a local coding assistant reads before every turn. From the repository description below, write a short markdown document with `##` sections: what this project is, its stack and layout and how it is built and tested. Rules, in order of importance: copy every name — file, folder, project, command — exactly as it appears, and never invent one; do not say what a folder or project *does* unless the description shows it, name it and move on; state only what the description supports, with no guessing, no filler and no generic advice; leave out whatever is unknown, a short accurate document beats a long plausible one. 40 lines maximum, no title page, and no code fence around the whole answer. Write it in the language of this instruction.</value></data>
+  <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Write the project context file now.</value></data>
+  <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Project profile created at {0}. It ships with the repository: it may recommend, never grant.</value></data>
 </root>

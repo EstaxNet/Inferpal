@@ -7,15 +7,15 @@ using Microsoft.VisualStudio.Extensibility.Editor;
 namespace Inferpal.Commands;
 
 /// <summary>
-/// Pipeline for the test-generation code action (<c>/test</c> and the <c>Add unit tests</c>
+/// VS side of the test-generation code action (<c>/test</c> and the <c>Add unit tests</c>
 /// context-menu command). Unlike <see cref="InPlaceCodeEdit"/>, the generated code does NOT
-/// belong to the active document — it goes into a <b>separate test file</b>:
-/// <list type="number">
-///   <item>Resolve the conventional test path next to the source (<see cref="TestFilePathResolver"/>).</item>
-///   <item>Generate the tests (model, tools off) from the selection — or the whole file.</item>
-///   <item>New file → write it and open it. Existing file → open it and replace its content via an
-///         undoable edit (Ctrl+Z), the model having been given the current tests to preserve.</item>
-/// </list>
+/// belong to the active document — it goes into a <b>separate test file</b>.
+/// <para>
+/// What to write and where is decided by <see cref="Services.CodeActions.TestGenerationPlanner"/>
+/// (Core), so the headless host answers <c>/test</c> with the same behaviour; what stays here is
+/// the part that is genuinely VS: the spinner, and applying the result as an <b>undoable</b> edit
+/// (Ctrl+Z) when the test file already exists.
+/// </para>
 /// Never throws; returns a <see cref="Result"/> describing what happened.
 /// </summary>
 internal static class TestGenerationEdit
@@ -35,83 +35,45 @@ internal static class TestGenerationEdit
         CancellationToken         ct)
     {
         var sourcePath = sourceView.Document.Uri.LocalPath;
-        var sourceName = Path.GetFileName(sourcePath);
 
         var sel        = sourceView.Selection;
         var sourceCode = !sel.IsEmpty
             ? sel.Extent.CopyToString()
             : sourceView.Document.Text.CopyToString();
-        if (string.IsNullOrWhiteSpace(sourceCode))
-            return new Result(false, string.Empty, false);
-
-        var testPath = TestFilePathResolver.Resolve(sourcePath);
-        var testName = Path.GetFileName(testPath);
-
-        // Read any existing test file so the model can extend it instead of clobbering it.
-        string? existing = null;
-        if (File.Exists(testPath))
-        {
-            try { existing = await File.ReadAllTextAsync(testPath, ct); }
-            catch { existing = null; }
-        }
-        var extend = !string.IsNullOrWhiteSpace(existing);
-
-        var system = extend ? TestGenerationPrompts.ExtendFileSystem : TestGenerationPrompts.NewFileSystem;
-        var user   = extend
-            ? $"Existing test file ({testName}):\n\n{existing}\n\nSource under test ({sourceName}):\n\n{sourceCode}"
-            : $"{TestGenerationPrompts.Instruction}\n\nSource file: {sourceName}\n\n{sourceCode}";
-
-        var messages = new List<ChatMessageDto>
-        {
-            new("system", system),
-            new("user",   user),
-        };
 
         // Spinner overlay while the model generates.
         InlineEditInputWindow dlg;
         try { dlg = await InlineEditInputWindow.CreateAndShowSpinnerAsync(); }
-        catch { return new Result(false, testName, extend); }
+        catch { return new Result(false, string.Empty, false); }
 
-        ChatTurnResult result;
+        TestGenerationPlan plan;
         try
         {
-            result = await client.SendChatAsync(
-                model, messages, EmptyToolRegistry.Instance, onToken: null, ct, TaskComplexity.Quick);
+            plan = await Services.CodeActions.TestGenerationPlanner.PlanAsync(
+                client, model, sourcePath, sourceCode, ct);
         }
-        catch
-        {
-            dlg.CloseFromThread();
-            return new Result(false, testName, extend);
-        }
-        finally
-        {
-            dlg.CloseFromThread();
-        }
+        catch (OperationCanceledException) { throw; }
+        catch { return new Result(false, string.Empty, false); }
+        finally { dlg.CloseFromThread(); }
 
-        var content = InlineEditResponse.Clean(result.TextContent);
-
-        // The model signalled there is nothing worth testing / nothing left to add — write nothing.
-        if (CodeActionSentinel.IsNoChange(content))
-            return new Result(false, testName, extend, NoChange: true);
-
-        if (string.IsNullOrWhiteSpace(content))
-            return new Result(false, testName, extend);
+        if (plan.NoChange) return new Result(false, plan.TestFileName, plan.Extended, NoChange: true);
+        if (!plan.Ok)      return new Result(false, plan.TestFileName, plan.Extended);
 
         try
         {
-            if (!extend)
+            if (!plan.Extended)
             {
                 // Brand-new file: write it to disk, then open it in the editor.
-                var dir = Path.GetDirectoryName(testPath);
+                var dir = Path.GetDirectoryName(plan.TestPath);
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
-                await File.WriteAllTextAsync(testPath, content, ct);
-                await vs.Documents().OpenTextDocumentAsync(new Uri(testPath), ct);
+                await File.WriteAllTextAsync(plan.TestPath, plan.Content, ct);
+                await vs.Documents().OpenTextDocumentAsync(new Uri(plan.TestPath), ct);
             }
             else
             {
                 // Existing file: open it and replace its whole content via an undoable edit.
-                var doc      = await vs.Documents().OpenTextDocumentAsync(new Uri(testPath), ct);
+                var doc      = await vs.Documents().OpenTextDocumentAsync(new Uri(plan.TestPath), ct);
                 var fullText = doc.Text.CopyToString();
                 var range    = new TextRange(
                     new TextPosition(doc, 0),
@@ -119,15 +81,15 @@ internal static class TestGenerationEdit
                 await vs.Editor().EditAsync(batch =>
                 {
                     var editable = doc.AsEditable(batch);
-                    editable.Replace(range, content);
+                    editable.Replace(range, plan.Content);
                 }, ct);
             }
 
-            return new Result(true, testName, extend);
+            return new Result(true, plan.TestFileName, plan.Extended);
         }
         catch
         {
-            return new Result(false, testName, extend);
+            return new Result(false, plan.TestFileName, plan.Extended);
         }
     }
 }

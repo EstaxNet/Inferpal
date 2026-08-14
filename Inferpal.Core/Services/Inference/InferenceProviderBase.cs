@@ -348,7 +348,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                 {
                     onStep(Strings.StatusCallingTool(string.Join(", ", calls.Select(c => c.Function.Name).Distinct())));
                     var results = await Task.WhenAll(
-                        calls.Select(c => tools.ExecuteAsync(c.Function.Name, c.Function.Arguments, ct)));
+                        calls.Select(c => AgentOrchestrator.ExecuteToolSafeAsync(tools, c.Function.Name, c.Function.Arguments, ct)));
                     for (int idx = 0; idx < calls.Count; idx++)
                     {
                         var toolName  = calls[idx].Function.Name;
@@ -366,7 +366,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                     var toolName = call.Function.Name;
                     onStep(Strings.StatusCallingTool(toolName));
 
-                    var result    = await tools.ExecuteAsync(toolName, call.Function.Arguments, ct);
+                    var result    = await AgentOrchestrator.ExecuteToolSafeAsync(tools, toolName, call.Function.Arguments, ct);
                     var diff      = tools.ConsumeDiff();
                     var hasErrors = toolName == GetDiagnosticsTool.ToolName && GetDiagnosticsTool.OutputHasErrors(result);
                     var exec      = new ToolExecution(toolName, call.Function.Arguments.ToString(), result, hasErrors, diff);

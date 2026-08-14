@@ -220,12 +220,14 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Template:   await HandleTemplateCommandAsync(parts, ct); break;
             case SlashCommandId.Docs:       await HandleDocsCommandAsync(parts, ct);     break;
             case SlashCommandId.Check:      await HandleCheckCommandAsync(parts, ct);    break;
+            case SlashCommandId.Onboard:    await HandleOnboardCommandAsync(parts, ct);  break;
             case SlashCommandId.Rules:      await HandleRulesCommandAsync(parts, ct);    break;
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
             case SlashCommandId.Diagnostics: await ShowInfoAsync(Services.Commands.DiagnosticsCommandHandler.Handle(parts)); break;
             case SlashCommandId.Bench:       await HandleBenchCommandAsync(parts, ct);    break;
             case SlashCommandId.Arena:       await HandleArenaCommandAsync(parts, ct);    break;
             case SlashCommandId.Tdd:         await HandleTddCommandAsync(parts, ct);      break;
+            case SlashCommandId.Task:        await HandleTaskCommandAsync(parts);         break;
             case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
             case SlashCommandId.Xray:
             {
@@ -343,6 +345,56 @@ internal partial class InferpalToolWindowData
     // owns the loop; this method only maps its callbacks to chat UI: CurrentStep for progress and
     // agent steps, a tool bubble per test round (expanded while red), an assistant bubble per fix
     // summary. Cancellable via the regular stop button (_currentCts), like /fix-build.
+    /// <summary>
+    /// <c>/task</c> — submits, lists, inspects or cancels a detached agent run. Unlike every other
+    /// agent command this one does NOT take the turn: it returns as soon as the queue has recorded
+    /// the objective, and the run continues while the user keeps working. It therefore never
+    /// touches <c>IsLoading</c>/<c>_currentCts</c>, whose contract is "a turn is in flight".
+    /// </summary>
+    private async Task HandleTaskCommandAsync(string[] parts)
+    {
+        await ShowInfoAsync(Services.Commands.TaskCommandHandler.Handle(BackgroundTasks(), parts).Message);
+    }
+
+    /// <summary>
+    /// The window's background-task queue, wired on first use. The run is restricted to
+    /// <see cref="BackgroundTaskToolRegistry"/> (read-only, nothing that could raise an approval
+    /// prompt): a task that popped a modal while the user is typing would defeat its own purpose.
+    /// </summary>
+    private BackgroundTaskQueue BackgroundTasks()
+    {
+        if (_backgroundTasks is not null) return _backgroundTasks;
+
+        _backgroundTasks = new BackgroundTaskQueue(async (task, onStep, taskCt) =>
+        {
+            // Snapshot the layered system prompt at start time, as a chat turn would.
+            var systemPrompt = _history.Count > 0 && _history[0].Role == "system"
+                ? _history[0].Content : null;
+
+            var history = new List<ChatMessageDto>();
+            if (!string.IsNullOrWhiteSpace(systemPrompt))
+                history.Add(new("system", systemPrompt + BackgroundTaskToolRegistry.SystemPromptSuffix));
+            history.Add(new("user", task.Objective));
+
+            // RunAgentAsync never throws on network/backend errors — they come back in the result.
+            var run = await _client.RunAgentAsync(
+                ModelRouter.Resolve(_config, ModelRole.Agent),
+                history,
+                new BackgroundTaskToolRegistry(_tools),
+                onStep:  onStep,
+                onToken: null,
+                ct:      taskCt);
+
+            return run.FinalResponse;
+        });
+
+        // A finished task must announce itself: its report is worthless if nobody knows it exists.
+        _backgroundTasks.TaskFinished += snapshot =>
+            _ = ShowInfoAsync(Strings.TaskFinishedNotice(snapshot.Id));
+
+        return _backgroundTasks;
+    }
+
     private async Task HandleTddCommandAsync(string[] parts, CancellationToken ct)
     {
         CancellationTokenSource? localCts = null;

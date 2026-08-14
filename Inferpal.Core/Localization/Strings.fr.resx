@@ -403,99 +403,7 @@ Sauvegarde : {0}</value></data>
 - `/history` — lister toutes les sessions sauvegardées avec date et aperçu
 - `/history &lt;terme&gt;` — recherche plein texte dans toutes les sessions sauvegardées</value></data>
 
-  <data name="SlashHelpAll" xml:space="preserve"><value>**Meta**
-- `/clear` — effacer la conversation
-- `/model &lt;nom&gt;` — changer de modèle
-- `/tools on|off` — activer ou désactiver les outils
-- `/export` — exporter la conversation dans un fichier
-- `/restore &lt;chemin&gt;` — restaurer un fichier depuis sa dernière sauvegarde
-- `/help` — afficher toutes les commandes disponibles
-
-**Système de fichiers**
-- `/read &lt;chemin&gt;` — joindre un fichier comme contexte
-- `/ls &lt;chemin&gt; [motif]` — lister les fichiers d'un répertoire
-- `/grep &lt;rép&gt; &lt;motif&gt; [ext]` — rechercher du texte dans les fichiers
-
-**Actions sur le code**
-- `/explain` — expliquer le fichier actif (ou la sélection)
-- `/fix` — suggérer des corrections pour le fichier actif
-- `/review` — revue de code structurée
-- `/refactor` — suggestions de refactorisation
-- `/test` — générer des tests unitaires
-- `/doc` — générer des commentaires de documentation XML
-
-**Shell**
-- `/run &lt;commande&gt;` — exécuter une commande PowerShell
-
-**Web**
-- `/fetch &lt;url&gt;` — afficher une page web en texte
-- `/search &lt;requête&gt;` — recherche web DuckDuckGo
-
-**Git**
-- `/commit` — analyse le diff, propose un message de commit et pré-remplit la saisie pour confirmer
-- `/git [chemin]` — afficher le statut git, le log et le résumé des modifications
-
-**Visual Studio / Build**
-- `/map` — afficher le graphe de dépendances du projet
-- `/solution [chemin]` — afficher la structure de la solution
-- `/build [chemin]` — compiler et afficher les erreurs
-- `/fix-build [chemin]` — compile → l'IA corrige les erreurs → recompile, jusqu'à succès (max 5 tours)
-
-**Contexte de projet**
-- `/context` — afficher le `.inferpal/context.md` actif (injecté dans chaque system prompt)
-- `/memory` — afficher la mémoire agent (`.inferpal/memory.md`, injectée dans chaque system prompt)
-
-**Index sémantique**
-- `/index` — afficher le statut de l'index RAG (fragments, modèle, racine)
-- `/index rebuild` — forcer une ré-indexation complète de la solution
-
-**Git**
-- `/diff [chemin]` — joindre le diff git complet comme chip de contexte
-
-**Contexte de projet**
-- `/note &lt;texte&gt;` — ajouter une note horodatée dans `.inferpal/notes.md`
-- `/notes [clear]` — lister ou effacer les notes de projet
-
-**Snippets &amp; Historique**
-- `/snippets` — lister les snippets sauvegardés (bouton ⭐ sur les blocs de code)
-- `/snippets copy &lt;n&gt;` / `/snippets delete &lt;n&gt;` / `/snippets clear`
-- `/history` — lister toutes les sessions sauvegardées
-- `/history &lt;terme&gt;` — recherche plein texte dans toutes les sessions
-- `/phistory [terme]` — rechercher dans l'historique de saisie ; `/phistory use &lt;n&gt;` pour réutiliser
-
-**Templates de session**
-- `/template` — lister les presets (code-review, bug-hunt, architecture, refactoring, tests)
-- `/template &lt;id&gt;` — démarrer une session avec le template sélectionné
-
-**Modèles**
-- `/models` — lister les modèles installés avec statut VRAM
-- `/models pull &lt;nom&gt;` / `/models delete &lt;nom&gt;` / `/models running`
-- `/hardware` — afficher le profil GPU/VRAM ; `/hardware &lt;gb&gt;` pour définir le budget VRAM
-- `/setup` — relancer la configuration initiale : re-détecter le backend, re-choisir les modèles
-
-**Agent**
-- `/agent-step` — mode pas à pas : pause après chaque outil
-- `/resume` — reprendre l'agent après une pause
-- `/plan` — mode plan : lecture seule, l'agent explore et propose un plan sans modifier les fichiers
-
-**Documentation (@Docs)**
-- `/docs add &lt;url&gt; [titre]` — parcourir et indexer un site de doc externe pour l'outil `search_docs`
-- `/docs list` — lister les sources de documentation indexées
-- `/docs remove &lt;id&gt;` — supprimer une source de documentation
-- `/docs reindex [id]` — ré-indexer toutes les sources (ou une par id)
-
-**Règles &amp; Checks**
-- `/rules` — lister les règles de projet (`.inferpal/rules`, scopées par glob, injectées dans le system prompt)
-- `/rules init` — créer une règle d'exemple
-- `/checks` — lister les checks de revue (`.inferpal/checks`)
-- `/checks init` — créer un check d'exemple
-- `/check [nom]` — relecture IA du diff git courant au regard des checks (100 % local)
-
-**Fichiers de prompt**
-- `/prompts` — liste les fichiers de prompt réutilisables (`.inferpal/prompts/*.md`) ; chaque fichier est une commande slash, `{args}` est remplacé
-- `/prompts init` — crée un fichier de prompt d'exemple</value></data>
-
-  <!-- History search -->
+    <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Aucune session sauvegardée. Les sessions sont archivées automatiquement via `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Aucune session ne correspond à « {0} ».</value></data>
 
@@ -549,8 +457,15 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="ChecksListHeader" xml:space="preserve"><value>**Checks de revue** (`.inferpal/checks`) :</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Rien à relire — l'arbre de travail est propre.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Revue du diff en cours…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Tu es un relecteur de code méticuleux, 100 % local. Relis le diff git ci-dessous UNIQUEMENT au regard des checks de revue fournis. Pour chaque check, indique s'il PASSE, ou liste les violations concrètes. Pour chaque violation, donne le fichier et la ligne (fichier:ligne), une sévérité (blocker / warning / nit) et une correction courte et actionnable. Sois concis. N'invente rien et ne commente rien en dehors des checks ou du diff. Si tous les checks passent, dis-le clairement.</value></data>
+  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Tu es un relecteur de code méticuleux, 100 % local. Relis le diff git ci-dessous UNIQUEMENT au regard des checks de revue fournis. Signale chaque violation sur sa propre ligne, exactement dans ce format : `- [severity] chemin/vers/fichier.ext:LIGNE - ce qui ne va pas et comment le corriger`, où severity vaut blocker, warning ou nit, et où LIGNE est un numéro de ligne présent dans le diff. Un constat par ligne, sans imbrication ni sous-puces. Ne désigne jamais un fichier absent du diff, n'invente aucun problème et ne commente rien en dehors des checks ou du diff. Indique en une phrase courte, hors des lignes de constat, quels checks passent. Si tous passent, dis-le clairement et ne signale aucun constat.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Aucun check nommé « {0} ». Lance `/checks` pour les lister.</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>Aucun constat ancré — les checks n'ont rien relevé sur ce diff.</value></data>
+  <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} constat(s)** ancré(s) au diff :</value></data>
+  <data name="CheckSeverityBlocker" xml:space="preserve"><value>**bloquant**</value></data>
+  <data name="CheckSeverityWarning" xml:space="preserve"><value>**avertissement**</value></data>
+  <data name="CheckSeverityNit" xml:space="preserve"><value>*détail*</value></data>
+  <data name="CheckAnchorAdjusted" xml:space="preserve"><value>ligne ajustée, annoncée en {0}</value></data>
+  <data name="CheckAnchorUnanchored" xml:space="preserve"><value>hors du diff — emplacement non vérifié</value></data>
   <data name="RulesScaffolded" xml:space="preserve"><value>Règle d'exemple créée dans {0}. Modifie-la — les règles correspondantes sont injectées dans le system prompt.</value></data>
   <data name="ChecksScaffolded" xml:space="preserve"><value>Check d'exemple créé dans {0}. Modifie-le, puis lance `/check` pour relire ton diff.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>Aucun fichier de prompt. Crée `.inferpal/prompts/*.md` ou lance `/prompts init`.</value></data>
@@ -927,4 +842,60 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 Vous êtes maintenant sur `{0}`.</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Analyse partielle : seuls {0} fichiers source sur {1} ont été balayés (plafond). Les résultats peuvent être incomplets.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>L'autorisation OAuth MCP n'est disponible que sous Windows pour l'instant : le jeton de rafraîchissement ne peut être stocké que chiffré (DPAPI), et le stocker en clair n'est pas une option. Utilisez plutôt un serveur avec un jeton d'en-tête statique.</value></data>
+  <data name="SlashHintTask" xml:space="preserve"><value>lancer une tâche d'agent en arrière-plan (`/task [objectif]`)</value></data>
+  <data name="TaskSubmitted" xml:space="preserve"><value>Tâche **{0}** lancée en arrière-plan : {1}</value></data>
+  <data name="TaskQueueFull" xml:space="preserve"><value>Trop de tâches en arrière-plan ({0} au maximum). Attendez qu'une se termine ou lancez `/task clear`.</value></data>
+  <data name="TaskUnknown" xml:space="preserve"><value>Tâche `{0}` inconnue.</value></data>
+  <data name="TaskStopRequested" xml:space="preserve"><value>Tâche `{0}` annulée.</value></data>
+  <data name="TaskForgot" xml:space="preserve"><value>{0} tâche(s) terminée(s) oubliée(s).</value></data>
+  <data name="TaskListEmpty" xml:space="preserve"><value>Aucune tâche en arrière-plan. `/task [objectif]` en lance une.</value></data>
+  <data name="TaskListTitle" xml:space="preserve"><value>Tâches en arrière-plan</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` affiche un rapport · `/task stop [id]` annule · `/task clear` oublie les tâches terminées</value></data>
+  <data name="TaskColumnState" xml:space="preserve"><value>État</value></data>
+  <data name="TaskColumnObjective" xml:space="preserve"><value>Objectif</value></data>
+  <data name="TaskStateQueued" xml:space="preserve"><value>en file</value></data>
+  <data name="TaskStateQueuedAt" xml:space="preserve"><value>en file (n°{0})</value></data>
+  <data name="TaskStateRunning" xml:space="preserve"><value>en cours</value></data>
+  <data name="TaskStateSucceeded" xml:space="preserve"><value>terminée</value></data>
+  <data name="TaskStateFailed" xml:space="preserve"><value>échec</value></data>
+  <data name="TaskStateCancelled" xml:space="preserve"><value>annulée</value></data>
+  <data name="TaskStillRunning" xml:space="preserve"><value>_Toujours en cours — le rapport s'affichera ici à la fin._</value></data>
+  <data name="TaskStepsTitle" xml:space="preserve"><value>Étapes</value></data>
+  <data name="TaskDuration" xml:space="preserve"><value>_Durée : {0}._</value></data>
+  <data name="TaskFinishedNotice" xml:space="preserve"><value>La tâche de fond `{0}` est terminée — `/task {0}` pour lire son rapport.</value></data>
+  <data name="SlashCategoryMeta" xml:space="preserve"><value>Méta</value></data>
+  <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Actions de code</value></data>
+  <data name="SlashCategoryFiles" xml:space="preserve"><value>Fichiers</value></data>
+  <data name="SlashCategoryShell" xml:space="preserve"><value>Shell</value></data>
+  <data name="SlashCategoryWeb" xml:space="preserve"><value>Web</value></data>
+  <data name="SlashCategoryGit" xml:space="preserve"><value>Git</value></data>
+  <data name="SlashCategoryBuild" xml:space="preserve"><value>Build et tests</value></data>
+  <data name="SlashCategoryKnowledge" xml:space="preserve"><value>Connaissance du projet</value></data>
+  <data name="SlashCategorySessions" xml:space="preserve"><value>Sessions et historique</value></data>
+  <data name="SlashCategoryModels" xml:space="preserve"><value>Modèles et matériel</value></data>
+  <data name="SlashCategoryAgent" xml:space="preserve"><value>Agent</value></data>
+  <data name="SlashCategoryGovernance" xml:space="preserve"><value>Règles et contrôles</value></data>
+  <data name="SlashCategoryTransparency" xml:space="preserve"><value>Transparence</value></data>
+  <data name="SlashHintDocs" xml:space="preserve"><value>indexer des sites de documentation pour `search_docs` (`/docs add|list|remove|reindex`)</value></data>
+  <data name="SlashHintOnboard" xml:space="preserve"><value>lire le profil de projet commité avec le dépôt et rédiger son fichier de contexte (`/onboard [init|apply|context]`)</value></data>
+  <data name="OnboardUsage" xml:space="preserve"><value>Usage : `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
+  <data name="OnboardHeading" xml:space="preserve"><value>**Profil de projet** — `.inferpal/project.json`</value></data>
+  <data name="OnboardNoProfile" xml:space="preserve"><value>Aucun profil ici ({0}). `/onboard init` écrit un exemple commenté.</value></data>
+  <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Appliqué** — exclusions d'index. Additif uniquement : elles retirent des fichiers de l'index sémantique et ne cachent rien à `read_file` ni à `search_in_files`.</value></data>
+  <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Recommandé** — choix machine, jamais appliqués d'eux-mêmes :</value></data>
+  <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (actuel : {2})</value></data>
+  <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` les écrit dans la configuration de cette machine.</value></data>
+  <data name="OnboardIgnoredHeading" xml:space="preserve"><value>**Ignoré** — un dépôt ne règle pas ceci (⛔ = il demandait quelque chose qui exécute, autorise ou redirige) :</value></data>
+  <data name="OnboardContextPresent" xml:space="preserve"><value>`.inferpal/context.md` est présent ({0}). `/onboard context force` le régénère.</value></data>
+  <data name="OnboardContextMissing" xml:space="preserve"><value>Pas encore de `.inferpal/context.md` — `/onboard context` en rédige un à partir du dépôt.</value></data>
+  <data name="OnboardNothingToApply" xml:space="preserve"><value>Rien à appliquer — le profil ne recommande rien que cette machine n'utilise déjà.</value></data>
+  <data name="OnboardApplied" xml:space="preserve"><value>✅ Appliqué à cette machine : {0}.</value></data>
+  <data name="OnboardContextExists" xml:space="preserve"><value>{0} existe déjà et n'a pas été touché. `/onboard context force` le régénère.</value></data>
+  <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Lecture du dépôt…</value></data>
+  <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Rédaction du contexte de projet…</value></data>
+  <data name="OnboardContextEmpty" xml:space="preserve"><value>Le modèle n'a rien renvoyé — `.inferpal/context.md` n'a pas été touché.</value></data>
+  <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} écrit ({1} caractères). Lis-le et corrige-le : il est injecté dans le prompt système à chaque tour.</value></data>
+  <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>Tu rédiges le fichier de contexte de projet qu'un assistant de code 100 % local lit avant chaque tour. À partir de la description de dépôt ci-dessous, écris un court document markdown avec des sections `##` : ce qu'est ce projet, sa stack et son organisation et comment il se construit et se teste. Règles, par ordre d'importance : recopie chaque nom — fichier, dossier, projet, commande — exactement tel qu'il apparaît, et n'en invente aucun ; ne dis pas ce qu'un dossier ou un projet *fait* si la description ne le montre pas, nomme-le et passe à la suite ; n'affirme que ce que la description soutient, sans supposition, sans remplissage et sans conseil générique ; laisse de côté ce que tu ignores, un document court et juste vaut mieux qu'un long document plausible. 40 lignes maximum, sans page de titre et sans bloc de code autour de toute la réponse. Rédige-le dans la langue de cette consigne.</value></data>
+  <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Rédige maintenant le fichier de contexte de projet.</value></data>
+  <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Profil de projet créé dans {0}. Il voyage avec le dépôt : il peut recommander, jamais accorder.</value></data>
 </root>

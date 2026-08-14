@@ -96,6 +96,12 @@ internal sealed class RenameSymbolTool : ITool
             return $"No source files found under '{root}'.";
 
         // ── Scan for occurrences ───────────────────────────────────────────────
+        // C# renames are resolved by the compiler when a workspace is known: the syntactic path
+        // below rewrites EVERY identifier token spelled like the target, so renaming a method
+        // called `Handle` would also rewrite the dozen unrelated `Handle` methods of other types —
+        // and this tool writes files. Semantics narrows that to the symbol actually asked for.
+        var semanticSpans = TryResolveRenameSpans(oldName, root, ct);
+
         var hits            = new List<(string FilePath, int Count, string NewContent)>();
         int totalOccurrences = 0;
 
@@ -106,7 +112,11 @@ internal sealed class RenameSymbolTool : ITool
             {
                 var content = await File.ReadAllTextAsync(file, ct);
 
-                var (newContent, count) = Path.GetExtension(file).Equals(".cs", StringComparison.OrdinalIgnoreCase)
+                var isCSharp = Path.GetExtension(file).Equals(".cs", StringComparison.OrdinalIgnoreCase);
+                var (newContent, count) =
+                      semanticSpans is not null && isCSharp
+                    ? ApplySpans(content, semanticSpans.GetValueOrDefault(file), newName)
+                    : isCSharp
                     ? RenameInCSharp(content, oldName, newName)
                     : RenameWithRegex(content, oldName, newName);
 
@@ -170,6 +180,49 @@ internal sealed class RenameSymbolTool : ITool
             sb.AppendLine($"⚠ Applied with {errors.Count} error(s):\n{string.Join('\n', errors)}");
 
         return sb.ToString().TrimEnd();
+    }
+
+    // ── Semantic rename (C#, when a workspace is known) ────────────────────────
+
+    /// <summary>
+    /// Tokens to rewrite per file, resolved by the compiler — or null when that is not possible
+    /// (no workspace, symbol unresolved, index failure), in which case the caller falls back to
+    /// the syntactic path.
+    /// </summary>
+    private static IReadOnlyDictionary<string, IReadOnlyList<Microsoft.CodeAnalysis.Text.TextSpan>>?
+        TryResolveRenameSpans(string oldName, string root, CancellationToken ct)
+    {
+        try
+        {
+            var spans = Lsp.CSharpSemanticIndex.ForWorkspace(root)
+                .FindRenameSpans(oldName, declaringFile: null, ct);
+            // Nothing resolved: better to fall back than to silently rename nothing at all.
+            return spans.Count > 0 ? spans : null;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("RenameSymbolTool.Semantic", ex);
+            return null;
+        }
+    }
+
+    /// <summary>Replaces the given spans, back to front so earlier offsets stay valid.</summary>
+    private static (string newContent, int count) ApplySpans(
+        string content,
+        IReadOnlyList<Microsoft.CodeAnalysis.Text.TextSpan>? spans,
+        string newName)
+    {
+        if (spans is null || spans.Count == 0) return (content, 0);
+
+        var sb = new StringBuilder(content);
+        foreach (var span in spans.OrderByDescending(s => s.Start))
+        {
+            if (span.End > sb.Length) continue;   // file changed under us — skip rather than corrupt
+            sb.Remove(span.Start, span.Length);
+            sb.Insert(span.Start, newName);
+        }
+        return (sb.ToString(), spans.Count);
     }
 
     // ── Roslyn rename (C# only) ────────────────────────────────────────────────

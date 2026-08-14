@@ -11,3 +11,4 @@ global using Inferpal.Services.Governance;
 global using Inferpal.Services.Presentation;
 global using Inferpal.Services.Editor;
 global using Inferpal.Services.Signals;
+global using Inferpal.Services.Tasks;

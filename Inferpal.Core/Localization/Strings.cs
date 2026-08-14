@@ -570,7 +570,23 @@ internal static class Strings
     public static string SlashUsage(string syntax)        => string.Format(Get(nameof(SlashUsage)),        syntax);
     public static string SlashUsageRestore                => Get(nameof(SlashUsageRestore));
     public static string SlashHelp(string unknownCmd)     => string.Format(Get(nameof(SlashHelp)),         unknownCmd);
-    public static string SlashHelpAll                     => Get(nameof(SlashHelpAll));
+
+    // `/help` section titles — the help text itself is generated from SlashCommandRouter.Catalog
+    // (the hand-written SlashHelpAll had drifted from the shipped commands and was dropped).
+    public static string SlashCategoryMeta                => Get(nameof(SlashCategoryMeta));
+    public static string SlashCategoryCodeActions         => Get(nameof(SlashCategoryCodeActions));
+    public static string SlashCategoryFiles               => Get(nameof(SlashCategoryFiles));
+    public static string SlashCategoryShell               => Get(nameof(SlashCategoryShell));
+    public static string SlashCategoryWeb                 => Get(nameof(SlashCategoryWeb));
+    public static string SlashCategoryGit                 => Get(nameof(SlashCategoryGit));
+    public static string SlashCategoryBuild               => Get(nameof(SlashCategoryBuild));
+    public static string SlashCategoryKnowledge           => Get(nameof(SlashCategoryKnowledge));
+    public static string SlashCategorySessions            => Get(nameof(SlashCategorySessions));
+    public static string SlashCategoryModels              => Get(nameof(SlashCategoryModels));
+    public static string SlashCategoryAgent               => Get(nameof(SlashCategoryAgent));
+    public static string SlashCategoryGovernance          => Get(nameof(SlashCategoryGovernance));
+    public static string SlashCategoryTransparency        => Get(nameof(SlashCategoryTransparency));
+    public static string SlashHintDocs                    => Get(nameof(SlashHintDocs));
     public static string SlashHeadlessUnavailable         => Get(nameof(SlashHeadlessUnavailable));
     public static string HistoryNoSessions                => Get(nameof(HistoryNoSessions));
     public static string HistoryNoResults(string term)    => string.Format(Get(nameof(HistoryNoResults)),   term);
@@ -617,6 +633,13 @@ internal static class Strings
     public static string CheckReviewingLabel     => Get(nameof(CheckReviewingLabel));
     public static string CheckReviewSystemPrompt => Get(nameof(CheckReviewSystemPrompt));
     public static string CheckUnknownName(string name) => string.Format(Get(nameof(CheckUnknownName)), name);
+    public static string CheckNoFindings         => Get(nameof(CheckNoFindings));
+    public static string CheckSeverityBlocker    => Get(nameof(CheckSeverityBlocker));
+    public static string CheckSeverityWarning    => Get(nameof(CheckSeverityWarning));
+    public static string CheckSeverityNit        => Get(nameof(CheckSeverityNit));
+    public static string CheckAnchorUnanchored   => Get(nameof(CheckAnchorUnanchored));
+    public static string CheckFindingsHeader(int count) => string.Format(Get(nameof(CheckFindingsHeader)), count);
+    public static string CheckAnchorAdjusted(int reported) => string.Format(Get(nameof(CheckAnchorAdjusted)), reported);
     public static string RulesScaffolded(string path)  => string.Format(Get(nameof(RulesScaffolded)),  path);
     public static string ChecksScaffolded(string path) => string.Format(Get(nameof(ChecksScaffolded)), path);
     public static string PromptsNone             => Get(nameof(PromptsNone));
@@ -840,6 +863,30 @@ internal static class Strings
         string.Format(Get(nameof(BranchCreated)), branch, turn, parent);
     public static string BranchSwitched(string name)         => string.Format(Get(nameof(BranchSwitched)), name);
 
+    // ── /task command (background agent tasks) ─────────────────────────────────
+    public static string SlashHintTask                       => Get(nameof(SlashHintTask));
+    public static string TaskSubmitted(string id, string objective) =>
+        string.Format(Get(nameof(TaskSubmitted)), id, objective);
+    public static string TaskQueueFull(int max)              => string.Format(Get(nameof(TaskQueueFull)), max);
+    public static string TaskUnknown(string id)              => string.Format(Get(nameof(TaskUnknown)), id);
+    public static string TaskStopRequested(string id)        => string.Format(Get(nameof(TaskStopRequested)), id);
+    public static string TaskForgot(int count)               => string.Format(Get(nameof(TaskForgot)), count);
+    public static string TaskListEmpty                       => Get(nameof(TaskListEmpty));
+    public static string TaskListTitle                       => Get(nameof(TaskListTitle));
+    public static string TaskListHint                        => Get(nameof(TaskListHint));
+    public static string TaskColumnState                     => Get(nameof(TaskColumnState));
+    public static string TaskColumnObjective                 => Get(nameof(TaskColumnObjective));
+    public static string TaskStateQueued                     => Get(nameof(TaskStateQueued));
+    public static string TaskStateQueuedAt(int position)     => string.Format(Get(nameof(TaskStateQueuedAt)), position);
+    public static string TaskStateRunning                    => Get(nameof(TaskStateRunning));
+    public static string TaskStateSucceeded                  => Get(nameof(TaskStateSucceeded));
+    public static string TaskStateFailed                     => Get(nameof(TaskStateFailed));
+    public static string TaskStateCancelled                  => Get(nameof(TaskStateCancelled));
+    public static string TaskStillRunning                    => Get(nameof(TaskStillRunning));
+    public static string TaskStepsTitle                      => Get(nameof(TaskStepsTitle));
+    public static string TaskDuration(string duration)       => string.Format(Get(nameof(TaskDuration)), duration);
+    public static string TaskFinishedNotice(string id)       => string.Format(Get(nameof(TaskFinishedNotice)), id);
+
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));
 
@@ -881,4 +928,31 @@ internal static class Strings
     public static string SlashMemoryNotFound(string path)          => string.Format(Get(nameof(SlashMemoryNotFound)), path);
     public static string SlashMemoryLoaded(string path, int chars, string preview) =>
         string.Format(Get(nameof(SlashMemoryLoaded)), path, chars, preview);
+
+    // ── /onboard — committable project profile (roadmap §19) ───────────────────
+    public static string SlashHintOnboard             => Get(nameof(SlashHintOnboard));
+    public static string OnboardUsage                 => Get(nameof(OnboardUsage));
+    public static string OnboardHeading               => Get(nameof(OnboardHeading));
+    public static string OnboardNoProfile(string path) => string.Format(Get(nameof(OnboardNoProfile)), path);
+    public static string OnboardAppliedHeading        => Get(nameof(OnboardAppliedHeading));
+    public static string OnboardRecommendedHeading    => Get(nameof(OnboardRecommendedHeading));
+    public static string OnboardRecommendLine(string key, string proposed, string current) =>
+        string.Format(Get(nameof(OnboardRecommendLine)), key, proposed, current);
+    public static string OnboardApplyHint             => Get(nameof(OnboardApplyHint));
+    public static string OnboardIgnoredHeading        => Get(nameof(OnboardIgnoredHeading));
+    public static string OnboardContextPresent(string path) => string.Format(Get(nameof(OnboardContextPresent)), path);
+    public static string OnboardContextMissing        => Get(nameof(OnboardContextMissing));
+    public static string OnboardNothingToApply        => Get(nameof(OnboardNothingToApply));
+    public static string OnboardApplied(string keys)  => string.Format(Get(nameof(OnboardApplied)), keys);
+    public static string OnboardContextExists(string path) => string.Format(Get(nameof(OnboardContextExists)), path);
+    public static string OnboardContextReadingLabel   => Get(nameof(OnboardContextReadingLabel));
+    public static string OnboardContextDraftingLabel  => Get(nameof(OnboardContextDraftingLabel));
+    public static string OnboardContextEmpty          => Get(nameof(OnboardContextEmpty));
+    public static string OnboardContextGenerated(string path, int chars) =>
+        string.Format(Get(nameof(OnboardContextGenerated)), path, chars);
+    public static string OnboardContextSystemPrompt   => Get(nameof(OnboardContextSystemPrompt));
+    public static string OnboardContextUserPrompt(string brief) =>
+        string.Format(Get(nameof(OnboardContextUserPrompt)), brief);
+    public static string OnboardProfileScaffolded(string path) =>
+        string.Format(Get(nameof(OnboardProfileScaffolded)), path);
 }

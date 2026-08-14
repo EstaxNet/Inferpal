@@ -136,7 +136,12 @@ internal static class RulesService
         return false;
     }
 
-    private static string GlobToRegex(string glob)
+    /// <summary>
+    /// Translates a glob into a regex pattern. Internal rather than private because the semantic
+    /// index reuses it (<see cref="Rag.IndexExclusions"/>) — one glob dialect for the whole
+    /// product, and callers whose patterns come from the repository add their own match timeout.
+    /// </summary>
+    internal static string GlobToRegex(string glob)
     {
         var sb = new StringBuilder("^");
         for (int i = 0; i < glob.Length; i++)

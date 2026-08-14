@@ -351,35 +351,17 @@ internal partial class InferpalToolWindowData
 
     // ── Git commit assistant ───────────────────────────────────────────────────
 
+    /// <summary>
+    /// <c>/commit</c> — proposes a message for the current change and pre-fills
+    /// <c>/commit-exec</c> with it. Nothing is committed here.
+    /// </summary>
+    /// <remarks>
+    /// The decisions (which diff, which model, how the proposal is cleaned) live in
+    /// <see cref="Services.Commands.CommitCommandHandler"/> so the Host proposes the same message;
+    /// the VM adds the streaming bubble and the prompt box.
+    /// </remarks>
     private async Task HandleCommitCommandAsync(CancellationToken ct)
     {
-        var root = FindProjectRoot();
-
-        // Staged diff first; fall back to unstaged if nothing staged
-        var (staged, _) = await RunGitAsync("diff --staged", root, ct);
-        bool nothingStaged = string.IsNullOrWhiteSpace(staged);
-
-        string diffContext;
-        if (nothingStaged)
-        {
-            var (status, _) = await RunGitAsync("status --short", root, ct);
-            if (string.IsNullOrWhiteSpace(status))
-            {
-                await ShowInfoAsync(Strings.CommitNothingToCommit);
-                return;
-            }
-            var (diff, _) = await RunGitAsync("diff", root, ct);
-            diffContext = Services.GitCommitPolicy.BuildUnstagedContext(status, diff);
-            await ShowInfoAsync(Strings.CommitNothingStaged);
-        }
-        else
-        {
-            diffContext = Services.GitCommitPolicy.BuildStagedContext(staged);
-        }
-
-        diffContext = Services.GitCommitPolicy.CapDiff(diffContext);
-
-        // Stream the LLM's proposed commit message
         ChatMessageItem? streamItem = null;
         await RunOnVMContextAsync(() =>
         {
@@ -392,38 +374,15 @@ internal partial class InferpalToolWindowData
             ScrollToBottom();
         });
 
+        using var sink = new ThrottledTokenSink(
+            chunk => Post(() => { if (streamItem is not null) streamItem.Content += chunk; }));
+
+        Services.Commands.CommitCommandHandler.CommitProposal proposal;
         try
         {
-            var commitHistory = Services.GitCommitPolicy.BuildProposalRequest(diffContext);
-
-            using var sink = new ThrottledTokenSink(chunk => Post(() => { if (streamItem is not null) streamItem.Content += chunk; }));
-            var result = await _client.RunAgentAsync(
-                model:   await ModelRouter.ResolveUtilityAsync(_config, _client, ct),
-                history: commitHistory,
-                tools:   EmptyToolRegistry.Instance,
-                onStep:  _ => { },
-                onToken: token => sink.Append(token),
-                ct:      ct);
-            sink.Stop();
-
-            // Think tags are stripped so reasoning-model output doesn't land in the prompt
-            var proposed = Services.GitCommitPolicy.CleanProposal(result.FinalResponse);
-
-            await RunOnVMContextAsync(() =>
-            {
-                streamItem  = FinalizeStreamingBubble(streamItem);
-                IsLoading   = false;
-                CurrentStep = string.Empty;
-
-                if (!string.IsNullOrWhiteSpace(proposed))
-                {
-                    Prompt = $"/commit-exec {proposed}";
-                    var hint = ChatMessageItem.AssistantMsg(Strings.CommitConfirmHint);
-                    ApplyItemTheme(hint);
-                    Messages.Insert(Messages.Count - 2, hint);
-                }
-                ScrollToBottom();
-            });
+            proposal = await Services.Commands.CommitCommandHandler.ProposeAsync(
+                _client, _config, Services.GitProcess.For(FindProjectRoot()),
+                onToken: token => sink.Append(token), ct);
         }
         catch (OperationCanceledException)
         {
@@ -433,76 +392,122 @@ internal partial class InferpalToolWindowData
                 IsLoading   = false;
                 CurrentStep = string.Empty;
             });
+            return;
         }
-        catch (Exception ex)
+        finally { sink.Stop(); }
+
+        await RunOnVMContextAsync(() =>
         {
-            var msg = ex.Message;
-            await RunOnVMContextAsync(() =>
+            streamItem  = FinalizeStreamingBubble(streamItem);
+            IsLoading   = false;
+            CurrentStep = string.Empty;
+
+            if (proposal.Notice is { } notice)
+                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(notice));
+
+            if (proposal.Message is { } message)
+                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(message));
+
+            if (proposal.Proposal is { } proposed)
             {
-                streamItem  = FinalizeStreamingBubble(streamItem);
-                IsLoading   = false;
-                CurrentStep = string.Empty;
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
-                ScrollToBottom();
-            });
-        }
+                Prompt = $"/commit-exec {proposed}";
+                var hint = ChatMessageItem.AssistantMsg(Strings.CommitConfirmHint);
+                ApplyItemTheme(hint);
+                Messages.Insert(Messages.Count - 2, hint);
+            }
+            ScrollToBottom();
+        });
     }
 
     // ── Rules & Checks (.inferpal/rules, .inferpal/checks) ─────────────────
 
     // AI-reviews the current git diff against .inferpal/checks. /check init scaffolds an example;
     // /check <name> runs a single check. 100% local — no diff leaves the machine.
+    /// <summary>
+    /// <c>/check</c> — the whole flow lives in <see cref="Services.Commands.CheckCommandHandler"/>
+    /// so the Host serves the same command (roadmap §15); the VM only supplies git and the UI.
+    /// </summary>
+    /// <remarks>
+    /// The answer is no longer streamed token by token: findings are anchored to the diff once the
+    /// review is complete, and a half-parsed location is worse than a slightly later one. The
+    /// status line carries the wait.
+    /// </remarks>
     private async Task HandleCheckCommandAsync(string[] parts, CancellationToken ct)
     {
         var root = FindProjectRoot();
-        var arg  = parts.Length >= 2 ? string.Join(" ", parts[1..]).Trim() : null;
 
-        if (string.Equals(arg, "init", StringComparison.OrdinalIgnoreCase))
+        var result = await Services.Commands.CheckCommandHandler.HandleAsync(
+            _client, _config, root, parts,
+            git: Services.GitProcess.For(root),
+            onProgress: p => Post(() => CurrentStep = p),
+            ct);
+
+        Post(() => CurrentStep = string.Empty);
+
+        if (result.Scaffold is { } s)
+            await ScaffoldFileAsync(s.Dir, s.FileName, s.Content, Strings.ChecksScaffolded);
+        else if (result.Message is { } msg)
+            await ShowInfoAsync(msg);
+    }
+
+    /// <summary>
+    /// <c>/onboard</c> — the committable project profile (roadmap §19): report it, apply the part
+    /// the user explicitly asks for, or draft <c>.inferpal/context.md</c>. Same handler as the
+    /// host, so both front-ends refuse and recommend exactly the same things.
+    /// </summary>
+    private async Task HandleOnboardCommandAsync(string[] parts, CancellationToken ct)
+    {
+        var root = FindProjectRoot();
+
+        var result = await Services.Commands.OnboardCommandHandler.HandleAsync(
+            _client, _config, root, parts,
+            git: Services.GitProcess.For(root),
+            onProgress: p => Post(() => CurrentStep = p),
+            ct);
+
+        Post(() => CurrentStep = string.Empty);
+
+        if (result.Scaffold is { } scaffold)
         {
-            // Single source of truth for the checks scaffold (dir/file/content): reuse the handler.
-            var scaffold = Services.Commands.RulesChecksPromptsCommandHandler.Checks(root, parts).Scaffold!;
-            await ScaffoldFileAsync(scaffold.Dir, scaffold.FileName, scaffold.Content, Strings.ChecksScaffolded);
+            await ScaffoldFileAsync(
+                scaffold.Dir, scaffold.FileName, scaffold.Content, Strings.OnboardProfileScaffolded);
             return;
         }
 
-        var checks = ChecksService.Load(Path.Combine(root, ".inferpal", "checks"));
-        if (checks.Count == 0) { await ShowInfoAsync(Strings.ChecksNone); return; }
+        // The handler mutates the config but never persists it (tests must not touch %APPDATA%).
+        if (result.SaveConfig) _config.Save();
 
-        if (!string.IsNullOrEmpty(arg))
-        {
-            var one = checks.FirstOrDefault(c => c.Name.Equals(arg, StringComparison.OrdinalIgnoreCase));
-            if (one is null) { await ShowInfoAsync(Strings.CheckUnknownName(arg)); return; }
-            checks = [one];
-        }
+        // Same refresh as /model: without it the status label keeps naming the previous model.
+        if (result.NewDefaultModel is { } model)
+            await RunOnVMContextAsync(() => ActiveModelLabel = model);
 
-        // Current diff: staged first, fall back to unstaged + status (mirror /commit).
-        var (staged, _) = await RunGitAsync("diff --staged", root, ct);
-        string diff;
-        if (string.IsNullOrWhiteSpace(staged))
+        if (result.Write is { } write)
         {
-            var (unstaged, _) = await RunGitAsync("diff", root, ct);
-            var (status, _)   = await RunGitAsync("status --short", root, ct);
-            if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
+            try
             {
-                await ShowInfoAsync(Strings.CheckNoDiff);
+                var dir = Path.GetDirectoryName(write.Path);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                await File.WriteAllTextAsync(write.Path, write.Content, System.Text.Encoding.UTF8, ct);
+                await _vs.Documents().OpenTextDocumentAsync(new Uri(write.Path), ct);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                await ShowInfoAsync(Strings.MsgError(ex.Message));
                 return;
             }
-            diff = Services.GitCommitPolicy.BuildUnstagedContext(status, unstaged);
-        }
-        else
-        {
-            diff = Services.GitCommitPolicy.BuildStagedContext(staged);
         }
 
-        diff = Services.GitCommitPolicy.CapDiff(diff);
+        if (result.RefreshSystemPrompt)
+            // context.md is part of the system prompt: pick it up without waiting for a /clear.
+            await RunOnVMContextAsync(() =>
+            {
+                _baseSystemPrompt = BuildSystemPrompt();
+                if (_history.Count > 0 && _history[0].Role == "system")
+                    _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
+            });
 
-        var history = new List<ChatMessageDto>
-        {
-            new("system", Strings.CheckReviewSystemPrompt),
-            new("user",   ChecksService.BuildReviewPrompt(checks, diff)),
-        };
-
-        await StreamAssistantReplyAsync(history, Strings.CheckReviewingLabel, ct);
+        if (result.Message is { } msg) await ShowInfoAsync(msg);
     }
 
     private async Task HandleRulesCommandAsync(string[] parts, CancellationToken ct)
@@ -607,6 +612,7 @@ internal partial class InferpalToolWindowData
         }
     }
 
+    /// <summary><c>/commit-exec &lt;message&gt;</c> — stage if needed, then commit (shared handler).</summary>
     private async Task HandleCommitExecAsync(string message, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(message))
@@ -615,51 +621,23 @@ internal partial class InferpalToolWindowData
             return;
         }
 
-        var root    = FindProjectRoot();
-        var safeMsg = Services.GitCommitPolicy.EscapeMessage(message);
-
-        // If nothing is staged, auto-stage tracked modified files (git add -u)
-        var (stagedFiles, _) = await RunGitAsync("diff --staged --name-only", root, ct);
-        if (string.IsNullOrWhiteSpace(stagedFiles))
-            await RunGitAsync("add -u", root, ct);
-
-        var (output, exitCode) = await RunGitAsync($"commit -m \"{safeMsg}\"", root, ct);
+        var result = await Services.Commands.CommitCommandHandler.ExecuteAsync(
+            message, Services.GitProcess.For(FindProjectRoot()), ct);
 
         await RunOnVMContextAsync(() =>
         {
-            var label = exitCode == 0 ? "✅ git commit" : "❌ git commit";
-            var text  = string.IsNullOrWhiteSpace(output) ? "(no output)" : output;
-            var item  = ChatMessageItem.ToolMsg(label, text, expanded: true);
+            var item = ChatMessageItem.ToolMsg(
+                result.Ok ? "✅ git commit" : "❌ git commit", result.Output, expanded: true);
             ApplyItemTheme(item);
             Messages.Insert(Messages.Count - 2, item);
             ScrollToBottom();
         });
     }
 
-    private static async Task<(string Output, int ExitCode)> RunGitAsync(
+    /// <summary>Git for the chat commands — the shared runner, so the Host behaves identically.</summary>
+    private static Task<(string Output, int ExitCode)> RunGitAsync(
         string args, string workDir, CancellationToken ct)
-    {
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo("git", args)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
-                WorkingDirectory       = workDir,
-            };
-            using var proc   = System.Diagnostics.Process.Start(psi)!;
-            var stdout        = await proc.StandardOutput.ReadToEndAsync(ct);
-            var stderr        = await proc.StandardError.ReadToEndAsync(ct);
-            await proc.WaitForExitAsync(ct);
-            var combined      = stdout.Trim();
-            if (!string.IsNullOrWhiteSpace(stderr))
-                combined += (combined.Length > 0 ? "\n" : "") + stderr.Trim();
-            return (combined, proc.ExitCode);
-        }
-        catch (Exception ex) { return (ex.Message, -1); }
-    }
+        => Services.GitProcess.RunAsync(args, workDir, ct);
 
     #endregion
 }

@@ -14,3 +14,4 @@ global using Inferpal.Services.VsIntegration;
 global using Inferpal.Services.Presentation;
 global using Inferpal.Services.Editor;
 global using Inferpal.Services.Signals;
+global using Inferpal.Services.Tasks;

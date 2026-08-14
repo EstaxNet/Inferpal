@@ -19,7 +19,7 @@ public class ShellSessionTests
 
     private sealed class AutoApprove : IApprovalService
     {
-        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, DiffInfo? diff = null)
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, DiffInfo? diff = null, bool forcePrompt = false)
             => Task.FromResult(true);
     }
 

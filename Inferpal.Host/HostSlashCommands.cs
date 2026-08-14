@@ -39,12 +39,47 @@ internal sealed partial class HostServer
             case SlashDelegatedAction delegated:
                 return await RunDelegatedSlashAsync(s, delegated, p, ct);
 
-            // Code actions: the adapter owns them (/fix /refactor /doc → codeAction/run,
-            // /explain /review → active-document prompt, /test → not ported yet).
+            // /test writes to a SEPARATE file, so there is nothing for the adapter's in-place
+            // code-action path to do with it: it fell through to `Handled = false` and the literal
+            // string "/test" reached the model, which improvised. Served here instead.
+            case SlashCodeAction { Kind: SlashCodeActionKind.Test }:
+                return await RunGenerateTestsAsync(s, ct);
+
+            // Other code actions: the adapter owns them (/fix /refactor /doc → codeAction/run,
+            // /explain /review → active-document prompt).
             default:
                 return new SlashCommandResult(Handled: false);
         }
     }
+
+    /// <summary>
+    /// The session's background-task queue, wired on first use to an agent run restricted to the
+    /// read-only registry (<see cref="BackgroundTaskToolRegistry"/>): a detached run explores and
+    /// reports, it never writes or executes, so it can never raise an approval prompt while the
+    /// user is typing.
+    /// </summary>
+    private BackgroundTaskQueue TaskQueue(HostSession s) => s.GetOrCreateTasks(
+        runner: async (task, onStep, ct) =>
+        {
+            var history = new List<Inferpal.Models.ChatMessageDto>
+            {
+                new("system", BuildSystemPromptText(s) + BackgroundTaskToolRegistry.SystemPromptSuffix),
+                new("user",   task.Objective),
+            };
+
+            // RunAgentAsync never throws for network/backend errors — they come back in the
+            // result — so a failed task carries the model's own explanation as its report.
+            var run = await s.Client.RunAgentAsync(
+                ModelRouter.Resolve(s.Config, ModelRole.Agent),
+                history,
+                new BackgroundTaskToolRegistry(s.Tools),
+                onStep:  onStep,
+                onToken: null,
+                ct:      ct);
+
+            return run.FinalResponse;
+        },
+        onFinished: snapshot => Notify("chat/step", new { text = Strings.TaskFinishedNotice(snapshot.Id) }));
 
     /// <summary>Direct tool invocation (/read /ls /grep /run /git /map …): executed by the
     /// registry — approvals and permission rules apply exactly as in an agent run.</summary>
@@ -261,6 +296,13 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, result.Message);
                 }
 
+                case SlashCommandId.Task:
+                    // Detached run: deliberately NOT bound to this turn's token — the task keeps
+                    // going after the command that submitted it returns. Progress is not streamed
+                    // to the chat (it would interrupt what the user is doing); only the completion
+                    // notice is, and `/task <id>` shows the report.
+                    return new SlashCommandResult(true, TaskCommandHandler.Handle(TaskQueue(s), parts).Message);
+
                 case SlashCommandId.AgentStep:
                     // Same texts as the VS toggle (deliberately English, model-adjacent UX).
                     s.StepMode = !s.StepMode;
@@ -277,12 +319,96 @@ internal sealed partial class HostServer
                         : "Plan mode **OFF**.",
                         [new SlashEffectDto("stateChange", s.PlanMode ? "on" : "off", "planMode")]);
 
+                case SlashCommandId.Check:
+                {
+                    // Roadmap §15: same handler as the VM, so the anchored findings are identical
+                    // on both sides. Progress uses the chat/step channel like /bench and /tdd.
+                    var result = await CheckCommandHandler.HandleAsync(
+                        s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
+                        git: GitProcess.For(s.RootDir),
+                        onProgress: progress => Notify("chat/step", new { text = progress }),
+                        cts.Token);
+
+                    // `init` writes through the same helper as /rules|/checks|/prompts init.
+                    if (result.Scaffold is { } scaffold)
+                        return await HandleScaffoldSlashAsync(
+                            new RulesChecksPromptsCommandHandler.CommandListResult(null, scaffold),
+                            Strings.ChecksScaffolded, cts.Token);
+
+                    return new SlashCommandResult(true, result.Message);
+                }
+
+                case SlashCommandId.Onboard:
+                {
+                    // Roadmap §19. The profile itself is applied (index exclusions) or merely
+                    // reported by the Core; the host only performs the IO it decided on.
+                    var result = await OnboardCommandHandler.HandleAsync(
+                        s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
+                        git: GitProcess.For(s.RootDir),
+                        onProgress: progress => Notify("chat/step", new { text = progress }),
+                        cts.Token);
+
+                    if (result.Scaffold is { } scaffold)
+                        return await HandleScaffoldSlashAsync(
+                            new RulesChecksPromptsCommandHandler.CommandListResult(null, scaffold),
+                            Strings.OnboardProfileScaffolded, cts.Token);
+
+                    if (result.SaveConfig) s.Config.Save();
+
+                    if (result.NewDefaultModel is { } model)
+                        return new SlashCommandResult(true, result.Message,
+                            [new SlashEffectDto("stateChange", model, "model")]);
+
+                    if (result.Write is { } write)
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(write.Path)!);
+                        await File.WriteAllTextAsync(write.Path, write.Content, System.Text.Encoding.UTF8, cts.Token);
+                        if (result.RefreshSystemPrompt) RefreshSystemMessage(s);
+                        return new SlashCommandResult(true, result.Message,
+                            [new SlashEffectDto("openFile", write.Path)]);
+                    }
+
+                    return new SlashCommandResult(true, result.Message);
+                }
+
+                case SlashCommandId.Commit:
+                {
+                    // Proposes only: the message lands in the input box behind `/commit-exec`, so
+                    // the user reads it before anything is committed.
+                    // No token streaming: `chat/token` feeds the assistant bubble of a chat turn,
+                    // and there is none open during a slash command. The status line carries the
+                    // wait, exactly like /bench and /tdd.
+                    Notify("chat/step", new { text = Strings.CommitProposingLabel });
+                    var proposal = await CommitCommandHandler.ProposeAsync(
+                        s.Client, s.Config, GitProcess.For(s.RootDir), onToken: null, cts.Token);
+
+                    if (proposal.Proposal is not { } proposed)
+                        return new SlashCommandResult(true, proposal.Message ?? proposal.Notice);
+
+                    var markdown = proposal.Notice is { } note
+                        ? note + "\n\n" + Strings.CommitConfirmHint
+                        : Strings.CommitConfirmHint;
+
+                    return new SlashCommandResult(true, markdown,
+                        [new SlashEffectDto("setPrompt", $"/commit-exec {proposed}")]);
+                }
+
+                case SlashCommandId.CommitExec:
+                {
+                    var message = string.Join(" ", parts[1..]).Trim();
+                    if (string.IsNullOrWhiteSpace(message))
+                        return new SlashCommandResult(true, Strings.SlashUsage("/commit-exec <message>"));
+
+                    var run = await CommitCommandHandler.ExecuteAsync(
+                        message, GitProcess.For(s.RootDir), cts.Token);
+
+                    return new SlashCommandResult(true,
+                        (run.Ok ? "✅ `git commit`" : "❌ `git commit`") + "\n\n```\n" + run.Output + "\n```");
+                }
+
                 // Not portable yet (VS-only UX or planned for a later phase): a deterministic
                 // localized answer beats falling through to the model with a raw "/command".
-                case SlashCommandId.Commit:
-                case SlashCommandId.CommitExec:
                 case SlashCommandId.FixBuild:
-                case SlashCommandId.Check:
                 case SlashCommandId.Setup:
                 case SlashCommandId.TestBuildBanner:
                     return new SlashCommandResult(true, Strings.SlashHeadlessUnavailable);
@@ -388,6 +514,47 @@ internal sealed partial class HostServer
         var progress = new Progress<string>(msg => Notify("chat/step", new { text = msg }));
         return new SlashCommandResult(true,
             await DocsCommandHandler.HandleAsync(s.Config, s.Docs, parts, progress, ct));
+    }
+
+    /// <summary>
+    /// <c>/test</c> — generate unit tests for the active document into the conventional test file
+    /// beside it, then ask the adapter to open it.
+    /// </summary>
+    /// <remarks>
+    /// Two deliberate differences from VS, both consequences of the port rather than choices:
+    /// <see cref="IEditorSurface"/> exposes no selection, so the whole file is the input; and an
+    /// existing test file is rewritten on disk rather than through an undoable editor edit — the
+    /// adapter opens it right after, so the change is visible and revertable by the editor's own
+    /// file history.
+    /// </remarks>
+    private async Task<SlashCommandResult> RunGenerateTestsAsync(HostSession s, CancellationToken ct)
+    {
+        var doc = await s.Editor.GetActiveDocumentAsync(ct);
+        if (doc is null || string.IsNullOrWhiteSpace(doc.Text))
+            return new SlashCommandResult(true, Strings.SlashNoActiveDocument);
+
+        var plan = await TestGenerationPlanner.PlanAsync(
+            s.Client, ModelRouter.Resolve(s.Config, ModelRole.CodeActions), doc.Path, doc.Text, ct);
+
+        if (plan.NoChange) return new SlashCommandResult(true, Strings.TestsNoChange);
+        if (!plan.Ok)      return new SlashCommandResult(true, Strings.TestsGenerateFailed);
+
+        try
+        {
+            var dir = Path.GetDirectoryName(plan.TestPath);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+            await File.WriteAllTextAsync(plan.TestPath, plan.Content, System.Text.Encoding.UTF8, ct);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("HostServer.GenerateTests", ex);
+            return new SlashCommandResult(true, Strings.TestsGenerateFailed);
+        }
+
+        return new SlashCommandResult(true,
+            plan.Extended ? Strings.TestsExtended(plan.TestFileName) : Strings.TestsGenerated(plan.TestFileName),
+            [new SlashEffectDto("openFile", plan.TestPath)]);
     }
 
     /// <summary>/rules /checks /prompts — list, or `init` scaffolds the example file

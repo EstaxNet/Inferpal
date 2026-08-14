@@ -451,6 +451,40 @@ public class HostServerTests
     }
 
     [Fact]
+    public async Task SlashTask_SubmitsInTheBackgroundAndListsWithoutBlockingTheTurn()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        var submit = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/task audit the RAG layer" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        // The command returns immediately: the run is detached, not awaited by this turn.
+        Assert.True(submit.Handled);
+        Assert.Contains("t1", submit.Markdown);
+
+        var listing = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/task" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.True(listing.Handled);
+        Assert.Contains("`t1`", listing.Markdown);
+        Assert.Contains("audit the RAG layer", listing.Markdown);
+    }
+
+    [Fact]
+    public async Task SlashTask_IsOfferedByTheAdapterAutocomplete()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        var commands = await h.Client.InvokeAsync<List<SlashCommandInfoDto>>("command/list")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Contains(commands, c => c.Command == "/task");
+    }
+
+    [Fact]
     public async Task SessionTitle_SanitizesModelAnswerAndReturnsTimestampedFileName()
     {
         using var h = CreateHarness();
@@ -564,6 +598,23 @@ public class HostServerTests
         Assert.Contains("/definitely-not-a-command", unknown.Markdown, StringComparison.Ordinal);
     }
 
+    // The bug this locks: /test used to fall through to `Handled = false`, and since the VS Code
+    // adapter only intercepts /fix /refactor /doc, the literal string "/test" reached the model,
+    // which improvised an answer about a command it knows nothing about. Anything but
+    // `Handled = false` is the fix; here there is no active document, so it says so.
+    [Fact]
+    public async Task CommandSlash_Test_IsServedHeadlessly_NotForwardedToTheModel()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/test" });
+
+        Assert.True(result.Handled);
+        Assert.Equal(Strings.SlashNoActiveDocument, result.Markdown);
+    }
+
     [Fact]
     public async Task CommandSlash_Replay_WithoutRuns_ReturnsEmptyRunMessage()
     {
@@ -575,6 +626,21 @@ public class HostServerTests
 
         Assert.True(result.Handled);
         Assert.Equal(Strings.ReplayNone, result.Markdown);
+    }
+
+    // Roadmap §19: the headless side must serve /onboard from the same Core handler as VS —
+    // a command that only exists in the tool window is the drift this repository already paid for.
+    [Fact]
+    public async Task CommandSlash_Onboard_IsServedHeadlessly()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/onboard" });
+
+        Assert.True(result.Handled);
+        Assert.Contains(Strings.OnboardHeading, result.Markdown, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -32,7 +32,8 @@ internal enum SlashCommandId
     Clear, TestBuildBanner, Model, Tools, Export, Context, Memory, Index,
     Commit, CommitExec, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
-    Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch,
+    Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
+    Onboard,
 }
 
 /// <summary>User-defined prompt template (config <c>PromptTemplates</c>, one <c>/name=text</c> per line,
@@ -48,65 +49,137 @@ internal sealed record UserSlashTemplate(string Name, string Text, string? Hint 
 /// </summary>
 internal static class SlashCommandRouter
 {
-    /// <summary>Canonical built-in command list — single source for autocomplete (and docs).
+    /// <summary>Grouping of <see cref="Catalog"/>, in `/help` display order.</summary>
+    internal enum SlashCategory
+    {
+        Meta, CodeActions, Files, Shell, Web, Git, Build,
+        Knowledge, Sessions, Models, Agent, Governance, Transparency,
+    }
+
+    /// <summary>
+    /// Canonical built-in command catalogue — the single source for the autocomplete popup
+    /// (VS and, through <c>command/list</c>, VS Code), for <c>/help</c>, and for the docs.
     /// A property (not a cached array) so the localized hints follow a runtime language switch
-    /// (<see cref="Strings.ApplyLanguage"/>).</summary>
-    internal static (string Cmd, string Hint)[] BuiltInCommands =>
+    /// (<see cref="Strings.ApplyLanguage"/>).
+    /// </summary>
+    /// <remarks>
+    /// Adding a command means adding a line here, and <c>SlashCommandCoverageTests</c> checks both
+    /// directions: every entry must be routed by <see cref="Route"/>, and every command routed by
+    /// <see cref="Route"/> must appear here. That second check is what caught <c>/docs</c>, which
+    /// worked but was invisible in both autocompletes because it had never been listed.
+    /// </remarks>
+    internal static (string Cmd, string Hint, SlashCategory Category)[] Catalog =>
     [
-        ("/explain",  Strings.SlashHintExplain),
-        ("/fix",      Strings.SlashHintFix),
-        ("/review",   Strings.SlashHintReview),
-        ("/refactor", Strings.SlashHintRefactor),
-        ("/test",     Strings.SlashHintTest),
-        ("/doc",      Strings.SlashHintDoc),
-        ("/clear",    Strings.SlashHintClear),
-        ("/model",    Strings.SlashHintModel),
-        ("/tools",    Strings.SlashHintTools),
-        ("/export",   Strings.SlashHintExport),
-        ("/restore",  Strings.SlashHintRestore),
-        ("/help",     Strings.SlashHintHelp),
-        ("/read",     Strings.SlashHintRead),
-        ("/ls",       Strings.SlashHintLs),
-        ("/grep",     Strings.SlashHintGrep),
-        ("/run",      Strings.SlashHintRun),
-        ("/fetch",    Strings.SlashHintFetch),
-        ("/search-web",  Strings.SlashHintSearch),
-        ("/search-code", Strings.SlashHintSearchCode),
-        ("/commit",   Strings.SlashHintCommit),
-        ("/git",      Strings.SlashHintGit),
-        ("/map",      Strings.SlashHintMap),
-        ("/solution", Strings.SlashHintSolution),
-        ("/build",    Strings.SlashHintBuild),
-        ("/fix-build",Strings.SlashHintFixBuild),
-        ("/context",  Strings.SlashHintContext),
-        ("/memory",   Strings.SlashHintMemory),
-        ("/index",    Strings.SlashHintIndex),
-        ("/history",  Strings.SlashHintHistory),
-        ("/template", Strings.SlashHintTemplate),
-        ("/diff",     Strings.SlashHintDiff),
-        ("/check",    Strings.SlashHintCheck),
-        ("/rules",    Strings.SlashHintRules),
-        ("/checks",   Strings.SlashHintChecks),
-        ("/snippets", Strings.SlashHintSnippets),
-        ("/note",     Strings.SlashHintNote),
-        ("/notes",    Strings.SlashHintNotes),
-        ("/phistory", Strings.SlashHintPhistory),
-        ("/models",     Strings.SlashHintModels),
-        ("/agent-step", Strings.SlashHintAgentStep),
-        ("/resume",     Strings.SlashHintResume),
-        ("/plan",       Strings.SlashHintPlan),
-        ("/prompts",    Strings.SlashHintPrompts),
-        ("/hardware",   Strings.SlashHintHardware),
-        ("/setup",      Strings.SlashHintSetup),
-        ("/diagnostics", Strings.SlashHintDiagnostics),
-        ("/undo-run",   Strings.SlashHintUndoRun),
-        ("/replay",     Strings.SlashHintReplay),
-        ("/xray",       Strings.SlashHintXray),
-        ("/bench",      Strings.SlashHintBench),
-        ("/arena",      Strings.SlashHintArena),
-        ("/tdd",        Strings.SlashHintTdd),
-        ("/branch",     Strings.SlashHintBranch),
+        ("/clear",    Strings.SlashHintClear,    SlashCategory.Meta),
+        ("/help",     Strings.SlashHintHelp,     SlashCategory.Meta),
+        ("/model",    Strings.SlashHintModel,    SlashCategory.Meta),
+        ("/tools",    Strings.SlashHintTools,    SlashCategory.Meta),
+        ("/export",   Strings.SlashHintExport,   SlashCategory.Meta),
+        ("/restore",  Strings.SlashHintRestore,  SlashCategory.Meta),
+
+        ("/explain",  Strings.SlashHintExplain,  SlashCategory.CodeActions),
+        ("/fix",      Strings.SlashHintFix,      SlashCategory.CodeActions),
+        ("/review",   Strings.SlashHintReview,   SlashCategory.CodeActions),
+        ("/refactor", Strings.SlashHintRefactor, SlashCategory.CodeActions),
+        ("/test",     Strings.SlashHintTest,     SlashCategory.CodeActions),
+        ("/doc",      Strings.SlashHintDoc,      SlashCategory.CodeActions),
+
+        ("/read",     Strings.SlashHintRead,     SlashCategory.Files),
+        ("/ls",       Strings.SlashHintLs,       SlashCategory.Files),
+        ("/grep",     Strings.SlashHintGrep,     SlashCategory.Files),
+        ("/diff",     Strings.SlashHintDiff,     SlashCategory.Files),
+
+        ("/run",      Strings.SlashHintRun,      SlashCategory.Shell),
+
+        ("/fetch",       Strings.SlashHintFetch,  SlashCategory.Web),
+        ("/search-web",  Strings.SlashHintSearch, SlashCategory.Web),
+
+        ("/commit",   Strings.SlashHintCommit,   SlashCategory.Git),
+        ("/git",      Strings.SlashHintGit,      SlashCategory.Git),
+
+        ("/build",     Strings.SlashHintBuild,    SlashCategory.Build),
+        ("/fix-build", Strings.SlashHintFixBuild, SlashCategory.Build),
+        ("/tdd",       Strings.SlashHintTdd,      SlashCategory.Build),
+        ("/solution",  Strings.SlashHintSolution, SlashCategory.Build),
+        ("/map",       Strings.SlashHintMap,      SlashCategory.Build),
+
+        ("/context",     Strings.SlashHintContext,    SlashCategory.Knowledge),
+        ("/memory",      Strings.SlashHintMemory,     SlashCategory.Knowledge),
+        ("/note",        Strings.SlashHintNote,       SlashCategory.Knowledge),
+        ("/notes",       Strings.SlashHintNotes,      SlashCategory.Knowledge),
+        ("/index",       Strings.SlashHintIndex,      SlashCategory.Knowledge),
+        ("/search-code", Strings.SlashHintSearchCode, SlashCategory.Knowledge),
+        ("/docs",        Strings.SlashHintDocs,       SlashCategory.Knowledge),
+        ("/onboard",     Strings.SlashHintOnboard,    SlashCategory.Knowledge),
+
+        ("/history",  Strings.SlashHintHistory,  SlashCategory.Sessions),
+        ("/phistory", Strings.SlashHintPhistory, SlashCategory.Sessions),
+        ("/branch",   Strings.SlashHintBranch,   SlashCategory.Sessions),
+        ("/template", Strings.SlashHintTemplate, SlashCategory.Sessions),
+        ("/snippets", Strings.SlashHintSnippets, SlashCategory.Sessions),
+
+        ("/models",   Strings.SlashHintModels,   SlashCategory.Models),
+        ("/hardware", Strings.SlashHintHardware, SlashCategory.Models),
+        ("/bench",    Strings.SlashHintBench,    SlashCategory.Models),
+        ("/arena",    Strings.SlashHintArena,    SlashCategory.Models),
+        ("/setup",    Strings.SlashHintSetup,    SlashCategory.Models),
+
+        ("/agent-step", Strings.SlashHintAgentStep, SlashCategory.Agent),
+        ("/resume",     Strings.SlashHintResume,    SlashCategory.Agent),
+        ("/plan",       Strings.SlashHintPlan,      SlashCategory.Agent),
+        ("/task",       Strings.SlashHintTask,      SlashCategory.Agent),
+
+        ("/rules",    Strings.SlashHintRules,    SlashCategory.Governance),
+        ("/checks",   Strings.SlashHintChecks,   SlashCategory.Governance),
+        ("/check",    Strings.SlashHintCheck,    SlashCategory.Governance),
+        ("/prompts",  Strings.SlashHintPrompts,  SlashCategory.Governance),
+
+        ("/xray",        Strings.SlashHintXray,        SlashCategory.Transparency),
+        ("/replay",      Strings.SlashHintReplay,      SlashCategory.Transparency),
+        ("/undo-run",    Strings.SlashHintUndoRun,     SlashCategory.Transparency),
+        ("/diagnostics", Strings.SlashHintDiagnostics, SlashCategory.Transparency),
     ];
+
+    /// <summary>Flat view of <see cref="Catalog"/> for the autocomplete popup and `command/list`.</summary>
+    internal static (string Cmd, string Hint)[] BuiltInCommands =>
+        Catalog.Select(c => (c.Cmd, c.Hint)).ToArray();
+
+    /// <summary>Localized section title of a category.</summary>
+    internal static string CategoryTitle(SlashCategory category) => category switch
+    {
+        SlashCategory.Meta         => Strings.SlashCategoryMeta,
+        SlashCategory.CodeActions  => Strings.SlashCategoryCodeActions,
+        SlashCategory.Files        => Strings.SlashCategoryFiles,
+        SlashCategory.Shell        => Strings.SlashCategoryShell,
+        SlashCategory.Web          => Strings.SlashCategoryWeb,
+        SlashCategory.Git          => Strings.SlashCategoryGit,
+        SlashCategory.Build        => Strings.SlashCategoryBuild,
+        SlashCategory.Knowledge    => Strings.SlashCategoryKnowledge,
+        SlashCategory.Sessions     => Strings.SlashCategorySessions,
+        SlashCategory.Models       => Strings.SlashCategoryModels,
+        SlashCategory.Agent        => Strings.SlashCategoryAgent,
+        SlashCategory.Governance   => Strings.SlashCategoryGovernance,
+        _                          => Strings.SlashCategoryTransparency,
+    };
+
+    /// <summary>
+    /// Renders `/help` from <see cref="Catalog"/>. Generated rather than written: the previous
+    /// hand-maintained help text had silently drifted, missing ten shipped commands (`/tdd`,
+    /// `/branch`, `/arena`, `/bench`, `/xray`, `/replay`, `/undo-run`, `/diagnostics`, `/task`,
+    /// `/docs`) in all ten languages while claiming to list everything.
+    /// </summary>
+    internal static string BuildHelp()
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var group in Catalog.GroupBy(c => c.Category).OrderBy(g => g.Key))
+        {
+            if (sb.Length > 0) sb.AppendLine();
+            sb.Append("**").Append(CategoryTitle(group.Key)).AppendLine("**");
+            foreach (var (cmd, hint, _) in group)
+                sb.Append("- `").Append(cmd).Append("` — ").AppendLine(hint);
+        }
+        return sb.ToString().TrimEnd();
+    }
 
     /// <summary>Maps a raw <c>/command …</c> input to the action the VM must execute.</summary>
     /// <param name="prompt">Full prompt text, starting with <c>/</c>.</param>
@@ -156,6 +229,8 @@ internal static class SlashCommandRouter
             case "/arena":             return new SlashDelegatedAction(SlashCommandId.Arena,           parts);
             case "/tdd":               return new SlashDelegatedAction(SlashCommandId.Tdd,             parts);
             case "/branch":            return new SlashDelegatedAction(SlashCommandId.Branch,          parts);
+            case "/task":              return new SlashDelegatedAction(SlashCommandId.Task,            parts);
+            case "/onboard":           return new SlashDelegatedAction(SlashCommandId.Onboard,         parts);
 
             // ── Code actions on the active document/selection ─────────────────
             case "/explain":           return new SlashCodeAction(SlashCodeActionKind.Explain);
@@ -239,7 +314,7 @@ internal static class SlashCommandRouter
 
             // ── Meta ──────────────────────────────────────────────────────────
             case "/help":
-                return new SlashInfoAction(Strings.SlashHelpAll);
+                return new SlashInfoAction(BuildHelp());
 
             default:
                 // User-defined prompt templates, then the unknown-command help.

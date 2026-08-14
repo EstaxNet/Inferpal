@@ -187,7 +187,7 @@ public class SlashCommandRouterTests
     public void Help_ShowsFullHelp_AndUnknownShowsCommandHelp()
     {
         var help = Assert.IsType<SlashInfoAction>(Route("/help"));
-        Assert.Equal(Strings.SlashHelpAll, help.Message);
+        Assert.Equal(SlashCommandRouter.BuildHelp(), help.Message);
 
         var unknown = Assert.IsType<SlashInfoAction>(Route("/frobnicate now"));
         Assert.Equal(Strings.SlashHelp("/frobnicate"), unknown.Message);

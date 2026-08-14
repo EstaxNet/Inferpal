@@ -47,7 +47,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// it via <c>DiffComputer.ComputeText</c>, rich ones show the colored diff viewer.</param>
     protected abstract Task<ApprovalDecision> PromptUserAsync(string message, Services.CodeActions.DiffInfo? diff, CancellationToken ct);
 
-    public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null)
+    public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false)
     {
         // The value the rules match against: the explicit subject (raw path for file tools) when
         // provided, otherwise the details (already the raw command/url/query for the other tools).
@@ -70,11 +70,14 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // the rules engine cannot know what actually runs. No auto-approval path may apply —
         // not an allow rule, not SecurityAlertsDisabled, not a session grant. The call is NOT
         // blocked: it falls through to the prompt, where the human reads the raw text.
-        var opaque = PermissionPolicy.IsOpaqueExecution(matchOn);
+        // `forcePrompt` joins it for the same reason from the other end: the text is perfectly
+        // readable, but the repository wrote it, so no consent the user gave their own agent applies.
+        var opaque = PermissionPolicy.IsOpaqueExecution(matchOn) || forcePrompt;
         if (opaque && (decision == PermissionDecision.Allow
                        || _config.SecurityAlertsDisabled
                        || _sessionAllowed.ContainsKey(toolName)))
-            Diagnostics.Record("Permission", $"Force-prompt (opaque execution) {toolName}: {matchOn}");
+            Diagnostics.Record("Permission",
+                $"Force-prompt ({(forcePrompt ? "repository-authored" : "opaque execution")}) {toolName}: {matchOn}");
 
         if (!opaque)
         {

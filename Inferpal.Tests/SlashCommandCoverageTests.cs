@@ -1,3 +1,4 @@
+using System.IO;
 using Inferpal.Localization;
 using Inferpal.Services;
 using Xunit;
@@ -133,7 +134,63 @@ public class SlashCommandCoverageTests
     public void Help_ReturnsFullHelp()
     {
         var action = Assert.IsType<SlashInfoAction>(Route("/help"));
-        Assert.Equal(Strings.SlashHelpAll, action.Message);
+        Assert.Equal(SlashCommandRouter.BuildHelp(), action.Message);
+    }
+
+    // ── /help is generated, and both directions of the catalogue are locked ──────────
+
+    [Fact]
+    public void Help_ListsEveryCommandOfTheCatalogue_UnderACategoryTitle()
+    {
+        var help = SlashCommandRouter.BuildHelp();
+
+        foreach (var (cmd, hint, category) in SlashCommandRouter.Catalog)
+        {
+            Assert.Contains($"`{cmd}` — {hint}", help);
+            Assert.Contains($"**{SlashCommandRouter.CategoryTitle(category)}**", help);
+        }
+    }
+
+    [Fact]
+    public void EveryRoutedCommand_IsAdvertisedInTheCatalogue()
+    {
+        // The reverse of EveryBuiltInCommand_IsHandled, and the check that was missing: `/docs`
+        // was routed and worked, but had never been listed, so it existed in neither
+        // autocomplete nor `/help`. Reading the `case "/x":` labels out of the router's own
+        // source is the only way to enumerate what Route() actually accepts.
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "SlashCommandRouter.cs"));
+        var routed = System.Text.RegularExpressions.Regex
+            .Matches(source, @"case ""(/[a-z0-9_-]+)"":")
+            .Select(m => m.Groups[1].Value)
+            .Distinct();
+
+        // Aliases and internals that deliberately stay out of the advertised list. Anything not
+        // named here must be advertised — that is the point of the check.
+        string[] unadvertised =
+        [
+            "/benchmark",          // alias of /bench
+            "/search",             // legacy alias of /search-web
+            "/web_search",         // legacy alias of /search-web
+            "/codebase",           // legacy alias of /search-code
+            "/commit-exec",        // second leg of /commit, never typed directly
+            "/test-build-banner",  // developer-only probe
+        ];
+
+        var advertised = SlashCommandRouter.Catalog.Select(c => c.Cmd).ToHashSet();
+        foreach (var cmd in routed.Except(unadvertised))
+            Assert.True(advertised.Contains(cmd),
+                $"{cmd} is routed but missing from SlashCommandRouter.Catalog — it would be " +
+                "invisible in both autocompletes and in /help.");
+    }
+
+    /// <summary>Repo root = first ancestor of the test bin folder containing README.md.</summary>
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        return dir!.FullName;
     }
 
     [Fact]

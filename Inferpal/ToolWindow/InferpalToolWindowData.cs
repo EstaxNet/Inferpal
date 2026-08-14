@@ -39,6 +39,11 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private readonly ModelLifetimeService      _lifetimeService;
     private readonly VsBuildMonitor            _buildMonitor;
 
+    /// <summary>Background agent tasks (<c>/task</c>), created on first use — see
+    /// <c>HandleTaskCommandAsync</c>. Null until the user submits one, so a session that never
+    /// uses the feature pays nothing.</summary>
+    private BackgroundTaskQueue? _backgroundTasks;
+
     private static readonly SettingIdentifier<string> ColorThemeId = "environment.visualExperience.colorTheme";
 
     private const int MaxCodeChars = 8_000;
