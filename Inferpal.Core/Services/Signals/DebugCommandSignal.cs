@@ -46,22 +46,14 @@ internal sealed record DebugCommandResponse(
 /// </remarks>
 internal static class DebugCommandSignal
 {
-    private static readonly string TempDir = Path.Combine(Path.GetTempPath(), "Inferpal");
-
-    internal static string RequestPath  { get; } = Path.Combine(TempDir, "debug_request.json");
-    internal static string ResponsePath { get; } = Path.Combine(TempDir, "debug_response.json");
+    internal static string RequestPath  => SignalFile.PathFor("debug_request.json");
+    internal static string ResponsePath => SignalFile.PathFor("debug_response.json");
 
     /// <summary>Written by the in-process driver while it is able to serve requests.</summary>
-    internal static string ReadyPath { get; } = Path.Combine(TempDir, "debug_ready.json");
+    internal static string ReadyPath => SignalFile.PathFor("debug_ready.json");
 
     /// <summary>A request older than this is ignored (host died between write and read).</summary>
     internal static TimeSpan MaxAge { get; set; } = TimeSpan.FromMinutes(10);
-
-    // Overridable in tests so staleness is decidable without a live process / real clock.
-    internal static Func<int, bool>? _isProcessAliveOverride;
-    internal static Func<DateTimeOffset>? _nowOverride;
-
-    private static DateTimeOffset Now => _nowOverride?.Invoke() ?? DateTimeOffset.UtcNow;
 
     private sealed record ReadyMarker([property: JsonPropertyName("pid")] int Pid);
 
@@ -72,9 +64,8 @@ internal static class DebugCommandSignal
     {
         try
         {
-            if (!File.Exists(ReadyPath)) return false;
-            var marker = JsonSerializer.Deserialize<ReadyMarker>(File.ReadAllText(ReadyPath));
-            return marker is not null && IsProcessAlive(marker.Pid);
+            var marker = SignalFile.TryRead<ReadyMarker>(ReadyPath);
+            return marker is not null && SignalFile.IsProcessAlive(marker.Pid);
         }
         catch { return false; }
     }
@@ -84,9 +75,9 @@ internal static class DebugCommandSignal
     {
         try
         {
-            Directory.CreateDirectory(TempDir);
+            Directory.CreateDirectory(SignalFile.Dir);
             // A leftover answer must never satisfy this request's wait.
-            File.Delete(ResponsePath);
+            SignalFile.Delete(ResponsePath);
             File.WriteAllText(RequestPath, JsonSerializer.Serialize(request));
             return request.Id;
         }
@@ -101,8 +92,8 @@ internal static class DebugCommandSignal
     internal static async Task<DebugCommandResponse?> WaitForResponseAsync(
         string id, TimeSpan timeout, CancellationToken ct)
     {
-        var deadline = Now + timeout;
-        while (Now < deadline)
+        var deadline = SignalFile.Now + timeout;
+        while (SignalFile.Now < deadline)
         {
             ct.ThrowIfCancellationRequested();
             var response = TryReadResponse(id);
@@ -116,8 +107,7 @@ internal static class DebugCommandSignal
     {
         try
         {
-            if (!File.Exists(ResponsePath)) return null;
-            var response = JsonSerializer.Deserialize<DebugCommandResponse>(File.ReadAllText(ResponsePath));
+            var response = SignalFile.TryRead<DebugCommandResponse>(ResponsePath);
             return response?.Id == id ? response : null;
         }
         catch { return null; }
@@ -126,8 +116,7 @@ internal static class DebugCommandSignal
     /// <summary>Withdraws an unanswered request so it cannot be executed late.</summary>
     internal static void DiscardRequest()
     {
-        try { File.Delete(RequestPath); }
-        catch { /* non-critical */ }
+        SignalFile.Delete(RequestPath);
     }
 
     // ── Driver side (devenv, in-process) ────────────────────────────────────────────
@@ -137,8 +126,7 @@ internal static class DebugCommandSignal
     {
         try
         {
-            Directory.CreateDirectory(TempDir);
-            File.WriteAllText(ReadyPath, JsonSerializer.Serialize(new ReadyMarker(pid)));
+            SignalFile.Write(ReadyPath, new ReadyMarker(pid), "DebugCommandSignal.MarkReady");
         }
         catch (Exception ex) { Diagnostics.Swallow("DebugCommandSignal.MarkReady", ex); }
     }
@@ -146,8 +134,7 @@ internal static class DebugCommandSignal
     /// <summary>Withdraws the advertisement (package disposed, VS closing).</summary>
     internal static void ClearReady()
     {
-        try { File.Delete(ReadyPath); }
-        catch { /* non-critical */ }
+        SignalFile.Delete(ReadyPath);
     }
 
     /// <summary>
@@ -158,12 +145,11 @@ internal static class DebugCommandSignal
     {
         try
         {
-            if (!File.Exists(RequestPath)) return null;
-            var request = JsonSerializer.Deserialize<DebugCommandRequest>(File.ReadAllText(RequestPath));
-            File.Delete(RequestPath);
-            if (request is null || !IsProcessAlive(request.Pid)) return null;
+            var request = SignalFile.TryRead<DebugCommandRequest>(RequestPath);
+            SignalFile.Delete(RequestPath);
+            if (request is null || !SignalFile.IsProcessAlive(request.Pid)) return null;
 
-            var age = Now - DateTimeOffset.FromUnixTimeMilliseconds(request.Ts);
+            var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(request.Ts);
             return age >= TimeSpan.Zero && age < MaxAge ? request : null;
         }
         catch (Exception ex)
@@ -177,16 +163,8 @@ internal static class DebugCommandSignal
     {
         try
         {
-            Directory.CreateDirectory(TempDir);
-            File.WriteAllText(ResponsePath, JsonSerializer.Serialize(response));
+            SignalFile.Write(ResponsePath, response, "DebugCommandSignal.WriteResponse");
         }
         catch (Exception ex) { Diagnostics.Swallow("DebugCommandSignal.WriteResponse", ex); }
-    }
-
-    private static bool IsProcessAlive(int pid)
-    {
-        if (_isProcessAliveOverride is not null) return _isProcessAliveOverride(pid);
-        try { System.Diagnostics.Process.GetProcessById(pid); return true; }
-        catch { return false; }
     }
 }

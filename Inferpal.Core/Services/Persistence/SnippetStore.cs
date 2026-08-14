@@ -15,19 +15,14 @@ internal static class SnippetStore
 {
     private const int MaxSnippets = 100;
 
-    private static readonly string _defaultFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Inferpal", "snippets.json");
+    private static readonly AppDataJsonFile<List<Snippet>> _file = new("snippets.json", "SnippetStore");
 
     // Overridden in tests to avoid writing to %APPDATA%.
-    internal static string? _fileOverride;
-    private static string FilePath => _fileOverride ?? _defaultFile;
-
-    private static readonly JsonSerializerOptions _opts = new()
+    internal static string? _fileOverride
     {
-        WriteIndented          = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+        get => _file.PathOverride;
+        set => _file.PathOverride = value;
+    }
 
     public static async Task SaveAsync(string language, string code, CancellationToken ct)
     {
@@ -41,34 +36,21 @@ internal static class SnippetStore
         if (snippets.Count > MaxSnippets)
             snippets.RemoveAt(0);
 
-        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-        await AtomicFile.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(snippets, _opts), ct);
+        await _file.SaveAsync(snippets, ct);
     }
 
-    public static async Task<List<Snippet>> LoadAllAsync(CancellationToken ct)
-    {
-        if (!File.Exists(FilePath)) return [];
-        try
-        {
-            var json = await File.ReadAllTextAsync(FilePath, ct);
-            return JsonSerializer.Deserialize<List<Snippet>>(json, _opts) ?? [];
-        }
-        catch { return []; }
-    }
+    public static Task<List<Snippet>> LoadAllAsync(CancellationToken ct) =>
+        _file.LoadAsync([], ct: ct);
 
     public static async Task DeleteAsync(int index, CancellationToken ct)
     {
         var snippets = await LoadAllAsync(ct);
         if (index < 0 || index >= snippets.Count) return;
         snippets.RemoveAt(index);
-        await AtomicFile.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(snippets, _opts), ct);
+        await _file.SaveAsync(snippets, ct);
     }
 
-    public static async Task ClearAsync(CancellationToken ct)
-    {
-        if (File.Exists(FilePath))
-            await AtomicFile.WriteAllTextAsync(FilePath, "[]", ct);
-    }
+    public static Task ClearAsync(CancellationToken ct) => _file.SaveAsync([], ct);
 
     /// <summary>
     /// The <c>/snippets</c> listing: 1-based index, language, one-line code preview,

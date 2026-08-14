@@ -374,24 +374,19 @@ internal class RunTestsTool : ITool
                 FileName               = fileName,
                 Arguments              = arguments,
                 WorkingDirectory       = workDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding  = Encoding.UTF8,
             };
 
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+            var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(timeoutSeconds), ct);
 
-            using var proc = ChildProcess.Start(psi);
-            var stdoutTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
-            var stderrTask = proc.StandardError.ReadToEndAsync(cts.Token);
-            await proc.WaitForExitAsync(cts.Token);
+            // A test run that overruns its budget now says so and keeps the partial log, instead of
+            // throwing a cancellation that aborted the agent turn and lost every line already
+            // produced. The runner is killed, tree included — a stray `dotnet test` used to survive.
+            if (run.TimedOut)
+                return ($"The test run exceeded its {timeoutSeconds}s budget and was stopped.\n\n{run.Combined}", -1);
 
-            var output = await stdoutTask + "\n" + await stderrTask;
-            return (output, proc.ExitCode);
+            return (run.Combined, run.ExitCode);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)               { return ($"Failed to start '{fileName}': {ex.Message}", -1); }

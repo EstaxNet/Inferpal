@@ -21,8 +21,7 @@ internal static class IndexExclusions
     /// Inferpal's own data dir — <c>.inferpal/history/</c> holds snapshot COPIES of source files
     /// (same extensions), which would otherwise pollute the index with stale duplicates.
     /// </summary>
-    public static readonly string[] BuiltInDirs =
-        ["obj", "bin", ".git", "node_modules", ".vs", "dist", ".inferpal"];
+    public static string[] BuiltInDirs => WorkspaceScan.ExcludedDirNames;
 
     /// <summary>
     /// <c>true</c> when <paramref name="path"/> must stay out of the index.
@@ -36,12 +35,7 @@ internal static class IndexExclusions
     /// </param>
     public static bool IsExcluded(string path, string? root = null, IReadOnlyList<string>? extra = null)
     {
-        foreach (var dir in BuiltInDirs)
-        {
-            if (path.Contains($@"\{dir}\", StringComparison.OrdinalIgnoreCase) ||
-                path.Contains($"/{dir}/",  StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
+        if (WorkspaceScan.IsExcludedPath(path)) return true;
 
         if (extra is null || extra.Count == 0) return false;
 

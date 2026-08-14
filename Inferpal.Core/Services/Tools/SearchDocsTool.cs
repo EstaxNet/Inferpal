@@ -55,12 +55,15 @@ internal sealed class SearchDocsTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var query = args.GetProperty("query").GetString()?.Trim() ?? string.Empty;
+        // ⚠ Not GetProperty/GetInt32: the arguments come from the model. A missing `query` used to
+        // throw KeyNotFoundException and a `"top_k": "5"` — which small local models send routinely —
+        // an InvalidOperationException, turning a correctable call into a tool failure.
+        var query = args.Trimmed("query") ?? string.Empty;
         if (string.IsNullOrEmpty(query))
             return "query is required.";
 
-        var topK = args.TryGetProperty("top_k", out var tk)
-            ? Math.Clamp(tk.GetInt32(), 1, 10)
+        var topK = args.TryGetProperty("top_k", out _)
+            ? Math.Clamp(args.Int("top_k", _config.RagTopK), 1, 10)
             : Math.Max(1, _config.RagTopK);
 
         if (_docs.ChunkCount == 0)

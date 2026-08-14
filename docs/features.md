@@ -13,8 +13,8 @@ exists.
   gauge (opens the X-Ray panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I
   keybinding, and a localized webview (10 languages).
 - **Headless slash commands** — ~40 commands are served by the host over JSON-RPC with the
-  same approval/permission pipeline; long commands are cancellable. VS-only for now:
-  `/commit`, `/commit-exec`, `/fix-build`, `/check`, `/setup`, `/test`.
+  same approval/permission pipeline; long commands are cancellable. VS-only: `/fix-build` and
+  `/setup`, coupled to Visual Studio by construction (MSBuild banner, live model-pull bubble).
 - **Settings panel in VS Code** — an "Inferpal Settings" webview mirroring the four VS tabs
   (Connection / Behavior / Context / Tools), backed by the shared config.
 - **Typed @-mentions, `/plan` and `/agent-step` modes, and per-turn RAG auto-context** all
@@ -26,13 +26,22 @@ exists.
   commands, search the web, diagnose builds, run tests, search the codebase) for up to
   **20 turns**, showing each step as a collapsible bubble. Independent read-only tools
   (`read_file`, `list_files`, `search_in_files`) in a single turn run **in parallel**.
-- **26 built-in tools** plus user-defined shell tools and [MCP](mcp.md) server tools — see
+- **28 built-in tools** plus user-defined shell tools and [MCP](mcp.md) server tools — see
   **[Tools](tools.md)**.
 - **Agent Step Mode** — pause between tool calls to inspect or override each action. Toggle
   with the 🦶 button (or `/agent-step`); continue with **▶ Resume** (or `/resume`).
 - **Agent Orchestrator** — an optional Plan→Act→Observe loop (`agentModeEnabled`).
 - **Plan mode** (`/plan`) — read-only: the agent explores and proposes a plan without editing
   any files.
+- **Persistent plans** (`/plan save`) — a plan proposed in the chat used to die at the next
+  `/clear`. Saved, it becomes `.inferpal/plans/<name>.md`: numbered steps with checkboxes,
+  committed with the code, so it survives a restart, shows up in the review of the change it
+  describes, and reaches a colleague. `/plan next` picks it back up, `/plan done <n>` ticks a
+  step. Ticking edits **one character** of the file — the prose and notes you wrote by hand are
+  preserved byte for byte, because a plan is a document you own and the product only annotates.
+  Nothing is ever executed from a plan file: it arrives with any clone, so its text steers the
+  model exactly as a rules file does and grants nothing, and every action it leads to goes
+  through the usual approval prompt. There is deliberately no "run the whole plan".
 - **Multi-file approval pass** — after ≥2 file writes in one run, a **Restore All** button
   rolls everything back at once.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
@@ -79,6 +88,12 @@ exists.
   suite (`run_tests` auto-detects dotnet / pytest / npm / cargo / go), hands the failure
   report to the agent, re-runs, up to 5 rounds. Writes go through the usual approval
   pipeline and `/undo-run` applies.
+- **`/task <objective>`** — a background agent run, detached from the conversation: submitting
+  returns at once and you keep working while it investigates. Tasks run one at a time and wait
+  for the chat to be idle before taking the GPU, so interactive work is never blocked. A notice
+  appears when the report is ready (`/task <id>` reads it, `/task` lists, `/task stop <id>`
+  cancels). Background runs are **read-only** — they explore and report, never write, execute or
+  reach the network, so nothing can interrupt you with an approval prompt.
 
 ## Inline completions
 
@@ -121,6 +136,13 @@ exists.
   layers dominate the budget.
 - **Project rules & AI checks** — repo-versioned governance. See
   **[Rules & Checks](rules-and-checks.md)**.
+- **Project profile & `/onboard`** — `.inferpal/project.json` travels with the repository and
+  says how it likes to be worked on. Index exclusions apply on their own (additively — a clone
+  can exclude more, never index more); model roles and context size are recommended, shown next
+  to the values in effect, and written to your settings only by `/onboard apply`; everything else
+  is ignored, unknown keys included. `/onboard context` drafts `.inferpal/context.md` from the
+  repository (layout, README, recent commits) and opens it for you to correct. See
+  **[Configuration → The project profile](configuration.md#the-project-profile-inferpalprojectjson)**.
 
 ## Conversation experience
 

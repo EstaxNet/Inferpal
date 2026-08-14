@@ -1,5 +1,5 @@
 using System.IO;
-using System.Text;
+using Inferpal.Services.Debugging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -41,31 +41,20 @@ internal sealed record DebuggerSnapshot(
 /// </remarks>
 internal static class DebuggerStateSignal
 {
-    private static readonly string TempDir = Path.Combine(Path.GetTempPath(), "Inferpal");
-
     /// <summary>Full path of the signal file.</summary>
-    internal static string FilePath { get; } = Path.Combine(TempDir, "debugger_state.json");
-
-    // Overridden in tests so staleness is decidable without a live process.
-    internal static Func<int, bool>? _isProcessAliveOverride;
+    internal static string FilePath => SignalFile.PathFor("debugger_state.json");
 
     // ── In-process side (VsDebuggerTracker) ────────────────────────────────────
 
     internal static void Write(DebuggerSnapshot snapshot)
     {
-        try
-        {
-            Directory.CreateDirectory(TempDir);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(snapshot));
-        }
-        catch { /* non-critical */ }
+        SignalFile.Write(FilePath, snapshot, "DebuggerStateSignal.Write");
     }
 
     /// <summary>Deletes the signal (debugger resumed or stopped). Safe if absent.</summary>
     internal static void Clear()
     {
-        try { File.Delete(FilePath); }
-        catch { /* non-critical */ }
+        SignalFile.Delete(FilePath);
     }
 
     // ── Out-of-process side (mention / tool) ───────────────────────────────────
@@ -76,59 +65,45 @@ internal static class DebuggerStateSignal
     /// </summary>
     internal static DebuggerSnapshot? TryRead()
     {
-        try
-        {
-            if (!File.Exists(FilePath)) return null;
-            var snap = JsonSerializer.Deserialize<DebuggerSnapshot>(File.ReadAllText(FilePath));
-            if (snap is null) return null;
-            return IsProcessAlive(snap.Pid) ? snap : null;
-        }
-        catch { return null; }
-    }
+        // §22: same reason as ActiveSolutionSignal — a host with no in-process VS peer would report
+        // Visual Studio's break state as its own. `get_debugger_state` then reads "No paused debug
+        // session", which is true of this editor, instead of handing the model another editor's
+        // call stack.
+        if (!SignalScope.HasVsInProcessPeer) return null;
 
-    private static bool IsProcessAlive(int pid)
-    {
-        if (_isProcessAliveOverride is not null) return _isProcessAliveOverride(pid);
-        try { System.Diagnostics.Process.GetProcessById(pid); return true; }
-        catch { return false; }
+        var snap = SignalFile.TryRead<DebuggerSnapshot>(FilePath);
+        return snap is not null && SignalFile.IsProcessAlive(snap.Pid) ? snap : null;
     }
 
     /// <summary>
     /// Renders a snapshot as the markdown context block shared by the <c>@debugger</c>
     /// attachment and the <c>get_debugger_state</c> tool result (model-facing, English).
     /// </summary>
-    internal static string Format(DebuggerSnapshot snap)
-    {
-        var sb = new StringBuilder("## Debugger state (paused)\n");
-        sb.Append("Break reason: ").Append(snap.Reason).Append('\n');
+    /// <remarks>
+    /// <para>
+    /// Delegates to <see cref="DebugStateFormatter"/>: this channel and the §21 port describe the
+    /// same thing to the same reader, and they had two renderers producing two vocabularies —
+    /// "Debugger state (paused)" / "Break reason" here against "Debugger paused" / "Stop reason"
+    /// there, for one concept.
+    /// </para>
+    /// <para>
+    /// <b>The drift was not only cosmetic.</b> The §21 renderer caps the stack, the locals and each
+    /// value, because a nine-frame stack of runtime internals spends a 16k window on noise. This
+    /// path had no cap at all, so <c>@debugger</c> on a deep stack pasted the whole thing. Sharing
+    /// the renderer gives it the budget the other path already had.
+    /// </para>
+    /// </remarks>
+    internal static string Format(DebuggerSnapshot snap) =>
+        DebugStateFormatter.Format(ToStopState(snap));
 
-        if (!string.IsNullOrEmpty(snap.Exception))
-            sb.Append("\n### Exception\n").Append(snap.Exception).Append('\n');
-
-        if (snap.Frames.Count > 0)
-        {
-            sb.Append("\n### Call stack (top first)\n");
-            foreach (var f in snap.Frames)
-            {
-                sb.Append("- ").Append(f.Function);
-                if (f.File is not null)
-                {
-                    sb.Append("  (").Append(f.File);
-                    if (f.Line is not null) sb.Append(':').Append(f.Line);
-                    sb.Append(')');
-                }
-                sb.Append('\n');
-            }
-        }
-
-        if (snap.Locals.Count > 0)
-        {
-            sb.Append("\n### Locals (current frame)\n");
-            foreach (var l in snap.Locals)
-                sb.Append("- `").Append(l.Name).Append("` (").Append(l.Type).Append(") = ")
-                  .Append(l.Value).Append('\n');
-        }
-
-        return sb.ToString().TrimEnd();
-    }
+    /// <summary>
+    /// Maps the tracker's snapshot onto the port's shape. Frame ids are positional: EnvDTE
+    /// numbers stack frames from the top, and nothing on this path selects a frame by id.
+    /// </summary>
+    private static DebugStopState ToStopState(DebuggerSnapshot snap) =>
+        new(snap.Reason,
+            ThreadId: 0,
+            Frames: [.. snap.Frames.Select((f, i) => new DebugFrame(i, f.Function, f.File, f.Line))],
+            Locals: [.. snap.Locals.Select(l => new DebugVariable(l.Name, l.Type, l.Value))],
+            Exception: snap.Exception);
 }

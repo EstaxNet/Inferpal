@@ -31,10 +31,11 @@ namespace Inferpal.Services.Signals;
 /// </remarks>
 internal static class LastKnownSolutionFile
 {
-    private static readonly string TempDir = Path.Combine(Path.GetTempPath(), "Inferpal");
-
     /// <summary>Full path of the cache file.</summary>
-    internal static string FilePath { get; } = Path.Combine(TempDir, "last_solution.json");
+    /// <remarks>⚠ Deliberately machine-wide, unlike the channels scoped per instance — ROADMAP §22,
+    /// family C: this cache means "the last solution Inferpal knew about", not "the one open
+    /// here".</remarks>
+    internal static string FilePath => SignalFile.PathFor("last_solution.json");
 
     /// <summary>
     /// Records the full path of a successfully resolved <c>.sln</c>, overwriting any previous value.
@@ -43,17 +44,9 @@ internal static class LastKnownSolutionFile
     internal static void Record(string? solutionPath)
     {
         if (string.IsNullOrEmpty(solutionPath) || !File.Exists(solutionPath)) return;
-        try
-        {
-            Directory.CreateDirectory(TempDir);
-            var json = JsonSerializer.Serialize(new
-            {
-                solutionPath,
-                ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            });
-            File.WriteAllText(FilePath, json);
-        }
-        catch { /* non-critical */ }
+        SignalFile.Write(FilePath,
+            new { solutionPath, ts = SignalFile.Now.ToUnixTimeMilliseconds() },
+            "LastKnownSolutionFile.Record");
     }
 
     /// <summary>

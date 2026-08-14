@@ -110,37 +110,19 @@ internal class GetGitStatusTool : ITool
         return sb.ToString().TrimEnd();
     }
 
-    private static async Task<string> GitAsync(string arguments, string workDir, CancellationToken ct)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName               = "git",
-                Arguments              = arguments,
-                WorkingDirectory       = workDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding  = Encoding.UTF8,
-            };
-            // prevent interactive prompts and ensure English output
-            psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
-            psi.Environment["LANG"]                = "en_US.UTF-8";
-
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(15));
-
-            using var proc = ChildProcess.Start(psi);
-            var stdout = await proc.StandardOutput.ReadToEndAsync(cts.Token);
-            await proc.WaitForExitAsync(cts.Token);
-            return stdout.Trim();
-        }
-        catch (OperationCanceledException) { throw; }
-        catch { return string.Empty; }
-    }
+    /// <summary>stdout of <c>git &lt;arguments&gt;</c>, empty when git could not answer.</summary>
+    /// <remarks>
+    /// ⚠ <b>stdout only, deliberately</b>: every caller here parses porcelain output line by line,
+    /// and git writes advice and warnings to stderr. This used to be a third private copy of the
+    /// process plumbing — env vars, encodings, timeout — and it had drifted: it never drained
+    /// stderr, so a repository chatty enough to fill that buffer deadlocked git (it blocks writing,
+    /// never closes stdout, and the read of stdout never returns) until the 15 s budget expired,
+    /// after which the catch-all reported "no changes". That is the exact defect
+    /// <see cref="GitProcess"/> was fixed for on 2026-08-03; the copy kept it. Found by the review
+    /// of 2026-08-07.
+    /// </remarks>
+    private static async Task<string> GitAsync(string arguments, string workDir, CancellationToken ct) =>
+        (await GitProcess.CaptureAsync(arguments, workDir, ct)).Stdout.Trim();
 
     private string? FindGitRootFromOpenFiles()
     {

@@ -15,11 +15,9 @@ namespace Inferpal.Services.Mcp;
 /// <c>tools/list</c> and <c>tools/call</c> — enough to surface MCP tools to the agent.
 /// HTTP/SSE transport is intentionally out of scope for v1.
 /// </remarks>
-internal sealed class McpStdioClient : IMcpClient
+internal sealed class McpStdioClient : McpClientBase, IMcpClient
 {
     private const string ProtocolVersion = "2024-11-05";
-    private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(20);
-    private static readonly TimeSpan CallTimeout      = TimeSpan.FromSeconds(120);
 
     private readonly McpServerConfig _config;
     private readonly ConcurrentDictionary<long, TaskCompletionSource<JsonElement>> _pending = new();
@@ -117,40 +115,15 @@ internal sealed class McpStdioClient : IMcpClient
     }
 
     /// <summary>Lists the tools the server advertises. Returns an empty list on failure.</summary>
-    public async Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct)
-    {
-        try
-        {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(HandshakeTimeout);
-            var result = await SendRequestAsync("tools/list", new JsonObject(), cts.Token).ConfigureAwait(false);
-            return McpJsonRpc.ParseTools(result);
-        }
-        catch
-        {
-            return [];
-        }
-    }
 
     /// <summary>
     /// Calls a tool by its server-local name and returns the concatenated text content.
     /// </summary>
-    public async Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
-    {
-        var callParams = new JsonObject { ["name"] = toolName };
-        callParams["arguments"] = arguments.ValueKind is JsonValueKind.Object or JsonValueKind.Array
-            ? JsonNode.Parse(arguments.GetRawText())
-            : new JsonObject();
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(CallTimeout);
-        var result = await SendRequestAsync("tools/call", callParams, cts.Token).ConfigureAwait(false);
-        return McpJsonRpc.ExtractCallResult(result, toolName);
-    }
 
     // ── JSON-RPC plumbing ────────────────────────────────────────────────────
 
-    private async Task<JsonElement> SendRequestAsync(string method, JsonNode @params, CancellationToken ct)
+    private protected override async Task<JsonElement> SendRequestAsync(
+        string method, JsonNode @params, CancellationToken ct)
     {
         if (_disposed || _process is null || _process.HasExited)
             throw new InvalidOperationException($"MCP server '{_config.Name}' is not running.");

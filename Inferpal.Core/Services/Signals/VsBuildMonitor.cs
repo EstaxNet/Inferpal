@@ -149,29 +149,19 @@ internal sealed class VsBuildMonitor : IDisposable
     {
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
-
             var psi = new ProcessStartInfo
             {
-                FileName               = "dotnet",
+                FileName  = "dotnet",
                 // Note: --no-restore is omitted intentionally.
                 // Using it risks failing with NETSDK1004 (missing assets file) when NuGet
                 // packages have not been restored yet, which produces no lines matching
                 // ErrorLineRegex and silently swallows the failure.
-                Arguments              = $"build \"{solutionPath}\" -v minimal",
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
+                Arguments = $"build \"{solutionPath}\" -v minimal",
             };
 
-            using var proc  = ChildProcess.Start(psi);
-            var outTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
-            var errTask = proc.StandardError.ReadToEndAsync(cts.Token);
-            await proc.WaitForExitAsync(cts.Token);
-            var combined = await outTask + "\n" + await errTask;
+            var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(90), CancellationToken.None);
 
-            var errorLines = combined
+            var errorLines = run.Combined
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .Where(l => GetDiagnosticsTool.ErrorLineRegex.IsMatch(l))
                 .Select(l => l.Trim())

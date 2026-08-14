@@ -4,12 +4,10 @@ using Xunit;
 namespace Inferpal.Tests;
 
 // Serialized: the cache file path is a process-wide static.
-[CollectionDefinition("LastKnownSolutionFile", DisableParallelization = true)]
-public class LastKnownSolutionFileCollection { }
-
-[Collection("LastKnownSolutionFile")]
+[Collection(SignalCollection.Name)]
 public class LastKnownSolutionFileTests : IDisposable
 {
+    private readonly SignalScratchDir _scratch = new();
     private readonly string _slnPath;
 
     public LastKnownSolutionFileTests()
@@ -24,6 +22,7 @@ public class LastKnownSolutionFileTests : IDisposable
     {
         DeleteCacheFile();
         try { File.Delete(_slnPath); } catch { }
+        _scratch.Dispose();
     }
 
     private static void DeleteCacheFile()

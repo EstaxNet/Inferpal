@@ -79,28 +79,17 @@ internal class GetDiagnosticsTool : ITool
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);
 
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(TimeSpan.FromSeconds(90));
-
         var psi = new ProcessStartInfo
         {
-            FileName               = "dotnet",
-            Arguments              = $"build \"{path}\" --no-restore -v minimal",
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            UseShellExecute        = false,
-            CreateNoWindow         = true,
+            FileName  = "dotnet",
+            Arguments = $"build \"{path}\" --no-restore -v minimal",
         };
 
-        using var process = ChildProcess.Start(psi);
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
-        var stderrTask = process.StandardError.ReadToEndAsync(cts.Token);
-
-        await process.WaitForExitAsync(cts.Token);
-        var stdout = await stdoutTask;
-        var stderr = await stderrTask;
-        var combined = stdout + "\n" + stderr;
+        // 90 s, after which the build tree is killed — it used to be abandoned, and MSBuild node
+        // processes outlived the turn that started them.
+        var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(90), ct);
+        var stdout   = run.Stdout;
+        var combined = run.Combined;
 
         var diagnostics = combined
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
@@ -111,9 +100,9 @@ internal class GetDiagnosticsTool : ITool
 
         if (diagnostics.Count == 0)
         {
-            return process.ExitCode == 0
+            return run.Succeeded
                 ? Strings.DiagBuildOk(Path.GetFileName(path))
-                : Strings.DiagBuildFailed(process.ExitCode, stdout.Trim());
+                : Strings.DiagBuildFailed(run.ExitCode, stdout.Trim());
         }
 
         var errors   = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("error",   StringComparison.OrdinalIgnoreCase));

@@ -24,40 +24,28 @@ internal sealed record ChatBusyState(
 /// </remarks>
 internal static class ChatBusySignal
 {
-    private static readonly string TempDir = Path.Combine(Path.GetTempPath(), "Inferpal");
-
     /// <summary>Full path of the signal file.</summary>
-    internal static string FilePath { get; } = Path.Combine(TempDir, "chat_busy.json");
+    /// <remarks>⚠ Machine-wide on purpose (ROADMAP §22, family B): there is one GPU, so a chat in
+    /// one editor must silence the ghost-text of another.</remarks>
+    internal static string FilePath => SignalFile.PathFor("chat_busy.json");
 
     /// <summary>Safety fuse: a busy signal older than this is treated as stale (crash without Clear).</summary>
     internal static TimeSpan MaxAge { get; set; } = TimeSpan.FromMinutes(10);
-
-    // Overridable in tests so staleness is decidable without a live process / real clock.
-    internal static Func<int, bool>? _isProcessAliveOverride;
-    internal static Func<DateTimeOffset>? _nowOverride;
-
-    private static DateTimeOffset Now => _nowOverride?.Invoke() ?? DateTimeOffset.UtcNow;
 
     // ── Host side (GpuScheduler) ────────────────────────────────────────────────
 
     /// <summary>Marks the shared GPU as held by a chat/agent request (this process).</summary>
     internal static void Write()
     {
-        try
-        {
-            Directory.CreateDirectory(TempDir);
-            var state = new ChatBusyState(System.Diagnostics.Process.GetCurrentProcess().Id,
-                                          Now.ToUnixTimeMilliseconds());
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(state));
-        }
-        catch { /* non-critical */ }
+        SignalFile.Write(FilePath,
+            new ChatBusyState(Environment.ProcessId, SignalFile.Now.ToUnixTimeMilliseconds()),
+            "ChatBusySignal.Write");
     }
 
     /// <summary>Clears the busy signal (last chat lease released). Safe if absent.</summary>
     internal static void Clear()
     {
-        try { File.Delete(FilePath); }
-        catch { /* non-critical */ }
+        SignalFile.Delete(FilePath);
     }
 
     // ── Ghost-text side (devenv) ────────────────────────────────────────────────
@@ -68,23 +56,10 @@ internal static class ChatBusySignal
     /// </summary>
     internal static bool IsBusy()
     {
-        try
-        {
-            if (!File.Exists(FilePath)) return false;
-            var state = JsonSerializer.Deserialize<ChatBusyState>(File.ReadAllText(FilePath));
-            if (state is null) return false;
-            if (!IsProcessAlive(state.Pid)) return false;
+        var state = SignalFile.TryRead<ChatBusyState>(FilePath);
+        if (state is null || !SignalFile.IsProcessAlive(state.Pid)) return false;
 
-            var age = Now - DateTimeOffset.FromUnixTimeMilliseconds(state.Ts);
-            return age >= TimeSpan.Zero && age < MaxAge;
-        }
-        catch { return false; }
-    }
-
-    private static bool IsProcessAlive(int pid)
-    {
-        if (_isProcessAliveOverride is not null) return _isProcessAliveOverride(pid);
-        try { System.Diagnostics.Process.GetProcessById(pid); return true; }
-        catch { return false; }
+        var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(state.Ts);
+        return age >= TimeSpan.Zero && age < MaxAge;
     }
 }

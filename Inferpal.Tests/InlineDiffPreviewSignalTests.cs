@@ -6,17 +6,20 @@ namespace Inferpal.Tests;
 // File-IPC protocol behind the inline diff preview (host writes request → devenv acks + consumes).
 // Serialized on the signal files: xUnit runs same-class facts sequentially, and the collection
 // keeps other signal-file tests apart.
-[Collection("InlineDiffSignal")]
+[Collection(SignalCollection.Name)]
 public class InlineDiffPreviewSignalTests : IDisposable
 {
     private const string FilePath = @"C:\proj\a.cs";
 
+    private readonly SignalScratchDir _scratch = new();
+
     public InlineDiffPreviewSignalTests() => Cleanup();
     public void Dispose()
     {
-        InlineDiffPreviewSignal._isProcessAliveOverride = null;
-        InlineDiffPreviewSignal._nowOverride = null;
+        SignalFile._isProcessAliveOverride = null;
+        SignalFile._nowOverride = null;
         Cleanup();
+        _scratch.Dispose();
     }
 
     private static void Cleanup()
@@ -50,7 +53,7 @@ public class InlineDiffPreviewSignalTests : IDisposable
     public void Request_FromDeadProcess_IsIgnored()
     {
         InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
-        InlineDiffPreviewSignal._isProcessAliveOverride = _ => false;
+        SignalFile._isProcessAliveOverride = _ => false;
 
         Assert.Null(InlineDiffPreviewSignal.TryReadRequestFor(FilePath));
     }
@@ -59,7 +62,7 @@ public class InlineDiffPreviewSignalTests : IDisposable
     public void Request_OlderThanMaxAge_IsIgnored()
     {
         InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
-        InlineDiffPreviewSignal._nowOverride = () => DateTimeOffset.UtcNow + InlineDiffPreviewSignal.MaxAge + TimeSpan.FromSeconds(1);
+        SignalFile._nowOverride = () => DateTimeOffset.UtcNow + InlineDiffPreviewSignal.MaxAge + TimeSpan.FromSeconds(1);
 
         Assert.Null(InlineDiffPreviewSignal.TryReadRequestFor(FilePath));
     }

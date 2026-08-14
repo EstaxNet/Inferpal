@@ -225,7 +225,7 @@ public class OnboardCommandHandlerTests : IDisposable
 
         Assert.Contains("src/",                 brief);
         Assert.Contains("A fixture repository.", brief);
-        Assert.Contains("Main.cs",               brief);   // one level deeper — see the sonde below
+        Assert.Contains("Main.cs",               brief);   // one level deeper — see the probe below
         Assert.Contains("second commit",         brief);
         Assert.DoesNotContain("obj/",            brief);
     }

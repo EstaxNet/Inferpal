@@ -42,4 +42,64 @@ public class ChildProcessTests
         Assert.Same(wait, first);   // the child finished; it did not sit waiting on input
         Assert.True(proc.HasExited);
     }
+
+    // ── RunAsync: the two properties seven private copies did not agree on ──────────
+
+    [Fact]
+    public async Task BothPipesAreDrainedConcurrently_SoAFloodOnStderrCannotDeadlock()
+    {
+        // The defect this pins is not hypothetical: GetGitStatusTool read stdout only, and a child
+        // that fills the stderr buffer blocks writing, never closes stdout, and the read of stdout
+        // never returns. 200 KB is far past any pipe buffer (typically 4-64 KB).
+        var psi = new ProcessStartInfo("powershell.exe",
+            "-NoProfile -NonInteractive -Command \"" +
+            "$s = 'x' * 200000; [Console]::Error.Write($s); [Console]::Out.Write('done')\"");
+
+        var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(30), CancellationToken.None);
+
+        Assert.False(run.TimedOut);
+        Assert.Equal("done", run.Stdout);
+        Assert.Equal(200_000, run.Stderr.Length);
+    }
+
+    [Fact]
+    public async Task ATimeoutKillsTheChildAndReportsInsteadOfThrowing()
+    {
+        var psi = new ProcessStartInfo("powershell.exe",
+            "-NoProfile -NonInteractive -Command \"Start-Sleep -Seconds 60\"");
+
+        var started = DateTime.UtcNow;
+        var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(2), CancellationToken.None);
+
+        Assert.True(run.TimedOut);
+        Assert.Equal(-1, run.ExitCode);
+        // Killed, not merely abandoned: three call sites used to leave the tree running because
+        // Process.Dispose() does not terminate anything.
+        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public async Task TheCallersOwnCancellationStillThrows()
+    {
+        // A user pressing stop is not an expired budget, and the two must not arrive as one value.
+        var psi = new ProcessStartInfo("powershell.exe",
+            "-NoProfile -NonInteractive -Command \"Start-Sleep -Seconds 60\"");
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => ChildProcess.RunAsync(psi, TimeSpan.FromMinutes(5), cts.Token));
+    }
+
+    [Theory]
+    [InlineData("out", "", "out")]
+    [InlineData("", "err", "err")]
+    [InlineData("out\n", "err", "out\nerr")]
+    [InlineData("", "", "")]
+    public void Combined_JoinsWithoutInventingBlankLines(string stdout, string stderr, string expected)
+    {
+        // Several callers split this text line by line; a leading or trailing empty line from an
+        // unconditional "\n" join used to reach their parsers.
+        Assert.Equal(expected, new ChildProcessResult(0, stdout, stderr, TimedOut: false).Combined);
+    }
 }

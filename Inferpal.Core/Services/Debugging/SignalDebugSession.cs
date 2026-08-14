@@ -102,6 +102,8 @@ internal sealed class SignalDebugSession : IDebugSession
               + "a build that failed or a dialog waiting in the IDE — check the Build output before "
               + "assuming anything about the program's behaviour.");
 
+        // The driver's own words, unchanged. Since 2026-08-06 the commonest one is a build that
+        // failed: it refuses the launch itself rather than letting Visual Studio raise its modal.
         if (!response.Ok)
             return DebugStartResult.Failed(response.Error ?? "The debugger refused to start the session.");
 

@@ -55,23 +55,16 @@ internal static class HardwareProbe
         {
             var psi = new ProcessStartInfo
             {
-                FileName               = "nvidia-smi",
-                Arguments              = "--query-gpu=memory.total --format=csv,noheader,nounits",
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
+                FileName  = "nvidia-smi",
+                Arguments = "--query-gpu=memory.total --format=csv,noheader,nounits",
             };
 
-            using var proc = ChildProcess.Start(psi);
-            if (proc is null) return null;
+            // stderr was redirected and never read here, so a chatty driver could have wedged the
+            // probe on a full buffer; the shared runner drains both.
+            var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(5), ct)
+                                        .ConfigureAwait(false);
 
-            var stdoutTask = proc.StandardOutput.ReadToEndAsync(ct);
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(5));
-            await proc.WaitForExitAsync(cts.Token).ConfigureAwait(false);
-
-            return ParseNvidiaSmiMemory(await stdoutTask.ConfigureAwait(false));
+            return run.TimedOut ? null : ParseNvidiaSmiMemory(run.Stdout);
         }
         catch { return null; }
     }

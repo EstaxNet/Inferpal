@@ -37,9 +37,17 @@ against them, **100% locally**:
 - The model reviews it against every check and reports `file:line`, a severity
   (**blocker** / **warning** / **nit**), and a concrete fix — instructed not to invent
   issues.
+- **Every location is then checked against the diff itself**, and the answer says which of
+  three it is: the line is inside a changed hunk; the line was off and got snapped to the
+  nearest changed line (the reported one is shown); or the file is not in the diff at all,
+  in which case the finding is kept but explicitly marked as an unverified location. A model
+  asked for `file:line` always produces one — only the diff can say whether it points at
+  anything, and a wrong anchor is worse than no anchor.
+- Findings are grouped by file, blockers first, so the reading order is the fixing order.
 
 Commands: `/check` runs all checks; `/check <name>` runs one; `/check init` scaffolds an
-example. `/checks` lists the available checks; `/checks init` scaffolds one.
+example. `/checks` lists the available checks; `/checks init` scaffolds one. Available in
+**both front-ends** (VS and VS Code).
 
 > [!NOTE]
 > Nothing leaves your machine — the review runs on your configured local model.

@@ -294,17 +294,10 @@ internal sealed class RenameSymbolTool : ITool
         return result;
     }
 
-    private static bool IsExcluded(string path) =>
-        path.Contains(@"\obj\",          StringComparison.Ordinal) ||
-        path.Contains(@"\bin\",          StringComparison.Ordinal) ||
-        path.Contains(@"\.git\",         StringComparison.Ordinal) ||
-        path.Contains(@"\node_modules\", StringComparison.Ordinal) ||
-        path.Contains(@"\.vs\",          StringComparison.Ordinal) ||
-        path.Contains(@"\dist\",         StringComparison.Ordinal) ||
-        path.Contains("/obj/",           StringComparison.Ordinal) ||
-        path.Contains("/bin/",           StringComparison.Ordinal) ||
-        path.Contains("/.git/",          StringComparison.Ordinal) ||
-        path.Contains("/node_modules/",  StringComparison.Ordinal);
+    // ⚠ This tool WRITES. Its own copy compared with StringComparison.Ordinal, so `\Obj\` or
+    // `\Node_Modules\` slipped through on a case-insensitive filesystem, and it did not exclude
+    // `.inferpal` — it could rewrite symbols inside the undo snapshots of the user's own files.
+    private static bool IsExcluded(string path) => WorkspaceScan.IsExcludedPath(path);
 
     private static bool IsValidIdentifier(string name) =>
         !string.IsNullOrEmpty(name) &&

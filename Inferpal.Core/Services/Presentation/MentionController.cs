@@ -71,9 +71,7 @@ internal static class MentionController
             ".csproj", ".sln", ".props", ".targets",
         };
 
-    private static readonly string[] SkippedDirs = ["bin", "obj", ".git", "node_modules", ".vs", "packages"];
-
-    private static bool IsSkippedDir(string dir) => SkippedDirs.Contains(Path.GetFileName(dir));
+    private static bool IsSkippedDir(string dir) => WorkspaceScan.IsExcludedDirName(dir);
 
     // ── Prompt parsing & transforms ───────────────────────────────────────────
 

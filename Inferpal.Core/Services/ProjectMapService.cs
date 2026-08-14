@@ -257,23 +257,8 @@ internal sealed class ProjectMapService
 
     // ── File enumeration ──────────────────────────────────────────────────────
 
-    private static IEnumerable<string> EnumerateSourceFiles(string root)
-    {
-        try
-        {
-            return Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
-                .Where(f => !IsExcluded(f));
-        }
-        catch { return []; }
-    }
-
-    private static bool IsExcluded(string path) =>
-        path.Contains(@"\obj\")          || path.Contains("/obj/")           ||
-        path.Contains(@"\bin\")          || path.Contains("/bin/")           ||
-        path.Contains(@"\.git\")         || path.Contains("/.git/")          ||
-        path.Contains(@"\node_modules\") || path.Contains("/node_modules/")  ||
-        path.Contains(@"\.inferpal\") || path.Contains("/.inferpal/")  ||
-        path.Contains(@"\history\")      || path.Contains("/history/");
+    private static IEnumerable<string> EnumerateSourceFiles(string root) =>
+        WorkspaceScan.EnumerateFiles(root, "*.cs");
 
     // ── Root discovery ────────────────────────────────────────────────────────
 

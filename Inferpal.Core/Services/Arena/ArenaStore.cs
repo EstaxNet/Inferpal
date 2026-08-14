@@ -24,40 +24,19 @@ internal sealed record ArenaSavedState(List<ArenaBattle> Battles, ArenaPending? 
 /// </summary>
 internal static class ArenaStore
 {
-    private static readonly string _defaultFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Inferpal", "arena.json");
+    private static readonly AppDataJsonFile<ArenaSavedState> _file = new("arena.json", "ArenaStore");
 
     /// <summary>Tests point this at a temp file so they never touch the real %AppData%.</summary>
-    internal static string? _fileOverride;
-
-    private static string FilePath => _fileOverride ?? _defaultFile;
-
-    private static readonly JsonSerializerOptions _opts = new()
+    internal static string? _fileOverride
     {
-        WriteIndented          = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
-    public static async Task SaveAsync(ArenaSavedState state)
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            await AtomicFile.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(state, _opts));
-        }
-        catch (Exception ex) { Diagnostics.Swallow("ArenaStore.Save", ex); }
+        get => _file.PathOverride;
+        set => _file.PathOverride = value;
     }
 
-    public static async Task<ArenaSavedState> LoadAsync()
-    {
-        try
-        {
-            if (File.Exists(FilePath) &&
-                JsonSerializer.Deserialize<ArenaSavedState>(await File.ReadAllTextAsync(FilePath), _opts)
-                    is { Battles: not null } state)
-                return state;
-        }
-        catch (Exception ex) { Diagnostics.Swallow("ArenaStore.Load", ex); }
-        return new ArenaSavedState([], null);
-    }
+    public static Task SaveAsync(ArenaSavedState state) => _file.SaveAsync(state);
+
+    // `Battles: not null` is the shape check, not a formality: a hand-edited or truncated file can
+    // deserialise into a state whose list is null, and every caller enumerates it.
+    public static Task<ArenaSavedState> LoadAsync() =>
+        _file.LoadAsync(new ArenaSavedState([], null), accept: s => s.Battles is not null);
 }

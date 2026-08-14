@@ -145,6 +145,20 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             }
 
             case SignalDebugSession.OpStart:
+            {
+                // Built explicitly first, and the launch is abandoned when it fails. Measured
+                // before being written (probe 3, 2026-08-06): `Debug.Start` on a solution that does
+                // not compile opens a modal — "There were build errors. Would you like to continue
+                // and run the last successful build?" — 2 s later, and it sits on
+                // the UI thread until a human answers. Every later request would then block on its
+                // hop to that thread: the whole driver stops, not just this call. Building through
+                // the automation instead reports the same failure in 0,34 s with no dialog at all.
+                var failure = await BuildBeforeLaunchAsync(ct);
+                if (failure is not null) return new(request.Id, Ok: false, Error: failure);
+
+                return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(request.Op, ct));
+            }
+
             case SignalDebugSession.OpContinue:
             case SignalDebugSession.OpStepOver:
             case SignalDebugSession.OpStepInto:
@@ -180,6 +194,76 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
 
             default:
                 return new(request.Id, Ok: false, Error: $"Unknown debugger operation '{request.Op}'.");
+        }
+    }
+
+    // ── Building before a launch ────────────────────────────────────────────────────
+
+    /// <summary>How long the pre-launch build may take before we stop waiting for it.</summary>
+    private const int BuildBudgetMs = 5 * 60 * 1000;
+
+    /// <summary>
+    /// Builds the solution and returns <c>null</c> when it is ready to run, or the sentence to hand
+    /// back when it is not.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Asynchronous on purpose.</b> <c>Build(true)</c> would hold the UI thread for the whole
+    /// build — minutes on a real solution, with a frozen IDE — so the build is started and its
+    /// state polled instead. Each poll is a short hop onto the UI thread to read a property, never
+    /// a wait held there.
+    /// </para>
+    /// <para>
+    /// <c>LastBuildInfo</c> is the number of projects that failed. Measured, not assumed: 1 on the
+    /// probe's deliberately broken solution.
+    /// </para>
+    /// </remarks>
+    private async Task<string?> BuildBeforeLaunchAsync(CancellationToken ct)
+    {
+        await Jtf.SwitchToMainThreadAsync(ct);
+        try { _dte.Solution.SolutionBuild.Build(false); }
+        catch (Exception ex)
+        {
+            // A solution that cannot even be asked to build is an ordinary answer, not a crash.
+            Services.Diagnostics.Swallow("VsDebugDriver.StartBuild", ex);
+            await TaskScheduler.Default.SwitchTo();
+            return "The solution could not be built: " + ex.Message;
+        }
+        await TaskScheduler.Default.SwitchTo();
+
+        var waited = 0;
+        while (waited < BuildBudgetMs)
+        {
+            await Task.Delay(PollMs, ct);
+            waited += PollMs;
+
+            await Jtf.SwitchToMainThreadAsync(ct);
+            var state = EnvDTE.vsBuildState.vsBuildStateInProgress;
+            try { state = _dte.Solution.SolutionBuild.BuildState; }
+            catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.BuildState", ex); }
+            var failed = state == EnvDTE.vsBuildState.vsBuildStateDone ? FailedProjectCount() : 0;
+            await TaskScheduler.Default.SwitchTo();
+
+            if (state != EnvDTE.vsBuildState.vsBuildStateDone) continue;
+
+            return failed == 0
+                ? null
+                : $"The build failed ({failed} project(s) with errors), so nothing was launched. "
+                + "Fix the build first — get_diagnostics reports the errors.";
+        }
+
+        return $"The build did not finish within {BuildBudgetMs / 60_000} minutes, so nothing was launched.";
+    }
+
+    /// <summary>Number of projects that failed the last build. UI thread only.</summary>
+    private int FailedProjectCount()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        try { return _dte.Solution.SolutionBuild.LastBuildInfo; }
+        catch (Exception ex)
+        {
+            Services.Diagnostics.Swallow("VsDebugDriver.LastBuildInfo", ex);
+            return 0;   // unreadable → let the launch proceed rather than block it on our own doubt
         }
     }
 

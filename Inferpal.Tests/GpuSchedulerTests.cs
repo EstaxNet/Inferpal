@@ -6,15 +6,17 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// GpuScheduler is a process-wide static gate that also writes the ChatBusySignal file, and the
-// ChatBusySignal tests read/write that same file — so both run in one non-parallel collection to
-// avoid a shared-file race.
-[CollectionDefinition("GpuSerial", DisableParallelization = true)]
-public class GpuSerialCollection { }
-
-[Collection("GpuSerial")]
-public class GpuSchedulerTests
+// GpuScheduler is a process-wide static gate that also writes the ChatBusySignal file — so it runs
+// in the serialised signal collection with everything else that touches that folder. Acquiring a
+// lease here used to clear the busy marker of a chat running in the developer's own editor, since
+// ChatBusySignal.Clear() deletes the shared file whoever wrote it.
+[Collection(SignalCollection.Name)]
+public class GpuSchedulerTests : IDisposable
 {
+    private readonly SignalScratchDir _scratch = new();
+
+    public void Dispose() => _scratch.Dispose();
+
     static async Task<bool> CompletesWithin(Task task, int ms) =>
         await Task.WhenAny(task, Task.Delay(ms)) == task;
 
@@ -78,22 +80,25 @@ public class GpuSchedulerTests
     }
 }
 
-[Collection("GpuSerial")]
+[Collection(SignalCollection.Name)]
 public class ChatBusySignalTests : IDisposable
 {
+    private readonly SignalScratchDir _scratch = new();
+
     public ChatBusySignalTests()
     {
-        ChatBusySignal._isProcessAliveOverride = _ => true;
-        ChatBusySignal._nowOverride = () => DateTimeOffset.UnixEpoch.AddHours(1);
+        SignalFile._isProcessAliveOverride = _ => true;
+        SignalFile._nowOverride = () => DateTimeOffset.UnixEpoch.AddHours(1);
         ChatBusySignal.Clear();
     }
 
     public void Dispose()
     {
         ChatBusySignal.Clear();
-        ChatBusySignal._isProcessAliveOverride = null;
-        ChatBusySignal._nowOverride = null;
+        SignalFile._isProcessAliveOverride = null;
+        SignalFile._nowOverride = null;
         ChatBusySignal.MaxAge = TimeSpan.FromMinutes(10);
+        _scratch.Dispose();
     }
 
     [Fact]
@@ -119,7 +124,7 @@ public class ChatBusySignalTests : IDisposable
     public void DeadWriterProcess_IsNotBusy()
     {
         ChatBusySignal.Write();
-        ChatBusySignal._isProcessAliveOverride = _ => false;   // writer crashed
+        SignalFile._isProcessAliveOverride = _ => false;   // writer crashed
         Assert.False(ChatBusySignal.IsBusy());
     }
 
@@ -127,10 +132,10 @@ public class ChatBusySignalTests : IDisposable
     public void StaleSignal_BeyondMaxAge_IsNotBusy()
     {
         var t0 = DateTimeOffset.UnixEpoch.AddHours(1);
-        ChatBusySignal._nowOverride = () => t0;
+        SignalFile._nowOverride = () => t0;
         ChatBusySignal.Write();
 
-        ChatBusySignal._nowOverride = () => t0 + TimeSpan.FromMinutes(11); // past the 10-min fuse
+        SignalFile._nowOverride = () => t0 + TimeSpan.FromMinutes(11); // past the 10-min fuse
         Assert.False(ChatBusySignal.IsBusy());
     }
 }

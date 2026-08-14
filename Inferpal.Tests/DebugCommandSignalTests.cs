@@ -13,16 +13,22 @@ namespace Inferpal.Tests;
 /// Serialised on the signal files — xUnit runs same-class facts sequentially, and the collection
 /// keeps the other signal-file tests apart.
 /// </remarks>
-[Collection("DebugCommandSignal")]
+[Collection(SignalCollection.Name)]
 public class DebugCommandSignalTests : IDisposable
 {
+    // ⚠ Installed before anything else runs: these facts publish a request carrying a live PID,
+    // one of them `op: "start"`. Against the real folder a VsDebugDriver in the developer's own
+    // Visual Studio claims it and starts debugging. See SignalScratchDir.
+    private readonly SignalScratchDir _scratch = new();
+
     public DebugCommandSignalTests() => Cleanup();
 
     public void Dispose()
     {
-        DebugCommandSignal._isProcessAliveOverride = null;
-        DebugCommandSignal._nowOverride = null;
+        SignalFile._isProcessAliveOverride = null;
+        SignalFile._nowOverride = null;
         Cleanup();
+        _scratch.Dispose();
     }
 
     private static void Cleanup()
@@ -55,7 +61,7 @@ public class DebugCommandSignalTests : IDisposable
     {
         // A devenv that crashed leaves its marker behind; the next session must not trust it.
         DebugCommandSignal.MarkReady(Environment.ProcessId);
-        DebugCommandSignal._isProcessAliveOverride = _ => false;
+        SignalFile._isProcessAliveOverride = _ => false;
 
         Assert.False(DebugCommandSignal.IsDriverReady());
     }
@@ -79,7 +85,7 @@ public class DebugCommandSignalTests : IDisposable
     public void Request_FromDeadProcess_IsNotClaimed()
     {
         DebugCommandSignal.WriteRequest(Request());
-        DebugCommandSignal._isProcessAliveOverride = _ => false;
+        SignalFile._isProcessAliveOverride = _ => false;
 
         Assert.Null(DebugCommandSignal.ClaimRequest());
     }
@@ -88,7 +94,7 @@ public class DebugCommandSignalTests : IDisposable
     public void Request_OlderThanMaxAge_IsNotClaimed()
     {
         DebugCommandSignal.WriteRequest(Request());
-        DebugCommandSignal._nowOverride = () => DateTimeOffset.UtcNow + DebugCommandSignal.MaxAge + TimeSpan.FromSeconds(1);
+        SignalFile._nowOverride = () => DateTimeOffset.UtcNow + DebugCommandSignal.MaxAge + TimeSpan.FromSeconds(1);
 
         Assert.Null(DebugCommandSignal.ClaimRequest());
     }

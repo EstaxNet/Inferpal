@@ -14,41 +14,18 @@ internal sealed record BenchSavedRun(DateTime TimestampUtc, List<BenchModelResul
 /// </summary>
 internal static class BenchStore
 {
-    private static readonly string _defaultFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Inferpal", "bench.json");
+    private static readonly AppDataJsonFile<BenchSavedRun?> _file = new("bench.json", "BenchStore");
 
     /// <summary>Tests point this at a temp file so they never touch the real %AppData%.</summary>
-    internal static string? _fileOverride;
-
-    private static string FilePath => _fileOverride ?? _defaultFile;
-
-    private static readonly JsonSerializerOptions _opts = new()
+    internal static string? _fileOverride
     {
-        WriteIndented          = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
-    public static async Task SaveAsync(BenchSavedRun run)
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            await AtomicFile.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(run, _opts));
-        }
-        catch (Exception ex) { Diagnostics.Swallow("BenchStore.Save", ex); }
+        get => _file.PathOverride;
+        set => _file.PathOverride = value;
     }
 
-    public static async Task<BenchSavedRun?> LoadAsync()
-    {
-        try
-        {
-            if (!File.Exists(FilePath)) return null;
-            return JsonSerializer.Deserialize<BenchSavedRun>(await File.ReadAllTextAsync(FilePath), _opts);
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow("BenchStore.Load", ex);
-            return null;
-        }
-    }
+    public static Task SaveAsync(BenchSavedRun run) => _file.SaveAsync(run);
+
+    // Same shape check as the arena state, and for the same reason: `/bench last` enumerates it.
+    public static Task<BenchSavedRun?> LoadAsync() =>
+        _file.LoadAsync(null, accept: r => r?.Results is not null);
 }

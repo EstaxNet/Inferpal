@@ -20,10 +20,10 @@ namespace Inferpal.Services.Signals;
 /// </summary>
 internal static class BuildSignalFile
 {
-    private static readonly string TempDir = Path.Combine(Path.GetTempPath(), "Inferpal");
+
 
     /// <summary>Full path of the signal file.</summary>
-    internal static string FilePath { get; } = Path.Combine(TempDir, "build_signal.json");
+    internal static string FilePath => SignalFile.PathFor("build_signal.json");
 
     // ── In-process side (GhostTextPackage) ────────────────────────────────────
 
@@ -42,7 +42,7 @@ internal static class BuildSignalFile
     {
         try
         {
-            Directory.CreateDirectory(TempDir);
+            Directory.CreateDirectory(SignalFile.Dir);
             var json = JsonSerializer.Serialize(new
             {
                 solutionPath,
@@ -112,7 +112,7 @@ internal static class BuildSignalFile
     /// </summary>
     internal static void EnsureDir()
     {
-        try { Directory.CreateDirectory(TempDir); }
+        try { Directory.CreateDirectory(SignalFile.Dir); }
         catch (Exception ex) { Services.Diagnostics.Swallow("BuildSignal.EnsureDir", ex); }
     }
 }

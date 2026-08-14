@@ -54,20 +54,40 @@ internal sealed class RagDatabase
     /// Loads chunks for a single source file using the <c>idx_chunks_file</c> index.
     /// O(log N) in the DB — far cheaper than <see cref="LoadAsync"/> for targeted lookups.
     /// </summary>
-    public async Task<List<RagChunk>> LoadFileAsync(string filePath, CancellationToken ct)
+    public Task<List<RagChunk>> LoadFileAsync(string filePath, CancellationToken ct) =>
+        QueryChunksAsync("root_hash = $rh AND file_path = $fp", "start_line", ct,
+                         ("$fp", filePath));
+
+    /// <summary>
+    /// Loads all chunks for this solution root from the SQLite DB.
+    /// Returns an empty list when the DB is new or empty.
+    /// </summary>
+    public Task<List<RagChunk>> LoadAsync(CancellationToken ct) =>
+        QueryChunksAsync("root_hash = $rh", "file_path, start_line", ct);
+
+    /// <summary>
+    /// The single chunk-reading query: the two public loaders differed only by their WHERE and
+    /// ORDER BY, yet each carried its own copy of the eight-column projection and the row mapping —
+    /// so adding a column meant remembering both, and one of them mapped into a temporary the other
+    /// did not.
+    /// </summary>
+    private async Task<List<RagChunk>> QueryChunksAsync(
+        string where, string orderBy, CancellationToken ct,
+        params (string Name, object Value)[] extraParams)
     {
         var result = new List<RagChunk>();
         await using var conn = OpenConnection();
 
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
+        cmd.CommandText = $@"
             SELECT file_path, rel_path, start_line, end_line,
                    content, content_hash, type_name, embedding
             FROM   chunks
-            WHERE  root_hash = $rh AND file_path = $fp
-            ORDER  BY start_line";
+            WHERE  {where}
+            ORDER  BY {orderBy}";
         cmd.Parameters.AddWithValue("$rh", _rootHash);
-        cmd.Parameters.AddWithValue("$fp", filePath);
+        foreach (var (name, value) in extraParams)
+            cmd.Parameters.AddWithValue(name, value);
 
         await using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
@@ -83,44 +103,6 @@ internal sealed class RagDatabase
                 TypeName    = await reader.IsDBNullAsync(6, ct) ? null : reader.GetString(6),
                 Embedding   = await reader.IsDBNullAsync(7, ct) ? null : BlobToFloats((byte[])reader[7]),
             });
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Loads all chunks for this solution root from the SQLite DB.
-    /// Returns an empty list when the DB is new or empty.
-    /// </summary>
-    public async Task<List<RagChunk>> LoadAsync(CancellationToken ct)
-    {
-        var result = new List<RagChunk>();
-        await using var conn = OpenConnection();
-
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            SELECT file_path, rel_path, start_line, end_line,
-                   content, content_hash, type_name, embedding
-            FROM   chunks
-            WHERE  root_hash = $rh
-            ORDER  BY file_path, start_line";
-        cmd.Parameters.AddWithValue("$rh", _rootHash);
-
-        await using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
-        {
-            var chunk = new RagChunk
-            {
-                FilePath    = reader.GetString(0),
-                RelPath     = reader.GetString(1),
-                StartLine   = reader.GetInt32(2),
-                EndLine     = reader.GetInt32(3),
-                Content     = reader.GetString(4),
-                ContentHash = reader.GetString(5),
-                TypeName    = await reader.IsDBNullAsync(6, ct) ? null : reader.GetString(6),
-                Embedding   = await reader.IsDBNullAsync(7, ct) ? null : BlobToFloats((byte[])reader[7]),
-            };
-            result.Add(chunk);
         }
 
         return result;

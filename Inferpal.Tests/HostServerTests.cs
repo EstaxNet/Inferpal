@@ -16,6 +16,11 @@ namespace Inferpal.Tests;
 /// <see cref="FakeInferenceProvider"/> and an in-test editor adapter (<see cref="ClientTarget"/>).
 /// This is exactly how the VS Code extension will drive the host — minus the process spawn.
 /// </summary>
+// In the serialised signal collection because constructing a HostServer declares, process-wide and
+// one-way, that this process has no in-process Visual Studio peer (§22). Production has one role
+// per process; a test process plays both, so this suite must not run alongside one that needs the
+// VS-peer side of that switch — SignalScratchDir resets it, and this keeps the reset meaningful.
+[Collection(SignalCollection.Name)]
 public class HostServerTests
 {
     private const int TimeoutMs = 15_000;

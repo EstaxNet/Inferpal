@@ -11,9 +11,11 @@ namespace Inferpal.Tests;
 /// therefore covered without a devenv — what is not covered is the automation itself, which is what
 /// the §21 probe measured.
 /// </summary>
-[Collection("DebugCommandSignal")]
+[Collection(SignalCollection.Name)]
 public class SignalDebugSessionTests : IDisposable
 {
+    // Before the fake driver: it polls the signal paths, which must already be redirected.
+    private readonly SignalScratchDir _scratch = new();
     private readonly FakeDriver _driver = new();
 
     public SignalDebugSessionTests()
@@ -31,9 +33,10 @@ public class SignalDebugSessionTests : IDisposable
         SignalDebugSession.StartTimeout  = TimeSpan.FromMinutes(5);
         SignalDebugSession.ResumeTimeout = TimeSpan.FromMinutes(2);
         SignalDebugSession.QueryTimeout  = TimeSpan.FromSeconds(20);
-        DebugCommandSignal._isProcessAliveOverride = null;
-        DebugCommandSignal._nowOverride = null;
+        SignalFile._isProcessAliveOverride = null;
+        SignalFile._nowOverride = null;
         Cleanup();
+        _scratch.Dispose();
     }
 
     private static void Cleanup()
@@ -169,6 +172,23 @@ public class SignalDebugSessionTests : IDisposable
 
         Assert.Null(result.State);
         Assert.Null(result.Failure);
+    }
+
+    [Fact]
+    public async Task Start_RefusedByTheDriver_CarriesItsExplanationVerbatim()
+    {
+        // The seam the pre-launch build uses: probe 3 (2026-08-06) measured that `Debug.Start` on a
+        // solution that does not compile opens a modal on the UI thread and freezes the whole
+        // driver, so the driver now builds first and refuses the launch itself. Its sentence has to
+        // reach the model unchanged — it is the only thing that says what to do next.
+        _driver.Start(r => new DebugCommandResponse(r.Id, Ok: false,
+            Error: "The build failed (1 project(s) with errors), so nothing was launched."));
+        var session = new SignalDebugSession();
+
+        var result = await session.StartAsync(CancellationToken.None);
+
+        Assert.Null(result.State);
+        Assert.Equal("The build failed (1 project(s) with errors), so nothing was launched.", result.Failure);
     }
 
     [Fact]

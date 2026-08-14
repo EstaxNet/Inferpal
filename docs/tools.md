@@ -1,6 +1,6 @@
 # Tools
 
-The agent completes tasks by calling tools. There are **26 built-in tools**, plus any
+The agent completes tasks by calling tools. There are **28 built-in tools**, plus any
 **user-defined shell tools** and any tools exposed by connected **[MCP](mcp.md) servers**.
 
 ## Built-in tools
@@ -21,6 +21,8 @@ The agent completes tasks by calling tools. There are **26 built-in tools**, plu
 | `get_open_editors` | — | All open files, active one marked `[active]` |
 | `get_git_status` | `path?`, `include_diff?` | `git status`, last 20 commits, branches, diff summary |
 | `get_debugger_state` | — | Break state when paused: reason, exception, call stack (`file:line`), locals (backs `@debugger`) |
+| `debug_control` | `action`, `file?`, `line?` | Drives the debugger: `set_breakpoint` / `clear_breakpoint` / `list_breakpoints` / `start` / `continue` / `step_over` / `step_into` / `step_out` / `stop`. **Approval on `start` only** — it runs your program; the steps that follow observe an execution you already consented to. Finite step budget, and running out is reported |
+| `debug_inspect` | `action?` (`state` \| `evaluate`), `expression?` | Reads a paused debugger: stop reason, user call stack, locals, and arbitrary expression evaluation in the current frame. Values are the debugger's own rendering — read, never parsed |
 | `run_tests` | `path?`, `filter?`, `runner?`, `timeout_seconds?` | `dotnet test` / `pytest` / `npm test` / `cargo test` / `go test` (auto-detected) |
 | `fetch_url` | `url`, `max_chars?` | Fetch a page as text. **Approval**, SSRF-guarded |
 | `web_search` | `query`, `max_results?` | DuckDuckGo search. **Approval** |
@@ -32,7 +34,7 @@ The agent completes tasks by calling tools. There are **26 built-in tools**, plu
 | `search_codebase` | `query`, `top_k?` | Semantic search over the indexed project |
 | `search_docs` | `query`, `top_k?` | Semantic search over `@Docs` external documentation |
 | `generate_project_map` | — | Namespace tree, types, dependencies, hotspots (TTL-cached) |
-| `rename_symbol` | `symbol`, `new_name`, `path?`, `dry_run?` | Project-wide rename (Roslyn for C#, regex fallback). **Approval** + snapshot; `dry_run=true` by default |
+| `rename_symbol` | `old_name`, `new_name`, `root?`, `file_pattern?`, `dry_run?` | Project-wide rename. On C# it renames the **symbol**, not the spelling: a method called `Handle` is renamed without touching the dozen unrelated `Handle` methods that share the name (compiler-resolved; falls back to syntax when no workspace is known). Other languages use a word-boundary regex. **Approval** + snapshot; `dry_run=true` by default |
 
 ### `analyze_code` modes
 
@@ -42,7 +44,7 @@ selected by `mode`:
 | `mode` | Does |
 |---|---|
 | `callgraph` | Methods in a file and what they call (`direction`: callees / callers / both) |
-| `impact` | Blast radius of changing a file — dependent files, tests, entry points |
+| `impact` | Blast radius of changing a file — dependent files, tests, entry points. When you pass `symbol` on a **C#** file, the report adds an **exact references** section resolved by the compiler and labelled as such: the other sections match names, this one resolves them (on this code base a name shared by a dozen types matched 61 places for 3 real uses) |
 | `nexus` | Cross-language bridges between C# and TS/JS (REST endpoints, JS interop, SignalR) |
 
 Other parameters: `path`, `root`, `symbol`, `depth`, `direction`, `focus`, `bridges`.

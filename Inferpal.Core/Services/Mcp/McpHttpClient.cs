@@ -24,11 +24,9 @@ namespace Inferpal.Services.Mcp;
 /// GET stream is a normal rotation, not a disconnect, so <see cref="Closed"/> is never raised — HTTP
 /// session-expiry reconnect and interactive OAuth are out of scope for this cut.
 /// </remarks>
-internal sealed partial class McpHttpClient : IMcpClient
+internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
 {
     private const string ProtocolVersion = "2024-11-05";
-    private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(20);
-    private static readonly TimeSpan CallTimeout      = TimeSpan.FromSeconds(120);
 
     private readonly McpServerConfig _config;
     private readonly Uri _url;
@@ -110,38 +108,21 @@ internal sealed partial class McpHttpClient : IMcpClient
         await SendNotificationAsync("notifications/initialized", ct).ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct)
-    {
-        try
-        {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(HandshakeTimeout);
-            var result = await SendRequestAsync("tools/list", new JsonObject(), cts.Token).ConfigureAwait(false);
-            return McpJsonRpc.ParseTools(result);
-        }
-        catch
-        {
-            return [];
-        }
-    }
 
-    public async Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
-    {
-        var callParams = new JsonObject { ["name"] = toolName };
-        callParams["arguments"] = arguments.ValueKind is JsonValueKind.Object or JsonValueKind.Array
-            ? JsonNode.Parse(arguments.GetRawText())
-            : new JsonObject();
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(CallTimeout);
-        var result = await SendRequestAsync("tools/call", callParams, cts.Token).ConfigureAwait(false);
-        return McpJsonRpc.ExtractCallResult(result, toolName);
-    }
 
     // ── JSON-RPC over Streamable HTTP ─────────────────────────────────────────
 
+    /// <summary>
+    /// The base's transport hook. The HTTP transport needs one extra degree of freedom — whether a
+    /// dropped session may be re-established mid-request — which is private to it and must not leak
+    /// into the shared protocol layer.
+    /// </summary>
+    private protected override Task<JsonElement> SendRequestAsync(
+        string method, JsonNode @params, CancellationToken ct) =>
+        SendRequestAsync(method, @params, ct, allowReinit: true);
+
     private async Task<JsonElement> SendRequestAsync(string method, JsonNode @params, CancellationToken ct,
-                                                     bool allowReinit = true)
+                                                     bool allowReinit)
     {
         if (_disposed)
             throw new InvalidOperationException($"MCP server '{_config.Name}' client is disposed.");

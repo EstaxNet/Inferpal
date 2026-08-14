@@ -513,23 +513,8 @@ internal sealed class NexusIntelligenceTool : ITool
 
     // ── File enumeration ───────────────────────────────────────────────────────
 
-    private static IEnumerable<string> EnumerateFiles(string root, string pattern)
-    {
-        try
-        {
-            return Directory.EnumerateFiles(root, pattern, SearchOption.AllDirectories)
-                .Where(f => !IsExcluded(f));
-        }
-        catch { return []; }
-    }
-
-    private static bool IsExcluded(string path) =>
-        path.Contains(@"\obj\")          || path.Contains("/obj/")          ||
-        path.Contains(@"\bin\")          || path.Contains("/bin/")          ||
-        path.Contains(@"\.git\")         || path.Contains("/.git/")         ||
-        path.Contains(@"\node_modules\") || path.Contains("/node_modules/") ||
-        path.Contains(@"\dist\")         || path.Contains("/dist/")         ||
-        path.Contains(@"\.vs\")          || path.Contains("/.vs/");
+    private static IEnumerable<string> EnumerateFiles(string root, string pattern) =>
+        WorkspaceScan.EnumerateFiles(root, pattern);
 
     // ── Bridge data containers ─────────────────────────────────────────────────
 

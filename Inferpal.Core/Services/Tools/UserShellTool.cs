@@ -37,44 +37,24 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
 
             var psi = new ProcessStartInfo
             {
-                FileName               = "powershell.exe",
-                Arguments              = $"-NoProfile -NonInteractive -EncodedCommand {encoded}",
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
+                FileName  = "powershell.exe",
+                Arguments = $"-NoProfile -NonInteractive -EncodedCommand {encoded}",
             };
 
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(config.CommandTimeoutSeconds));
+            // Concurrent drain of both pipes and a killed process tree on timeout live in
+            // ChildProcess now — this tool was the one site that had both right, and the shared
+            // implementation is its behaviour.
+            var run = await ChildProcess.RunAsync(
+                psi, TimeSpan.FromSeconds(config.CommandTimeoutSeconds), ct);
 
-            using var proc = ChildProcess.Start(psi);
-            // Read stdout and stderr concurrently to prevent buffer-full deadlocks.
-            var stdoutTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
-            var stderrTask = proc.StandardError.ReadToEndAsync(cts.Token);
-            try
-            {
-                await proc.WaitForExitAsync(cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                // Timeout or user cancel: Process.Dispose() does NOT terminate the native
-                // process, so kill the whole tree to avoid leaving an orphaned powershell.exe.
-                try { proc.Kill(entireProcessTree: true); } catch { }
-                throw;
-            }
-            var output = await stdoutTask;
-            var error  = await stderrTask;
+            // Timeout is reported to the model, not thrown: it must not abort the whole agent run.
+            if (run.TimedOut)
+                return $"Error: command timed out after {config.CommandTimeoutSeconds}s.";
 
-            var result = (output + error).Trim();
+            var result = (run.Stdout + run.Stderr).Trim();
             return string.IsNullOrEmpty(result) ? "(no output)" : result;
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } // user cancelled
-        catch (OperationCanceledException)
-        {
-            // Internal timeout — report it to the model instead of aborting the whole agent run.
-            return $"Error: command timed out after {config.CommandTimeoutSeconds}s.";
-        }
+        catch (OperationCanceledException) { throw; } // user cancelled
         catch (Exception ex) { return $"Error: {ex.Message}"; }
     }
 }

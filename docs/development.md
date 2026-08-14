@@ -68,18 +68,33 @@ tag (matching that version) triggers the CI release workflow
 (`.github/workflows/release.yml`): it runs the tests, builds both extensions (VS 2026 VSIX
 and VS Code VSIX), and attaches them — plus `SHA256SUMS.txt` — to a GitHub Release.
 
+Locally, `./release.ps1` chains the `deploy-release.ps1` wizard (version bump, Release
+build, git tag, optional Marketplace upload) and collects the same deliverables under
+`dist/<version>/`.
+
 ## Tests
 
 ```powershell
 dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 ```
 
-The suite has **998 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
+The suite has **1300 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
 extension's `internal` types are testable directly. All the logic lives in `Inferpal.Core`,
 a pure net8.0 library with no editor SDK or WPF dependency (guarded by `CoreIsolationTests`),
 specifically so it can be unit-tested without Visual Studio (e.g. `DiffComputer`,
 `ContextBudgetGauge`, `ThemePalette`, `ConnectionStatusPresenter`, `PromptHistoryNavigator`,
 `ModelCatalog`, `RulesService`, `ChecksService`, `FixPromptBuilder`, `HistoryCompaction`).
+
+### Validating the inline diff preview
+
+The per-hunk preview behind `/fix`, `/refactor` and `/doc` ends in a WPF adornment living
+inside `devenv.exe` — the one piece no unit test can see. What *can* be checked offline is
+the maths behind it: `Inferpal.Tests/Fixtures/inline-diff-scenarios.json` holds the scenarios
+(hunk shapes, per-hunk accept/reject subsets, expected merge results) and
+`InlineDiffScenarioFixturesTests` locks them against `InlineDiffPlanner`, so a wrong
+expectation fails `dotnet test` instead of masquerading as a broken preview during manual
+validation. The rendering itself still has to be eyeballed in a real VS
+(`./deploy-dev.ps1 -Launch` — the renderer is in-proc MEF, a hot apply does not reload it).
 
 ## Project layout
 
@@ -95,7 +110,7 @@ Inferpal.Core/
     ├── Agent/       Plan→Act→Observe orchestrator, policies, compaction
     ├── Inference/   Providers (Ollama, LM Studio, OpenAI-compatible) + ModelCatalog
     ├── Execution/   Tool registries, approval, pattern permissions, file history
-    ├── Tools/       The 26 built-in ITool implementations
+    ├── Tools/       The 28 built-in ITool implementations
     ├── Rag/         CodeChunker, RagDatabase, ProjectIndexService (hybrid search)
     ├── Docs/        @Docs crawler/index
     ├── Lsp/         LSP semantic-chunking tier

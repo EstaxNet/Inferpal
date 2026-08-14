@@ -23,7 +23,7 @@ and **technical** references (how it works).
 ```mermaid
 flowchart LR
     user([You]) -->|prompt| chat[Inferpal chat]
-    chat -->|tool calls| tools[26 built-in tools<br/>+ MCP + custom]
+    chat -->|tool calls| tools[28 built-in tools<br/>+ MCP + custom]
     chat <-->|HTTP| provider[Model server<br/>Ollama / LM Studio / OpenAI-compatible]
     tools --> ws[(Your workspace)]
     editor([VS editor]) -->|ghost text| chat
@@ -39,7 +39,7 @@ flowchart LR
 | [Configuration](configuration.md) | Every setting and config key, with defaults |
 | [Features](features.md) | Functional tour of everything Inferpal does |
 | [Slash Commands](slash-commands.md) | The full `/command` reference |
-| [Tools](tools.md) | The 26 built-in agent tools, custom shell tools, permission rules, and the approval model |
+| [Tools](tools.md) | The 28 built-in agent tools, custom shell tools, permission rules, and the approval model |
 | [Mentions](mentions.md) | The `@` typed-context picker |
 | [Search & Indexing](search-and-indexing.md) | Semantic codebase search (RAG) and `@Docs` external documentation |
 | [MCP](mcp.md) | Connecting Model Context Protocol servers |

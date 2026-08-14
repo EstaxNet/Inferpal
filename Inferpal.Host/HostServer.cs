@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -55,6 +55,13 @@ internal sealed partial class HostServer : IDisposable
     {
         _providerFactory = providerFactory ?? InferenceProviderFactory.Create;
         _configFactory   = configFactory   ?? InferpalConfig.Load;
+
+        // §22. This host talks to its editor over RPC, never to a Visual Studio in-process package —
+        // yet the signal folder under %TEMP% is machine-wide, so without this declaration
+        // `get_solution_info` answered with the solution open in Visual Studio and
+        // `get_debugger_state` with Visual Studio's break state. Declared, not inferred: a process
+        // that guesses its own role guesses wrong the day a third front-end appears.
+        SignalScope.DeclareNoVsInProcessPeer();
     }
 
     /// <summary>Completed when the adapter sent `shutdown` — Program.cs exits on it.</summary>

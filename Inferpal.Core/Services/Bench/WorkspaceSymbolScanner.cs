@@ -194,18 +194,7 @@ internal static class WorkspaceSymbolScanner
         return result;
     }
 
-    /// <summary>Same skip list as the semantic index — see <c>ProjectIndexService.IsExcluded</c>.</summary>
-    private static readonly string[] ExcludedDirNames =
-        ["obj", "bin", ".git", "node_modules", ".vs", "dist", ".inferpal"];
-
-    private static bool IsExcluded(string path)
-    {
-        foreach (var dir in ExcludedDirNames)
-            if (path.Contains($@"\{dir}\", StringComparison.OrdinalIgnoreCase) ||
-                path.Contains($"/{dir}/", StringComparison.OrdinalIgnoreCase))
-                return true;
-        return false;
-    }
+    private static bool IsExcluded(string path) => WorkspaceScan.IsExcludedPath(path);
 
     private static string Rel(string root, string path) =>
         Path.GetRelativePath(root, path).Replace('\\', '/');

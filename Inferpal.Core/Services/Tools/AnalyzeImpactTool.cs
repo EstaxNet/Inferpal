@@ -442,12 +442,7 @@ internal class AnalyzeImpactTool : ITool
         catch { return []; }
     }
 
-    private static bool IsExcluded(string path) =>
-        path.Contains(@"\obj\") || path.Contains(@"\bin\") ||
-        path.Contains(@"\.git\") || path.Contains(@"\node_modules\") ||
-        path.Contains(@"\dist\") || path.Contains(@"\build\") ||
-        path.Contains("/obj/")   || path.Contains("/bin/") ||
-        path.Contains("/node_modules/") || path.Contains("/dist/") || path.Contains("/build/");
+    private static bool IsExcluded(string path) => WorkspaceScan.IsExcludedPath(path);
 
     // ── Icons ─────────────────────────────────────────────────────────────────
 

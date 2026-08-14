@@ -188,34 +188,19 @@ internal sealed class SmartFixValidator
     // project directory, with a 60s fuse. Returns (exit code, combined stdout+stderr).
     private static async Task<(int ExitCode, string Output)> RunAsync(string command, string workDir, CancellationToken ct)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(TimeSpan.FromSeconds(60));
-
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(command));
         var psi = new ProcessStartInfo
         {
-            FileName               = "powershell.exe",
-            Arguments              = $"-NoProfile -NonInteractive -EncodedCommand {encoded}",
-            WorkingDirectory       = workDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            UseShellExecute        = false,
-            CreateNoWindow         = true,
+            FileName         = "powershell.exe",
+            Arguments        = $"-NoProfile -NonInteractive -EncodedCommand {encoded}",
+            WorkingDirectory = workDir,
         };
 
-        using var proc = ChildProcess.Start(psi);
-        var outTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
-        var errTask = proc.StandardError.ReadToEndAsync(cts.Token);
-        try
-        {
-            await proc.WaitForExitAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            try { proc.Kill(entireProcessTree: true); } catch { }
-            throw;
-        }
-        var combined = await outTask + "\n" + await errTask;
-        return (proc.ExitCode, combined);
+        var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(60), ct);
+
+        // A validator that hangs is a failed validation, not a cancelled edit: -1 with the partial
+        // output lets the caller reject the write and show why, where the thrown cancellation used
+        // to surface as if the user had stopped it.
+        return (run.TimedOut ? -1 : run.ExitCode, run.Combined);
     }
 }

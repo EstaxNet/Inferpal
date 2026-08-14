@@ -128,13 +128,45 @@ Every persisted setting, its type, and default value.
 
 ## Workspace overlays (committable, team-shared)
 
-Two optional files under `.inferpal/` let a team version-control policy alongside the code.
+Three optional files under `.inferpal/` let a team version-control policy alongside the code.
 They layer on top of the per-machine settings above.
 
 | File | Purpose |
 |---|---|
 | `.inferpal/permissions.json` | **Deny** rules pushed to everyone on the repo: `{ "rules": ["deny run_command ^curl", "deny * \\.env$"] }`. `allow` rules are ignored here — a cloned repository must not be able to auto-approve itself; auto-approval lives in the per-machine setting. See [Tools → Permission rules](tools.md). |
-| `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. |
+| `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. ⚠ This file is committed, so it arrives with any clone: a command defined here is **always shown for approval before it runs** (asked once per session, and no `allow` rule or *Disable security alerts* can auto-approve it). The built-in validators are unaffected. |
+| `.inferpal/project.json` | **Project profile** — how a repository likes to be worked on. `/onboard init` writes a commented example; `/onboard` shows what it asked for and what it got. |
+
+### The project profile (`.inferpal/project.json`)
+
+```jsonc
+{
+  // Applied automatically — additive only.
+  "indexExclude": ["vendor", "**/*.generated.cs"],
+
+  // Shown by `/onboard`, applied only by `/onboard apply`.
+  "recommend": {
+    "agentModel": "qwen2.5-coder:14b",
+    "utilityModel": "qwen2.5:3b",
+    "contextWindowSize": 16384
+  }
+}
+```
+
+Comments and trailing commas are accepted. The file is **non-privileged** — it ships with
+whatever you clone, so it may describe preferences and may never grant anything. Exactly three
+categories, and the classification is an allow-list: **an unknown key is ignored, not
+interpreted.**
+
+| Category | Keys | What happens |
+|---|---|---|
+| Applied | `indexExclude` | Kept out of the semantic index, **additively**: the profile can exclude more, never include more. It shrinks the index only — nothing is hidden from `read_file`, `list_files` or `search_in_files`, and `/onboard` prints every pattern. |
+| Recommended | `defaultModel`, `agentModel`, `utilityModel`, `codeActionsModel`, `inlineEditModel`, `inlineCompletionModel`, `ragEmbeddingModel`, `contextWindowSize` (under `recommend`) | Displayed next to the value currently in effect. Nothing changes until you type `/onboard apply`: which models are installed and how much VRAM you have are machine facts, not repository facts. |
+| Never | everything else — `validators`, `permissions`, `baseUrl`, `apiKey`, `customTools`, … | Ignored, and named in the `/onboard` report (⛔) plus `/diagnostics`. Nesting one of them under `recommend` does not launder it. |
+
+Nothing here raises an approval prompt, because nothing here executes: a file that cannot grant
+anything has no approval to ask for. Compare `validators.json` above, which *can* name a command
+and is therefore force-prompted.
 
 (Existing overlays — `.inferpal/context.md`, `memory.md`, `notes.md`, `rules/`, `checks/`,
 `prompts/` — are unchanged; see [Rules & Checks](rules-and-checks.md).)

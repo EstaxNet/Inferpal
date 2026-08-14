@@ -32,10 +32,8 @@ namespace Inferpal.Services.Signals;
 /// </remarks>
 internal static class ActiveSolutionSignal
 {
-    private static readonly string TempDir = Path.Combine(Path.GetTempPath(), "Inferpal");
-
     /// <summary>Full path of the signal file.</summary>
-    internal static string FilePath { get; } = Path.Combine(TempDir, "active_solution.json");
+    internal static string FilePath => SignalFile.PathFor("active_solution.json");
 
     // ── In-process side (VsSolutionTracker) ────────────────────────────────────
 
@@ -44,24 +42,15 @@ internal static class ActiveSolutionSignal
     /// </summary>
     internal static void Write(string solutionPath)
     {
-        try
-        {
-            Directory.CreateDirectory(TempDir);
-            var json = JsonSerializer.Serialize(new
-            {
-                solutionPath,
-                ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            });
-            File.WriteAllText(FilePath, json);
-        }
-        catch { /* non-critical */ }
+        SignalFile.Write(FilePath,
+            new { solutionPath, ts = SignalFile.Now.ToUnixTimeMilliseconds() },
+            "ActiveSolutionSignal.Write");
     }
 
     /// <summary>Deletes the signal file (called when the solution closes). Safe if absent.</summary>
     internal static void Clear()
     {
-        try { File.Delete(FilePath); }
-        catch { /* non-critical */ }
+        SignalFile.Delete(FilePath);
     }
 
     // ── Out-of-process side (tools / ToolWindow) ───────────────────────────────
@@ -73,6 +62,12 @@ internal static class ActiveSolutionSignal
     /// </summary>
     internal static string? TryReadSolutionPath()
     {
+        // §22: this file is written by a Visual Studio in-process package and the folder is
+        // machine-wide. A host with no such peer (Inferpal.Host, i.e. VS Code) would otherwise
+        // answer with the solution open in Visual Studio — and win, since callers consult this
+        // first. Someone else's state is not a better answer than no answer.
+        if (!SignalScope.HasVsInProcessPeer) return null;
+
         try
         {
             if (!File.Exists(FilePath)) return null;

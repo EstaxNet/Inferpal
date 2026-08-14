@@ -143,17 +143,21 @@ internal sealed class DocsDatabase
 
     // ── Schema ───────────────────────────────────────────────────────────────
 
-    private void EnsureSchema()
+    /// <summary>
+    /// The one definition of this database's tables.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Written <b>once</b>, on purpose. The DDL used to appear twice — once for a fresh database
+    /// and once for the rebuild after a schema-version bump — identical but for
+    /// <c>IF NOT EXISTS</c>. That is the shape schema drift takes: add a column to the create path,
+    /// forget the rebuild path, and a database that has ever been rebuilt no longer matches a fresh
+    /// one, with queries silently failing on whichever machine took the other branch.
+    /// </remarks>
+    private static string Ddl(bool ifNotExists)
     {
-        using var conn = OpenConnection();
-        using var cmd  = conn.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE IF NOT EXISTS meta (
-                key   TEXT PRIMARY KEY,
-                value TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS doc_sites (
+        var guard = ifNotExists ? "IF NOT EXISTS " : "";
+        return $@"
+            CREATE TABLE {guard}doc_sites (
                 id          TEXT PRIMARY KEY,
                 title       TEXT NOT NULL,
                 start_url   TEXT NOT NULL,
@@ -161,7 +165,7 @@ internal sealed class DocsDatabase
                 chunk_count INTEGER NOT NULL DEFAULT 0
             );
 
-            CREATE TABLE IF NOT EXISTS doc_chunks (
+            CREATE TABLE {guard}doc_chunks (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
                 doc_id       TEXT NOT NULL,
                 url          TEXT NOT NULL,
@@ -172,9 +176,20 @@ internal sealed class DocsDatabase
                 embedding    BLOB
             );
 
-            CREATE INDEX IF NOT EXISTS idx_doc_chunks_doc ON doc_chunks (doc_id);
+            CREATE INDEX {guard}idx_doc_chunks_doc ON doc_chunks (doc_id);";
+    }
 
-            INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '" + SchemaVersion + @"');";
+    private void EnsureSchema()
+    {
+        using var conn = OpenConnection();
+        using var cmd  = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS meta (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );" + Ddl(ifNotExists: true) +
+            $@"
+            INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '{SchemaVersion}');";
         cmd.ExecuteNonQuery();
 
         EnsureSchemaVersion(conn);
@@ -199,30 +214,9 @@ internal sealed class DocsDatabase
         using var drop = conn.CreateCommand();
         drop.CommandText = @"
             DROP TABLE IF EXISTS doc_chunks;
-            DROP TABLE IF EXISTS doc_sites;
-
-            CREATE TABLE doc_sites (
-                id          TEXT PRIMARY KEY,
-                title       TEXT NOT NULL,
-                start_url   TEXT NOT NULL,
-                page_count  INTEGER NOT NULL DEFAULT 0,
-                chunk_count INTEGER NOT NULL DEFAULT 0
-            );
-
-            CREATE TABLE doc_chunks (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                doc_id       TEXT NOT NULL,
-                url          TEXT NOT NULL,
-                page_title   TEXT NOT NULL,
-                heading      TEXT,
-                content      TEXT NOT NULL,
-                content_hash TEXT NOT NULL,
-                embedding    BLOB
-            );
-
-            CREATE INDEX idx_doc_chunks_doc ON doc_chunks (doc_id);
-
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '" + SchemaVersion + @"');";
+            DROP TABLE IF EXISTS doc_sites;" + Ddl(ifNotExists: false) +
+            $@"
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '{SchemaVersion}');";
         drop.ExecuteNonQuery();
     }
 

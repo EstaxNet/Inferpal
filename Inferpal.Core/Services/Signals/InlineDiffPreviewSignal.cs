@@ -30,19 +30,11 @@ internal sealed record InlineDiffAck(
 /// </summary>
 internal static class InlineDiffPreviewSignal
 {
-    private static readonly string TempDir = Path.Combine(Path.GetTempPath(), "Inferpal");
-
-    internal static string RequestPath { get; } = Path.Combine(TempDir, "inline_diff_request.json");
-    internal static string AckPath     { get; } = Path.Combine(TempDir, "inline_diff_ack.json");
+    internal static string RequestPath => SignalFile.PathFor("inline_diff_request.json");
+    internal static string AckPath     => SignalFile.PathFor("inline_diff_ack.json");
 
     /// <summary>A request older than this is ignored (host crashed between write and discard).</summary>
     internal static TimeSpan MaxAge { get; set; } = TimeSpan.FromMinutes(2);
-
-    // Overridable in tests so staleness is decidable without a live process / real clock.
-    internal static Func<int, bool>? _isProcessAliveOverride;
-    internal static Func<DateTimeOffset>? _nowOverride;
-
-    private static DateTimeOffset Now => _nowOverride?.Invoke() ?? DateTimeOffset.UtcNow;
 
     // ── Host side (code actions) ────────────────────────────────────────────────
 
@@ -51,24 +43,19 @@ internal static class InlineDiffPreviewSignal
     internal static string WriteRequest(string filePath, string oldText, string newText)
     {
         var id = Guid.NewGuid().ToString("N");
-        try
-        {
-            Directory.CreateDirectory(TempDir);
-            File.Delete(AckPath);   // a stale ack must not satisfy the new request's wait
-            var request = new InlineDiffRequest(
-                id, System.Diagnostics.Process.GetCurrentProcess().Id,
-                Now.ToUnixTimeMilliseconds(), filePath, oldText, newText);
-            File.WriteAllText(RequestPath, JsonSerializer.Serialize(request));
-        }
-        catch (Exception ex) { Diagnostics.Swallow("InlineDiffPreviewSignal.WriteRequest", ex); }
+        SignalFile.Delete(AckPath);   // a stale ack must not satisfy the new request's wait
+        SignalFile.Write(RequestPath,
+            new InlineDiffRequest(id, Environment.ProcessId,
+                                  SignalFile.Now.ToUnixTimeMilliseconds(), filePath, oldText, newText),
+            "InlineDiffPreviewSignal.WriteRequest");
         return id;
     }
 
     /// <summary>Polls for the renderer's pickup receipt of <paramref name="id"/>.</summary>
     internal static async Task<bool> WaitForPickupAsync(string id, TimeSpan timeout, CancellationToken ct)
     {
-        var deadline = Now + timeout;
-        while (Now < deadline)
+        var deadline = SignalFile.Now + timeout;
+        while (SignalFile.Now < deadline)
         {
             ct.ThrowIfCancellationRequested();
             if (IsPickedUp(id)) return true;
@@ -79,20 +66,13 @@ internal static class InlineDiffPreviewSignal
 
     internal static bool IsPickedUp(string id)
     {
-        try
-        {
-            if (!File.Exists(AckPath)) return false;
-            var ack = JsonSerializer.Deserialize<InlineDiffAck>(File.ReadAllText(AckPath));
-            return ack?.Id == id;
-        }
-        catch { return false; }
+        return SignalFile.TryRead<InlineDiffAck>(AckPath)?.Id == id;
     }
 
     /// <summary>Withdraws an unclaimed request (no renderer picked it up — direct apply follows).</summary>
     internal static void DiscardRequest()
     {
-        try { File.Delete(RequestPath); }
-        catch { /* non-critical */ }
+        SignalFile.Delete(RequestPath);
     }
 
     // ── Renderer side (devenv) ──────────────────────────────────────────────────
@@ -105,14 +85,13 @@ internal static class InlineDiffPreviewSignal
     {
         try
         {
-            if (!File.Exists(RequestPath)) return null;
-            var request = JsonSerializer.Deserialize<InlineDiffRequest>(File.ReadAllText(RequestPath));
+            var request = SignalFile.TryRead<InlineDiffRequest>(RequestPath);
             if (request is null) return null;
             if (!string.Equals(Path.GetFullPath(request.FilePath), Path.GetFullPath(filePath),
                                StringComparison.OrdinalIgnoreCase)) return null;
-            if (!IsProcessAlive(request.Pid)) return null;
+            if (!SignalFile.IsProcessAlive(request.Pid)) return null;
 
-            var age = Now - DateTimeOffset.FromUnixTimeMilliseconds(request.Ts);
+            var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(request.Ts);
             return age >= TimeSpan.Zero && age < MaxAge ? request : null;
         }
         catch { return null; }
@@ -122,19 +101,8 @@ internal static class InlineDiffPreviewSignal
     /// second view of the same document cannot show the preview twice.</summary>
     internal static void Acknowledge(string id)
     {
-        try
-        {
-            Directory.CreateDirectory(TempDir);
-            File.WriteAllText(AckPath, JsonSerializer.Serialize(new InlineDiffAck(id, Now.ToUnixTimeMilliseconds())));
-            File.Delete(RequestPath);
-        }
-        catch (Exception ex) { Diagnostics.Swallow("InlineDiffPreviewSignal.Acknowledge", ex); }
-    }
-
-    private static bool IsProcessAlive(int pid)
-    {
-        if (_isProcessAliveOverride is not null) return _isProcessAliveOverride(pid);
-        try { System.Diagnostics.Process.GetProcessById(pid); return true; }
-        catch { return false; }
+        SignalFile.Write(AckPath, new InlineDiffAck(id, SignalFile.Now.ToUnixTimeMilliseconds()),
+                         "InlineDiffPreviewSignal.Acknowledge");
+        SignalFile.Delete(RequestPath);
     }
 }
