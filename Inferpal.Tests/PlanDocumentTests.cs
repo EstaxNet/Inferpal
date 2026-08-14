@@ -113,11 +113,13 @@ public class PlanDocumentTests
     }
 
     [Fact]
-    public void CrlfFiles_AreParsedAndRewrittenConsistently()
+    public void CrlfFiles_KeepTheirLineEndings_WhenTicked()
     {
+        // A plan is a committed human document: rewriting every CRLF to LF on a one-character
+        // tick would turn the surgical edit into a whole-file diff. Endings are preserved.
         var updated = PlanDocument.Parse("# T\r\n\r\n- [ ] a\r\n- [ ] b\r\n").WithStepDone(2, true);
 
-        Assert.Equal("# T\n\n- [ ] a\n- [x] b\n", updated);
+        Assert.Equal("# T\r\n\r\n- [ ] a\r\n- [x] b\r\n", updated);
     }
 
     // ── Rendering a fresh plan ─────────────────────────────────────────────────

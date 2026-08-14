@@ -52,7 +52,7 @@ internal sealed record PlanStep(int Number, string Text, bool Done, int LineInde
 /// </remarks>
 internal sealed class PlanDocument
 {
-    /// <summary>Raw file text, newline-normalised to <c>\n</c>.</summary>
+    /// <summary>Raw file text, exactly as read — line endings included.</summary>
     public string Text { get; }
 
     /// <summary>Title: the first level-1 heading, else the frontmatter description, else the name.</summary>
@@ -87,19 +87,23 @@ internal sealed class PlanDocument
     /// <param name="fallbackTitle">Used when the document carries no heading and no description.</param>
     public static PlanDocument Parse(string? text, string fallbackTitle = "")
     {
-        var normalized = (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n');
-        var (fm, _)    = RulesService.ParseFrontMatter(normalized);
+        var raw     = text ?? string.Empty;
+        var (fm, _) = RulesService.ParseFrontMatter(raw.Replace("\r\n", "\n").Replace('\r', '\n'));
 
-        var lines = normalized.Split('\n');
+        // Lines are split on '\n' only, with a trailing '\r' stripped for matching: the raw text
+        // is kept as-is so a tick stays a one-character edit in CRLF files too (see WithStepDone).
+        var lines = raw.Split('\n');
         var steps = new List<PlanStep>();
         string? heading = null;
 
         for (var i = 0; i < lines.Length; i++)
         {
-            if (heading is null && _heading.Match(lines[i]) is { Success: true } h)
+            var line = lines[i].EndsWith('\r') ? lines[i][..^1] : lines[i];
+
+            if (heading is null && _heading.Match(line) is { Success: true } h)
                 heading = h.Groups["title"].Value;
 
-            var m = _checkbox.Match(lines[i]);
+            var m = _checkbox.Match(line);
             if (!m.Success) continue;
 
             // Strip a "3." the author wrote inside the step: the number shown to the user is the
@@ -117,7 +121,7 @@ internal sealed class PlanDocument
                         ? d.Trim() : null)
                     ?? fallbackTitle;
 
-        return new PlanDocument(normalized, title, steps);
+        return new PlanDocument(raw, title, steps);
     }
 
     /// <summary>
@@ -131,13 +135,16 @@ internal sealed class PlanDocument
         if (step is null || step.Done == done) return null;
 
         var lines = Text.Split('\n');
-        var m     = _checkbox.Match(lines[step.LineIndex]);
+        var line  = lines[step.LineIndex];
+        var hadCr = line.EndsWith('\r');
+        var m     = _checkbox.Match(hadCr ? line[..^1] : line);
         if (!m.Success) return null;   // file changed under us; the caller re-reads rather than guesses
 
         lines[step.LineIndex] = m.Groups["lead"].Value
                               + (done ? "x" : " ")
                               + m.Groups["tail"].Value
-                              + m.Groups["text"].Value;
+                              + m.Groups["text"].Value
+                              + (hadCr ? "\r" : string.Empty);
         return string.Join("\n", lines);
     }
 
