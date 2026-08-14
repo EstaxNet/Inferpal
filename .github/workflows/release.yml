@@ -70,7 +70,7 @@ jobs:
           Get-ChildItem $dist | ForEach-Object { Write-Host "  $($_.Name)  ($([math]::Round($_.Length/1MB,1)) MB)" }
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Inferpal ${{ env.VERSION }}
           files: dist/${{ env.VERSION }}/*
