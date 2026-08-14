@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 using Inferpal.Config;
 
@@ -48,7 +48,7 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(config.CommandTimeoutSeconds));
 
-            using var proc = Process.Start(psi)!;
+            using var proc = ChildProcess.Start(psi);
             // Read stdout and stderr concurrently to prevent buffer-full deadlocks.
             var stdoutTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
             var stderrTask = proc.StandardError.ReadToEndAsync(cts.Token);

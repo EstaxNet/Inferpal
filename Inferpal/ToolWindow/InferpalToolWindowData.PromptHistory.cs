@@ -451,6 +451,37 @@ internal partial class InferpalToolWindowData
     }
 
     /// <summary>
+    /// <c>/plan</c> — read-only plan mode, and the persistent plans of <c>.inferpal/plans/</c>
+    /// (roadmap §17). Same handler as the host: the list of sub-commands exists once.
+    /// </summary>
+    private async Task HandlePlanCommandAsync(string[] parts, CancellationToken ct)
+    {
+        var result = Services.Commands.PlanCommandHandler.Handle(
+            FindProjectRoot(), parts, LastAssistantText(), _activePlan);
+
+        // Bare `/plan` still toggles plan mode; the toggle owns its own message.
+        if (result.ToggleMode) { await TogglePlanModeAsync(); return; }
+
+        if (result.SetActivePlan is { } active) _activePlan = active.Length == 0 ? null : active;
+
+        if (result.Message is { } message) await ShowInfoAsync(message);
+
+        if (result.OpenPath is { } path)
+        {
+            try { await _vs.Documents().OpenTextDocumentAsync(new Uri(path), ct); }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { Diagnostics.Swallow($"HandlePlanCommandAsync.Open({path})", ex); }
+        }
+    }
+
+    /// <summary>
+    /// The model's most recent answer — what <c>/plan save</c> turns into a file. Anchors are
+    /// excluded for the same reason the session save excludes them: they are layout, not content.
+    /// </summary>
+    private string? LastAssistantText() =>
+        _history.LastOrDefault(m => m.Role == "assistant")?.Content;
+
+    /// <summary>
     /// <c>/onboard</c> — the committable project profile (roadmap §19): report it, apply the part
     /// the user explicitly asks for, or draft <c>.inferpal/context.md</c>. Same handler as the
     /// host, so both front-ends refuse and recommend exactly the same things.

@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -58,6 +58,9 @@ internal sealed class BackgroundShellRegistry : IDisposable
         if (Directory.Exists(workingDirectory))
             psi.WorkingDirectory = workingDirectory;
 
+        // stdin redirected and closed once started: a detached job must never inherit the
+        // host's JSON-RPC pipe (see ChildProcess).
+        psi.RedirectStandardInput = true;
         var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 
         string id;
@@ -79,6 +82,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
         };
 
         process.Start();
+        ChildProcess.CloseInput(process);
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 

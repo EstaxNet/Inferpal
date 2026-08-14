@@ -672,7 +672,7 @@ ollama serve
   <data name="SlashHintModels" xml:space="preserve"><value>менеджер моделей Ollama — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>переключить пошаговый режим агента — пауза после каждого вызова инструмента</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>возобновить агента после паузы пошагового режима</value></data>
-  <data name="SlashHintPlan" xml:space="preserve"><value>переключить режим плана — только чтение: исследовать и предложить план, без правок</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>режим плана и сохранённые планы — /plan [list|save|next|done n|&lt;имя&gt;]</value></data>
   <data name="SlashHintPrompts" xml:space="preserve"><value>список переиспользуемых файлов промптов (.inferpal/prompts) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>показать профиль GPU/VRAM — /hardware [gb] для задания бюджета VRAM</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>повторить первичную настройку — заново определить бэкенд и выбрать модели</value></data>
@@ -898,4 +898,34 @@ ollama serve
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>Вы пишете файл контекста проекта, который полностью локальный помощник по коду читает перед каждым ходом. По описанию репозитория ниже составьте короткий документ в markdown с разделами `##`: что это за проект, его стек и структура и как он собирается и тестируется. Правила по важности: переписывайте каждое имя — файла, папки, проекта, команды — ровно так, как оно указано, и не выдумывайте новых; не пишите, что папка или проект *делает*, если описание этого не показывает — назовите и идите дальше; утверждайте только то, что подтверждается описанием, без догадок, воды и общих советов; неизвестное опускайте — короткий точный документ лучше длинного правдоподобного. Не более 40 строк, без титульной страницы и без блока кода вокруг всего ответа. Пишите его на языке этой инструкции.</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Теперь напишите файл контекста проекта.</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Профиль проекта создан в {0}. Он путешествует вместе с репозиторием: может рекомендовать, но никогда — разрешать.</value></data>
+  <data name="PlanUsage" xml:space="preserve"><value>**/plan** — режим плана и постоянные планы.&#10;&#10;- `/plan` — переключить режим плана (только чтение)&#10;- `/plan list` — список планов этого репозитория&#10;- `/plan save [имя]` — сохранить план из последнего ответа в `.inferpal/plans/`&#10;- `/plan &lt;имя&gt;` — открыть план&#10;- `/plan next` — показать следующий незавершённый шаг&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — отметить или снять отметку с шага</value></data>
+  <data name="PlanModeOn" xml:space="preserve"><value>📋 **Режим плана ВКЛЮЧЁН** — только чтение: агент исследует и предлагает план, но не может изменять файлы и выполнять команды. Переключите снова (или `/plan`), чтобы применять изменения. Сохраните план через `/plan save`, и он переживёт `/clear`.</value></data>
+  <data name="PlanModeOff" xml:space="preserve"><value>Режим плана **ВЫКЛЮЧЕН**.</value></data>
+  <data name="PlanListEmpty" xml:space="preserve"><value>Планов пока нет. Попросите план в режиме плана и сохраните его через `/plan save` — планы лежат в `.inferpal/plans/` и коммитятся вместе с кодом.</value></data>
+  <data name="PlanListHeader" xml:space="preserve"><value>### Планы этого репозитория</value></data>
+  <data name="PlanSaved" xml:space="preserve"><value>План **{0}** сохранён, шагов: {1} → `{2}`. Он переживает `/clear` и перезапуск; `/plan next` продолжит его.</value></data>
+  <data name="PlanNoSteps" xml:space="preserve"><value>В последнем ответе не найдено ни одного шага. Плану нужен нумерованный список или чек-лист — попросите его, затем `/plan save`.</value></data>
+  <data name="PlanNotFound" xml:space="preserve"><value>Плана с именем **{0}** нет. `/plan list` покажет существующие.</value></data>
+  <data name="PlanNoActive" xml:space="preserve"><value>Нет активного плана. Откройте его через `/plan &lt;имя&gt;` или посмотрите список: `/plan list`.</value></data>
+  <data name="PlanNoStepsInFile" xml:space="preserve"><value>*(в этом плане пока нет шагов — добавьте строки `- [ ] …` в файл)*</value></data>
+  <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} выполнено</value></data>
+  <data name="PlanNextStep" xml:space="preserve"><value>Следующий шаг **{0}** — {1}</value></data>
+  <data name="PlanComplete" xml:space="preserve"><value>**{0}** — все шаги выполнены. ✅</value></data>
+  <data name="PlanStepTicked" xml:space="preserve"><value>Шаг **{0}** выполнен — {1}</value></data>
+  <data name="PlanStepUnticked" xml:space="preserve"><value>Шаг **{0}** снова открыт.</value></data>
+  <data name="PlanStepUnknown" xml:space="preserve"><value>В этом плане нет шага {0} (всего шагов: {1}).</value></data>
+  <data name="PlanStepAlready" xml:space="preserve"><value>Шаг **{0}** уже {1}.</value></data>
+  <data name="PlanStateDone" xml:space="preserve"><value>выполнен</value></data>
+  <data name="PlanStateTodo" xml:space="preserve"><value>не выполнен</value></data>
+  <data name="TaskProposalsHeader" xml:space="preserve"><value>### Предложено изменений: {0} — ничего не применено</value></data>
+  <data name="TaskProposalItem" xml:space="preserve"><value>**{0}. `{1}`** — {2}</value></data>
+  <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Просмотрите каждый diff и примените нужные через `/task apply {0} &lt;n&gt;`. Каждое проходит обычное подтверждение — заранее ничего не одобрялось.</value></data>
+  <data name="TaskSubmittedProposing" xml:space="preserve"><value>Задача **{0}** отправлена в режиме предложений: `{1}`. Она может выразить изменения файлов, но ничего не будет применено — вы просмотрите каждый diff, когда вернётся отчёт.</value></data>
+  <data name="TaskNoProposals" xml:space="preserve"><value>Задача **{0}** не предложила изменений.</value></data>
+  <data name="TaskProposalUnknown" xml:space="preserve"><value>Предложения {0} нет — у этой задачи их {1}.</value></data>
+  <data name="TaskProposalStale" xml:space="preserve"><value>Предложение не применено: **{0}** изменился с тех пор, как задача его прочитала, и записанный diff больше его не описывает. Запустите задачу заново, а не перезаписывайте сделанную за это время работу.</value></data>
+  <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Делать нечего: **{0}** уже точно такой, каким его хотело предложение.</value></data>
+  <data name="TaskProposalFileMissing" xml:space="preserve"><value>Предложение не применено: **{0}** не в том состоянии, которое предполагалось (отсутствует или существует там, где ожидался новый файл).</value></data>
+  <data name="TaskProposalUnusable" xml:space="preserve"><value>Предложение не применено: для **{0}** не записано ни одного просматриваемого изменения.</value></data>
+  <data name="TaskProposalApplied" xml:space="preserve"><value>Предложение применено к **{0}**. `/undo-run` покрывает его, как любую другую запись.</value></data>
 </root>

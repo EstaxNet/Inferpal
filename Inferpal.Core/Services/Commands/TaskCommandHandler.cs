@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Inferpal.Localization;
 
 namespace Inferpal.Services.Commands;
@@ -18,7 +18,13 @@ namespace Inferpal.Services.Commands;
 internal static class TaskCommandHandler
 {
     /// <summary>Outcome of a <c>/task</c> invocation: the markdown to display.</summary>
-    internal readonly record struct TaskCommandResult(string Message);
+    /// <param name="Message">Markdown to display.</param>
+    /// <param name="Apply">
+    /// A proposal the front-end must apply (roadmap §18). The handler never writes: applying goes
+    /// through the real tools, so it gets the ordinary approval prompt, the snapshot and
+    /// <c>/undo-run</c> coverage — which is exactly why the handler cannot do it itself.
+    /// </param>
+    internal readonly record struct TaskCommandResult(string Message, TaskProposal? Apply = null);
 
     /// <param name="queue">The workspace's background queue.</param>
     /// <param name="parts">Tokenised command, <c>parts[0]</c> being <c>/task</c>.</param>
@@ -28,6 +34,24 @@ internal static class TaskCommandHandler
 
         if (args.Length == 0 || IsWord(args[0], "list"))
             return new(RenderList(queue));
+
+        // `/task propose <objective>`: the task may express changes, none of them applied.
+        if (IsWord(args[0], "propose"))
+        {
+            var goal = string.Join(" ", args[1..]).Trim();
+            if (goal.Length == 0) return new(Strings.SlashUsage("/task propose <objective>"));
+
+            var proposedId = queue.Submit(goal, proposeWrites: true);
+            return new(proposedId is null
+                ? Strings.TaskQueueFull(BackgroundTaskQueue.MaxPending)
+                : Strings.TaskSubmittedProposing(proposedId, goal));
+        }
+
+        // `/task apply <id> <n>`: one proposal, through the usual prompt. There is deliberately no
+        // form that applies them all — that would be the grouped approval §9 refuses, moved from
+        // submission to return.
+        if (IsWord(args[0], "apply"))
+            return Apply(queue, args);
 
         if (IsWord(args[0], "stop") || IsWord(args[0], "cancel"))
         {
@@ -52,6 +76,24 @@ internal static class TaskCommandHandler
 
     private static bool IsWord(string arg, string word) =>
         string.Equals(arg, word, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Resolves <c>/task apply &lt;id&gt; &lt;n&gt;</c> to the one proposal it names.</summary>
+    private static TaskCommandResult Apply(BackgroundTaskQueue queue, string[] args)
+    {
+        if (args.Length < 3 || !int.TryParse(args[2], out var number))
+            return new(Strings.SlashUsage("/task apply <id> <n>"));
+
+        if (queue.Get(args[1]) is not { } task) return new(Strings.TaskUnknown(args[1]));
+
+        var proposals = task.PendingProposals;
+        if (proposals.Count == 0) return new(Strings.TaskNoProposals(task.Id));
+
+        if (number < 1 || number > proposals.Count)
+            return new(Strings.TaskProposalUnknown(number, proposals.Count));
+
+        // The front-end applies it and reports; the handler only names which one.
+        return new(string.Empty, proposals[number - 1]);
+    }
 
     // ── Rendering ───────────────────────────────────────────────────────────────
 
@@ -93,6 +135,9 @@ internal static class TaskCommandHandler
             sb.AppendLine(task.Result!.Trim());
         else if (!task.IsFinished)
             sb.AppendLine(Strings.TaskStillRunning);
+
+        if (task.PendingProposals.Count > 0)
+            sb.AppendLine(TaskProposalReport.Render(task.Id, task.PendingProposals));
 
         // The journal explains an empty or surprising report; only useful while/after running.
         if (task.Steps.Count > 0)

@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -92,7 +92,7 @@ internal class GetDiagnosticsTool : ITool
             CreateNoWindow         = true,
         };
 
-        using var process = Process.Start(psi)!;
+        using var process = ChildProcess.Start(psi);
 
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
         var stderrTask = process.StandardError.ReadToEndAsync(cts.Token);

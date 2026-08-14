@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -165,7 +165,7 @@ internal sealed class VsBuildMonitor : IDisposable
                 CreateNoWindow         = true,
             };
 
-            using var proc  = Process.Start(psi)!;
+            using var proc  = ChildProcess.Start(psi);
             var outTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
             var errTask = proc.StandardError.ReadToEndAsync(cts.Token);
             await proc.WaitForExitAsync(cts.Token);

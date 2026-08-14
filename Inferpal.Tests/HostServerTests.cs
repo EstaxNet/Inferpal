@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Net.Http;
 using Inferpal.Config;
 using Inferpal.Host;
@@ -110,6 +110,46 @@ public class HostServerTests
         Assert.False(result.ModelManagement);
         Assert.False(result.Fim);
         Assert.NotEqual("0.0.0", result.HostVersion);
+    }
+
+    [Fact]
+    public async Task Initialize_KeepsTheEditorLocale_WhenLoadingTheConfigWouldClearIt()
+    {
+        // The real config factory is InferpalConfig.Load, which calls Strings.ApplyLanguage(
+        // cfg.Language) unconditionally — so "Auto" (empty) resets the override and the strings fall
+        // back to the machine's UI culture, silently discarding the handshake. The harness's own
+        // factory never did that, which is exactly why the test below passed while the running host
+        // answered in French with `locale: "en"`. Found by driving the host, not by reading it.
+        using var h = CreateHarness(cfg =>
+        {
+            cfg.Language = string.Empty;
+            Strings.ApplyLanguage(cfg.Language);   // what Config.Load does, reproduced
+        });
+        try
+        {
+            await h.InitializeAsync(locale: "en").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.Equal("en", Strings.OverrideCulture?.Name);
+        }
+        finally { Strings.ApplyLanguage(null); }
+    }
+
+    [Fact]
+    public async Task Initialize_LetsAnExplicitConfigLanguageBeatTheEditorLocale()
+    {
+        // A language pinned in the settings is the more deliberate signal of the two.
+        using var h = CreateHarness(cfg =>
+        {
+            cfg.Language = "de";
+            Strings.ApplyLanguage(cfg.Language);
+        });
+        try
+        {
+            await h.InitializeAsync(locale: "en").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.Equal("de", Strings.OverrideCulture?.Name);
+        }
+        finally { Strings.ApplyLanguage(null); }
     }
 
     [Fact]

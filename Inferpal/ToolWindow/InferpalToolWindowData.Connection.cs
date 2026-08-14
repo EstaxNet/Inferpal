@@ -252,9 +252,9 @@ internal partial class InferpalToolWindowData
             if (_history.Count > 0 && _history[0].Role == "system")
                 _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
         });
-        await ShowInfoAsync(IsPlanMode
-            ? "📋 **Plan mode ON** — read-only: the agent explores and proposes a plan, but cannot edit files or run commands. Toggle again (or `/plan`) to apply changes."
-            : "Plan mode **OFF**.");
+        // Localised since §17: these two lines were hard-coded English while every other command
+        // message went through Strings — the toolbar button shows them too, in all ten languages.
+        await ShowInfoAsync(IsPlanMode ? Strings.PlanModeOn : Strings.PlanModeOff);
     }
 
     /// <summary>

@@ -674,7 +674,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SlashHintModels" xml:space="preserve"><value>Ollama モデルマネージャー — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>エージェントのステップモードを切り替え — 各ツール呼び出し後に一時停止</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>ステップモードの一時停止後にエージェントを再開</value></data>
-  <data name="SlashHintPlan" xml:space="preserve"><value>プランモードを切り替え — 読み取り専用：探索して計画を提案、編集なし</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>プランモードと保存済みプラン — /plan [list|save|next|done n|&lt;名前&gt;]</value></data>
   <data name="SlashHintPrompts" xml:space="preserve"><value>再利用可能なプロンプトファイルを一覧表示（.inferpal/prompts） — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>GPU/VRAM プロファイルを表示 — /hardware [gb] で VRAM バジェットを設定</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>初回セットアップを再実行 — バックエンド再検出、モデル再選択</value></data>
@@ -898,4 +898,34 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>あなたは、完全ローカルのコーディングアシスタントが毎ターンの前に読むプロジェクトコンテキストファイルを書きます。以下のリポジトリ説明から、`##` 見出しを使った短い markdown 文書を書いてください: このプロジェクトが何か、スタックと構成、ビルドとテストの方法。重要な順のルール: ファイル・フォルダー・プロジェクト・コマンドの名前は表記どおりに写し、決して創作しないこと。説明が示していない限り、フォルダーやプロジェクトが何を*する*かは書かず、名前を挙げるにとどめること。説明が裏付けることだけを述べ、推測・水増し・一般論は書かないこと。分からないことは省くこと——短く正確な文書は、長くもっともらしい文書に勝ります。最大 40 行、表紙なし、回答全体をコードフェンスで囲まないこと。 この指示と同じ言語で書いてください。</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;ではプロジェクトコンテキストファイルを書いてください。</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>プロジェクトプロファイルを {0} に作成しました。リポジトリと共に配布されます: 推奨はできますが、権限は与えられません。</value></data>
+  <data name="PlanUsage" xml:space="preserve"><value>**/plan** — プランモードと永続的なプラン。&#10;&#10;- `/plan` — プランモード (読み取り専用) を切り替え&#10;- `/plan list` — このリポジトリのプラン一覧&#10;- `/plan save [名前]` — 直前の回答のプランを `.inferpal/plans/` に保存&#10;- `/plan &lt;名前&gt;` — プランを開く&#10;- `/plan next` — 次の未完了ステップを表示&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — ステップのチェックを付け外し</value></data>
+  <data name="PlanModeOn" xml:space="preserve"><value>📋 **プランモード ON** — 読み取り専用: エージェントは調査してプランを提案しますが、ファイルの編集もコマンドの実行もできません。もう一度切り替える (または `/plan`) と変更を適用できます。`/plan save` で保存すれば `/clear` でも消えません。</value></data>
+  <data name="PlanModeOff" xml:space="preserve"><value>プランモード **OFF**。</value></data>
+  <data name="PlanListEmpty" xml:space="preserve"><value>プランはまだありません。プランモードで作成を依頼し、`/plan save` で保存してください。プランは `.inferpal/plans/` にあり、コードと一緒にコミットされます。</value></data>
+  <data name="PlanListHeader" xml:space="preserve"><value>### このリポジトリのプラン</value></data>
+  <data name="PlanSaved" xml:space="preserve"><value>プラン **{0}** を {1} ステップで保存しました → `{2}`。`/clear` や再起動後も残ります。`/plan next` で再開できます。</value></data>
+  <data name="PlanNoSteps" xml:space="preserve"><value>直前の回答にステップが見つかりません。プランには番号付きリストかチェックリストが必要です。作成を依頼してから `/plan save` してください。</value></data>
+  <data name="PlanNotFound" xml:space="preserve"><value>**{0}** という名前のプランはありません。`/plan list` で一覧を確認できます。</value></data>
+  <data name="PlanNoActive" xml:space="preserve"><value>アクティブなプランがありません。`/plan &lt;名前&gt;` で開くか、`/plan list` で一覧を確認してください。</value></data>
+  <data name="PlanNoStepsInFile" xml:space="preserve"><value>*(このプランにはまだステップがありません — ファイルに `- [ ] …` の行を追加してください)*</value></data>
+  <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} 完了</value></data>
+  <data name="PlanNextStep" xml:space="preserve"><value>次のステップ **{0}** — {1}</value></data>
+  <data name="PlanComplete" xml:space="preserve"><value>**{0}** — すべてのステップが完了しました。✅</value></data>
+  <data name="PlanStepTicked" xml:space="preserve"><value>ステップ **{0}** 完了 — {1}</value></data>
+  <data name="PlanStepUnticked" xml:space="preserve"><value>ステップ **{0}** を未完了に戻しました。</value></data>
+  <data name="PlanStepUnknown" xml:space="preserve"><value>このプランにステップ {0} はありません (全 {1} ステップ)。</value></data>
+  <data name="PlanStepAlready" xml:space="preserve"><value>ステップ **{0}** はすでに{1}です。</value></data>
+  <data name="PlanStateDone" xml:space="preserve"><value>完了</value></data>
+  <data name="PlanStateTodo" xml:space="preserve"><value>未完了</value></data>
+  <data name="TaskProposalsHeader" xml:space="preserve"><value>### {0} 件の変更を提案 — まだ何も適用されていません</value></data>
+  <data name="TaskProposalItem" xml:space="preserve"><value>**{0}. `{1}`** — {2}</value></data>
+  <data name="TaskProposalsApplyHint" xml:space="preserve"><value>各差分を確認し、適用したいものを `/task apply {0} &lt;n&gt;` で適用してください。いずれも通常の承認プロンプトを通ります — 事前に承認されたものはありません。</value></data>
+  <data name="TaskSubmittedProposing" xml:space="preserve"><value>タスク **{0}** を提案モードで送信しました: `{1}`。ファイル変更を表現できますが、何も適用されません — レポートが返ってきたら各差分を確認してください。</value></data>
+  <data name="TaskNoProposals" xml:space="preserve"><value>タスク **{0}** は変更を提案しませんでした。</value></data>
+  <data name="TaskProposalUnknown" xml:space="preserve"><value>提案 {0} はありません — このタスクには {1} 件あります。</value></data>
+  <data name="TaskProposalStale" xml:space="preserve"><value>提案は適用されませんでした: タスクが読んだ後に **{0}** が変更されたため、記録された差分はもう当てはまりません。その間の作業を上書きせず、タスクを再実行してください。</value></data>
+  <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>何もする必要はありません: **{0}** はすでに提案どおりの内容です。</value></data>
+  <data name="TaskProposalFileMissing" xml:space="preserve"><value>提案は適用されませんでした: **{0}** が前提の状態ではありません (存在しない、または新規作成を想定していた場所に存在する)。</value></data>
+  <data name="TaskProposalUnusable" xml:space="preserve"><value>提案は適用されませんでした: **{0}** について確認可能な変更が記録されていません。</value></data>
+  <data name="TaskProposalApplied" xml:space="preserve"><value>**{0}** に提案を適用しました。他の書き込みと同様に `/undo-run` で戻せます。</value></data>
 </root>

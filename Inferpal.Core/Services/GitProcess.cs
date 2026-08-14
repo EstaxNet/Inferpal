@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 
 namespace Inferpal.Services;
@@ -45,9 +45,20 @@ internal static class GitProcess
             psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
             psi.Environment["LANG"]                = "en_US.UTF-8";
 
-            using var proc = Process.Start(psi)!;
-            var stdout = await proc.StandardOutput.ReadToEndAsync(ct);
-            var stderr = await proc.StandardError.ReadToEndAsync(ct);
+            // ⚠ ChildProcess, not Process.Start: without it git inherits the host's stdin — the
+            // JSON-RPC pipe in VS Code — allocates a console and hangs at 0 % CPU forever. Measured
+            // on 2026-08-03; the same call takes 31 ms from an ordinary process, which is why only
+            // the VS Code front-end was affected. See ChildProcess for the full account.
+            using var proc = ChildProcess.Start(psi);
+
+            // Both pipes drained CONCURRENTLY. Reading stdout to the end first is a textbook
+            // deadlock: a child that fills the stderr buffer meanwhile blocks writing, so it never
+            // closes stdout and the first read never completes. git is chatty on stderr — every
+            // CRLF warning goes there — so this is reachable, not theoretical.
+            var stdoutTask = proc.StandardOutput.ReadToEndAsync(ct);
+            var stderrTask = proc.StandardError.ReadToEndAsync(ct);
+            var stdout = await stdoutTask;
+            var stderr = await stderrTask;
             await proc.WaitForExitAsync(ct);
 
             var combined = stdout.Trim();

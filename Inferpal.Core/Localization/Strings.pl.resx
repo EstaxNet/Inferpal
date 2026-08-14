@@ -674,7 +674,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="SlashHintModels" xml:space="preserve"><value>menedżer modeli Ollama — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>przełącz tryb krokowy agenta — pauza po każdym wywołaniu narzędzia</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>wznów agenta po pauzie trybu krokowego</value></data>
-  <data name="SlashHintPlan" xml:space="preserve"><value>przełącz tryb planu — tylko do odczytu: eksploruj i zaproponuj plan, bez edycji</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>tryb planu i zapisane plany — /plan [list|save|next|done n|&lt;nazwa&gt;]</value></data>
   <data name="SlashHintPrompts" xml:space="preserve"><value>wyświetl pliki promptów wielokrotnego użytku (.inferpal/prompts) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>pokaż profil GPU/VRAM — /hardware [gb] aby ustawić budżet VRAM</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>ponów konfigurację początkową — ponownie wykryj backend, wybierz modele</value></data>
@@ -898,4 +898,34 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>Piszesz plik kontekstu projektu, który w pełni lokalny asystent kodu czyta przed każdą turą. Na podstawie poniższego opisu repozytorium napisz krótki dokument markdown z sekcjami `##`: czym jest ten projekt, jaki ma stos i układ oraz jak się go buduje i testuje. Zasady według ważności: przepisuj każdą nazwę — pliku, folderu, projektu, polecenia — dokładnie tak, jak występuje, i żadnej nie wymyślaj; nie pisz, co folder lub projekt *robi*, jeśli opis tego nie pokazuje — wymień go i idź dalej; twierdź tylko to, co potwierdza opis, bez zgadywania, wypełniaczy i ogólnych porad; pomiń to, czego nie wiesz — krótki i trafny dokument bije długi i prawdopodobny. Najwyżej 40 wierszy, bez strony tytułowej i bez bloku kodu wokół całej odpowiedzi. Napisz go w języku tej instrukcji.</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Napisz teraz plik kontekstu projektu.</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Profil projektu utworzony w {0}. Podróżuje z repozytorium: może zalecać, nigdy przyznawać.</value></data>
+  <data name="PlanUsage" xml:space="preserve"><value>**/plan** — tryb planu i trwałe plany.&#10;&#10;- `/plan` — przełącza tryb planu (tylko do odczytu)&#10;- `/plan list` — lista planów tego repozytorium&#10;- `/plan save [nazwa]` — zapisuje plan z ostatniej odpowiedzi do `.inferpal/plans/`&#10;- `/plan &lt;nazwa&gt;` — otwiera plan&#10;- `/plan next` — pokazuje następny nieukończony krok&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — zaznacza lub odznacza krok</value></data>
+  <data name="PlanModeOn" xml:space="preserve"><value>📋 **Tryb planu WŁĄCZONY** — tylko do odczytu: agent bada kod i proponuje plan, ale nie może edytować plików ani uruchamiać poleceń. Przełącz ponownie (lub `/plan`), aby zastosować zmiany. Zapisz plan przez `/plan save`, a przetrwa `/clear`.</value></data>
+  <data name="PlanModeOff" xml:space="preserve"><value>Tryb planu **WYŁĄCZONY**.</value></data>
+  <data name="PlanListEmpty" xml:space="preserve"><value>Nie ma jeszcze żadnego planu. Poproś o niego w trybie planu, a potem `/plan save` — plany leżą w `.inferpal/plans/` i są commitowane razem z kodem.</value></data>
+  <data name="PlanListHeader" xml:space="preserve"><value>### Plany tego repozytorium</value></data>
+  <data name="PlanSaved" xml:space="preserve"><value>Plan **{0}** zapisany z {1} krokiem/krokami → `{2}`. Przetrwa `/clear` i restart; `/plan next` go podejmie.</value></data>
+  <data name="PlanNoSteps" xml:space="preserve"><value>W ostatniej odpowiedzi nie znaleziono kroków. Plan wymaga listy numerowanej lub listy kontrolnej — poproś o nią, a potem `/plan save`.</value></data>
+  <data name="PlanNotFound" xml:space="preserve"><value>Nie ma planu o nazwie **{0}**. `/plan list` pokaże istniejące.</value></data>
+  <data name="PlanNoActive" xml:space="preserve"><value>Brak aktywnego planu. Otwórz go przez `/plan &lt;nazwa&gt;` albo zobacz listę: `/plan list`.</value></data>
+  <data name="PlanNoStepsInFile" xml:space="preserve"><value>*(ten plan nie ma jeszcze kroków — dodaj do pliku wiersze `- [ ] …`)*</value></data>
+  <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} zrobione</value></data>
+  <data name="PlanNextStep" xml:space="preserve"><value>Następny krok **{0}** — {1}</value></data>
+  <data name="PlanComplete" xml:space="preserve"><value>**{0}** — wszystkie kroki są zrobione. ✅</value></data>
+  <data name="PlanStepTicked" xml:space="preserve"><value>Krok **{0}** zrobiony — {1}</value></data>
+  <data name="PlanStepUnticked" xml:space="preserve"><value>Krok **{0}** otwarty ponownie.</value></data>
+  <data name="PlanStepUnknown" xml:space="preserve"><value>Ten plan nie ma kroku {0} (ma ich {1}).</value></data>
+  <data name="PlanStepAlready" xml:space="preserve"><value>Krok **{0}** jest już {1}.</value></data>
+  <data name="PlanStateDone" xml:space="preserve"><value>zrobiony</value></data>
+  <data name="PlanStateTodo" xml:space="preserve"><value>do zrobienia</value></data>
+  <data name="TaskProposalsHeader" xml:space="preserve"><value>### {0} proponowana(-e) zmiana(-y) — nic nie zostało zastosowane</value></data>
+  <data name="TaskProposalItem" xml:space="preserve"><value>**{0}. `{1}`** — {2}</value></data>
+  <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Przejrzyj każdy diff, a potem zastosuj wybrane przez `/task apply {0} &lt;n&gt;`. Każda przechodzi zwykłe zatwierdzenie — z góry nic nie zostało zatwierdzone.</value></data>
+  <data name="TaskSubmittedProposing" xml:space="preserve"><value>Zadanie **{0}** wysłane w trybie propozycji: `{1}`. Może wyrazić zmiany plików, ale nic nie zostanie zastosowane — przejrzysz każdy diff, gdy wróci raport.</value></data>
+  <data name="TaskNoProposals" xml:space="preserve"><value>Zadanie **{0}** nie zaproponowało żadnej zmiany.</value></data>
+  <data name="TaskProposalUnknown" xml:space="preserve"><value>Nie ma propozycji {0} — to zadanie ma ich {1}.</value></data>
+  <data name="TaskProposalStale" xml:space="preserve"><value>Propozycja nie została zastosowana: **{0}** zmienił się od czasu, gdy zadanie go przeczytało, więc zapisany diff już go nie opisuje. Uruchom zadanie ponownie, zamiast nadpisywać pracę wykonaną w międzyczasie.</value></data>
+  <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nie ma nic do zrobienia: **{0}** jest już dokładnie taki, jak chciała propozycja.</value></data>
+  <data name="TaskProposalFileMissing" xml:space="preserve"><value>Propozycja nie została zastosowana: **{0}** nie jest w założonym stanie (brak, albo istnieje tam, gdzie oczekiwano nowego pliku).</value></data>
+  <data name="TaskProposalUnusable" xml:space="preserve"><value>Propozycja nie została zastosowana: dla **{0}** nie zapisano żadnej możliwej do przejrzenia zmiany.</value></data>
+  <data name="TaskProposalApplied" xml:space="preserve"><value>Propozycja zastosowana do **{0}**. `/undo-run` obejmuje ją jak każdy inny zapis.</value></data>
 </root>

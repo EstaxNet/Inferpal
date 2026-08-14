@@ -54,6 +54,11 @@ internal sealed class HostSession : IDisposable
     /// <summary>Plan mode (`/plan`): read-only tool registry + plan-mode prompt suffix.</summary>
     public bool PlanMode { get; set; }
 
+    /// <summary>Plan the session is working on (mirror of the VS VM's <c>_activePlan</c>), so
+    /// `/plan next` and `/plan done n` need no argument. Session state: the file is what
+    /// persists, not which one happened to be open.</summary>
+    public string? ActivePlan { get; set; }
+
     /// <summary>Agent step mode (`/agent-step`): pause after every tool call until
     /// `chat/resumeStep` (or `/resume`) releases <see cref="StepResume"/>.</summary>
     public bool StepMode { get; set; }

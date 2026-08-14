@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Inferpal.Services.Hardware;
 
@@ -63,7 +63,7 @@ internal static class HardwareProbe
                 CreateNoWindow         = true,
             };
 
-            using var proc = Process.Start(psi);
+            using var proc = ChildProcess.Start(psi);
             if (proc is null) return null;
 
             var stdoutTask = proc.StandardOutput.ReadToEndAsync(ct);

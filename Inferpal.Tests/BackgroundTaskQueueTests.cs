@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 namespace Inferpal.Tests;
 
@@ -44,11 +44,16 @@ public class BackgroundTaskQueueTests
             }
         }
 
-        public async Task<string> RunAsync(BackgroundTaskSnapshot task, Action<string> onStep, CancellationToken ct)
+        /// <summary>Modes the queue handed each started task, in order (roadmap §18).</summary>
+        public List<bool> ProposeModes { get; } = [];
+
+        public async Task<BackgroundTaskQueue.TaskRunOutcome> RunAsync(
+            BackgroundTaskSnapshot task, Action<string> onStep, CancellationToken ct)
         {
             lock (_lock)
             {
                 Started.Add(task.Id);
+                ProposeModes.Add(task.ProposeWrites);
                 MaxConcurrent = Math.Max(MaxConcurrent, ++Concurrent);
             }
             try
@@ -57,7 +62,8 @@ public class BackgroundTaskQueueTests
                 // Racing the gate against cancellation is what a real runner does with its token.
                 var cancelled = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
                 using (ct.Register(() => cancelled.TrySetCanceled(ct)))
-                    return await await Task.WhenAny(Gate(task.Id).Task, cancelled.Task);
+                    return BackgroundTaskQueue.TaskRunOutcome.Of(
+                        await await Task.WhenAny(Gate(task.Id).Task, cancelled.Task));
             }
             finally { lock (_lock) Concurrent--; }
         }
@@ -240,7 +246,7 @@ public class BackgroundTaskQueueTests
         using var queue = new BackgroundTaskQueue((_, onStep, _) =>
         {
             for (int i = 0; i < BackgroundTaskQueue.MaxSteps + 50; i++) onStep($"step {i}");
-            return released.Task;
+            return released.Task.ContinueWith(t => BackgroundTaskQueue.TaskRunOutcome.Of(t.Result));
         });
 
         var id = queue.Submit("chatty")!;

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Inferpal.Models;
 using Inferpal.Services;
 using Inferpal.Services.Commands;
@@ -13,7 +13,8 @@ namespace Inferpal.Tests;
 public class TaskCommandTests
 {
     private static BackgroundTaskQueue Queue() =>
-        new((_, _, ct) => Task.Delay(System.Threading.Timeout.Infinite, ct).ContinueWith(_ => "", ct));
+        new((_, _, ct) => Task.Delay(System.Threading.Timeout.Infinite, ct)
+                              .ContinueWith(_ => BackgroundTaskQueue.TaskRunOutcome.Of(""), ct));
 
     private static string Run(BackgroundTaskQueue queue, params string[] parts) =>
         TaskCommandHandler.Handle(queue, parts).Message;
@@ -180,7 +181,7 @@ public class TaskCommandTests
         using var queue = new BackgroundTaskQueue((_, onStep, _) =>
         {
             onStep("read RagDatabase.cs");
-            return release.Task;
+            return release.Task.ContinueWith(t => BackgroundTaskQueue.TaskRunOutcome.Of(t.Result));
         });
 
         queue.Submit("audit the RAG layer");

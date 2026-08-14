@@ -681,7 +681,7 @@ ollama serve
   <data name="SlashHintModels" xml:space="preserve"><value>Ollama model manager — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>toggle agent step mode — pause after each tool call</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>resume agent after a step-mode pause</value></data>
-  <data name="SlashHintPlan" xml:space="preserve"><value>toggle plan mode — read-only: explore and propose a plan, no edits</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>plan mode and saved plans — /plan [list|save|next|done n|&lt;name&gt;]</value></data>
   <data name="SlashHintPrompts" xml:space="preserve"><value>list reusable prompt files (.inferpal/prompts) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>show GPU/VRAM profile — /hardware [gb] to set the VRAM budget</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>re-run first-run setup — re-detect backend, re-pick models</value></data>
@@ -897,4 +897,34 @@ ollama serve
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>You write the project context file that a local coding assistant reads before every turn. From the repository description below, write a short markdown document with `##` sections: what this project is, its stack and layout and how it is built and tested. Rules, in order of importance: copy every name — file, folder, project, command — exactly as it appears, and never invent one; do not say what a folder or project *does* unless the description shows it, name it and move on; state only what the description supports, with no guessing, no filler and no generic advice; leave out whatever is unknown, a short accurate document beats a long plausible one. 40 lines maximum, no title page, and no code fence around the whole answer. Write it in the language of this instruction.</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Write the project context file now.</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Project profile created at {0}. It ships with the repository: it may recommend, never grant.</value></data>
+  <data name="PlanUsage" xml:space="preserve"><value>**/plan** — plan mode and persistent plans.&#10;&#10;- `/plan` — toggle read-only plan mode&#10;- `/plan list` — list the plans of this repository&#10;- `/plan save [name]` — save the plan from the last answer to `.inferpal/plans/`&#10;- `/plan &lt;name&gt;` — open a plan&#10;- `/plan next` — show the next unfinished step&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — tick or untick a step</value></data>
+  <data name="PlanModeOn" xml:space="preserve"><value>📋 **Plan mode ON** — read-only: the agent explores and proposes a plan, but cannot edit files or run commands. Toggle again (or `/plan`) to apply changes. Save the plan with `/plan save` so it survives `/clear`.</value></data>
+  <data name="PlanModeOff" xml:space="preserve"><value>Plan mode **OFF**.</value></data>
+  <data name="PlanListEmpty" xml:space="preserve"><value>No plan yet. Ask for one in plan mode, then `/plan save` it — plans live in `.inferpal/plans/` and are committed with the code.</value></data>
+  <data name="PlanListHeader" xml:space="preserve"><value>### Plans of this repository</value></data>
+  <data name="PlanSaved" xml:space="preserve"><value>Plan **{0}** saved with {1} step(s) → `{2}`. It survives `/clear` and a restart; `/plan next` picks it back up.</value></data>
+  <data name="PlanNoSteps" xml:space="preserve"><value>No step found in the last answer. A plan needs a numbered list or a checklist — ask for one, then `/plan save`.</value></data>
+  <data name="PlanNotFound" xml:space="preserve"><value>No plan named **{0}**. `/plan list` shows the ones there are.</value></data>
+  <data name="PlanNoActive" xml:space="preserve"><value>No active plan. Open one with `/plan &lt;name&gt;`, or `/plan list` to see them.</value></data>
+  <data name="PlanNoStepsInFile" xml:space="preserve"><value>*(this plan has no step yet — add `- [ ] …` lines to the file)*</value></data>
+  <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} done</value></data>
+  <data name="PlanNextStep" xml:space="preserve"><value>Next step **{0}** — {1}</value></data>
+  <data name="PlanComplete" xml:space="preserve"><value>**{0}** — every step is done. ✅</value></data>
+  <data name="PlanStepTicked" xml:space="preserve"><value>Step **{0}** done — {1}</value></data>
+  <data name="PlanStepUnticked" xml:space="preserve"><value>Step **{0}** reopened.</value></data>
+  <data name="PlanStepUnknown" xml:space="preserve"><value>This plan has no step {0} (it has {1}).</value></data>
+  <data name="PlanStepAlready" xml:space="preserve"><value>Step **{0}** is already {1}.</value></data>
+  <data name="PlanStateDone" xml:space="preserve"><value>done</value></data>
+  <data name="PlanStateTodo" xml:space="preserve"><value>to do</value></data>
+  <data name="TaskProposalsHeader" xml:space="preserve"><value>### {0} proposed change(s) — nothing has been applied</value></data>
+  <data name="TaskProposalItem" xml:space="preserve"><value>**{0}. `{1}`** — {2}</value></data>
+  <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Review each diff, then apply the ones you want with `/task apply {0} &lt;n&gt;`. Each one goes through the usual approval prompt — nothing was approved in advance.</value></data>
+  <data name="TaskSubmittedProposing" xml:space="preserve"><value>Task **{0}** submitted in proposal mode: `{1}`. It may express file changes, but nothing will be applied — you review each diff when the report comes back.</value></data>
+  <data name="TaskNoProposals" xml:space="preserve"><value>Task **{0}** proposed no change.</value></data>
+  <data name="TaskProposalUnknown" xml:space="preserve"><value>No proposal {0} — this task has {1}.</value></data>
+  <data name="TaskProposalStale" xml:space="preserve"><value>Proposal not applied: **{0}** changed since the task looked at it, so the recorded diff no longer describes it. Re-run the task rather than overwrite work done in between.</value></data>
+  <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nothing to do: **{0}** is already exactly what the proposal wanted.</value></data>
+  <data name="TaskProposalFileMissing" xml:space="preserve"><value>Proposal not applied: **{0}** is not in the state it assumed (missing, or present where it expected a new file).</value></data>
+  <data name="TaskProposalUnusable" xml:space="preserve"><value>Proposal not applied: no reviewable change was recorded for **{0}**.</value></data>
+  <data name="TaskProposalApplied" xml:space="preserve"><value>Proposal applied to **{0}**. `/undo-run` covers it like any other write.</value></data>
 </root>

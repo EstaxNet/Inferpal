@@ -103,6 +103,10 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // Session file the conversation currently lives in ("" = never saved). Set when a session is
     // loaded or a branch is created; consumed by /branch to record the parent link.
     private string           _currentSessionName    = string.Empty;
+    /// <summary>Plan the session is working on (<c>.inferpal/plans/&lt;name&gt;.md</c>), set by
+    /// <c>/plan save</c> or <c>/plan &lt;name&gt;</c> so <c>/plan next</c> needs no argument.
+    /// Session state, not persisted: the plan file is what survives, not which one was open.</summary>
+    private string?          _activePlan;
 
     // ── Prompt history ─────────────────────────────────────────────────────────
     private const  int            PromptHistoryMax  = 50;

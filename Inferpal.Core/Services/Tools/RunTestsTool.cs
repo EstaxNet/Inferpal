@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -385,7 +385,7 @@ internal class RunTestsTool : ITool
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
 
-            using var proc = Process.Start(psi)!;
+            using var proc = ChildProcess.Start(psi);
             var stdoutTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
             var stderrTask = proc.StandardError.ReadToEndAsync(cts.Token);
             await proc.WaitForExitAsync(cts.Token);

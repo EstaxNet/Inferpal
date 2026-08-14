@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -32,6 +32,18 @@ internal sealed partial class HostServer : IDisposable
     private readonly object _gate = new();
 
     private JsonRpc?                 _rpc;
+
+    /// <summary>
+    /// Locale the editor announced at <c>initialize</c>, kept so it can be re-applied.
+    /// </summary>
+    /// <remarks>
+    /// It has to be kept, and re-applied after the configuration is loaded: <c>Config.Load</c>
+    /// calls <c>Strings.ApplyLanguage(cfg.Language)</c> unconditionally, so an empty language
+    /// ("Auto", the default) resets the override to null and the strings fall back to the machine's
+    /// UI culture — silently discarding what the editor just said. Found by running the host, not by
+    /// reading it: with `locale: "en"` the answers came back in French on a French Windows.
+    /// </remarks>
+    private string?                  _editorLocale;
     private HostSession?             _session;
     private CancellationTokenSource? _chatCts;
 
@@ -62,9 +74,13 @@ internal sealed partial class HostServer : IDisposable
     public InitializeResult Initialize(InitializeParams p)
     {
         var rpc = _rpc ?? throw new InvalidOperationException("RPC connection not attached.");
-        Strings.ApplyLanguage(NormalizeLocale(p.Locale));
+        _editorLocale = NormalizeLocale(p.Locale);
 
         var config   = _configFactory();
+        // AFTER the load, never before: Config.Load applies its own language and clears the
+        // override when the user picked "Auto". An explicit choice in the settings still wins — it
+        // is the more deliberate signal — and the editor's locale beats the machine's culture.
+        ApplyLanguage(config);
         var client   = _providerFactory(config);
         var overlay  = new OpenDocumentOverlay();
         var editor   = new RpcEditorSurface(rpc, overlay);
@@ -363,10 +379,10 @@ internal sealed partial class HostServer : IDisposable
                 prop.SetValue(s.Config, prop.GetValue(incoming));
 
         s.Config.Save();
-        // A language override takes effect immediately (settings/strings, slash hints, …),
-        // like the VS settings window; empty falls back to the initialize-handshake locale.
-        if (!string.IsNullOrEmpty(s.Config.Language))
-            Strings.ApplyLanguage(s.Config.Language);
+        // A language override takes effect immediately (settings/strings, slash hints, …), like the
+        // VS settings window; going back to "Auto" returns to the editor's locale rather than
+        // leaving whatever was last applied.
+        ApplyLanguage(s.Config);
         ResetHistory(s);   // custom prompt / pinned files may have changed
     }
 
@@ -635,6 +651,13 @@ internal sealed partial class HostServer : IDisposable
 
     /// <summary>VS Code locale ids are lowercase (`zh-cn`); .NET wants `zh-CN`. GetCultureInfo
     /// is case-insensitive, so validating through it normalizes; invalid ⇒ null (OS culture).</summary>
+    /// <summary>
+    /// Applies the language with the only precedence that makes sense here: an explicit choice in
+    /// the settings, else the locale the editor announced, else the machine's UI culture.
+    /// </summary>
+    private void ApplyLanguage(InferpalConfig config) =>
+        Strings.ApplyLanguage(string.IsNullOrEmpty(config.Language) ? _editorLocale : config.Language);
+
     private static string? NormalizeLocale(string? locale)
     {
         if (string.IsNullOrWhiteSpace(locale)) return null;

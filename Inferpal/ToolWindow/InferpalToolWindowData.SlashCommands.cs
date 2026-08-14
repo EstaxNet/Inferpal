@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -204,7 +204,6 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Hardware:   await HandleHardwareCommandAsync(parts, ct);                  break;
             case SlashCommandId.Setup:      await HandleSetupCommandAsync(parts, ct);                    break;
             case SlashCommandId.AgentStep:  await ToggleStepModeAsync();                                  break;
-            case SlashCommandId.Plan:       await TogglePlanModeAsync();                                  break;
             case SlashCommandId.Prompts:    await HandlePromptsCommandAsync(parts, ct);                   break;
 
             case SlashCommandId.Resume:
@@ -220,6 +219,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Template:   await HandleTemplateCommandAsync(parts, ct); break;
             case SlashCommandId.Docs:       await HandleDocsCommandAsync(parts, ct);     break;
             case SlashCommandId.Check:      await HandleCheckCommandAsync(parts, ct);    break;
+            case SlashCommandId.Plan:       await HandlePlanCommandAsync(parts, ct);     break;
             case SlashCommandId.Onboard:    await HandleOnboardCommandAsync(parts, ct);  break;
             case SlashCommandId.Rules:      await HandleRulesCommandAsync(parts, ct);    break;
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
@@ -353,7 +353,27 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private async Task HandleTaskCommandAsync(string[] parts)
     {
-        await ShowInfoAsync(Services.Commands.TaskCommandHandler.Handle(BackgroundTasks(), parts).Message);
+        var result = Services.Commands.TaskCommandHandler.Handle(BackgroundTasks(), parts);
+
+        // `/task apply <id> <n>`: the handler names the proposal, the write goes through the real
+        // registry — so the ordinary approval prompt appears, the file is snapshotted and
+        // /undo-run covers it exactly like any other write (roadmap §18, decision (b)).
+        if (result.Apply is { } proposal)
+        {
+            await ShowInfoAsync(await Services.Tasks.TaskProposalApplication.ApplyAsync(
+                proposal, _tools, ReadFileForProposal, CancellationToken.None,
+                beginRun: () => _tools.History.BeginRun()));
+            return;
+        }
+
+        await ShowInfoAsync(result.Message);
+    }
+
+    /// <summary>Current content of a proposed file, or null when it is not there.</summary>
+    private static string? ReadFileForProposal(string path)
+    {
+        try   { return File.Exists(path) ? File.ReadAllText(path) : null; }
+        catch (Exception ex) { Diagnostics.Swallow($"ReadFileForProposal({path})", ex); return null; }
     }
 
     /// <summary>
@@ -371,21 +391,33 @@ internal partial class InferpalToolWindowData
             var systemPrompt = _history.Count > 0 && _history[0].Role == "system"
                 ? _history[0].Content : null;
 
+            // Proposal mode (§18): the editing tools become available, but against a registry whose
+            // approval service records instead of granting — so the run still cannot write anything.
+            var recorder = task.ProposeWrites ? new Services.Tasks.ProposalRecorder() : null;
+            var registry = recorder is null
+                ? new BackgroundTaskToolRegistry(_tools)
+                : new BackgroundTaskToolRegistry(_tools.WithApprovalService(recorder), recorder);
+
+            var suffix = recorder is null
+                ? BackgroundTaskToolRegistry.SystemPromptSuffix
+                : BackgroundTaskToolRegistry.ProposalPromptSuffix;
+
             var history = new List<ChatMessageDto>();
             if (!string.IsNullOrWhiteSpace(systemPrompt))
-                history.Add(new("system", systemPrompt + BackgroundTaskToolRegistry.SystemPromptSuffix));
+                history.Add(new("system", systemPrompt + suffix));
             history.Add(new("user", task.Objective));
 
             // RunAgentAsync never throws on network/backend errors — they come back in the result.
             var run = await _client.RunAgentAsync(
                 ModelRouter.Resolve(_config, ModelRole.Agent),
                 history,
-                new BackgroundTaskToolRegistry(_tools),
+                registry,
                 onStep:  onStep,
                 onToken: null,
                 ct:      taskCt);
 
-            return run.FinalResponse;
+            return new BackgroundTaskQueue.TaskRunOutcome(
+                run.FinalResponse, recorder?.Proposals ?? []);
         });
 
         // A finished task must announce itself: its report is worthless if nobody knows it exists.

@@ -1,4 +1,4 @@
-namespace Inferpal.Services.Tasks;
+﻿namespace Inferpal.Services.Tasks;
 
 /// <summary>
 /// Serial queue of detached agent runs (<c>/task</c>) — ROADMAP §9. A task is submitted from the
@@ -32,16 +32,31 @@ internal sealed class BackgroundTaskQueue : IDisposable
 
     private const string TrimMarker = "[… earlier steps dropped …]";
 
-    /// <summary>Runs one task to completion. Returns its final report; may throw to fail the task.</summary>
-    /// <param name="task">Snapshot of the task being started (id + objective).</param>
+    /// <summary>What a completed run hands back: its report, and the changes it proposed.</summary>
+    /// <param name="Report">Final markdown answer.</param>
+    /// <param name="Proposals">
+    /// Changes recorded but not applied (roadmap §18). Empty for a read-only task. Carried here
+    /// rather than folded into the report because <c>/task apply</c> needs the structured diff, not
+    /// prose about it.
+    /// </param>
+    internal sealed record TaskRunOutcome(string Report, IReadOnlyList<TaskProposal> Proposals)
+    {
+        /// <summary>A read-only run: report only.</summary>
+        public static TaskRunOutcome Of(string report) => new(report, []);
+    }
+
+    /// <summary>Runs one task to completion. Returns its outcome; may throw to fail the task.</summary>
+    /// <param name="task">Snapshot of the task being started (id, objective, and whether it proposes).</param>
     /// <param name="onStep">Progress sink, mirrored into the task's journal.</param>
-    internal delegate Task<string> TaskRunner(BackgroundTaskSnapshot task, Action<string> onStep, CancellationToken ct);
+    internal delegate Task<TaskRunOutcome> TaskRunner(BackgroundTaskSnapshot task, Action<string> onStep, CancellationToken ct);
 
     private sealed class Job
     {
         public required string Id;
         public required string Objective;
         public required DateTimeOffset CreatedAt;
+        public bool ProposeWrites;
+        public IReadOnlyList<TaskProposal> Proposals = [];
 
         public BackgroundTaskState State = BackgroundTaskState.Queued;
         public DateTimeOffset? StartedAt;
@@ -89,7 +104,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// Submits <paramref name="objective"/> and returns its short id (<c>t1</c>, <c>t2</c>, …),
     /// or <c>null</c> when the queue is full (<see cref="MaxPending"/>) or already disposed.
     /// </summary>
-    internal string? Submit(string objective)
+    internal string? Submit(string objective, bool proposeWrites = false)
     {
         Job job;
         lock (_lock)
@@ -97,7 +112,11 @@ internal sealed class BackgroundTaskQueue : IDisposable
             if (_disposed) return null;
             if (_pending.Count + (_current is null ? 0 : 1) >= MaxPending) return null;
 
-            job = new Job { Id = "t" + (++_seq), Objective = objective, CreatedAt = _now() };
+            job = new Job
+            {
+                Id = "t" + (++_seq), Objective = objective, CreatedAt = _now(),
+                ProposeWrites = proposeWrites,
+            };
             _pending.Enqueue(job);
 
             // The worker retires when it drains the queue (under this same lock), so a null
@@ -228,11 +247,12 @@ internal sealed class BackgroundTaskQueue : IDisposable
                 started       = SnapshotLocked(job);
             }
 
-            var report = await _runner(started, step => AppendStep(job, step), cts.Token).ConfigureAwait(false);
+            var outcome = await _runner(started, step => AppendStep(job, step), cts.Token).ConfigureAwait(false);
 
             lock (_lock)
             {
-                FinishLocked(job, BackgroundTaskState.Succeeded, report, null);
+                job.Proposals = outcome.Proposals;
+                FinishLocked(job, BackgroundTaskState.Succeeded, outcome.Report, null);
                 return SnapshotLocked(job);
             }
         }
@@ -309,7 +329,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
 
         return new BackgroundTaskSnapshot(
             job.Id, job.Objective, job.State, job.CreatedAt, job.StartedAt, job.FinishedAt,
-            job.Result, job.Error, job.Steps.ToArray(), position);
+            job.Result, job.Error, job.Steps.ToArray(), position,
+            job.ProposeWrites, job.Proposals);
     }
 
     private void RaiseFinished(BackgroundTaskSnapshot snapshot)

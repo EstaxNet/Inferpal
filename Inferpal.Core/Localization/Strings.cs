@@ -955,4 +955,58 @@ internal static class Strings
         string.Format(Get(nameof(OnboardContextUserPrompt)), brief);
     public static string OnboardProfileScaffolded(string path) =>
         string.Format(Get(nameof(OnboardProfileScaffolded)), path);
+
+    // ── /plan — plan mode and persistent plans (roadmap §17) ────────────────────
+    public static string PlanUsage           => Get(nameof(PlanUsage));
+    public static string PlanModeOn          => Get(nameof(PlanModeOn));
+    public static string PlanModeOff         => Get(nameof(PlanModeOff));
+    public static string PlanListEmpty       => Get(nameof(PlanListEmpty));
+    public static string PlanListHeader      => Get(nameof(PlanListHeader));
+    public static string PlanNoSteps         => Get(nameof(PlanNoSteps));
+    public static string PlanNoActive        => Get(nameof(PlanNoActive));
+    public static string PlanNoStepsInFile   => Get(nameof(PlanNoStepsInFile));
+    public static string PlanStateDone       => Get(nameof(PlanStateDone));
+    public static string PlanStateTodo       => Get(nameof(PlanStateTodo));
+    public static string PlanSaved(string name, int steps, string path) =>
+        string.Format(Get(nameof(PlanSaved)), name, steps, path);
+    public static string PlanNotFound(string name) =>
+        string.Format(Get(nameof(PlanNotFound)), name);
+    public static string PlanHeader(string title, string name, int done, int total) =>
+        string.Format(Get(nameof(PlanHeader)), title, name, done, total);
+    public static string PlanNextStep(int number, string text) =>
+        string.Format(Get(nameof(PlanNextStep)), number, text);
+    public static string PlanComplete(string title) =>
+        string.Format(Get(nameof(PlanComplete)), title);
+    public static string PlanStepTicked(int number, string text) =>
+        string.Format(Get(nameof(PlanStepTicked)), number, text);
+    public static string PlanStepUnticked(int number) =>
+        string.Format(Get(nameof(PlanStepUnticked)), number);
+    public static string PlanStepUnknown(int number, int total) =>
+        string.Format(Get(nameof(PlanStepUnknown)), number, total);
+    public static string PlanStepAlready(int number, string state) =>
+        string.Format(Get(nameof(PlanStepAlready)), number, state);
+
+    // ── /task proposals — background tasks that propose writes (roadmap §18) ────
+    public static string TaskProposalsHeader(int count) =>
+        string.Format(Get(nameof(TaskProposalsHeader)), count);
+    public static string TaskProposalItem(int number, string tool, string details) =>
+        string.Format(Get(nameof(TaskProposalItem)), number, tool, details);
+    public static string TaskProposalsApplyHint(string taskId) =>
+        string.Format(Get(nameof(TaskProposalsApplyHint)), taskId);
+    public static string TaskSubmittedProposing(string id, string objective) =>
+        string.Format(Get(nameof(TaskSubmittedProposing)), id, objective);
+    public static string TaskNoProposals(string id) =>
+        string.Format(Get(nameof(TaskNoProposals)), id);
+    public static string TaskProposalUnknown(int number, int total) =>
+        string.Format(Get(nameof(TaskProposalUnknown)), number, total);
+    public static string TaskProposalStale(string path) =>
+        string.Format(Get(nameof(TaskProposalStale)), path);
+    public static string TaskProposalAlreadyApplied(string path) =>
+        string.Format(Get(nameof(TaskProposalAlreadyApplied)), path);
+    public static string TaskProposalFileMissing(string path) =>
+        string.Format(Get(nameof(TaskProposalFileMissing)), path);
+    public static string TaskProposalUnusable(string path) =>
+        string.Format(Get(nameof(TaskProposalUnusable)), path);
+    public static string TaskProposalApplied(string path) =>
+        string.Format(Get(nameof(TaskProposalApplied)), path);
 }

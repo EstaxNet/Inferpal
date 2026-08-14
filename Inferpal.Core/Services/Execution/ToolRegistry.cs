@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Inferpal.Config;
 using Inferpal.Models;
 using Inferpal.Services.Docs;
@@ -25,6 +25,16 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private readonly FileHistoryService        _fileHistory = new();
     private DiffInfo? _pendingDiff;
 
+    // Kept so a sibling registry can be built with a different approval service — see
+    // WithApprovalService. Storing the composition is cheaper than threading a factory through
+    // every front-end that owns a registry.
+    private readonly IEditorSurface       _editor;
+    private readonly ProjectIndexService  _indexService;
+    private readonly IInferenceProvider   _client;
+    private readonly ProjectMapService    _mapService;
+    private readonly DocsIndexService     _docsIndex;
+    private readonly OpenDocumentOverlay? _overlay;
+
     public DiffInfo? ConsumeDiff() { var d = _pendingDiff; _pendingDiff = null; return d; }
 
     /// <summary>File snapshot/restore service, exposed so the VM can begin a change-tracking run
@@ -38,6 +48,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         _config   = config;
         _approval = approval;
         _mcp      = mcp;
+
+        _editor       = editor;
+        _indexService = indexService;
+        _client       = client;
+        _mapService   = mapService;
+        _docsIndex    = docsIndex;
+        _overlay      = overlay;
 
         var history  = _fileHistory;
         // The approval service is passed so a build command coming from the workspace's
@@ -75,11 +92,36 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new SearchDocsTool(docsIndex, client, config));
         Register(new GenerateProjectMapTool(mapService));
 
-        // ⚠ No `delegate` tool here. It was built and measured (roadmap §11) and removed on
-        // 2026-07-31: it saved 91 % of the main thread's prompt tokens but halved accuracy
-        // (4/12 → 2/12), and the pre-registered gate makes degraded accuracy fatal whatever the
-        // saving. Do not re-add it without the redesign and the new gate described in §20.
+        // ⚠ No `delegate` tool here, and this one is closed rather than merely absent. It was built
+        // and measured twice against gates registered before the code was written:
+        //   §11 (2026-07-31) — 91 % of the main thread's prompt tokens saved, accuracy halved
+        //                      (4/12 → 2/12). Cut; the redesign was scoped as §20.
+        //   §20 (2026-08-02) — one sub-agent per target, explicit budget, audited citations. On a
+        //                      valid reference arm (58,3 %, inside the 40-80 % window): 7/36 against
+        //                      21/36, and only 13,9 % of tokens saved because the parent re-explored
+        //                      what the sub-agents failed to establish.
+        // The §20 gate said in advance that a second failure closes the track for good. It did.
+        // Do not re-add this tool. Recoverable at commit 60e68a1 if the dossier ever needs reading.
     }
+
+    /// <summary>
+    /// The same tool surface, wired to a different <see cref="IApprovalService"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Used by a background task running in proposal mode (roadmap §18), whose approval service
+    /// records every request and grants none. The service is injected into each tool's constructor,
+    /// so it cannot be swapped by a wrapper: a fresh registry is the only construction where no tool
+    /// holds a reference to the real prompting service. That is the point — not an inconvenience.
+    /// </para>
+    /// <para>
+    /// ⚠ The sibling has its <b>own</b> <see cref="FileHistoryService"/>, which stays empty because
+    /// nothing it exposes ever writes. Snapshots and <c>/undo-run</c> coverage come later, when a
+    /// proposal is applied through <i>this</i> registry by the ordinary path.
+    /// </para>
+    /// </remarks>
+    public ToolRegistry WithApprovalService(IApprovalService approval) =>
+        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay);
 
     private IEnumerable<ITool> UserTools =>
         (_config.CustomTools ?? string.Empty)

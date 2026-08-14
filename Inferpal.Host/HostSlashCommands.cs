@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services;
 using Inferpal.Services.Commands;
@@ -61,9 +61,21 @@ internal sealed partial class HostServer
     private BackgroundTaskQueue TaskQueue(HostSession s) => s.GetOrCreateTasks(
         runner: async (task, onStep, ct) =>
         {
+            // Proposal mode (§18): the editing tools become available, against a registry whose
+            // approval service records instead of granting — so the run still cannot write. Same
+            // construction as the VS view-model, because the mode must not differ between editors.
+            var recorder = task.ProposeWrites ? new ProposalRecorder() : null;
+            var registry = recorder is null
+                ? new BackgroundTaskToolRegistry(s.Tools)
+                : new BackgroundTaskToolRegistry(s.Tools.WithApprovalService(recorder), recorder);
+
+            var suffix = recorder is null
+                ? BackgroundTaskToolRegistry.SystemPromptSuffix
+                : BackgroundTaskToolRegistry.ProposalPromptSuffix;
+
             var history = new List<Inferpal.Models.ChatMessageDto>
             {
-                new("system", BuildSystemPromptText(s) + BackgroundTaskToolRegistry.SystemPromptSuffix),
+                new("system", BuildSystemPromptText(s) + suffix),
                 new("user",   task.Objective),
             };
 
@@ -72,14 +84,22 @@ internal sealed partial class HostServer
             var run = await s.Client.RunAgentAsync(
                 ModelRouter.Resolve(s.Config, ModelRole.Agent),
                 history,
-                new BackgroundTaskToolRegistry(s.Tools),
+                registry,
                 onStep:  onStep,
                 onToken: null,
                 ct:      ct);
 
-            return run.FinalResponse;
+            return new BackgroundTaskQueue.TaskRunOutcome(
+                run.FinalResponse, recorder?.Proposals ?? []);
         },
         onFinished: snapshot => Notify("chat/step", new { text = Strings.TaskFinishedNotice(snapshot.Id) }));
+
+    /// <summary>Current content of a proposed file, or null when it is not there.</summary>
+    private static string? ReadFileForProposal(string path)
+    {
+        try   { return File.Exists(path) ? File.ReadAllText(path) : null; }
+        catch (Exception ex) { Diagnostics.Swallow($"ReadFileForProposal({path})", ex); return null; }
+    }
 
     /// <summary>Direct tool invocation (/read /ls /grep /run /git /map …): executed by the
     /// registry — approvals and permission rules apply exactly as in an agent run.</summary>
@@ -297,11 +317,23 @@ internal sealed partial class HostServer
                 }
 
                 case SlashCommandId.Task:
+                {
                     // Detached run: deliberately NOT bound to this turn's token — the task keeps
                     // going after the command that submitted it returns. Progress is not streamed
                     // to the chat (it would interrupt what the user is doing); only the completion
                     // notice is, and `/task <id>` shows the report.
-                    return new SlashCommandResult(true, TaskCommandHandler.Handle(TaskQueue(s), parts).Message);
+                    var task = TaskCommandHandler.Handle(TaskQueue(s), parts);
+
+                    // `/task apply <id> <n>`: the write goes through the real registry, so the
+                    // ordinary approval prompt appears and /undo-run covers it (§18, decision (b)).
+                    if (task.Apply is { } proposal)
+                        return new SlashCommandResult(true,
+                            await TaskProposalApplication.ApplyAsync(
+                                proposal, s.Tools, ReadFileForProposal, cts.Token,
+                                beginRun: () => s.Tools.History.BeginRun()));
+
+                    return new SlashCommandResult(true, task.Message);
+                }
 
                 case SlashCommandId.AgentStep:
                     // Same texts as the VS toggle (deliberately English, model-adjacent UX).
@@ -312,12 +344,31 @@ internal sealed partial class HostServer
                         [new SlashEffectDto("stateChange", s.StepMode ? "on" : "off", "stepMode")]);
 
                 case SlashCommandId.Plan:
-                    s.PlanMode = !s.PlanMode;
-                    RefreshSystemMessage(s);
-                    return new SlashCommandResult(true, s.PlanMode
-                        ? "📋 **Plan mode ON** — read-only: the agent explores and proposes a plan, but cannot edit files or run commands. Toggle again (or `/plan`) to apply changes."
-                        : "Plan mode **OFF**.",
-                        [new SlashEffectDto("stateChange", s.PlanMode ? "on" : "off", "planMode")]);
+                {
+                    // Roadmap §17. Same handler as the VM: bare `/plan` still toggles read-only
+                    // plan mode, everything else works on a file under .inferpal/plans/.
+                    var result = PlanCommandHandler.Handle(
+                        s.RootDir, parts,
+                        s.History.LastOrDefault(m => m.Role == "assistant")?.Content,
+                        s.ActivePlan);
+
+                    if (result.ToggleMode)
+                    {
+                        s.PlanMode = !s.PlanMode;
+                        RefreshSystemMessage(s);
+                        return new SlashCommandResult(true,
+                            s.PlanMode ? Strings.PlanModeOn : Strings.PlanModeOff,
+                            [new SlashEffectDto("stateChange", s.PlanMode ? "on" : "off", "planMode")]);
+                    }
+
+                    if (result.SetActivePlan is { } active)
+                        s.ActivePlan = active.Length == 0 ? null : active;
+
+                    // `/plan save` wrote the file; opening it is the editor's job, as for /onboard.
+                    return result.OpenPath is { } path
+                        ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("openFile", path)])
+                        : new SlashCommandResult(true, result.Message);
+                }
 
                 case SlashCommandId.Check:
                 {

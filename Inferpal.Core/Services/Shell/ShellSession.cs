@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -74,7 +74,7 @@ internal sealed class ShellSession
             CreateNoWindow         = true,
         };
 
-        using var process = Process.Start(psi)!;
+        using var process = ChildProcess.Start(psi);
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
         var stderrTask = process.StandardError.ReadToEndAsync(cts.Token);
         try

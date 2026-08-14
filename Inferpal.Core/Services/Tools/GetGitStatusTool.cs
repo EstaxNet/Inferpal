@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -133,7 +133,7 @@ internal class GetGitStatusTool : ITool
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(15));
 
-            using var proc = Process.Start(psi)!;
+            using var proc = ChildProcess.Start(psi);
             var stdout = await proc.StandardOutput.ReadToEndAsync(cts.Token);
             await proc.WaitForExitAsync(cts.Token);
             return stdout.Trim();

@@ -674,7 +674,7 @@ ollama serve
   <data name="SlashHintModels" xml:space="preserve"><value>Ollama 模型管理器 — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>切换代理单步模式 — 每次工具调用后暂停</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>单步模式暂停后恢复代理</value></data>
-  <data name="SlashHintPlan" xml:space="preserve"><value>切换计划模式 — 只读：探索并提出计划，不做修改</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>计划模式与已保存的计划 — /plan [list|save|next|done n|&lt;名称&gt;]</value></data>
   <data name="SlashHintPrompts" xml:space="preserve"><value>列出可重用的提示文件（.inferpal/prompts） — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>显示 GPU/VRAM 配置 — /hardware [gb] 设置 VRAM 预算</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>重新运行初始设置 — 重新检测后端并重新选择模型</value></data>
@@ -898,4 +898,34 @@ ollama serve
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>你要撰写一份项目上下文文件，供一个完全本地的编码助手在每一轮之前阅读。根据下面的仓库描述，写一份带 `##` 小节的简短 markdown 文档：这个项目是什么、技术栈与目录结构、以及如何构建和测试。规则（按重要性排序）：文件、文件夹、项目、命令的名称一律照抄原样，绝不臆造；描述没有显示的，就不要写某个文件夹或项目「做什么」，列出名称即可；只陈述描述所支持的内容，不要猜测、不要凑字数、不要给泛泛的建议；不知道的就略去——简短而准确胜过冗长而似是而非。最多 40 行，不要封面，也不要用代码块包裹整个回答。 请使用与本指令相同的语言撰写。</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;现在请撰写项目上下文文件。</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>项目配置已创建于 {0}。它随仓库一起分发：可以建议，但绝不授予权限。</value></data>
+  <data name="PlanUsage" xml:space="preserve"><value>**/plan** — 计划模式与持久计划。&#10;&#10;- `/plan` — 切换计划模式（只读）&#10;- `/plan list` — 列出本仓库的计划&#10;- `/plan save [名称]` — 把上一条回答中的计划保存到 `.inferpal/plans/`&#10;- `/plan &lt;名称&gt;` — 打开一个计划&#10;- `/plan next` — 显示下一个未完成的步骤&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — 勾选或取消勾选某个步骤</value></data>
+  <data name="PlanModeOn" xml:space="preserve"><value>📋 **计划模式已开启** — 只读：智能体可以探索并提出计划，但不能修改文件或执行命令。再次切换（或 `/plan`）即可应用改动。用 `/plan save` 保存计划，它就能在 `/clear` 之后依然存在。</value></data>
+  <data name="PlanModeOff" xml:space="preserve"><value>计划模式**已关闭**。</value></data>
+  <data name="PlanListEmpty" xml:space="preserve"><value>还没有任何计划。在计划模式下让它生成一个，然后 `/plan save` 保存 —— 计划位于 `.inferpal/plans/`，会随代码一起提交。</value></data>
+  <data name="PlanListHeader" xml:space="preserve"><value>### 本仓库的计划</value></data>
+  <data name="PlanSaved" xml:space="preserve"><value>计划 **{0}** 已保存，共 {1} 个步骤 → `{2}`。它能在 `/clear` 和重启后保留；用 `/plan next` 继续。</value></data>
+  <data name="PlanNoSteps" xml:space="preserve"><value>在上一条回答中没有找到步骤。计划需要一个编号列表或清单 —— 先让它生成，再 `/plan save`。</value></data>
+  <data name="PlanNotFound" xml:space="preserve"><value>没有名为 **{0}** 的计划。用 `/plan list` 查看已有的计划。</value></data>
+  <data name="PlanNoActive" xml:space="preserve"><value>没有活动计划。用 `/plan &lt;名称&gt;` 打开一个，或用 `/plan list` 查看。</value></data>
+  <data name="PlanNoStepsInFile" xml:space="preserve"><value>*（这个计划还没有步骤 —— 在文件中添加 `- [ ] …` 行）*</value></data>
+  <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — 已完成 {2}/{3}</value></data>
+  <data name="PlanNextStep" xml:space="preserve"><value>下一步 **{0}** — {1}</value></data>
+  <data name="PlanComplete" xml:space="preserve"><value>**{0}** —— 所有步骤都已完成。✅</value></data>
+  <data name="PlanStepTicked" xml:space="preserve"><value>步骤 **{0}** 已完成 —— {1}</value></data>
+  <data name="PlanStepUnticked" xml:space="preserve"><value>步骤 **{0}** 已重新打开。</value></data>
+  <data name="PlanStepUnknown" xml:space="preserve"><value>这个计划没有第 {0} 步（共 {1} 步）。</value></data>
+  <data name="PlanStepAlready" xml:space="preserve"><value>步骤 **{0}** 已经是{1}。</value></data>
+  <data name="PlanStateDone" xml:space="preserve"><value>已完成</value></data>
+  <data name="PlanStateTodo" xml:space="preserve"><value>待办</value></data>
+  <data name="TaskProposalsHeader" xml:space="preserve"><value>### 提议了 {0} 项更改 —— 尚未应用任何内容</value></data>
+  <data name="TaskProposalItem" xml:space="preserve"><value>**{0}. `{1}`** — {2}</value></data>
+  <data name="TaskProposalsApplyHint" xml:space="preserve"><value>逐一查看差异，然后用 `/task apply {0} &lt;n&gt;` 应用你想要的更改。每一项都会经过通常的审批提示 —— 没有任何内容被预先批准。</value></data>
+  <data name="TaskSubmittedProposing" xml:space="preserve"><value>任务 **{0}** 已以提议模式提交：`{1}`。它可以表达文件更改，但不会应用任何内容 —— 报告返回时由你逐一查看差异。</value></data>
+  <data name="TaskNoProposals" xml:space="preserve"><value>任务 **{0}** 没有提出任何更改。</value></data>
+  <data name="TaskProposalUnknown" xml:space="preserve"><value>没有第 {0} 项提议 —— 该任务共有 {1} 项。</value></data>
+  <data name="TaskProposalStale" xml:space="preserve"><value>提议未应用：自任务读取以来 **{0}** 已发生变化，记录的差异不再适用。请重新运行任务，而不要覆盖期间完成的工作。</value></data>
+  <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>无需操作：**{0}** 已经正是提议想要的样子。</value></data>
+  <data name="TaskProposalFileMissing" xml:space="preserve"><value>提议未应用：**{0}** 不处于它假设的状态（缺失，或在预期新建文件的位置已存在）。</value></data>
+  <data name="TaskProposalUnusable" xml:space="preserve"><value>提议未应用：没有为 **{0}** 记录可供审阅的更改。</value></data>
+  <data name="TaskProposalApplied" xml:space="preserve"><value>提议已应用到 **{0}**。`/undo-run` 会像其他写入一样覆盖它。</value></data>
 </root>

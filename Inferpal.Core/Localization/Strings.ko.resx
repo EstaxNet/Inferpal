@@ -674,7 +674,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="SlashHintModels" xml:space="preserve"><value>Ollama 모델 관리자 — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>에이전트 단계 모드 전환 — 각 도구 호출 후 일시 정지</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>단계 모드 일시 정지 후 에이전트 재개</value></data>
-  <data name="SlashHintPlan" xml:space="preserve"><value>플랜 모드 전환 — 읽기 전용: 탐색하고 계획 제안, 편집 없음</value></data>
+  <data name="SlashHintPlan" xml:space="preserve"><value>계획 모드와 저장된 계획 — /plan [list|save|next|done n|&lt;이름&gt;]</value></data>
   <data name="SlashHintPrompts" xml:space="preserve"><value>재사용 가능한 프롬프트 파일 나열 (.inferpal/prompts) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>GPU/VRAM 프로필 표시 — /hardware [gb]로 VRAM 예산 설정</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>초기 설정 다시 실행 — 백엔드 재감지, 모델 재선택</value></data>
@@ -898,4 +898,34 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>당신은 완전 로컬 코딩 어시스턴트가 매 턴 전에 읽는 프로젝트 컨텍스트 파일을 작성합니다. 아래 저장소 설명을 바탕으로 `##` 섹션을 가진 짧은 마크다운 문서를 쓰세요: 이 프로젝트가 무엇인지, 스택과 구성, 빌드와 테스트 방법. 중요한 순서대로의 규칙: 파일·폴더·프로젝트·명령의 이름은 적힌 그대로 옮기고 절대 지어내지 마세요. 설명이 보여주지 않는 한 폴더나 프로젝트가 무엇을 *하는지* 쓰지 말고 이름만 적고 넘어가세요. 설명이 뒷받침하는 것만 쓰고 추측·군더더기·일반론은 넣지 마세요. 모르는 것은 빼세요 — 짧고 정확한 문서가 길고 그럴듯한 문서보다 낫습니다. 최대 40줄, 표지 없이, 답변 전체를 코드 펜스로 감싸지 마세요. 이 지시문과 같은 언어로 작성하세요.</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;이제 프로젝트 컨텍스트 파일을 작성하세요.</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>프로젝트 프로필을 {0} 에 만들었습니다. 저장소와 함께 배포됩니다: 권장할 수는 있어도 권한을 줄 수는 없습니다.</value></data>
+  <data name="PlanUsage" xml:space="preserve"><value>**/plan** — 계획 모드와 영구 계획.&#10;&#10;- `/plan` — 계획 모드(읽기 전용) 전환&#10;- `/plan list` — 이 저장소의 계획 목록&#10;- `/plan save [이름]` — 마지막 답변의 계획을 `.inferpal/plans/`에 저장&#10;- `/plan &lt;이름&gt;` — 계획 열기&#10;- `/plan next` — 다음 미완료 단계 표시&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — 단계 체크 또는 해제</value></data>
+  <data name="PlanModeOn" xml:space="preserve"><value>📋 **계획 모드 켜짐** — 읽기 전용: 에이전트가 탐색하고 계획을 제안하지만 파일을 편집하거나 명령을 실행할 수는 없습니다. 다시 전환하면(또는 `/plan`) 변경을 적용할 수 있습니다. `/plan save`로 저장하면 `/clear` 후에도 남습니다.</value></data>
+  <data name="PlanModeOff" xml:space="preserve"><value>계획 모드 **꺼짐**.</value></data>
+  <data name="PlanListEmpty" xml:space="preserve"><value>아직 계획이 없습니다. 계획 모드에서 요청한 뒤 `/plan save`로 저장하세요. 계획은 `.inferpal/plans/`에 있으며 코드와 함께 커밋됩니다.</value></data>
+  <data name="PlanListHeader" xml:space="preserve"><value>### 이 저장소의 계획</value></data>
+  <data name="PlanSaved" xml:space="preserve"><value>계획 **{0}**을(를) {1}단계로 저장했습니다 → `{2}`. `/clear`와 재시작 후에도 남으며 `/plan next`로 이어서 진행합니다.</value></data>
+  <data name="PlanNoSteps" xml:space="preserve"><value>마지막 답변에서 단계를 찾지 못했습니다. 계획에는 번호 목록이나 체크리스트가 필요합니다. 먼저 요청한 뒤 `/plan save`하세요.</value></data>
+  <data name="PlanNotFound" xml:space="preserve"><value>**{0}** 이름의 계획이 없습니다. `/plan list`로 목록을 확인하세요.</value></data>
+  <data name="PlanNoActive" xml:space="preserve"><value>활성 계획이 없습니다. `/plan &lt;이름&gt;`으로 열거나 `/plan list`로 확인하세요.</value></data>
+  <data name="PlanNoStepsInFile" xml:space="preserve"><value>*(이 계획에는 아직 단계가 없습니다 — 파일에 `- [ ] …` 줄을 추가하세요)*</value></data>
+  <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} 완료</value></data>
+  <data name="PlanNextStep" xml:space="preserve"><value>다음 단계 **{0}** — {1}</value></data>
+  <data name="PlanComplete" xml:space="preserve"><value>**{0}** — 모든 단계가 완료되었습니다. ✅</value></data>
+  <data name="PlanStepTicked" xml:space="preserve"><value>단계 **{0}** 완료 — {1}</value></data>
+  <data name="PlanStepUnticked" xml:space="preserve"><value>단계 **{0}**을(를) 다시 열었습니다.</value></data>
+  <data name="PlanStepUnknown" xml:space="preserve"><value>이 계획에는 {0}단계가 없습니다 (총 {1}단계).</value></data>
+  <data name="PlanStepAlready" xml:space="preserve"><value>단계 **{0}**은(는) 이미 {1} 상태입니다.</value></data>
+  <data name="PlanStateDone" xml:space="preserve"><value>완료</value></data>
+  <data name="PlanStateTodo" xml:space="preserve"><value>미완료</value></data>
+  <data name="TaskProposalsHeader" xml:space="preserve"><value>### 제안된 변경 {0}건 — 아직 아무것도 적용되지 않았습니다</value></data>
+  <data name="TaskProposalItem" xml:space="preserve"><value>**{0}. `{1}`** — {2}</value></data>
+  <data name="TaskProposalsApplyHint" xml:space="preserve"><value>각 diff를 검토한 뒤 원하는 것을 `/task apply {0} &lt;n&gt;`으로 적용하세요. 모두 평소의 승인 창을 거치며, 사전에 승인된 것은 없습니다.</value></data>
+  <data name="TaskSubmittedProposing" xml:space="preserve"><value>작업 **{0}**을(를) 제안 모드로 제출했습니다: `{1}`. 파일 변경을 표현할 수 있지만 아무것도 적용되지 않습니다 — 보고서가 돌아오면 각 diff를 검토하세요.</value></data>
+  <data name="TaskNoProposals" xml:space="preserve"><value>작업 **{0}**은(는) 어떤 변경도 제안하지 않았습니다.</value></data>
+  <data name="TaskProposalUnknown" xml:space="preserve"><value>제안 {0}이(가) 없습니다 — 이 작업에는 {1}건이 있습니다.</value></data>
+  <data name="TaskProposalStale" xml:space="preserve"><value>제안이 적용되지 않았습니다: 작업이 읽은 뒤 **{0}**이(가) 변경되어 기록된 diff가 더 이상 맞지 않습니다. 그동안의 작업을 덮어쓰지 말고 작업을 다시 실행하세요.</value></data>
+  <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>할 일이 없습니다: **{0}**은(는) 이미 제안이 원한 그대로입니다.</value></data>
+  <data name="TaskProposalFileMissing" xml:space="preserve"><value>제안이 적용되지 않았습니다: **{0}**이(가) 가정한 상태가 아닙니다 (없거나, 새 파일을 예상한 자리에 이미 있음).</value></data>
+  <data name="TaskProposalUnusable" xml:space="preserve"><value>제안이 적용되지 않았습니다: **{0}**에 대해 검토 가능한 변경이 기록되지 않았습니다.</value></data>
+  <data name="TaskProposalApplied" xml:space="preserve"><value>**{0}**에 제안을 적용했습니다. 다른 쓰기와 마찬가지로 `/undo-run`으로 되돌릴 수 있습니다.</value></data>
 </root>
