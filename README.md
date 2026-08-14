@@ -15,7 +15,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-1295%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-1704%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2022%20%2F%202026-5C2D91" alt="Visual Studio 2022 / 2026">
   <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
@@ -48,15 +48,21 @@ two editors.
 
 ### Highlights
 
-- **Agentic loop** — 26 built-in tools, plus user-defined shell tools and **MCP** servers; independent read-only tools run in parallel.
+- **Agentic loop** — 28 built-in tools, plus user-defined shell tools and **MCP** servers; independent read-only tools run in parallel.
 - **Local-first** — Ollama, LM Studio, or any OpenAI-compatible server (llama.cpp, vLLM); run the backend locally or on a [remote GPU host](docs/remote-inference.md).
 - **Inline ghost-text completions** — Fill-in-the-Middle as you type (Tab / Esc), with Fast / Default / High-Accuracy presets.
 - **Semantic codebase search** — background indexing with hybrid retrieval (cosine + BM25 fused with RRF) and per-turn auto-context.
 - **Smart Fix Protocol** — after every edit, a polyglot build/typecheck (.NET / TypeScript / Rust / Go) feeds compile errors back so the agent fixes them in the same loop.
 - **Code actions & Inline Edit** — Explain / Fix / Refactor / Add Tests / Add Docstring, plus **Ctrl+Shift+I** to rewrite a selection in place.
-- **Safety by default** — approval-gated writes/commands, a catastrophic-command hard denylist, force-prompt on indirect execution (`iex`, `-EncodedCommand`, …), committable permission rules, and a hardened SSRF guard.
+- **Safety by default** — approval-gated writes/commands, a catastrophic-command hard denylist, force-prompt on indirect execution (`iex`, `-EncodedCommand`, …) **and on anything a cloned repository authored** (committed validators, permission overlays), committable permission rules, and a hardened SSRF guard.
 - **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, typed `@`-mentions, and 50+ slash commands.
 - **Built for the IDE** — live debugger awareness, VRAM monitoring, VS theme adaptation, and 10 UI languages.
+- **Debugger loop** — `/debug [goal]` lets the agent drive a **real debug session** from the chat: breakpoints, stepping, locals and call-stack inspection, in both editors (Visual Studio via an in-process driver, VS Code via a DAP bridge). Read-only, and starting a session always asks first.
+- **Compiler-backed code intelligence** — `analyze_impact`, `analyze_code` and `rename_symbol` resolve C# symbols with the Roslyn compiler instead of name matching: real references, not homonyms — and `rename_symbol` no longer rewrites unrelated tokens that merely share the name.
+- **Anchored diff review** — `/check` reviews your pending diff against repo-versioned AI checks and anchors every finding to a diff line (and says so when a location can't be confirmed); `/commit` drafts the message, `/commit-exec` runs it only after you've read it.
+- **Persistent plans** — `/plan save|list|next|done` turns the current plan into a committable markdown file under `.inferpal/plans/` that survives `/clear`, restarts and editors; a plan can never execute anything by itself.
+- **Background agent tasks** — `/task [goal]` runs a read-only agent while you keep coding (serial queue behind the GPU scheduler); `/task propose` records the writes it *would* make, and `/task apply` replays each one through the normal approval prompt — never granted in advance.
+- **Project onboarding** — a committable, non-privileged `.inferpal/project.json` profile plus `/onboard` (report, apply model-role recommendations, generate the project context file). Classified by allow-list: unknown keys are ignored, never interpreted.
 - **Multi-model toolkit** — `/bench` scores your installed models per role, `/arena` runs blind A/B duels, and the **Model Router** sends background tasks (titles, commit messages, summaries) to a small utility model — never cold-loading one.
 - **Conversation branching** — `/branch <n>` forks a conversation at any turn: the branch keeps turns 1..*n* and the conversation continues there, while the original is written back to disk first. `/branch` lists the branch points and the family tree, `/branch <name>` switches. Branches are plain session files, so nothing else had to learn about them.
 - **Transparency** — the **Context X-Ray** panel breaks down the exact prompt sent to the model, layer by layer, with per-layer toggles; `/replay` reconstructs an agent run post-mortem; `/fix` `/refactor` `/doc` show a per-hunk **inline diff preview** before touching your buffer.
