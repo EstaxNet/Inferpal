@@ -289,6 +289,8 @@
   <data name="DeleteCancelled" xml:space="preserve"><value>Удаление отменено пользователем.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} удалён</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Команда отменена пользователем.</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>Запустить сеанс отладки для: {0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>Сеанс отладки не запущен (отклонено пользователем).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Применить изменение к: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Изменение отменено пользователем.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content не найден в {0}. Проверьте пробелы, переносы строк и отступы.</value></data>
@@ -928,4 +930,13 @@ ollama serve
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Предложение не применено: **{0}** не в том состоянии, которое предполагалось (отсутствует или существует там, где ожидался новый файл).</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Предложение не применено: для **{0}** не записано ни одного просматриваемого изменения.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Предложение применено к **{0}**. `/undo-run` покрывает его, как любую другую запись.</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>проверить гипотезу во время выполнения отладчиком (`/debug [гипотеза]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>Из этого сеанса редактора отладчик недоступен.</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>Сеанс отладки остановлен.</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**Отладчик**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>Выполнение не приостановлено.</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>Приостановлено в {0}.</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>Точки останова не заданы.</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Точки останова:</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — выяснить, что программа делает на самом деле, во время выполнения.&#10;&#10;- `/debug &lt;гипотеза&gt;` — поставить точку останова, запустить и прочитать состояние&#10;- `/debug` — показать, что сейчас делает отладчик&#10;- `/debug stop` — завершить сеанс отладки</value></data>
 </root>

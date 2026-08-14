@@ -289,6 +289,8 @@ Ollama가 실행되면 헤더의 ↻ 다시 시도를 클릭하세요.</value></
   <data name="DeleteCancelled" xml:space="preserve"><value>사용자가 삭제를 취소했습니다.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} 삭제됨</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>사용자가 명령을 취소했습니다.</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>다음에 대한 디버깅 세션을 시작할까요: {0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>디버깅 세션이 시작되지 않았습니다(사용자가 거부함).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>변경 적용: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>사용자가 변경을 취소했습니다.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>{0}에서 old_content를 찾을 수 없습니다. 공백, 줄 바꿈, 들여쓰기를 확인하세요.</value></data>
@@ -928,4 +930,13 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>제안이 적용되지 않았습니다: **{0}**이(가) 가정한 상태가 아닙니다 (없거나, 새 파일을 예상한 자리에 이미 있음).</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>제안이 적용되지 않았습니다: **{0}**에 대해 검토 가능한 변경이 기록되지 않았습니다.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>**{0}**에 제안을 적용했습니다. 다른 쓰기와 마찬가지로 `/undo-run`으로 되돌릴 수 있습니다.</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>디버거로 런타임 가설을 조사 (`/debug [가설]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>이 편집기 세션에서 디버거에 연결할 수 없습니다.</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>디버깅 세션을 중지했습니다.</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**디버거**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>실행이 일시 중지되지 않았습니다.</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>{0} 에서 일시 중지됨.</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>설정된 중단점이 없습니다.</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>중단점:</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — 프로그램이 실행 중에 실제로 무엇을 하는지 조사합니다.&#10;&#10;- `/debug &lt;가설&gt;` — 중단점을 설정하고 실행한 뒤 상태를 읽어 판단합니다&#10;- `/debug` — 디버거가 지금 무엇을 하고 있는지 표시합니다&#10;- `/debug stop` — 디버깅 세션을 종료합니다</value></data>
 </root>

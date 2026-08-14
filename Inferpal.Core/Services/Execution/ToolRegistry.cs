@@ -34,6 +34,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private readonly ProjectMapService    _mapService;
     private readonly DocsIndexService     _docsIndex;
     private readonly OpenDocumentOverlay? _overlay;
+    private readonly IDebugSession?       _debug;
 
     public DiffInfo? ConsumeDiff() { var d = _pendingDiff; _pendingDiff = null; return d; }
 
@@ -41,9 +42,19 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// (<see cref="FileHistoryService.BeginRun"/>) and run <c>/undo-run</c>.</summary>
     public FileHistoryService History => _fileHistory;
 
+    /// <summary>
+    /// The debugger surface the two debug tools were built with, or <c>null</c> on a front-end that
+    /// has none. Exposed so <c>/debug</c> reports on the very session the model drives rather than
+    /// on a second one built beside it.
+    /// </summary>
+    public IDebugSession? Debug => _debug;
+
     /// <param name="overlay">Open-document mirror for dirty-buffer reads;
     /// null when the editor feeds no overlay (VS in-proc today).</param>
-    public ToolRegistry(IEditorSurface editor, IApprovalService approval, InferpalConfig config, ProjectIndexService indexService, IInferenceProvider client, ProjectMapService mapService, McpToolService mcp, DocsIndexService docsIndex, OpenDocumentOverlay? overlay = null)
+    /// <param name="debug">Debugger surface of the host editor; null when this front-end has none,
+    /// in which case the two debug tools are not registered at all — the model is never shown a
+    /// tool that can only answer that it is unavailable.</param>
+    public ToolRegistry(IEditorSurface editor, IApprovalService approval, InferpalConfig config, ProjectIndexService indexService, IInferenceProvider client, ProjectMapService mapService, McpToolService mcp, DocsIndexService docsIndex, OpenDocumentOverlay? overlay = null, IDebugSession? debug = null)
     {
         _config   = config;
         _approval = approval;
@@ -55,6 +66,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         _mapService   = mapService;
         _docsIndex    = docsIndex;
         _overlay      = overlay;
+        _debug        = debug;
 
         var history  = _fileHistory;
         // The approval service is passed so a build command coming from the workspace's
@@ -92,6 +104,17 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new SearchDocsTool(docsIndex, client, config));
         Register(new GenerateProjectMapTool(mapService));
 
+        // Roadmap §21. Registered only when the front-end can actually drive a debugger: a tool
+        // whose every answer is "unavailable here" costs prompt tokens on every turn and teaches a
+        // small model to keep trying. The step budget is per registry, i.e. per editor session, and
+        // is reset by each `start`.
+        if (debug is not null)
+        {
+            var budget = new DebugStepBudget();
+            Register(new DebugControlTool(debug, approval, budget, () => indexService.RootDir));
+            Register(new DebugInspectTool(debug, () => indexService.RootDir));
+        }
+
         // ⚠ No `delegate` tool here, and this one is closed rather than merely absent. It was built
         // and measured twice against gates registered before the code was written:
         //   §11 (2026-07-31) — 91 % of the main thread's prompt tokens saved, accuracy halved
@@ -120,8 +143,14 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// proposal is applied through <i>this</i> registry by the ordinary path.
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// ⚠ The debug surface is <b>not</b> carried over. A background task must not be able to launch
+    /// the user's program: starting a session is an execution, and deferring an execution to be
+    /// approved later is the blank cheque §9 refused. The sibling registry therefore has no debug
+    /// tools at all, rather than tools whose approval would be recorded as a proposal.
+    /// </remarks>
     public ToolRegistry WithApprovalService(IApprovalService approval) =>
-        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay);
+        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null);
 
     private IEnumerable<ITool> UserTools =>
         (_config.CustomTools ?? string.Empty)

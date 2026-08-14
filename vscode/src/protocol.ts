@@ -5,6 +5,12 @@ export interface InitializeParams {
   rootDir: string;
   locale?: string;
   clientName?: string;
+  /**
+   * This adapter serves the reverse `debug/*` requests. Declared rather than assumed: without it
+   * the host would register two debugger tools whose every call answers "method not found", and
+   * the model would pay for them on every turn.
+   */
+  debug?: boolean;
 }
 
 export interface InitializeResult {
@@ -255,4 +261,59 @@ export interface SettingsTab {
 export interface SettingsSchema {
   tabs: SettingsTab[];
   headerFields: SettingsField[];
+}
+
+// ── Reverse `debug/*` DTOs (host → editor), roadmap §21 ──────────────────────
+// Mirror of Inferpal.Host/HostProtocol.cs. Deliberately not a rendering of the Debug Adapter
+// Protocol: only what the Core's IDebugSession port needs crosses this wire, and values stay
+// opaque strings because the two editors' debuggers render them differently on purpose.
+
+export interface DebugBreakpointDto {
+  file: string;
+  line: number;
+  enabled: boolean;
+}
+
+export interface DebugBreakpointParams {
+  file: string;
+  line: number;
+}
+
+export interface DebugStepParams {
+  /** `over` | `into` | `out`. */
+  kind: string;
+}
+
+export interface DebugEvaluateParams {
+  expression: string;
+  /** Null = the top frame of the current stop. */
+  frameId?: number | null;
+}
+
+export interface DebugFrameDto {
+  id: number;
+  function: string;
+  file: string | null;
+  line: number | null;
+}
+
+export interface DebugVariableDto {
+  name: string;
+  type: string;
+  /** Rendered by the debug adapter. Present it; never parse it. */
+  value: string;
+}
+
+export interface DebugStopStateDto {
+  reason: string;
+  threadId: number;
+  frames: DebugFrameDto[];
+  locals: DebugVariableDto[];
+  exception?: string | null;
+}
+
+/** `debug/start` answer — three outcomes: a stop, a completed run (both null), or a failure. */
+export interface DebugStartDto {
+  state: DebugStopStateDto | null;
+  failure: string | null;
 }

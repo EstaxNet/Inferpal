@@ -289,6 +289,8 @@ Fortfahren?</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Löschen vom Benutzer abgebrochen.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} gelöscht</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Befehl vom Benutzer abgebrochen.</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>Debugsitzung starten für: {0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>Debugsitzung nicht gestartet (vom Benutzer abgelehnt).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Änderung anwenden auf: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Änderung vom Benutzer abgebrochen.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content in {0} nicht gefunden. Überprüfen Sie Leerzeichen, Zeilenumbrüche und Einrückung.</value></data>
@@ -928,4 +930,13 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Vorschlag nicht angewendet: **{0}** ist nicht im angenommenen Zustand (fehlt, oder existiert, wo eine neue Datei erwartet wurde).</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Vorschlag nicht angewendet: für **{0}** wurde keine prüfbare Änderung aufgezeichnet.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Vorschlag auf **{0}** angewendet. `/undo-run` deckt ihn ab wie jede andere Schreiboperation.</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>eine Laufzeit-Hypothese mit dem Debugger prüfen (`/debug [Hypothese]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>Aus dieser Editorsitzung ist kein Debugger erreichbar.</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>Debugsitzung beendet.</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**Debugger**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>Die Ausführung ist nicht angehalten.</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>Angehalten in {0}.</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>Es sind keine Haltepunkte gesetzt.</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Haltepunkte:</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — untersuchen, was das Programm zur Laufzeit tatsächlich tut.&#10;&#10;- `/debug &lt;Hypothese&gt;` — Haltepunkt setzen, starten und den Zustand lesen&#10;- `/debug` — zeigt, was der Debugger gerade tut&#10;- `/debug stop` — beendet die Debugsitzung</value></data>
 </root>

@@ -5,12 +5,14 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
 import { SettingsPanel } from './settingsPanel';
+import { DebugBridge } from './debugBridge';
 import { EditorBridge } from './editorBridge';
 import { HostClient } from './hostClient';
 import { FimProvider } from './inlineCompletions';
 
 let host: HostClient | undefined;
 let bridge: EditorBridge | undefined;
+let debugBridge: DebugBridge | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const output = vscode.window.createOutputChannel('Inferpal');
@@ -19,6 +21,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   bridge = new EditorBridge(context.secrets);
   context.subscriptions.push(bridge);
+
+  // Roadmap §21: this is what makes debug_control / debug_inspect exist for the model on this
+  // front-end. Created unconditionally — vscode.debug is always there — while whether *this*
+  // workspace can actually launch anything is answered at start time, in words the agent can use.
+  debugBridge = new DebugBridge(log);
+  context.subscriptions.push(debugBridge);
 
   const chatView = new ChatViewProvider(
     context,
@@ -170,6 +178,7 @@ async function startHost(
       },
     },
     bridge!,
+    debugBridge,
   );
 
   try {

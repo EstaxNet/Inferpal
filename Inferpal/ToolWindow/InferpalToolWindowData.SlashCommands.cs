@@ -228,6 +228,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Arena:       await HandleArenaCommandAsync(parts, ct);    break;
             case SlashCommandId.Tdd:         await HandleTddCommandAsync(parts, ct);      break;
             case SlashCommandId.Task:        await HandleTaskCommandAsync(parts);         break;
+            case SlashCommandId.Debug:       await HandleDebugCommandAsync(parts, ct);    break;
             case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
             case SlashCommandId.Xray:
             {
@@ -367,6 +368,30 @@ internal partial class InferpalToolWindowData
         }
 
         await ShowInfoAsync(result.Message);
+    }
+
+    /// <summary>
+    /// <c>/debug</c> (roadmap §21) — reports the debugger's state, or opens the hypothesis loop.
+    /// </summary>
+    /// <remarks>
+    /// The command drives nothing itself: a hypothesis becomes an ordinary agent turn, which
+    /// reaches the debugger only through <c>debug_control</c> / <c>debug_inspect</c> — and so
+    /// through the approval on the single action that executes the user's program. A shortcut here
+    /// would be a second way in, beside the one the consent model was written for.
+    /// </remarks>
+    private async Task HandleDebugCommandAsync(string[] parts, CancellationToken ct)
+    {
+        var result = await Services.Commands.DebugCommandHandler.HandleAsync(_tools.Debug, parts, ct);
+
+        if (result.SendAsPrompt is { } prompt)
+        {
+            await SendCoreAsync(prompt, oneTimeModel: null, attachments: [], ct: ct, clearPrompt: true);
+            return;
+        }
+
+        // Every reporting path sets a message; matching rather than asserting keeps the two
+        // branches of the result exclusive without a null-forgiving operator.
+        if (result.Message is { } message) await ShowInfoAsync(message);
     }
 
     /// <summary>Current content of a proposed file, or null when it is not there.</summary>

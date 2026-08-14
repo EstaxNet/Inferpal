@@ -53,6 +53,38 @@ public class HostServerTests
             LastApprovalMessage = note.Message;
             return ApprovalAnswer;
         }
+
+        // ── Debugger adapter (roadmap §21) ────────────────────────────────────
+        // Stands in for the TypeScript DebugBridge: the point of these is that the host's
+        // RpcDebugSession really crosses the wire, not that VS Code's debugger works.
+
+        public readonly List<string> DebugCalls = [];
+        public object? StartAnswer = new { state = (object?)null, failure = (string?)null };
+        public object? PausedState;
+
+        [JsonRpcMethod("debug/listBreakpoints")]
+        public object[] ListBreakpoints()
+        {
+            DebugCalls.Add("listBreakpoints");
+            return [new { file = @"C:\ws\Program.cs", line = 14, enabled = true }];
+        }
+
+        [JsonRpcMethod("debug/state")]
+        public object? DebugState()
+        {
+            DebugCalls.Add("state");
+            return PausedState;
+        }
+
+        [JsonRpcMethod("debug/start")]
+        public object? DebugStart()
+        {
+            DebugCalls.Add("start");
+            return StartAnswer;
+        }
+
+        [JsonRpcMethod("debug/stop")]
+        public void DebugStop() => DebugCalls.Add("stop");
     }
 
     private sealed class Harness : IDisposable
@@ -63,9 +95,10 @@ public class HostServerTests
         public required FakeInferenceProvider Fake      { get; init; }
         public required ClientTarget          Target    { get; init; }
 
-        public Task<InitializeResult> InitializeAsync(string? locale = null, string? rootDir = null) =>
+        public Task<InitializeResult> InitializeAsync(string? locale = null, string? rootDir = null,
+                                                      bool debug = false) =>
             Client.InvokeWithParameterObjectAsync<InitializeResult>(
-                "initialize", new { rootDir = rootDir ?? Path.GetTempPath(), locale });
+                "initialize", new { rootDir = rootDir ?? Path.GetTempPath(), locale, debug });
 
         public void Dispose()
         {
@@ -1132,5 +1165,87 @@ public class HostServerTests
         Assert.Contains(list, c => c.Command == "/help" && c.Hint.Length > 0);
         Assert.Contains(list, c => c.Command == "/xray");
         Assert.Contains(list, c => c.Command == "/standup" && c.Hint == "Summarize my day");
+    }
+
+    // ── Debugger (roadmap §21, tranche 3) ──────────────────────────────────────
+
+    [Fact]
+    public async Task WithoutADeclaredDebugger_TheDebugToolsAreNotOffered()
+    {
+        // An adapter that does not serve `debug/*` answers "method not found" to every call, so a
+        // registered tool could only ever fail — while still costing tokens in the definitions sent
+        // on every turn. The declaration in the handshake is what decides.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var names = h.Server.CurrentSession!.Tools.Definitions.Select(d => d.Function.Name).ToList();
+
+        Assert.DoesNotContain("debug_control", names);
+        Assert.DoesNotContain("debug_inspect", names);
+    }
+
+    [Fact]
+    public async Task WithADeclaredDebugger_TheToolsExist_AndReallyReachTheAdapter()
+    {
+        using var h = CreateHarness();
+        h.Target.PausedState = new
+        {
+            reason   = "breakpoint",
+            threadId = 0,
+            frames   = new[] { new { id = 3, function = "Program.Compute", file = @"C:\ws\Program.cs", line = 14 } },
+            locals   = new[] { new { name = "total", type = "int", value = "106" } },
+        };
+        await h.InitializeAsync(debug: true).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var names = h.Server.CurrentSession!.Tools.Definitions.Select(d => d.Function.Name).ToList();
+        Assert.Contains("debug_control", names);
+        Assert.Contains("debug_inspect", names);
+
+        // `/debug` with no argument reports; the answers must come from the adapter, over the wire.
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/debug" });
+
+        Assert.True(result.Handled);
+        Assert.Contains(@"C:\ws\Program.cs:14", result.Markdown);
+        Assert.Contains("Program.Compute", result.Markdown);   // came back over the wire, not invented
+        Assert.Contains("state", h.Target.DebugCalls);
+        Assert.Contains("listBreakpoints", h.Target.DebugCalls);
+    }
+
+    [Fact]
+    public async Task DebugStart_ThatTheAdapterRefuses_IsNotReportedAsACompletedRun()
+    {
+        // The VS Code case this exists for: a workspace with no launch configuration. "It ran and
+        // never hit your breakpoint" and "it never started" lead to opposite next moves, and only
+        // one of them is true.
+        using var h = CreateHarness();
+        h.Target.ApprovalAnswer = 1;                       // starting executes: it is approved here
+        h.Target.StartAnswer = new { state = (object?)null, failure = "No launch configuration in this workspace." };
+        await h.InitializeAsync(debug: true).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var output = await h.Server.CurrentSession!.Tools.ExecuteAsync(
+            "debug_control", System.Text.Json.JsonDocument.Parse("""{"action":"start"}""").RootElement,
+            CancellationToken.None);
+
+        Assert.Contains("did not start", output);
+        Assert.Contains("No launch configuration", output);
+        Assert.DoesNotContain("ran to completion", output);
+    }
+
+    [Fact]
+    public async Task AHypothesisComesBackAsAPromptToRun_NotAsADebuggerTheCommandDrivesItself()
+    {
+        // The command must not reach the debugger on its own: the loop goes through the tools, and
+        // therefore through the approval on the one action that runs the user's program.
+        using var h = CreateHarness();
+        await h.InitializeAsync(debug: true).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/debug why is total 106 instead of 105" });
+
+        var effect = Assert.Single(result.Effects!);
+        Assert.Equal("sendAsPrompt", effect.Kind);
+        Assert.Contains("why is total 106 instead of 105", effect.Value);
+        Assert.Empty(h.Target.DebugCalls);
     }
 }

@@ -76,6 +76,34 @@ public class DocCountersTests
         return dir!.FullName;
     }
 
+    /// <summary>
+    /// A front-end that serves a debugger. Passed on purpose: the two <c>/debug</c> tools are
+    /// registered only where an <see cref="Services.Debugging.IDebugSession"/> exists, and since
+    /// tranche 3 of §21 that is both front-ends — Visual Studio through the in-process driver, VS
+    /// Code through the reverse RPC. The README's number describes what a user is offered, so it
+    /// counts them.
+    /// </summary>
+    private sealed class NullDebugSession : Services.Debugging.IDebugSession
+    {
+        public bool IsAvailable => true;
+        public Task<Services.Debugging.DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct) =>
+            Task.FromResult<Services.Debugging.DebugBreakpointInfo?>(null);
+        public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct) => Task.FromResult(false);
+        public Task<IReadOnlyList<Services.Debugging.DebugBreakpointInfo>> ListBreakpointsAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<Services.Debugging.DebugBreakpointInfo>>([]);
+        public Task<Services.Debugging.DebugStartResult> StartAsync(CancellationToken ct) =>
+            Task.FromResult(Services.Debugging.DebugStartResult.RanToCompletion);
+        public Task<Services.Debugging.DebugStopState?> ContinueAsync(CancellationToken ct) =>
+            Task.FromResult<Services.Debugging.DebugStopState?>(null);
+        public Task<Services.Debugging.DebugStopState?> StepAsync(Services.Debugging.DebugStepKind kind, CancellationToken ct) =>
+            Task.FromResult<Services.Debugging.DebugStopState?>(null);
+        public Task<Services.Debugging.DebugStopState?> GetStateAsync(CancellationToken ct) =>
+            Task.FromResult<Services.Debugging.DebugStopState?>(null);
+        public Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct) =>
+            Task.FromResult<string?>(null);
+        public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
+    }
+
     [Fact]
     public void Readme_BuiltInToolCount_MatchesTheRegistry()
     {
@@ -88,7 +116,8 @@ public class DocCountersTests
         var index    = new ProjectIndexService(client, config, new LspSemanticProvider());
         var registry = new ToolRegistry(editor, approval, config, index, client,
                                         new ProjectMapService(editor), new McpToolService(config, approval),
-                                        new DocsIndexService(client, config), new OpenDocumentOverlay());
+                                        new DocsIndexService(client, config), new OpenDocumentOverlay(),
+                                        new NullDebugSession());
 
         // Bold or plain — the two repos phrase the claim differently.
         var path   = Path.Combine(RepoRoot(), "README.md");

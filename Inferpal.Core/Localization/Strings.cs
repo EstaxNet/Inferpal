@@ -462,6 +462,7 @@ internal static class Strings
     public static string WriteCancelled    => Get(nameof(WriteCancelled));
     public static string DeleteCancelled   => Get(nameof(DeleteCancelled));
     public static string RunCancelled      => Get(nameof(RunCancelled));
+    public static string DebugStartCancelled => Get(nameof(DebugStartCancelled));
     public static string DiagNoProject     => Get(nameof(DiagNoProject));
     public static string ActiveDocNoContext => Get(nameof(ActiveDocNoContext));
     public static string ActiveDocNoFile   => Get(nameof(ActiveDocNoFile));
@@ -492,6 +493,21 @@ internal static class Strings
 
     public static string DiffConfirm(string path) =>
         string.Format(Get(nameof(DiffConfirm)), path);
+
+    public static string DebugStartConfirm(string workspace) =>
+        string.Format(Get(nameof(DebugStartConfirm)), workspace);
+
+    // ── /debug (roadmap §21) ───────────────────────────────────────────────
+    public static string DebugUnavailable         => Get(nameof(DebugUnavailable));
+    public static string DebugStopped             => Get(nameof(DebugStopped));
+    public static string DebugUsage               => Get(nameof(DebugUsage));
+    public static string DebugStatusHeader        => Get(nameof(DebugStatusHeader));
+    public static string DebugStatusNotPaused     => Get(nameof(DebugStatusNotPaused));
+    public static string DebugStatusNoBreakpoints => Get(nameof(DebugStatusNoBreakpoints));
+    public static string DebugStatusBreakpoints   => Get(nameof(DebugStatusBreakpoints));
+
+    public static string DebugStatusPaused(string location) =>
+        string.Format(Get(nameof(DebugStatusPaused)), location);
 
     public static string DiffCancelled => Get(nameof(DiffCancelled));
 
@@ -865,6 +881,7 @@ internal static class Strings
 
     // ── /task command (background agent tasks) ─────────────────────────────────
     public static string SlashHintTask                       => Get(nameof(SlashHintTask));
+    public static string SlashHintDebug                      => Get(nameof(SlashHintDebug));
     public static string TaskSubmitted(string id, string objective) =>
         string.Format(Get(nameof(TaskSubmitted)), id, objective);
     public static string TaskQueueFull(int max)              => string.Format(Get(nameof(TaskQueueFull)), max);

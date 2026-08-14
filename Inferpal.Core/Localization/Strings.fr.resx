@@ -289,6 +289,8 @@ Continuer ?</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Suppression annulée par l'utilisateur.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} supprimé</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Commande annulée par l'utilisateur.</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>Démarrer une session de débogage pour : {0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>Session de débogage non démarrée (refusée par l'utilisateur).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Appliquer la modification à : {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Modification annulée par l'utilisateur.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content introuvable dans {0}. Vérifiez espaces, retours à la ligne et indentation.</value></data>
@@ -928,4 +930,13 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Proposition non appliquée : **{0}** n'est pas dans l'état qu'elle supposait (absent, ou présent là où elle attendait un fichier neuf).</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Proposition non appliquée : aucun changement relisible n'a été enregistré pour **{0}**.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Proposition appliquée à **{0}**. `/undo-run` la couvre comme n'importe quelle autre écriture.</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>enquêter à l'exécution avec le débogueur (`/debug [hypothèse]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>Aucun débogueur n'est joignable depuis cette session de l'éditeur.</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>Session de débogage arrêtée.</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**Débogueur**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>L'exécution n'est pas en pause.</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>En pause dans {0}.</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>Aucun point d'arrêt n'est posé.</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Points d'arrêt :</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — enquêter sur ce que le programme fait réellement, à l'exécution.&#10;&#10;- `/debug &lt;hypothèse&gt;` — pose un point d'arrêt, lance, et lit l'état pour trancher&#10;- `/debug` — montre ce que fait le débogueur en ce moment&#10;- `/debug stop` — termine la session de débogage</value></data>
 </root>

@@ -9,7 +9,17 @@ namespace Inferpal.Host;
 /// <param name="RootDir">Workspace root: file-tool confinement + `.inferpal/` project layers.</param>
 /// <param name="Locale">Editor display language (e.g. <c>fr</c>, <c>zh-cn</c>); null keeps the OS culture.</param>
 /// <param name="ClientName">Free-form adapter identity for diagnostics (e.g. <c>vscode/1.102</c>).</param>
-internal sealed record InitializeParams(string RootDir, string? Locale = null, string? ClientName = null);
+/// <param name="Debug">
+/// The adapter serves the reverse <c>debug/*</c> requests. Declared rather than assumed: an older
+/// extension talking to a newer host would answer "method not found" to every one of them, and the
+/// two debugger tools would then be offered to the model as capabilities that always fail. Absent
+/// (the default) means no debugger, and the tools are simply not registered.
+/// </param>
+internal sealed record InitializeParams(
+    string  RootDir,
+    string? Locale     = null,
+    string? ClientName = null,
+    bool    Debug      = false);
 
 /// <summary>What the adapter learns about the backend at startup (gates UI features).</summary>
 internal sealed record InitializeResult(
@@ -52,6 +62,46 @@ internal sealed record ActiveDocumentDto(string? Path, string? Text);
 
 /// <summary>Reverse `editor/replaceSelection` answer from the adapter.</summary>
 internal sealed record EditResultDto(string? Path, bool ReplacedSelection);
+
+// ── Reverse `debug/*` requests (host → adapter), roadmap §21 ─────────────────
+// Deliberately a flat mirror of the Core's Services/Debugging port rather than a rendering of
+// the Debug Adapter Protocol: the adapter speaks DAP on its side, and what crosses this wire is
+// only what IDebugSession needs. Values stay opaque strings — the §21 probe measured the same
+// list rendered `Count = 3` by Visual Studio and `(3) [21, 42, 43]` by VS Code, so parsing one
+// of them would break the other.
+
+/// <summary>Reverse `debug/addBreakpoint`, `debug/removeBreakpoint` parameters.</summary>
+internal sealed record DebugBreakpointParams(string File, int Line);
+
+/// <summary>A breakpoint as the adapter's debugger bound it.</summary>
+internal sealed record DebugBreakpointDto(string File, int Line, bool Enabled);
+
+/// <summary>Reverse `debug/step` parameter: <c>over</c> | <c>into</c> | <c>out</c>.</summary>
+internal sealed record DebugStepParams(string Kind);
+
+/// <summary>Reverse `debug/evaluate` parameters. <paramref name="FrameId"/> null = top frame.</summary>
+internal sealed record DebugEvaluateParams(string Expression, int? FrameId);
+
+/// <summary>One call-stack frame, top of stack first.</summary>
+internal sealed record DebugFrameDto(int Id, string Function, string? File, int? Line);
+
+/// <summary>One variable of the current frame; <paramref name="Value"/> is the adapter's rendering.</summary>
+internal sealed record DebugVariableDto(string Name, string Type, string Value);
+
+/// <summary>Where and why execution is paused.</summary>
+internal sealed record DebugStopStateDto(
+    string?                  Reason,
+    int                      ThreadId,
+    List<DebugFrameDto>?     Frames,
+    List<DebugVariableDto>?  Locals,
+    string?                  Exception = null);
+
+/// <summary>
+/// Answer to `debug/start`: the three outcomes of asking a debugger to run, kept apart on the
+/// wire because that is the whole point of <c>DebugStartResult</c>. A workspace with no launch
+/// configuration is the common case in VS Code, and it is neither a stop nor a completed run.
+/// </summary>
+internal sealed record DebugStartDto(DebugStopStateDto? State, string? Failure);
 
 /// <summary>`index/status` snapshot.</summary>
 internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string RootDir);

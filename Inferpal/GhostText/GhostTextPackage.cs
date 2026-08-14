@@ -29,6 +29,7 @@ internal sealed class GhostTextPackage : AsyncPackage
     private VsBuildEventHandler? _buildEventHandler;
     private VsSolutionTracker?   _solutionTracker;
     private VsDebuggerTracker?   _debuggerTracker;
+    private VsDebugDriver?       _debugDriver;
 
     protected override async Task InitializeAsync(CancellationToken ct, IProgress<ServiceProgressData> progress)
     {
@@ -75,11 +76,22 @@ internal sealed class GhostTextPackage : AsyncPackage
                 _debuggerTracker = new VsDebuggerTracker(shellDbg, dte);
         }
         catch { /* non-critical */ }
+
+        try
+        {
+            // The reverse leg (roadmap §21): serves the host's debugger commands so `/debug` can
+            // set breakpoints, run and step. Requires the DTE — without it there is nothing to
+            // drive, and the host is simply never told a driver exists.
+            if (shellDbg is not null && dte is not null)
+                _debugDriver = new VsDebugDriver(shellDbg, dte);
+        }
+        catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.DebugDriver", ex); }
     }
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing && (_buildEventHandler is not null || _solutionTracker is not null || _debuggerTracker is not null))
+        if (disposing && (_buildEventHandler is not null || _solutionTracker is not null
+                          || _debuggerTracker is not null || _debugDriver is not null))
         {
             try
             {
@@ -93,6 +105,8 @@ internal sealed class GhostTextPackage : AsyncPackage
                     _solutionTracker = null;
                     _debuggerTracker?.Dispose();
                     _debuggerTracker = null;
+                    _debugDriver?.Dispose();
+                    _debugDriver = null;
                 });
             }
             catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.PackageDispose", ex); }

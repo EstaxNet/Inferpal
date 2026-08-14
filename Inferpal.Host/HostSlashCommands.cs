@@ -422,6 +422,18 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, result.Message);
                 }
 
+                case SlashCommandId.Debug:
+                {
+                    // Roadmap §21. The handler never drives the debugger itself: it either reports,
+                    // or hands the model an instruction that goes through debug_control /
+                    // debug_inspect — and therefore through the approval on the one action that
+                    // executes the user's program.
+                    var result = await DebugCommandHandler.HandleAsync(s.Tools.Debug, parts, cts.Token);
+                    return result.SendAsPrompt is { } prompt
+                        ? new SlashCommandResult(true, null, [new SlashEffectDto("sendAsPrompt", prompt)])
+                        : new SlashCommandResult(true, result.Message);
+                }
+
                 case SlashCommandId.Commit:
                 {
                     // Proposes only: the message lands in the input box behind `/commit-exec`, so

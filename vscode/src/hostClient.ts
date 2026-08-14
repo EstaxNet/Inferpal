@@ -4,9 +4,13 @@
 import * as cp from 'child_process';
 import * as rpc from 'vscode-jsonrpc/node';
 import type { CancellationToken } from 'vscode-jsonrpc';
+import type { DebugDelegate } from './debugBridge';
 import {
   ActiveDocumentDto,
   ApprovalNote,
+  DebugBreakpointParams,
+  DebugEvaluateParams,
+  DebugStepParams,
   BackendStatusResult,
   ChatSendParams,
   ChatSendResult,
@@ -92,6 +96,12 @@ export class HostClient {
   constructor(
     private readonly options: HostClientOptions,
     private readonly delegate: EditorDelegate,
+    /**
+     * Optional debugger surface (roadmap §21). Its presence is what the host is told in the
+     * handshake, and what decides whether `debug_control` / `debug_inspect` exist for the model at
+     * all — an editor that cannot drive a debugger must not advertise two tools that always fail.
+     */
+    private readonly debugDelegate?: DebugDelegate,
   ) {}
 
   get isRunning(): boolean {
@@ -154,6 +164,20 @@ export class HostClient {
     conn.onRequest('secrets/unprotect', (p: { key: string; value: string }) =>
       this.delegate.unprotectSecret(p.key, p.value));
 
+    // ── Reverse debugger requests (roadmap §21) ─────────────────────────────
+    const debug = this.debugDelegate;
+    if (debug) {
+      conn.onRequest('debug/addBreakpoint', (p: DebugBreakpointParams) => debug.addBreakpoint(p.file, p.line));
+      conn.onRequest('debug/removeBreakpoint', (p: DebugBreakpointParams) => debug.removeBreakpoint(p.file, p.line));
+      conn.onRequest('debug/listBreakpoints', () => debug.listBreakpoints());
+      conn.onRequest('debug/start', () => debug.start());
+      conn.onRequest('debug/continue', () => debug.continue());
+      conn.onRequest('debug/step', (p: DebugStepParams) => debug.step(p));
+      conn.onRequest('debug/state', () => debug.state());
+      conn.onRequest('debug/evaluate', (p: DebugEvaluateParams) => debug.evaluate(p));
+      conn.onRequest('debug/stop', () => debug.stop());
+    }
+
     // ── Streamed chat notifications ─────────────────────────────────────────
     conn.onNotification('chat/token', (n: TextNote) => this.events.onToken?.(n.text));
     conn.onNotification('chat/thinking', (n: TextNote) => this.events.onThinking?.(n.text));
@@ -172,6 +196,7 @@ export class HostClient {
       rootDir: this.options.rootDir,
       locale: this.options.locale,
       clientName: this.options.clientName ?? 'vscode',
+      debug: this.debugDelegate !== undefined,
     };
     this.info = await conn.sendRequest<InitializeResult>('initialize', params);
     this.options.log?.(

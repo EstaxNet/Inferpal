@@ -289,6 +289,8 @@ Ollama 启动后，点击标题栏的 ↻ 重试按钮。</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>用户已取消删除。</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} 已删除</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>命令已被用户取消。</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>为以下项启动调试会话：{0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>未启动调试会话（用户已拒绝）。</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>应用更改到：{0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>用户已取消更改。</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>在 {0} 中未找到 old_content。请检查空格、换行和缩进。</value></data>
@@ -928,4 +930,13 @@ ollama serve
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>提议未应用：**{0}** 不处于它假设的状态（缺失，或在预期新建文件的位置已存在）。</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>提议未应用：没有为 **{0}** 记录可供审阅的更改。</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>提议已应用到 **{0}**。`/undo-run` 会像其他写入一样覆盖它。</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>用调试器验证运行时假设 (`/debug [假设]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>此编辑器会话无法访问调试器。</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>调试会话已停止。</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**调试器**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>执行未暂停。</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>已在 {0} 暂停。</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>未设置断点。</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>断点：</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — 在运行时查明程序实际做了什么。&#10;&#10;- `/debug &lt;假设&gt;` — 设置断点、运行并读取状态以作判断&#10;- `/debug` — 显示调试器当前的状态&#10;- `/debug stop` — 结束调试会话</value></data>
 </root>

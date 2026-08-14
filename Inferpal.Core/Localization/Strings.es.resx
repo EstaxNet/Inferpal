@@ -289,6 +289,8 @@ Haz clic en ↻ Reintentar en el encabezado cuando Ollama esté en ejecución.</
   <data name="DeleteCancelled" xml:space="preserve"><value>Eliminación cancelada por el usuario.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} eliminado</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Comando cancelado por el usuario.</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>Iniciar una sesión de depuración para: {0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>Sesión de depuración no iniciada (rechazada por el usuario).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Aplicar cambio a: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Cambio cancelado por el usuario.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content no encontrado en {0}. Verifique espacios, saltos de línea y sangría.</value></data>
@@ -928,4 +930,13 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Propuesta no aplicada: **{0}** no está en el estado que suponía (falta, o existe donde esperaba un archivo nuevo).</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Propuesta no aplicada: no se registró ningún cambio revisable para **{0}**.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Propuesta aplicada a **{0}**. `/undo-run` la cubre como cualquier otra escritura.</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>investigar una hipótesis en ejecución con el depurador (`/debug [hipótesis]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>No hay ningún depurador accesible desde esta sesión del editor.</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>Sesión de depuración detenida.</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**Depurador**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>La ejecución no está pausada.</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>Pausado en {0}.</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>No hay puntos de interrupción definidos.</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Puntos de interrupción:</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — investigar lo que el programa hace realmente, en ejecución.&#10;&#10;- `/debug &lt;hipótesis&gt;` — pone un punto de interrupción, ejecuta y lee el estado&#10;- `/debug` — muestra lo que está haciendo el depurador&#10;- `/debug stop` — termina la sesión de depuración</value></data>
 </root>

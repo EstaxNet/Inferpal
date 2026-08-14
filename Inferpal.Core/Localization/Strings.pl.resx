@@ -289,6 +289,8 @@ Kontynuować?</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Usunięcie anulowane przez użytkownika.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} usunięto</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Polecenie anulowane przez użytkownika.</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>Rozpocząć sesję debugowania dla: {0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>Sesja debugowania nie została uruchomiona (odrzucona przez użytkownika).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Zastosuj zmianę do: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Zmiana anulowana przez użytkownika.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content nie znaleziony w {0}. Sprawdź spacje, podziały wierszy i wcięcia.</value></data>
@@ -928,4 +930,13 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Propozycja nie została zastosowana: **{0}** nie jest w założonym stanie (brak, albo istnieje tam, gdzie oczekiwano nowego pliku).</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Propozycja nie została zastosowana: dla **{0}** nie zapisano żadnej możliwej do przejrzenia zmiany.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Propozycja zastosowana do **{0}**. `/undo-run` obejmuje ją jak każdy inny zapis.</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>zbadaj hipotezę w czasie wykonania debugerem (`/debug [hipoteza]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>Z tej sesji edytora żaden debuger nie jest osiągalny.</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>Sesja debugowania zatrzymana.</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**Debuger**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>Wykonanie nie jest wstrzymane.</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>Wstrzymano w {0}.</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>Nie ustawiono żadnych pułapek.</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Pułapki:</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — zbadaj, co program naprawdę robi w czasie wykonania.&#10;&#10;- `/debug &lt;hipoteza&gt;` — ustaw pułapkę, uruchom i odczytaj stan&#10;- `/debug` — pokazuje, co robi teraz debuger&#10;- `/debug stop` — kończy sesję debugowania</value></data>
 </root>

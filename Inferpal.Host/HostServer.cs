@@ -97,8 +97,12 @@ internal sealed partial class HostServer : IDisposable
             : new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect);
         var mcp      = new McpToolService(config, approval, clientFactory: null, tokenStore: tokens);
         var docs     = new DocsIndexService(client, config);
+        // Registered only when the adapter declared `debug/*` support: an unimplemented handler
+        // would answer "method not found" to every call, and the model would spend tokens each turn
+        // on two tools that can only fail.
+        var debug    = p.Debug ? new RpcDebugSession(rpc, declared: true) : null;
         var tools    = new ToolRegistry(editor, approval, config, index, client,
-                                        new ProjectMapService(editor), mcp, docs, overlay);
+                                        new ProjectMapService(editor), mcp, docs, overlay, debug);
 
         // Pin the file-tool confinement root even when RAG never indexes; the adapter
         // opts into indexing explicitly via `index/start` (VS Code shows its own gate).

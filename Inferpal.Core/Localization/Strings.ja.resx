@@ -289,6 +289,8 @@ Ollama が起動したら、ヘッダーの ↻ 再試行 をクリックして�
   <data name="DeleteCancelled" xml:space="preserve"><value>ユーザーによって削除がキャンセルされました。</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} を削除しました</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>ユーザーによってコマンドがキャンセルされました。</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>デバッグ セッションを開始しますか: {0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>デバッグ セッションは開始されませんでした (ユーザーが拒否)。</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>変更を適用：{0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>ユーザーによって変更がキャンセルされました。</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>{0} で old_content が見つかりません。スペース、改行、インデントを確認してください。</value></data>
@@ -928,4 +930,13 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>提案は適用されませんでした: **{0}** が前提の状態ではありません (存在しない、または新規作成を想定していた場所に存在する)。</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>提案は適用されませんでした: **{0}** について確認可能な変更が記録されていません。</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>**{0}** に提案を適用しました。他の書き込みと同様に `/undo-run` で戻せます。</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>デバッガーで実行時の仮説を検証する (`/debug [仮説]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>このエディター セッションからデバッガーに接続できません。</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>デバッグ セッションを停止しました。</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**デバッガー**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>実行は一時停止していません。</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>{0} で停止中。</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>ブレークポイントは設定されていません。</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>ブレークポイント:</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — 実行時にプログラムが実際に何をしているかを調べます。&#10;&#10;- `/debug &lt;仮説&gt;` — ブレークポイントを置き、実行し、状態を読んで判定します&#10;- `/debug` — デバッガーの現在の状態を表示します&#10;- `/debug stop` — デバッグ セッションを終了します</value></data>
 </root>

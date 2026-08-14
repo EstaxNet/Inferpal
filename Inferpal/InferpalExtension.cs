@@ -82,6 +82,10 @@ public class InferpalExtension : Extension
         services.AddSingleton<LspSemanticProvider>();
         services.AddSingleton<McpToolService>();
         services.AddSingleton<DocsIndexService>();
+        // Roadmap §21. Registering it makes the two debug tools appear in the registry; the
+        // session itself answers "unavailable" until an in-process driver advertises itself, so a
+        // devenv whose package failed to load degrades to no debugger rather than to a hang.
+        services.AddSingleton<Services.Debugging.IDebugSession, Services.Debugging.SignalDebugSession>();
         services.AddSingleton<ToolRegistry>();
         services.AddSingleton<ModelLifetimeService>();
         services.AddSingleton<VsBuildMonitor>();

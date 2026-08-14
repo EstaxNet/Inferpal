@@ -6,11 +6,24 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
+/// Marks the tests that repoint <see cref="InferpalConfig.OverridePathForTests"/>, which is
+/// <b>static</b>: while they run, every other test's <c>Config.Save()</c> — <c>/model</c> and the
+/// settings RPC do call it — lands on their file and drops the cache they are asserting on. xUnit
+/// parallelises across collections, so the isolation has to be declared, not assumed.
+/// </summary>
+[CollectionDefinition(GlobalConfigPathCollection.Name, DisableParallelization = true)]
+public sealed class GlobalConfigPathCollection
+{
+    public const string Name = "global-config-path";
+}
+
+/// <summary>
 /// <see cref="InferpalConfig.Load"/> sits on hot paths — the ghost-text controller calls it on
 /// every keystroke — so it caches the parse and invalidates on the file's write stamp. These tests
 /// pin both halves: the cache must actually be reused, and it must never serve stale values after
 /// a save.
 /// </summary>
+[Collection(GlobalConfigPathCollection.Name)]
 public class ConfigLoadCacheTests : IDisposable
 {
     private readonly string? _previous = InferpalConfig.OverridePathForTests;

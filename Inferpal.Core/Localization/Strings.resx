@@ -289,6 +289,8 @@ Continue?</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Delete cancelled by user.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} deleted</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Command cancelled by user.</value></data>
+  <data name="DebugStartConfirm" xml:space="preserve"><value>Start a debugging session for: {0}</value></data>
+  <data name="DebugStartCancelled" xml:space="preserve"><value>Debugging session not started (declined by user).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Apply change to: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Change cancelled by user.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content not found in {0}. Check spaces, line breaks and indentation.</value></data>
@@ -927,4 +929,13 @@ ollama serve
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Proposal not applied: **{0}** is not in the state it assumed (missing, or present where it expected a new file).</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Proposal not applied: no reviewable change was recorded for **{0}**.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Proposal applied to **{0}**. `/undo-run` covers it like any other write.</value></data>
+  <data name="SlashHintDebug" xml:space="preserve"><value>investigate a runtime hypothesis with the debugger (`/debug [hypothesis]`)</value></data>
+  <data name="DebugUnavailable" xml:space="preserve"><value>No debugger is reachable from this editor session.</value></data>
+  <data name="DebugStopped" xml:space="preserve"><value>Debugging session stopped.</value></data>
+  <data name="DebugStatusHeader" xml:space="preserve"><value>**Debugger**</value></data>
+  <data name="DebugStatusNotPaused" xml:space="preserve"><value>Execution is not paused.</value></data>
+  <data name="DebugStatusPaused" xml:space="preserve"><value>Paused in {0}.</value></data>
+  <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>No breakpoints are set.</value></data>
+  <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Breakpoints:</value></data>
+  <data name="DebugUsage" xml:space="preserve"><value>**/debug** — investigate what the program actually does, at runtime.&#10;&#10;- `/debug &lt;hypothesis&gt;` — set a breakpoint, run, and read the state to settle it&#10;- `/debug` — show what the debugger is currently doing&#10;- `/debug stop` — end the debugging session</value></data>
 </root>
