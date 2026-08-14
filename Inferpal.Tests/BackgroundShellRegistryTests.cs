@@ -54,17 +54,26 @@ public class BackgroundShellRegistryTests
     public async Task Poll_ReturnsOnlyWhatIsNewSinceThePreviousPoll()
     {
         using var registry = new BackgroundShellRegistry();
-        var id = registry.Start("Write-Output 'one'; Start-Sleep -Milliseconds 400; Write-Output 'two'",
-                                "echo twice", Path.GetTempPath());
+        // "two" is gated on a file the test creates, not on a fixed sleep: on a busy CI runner a
+        // 400 ms window was short enough for both lines to land in the very first poll.
+        var gate = Path.Combine(Path.GetTempPath(), $"inferpal-bg-gate-{Guid.NewGuid():N}");
+        var id = registry.Start(
+            $"Write-Output 'one'; while (-not (Test-Path '{gate}')) {{ Start-Sleep -Milliseconds 25 }}; Write-Output 'two'",
+            "echo twice", Path.GetTempPath());
 
-        var first = await PollUntilAsync(registry, id, out_ => out_.Contains("one"));
-        Assert.Contains("one", first.Output);
-        Assert.DoesNotContain("two", first.Output);
+        try
+        {
+            var first = await PollUntilAsync(registry, id, out_ => out_.Contains("one"));
+            Assert.Contains("one", first.Output);
+            Assert.DoesNotContain("two", first.Output);
 
-        // The next poll only carries what appeared since — "one" was already drained.
-        var second = await PollUntilAsync(registry, id, out_ => out_.Contains("two"));
-        Assert.Contains("two", second.Output);
-        Assert.DoesNotContain("one", second.Output);
+            // The next poll only carries what appeared since — "one" was already drained.
+            File.WriteAllText(gate, "");
+            var second = await PollUntilAsync(registry, id, out_ => out_.Contains("two"));
+            Assert.Contains("two", second.Output);
+            Assert.DoesNotContain("one", second.Output);
+        }
+        finally { try { File.Delete(gate); } catch { } }
     }
 
     [Fact]
