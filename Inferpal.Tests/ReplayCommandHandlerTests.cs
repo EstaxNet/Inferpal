@@ -1,3 +1,4 @@
+using System.IO;
 using Inferpal.Localization;
 using Inferpal.Services.Commands;
 using Xunit;
@@ -64,7 +65,7 @@ public class ReplayCommandHandlerTests
         var text = ReplayCommandHandler.Handle([run], NoArgs, root: TestPaths.P(@"C:\proj"));
 
         Assert.Contains("1. `read_file`", text);
-        Assert.Contains(@"Services\A.cs", text);          // absolute path relativised to root
+        Assert.Contains(Path.Combine("Services", "A.cs"), text);   // absolute path relativised to root
         Assert.Contains("85 ms", text);
         Assert.Contains("2. `run_command` dotnet build", text);
         Assert.True(text.Contains("2.3 s") || text.Contains("2,3 s"),   // decimal separator is culture-dependent
