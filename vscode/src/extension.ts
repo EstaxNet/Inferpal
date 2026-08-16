@@ -159,6 +159,17 @@ async function startHost(
     return;
   }
 
+  // The VSIX is a zip built on a Windows CI runner: the bundled host's exec bit does not
+  // survive packaging, so a fresh install on Linux/macOS would spawn straight into EACCES (§23).
+  // Re-asserting the bit is idempotent; a failure here surfaces as the spawn error right below.
+  if (process.platform !== 'win32') {
+    try {
+      fs.chmodSync(hostPath, 0o755);
+    } catch {
+      // Best-effort — e.g. a read-only hostPath pointed at by the user setting.
+    }
+  }
+
   const client = new HostClient(
     {
       hostPath,

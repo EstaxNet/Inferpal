@@ -35,6 +35,28 @@ jobs:
       - name: Test
         run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
 
+  # §23: editor-agnostic net8.0 leg (Core + Host) on the OSes the VS Code extension targets.
+  # The VSIX project only exists on the net8.0-windows TFM, which the csproj drops off-Windows,
+  # so restore/build here never touch the VS SDK. This is also where the bash dialect of
+  # ShellStateProtocol runs against a real /bin/bash.
+  test-posix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Test (net8.0 editor-agnostic slice)
+        run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release
+
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:
     runs-on: ubuntu-latest

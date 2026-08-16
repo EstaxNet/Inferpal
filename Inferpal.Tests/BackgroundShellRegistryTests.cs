@@ -13,6 +13,12 @@ namespace Inferpal.Tests;
 public class BackgroundShellRegistryTests
 {
     /// <summary>
+    /// These jobs are written in PS syntax; they skip silently on a pwsh-less POSIX machine
+    /// (every CI matrix runner ships pwsh — the bash contract is covered by PosixShellTests, §23).
+    /// </summary>
+    private static bool PowerShellAvailable => ShellLauncher.Resolve().Dialect == ShellDialect.PowerShell;
+
+    /// <summary>
     /// Polls until <paramref name="predicate"/> holds over the <b>accumulated</b> output, instead of
     /// sleeping a fixed delay. Accumulation matters: each poll drains the buffer by design, so the
     /// last poll of a finished job legitimately returns nothing new.
@@ -37,6 +43,7 @@ public class BackgroundShellRegistryTests
     [Fact]
     public async Task Job_RunsAndReportsItsOutputThenDisappears()
     {
+        if (!PowerShellAvailable) return;
         using var registry = new BackgroundShellRegistry();
         var id = registry.Start("Write-Output 'hello-bg'", "echo", Path.GetTempPath());
 
@@ -53,6 +60,7 @@ public class BackgroundShellRegistryTests
     [Fact]
     public async Task Poll_ReturnsOnlyWhatIsNewSinceThePreviousPoll()
     {
+        if (!PowerShellAvailable) return;
         using var registry = new BackgroundShellRegistry();
         // "two" is gated on a file the test creates, not on a fixed sleep: on a busy CI runner a
         // 400 ms window was short enough for both lines to land in the very first poll.
@@ -81,6 +89,7 @@ public class BackgroundShellRegistryTests
     [Fact]
     public void Stop_KillsTheJobAndForgetsIt()
     {
+        if (!PowerShellAvailable) return;
         using var registry = new BackgroundShellRegistry();
         var id = registry.Start("Start-Sleep -Seconds 300", "sleep", Path.GetTempPath());
 
@@ -92,6 +101,7 @@ public class BackgroundShellRegistryTests
     [Fact]
     public void List_ExposesRunningJobsForDiagnostics()
     {
+        if (!PowerShellAvailable) return;
         using var registry = new BackgroundShellRegistry();
         var id = registry.Start("Start-Sleep -Seconds 300", "sleep 300", Path.GetTempPath());
 
@@ -107,6 +117,7 @@ public class BackgroundShellRegistryTests
     public void Dispose_KillsEveryStillRunningJob()
     {
         // The regression this guards: closing the editor used to leave these powershells behind.
+        if (!PowerShellAvailable) return;
         var registry = new BackgroundShellRegistry();
         registry.Start("Start-Sleep -Seconds 300", "a", Path.GetTempPath());
         registry.Start("Start-Sleep -Seconds 300", "b", Path.GetTempPath());

@@ -221,10 +221,11 @@ exists.
   per-machine setting can do both; the committable `.inferpal/permissions.json` overlay can only
   *deny* (a cloned repository must not be able to grant itself auto-approval); a built-in denylist of
   catastrophic shell commands always applies (an **accident guard**, not a security boundary —
-  it matches text, so obfuscation defeats it), and indirect execution (`iex`,
-  `-EncodedCommand`, `FromBase64String`, `[scriptblock]::Create`, `& $var`) is
-  **force-prompted**: never auto-approved by any rule, session grant or setting, never
-  blocked — the approval prompt, where the raw command is visible, is the actual boundary.
+  it matches text, so obfuscation defeats it), and indirect execution — PowerShell (`iex`,
+  `-EncodedCommand`, `FromBase64String`, `[scriptblock]::Create`, `& $var`) and POSIX
+  (`eval`, piping into a shell, `base64 -d`, `sh -c "$var"`, `source`/`exec` on a variable)
+  alike — is **force-prompted**: never auto-approved by any rule, session grant or setting,
+  never blocked — the approval prompt, where the raw command is visible, is the actual boundary.
   See **[Tools → Permission rules](tools.md)**.
 - **Hardened SSRF guard** on outbound fetches (DNS rebinding, IPv4-mapped IPv6, `0.0.0.0/8`,
   loopback/private ranges, ReDoS-safe timeout).

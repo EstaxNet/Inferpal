@@ -1,8 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
+    <!-- §23: dual-targeted. net8.0-windows is the full suite (VS assembly + WPF included);
+         net8.0 is the editor-agnostic slice (Core + Host) that the ubuntu/macos CI legs run —
+         the VSIX project cannot build off-Windows, so its tests stay on the Windows TFM. -->
+    <TargetFrameworks>net8.0-windows;net8.0</TargetFrameworks>
+    <!-- Off-Windows only the agnostic leg exists at all: keeping the windows TFM in the list
+         would drag the VSIX project into restore/evaluation on ubuntu/macos runners. -->
+    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net8.0</TargetFrameworks>
+    <UseWPF Condition="'$(TargetFramework)' == 'net8.0-windows'">true</UseWPF>
     <!-- Nullable/ImplicitUsings/LangVersion inherited from the repo-root Directory.Build.props -->
     <IsPackable>false</IsPackable>
     <!-- Prevent VSIX generation in the test project -->
@@ -27,9 +33,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Inferpal\Inferpal.csproj" />
     <ProjectReference Include="..\Inferpal.Host\Inferpal.Host.csproj" />
     <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The VSIX assembly and the tests that exercise it exist only on the Windows TFM. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <ProjectReference Include="..\Inferpal\Inferpal.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net8.0-windows'">
+    <Compile Remove="InlineEditResponseTests.cs" />
+    <Compile Remove="TestFilePathResolverTests.cs" />
+    <Compile Remove="VsThemeDetectorTests.cs" />
+    <Compile Remove="ChatAutoScrollerTests.cs" />
+    <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 
 </Project>

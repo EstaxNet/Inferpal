@@ -37,6 +37,18 @@ internal static class ShellStateProtocol
     private static string B64Utf16(string s) => Convert.ToBase64String(Encoding.Unicode.GetBytes(s));
     private static string FromB64Utf8(string s) => Encoding.UTF8.GetString(Convert.FromBase64String(s));
 
+    /// <summary>Dialect-dispatching overload (§23): same contract, PowerShell or POSIX wrapper.</summary>
+    public static string BuildForegroundScript(ShellDialect dialect, string cwd, IReadOnlyDictionary<string, string> env, string command, string marker) =>
+        dialect == ShellDialect.PowerShell
+            ? BuildForegroundScript(cwd, env, command, marker)
+            : BuildForegroundScriptPosix(cwd, env, command, marker);
+
+    /// <summary>Dialect-dispatching overload (§23): same contract, PowerShell or POSIX wrapper.</summary>
+    public static string BuildBackgroundScript(ShellDialect dialect, string cwd, IReadOnlyDictionary<string, string> env, string command) =>
+        dialect == ShellDialect.PowerShell
+            ? BuildBackgroundScript(cwd, env, command)
+            : BuildBackgroundScriptPosix(cwd, env, command);
+
     /// <summary>
     /// Builds the foreground wrapper script: restore cwd/env, run the (base64-encoded) command in
     /// the current scope via <c>Invoke-Expression</c> so <c>cd</c>/<c>$env:</c>/global state persist,
@@ -71,6 +83,53 @@ internal static class ShellStateProtocol
         sb.Append("$__c=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('").Append(B64Utf16(command)).Append("'))\n");
         sb.Append("Invoke-Expression $__c\n");
         return sb.ToString();
+    }
+
+    // ── POSIX dialect (§23) ─────────────────────────────────────────────────────
+    // Same design, same injection-proofing: every piece of user data (cwd, env names and values,
+    // the command itself) travels as a single-quoted base64 literal — the base64 alphabet contains
+    // no shell metacharacter, so an LLM-supplied value can never break out into script. `eval` on
+    // the decoded command mirrors Invoke-Expression: cd/export run in the current shell, so they
+    // persist into the state emit. There is no try/finally in sh — statements simply run in
+    // sequence, and a command that calls `exit` skips the emit, which ParseForeground already
+    // treats as "no state captured" (the exact PowerShell caveat).
+
+    private static string BuildForegroundScriptPosix(string cwd, IReadOnlyDictionary<string, string> env, string command, string marker)
+    {
+        var sb = new StringBuilder();
+        AppendRestorePosix(sb, cwd, env);
+        sb.Append("__c=$(printf '%s' '").Append(B64Utf8(command)).Append("' | base64 -d)\n");
+        sb.Append("eval \"$__c\"\n");
+        sb.Append("printf '%s\\n' '").Append(marker).Append("'\n");
+        // base64 wraps at 76 columns on GNU and BSD alike — `tr -d '\n'` keeps each state line whole.
+        sb.Append("printf 'CWD=%s\\n' \"$(printf '%s' \"$PWD\" | base64 | tr -d '\\n')\"\n");
+        // awk's ENVIRON iteration is POSIX and, unlike parsing `env` output, immune to values
+        // containing '=' or newlines: names come from awk, values from printenv, both re-encoded.
+        sb.Append("for __n in $(awk 'BEGIN{for (v in ENVIRON) print v}'); do\n");
+        sb.Append("  printf 'ENV=%s").Append(EnvSep).Append("%s\\n' \"$(printf '%s' \"$__n\" | base64 | tr -d '\\n')\" \"$(printf '%s' \"$(printenv \"$__n\")\" | base64 | tr -d '\\n')\"\n");
+        sb.Append("done\n");
+        return sb.ToString();
+    }
+
+    private static string BuildBackgroundScriptPosix(string cwd, IReadOnlyDictionary<string, string> env, string command)
+    {
+        var sb = new StringBuilder();
+        AppendRestorePosix(sb, cwd, env);
+        sb.Append("__c=$(printf '%s' '").Append(B64Utf8(command)).Append("' | base64 -d)\n");
+        sb.Append("eval \"$__c\"\n");
+        return sb.ToString();
+    }
+
+    private static void AppendRestorePosix(StringBuilder sb, string cwd, IReadOnlyDictionary<string, string> env)
+    {
+        sb.Append("__d=$(printf '%s' '").Append(B64Utf8(cwd)).Append("' | base64 -d)\n");
+        sb.Append("if [ -d \"$__d\" ]; then cd \"$__d\"; fi\n");
+        foreach (var kv in env)
+        {
+            sb.Append("export \"$(printf '%s' '").Append(B64Utf8(kv.Key))
+              .Append("' | base64 -d)\"=\"$(printf '%s' '").Append(B64Utf8(kv.Value))
+              .Append("' | base64 -d)\"\n");
+        }
     }
 
     private static void AppendRestore(StringBuilder sb, string cwd, IReadOnlyDictionary<string, string> env)

@@ -133,6 +133,9 @@ public class DocCountersTests
     [Fact]
     public void Readme_TestsBadge_MatchesThisAssembly()
     {
+        // §23: the net8.0 leg deliberately omits the VSIX-dependent test files, so its own count
+        // can never match the badge — the badge is owned by the full net8.0-windows suite.
+#if WINDOWS
         var total = 0;
         foreach (var type in typeof(DocCountersTests).Assembly.GetTypes())
         {
@@ -160,5 +163,6 @@ public class DocCountersTests
         AssertCounter(path, total, int.Parse(badge.Groups[1].Value),
                       text => Regex.Replace(text, @"tests-\d+%20passing", $"tests-{total}%20passing"),
                       "passing tests");
+#endif
     }
 }

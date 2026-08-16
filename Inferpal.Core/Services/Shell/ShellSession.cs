@@ -9,8 +9,10 @@ namespace Inferpal.Services.Shell;
 /// <summary>
 /// A persistent shell "session" for the agent: working directory and environment overrides are
 /// preserved across <see cref="RunCommandTool"/> calls even though each command still runs in a
-/// fresh, isolated <c>powershell.exe</c> (see <see cref="ShellStateProtocol"/> for why). One
-/// instance lives for the lifetime of the tool registry (i.e. per workspace).
+/// fresh, isolated shell process — <c>powershell.exe</c>/<c>pwsh</c> or <c>bash</c> depending on
+/// the machine (<see cref="ShellLauncher"/>, §23; see <see cref="ShellStateProtocol"/> for why
+/// there is no live REPL pipe). One instance lives for the lifetime of the tool registry
+/// (i.e. per workspace).
 /// </summary>
 internal sealed class ShellSession
 {
@@ -58,21 +60,14 @@ internal sealed class ShellSession
         if (!Directory.Exists(startCwd))
             startCwd = _root();
 
+        var (dialect, shell) = ShellLauncher.Resolve();
         var marker = ShellStateProtocol.NewMarker();
-        var script = ShellStateProtocol.BuildForegroundScript(startCwd, env, command, marker);
+        var script = ShellStateProtocol.BuildForegroundScript(dialect, startCwd, env, command, marker);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(TimeSpan.FromSeconds(_config.CommandTimeoutSeconds));
 
-        var psi = new ProcessStartInfo
-        {
-            FileName               = "powershell.exe",
-            Arguments              = $"-NoProfile -NonInteractive -EncodedCommand {Encode(script)}",
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            UseShellExecute        = false,
-            CreateNoWindow         = true,
-        };
+        var psi = ShellLauncher.BuildStartInfo(dialect, shell, script);
 
         using var process = ChildProcess.Start(psi);
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cts.Token);

@@ -70,7 +70,8 @@ internal sealed class RunCommandTool : ITool, IDisposable
         {
             var (cwd, env) = _session.Snapshot();
             var startCwd   = workDir ?? cwd;
-            var script     = ShellStateProtocol.BuildBackgroundScript(startCwd, env, command);
+            var (dialect, _) = Shell.ShellLauncher.Resolve();
+            var script     = ShellStateProtocol.BuildBackgroundScript(dialect, startCwd, env, command);
             var id         = _background.Start(script, command, startCwd);
             return $"Started background job '{id}'. Use action='poll' id='{id}' to read its output, action='stop' id='{id}' to terminate it.";
         }

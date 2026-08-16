@@ -154,6 +154,18 @@ internal sealed class PermissionPolicy
         new(@"\[\s*scriptblock\s*\]\s*::\s*Create", RegexOptions.IgnoreCase | RegexOptions.Compiled),
         // Call operator on a variable/subexpression (& $cmd, & $(…)) or dot-sourcing one (. $script)
         new(@"(&\s*|(?<=^|[;|&(\s])\.\s+)\$", RegexOptions.Compiled),
+
+        // ── POSIX equivalents (§23) — same tier, same contract: force the prompt, never block ──
+        // eval runs a string the rules engine never saw (the iex of POSIX shells)
+        new(@"\beval\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Piping anything into a shell executes downloaded/generated text (curl … | sh)
+        new(@"\|\s*(sudo\s+)?(sh|bash|zsh|dash|ksh)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Base64 payload decoded at run time (mirror of FromBase64String)
+        new(@"\bbase64\b[^|&;]*(\s-[dD]\b|--decode)", RegexOptions.Compiled),
+        // A shell -c whose payload is a variable — a literal -c 'text' stays readable and does not match
+        new(@"\b(sh|bash|zsh|dash|ksh)\b[^|&;]*-c\s*[""']?\s*\$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Sourcing or exec-ing a path held in a variable
+        new(@"\b(source|exec)\s+[""']?\$", RegexOptions.Compiled),
     ];
 
     /// <summary>

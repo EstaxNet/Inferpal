@@ -10,11 +10,16 @@ using Xunit;
 namespace Inferpal.Tests;
 
 // Axis 7 — persistent shell session (cwd/env preserved across calls) + background jobs.
-// The protocol parsing is pure/unit-tested; the integration tests actually spawn powershell.exe
-// (Windows-only, which is where these tests run) to prove cwd/env really persist and that a
-// background job can be launched, polled and stopped.
+// The protocol parsing is pure/unit-tested; the integration tests actually spawn the resolved
+// PowerShell (powershell.exe on Windows, pwsh elsewhere — every CI matrix runner ships one) to
+// prove cwd/env really persist and that a background job can be launched, polled and stopped.
+// On a pwsh-less POSIX machine they skip silently: the same contract runs in bash via
+// PosixShellTests (§23).
 public class ShellSessionTests
 {
+    /// <summary>PS-syntax integration tests only make sense when the resolved shell speaks PowerShell.</summary>
+    private static bool PowerShellAvailable => ShellLauncher.Resolve().Dialect == ShellDialect.PowerShell;
+
     private static string B64(string s) => Convert.ToBase64String(Encoding.UTF8.GetBytes(s));
 
     private sealed class AutoApprove : IApprovalService
@@ -101,6 +106,7 @@ public class ShellSessionTests
     [Fact]
     public async Task EnvVar_PersistsAcrossCalls()
     {
+        if (!PowerShellAvailable) return;
         var tool = NewTool(Path.GetTempPath());
 
         await tool.ExecuteAsync(Args("""{"command":"$env:INFERPAL_TEST_VAR='hello42'"}"""), CancellationToken.None);
@@ -112,6 +118,7 @@ public class ShellSessionTests
     [Fact]
     public async Task WorkingDirectory_PersistsAcrossCalls()
     {
+        if (!PowerShellAvailable) return;
         var root = Path.Combine(Path.GetTempPath(), "inferpal_shell_" + Guid.NewGuid().ToString("N"));
         var sub  = Path.Combine(root, "sub");
         Directory.CreateDirectory(sub);
@@ -133,6 +140,7 @@ public class ShellSessionTests
     [Fact]
     public async Task Background_StartsPollsAndStops()
     {
+        if (!PowerShellAvailable) return;
         var tool = NewTool(Path.GetTempPath());
 
         var start = await tool.ExecuteAsync(

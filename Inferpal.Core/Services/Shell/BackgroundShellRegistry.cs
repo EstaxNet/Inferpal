@@ -46,15 +46,8 @@ internal sealed class BackgroundShellRegistry : IDisposable
     /// </summary>
     public string Start(string script, string command, string workingDirectory)
     {
-        var psi = new ProcessStartInfo
-        {
-            FileName               = "powershell.exe",
-            Arguments              = $"-NoProfile -NonInteractive -EncodedCommand {ShellSession.Encode(script)}",
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            UseShellExecute        = false,
-            CreateNoWindow         = true,
-        };
+        var (dialect, shell) = ShellLauncher.Resolve();
+        var psi = ShellLauncher.BuildStartInfo(dialect, shell, script);
         if (Directory.Exists(workingDirectory))
             psi.WorkingDirectory = workingDirectory;
 

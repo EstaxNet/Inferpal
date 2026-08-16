@@ -52,9 +52,20 @@ jobs:
         working-directory: vscode
         run: npm ci
 
+      # §23: one VSIX per platform, same version (Marketplace requirement). The host is
+      # cross-published self-contained from this Windows runner (no AOT/R2R involved);
+      # the exec bit lost by zip-on-Windows is re-asserted by the extension at activation.
       - name: Build VS Code VSIX (win32-x64, bundled self-contained host)
         shell: pwsh
         run: ./vscode/package.ps1 -Target win32-x64
+
+      - name: Build VS Code VSIX (linux-x64)
+        shell: pwsh
+        run: ./vscode/package.ps1 -Target linux-x64
+
+      - name: Build VS Code VSIX (darwin-arm64)
+        shell: pwsh
+        run: ./vscode/package.ps1 -Target darwin-arm64
 
       - name: Assemble deliverables + checksums
         shell: pwsh
@@ -62,7 +73,9 @@ jobs:
           $dist = "dist/$env:VERSION"
           New-Item -ItemType Directory -Force -Path $dist | Out-Null
           Copy-Item "Inferpal/bin/Release/net8.0-windows/Inferpal.vsix" "$dist/Inferpal-vs2026-$env:VERSION.vsix"
-          Copy-Item "vscode/inferpal-win32-x64-$env:VERSION.vsix" "$dist/inferpal-vscode-win32-x64-$env:VERSION.vsix"
+          foreach ($target in 'win32-x64', 'linux-x64', 'darwin-arm64') {
+              Copy-Item "vscode/inferpal-$target-$env:VERSION.vsix" "$dist/inferpal-vscode-$target-$env:VERSION.vsix"
+          }
           $sums = Get-ChildItem $dist -Filter '*.vsix' | ForEach-Object {
               "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
           }
