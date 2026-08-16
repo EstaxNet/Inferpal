@@ -260,7 +260,14 @@ internal sealed partial class HostServer
                 }
 
                 case SlashCommandId.Diagnostics:
-                    return new SlashCommandResult(true, DiagnosticsCommandHandler.Handle(parts));
+                {
+                    var result = DiagnosticsCommandHandler.Handle(parts, new DiagnosticsExportContext(
+                        s.Config, "VS Code host",
+                        WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir));
+                    return result.CopyToClipboard is { } bundle
+                        ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("copyToClipboard", bundle)])
+                        : new SlashCommandResult(true, result.Message);
+                }
 
                 case SlashCommandId.Replay:
                     return new SlashCommandResult(true,

@@ -714,10 +714,11 @@ ollama serve
   <data name="ModelsInstalledHeader" xml:space="preserve"><value>## 已安装的模型</value></data>
   <data name="ModelsTableModel" xml:space="preserve"><value>模型</value></data>
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
-  <data name="SlashHintDiagnostics" xml:space="preserve"><value>显示最近的诊断 — `clear`/`on`/`off`</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>显示最近的诊断 — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## 诊断</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>没有记录任何诊断。</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>已清除诊断。</value></data>
+  <data name="DiagnosticsExported" xml:space="preserve"><value>支持报告已复制到剪贴板 — 请粘贴到 GitHub issue 中。</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>已启用诊断文件日志。</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>已禁用诊断文件日志。</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>撤销上一次代理运行的所有文件更改</value></data>

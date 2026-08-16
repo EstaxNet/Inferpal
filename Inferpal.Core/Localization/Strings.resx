@@ -721,10 +721,11 @@ ollama serve
   <data name="ModelsInstalledHeader" xml:space="preserve"><value>## Installed models</value></data>
   <data name="ModelsTableModel" xml:space="preserve"><value>Model</value></data>
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
-  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Show recent diagnostics — `clear`/`on`/`off`</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Show recent diagnostics — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostics</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>No diagnostics recorded.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnostics cleared.</value></data>
+  <data name="DiagnosticsExported" xml:space="preserve"><value>Support bundle copied to clipboard — paste it into a GitHub issue.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Diagnostics file logging enabled.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Diagnostics file logging disabled.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Undo all file changes from the last agent run</value></data>

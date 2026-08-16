@@ -23,7 +23,7 @@ editor with tools disabled).
 | `/tools on\|off` | Enable or disable tool calling |
 | `/export` | Export the conversation to `.md` or `.txt` |
 | `/help` | Show all available commands |
-| `/diagnostics [clear\|on\|off]` | List the background errors swallowed best-effort (in-memory ring buffer, includes permission-rule denials); `clear` empties it, `on`/`off` toggles the opt-in file log |
+| `/diagnostics [clear\|on\|off\|export]` | List the background errors swallowed best-effort (in-memory ring buffer, includes permission-rule denials); `clear` empties it, `on`/`off` toggles the opt-in file log; `export` copies a **sanitized support bundle** to the clipboard for GitHub issues — versions, OS, provider (remote endpoints redacted, API key never included), model roles, feature toggles and the recent diagnostics with profile/workspace paths masked. The chat shows exactly what was copied: you read what you are about to send, and nothing leaves the machine on its own |
 
 ## Context & memory
 

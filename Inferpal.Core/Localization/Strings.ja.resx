@@ -714,10 +714,11 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ModelsInstalledHeader" xml:space="preserve"><value>## インストール済みモデル</value></data>
   <data name="ModelsTableModel" xml:space="preserve"><value>モデル</value></data>
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
-  <data name="SlashHintDiagnostics" xml:space="preserve"><value>最近の診断を表示 — `clear`/`on`/`off`</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>最近の診断を表示 — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## 診断</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>診断は記録されていません。</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>診断をクリアしました。</value></data>
+  <data name="DiagnosticsExported" xml:space="preserve"><value>サポートレポートをクリップボードにコピーしました — GitHub の Issue に貼り付けてください。</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>診断のファイル記録を有効にしました。</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>診断のファイル記録を無効にしました。</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>直近のエージェント実行によるファイル変更をすべて元に戻す</value></data>

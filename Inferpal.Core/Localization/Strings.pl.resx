@@ -714,10 +714,11 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="ModelsInstalledHeader" xml:space="preserve"><value>## Zainstalowane modele</value></data>
   <data name="ModelsTableModel" xml:space="preserve"><value>Model</value></data>
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
-  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Pokaż ostatnie diagnostyki — `clear`/`on`/`off`</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Pokaż ostatnie diagnostyki — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostyka</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Brak zarejestrowanych diagnostyk.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Wyczyszczono diagnostyki.</value></data>
+  <data name="DiagnosticsExported" xml:space="preserve"><value>Raport pomocy skopiowany do schowka — wklej go do zgłoszenia na GitHubie.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Włączono zapis diagnostyki do pliku.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Wyłączono zapis diagnostyki do pliku.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Cofnij wszystkie zmiany plików z ostatniego uruchomienia agenta</value></data>

@@ -714,10 +714,11 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="ModelsInstalledHeader" xml:space="preserve"><value>## Installierte Modelle</value></data>
   <data name="ModelsTableModel" xml:space="preserve"><value>Modell</value></data>
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
-  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Aktuelle Diagnosen anzeigen — `clear`/`on`/`off`</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Aktuelle Diagnosen anzeigen — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnose</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Keine Diagnosen aufgezeichnet.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnosen gelöscht.</value></data>
+  <data name="DiagnosticsExported" xml:space="preserve"><value>Support-Bericht in die Zwischenablage kopiert — fügen Sie ihn in ein GitHub-Issue ein.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Diagnose-Dateiprotokollierung aktiviert.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Diagnose-Dateiprotokollierung deaktiviert.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Alle Dateiänderungen des letzten Agent-Laufs rückgängig machen</value></data>

@@ -41,8 +41,12 @@ body:
   - type: textarea
     id: diagnostics
     attributes:
-      label: Logs / diagnostics
-      description: Relevant output from `/diagnostics`, the Output window, or any exception text.
+      label: Support bundle / logs
+      description: >-
+        Paste the output of `/diagnostics export` (it copies a sanitized support bundle to your
+        clipboard — versions, OS, provider with remote endpoints redacted, model roles, toggles
+        and recent background errors; review it before pasting). Otherwise, any relevant output
+        from `/diagnostics`, the Output window, or exception text.
       render: text
   - type: input
     id: inferpal-version

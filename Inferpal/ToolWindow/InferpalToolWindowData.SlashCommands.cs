@@ -223,7 +223,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Onboard:    await HandleOnboardCommandAsync(parts, ct);  break;
             case SlashCommandId.Rules:      await HandleRulesCommandAsync(parts, ct);    break;
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
-            case SlashCommandId.Diagnostics: await ShowInfoAsync(Services.Commands.DiagnosticsCommandHandler.Handle(parts)); break;
+            case SlashCommandId.Diagnostics: await HandleDiagnosticsCommandAsync(parts); break;
             case SlashCommandId.Bench:       await HandleBenchCommandAsync(parts, ct);    break;
             case SlashCommandId.Arena:       await HandleArenaCommandAsync(parts, ct);    break;
             case SlashCommandId.Tdd:         await HandleTddCommandAsync(parts, ct);      break;
@@ -559,6 +559,29 @@ internal partial class InferpalToolWindowData
     private async Task HandleNotesCommandAsync(string[] parts, CancellationToken ct)
     {
         var result = await Services.Commands.NotesCommandHandler.HandleNotesAsync(FindProjectRoot(), parts, ct);
+        await ShowInfoAsync(result.Message);
+    }
+
+    private async Task HandleDiagnosticsCommandAsync(string[] parts)
+    {
+        // §24: `export` needs the caller's world (config, front-end label, connection badge,
+        // workspace root for path sanitising); the other sub-commands ignore the context.
+        var result = Services.Commands.DiagnosticsCommandHandler.Handle(parts,
+            new Services.Commands.DiagnosticsExportContext(
+                _config, "Visual Studio", ConnectionStatusText, FindProjectRoot()));
+
+        if (result.CopyToClipboard is { } bundle)
+        {
+            var thread = new Thread(() =>
+            {
+                try { System.Windows.Clipboard.SetText(bundle); }
+                catch (Exception ex) { Diagnostics.Swallow("Clipboard.CopyDiagnostics", ex); }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+        }
+
         await ShowInfoAsync(result.Message);
     }
 

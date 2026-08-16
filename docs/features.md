@@ -229,6 +229,11 @@ exists.
 - **Hardened SSRF guard** on outbound fetches (DNS rebinding, IPv4-mapped IPv6, `0.0.0.0/8`,
   loopback/private ranges, ReDoS-safe timeout).
 - **Circuit breaker** on backend failures and **loop detection** to stop infinite agent loops.
+- **Local diagnostics, transparent export** — `/diagnostics` lists background errors swallowed
+  best-effort (in-memory ring buffer, zero telemetry), and `/diagnostics export` copies a
+  **sanitized support bundle** for GitHub issues: remote endpoints redacted, API key never
+  included, profile and workspace paths masked. The chat shows exactly the text that was
+  copied — you read what you are about to send, and nothing leaves the machine on its own.
 
 ## Localization & theming
 

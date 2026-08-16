@@ -712,10 +712,11 @@ ollama serve
   <data name="ModelsInstalledHeader" xml:space="preserve"><value>## Установленные модели</value></data>
   <data name="ModelsTableModel" xml:space="preserve"><value>Модель</value></data>
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
-  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Показать последние диагностические записи — `clear`/`on`/`off`</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Показать последние диагностические записи — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Диагностика</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Диагностических записей нет.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Диагностика очищена.</value></data>
+  <data name="DiagnosticsExported" xml:space="preserve"><value>Отчёт для поддержки скопирован в буфер обмена — вставьте его в issue на GitHub.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Запись диагностики в файл включена.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Запись диагностики в файл выключена.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Отменить все изменения файлов из последнего запуска агента</value></data>

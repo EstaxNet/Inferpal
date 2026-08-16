@@ -779,6 +779,7 @@ internal static class Strings
     public static string DiagnosticsHeader                   => Get(nameof(DiagnosticsHeader));
     public static string DiagnosticsEmpty                    => Get(nameof(DiagnosticsEmpty));
     public static string DiagnosticsCleared                  => Get(nameof(DiagnosticsCleared));
+    public static string DiagnosticsExported                 => Get(nameof(DiagnosticsExported));
     public static string DiagnosticsFileOn                   => Get(nameof(DiagnosticsFileOn));
     public static string DiagnosticsFileOff                  => Get(nameof(DiagnosticsFileOff));
 

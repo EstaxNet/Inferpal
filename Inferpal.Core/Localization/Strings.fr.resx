@@ -722,10 +722,11 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="ModelsInstalledHeader" xml:space="preserve"><value>## Modèles installés</value></data>
   <data name="ModelsTableModel" xml:space="preserve"><value>Modèle</value></data>
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
-  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Affiche les diagnostics récents — `clear`/`on`/`off`</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Affiche les diagnostics récents — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostics</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Aucun diagnostic enregistré.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnostics effacés.</value></data>
+  <data name="DiagnosticsExported" xml:space="preserve"><value>Rapport de support copié dans le presse-papiers — collez-le dans une issue GitHub.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Journalisation des diagnostics dans un fichier activée.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Journalisation des diagnostics dans un fichier désactivée.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Annule toutes les modifs de fichiers du dernier run agent</value></data>

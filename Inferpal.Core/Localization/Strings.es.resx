@@ -714,10 +714,11 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="ModelsInstalledHeader" xml:space="preserve"><value>## Modelos instalados</value></data>
   <data name="ModelsTableModel" xml:space="preserve"><value>Modelo</value></data>
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
-  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Mostrar diagnósticos recientes — `clear`/`on`/`off`</value></data>
+  <data name="SlashHintDiagnostics" xml:space="preserve"><value>Mostrar diagnósticos recientes — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnósticos</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>No hay diagnósticos registrados.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnósticos borrados.</value></data>
+  <data name="DiagnosticsExported" xml:space="preserve"><value>Informe de soporte copiado al portapapeles — pégalo en una issue de GitHub.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Registro de diagnósticos en archivo activado.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Registro de diagnósticos en archivo desactivado.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Deshacer todos los cambios de archivos del último run del agente</value></data>
