@@ -6,15 +6,17 @@ namespace Inferpal.Tests;
 
 public class McpStdioClientTests
 {
-    private static McpServerConfig Cmd(params string[] args) =>
-        new("test", "cmd.exe", args, new Dictionary<string, string>());
+    // A "server" that exits immediately — cmd on Windows, /bin/sh elsewhere (§23).
+    private static McpServerConfig ExitsAtOnce() => OperatingSystem.IsWindows()
+        ? new("test", "cmd.exe", ["/c", "exit"], new Dictionary<string, string>())
+        : new("test", "/bin/sh", ["-c", "exit"], new Dictionary<string, string>());
 
     [Fact]
     public async Task Closed_FiresWhenProcessExitsUnexpectedly()
     {
         // A process that exits straight away: the handshake fails (StartAsync returns false) and the
         // read loop ends — which is exactly the "server died" signal the reconnect logic listens for.
-        var client = new McpStdioClient(Cmd("/c", "exit"));
+        var client = new McpStdioClient(ExitsAtOnce());
         var closed = new TaskCompletionSource();
         client.Closed += () => closed.TrySetResult();
 
@@ -32,7 +34,7 @@ public class McpStdioClientTests
     {
         // After an unexpected exit (one Closed), disposing the already-dead client must not report
         // a further close — the read-loop guard keys off _disposed, set at the top of DisposeAsync.
-        var client = new McpStdioClient(Cmd("/c", "exit"));
+        var client = new McpStdioClient(ExitsAtOnce());
         var count = 0;
         client.Closed += () => Interlocked.Increment(ref count);
 

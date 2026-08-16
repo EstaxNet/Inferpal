@@ -16,7 +16,13 @@ namespace Inferpal.Services.Editor;
 /// </remarks>
 internal sealed class OpenDocumentOverlay
 {
-    private readonly ConcurrentDictionary<string, string> _docs = new(StringComparer.OrdinalIgnoreCase);
+    // Path case-folding is a property of the file system, not of the process: Windows and macOS
+    // (default APFS) fold case, Linux does not — an Ordinal comparer there keeps two genuinely
+    // distinct open files (a.cs / A.cs) from colliding into one shared buffer (§23).
+    private static readonly StringComparer PathComparer =
+        OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+
+    private readonly ConcurrentDictionary<string, string> _docs = new(PathComparer);
 
     /// <summary>Mirrors an opened/edited document (full-text sync).</summary>
     public void Set(string path, string text) => _docs[Normalize(path)] = text;

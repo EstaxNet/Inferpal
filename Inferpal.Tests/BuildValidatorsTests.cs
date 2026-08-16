@@ -1,3 +1,4 @@
+using System.IO;
 using Inferpal.Services;
 using Xunit;
 
@@ -16,7 +17,7 @@ public class BuildValidatorsTests
             string? hit = glob.StartsWith("*.")
                 ? files.FirstOrDefault(f => f.EndsWith(glob[1..], StringComparison.OrdinalIgnoreCase))
                 : files.FirstOrDefault(f => string.Equals(f, glob, StringComparison.OrdinalIgnoreCase));
-            return hit is null ? null : dir + "\\" + hit;
+            return hit is null ? null : dir + Path.DirectorySeparatorChar + hit;
         };
 
     private static IReadOnlyList<BuildValidator> Defaults => BuildValidators.Defaults;
@@ -26,64 +27,64 @@ public class BuildValidatorsTests
     [Fact]
     public void Match_DotnetFile_FindsNearestCsproj()
     {
-        var finder = FakeFinder(new() { [@"C:\repo\app"] = ["App.csproj"] });
-        var m = BuildValidators.Match(@"C:\repo\app\src\Service.cs", Defaults, finder);
+        var finder = FakeFinder(new() { [TestPaths.P(@"C:\repo\app")] = ["App.csproj"] });
+        var m = BuildValidators.Match(TestPaths.P(@"C:\repo\app\src\Service.cs"), Defaults, finder);
 
         Assert.NotNull(m);
         Assert.Equal("dotnet", m!.Value.Validator.Name);
-        Assert.Equal(@"C:\repo\app", m.Value.ProjectDir);
-        Assert.Equal(@"C:\repo\app\App.csproj", m.Value.ProjectFile);
+        Assert.Equal(TestPaths.P(@"C:\repo\app"), m.Value.ProjectDir);
+        Assert.Equal(TestPaths.P(@"C:\repo\app\App.csproj"), m.Value.ProjectFile);
     }
 
     [Fact]
     public void Match_PrefersCsprojOverSlnInSameDir()
     {
-        var finder = FakeFinder(new() { [@"C:\repo"] = ["Sln.sln", "Proj.csproj"] });
-        var m = BuildValidators.Match(@"C:\repo\Foo.cs", Defaults, finder);
-        Assert.Equal(@"C:\repo\Proj.csproj", m!.Value.ProjectFile);   // *.csproj marker comes first
+        var finder = FakeFinder(new() { [TestPaths.P(@"C:\repo")] = ["Sln.sln", "Proj.csproj"] });
+        var m = BuildValidators.Match(TestPaths.P(@"C:\repo\Foo.cs"), Defaults, finder);
+        Assert.Equal(TestPaths.P(@"C:\repo\Proj.csproj"), m!.Value.ProjectFile);   // *.csproj marker comes first
     }
 
     [Fact]
     public void Match_FallsBackToSlnWhenNoCsproj()
     {
-        var finder = FakeFinder(new() { [@"C:\repo"] = ["Only.sln"] });
-        var m = BuildValidators.Match(@"C:\repo\src\Foo.cs", Defaults, finder);
-        Assert.Equal(@"C:\repo\Only.sln", m!.Value.ProjectFile);
+        var finder = FakeFinder(new() { [TestPaths.P(@"C:\repo")] = ["Only.sln"] });
+        var m = BuildValidators.Match(TestPaths.P(@"C:\repo\src\Foo.cs"), Defaults, finder);
+        Assert.Equal(TestPaths.P(@"C:\repo\Only.sln"), m!.Value.ProjectFile);
     }
 
     [Fact]
     public void Match_TypeScriptFile_FindsTsconfig()
     {
-        var finder = FakeFinder(new() { [@"C:\web"] = ["tsconfig.json"] });
-        var m = BuildValidators.Match(@"C:\web\src\a\b\comp.tsx", Defaults, finder);
+        var finder = FakeFinder(new() { [TestPaths.P(@"C:\web")] = ["tsconfig.json"] });
+        var m = BuildValidators.Match(TestPaths.P(@"C:\web\src\a\b\comp.tsx"), Defaults, finder);
         Assert.Equal("typescript", m!.Value.Validator.Name);
-        Assert.Equal(@"C:\web\tsconfig.json", m.Value.ProjectFile);
+        Assert.Equal(TestPaths.P(@"C:\web\tsconfig.json"), m.Value.ProjectFile);
     }
 
     [Fact]
     public void Match_RustAndGo_ByMarker()
     {
-        var rust = BuildValidators.Match(@"C:\r\src\main.rs", Defaults,
-            FakeFinder(new() { [@"C:\r"] = ["Cargo.toml"] }));
+        var rust = BuildValidators.Match(TestPaths.P(@"C:\r\src\main.rs"), Defaults,
+            FakeFinder(new() { [TestPaths.P(@"C:\r")] = ["Cargo.toml"] }));
         Assert.Equal("rust", rust!.Value.Validator.Name);
 
-        var go = BuildValidators.Match(@"C:\g\pkg\main.go", Defaults,
-            FakeFinder(new() { [@"C:\g"] = ["go.mod"] }));
+        var go = BuildValidators.Match(TestPaths.P(@"C:\g\pkg\main.go"), Defaults,
+            FakeFinder(new() { [TestPaths.P(@"C:\g")] = ["go.mod"] }));
         Assert.Equal("go", go!.Value.Validator.Name);
     }
 
     [Fact]
     public void Match_UnknownExtension_ReturnsNull()
     {
-        var finder = FakeFinder(new() { [@"C:\x"] = ["whatever.txt"] });
-        Assert.Null(BuildValidators.Match(@"C:\x\notes.md", Defaults, finder));
+        var finder = FakeFinder(new() { [TestPaths.P(@"C:\x")] = ["whatever.txt"] });
+        Assert.Null(BuildValidators.Match(TestPaths.P(@"C:\x\notes.md"), Defaults, finder));
     }
 
     [Fact]
     public void Match_NoMarkerAnywhere_ReturnsNull()
     {
         var finder = FakeFinder(new());   // nothing on disk
-        Assert.Null(BuildValidators.Match(@"C:\repo\src\Service.cs", Defaults, finder));
+        Assert.Null(BuildValidators.Match(TestPaths.P(@"C:\repo\src\Service.cs"), Defaults, finder));
     }
 
     // ── Overlay parsing ────────────────────────────────────────────────────────
@@ -129,8 +130,8 @@ public class BuildValidatorsTests
             """{ ".cs": { "marker": "*.csproj", "command": "custom-build" } }""");
         var validators = BuildValidators.Resolve(overlay);
 
-        var finder = FakeFinder(new() { [@"C:\repo"] = ["App.csproj"] });
-        var m = BuildValidators.Match(@"C:\repo\Foo.cs", validators, finder);
+        var finder = FakeFinder(new() { [TestPaths.P(@"C:\repo")] = ["App.csproj"] });
+        var m = BuildValidators.Match(TestPaths.P(@"C:\repo\Foo.cs"), validators, finder);
 
         Assert.Equal("custom-build", m!.Value.Validator.Command);     // overlay wins
         Assert.False(m.Value.Validator.UseDotnetErrorFilter);         // overlay entry is generic

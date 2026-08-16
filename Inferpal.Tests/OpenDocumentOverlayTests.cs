@@ -19,23 +19,29 @@ public class OpenDocumentOverlayTests
     }
 
     [Fact]
-    public void TryGet_IsCaseInsensitiveAndPathNormalized()
+    public void TryGet_IsPathNormalized_AndFollowsThePlatformsCaseFolding()
     {
         var overlay = new OpenDocumentOverlay();
-        overlay.Set(@"C:\proj\sub\..\A.CS", "content");
+        overlay.Set(TestPaths.P(@"C:\proj\sub\..\A.CS"), "content");
 
-        Assert.True(overlay.TryGet(@"c:\proj\a.cs", out var text));
+        // `sub\..` collapses on every OS.
+        Assert.True(overlay.TryGet(TestPaths.P(@"C:\proj\A.CS"), out var text));
         Assert.Equal("content", text);
+
+        // Case-folding follows the file system: on Linux a.cs and A.CS are two distinct
+        // files, and the overlay must NOT hand one buffer out for the other (§23).
+        Assert.Equal(!OperatingSystem.IsLinux(),
+                     overlay.TryGet(TestPaths.P(@"C:\proj\a.cs"), out _));
     }
 
     [Fact]
     public void Remove_DropsTheDocument()
     {
         var overlay = new OpenDocumentOverlay();
-        overlay.Set(@"C:\proj\a.cs", "content");
-        overlay.Remove(@"C:\PROJ\a.cs");
+        overlay.Set(TestPaths.P(@"C:\proj\a.cs"), "content");
+        overlay.Remove(TestPaths.P(@"C:\proj\a.cs"));
 
-        Assert.False(overlay.TryGet(@"C:\proj\a.cs", out _));
+        Assert.False(overlay.TryGet(TestPaths.P(@"C:\proj\a.cs"), out _));
         Assert.Equal(0, overlay.Count);
     }
 

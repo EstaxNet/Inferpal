@@ -8,14 +8,25 @@ namespace Inferpal.Tests;
 // driving the VS Code host — git hung forever on the JSON-RPC pipe it had been handed as stdin).
 public class ChildProcessTests
 {
-    private static ProcessStartInfo Psi(string args) =>
-        new("cmd.exe", args)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            UseShellExecute        = false,
-            CreateNoWindow         = true,
-        };
+    // ChildProcess is cross-platform Core code, so its guinea-pig children are too: the same
+    // behaviours are exercised through cmd/powershell on Windows and /bin/sh on POSIX (§23).
+    private static ProcessStartInfo Psi(string windowsCmdArgs, string posixShScript)
+    {
+        var psi = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo("cmd.exe", windowsCmdArgs)
+            : new ProcessStartInfo("/bin/sh") { ArgumentList = { "-c", posixShScript } };
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError  = true;
+        psi.UseShellExecute        = false;
+        psi.CreateNoWindow         = true;
+        return psi;
+    }
+
+    private static ProcessStartInfo ShellPsi(string powershellCommand, string posixShScript) =>
+        OperatingSystem.IsWindows()
+            ? new ProcessStartInfo("powershell.exe",
+                $"-NoProfile -NonInteractive -Command \"{powershellCommand}\"")
+            : new ProcessStartInfo("/bin/sh") { ArgumentList = { "-c", posixShScript } };
 
     [Fact]
     public void StdinIsRedirectedAndClosed()
@@ -23,7 +34,7 @@ public class ChildProcessTests
         // The OS-level hang cannot be reproduced in-process: it needs a pipe as the *parent's*
         // stdin, which a test host does not have. What is pinned here is the decision that was
         // missing — the flag — and that the pipe is shut rather than left open.
-        using var proc = ChildProcess.Start(Psi("/c exit 0"));
+        using var proc = ChildProcess.Start(Psi("/c exit 0", "exit 0"));
 
         Assert.True(proc.StartInfo.RedirectStandardInput);
         Assert.Throws<ObjectDisposedException>(() => proc.StandardInput.Write('x'));
@@ -34,7 +45,7 @@ public class ChildProcessTests
     {
         // The behavioural half, and the reason closing beats merely redirecting: a background agent
         // must not be stuck on input nobody will ever type.
-        using var proc = ChildProcess.Start(Psi("/c set /p X= & exit 0"));
+        using var proc = ChildProcess.Start(Psi("/c set /p X= & exit 0", "read X; exit 0"));
 
         var wait  = proc.WaitForExitAsync();
         var first = await Task.WhenAny(wait, Task.Delay(10_000));
@@ -51,9 +62,9 @@ public class ChildProcessTests
         // The defect this pins is not hypothetical: GetGitStatusTool read stdout only, and a child
         // that fills the stderr buffer blocks writing, never closes stdout, and the read of stdout
         // never returns. 200 KB is far past any pipe buffer (typically 4-64 KB).
-        var psi = new ProcessStartInfo("powershell.exe",
-            "-NoProfile -NonInteractive -Command \"" +
-            "$s = 'x' * 200000; [Console]::Error.Write($s); [Console]::Out.Write('done')\"");
+        var psi = ShellPsi(
+            "$s = 'x' * 200000; [Console]::Error.Write($s); [Console]::Out.Write('done')",
+            "head -c 200000 /dev/zero | tr '\\0' 'x' 1>&2; printf done");
 
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(30), CancellationToken.None);
 
@@ -65,8 +76,7 @@ public class ChildProcessTests
     [Fact]
     public async Task ATimeoutKillsTheChildAndReportsInsteadOfThrowing()
     {
-        var psi = new ProcessStartInfo("powershell.exe",
-            "-NoProfile -NonInteractive -Command \"Start-Sleep -Seconds 60\"");
+        var psi = ShellPsi("Start-Sleep -Seconds 60", "sleep 60");
 
         var started = DateTime.UtcNow;
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(2), CancellationToken.None);
@@ -82,8 +92,7 @@ public class ChildProcessTests
     public async Task TheCallersOwnCancellationStillThrows()
     {
         // A user pressing stop is not an expired budget, and the two must not arrive as one value.
-        var psi = new ProcessStartInfo("powershell.exe",
-            "-NoProfile -NonInteractive -Command \"Start-Sleep -Seconds 60\"");
+        var psi = ShellPsi("Start-Sleep -Seconds 60", "sleep 60");
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
 

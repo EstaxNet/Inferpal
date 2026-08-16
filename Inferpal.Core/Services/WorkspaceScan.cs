@@ -64,9 +64,18 @@ internal static class WorkspaceScan
     }
 
     /// <summary><c>true</c> when a directory should not be descended into, by its own name.</summary>
-    public static bool IsExcludedDirName(string directoryPath) =>
-        ExcludedDirNames.Contains(Path.GetFileName(directoryPath.TrimEnd('\\', '/')),
-                                  StringComparer.OrdinalIgnoreCase);
+    /// <remarks>
+    /// Separator-agnostic like <see cref="IsExcludedPath"/> — <c>Path.GetFileName</c> alone only
+    /// understands the native separator, so on Linux a Windows-style path kept its full
+    /// <c>C:\p\node_modules</c> as the "leaf" and was never excluded (§23).
+    /// </remarks>
+    public static bool IsExcludedDirName(string directoryPath)
+    {
+        var trimmed = directoryPath.TrimEnd('\\', '/');
+        var cut     = trimmed.LastIndexOfAny(['\\', '/']);
+        return ExcludedDirNames.Contains(cut < 0 ? trimmed : trimmed[(cut + 1)..],
+                                         StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>
     /// Files matching <paramref name="pattern"/> under <paramref name="root"/>, excluded

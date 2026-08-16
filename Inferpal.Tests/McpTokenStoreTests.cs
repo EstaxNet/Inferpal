@@ -97,6 +97,9 @@ public class McpTokenStoreTests : IDisposable
     public void DpapiRoundTrip_Works()
     {
         // Exercises the real default DPAPI protect/unprotect (Windows, CurrentUser).
+        // Off Windows the default deliberately fails loud (OAuth is Windows-only until a
+        // platform secret store is injected) — nothing to round-trip there (§23).
+        if (!OperatingSystem.IsWindows()) return;
         var store = new McpTokenStore(_path);
         store.Save("srv", new McpOAuthState { AccessToken = "secret-token" });
 

@@ -24,9 +24,10 @@ public class SlashCommandRouterTests
     [Fact]
     public void Read_BuildsPathFromAllParts_AndAttachesAsFileName()
     {
-        var action = Assert.IsType<SlashToolAction>(Route(@"/read C:\src\My File.cs"));
+        var path   = TestPaths.P(@"C:\src\My File.cs");
+        var action = Assert.IsType<SlashToolAction>(Route("/read " + path));
         Assert.Equal("read_file", action.Tool);
-        Assert.Equal("""{"path":"C:\\src\\My File.cs"}""", Json(action.Args));
+        Assert.Equal(JsonSerializer.Serialize(new { path }), Json(action.Args));
         Assert.Equal("My File.cs", action.AttachAs);
     }
 

@@ -87,7 +87,16 @@ public class AnalyzeImpactSemanticTests : IDisposable
         Assert.Contains("Exact references to `Diag`  (1)", report);   // the class use only
         Assert.Contains("Zzz/User.cs", report);
         Assert.Contains("declared at Zzz/Diag.cs", report);
-        Assert.DoesNotContain("Aaa/Fake.cs", report);                 // the property is not a use
+        // The property must be absent from the EXACT section specifically — the heuristic
+        // layers above legitimately list Fake.cs (it contains the name), and their separator
+        // is platform-native: asserting on the whole report was vacuously green on Windows
+        // (`..\Aaa\Fake.cs`) and red on Linux (`../Aaa/Fake.cs`) for reasons that had nothing
+        // to do with the disambiguation being pinned here (§23).
+        var exactStart   = report.IndexOf("## Exact references", StringComparison.Ordinal);
+        Assert.True(exactStart >= 0);
+        var nextSection  = report.IndexOf("\n## ", exactStart + 1, StringComparison.Ordinal);
+        var exactSection = nextSection >= 0 ? report[exactStart..nextSection] : report[exactStart..];
+        Assert.DoesNotContain("Fake.cs", exactSection);                // the property is not a use
     }
 
     [Fact]

@@ -94,7 +94,10 @@ public class MentionControllerTests
 
         public string AddFile(string relPath, string content = "x")
         {
-            var full = System.IO.Path.Combine(Path, relPath);
+            // Fixtures are written Windows-style; on POSIX the backslash would land in the file
+            // NAME instead of creating a subdirectory (§23).
+            var full = System.IO.Path.Combine(
+                Path, relPath.Replace('\\', System.IO.Path.DirectorySeparatorChar));
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(full)!);
             File.WriteAllText(full, content);
             return full;
@@ -150,7 +153,7 @@ public class MentionControllerTests
 
         Assert.StartsWith("Folder: " + tmp.Path, context);
         Assert.Contains("readme.md", context);
-        Assert.Contains(@"sub\code.cs", context);
+        Assert.Contains(Path.Combine("sub", "code.cs"), context);
         Assert.Contains("hello body", context);
         Assert.Contains("class C {}", context);
         Assert.DoesNotContain("ignored.bin", context);
@@ -161,7 +164,7 @@ public class MentionControllerTests
     {
         using var tmp = new TempDir();
         var inside = tmp.AddFile(@"src\A.cs");
-        Assert.Equal(@"src\A.cs", MentionController.RelLabel(inside, tmp.Path));
+        Assert.Equal(Path.Combine("src", "A.cs"), MentionController.RelLabel(inside, tmp.Path));
 
         var outsideRoot = Path.Combine(tmp.Path, "src");
         var elsewhere   = tmp.AddFile("B.cs");                 // sibling of src → not under it

@@ -16,8 +16,8 @@ public class ReplayCommandHandlerTests
     public void RecordToolCall_AssignsIncrementingSequence()
     {
         var run = new HistoryRun("r1");
-        run.RecordToolCall("read_file",  @"C:\a.cs", 10, error: false);
-        run.RecordToolCall("apply_diff", @"C:\a.cs", 250, error: true);
+        run.RecordToolCall("read_file",  TestPaths.P(@"C:\a.cs"), 10, error: false);
+        run.RecordToolCall("apply_diff", TestPaths.P(@"C:\a.cs"), 250, error: true);
 
         Assert.Equal(2, run.ToolCallCount);
         Assert.Equal([1, 2], run.ToolCalls.Select(c => c.Seq));
@@ -58,10 +58,10 @@ public class ReplayCommandHandlerTests
     public void Handle_RendersToolLines_DurationsAndErrorMarker()
     {
         var run = new HistoryRun("r1");
-        run.RecordToolCall("read_file", @"C:\proj\Services\A.cs", 85,   error: false);
+        run.RecordToolCall("read_file", TestPaths.P(@"C:\proj\Services\A.cs"), 85,   error: false);
         run.RecordToolCall("run_command", "dotnet build",         2340, error: true);
 
-        var text = ReplayCommandHandler.Handle([run], NoArgs, root: @"C:\proj");
+        var text = ReplayCommandHandler.Handle([run], NoArgs, root: TestPaths.P(@"C:\proj"));
 
         Assert.Contains("1. `read_file`", text);
         Assert.Contains(@"Services\A.cs", text);          // absolute path relativised to root
@@ -76,11 +76,11 @@ public class ReplayCommandHandlerTests
     public void Handle_ListsCreatedAndModifiedFiles()
     {
         var run = new HistoryRun("r1");
-        run.RecordToolCall("write_file", @"C:\proj\new.cs", 12, error: false);
-        run.RecordFirst(@"C:\proj\new.cs", snapshot: null);        // created
-        run.RecordFirst(@"C:\proj\old.cs", snapshot: "snap");      // modified
+        run.RecordToolCall("write_file", TestPaths.P(@"C:\proj\new.cs"), 12, error: false);
+        run.RecordFirst(TestPaths.P(@"C:\proj\new.cs"), snapshot: null);        // created
+        run.RecordFirst(TestPaths.P(@"C:\proj\old.cs"), snapshot: "snap");      // modified
 
-        var text = ReplayCommandHandler.Handle([run], NoArgs, root: @"C:\proj");
+        var text = ReplayCommandHandler.Handle([run], NoArgs, root: TestPaths.P(@"C:\proj"));
 
         Assert.Contains(Strings.ReplayFilesHeader, text);
         Assert.Contains("🆕 new.cs", text);
