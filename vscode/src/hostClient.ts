@@ -85,6 +85,15 @@ export class HostClient {
   private conn: rpc.MessageConnection | undefined;
   private events: ChatEvents = {};
   private stopping = false;
+  /** True from spawn until the `initialize` handshake answers: a crash then is surfaced
+   * by `start()` rejecting (and possibly retried), not by the `onCrash` popup. */
+  private starting = false;
+  /** Set when stderr carries the .NET "Couldn't find a valid ICU package" FailFast. */
+  private icuCrash = false;
+  /** Resolves when the current process closed (stdio flushed) — the ICU message can
+   * land on stderr after the RPC pipe already broke, so `start()` waits on this
+   * before deciding whether the crash was the libicu case. */
+  private closed: Promise<void> | undefined;
 
   /** Host handshake answer, available after start(). */
   public info: InitializeResult | undefined;
@@ -113,22 +122,61 @@ export class HostClient {
     this.events = events;
   }
 
-  /** Spawns the host, wires reverse handlers and performs the `initialize` handshake. */
+  /**
+   * Spawns the host, wires reverse handlers and performs the `initialize` handshake.
+   * On a bare Linux without libicu the self-contained host FailFasts at boot (§23);
+   * that one crash is retried once with .NET's invariant-globalization fallback —
+   * degraded collation, but the resx localization survives (fr measured end-to-end) —
+   * rather than greeting a fresh install with a dead extension.
+   */
   async start(): Promise<InitializeResult> {
+    try {
+      return await this.startOnce();
+    } catch (err) {
+      if (process.platform !== 'win32') {
+        // Let stdio flush before reading the diagnosis: the FailFast text can arrive
+        // on stderr after the RPC pipe already broke. 2 s guard for the spawn-error
+        // path, where 'close' never fires.
+        await Promise.race([this.closed, new Promise((r) => setTimeout(r, 2000))]);
+        if (this.icuCrash) {
+          this.options.log?.(
+            '[host] libicu missing — retrying with DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 ' +
+              '(degraded globalization; install libicu for full locale support)',
+          );
+          return this.startOnce({
+            DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: '1',
+            // Invariant mode alone refuses `new CultureInfo("fr")`: allow the named
+            // (data-less) cultures so the satellite-resource lookup keeps working.
+            DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY: '0',
+          });
+        }
+      }
+      throw err;
+    }
+  }
+
+  private async startOnce(extraEnv?: Record<string, string>): Promise<InitializeResult> {
     if (this.conn) {
       throw new Error('Host already running');
     }
     this.stopping = false;
+    this.starting = true;
+    this.icuCrash = false;
 
     const proc = cp.spawn(this.options.hostPath, [], {
       cwd: this.options.rootDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
+      env: extraEnv ? { ...process.env, ...extraEnv } : undefined,
     });
     this.proc = proc;
+    this.closed = new Promise((resolve) => proc.once('close', () => resolve()));
 
     proc.stderr?.setEncoding('utf8');
     proc.stderr?.on('data', (chunk: string) => {
+      if (chunk.includes("Couldn't find a valid ICU package")) {
+        this.icuCrash = true;
+      }
       for (const line of chunk.split(/\r?\n/)) {
         if (line.trim().length > 0) {
           this.options.log?.(`[host] ${line}`);
@@ -138,10 +186,15 @@ export class HostClient {
 
     proc.on('exit', (code) => {
       const crashed = !this.stopping;
+      const starting = this.starting;
       this.teardown();
       if (crashed) {
         this.options.log?.(`[host] exited unexpectedly (code ${code})`);
-        this.options.onCrash?.(code);
+        // During the handshake the failure surfaces through start() rejecting (or its
+        // libicu retry succeeding); the crash popup is for an established session.
+        if (!starting) {
+          this.options.onCrash?.(code);
+        }
       }
     });
 
@@ -199,6 +252,7 @@ export class HostClient {
       debug: this.debugDelegate !== undefined,
     };
     this.info = await conn.sendRequest<InitializeResult>('initialize', params);
+    this.starting = false;
     this.options.log?.(
       `[host] initialized v${this.info.hostVersion} (provider ${this.info.provider}, model ${this.info.defaultModel})`,
     );

@@ -11,7 +11,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Inferpal.Host</RootNamespace>
     <AssemblyName>Inferpal.Host</AssemblyName>
-    <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- Never declare <InvariantGlobalization>false</>: an explicit value makes the SDK emit
+         "System.Globalization.Invariant": false into the runtimeconfig, and that AppContext
+         switch OVERRIDES DOTNET_SYSTEM_GLOBALIZATION_INVARIANT — which would defeat the VS Code
+         extension's fallback when libicu is missing (bare Linux: the host FailFasts at boot).
+         The SDK default is already non-invariant, without locking out the environment variable.
+         Locked by HostGlobalizationConfigTests. -->
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
