@@ -64,6 +64,9 @@ internal static class ShellStateProtocol
         sb.Append("  $__c=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('").Append(B64Utf16(command)).Append("'))\n");
         sb.Append("  Invoke-Expression $__c\n");
         sb.Append("} finally {\n");
+        // Terminate any pending console line first ([Console]::Write, native exe without a
+        // trailing newline) so the marker always starts a line of its own.
+        sb.Append("  Write-Output ''\n");
         sb.Append("  Write-Output '").Append(marker).Append("'\n");
         sb.Append("  Write-Output ('CWD=' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-Location).Path)))\n");
         sb.Append("  Get-ChildItem env: | ForEach-Object { 'ENV=' + ([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($_.Name))) + '").Append(EnvSep).Append("' + ([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes([string]$_.Value))) }\n");
@@ -100,7 +103,10 @@ internal static class ShellStateProtocol
         AppendRestorePosix(sb, cwd, env);
         sb.Append("__c=$(printf '%s' '").Append(B64Utf8(command)).Append("' | base64 -d)\n");
         sb.Append("eval \"$__c\"\n");
-        sb.Append("printf '%s\\n' '").Append(marker).Append("'\n");
+        // Leading \n terminates any unterminated output line (printf/base64 -d without a
+        // trailing newline) so the marker always starts a line of its own; a doubled newline
+        // on well-behaved output is folded away by the parser's TrimEnd.
+        sb.Append("printf '\\n%s\\n' '").Append(marker).Append("'\n");
         // base64 wraps at 76 columns on GNU and BSD alike — `tr -d '\n'` keeps each state line whole.
         sb.Append("printf 'CWD=%s\\n' \"$(printf '%s' \"$PWD\" | base64 | tr -d '\\n')\"\n");
         // awk's ENVIRON iteration is POSIX and, unlike parsing `env` output, immune to values
@@ -156,10 +162,20 @@ internal static class ShellStateProtocol
     {
         var lines = (stdout ?? string.Empty).Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
         var idx = Array.FindIndex(lines, l => l.Trim() == marker);
+        // A command whose output has no trailing newline glues the marker to its last line
+        // ("hello-gateINFERPAL_STATE_…"): recover the prefix as the real tail of the output.
+        // The marker embeds a fresh GUID, so an accidental suffix match cannot happen.
+        string? glued = null;
         if (idx < 0)
-            return new ShellRunState((stdout ?? string.Empty).TrimEnd(), null, EmptyEnv, false);
+        {
+            idx = Array.FindIndex(lines, l => l.TrimEnd().EndsWith(marker, StringComparison.Ordinal));
+            if (idx < 0)
+                return new ShellRunState((stdout ?? string.Empty).TrimEnd(), null, EmptyEnv, false);
+            var trimmed = lines[idx].TrimEnd();
+            glued = trimmed[..^marker.Length];
+        }
 
-        var output = string.Join("\n", lines.Take(idx)).TrimEnd();
+        var output = string.Join("\n", lines.Take(idx).Concat(glued is null ? [] : [glued])).TrimEnd();
         string? cwd = null;
         var env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         for (var i = idx + 1; i < lines.Length; i++)

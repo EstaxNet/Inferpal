@@ -52,6 +52,39 @@ public class ShellSessionTests
     }
 
     [Fact]
+    public void ParseForeground_MarkerGluedToUnterminatedOutput_StillSplits()
+    {
+        // A command whose output has no trailing newline (`printf 'hello-gate'`,
+        // `base64 -d`, a native exe) glues the marker to its last line. Seen live on the
+        // §23 Linux battery: the raw state block leaked into the visible output and the
+        // cwd/env state of the call was silently lost.
+        const string marker = "INFERPAL_STATE_abc";
+        var stdout =
+            "hello-gate" + marker + "\n" +
+            "CWD=" + B64("/tmp/sub") + "\n" +
+            "ENV=" + B64("FOO") + "|" + B64("bar") + "\n";
+
+        var state = ShellStateProtocol.ParseForeground(stdout, marker);
+
+        Assert.True(state.StateCaptured);
+        Assert.Equal("hello-gate", state.Output);
+        Assert.Equal("/tmp/sub", state.Cwd);
+        Assert.Equal("bar", state.EnvFull["FOO"]);
+    }
+
+    [Fact]
+    public void ForegroundScripts_TerminatePendingOutputLineBeforeMarker()
+    {
+        // Belt to the parser's braces: both dialects emit a newline of their own before the
+        // marker, so a well-behaved shell never glues it in the first place.
+        var env = new Dictionary<string, string>();
+        var posix = ShellStateProtocol.BuildForegroundScript(ShellDialect.Posix, "/w", env, "true", "M");
+        Assert.Contains("printf '\\n%s\\n' 'M'", posix);
+        var ps = ShellStateProtocol.BuildForegroundScript(ShellDialect.PowerShell, @"C:\w", env, "echo hi", "M");
+        Assert.Contains("Write-Output ''\n  Write-Output 'M'", ps);
+    }
+
+    [Fact]
     public void ParseForeground_WhenMarkerMissing_TreatsAllAsOutput()
     {
         var state = ShellStateProtocol.ParseForeground("just output\n", "INFERPAL_STATE_x");
