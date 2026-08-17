@@ -93,7 +93,10 @@ internal static class DiagnosticsCommandHandler
         var version = typeof(Diagnostics).Assembly.GetName().Version;
         sb.Append("- **Inferpal**: ").Append(version?.ToString(3) ?? "unknown")
           .Append(" — ").Append(ctx.FrontEnd).Append('\n');
-        sb.Append("- **OS**: ").Append(Environment.OSVersion.VersionString)
+        // OSDescription, not OSVersion.VersionString: the latter reports the bare kernel family
+        // ("Unix 6.18.33.2") on Linux/macOS, where a support bundle needs the actual platform
+        // ("Linux 6.18.33.2-...-WSL2") — seen on the §23 Linux battery.
+        sb.Append("- **OS**: ").Append(RuntimeInformation.OSDescription)
           .Append(" (").Append(RuntimeInformation.OSArchitecture).Append(")\n");
         sb.Append("- **.NET**: ").Append(Environment.Version).Append('\n');
         sb.Append("- **Provider**: ").Append(c.Provider)
