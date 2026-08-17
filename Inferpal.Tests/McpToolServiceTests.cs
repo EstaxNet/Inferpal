@@ -161,7 +161,10 @@ public class McpToolServiceTests
         var first  = new FakeMcpClient("srv") { ToolList = [Tool("a")] };
         var second = new FakeMcpClient("srv") { ToolList = [Tool("a"), Tool("b")] };
         var queue  = new Queue<FakeMcpClient>([first, second]);
-        await using var svc = NewService(config, _ => queue.Dequeue());
+        // Fast backoff slot: without it the test rides the production schedule (first slot = 1 s)
+        // against WaitUntil's 2 s budget — measured flaky on a loaded CI runner (release run
+        // 31982013261, exactly 2 s then timeout).
+        await using var svc = NewService(config, _ => queue.Dequeue(), [TimeSpan.FromMilliseconds(5)]);
 
         config.McpEnabled = true;
         await svc.RefreshAsync();
