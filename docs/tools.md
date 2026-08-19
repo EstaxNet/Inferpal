@@ -11,7 +11,7 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `write_file` | `path`, `content` | Write/overwrite a file. **Approval** + snapshot + Smart Fix |
 | `list_files` | `path`, `pattern?` | List files (glob, max 300, recursive) |
 | `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (max 100 results) |
-| `run_command` | `command`, `working_directory?` | Run a PowerShell command. **Approval**, configurable timeout |
+| `run_command` | `command`, `working_directory?` | Run a shell command — PowerShell on Windows, bash on Linux/macOS ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout |
 | `apply_diff` | `path`, `old_content`, `new_content`, `occurrence?` | Find-and-replace (exact, then whitespace-tolerant fuzzy fallback). `occurrence`: `unique` (default) / `first` / `all`. **Approval** (shows the diff) + snapshot + Smart Fix |
 | `apply_edits` | `edits[]` (`path`, `old_content`, `new_content`, `occurrence?`) | **Atomic** multi-file edit — all edits resolved first; nothing is written unless every edit matches. One approval (combined diff) + snapshot per file + Smart Fix |
 | `restore_file` | `path`, `snapshot_path?` | Restore a file from `.inferpal/history/` |
@@ -95,10 +95,12 @@ deny  * \.env$                                       # never touch secrets, any 
   **accident guard, not a security boundary**: it matches submitted text, so obfuscation
   defeats it by construction. The actual boundary is the approval prompt, where the raw
   command is visible.
-- **Force-prompt** on indirect execution (`iex`, `-EncodedCommand`, `FromBase64String`,
-  `[scriptblock]::Create`, `& $var`): what runs is not the text the rules read, so no
-  auto-approval path applies (allow rule, session grant, security alerts disabled) — the
-  call is never blocked, it simply always reaches the approval prompt.
+- **Force-prompt** on indirect execution — PowerShell (`iex`, `-EncodedCommand`,
+  `FromBase64String`, `[scriptblock]::Create`, `& $var`) and POSIX (`eval`, piping into a
+  shell, `base64 -d`, `sh -c "$var"`, `source`/`exec` on a variable) alike: what runs is
+  not the text the rules read, so no auto-approval path applies (allow rule, session grant,
+  security alerts disabled) — the call is never blocked, it simply always reaches the
+  approval prompt.
 
 See **[Configuration → Permission rules](configuration.md)**.
 

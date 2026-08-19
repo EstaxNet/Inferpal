@@ -24,7 +24,7 @@
 <p align="center">
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><b>⬇ Download the latest release</b></a>
   — <code>Inferpal-vs2026-*.vsix</code> for Visual Studio (double-click to install)
-  or <code>inferpal-vscode-win32-x64-*.vsix</code> for VS Code.
+  or <code>inferpal-vscode-&lt;platform&gt;-*.vsix</code> for VS Code — Windows x64, Linux x64 or Apple Silicon.
   Visual Studio Marketplace listing coming soon.
 </p>
 
@@ -76,7 +76,7 @@ two editors.
 
 | Requirement | Details |
 |---|---|
-| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community / Professional / Enterprise — or **VS Code** (win32-x64) |
+| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community / Professional / Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon) |
 | .NET SDK | .NET 8 (building from source only — the VS Code VSIX bundles its own runtime) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 
@@ -89,8 +89,9 @@ two editors.
 
 1. Download the extension from **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)**:
    - **Visual Studio**: double-click `Inferpal-vs2026-<version>.vsix`;
-   - **VS Code**: `code --install-extension inferpal-vscode-win32-x64-<version>.vsix`
-     (or Extensions view → `…` → *Install from VSIX…*);
+   - **VS Code**: `code --install-extension inferpal-vscode-<platform>-<version>.vsix`
+     — pick `win32-x64`, `linux-x64` or `darwin-arm64` (or Extensions view → `…` →
+     *Install from VSIX…*);
    - or build from source: `dotnet build Inferpal/Inferpal.csproj` — see [Development](docs/development.md).
 2. Start a model server:
 

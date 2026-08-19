@@ -7,7 +7,7 @@ sections cover the **VS Code extension** (at feature parity since 1.2.0).
 
 | Requirement | Details |
 |---|---|
-| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community, Professional or Enterprise — or **VS Code** (win32-x64) |
+| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon) |
 | .NET SDK | .NET 8 (building from source only) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 
@@ -88,9 +88,12 @@ The VS Code extension shares the same engine and the same Inferpal configuration
 Visual Studio extension — configure once, use in both editors. Since 1.2.0 it is at
 **feature parity** with the Visual Studio front-end.
 
-1. Download `inferpal-vscode-win32-x64-<version>.vsix` from
-   **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)** and install it:
-   `code --install-extension inferpal-vscode-win32-x64-<version>.vsix`
+1. Download the VSIX for your platform from
+   **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)** —
+   `inferpal-vscode-win32-x64-<version>.vsix` (Windows x64),
+   `inferpal-vscode-linux-x64-<version>.vsix` (Linux x64) or
+   `inferpal-vscode-darwin-arm64-<version>.vsix` (Apple Silicon) — and install it:
+   `code --install-extension inferpal-vscode-<platform>-<version>.vsix`
    (or Extensions view → `…` → *Install from VSIX…*). The backend (`Inferpal.Host`) is
    bundled and self-contained — no .NET installation required.
 2. Open the **Inferpal** view in the Activity Bar (or press **Ctrl+Alt+I**) and start

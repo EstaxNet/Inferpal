@@ -47,7 +47,7 @@ editor with tools disabled).
 |---|---|
 | `/ls <path> [pattern]` | List files in a directory |
 | `/grep <dir> <pattern> [ext]` | Search text in files |
-| `/run <command>` | Run a PowerShell command (requires approval) |
+| `/run <command>` | Run a shell command — PowerShell on Windows, bash on Linux/macOS (requires approval) |
 | `/fetch <url>` | Fetch a web page as text (requires approval) |
 | `/search-web <query>` | DuckDuckGo web search (aliases `/search`, `/web_search`, requires approval) |
 | `/search-code <query>` | Semantic search across the indexed codebase (alias `/codebase`) |
