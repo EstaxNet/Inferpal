@@ -6,6 +6,70 @@ namespace Inferpal.Tests;
 // Output parsing for the cargo (Rust) and go test runners added alongside the polyglot Smart Fix.
 public class RunTestsParsersTests
 {
+    // ── dotnet (modern vstest block, SDK 9/10) ─────────────────────────────────
+    // The single-line "Passed! - Failed: …" format the parser originally targeted is gone from
+    // modern SDKs: every run fell through to "no summary line detected" (green) or the raw
+    // MSBuild dump (red). Found by an internal measurement campaign (2026-08-20) — both tests
+    // below are red without the multi-line block parsing.
+
+    [Fact]
+    public void Dotnet_ModernBlock_AllPassing_ReportsParsedSummary()
+    {
+        var raw = """
+            Test run for C:\x\Cobaye.Tests.dll (.NETCoreApp,Version=v8.0)
+              Passed Cobaye.Tests.SortingTests.SortsSmallestFirst [9 ms]
+
+            Test Run Successful.
+            Total tests: 16
+                 Passed: 16
+             Total time: 0,3985 Seconds
+            """;
+        var result = RunTestsTool.ParseDotnetOutput(raw, 0);
+
+        Assert.Contains("✓ PASSED", result);
+        Assert.Contains("Total: 16", result);
+        Assert.DoesNotContain("no summary line detected", result);
+    }
+
+    [Fact]
+    public void Dotnet_ModernBlock_WithFailures_ReportsFailedSummaryAndNames()
+    {
+        var raw = """
+              Failed Cobaye.Tests.CalculatorTests.AddsTwoNumbers [12 ms]
+              Error Message:
+               Assert.Equal() Failure: Expected: 5 / Actual: -1
+
+            Test Run Failed.
+            Total tests: 2
+                 Passed: 1
+                 Failed: 1
+             Total time: 0,4 Seconds
+            """;
+        var result = RunTestsTool.ParseDotnetOutput(raw, 1);
+
+        Assert.Contains("✗ FAILED", result);
+        Assert.Contains("Total: 2", result);
+        Assert.Contains("✗ Cobaye.Tests.CalculatorTests.AddsTwoNumbers", result);
+        Assert.Contains("Assert.Equal() Failure", result);
+    }
+
+    [Fact]
+    public void Dotnet_ZeroMatchFilter_IsNotReportedGreen()
+    {
+        // Exit 0 with zero matched tests: an agent that renames or deletes the failing test must
+        // not turn the /tdd loop green on a run where nothing ran.
+        var raw = """
+            No test matches the given testcase filter `FullyQualifiedName~RenamedTests` in C:\x\Cobaye.Tests.dll
+              0 Warning(s)
+            """;
+        var result = RunTestsTool.ParseDotnetOutput(raw, 0);
+
+        Assert.Contains("No test matched the filter", result);
+        Assert.DoesNotContain("✓", result);
+        Assert.False(Services.Commands.TddCommandHandler.TestsPassed(result),
+                     "the /tdd loop must not read a zero-match run as green");
+    }
+
     // ── Cargo ──────────────────────────────────────────────────────────────────
 
     [Fact]

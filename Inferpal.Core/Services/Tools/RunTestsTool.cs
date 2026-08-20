@@ -131,7 +131,7 @@ internal class RunTestsTool : ITool
 
     // ── Output parsers ─────────────────────────────────────────────────────────
 
-    private static string ParseDotnetOutput(string raw, int exitCode)
+    internal static string ParseDotnetOutput(string raw, int exitCode)
     {
         var sb = new StringBuilder();
 
@@ -150,10 +150,41 @@ internal class RunTestsTool : ITool
             totalTotal   += int.Parse(m.Groups[4].Value);
         }
 
+        // Modern vstest (SDK 9/10) prints a multi-line block instead — the single-line format
+        // above never matches there, so every run fell through to "no summary line detected"
+        // (green) or the raw dump (red). Found by an internal measurement campaign, 2026-08-20:
+        //   Test Run Successful.
+        //   Total tests: 16
+        //        Passed: 16
+        //        Failed: 2        (only when non-zero)
+        if (totalTotal == 0)
+        {
+            var blockRx = new Regex(
+                @"^Total tests:\s*(\d+)\s*$(?:\r?\n^\s+Passed:\s*(\d+)\s*$)?(?:\r?\n^\s+Failed:\s*(\d+)\s*$)?(?:\r?\n^\s+Skipped:\s*(\d+)\s*$)?",
+                RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
+            foreach (Match m in blockRx.Matches(raw))
+            {
+                totalTotal   += int.Parse(m.Groups[1].Value);
+                totalPassed  += m.Groups[2].Success ? int.Parse(m.Groups[2].Value) : 0;
+                totalFailed  += m.Groups[3].Success ? int.Parse(m.Groups[3].Value) : 0;
+                totalSkipped += m.Groups[4].Success ? int.Parse(m.Groups[4].Value) : 0;
+            }
+        }
+
         if (totalTotal > 0)
         {
             var status = totalFailed == 0 ? "✓ PASSED" : "✗ FAILED";
             sb.AppendLine($"{status} — Failed: {totalFailed}, Passed: {totalPassed}, Skipped: {totalSkipped}, Total: {totalTotal}");
+        }
+        // A filter matching zero tests exits 0 and used to read as a pass — so an agent that
+        // renamed or deleted the failing test made `/tdd` declare victory on a run where nothing
+        // ran (found by an internal measurement campaign, 2026-08-20). The vstest message is reliably English
+        // here because this tool forces the child's UI language. No ✓/✗ prefix on purpose:
+        // callers' verdict parsing reads it as not-green and the loop keeps working.
+        else if (raw.Contains("No test matches the given testcase filter", StringComparison.Ordinal))
+        {
+            sb.AppendLine("⚠ No test matched the filter — nothing ran. " +
+                          "The tests may have been renamed or removed; that is not a pass.");
         }
         else if (exitCode == 0)
         {
@@ -377,6 +408,14 @@ internal class RunTestsTool : ITool
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding  = Encoding.UTF8,
             };
+
+            // The dotnet/vstest summary lines this tool parses ("Passed! - Failed: …",
+            // "Failed X [10 ms]", "Error Message:") are localized by the SDK: on a French machine
+            // every red run fell through to the raw-log fallback — a truncated MSBuild wall instead
+            // of test names and assert messages (found by an internal measurement campaign, 2026-08-20). Forcing
+            // the child's UI language keeps the parser input deterministic on every locale.
+            psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
+            psi.EnvironmentVariables["VSLANG"]                 = "1033";
 
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(timeoutSeconds), ct);
 
