@@ -11,9 +11,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
 
     <!-- Version numbering (bumped by deploy-release.ps1) -->
-    <AssemblyVersion>1.5.1.0</AssemblyVersion>
-    <FileVersion>1.5.1.0</FileVersion>
-    <Version>1.5.1</Version>
+    <AssemblyVersion>1.5.2.0</AssemblyVersion>
+    <FileVersion>1.5.2.0</FileVersion>
+    <Version>1.5.2</Version>
 
     <!-- Binary reproducibility -->
     <Deterministic>true</Deterministic>
