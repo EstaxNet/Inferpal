@@ -10,6 +10,7 @@ namespace Inferpal.Tests;
 /// job must die with the editor — a child started with <c>UseShellExecute=false</c> outlives its
 /// parent on Windows.
 /// </summary>
+[Collection(ShellSerialCollection.Name)]
 public class BackgroundShellRegistryTests
 {
     /// <summary>

@@ -15,6 +15,7 @@ namespace Inferpal.Tests;
 // prove cwd/env really persist and that a background job can be launched, polled and stopped.
 // On a pwsh-less POSIX machine they skip silently: the same contract runs in bash via
 // PosixShellTests (§23).
+[Collection(ShellSerialCollection.Name)]
 public class ShellSessionTests
 {
     /// <summary>PS-syntax integration tests only make sense when the resolved shell speaks PowerShell.</summary>

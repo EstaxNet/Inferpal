@@ -22,15 +22,22 @@ internal enum ShellDialect
 /// rather than cached: it costs a PATH scan only off-Windows, and a cache would be one more
 /// process-wide static for tests to reset.
 /// </remarks>
+/// <summary>Immutable dialect + executable pair for the test seam — a reference type on purpose:
+/// reference reads/writes are atomic, where the nullable struct tuple it replaces could be read
+/// torn by a concurrently-running test class. A torn read materialized once on the ubuntu CI leg
+/// (2026-08-20): HasValue already true, Dialect still default(PowerShell = 0), FileName already
+/// "/bin/bash" — a PowerShell wrapper handed to bash.</summary>
+internal sealed record ShellOverride(ShellDialect Dialect, string FileName);
+
 internal static class ShellLauncher
 {
     /// <summary>Test seam: forces a dialect + executable (e.g. Git bash on a Windows dev box).</summary>
-    internal static (ShellDialect Dialect, string FileName)? _overrideForTests;
+    internal static volatile ShellOverride? _overrideForTests;
 
     /// <summary>The dialect and executable this machine's persistent shell uses.</summary>
     public static (ShellDialect Dialect, string FileName) Resolve()
     {
-        if (_overrideForTests is { } o) return o;
+        if (_overrideForTests is { } o) return (o.Dialect, o.FileName);
         if (OperatingSystem.IsWindows()) return (ShellDialect.PowerShell, "powershell.exe");
 
         var pwsh = FindOnPath("pwsh");

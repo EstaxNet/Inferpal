@@ -11,6 +11,7 @@ namespace Inferpal.Tests;
 /// PowerShell (restore cwd/env, sentinel, state emit), and the same security tiers (the
 /// opaque-execution force-prompt gains its POSIX equivalents).
 /// </summary>
+[Collection(ShellSerialCollection.Name)]
 public class PosixShellTests
 {
     // ── Security tier: POSIX indirect execution forces the prompt ───────────────
@@ -101,7 +102,7 @@ public class PosixShellTests
         var bash = FindBash();
         if (bash is null) return;   // no bash on this machine — covered by the POSIX CI legs
 
-        ShellLauncher._overrideForTests = (ShellDialect.Posix, bash);
+        ShellLauncher._overrideForTests = new ShellOverride(ShellDialect.Posix, bash);
         try
         {
             var config  = new InferpalConfig();
