@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services.Tools;
@@ -31,6 +31,27 @@ internal sealed class McpTool : ITool
             : info.Description;
         Parameters       = info.InputSchema;
     }
+
+    private McpTool(McpTool source, IApprovalService approval)
+    {
+        _client          = source._client;
+        _approval        = approval;
+        _serverLocalName = source._serverLocalName;
+        Name             = source.Name;
+        Description      = source.Description;
+        Parameters       = source.Parameters;
+    }
+
+    /// <summary>
+    /// The same tool gated by a different approval pipeline. The service is captured at
+    /// construction, so a sibling registry built by <c>ToolRegistry.WithApprovalService</c> used to
+    /// keep prompting through the ORIGINAL service — the §25 <c>TestFileWriteGuard</c> never applied
+    /// to MCP tools, and a prior "Always" grant let a model rewrite a test file through an MCP
+    /// filesystem server without any force-prompt (pre-1.6.0 architecture review, §1.5). Rebinding restores the
+    /// invariant that a registry's whole surface answers to its own approval service.
+    /// </summary>
+    internal McpTool WithApproval(IApprovalService approval) =>
+        ReferenceEquals(approval, _approval) ? this : new McpTool(this, approval);
 
     public string Name { get; }
     public string Description { get; }

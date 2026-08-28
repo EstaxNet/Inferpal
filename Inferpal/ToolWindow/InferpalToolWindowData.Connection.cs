@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -29,8 +29,14 @@ internal partial class InferpalToolWindowData
     private async Task RetryConnectionAsync(object? _, CancellationToken ct)
     {
         _client.ResetCircuit();
-        await _heartbeatCts.CancelAsync();
+        // Dispose the old CTS (it leaked) and hand the NEW token to the loop explicitly: the loop
+        // used to read _heartbeatCts.Token at ITS start, so a double-click could start two loops
+        // on the same token — double polling and doubled "connection restored" bubbles (the
+        // pre-1.6.0 architecture review). Captured here, each loop dies with its own token.
+        var old = _heartbeatCts;
         _heartbeatCts = new CancellationTokenSource();
+        var token = _heartbeatCts.Token;
+        try { await old.CancelAsync(); } finally { old.Dispose(); }
         // Keep _isBackendReachable=false until the next heartbeat tick confirms success —
         // this prevents a race where the user clicks Send during the 2-second check delay.
         await RunOnVMContextAsync(() =>
@@ -39,7 +45,7 @@ internal partial class InferpalToolWindowData
             ConnectionStatusColor = "#A0A0A0";
             ShowRetryButton       = false;
         });
-        _ = StartHeartbeatAsync();
+        _ = StartHeartbeatAsync(token);
     }
 
     // ── VRAM monitoring ───────────────────────────────────────────────────────
@@ -64,9 +70,9 @@ internal partial class InferpalToolWindowData
         }, null);
     }
 
-    private async Task StartHeartbeatAsync()
+    private async Task StartHeartbeatAsync(CancellationToken? token = null)
     {
-        var ct = _heartbeatCts.Token;
+        var ct = token ?? _heartbeatCts.Token;
         try
         {
             // Let the window finish its initial render before the first check.
@@ -96,7 +102,8 @@ internal partial class InferpalToolWindowData
                     var edgeMessage = status.Transition switch
                     {
                         ConnectionTransition.Restored => Strings.MsgHeartbeatRestored,
-                        ConnectionTransition.Lost     => Strings.MsgConnectionGuardFailed(url),
+                        ConnectionTransition.Lost     => Strings.MsgConnectionGuardFailed(
+                                                             url, InferenceProviderFactory.DisplayName(_config.Provider)),
                         _                             => null,
                     };
                     if (edgeMessage is not null)
@@ -233,9 +240,11 @@ internal partial class InferpalToolWindowData
 
 
     /// <summary>Toggles agent step mode (shared by the <c>/agent-step</c> command and the toolbar button).</summary>
+    /// <remarks>Commands run OFF the VM context (see SendAsync) — [DataMember] mutations are
+    /// marshalled, like every other property write (pre-1.6.0 architecture review, §2.5).</remarks>
     private async Task ToggleStepModeAsync()
     {
-        IsStepMode = !IsStepMode;
+        await RunOnVMContextAsync(() => IsStepMode = !IsStepMode);
         await ShowInfoAsync(IsStepMode
             ? "🦶 **Step mode ON** — the agent will pause after each tool call. Use ▶ Resume (or `/resume`) to continue."
             : "Step mode **OFF**.");
@@ -245,9 +254,9 @@ internal partial class InferpalToolWindowData
     /// Refreshes the system prompt so the plan-mode instructions follow the toggle mid-session.</summary>
     private async Task TogglePlanModeAsync()
     {
-        IsPlanMode = !IsPlanMode;
         await RunOnVMContextAsync(() =>
         {
+            IsPlanMode = !IsPlanMode;   // marshalled like the history it drives (revue §2.5)
             _baseSystemPrompt = BuildSystemPrompt();
             if (_history.Count > 0 && _history[0].Role == "system")
                 _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
@@ -264,10 +273,13 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private async Task ToggleAgentModeAsync()
     {
-        IsAgentMode = !IsAgentMode;
+        await RunOnVMContextAsync(() =>
+        {
+            IsAgentMode = !IsAgentMode;   // marshalled: commands run off the VM context (revue §2.5)
+            AgentModeLabel = IsAgentMode ? Strings.LabelModeAgent : Strings.LabelModeChat;
+        });
         _config.AgentModeEnabled = IsAgentMode;
         _config.Save();
-        AgentModeLabel = IsAgentMode ? Strings.LabelModeAgent : Strings.LabelModeChat;
         await ShowInfoAsync(IsAgentMode
             ? $"**{Strings.LabelModeAgent}** — Plan → Act → Observe"
             : $"**{Strings.LabelModeChat}**");

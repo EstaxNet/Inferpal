@@ -1,6 +1,7 @@
 // Editor side of the reverse-RPC surface: answers the host's editor/* requests and
 // mirrors open documents into the host's dirty-buffer overlay (textDocument/did*).
 import * as vscode from 'vscode';
+import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient, EditorDelegate } from './hostClient';
 import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto } from './protocol';
 
@@ -24,7 +25,9 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
   private readonly changeTimers = new Map<string, NodeJS.Timeout>();
   private readonly disposables: vscode.Disposable[] = [];
   private host: HostClient | undefined;
-  private approvalCard: ((message: string) => Promise<number | undefined>) | undefined;
+  private approvalCard:
+    | ((message: string, token?: CancellationToken) => Promise<number | undefined>)
+    | undefined;
 
   constructor(private readonly secrets?: vscode.SecretStorage) {
     this.lastActive = vscode.window.activeTextEditor;
@@ -62,7 +65,9 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
   }
 
   /** Preferred approval UI (chat webview card); modal dialog stays as the fallback. */
-  setApprovalCard(handler: (message: string) => Promise<number | undefined>): void {
+  setApprovalCard(
+    handler: (message: string, token?: CancellationToken) => Promise<number | undefined>,
+  ): void {
     this.approvalCard = handler;
   }
 
@@ -121,11 +126,16 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
 
   // ── EditorDelegate (host → editor requests) ────────────────────────────────
 
-  async approvalRequest(note: ApprovalNote): Promise<number> {
+  async approvalRequest(note: ApprovalNote, token?: CancellationToken): Promise<number> {
+    // §27.5 — the token relays the host's $/cancelRequest (turn cancelled/timeout): a card that
+    // outlives its run is a ghost the user can still click. Cancellation always answers deny.
+    if (token?.isCancellationRequested) {
+      return ApprovalAnswer.Deny;
+    }
     // Chat card first (Continue/Cline style) — inline, keeps the flow readable.
     if (this.approvalCard) {
       try {
-        const answer = await this.approvalCard(note.message);
+        const answer = await this.approvalCard(note.message, token);
         if (answer !== undefined) {
           return answer;
         }
@@ -134,16 +144,29 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
       }
     }
     // Modal fallback so an agent mid-run can never be silently ignored; Esc/close = deny.
+    // A native modal cannot be closed programmatically: on cancellation the wait ends (deny) —
+    // the dialog lingers until the user closes it, cosmetic only, its answer is ignored.
     const once = vscode.l10n.t('Allow once');
     const always = vscode.l10n.t('Always allow (session)');
-    const answer = await vscode.window.showWarningMessage(note.message, { modal: true }, once, always);
-    if (answer === once) {
-      return ApprovalAnswer.Once;
+    let cancelSub: { dispose(): void } | undefined;
+    try {
+      const cancelled = new Promise<undefined>((resolve) => {
+        cancelSub = token?.onCancellationRequested(() => resolve(undefined));
+      });
+      const answer = await Promise.race([
+        vscode.window.showWarningMessage(note.message, { modal: true }, once, always),
+        cancelled,
+      ]);
+      if (answer === once) {
+        return ApprovalAnswer.Once;
+      }
+      if (answer === always) {
+        return ApprovalAnswer.Always;
+      }
+      return ApprovalAnswer.Deny;
+    } finally {
+      cancelSub?.dispose();
     }
-    if (answer === always) {
-      return ApprovalAnswer.Always;
-    }
-    return ApprovalAnswer.Deny;
   }
 
   async activeDocument(): Promise<ActiveDocumentDto> {

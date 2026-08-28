@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace Inferpal.Services.Signals;
 
@@ -45,6 +45,14 @@ internal static class SignalFile
 
     internal static DateTimeOffset Now => _nowOverride?.Invoke() ?? DateTimeOffset.UtcNow;
 
+    /// <summary>PID of the current process, as it is written into the signals.</summary>
+    /// <remarks>
+    /// Not <c>Environment.ProcessId</c>: these sources are also compiled as net472 by
+    /// <c>Inferpal.InProc</c> (the assembly loaded inside <c>devenv</c>), where that API does not
+    /// exist. Cached: the PID does not change, and <c>Process.GetCurrentProcess()</c> allocates.
+    /// </remarks>
+    internal static readonly int CurrentPid = System.Diagnostics.Process.GetCurrentProcess().Id;
+
     /// <summary>Full path of a channel's file, resolved against the current directory.</summary>
     /// <remarks>
     /// A method rather than a cached string: the override is set after static initialisation, so a
@@ -89,7 +97,9 @@ internal static class SignalFile
         if (!fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
             !fileName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) return false;
         var middle = fileName[prefix.Length..^suffix.Length];
-        return middle.All(char.IsAsciiDigit);
+        // Not char.IsAsciiDigit: this file is also compiled as net472 by Inferpal.InProc, where
+        // that API does not exist (it is net7+). The predicate itself is the same.
+        return middle.All(c => c >= '0' && c <= '9');
     }
 
     /// <summary>Every keyed file of <paramref name="baseName"/> currently on disk. Never throws.</summary>

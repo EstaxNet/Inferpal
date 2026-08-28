@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Code actions & bannière de build
+    #region Code actions & build banner
 
     // ── Code-action helpers ────────────────────────────────────────────────────
 
@@ -120,12 +120,13 @@ internal partial class InferpalToolWindowData
         // Extract first line for display; truncate if it is too wide for the banner.
         var firstError = Services.CodeActions.FixPromptBuilder.FirstErrorLine(errorLines);
 
-        _buildFailedErrorLines = errorLines;
-
         Post(() =>
         {
-            BuildFailedFirstError = firstError;
-            HasBuildFailedBanner  = true;
+            // The field moves inside the marshalled block: it was written on the watcher thread
+            // while "Fix with AI" read it from the command path (pre-1.6.0 architecture review, §2.5).
+            _buildFailedErrorLines = errorLines;
+            BuildFailedFirstError  = firstError;
+            HasBuildFailedBanner   = true;
         });
     }
 

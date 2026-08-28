@@ -10,7 +10,13 @@ internal class GetGitStatusTool : ITool
 {
     private readonly IEditorSurface _editor;
 
-    public GetGitStatusTool(IEditorSurface editor) => _editor = editor;
+    public GetGitStatusTool(IEditorSurface editor, Func<string?>? getRoot = null)
+    {
+        _editor  = editor;
+        _getRoot = getRoot ?? (() => null);
+    }
+
+    private readonly Func<string?> _getRoot;
 
     private const int MaxDiffChars = 6000;
 
@@ -45,6 +51,15 @@ internal class GetGitStatusTool : ITool
     {
         var startPath    = args.TryGetProperty("path",         out var p) ? p.GetString() : null;
         var includeDiff  = args.TryGetProperty("include_diff", out var d) && d.GetBoolean();
+
+        // Same confinement contract as every other path-taking tool: this was the one tool that
+        // took the model's raw path and would read the git status of any repository on the
+        // machine (pre-1.6.0 architecture review, §1.10). Read-only, but outside the advertised boundary.
+        if (startPath is not null)
+        {
+            startPath = PathSanitizer.Sanitize(startPath);
+            PathSanitizer.AssertUnderRoot(startPath, _getRoot());
+        }
 
         var root = (startPath is not null ? FindGitRoot(startPath) : null)
                 ?? FindGitRootFromOpenFiles()

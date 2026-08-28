@@ -245,8 +245,8 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  session : {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama non configurée. Ouvrez les paramètres pour la renseigner.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Le modèle n'a retourné aucune réponse. Le modèle configuré ne supporte peut-être pas la génération de texte — essayez le modèle du chat par défaut.</value></data>
-  <data name="MsgTimeout" xml:space="preserve"><value>Délai d'attente dépassé — Ollama ne répond pas à {0} après 30 minutes.</value></data>
-  <data name="MsgUnreachable" xml:space="preserve"><value>Impossible de joindre Ollama à {0}. Vérifiez l'URL dans les paramètres.</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>Délai d'attente dépassé — le backend à {0} ne répond plus (délai d'inactivité).</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>Impossible de joindre le backend à {0}. Vérifiez l'URL dans les paramètres.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Le serveur d'inférence à {0} a renvoyé une erreur :
 
 {1}</value></data>
@@ -254,15 +254,15 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
 
 Détail du serveur : {0}</value></data>
   <data name="MsgContextWontFit" xml:space="preserve"><value>La requête (~{0} tokens) est plus grande que le contexte avec lequel le modèle est chargé ({1} tokens) en mode agent — les seules définitions d'outils occupent plusieurs milliers de tokens. Augmentez la longueur de contexte chargée (16384 ou plus recommandé dans LM Studio), ou réduisez le nombre d'outils agent activés.</value></data>
-  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Impossible de joindre Ollama à {0}
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Impossible de joindre {1} à {0}
 
 Étapes de dépannage :
-  1. Démarrez Ollama — ouvrez un terminal et exécutez :  ollama serve
+  1. Démarrez {1} (pour Ollama : ouvrez un terminal et exécutez  ollama serve)
   2. Vérifiez l'URL dans les paramètres (actuellement : {0})
-  3. Si Ollama tourne sur une autre machine, mettez l'URL à jour dans les paramètres
-  4. Vérifiez que le port 11434 n'est pas bloqué par un pare-feu ou un antivirus
+  3. Si {1} tourne sur une autre machine, mettez l'URL à jour dans les paramètres
+  4. Vérifiez que le port n'est pas bloqué par un pare-feu ou un antivirus
 
-Cliquez sur ↻ Réessayer dans l'en-tête une fois Ollama démarré.</value></data>
+Cliquez sur ↻ Réessayer dans l'en-tête une fois {1} démarré.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconnecté à Ollama — prêt.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Vérifier la connexion à Ollama maintenant</value></data>
 
@@ -724,6 +724,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="SlashHintDiagnostics" xml:space="preserve"><value>Affiche les diagnostics récents — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostics</value></data>
+  <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Le composant in-process n'est pas chargé : le ghost-text, l'aperçu de diff de l'édition inline et le driver debugger de /tdd sont indisponibles. Le chat n'est pas affecté (il tourne hors process), c'est pourquoi rien n'a l'air cassé.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Aucun diagnostic enregistré.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnostics effacés.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Rapport de support copié dans le presse-papiers — collez-le dans une issue GitHub.</value></data>
@@ -777,6 +778,10 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="TddFixing" xml:space="preserve"><value>🔧 Correction {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Suite de tests verte après {0} tour(s).</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Tests toujours en échec après {0} tour(s) — intervention manuelle requise.</value></data>
+  <data name="TddDebugCaptureApproval" xml:space="preserve"><value>Relancer le test en échec '{0}' sous le débogueur pour capturer son état au point d'échec ? (demandé une fois par run /tdd)</value></data>
+  <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Capture de l'état du débogueur au point d'échec…</value></data>
+  <data name="TddDebugCaptureFailed" xml:space="preserve"><value>⚠ Échec de la capture de l'état du débogueur — poursuite sans elle.</value></data>
+  <data name="TddDebugCaptureUnavailable" xml:space="preserve"><value>⚠ Capture du débogueur indisponible (driver in-process non chargé) — boucle simple.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Radiographie du contexte — prompt système ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Prompt système de base</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Extrait persona</value></data>
@@ -850,6 +855,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="TaskQueueFull" xml:space="preserve"><value>Trop de tâches en arrière-plan ({0} au maximum). Attendez qu'une se termine ou lancez `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Tâche `{0}` inconnue.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Tâche `{0}` annulée.</value></data>
+  <data name="TaskAlreadyFinished" xml:space="preserve"><value>La tâche `{0}` est déjà terminée — `/task {0}` affiche son rapport.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>{0} tâche(s) terminée(s) oubliée(s).</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Aucune tâche en arrière-plan. `/task [objectif]` en lance une.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Tâches en arrière-plan</value></data>

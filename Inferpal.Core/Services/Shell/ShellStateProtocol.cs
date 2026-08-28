@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 
 namespace Inferpal.Services.Shell;
 
@@ -158,6 +158,14 @@ internal static class ShellStateProtocol
     /// (cwd + full env). If the marker is absent (e.g. the command called <c>exit</c> and skipped
     /// the <c>finally</c>), the whole text is treated as output and no state is captured.
     /// </summary>
+    /// <summary>
+    /// Comparer for environment variable NAMES: case-insensitive on Windows, case-sensitive on
+    /// POSIX (§27.6 - <c>PATH</c> and <c>path</c> are two distinct variables on Linux; a shared
+    /// OrdinalIgnoreCase merged them silently on the published linux-x64/darwin VSIXes).
+    /// </summary>
+    public static StringComparer EnvNameComparer =>
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
     public static ShellRunState ParseForeground(string stdout, string marker)
     {
         var lines = (stdout ?? string.Empty).Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
@@ -177,7 +185,7 @@ internal static class ShellStateProtocol
 
         var output = string.Join("\n", lines.Take(idx).Concat(glued is null ? [] : [glued])).TrimEnd();
         string? cwd = null;
-        var env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var env = new Dictionary<string, string>(EnvNameComparer);
         for (var i = idx + 1; i < lines.Length; i++)
         {
             var line = lines[i];
@@ -203,11 +211,19 @@ internal static class ShellStateProtocol
     /// the variables the session added or changed. These overrides are what gets re-applied on the
     /// next command, so <c>$env:FOO='x'</c> persists across calls without re-injecting the whole env.
     /// </summary>
+    /// <remarks>
+    /// Doctrine (§27.6, deliberate): a variable <b>removed</b> by the command
+    /// (<c>Remove-Item env:</c>, <c>unset</c>) leaves no trace in the snapshot - it is therefore
+    /// not persisted and reappears on the next call, inherited from the process. Same family as
+    /// in-memory PowerShell variables and modules: out of scope for the state protocol. Persisting
+    /// it would need tombstones in this diff AND in both restore scripts; to be reopened only if a
+    /// real use case asks for it.
+    /// </remarks>
     public static Dictionary<string, string> ComputeOverrides(
         IReadOnlyDictionary<string, string> baseline,
         IReadOnlyDictionary<string, string> full)
     {
-        var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var overrides = new Dictionary<string, string>(EnvNameComparer);
         foreach (var kv in full)
         {
             if (!baseline.TryGetValue(kv.Key, out var b) || !string.Equals(b, kv.Value, StringComparison.Ordinal))

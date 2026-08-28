@@ -169,4 +169,55 @@ public class AnalyzeImpactSemanticTests : IDisposable
         // rather than present name-matching as resolution.
         Assert.DoesNotContain("resolved by the C# compiler", report);
     }
+
+    [Fact]
+    public async Task NamedScriptSymbol_RunsTheHeuristic_InsteadOfRefusing()
+    {
+        // Script exports live in ExportedNames, not Types: before the fix, naming ANY TS symbol
+        // answered "symbol not found" — measured 10/10 on the vscode/src probe set (2026-08-20,
+        // docs/probes/semantique-ts). The degraded heuristic must run, not refuse.
+        var target = Write("lib.ts", """
+            export class Widget {
+              render(): string { return 'w'; }
+            }
+            """);
+        Write("consumer.ts", """
+            import { Widget } from './lib';
+            const w = new Widget();
+            """);
+
+        var report = await RunAsync(target, "Widget");
+
+        Assert.DoesNotContain("not found in the public API", report);
+        Assert.Contains("consumer.ts", report);
+    }
+
+    [Fact]
+    public async Task NamedScriptSymbol_CountsOnlyImportersThatMentionIt()
+    {
+        // Importing the file is not using the symbol: a contract file used to report every one of
+        // its importers for every symbol asked about (measured P = 0.12-0.38 on protocol.ts,
+        // docs/probes/semantique-ts seconde passe), while the "uses:" mention annotations were
+        // 100 % right. At the symbol grain the non-mentioning importers must be excluded — and
+        // said, not silently dropped.
+        var target = Write("contract.ts", """
+            export interface Widget { render(): string; }
+            export interface Gadget { spin(): void; }
+            """);
+        Write("usesWidget.ts", """
+            import { Widget } from './contract';
+            export const w: Widget | null = null;
+            """);
+        Write("usesGadget.ts", """
+            import { Gadget } from './contract';
+            export const g: Gadget | null = null;
+            """);
+
+        var report = await RunAsync(target, "Widget");
+
+        Assert.Contains("usesWidget.ts", report);
+        Assert.DoesNotContain("usesGadget.ts", report);
+        Assert.Contains("+1 file(s) import contract.ts without mentioning `Widget`", report);
+        Assert.Contains("Direct dependants  (1)", report);
+    }
 }

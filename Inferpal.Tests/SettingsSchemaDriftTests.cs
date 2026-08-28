@@ -1,4 +1,4 @@
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 using System.IO;
 using Inferpal.Config;
 using Inferpal.Services.Presentation;
@@ -99,6 +99,30 @@ public class SettingsSchemaDriftTests
         Assert.True(missing.Count == 0,
             "Settings labels/hints/titles with no matching resource (the panel would render the raw "
             + "key, and the .resx completeness test would never see them):\n  " + string.Join("\n  ", missing));
+    }
+
+    [Fact]
+    public void FimModeOptionTexts_MatchTheActualPresets()
+    {
+        // §27.6 - the labels promise "128 tok / 300 ms" literally: if the preset table of
+        // FimContextBuilder moves, the form lies silently on both sides.
+        var field = SettingsSchema.AllFields.Single(f => f.Key == "inlineCompletionMode");
+        Assert.NotNull(field.Options);
+
+        foreach (var opt in field.Options!)
+        {
+            var preset = FimContextBuilder.GetSettings(opt.Value);
+            var delay  = preset.DebounceMs >= 1000
+                ? $"{preset.DebounceMs / 1000} s"
+                : $"{preset.DebounceMs} ms";
+            Assert.Contains($"{preset.MaxTokens} tok", opt.Text);
+            Assert.Contains(delay, opt.Text);
+        }
+
+        // GetSettings falls back to Default on an unknown code: pairwise-distinct presets prove
+        // every option of the form is a real preset, not the fallback.
+        var presets = field.Options!.Select(o => FimContextBuilder.GetSettings(o.Value)).ToList();
+        Assert.Equal(presets.Count, presets.Distinct().Count());
     }
 
     [Fact]

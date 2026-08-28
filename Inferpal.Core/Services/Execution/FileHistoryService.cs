@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 
 namespace Inferpal.Services.Execution;
 
@@ -9,13 +9,39 @@ namespace Inferpal.Services.Execution;
 /// <remarks>
 /// Backups are stored in <c>.inferpal/history/</c> at the git repository root
 /// (falls back to the file's directory when no git root is found).
-/// Snapshot filename format: <c>yyyy-MM-dd_HH-mm-ss-fff_&lt;originalFilename&gt;</c>.
+/// Snapshot filename format: <c>yyyy-MM-dd_HH-mm-ss-fff_&lt;pathHash8&gt;_&lt;originalFilename&gt;</c>.
+/// The 8-hex-char hash of the <em>full</em> path disambiguates same-named files: matching on the
+/// bare file name let <c>restore_file</c> on <c>A\Config.cs</c> silently restore the content of a
+/// more recently touched <c>B\Config.cs</c>, and homonyms pruned each other's retention slots
+/// (pre-1.6.0 architecture review, §1.4). Snapshots written before this format are no longer found by
+/// name-matching — deliberate: that matching is the bug — but stay on disk and remain restorable
+/// via <c>/undo-run</c>, which keeps exact snapshot paths.
 /// </remarks>
 internal class FileHistoryService
 {
-    // Snapshot filename: "yyyy-MM-dd_HH-mm-ss-fff_<originalFilename>"
-    // 23 timestamp chars + 1 underscore separator = 24 characters total.
+    // Snapshot filename: "yyyy-MM-dd_HH-mm-ss-fff_<pathHash8>_<originalFilename>"
+    // 23 timestamp chars + 1 underscore separator = 24 characters before the hash.
     private const int TimestampPrefixLength = 24;
+
+    /// <summary>First 8 hex chars of the SHA-256 of the normalized full path — the per-file
+    /// identity that survives homonyms in other directories.</summary>
+    internal static string PathHash(string filePath)
+    {
+        var normalized = Path.GetFullPath(filePath).ToLowerInvariant();
+        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(normalized));
+        return Convert.ToHexString(bytes.AsSpan(0, 4)).ToLowerInvariant();
+    }
+
+    /// <summary>The per-file suffix a snapshot name must carry after its timestamp prefix.</summary>
+    private static string SnapshotSuffix(string filePath) =>
+        $"{PathHash(filePath)}_{Path.GetFileName(filePath)}";
+
+    private static bool MatchesSuffix(string snapshotPath, string suffix)
+    {
+        var bn = Path.GetFileName(snapshotPath);
+        return bn.Length > TimestampPrefixLength &&
+               bn[TimestampPrefixLength..].Equals(suffix, StringComparison.OrdinalIgnoreCase);
+    }
 
     // Cap on retained snapshots per original file. Older ones are pruned after each
     // new snapshot so .inferpal/history/ cannot grow without bound.
@@ -31,37 +57,40 @@ internal class FileHistoryService
             Directory.CreateDirectory(historyDir);
 
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff");
-            var fileName  = Path.GetFileName(filePath);
-            var snapPath  = Path.Combine(historyDir, $"{timestamp}_{fileName}");
+            var suffix    = SnapshotSuffix(filePath);
+            var snapPath  = Path.Combine(historyDir, $"{timestamp}_{suffix}");
 
             var bytes = await File.ReadAllBytesAsync(filePath, ct);
             await File.WriteAllBytesAsync(snapPath, bytes, ct);
 
-            PruneOldSnapshots(historyDir, fileName);
+            PruneOldSnapshots(historyDir, suffix);
             RecordInRun(filePath, snapPath);   // for /undo-run (no-op when no run is active)
             return snapPath;
         }
-        catch
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
         {
+            // A failed snapshot means the write that follows has NO safety net. Swallowing it
+            // without a trace made the file silently vanish from the /undo-run perimeter while
+            // the tool description still promised "snapshotted" (pre-1.6.0 architecture review, §1.3): trace
+            // it, and record the file in the run as snapshot-failed so UndoRunAsync reports it
+            // as Failed instead of not knowing it was ever touched.
+            Diagnostics.Swallow($"FileHistoryService.Snapshot({filePath})", ex);
+            lock (_runLock) _currentRun?.RecordFirst(filePath, snapshot: null, snapshotFailed: true);
             return string.Empty;
         }
     }
 
     /// <summary>
-    /// Deletes the oldest snapshots of <paramref name="fileName"/> beyond
-    /// <see cref="MaxSnapshotsPerFile"/>. Best-effort — never throws.
+    /// Deletes the oldest snapshots carrying <paramref name="suffix"/> (path hash + file name)
+    /// beyond <see cref="MaxSnapshotsPerFile"/>. Best-effort — never throws.
     /// </summary>
-    private static void PruneOldSnapshots(string historyDir, string fileName)
+    private static void PruneOldSnapshots(string historyDir, string suffix)
     {
         try
         {
             var snaps = Directory.EnumerateFiles(historyDir)
-                .Where(f =>
-                {
-                    var bn = Path.GetFileName(f);
-                    return bn.Length > TimestampPrefixLength &&
-                           bn[TimestampPrefixLength..].Equals(fileName, StringComparison.OrdinalIgnoreCase);
-                })
+                .Where(f => MatchesSuffix(f, suffix))
                 .OrderByDescending(f => f) // timestamp prefix sorts lexically == chronologically
                 .Skip(MaxSnapshotsPerFile)
                 .ToList();
@@ -77,15 +106,10 @@ internal class FileHistoryService
         var historyDir = GetHistoryDir(originalPath);
         if (!Directory.Exists(historyDir)) return null;
 
-        var fileName = Path.GetFileName(originalPath);
+        var suffix = SnapshotSuffix(originalPath);
 
         return Directory.EnumerateFiles(historyDir)
-            .Where(f =>
-            {
-                var bn = Path.GetFileName(f);
-                return bn.Length > TimestampPrefixLength &&
-                       bn[TimestampPrefixLength..].Equals(fileName, StringComparison.OrdinalIgnoreCase);
-            })
+            .Where(f => MatchesSuffix(f, suffix))
             .OrderByDescending(f => f)
             .FirstOrDefault();
     }
@@ -157,7 +181,14 @@ internal class FileHistoryService
             ct.ThrowIfCancellationRequested();
             try
             {
-                if (change.SnapshotPath is null)
+                if (change.SnapshotFailed)
+                {
+                    // The file was modified but its pre-run content was never captured: undoing
+                    // cannot restore it, and deleting it (the created-file path below) would
+                    // destroy data. Report it as failed so the user knows this one is manual.
+                    failed.Add(change.OriginalPath);
+                }
+                else if (change.SnapshotPath is null)
                 {
                     if (File.Exists(change.OriginalPath)) { File.Delete(change.OriginalPath); deleted.Add(change.OriginalPath); }
                 }
@@ -199,8 +230,10 @@ internal class FileHistoryService
 }
 
 /// <summary>One file touched during a run. <see cref="SnapshotPath"/> is <c>null</c> when the file
-/// was <em>created</em> during the run (no prior content — undo deletes it).</summary>
-internal sealed record RunChange(string OriginalPath, string? SnapshotPath);
+/// was <em>created</em> during the run (no prior content — undo deletes it) — unless
+/// <see cref="SnapshotFailed"/> is set: the file existed but its snapshot could not be taken, so
+/// undo can neither restore nor delete it and reports it as failed.</summary>
+internal sealed record RunChange(string OriginalPath, string? SnapshotPath, bool SnapshotFailed = false);
 
 /// <summary>One tool invocation in a run's journal (for <c>/replay</c>). <see cref="Subject"/> is the
 /// best-effort target extracted from the arguments (path, command, query…), <c>null</c> when none.
@@ -230,10 +263,10 @@ internal sealed class HistoryRun
 
     public HistoryRun(string id) { Id = id; StartedAt = DateTime.Now; }
 
-    public void RecordFirst(string originalPath, string? snapshot)
+    public void RecordFirst(string originalPath, string? snapshot, bool snapshotFailed = false)
     {
         if (!_firstByPath.ContainsKey(originalPath))
-            _firstByPath[originalPath] = new RunChange(originalPath, snapshot);
+            _firstByPath[originalPath] = new RunChange(originalPath, snapshot, snapshotFailed);
     }
 
     public void RecordToolCall(string tool, string? subject, long durationMs, bool error)

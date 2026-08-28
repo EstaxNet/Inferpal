@@ -1,4 +1,4 @@
-// Editor side of the reverse `debug/*` surface (roadmap §21): drives vscode.debug and the Debug
+﻿// Editor side of the reverse `debug/*` surface (roadmap §21): drives vscode.debug and the Debug
 // Adapter Protocol on behalf of the host's debug_control / debug_inspect tools.
 //
 // The Visual Studio front-end does the same job through EnvDTE inside devenv; the §21 probe drove
@@ -9,6 +9,7 @@
 import * as vscode from 'vscode';
 import {
   DebugBreakpointDto,
+  DebugCaptureTestParams,
   DebugEvaluateParams,
   DebugFrameDto,
   DebugStartDto,
@@ -28,6 +29,7 @@ export interface DebugDelegate {
   state(): Promise<DebugStopStateDto | null>;
   evaluate(p: DebugEvaluateParams): Promise<string | null>;
   stop(): Promise<void>;
+  captureTest(p: DebugCaptureTestParams): Promise<DebugStopStateDto | null>;
 }
 
 /** How long a resume may run before we answer "no stop" rather than hang the agent's turn. */
@@ -45,6 +47,8 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
 
   /** Thread reported by the last `stopped` event — never assumed to be 1 (the probe saw 0). */
   private stoppedThreadId: number | undefined;
+  /** Reason/text of the last `stopped` event (§25 capture reads the exception identity here). */
+  private lastStop: { reason: string; text: string | null } | undefined;
   /** Resolvers waiting for the next stop-or-end transition. */
   private waiters: Array<(t: Transition) => void> = [];
 
@@ -59,7 +63,11 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
               return;
             }
             if (m.event === 'stopped') {
-              this.stoppedThreadId = m.body?.threadId ?? 0;
+              const body = m.body as { threadId?: number; reason?: string; text?: string; description?: string };
+              this.stoppedThreadId = body?.threadId ?? 0;
+              // §25: an exception stop carries its identity in the event body — kept for the
+              // capture, since no later request re-surfaces it.
+              this.lastStop = { reason: body?.reason ?? 'stopped', text: body?.text ?? body?.description ?? null };
               this.release('stopped');
             } else if (m.event === 'continued') {
               this.stoppedThreadId = undefined;
@@ -245,6 +253,154 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     }
   }
 
+  // ── §25: capture one failing test ─────────────────────────────────────────
+
+  /**
+   * Launches the repro runner under an ephemeral inline `coreclr` configuration (no launch.json),
+   * arms the all-exceptions filter at the entry stop, and returns the first exception stop whose
+   * stack reaches the workspace. Probed before being wired (2026-08-20): ~1.4 s launch → stop on
+   * a warm host — but the very first launch of a cold C# extension may never start the adapter,
+   * hence the entry timeout answers null rather than waiting on a session that will not come.
+   */
+  async captureTest(p: DebugCaptureTestParams): Promise<DebugStopStateDto | null> {
+    if (vscode.debug.activeDebugSession) {
+      return null; // never hijack a session the user (or the model) is driving
+    }
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    if (!folder) {
+      return null;
+    }
+
+    const entrySettled = this.nextTransition(START_TIMEOUT_MS);
+    let started = false;
+    try {
+      started = await vscode.debug.startDebugging(folder, {
+        type: 'coreclr',
+        request: 'launch',
+        name: 'Inferpal test capture',
+        program: p.program,
+        args: p.args,
+        cwd: p.cwd,
+        stopAtEntry: true,
+        justMyCode: false,
+        console: 'internalConsole',
+        internalConsoleOptions: 'neverOpen',
+      } as vscode.DebugConfiguration);
+    } catch (err) {
+      this.log?.(`[debug] captureTest launch failed: ${String(err)}`);
+      this.release('ended');
+      return null;
+    }
+    if (!started) {
+      // Disarm the transition waiter: nothing will ever fire it, and left armed it consumed the
+      // next real session's event 5 minutes later (pre-1.6.0 architecture review).
+      this.release('ended');
+      return null;
+    }
+    // Pin OUR session now: after a 5-minute entry timeout, activeDebugSession may be one the
+    // USER started meanwhile — this.stop() would have killed theirs (pre-1.6.0 architecture review).
+    const launched = vscode.debug.activeDebugSession as vscode.DebugSession | undefined;
+    if ((await entrySettled) !== 'stopped') {
+      if (launched) {
+        await vscode.debug.stopDebugging(launched);
+      }
+      return null;
+    }
+
+    // Asserted on purpose: the early "already debugging" guard above narrows the property access
+    // to undefined for the rest of the function, and the capture session created since would
+    // otherwise type as `never`.
+    const session = vscode.debug.activeDebugSession as vscode.DebugSession | undefined;
+    if (!session) {
+      return null;
+    }
+    try {
+      // Armed mid-session, after the entry stop: probed, vsdbg accepts it (the runner would race
+      // a filter set any later — the failing test throws within milliseconds of resuming).
+      await session.customRequest('setExceptionBreakpoints', { filters: ['all'] });
+
+      // Continue past stops whose stack never reaches the workspace (loader-time first-chance
+      // noise), bounded — the same skip loop as the probe capturer.
+      for (let hop = 0; hop < 20; hop++) {
+        const settled = this.nextTransition(RESUME_TIMEOUT_MS);
+        await session.customRequest('continue', { threadId: this.stoppedThreadId });
+        if ((await settled) !== 'stopped') {
+          return null; // ran to completion: nothing threw — an ordinary answer
+        }
+        const frames = await this.frames(session);
+        const hit = frames.find((f) => f.file !== null && underRoot(p.projectRoot, f.file));
+        if (hit) {
+          const locals = await this.localsExpanded(session, hit.id);
+          return {
+            reason: 'exception',
+            threadId: this.stoppedThreadId ?? 0,
+            frames: frames.slice(0, MAX_FRAMES),
+            locals,
+            exception: this.lastStop?.text ?? null,
+          };
+        }
+      }
+      return null;
+    } catch (err) {
+      this.log?.(`[debug] captureTest failed: ${String(err)}`);
+      return null;
+    } finally {
+      // The capture session never outlives the call, whatever happened above.
+      try {
+        await vscode.debug.stopDebugging(session);
+      } catch {
+        // already gone
+      }
+    }
+  }
+
+  /**
+   * Locals of the frame plus one level of children for expandable values — vsdbg renders
+   * collections through their debugger type proxies, so one level is where the payload lives
+   * (`{[ui:theme, dark]}`); bounded so a huge object cannot flood the prompt.
+   */
+  private async localsExpanded(session: vscode.DebugSession, frameId: number): Promise<DebugVariableDto[]> {
+    const out: DebugVariableDto[] = [];
+    try {
+      const scopes = (await session.customRequest('scopes', { frameId })) as {
+        scopes?: Array<{ name: string; variablesReference: number; expensive?: boolean; presentationHint?: string }>;
+      };
+      const list = scopes?.scopes ?? [];
+      const scope =
+        list.find((s) => s.presentationHint === 'locals') ?? list.find((s) => s.expensive !== true) ?? list[0];
+      if (!scope) {
+        return out;
+      }
+
+      const top = (await session.customRequest('variables', { variablesReference: scope.variablesReference })) as {
+        variables?: Array<{ name: string; value: string; type?: string; variablesReference?: number }>;
+      };
+      let childBudget = 40;
+      for (const v of (top?.variables ?? []).slice(0, MAX_LOCALS)) {
+        out.push({ name: v.name, type: v.type ?? '', value: v.value });
+        if (!v.variablesReference || childBudget <= 0 || v.name === '$exception') {
+          continue;
+        }
+        try {
+          const kids = (await session.customRequest('variables', { variablesReference: v.variablesReference })) as {
+            variables?: Array<{ name: string; value: string; type?: string }>;
+          };
+          for (const k of (kids?.variables ?? []).slice(0, 8)) {
+            if (childBudget-- <= 0) {
+              break;
+            }
+            out.push({ name: `${v.name}.${k.name}`, type: k.type ?? '', value: k.value });
+          }
+        } catch {
+          // a value that refuses expansion keeps its flat rendering
+        }
+      }
+    } catch (err) {
+      this.log?.(`[debug] localsExpanded failed: ${String(err)}`);
+    }
+    return out;
+  }
+
   // ── Reading ───────────────────────────────────────────────────────────────
 
   async state(): Promise<DebugStopStateDto | null> {
@@ -282,11 +438,14 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
 
     const frames = await this.frames(session);
     return {
-      reason: 'break',
+      // The stopped event's identity was frozen to 'break': after an exception stop, debug/state
+      // and debug/step reported "break" and the exception text existed only in the captureTest
+      // path (pre-1.6.0 architecture review). lastStop carries what the adapter actually said.
+      reason: this.lastStop?.reason ?? 'break',
       threadId,
       frames: frames.slice(0, MAX_FRAMES),
       locals: frames.length > 0 ? await this.locals(session, frames[0].id) : [],
-      exception: null,
+      exception: this.lastStop?.reason === 'exception' ? this.lastStop.text : null,
     };
   }
 
@@ -375,4 +534,9 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
 function samePath(a: string, b: string): boolean {
   const normalize = (p: string): string => p.replace(/\\/g, '/').toLowerCase();
   return normalize(a) === normalize(b);
+}
+
+function underRoot(root: string, file: string): boolean {
+  const normalize = (p: string): string => p.replace(/\\/g, '/').toLowerCase().replace(/\/+$/, '');
+  return normalize(file).startsWith(normalize(root) + '/');
 }

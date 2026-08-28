@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Inference sidecar for the in-process half.
+       A minimal net8.0 console: it exposes ONE Core operation, FIM completion, over
+       header-framed JSON-RPC 2.0 on stdio. Its only client is Inferpal.InProc, the net472
+       assembly devenv loads, which cannot load the Core (devenv is a .NET Framework 4.7.2
+       process, so a .NET 8 assembly is rejected by its MEF discovery).
+
+       Why not Inferpal.Host, which already speaks "fim/complete": its `initialize` builds the
+       whole session - MCP servers, RAG index, tool registry. Starting a second one per devenv
+       just for ghost text would duplicate MCP processes and an indexer. This project only builds
+       the configuration and the inference provider, and adds NO dependency to the VSIX: the Core
+       is already in there.
+
+       The framing is the one of Inferpal.Host (Content-Length + camelCase JSON), by design:
+       a single wire grammar in the repository. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Inferpal.Fim</RootNamespace>
+    <AssemblyName>Inferpal.Fim</AssemblyName>
+    <!-- The VSIX already carries Inferpal.Core and its dependencies: nothing to copy here. -->
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Inferpal.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

@@ -100,7 +100,8 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// <summary>
     /// Returns the current compiled policy, rebuilding it only when the per-machine config rules or
     /// the workspace <c>.inferpal/permissions.json</c> overlay have changed since the last build.
-    /// Config rules are evaluated before overlay rules (first match wins).
+    /// Overlay rules (deny-only) are evaluated before config rules — see
+    /// <see cref="PermissionPolicy.Compose"/> for why the order is load-bearing.
     /// </summary>
     private PermissionPolicy GetPolicy()
     {
@@ -115,14 +116,15 @@ internal abstract class ApprovalServiceBase : IApprovalService
                 && overlayStamp == _cachedOverlayStamp)
                 return _policy;
 
-            var rules = new List<PermissionRule>(PermissionPolicy.ParseRules(configRules));
+            IReadOnlyList<PermissionRule> overlayRules = [];
             if (overlayPath is not null && overlayStamp != default)
             {
-                try { rules.AddRange(PermissionPolicy.ParseJsonOverlay(File.ReadAllText(overlayPath))); }
+                try { overlayRules = PermissionPolicy.ParseJsonOverlay(File.ReadAllText(overlayPath)); }
                 catch (Exception ex) { Diagnostics.Swallow("PermissionOverlayRead", ex); }
             }
 
-            _policy             = new PermissionPolicy(rules);
+            _policy             = new PermissionPolicy(
+                PermissionPolicy.Compose(PermissionPolicy.ParseRules(configRules), overlayRules));
             _cachedConfigRules  = configRules;
             _cachedOverlayPath  = overlayPath;
             _cachedOverlayStamp = overlayStamp;

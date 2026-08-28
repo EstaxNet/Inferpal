@@ -165,7 +165,7 @@ internal sealed class RenameSymbolTool : ITool
             try
             {
                 await _history.SnapshotAsync(filePath, ct);
-                await File.WriteAllTextAsync(filePath, newContent, ct);
+                await SafeFileWriter.WritePreservingAsync(filePath, newContent, ct);
             }
             catch (Exception ex)
             {
@@ -255,7 +255,8 @@ internal sealed class RenameSymbolTool : ITool
         // Build a word-boundary pattern for this specific name
         var pattern = $@"(?<!\w){Regex.Escape(oldName)}(?!\w)";
         int count   = 0;
-        var result  = Regex.Replace(content, pattern, _ => { count++; return newName; });
+        var result  = Regex.Replace(content, pattern, _ => { count++; return newName; },
+                                    RegexOptions.None, RegexBudget.Default);
         return (result, count);
     }
 

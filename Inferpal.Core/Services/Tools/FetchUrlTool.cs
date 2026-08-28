@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
@@ -23,7 +23,13 @@ internal class FetchUrlTool : ITool
         // against IsPrivateOrLoopback — automatic redirects would let a public URL
         // bounce the request to 127.0.0.1 / 192.168.x.x and bypass the SSRF guard.
         var handler = new HttpClientHandler { AllowAutoRedirect = false };
-        var client  = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        var client  = new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(30),
+            // The whole body was downloaded before the character-level truncation: a multi-GB
+            // response was pulled entirely into memory first (pre-1.6.0 architecture review).
+            MaxResponseContentBufferSize = 8 * 1024 * 1024,
+        };
         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
         client.DefaultRequestHeaders.TryAddWithoutValidation("Accept",
@@ -72,9 +78,12 @@ internal class FetchUrlTool : ITool
         var current = url;
         for (int hop = 0; ; hop++)
         {
-            // Two-stage SSRF guard: the literal-IP check, then a DNS resolution of host NAMES.
-            // The latter closes the DNS-rebinding gap — a public name whose A record points at
-            // 127.0.0.1 / 169.254.169.254 passes the literal check but is caught here.
+            // Two-stage SSRF guard: the literal-IP check, then a DNS resolution of host NAMES —
+            // catching a public name whose A record points at 127.0.0.1 / 169.254.169.254.
+            // ⚠ Best-effort, not a closed gap: the actual GET below resolves DNS again on its own,
+            // so a TTL≈0 attacker can answer public here and private there (classic rebinding).
+            // Pinning the validated IP via ConnectCallback would close it; today the approval
+            // prompt upstream is the real boundary (pre-1.6.0 architecture review — comment honesty).
             if (IsPrivateOrLoopback(current) || await ResolvesToPrivateAsync(current, ct))
                 throw new ArgumentException(
                     hop == 0

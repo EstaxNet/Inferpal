@@ -1,4 +1,4 @@
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Inferpal.Config;
@@ -204,6 +204,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        {
+            // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
+            // "Cannot reach … check the URL" sent the user to verify a URL that was fine (the
+            // pre-1.6.0 architecture review, §3.1): say what the server said instead.
+            RecordFailure();
+            throw new AgentHttpException(Strings.MsgServerError(base_, ex.Message), isTimeout: false);
+        }
         catch (Exception ex)
         {
             RecordFailure();
@@ -310,6 +318,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
         catch (AgentHttpException) { throw; } // an in-stream server error we already mapped — keep its message
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        {
+            // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
+            // "Cannot reach … check the URL" sent the user to verify a URL that was fine (the
+            // pre-1.6.0 architecture review, §3.1): say what the server said instead.
+            RecordFailure();
+            throw new AgentHttpException(Strings.MsgServerError(base_, ex.Message), isTimeout: false);
+        }
         catch (Exception ex)
         {
             RecordFailure();
@@ -329,7 +345,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // Fallback: some models emit the tool call as plain-text JSON in the content (see OllamaClient).
         if (toolCalls is null && contentBuilder.Length > 0)
         {
-            var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentText);
+            var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
+            var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentText, known.Contains);
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens);
         }
@@ -482,7 +499,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     /// <inheritdoc/>
     public override async Task<bool> CheckConnectionAsync(string url, CancellationToken ct)
     {
-        if (IsInCooldown()) return false;
+        // The probe TRAVERSES the cooldown instead of short-circuiting on it: returning false
+        // while the breaker was open meant the one call able to notice the server coming back was
+        // itself blocked — the connection indicator stayed red for the full 5 minutes after a
+        // recovery (pre-1.6.0 architecture review, §3.3). A successful probe closes the circuit on the spot.
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -490,7 +510,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             using var req = new HttpRequestMessage(HttpMethod.Get, $"{V1(url)}/models");
             AddAuth(req);
             using var response = await _http.SendAsync(req, cts.Token);
-            if (response.IsSuccessStatusCode) { RecordSuccess(); return true; }
+            if (response.IsSuccessStatusCode) { ResetCircuit(); return true; }
             RecordFailure();
             return false;
         }
@@ -522,11 +542,15 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
     private async Task<OpenAiModelsResponse?> GetModelsAsync(string v1Base, CancellationToken ct)
     {
+        // Bounded: the shared HttpClient's timeout is infinite, and a server that accepts TCP but
+        // never answers froze every model dropdown behind this call (pre-1.6.0 architecture review).
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromSeconds(10));
         using var req = new HttpRequestMessage(HttpMethod.Get, $"{v1Base}/models");
         AddAuth(req);
-        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
         if (!resp.IsSuccessStatusCode) return null;
-        return await resp.Content.ReadFromJsonAsync<OpenAiModelsResponse>(_jsonOpts, ct);
+        return await resp.Content.ReadFromJsonAsync<OpenAiModelsResponse>(_jsonOpts, cts.Token);
     }
 
     // ── FIM ────────────────────────────────────────────────────────────────────

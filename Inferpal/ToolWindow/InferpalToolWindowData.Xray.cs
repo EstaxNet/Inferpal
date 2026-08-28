@@ -38,10 +38,7 @@ internal partial class InferpalToolWindowData
     });
 
     private Task CopyXrayPromptAsync(object? _, CancellationToken __) => RunOnVMContextAsync(() =>
-    {
-        try { System.Windows.Clipboard.SetText(string.IsNullOrEmpty(_xrayRawPrompt) ? " " : _xrayRawPrompt); }
-        catch (Exception ex) { Diagnostics.Swallow("Xray.CopyPrompt", ex); }
-    });
+        ClipboardHelper.TrySet(_xrayRawPrompt, "Xray.CopyPrompt"));
 
     /// <summary>Rebuilds the panel rows from the current prompt composition. VM thread only.</summary>
     private void RefreshXrayPanel()

@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Inferpal.Config;
@@ -128,6 +128,18 @@ public class DocCountersTests
         AssertCounter(path, actual, int.Parse(claim.Groups[1].Value),
                       text => Regex.Replace(text, @"\d+ built-in tools", $"{actual} built-in tools"),
                       "built-in tools");
+
+        // The Marketplace listing is NOT generated from the README — it had silently drifted to
+        // "26 built-in tools" while the product grew to 28 (pre-1.6.0 architecture review, §3.4). Since the
+        // switch to in-process hosting (2026-08-23) the SDK forbids ExtensionConfiguration.
+        // Metadata, so that description now lives in source.extension.vsixmanifest, the file
+        // actually packaged in the VSIX. Same counter, same auto-rewrite, new home.
+        var extPath  = Path.Combine(RepoRoot(), "Inferpal", "source.extension.vsixmanifest");
+        var extClaim = Regex.Match(File.ReadAllText(extPath), @"(\d+) built-in tools");
+        Assert.True(extClaim.Success, "source.extension.vsixmanifest no longer states 'N built-in tools'.");
+        AssertCounter(extPath, actual, int.Parse(extClaim.Groups[1].Value),
+                      text => Regex.Replace(text, @"\d+ built-in tools", $"{actual} built-in tools"),
+                      "built-in tools (Marketplace description)");
     }
 
     [Fact]

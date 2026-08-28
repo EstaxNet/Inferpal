@@ -412,9 +412,13 @@ internal partial class InferpalToolWindowData
 
         _backgroundTasks = new BackgroundTaskQueue(async (task, onStep, taskCt) =>
         {
-            // Snapshot the layered system prompt at start time, as a chat turn would.
-            var systemPrompt = _history.Count > 0 && _history[0].Role == "system"
-                ? _history[0].Content : null;
+            // Snapshot the layered system prompt at start time, as a chat turn would — read on
+            // the VM context: _history is replaced wholesale there (ClearAsync/restore), and this
+            // runner is a background thread (pre-1.6.0 architecture review).
+            string? systemPrompt = null;
+            await RunOnVMContextAsync(() =>
+                systemPrompt = _history.Count > 0 && _history[0].Role == "system"
+                    ? _history[0].Content : null);
 
             // Proposal mode (§18): the editing tools become available, but against a registry whose
             // approval service records instead of granting — so the run still cannot write anything.
@@ -491,7 +495,9 @@ internal partial class InferpalToolWindowData
                     Messages.Insert(Messages.Count - 2, msg);
                     ScrollToBottom();
                 }),
-                tok);
+                tok,
+                debugCapture: new Services.Debugging.SignalTestDebugCapture(),
+                approval:     _tools.Approval);
             await ShowInfoAsync(result.Message);
         }
         catch (OperationCanceledException)
@@ -566,21 +572,17 @@ internal partial class InferpalToolWindowData
     {
         // §24: `export` needs the caller's world (config, front-end label, connection badge,
         // workspace root for path sanitising); the other sub-commands ignore the context.
+        // The in-process half is read HERE, not in the handler: the handler stays pure, and we are
+        // the side that has an in-process peer - when it did not load, the failure is invisible
+        // from this process (the chat works) and the user had no way to find out.
         var result = Services.Commands.DiagnosticsCommandHandler.Handle(parts,
             new Services.Commands.DiagnosticsExportContext(
-                _config, "Visual Studio", ConnectionStatusText, FindProjectRoot()));
+                _config, "Visual Studio", ConnectionStatusText, FindProjectRoot(),
+                Services.Signals.InProcAliveSignal.DescribeForBundle()),
+            Services.Signals.InProcAliveSignal.IsLoadedOrNull());
 
         if (result.CopyToClipboard is { } bundle)
-        {
-            var thread = new Thread(() =>
-            {
-                try { System.Windows.Clipboard.SetText(bundle); }
-                catch (Exception ex) { Diagnostics.Swallow("Clipboard.CopyDiagnostics", ex); }
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-        }
+            ClipboardHelper.TrySet(bundle, "Clipboard.CopyDiagnostics");
 
         await ShowInfoAsync(result.Message);
     }
@@ -592,16 +594,7 @@ internal partial class InferpalToolWindowData
         var result = await Services.Commands.SnippetsCommandHandler.HandleAsync(parts, ct);
 
         if (result.CopyToClipboard is { } code)
-        {
-            var thread = new Thread(() =>
-            {
-                try { System.Windows.Clipboard.SetText(string.IsNullOrEmpty(code) ? " " : code); }
-                catch (Exception ex) { Diagnostics.Swallow("Clipboard.CopySnippet", ex); }
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-        }
+            ClipboardHelper.TrySet(code, "Clipboard.CopySnippet");
 
         await ShowInfoAsync(result.Message);
     }

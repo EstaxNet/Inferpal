@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -73,13 +73,35 @@ internal partial class InferpalToolWindowData
         // The model is captured in the closure — no volatile field or
         // cross-thread race condition possible.
         // clearPrompt: false so the user's current draft is preserved.
-        // Performance Shield: cancel any in-flight request on the VM context
-        // before starting, so rapid successive code actions don't pile up.
+        // Performance Shield: cancel any in-flight request on the VM context before starting —
+        // and WAIT for it to unwind: firing the next turn immediately let the cancelled turn's
+        // finally stomp IsLoading/_currentCts under the new one (dead stop button, third send
+        // possible, interleaved bubbles — pre-1.6.0 architecture review, §2.1). _turnDone is completed by the
+        // owning turn's conditional finalisation.
         Post(() =>
         {
+            var previousTurn = _turnDone?.Task;
             _currentCts?.Cancel();
-            _ = SendCoreAsync(p, m, atts, CancellationToken.None, clearPrompt: false);
+            _ = RunPendingTurnAsync(previousTurn, p, m, atts);
         });
+    }
+
+    private async Task RunPendingTurnAsync(Task? previousTurn, string p, string? m, List<AttachmentItem> atts)
+    {
+        try
+        {
+            // Belt over the signal: a turn that never completes its finalisation must not make
+            // code actions permanently dead — 15 s is far beyond any real unwind.
+            // VSTHRD003 is a false positive here: previousTurn is a TCS completed on the VM's
+            // NonConcurrentSynchronizationContext (RunContinuationsAsynchronously) in this OOP
+            // process — no JTF main thread exists to deadlock against.
+#pragma warning disable VSTHRD003
+            if (previousTurn is not null)
+                await Task.WhenAny(previousTurn, Task.Delay(TimeSpan.FromSeconds(15)));
+#pragma warning restore VSTHRD003
+            await SendCoreAsync(p, m, atts, CancellationToken.None, clearPrompt: false);
+        }
+        catch (Exception ex) { Diagnostics.Swallow("PendingPrompt.Run", ex); }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────

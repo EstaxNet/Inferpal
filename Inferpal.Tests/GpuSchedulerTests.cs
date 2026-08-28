@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,6 +21,24 @@ public class GpuSchedulerTests : IDisposable
 
     static async Task<bool> CompletesWithin(Task task, int ms) =>
         await Task.WhenAny(task, Task.Delay(ms)) == task;
+
+    // With in-process hosting, the chat and ghost text share the process. The chat > FIM priority
+    // must no longer depend on the file marker, whose write is best-effort (failure swallowed):
+    // the lease counter, by contrast, is exact.
+    [Fact]
+    public void ShouldFimYield_TrueWhileLeased_EvenWithoutTheBusyMarker()
+    {
+        Assert.False(GpuScheduler.ShouldFimYield());          // repos : ni lease, ni marqueur
+
+        var lease = GpuScheduler.AcquireChatLease();
+        Inferpal.Services.Signals.ChatBusySignal.Clear();     // simulates the failed write
+        Assert.False(File.Exists(Inferpal.Services.Signals.ChatBusySignal.FilePath));
+
+        Assert.True(GpuScheduler.ShouldFimYield());            // le lease suffit
+
+        lease.Dispose();
+        Assert.False(GpuScheduler.ShouldFimYield());
+    }
 
     [Fact]
     public async Task WaitForChatIdle_NoLease_ReturnsImmediately()

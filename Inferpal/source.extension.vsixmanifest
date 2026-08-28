@@ -1,39 +1,40 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- ⚠ ATTENTION : ce fichier N'EST PAS le manifest packagé dans le VSIX.
-     Le SDK VisualStudio.Extensibility GÉNÈRE extension.vsixmanifest depuis
-     ExtensionConfiguration.Metadata dans InferpalExtension.cs — c'est LÀ que
-     License/Icon/Tags/MoreInfo doivent être déclarés. Ce fichier est conservé
-     comme documentation d'intention (cibles d'installation souhaitées). -->
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Manifest packaged into the VSIX since the move to VssdkCompatibleExtension. Before that,
+     the Extensibility SDK generated one instead, from ExtensionConfiguration.Metadata
+     (InferpalExtension.cs) - with no <Assets> section, hence no in-process half. The two sources
+     must stay consistent: the visible metadata (License/Icon/Tags/MoreInfo) is declared here AND
+     in InferpalExtension.cs. -->
 <PackageManifest Version="2.0.0"
                  xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011"
                  xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
+    <!-- Version: a VSSDK token resolved from the assembly (so from Directory.Build.props, the
+         single source of version in the repository). Hard-coded, it drifted silently. -->
     <Identity Id="Inferpal.bf3c1a2e-4d5f-4b8c-9e2a-1f7d3c6e8b4a"
-              Version="1.0.1.0"
+              Version="|Inferpal;GetVsixVersion|"
               Language="en-US"
               Publisher="EstaxNet" />
     <DisplayName>Inferpal</DisplayName>
-    <Description xml:space="preserve">AI developer assistant for self-hosted LLMs — Ollama, LM Studio, or any OpenAI-compatible server, on your machine or your own remote host. Autonomous agentic loop with 26 built-in tools: read/write files, run builds and tests, semantic codebase search, inline ghost-text completions, query Git, browse the web — no mandatory cloud, no telemetry.</Description>
+    <Description xml:space="preserve">AI developer assistant for self-hosted LLMs — Ollama, LM Studio, or any OpenAI-compatible server, on your machine or your own remote host. Autonomous agentic loop with 28 built-in tools: read/write files, run builds and tests, semantic codebase search, inline ghost-text completions, query Git, browse the web — no mandatory cloud, no telemetry.</Description>
     <MoreInfo>https://github.com/EstaxNet/Inferpal</MoreInfo>
-    <!-- La licence DOIT être un fichier .txt/.rtf embarqué dans le VSIX (schéma VSIX 2.0),
-         pas une URL — une URL fait échouer la validation Marketplace. -->
+    <!-- The license MUST be a .txt/.rtf file embedded in the VSIX (VSIX 2.0 schema), not a URL
+         - a URL fails Marketplace validation. -->
     <License>LICENSE.txt</License>
     <Icon>assets\icon.png</Icon>
     <Tags>AI, LLM, Ollama, LM Studio, Assistant, Code, Local, Agentic, Autocomplete, RAG</Tags>
   </Metadata>
 
-  <Installation ExtensionType="VisualStudio.Extensibility">
-    <!-- VS 2022 (17.x) -->
-    <InstallationTarget Id="Microsoft.VisualStudio.Community"    Version="[17.9, 18.0)">
-      <ProductArchitecture>amd64</ProductArchitecture>
-    </InstallationTarget>
-    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[17.9, 18.0)">
-      <ProductArchitecture>amd64</ProductArchitecture>
-    </InstallationTarget>
-    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise"   Version="[17.9, 18.0)">
-      <ProductArchitecture>amd64</ProductArchitecture>
-    </InstallationTarget>
-    <!-- VS 2026 (18.x) -->
+  <!-- VS 2026 (18.x) ONLY since the move to hybrid hosting: loading a .NET 8 extension inside
+       devenv is an 18.x capability (DotnetTargetVersions). The 17.x targets were removed -
+       leaving them would have promised an install that could not load. -->
+  <!-- ExtensionType: "VSSDK+VisualStudio.Extensibility" (hybrid), NOT
+       "VisualStudio.Extensibility" alone. That value is what tells the extension manager the VSIX
+       ALSO carries VSSDK components (the assets below); with the out-of-process value alone, the
+       <Assets> section is processed by nobody. Measured on the two hybrids Microsoft ships in
+       VS 18 (Copilot Build Analyzer, Copilot testing): same value, same MefComponent + VsPackage
+       assets, installed under Common7\IDE\Extensions\ - whereas pure Extensibility extensions
+       land under VSExtensions\, where the in-process half does not load. -->
+  <Installation ExtensionType="VSSDK+VisualStudio.Extensibility">
     <InstallationTarget Id="Microsoft.VisualStudio.Community"    Version="[18.0, 19.0)">
       <ProductArchitecture>amd64</ProductArchitecture>
     </InstallationTarget>
@@ -48,9 +49,22 @@
 
   <Prerequisites>
     <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor"
-                  Version="[17.9,)"
+                  Version="[18.0,)"
                   DisplayName="Visual Studio core editor" />
   </Prerequisites>
 
+  <!-- In-proc: these two assets are the ONLY path by which VS inventories the pkgdef (GhostText
+       package + AutoLoadPackages) and adds the in-process assembly to the MEF catalog (ghost
+       text, inline edit, the /tdd debugger driver, chat auto-scroll).
+
+       The MEF asset names Inferpal.InProc.dll (net472), NOT Inferpal.dll (net8).
+       devenv.exe is a .NET Framework 4.7.2 process, its MEF discovery reflects over the assembly
+       declared here, and on a .NET 8 assembly the reference closure is unresolvable on the
+       Framework side - PartDiscoveryException x19, zero parts, in silence. Out of the 211 MEF
+       components of VS 18, Inferpal.dll was the only one actually linked against .NET 8. -->
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage"    Path="Inferpal.pkgdef" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" Path="Inferpal.InProc.dll" />
+  </Assets>
 
 </PackageManifest>

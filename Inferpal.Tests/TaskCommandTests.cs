@@ -121,6 +121,49 @@ public class TaskCommandTests
     }
 
     [Fact]
+    public void Stop_OnAFinishedTask_SaysFinished_NotUnknown()
+    {
+        // The probe bench caught the lie: a task /task can still display answered "unknown"
+        // to /task stop. The refusal must name the real cause — it is finished, not unknown.
+        using var queue = new BackgroundTaskQueue(
+            (_, _, _) => Task.FromResult(BackgroundTaskQueue.TaskRunOutcome.Of("done")));
+        Run(queue, "/task", "quick", "one");
+        WaitSettled(queue, "t1");
+
+        var message = Run(queue, "/task", "stop", "t1");
+
+        Assert.Equal(Inferpal.Localization.Strings.TaskAlreadyFinished("t1"), message);
+        Assert.NotEqual(Inferpal.Localization.Strings.TaskUnknown("t1"), message);
+    }
+
+    [Fact]
+    public void KeywordFollowedByFreeText_IsAnObjective_NotASubCommand()
+    {
+        // "/task clear the build warnings" used to ERASE the finished reports, and
+        // "/task list all TODO comments" listed instead of submitting (pre-1.6.0 architecture review, §3.7).
+        using var queue = new BackgroundTaskQueue(
+            (_, _, _) => Task.FromResult(BackgroundTaskQueue.TaskRunOutcome.Of("done")));
+        Run(queue, "/task", "quick", "one");
+        WaitSettled(queue, "t1");
+        Assert.Single(queue.List());   // one finished task on record
+
+        var cleared = Run(queue, "/task", "clear", "the", "build", "warnings");
+        Assert.Contains("t2", cleared);                       // submitted as an objective…
+        Assert.Contains(queue.List(), t => t.Id == "t1");     // …and t1's report survived
+
+        var listed = Run(queue, "/task", "list", "all", "TODO", "comments");
+        Assert.Contains("t3", listed);
+
+        var stopped = Run(queue, "/task", "stop", "the", "noisy", "watcher");
+        Assert.Contains("t4", stopped);
+
+        // The exact shapes still bind: a typo'd id answers "unknown", never submits.
+        var unknown = Run(queue, "/task", "stop", "t99");
+        Assert.Contains("t99", unknown);
+        Assert.DoesNotContain("t5", unknown);
+    }
+
+    [Fact]
     public void Stop_WithoutAnId_ShowsTheUsage()
     {
         using var queue = Queue();

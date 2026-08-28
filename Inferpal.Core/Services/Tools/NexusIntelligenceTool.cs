@@ -500,7 +500,7 @@ internal sealed class NexusIntelligenceTool : ITool
 
         // Replace {param} with wildcard segment for comparison
         static string Parameterize(string r) =>
-            Regex.Replace(Norm(r), @"\{[^}]+\}", "*");
+            Regex.Replace(Norm(r), @"\{[^}]+\}", "*", RegexOptions.None, RegexBudget.Default);
 
         var csNorm = Parameterize(csRoute);
         var tsNorm = Parameterize(tsRoute);

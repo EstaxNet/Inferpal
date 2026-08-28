@@ -245,8 +245,8 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 令牌 · 会话：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>未配置 Ollama URL，请打开设置进行配置。</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>模型未返回任何响应。配置的模型可能不支持文本生成 — 请尝试默认聊天模型。</value></data>
-  <data name="MsgTimeout" xml:space="preserve"><value>连接超时 — Ollama 在 {0} 未在 30 秒内响应。</value></data>
-  <data name="MsgUnreachable" xml:space="preserve"><value>无法连接到 {0} 的 Ollama。请在设置中检查 URL。</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>连接超时 — {0} 的后端已停止响应（空闲超时）。</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>无法连接到 {0} 的后端。请在设置中检查 URL。</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0} 的推理服务器返回了错误：
 
 {1}</value></data>
@@ -254,15 +254,15 @@
 
 服务器详情：{0}</value></data>
   <data name="MsgContextWontFit" xml:space="preserve"><value>在智能体模式下，请求（约 {0} 个 token）大于模型已加载的上下文（{1} 个 token）——仅工具定义就占用数千个 token。请增大已加载的上下文长度（LM Studio 中建议 16384 或更高），或减少已启用的智能体工具数量。</value></data>
-  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>无法连接到 {0} 的 Ollama
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>无法连接到 {0} 的 {1}
 
 故障排除步骤：
-  1. 启动 Ollama — 打开终端并运行：  ollama serve
+  1. 启动 {1}（Ollama 示例：打开终端并运行  ollama serve）
   2. 在设置中检查 URL（当前：{0}）
-  3. 如果 Ollama 在另一台机器上运行，请在设置中更新 URL
-  4. 检查防火墙或防病毒软件是否阻止了 11434 端口
+  3. 如果 {1} 在另一台机器上运行，请在设置中更新 URL
+  4. 检查防火墙或防病毒软件是否阻止了该端口
 
-Ollama 启动后，点击标题栏的 ↻ 重试按钮。</value></data>
+{1} 启动后，点击标题栏的 ↻ 重试按钮。</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ 已重新连接到 Ollama — 就绪。</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>立即检查与 Ollama 的连接</value></data>
 
@@ -716,6 +716,7 @@ ollama serve
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="SlashHintDiagnostics" xml:space="preserve"><value>显示最近的诊断 — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## 诊断</value></data>
+  <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ 进程内组件未加载：幽灵文本、内联编辑的差异预览和 /tdd 调试器驱动均不可用。聊天不受影响（它在进程外运行），所以看不出有什么坏了。</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>没有记录任何诊断。</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>已清除诊断。</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>支持报告已复制到剪贴板 — 请粘贴到 GitHub issue 中。</value></data>
@@ -769,6 +770,10 @@ ollama serve
   <data name="TddFixing" xml:space="preserve"><value>🔧 修复 {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ 经过 {0} 轮后测试套件全部通过。</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ 经过 {0} 轮后测试仍然失败 — 需要手动干预。</value></data>
+  <data name="TddDebugCaptureApproval" xml:space="preserve"><value>是否在调试器下重新运行失败的测试 '{0}'，以捕获失败点的状态？（每次 /tdd 运行只询问一次）</value></data>
+  <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 正在捕获失败点的调试器状态…</value></data>
+  <data name="TddDebugCaptureFailed" xml:space="preserve"><value>⚠ 调试器状态捕获失败 — 将在没有该状态的情况下继续。</value></data>
+  <data name="TddDebugCaptureUnavailable" xml:space="preserve"><value>⚠ 调试器捕获不可用（未加载进程内驱动）— 使用普通循环。</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 上下文透视 — 系统提示词 ≈ {0} 个 token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基础系统提示词</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>角色片段</value></data>
@@ -850,6 +855,7 @@ ollama serve
   <data name="TaskQueueFull" xml:space="preserve"><value>后台任务过多（最多 {0} 个）。请等待其中一个完成，或执行 `/task clear`。</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>未知任务 `{0}`。</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>任务 `{0}` 已取消。</value></data>
+  <data name="TaskAlreadyFinished" xml:space="preserve"><value>任务 `{0}` 已经完成 — `/task {0}` 可查看其报告。</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>已清除 {0} 个已完成的任务。</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>暂无后台任务。使用 `/task [目标]` 启动一个。</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>后台任务</value></data>

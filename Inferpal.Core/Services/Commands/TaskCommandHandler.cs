@@ -32,7 +32,11 @@ internal static class TaskCommandHandler
     {
         var args = parts.Length > 1 ? parts[1..] : [];
 
-        if (args.Length == 0 || IsWord(args[0], "list"))
+        // Keyword sub-commands only bind in their exact shape: "/task clear the build warnings"
+        // used to ERASE the finished reports instead of submitting the objective, and
+        // "/task list all TODO comments" listed (pre-1.6.0 architecture review, §3.7). A keyword followed by
+        // free text falls through to submission, same prudence the id-lookup below already has.
+        if (args.Length == 0 || (args.Length == 1 && IsWord(args[0], "list")))
             return new(RenderList(queue));
 
         // `/task propose <objective>`: the task may express changes, none of them applied.
@@ -55,12 +59,21 @@ internal static class TaskCommandHandler
 
         if (IsWord(args[0], "stop") || IsWord(args[0], "cancel"))
         {
-            if (args.Length < 2) return new(Strings.SlashUsage("/task stop <id>"));
+            if (args.Length == 1) return new(Strings.SlashUsage("/task stop <id>"));
             var id = args[1];
-            return new(queue.Cancel(id) ? Strings.TaskStopRequested(id) : Strings.TaskUnknown(id));
+            // Bind only on the exact "<keyword> <id>" shape (an id-looking token keeps the
+            // "Unknown task `t99`" answer for typos); anything else is an objective that happens
+            // to start with the word "stop".
+            if (args.Length == 2 && (LooksLikeId(id) || queue.Get(id) is not null))
+            {
+                if (queue.Cancel(id)) return new(Strings.TaskStopRequested(id));
+                // Cancel refuses both the unknown and the already-terminal id — telling a user that a
+                // task they can still display is "unknown" lies about the cause (preemption probe).
+                return new(queue.Get(id) is not null ? Strings.TaskAlreadyFinished(id) : Strings.TaskUnknown(id));
+            }
         }
 
-        if (IsWord(args[0], "clear"))
+        if (args.Length == 1 && IsWord(args[0], "clear"))
             return new(Strings.TaskForgot(queue.ClearFinished()));
 
         // A lone, existing id reads as "show me that one".
@@ -76,6 +89,11 @@ internal static class TaskCommandHandler
 
     private static bool IsWord(string arg, string word) =>
         string.Equals(arg, word, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Shaped like a task id (<c>t1</c>, <c>t42</c>…) — a "stop t99" typo must keep
+    /// answering "Unknown task", not become an objective.</summary>
+    private static bool LooksLikeId(string arg) =>
+        arg.Length >= 2 && (arg[0] is 't' or 'T') && arg[1..].All(char.IsAsciiDigit);
 
     /// <summary>Resolves <c>/task apply &lt;id&gt; &lt;n&gt;</c> to the one proposal it names.</summary>
     private static TaskCommandResult Apply(BackgroundTaskQueue queue, string[] args)

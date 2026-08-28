@@ -428,8 +428,8 @@ internal static class Strings
     public static string MsgContextWontFit(int estimateTokens, int loadedContext) =>
         string.Format(Get(nameof(MsgContextWontFit)), estimateTokens, loadedContext);
 
-    public static string MsgConnectionGuardFailed(string url) =>
-        string.Format(Get(nameof(MsgConnectionGuardFailed)), url);
+    public static string MsgConnectionGuardFailed(string url, string backend) =>
+        string.Format(Get(nameof(MsgConnectionGuardFailed)), url, backend);
 
     public static string MsgHeartbeatRestored    => Get(nameof(MsgHeartbeatRestored));
     public static string TooltipRetryConnection  => Get(nameof(TooltipRetryConnection));
@@ -778,6 +778,7 @@ internal static class Strings
     public static string SlashHintDiagnostics                => Get(nameof(SlashHintDiagnostics));
     public static string DiagnosticsHeader                   => Get(nameof(DiagnosticsHeader));
     public static string DiagnosticsEmpty                    => Get(nameof(DiagnosticsEmpty));
+    public static string DiagnosticsInProcDead               => Get(nameof(DiagnosticsInProcDead));
     public static string DiagnosticsCleared                  => Get(nameof(DiagnosticsCleared));
     public static string DiagnosticsExported                 => Get(nameof(DiagnosticsExported));
     public static string DiagnosticsFileOn                   => Get(nameof(DiagnosticsFileOn));
@@ -843,6 +844,10 @@ internal static class Strings
     public static string TddFixing(int round)                => string.Format(Get(nameof(TddFixing)), round);
     public static string TddSuccess(int rounds)              => string.Format(Get(nameof(TddSuccess)), rounds);
     public static string TddGiveUp(int maxRounds)            => string.Format(Get(nameof(TddGiveUp)), maxRounds);
+    public static string TddDebugCaptureApproval(string test) => string.Format(Get(nameof(TddDebugCaptureApproval)), test);
+    public static string TddDebugCapturing                   => Get(nameof(TddDebugCapturing));
+    public static string TddDebugCaptureFailed               => Get(nameof(TddDebugCaptureFailed));
+    public static string TddDebugCaptureUnavailable          => Get(nameof(TddDebugCaptureUnavailable));
     public static string XrayHeader(string tokens)           => string.Format(Get(nameof(XrayHeader)), tokens);
     public static string XrayLabelBase                       => Get(nameof(XrayLabelBase));
     public static string XrayLabelPersona                    => Get(nameof(XrayLabelPersona));
@@ -888,6 +893,7 @@ internal static class Strings
     public static string TaskQueueFull(int max)              => string.Format(Get(nameof(TaskQueueFull)), max);
     public static string TaskUnknown(string id)              => string.Format(Get(nameof(TaskUnknown)), id);
     public static string TaskStopRequested(string id)        => string.Format(Get(nameof(TaskStopRequested)), id);
+    public static string TaskAlreadyFinished(string id)      => string.Format(Get(nameof(TaskAlreadyFinished)), id);
     public static string TaskForgot(int count)               => string.Format(Get(nameof(TaskForgot)), count);
     public static string TaskListEmpty                       => Get(nameof(TaskListEmpty));
     public static string TaskListTitle                       => Get(nameof(TaskListTitle));

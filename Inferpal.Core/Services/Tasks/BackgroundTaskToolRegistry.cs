@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Inferpal.Models;
 
 namespace Inferpal.Services.Tasks;
@@ -106,8 +106,12 @@ internal sealed class BackgroundTaskToolRegistry(
         var result = await inner.ExecuteAsync(name, args, ct);
         if (proposals is null || proposals.RequestCount == before) return result;
 
-        var recorded = proposals.Proposals.Last(p =>
+        // LastOrDefault, not Last: a composite tool can request approval under a subject that
+        // records no proposal carrying THIS registration name — Last then threw out of a loop
+        // whose contract is never-throw (pre-1.6.0 architecture review).
+        var recorded = proposals.Proposals.LastOrDefault(p =>
             string.Equals(p.Tool, name, StringComparison.OrdinalIgnoreCase));
+        if (recorded is null) return result;
         return $"Recorded as a proposal for {recorded.Subject} ({proposals.Count} pending in total). "
              + "Nothing was written: the user reviews this change when your report comes back. "
              + "Continue with the objective.";

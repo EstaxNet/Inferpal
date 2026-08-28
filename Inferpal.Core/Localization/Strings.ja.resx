@@ -245,8 +245,8 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} トークン  ·  セッション：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama の URL が設定されていません。設定を開いて設定してください。</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>モデルが応答を返しませんでした。設定されたモデルがテキスト生成をサポートしていない可能性があります — デフォルトのチャットモデルをお試しください。</value></data>
-  <data name="MsgTimeout" xml:space="preserve"><value>接続タイムアウト — Ollama が {0} で 30 分以内に応答しませんでした。</value></data>
-  <data name="MsgUnreachable" xml:space="preserve"><value>{0} の Ollama に接続できません。設定で URL を確認してください。</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>接続タイムアウト — {0} のバックエンドが応答しなくなりました（無通信タイムアウト）。</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>{0} のバックエンドに接続できません。設定で URL を確認してください。</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0} の推論サーバーがエラーを返しました:
 
 {1}</value></data>
@@ -254,15 +254,15 @@
 
 サーバー詳細: {0}</value></data>
   <data name="MsgContextWontFit" xml:space="preserve"><value>エージェントモードでは、リクエスト（約 {0} トークン）がモデルにロードされているコンテキスト（{1} トークン）より大きくなっています。ツール定義だけで数千トークンを占有します。ロードするコンテキスト長を増やす（LM Studio では 16384 以上を推奨）か、有効なエージェントツールの数を減らしてください。</value></data>
-  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{0} の Ollama に接続できません
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{0} の {1} に接続できません
 
 トラブルシューティング手順:
-  1. Ollama を起動してください — ターミナルを開き、次を実行:  ollama serve
+  1. {1} を起動してください（Ollama の場合: ターミナルを開き、次を実行  ollama serve）
   2. 設定で URL を確認してください（現在: {0}）
-  3. Ollama が別のマシンで動作している場合は、設定で URL を更新してください
-  4. ポート 11434 がファイアウォールやウイルス対策ソフトでブロックされていないか確認してください
+  3. {1} が別のマシンで動作している場合は、設定で URL を更新してください
+  4. ポートがファイアウォールやウイルス対策ソフトでブロックされていないか確認してください
 
-Ollama が起動したら、ヘッダーの ↻ 再試行 をクリックしてください。</value></data>
+{1} が起動したら、ヘッダーの ↻ 再試行 をクリックしてください。</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Ollama に再接続しました — 準備完了。</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>今すぐ Ollama への接続を確認する</value></data>
 
@@ -716,6 +716,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="SlashHintDiagnostics" xml:space="preserve"><value>最近の診断を表示 — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## 診断</value></data>
+  <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ インプロセス コンポーネントが読み込まれていません。ゴーストテキスト、インライン編集の差分プレビュー、/tdd のデバッガー ドライバーは使用できません。チャットはプロセス外で動作するため影響を受けず、壊れているように見えません。</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>診断は記録されていません。</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>診断をクリアしました。</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>サポートレポートをクリップボードにコピーしました — GitHub の Issue に貼り付けてください。</value></data>
@@ -769,6 +770,10 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="TddFixing" xml:space="preserve"><value>🔧 修正 {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ {0} ラウンド後にテストスイートがグリーンになりました。</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ {0} ラウンド後もテストが失敗しています — 手動での対応が必要です。</value></data>
+  <data name="TddDebugCaptureApproval" xml:space="preserve"><value>失敗したテスト '{0}' をデバッガーで再実行し、失敗時点の状態を取得しますか？（/tdd 実行ごとに 1 回確認）</value></data>
+  <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 失敗時点のデバッガー状態を取得しています…</value></data>
+  <data name="TddDebugCaptureFailed" xml:space="preserve"><value>⚠ デバッガー状態の取得に失敗しました — 状態なしで続行します。</value></data>
+  <data name="TddDebugCaptureUnavailable" xml:space="preserve"><value>⚠ デバッガー取得を利用できません (インプロセス ドライバー未読み込み) — 通常のループで続行します。</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 コンテキスト X 線 — システムプロンプト ≈ {0} トークン</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基本システムプロンプト</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>ペルソナスニペット</value></data>
@@ -850,6 +855,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="TaskQueueFull" xml:space="preserve"><value>バックグラウンドタスクが多すぎます (最大 {0} 件)。いずれかの完了を待つか、`/task clear` を実行してください。</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>タスク `{0}` は見つかりません。</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>タスク `{0}` をキャンセルしました。</value></data>
+  <data name="TaskAlreadyFinished" xml:space="preserve"><value>タスク `{0}` は既に完了しています — `/task {0}` でレポートを表示できます。</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>完了した {0} 件のタスクを破棄しました。</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>バックグラウンドタスクはありません。`/task [目的]` で開始できます。</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>バックグラウンドタスク</value></data>

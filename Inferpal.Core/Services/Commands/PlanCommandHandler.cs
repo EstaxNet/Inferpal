@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Inferpal.Localization;
 using Inferpal.Services.Persistence;
 
@@ -24,6 +24,14 @@ namespace Inferpal.Services.Commands;
 /// ⚠ Nothing here executes a step. Reading a plan hands its text to a human, and any action that
 /// follows goes through the ordinary approval prompt — see <see cref="PlanDocument"/> for why that
 /// matters for a file that ships with every clone.
+/// </para>
+/// <para>
+/// Doctrine (§27.6, deliberate): unlike the "the handler decides, the view-model applies" pattern,
+/// this handler <b>writes on its own</b> into <c>.inferpal/plans/</c> through
+/// <see cref="PlanStore"/>. Modelling the write as an effect would apply it twice (VS view-model +
+/// host) for a store that is already pure, testable and identical on both sides - the modelled
+/// effect would add drift surface and nothing else. The effects that stay modelled are the ones
+/// that differ per front-end (clipboard, prompt refresh, scaffold).
 /// </para>
 /// </remarks>
 internal static class PlanCommandHandler
@@ -105,6 +113,12 @@ internal static class PlanCommandHandler
         var rawName = string.Join(' ', parts.Skip(2)).Trim();
         var title   = rawName.Length > 0 ? rawName : FirstHeading(lastAssistantText) ?? "Plan";
         var name    = PlanStore.SanitizeName(title);
+
+        // A plan named like a sub-command would be unreachable forever: `/plan list` lists, it
+        // never opens `list.md`. The Reserved set existed but was enforced nowhere — the promise
+        // in its own doc-comment was false (pre-1.6.0 architecture review). Suffix rather than refuse:
+        // the save the user asked for still happens, under a name every route can reach.
+        if (Reserved.Contains(name)) name += "-plan";
 
         var path = PlanStore.Save(root, name, PlanDocument.Render(title, steps));
 

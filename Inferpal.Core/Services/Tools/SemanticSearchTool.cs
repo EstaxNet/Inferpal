@@ -140,7 +140,7 @@ internal sealed class SemanticSearchTool : ITool
 
             // Truncate very long chunks to avoid overwhelming the context window
             var display = chunk.Content.Length > 900
-                ? chunk.Content[..900] + "\n…(truncated)"
+                ? SafeTruncate.Truncate(chunk.Content, 900) + "\n…(truncated)"
                 : chunk.Content;
             sb.AppendLine(display);
             sb.AppendLine("```");

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using Inferpal.Models;
 
@@ -54,12 +54,22 @@ internal static class InlineToolCallParser
     /// Attempts to extract tool calls from text content the model produced.
     /// </summary>
     /// <param name="content">The raw assistant content string.</param>
+    /// <param name="isKnownTool">
+    /// When provided, gates the <b>bare-JSON</b> shape (2) only: a whole-content JSON object is
+    /// promoted to a tool call solely when its <c>name</c> is a registered tool. Without the gate,
+    /// asking the model for "a JSON of a person" turned <c>{"name":"Alice","age":30}</c> into a
+    /// call of the tool "Alice" and DESTROYED the legitimate answer (pre-1.6.0 architecture review, §3.2). The
+    /// explicit <c>&lt;tool_call&gt;</c> shapes stay ungated: their intent is unambiguous, and an
+    /// unknown name there should keep flowing to the registry's "Unknown tool" feedback, which is
+    /// what lets the model correct a typo.
+    /// </param>
     /// <returns>
     /// A tuple of the recovered calls (<c>null</c> when none were found) and the content with the
     /// consumed tool-call JSON stripped out (so it is not also shown to the user as text).
     /// When nothing is recovered, the original content is returned unchanged.
     /// </returns>
-    public static (List<ToolCallDto>? Calls, string Cleaned) TryParse(string? content)
+    public static (List<ToolCallDto>? Calls, string Cleaned) TryParse(
+        string? content, Func<string, bool>? isKnownTool = null)
     {
         if (string.IsNullOrWhiteSpace(content))
             return (null, content ?? string.Empty);
@@ -99,7 +109,9 @@ internal static class InlineToolCallParser
         var payload = StripCodeFence(content.Trim());
         if ((payload.StartsWith('{') || payload.StartsWith('['))
             && TryAddFromJson(payload, calls)
-            && calls.Count > 0)
+            && calls.Count > 0
+            // All-or-nothing gate: a payload with ANY unrecognised name is an answer, not a call.
+            && (isKnownTool is null || calls.All(c => isKnownTool(c.Function.Name))))
         {
             return (calls, string.Empty);
         }

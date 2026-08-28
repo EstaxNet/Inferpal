@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -115,7 +115,10 @@ internal sealed partial class HostServer : IDisposable
         // opts into indexing explicitly via `index/start` (VS Code shows its own gate).
         index.SetRoot(p.RootDir);
 
-        _session?.Dispose();
+        // Slot-held: a re-entrant initialize used to dispose MCP/shells/tools under a running
+        // agent loop (pre-1.6.0 architecture review, §2.6 — the adapter never does it today, but the invariant
+        // belongs here, not in the adapter's good manners).
+        WithTurnSlot("initialize", () => _session?.Dispose());
         _session = new HostSession
         {
             Config       = config,
@@ -129,6 +132,8 @@ internal sealed partial class HostServer : IDisposable
             Mcp          = mcp,
             Lsp          = lsp,
             RootDir      = p.RootDir,
+            Approval     = approval,
+            TestCapture  = p.Debug ? new RpcTestDebugCapture(rpc) : null,
         };
         ResetHistory(_session);
 
@@ -168,7 +173,7 @@ internal sealed partial class HostServer : IDisposable
             // Auto-context: inject the most relevant indexed chunks for this turn (same
             // per-turn RAG block as the VS VM). Runs before the agent takes the GPU lease.
             var promptText = p.Prompt;
-            var autoCtx    = await BuildRagAutoContextAsync(s, promptText, cts.Token);
+            var autoCtx    = await BuildRagAutoContextAsync(s, promptText, p.AttachedPaths, cts.Token);
             if (!string.IsNullOrEmpty(autoCtx))
                 promptText = autoCtx + "\n\n" + promptText;
 
@@ -266,8 +271,7 @@ internal sealed partial class HostServer : IDisposable
     public void ChatReset()
     {
         var s = Session();
-        AssertIdle("chat/reset");
-        ResetHistory(s);
+        WithTurnSlot("chat/reset", () => ResetHistory(s));
     }
 
     /// <summary>Full slash-command list for the adapter's autocomplete popup: built-ins (hints
@@ -385,16 +389,22 @@ internal sealed partial class HostServer : IDisposable
         var incoming = JsonSerializer.Deserialize<InferpalConfig>(p.Json)
                        ?? throw new ArgumentException("Invalid config JSON.");
 
-        foreach (var prop in typeof(InferpalConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            if (prop.CanRead && prop.CanWrite)
-                prop.SetValue(s.Config, prop.GetValue(incoming));
+        // Slot-held, not merely idle-checked: a settings save (or onDidChangeConfiguration) used
+        // to mutate the shared Config the agent loop reads and replace the History it appends to,
+        // mid-run (pre-1.6.0 architecture review, §2.6).
+        WithTurnSlot("config/update", () =>
+        {
+            foreach (var prop in typeof(InferpalConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                if (prop.CanRead && prop.CanWrite)
+                    prop.SetValue(s.Config, prop.GetValue(incoming));
 
-        s.Config.Save();
-        // A language override takes effect immediately (settings/strings, slash hints, …), like the
-        // VS settings window; going back to "Auto" returns to the editor's locale rather than
-        // leaving whatever was last applied.
-        ApplyLanguage(s.Config);
-        ResetHistory(s);   // custom prompt / pinned files may have changed
+            s.Config.Save();
+            // A language override takes effect immediately (settings/strings, slash hints, …), like the
+            // VS settings window; going back to "Auto" returns to the editor's locale rather than
+            // leaving whatever was last applied.
+            ApplyLanguage(s.Config);
+            ResetHistory(s);   // custom prompt / pinned files may have changed
+        });
     }
 
     // ── RAG index ──────────────────────────────────────────────────────────────
@@ -443,19 +453,21 @@ internal sealed partial class HostServer : IDisposable
     /// conversational turn, tool results included) and the transcript is returned for
     /// re-rendering. Null when the session doesn't exist.</summary>
     [JsonRpcMethod("session/load", UseSingleObjectParameterDeserialization = true)]
-    public async Task<SessionLoadResult?> SessionLoadAsync(SessionRefParams p, CancellationToken ct)
-    {
-        var s = Session();
-        AssertIdle("session/load");
-        var data = await s.Store.LoadAsync(p.Name, ct);
-        if (data is null) return null;
+    public Task<SessionLoadResult?> SessionLoadAsync(SessionRefParams p, CancellationToken ct) =>
+        // Slot held across the await: the old entry-check let a chat/send slip in while the store
+        // was loading, then the history swap landed under the running loop (revue §2.6, TOCTOU).
+        WithTurnSlotAsync<SessionLoadResult?>("session/load", ct, async token =>
+        {
+            var s    = Session();
+            var data = await s.Store.LoadAsync(p.Name, token);
+            if (data is null) return null;
 
-        s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
-        s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;
-        return new SessionLoadResult(
-            p.Name,
-            data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList());
-    }
+            s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
+            s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;
+            return new SessionLoadResult(
+                p.Name,
+                data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList());
+        });
 
     [JsonRpcMethod("session/delete", UseSingleObjectParameterDeserialization = true)]
     public bool SessionDelete(SessionRefParams p) => Session().Store.Delete(p.Name);
@@ -468,32 +480,33 @@ internal sealed partial class HostServer : IDisposable
     /// turn doesn't exist.
     /// </summary>
     [JsonRpcMethod("session/branch", UseSingleObjectParameterDeserialization = true)]
-    public async Task<SessionBranchResult?> SessionBranchAsync(SessionBranchParams p, CancellationToken ct)
-    {
-        var s        = Session();
-        AssertIdle("session/branch");
-        var messages = p.Messages.Select(ToSaved).ToList();
-        var sessions = await s.Store.ListWithPreviewAsync(ct);
+    public Task<SessionBranchResult?> SessionBranchAsync(SessionBranchParams p, CancellationToken ct) =>
+        // Slot held across the awaits — same TOCTOU as session/load (revue §2.6).
+        WithTurnSlotAsync<SessionBranchResult?>("session/branch", ct, async token =>
+        {
+            var s        = Session();
+            var messages = p.Messages.Select(ToSaved).ToList();
+            var sessions = await s.Store.ListWithPreviewAsync(token);
 
-        var plan = BranchManager.Plan(messages, p.Turn, s.CurrentSessionName, sessions, DateTime.Now);
-        if (plan is null) return null;
+            var plan = BranchManager.Plan(messages, p.Turn, s.CurrentSessionName, sessions, DateTime.Now);
+            if (plan is null) return null;
 
-        // The parent is rewritten with the conversation as it stands now (it may have moved on
-        // since it was loaded), keeping its own parent link when it is itself a branch.
-        await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, ct,
-                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn);
+            // The parent is rewritten with the conversation as it stands now (it may have moved on
+            // since it was loaded), keeping its own parent link when it is itself a branch.
+            await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, token,
+                                    parent: plan.ParentParent, forkTurn: plan.ParentForkTurn);
 
-        await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, ct,
-                                parent: plan.ParentName, forkTurn: plan.ForkTurn);
+            await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token,
+                                    parent: plan.ParentName, forkTurn: plan.ForkTurn);
 
-        s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
-        s.CurrentSessionName = plan.BranchName;
+            s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
+            s.CurrentSessionName = plan.BranchName;
 
-        return new SessionBranchResult(
-            plan.BranchName, plan.ParentName, plan.ForkTurn,
-            plan.BranchMessages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList(),
-            Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
-    }
+            return new SessionBranchResult(
+                plan.BranchName, plan.ParentName, plan.ForkTurn,
+                plan.BranchMessages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList(),
+                Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
+        });
 
     /// <summary>
     /// LLM-generated name for a conversation (utility model via the Model Router) — the VS Code
@@ -525,13 +538,25 @@ internal sealed partial class HostServer : IDisposable
     public XRayPanelDto XrayToggle(XRayToggleParams p)
     {
         var s = Session();
-        if (p.Enabled) s.XrayDisabledSections.Remove(p.Id);
-        else           s.XrayDisabledSections.Add(p.Id);
+        // Slot-held: this rewrites History[0] — under a running loop that is the same race as
+        // chat/reset (revue §2.6).
+        return WithTurnSlotFunc("xray/toggle", () =>
+        {
+            if (p.Enabled) s.XrayDisabledSections.Remove(p.Id);
+            else           s.XrayDisabledSections.Add(p.Id);
 
-        if (s.History.Count > 0 && s.History[0].Role == "system")
-            s.History[0] = new ChatMessageDto("system", BuildSystemPromptText(s));
+            if (s.History.Count > 0 && s.History[0].Role == "system")
+                s.History[0] = new ChatMessageDto("system", BuildSystemPromptText(s));
 
-        return ToXRayPanelDto(s);
+            return ToXRayPanelDto(s);
+        });
+    }
+
+    private T WithTurnSlotFunc<T>(string operation, Func<T> body)
+    {
+        var cts = AcquireTurnFor(operation);
+        try { return body(); }
+        finally { ReleaseTurn(cts); }
     }
 
     // ── Open-document overlay & active editor (notifications from the adapter) ─
@@ -573,24 +598,43 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>
-    /// Refuses a conversation-history mutation while a turn is in flight. `session/load`,
-    /// `session/branch` and `chat/reset` all replace <see cref="HostSession.History"/> wholesale;
-    /// doing that under a running agent loop is a data race on a <c>List&lt;T&gt;</c> the loop is
-    /// appending to. Nothing at the protocol level orders these calls — the adapter happens to,
-    /// today — so the invariant is enforced here, where it belongs.
+    /// Runs a History/Config mutation while <b>holding</b> the turn slot. The predecessor
+    /// (`AssertIdle`) merely tested the slot at entry — a check-then-act: a `chat/send` arriving
+    /// during the operation's awaits slipped in and raced the very mutation the check existed to
+    /// prevent (pre-1.6.0 architecture review, §2.6). Taking the slot makes the exclusion symmetric: the
+    /// mutation excludes a turn exactly as a turn excludes the mutation.
     /// </summary>
-    private void AssertIdle(string operation)
+    private void WithTurnSlot(string operation, Action body)
+    {
+        var cts = AcquireTurnFor(operation);
+        try { body(); }
+        finally { ReleaseTurn(cts); }
+    }
+
+    /// <inheritdoc cref="WithTurnSlot"/>
+    private async Task<T> WithTurnSlotAsync<T>(string operation, CancellationToken ct, Func<CancellationToken, Task<T>> body)
+    {
+        var cts = AcquireTurnFor(operation, ct);
+        try { return await body(cts.Token); }
+        finally { ReleaseTurn(cts); }
+    }
+
+    private CancellationTokenSource AcquireTurnFor(string operation, CancellationToken ct = default)
     {
         lock (_gate)
+        {
             if (_chatCts is not null)
                 throw new InvalidOperationException(
                     $"'{operation}' cannot run while a chat turn is in flight — cancel it first.");
+            return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        }
     }
 
     /// <summary>Per-turn RAG auto-context (mirror of the VS VM's <c>BuildAutoContextAsync</c>):
     /// warm shadow result when available, else one bounded embed + search. Best-effort —
     /// any failure yields no auto-context, never an error.</summary>
-    private static async Task<string> BuildRagAutoContextAsync(HostSession s, string userText, CancellationToken ct)
+    private static async Task<string> BuildRagAutoContextAsync(
+        HostSession s, string userText, List<string>? attachedPaths, CancellationToken ct)
     {
         if (!s.Config.RagAutoContextEnabled || !s.Config.RagEnabled)   return string.Empty;
         if (s.Index.ChunkCount == 0 || s.Client.IsEmbeddingCircuitOpen) return string.Empty;
@@ -609,9 +653,19 @@ internal sealed partial class HostServer : IDisposable
                 if (embedding is null) return string.Empty;
                 results = await s.Index.SearchAsync(embedding, trimmed, RagAutoContext.DefaultMaxChunks, ct);
             }
-            return results is null or { Count: 0 }
-                ? string.Empty
-                : RagAutoContext.Build(results, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            if (results is null or { Count: 0 }) return string.Empty;
+
+            // Parity with the VS VM: the adapter names the files it inlined as attachments so a
+            // chunk of an attached file is not injected a second time — this set used to be
+            // hard-coded empty (pre-1.6.0 architecture review). Resolved to full paths, the grain the
+            // chunks carry.
+            var attached = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (attachedPaths is { Count: > 0 } && !string.IsNullOrEmpty(s.RootDir))
+                foreach (var p in attachedPaths)
+                    try { attached.Add(Path.GetFullPath(Path.IsPathRooted(p) ? p : Path.Combine(s.RootDir, p))); }
+                    catch (Exception ex) { Diagnostics.Swallow("BuildRagAutoContext.AttachedPath", ex); }
+
+            return RagAutoContext.Build(results, attached);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -645,12 +699,26 @@ internal sealed partial class HostServer : IDisposable
     {
         var model = XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
-            AgentOrchestrator.EstimateTokens(s.History), s.Config.ContextWindowSize);
+            AgentOrchestrator.EstimateTokens(SnapshotHistory(s)), s.Config.ContextWindowSize);
         return new XRayPanelDto(
             model.Sections.Select(x => new XRaySectionDto(
                 x.Id, x.Label, x.Tokens, x.Percent, x.Content, x.Enabled, x.CanToggle)).ToList(),
             model.TotalTokens, model.HistoryTokens, model.ContextWindow,
             model.FillPercent, model.OverheadWarning, model.RawPrompt);
+    }
+
+    /// <summary>Bounded defensive copy of the history: `xray/panel` is a read the webview can ask
+    /// for mid-stream (its button is not gated on busy), and enumerating the List the agent loop
+    /// is appending to throws (pre-1.6.0 architecture review, §2.6). A handful of retries always wins — the
+    /// loop appends in bursts, it does not spin.</summary>
+    private static List<ChatMessageDto> SnapshotHistory(HostSession s)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try { return s.History.ToList(); }
+            catch (InvalidOperationException) when (attempt < 5) { }  // modified during enumeration
+            catch (ArgumentException)         when (attempt < 5) { }  // resized during CopyTo
+        }
     }
 
     /// <summary>Reseeds the history with the layered system prompt.</summary>

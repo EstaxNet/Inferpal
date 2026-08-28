@@ -27,6 +27,9 @@ export interface ChatSendParams {
   prompt: string;
   model?: string;
   agentMode?: boolean;
+  /** Workspace-relative paths of files inlined as attachments — the host's RAG auto-context
+   * skips their chunks instead of injecting them a second time (parity with VS). */
+  attachedPaths?: string[];
 }
 
 export interface ChatSendResult {
@@ -316,4 +319,12 @@ export interface DebugStopStateDto {
 export interface DebugStartDto {
   state: DebugStopStateDto | null;
   failure: string | null;
+}
+
+/** `debug/captureTest` (§25): launch the repro runner under coreclr and capture the failure. */
+export interface DebugCaptureTestParams {
+  program: string;
+  args: string[];
+  cwd: string;
+  projectRoot: string;
 }

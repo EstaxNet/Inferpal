@@ -123,7 +123,7 @@ internal sealed class ApplyEditsTool : ITool
         foreach (var path in changed)
         {
             await _history.SnapshotAsync(path, ct);   // recorded in the active run → /undo-run
-            await File.WriteAllTextAsync(path, current[path], ct);
+            await SafeFileWriter.WritePreservingAsync(path, current[path], ct);
         }
 
         // Smart Fix once: building any edited file validates its project (covers same-project edits).

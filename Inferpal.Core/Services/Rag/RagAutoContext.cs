@@ -36,7 +36,7 @@ internal static class RagAutoContext
             if (chunk.FilePath is { Length: > 0 } fp && attachedPaths.Contains(fp)) continue;
 
             var body = chunk.Content.Length > MaxChunkChars
-                ? chunk.Content[..MaxChunkChars] + "\n…"
+                ? SafeTruncate.Truncate(chunk.Content, MaxChunkChars) + "\n…"
                 : chunk.Content;
             var block = $"### {chunk.RelPath}:{chunk.StartLine}-{chunk.EndLine}\n```\n{body}\n```\n";
 

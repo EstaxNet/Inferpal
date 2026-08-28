@@ -88,6 +88,14 @@ exists.
   suite (`run_tests` auto-detects dotnet / pytest / npm / cargo / go), hands the failure
   report to the agent, re-runs, up to 5 rounds. Writes go through the usual approval
   pipeline and `/undo-run` applies.
+  On the first red round the failing test is also **re-run under the debugger**, and what the
+  runner's text cannot carry — the real exception, the call stack, the values of the locals at
+  the point of failure — is added to the fix prompt. Visual Studio attaches its own debugger,
+  VS Code drives the Debug Adapter Protocol; running a test under a debugger is execution, so
+  it asks **once per `/tdd` run**. No debugger, a failed capture or a refused approval falls
+  back to the text-only loop, and a failed capture says so in the run. Rewriting a *test* file
+  during the loop always asks, whatever your permission rules say — "make it green" has an
+  obvious shortcut, and this is the one place it must not be taken silently.
 - **`/task <objective>`** — a background agent run, detached from the conversation: submitting
   returns at once and you keep working while it investigates. Tasks run one at a time and wait
   for the chat to be idle before taking the GPU, so interactive work is never blocked. A notice

@@ -1,4 +1,4 @@
-namespace Inferpal.Services.Hardware;
+﻿namespace Inferpal.Services.Hardware;
 
 /// <summary>
 /// Central priority gate for the single shared Ollama GPU, in the extension-host process.
@@ -61,6 +61,22 @@ internal static class GpuScheduler
         }
         return new Lease();
     }
+
+    /// <summary>
+    /// <c>true</c> when ghost text (FIM) must stay quiet: a chat turn holds the GPU, here or
+    /// ailleurs sur la machine.
+    /// </summary>
+    /// <remarks>
+    /// Order matters. <see cref="IsChatActive"/> is the <b>local</b> truth - an in-memory counter,
+    /// no I/O, exact by construction; <see cref="ChatBusySignal.IsBusy"/> is a best-effort
+    /// <b>cross-process</b> channel (writing the marker may fail, and the failure is swallowed by
+    /// <c>Diagnostics.Swallow</c>). While the chat lived in the host and FIM in devenv, only the
+    /// file could answer. With in-process hosting the two share a process: asking the disk what the
+    /// counter already knows would make the chat &gt; FIM priority depend on a write that is
+    /// allowed to fail. The file is still consulted afterwards, for the other editors on the
+    /// machine - there is only one GPU.
+    /// </remarks>
+    public static bool ShouldFimYield() => IsChatActive || ChatBusySignal.IsBusy();
 
     /// <summary>Marker refresh cadence — comfortably under <see cref="ChatBusySignal.MaxAge"/>.</summary>
     private static readonly TimeSpan BusyRefreshPeriod = TimeSpan.FromMinutes(4);

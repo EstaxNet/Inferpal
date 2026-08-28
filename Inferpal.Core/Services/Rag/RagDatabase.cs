@@ -25,9 +25,13 @@ internal sealed class RagDatabase
 {
     // ── Storage paths ─────────────────────────────────────────────────────────
 
-    private static readonly string BaseDir = Path.Combine(
+    private static readonly string DefaultBaseDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Inferpal", "rag");
+
+    // Redirectable for tests (mirrors TestReproScaffold.BaseDir): the index lifecycle tests
+    // write a real SQLite DB and must not touch the user's %AppData% index.
+    internal static Func<string> BaseDir = () => DefaultBaseDir;
 
     private readonly string _dbPath;
     private readonly string _rootHash;
@@ -43,8 +47,9 @@ internal sealed class RagDatabase
     public RagDatabase(string solutionRoot)
     {
         _rootHash = ComputePathHash(solutionRoot);
-        _dbPath   = Path.Combine(BaseDir, $"{_rootHash}.db");
-        Directory.CreateDirectory(BaseDir);
+        var baseDir = BaseDir();
+        _dbPath   = Path.Combine(baseDir, $"{_rootHash}.db");
+        Directory.CreateDirectory(baseDir);
         EnsureSchema();
     }
 

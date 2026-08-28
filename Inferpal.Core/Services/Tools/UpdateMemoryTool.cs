@@ -61,7 +61,7 @@ internal class UpdateMemoryTool : ITool
         {
             case "clear":
                 newContent = string.Empty;
-                await File.WriteAllTextAsync(memPath, newContent, Encoding.UTF8, ct);
+                await SafeFileWriter.WritePreservingAsync(memPath, newContent, ct);
                 return Strings.UpdateMemoryClear(memPath);
 
             case "replace":
@@ -82,7 +82,9 @@ internal class UpdateMemoryTool : ITool
                 break;
         }
 
-        await File.WriteAllTextAsync(memPath, newContent, Encoding.UTF8, ct);
+        // SafeFileWriter: memory.md is committable and user-editable — keep whatever
+        // encoding/BOM the user's editor gave it instead of forcing UTF-8 with BOM.
+        await SafeFileWriter.WritePreservingAsync(memPath, newContent, ct);
         return Strings.UpdateMemoryOk(memPath, newContent.Length);
     }
 

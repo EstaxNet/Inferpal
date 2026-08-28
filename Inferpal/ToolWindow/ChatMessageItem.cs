@@ -157,15 +157,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
 
     private Task CopyContentAsync(object? _, CancellationToken ct)
     {
-        var text = Content;
-        var thread = new Thread(() =>
-        {
-            try { System.Windows.Clipboard.SetText(string.IsNullOrEmpty(text) ? " " : text); }
-            catch (Exception ex) { Diagnostics.Swallow("Clipboard.CopyMessage", ex); }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
+        ClipboardHelper.TrySet(Content, "Clipboard.CopyMessage");
         return Task.CompletedTask;
     }
 

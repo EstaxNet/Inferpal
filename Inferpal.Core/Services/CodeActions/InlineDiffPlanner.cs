@@ -108,7 +108,7 @@ internal static class InlineDiffPlanner
         for (; cursor < old.Length; cursor++)
             result.Add(old[cursor]);
 
-        return string.Join('\n', result);
+        return string.Join("\n",result);
     }
 
     /// <summary>
@@ -140,7 +140,7 @@ internal static class InlineDiffPlanner
             {
                 // Append after a last line that has no trailing '\n'.
                 edits.Add(new DiffEdit(hunk.Index, plan.OldText.Length, plan.OldText.Length,
-                    "\n" + string.Join('\n', hunk.NewLines)));
+                    "\n" + string.Join("\n",hunk.NewLines)));
                 continue;
             }
 
@@ -148,7 +148,7 @@ internal static class InlineDiffPlanner
             {
                 // Insertion before an existing line — the block carries its own trailing '\n'.
                 edits.Add(new DiffEdit(hunk.Index, lineOffset[hunk.OldStart], lineOffset[hunk.OldStart],
-                    string.Join('\n', hunk.NewLines) + "\n"));
+                    string.Join("\n",hunk.NewLines) + "\n"));
                 continue;
             }
 
@@ -157,7 +157,7 @@ internal static class InlineDiffPlanner
             var end        = reachesEof ? plan.OldText.Length : lineOffset[hunk.OldStart + count];
             var newText    = hunk.NewLines.Count == 0
                 ? string.Empty
-                : string.Join('\n', hunk.NewLines) + (reachesEof ? string.Empty : "\n");
+                : string.Join("\n",hunk.NewLines) + (reachesEof ? string.Empty : "\n");
 
             // Deleting the trailing lines outright must also swallow the '\n' that used to
             // precede them, or the file would keep a dangling final newline.

@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 
 namespace Inferpal.Services;
 
@@ -66,12 +66,19 @@ internal static class Diagnostics
         lock (_gate) _ring.Clear();
     }
 
+    /// <summary>Cap on the opt-in log file. A forgotten `/diagnostics on` must not grow without
+    /// bound (pre-1.6.0 architecture review); past the cap the file restarts with a marker rather than
+    /// silently dropping new lines — the RECENT entries are the ones a bug report needs.</summary>
+    private const long MaxLogBytes = 5 * 1024 * 1024;
+
     private static void AppendToFile(DiagnosticEntry e)
     {
         try
         {
             var path = LogPath;
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            if (new FileInfo(path) is { Exists: true, Length: > MaxLogBytes })
+                File.WriteAllText(path, $"[log truncated at {MaxLogBytes / (1024 * 1024)} MB — older entries dropped]{Environment.NewLine}");
             File.AppendAllText(path, e.ToLine() + Environment.NewLine);
         }
         catch { /* file logging is best-effort too */ }

@@ -141,11 +141,14 @@ internal sealed class BackgroundShellRegistry : IDisposable
     {
         Job? job;
         lock (_lock)
-        {
             if (!_jobs.TryGetValue(id, out job)) return false;
-            _jobs.Remove(id);
-        }
-        try { job!.Process.Kill(entireProcessTree: true); } catch { }
+
+        // Kill FIRST, detrack after: removing before a failed Kill (AccessDenied, stubborn tree)
+        // orphaned the process forever — Dispose() could no longer see it (pre-1.6.0 architecture review).
+        try { job!.Process.Kill(entireProcessTree: true); }
+        catch (Exception ex) { Diagnostics.Swallow($"BackgroundShellRegistry.Stop({id})", ex); }
+
+        lock (_lock) _jobs.Remove(id);
         try { job!.Process.Dispose(); } catch { }
         return true;
     }

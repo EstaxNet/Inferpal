@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -202,8 +202,14 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
             var root = doc.RootElement;
 
             // Responses carry an "id"; server-initiated notifications do not. We act on the one
-            // notification we care about (tool list changed) and ignore the rest.
-            if (!root.TryGetProperty("id", out var idEl) || !idEl.TryGetInt64(out var id))
+            // notification we care about (tool list changed) and ignore the rest. Some servers
+            // echo the numeric id back as a STRING ("42") — treating those as notifications made
+            // every call wait out its full 120 s timeout (pre-1.6.0 architecture review).
+            long id = 0;
+            var hasId = root.TryGetProperty("id", out var idEl)
+                && (idEl.TryGetInt64(out id)
+                    || (idEl.ValueKind == JsonValueKind.String && long.TryParse(idEl.GetString(), out id)));
+            if (!hasId)
             {
                 if (root.TryGetProperty("method", out var methodEl)
                     && methodEl.ValueKind == JsonValueKind.String

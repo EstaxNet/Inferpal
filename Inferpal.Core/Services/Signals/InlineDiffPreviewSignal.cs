@@ -47,7 +47,7 @@ internal static class InlineDiffPreviewSignal
         var id = Guid.NewGuid().ToString("N");
         SignalFile.Delete(AckPath);   // a stale ack must not satisfy the new request's wait
         SignalFile.Write(RequestPath,
-            new InlineDiffRequest(id, Environment.ProcessId,
+            new InlineDiffRequest(id, SignalFile.CurrentPid,
                                   SignalFile.Now.ToUnixTimeMilliseconds(), filePath, oldText, newText),
             "InlineDiffPreviewSignal.WriteRequest");
         return id;

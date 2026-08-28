@@ -122,8 +122,9 @@ internal class GetDiagnosticsTool : ITool
         var cwd = Directory.GetCurrentDirectory();
         foreach (var ext in new[] { "*.sln", "*.csproj" })
         {
-            var found = Directory.GetFiles(cwd, ext, SearchOption.AllDirectories)
-                                 .FirstOrDefault();
+            // WorkspaceScan: lazy + excluded dirs skipped — a stray .csproj under node_modules
+            // or bin/ must not become "the" project file.
+            var found = WorkspaceScan.EnumerateFiles(cwd, ext).FirstOrDefault();
             if (found is not null) return found;
         }
         return null;

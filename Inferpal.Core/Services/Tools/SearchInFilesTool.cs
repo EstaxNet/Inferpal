@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Inferpal.Localization;
@@ -41,7 +41,23 @@ internal class SearchInFilesTool : ITool
 
         var results = new List<string>();
 
-        foreach (var file in Directory.GetFiles(path, filePattern, SearchOption.AllDirectories))
+        // Lazy enumeration + the same artefact exclusions as the semantic index: GetFiles used to
+        // materialise the whole tree (long seconds on a node project) and happily searched .git/,
+        // node_modules/, bin/, obj/ — and the 100-result cap was only checked per FILE, so a
+        // single minified file could add tens of thousands of lines (pre-1.6.0 architecture review).
+        IEnumerable<string> files;
+        try
+        {
+            files = Directory.EnumerateFiles(path, filePattern, SearchOption.AllDirectories)
+                             .Where(f => !WorkspaceScan.IsExcludedPath(f));
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("SearchInFilesTool.Enumerate", ex);
+            return Task.FromResult(Strings.NoResults);
+        }
+
+        foreach (var file in files)
         {
             if (ct.IsCancellationRequested) break;
             if (results.Count >= 100) break;
@@ -50,10 +66,12 @@ internal class SearchInFilesTool : ITool
             {
                 var lines = File.ReadAllLines(file);
                 var relPath = file[path.Length..].TrimStart('\\', '/');
-                for (int i = 0; i < lines.Length; i++)
+                for (int i = 0; i < lines.Length && results.Count < 100; i++)
                 {
-                    if (regex.IsMatch(lines[i]))
-                        results.Add($"{relPath}:{i + 1}: {lines[i].Trim()}");
+                    if (!regex.IsMatch(lines[i])) continue;
+                    var line = lines[i].Trim();
+                    if (line.Length > 400) line = line[..400] + "…";   // a minified line is not a result
+                    results.Add($"{relPath}:{i + 1}: {line}");
                 }
             }
             catch (OperationCanceledException) { }

@@ -1,4 +1,4 @@
-using Inferpal.Services;
+﻿using Inferpal.Services;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -71,4 +71,23 @@ public class GitCommitPolicyTests
     [Fact]
     public void EscapeMessage_EscapesDoubleQuotesAndTrims() =>
         Assert.Equal("say \\\"hi\\\"", GitCommitPolicy.EscapeMessage("  say \"hi\"  "));
+
+    [Fact]
+    public void EscapeMessage_DoublesTrailingBackslashes_SoTheClosingQuoteSurvives()
+    {
+        // Win32/MSVCRT rule: a backslash escapes only when it precedes a quote. A message ending
+        // in `bin\` produced `…bin\"` — the closing quote was swallowed and the remaining git
+        // arguments merged into the message (pre-1.6.0 architecture review).
+        Assert.Equal(@"move to bin\\", GitCommitPolicy.EscapeMessage(@"move to bin\"));
+        Assert.Equal(@"a\\\\", GitCommitPolicy.EscapeMessage(@"a\\"));
+    }
+
+    [Fact]
+    public void EscapeMessage_DoublesBackslashesBeforeAnEmbeddedQuote()
+    {
+        // `\"` in the message: the original backslash must double AND the quote gets its own.
+        Assert.Equal("path \\\\\\\"x", GitCommitPolicy.EscapeMessage("path \\\"x"));
+        // A backslash NOT followed by a quote stays literal.
+        Assert.Equal(@"a\b", GitCommitPolicy.EscapeMessage(@"a\b"));
+    }
 }

@@ -11,8 +11,8 @@ namespace Inferpal.Tests;
 /// because the published runtimeconfig carries <b>no</b> <c>System.Globalization.Invariant</c>
 /// entry: the SDK emits one as soon as the csproj declares <c>InvariantGlobalization</c>
 /// (either value), and the AppContext switch then overrides the environment variable — the retry
-/// spawns a host that crashes identically. Measured end-to-end on a fresh Ubuntu WSL2
-/// against the real linux-x64 VSIX host (2026-08-17).
+/// spawns a host that crashes identically. Measured on the WSL bench of 2026-08-17
+/// (docs/probes/icu-fallback/).
 /// </summary>
 public class HostGlobalizationConfigTests
 {

@@ -1,4 +1,4 @@
-using Inferpal.Services.Rag;
+﻿using Inferpal.Services.Rag;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -42,6 +42,26 @@ public class HybridSearchTests
     {
         Assert.Empty(CodeTokenizer.Tokenize(""));
         Assert.Empty(CodeTokenizer.Tokenize(null));
+    }
+
+    [Fact]
+    public void Bm25Tokens_AreComputedOnce_AndCachedPerChunk()
+    {
+        // §27.1 - SearchAsync used to re-tokenize the whole corpus on every query (including the
+        // per-keystroke pre-warm); tokens are now cached on the chunk, invalidated per file since
+        // re-indexing always creates fresh instances.
+        var chunk = new RagChunk
+        {
+            Content  = "GetUserName",
+            TypeName = "UserService",
+            RelPath  = "a/UserService.cs",
+        };
+
+        var first = chunk.Bm25Tokens;
+        Assert.Same(first, chunk.Bm25Tokens);   // same reference = no re-tokenization
+        Assert.Equal(
+            CodeTokenizer.Tokenize($"{chunk.Content}\n{chunk.TypeName}\n{chunk.RelPath}"),
+            first);
     }
 
     // ── BM25 ─────────────────────────────────────────────────────────────────────

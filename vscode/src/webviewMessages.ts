@@ -90,9 +90,11 @@ export type ExtToWebview =
   | { type: 'token'; text: string }
   | { type: 'thinking' }
   | { type: 'status'; text: string }
+  | { type: 'assistant'; text: string; timestamp: string }
   | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; timestamp: string; expanded: boolean }
   | { type: 'plan'; plan: WvPlan }
   | { type: 'approval'; id: number; message: string }
+  | { type: 'approvalDismiss'; id: number }
   | { type: 'mentionSuggestions'; items: string[] }
   | { type: 'xrayPanel'; panel: XRayPanel }
   | { type: 'streamReset' }

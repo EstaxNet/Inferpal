@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Inferpal.Services.Execution;
@@ -158,8 +158,12 @@ internal sealed class PermissionPolicy
         // ── POSIX equivalents (§23) — same tier, same contract: force the prompt, never block ──
         // eval runs a string the rules engine never saw (the iex of POSIX shells)
         new(@"\beval\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        // Piping anything into a shell executes downloaded/generated text (curl … | sh)
-        new(@"\|\s*(sudo\s+)?(sh|bash|zsh|dash|ksh)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Piping anything into an interpreter executes downloaded/generated text — the script
+        // interpreters are the same family as the shells (curl … | python3 ≡ curl … | sh),
+        // not obfuscation (pre-1.6.0 architecture review).
+        new(@"\|\s*(sudo\s+)?(sh|bash|zsh|dash|ksh|python[0-9.]*|perl|ruby|node)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // Invoke-Command / icm runs a script block, possibly remotely — same tier as iex
+        new(@"\b(icm|Invoke-Command)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
         // Base64 payload decoded at run time (mirror of FromBase64String)
         new(@"\bbase64\b[^|&;]*(\s-[dD]\b|--decode)", RegexOptions.Compiled),
         // A shell -c whose payload is a variable — a literal -c 'text' stays readable and does not match
@@ -178,9 +182,39 @@ internal sealed class PermissionPolicy
         !string.IsNullOrEmpty(subject) && OpaqueExecution.Any(r => r.IsMatch(subject));
 
     /// <summary>Classifies a tool call. See the type remarks for the evaluation order.</summary>
+    /// <remarks>
+    /// A subject can carry <b>several paths</b> — <c>apply_edits</c> and <c>rename_symbol</c> join
+    /// every affected file with <c>'\n'</c>. A rule that holds for one line does not hold for the
+    /// aggregate: without <see cref="RegexOptions.Multiline"/>, a <c>$</c>-anchored deny only sees
+    /// the last line, so a two-file edit used to slip past <c>deny * \.env$</c> (pre-1.6.0 architecture review,
+    /// §1.1). Multi-line subjects are therefore evaluated line by line: one denied path denies the
+    /// whole call, and the call is only auto-approved when <em>every</em> path is allowed.
+    /// </remarks>
     public PermissionDecision Evaluate(string toolName, string? subject)
     {
         subject ??= string.Empty;
+
+        if (subject.Contains('\n'))
+        {
+            var sawPrompt = false;
+            foreach (var raw in subject.Split('\n'))
+            {
+                var line = raw.Trim('\r', ' ', '\t');
+                if (line.Length == 0) continue;
+                switch (EvaluateSingle(toolName, line))
+                {
+                    case PermissionDecision.Deny:   return PermissionDecision.Deny;
+                    case PermissionDecision.Prompt: sawPrompt = true; break;
+                }
+            }
+            return sawPrompt ? PermissionDecision.Prompt : PermissionDecision.Allow;
+        }
+
+        return EvaluateSingle(toolName, subject);
+    }
+
+    private PermissionDecision EvaluateSingle(string toolName, string subject)
+    {
         if (IsHardDenied(subject)) return PermissionDecision.Deny;
 
         foreach (var rule in _rules)
@@ -188,6 +222,25 @@ internal sealed class PermissionPolicy
                 return rule.Decision;   // first match wins
 
         return PermissionDecision.Prompt;
+    }
+
+    /// <summary>
+    /// Composes the machine config rules with the workspace overlay into one ordered ruleset.
+    /// <b>Overlay rules come first.</b> The overlay is deny-only by construction
+    /// (<see cref="ParseJsonOverlay"/>), so putting it ahead can only restrict — whereas the old
+    /// config-first order let an ordinary machine <c>allow</c> (say, <c>allow write_file \.cs$</c>)
+    /// shadow a repository's <c>deny</c> under first-match-wins, silently breaking the documented
+    /// promise that a project tightening its own restrictions is always safe (pre-1.6.0 architecture review, §1.2).
+    /// </summary>
+    public static IReadOnlyList<PermissionRule> Compose(
+        IReadOnlyList<PermissionRule> configRules,
+        IReadOnlyList<PermissionRule> overlayRules)
+    {
+        if (overlayRules.Count == 0) return configRules;
+        var rules = new List<PermissionRule>(overlayRules.Count + configRules.Count);
+        rules.AddRange(overlayRules);
+        rules.AddRange(configRules);
+        return rules;
     }
 
     // ── Parsing ────────────────────────────────────────────────────────────────

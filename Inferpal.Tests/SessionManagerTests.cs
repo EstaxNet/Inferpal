@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Inferpal.Services;
@@ -130,6 +130,17 @@ public class SessionManagerTests
     [Fact]
     public void FormatAge_Over30Days_FallsBackToDate() =>
         Assert.Equal("2026-05-01", SessionManager.FormatAge(new DateTime(2026, 5, 1, 8, 0, 0, DateTimeKind.Utc), Now));
+
+    [Fact]
+    public void FormatAge_NormalizesLocalKind_AndNeverGoesNegative()
+    {
+        // §27.6 - instants arrive from JSON with a varying Kind: a Local Kind shifted the age by
+        // the time zone. And a clock going backwards must never show a "-3m ago".
+        var savedLocal = Now.AddMinutes(-5).ToLocalTime(); // same instant, Kind = Local
+        Assert.Equal("5m ago", SessionManager.FormatAge(savedLocal, Now));
+
+        Assert.Equal("0m ago", SessionManager.FormatAge(Now.AddMinutes(3), Now)); // futur → plancher
+    }
 
     // ── /history rendering ─────────────────────────────────────────────────────
 

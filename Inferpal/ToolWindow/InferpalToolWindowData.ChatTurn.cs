@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -37,8 +37,9 @@ internal partial class InferpalToolWindowData
         // and is instead absorbed by the atomic claim below.
         if (IsLoading)
         {
-            if (_currentCts is { } cts)
-                await cts.CancelAsync();
+            // Marshalled for the same reason as CancelAsync: the finally disposes _currentCts on
+            // the VM context, and cancelling from here raced it (pre-1.6.0 architecture review, §2.3).
+            await RunOnVMContextAsync(() => _currentCts?.Cancel());
             return;
         }
 
@@ -120,7 +121,8 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 var url = _config.BaseUrl;
-                var msg = ChatMessageItem.AssistantMsg(Strings.MsgConnectionGuardFailed(url));
+                var msg = ChatMessageItem.AssistantMsg(Strings.MsgConnectionGuardFailed(
+                    url, InferenceProviderFactory.DisplayName(_config.Provider)));
                 ApplyItemTheme(msg);
                 Messages.Insert(Messages.Count - 2, msg);
                 ScrollToBottom();
@@ -155,6 +157,7 @@ internal partial class InferpalToolWindowData
                 }
                 IsLoading     = true;
                 _sendStarting = false;
+                _turnDone     = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 var userItem  = ChatMessageItem.UserMsg(userText);
                 ApplyItemTheme(userItem);
                 Messages.Insert(Messages.Count - 2, userItem);
@@ -206,7 +209,11 @@ internal partial class InferpalToolWindowData
             {
                 IsLoading     = false;
                 _sendStarting = false;
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
+                _turnDone?.TrySetResult();
+                _turnDone     = null;
+                var errItem = ChatMessageItem.AssistantMsg(Strings.MsgError(msg));
+                ApplyItemTheme(errItem);   // every other insertion themes; these four didn't (revue lot 4)
+                Messages.Insert(Messages.Count - 2, errItem);
             });
             return;
         }
@@ -535,6 +542,7 @@ internal partial class InferpalToolWindowData
 
                     case Services.Agent.FinalAnswerKind.EmptyFallback:
                         var emptyMsg = ChatMessageItem.AssistantMsg(Strings.MsgEmptyResponse);
+                        ApplyItemTheme(emptyMsg);
                         Messages.Insert(Messages.Count - 2, emptyMsg);
                         lastAssistant = emptyMsg;
                         break;
@@ -583,7 +591,9 @@ internal partial class InferpalToolWindowData
                 // Finalize and discard any empty/invisible streaming bubble that was started
                 // before the cancellation arrived (a visible partial response stays).
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgCancelled));
+                var cancelItem = ChatMessageItem.AssistantMsg(Strings.MsgCancelled);
+                ApplyItemTheme(cancelItem);
+                Messages.Insert(Messages.Count - 2, cancelItem);
                 ScrollToBottom();
             });
         }
@@ -595,7 +605,9 @@ internal partial class InferpalToolWindowData
                 // Remove the live-status bubble (if any) before showing the error message.
                 RemoveStatusBubble();
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
+                var errItem = ChatMessageItem.AssistantMsg(Strings.MsgError(msg));
+                ApplyItemTheme(errItem);
+                Messages.Insert(Messages.Count - 2, errItem);
                 ScrollToBottom();
             });
         }
@@ -609,9 +621,18 @@ internal partial class InferpalToolWindowData
                 // or the catch handlers didn't reach the removal code.
                 RemoveStatusBubble();
                 localCts?.Dispose();
-                _currentCts = null;
-                IsLoading   = false;
-                CurrentStep = string.Empty;
+                // Conditional finalisation: a code action can cancel THIS turn and start the next
+                // one before this finally runs — _currentCts then belongs to the NEW turn, and
+                // stomping IsLoading here killed its stop button and let a third send through
+                // (pre-1.6.0 architecture review, §2.1). Only the turn that still owns the state releases it.
+                if (ReferenceEquals(_currentCts, localCts))
+                {
+                    _currentCts = null;
+                    IsLoading   = false;
+                    CurrentStep = string.Empty;
+                    _turnDone?.TrySetResult();
+                    _turnDone   = null;
+                }
             });
 
             // Beep when a long agent run completes, so the user can work elsewhere
@@ -629,11 +650,11 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) { Diagnostics.Swallow("ChatTurn.Cleanup", ex); }
     }
 
-    private Task CancelAsync(object? _, CancellationToken ct)
-    {
-        _currentCts?.Cancel();
-        return Task.CompletedTask;
-    }
+    private Task CancelAsync(object? _, CancellationToken ct) =>
+        // Marshalled: the finally disposes _currentCts on the VM context, so cancelling from the
+        // command thread raced it into an ObjectDisposedException when the click landed exactly
+        // as the response completed (pre-1.6.0 architecture review, §2.3). Same context ⇒ serialized.
+        RunOnVMContextAsync(() => _currentCts?.Cancel());
 
     // ── Connection Guard / Heartbeat ───────────────────────────────────────────
 

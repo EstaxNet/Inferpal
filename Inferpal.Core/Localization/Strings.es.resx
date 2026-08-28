@@ -245,8 +245,8 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  sesión : {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL de Ollama no configurada. Abre la configuración para establecerla.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>El modelo no devolvió ninguna respuesta. Es posible que el modelo configurado no admita la generación de texto — prueba el modelo de chat predeterminado.</value></data>
-  <data name="MsgTimeout" xml:space="preserve"><value>Tiempo de espera agotado — Ollama no respondió en {0} en 30 segundos.</value></data>
-  <data name="MsgUnreachable" xml:space="preserve"><value>No se puede alcanzar Ollama en {0}. Verifica la URL en Configuración.</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>Tiempo de espera agotado — el backend en {0} dejó de responder (tiempo de inactividad).</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>No se puede alcanzar el backend en {0}. Verifica la URL en Configuración.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>El servidor de inferencia en {0} devolvió un error:
 
 {1}</value></data>
@@ -254,15 +254,15 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
 
 Detalle del servidor: {0}</value></data>
   <data name="MsgContextWontFit" xml:space="preserve"><value>La solicitud (~{0} tokens) es mayor que el contexto con el que está cargado el modelo ({1} tokens) en modo agente: solo las definiciones de herramientas ocupan varios miles de tokens. Aumenta la longitud de contexto cargada (se recomienda 16384 o más en LM Studio) o reduce el número de herramientas de agente activadas.</value></data>
-  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>No se puede alcanzar Ollama en {0}
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>No se puede alcanzar {1} en {0}
 
 Pasos para solucionar el problema:
-  1. Inicia Ollama — abre una terminal y ejecuta:  ollama serve
+  1. Inicia {1} (para Ollama: abre una terminal y ejecuta  ollama serve)
   2. Verifica la URL en Configuración (actualmente: {0})
-  3. Si Ollama está en otra máquina, actualiza la URL en Configuración
-  4. Comprueba que el puerto 11434 no esté bloqueado por un cortafuegos o antivirus
+  3. Si {1} está en otra máquina, actualiza la URL en Configuración
+  4. Comprueba que el puerto no esté bloqueado por un cortafuegos o antivirus
 
-Haz clic en ↻ Reintentar en el encabezado cuando Ollama esté en ejecución.</value></data>
+Haz clic en ↻ Reintentar en el encabezado cuando {1} esté en ejecución.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconectado a Ollama — listo.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Comprobar la conexión a Ollama ahora</value></data>
 
@@ -716,6 +716,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="SlashHintDiagnostics" xml:space="preserve"><value>Mostrar diagnósticos recientes — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnósticos</value></data>
+  <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ El componente in-process no está cargado: el texto fantasma, la vista previa de diferencias de la edición en línea y el controlador de depuración de /tdd no están disponibles. El chat no se ve afectado (se ejecuta fuera del proceso), por eso nada parece roto.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>No hay diagnósticos registrados.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnósticos borrados.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Informe de soporte copiado al portapapeles — pégalo en una issue de GitHub.</value></data>
@@ -769,6 +770,10 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="TddFixing" xml:space="preserve"><value>🔧 Corrección {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Suite de tests en verde tras {0} ronda(s).</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Los tests siguen fallando tras {0} ronda(s) — se requiere intervención manual.</value></data>
+  <data name="TddDebugCaptureApproval" xml:space="preserve"><value>¿Volver a ejecutar la prueba fallida '{0}' bajo el depurador para capturar su estado en el punto de fallo? (se pregunta una vez por ejecución de /tdd)</value></data>
+  <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Capturando el estado del depurador en el punto de fallo…</value></data>
+  <data name="TddDebugCaptureFailed" xml:space="preserve"><value>⚠ Falló la captura del estado del depurador — se continúa sin ella.</value></data>
+  <data name="TddDebugCaptureUnavailable" xml:space="preserve"><value>⚠ Captura del depurador no disponible (controlador in-process no cargado) — bucle simple.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Radiografía del contexto — prompt del sistema ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Prompt del sistema base</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Fragmento de persona</value></data>
@@ -850,6 +855,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="TaskQueueFull" xml:space="preserve"><value>Demasiadas tareas en segundo plano (máximo {0}). Espere a que termine una o ejecute `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Tarea `{0}` desconocida.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Tarea `{0}` cancelada.</value></data>
+  <data name="TaskAlreadyFinished" xml:space="preserve"><value>La tarea `{0}` ya ha terminado — `/task {0}` muestra su informe.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>{0} tarea(s) terminada(s) olvidada(s).</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Ninguna tarea en segundo plano. `/task [objetivo]` inicia una.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Tareas en segundo plano</value></data>

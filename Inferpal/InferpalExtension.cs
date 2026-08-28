@@ -25,27 +25,47 @@ public class InferpalExtension : Extension
     // lazily bind System.Windows.Extensions, unresolvable in the host's extension ALC.
     static InferpalExtension() => WpfAssemblyResolver.Install();
 
+    /// <summary>
+    /// ⚠ <b>This <c>true</c> is a packaging switch we have to live with, not a hosting
+    /// intention.</b> The SDK requires <c>RequiresInProcessHosting = true</c> as soon as
+    /// <c>&lt;VssdkCompatibleExtension&gt;</c> is true (<c>VSEXT0007</c>) — and
+    /// <c>VssdkCompatibleExtension</c> is what makes <c>source.extension.vsixmanifest</c> get
+    /// packaged, hence the <c>&lt;Assets&gt;</c> section without which the in-process half is
+    /// never inventoried. The compiler will not let the pair be split.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ What the SDK infers from it is <c>"allowHostingInProcess": true</c> for every service in
+    /// <c>.vsextension\extension.json</c> — and VS takes that at its word: in the
+    /// <c>ActivityLog</c> of the live hive, <c>ExtensionMetadataInProcServiceBroker</c> tried to
+    /// create <b>inside devenv</b> <c>Inferpal.Services.VsIntegration.ActiveDocumentTracker</c>
+    /// and failed on <c>FileNotFoundException: System.Runtime, Version=8.0.0.0</c> from
+    /// <c>InferpalExtension..cctor()</c>. Same verdict as in MEF, one floor up: <b>nothing net8
+    /// activates inside devenv</b>. That is why the build sets this field back to <c>false</c> in
+    /// the generated JSON — target <c>ForceOutOfProcessHostingInExtensionJson</c>
+    /// (Inferpal.csproj).
+    /// </remarks>
+    /// <remarks>
+    /// The <c>net472 + VssdkCompatibleExtension + in-proc</c> triple is the contract for
+    /// everything devenv hosts: the official project template
+    /// (<c>VisualStudioExtensibilityInProcessProject</c>) targets <c>net472</c>, the two hybrids
+    /// Microsoft ships (Copilot Build Analyzer, Copilot testing) are <c>net472</c> all the way to
+    /// their Extensibility assembly, and the extension with the <b>same shape as ours</b> —
+    /// AppModernizationForDotNet — is <c>net10.0</c> with every service at
+    /// <c>allowHostingInProcess: false</c>, delegating what must live inside devenv to a
+    /// <b>separate net472 container</b>. Here that container is <c>Inferpal.InProc.dll</c> —
+    /// ghost text, inline diff preview, the <c>/tdd</c> debugger driver. This assembly stays
+    /// out-of-process, in the host VS starts alongside.
+    /// </remarks>
+    /// <remarks>
+    /// ⚠ <see cref="ExtensionConfiguration.Metadata"/> MUST stay null while
+    /// <c>RequiresInProcessHosting</c> is true (<c>CEE0028</c>). The listing metadata (id,
+    /// version, license, icon, tags, description) therefore lives in
+    /// <c>source.extension.vsixmanifest</c>, the manifest that is actually packaged; the
+    /// "N built-in tools" count there is locked by <c>DocCountersTests</c>.
+    /// </remarks>
     public override ExtensionConfiguration ExtensionConfiguration => new()
     {
-        // ⚠ C'est CE bloc (pas source.extension.vsixmanifest) que le SDK Extensibility
-        // sérialise en extension.vsixmanifest dans le VSIX. La validation Marketplace
-        // exige que License pointe vers un fichier .txt/.rtf embarqué dans le package.
-        // ⚠ La qualification `this.ExtensionAssemblyVersion` est OBLIGATOIRE : non qualifié,
-        // le générateur du SDK ne substitue pas la version → Identity Version="0.0.0.0".
-        Metadata = new(
-            id: "Inferpal.bf3c1a2e-4d5f-4b8c-9e2a-1f7d3c6e8b4a",
-            version: this.ExtensionAssemblyVersion,
-            publisherName: "EstaxNet",
-            displayName: "Inferpal",
-            description: "AI developer assistant for self-hosted LLMs — Ollama, LM Studio, or any OpenAI-compatible server, on your machine or your own remote host. Autonomous agentic loop with 26 built-in tools: read/write files, run builds and tests, semantic codebase search, inline completions, query Git, browse the web — no mandatory cloud, no telemetry."
-        )
-        {
-            License = "LICENSE.txt",
-            Icon = @"assets\icon.png",
-            MoreInfo = "https://github.com/EstaxNet/Inferpal",
-            Tags = ["AI", "LLM", "Ollama", "LM Studio", "Assistant", "Code", "Local", "Agentic", "Autocomplete", "RAG"],
-            Preview = false,
-        }
+        RequiresInProcessHosting = true,
     };
 
     /// <summary>

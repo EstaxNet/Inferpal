@@ -33,7 +33,11 @@ internal sealed record InitializeResult(
 
 /// <summary>`chat/send` — one user turn. Tokens/steps stream back as notifications.</summary>
 /// <param name="AgentMode">Overrides the configured agent-mode switch for this turn; null = config.</param>
-internal sealed record ChatSendParams(string Prompt, string? Model = null, bool? AgentMode = null);
+internal sealed record ChatSendParams(
+    string Prompt, string? Model = null, bool? AgentMode = null,
+    /// <summary>Workspace-relative (or full) paths of files the adapter inlined as attachments —
+    /// lets the RAG auto-context skip their chunks (parity with the VS VM, revue lot 4).</summary>
+    List<string>? AttachedPaths = null);
 
 /// <summary>Final outcome of a turn. <paramref name="Text"/> holds the partial stream on cancel.</summary>
 internal sealed record ChatSendResult(
@@ -102,6 +106,9 @@ internal sealed record DebugStopStateDto(
 /// configuration is the common case in VS Code, and it is neither a stop nor a completed run.
 /// </summary>
 internal sealed record DebugStartDto(DebugStopStateDto? State, string? Failure);
+
+/// <summary>`debug/captureTest` (§25): the repro-runner launch the adapter debugs.</summary>
+internal sealed record DebugCaptureTestParams(string Program, List<string> Args, string Cwd, string ProjectRoot);
 
 /// <summary>`index/status` snapshot.</summary>
 internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string RootDir);

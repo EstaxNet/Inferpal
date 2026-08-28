@@ -184,17 +184,14 @@ internal sealed class SmartFixValidator
         }
     }
 
-    // Runs the command line in PowerShell (Base64-encoded to avoid metacharacter issues), in the
-    // project directory, with a 60s fuse. Returns (exit code, combined stdout+stderr).
+    // Runs the command line under the machine's shell (resolved like run_command — powershell.exe
+    // was hard-coded, so validators silently failed on the published Linux/macOS hosts), in the
+    // project directory, with a 60s fuse. Returns (exit code, output).
     private static async Task<(int ExitCode, string Output)> RunAsync(string command, string workDir, CancellationToken ct)
     {
-        var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(command));
-        var psi = new ProcessStartInfo
-        {
-            FileName         = "powershell.exe",
-            Arguments        = $"-NoProfile -NonInteractive -EncodedCommand {encoded}",
-            WorkingDirectory = workDir,
-        };
+        var (dialect, shell) = Shell.ShellLauncher.Resolve();
+        var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, command);
+        psi.WorkingDirectory = workDir;
 
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(60), ct);
 

@@ -1,4 +1,4 @@
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -40,6 +40,16 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     // ── Chat circuit breaker ───────────────────────────────────────────────────
     // 5 consecutive failures → 5-minute cooldown; all calls short-circuit until
     // the cooldown expires or the user clicks Retry (which calls ResetCircuit).
+    //
+    // Doctrine (§27.6, deliberate - do not re-report):
+    //  - State is PER INSTANCE, not static: a provider lives as long as its configuration
+    //    (recreated when the backend/URL changes), and two configured backends must not
+    //    partager leurs pannes.
+    //  - RecordSuccess fires as soon as the streaming response HEADERS arrive: the breaker
+    //    guards REACHABILITY (TTFB - dead server, queue, load); a stream that dies mid-body still
+    //    records its RecordFailure. A server that accepts then systematically dies therefore
+    //    oscillates 1-0 without ever tripping the cooldown - accepted: the user sees every error,
+    //    and cutting access would not help that case.
     private const  int          MaxConsecutiveFailures = 5;
     private static readonly TimeSpan CooldownDuration = TimeSpan.FromMinutes(5);
 
@@ -174,16 +184,24 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         if (headers is not null)
             foreach (var kv in headers) request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
         var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (response.IsSuccessStatusCode) return response;
+
+        // A 4xx/5xx body is the server saying *why* (wrong parameter, template error, context
+        // overflow…) — EnsureSuccessStatusCode would throw it away and the user would only ever
+        // see the bare status code (preemption probe: two /task runs failed on a 400
+        // whose reason was unreadable). Read a bounded slice and carry it in the exception.
+        string detail;
         try
         {
-            response.EnsureSuccessStatusCode();
-            return response;
+            detail = (await response.Content.ReadAsStringAsync(ct)).Trim();
+            if (detail.Length > 600) detail = detail[..600] + "…";
         }
-        catch
-        {
-            response.Dispose(); // release the connection on HTTP errors
-            throw;
-        }
+        catch { detail = string.Empty; } // best-effort: the status line alone still surfaces
+        var status = $"{(int)response.StatusCode} ({response.ReasonPhrase})";
+        response.Dispose(); // release the connection on HTTP errors
+        throw new HttpRequestException(detail.Length > 0
+            ? $"HTTP {status}: {detail}"
+            : $"HTTP {status}.");
     }
 
     // ── Wire-format-specific operations (each backend implements these) ─────────

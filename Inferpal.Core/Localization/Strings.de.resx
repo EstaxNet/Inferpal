@@ -245,8 +245,8 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} Tok  ·  Sitzung: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama-URL nicht konfiguriert. Öffnen Sie die Einstellungen, um sie festzulegen.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Das Modell hat keine Antwort zurückgegeben. Das konfigurierte Modell unterstützt möglicherweise keine Textgenerierung — versuchen Sie das Standard-Chat-Modell.</value></data>
-  <data name="MsgTimeout" xml:space="preserve"><value>Verbindungstimeout – Ollama hat bei {0} nicht innerhalb von 30 Minuten geantwortet.</value></data>
-  <data name="MsgUnreachable" xml:space="preserve"><value>Ollama unter {0} nicht erreichbar. Überprüfen Sie die URL in den Einstellungen.</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>Verbindungstimeout – das Backend unter {0} antwortet nicht mehr (Inaktivitäts-Timeout).</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>Backend unter {0} nicht erreichbar. Überprüfen Sie die URL in den Einstellungen.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Der Inferenzserver unter {0} hat einen Fehler zurückgegeben:
 
 {1}</value></data>
@@ -254,15 +254,15 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
 
 Serverdetails: {0}</value></data>
   <data name="MsgContextWontFit" xml:space="preserve"><value>Die Anfrage (~{0} Tokens) ist größer als das Kontextfenster, mit dem das Modell geladen ist ({1} Tokens), im Agentenmodus — allein die Werkzeugdefinitionen belegen mehrere Tausend Tokens. Erhöhen Sie die geladene Kontextlänge (16384 oder mehr in LM Studio empfohlen) oder reduzieren Sie die Anzahl der aktivierten Agenten-Werkzeuge.</value></data>
-  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Ollama unter {0} nicht erreichbar
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{1} unter {0} nicht erreichbar
 
 Fehlerbehebung:
-  1. Ollama starten — Terminal öffnen und ausführen:  ollama serve
+  1. {1} starten (für Ollama: Terminal öffnen und ausführen  ollama serve)
   2. URL in den Einstellungen prüfen (aktuell: {0})
-  3. Falls Ollama auf einem anderen Rechner läuft, URL in den Einstellungen aktualisieren
-  4. Prüfen, ob Port 11434 durch eine Firewall oder ein Antivirenprogramm blockiert wird
+  3. Falls {1} auf einem anderen Rechner läuft, URL in den Einstellungen aktualisieren
+  4. Prüfen, ob der Port durch eine Firewall oder ein Antivirenprogramm blockiert wird
 
-Klicken Sie auf ↻ Wiederholen in der Kopfzeile, wenn Ollama läuft.</value></data>
+Klicken Sie auf ↻ Wiederholen in der Kopfzeile, wenn {1} läuft.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Wieder mit Ollama verbunden — bereit.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Jetzt Verbindung zu Ollama prüfen</value></data>
 
@@ -716,6 +716,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="SlashHintDiagnostics" xml:space="preserve"><value>Aktuelle Diagnosen anzeigen — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnose</value></data>
+  <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Die In-Process-Komponente ist nicht geladen: Ghost-Text, die Diff-Vorschau der Inline-Bearbeitung und der /tdd-Debuggertreiber sind nicht verfügbar. Der Chat ist nicht betroffen (er läuft prozessextern) — deshalb wirkt nichts kaputt.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Keine Diagnosen aufgezeichnet.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnosen gelöscht.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Support-Bericht in die Zwischenablage kopiert — fügen Sie ihn in ein GitHub-Issue ein.</value></data>
@@ -769,6 +770,10 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="TddFixing" xml:space="preserve"><value>🔧 Korrektur {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Testsuite nach {0} Runde(n) grün.</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Tests schlagen nach {0} Runde(n) immer noch fehl — manueller Eingriff erforderlich.</value></data>
+  <data name="TddDebugCaptureApproval" xml:space="preserve"><value>Den fehlgeschlagenen Test '{0}' unter dem Debugger erneut ausführen, um seinen Zustand am Fehlerpunkt zu erfassen? (einmal pro /tdd-Lauf gefragt)</value></data>
+  <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Debugger-Zustand am Fehlerpunkt wird erfasst…</value></data>
+  <data name="TddDebugCaptureFailed" xml:space="preserve"><value>⚠ Erfassung des Debugger-Zustands fehlgeschlagen — es geht ohne weiter.</value></data>
+  <data name="TddDebugCaptureUnavailable" xml:space="preserve"><value>⚠ Debugger-Erfassung nicht verfügbar (In-Process-Treiber nicht geladen) — einfache Schleife.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Kontext-Röntgen — System-Prompt ≈ {0} Token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Basis-System-Prompt</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Persona-Snippet</value></data>
@@ -850,6 +855,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="TaskQueueFull" xml:space="preserve"><value>Zu viele Hintergrundaufgaben (max. {0}). Warten Sie auf eine oder führen Sie `/task clear` aus.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Unbekannte Aufgabe `{0}`.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Aufgabe `{0}` abgebrochen.</value></data>
+  <data name="TaskAlreadyFinished" xml:space="preserve"><value>Aufgabe `{0}` ist bereits abgeschlossen — `/task {0}` zeigt ihren Bericht.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>{0} abgeschlossene Aufgabe(n) verworfen.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Noch keine Hintergrundaufgabe. `/task [Ziel]` startet eine.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Hintergrundaufgaben</value></data>

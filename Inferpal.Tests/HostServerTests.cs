@@ -51,11 +51,29 @@ public class HostServerTests
             FirstToken.TrySetResult(note.Text);
         }
 
+        // §27.5 — opt-in: stand in for a card the user never answers, so only the host's
+        // $/cancelRequest can end the wait. Off by default; the other approval tests answer
+        // immediately as before.
+        public bool ApprovalHangs;
+        public readonly TaskCompletionSource<bool> ApprovalEntered =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public readonly TaskCompletionSource<bool> ApprovalCancelled =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         [JsonRpcMethod("approval/request", UseSingleObjectParameterDeserialization = true)]
-        public int ApprovalRequest(ApprovalNote note)
+        public async Task<int> ApprovalRequest(ApprovalNote note, CancellationToken ct)
         {
             ApprovalPrompts++;
             LastApprovalMessage = note.Message;
+            ApprovalEntered.TrySetResult(true);
+
+            if (ApprovalHangs)
+            {
+                // The token StreamJsonRpc fires on $/cancelRequest — the very one the VS Code
+                // adapter hands to the chat card so a cancelled turn retires it.
+                using (ct.Register(() => ApprovalCancelled.TrySetResult(true)))
+                    await Task.Delay(Timeout.Infinite, ct);
+            }
             return ApprovalAnswer;
         }
 
@@ -363,6 +381,29 @@ public class HostServerTests
 
         Assert.True(ok);
         Assert.NotNull(h.Target.LastApprovalMessage);
+    }
+
+    [Fact]
+    public async Task Approval_TurnCancelled_CancelsTheAdapterRequest()
+    {
+        // §27.5, the falsifiable half of the live validation: the ghost-card fix assumes a
+        // cancelled turn reaches the card. This test proves the wire - the turn's ct (what
+        // `chat/cancel` cancels) -> StreamJsonRpc emits $/cancelRequest -> the adapter handler's
+        // token lights up. That token is the one chatViewProvider wires to `approvalDismiss`.
+        // What remains visual: the card freezing in the webview.
+        using var h = CreateHarness();
+        h.Target.ApprovalHangs = true;   // the user never answers
+        var approval = new RpcApprovalService(new InferpalConfig(), () => null, h.ServerRpc);
+
+        using var turnCts = new CancellationTokenSource();
+        var pending = approval.RequestApprovalAsync("write_file", @"C:\x.txt", turnCts.Token);
+
+        await h.Target.ApprovalEntered.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        turnCts.Cancel();                // what ChatCancel() does to the turn's CTS
+
+        await h.Target.ApprovalCancelled.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => pending.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
     }
 
     [Fact]

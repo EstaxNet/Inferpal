@@ -1,4 +1,4 @@
-// Inferpal chat webview. The extension host owns the transcript; this script only renders
+﻿// Inferpal chat webview. The extension host owns the transcript; this script only renders
 // state pushed via postMessage and reports user intents back. It must survive being
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
@@ -64,7 +64,7 @@ searchToggle.textContent = '🔍';
 searchToggle.title = t('searchTitle');
 topbarEl.append(connDot, connText, connRetry, vramEl, topSpacer, searchToggle);
 
-// Search bar: dims non-matching bubbles (VS parity: grisées, pas masquées).
+// Search bar: dims non-matching bubbles (VS parity: greyed out, not hidden).
 const searchBar = document.createElement('div');
 searchBar.id = 'searchbar';
 searchBar.hidden = true;
@@ -415,11 +415,15 @@ function renderApprovalMessage(message: string): HTMLElement {
   return pre;
 }
 
+// Cards still awaiting an answer, by id — so a host-side cancellation can retire its card (§27.5).
+const approvalCards = new Map<number, HTMLElement>();
+
 function addApprovalCard(id: number, message: string): void {
   finishStream();
   hideWelcome();
   const card = document.createElement('div');
   card.className = 'bubble approval';
+  approvalCards.set(id, card);
   const text = document.createElement('div');
   text.className = 'approval-message';
   text.appendChild(renderApprovalMessage(message));
@@ -435,6 +439,7 @@ function addApprovalCard(id: number, message: string): void {
     btn.textContent = spec.label;
     btn.className = spec.cls;
     btn.addEventListener('click', () => {
+      approvalCards.delete(id);
       post({ type: 'approvalAnswer', id, answer: spec.answer });
       card.classList.add('answered');
       for (const b of actions.querySelectorAll('button')) {
@@ -453,6 +458,20 @@ function addApprovalCard(id: number, message: string): void {
   card.appendChild(actions);
   messagesEl.appendChild(card);
   scrollToBottom();
+}
+
+// §27.5 — the run this card belonged to was cancelled host-side: freeze it (same inert look as
+// an answered card) so its buttons cannot answer into a run that no longer exists.
+function dismissApprovalCard(id: number): void {
+  const card = approvalCards.get(id);
+  approvalCards.delete(id);
+  if (!card) {
+    return; // already answered
+  }
+  card.classList.add('answered');
+  for (const b of card.querySelectorAll('.approval-actions button')) {
+    (b as HTMLButtonElement).disabled = true;
+  }
 }
 
 // ── Welcome screen (VS parity: ◇ Inferpal + 4 action cards) ─────────────────
@@ -1016,6 +1035,11 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
     case 'status':
       setStatus(msg.text);
       break;
+    case 'assistant':
+      // Out-of-turn assistant bubble (e.g. a background /task finishing) — persistent, unlike a
+      // status line the next setBusy wipes (pre-1.6.0 architecture review, §3.6).
+      addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp });
+      break;
     case 'tool':
       finishStream();
       addToolBubble(
@@ -1035,6 +1059,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'approval':
       addApprovalCard(msg.id, msg.message);
+      break;
+    case 'approvalDismiss':
+      dismissApprovalCard(msg.id);
       break;
     case 'mentionSuggestions':
       renderMentions(msg.items);

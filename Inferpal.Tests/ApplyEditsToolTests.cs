@@ -72,6 +72,27 @@ public class ApplyEditsToolTests
     }
 
     [Fact]
+    public async Task Edit_PreservesBomAndEncoding_OfTheExistingFile()
+    {
+        // File.WriteAllTextAsync always emits UTF-8 without BOM: a one-line edit used to strip
+        // the BOM VS puts on .cs files and to transcode UTF-16 files outright (revue §1.9).
+        using var tmp = new TempDir();
+        var bomFile  = Path.Combine(tmp.Path, "Bom.cs");
+        var utf16    = Path.Combine(tmp.Path, "Wide.cs");
+        await File.WriteAllTextAsync(bomFile, "int x = 1;", new UTF8Encoding(true));
+        await File.WriteAllTextAsync(utf16,   "int y = 2;", Encoding.Unicode);
+
+        await Tool(tmp.Path).ExecuteAsync(Args((bomFile, "x = 1", "x = 10"), (utf16, "y = 2", "y = 20")), CancellationToken.None);
+
+        var bomBytes  = await File.ReadAllBytesAsync(bomFile);
+        var wideBytes = await File.ReadAllBytesAsync(utf16);
+        Assert.Equal(new byte[] { 0xEF, 0xBB, 0xBF }, bomBytes.Take(3).ToArray());   // UTF-8 BOM kept
+        Assert.Equal(new byte[] { 0xFF, 0xFE },       wideBytes.Take(2).ToArray());  // UTF-16 LE BOM kept
+        Assert.Equal("int x = 10;", await File.ReadAllTextAsync(bomFile));
+        Assert.Equal("int y = 20;", await File.ReadAllTextAsync(utf16));     // still readable, not mojibake
+    }
+
+    [Fact]
     public async Task NoEdits_ReturnsEmptyNotice_AndWritesNothing()
     {
         using var tmp = new TempDir();

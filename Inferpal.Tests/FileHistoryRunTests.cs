@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using Inferpal.Services;
 using Xunit;
 
@@ -71,6 +71,53 @@ public class FileHistoryRunTests
 
         Assert.False(File.Exists(created));
         Assert.Contains(created, result.Deleted);
+    }
+
+    [Fact]
+    public async Task Restore_NeverConfusesHomonymsFromDifferentFolders()
+    {
+        // Snapshot names used to carry the bare file name only: restore_file on A\Config.cs
+        // picked the most recent snapshot NAMED Config.cs — B's — and wrote B's content into A
+        // with a plausible-looking approval diff (pre-1.6.0 architecture review, §1.4). The shared history dir
+        // requires a common git root, hence the fake .git below.
+        using var tmp = new TempDir();
+        Directory.CreateDirectory(Path.Combine(tmp.Path, ".git"));
+        Directory.CreateDirectory(Path.Combine(tmp.Path, "A"));
+        Directory.CreateDirectory(Path.Combine(tmp.Path, "B"));
+        var fileA = Path.Combine(tmp.Path, "A", "Config.cs"); await File.WriteAllTextAsync(fileA, "contentA");
+        var fileB = Path.Combine(tmp.Path, "B", "Config.cs"); await File.WriteAllTextAsync(fileB, "contentB");
+
+        var svc = new FileHistoryService();
+        await svc.SnapshotAsync(fileA, CancellationToken.None);
+        await Task.Delay(25);                                     // B strictly newer
+        await svc.SnapshotAsync(fileB, CancellationToken.None);
+
+        var snapForA = svc.FindMostRecentSnapshot(fileA);
+        Assert.NotNull(snapForA);
+        Assert.Equal("contentA", await File.ReadAllTextAsync(snapForA!));
+    }
+
+    [Fact]
+    public async Task SnapshotFailure_IsReportedByUndoRun_AndNeverDeletesTheFile()
+    {
+        // A locked file (antivirus, another process, full disk…) used to fail the snapshot in a
+        // bare catch: the write went ahead with no net and the file silently vanished from the
+        // /undo-run perimeter (pre-1.6.0 architecture review, §1.3). It must surface as Failed — and never be
+        // treated as "created this run" (which undo would DELETE).
+        using var tmp = new TempDir();
+        var file = tmp.File("locked.txt", "precious");
+
+        var svc = new FileHistoryService();
+        svc.BeginRun();
+        using (new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None))
+            Assert.Equal(string.Empty, await svc.SnapshotAsync(file, CancellationToken.None));
+
+        var run    = svc.Runs.First(r => r.FileCount > 0);
+        var result = await svc.UndoRunAsync(run, CancellationToken.None);
+
+        Assert.Contains(file, result.Failed);
+        Assert.True(File.Exists(file));
+        Assert.Equal("precious", await File.ReadAllTextAsync(file));
     }
 
     [Fact]

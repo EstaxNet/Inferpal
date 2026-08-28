@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -176,7 +176,16 @@ internal class AnalyzeImpactTool : ITool
                     .ToList()
             };
             if (api.Types.Count == 0)
-                return Strings.ImpactSymbolNotFound(symbol!, fileName);
+            {
+                // Script languages put their exports in ExportedNames, not Types — before this
+                // branch, naming any TS/JS/py symbol made the tool refuse outright instead of
+                // running its heuristic (measured: 10/10 "symbol not found" on the vscode/src
+                // probe set, 2026-08-20). Scope the scan to that name and carry on.
+                if (api.ExportedNames.Any(n => n.Equals(symbol, StringComparison.OrdinalIgnoreCase)))
+                    api = api with { ExportedNames = [symbol!] };
+                else
+                    return Strings.ImpactSymbolNotFound(symbol!, fileName);
+            }
         }
 
         if (api.Types.Count == 0 && api.ExportedNames.Count == 0)
@@ -184,14 +193,31 @@ internal class AnalyzeImpactTool : ITool
 
         // ── 2. Scan for direct dependants (Layer 1) ───────────────────────────
         var (allFiles, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
-        var layer1    = await ScanDirectDependantsAsync(api, filePath, allFiles, ct);
+        var contentCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var layer1    = await ScanDirectDependantsAsync(api, filePath, allFiles, contentCache, ct);
+
+        // ── 2b. Symbol grain for scripts: importing the file is not using the symbol ──
+        // A C# dependant must mention the filtered type (CheckReference requires a match); the
+        // script path only required importing the FILE, so a contract file reported every importer
+        // for every symbol — measured P = 0.12-0.38 on protocol.ts/webviewMessages.ts while the
+        // "uses:" mention annotations were 100 % right (docs/probes/semantique-ts, seconde passe).
+        // At the symbol grain only the importers that mention the symbol count; the rest are said
+        // in the report, not silently dropped.
+        var symbolScopedScript     = !string.IsNullOrWhiteSpace(symbol) && ext is not ".cs";
+        var importersNotMentioning = 0;
+        if (symbolScopedScript)
+        {
+            importersNotMentioning = layer1.Count(d => d.ReferencedTypes.Count == 0);
+            if (importersNotMentioning > 0)
+                layer1 = layer1.Where(d => d.ReferencedTypes.Count > 0).ToList();
+        }
 
         // ── 3. Transitive dependants (Layer 2 … depth) ───────────────────────
         var transitive = new List<DependantFile>();
         if (depth >= 2 && layer1.Count > 0)
         {
             var layer1Paths = layer1.Select(d => d.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            transitive = await ScanTransitiveDependantsAsync(layer1, allFiles, layer1Paths, filePath, ct);
+            transitive = await ScanTransitiveDependantsAsync(layer1, allFiles, layer1Paths, filePath, contentCache, ct);
         }
 
         // ── 3b. Exact references, when the question allows an exact answer ────
@@ -254,6 +280,8 @@ internal class AnalyzeImpactTool : ITool
                 sb.AppendLine($"  {icon} {d.RelPath}{badge}{how}{refs}");
             }
         }
+        if (importersNotMentioning > 0)
+            sb.AppendLine($"  *(+{importersNotMentioning} file(s) import {fileName} without mentioning `{symbol}` — not counted at the symbol grain)*");
 
         // Layer 2
         if (depth >= 2)
@@ -318,12 +346,37 @@ internal class AnalyzeImpactTool : ITool
         return sb.ToString().TrimEnd();
     }
 
+    // ── Bounded, cached scan regexes ──────────────────────────────────────────
+    // The static patterns of this file are carefully budgeted, but the per-candidate ×
+    // per-type patterns of CheckReference/DetermineKind were built on every call through the
+    // static Regex.IsMatch — no timeout at all, on up to 500 files: the exact "never returns"
+    // failure RegexBudget documents (pre-1.6.0 architecture review). A timeout here surfaces as the
+    // registry's "too pathological to parse" message, by design.
+    private static class ScanRegex
+    {
+        private static readonly object _lock = new();
+        private static readonly Dictionary<string, Regex> _cache = new(StringComparer.Ordinal);
+
+        public static Regex WordBoundary(string name) => Get($@"\b{Regex.Escape(name)}\b");
+
+        public static Regex Get(string pattern)
+        {
+            lock (_lock)
+            {
+                if (_cache.TryGetValue(pattern, out var rx)) return rx;
+                if (_cache.Count > 512) _cache.Clear();   // symbol churn is bounded per workspace
+                return _cache[pattern] = new Regex(pattern, RegexOptions.None, RegexBudget.Default);
+            }
+        }
+    }
+
     // ── Direct dependant scan ─────────────────────────────────────────────────
 
     private static async Task<List<DependantFile>> ScanDirectDependantsAsync(
         PublicApi api,
         string    targetFile,
         List<string> candidateFiles,
+        Dictionary<string, string> contentCache,
         CancellationToken ct)
     {
         var results = new List<DependantFile>();
@@ -338,6 +391,7 @@ internal class AnalyzeImpactTool : ITool
             try
             {
                 var src = await File.ReadAllTextAsync(file, ct);
+                contentCache[file] = src;   // layer 2 re-read every one of these from disk (lot 4)
                 bool referenced;
                 List<string> referencedTypes;
                 DependencyKind kind;
@@ -369,6 +423,7 @@ internal class AnalyzeImpactTool : ITool
         List<string>        allFiles,
         HashSet<string>     layer1Paths,
         string              targetFile,
+        Dictionary<string, string> contentCache,
         CancellationToken   ct)
     {
         var results    = new List<DependantFile>();
@@ -382,11 +437,20 @@ internal class AnalyzeImpactTool : ITool
 
             // Build a mini-API from the layer-1 file's public type names
             // (we just search for references to the layer-1 filename / class names)
-            var depSource   = string.Empty;
-            try { depSource = await File.ReadAllTextAsync(dep.FilePath, ct); }
-            catch { continue; }
+            string? depSource;
+            if (!contentCache.TryGetValue(dep.FilePath, out depSource))
+            {
+                try { contentCache[dep.FilePath] = depSource = await File.ReadAllTextAsync(dep.FilePath, ct); }
+                catch { continue; }
+            }
 
-            var depApi = CSharpApiExtractor.Extract(depSource, dep.FilePath);
+            // Route by the layer-1 file's OWN language: running the C# extractor on a .ts file
+            // found zero types, so "Layer 2 (0)" was presented as a result when it was a
+            // non-capability (pre-1.6.0 architecture review).
+            var depExt = Path.GetExtension(dep.FilePath).ToLowerInvariant();
+            var depApi = depExt is ".cs"
+                ? CSharpApiExtractor.Extract(depSource, dep.FilePath)
+                : ScriptApiExtractor.Extract(depSource, dep.FilePath, depExt);
 
             foreach (var file in allFiles.Take(MaxTransitiveFiles * 3))
             {
@@ -395,10 +459,13 @@ internal class AnalyzeImpactTool : ITool
 
                 try
                 {
-                    var src = await File.ReadAllTextAsync(file, ct);
+                    if (!contentCache.TryGetValue(file, out var src))
+                        contentCache[file] = src = await File.ReadAllTextAsync(file, ct);
 
                     // Does this file reference the layer-1 file?
-                    var (referenced, refTypes, kind) = CSharpApiExtractor.CheckReference(depApi, src);
+                    var (referenced, refTypes, kind) = depExt is ".cs"
+                        ? CSharpApiExtractor.CheckReference(depApi, src)
+                        : ScriptApiExtractor.CheckReference(depApi, src, dep.FilePath, file);
                     if (!referenced) continue;
 
                     alreadySeen.Add(file);
@@ -506,10 +573,7 @@ internal class AnalyzeImpactTool : ITool
             @"(class|interface|enum|struct|record)\s+([\w]+)",
             RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
-        // Checks reference relationships
-        private static readonly Regex _inherits     = new(@":\s*[\w,\s<>]*\b([\w]+)\b", RegexOptions.Compiled, RegexBudget.Default);
-        private static readonly Regex _instantiates = new(@"\bnew\s+([\w]+)\s*[<(]",    RegexOptions.Compiled, RegexBudget.Default);
-        private static readonly Regex _injectsCtx   = new(@"\((.*?)\)",                   RegexOptions.Compiled, RegexBudget.Default);
+        // (The per-type reference/kind patterns are built through ScanRegex — bounded + cached.)
 
         public static PublicApi Extract(string source, string filePath)
         {
@@ -544,7 +608,7 @@ internal class AnalyzeImpactTool : ITool
             foreach (var t in api.Types)
             {
                 // Word-boundary search — avoids matching "MyOllamaService" as "OllamaService"
-                if (!Regex.IsMatch(source, $@"\b{Regex.Escape(t.Name)}\b")) continue;
+                if (!ScanRegex.WordBoundary(t.Name).IsMatch(source)) continue;
 
                 matched.Add(t.Name);
 
@@ -565,7 +629,7 @@ internal class AnalyzeImpactTool : ITool
             var escaped = Regex.Escape(typeName);
 
             // Inherits/implements  :  class Foo : Bar  or  class Foo : IBar, IFoo
-            if (Regex.IsMatch(source, $@":\s*[\w<>\s,]*\b{escaped}\b"))
+            if (ScanRegex.Get($@":\s*[\w<>\s,]*\b{escaped}\b").IsMatch(source))
             {
                 // Interface? → Implements
                 if (typeName.Length > 1 && typeName[0] == 'I' && char.IsUpper(typeName[1]))
@@ -574,11 +638,11 @@ internal class AnalyzeImpactTool : ITool
             }
 
             // Instantiates:  new TypeName(
-            if (Regex.IsMatch(source, $@"\bnew\s+{escaped}\s*[<(]"))
+            if (ScanRegex.Get($@"\bnew\s+{escaped}\s*[<(]").IsMatch(source))
                 return DependencyKind.Instantiates;
 
             // Injects (constructor parameter):  TypeName varName
-            if (Regex.IsMatch(source, $@"\b{escaped}\s+\w+\b"))
+            if (ScanRegex.Get($@"\b{escaped}\s+\w+\b").IsMatch(source))
                 return DependencyKind.Injects;
 
             return DependencyKind.Uses;
@@ -591,7 +655,10 @@ internal class AnalyzeImpactTool : ITool
 
     private static class ScriptApiExtractor
     {
-        private static readonly Regex _jsExport   = new(@"export\s+(?:default\s+)?(?:class|function|const|let|var|async\s+function)\s+([\w]+)", RegexOptions.Compiled, RegexBudget.Default);
+        // interface/type/enum included: TypeScript's most-shared exports ARE its types — without
+        // them, every symbol of a protocol/contract file was invisible to the symbol filter
+        // (measured on vscode/src: protocol.ts and webviewMessages.ts cases, 2026-08-20).
+        private static readonly Regex _jsExport   = new(@"export\s+(?:default\s+)?(?:abstract\s+)?(?:class|function|const|let|var|async\s+function|interface|type|enum|const\s+enum)\s+([\w]+)", RegexOptions.Compiled, RegexBudget.Default);
         private static readonly Regex _pyExport   = new(@"(?m)^(?:def|class)\s+([A-Z][\w]*|[a-z_][\w]*)\s*[:(]", RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
         private static readonly Regex _goExport   = new(@"func\s+(?:\([^)]+\)\s+)?([\w]+)\s*\(",                  RegexOptions.Compiled, RegexBudget.Default);
 
@@ -631,16 +698,16 @@ internal class AnalyzeImpactTool : ITool
 
             // Search for import/require with the file name
             bool hasImport =
-                Regex.IsMatch(source, $@"['""][^'""]*{escaped}['""]") ||   // JS: from './stem'
-                Regex.IsMatch(source, $@"import\s+{escaped}\b") ||         // Python: import stem
-                Regex.IsMatch(source, $@"from\s+\w*{escaped}") ||          // Python: from pkg.stem
-                Regex.IsMatch(source, $@"import\s+[\w\.]*{escaped}[\w\.]*");    // Java/Go
+                ScanRegex.Get($@"['""][^'""]*{escaped}['""]").IsMatch(source) ||     // JS: from './stem'
+                ScanRegex.Get($@"import\s+{escaped}\b").IsMatch(source) ||           // Python: import stem
+                ScanRegex.Get($@"from\s+\w*{escaped}").IsMatch(source) ||            // Python: from pkg.stem
+                ScanRegex.Get($@"import\s+[\w\.]*{escaped}[\w\.]*").IsMatch(source); // Java/Go
 
             if (!hasImport) return (false, [], DependencyKind.Uses);
 
             // Which exported names are mentioned?
             var matched = api.ExportedNames
-                .Where(n => Regex.IsMatch(source, $@"\b{Regex.Escape(n)}\b"))
+                .Where(n => ScanRegex.WordBoundary(n).IsMatch(source))
                 .ToList();
 
             return (true, matched, DependencyKind.Uses);

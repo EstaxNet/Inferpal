@@ -1,4 +1,4 @@
-// Inferpal extension registration
+﻿// Inferpal extension registration
 //
 // $RootKey$       → VS private registry (privateregistry.bin, mounted on HKCU\...\{ver})
 // $PackageFolder$ → extension install directory
@@ -10,23 +10,42 @@
 "Version"="1.0"
 "Publisher"="EstaxNet"
 
-// ── In-process MEF: DLL to scan for exports (GhostTextViewListener, etc.) ────────
-// VS reads this key from privateregistry.bin to build the MEF catalog.
-// deploy-dev.ps1 writes this key directly into privateregistry.bin because VS
-// does not process pkgdefs of VSExtensions\ extensions (new OOP model).
-[$RootKey$\MEFComponent]
-@="$PackageFolder$\Inferpal.dll"
+// ── In-process MEF ───────────────────────────────────────────────────────────────
+// There is NOTHING here, and that is the result of a measurement. A [$RootKey$\MEFComponent]
+// key pointing at Inferpal.InProc.dll lived here for two days: it builds NOTHING. The MEF
+// catalog of VS 18 is filled from the extension inventory (the Microsoft.VisualStudio.MefComponent
+// asset of the manifest), not from the registry - no Microsoft component is registered that way,
+// and VS rebuilds the _Config root at startup, which erases whatever is written there. What loads
+// ghost text is the asset declared in source.extension.vsixmanifest, and nothing else.
+//
+// The key was removed once the hybrid switch had been measured loading (ActivityLog:
+// Begin/End package load [Inferpal GhostText]). Why not leave it "just in case": the pkgdef merge
+// is GLOBAL and stops at the first file it cannot process - measured on this machine, where the
+// import aborted at the 2nd file out of 465 with E_ACCESSDENIED. Writing a useless default value
+// into a root VS owns is risk taken on behalf of the other 464.
 
 // ── In-process AsyncPackage (GhostTextPackage) ───────────────────────────────────
-// Registers the traditional package that forces VS to load Inferpal.dll
-// in-process at startup. Required so the MEF exports get instantiated
-// (GhostTextViewListener.TextViewCreated, InlineEditController, etc.).
+// Registers the traditional package that forces VS to load the in-process assembly
+// at startup. Required so the MEF exports get instantiated
+// (GhostTextViewListener.TextViewCreated, InlineDiffController, etc.).
+//
+// Inferpal.InProc.dll (net472), NOT Inferpal.dll (net8): devenv is a .NET Framework 4.7.2
+// process and can load neither half of a .NET 8 assembly.
 [$RootKey$\Packages\{6a7b2c3d-4e5f-4a8b-9c0d-1e2f3a4b5c6d}]
 @="Inferpal GhostText"
 "InprocServer32"="$WinDir$\SYSTEM32\MSCOREE.DLL"
 "Class"="Inferpal.GhostText.GhostTextPackage"
-"CodeBase"="$PackageFolder$\Inferpal.dll"
-"AllowsBackgroundLoading"=dword:00000001
+"CodeBase"="$PackageFolder$\Inferpal.InProc.dll"
+// The value name is "AllowsBackgroundLoad", NOT "AllowsBackgroundLoading". The latter is the
+// name of the C# PROPERTY on PackageRegistrationAttribute; the registry value it writes is
+// called "AllowsBackgroundLoad". This pkgdef is hand-written (GeneratePkgDefFile=false,
+// CreatePkgDef.exe cannot read .NET 8), so nothing corrected the confusion. Measured: out of the
+// 465 pkgdef files of VS 18, 59 write the correct name and the ONLY file in the whole tree
+// writing the other one was ours. Cost: VS reads the package as NOT supporting background
+// loading, so it IGNORES both autoload requests below (ActivityLog, AutoLoadManager: "is ignored
+// because package does not support background loading", then SyncAutoLoadedExtensions
+// "attempted the synchronous autoload feature") - GhostTextPackage is never loaded.
+"AllowsBackgroundLoad"=dword:00000001
 
 // ── AutoLoadPackages ─────────────────────────────────────────────────────────────
 // Loads GhostTextPackage automatically when VS has a solution open.

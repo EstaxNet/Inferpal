@@ -59,6 +59,9 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public IReadOnlyList<TaskProposal> Proposals = [];
 
         public BackgroundTaskState State = BackgroundTaskState.Queued;
+        /// <summary>Set when Cancel targets a job the worker already picked but whose CTS may not
+        /// be wired yet (the gate-wait window) — RunJobAsync honours it right after wiring.</summary>
+        public bool CancelRequested;
         public DateTimeOffset? StartedAt;
         public DateTimeOffset? FinishedAt;
         public string? Result;
@@ -172,7 +175,13 @@ internal sealed class BackgroundTaskQueue : IDisposable
             var job = FindLocked(id);
             if (job is null || IsTerminal(job.State)) return false;
 
-            if (job.State == BackgroundTaskState.Queued)
+            // ⚠ "Queued" does not mean "still in _pending": the worker dequeues the job and only
+            // flips it to Running AFTER the GPU gate opens (WaitForChatIdleAsync), so a job can sit
+            // as _current in state Queued for minutes. Taking the drop-branch for it marked the
+            // task Cancelled without cancelling its CTS — the run then executed anyway and
+            // finished a second time into _finished (pre-1.6.0 architecture review, §1.6). The drop-branch is
+            // therefore gated on actual _pending membership.
+            if (job.State == BackgroundTaskState.Queued && _pending.Contains(job))
             {
                 // Rebuild the queue without it: Queue<T> has no remove, and dequeuing in the
                 // worker instead would let a cancelled task briefly look like it is starting.
@@ -185,7 +194,10 @@ internal sealed class BackgroundTaskQueue : IDisposable
             }
             else
             {
-                job.Cts?.Cancel();   // running: the runner observes the token and unwinds
+                // Running, or picked-up-and-gate-waiting: the runner observes the token and
+                // unwinds. The flag covers the sliver before RunJobAsync wires job.Cts.
+                job.CancelRequested = true;
+                job.Cts?.Cancel();
             }
         }
 
@@ -232,7 +244,11 @@ internal sealed class BackgroundTaskQueue : IDisposable
     private async Task<BackgroundTaskSnapshot> RunJobAsync(Job job)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(_shutdown.Token);
-        lock (_lock) job.Cts = cts;
+        lock (_lock)
+        {
+            job.Cts = cts;
+            if (job.CancelRequested) cts.Cancel();   // Cancel raced the wiring — honour it now
+        }
 
         try
         {

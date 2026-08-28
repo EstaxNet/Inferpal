@@ -1,7 +1,8 @@
-// Sidebar chat: WebviewViewProvider + typed postMessage protocol. The extension host
+﻿// Sidebar chat: WebviewViewProvider + typed postMessage protocol. The extension host
 // (this class) is the source of truth for the transcript — the webview can be destroyed
 // on hide and is re-hydrated on every resolveWebviewView.
 import * as vscode from 'vscode';
+import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, renderExport, toSavedMessages, toTranscript } from './chatSessions';
@@ -82,7 +83,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * (0 deny / 1 once / 2 always). Returns undefined when the card cannot be
    * shown (no resolved view) — the caller then falls back to a modal dialog.
    */
-  async requestApproval(message: string): Promise<number | undefined> {
+  async requestApproval(message: string, token?: CancellationToken): Promise<number | undefined> {
     if (!this.view) {
       return undefined;
     }
@@ -99,23 +100,46 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const id = ++this.approvalSeq;
     const answer = new Promise<number>((resolve) => this.pendingApprovals.set(id, resolve));
+    // §27.5 — turn cancelled while the card is up: deny, and retire the card in the webview so
+    // it cannot be answered into a run that no longer exists (ghost card).
+    const cancelSub = token?.onCancellationRequested(() => this.dismissApproval(id));
     this.post({ type: 'approval', id, message });
-    return answer;
+    try {
+      return await answer;
+    } finally {
+      cancelSub?.dispose();
+    }
+  }
+
+  private dismissApproval(id: number): void {
+    const resolve = this.pendingApprovals.get(id);
+    if (!resolve) {
+      return; // already answered
+    }
+    this.pendingApprovals.delete(id);
+    this.post({ type: 'approvalDismiss', id });
+    resolve(0);
   }
 
   /** New conversation: clears both the host history and the local transcript. */
   async resetConversation(): Promise<void> {
     const host = this.getHost();
-    // Archive first, exactly like the VS `/clear` does — fire-and-forget so the UI clears
-    // immediately while the utility model names the session in the background.
-    this.archiveConversation();
     if (host?.isRunning) {
       try {
         await host.chatReset();
       } catch (err) {
-        this.log(`[chat] reset failed: ${String(err)}`);
+        // The host refused (a turn is in flight): clearing the webview anyway used to desync the
+        // two — an empty transcript over a full host history, and the running turn's answer then
+        // landed alone in a "new" conversation carrying the old context (pre-1.6.0 architecture review, §2.7).
+        this.log(`[chat] reset refused: ${String(err)}`);
+        void vscode.window.showWarningMessage(
+          vscode.l10n.t('A turn is still running — stop it before starting a new conversation.'));
+        return;
       }
     }
+    // Archive after the host accepted the reset — fire-and-forget so the UI clears
+    // immediately while the utility model names the session in the background.
+    this.archiveConversation();
     this.transcript.length = 0;
     this.streamText = '';
     this.plan = null;
@@ -173,6 +197,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       },
       onStepPaused: () => this.post({ type: 'stepPaused' }),
       onStepResumed: () => this.post({ type: 'stepResumed' }),
+      onTaskFinished: (text) => {
+        // A persistent assistant bubble, like the VS front-end — not an ephemeral status line
+        // wiped by the next setBusy (pre-1.6.0 architecture review, §3.6).
+        const item: WvTranscriptItem = { role: 'assistant', text, timestamp: ChatViewProvider.now() };
+        this.append(item);
+        this.post({ type: 'assistant', text, timestamp: item.timestamp! });
+      },
     });
 
     this.model = vscode.workspace.getConfiguration('inferpal').get<string>('model', '') || host.info?.defaultModel || '';
@@ -398,8 +429,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!name) {
       return;
     }
-    await host.sessionSave(name, this.snapshot());
-    void vscode.window.showInformationMessage(vscode.l10n.t('Session saved: {0}', name));
+    // §27.6 — 'last_session' is the auto-save slot (overwritten every turn): a user save under
+    // that name would silently vanish. Same pattern as /plan's reserved set: suffix it.
+    const safeName =
+      name.trim().toLowerCase() === 'last_session' ? `${name.trim()}-session` : name.trim();
+    await host.sessionSave(safeName, this.snapshot());
+    void vscode.window.showInformationMessage(vscode.l10n.t('Session saved: {0}', safeName));
   }
 
   /** Command: pick a saved session and restore it (host history + transcript). */
@@ -494,10 +529,27 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'reset':
         await this.resetConversation();
         return;
-      case 'pickModel':
+      case 'pickModel': {
         this.model = msg.model;
         await vscode.workspace.getConfiguration('inferpal').update('model', msg.model, vscode.ConfigurationTarget.Workspace);
+        // Also push the pick into the host's shared config: without it, `/model` (no argument)
+        // kept answering the OLD model and every Model Router role that falls back to
+        // DefaultModel (session titles, code actions) silently stayed on it (revue §3.5).
+        // Read-modify-write of the full JSON — config/update replaces the whole object.
+        const host = this.getHost();
+        if (host?.isRunning) {
+          try {
+            const cfg = JSON.parse(await host.configGet()) as { defaultModel?: string };
+            if (cfg.defaultModel !== msg.model) {
+              cfg.defaultModel = msg.model;
+              await host.configUpdate(JSON.stringify(cfg));
+            }
+          } catch (err) {
+            this.log(`[chat] model pick → host config failed: ${String(err)}`);
+          }
+        }
         return;
+      }
       case 'approvalAnswer': {
         const resolve = this.pendingApprovals.get(msg.id);
         this.pendingApprovals.delete(msg.id);
@@ -728,10 +780,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Expands `@relative/path` tokens into fenced attachments appended to the prompt.
    * Reads through `openTextDocument`, so dirty buffers win over disk. Non-file tokens
    * (someone's @handle) simply resolve to nothing and stay as typed. */
-  private async expandMentions(prompt: string): Promise<string> {
+  private async expandMentions(prompt: string): Promise<{ text: string; paths: string[] }> {
     const root = vscode.workspace.workspaceFolders?.[0]?.uri;
     if (!root || !prompt.includes('@')) {
-      return prompt;
+      return { text: prompt, paths: [] };
     }
     const MAX_FILES = 5;
     const MAX_CHARS = 40_000;
@@ -739,6 +791,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       .slice(0, MAX_FILES);
 
     let attachments = '';
+    const paths: string[] = [];
     for (const token of tokens) {
       try {
         const doc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(root, token));
@@ -747,11 +800,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           text = text.slice(0, MAX_CHARS) + '\n… [truncated]';
         }
         attachments += `\n\n## Attached file: ${token}\n\`\`\`\n${text}\n\`\`\``;
+        paths.push(token);
       } catch {
         // not a workspace file — leave the token as plain text
       }
     }
-    return prompt + attachments;
+    return { text: prompt + attachments, paths };
   }
 
   private denyAllPending(): void {
@@ -940,10 +994,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private async chatTurn(prompt: string, host: HostClient): Promise<void> {
     try {
       const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', true);
-      let expanded = await this.expandMentions(prompt);
+      const mentions = await this.expandMentions(prompt);
+      let expanded = mentions.text;
+      const attachedPaths = [...mentions.paths];
       if (this.pendingAttachments.length > 0) {
         for (const a of this.pendingAttachments) {
           expanded += `\n\n## Attached: ${a.name}\n\`\`\`\n${a.content}\n\`\`\``;
+          attachedPaths.push(a.name);
         }
         this.pendingAttachments = [];
         this.postChips();
@@ -952,6 +1009,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         prompt: expanded,
         model: this.model || undefined,
         agentMode,
+        attachedPaths: attachedPaths.length > 0 ? attachedPaths : undefined,
       });
       const finalText = result.text || this.streamText;
       this.promptTokens = result.promptTokens || this.promptTokens;

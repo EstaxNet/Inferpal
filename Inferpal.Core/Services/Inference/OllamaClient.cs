@@ -1,4 +1,4 @@
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Inferpal.Config;
@@ -104,6 +104,14 @@ internal class OllamaClient : InferenceProviderBase
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        {
+            // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
+            // "Cannot reach … check the URL" sent the user to verify a URL that was fine (the
+            // pre-1.6.0 architecture review, §3.1): say what the server said instead.
+            RecordFailure();
+            throw new AgentHttpException(Strings.MsgServerError(base_, ex.Message), isTimeout: false);
+        }
         catch (Exception ex)
         {
             RecordFailure();
@@ -180,7 +188,8 @@ internal class OllamaClient : InferenceProviderBase
         // than printing the raw JSON as the final answer (and stopping).
         if ((toolCalls is null || toolCalls.Count == 0) && contentBuilder.Length > 0)
         {
-            var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentBuilder.ToString());
+            var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
+            var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentBuilder.ToString(), known.Contains);
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens);
         }
@@ -188,16 +197,17 @@ internal class OllamaClient : InferenceProviderBase
         return new ChatTurnResult(contentBuilder.ToString(), toolCalls, tokensUsed, promptTokens);
     }
 
-    /// <summary>Pings <c>/api/tags</c> with a 5-second timeout to verify Ollama is reachable.</summary>
+    /// <summary>Pings <c>/api/tags</c> with a 5-second timeout to verify Ollama is reachable.
+    /// Traverses the breaker cooldown (see the OpenAI-compatible sibling): the probe is the one
+    /// call that can notice the server coming back, and a success closes the circuit.</summary>
     public override async Task<bool> CheckConnectionAsync(string url, CancellationToken ct)
     {
-        if (IsInCooldown()) return false;
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            var response = await _http.GetAsync($"{url.TrimEnd('/')}/api/tags", cts.Token);
-            if (response.IsSuccessStatusCode) { RecordSuccess(); return true; }
+            using var response = await _http.GetAsync($"{url.TrimEnd('/')}/api/tags", cts.Token);
+            if (response.IsSuccessStatusCode) { ResetCircuit(); return true; }
             RecordFailure();
             return false;
         }
@@ -224,7 +234,10 @@ internal class OllamaClient : InferenceProviderBase
 
             // Ollama /api/embeddings uses "prompt" as the text field (legacy API)
             var requestBody = new { model, prompt = text };
-            var http = await _http.PostAsJsonAsync(
+            // `using`: this runs in the indexing loop — thousands of undisposed responses per
+            // pass otherwise wait on the finalizer (pre-1.6.0 architecture review; the OpenAI sibling
+            // already disposed).
+            using var http = await _http.PostAsJsonAsync(
                 $"{base_}/api/embeddings", requestBody, _jsonOpts, sendCts.Token);
             http.EnsureSuccessStatusCode();
 
@@ -301,11 +314,20 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
+            // Bounded like CheckConnectionAsync: the shared HttpClient has an infinite timeout, so
+            // a server that accepts TCP but never answers froze the model dropdowns until the
+            // caller's token fired — if it had one (pre-1.6.0 architecture review).
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(10));
             var base_  = (url ?? _config.BaseUrl).TrimEnd('/');
-            var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", ct);
+            var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
             return result?.Models?.Select(m => m.Name).ToList() ?? [];
         }
-        catch { return []; }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            Diagnostics.Swallow("OllamaClient.ListModels", ex);
+            return [];
+        }
     }
 
     /// <summary>Returns all installed models with their on-disk size (for VRAM footprint estimation).</summary>
@@ -313,11 +335,17 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(10));
             var base_  = (url ?? _config.BaseUrl).TrimEnd('/');
-            var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", ct);
+            var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
             return result?.Models?.Select(m => new InstalledModelInfo(m.Name, m.Size)).ToList() ?? [];
         }
-        catch { return []; }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            Diagnostics.Swallow("OllamaClient.ListInstalledModels", ex);
+            return [];
+        }
     }
 
     /// <summary>
@@ -353,8 +381,23 @@ internal class OllamaClient : InferenceProviderBase
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader       = new System.IO.StreamReader(stream);
 
-            while (await reader.ReadLineAsync(ct) is { } line)
+            while (true)
             {
+                // Per-line inactivity fuse: the pull stream had NO re-arm (unlike SendChatAsync),
+                // so a registry that froze left /models pull suspended forever (revue, lot 4).
+                // 2 minutes without a single progress line is a dead pull, not a slow one.
+                string? line;
+                using (var lineCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                {
+                    lineCts.CancelAfter(TimeSpan.FromMinutes(2));
+                    try { line = await reader.ReadLineAsync(lineCts.Token); }
+                    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                    {
+                        onStatus("stalled — no progress from the registry for 2 minutes, giving up");
+                        return false;
+                    }
+                }
+                if (line is null) break;
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 try
                 {
@@ -381,6 +424,9 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(30));   // a delete is bounded work; infinite client timeout is not
+            ct = cts.Token;
             var base_ = _config.BaseUrl.TrimEnd('/');
             using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Delete, $"{base_}/api/delete")
             {
@@ -409,9 +455,10 @@ internal class OllamaClient : InferenceProviderBase
         var base_ = _config.BaseUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_) || IsInCooldown()) return;
 
-        // Yield the shared GPU to an in-flight chat/agent request (cross-process signal): a delayed,
-        // now-stale ghost-text suggestion is worse than none. FIM resumes once the chat turn ends.
-        if (ChatBusySignal.IsBusy()) return;
+        // Yield the shared GPU to an in-flight chat/agent request: a delayed, now-stale ghost-text
+        // suggestion is worse than none. FIM resumes once the chat turn ends. In-process lease
+        // first (exact, no I/O), cross-process marker second (other editors, one GPU).
+        if (GpuScheduler.ShouldFimYield()) return;
 
         var request = new GenerateRequest(
             Model:     string.IsNullOrEmpty(model) ? _config.DefaultModel : model,

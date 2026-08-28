@@ -34,4 +34,16 @@ internal class RagChunk
 
     /// <summary>Embedding vector loaded from the companion binary file; <c>null</c> if not yet embedded.</summary>
     [JsonIgnore] public float[]? Embedding { get; set; }
+
+    /// <summary>
+    /// BM25 tokens of the chunk (content + type name + relative path), computed on first use and
+    /// cached for the chunk's lifetime. Re-chunking a file always produces fresh
+    /// <see cref="RagChunk"/> instances, so the cache is invalidated per file by construction —
+    /// no explicit eviction needed. Benign race: two threads may tokenize concurrently; the
+    /// results are identical and one reference wins.
+    /// </summary>
+    [JsonIgnore] public IReadOnlyList<string> Bm25Tokens =>
+        _bm25Tokens ??= CodeTokenizer.Tokenize($"{Content}\n{TypeName}\n{RelPath}");
+
+    private IReadOnlyList<string>? _bm25Tokens;
 }

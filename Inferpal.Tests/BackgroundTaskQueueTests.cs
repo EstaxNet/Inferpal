@@ -139,6 +139,32 @@ public class BackgroundTaskQueueTests
     }
 
     [Fact]
+    public async Task Cancel_WhileWaitingAtTheGpuGate_ReallyCancels_AndFinishesExactlyOnce()
+    {
+        // The worker dequeues a job (it becomes _current) and only flips it to Running once the
+        // GPU gate opens — so a job can sit in state Queued, OUT of _pending, for minutes. The
+        // old Cancel took the drop-branch for it: marked Cancelled without cancelling the CTS,
+        // then the gate opened and the run executed anyway, finishing a second time into the
+        // list (pre-1.6.0 architecture review, §1.6).
+        var gate   = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var runner = new GatedRunner();
+        using var queue = new BackgroundTaskQueue(runner.RunAsync, waitForChatIdle: ct => gate.Task.WaitAsync(ct));
+
+        var id = queue.Submit("audit")!;
+        await Task.Delay(50);   // let the worker pick it up; the gate keeps it in state Queued
+        Assert.Equal(BackgroundTaskState.Queued, queue.Get(id)!.State);
+
+        Assert.True(queue.Cancel(id));
+        await WaitUntil(() => queue.Get(id)!.IsFinished, "the cancelled task to settle");
+        Assert.Equal(BackgroundTaskState.Cancelled, queue.Get(id)!.State);
+
+        gate.TrySetResult(true);   // the chat goes idle afterwards — a zombie would start now
+        await Task.Delay(80);
+        Assert.Empty(runner.Started);                              // the run never executed
+        Assert.Equal(1, queue.List().Count(t => t.Id == id));      // finished exactly once
+    }
+
+    [Fact]
     public async Task ARunnerFailure_FailsTheTask_AndKeepsTheQueueGoing()
     {
         var runner = new GatedRunner();

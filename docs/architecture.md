@@ -24,26 +24,28 @@ Two adapters consume it:
 
 ## Process model
 
-Inferpal uses the **out-of-process** Visual Studio Extensibility model
-(`Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x). A hard constraint of VS Remote UI:
-only types loaded in `devenv.exe` can be referenced in XAML. The out-of-process parts run in
-a `ServiceHub.Host` process, so all data crossing the boundary must be `[DataContract]`
-objects containing **only primitives** (and collections of such).
+Inferpal uses the Visual Studio Extensibility model
+(`Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x), hosted **in-process** since 2026-08-23
+(`RequiresInProcessHosting` + `VssdkCompatibleExtension`) — the only documented way to ship the
+in-process parts below alongside it. A hard constraint of VS Remote UI:
+only types loaded in `devenv.exe` can be referenced in XAML, so all data crossing the
+view-model boundary must be `[DataContract]` objects containing **only primitives** (and
+collections of such). That rule comes from the SDK and holds under in-process hosting too.
 
 ```mermaid
 flowchart LR
-    subgraph host["Extension process — ServiceHub.Host"]
+    subgraph host["Extension code — view-model side"]
         prov[IInferenceProvider clients<br/>Ollama / LM Studio / OpenAI]
-        reg[ToolRegistry — 26 tools + MCP]
+        reg[ToolRegistry — 28 tools + MCP]
         md[MarkdownParser → MarkdownBlock + InlineRun]
         rag[ProjectIndexService — hybrid RAG: cosine + BM25/RRF]
         vm[InferpalToolWindowData — ViewModel]
     end
-    subgraph dev["VS host process — devenv.exe"]
+    subgraph dev["Remote UI rendering — devenv.exe"]
         wpf[WPF DataTemplate rendering<br/>DataTrigger on MarkdownBlock.Type]
         ghost[GhostText MEF<br/>adornments → IWpfTextView]
     end
-    host -- "IPC: [DataMember] primitives only" --> dev
+    host -- "Remote UI: [DataMember] primitives only" --> dev
 ```
 
 ### In-process ghost text
@@ -52,7 +54,12 @@ Inline completions need `IWpfTextView`, which is not available to out-of-process
 The `GhostText` components are therefore **in-process**: MEF parts
 (`IWpfTextViewCreationListener`, `AdornmentLayerDefinition`) plus a minimal `AsyncPackage`
 that forces Visual Studio to load `Inferpal.dll` inside `devenv.exe`. They ship in the **same
-VSIX and assembly** as the out-of-process extension but run in `devenv.exe`.
+VSIX and assembly** as the rest of the extension and run in `devenv.exe`. Visual Studio only
+inventories them through the `MefComponent` / `VsPackage` assets of the packaged manifest, and
+only when that manifest declares the hybrid installation type
+`ExtensionType="VSSDK+VisualStudio.Extensibility"` — with the out-of-process type alone the VSIX
+lands in `Common7\IDE\VSExtensions\` and nobody processes its assets. Miss either half and the
+class loads nowhere and nothing says so — the chat keeps working.
 
 ## Agentic loop
 
@@ -126,7 +133,7 @@ the request times out. A central scheduler enforces priority **chat > FIM > embe
 
 ## Cross-process signals
 
-The in-process package publishes state the out-of-process agent reads via small file-based
+The in-process package publishes state the agent reads via small file-based
 IPC channels:
 
 | Signal | Direction | Scope | Purpose |
@@ -149,7 +156,7 @@ per-instance channels at all.
 | Component | Technology |
 |---|---|
 | Language / runtime | C# .NET 8 (`net8.0-windows`) |
-| Extension SDK | `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.40608 (out-of-process) |
+| Extension SDK | `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.40608 (in-process hosting) |
 | In-process MEF | `Microsoft.VisualStudio.Shell.15.0`, `Microsoft.VisualStudio.Text.UI.Wpf` |
 | Markdown | Markdig 1.2.0 |
 | Vector store | SQLite WAL (`Microsoft.Data.Sqlite` 8.0.16) |

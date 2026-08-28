@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using Inferpal.Localization;
 
@@ -32,13 +32,30 @@ internal class ListFilesTool : ITool
         if (!Directory.Exists(path))
             return Task.FromResult(Strings.DirNotFound(path));
 
+        // Lazy + excluded like the semantic index: on a node project root, GetFiles materialised
+        // the whole tree and the 300 results shown were mostly node_modules/.git noise (the
+        // pre-1.6.0 architecture review). Take(limit + 1) detects truncation without walking everything.
         const int limit = 300;
-        var all   = Directory.GetFiles(path, pattern, SearchOption.AllDirectories);
-        var files = all.Take(limit).Select(f => f[path.Length..].TrimStart('\\', '/'));
-        var result = string.Join("\n", files);
+        List<string> files;
+        try
+        {
+            files = Directory.EnumerateFiles(path, pattern, SearchOption.AllDirectories)
+                             .Where(f => !WorkspaceScan.IsExcludedPath(f))
+                             .Take(limit + 1)
+                             .Select(f => f[path.Length..].TrimStart('\\', '/'))
+                             .ToList();
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ListFilesTool.Enumerate", ex);
+            return Task.FromResult(Strings.DirNotFound(path));
+        }
 
-        if (all.Length > limit)
-            result += $"\n(showing first {limit} of {all.Length} files)";
+        var truncated = files.Count > limit;
+        if (truncated) files.RemoveAt(files.Count - 1);
+        var result = string.Join("\n", files);
+        if (truncated)
+            result += $"\n(showing first {limit} files — narrow the path or pattern for the rest)";
 
         return Task.FromResult(result);
     }

@@ -29,17 +29,14 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
 
         try
         {
-            // Base64 UTF-16 keeps the script intact across the process command line (quoting,
-            // '&', newlines…). It does NOT sandbox `args`: they are appended INTO the script and
-            // may contain arbitrary PowerShell by design — the approval prompt above (which shows
-            // the full command, args included) and the permission rules are the actual guard.
-            var encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(fullCmd));
-
-            var psi = new ProcessStartInfo
-            {
-                FileName  = "powershell.exe",
-                Arguments = $"-NoProfile -NonInteractive -EncodedCommand {encoded}",
-            };
+            // Resolved per machine like run_command: powershell.exe was hard-coded here, so every
+            // user-defined tool died on the published linux-x64/darwin-arm64 hosts with "cannot
+            // start process 'powershell.exe'" (pre-1.6.0 architecture review). The encoding contract is
+            // ShellLauncher's: -EncodedCommand on PowerShell, ArgumentList -c on POSIX — neither
+            // goes through a shell quoting layer. `args` are still appended INTO the script by
+            // design — the approval prompt above (full command shown) is the actual guard.
+            var (dialect, shell) = Shell.ShellLauncher.Resolve();
+            var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, fullCmd);
 
             // Concurrent drain of both pipes and a killed process tree on timeout live in
             // ChildProcess now — this tool was the one site that had both right, and the shared

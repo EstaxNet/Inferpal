@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Helpers UI : budget, défilement, contexte VM, thème
+    #region UI helpers: budget, scrolling, view-model context, theme
 
     // ── Context budget ─────────────────────────────────────────────────────────
 
@@ -82,7 +82,11 @@ internal partial class InferpalToolWindowData
     // guarantees all prior Post() calls (onToken etc.) have already completed.
     private Task RunOnVMContextAsync(Action action)
     {
-        var tcs = new TaskCompletionSource();
+        // RunContinuationsAsynchronously is load-bearing: without it, SetResult runs the awaiting
+        // caller's continuation INLINE on the VM pump's worker — so all the "off-context" code
+        // after each `await RunOnVMContextAsync(...)` (history building, clipboard Join…) executed
+        // on the pump, behind which the streaming Post()s pile up (pre-1.6.0 architecture review, §2.4).
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         SynchronizationContext.Post(_ =>
         {
             try   { action(); tcs.SetResult(); }

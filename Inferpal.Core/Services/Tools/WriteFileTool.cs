@@ -69,7 +69,7 @@ internal class WriteFileTool : ITool
         if (!string.IsNullOrEmpty(dir))
             Directory.CreateDirectory(dir);
 
-        await File.WriteAllTextAsync(path, content, ct);
+        await SafeFileWriter.WritePreservingAsync(path, content, ct);
 
         _setDiff?.Invoke(new DiffInfo(oldContent, content, path));
 

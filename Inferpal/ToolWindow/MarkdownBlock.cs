@@ -62,15 +62,7 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
 
     private Task CopyCodeAsync(object? _, CancellationToken ct)
     {
-        var text = Text;
-        var thread = new Thread(() =>
-        {
-            try { System.Windows.Clipboard.SetText(string.IsNullOrEmpty(text) ? " " : text); }
-            catch (Exception ex) { Services.Diagnostics.Swallow("Clipboard.CopyCodeBlock", ex); }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
+        ClipboardHelper.TrySet(Text, "Clipboard.CopyCodeBlock");
         return Task.CompletedTask;
     }
 

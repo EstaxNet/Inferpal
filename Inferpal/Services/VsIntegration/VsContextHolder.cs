@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.Extensibility;
+﻿using Microsoft.VisualStudio.Extensibility;
 using Microsoft.VisualStudio.Extensibility.Editor;
 
 namespace Inferpal.Services.VsIntegration;
@@ -35,16 +35,25 @@ internal class VsContextHolder
         get => _latestView;
         set
         {
-            _latestView = value;
-            if (value is not null)
+            // Check-and-set under the lock: concurrent open+changed activations could interleave
+            // the test and the write (duplicate or out-of-order ActiveFileChanged), despite the
+            // "safe from any thread" contract of the class doc (pre-1.6.0 architecture review). The
+            // event itself fires outside the lock.
+            string? changed = null;
+            lock (_lock)
             {
-                var path = value.Document.Uri.LocalPath ?? string.Empty;
-                if (path != _activeFilePath)
+                _latestView = value;
+                if (value is not null)
                 {
-                    _activeFilePath = path;
-                    ActiveFileChanged?.Invoke(this, path);
+                    var path = value.Document.Uri.LocalPath ?? string.Empty;
+                    if (path != _activeFilePath)
+                    {
+                        _activeFilePath = path;
+                        changed = path;
+                    }
                 }
             }
+            if (changed is not null) ActiveFileChanged?.Invoke(this, changed);
         }
     }
 

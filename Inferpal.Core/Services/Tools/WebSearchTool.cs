@@ -87,7 +87,8 @@ internal class WebSearchTool : ITool
             var rawText = tm.Groups[2].Success ? tm.Groups[2].Value : tm.Groups[4].Value;
 
             rawHref = WebUtility.HtmlDecode(rawHref);
-            var title = WebUtility.HtmlDecode(Regex.Replace(rawText, @"<[^>]+>", "")).Trim();
+            // Budgeted like every other pattern in this file: these two run on EXTERNAL HTML.
+            var title = WebUtility.HtmlDecode(Regex.Replace(rawText, @"<[^>]+>", "", RegexOptions.None, RegexBudget.Default)).Trim();
             var url   = DecodeUrl(rawHref);
 
             if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url)) continue;
@@ -98,7 +99,7 @@ internal class WebSearchTool : ITool
             var snippetMatch = snippets.Cast<Match>()
                 .FirstOrDefault(s => s.Index > tm.Index && s.Index < tm.Index + 3000);
             var snippet = snippetMatch is not null
-                ? WebUtility.HtmlDecode(Regex.Replace(snippetMatch.Groups[1].Value, @"<[^>]+>", "")).Trim()
+                ? WebUtility.HtmlDecode(Regex.Replace(snippetMatch.Groups[1].Value, @"<[^>]+>", "", RegexOptions.None, RegexBudget.Default)).Trim()
                 : "";
 
             results.Add((title, url, snippet));

@@ -22,7 +22,7 @@ internal sealed class ShellSession
     private readonly object _lock = new();
 
     private string? _cwd;
-    private Dictionary<string, string> _overrides = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, string> _overrides = new(ShellStateProtocol.EnvNameComparer);
 
     public ShellSession(Func<string> root, InferpalConfig config)
     {
@@ -40,7 +40,7 @@ internal sealed class ShellSession
     /// <summary>The cwd/env overrides a background job should inherit at launch time.</summary>
     public (string Cwd, IReadOnlyDictionary<string, string> Env) Snapshot()
     {
-        lock (_lock) return (_cwd ?? _root(), new Dictionary<string, string>(_overrides, StringComparer.OrdinalIgnoreCase));
+        lock (_lock) return (_cwd ?? _root(), new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer));
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ internal sealed class ShellSession
         lock (_lock)
         {
             startCwd = workDirOverride ?? _cwd ?? _root();
-            env      = new Dictionary<string, string>(_overrides, StringComparer.OrdinalIgnoreCase);
+            env      = new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer);
         }
         if (!Directory.Exists(startCwd))
             startCwd = _root();
@@ -112,7 +112,7 @@ internal sealed class ShellSession
 
     private static IReadOnlyDictionary<string, string> CaptureProcessEnv()
     {
-        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var dict = new Dictionary<string, string>(ShellStateProtocol.EnvNameComparer);
         foreach (DictionaryEntry e in Environment.GetEnvironmentVariables())
         {
             if (e.Key is string k) dict[k] = e.Value?.ToString() ?? string.Empty;

@@ -5,7 +5,7 @@
 <h1 align="center">Inferpal</h1>
 
 <p align="center">
-  An agentic developer assistant for Visual Studio 2022/2026 and
+  An agentic developer assistant for Visual Studio 2026 and
   <b>VS Code</b> — powered entirely by <b>local LLMs</b>: Ollama, LM Studio,
   or any OpenAI-compatible server. Full tool calling, inline ghost-text completions,
   semantic codebase search, and zero required cloud dependency.
@@ -15,9 +15,9 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-1754%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-1846%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
-  <img src="https://img.shields.io/badge/Visual%20Studio-2022%20%2F%202026-5C2D91" alt="Visual Studio 2022 / 2026">
+  <img src="https://img.shields.io/badge/Visual%20Studio-2026-5C2D91" alt="Visual Studio 2026">
   <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
 </p>
 
@@ -42,7 +42,7 @@ building, testing, and searching your codebase — to complete real tasks, while
 and every command stays behind an approval gate and a workspace sandbox. No API key, no
 telemetry, no cloud required.
 
-It ships as a **Visual Studio 2022/2026 extension** (the primary target) and a
+It ships as a **Visual Studio 2026 extension** (the primary target) and a
 **VS Code extension** at feature parity since 1.2.0 — one shared engine (`Inferpal.Core`),
 two editors.
 
@@ -58,6 +58,7 @@ two editors.
 - **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, typed `@`-mentions, and 50+ slash commands.
 - **Built for the IDE** — live debugger awareness, VRAM monitoring, VS theme adaptation, and 10 UI languages.
 - **Debugger loop** — `/debug [goal]` lets the agent drive a **real debug session** from the chat: breakpoints, stepping, locals and call-stack inspection, in both editors (Visual Studio via an in-process driver, VS Code via a DAP bridge). Read-only, and starting a session always asks first.
+- **`/tdd` with a debugger** *(new in 1.6.0)* — when a test fails, the loop stops guessing from the runner's text: the failing test is re-run under the editor's debugger and the exception, the stack and the expanded locals go into the fix prompt. Measured on a fixed 12-case bench with a local 27B model: **12/12 fixed against 10/12** without it. It asks once per run, degrades cleanly when no debugger is available — and **says so** instead of silently looping. Writing a test file during a `/tdd` run always asks, whatever the permission rules say.
 - **Compiler-backed code intelligence** — `analyze_impact`, `analyze_code` and `rename_symbol` resolve C# symbols with the Roslyn compiler instead of name matching: real references, not homonyms — and `rename_symbol` no longer rewrites unrelated tokens that merely share the name.
 - **Anchored diff review** — `/check` reviews your pending diff against repo-versioned AI checks and anchors every finding to a diff line (and says so when a location can't be confirmed); `/commit` drafts the message, `/commit-exec` runs it only after you've read it.
 - **Persistent plans** — `/plan save|list|next|done` turns the current plan into a committable markdown file under `.inferpal/plans/` that survives `/clear`, restarts and editors; a plan can never execute anything by itself.
@@ -76,7 +77,7 @@ two editors.
 
 | Requirement | Details |
 |---|---|
-| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community / Professional / Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon) |
+| Editor | Visual Studio 2026 (18.x) — Community / Professional / Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon) |
 | .NET SDK | .NET 8 (building from source only — the VS Code VSIX bundles its own runtime) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 

@@ -1,4 +1,4 @@
-using Inferpal.Config;
+﻿using Inferpal.Config;
 
 namespace Inferpal.Services.Inference;
 
@@ -36,5 +36,17 @@ internal static class InferenceProviderFactory
             LmStudio         => ProviderCapabilities.LmStudio,
             OpenAiCompatible => ProviderCapabilities.OpenAiCompatible,
             _                => ProviderCapabilities.Ollama,
+        };
+
+    /// <summary>
+    /// User-facing name of the configured backend, for connection messages: telling an LM Studio
+    /// user "cannot reach Ollama, run ollama serve" sent them chasing the wrong process (§27.6).
+    /// </summary>
+    public static string DisplayName(string? code) =>
+        (code?.Trim().ToLowerInvariant()) switch
+        {
+            LmStudio         => "LM Studio",
+            OpenAiCompatible => "OpenAI-compatible", // same label as the settings dropdown
+            _                => "Ollama",
         };
 }

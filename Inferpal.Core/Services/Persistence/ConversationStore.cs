@@ -49,10 +49,11 @@ internal class ConversationStore
 
         // Write-then-rename: a crash (or a full disk) mid-write must not leave a truncated
         // session behind. It matters more since /branch rewrites the parent file on every fork —
-        // the interrupted save would be of the conversation the user is keeping.
-        var temp = file + ".tmp";
-        await File.WriteAllTextAsync(temp, JsonSerializer.Serialize(payload, _opts), ct);
-        File.Move(temp, file, overwrite: true);
+        // the interrupted save would be of the conversation the user is keeping. Via AtomicFile,
+        // NOT a hand-rolled fixed ".tmp": both front-ends share %AppData% and auto-save
+        // last_session.json every turn, and a fixed staging name turns those concurrent writers
+        // into a collision (pre-1.6.0 architecture review, §1.7 — the exact bug AtomicFile documents).
+        await AtomicFile.WriteAllTextAsync(file, JsonSerializer.Serialize(payload, _opts), ct);
     }
 
     /// Auto-saves the current session to "last_session.json".
@@ -161,6 +162,10 @@ internal class ConversationStore
 
     private static readonly HashSet<char> _invalidChars = [..Path.GetInvalidFileNameChars()];
 
+    // Doctrine (§27.6, deliberate): flattening can make two names collide ("a/b" and "a_b" share
+    // the same file). Changing the encoding would break addressing for already saved sessions; and
+    // names come from the UI (timestamped title on the VS side, filtered InputBox on the VS Code
+    // side, where "last_session" is reserved on top of that), which makes the case marginal.
     private static string Sanitize(string name) =>
         string.Concat(name.Select(c => _invalidChars.Contains(c) ? '_' : c));
 }

@@ -46,6 +46,53 @@ public class PermissionPolicyTests
         Assert.Equal(PermissionDecision.Allow, policy.Evaluate("run_command", "DOTNET build"));
     }
 
+    // ── Multi-path subjects (apply_edits / rename_symbol join paths with '\n') ──
+
+    [Fact]
+    public void MultiPathSubject_ADeniedPathDeniesTheWholeCall()
+    {
+        // Without per-line evaluation, 'deny * \.env$' only saw the LAST line of the aggregate:
+        // a two-file apply_edits touching .env slipped past the repo's own deny (revue §1.1).
+        var policy = FromDsl(@"deny * \.env$");
+        Assert.Equal(PermissionDecision.Deny, policy.Evaluate("apply_edits", ".env\nreadme.md"));
+    }
+
+    [Fact]
+    public void MultiPathSubject_DenyOnOneLine_BeatsAnAllowOnTheOthers()
+    {
+        // The deny is first (first-match-wins holds per line); the denied path is NOT the last
+        // one, so the old aggregate match ('$' = end of string) saw nothing to deny.
+        var policy = FromDsl("deny write_file \\.env$\nallow write_file .*");
+        Assert.Equal(PermissionDecision.Deny, policy.Evaluate("write_file", ".env\nok.cs"));
+    }
+
+    [Fact]
+    public void MultiPathSubject_AutoApprovedOnlyWhenEveryPathIsAllowed()
+    {
+        var policy = FromDsl(@"allow apply_edits \.cs$");
+        // The last line matches the allow, but the first path is not covered → prompt, not allow.
+        Assert.Equal(PermissionDecision.Prompt, policy.Evaluate("apply_edits", "a.txt\nb.cs"));
+        // Every path allowed → the aggregate is allowed.
+        Assert.Equal(PermissionDecision.Allow, policy.Evaluate("apply_edits", "a.cs\nb.cs"));
+    }
+
+    // ── Composition config ⊕ overlay ─────────────────────────────────────────
+
+    [Fact]
+    public void Compose_AnOverlayDeny_BeatsAMachineAllow()
+    {
+        // The old config-first order let 'allow write_file \.cs$' (machine) shadow the repo's
+        // 'deny write_file Migrations/' under first-match-wins — the documented promise that a
+        // project tightening its own restrictions is always safe was silently false (revue §1.2).
+        var config  = PermissionPolicy.ParseRules(@"allow write_file \.cs$");
+        var overlay = PermissionPolicy.ParseJsonOverlay("""{ "rules": ["deny write_file Migrations/"] }""");
+
+        var policy = new PermissionPolicy(PermissionPolicy.Compose(config, overlay));
+
+        Assert.Equal(PermissionDecision.Deny,  policy.Evaluate("write_file", "Migrations/init.cs"));
+        Assert.Equal(PermissionDecision.Allow, policy.Evaluate("write_file", "src/ok.cs"));
+    }
+
     // ── Tool scoping ─────────────────────────────────────────────────────────
 
     [Fact]

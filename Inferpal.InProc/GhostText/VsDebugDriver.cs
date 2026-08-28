@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Threading;
 using System.Threading.Tasks;
 using Inferpal.Services.Debugging;
@@ -120,7 +120,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
     {
         switch (request.Op)
         {
-            case SignalDebugSession.OpAddBreakpoint:
+            case DebugOps.AddBreakpoint:
             {
                 await Jtf.SwitchToMainThreadAsync(ct);
                 var bound = AddBreakpoint(request.File!, request.Line);
@@ -128,7 +128,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 return new(request.Id, Ok: true, Breakpoints: bound);
             }
 
-            case SignalDebugSession.OpRemoveBreakpoint:
+            case DebugOps.RemoveBreakpoint:
             {
                 await Jtf.SwitchToMainThreadAsync(ct);
                 var removed = RemoveBreakpoint(request.File!, request.Line);
@@ -136,7 +136,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 return new(request.Id, Ok: true, Flag: removed);
             }
 
-            case SignalDebugSession.OpListBreakpoints:
+            case DebugOps.ListBreakpoints:
             {
                 await Jtf.SwitchToMainThreadAsync(ct);
                 var all = ListBreakpoints();
@@ -144,7 +144,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 return new(request.Id, Ok: true, Breakpoints: all);
             }
 
-            case SignalDebugSession.OpStart:
+            case DebugOps.Start:
             {
                 // Built explicitly first, and the launch is abandoned when it fails. Measured
                 // before being written (probe 3, 2026-08-06): `Debug.Start` on a solution that does
@@ -159,13 +159,13 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(request.Op, ct));
             }
 
-            case SignalDebugSession.OpContinue:
-            case SignalDebugSession.OpStepOver:
-            case SignalDebugSession.OpStepInto:
-            case SignalDebugSession.OpStepOut:
+            case DebugOps.Continue:
+            case DebugOps.StepOver:
+            case DebugOps.StepInto:
+            case DebugOps.StepOut:
                 return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(request.Op, ct));
 
-            case SignalDebugSession.OpState:
+            case DebugOps.State:
             {
                 if (!IsPaused) return new(request.Id, Ok: true, State: null);
                 await Jtf.SwitchToMainThreadAsync(ct);
@@ -174,7 +174,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 return new(request.Id, Ok: true, State: state);
             }
 
-            case SignalDebugSession.OpEvaluate:
+            case DebugOps.Evaluate:
             {
                 await Jtf.SwitchToMainThreadAsync(ct);
                 var text = Evaluate(request.Expression ?? string.Empty, request.FrameId);
@@ -184,12 +184,20 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                     : new(request.Id, Ok: true, Text: text);
             }
 
-            case SignalDebugSession.OpStop:
+            case DebugOps.Stop:
             {
                 await Jtf.SwitchToMainThreadAsync(ct);
                 _dte.Debugger.Stop(false);
                 await TaskScheduler.Default.SwitchTo();
                 return new(request.Id, Ok: true);
+            }
+
+            case DebugOps.CaptureTest:
+            {
+                var state = await CaptureTestAsync(request, ct);
+                return state is null
+                    ? new(request.Id, Ok: false, Error: "The failing test could not be captured under the debugger.")
+                    : new(request.Id, Ok: true, State: state);
             }
 
             default:
@@ -291,11 +299,11 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             // F5, both times. In design mode it builds and launches; in break mode it continues —
             // which is what F5 does. Debugger.Go() is avoided on purpose: the §21 probe recorded it
             // failing where ExecuteCommand succeeded.
-            case SignalDebugSession.OpStart:
-            case SignalDebugSession.OpContinue: _dte.ExecuteCommand("Debug.Start"); break;
-            case SignalDebugSession.OpStepOver: _dte.Debugger.StepOver(false);      break;
-            case SignalDebugSession.OpStepInto: _dte.Debugger.StepInto(false);      break;
-            case SignalDebugSession.OpStepOut:  _dte.Debugger.StepOut(false);       break;
+            case DebugOps.Start:
+            case DebugOps.Continue: _dte.ExecuteCommand("Debug.Start"); break;
+            case DebugOps.StepOver: _dte.Debugger.StepOver(false);      break;
+            case DebugOps.StepInto: _dte.Debugger.StepInto(false);      break;
+            case DebugOps.StepOut:  _dte.Debugger.StepOut(false);       break;
         }
         await TaskScheduler.Default.SwitchTo();
 
@@ -333,6 +341,143 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             await Task.Delay(PollMs / 2, ct);
         }
         return null;
+    }
+
+    // ── §25: capture one failing test under the debugger ─────────────────────────────
+
+    /// <summary>
+    /// Launches the repro runner in wait-for-debugger mode, attaches through
+    /// <c>LocalProcesses</c>, waits for the unhandled-exception break at the original throw site
+    /// (the runner invokes with <c>DoNotWrapExceptions</c>) and snapshots it. Every step was
+    /// probed before being written (2026-08-20, <c>docs/probes/tdd-debug-launch/</c>): attach
+    /// ~2 s, break ~3 s — and the current frame is <b>empty at the break signal</b>, so the
+    /// snapshot retries until the stack settles.
+    /// </summary>
+    private async Task<DebugStopState?> CaptureTestAsync(
+        Services.Signals.DebugCommandRequest request, CancellationToken ct)
+    {
+        if (request.Program is null || request.Args is null) return null;
+        // Never hijack a session the user (or the model) is actually driving.
+        if (Volatile.Read(ref _mode) != (int)DBGMODE.DBGMODE_Design) return null;
+
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName         = "dotnet",
+            WorkingDirectory = request.Cwd ?? string.Empty,
+            UseShellExecute  = false,
+            CreateNoWindow   = true,
+        };
+        // net472 has no ArgumentList: the line is assembled and escaped here (see QuoteArg).
+        psi.Arguments = string.Join(" ",
+            new[] { request.Program }.Concat(request.Args ?? Array.Empty<string>()).Select(QuoteArg));
+        psi.EnvironmentVariables["INFERPAL_WAIT_DEBUGGER"] = "1";
+
+        using var runner = System.Diagnostics.Process.Start(psi);
+        if (runner is null) return null;
+        try
+        {
+            var generation = Volatile.Read(ref _modeGen);
+
+            var attached = false;
+            var deadline = NowMs() + 30_000;
+            while (!attached && NowMs() < deadline && !runner.HasExited)
+            {
+                ct.ThrowIfCancellationRequested();
+                await Jtf.SwitchToMainThreadAsync(ct);
+                try
+                {
+                    foreach (EnvDTE.Process p in _dte.Debugger.LocalProcesses)
+                    {
+                        try { if (p.ProcessID == runner.Id) { p.Attach(); attached = true; break; } }
+                        catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.Attach", ex); }
+                    }
+                }
+                catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.LocalProcesses", ex); }
+                await TaskScheduler.Default.SwitchTo();
+                if (!attached) await Task.Delay(250, ct);
+            }
+            if (!attached) return null;
+
+            // Only the TRANSITION to break counts (§21 lesson) — attach machinery can flicker.
+            var breakDeadline = NowMs() + 90_000;
+            while (NowMs() < breakDeadline)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (Volatile.Read(ref _modeGen) != generation &&
+                    (DBGMODE)Volatile.Read(ref _mode) == DBGMODE.DBGMODE_Break) break;
+                await Task.Delay(150, ct);
+            }
+            if ((DBGMODE)Volatile.Read(ref _mode) != DBGMODE.DBGMODE_Break) return null;
+
+            // CurrentStackFrame is empty when the break is first signalled — retry until it settles.
+            for (var attempt = 0; attempt < 20; attempt++)
+            {
+                await Task.Delay(250, ct);
+                await Jtf.SwitchToMainThreadAsync(ct);
+                var state = CaptureState();
+                await TaskScheduler.Default.SwitchTo();
+                if (state.Frames.Count > 0 && !string.IsNullOrEmpty(state.Frames[0].Function))
+                    return state with { Reason = "exception" };
+            }
+            return null;
+        }
+        finally
+        {
+            // The capture session and its runner never outlive the call, whatever happened above.
+            try
+            {
+                await Jtf.SwitchToMainThreadAsync(CancellationToken.None);
+                try { _dte.Debugger.Stop(false); } catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.CaptureStop", ex); }
+                await TaskScheduler.Default.SwitchTo();
+            }
+            catch { }
+            try { if (!runner.HasExited) KillTree(runner); } catch { }
+        }
+    }
+
+    // ── net472 supplements ──────────────────────────────────────────────────────────
+    // Three modern .NET BCL APIs do not exist on .NET Framework, and this assembly is
+    // en net472 par obligation (devenv est un process Framework — docs/probes/inproc-net8-verdict.md).
+
+    /// <summary>Windows escaping of a command-line argument (replaces ArgumentList).</summary>
+    private static string QuoteArg(string value)
+    {
+        if (value.Length > 0 && value.IndexOfAny(new[] { ' ', '\t', '"' }) < 0) return value;
+
+        var sb = new System.Text.StringBuilder("\"");
+        for (var i = 0; i < value.Length; i++)
+        {
+            var slashes = 0;
+            while (i < value.Length && value[i] == '\\') { slashes++; i++; }
+
+            if (i == value.Length)            { sb.Append('\\', slashes * 2); break; }
+            if (value[i] == '"')              { sb.Append('\\', slashes * 2 + 1); }
+            else                              { sb.Append('\\', slashes); }
+            sb.Append(value[i]);
+        }
+        return sb.Append('"').ToString();
+    }
+
+    /// <summary>Horloge monotone en millisecondes (remplace le TickCount64 du BCL moderne).</summary>
+    private static long NowMs() =>
+        System.Diagnostics.Stopwatch.GetTimestamp() / (System.Diagnostics.Stopwatch.Frequency / 1000);
+
+    /// <summary>Tue le process et sa descendance (remplace Kill(entireProcessTree: true)).</summary>
+    private static void KillTree(System.Diagnostics.Process process)
+    {
+        try
+        {
+            using var killer = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName        = "taskkill",
+                Arguments       = "/T /F /PID " + process.Id,
+                UseShellExecute = false,
+                CreateNoWindow  = true,
+            });
+            killer?.WaitForExit(5000);
+        }
+        catch { /* nettoyage */ }
+        try { if (!process.HasExited) process.Kill(); } catch { /* nettoyage */ }
     }
 
     // ── EnvDTE automation (UI thread only) ──────────────────────────────────────────
@@ -445,7 +590,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 {
                     if (locals.Count >= MaxLocals) break;
                     // ⚠ Names here include the IDE's own pseudo-variables, localised — a French VS
-                    // adds « int.ToString retourné » after a step. Never match on them.
+                    // adds "int.ToString returned" after a step. Never match on them.
                     try { locals.Add(new DebugVariable(local.Name, local.Type, local.Value)); }
                     catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.LocalValue", ex); }
                 }

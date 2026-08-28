@@ -34,6 +34,11 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// backend without FIM output.</summary>
     public Func<string, string, string>? OnFim { get; set; }
 
+    /// <summary>Optional override of <see cref="GetEmbeddingAsync"/> (chunk text → vector);
+    /// null keeps the constant <see cref="Embedding"/>. Lets the RAG lifecycle tests count
+    /// embedding calls and act mid-pass (e.g. rewrite a file while it is being indexed).</summary>
+    public Func<string, float[]?>? OnEmbedding { get; set; }
+
     /// <summary>Result of <see cref="DeleteModelAsync"/> (keyed by model name).</summary>
     public Func<string, bool>          OnDelete { get; set; } = _ => true;
     /// <summary>Result of <see cref="PullModelAsync"/> (keyed by model name).</summary>
@@ -73,7 +78,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     }
 
     public Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct) =>
-        Task.FromResult(Embedding);
+        Task.FromResult(OnEmbedding is not null ? OnEmbedding(text) : Embedding);
 
     public Task<bool> CheckConnectionAsync(string url, CancellationToken ct) => Task.FromResult(ConnectionOk);
 

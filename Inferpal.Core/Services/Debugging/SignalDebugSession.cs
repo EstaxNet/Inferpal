@@ -1,4 +1,4 @@
-using Inferpal.Services.Signals;
+﻿using Inferpal.Services.Signals;
 
 namespace Inferpal.Services.Debugging;
 
@@ -29,17 +29,21 @@ internal sealed class SignalDebugSession : IDebugSession
 {
     // Operation names on the wire. Kept as constants because the driver lives in another
     // assembly *and* another process: a typo here is a runtime no-op, not a compile error.
-    internal const string OpAddBreakpoint    = "add_bp";
-    internal const string OpRemoveBreakpoint = "remove_bp";
-    internal const string OpListBreakpoints  = "list_bp";
-    internal const string OpStart            = "start";
-    internal const string OpContinue         = "continue";
-    internal const string OpStepOver         = "step_over";
-    internal const string OpStepInto         = "step_into";
-    internal const string OpStepOut          = "step_out";
-    internal const string OpState            = "state";
-    internal const string OpEvaluate         = "evaluate";
-    internal const string OpStop             = "stop";
+    // The literals live in <see cref="DebugOps"/>, which the in-process driver (net472) compiles
+    // from the SAME source file - see Inferpal.InProc.csproj.
+    internal const string OpAddBreakpoint    = DebugOps.AddBreakpoint;
+    internal const string OpRemoveBreakpoint = DebugOps.RemoveBreakpoint;
+    internal const string OpListBreakpoints  = DebugOps.ListBreakpoints;
+    internal const string OpStart            = DebugOps.Start;
+    internal const string OpContinue         = DebugOps.Continue;
+    internal const string OpStepOver         = DebugOps.StepOver;
+    internal const string OpStepInto         = DebugOps.StepInto;
+    internal const string OpStepOut          = DebugOps.StepOut;
+    internal const string OpState            = DebugOps.State;
+    internal const string OpEvaluate         = DebugOps.Evaluate;
+    internal const string OpStop             = DebugOps.Stop;
+    /// <summary>§25: attach to a waiting repro runner and capture the unhandled-exception stop.</summary>
+    internal const string OpCaptureTest      = DebugOps.CaptureTest;
 
     /// <summary>
     /// Starting a session builds the solution first, so its budget is measured in minutes. This is
@@ -54,7 +58,8 @@ internal sealed class SignalDebugSession : IDebugSession
     /// <summary>Everything else is a question asked of a debugger that is already paused.</summary>
     internal static TimeSpan QueryTimeout { get; set; } = TimeSpan.FromSeconds(20);
 
-    private readonly SemaphoreSlim _oneAtATime = new(1, 1);
+    // Shared with the §25 capture client: the channel carries one request at a time, whoever asks.
+    private static SemaphoreSlim _oneAtATime => Signals.DebugCommandSignal.ChannelLock;
 
     public bool IsAvailable => DebugCommandSignal.IsDriverReady();
 

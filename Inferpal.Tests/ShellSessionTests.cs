@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Text.Json;
 using Inferpal.Config;
@@ -22,6 +22,18 @@ public class ShellSessionTests
     private static bool PowerShellAvailable => ShellLauncher.Resolve().Dialect == ShellDialect.PowerShell;
 
     private static string B64(string s) => Convert.ToBase64String(Encoding.UTF8.GetBytes(s));
+
+    [Fact]
+    public void EnvNameComparer_MatchesThePlatformSemantics()
+    {
+        // §27.6 - PATH and path are two distinct variables on POSIX, a single one on Windows;
+        // a shared OrdinalIgnoreCase merged them silently on the linux/darwin side.
+        var dict = new Dictionary<string, string>(ShellStateProtocol.EnvNameComparer) { ["PATH"] = "a" };
+        if (OperatingSystem.IsWindows())
+            Assert.True(dict.ContainsKey("path"), "on Windows env names are case-insensitive");
+        else
+            Assert.False(dict.ContainsKey("path"), "on POSIX env names are case-sensitive");
+    }
 
     private sealed class AutoApprove : IApprovalService
     {

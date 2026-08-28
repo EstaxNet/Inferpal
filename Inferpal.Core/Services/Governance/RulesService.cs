@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -117,6 +117,37 @@ internal static class RulesService
     /// and <c>?</c>. Paths and globs are normalized to forward slashes. A glob without a slash
     /// (e.g. <c>*.cs</c>) also matches the file name alone, so it works regardless of folder depth.
     /// </summary>
+    // Compiled-glob cache. The globs come from .inferpal/rules/*.md — a file that arrives with
+    // any clone — and Matches() runs on every system-prompt rebuild (each active-file switch):
+    // recompiling per call was wasteful, and matching without a timeout handed a repo-authored
+    // pathological glob a way to freeze the prompt build (pre-1.6.0 architecture review, §1.8 — the exact
+    // budget IndexExclusions already applies to the same dialect).
+    private static readonly TimeSpan GlobMatchTimeout = TimeSpan.FromMilliseconds(50);
+    private static readonly object _globCacheLock = new();
+    private static readonly Dictionary<string, Regex> _globCache = new(StringComparer.Ordinal);
+
+    private static Regex CompiledGlob(string glob)
+    {
+        lock (_globCacheLock)
+        {
+            if (_globCache.TryGetValue(glob, out var cached)) return cached;
+            if (_globCache.Count > 256) _globCache.Clear();   // rules churn is tiny; a reset is fine
+            var rx = new Regex(GlobToRegex(glob), RegexOptions.None, GlobMatchTimeout);
+            _globCache[glob] = rx;
+            return rx;
+        }
+    }
+
+    private static bool SafeIsMatch(Regex rx, string input)
+    {
+        try { return rx.IsMatch(input); }
+        catch (RegexMatchTimeoutException)
+        {
+            Diagnostics.Record("Rules", $"Glob regex timed out, treated as no-match: {rx}");
+            return false;   // a glob the engine cannot evaluate must never decide — nor freeze
+        }
+    }
+
     public static bool GlobMatch(string glob, string path)
     {
         if (string.IsNullOrEmpty(glob) || string.IsNullOrEmpty(path)) return false;
@@ -124,14 +155,14 @@ internal static class RulesService
         var g = glob.Replace('\\', '/').Trim();
         var p = path.Replace('\\', '/').TrimStart('/');
 
-        var rx = GlobToRegex(g);
-        if (Regex.IsMatch(p, rx)) return true;
+        var rx = CompiledGlob(g);
+        if (SafeIsMatch(rx, p)) return true;
 
         // Bare patterns (no path separator) match the file name at any depth.
         if (!g.Contains('/'))
         {
             var name = p[(p.LastIndexOf('/') + 1)..];
-            return Regex.IsMatch(name, rx);
+            return SafeIsMatch(rx, name);
         }
         return false;
     }

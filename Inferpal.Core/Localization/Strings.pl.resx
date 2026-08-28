@@ -245,8 +245,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  sesja: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Adres URL Ollama nie jest skonfigurowany. Otwórz ustawienia, aby go ustawić.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Model nie zwrócił żadnej odpowiedzi. Skonfigurowany model może nie obsługiwać generowania tekstu — spróbuj domyślnego modelu czatu.</value></data>
-  <data name="MsgTimeout" xml:space="preserve"><value>Przekroczono limit czasu połączenia — Ollama nie odpowiedział pod adresem {0} w ciągu 30 minut.</value></data>
-  <data name="MsgUnreachable" xml:space="preserve"><value>Nie można połączyć się z Ollama pod adresem {0}. Sprawdź URL w ustawieniach.</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>Przekroczono limit czasu połączenia — backend pod adresem {0} przestał odpowiadać (limit bezczynności).</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>Nie można połączyć się z backendem pod adresem {0}. Sprawdź URL w ustawieniach.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Serwer inferencji pod adresem {0} zwrócił błąd:
 
 {1}</value></data>
@@ -254,15 +254,15 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
 
 Szczegóły serwera: {0}</value></data>
   <data name="MsgContextWontFit" xml:space="preserve"><value>Żądanie (~{0} tokenów) jest większe niż kontekst, z którym załadowano model ({1} tokenów) w trybie agenta — same definicje narzędzi zajmują kilka tysięcy tokenów. Zwiększ załadowaną długość kontekstu (zalecane 16384 lub więcej w LM Studio) albo zmniejsz liczbę włączonych narzędzi agenta.</value></data>
-  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Nie można połączyć się z Ollama pod adresem {0}
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Nie można połączyć się z {1} pod adresem {0}
 
 Kroki rozwiązywania problemów:
-  1. Uruchom Ollama — otwórz terminal i wykonaj:  ollama serve
+  1. Uruchom {1} (dla Ollama: otwórz terminal i wykonaj  ollama serve)
   2. Sprawdź URL w ustawieniach (aktualnie: {0})
-  3. Jeśli Ollama działa na innej maszynie, zaktualizuj URL w ustawieniach
-  4. Sprawdź, czy port 11434 nie jest blokowany przez zaporę sieciową lub program antywirusowy
+  3. Jeśli {1} działa na innej maszynie, zaktualizuj URL w ustawieniach
+  4. Sprawdź, czy port nie jest blokowany przez zaporę sieciową lub program antywirusowy
 
-Kliknij ↻ Ponów próbę w nagłówku po uruchomieniu Ollama.</value></data>
+Kliknij ↻ Ponów próbę w nagłówku po uruchomieniu {1}.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Ponownie połączono z Ollama — gotowe.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Sprawdź połączenie z Ollama teraz</value></data>
 
@@ -716,6 +716,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="SlashHintDiagnostics" xml:space="preserve"><value>Pokaż ostatnie diagnostyki — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostyka</value></data>
+  <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Komponent in-process nie został załadowany: ghost text, podgląd różnic edycji inline oraz sterownik debugera /tdd są niedostępne. Czat działa (jest poza procesem) — dlatego nic nie wygląda na zepsute.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Brak zarejestrowanych diagnostyk.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Wyczyszczono diagnostyki.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Raport pomocy skopiowany do schowka — wklej go do zgłoszenia na GitHubie.</value></data>
@@ -769,6 +770,10 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="TddFixing" xml:space="preserve"><value>🔧 Poprawka {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Zestaw testów zielony po {0} rundzie/rundach.</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Testy nadal nie przechodzą po {0} rundach — wymagana ręczna interwencja.</value></data>
+  <data name="TddDebugCaptureApproval" xml:space="preserve"><value>Uruchomić ponownie nieudany test '{0}' pod debugerem, aby przechwycić jego stan w punkcie awarii? (pytanie raz na przebieg /tdd)</value></data>
+  <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Przechwytywanie stanu debugera w punkcie awarii…</value></data>
+  <data name="TddDebugCaptureFailed" xml:space="preserve"><value>⚠ Przechwycenie stanu debugera nie powiodło się — kontynuacja bez niego.</value></data>
+  <data name="TddDebugCaptureUnavailable" xml:space="preserve"><value>⚠ Przechwytywanie debugera niedostępne (sterownik in-process niezaładowany) — zwykła pętla.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Prześwietlenie kontekstu — prompt systemowy ≈ {0} tokenów</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Bazowy prompt systemowy</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Fragment persony</value></data>
@@ -850,6 +855,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="TaskQueueFull" xml:space="preserve"><value>Zbyt wiele zadań w tle (maksymalnie {0}). Poczekaj na zakończenie jednego lub uruchom `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Nieznane zadanie `{0}`.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Zadanie `{0}` anulowane.</value></data>
+  <data name="TaskAlreadyFinished" xml:space="preserve"><value>Zadanie `{0}` już się zakończyło — `/task {0}` pokaże jego raport.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>Usunięto zakończone zadania: {0}.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Brak zadań w tle. `/task [cel]` uruchamia zadanie.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Zadania w tle</value></data>

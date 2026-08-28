@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using Inferpal.Services;
 using Xunit;
 
@@ -76,6 +76,22 @@ public class RulesServiceTests : IDisposable
     public void GlobMatch_NormalizesBackslashes()
     {
         Assert.True(RulesService.GlobMatch("src/**", "src\\app\\Foo.cs"));
+    }
+
+    [Fact]
+    public async Task GlobMatch_APathologicalRepoAuthoredGlob_CannotFreezeThePromptBuild()
+    {
+        // .inferpal/rules globs arrive with any clone, and Matches() runs on every system-prompt
+        // rebuild: without a match timeout, a catastrophic-backtracking glob froze the build
+        // (pre-1.6.0 architecture review, §1.8). Run on a worker so a regression fails fast instead of hanging
+        // the suite: the old behaviour never returns.
+        var glob = string.Concat(Enumerable.Repeat("a*", 20)) + "b";
+        var path = new string('a', 40) + "c";   // never matches → worst-case backtracking
+
+        var work = Task.Run(() => RulesService.GlobMatch(glob, path));
+        var done = await Task.WhenAny(work, Task.Delay(TimeSpan.FromSeconds(3)));
+        Assert.True(ReferenceEquals(done, work), "GlobMatch hung on a pathological glob");
+        Assert.False(await work);
     }
 
     // ── Matches ──────────────────────────────────────────────────────────────────

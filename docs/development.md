@@ -1,4 +1,4 @@
-# Development
+﻿# Development
 
 How to build, test, extend, and contribute to Inferpal. For how the pieces fit together see
 **[Architecture](architecture.md)**.
@@ -6,7 +6,7 @@ How to build, test, extend, and contribute to Inferpal. For how the pieces fit t
 ## Prerequisites
 
 - **.NET 8 SDK**
-- **Visual Studio 2022 (17.9+) or 2026 (18.x)** with the Visual Studio extension development
+- **Visual Studio 2026 (18.x)** with the Visual Studio extension development
   workload
 - **Node.js 20+** — only for the VS Code extension (`vscode/`)
 - A running model server for manual testing — see [Getting Started](getting-started.md)
@@ -50,16 +50,18 @@ npm run build                      # esbuild bundle
 - **auto-elevation**: the install dir lives under Program Files, so the script relaunches
   itself elevated (one UAC prompt) instead of failing halfway; a transcript is kept in
   `%TEMP%\inferpal-deploy-vs.log`;
-- **hot apply**: works with Visual Studio running — locked assemblies are swapped via
-  rename (live processes keep the old mapping), then the ServiceHub Extensibility host
-  is restarted on the fresh DLL. Close/reopen the Inferpal tool window to pick it up.
-  Only the in-proc ghost text (MEF) needs a real VS restart: use `-Launch`.
+- **hot apply**: locked assemblies are swapped via rename (live processes keep the old
+  mapping). It only *applies* the new DLL while the extension is hosted **out-of-process**:
+  the ServiceHub Extensibility host is restarted on it and reopening the tool window picks
+  it up. Under **in-process hosting** (the default since 2026-08-23) there is no such host —
+  the running `devenv.exe` keeps the old DLL until it restarts, and the script says so
+  instead of announcing a success. Use `-Launch`.
 - F5 on the `Inferpal` project launches the VS Experimental instance
   (`Properties\launchSettings.json` — its machine-specific devenv path is auto-healed).
 
 > [!IMPORTANT]
-> To debug the running extension, attach to **`ServiceHub.Host.dotnet.exe`** (the chat runs
-> out-of-process); the in-proc ghost text lives in `devenv.exe`.
+> Since the 2026-08-23 switch to in-process hosting, the extension — chat included — runs inside
+> **`devenv.exe`**; attach there. (Before that switch the chat lived in `ServiceHub.Host.dotnet.exe`.)
 
 ### Releases
 
@@ -78,7 +80,9 @@ build, git tag, optional Marketplace upload) and collects the same deliverables 
 dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 ```
 
-The suite has **1300 xUnit tests**. The test project uses `InternalsVisibleTo`, so the
+The suite is large (the exact figure is the `tests-N passing` badge at the top of the README,
+which `DocCountersTests` locks against the assembly — this sentence deliberately carries no
+number of its own, the last one had rotted by 500 tests). The test project uses `InternalsVisibleTo`, so the
 extension's `internal` types are testable directly. All the logic lives in `Inferpal.Core`,
 a pure net8.0 library with no editor SDK or WPF dependency (guarded by `CoreIsolationTests`),
 specifically so it can be unit-tested without Visual Studio (e.g. `DiffComputer`,
@@ -168,7 +172,7 @@ If the tool touches the filesystem, runs commands, or reaches the network, take 
 
 ## Coding constraints to know
 
-These are the non-obvious rules that keep the Remote UI / out-of-process model working:
+These are the non-obvious rules that keep the Remote UI model working:
 
 | Topic | Rule |
 |---|---|

@@ -1,4 +1,4 @@
-// Spawns and supervises the Inferpal.Host process and exposes its JSON-RPC surface
+﻿// Spawns and supervises the Inferpal.Host process and exposes its JSON-RPC surface
 // as a typed API. Deliberately free of any 'vscode' import so it can be smoke-tested
 // with plain Node against the real host binary.
 import * as cp from 'child_process';
@@ -9,6 +9,7 @@ import {
   ActiveDocumentDto,
   ApprovalNote,
   DebugBreakpointParams,
+  DebugCaptureTestParams,
   DebugEvaluateParams,
   DebugStepParams,
   BackendStatusResult,
@@ -41,7 +42,8 @@ import {
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
 export interface EditorDelegate {
-  approvalRequest(note: ApprovalNote): Promise<number>;
+  /** The token relays the host's `$/cancelRequest` (turn cancelled) — honour it: §27.5. */
+  approvalRequest(note: ApprovalNote, token?: CancellationToken): Promise<number>;
   activeDocument(): Promise<ActiveDocumentDto>;
   insertAtCursor(text: string): Promise<string | null>;
   replaceSelection(text: string): Promise<EditResultDto>;
@@ -64,6 +66,8 @@ export interface ChatEvents {
   onStreamReset?(): void;
   onStepPaused?(): void;
   onStepResumed?(): void;
+  /** A background `/task` reached a terminal state — rendered as a persistent bubble, like VS. */
+  onTaskFinished?(text: string): void;
 }
 
 export interface HostClientOptions {
@@ -205,7 +209,10 @@ export class HostClient {
     this.conn = conn;
 
     // ── Reverse requests (host → editor) ────────────────────────────────────
-    conn.onRequest('approval/request', (note: ApprovalNote) => this.delegate.approvalRequest(note));
+    // The cancellation token carries the host's $/cancelRequest: a cancelled agent turn must
+    // retire its approval card instead of leaving a ghost the user can still click (§27.5).
+    conn.onRequest('approval/request', (note: ApprovalNote, token: CancellationToken) =>
+      this.delegate.approvalRequest(note, token));
     conn.onRequest('editor/activeDocument', () => this.delegate.activeDocument());
     conn.onRequest('editor/insertAtCursor', (p: { text: string }) => this.delegate.insertAtCursor(p.text));
     conn.onRequest('editor/replaceSelection', (p: { text: string }) => this.delegate.replaceSelection(p.text));
@@ -229,6 +236,7 @@ export class HostClient {
       conn.onRequest('debug/state', () => debug.state());
       conn.onRequest('debug/evaluate', (p: DebugEvaluateParams) => debug.evaluate(p));
       conn.onRequest('debug/stop', () => debug.stop());
+      conn.onRequest('debug/captureTest', (p: DebugCaptureTestParams) => debug.captureTest(p));
     }
 
     // ── Streamed chat notifications ─────────────────────────────────────────
@@ -241,6 +249,9 @@ export class HostClient {
     conn.onNotification('chat/streamReset', () => this.events.onStreamReset?.());
     conn.onNotification('chat/stepPaused', () => this.events.onStepPaused?.());
     conn.onNotification('chat/stepResumed', () => this.events.onStepResumed?.());
+    // Dedicated channel: as a `chat/step` status line the notice was wiped by the next
+    // setBusy(false) — a task finishing while the user looked away left no trace (revue §3.6).
+    conn.onNotification('task/finished', (n: TextNote) => this.events.onTaskFinished?.(n.text));
 
     conn.onError((err) => this.options.log?.(`[rpc] error: ${String(err)}`));
     conn.listen();
@@ -318,9 +329,17 @@ export class HostClient {
   }
 
   /** Slash commands the host serves headlessly. `promptHistory` (most-recent-last)
-   * feeds /phistory; long commands are cancellable via chatCancel(). */
-  commandSlash(text: string, promptHistory?: string[]): Promise<SlashCommandResult> {
-    return this.connection().sendRequest<SlashCommandResult>('command/slash', { text, promptHistory });
+   * feeds /phistory; long commands are cancellable via chatCancel(). Flagged chat-busy like
+   * chat/send: /tdd, /bench and /arena are multi-minute inferences holding the GPU lease, and
+   * FIM used to queue behind them on every keystroke (pre-1.6.0 architecture review — the cost on
+   * instant slashes is a skipped FIM for a few milliseconds). */
+  async commandSlash(text: string, promptHistory?: string[]): Promise<SlashCommandResult> {
+    this.isChatBusy = true;
+    try {
+      return await this.connection().sendRequest<SlashCommandResult>('command/slash', { text, promptHistory });
+    } finally {
+      this.isChatBusy = false;
+    }
   }
 
   /** Declarative settings form (tabs → sections → fields) served from the Core. */

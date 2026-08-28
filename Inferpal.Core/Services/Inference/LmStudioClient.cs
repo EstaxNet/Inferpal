@@ -305,9 +305,10 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         var base_ = BaseV1;
         if (string.IsNullOrWhiteSpace(base_) || IsInCooldown()) return;
 
-        // Yield the shared GPU to an in-flight chat/agent request (cross-process signal): a delayed,
-        // now-stale ghost-text suggestion is worse than none.
-        if (ChatBusySignal.IsBusy()) return;
+        // Yield the shared GPU to an in-flight chat/agent request: a delayed, now-stale ghost-text
+        // suggestion is worse than none. FIM resumes once the chat turn ends. In-process lease
+        // first (exact, no I/O), cross-process marker second (other editors, one GPU).
+        if (GpuScheduler.ShouldFimYield()) return;
 
         var m    = string.IsNullOrEmpty(model) ? _config.DefaultModel : model;
         var spec = FimTemplate.Build(m, prefix, suffix);

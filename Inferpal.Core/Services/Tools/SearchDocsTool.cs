@@ -101,7 +101,7 @@ internal sealed class SearchDocsTool : ITool
             sb.AppendLine();
 
             var display = chunk.Content.Length > 900
-                ? chunk.Content[..900] + "\n…(truncated)"
+                ? SafeTruncate.Truncate(chunk.Content, 900) + "\n…(truncated)"
                 : chunk.Content;
             sb.AppendLine(display);
             sb.AppendLine();

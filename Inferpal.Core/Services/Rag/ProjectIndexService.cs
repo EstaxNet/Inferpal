@@ -13,8 +13,9 @@ namespace Inferpal.Services.Rag;
 ///   <item>Call <see cref="StartIndexing"/> with the solution root directory.</item>
 ///   <item>The service enumerates source files, chunks them, and requests Ollama embeddings.</item>
 ///   <item>Progress and results are available via <see cref="Status"/>, <see cref="ChunkCount"/>, <see cref="IsIndexing"/>.</item>
-///   <item>A <see cref="System.IO.FileSystemWatcher"/> watches the root for file changes and re-indexes
-///       modified files after a 5-second debounce.</item>
+///   <item>A <see cref="System.IO.FileSystemWatcher"/> — armed <b>before</b> the pass reads anything,
+///       so nothing changed mid-pass is lost — re-indexes modified files after a 5-second debounce
+///       (deferred while a pass runs; the pass drains the accumulated backlog after its final save).</item>
 /// </list>
 /// Thread-safety: all internal state is protected by <see cref="_chunkLock"/>.
 /// </remarks>
@@ -201,16 +202,16 @@ internal sealed class ProjectIndexService : IDisposable
 
         // ── Lexical side (BM25) ───────────────────────────────────────────
         // Catches exact identifiers / symbol & file names that weak local embeddings dilute. Tokens
-        // include the chunk's type and relative path so name-based queries score strongly.
+        // include the chunk's type and relative path so name-based queries score strongly. The
+        // tokens are cached per chunk (RagChunk.Bm25Tokens, invalidated per file by re-chunking) —
+        // tokenizing the whole corpus on every query made each shadow pre-warm during typing O(N).
         List<(int Idx, double Score)> lexical = [];
         if (!string.IsNullOrWhiteSpace(keywordFallback))
         {
             var queryTokens = CodeTokenizer.Tokenize(keywordFallback);
             if (queryTokens.Count > 0)
             {
-                var docs = allChunks
-                    .Select(c => CodeTokenizer.Tokenize($"{c.Content}\n{c.TypeName}\n{c.RelPath}"))
-                    .ToList<IReadOnlyList<string>>();
+                var docs = allChunks.Select(c => c.Bm25Tokens).ToList();
                 lexical = new Bm25Index(docs).Rank(queryTokens, pool);
             }
         }
@@ -291,6 +292,13 @@ internal sealed class ProjectIndexService : IDisposable
         try
         {
             var db = new RagDatabase(rootDir);
+
+            // ── Watch for file changes — armed BEFORE the pass reads anything ─
+            // The pass can run for minutes (embeddings); a file saved while it runs used to be
+            // invisible until the next boot (the watcher was only armed after the final save).
+            // Events raised during the pass accumulate in _pendingRebuild (OnDebounceElapsed
+            // defers while IsIndexing) and are drained after the final SaveAsync below.
+            SetupFileWatcher(rootDir);
 
             // ── Load existing index from disk ─────────────────────────────────
             var loaded = await db.LoadAsync(ct);
@@ -383,8 +391,19 @@ internal sealed class ProjectIndexService : IDisposable
             var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
             Status = $"RAG: ✅ {ChunkCount} chunks from {files.Count} files{embStatus}";
 
-            // ── Watch for file changes ────────────────────────────────────────
-            SetupFileWatcher(rootDir);
+            // ── Drain the backlog accumulated during the pass ─────────────────
+            // A file modified after the pass read it entered the authoritative replaceAll above
+            // with its OLD content; the watcher caught the change, so re-read those files now that
+            // nothing can overwrite the result. Changes arriving during this drain re-arm the
+            // debounce timer and are handled through the normal watcher path afterwards.
+            string[] backlog;
+            lock (_pendingRebuild)
+            {
+                backlog = [.. _pendingRebuild];
+                _pendingRebuild.Clear();
+            }
+            if (backlog.Length > 0)
+                await ReIndexFilesAsync(backlog, rootDir, ct);
         }
         catch (OperationCanceledException)
         {
@@ -444,19 +463,38 @@ internal sealed class ProjectIndexService : IDisposable
 
         lock (_pendingRebuild) _pendingRebuild.Add(path);
 
-        // Debounce — wait 5 s after the last change before re-indexing
+        ArmDebounce();
+    }
+
+    // Debounce delay — wait this long after the last change before re-indexing.
+    // Internal-settable so the watcher lifecycle tests don't wait 5 s per event.
+    internal int DebounceMs { get; set; } = 5_000;
+
+    /// <summary>(Re-)arms the debounce timer; no-op after dispose.</summary>
+    private void ArmDebounce()
+    {
         lock (_timerLock)
         {
             if (_disposed) return;
             _debounceTimer?.Dispose();
             _debounceTimer = new System.Threading.Timer(
                 OnDebounceElapsed, null,
-                dueTime: 5_000, period: System.Threading.Timeout.Infinite);
+                dueTime: DebounceMs, period: System.Threading.Timeout.Infinite);
         }
     }
 
     private void OnDebounceElapsed(object? _)
     {
+        // While an indexing pass runs, defer: ReIndexFilesAsync would race the pass's final
+        // replaceAll, which silently overwrites whatever the re-index just published. Keep the
+        // backlog and re-arm — the pass drains it right after its final SaveAsync; this retry
+        // only matters if the pass dies (cancelled, backend error) before reaching the drain.
+        if (IsIndexing)
+        {
+            ArmDebounce();
+            return;
+        }
+
         string[] pending;
         lock (_pendingRebuild)
         {
@@ -513,10 +551,32 @@ internal sealed class ProjectIndexService : IDisposable
                 var content    = await File.ReadAllTextAsync(file, ct);
                 var fileChunks = await ChunkFileAsync(file, content, rootDir, ct);
 
-                if (_config.RagEnabled && !_client.IsEmbeddingCircuitOpen)
+                if (_config.RagEnabled)
                 {
+                    // Reuse embeddings for unchanged chunks (same start line + content hash),
+                    // mirroring the initial pass: a save without content change — and the
+                    // post-pass backlog drain, which re-reads files the pass just embedded —
+                    // would otherwise re-embed the whole file for nothing.
+                    List<RagChunk>? previous = null;
+                    await _chunkLock.WaitAsync(ct);
+                    try
+                    {
+                        if (_chunksByFile.TryGetValue(file, out var current))
+                            previous = [.. current];
+                    }
+                    finally { _chunkLock.Release(); }
+
                     foreach (var chunk in fileChunks)
                     {
+                        var existing = previous?.FirstOrDefault(c =>
+                            c.StartLine == chunk.StartLine &&
+                            c.ContentHash == chunk.ContentHash);
+                        if (existing?.Embedding is { Length: > 0 })
+                        {
+                            chunk.Embedding = existing.Embedding;
+                            continue;
+                        }
+
                         if (_client.IsEmbeddingCircuitOpen) break;
                         // Yield the shared Ollama backend to any in-flight interactive request.
                         await GpuScheduler.WaitForChatIdleAsync(ct);

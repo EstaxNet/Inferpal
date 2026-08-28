@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -59,12 +59,17 @@ internal sealed class ProjectMapService
         var usingsByNs   = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);   // ns → used ns
         var refCounts    = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);      // file → ref count
 
+        // Pass-1 contents kept for pass 2: it used to re-read every file from disk a second time
+        // (pre-1.6.0 architecture review).
+        var contents = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var file in files)
         {
             ct.ThrowIfCancellationRequested();
             try
             {
                 var src = await File.ReadAllTextAsync(file, ct);
+                contents[file] = src;
                 var rel = Path.GetRelativePath(root, file);
                 var ns  = ExtractNamespace(src) ?? "global";
 
@@ -86,21 +91,19 @@ internal sealed class ProjectMapService
                 // Reference count (other files referencing this filename stem)
                 refCounts.TryAdd(Path.GetFileNameWithoutExtension(file), 0);
             }
+            // Cancellation must PROPAGATE: swallowed, every remaining read failed instantly and
+            // a partial map was returned as if complete (pre-1.6.0 architecture review).
+            catch (OperationCanceledException) { throw; }
             catch { /* skip unreadable files */ }
         }
 
-        // ── 2. Cross-file ref counts ──────────────────────────────────────────
-        foreach (var file in files)
+        // ── 2. Cross-file ref counts (over the pass-1 contents, no second disk walk) ──
+        foreach (var (_, src) in contents)
         {
-            try
-            {
-                var src = await File.ReadAllTextAsync(file, ct);
-                foreach (var stem in refCounts.Keys.ToList())
-                    if (src.Contains(stem, StringComparison.OrdinalIgnoreCase))
-                        refCounts[stem]++;
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { Diagnostics.Swallow("ProjectMapService.RefCount", ex); }
+            ct.ThrowIfCancellationRequested();
+            foreach (var stem in refCounts.Keys.ToList())
+                if (src.Contains(stem, StringComparison.OrdinalIgnoreCase))
+                    refCounts[stem]++;
         }
 
         // ── 3. Render ─────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Inferpal.Config;
@@ -19,8 +19,14 @@ internal readonly record struct DiagnosticsCommandResult(string Message, string?
 /// <param name="FrontEnd">Human-readable front-end label ("Visual Studio", "VS Code host").</param>
 /// <param name="BackendStatus">The connection badge text the front-end already displays, if any.</param>
 /// <param name="WorkspaceRoot">Workspace root, replaced by <c>&lt;workspace&gt;</c> in diagnostic details.</param>
+/// <param name="InProcHalf">
+/// State of the in-process half, as <c>InProcAliveSignal.DescribeForBundle()</c> renders it;
+/// <c>null</c> omits the line. Passed in by the caller rather than read here: this handler is pure
+/// by doctrine, and a test reading the real <c>%TEMP%</c> would depend on the machine running it.
+/// </param>
 internal sealed record DiagnosticsExportContext(
-    InferpalConfig Config, string FrontEnd, string? BackendStatus = null, string? WorkspaceRoot = null);
+    InferpalConfig Config, string FrontEnd, string? BackendStatus = null, string? WorkspaceRoot = null,
+    string? InProcHalf = null);
 
 /// <summary>
 /// Execution logic for <c>/diagnostics</c> — surfaces the in-memory <see cref="Diagnostics"/> ring so
@@ -46,7 +52,15 @@ internal static class DiagnosticsCommandHandler
 
     /// <summary>Handles a <c>/diagnostics</c> invocation.</summary>
     /// <param name="export">Required for the <c>export</c> sub-command; unused otherwise.</param>
-    public static DiagnosticsCommandResult Handle(string[] parts, DiagnosticsExportContext? export = null)
+    /// <param name="inProcLoaded">
+    /// <c>false</c> = <b>proof</b> that the in-process half is not loaded, so the warning is
+    /// shown; <c>true</c> = loaded; <c>null</c> = nothing to say (no in-process peer, i.e. VS Code
+    /// — or a caller that does not know). See <c>InProcAliveSignal.IsLoadedOrNull()</c>, which
+    /// produces exactly these three values. The warning therefore fires on proof of absence only,
+    /// never on absence of proof.
+    /// </param>
+    public static DiagnosticsCommandResult Handle(string[] parts, DiagnosticsExportContext? export = null,
+                                                  bool? inProcLoaded = null)
     {
         var sub = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
 
@@ -72,9 +86,19 @@ internal static class DiagnosticsCommandHandler
 
             default:
                 var entries = Diagnostics.Snapshot();
-                if (entries.Count == 0) return new(Strings.DiagnosticsEmpty);
 
-                var sb = new StringBuilder(Strings.DiagnosticsHeader).Append('\n');
+                // ⚠ First, and before the "no entries" short-circuit: the in-process failure
+                // produces NO diagnostic entry at all - it happens inside devenv, in an assembly
+                // this process never loaded. A user whose ghost text does nothing used to see
+                // "No diagnostics recorded." and walk away with nothing.
+                var inproc = inProcLoaded == false ? Strings.DiagnosticsInProcDead : null;
+                if (entries.Count == 0)
+                    return new(inproc is null ? Strings.DiagnosticsEmpty
+                                              : inproc + "\n\n" + Strings.DiagnosticsEmpty);
+
+                var sb = new StringBuilder();
+                if (inproc is not null) sb.Append(inproc).Append("\n\n");
+                sb.Append(Strings.DiagnosticsHeader).Append('\n');
                 foreach (var e in entries.Reverse().Take(MaxShown))   // most recent first
                     sb.Append("\n- `").Append(e.Timestamp.ToString("HH:mm:ss")).Append("` **")
                       .Append(e.Context).Append("** — ").Append(e.Detail);
@@ -99,6 +123,12 @@ internal static class DiagnosticsCommandHandler
         sb.Append("- **OS**: ").Append(RuntimeInformation.OSDescription)
           .Append(" (").Append(RuntimeInformation.OSArchitecture).Append(")\n");
         sb.Append("- **.NET**: ").Append(Environment.Version).Append('\n');
+        // The in-process half dies silently (the chat is out-of-process and keeps working), so a
+        // "ghost text does nothing" report used to arrive without the one piece of information
+        // that settles it. It is also the only observation of the in-process half the project ever
+        // gets from a machine other than the maintainer's - see InProcAliveSignal.
+        if (!string.IsNullOrEmpty(ctx.InProcHalf))
+            sb.Append("- **In-process half**: ").Append(ctx.InProcHalf).Append('\n');
         sb.Append("- **Provider**: ").Append(c.Provider)
           .Append(" — ").Append(RedactEndpoint(c.BaseUrl)).Append('\n');
         sb.Append("- **API key**: ").Append(string.IsNullOrEmpty(c.ApiKey) ? "not set" : "set (redacted)").Append('\n');

@@ -1,0 +1,120 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The in-process half, on .NET Framework out of necessity.
+       Measured: devenv.exe of VS 18 is a .NET Framework 4.7.2 process (devenv.exe.config,
+       <supportedRuntime sku=".NETFramework,Version=v4.7.2">), and its MEF discovery reflects over
+       every assembly declared as an asset. Out of the 211 MEF components of VS 18, Inferpal.dll
+       (net8.0-windows) was the ONLY one actually linked against .NET 8: the reference closure was
+       unresolvable on the Framework side (System.Runtime 8.0.0.0), hence PartDiscoveryException
+       x19 and zero parts loaded. No ExtensionType value, no asset and no install root changes
+       that.
+
+       This project therefore carries ALL of the in-process half (FIM ghost text, inline diff
+       preview, the /tdd debugger driver, chat auto-scroll) in net472, the only TFM devenv can
+       load. It does NOT reference Inferpal.Core (net8): what it shares with the Core it shares in
+       SOURCE (the <Compile Link> items below - signal bus, Diagnostics, debugger DTOs), and FIM
+       inference, which lives in the Core, reaches it through a sidecar over JSON-RPC
+       (FimSidecar.cs). The Core stays net8 and editor-agnostic.
+
+       WARNING: a single DLL ships in the VSIX. System.Text.Json and its whole closure are provided
+       by devenv (codeBase + bindingRedirect in devenv.exe.config: System.Text.Json 10.x,
+       Encodings.Web, Bcl.AsyncInterfaces, Memory, Buffers, Unsafe, Numerics.Vectors,
+       Tasks.Extensions). Hence ExcludeAssets=runtime: shipping our net472 copies would collide
+       with the net8 copies of Inferpal.dll, which live at the same root of the VSIX. -->
+  <PropertyGroup>
+    <!-- net472 is the SHIPPED TFM (the only one devenv can load). net8.0-windows exists only so
+         that Inferpal.Tests, which is net8, can compile against these types: a net8 project
+         cannot reference a net472 project. Nothing from that leg enters the VSIX:
+         Inferpal.csproj embeds the net472 output explicitly. -->
+    <TargetFrameworks>net472;net8.0-windows</TargetFrameworks>
+    <RootNamespace>Inferpal</RootNamespace>
+    <AssemblyName>Inferpal.InProc</AssemblyName>
+    <UseWindowsForms>false</UseWindowsForms>
+    <!-- UseWPF is not supported outside .NET Core: on the net472 leg the WPF assemblies are
+         referenced explicitly below (they are part of the installed Framework). -->
+    <UseWPF Condition="'$(TargetFramework)' != 'net472'">true</UseWPF>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <!-- NU1701: the VS SDK packages restore as .NETFramework, which is the nominal case here. -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+    <!-- The VSIX ships this DLL alone; nothing else must land in the output. -->
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1701</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Inferpal.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!-- Framework assemblies (provided by the machine) -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Net.Http" />
+    <!-- EnvDTE is driven through `dynamic` (VsDebugDriver, VsDebuggerTracker): the C# late
+         binder lives in Microsoft.CSharp, which is not referenced by default on net472. -->
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <!-- .NET Framework reference assemblies, so this project compiles on a machine that only has
+       the .NET SDK (a CI runner, a box without Build Tools) - the local targeting pack is used
+       when it exists. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Packages: compile-only, never copied (VS provides them at runtime). -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.14.40264" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Text.UI.Wpf" Version="17.14.249" PrivateAssets="all" ExcludeAssets="runtime" />
+    <!-- Same version as the Core: the signal DTOs are serialized on both sides. -->
+    <PackageReference Include="System.Text.Json" Version="9.0.0" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <!-- Sources shared with the Core, BY LINK.
+       These files are pure (BCL + System.Text.Json) and compiled into both assemblies. They never
+       meet: the Core lives in the out-of-process host (net8), this copy lives in devenv (net472).
+       Sharing the SOURCE rather than copying the logic is what keeps the two ends of the signal
+       bus from drifting apart - the same trade-off as *CommandHandler between the two
+       front-ends. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <Compile Include="..\Inferpal.Core\Services\Diagnostics.cs"                      Link="Shared\Diagnostics.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\SignalFile.cs"               Link="Shared\Signals\SignalFile.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\SignalScope.cs"              Link="Shared\Signals\SignalScope.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\ActiveSolutionSignal.cs"     Link="Shared\Signals\ActiveSolutionSignal.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\InProcAliveSignal.cs"        Link="Shared\Signals\InProcAliveSignal.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\BuildSignalFile.cs"          Link="Shared\Signals\BuildSignalFile.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\DebuggerStateSignal.cs"      Link="Shared\Signals\DebuggerStateSignal.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\DebugCommandSignal.cs"       Link="Shared\Signals\DebugCommandSignal.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\InlineDiffPreviewSignal.cs"  Link="Shared\Signals\InlineDiffPreviewSignal.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\LastKnownSolutionFile.cs"    Link="Shared\Signals\LastKnownSolutionFile.cs" />
+    <Compile Include="..\Inferpal.Core\Services\CodeActions\InlineDiffPlanner.cs"    Link="Shared\CodeActions\InlineDiffPlanner.cs" />
+    <Compile Include="..\Inferpal.Core\Services\CodeActions\FimContextBuilder.cs"    Link="Shared\CodeActions\FimContextBuilder.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Debugging\DebugOps.cs"               Link="Shared\Debugging\DebugOps.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Debugging\IDebugSession.cs"          Link="Shared\Debugging\IDebugSession.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Debugging\DebugStateFormatter.cs"    Link="Shared\Debugging\DebugStateFormatter.cs" />
+  </ItemGroup>
+
+  <!-- On the test leg (net8) the same types come from the REAL Core: recompiling them here would
+       create ambiguous duplicates for Inferpal.Tests, which references both assemblies. -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net472'">
+    <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
+  </ItemGroup>
+
+</Project>

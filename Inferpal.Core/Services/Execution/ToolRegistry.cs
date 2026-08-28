@@ -22,7 +22,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private readonly InferpalConfig         _config;
     private readonly IApprovalService          _approval;
     private readonly McpToolService            _mcp;
-    private readonly FileHistoryService        _fileHistory = new();
+    private readonly FileHistoryService        _fileHistory;
     private DiffInfo? _pendingDiff;
 
     // Kept so a sibling registry can be built with a different approval service — see
@@ -49,16 +49,21 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// </summary>
     public IDebugSession? Debug => _debug;
 
+    /// <summary>The approval pipeline this registry gates its tools with — exposed so §25's
+    /// `/tdd` capture asks consent through the same prompt as everything else.</summary>
+    public IApprovalService Approval => _approval;
+
     /// <param name="overlay">Open-document mirror for dirty-buffer reads;
     /// null when the editor feeds no overlay (VS in-proc today).</param>
     /// <param name="debug">Debugger surface of the host editor; null when this front-end has none,
     /// in which case the two debug tools are not registered at all — the model is never shown a
     /// tool that can only answer that it is unavailable.</param>
-    public ToolRegistry(IEditorSurface editor, IApprovalService approval, InferpalConfig config, ProjectIndexService indexService, IInferenceProvider client, ProjectMapService mapService, McpToolService mcp, DocsIndexService docsIndex, OpenDocumentOverlay? overlay = null, IDebugSession? debug = null)
+    public ToolRegistry(IEditorSurface editor, IApprovalService approval, InferpalConfig config, ProjectIndexService indexService, IInferenceProvider client, ProjectMapService mapService, McpToolService mcp, DocsIndexService docsIndex, OpenDocumentOverlay? overlay = null, IDebugSession? debug = null, FileHistoryService? fileHistory = null)
     {
-        _config   = config;
-        _approval = approval;
-        _mcp      = mcp;
+        _config      = config;
+        _approval    = approval;
+        _mcp         = mcp;
+        _fileHistory = fileHistory ?? new();
 
         _editor       = editor;
         _indexService = indexService;
@@ -90,7 +95,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new WebSearchTool(approval));
         Register(new GetSolutionInfoTool(editor));
         Register(new GetOpenEditorsTool(editor));
-        Register(new GetGitStatusTool(editor));
+        Register(new GetGitStatusTool(editor, () => indexService.RootDir));
         Register(new GetDebuggerStateTool());
         Register(new RunTestsTool());
         Register(new InsertAtCursorTool(editor));
@@ -138,9 +143,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// holds a reference to the real prompting service. That is the point — not an inconvenience.
     /// </para>
     /// <para>
-    /// ⚠ The sibling has its <b>own</b> <see cref="FileHistoryService"/>, which stays empty because
-    /// nothing it exposes ever writes. Snapshots and <c>/undo-run</c> coverage come later, when a
-    /// proposal is applied through <i>this</i> registry by the ordinary path.
+    /// The sibling <b>shares this registry's</b> <see cref="FileHistoryService"/>. It used to get a
+    /// fresh, runless one — true no-op while every sibling was proposal-mode (nothing wrote), but
+    /// since §25 routes <c>/tdd</c>'s REAL writes through a sibling, those snapshots landed in a
+    /// history nobody could see and every <c>/tdd</c> edit silently escaped <c>/undo-run</c>
+    /// (pre-1.6.0 architecture review, §1.5). Sharing is safe for proposal mode: a recorder that refuses every
+    /// write never reaches the snapshot path.
     /// </para>
     /// </remarks>
     /// <remarks>
@@ -150,7 +158,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// tools at all, rather than tools whose approval would be recorded as a proposal.
     /// </remarks>
     public ToolRegistry WithApprovalService(IApprovalService approval) =>
-        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null);
+        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null, fileHistory: _fileHistory);
 
     private IEnumerable<ITool> UserTools =>
         (_config.CustomTools ?? string.Empty)
@@ -168,10 +176,18 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             })
             .Where(t => t is not null)!;
 
+    /// <summary>The MCP tools rebound to <b>this</b> registry's approval pipeline. The shared
+    /// <see cref="McpToolService"/> built them with the original service; served raw, a sibling
+    /// registry (<see cref="WithApprovalService"/>) would gate every tool it exposes EXCEPT the
+    /// MCP ones — the decorator (e.g. §25's TestFileWriteGuard) silently not applying to the very
+    /// tools that can write files (pre-1.6.0 architecture review, §1.5).</summary>
+    private IEnumerable<ITool> McpTools =>
+        _mcp.Tools.Select(t => t is Mcp.McpTool m ? m.WithApproval(_approval) : t);
+
     public IReadOnlyList<ToolDefinition> Definitions =>
         _tools.Values
             .Concat(UserTools)
-            .Concat(_mcp.Tools)
+            .Concat(McpTools)
             .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
             .ToList();
 
@@ -179,7 +195,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     {
         if (!_tools.TryGetValue(name, out var tool))
             tool = UserTools.FirstOrDefault(t => t.Name == name)
-                ?? _mcp.Tools.FirstOrDefault(t => t.Name == name);
+                ?? McpTools.FirstOrDefault(t => t.Name == name);
 
         if (tool is null)
         {

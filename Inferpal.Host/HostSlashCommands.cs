@@ -42,8 +42,15 @@ internal sealed partial class HostServer
             // /test writes to a SEPARATE file, so there is nothing for the adapter's in-place
             // code-action path to do with it: it fell through to `Handled = false` and the literal
             // string "/test" reached the model, which improvised. Served here instead.
+            // Inside the turn slot like every other slash that infers: it used to run OUTSIDE it —
+            // a second inference in parallel with a chat turn on the same GPU, and chat/cancel
+            // could not stop it (pre-1.6.0 architecture review, §2.6).
             case SlashCodeAction { Kind: SlashCodeActionKind.Test }:
-                return await RunGenerateTestsAsync(s, ct);
+            {
+                var cts = AcquireTurn(ct);
+                try     { return await RunGenerateTestsAsync(s, cts.Token); }
+                finally { ReleaseTurn(cts); }
+            }
 
             // Other code actions: the adapter owns them (/fix /refactor /doc → codeAction/run,
             // /explain /review → active-document prompt).
@@ -92,7 +99,9 @@ internal sealed partial class HostServer
             return new BackgroundTaskQueue.TaskRunOutcome(
                 run.FinalResponse, recorder?.Proposals ?? []);
         },
-        onFinished: snapshot => Notify("chat/step", new { text = Strings.TaskFinishedNotice(snapshot.Id) }));
+        // Dedicated notification, not a chat/step status line: the adapter renders it as a
+        // persistent bubble (VS parity) instead of a status wiped by the next setBusy (revue §3.6).
+        onFinished: snapshot => Notify("task/finished", new { text = Strings.TaskFinishedNotice(snapshot.Id) }));
 
     /// <summary>Current content of a proposed file, or null when it is not there.</summary>
     private static string? ReadFileForProposal(string path)
@@ -261,9 +270,14 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Diagnostics:
                 {
+                    // On the VS Code side there is no in-process peer: both calls return "n/a"
+                    // and null, so nothing is shown. That is intended - staying quiet beats
+                    // reporting the state of the Visual Studio open next door (§22).
                     var result = DiagnosticsCommandHandler.Handle(parts, new DiagnosticsExportContext(
                         s.Config, "VS Code host",
-                        WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir));
+                        WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
+                        InProcHalf: InProcAliveSignal.DescribeForBundle()),
+                        InProcAliveSignal.IsLoadedOrNull());
                     return result.CopyToClipboard is { } bundle
                         ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("copyToClipboard", bundle)])
                         : new SlashCommandResult(true, result.Message);
@@ -319,7 +333,8 @@ internal sealed partial class HostServer
                         onStep:       st => Notify("chat/step", new { text = st }),
                         onToken:      null,
                         onFixResult:  null,
-                        cts.Token);
+                        cts.Token,
+                        s.TestCapture, s.Approval);
                     return new SlashCommandResult(true, result.Message);
                 }
 

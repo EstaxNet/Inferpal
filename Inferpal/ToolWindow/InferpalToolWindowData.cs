@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -25,7 +25,7 @@ namespace Inferpal.ToolWindow;
 [DataContract]
 internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
 {
-    #region État & champs
+    #region State & fields
 
     private readonly IInferenceProvider       _client;
     private readonly AgentOrchestrator        _orchestrator;
@@ -87,6 +87,10 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
 
     private List<ChatMessageDto>     _history = [];
     private CancellationTokenSource? _currentCts;
+    // Completed by the owning turn's (conditional) finalisation — the signal the code-action
+    // pending-prompt path awaits after cancelling a turn, so it never starts the next one while
+    // the previous is still unwinding (pre-1.6.0 architecture review, §2.1). Touched on the VM context only.
+    private TaskCompletionSource?    _turnDone;
     // Atomic send claim, touched only on the (FIFO, single-threaded) VM context. Guards the
     // startup window between a send being claimed and IsLoading taking over as the re-entrancy
     // guard — without it, a burst of Enter presses while the backend is slow to start

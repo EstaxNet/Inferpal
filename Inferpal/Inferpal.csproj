@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!-- ── Common properties ───────────────────────────────────────────────── -->
   <!-- Versioning, LangVersion, Nullable, ImplicitUsings, Deterministic and
@@ -20,6 +20,18 @@
     <!-- Enables the full VSSDK pipeline (GeneratePkgDef, CreateVsixContainer…) -->
     <VSSDKBuildToolsAutoSetup>true</VSSDKBuildToolsAutoSetup>
 
+    <!-- HYBRID extension (out-of-proc + in-proc). Measured: without this switch the
+         Extensibility SDK generates a manifest with NO <Assets> section and installs the
+         extension under Common7\IDE\VSExtensions\, a world where VS processes NEITHER the
+         pkgdef NOR the MEF catalog - so the in-process half (ghost text, inline edit,
+         the /tdd debugger driver) is never inventoried: zero occurrences of "Inferpal" in
+         ComponentModelCache\...Default.catalogs, against 41 for Docker.Compose, which does
+         declare a MefComponent asset. A MEFComponent key in the private registry hive does
+         not replace that asset (VS rebuilds _Config at startup and wipes it). With
+         VssdkCompatibleExtension it is source.extension.vsixmanifest that gets packaged
+         (VsPackage + MefComponent assets) and the install goes back into Extensions\. -->
+    <VssdkCompatibleExtension>true</VssdkCompatibleExtension>
+
     <!-- Copy NuGet DLLs to the output directory so the VSIX embeds them -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
@@ -33,6 +45,13 @@
     <!-- Deployment is handled by deploy-dev.ps1, not by the build -->
     <DeployExtension>false</DeployExtension>
   </PropertyGroup>
+
+  <!-- Resolves the |Inferpal;GetVsixVersion| token of source.extension.vsixmanifest: the VSIX
+       version therefore comes from Directory.Build.props (the single source in the repository)
+       instead of being copied by hand into the manifest, where it had drifted to 1.0.1.0 while
+       the product was at 1.5.2. The VSSDK only provides this target for classic VSIX projects;
+       in hybrid mode it has to be declared. -->
+  <Target Name="GetVsixVersion" Returns="$(AssemblyVersion)" />
 
   <!-- ── Debug ───────────────────────────────────────────────────────────── -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -73,6 +92,68 @@
     <!-- Editor-agnostic logic core (Markdig, Roslyn, SQLite and ProtectedData flow in
          transitively and are still copied into the VSIX via CopyLocalLockFileAssemblies). -->
     <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
+
+    <!-- In-proc (net472) and its inference sidecar (net8).
+         Two BUILD references, not compile references: ReferenceOutputAssembly=false because no
+         API of these projects is called from here - they are loaded by devenv and by the sidecar
+         itself, not by the out-of-process host. What matters is ordering: their outputs are
+         embedded in the VSIX by the <Content> items below, so they must be built first.
+         SkipGetTargetFrameworkProperties: without it MSBuild negotiates the TFM and refuses
+         net8.0-windows -> net472. -->
+    <ProjectReference Include="..\Inferpal.InProc\Inferpal.InProc.csproj"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Private="false" />
+    <ProjectReference Include="..\Inferpal.Fim\Inferpal.Fim.csproj"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Private="false" />
+  </ItemGroup>
+
+  <!-- ── Charge utile in-process du VSIX ────────────────────────────────────
+       Inferpal.InProc.dll is the assembly declared as a Microsoft.VisualStudio.MefComponent asset
+       (and named by the pkgdef): it is THAT one devenv inventories and loads. A single DLL -
+       Inferpal.Fim.* is the sidecar it starts for inference; its dependencies (Core, Markdig,
+       SQLite...) already sit at the root of the VSIX, brought in by this project. -->
+  <ItemGroup>
+    <Content Include="..\Inferpal.InProc\bin\$(Configuration)\net472\Inferpal.InProc.dll">
+      <Link>Inferpal.InProc.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Inferpal.Fim\bin\$(Configuration)\net8.0\Inferpal.Fim.exe">
+      <Link>Inferpal.Fim.exe</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Inferpal.Fim\bin\$(Configuration)\net8.0\Inferpal.Fim.dll">
+      <Link>Inferpal.Fim.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Inferpal.Fim\bin\$(Configuration)\net8.0\Inferpal.Fim.runtimeconfig.json">
+      <Link>Inferpal.Fim.runtimeconfig.json</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Inferpal.Fim\bin\$(Configuration)\net8.0\Inferpal.Fim.deps.json">
+      <Link>Inferpal.Fim.deps.json</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- Symbols of the in-process half: Debug only, like the rest of the VSIX. -->
+    <Content Include="..\Inferpal.InProc\bin\$(Configuration)\net472\Inferpal.InProc.pdb"
+             Condition="'$(Configuration)' == 'Debug'">
+      <Link>Inferpal.InProc.pdb</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Inferpal.Fim\bin\$(Configuration)\net8.0\Inferpal.Fim.pdb"
+             Condition="'$(Configuration)' == 'Debug'">
+      <Link>Inferpal.Fim.pdb</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -104,8 +185,13 @@
     <!-- The pkgdef is REQUIRED for VSIXInstaller to write the registry entry
          VisualStudio\Extensibility\Extensions\Inferpal... into the private registry.
          Without that entry, VisualStudioExtensibilityPackage does not discover the extension.
-         Note: VSSDK BuildTools rewrites ExtensionType to VSSDK+VisualStudio.Extensibility,
-         but our pkgdef has no Packages key → VSSDK attempts no in-memory load.
+         Note: VSSDK BuildTools rewrites ExtensionType to VSSDK+VisualStudio.Extensibility.
+         ⚠ The pkgdef DOES carry a Packages key (GhostTextPackage) + AutoLoadPackages +
+         MEFComponent — a previous version of this comment denied it. Whether those keys get
+         merged depends on the install path (deploy-dev writes them into the hive; VSIXInstaller
+         merges the pkgdef on release installs), which is why the build-event subscription is
+         funneled through BuildEventsBootstrap: either loader may run, only one handler may
+         exist (§27.4).
          VisX uses the Extensibility\Extensions entry to start the out-of-process host. -->
     <!-- string-resources.json must live in .vsextension/ (next to extension.json)
          for VS to resolve the %key% tokens in menus/commands. -->
@@ -205,6 +291,62 @@
        finds it first when resolving "Inferpal.Core.resources", the culture mismatch
        makes the bind fail and ALL languages fall back to neutral English. So remove
        every entry of that satellite whose target path has no culture subfolder. -->
+  <!-- Hosting of the Extensibility parts: out-of-process, by force.
+       The SDK requires RequiresInProcessHosting=true as soon as VssdkCompatibleExtension is true
+       (VSEXT0007), and VssdkCompatibleExtension is what makes our hybrid manifest get packaged -
+       hence the <Assets> section without which the in-process half is never inventoried.
+       The compiler will not let the pair be split, but its two halves do NOT talk about the same
+       assembly:
+         - the <Assets> make devenv load Inferpal.InProc.dll (net472) - that is intended;
+         - RequiresInProcessHosting writes "allowHostingInProcess": true for every service of
+           .vsextension\extension.json, that is, for Inferpal.dll (net8).
+       VS takes the second at its word. Measured, in the ActivityLog of the live hive:
+       ExtensionMetadataInProcServiceBroker tries to create ActiveDocumentTracker INSIDE devenv and
+       fails on "FileNotFoundException: System.Runtime, Version=8.0.0.0" - the same verdict as in
+       MEF, one floor up.
+
+       This target therefore sets the field back to false, which is exactly the shape Microsoft
+       ships for an extension of our form: AppModernizationForDotNet is net10.0, all its services
+       at allowHostingInProcess:false, and what must live inside devenv is delegated to a separate
+       net472 container (here: Inferpal.InProc.dll). The two hybrids of VS 18 (Copilot Build
+       Analyzer, Copilot testing) and the official in-process project template are net472 end to
+       end - that is the contract for everything devenv hosts.
+
+       WARNING: the target rewrites the INTERMEDIATE file: that is the one _AddExtensionJsonVsixItem
+       puts into the VSIX and _CopyGeneratedOutputsToOutputDirectory copies into bin\. Rewriting
+       the copy in bin\ would change nothing in the VSIX. It fails if the field disappeared from
+       the generated JSON: without that guard, a change in the generator would make the repair
+       silent. -->
+  <UsingTask TaskName="ForceOutOfProcessHosting" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <JsonPath ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var text = System.IO.File.ReadAllText(JsonPath);
+        if (text.IndexOf("allowHostingInProcess", System.StringComparison.Ordinal) < 0)
+        {
+            Log.LogError("extension.json no longer contains 'allowHostingInProcess': the SDK " +
+                         "generator changed shape. Without that field set to false, VS tries to " +
+                         "load Inferpal.dll (net8) into devenv (net472) and every part dies.");
+        }
+        else
+        {
+            var updated = text.Replace("\"allowHostingInProcess\": true",
+                                       "\"allowHostingInProcess\": false");
+            if (updated != text) System.IO.File.WriteAllText(JsonPath, updated);
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="ForceOutOfProcessHostingInExtensionJson"
+          AfterTargets="CoreCompile"
+          Condition="Exists('$(IntermediateOutputPath)extension.json')">
+    <ForceOutOfProcessHosting JsonPath="$(IntermediateOutputPath)extension.json" />
+  </Target>
+
   <Target Name="PruneFlattenedCoreSatelliteFromVsix"
           BeforeTargets="GenerateTemplatesManifest;GenerateFileManifest">
     <ItemGroup>

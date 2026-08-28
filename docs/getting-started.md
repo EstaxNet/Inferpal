@@ -1,4 +1,4 @@
-# Getting Started
+﻿# Getting Started
 
 This guide takes you from nothing to a working Inferpal chat in Visual Studio — the last
 sections cover the **VS Code extension** (at feature parity since 1.2.0).
@@ -7,7 +7,7 @@ sections cover the **VS Code extension** (at feature parity since 1.2.0).
 
 | Requirement | Details |
 |---|---|
-| Editor | Visual Studio 2022 (17.9+) **or** 2026 (18.x) — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon) |
+| Editor | Visual Studio 2026 (18.x) — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon) |
 | .NET SDK | .NET 8 (building from source only) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 

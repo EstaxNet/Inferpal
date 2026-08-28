@@ -28,6 +28,12 @@ internal sealed class HostSession : IDisposable
     public required LspSemanticProvider  Lsp          { get; init; }
     public required string               RootDir      { get; init; }
 
+    /// <summary>Approval pipeline — §25 asks it once per `/tdd` run before any debug capture.</summary>
+    public required IApprovalService     Approval     { get; init; }
+
+    /// <summary>§25 capture port; null when the adapter did not declare `debug/*` support.</summary>
+    public Services.Debugging.ITestDebugCapture? TestCapture { get; init; }
+
     /// <summary>Named-session persistence, same store (and files) as the VS extension.</summary>
     public ConversationStore Store { get; } = new();
 

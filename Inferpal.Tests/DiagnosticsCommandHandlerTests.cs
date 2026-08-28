@@ -80,6 +80,53 @@ public class DiagnosticsCommandHandlerTests : IDisposable
         new(config ?? new Inferpal.Config.InferpalConfig(), "Test front-end",
             BackendStatus: "connected", WorkspaceRoot: root);
 
+    /// <summary>
+    /// The in-process warning fires on <b>proof of absence</b> only.
+    /// </summary>
+    /// <remarks>
+    /// That distinction is the one that produced a run of false verdicts: "I have no proof" read
+    /// as "it is dead". Here <c>null</c> is the VS Code case (no in-process peer) and the case of a
+    /// caller that does not know - it must stay quiet, or every VS Code user would read that their
+    /// ghost text is broken.
+    /// </remarks>
+    [Theory]
+    [InlineData(null,  false)]
+    [InlineData(true,  false)]
+    [InlineData(false, true)]
+    public void List_WarnsAboutInProc_OnlyOnProofOfAbsence(bool? inProcLoaded, bool expectWarning)
+    {
+        var msg = DiagnosticsCommandHandler.Handle(Cmd(), null, inProcLoaded).Message;
+        Assert.Equal(expectWarning, msg.Contains(Strings.DiagnosticsInProcDead, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void List_InProcWarning_SurvivesTheEmptyShortcut()
+    {
+        // ⚠ The in-process failure produces NO diagnostic entry at all: it happens inside devenv,
+        // in an assembly this process never loaded. Without this case the warning would be
+        // short-circuited by "no entries" for exactly the people who need it.
+        Assert.Empty(Diagnostics.Snapshot());
+
+        var msg = DiagnosticsCommandHandler.Handle(Cmd(), null, inProcLoaded: false).Message;
+
+        Assert.Contains(Strings.DiagnosticsInProcDead, msg);
+        Assert.Contains(Strings.DiagnosticsEmpty, msg);
+    }
+
+    [Fact]
+    public void Export_ReportsTheInProcHalf_WhenTheCallerKnowsIt()
+    {
+        var ctx = Ctx() with { InProcHalf = "NOT LOADED (measured)" };
+
+        var bundle = DiagnosticsCommandHandler.Handle(Cmd("export"), ctx).CopyToClipboard!;
+
+        Assert.Contains("In-process half", bundle);
+        Assert.Contains("NOT LOADED (measured)", bundle);
+        // And the line disappears when the caller knows nothing, rather than showing a blank that
+        // would read as a measurement.
+        Assert.DoesNotContain("In-process half", DiagnosticsCommandHandler.Handle(Cmd("export"), Ctx()).CopyToClipboard!);
+    }
+
     [Fact]
     public void Export_CopiesExactlyWhatItShows()
     {

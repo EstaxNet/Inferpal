@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -109,7 +109,12 @@ internal partial class InferpalToolWindowData
 
     private async Task RegenerateAsync()
     {
-        if (_currentCts is not null) return;
+        // Full turn guard, not just _currentCts: the CTS is only wired AFTER the (possibly slow)
+        // context-building phase of SendCoreAsync, so a regenerate click in that window passed
+        // this check and truncated Messages/_history under the starting turn (pre-1.6.0 architecture review,
+        // §2.2 — the same hole SendAsync's atomic claim documents for the other button). Runs on
+        // the VM context (invoked via Post), so reading the claim here is safe.
+        if (_sendStarting || IsLoading || _currentCts is not null) return;
 
         // Find the last user message in the visible list (before the two anchors at the end)
         ChatMessageItem? lastUserItem = null;

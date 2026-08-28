@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -38,12 +38,35 @@ public class TddTests
 
     private static Task<TddCommandHandler.TddCommandResult> RunAsync(
         FakeInferenceProvider client, FakeToolRegistry tools, string[] parts,
-        Action<string, bool>? onTestReport = null, string? systemPrompt = null) =>
+        Action<string, bool>? onTestReport = null, string? systemPrompt = null,
+        Services.Debugging.ITestDebugCapture? capture = null, IApprovalService? approval = null,
+        Action<string>? onProgress = null) =>
         TddCommandHandler.HandleAsync(
             client, new InferpalConfig { DefaultModel = "big", AgentModel = "coder" },
             tools, systemPrompt, parts, projectRoot: @"C:\proj",
-            onProgress: null, onTestReport, onStep: null, onToken: null, onFixResult: null,
-            CancellationToken.None);
+            onProgress, onTestReport, onStep: null, onToken: null, onFixResult: null,
+            CancellationToken.None, capture, approval);
+
+    // ── §25 fakes: capture port + approval, both recording ─────────────────────────
+    private sealed class FakeCapture : Services.Debugging.ITestDebugCapture
+    {
+        public bool IsAvailable { get; set; } = true;
+        public Services.Debugging.DebugStopState? State { get; set; }
+        public List<string> Captured { get; } = [];
+        public Task<Services.Debugging.DebugStopState?> CaptureAsync(string fqn, string root, CancellationToken ct)
+        { Captured.Add(fqn); return Task.FromResult(State); }
+    }
+
+    private sealed class RecordingApproval(bool answer) : IApprovalService
+    {
+        public List<(string Tool, string? Subject, bool Forced)> Asked { get; } = [];
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct,
+            string? subject = null, DiffInfo? diff = null, bool forcePrompt = false)
+        { Asked.Add((toolName, subject, forcePrompt)); return Task.FromResult(answer); }
+    }
+
+    private const string RedFqn =
+        "✗ FAILED — Failed: 1, Passed: 4, Skipped: 0, Total: 5\n\nFailing tests:\n  ✗ My.Tests.Class.Method";
 
     [Fact]
     public async Task GreenFirstRound_StopsWithoutAgent()
@@ -141,5 +164,190 @@ public class TddTests
 
         Assert.Contains("the failing tests pass",
             TddCommandHandler.BuildFixPrompt(Green, null).Replace('\n', ' '));
+    }
+
+    // ── §25: debugger state at the failure point ────────────────────────────────────
+
+    private static Services.Debugging.DebugStopState SomeState() => new(
+        "exception", 1,
+        [new Services.Debugging.DebugFrame(1, "My.Tests.Class.Method", @"C:\proj\A.cs", 12)],
+        [new Services.Debugging.DebugVariable("line", "string", "\"REBOOT\"")],
+        "IndexOutOfRangeException");
+
+    [Fact]
+    public void BuildFixPrompt_InsertsTheDebuggerBlockBeforeTheRules()
+    {
+        // Measured placement (probe 2026-08-20): appended after the rules, the model narrated
+        // its diagnosis without ever writing — both prompt variants must end on the same rules.
+        var block  = "## Debugger paused\nStop reason: exception";
+        var prompt = TddCommandHandler.BuildFixPrompt(Red, null, block);
+
+        var blockAt = prompt.IndexOf("## Debugger paused", StringComparison.Ordinal);
+        var rulesAt = prompt.IndexOf("Rules:", StringComparison.Ordinal);
+        Assert.True(blockAt > 0 && rulesAt > blockAt, "the block must sit before the Rules section");
+        Assert.EndsWith("instead of guessing.", prompt.TrimEnd());
+    }
+
+    [Fact]
+    public void FirstFailingTest_ReadsTheFqn_AndIgnoresSummaryAndNonFqnLines()
+    {
+        Assert.Equal("My.Tests.Class.Method", TddCommandHandler.FirstFailingTest(RedFqn));
+        Assert.Null(TddCommandHandler.FirstFailingTest(Red));    // "MyTest" is not an FQN
+        Assert.Null(TddCommandHandler.FirstFailingTest(Green));
+    }
+
+    [Fact]
+    public async Task Capture_InjectsTheStateBlock_AndAsksApprovalOncePerRun()
+    {
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(Green);
+        var capture  = new FakeCapture { State = SomeState() };
+        var approval = new RecordingApproval(answer: true);
+
+        await RunAsync(client, tools, ["/tdd"], capture: capture, approval: approval);
+
+        Assert.Equal(2, capture.Captured.Count);                 // one capture per red round
+        Assert.All(capture.Captured, fqn => Assert.Equal("My.Tests.Class.Method", fqn));
+        var ask = Assert.Single(approval.Asked);                 // consent granularity = the run
+        Assert.Equal(("debug_test", "My.Tests.Class.Method", false), ask);
+        var prompt = client.AgentRuns[0].History[^1].Content;
+        Assert.Contains("## Debugger paused", prompt);
+        Assert.Contains("\"REBOOT\"", prompt);
+        Assert.True(prompt.IndexOf("## Debugger paused", StringComparison.Ordinal)
+                    < prompt.IndexOf("Rules:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task CaptureFailure_SaysSo_AndTheRoundRunsPlain()
+    {
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(Green);
+        var capture  = new FakeCapture { State = null };         // capture fails
+        var progress = new List<string>();
+
+        await RunAsync(client, tools, ["/tdd"], capture: capture, approval: new RecordingApproval(true),
+                       onProgress: progress.Add);
+
+        Assert.Single(capture.Captured);
+        Assert.Contains(Strings.TddDebugCaptureFailed, progress);   // no silent fallback
+        Assert.DoesNotContain("## Debugger paused", client.AgentRuns[0].History[^1].Content);
+    }
+
+    [Fact]
+    public async Task ApprovalDeclined_DisablesTheCaptureForTheRestOfTheRun()
+    {
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(Green);
+        var capture  = new FakeCapture { State = SomeState() };
+        var approval = new RecordingApproval(answer: false);
+
+        await RunAsync(client, tools, ["/tdd"], capture: capture, approval: approval);
+
+        Assert.Single(approval.Asked);                            // asked once, not per round
+        Assert.Empty(capture.Captured);                           // never captured
+        Assert.DoesNotContain("## Debugger paused", client.AgentRuns[0].History[^1].Content);
+    }
+
+    [Fact]
+    public async Task NoCapturePort_TheLoopIsUnchanged()
+    {
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(Green);
+        var progress = new List<string>();
+
+        await RunAsync(client, tools, ["/tdd"], onProgress: progress.Add);   // no port, no approval
+
+        Assert.DoesNotContain("Debugger", client.AgentRuns[0].History[^1].Content);
+        // An ABSENT port is not a broken port: on the VS Code side without the §21 `debug`
+        // capability, §25 does not exist, and announcing a missing capability there would be
+        // noise on every /tdd.
+        Assert.DoesNotContain(Strings.TddDebugCaptureUnavailable, progress);
+    }
+
+    [Fact]
+    public async Task CaptureUnavailable_SaysSoOnce_AndTheLoopRunsPlain()
+    {
+        // The measured defect, in one case. The in-process debugger driver had not started, so
+        // `IsAvailable` was false: /tdd ran its bare red loop WITHOUT a word, nobody saw that the
+        // §25 capture had never been offered, and the probe reading it scored that as a product
+        // failure - where there was only a missing capability.
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(Green);
+        var capture  = new FakeCapture { IsAvailable = false, State = SomeState() };
+        var approval = new RecordingApproval(true);
+        var progress = new List<string>();
+
+        await RunAsync(client, tools, ["/tdd"], capture: capture, approval: approval,
+                       onProgress: progress.Add);
+
+        // Said once - not per round: two red rounds are not two failures.
+        Assert.Single(progress, p => p == Strings.TddDebugCaptureUnavailable);
+        Assert.Empty(capture.Captured);      // nothing was captured...
+        Assert.Empty(approval.Asked);        // ...and nothing was asked for it
+        Assert.DoesNotContain("## Debugger paused", client.AgentRuns[0].History[^1].Content);
+    }
+
+    [Fact]
+    public async Task ApprovalDeclined_IsNotReportedAsAnOutage()
+    {
+        // A refusal is a user decision, which they already read on their card. Conflating it with
+        // the failure above would send people hunting a dead driver after every "no".
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(RedFqn);
+        tools.TestOutputs.Enqueue(Green);
+        var progress = new List<string>();
+
+        await RunAsync(client, tools, ["/tdd"], capture: new FakeCapture { State = SomeState() },
+                       approval: new RecordingApproval(answer: false), onProgress: progress.Add);
+
+        Assert.DoesNotContain(Strings.TddDebugCaptureUnavailable, progress);
+    }
+
+    // ── §25: test-file write guard ──────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(@"C:\proj\tests\CalculatorTests.cs", true)]
+    [InlineData(@"C:\proj\src\CalculatorTests.cs", true)]          // name alone suffices
+    [InlineData(@"C:\proj\test\helpers.py", true)]
+    [InlineData(@"C:\proj\src\__tests__\app.js", true)]
+    [InlineData(@"C:\proj\src\app.spec.ts", true)]
+    [InlineData(@"C:\proj\src\test_parser.py", true)]
+    [InlineData(@"C:\proj\Inferpal.Tests\FakeProvider.cs", true)]  // .NET "<Project>.Tests" folder — this repo's own convention (revue lot 4)
+    [InlineData(@"C:\proj\App.Test\Fixtures\data.json", true)]
+    [InlineData(@"C:\proj\src\Calculator.cs", false)]
+    [InlineData(@"C:\proj\src\Contest.cs", false)]                 // "test" inside a word is not a segment
+    [InlineData(@"C:\proj\attestation\Rules.cs", false)]
+    [InlineData("", false)]
+    public void TestFileWriteGuard_RecognisesTestTargets(string subject, bool expected) =>
+        Assert.Equal(expected, TestFileWriteGuard.TargetsTestFile(subject));
+
+    [Fact]
+    public async Task TestFileWriteGuard_ForcesThePromptOnTestFiles_AndOnlyThere()
+    {
+        var inner = new RecordingApproval(answer: true);
+        var guard = new TestFileWriteGuard(inner);
+
+        await guard.RequestApprovalAsync("apply_diff", "details", CancellationToken.None,
+                                         subject: @"C:\proj\tests\CalculatorTests.cs");
+        await guard.RequestApprovalAsync("apply_diff", "details", CancellationToken.None,
+                                         subject: @"C:\proj\src\Calculator.cs");
+
+        Assert.True(inner.Asked[0].Forced,  "a test-file write must reach the human whatever the rules say");
+        Assert.False(inner.Asked[1].Forced, "production writes keep the normal pipeline");
     }
 }

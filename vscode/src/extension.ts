@@ -1,4 +1,4 @@
-// Extension entry point: resolves the Inferpal.Host binary, spawns/supervises it,
+﻿// Extension entry point: resolves the Inferpal.Host binary, spawns/supervises it,
 // wires the editor bridge (reverse RPC + document sync) and registers the chat view.
 import * as fs from 'fs';
 import * as path from 'path';
@@ -35,7 +35,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     () => bridge?.editorDiagnostics() ?? Promise.resolve(null),
     log,
   );
-  bridge.setApprovalCard((message) => chatView.requestApproval(message));
+  bridge.setApprovalCard((message, token) => chatView.requestApproval(message, token));
   context.subscriptions.push(
     chatView,
     vscode.window.registerWebviewViewProvider(ChatViewProvider.viewId, chatView, {
@@ -122,7 +122,24 @@ export async function deactivate(): Promise<void> {
   host = undefined;
 }
 
-async function startHost(
+// Serializes startHost: the command `inferpal.restartHost` and onDidChangeWorkspaceFolders can
+// overlap, and two interleaved starts each saw `host === undefined` after the first await and
+// spawned two .NET processes — the loser orphaned with its MCP servers and shells, and its
+// onCrash later clobbered the winner (pre-1.6.0 architecture review, §2.8).
+let startChain: Promise<void> = Promise.resolve();
+
+function startHost(
+  context: vscode.ExtensionContext,
+  chatView: ChatViewProvider,
+  log: (line: string) => void,
+  interactive: boolean,
+): Promise<void> {
+  // .catch first: one failed start must not leave the chain rejected and every later start dead.
+  startChain = startChain.catch(() => undefined).then(() => startHostCore(context, chatView, log, interactive));
+  return startChain;
+}
+
+async function startHostCore(
   context: vscode.ExtensionContext,
   chatView: ChatViewProvider,
   log: (line: string) => void,

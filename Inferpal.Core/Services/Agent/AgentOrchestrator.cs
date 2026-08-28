@@ -141,7 +141,7 @@ internal sealed class AgentOrchestrator
     internal static string CapForContext(string result) =>
         result.Length <= MaxToolResultCharsInContext
             ? result
-            : result[..MaxToolResultCharsInContext] +
+            : SafeTruncate.Truncate(result, MaxToolResultCharsInContext) +
               $"\n\n[... truncated to {MaxToolResultCharsInContext} characters out of {result.Length} to stay within the context window]";
 
     // Short quote of the user's current request, embedded in the synthesis prompt so the model
@@ -159,11 +159,21 @@ internal sealed class AgentOrchestrator
         "[Older tool result elided to stay within the context window.]";
 
     // Rough BPE estimate (~4 chars/token), matching the project's chunk-size estimation.
+    // Tool-call arguments count too: a write_file/apply_diff turn carries the whole file in the
+    // assistant's tool_calls, not in Content — ignoring them meant a run writing several large
+    // files never crossed the compaction threshold and the backend silently truncated the head
+    // (system prompt + plan), the exact failure compaction exists to prevent (pre-1.6.0 architecture review,
+    // §2.10; same formula as OpenAiCompatibleClient.EstimateRequestTokens).
     internal static int EstimateTokens(IEnumerable<ChatMessageDto> messages)
     {
         var chars = 0;
         foreach (var m in messages)
+        {
             chars += m.Content?.Length ?? 0;
+            if (m.ToolCalls is { Count: > 0 } calls)
+                foreach (var c in calls)
+                    chars += c.Function.Name.Length + c.Function.Arguments.GetRawText().Length;
+        }
         return chars / 4;
     }
 
@@ -733,7 +743,12 @@ internal sealed class AgentOrchestrator
                     && actRetries < MaxActRetries)
                 {
                     actRetries++;
-                    messages.Remove(assistantMsg);
+                    // RemoveAt, NOT Remove(assistantMsg): ChatMessageDto is a record, so Remove
+                    // uses VALUE equality and strips the FIRST equal occurrence — after a plan
+                    // fallback also produced an empty assistant, a double stall corrupted the plan
+                    // trio instead of dropping this turn (pre-1.6.0 architecture review, §2.9). The empty turn
+                    // was appended just above; it is by construction the last element.
+                    messages.RemoveAt(messages.Count - 1);
                     onStreamReset?.Invoke();
                     continue;
                 }

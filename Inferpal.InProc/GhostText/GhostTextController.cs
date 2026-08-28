@@ -1,7 +1,6 @@
-using System.Windows.Input;
+﻿using System.Windows.Input;
 using System.Windows.Threading;
-using Inferpal.Config;
-using Inferpal.Services;
+using Inferpal.Services.CodeActions;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
@@ -53,11 +52,11 @@ internal sealed class GhostTextController
         // Hide immediately on every keystroke — fire-and-forget (VSTHRD110: _ = discards result).
         _ = _dispatcher.InvokeAsync(() => _adornment.Hide());
 
-        // Load config BEFORE acquiring the lock: InferpalConfig.Load() does JSON I/O
-        // and must not be called while holding _gate (avoids lock contention / potential deadlock).
-        var config   = InferpalConfig.Load();
-        var settings = config.InlineCompletionEnabled
-            ? FimContextBuilder.GetSettings(config.InlineCompletionMode)
+        // Read the settings BEFORE acquiring the lock: the read may touch the disk, and must not
+        // happen while holding _gate (avoids lock contention / potential deadlock).
+        var config   = InProcConfig.Current();
+        var settings = config.Enabled
+            ? FimContextBuilder.GetSettings(config.Mode)
             : null;
 
         // Single lock covers the cancel→dispose→create sequence atomically, which
@@ -97,9 +96,9 @@ internal sealed class GhostTextController
             token = _cts.Token;
         }
         // Cancel outside the lock to avoid running callbacks while holding it.
-        // CancelAsync() schedules callbacks asynchronously (fixes VSTHRD103).
+        // (net472 has no CancelAsync(); the registered callback is a single Send on a pipe.)
         if (prev is not null)
-            await prev.CancelAsync();
+            await Task.Run(() => prev.Cancel()).ConfigureAwait(false);
 
         try
         {
@@ -110,33 +109,33 @@ internal sealed class GhostTextController
             var (prefix, suffix, anchor, snapshot) = ctx.Value;
             _triggerSnapshot = snapshot;
 
-            var config   = InferpalConfig.Load();
-            if (!config.InlineCompletionEnabled) return;
-            var settings = FimContextBuilder.GetSettings(config.InlineCompletionMode);
-            var fimModel = string.IsNullOrEmpty(config.InlineCompletionModel) ? null : config.InlineCompletionModel;
-            // Honor the configured backend; StreamFimAsync is a no-op on providers without FIM support.
-            var client   = InferenceProviderFactory.Create(config);
-            if (!client.Capabilities.Fim) return;
+            var config = InProcConfig.Current();
+            if (!config.Enabled) return;
+            var settings = FimContextBuilder.GetSettings(config.Mode);
 
-            await client.StreamFimAsync(
+            // Inference lives in the Core (net8), out of reach from this net472 assembly: it is
+            // asked of the sidecar, which IS the Core. It returns the whole completion - streaming
+            // token by token brought nothing here, the adornment only shows a complete text before
+            // Tab can accept it anyway.
+            var completion = await FimSidecar.CompleteAsync(
                 prefix:      prefix,
                 suffix:      suffix,
                 maxTokens:   settings.MaxTokens,
                 temperature: settings.Temperature,
-                model:       fimModel,
-                onToken: chunk =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    // Fire-and-forget UI dispatch — result intentionally discarded (VSTHRD110: _ =).
-                    _ = _dispatcher.InvokeAsync(() =>
-                    {
-                        if (token.IsCancellationRequested) return;
-                        // Discard if the buffer changed since we triggered.
-                        if (!ReferenceEquals(_view.TextBuffer.CurrentSnapshot, snapshot)) return;
-                        _adornment.Append(chunk, anchor);
-                    });
-                },
-                ct: token);
+                model:       config.Model,
+                configStamp: config.Stamp,
+                ct:          token).ConfigureAwait(false);
+
+            if (completion is null || token.IsCancellationRequested) return;
+
+            // Fire-and-forget UI dispatch — result intentionally discarded (VSTHRD110: _ =).
+            _ = _dispatcher.InvokeAsync(() =>
+            {
+                if (token.IsCancellationRequested) return;
+                // Discard if the buffer changed since we triggered.
+                if (!ReferenceEquals(_view.TextBuffer.CurrentSnapshot, snapshot)) return;
+                _adornment.Append(completion, anchor);
+            });
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.Trigger", ex); }

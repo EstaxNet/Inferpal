@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- §23: dual-targeted. net8.0-windows is the full suite (VS assembly + WPF included);
@@ -34,18 +34,27 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Inferpal.Host\Inferpal.Host.csproj" />
+    <ProjectReference Include="..\Inferpal.Fim\Inferpal.Fim.csproj" />
     <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
   </ItemGroup>
 
   <!-- The VSIX assembly and the tests that exercise it exist only on the Windows TFM. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <ProjectReference Include="..\Inferpal\Inferpal.csproj" />
+    <!-- The in-process half. It SHIPS as net472 (devenv is a .NET Framework process); it
+         carries a net8.0-windows leg for this reference only, without which its types would
+         be out of reach of a net8 test suite. -->
+    <ProjectReference Include="..\Inferpal.InProc\Inferpal.InProc.csproj" />
+    <!-- Interop types for the §27.4 BuildEventsBootstrap test (the VSIX project's SDK refs are
+         PrivateAssets and do not flow through the ProjectReference). -->
+    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.14.40264" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net8.0-windows'">
     <Compile Remove="InlineEditResponseTests.cs" />
     <Compile Remove="TestFilePathResolverTests.cs" />
     <Compile Remove="VsThemeDetectorTests.cs" />
     <Compile Remove="ChatAutoScrollerTests.cs" />
+    <Compile Remove="BuildEventsBootstrapTests.cs" />
     <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 

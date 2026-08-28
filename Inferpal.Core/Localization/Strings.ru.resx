@@ -245,8 +245,8 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} тк  ·  сессия: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama не настроен. Откройте настройки для его указания.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Модель не вернула ответ. Настроенная модель может не поддерживать генерацию текста — попробуйте модель чата по умолчанию.</value></data>
-  <data name="MsgTimeout" xml:space="preserve"><value>Таймаут подключения — Ollama не ответил по адресу {0} в течение 30 минут.</value></data>
-  <data name="MsgUnreachable" xml:space="preserve"><value>Не удаётся подключиться к Ollama по адресу {0}. Проверьте URL в настройках.</value></data>
+  <data name="MsgTimeout" xml:space="preserve"><value>Таймаут подключения — бэкенд по адресу {0} перестал отвечать (таймаут бездействия).</value></data>
+  <data name="MsgUnreachable" xml:space="preserve"><value>Не удаётся подключиться к бэкенду по адресу {0}. Проверьте URL в настройках.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Сервер вывода по адресу {0} вернул ошибку:
 
 {1}</value></data>
@@ -254,15 +254,15 @@
 
 Детали сервера: {0}</value></data>
   <data name="MsgContextWontFit" xml:space="preserve"><value>Запрос (~{0} токенов) больше контекста, с которым загружена модель ({1} токенов), в режиме агента — одни только определения инструментов занимают несколько тысяч токенов. Увеличьте загруженную длину контекста (рекомендуется 16384 или больше в LM Studio) либо уменьшите количество включённых инструментов агента.</value></data>
-  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Не удаётся подключиться к Ollama по адресу {0}
+  <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Не удаётся подключиться к {1} по адресу {0}
 
 Шаги по устранению неполадок:
-  1. Запустите Ollama — откройте терминал и выполните:  ollama serve
+  1. Запустите {1} (для Ollama: откройте терминал и выполните  ollama serve)
   2. Проверьте URL в настройках (текущий: {0})
-  3. Если Ollama работает на другой машине, обновите URL в настройках
-  4. Убедитесь, что порт 11434 не заблокирован брандмауэром или антивирусом
+  3. Если {1} работает на другой машине, обновите URL в настройках
+  4. Убедитесь, что порт не заблокирован брандмауэром или антивирусом
 
-После запуска Ollama нажмите ↻ Повторить в заголовке.</value></data>
+После запуска {1} нажмите ↻ Повторить в заголовке.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Соединение с Ollama восстановлено — готово.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Проверить соединение с Ollama сейчас</value></data>
 
@@ -714,6 +714,7 @@ ollama serve
   <data name="ModelsTableVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="SlashHintDiagnostics" xml:space="preserve"><value>Показать последние диагностические записи — `clear`/`on`/`off`/`export`</value></data>
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Диагностика</value></data>
+  <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Внутрипроцессный компонент не загружен: подсказки ghost text, предпросмотр diff встроенного редактирования и драйвер отладчика /tdd недоступны. Чат работает (он вне процесса) — поэтому поломка незаметна.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Диагностических записей нет.</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Диагностика очищена.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Отчёт для поддержки скопирован в буфер обмена — вставьте его в issue на GitHub.</value></data>
@@ -767,6 +768,10 @@ ollama serve
   <data name="TddFixing" xml:space="preserve"><value>🔧 Исправление {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Тесты зелёные после {0} раунда(ов).</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Тесты всё ещё падают после {0} раунда(ов) — требуется ручное вмешательство.</value></data>
+  <data name="TddDebugCaptureApproval" xml:space="preserve"><value>Перезапустить упавший тест '{0}' под отладчиком, чтобы захватить его состояние в точке сбоя? (запрашивается один раз за запуск /tdd)</value></data>
+  <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Захват состояния отладчика в точке сбоя…</value></data>
+  <data name="TddDebugCaptureFailed" xml:space="preserve"><value>⚠ Не удалось захватить состояние отладчика — продолжаем без него.</value></data>
+  <data name="TddDebugCaptureUnavailable" xml:space="preserve"><value>⚠ Захват отладчика недоступен (внутрипроцессный драйвер не загружен) — обычный цикл.</value></data>
   <data name="LabelModelRouterAuto" xml:space="preserve"><value>Автомаршрутизация служебных задач (по /bench)</value></data>
   <data name="HintModelRouterAuto" xml:space="preserve"><value>Если служебная модель не задана, фоновые задачи используют модель, рекомендованную /bench для служебной роли — но только если она уже загружена в VRAM. Холодная модель никогда не загружается ради заголовка или сообщения коммита (обмен обошёлся бы дороже выгоды); вместо неё используется модель чата.</value></data>
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Рентген контекста — системный промпт ≈ {0} токенов</value></data>
@@ -850,6 +855,7 @@ ollama serve
   <data name="TaskQueueFull" xml:space="preserve"><value>Слишком много фоновых задач (максимум {0}). Дождитесь завершения одной или выполните `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Неизвестная задача `{0}`.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Задача `{0}` отменена.</value></data>
+  <data name="TaskAlreadyFinished" xml:space="preserve"><value>Задача `{0}` уже завершена — `/task {0}` покажет её отчёт.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>Забыто завершённых задач: {0}.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Фоновых задач нет. `/task [цель]` запускает задачу.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Фоновые задачи</value></data>

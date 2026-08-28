@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Inferpal.Services;
 using Xunit;
 
@@ -20,6 +20,48 @@ public class InlineToolCallParserTests
         Assert.Equal("https://github.com/continuedev/continue",
                      call.Function.Arguments.GetProperty("url").GetString());
         Assert.Equal(string.Empty, cleaned); // whole content consumed
+    }
+
+    [Fact]
+    public void BareJson_WithAnUnknownName_IsAnAnswer_NotAToolCall()
+    {
+        // Ask the model for "a JSON of a person" and it answers {"name":"Alice","age":30}:
+        // promoted to a call of the tool "Alice", the legitimate answer was DESTROYED
+        // (pre-1.6.0 architecture review, §3.2). With the registry gate, only real tool names promote.
+        var content = """{"name":"Alice","age":30}""";
+        var isKnown = (string n) => n is "read_file" or "write_file";
+
+        var (calls, cleaned) = InlineToolCallParser.TryParse(content, isKnown);
+
+        Assert.Null(calls);
+        Assert.Equal(content, cleaned);   // the answer survives untouched
+    }
+
+    [Fact]
+    public void BareJson_WithARealToolName_StillPromotes_UnderTheGate()
+    {
+        var content = """{"name":"read_file","arguments":{"path":"a.cs"}}""";
+        var isKnown = (string n) => n is "read_file" or "write_file";
+
+        var (calls, cleaned) = InlineToolCallParser.TryParse(content, isKnown);
+
+        var call = Assert.Single(calls!);
+        Assert.Equal("read_file", call.Function.Name);
+        Assert.Equal(string.Empty, cleaned);
+    }
+
+    [Fact]
+    public void ExplicitToolCallTag_StaysUngated_SoATypoStillReachesTheRegistryFeedback()
+    {
+        // An unknown name inside an explicit <tool_call> tag is an unambiguous call attempt:
+        // it must flow to the registry's "Unknown tool" feedback so the model can correct it.
+        var content = "<tool_call>{\"name\":\"reed_file\",\"arguments\":{}}</tool_call>";
+        var isKnown = (string n) => n == "read_file";
+
+        var (calls, _) = InlineToolCallParser.TryParse(content, isKnown);
+
+        var call = Assert.Single(calls!);
+        Assert.Equal("reed_file", call.Function.Name);
     }
 
     [Fact]

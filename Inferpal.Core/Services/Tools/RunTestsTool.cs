@@ -230,7 +230,7 @@ internal class RunTestsTool : ITool
             var line = rawLine.TrimEnd('\r').Trim();
 
             // Start of a failed test: "Failed SomeName [10 ms]"
-            if (Regex.IsMatch(line, @"^Failed\s+\S"))
+            if (Regex.IsMatch(line, @"^Failed\s+\S", RegexOptions.None, RegexBudget.Default))
             {
                 if (currentName is not null)
                     failures.Add((currentName, currentDetails));
@@ -355,7 +355,7 @@ internal class RunTestsTool : ITool
     {
         var sb = new StringBuilder();
 
-        var failing = Regex.Matches(raw, @"^\s*--- FAIL:\s+(\S+)", RegexOptions.Multiline)
+        var failing = Regex.Matches(raw, @"^\s*--- FAIL:\s+(\S+)", RegexOptions.Multiline, RegexBudget.Default)
             .Select(m => m.Groups[1].Value)
             .Distinct()
             .Take(30)
@@ -377,7 +377,7 @@ internal class RunTestsTool : ITool
         // Surface the diagnostic lines Go prints under each failure (file:line: message).
         var detail = raw.Split('\n')
             .Select(l => l.TrimEnd('\r'))
-            .Where(l => Regex.IsMatch(l, @"\.go:\d+:"))
+            .Where(l => Regex.IsMatch(l, @"\.go:\d+:", RegexOptions.None, RegexBudget.Default))
             .Select(l => l.Trim())
             .Distinct()
             .Take(20)
@@ -440,14 +440,16 @@ internal class RunTestsTool : ITool
                 return "dotnet";
         }
 
-        if (Directory.GetFiles(workDir, "*.sln",   SearchOption.AllDirectories).Any() ||
-            Directory.GetFiles(workDir, "*.csproj", SearchOption.AllDirectories).Any())
+        // WorkspaceScan: lazy (GetFiles materialized the whole tree before .Any()) and excluded
+        // dirs skipped — a vendored .sln under node_modules must not flip the runner to dotnet.
+        if (WorkspaceScan.EnumerateFiles(workDir, "*.sln").Any() ||
+            WorkspaceScan.EnumerateFiles(workDir, "*.csproj").Any())
             return "dotnet";
 
         if (File.Exists(Path.Combine(workDir, "pytest.ini"))     ||
             File.Exists(Path.Combine(workDir, "pyproject.toml")) ||
             File.Exists(Path.Combine(workDir, "conftest.py"))    ||
-            Directory.GetFiles(workDir, "conftest.py", SearchOption.AllDirectories).Any())
+            WorkspaceScan.EnumerateFiles(workDir, "conftest.py").Any())
             return "pytest";
 
         if (File.Exists(Path.Combine(workDir, "package.json")))
