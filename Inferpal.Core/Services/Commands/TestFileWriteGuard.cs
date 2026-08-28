@@ -32,7 +32,11 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
         if (string.IsNullOrWhiteSpace(subject)) return false;
         foreach (var token in subject.Split('\n', ';', ','))
         {
-            var path = token.Trim();
+            // Separators are normalized BEFORE anything reads a file name: on POSIX a backslash is
+            // an ordinary character, so Path.GetFileNameWithoutExtension of a Windows-style path
+            // returns the whole path and "test_parser.py" stops being recognised. The subject can
+            // carry either flavour on either platform - it comes from a model, and from MCP tools.
+            var path = token.Trim().Replace('\\', '/');
             if (path.Length == 0) continue;
             var name = Path.GetFileNameWithoutExtension(path);
             // Case-sensitive on purpose: "CalculatorTests" is the convention, "Contest" is a word.
@@ -43,7 +47,7 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
                 name.StartsWith("test_", StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            foreach (var segment in path.Replace('\\', '/').Split('/'))
+            foreach (var segment in path.Split('/'))
                 if (segment.Equals("test", StringComparison.OrdinalIgnoreCase) ||
                     segment.Equals("tests", StringComparison.OrdinalIgnoreCase) ||
                     segment.Equals("__tests__", StringComparison.OrdinalIgnoreCase) ||

@@ -20,9 +20,13 @@ public class TestDebugCaptureTests : IDisposable
         try { Directory.Delete(_root, recursive: true); } catch { }
     }
 
+    // The relative directory is given with '/' and split here: a verbatim Windows path is a
+    // single file name on POSIX, so the fixture used to create ONE directory whose whole name
+    // was the path, and the locator - which looks for a 'bin' segment - found nothing.
+    // Two of these cases were red on the ubuntu/macos CI legs, and a third was vacuously green.
     private string MakeDll(string relativeDir, string name)
     {
-        var dir = Path.Combine(_root, relativeDir);
+        var dir = Path.Combine([_root, .. relativeDir.Split('/')]);
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, name);
         File.WriteAllText(path, "not really a dll");
@@ -34,8 +38,8 @@ public class TestDebugCaptureTests : IDisposable
     [Fact]
     public void Locator_PicksTheLongestAssemblyNamePrefixOfTheFqn()
     {
-        MakeDll(@"src\bin\Debug\net8.0", "My.dll");
-        var tests = MakeDll(@"tests\bin\Debug\net8.0", "My.Tests.dll");
+        MakeDll("src/bin/Debug/net8.0", "My.dll");
+        var tests = MakeDll("tests/bin/Debug/net8.0", "My.Tests.dll");
 
         Assert.Equal(tests, TestAssemblyLocator.Locate(_root, "My.Tests.CalculatorTests.Adds"));
     }
@@ -43,8 +47,8 @@ public class TestDebugCaptureTests : IDisposable
     [Fact]
     public void Locator_IgnoresObjAndRefOutputs_AndAnswersNullWhenNothingMatches()
     {
-        MakeDll(@"tests\obj\Debug\net8.0", "My.Tests.dll");                 // obj → never
-        MakeDll(@"tests\bin\Debug\net8.0\ref", "My.Tests.dll");             // ref assembly → never
+        MakeDll("tests/obj/Debug/net8.0", "My.Tests.dll");                 // obj → never
+        MakeDll("tests/bin/Debug/net8.0/ref", "My.Tests.dll");             // ref assembly → never
 
         Assert.Null(TestAssemblyLocator.Locate(_root, "My.Tests.CalculatorTests.Adds"));
         Assert.Null(TestAssemblyLocator.Locate(_root, "Other.Namespace.Test"));
@@ -157,7 +161,7 @@ public class TestDebugCaptureTests : IDisposable
     [Fact]
     public async Task Base_LocatesTheAssembly_EnsuresTheRunner_AndDelegatesTheLaunch()
     {
-        var testDll = MakeDll(@"tests\bin\Debug\net8.0", "My.Tests.dll");
+        var testDll = MakeDll("tests/bin/Debug/net8.0", "My.Tests.dll");
         // A pre-existing file at the runner path short-circuits the build: the orchestration is
         // what this test measures, not the SDK.
         TestReproScaffold.BaseDir = () => Path.Combine(_root, "scaffold");
