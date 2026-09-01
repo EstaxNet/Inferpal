@@ -22,15 +22,14 @@
     <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
 
-  <!-- Reviewed NuGet audit suppressions (vulnerable path not reachable in this app) -->
-  <ItemGroup>
-    <!-- GHSA-2m69-gcr7-jv3q / CVE-2025-6965 — SQLite < 3.50.2, reachable only through
-         malicious SQL or an untrusted database file. SQLitePCLRaw ships no fixed bundle
-         yet (every version ≤ 2.1.11 is affected). Inferpal opens only its own local index
-         databases (RAG / @Docs), builds every query itself, and never enables SQLite
-         extension loading, so the vulnerable path is unreachable. Re-evaluate once a
-         patched SQLitePCLRaw.bundle_e_sqlite3 ships. -->
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
-  </ItemGroup>
+  <!-- No NuGet audit suppression is in force, and that is a measured state rather than an
+       omission. GHSA-2m69-gcr7-jv3q (SQLite < 3.50.2) was suppressed here while no fixed
+       SQLitePCLRaw bundle existed; the pin to SQLitePCLRaw.bundle_e_sqlite3 2.1.12 in
+       Inferpal.Core.csproj settled it, which is exactly the condition the suppression named for
+       its own removal. Verified on 2026-09-01 by removing it and re-running the audit: the six
+       projects report no vulnerable package either way.
+       ⚠ Why it is removed rather than left in place: a suppression that suppresses nothing is
+       not neutral. It blesses in advance the next dependency that reintroduces the same
+       advisory, and nothing would say so. -->
 
 </Project>

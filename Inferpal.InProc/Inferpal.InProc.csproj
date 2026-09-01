@@ -85,6 +85,16 @@
     <PackageReference Include="Microsoft.VisualStudio.Text.UI.Wpf" Version="17.14.249" PrivateAssets="all" ExcludeAssets="runtime" />
     <!-- Same version as the Core: the signal DTOs are serialized on both sides. -->
     <PackageReference Include="System.Text.Json" Version="9.0.0" PrivateAssets="all" ExcludeAssets="runtime" />
+    <!-- Security remediation.
+         MessagePack arrives transitively through Microsoft.VisualStudio.Shell.15.0, at 2.5.192.
+         Eleven advisories target it, two of them high (GHSA-hv8m-jj95-wg3x,
+         GHSA-vh6j-jc39-fggf): an out-of-bounds read in LZ4 decompression. Pin the fixed 2.5.301.
+         The SAME pin has been in Inferpal.csproj since the pre-1.6.0 review and was never given
+         to this project - the instance repaired, the class left alive. Adding a PackageReference
+         here should now ask whether Inferpal.csproj needs the same one, and the reverse.
+         PrivateAssets + ExcludeAssets=runtime like the rest of this block: nothing is copied,
+         one DLL ships, and devenv provides the closure at run time. -->
+    <PackageReference Include="MessagePack" Version="2.5.301" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <!-- Sources shared with the Core, BY LINK.
