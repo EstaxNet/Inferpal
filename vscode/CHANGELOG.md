@@ -5,9 +5,12 @@ extension share one engine and one version number.
 
 ## 1.6.3
 
-- Version alignment only, again — the two front-ends share one number. 1.6.2 shipped a fix for the
-  Visual Studio package that did not work; 1.6.3 is the one that does. Nothing in either release
-  touches the VS Code extension.
+- **A finished background task could be listed twice.** `/task` moved a task out of "running" and
+  into "finished" under two different locks; in between it was in both, so `/task list` returned it
+  twice and the queue counted it twice. One transition, one lock. This one is in the shared engine,
+  so it affects VS Code as well.
+- The other fix in 1.6.3 is in the Visual Studio package only (1.6.2 shipped a repair that did not
+  work). Nothing there touches this extension.
 
 ## 1.6.2
 

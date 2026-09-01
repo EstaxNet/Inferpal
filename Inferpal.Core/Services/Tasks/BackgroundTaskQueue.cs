@@ -327,6 +327,16 @@ internal sealed class BackgroundTaskQueue : IDisposable
         job.FinishedAt = _now();
         job.Result     = result;
         job.Error      = error;
+        // ⚠ Leaving "current" and entering "finished" is ONE transition, and it happens under
+        // ONE lock. It used to be two: this method appended to _finished, and the worker loop
+        // cleared _current afterwards in a lock of its own. Between the two the job was in both
+        // places at once, so List() returned it TWICE and Count counted it twice — for a window
+        // the caller cannot see or avoid. Caught by CI on 2026-09-01, on a run where the local
+        // machine had passed the same test twice: the collection held two identical snapshots of
+        // t1, both already Succeeded.
+        // ReferenceEquals, not an id comparison: a pending job cancelled before it ever started
+        // also finishes here, and it was never _current.
+        if (ReferenceEquals(_current, job)) _current = null;
         _finished.Add(job);
     }
 

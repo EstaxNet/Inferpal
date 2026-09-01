@@ -69,6 +69,45 @@ public class BackgroundTaskQueueTests
         }
     }
 
+    /// <summary>
+    /// A task that has just finished must never appear twice in <c>List()</c>.
+    /// </summary>
+    /// <remarks>
+    /// It used to. Leaving <c>_current</c> and entering <c>_finished</c> were two separate locks:
+    /// the finish path appended to <c>_finished</c>, and the worker loop cleared <c>_current</c>
+    /// afterwards. Between the two the job sat in both, so <c>List()</c> returned it twice and
+    /// <c>Count</c> counted it twice. Caught by CI on 2026-09-01 — on a tree the local machine had
+    /// just run green twice — as two identical snapshots of <c>t1</c>, both already Succeeded.
+    ///
+    /// ⚠ The window is microseconds wide, so this spins instead of polling: a <c>Task.Delay(10)</c>
+    /// steps straight over it, which is exactly why the defect survived every earlier run here and
+    /// only ever showed up on a busier machine.
+    /// </remarks>
+    [Fact]
+    public void AFinishedTask_IsNeverListedTwice()
+    {
+        for (var round = 1; round <= 120; round++)
+        {
+            using var queue = new BackgroundTaskQueue(
+                (_, _, _) => Task.FromResult(BackgroundTaskQueue.TaskRunOutcome.Of("done")));
+
+            var id = queue.Submit($"round {round}");
+            var deadline = DateTime.UtcNow + Timeout;
+
+            while (true)
+            {
+                var listed = queue.List();
+                var twice = listed.GroupBy(t => t.Id).FirstOrDefault(g => g.Count() > 1);
+                Assert.True(twice is null,
+                    $"round {round}: task {twice?.Key} listed {twice?.Count()} times " +
+                    "— it is in _current and in _finished at the same time.");
+
+                if (queue.Get(id!)?.IsFinished == true && listed.Count == 1) break;
+                if (DateTime.UtcNow > deadline) Assert.Fail($"round {round}: task never settled.");
+            }
+        }
+    }
+
     [Fact]
     public async Task Submit_RunsTheTask_AndReportsItsResult()
     {
