@@ -15,7 +15,7 @@
               Language="en-US"
               Publisher="EstaxNet" />
     <DisplayName>Inferpal for Visual Studio</DisplayName>
-    <Description xml:space="preserve">AI developer assistant for self-hosted LLMs — Ollama, LM Studio, or any OpenAI-compatible server, on your machine or your own remote host. Autonomous agentic loop with 28 built-in tools: read/write files, run builds and tests, semantic codebase search, inline ghost-text completions, query Git, browse the web — no mandatory cloud, no telemetry.</Description>
+    <Description xml:space="preserve">AI developer assistant for self-hosted LLMs — Ollama, LM Studio, any OpenAI-compatible server. Agentic loop, 28 built-in tools, and a real debugger on failing tests. 100% local, no telemetry.</Description>
     <MoreInfo>https://github.com/EstaxNet/Inferpal</MoreInfo>
     <!-- The license MUST be a .txt/.rtf file embedded in the VSIX (VSIX 2.0 schema), not a URL
          - a URL fails Marketplace validation. -->

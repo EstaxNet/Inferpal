@@ -3,6 +3,13 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.5
+
+- **`MessagePack` is pinned to the patched 2.5.301** wherever it was still resolving to a
+  vulnerable 2.5.192. The rest of this release is in the Visual Studio package: its dependency set
+  is back to what it was in 1.6.1 plus the SQLite engine, and its listing description now fits the
+  200 characters the Marketplace keeps.
+
 ## 1.6.4
 
 - Version alignment only — the two front-ends share one number. The change in 1.6.4 is in the
