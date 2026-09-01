@@ -18,14 +18,18 @@
   <img src="https://img.shields.io/badge/tests-1857%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026-5C2D91" alt="Visual Studio 2026">
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/visual-studio-marketplace/v/EstaxNet.inferpal-vs?label=VS%20Marketplace" alt="Visual Studio Marketplace"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/visual-studio-marketplace/v/EstaxNet.inferpal-vscode?label=VS%20Code%20Marketplace" alt="VS Code Marketplace"></a>
   <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
 </p>
 
 <p align="center">
-  <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><b>⬇ Download the latest release</b></a>
-  — <code>Inferpal-vs2026-*.vsix</code> for Visual Studio (double-click to install)
-  or <code>inferpal-vscode-&lt;platform&gt;-*.vsix</code> for VS Code — Windows x64, Linux x64 or Apple Silicon.
-  Visual Studio Marketplace listing coming soon.
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><b>Inferpal for Visual Studio</b></a> ·
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><b>Inferpal for VS Code</b></a>
+  <br>
+  or <a href="https://github.com/EstaxNet/Inferpal/releases/latest">download the latest release</a> —
+  <code>Inferpal-vs2026-*.vsix</code> for Visual Studio,
+  <code>inferpal-vscode-&lt;platform&gt;-*.vsix</code> for VS Code (Windows x64, Linux x64 or Apple Silicon).
 </p>
 
 <p align="center">
@@ -77,7 +81,7 @@ two editors.
 
 | Requirement | Details |
 |---|---|
-| Editor | Visual Studio 2026 (18.x) — Community / Professional / Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon) |
+| Editor | **Visual Studio 2026** — Community / Professional / Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon). ⚠ The Visual Studio listing shows 17.14 as its floor: since Visual Studio 2026 only the lower bound of an installation target is evaluated, and `18.0` is refused as experimental. The in-editor half (ghost text, inline-diff preview, `/tdd` debugger driver) still requires 2026. |
 | .NET SDK | .NET 8 (building from source only — the VS Code VSIX bundles its own runtime) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 
@@ -88,11 +92,15 @@ two editors.
 
 ## Quick Start
 
-1. Download the extension from **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)**:
-   - **Visual Studio**: double-click `Inferpal-vs2026-<version>.vsix`;
-   - **VS Code**: `code --install-extension inferpal-vscode-<platform>-<version>.vsix`
-     — pick `win32-x64`, `linux-x64` or `darwin-arm64` (or Extensions view → `…` →
-     *Install from VSIX…*);
+1. Install the extension:
+   - **Visual Studio**: search *Inferpal* in Extensions → Manage Extensions, or
+     [install it from the Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs);
+   - **VS Code**: search *Inferpal* in the Extensions view, or
+     [install it from the Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode);
+   - or from **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)**:
+     double-click `Inferpal-vs2026-<version>.vsix` (**close Visual Studio first** — the merge that
+     registers an extension gives up, silently, if any part of the configuration is in use), or
+     `code --install-extension inferpal-vscode-<platform>-<version>.vsix`;
    - or build from source: `dotnet build Inferpal/Inferpal.csproj` — see [Development](docs/development.md).
 2. Start a model server:
 

@@ -7,7 +7,7 @@ sections cover the **VS Code extension** (at feature parity since 1.2.0).
 
 | Requirement | Details |
 |---|---|
-| Editor | Visual Studio 2026 (18.x) — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon) |
+| Editor | **Visual Studio 2026** — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon). ⚠ The Visual Studio listing shows 17.14 as its floor because the Marketplace no longer accepts a 2026-only installation target; the in-editor half still needs 2026. |
 | .NET SDK | .NET 8 (building from source only) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 
@@ -44,9 +44,17 @@ The backend does not have to run on the machine hosting Visual Studio — see
 
 ## 3. Build and install the extension
 
-The quickest path is the prebuilt VSIX from
-**[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)** —
-double-click `Inferpal-vs2026-<version>.vsix`. To build from source:
+The quickest path is the **[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs)**
+listing, *Inferpal for Visual Studio* — or the prebuilt VSIX from
+**[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)**, by double-clicking
+`Inferpal-vs2026-<version>.vsix`.
+
+> [!IMPORTANT]
+> Close Visual Studio before installing a VSIX. The merge that registers an extension rewrites the
+> whole configuration at once and gives up if any part of it is in use, so installing with the IDE
+> open can leave nothing registered — silently.
+
+To build from source:
 
 ```powershell
 # Debug (includes PDB in the VSIX, for Attach-to-Process debugging)

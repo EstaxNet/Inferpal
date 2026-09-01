@@ -6,7 +6,14 @@ C# (.NET 8). The full technical reference lives in **[docs/development.md](docs/
 ## Getting set up
 
 - **.NET 8 SDK**
-- **Visual Studio 2022 (17.9+) or 2026 (18.x)** with the extension-development workload
+- **Visual Studio 2026** with the extension-development workload — 2022 is not supported:
+  since 1.6.0 the VSIX is a hybrid extension whose in-process half is inventoried only by
+  Visual Studio 2026.
+  ⚠ Since 1.6.4 the manifest can no longer *declare* that restriction: the Marketplace refuses
+  `18.0` as an installation-target lower bound, and since Visual Studio 2026 only the lower bound
+  is evaluated at all. The listing therefore shows **17.14** as its floor. The requirement is real
+  all the same — it now rests on the `<Prerequisite>` alone, and that this actually refuses a 2022
+  install has **not been measured**.
 - A local model server (Ollama / LM Studio / OpenAI-compatible) for manual testing
 
 ```powershell

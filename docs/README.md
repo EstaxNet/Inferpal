@@ -57,7 +57,7 @@ flowchart LR
 
 | | |
 |---|---|
-| Visual Studio | 2026 (18.x) — Community / Professional / Enterprise |
+| Visual Studio | **2026** — Community / Professional / Enterprise. The listing declares 17.14 as its floor (a Marketplace constraint, not a supported configuration). |
 | VS Code | feature parity since 1.2.0 — VSIX for **Windows x64, Linux x64 and Apple Silicon** since 1.5.0, each with a bundled self-contained backend (`Inferpal.Host`) |
 | Runtime | .NET 8 (`net8.0-windows`; core engine is plain `net8.0`) |
 | Extension model | VS: hybrid VSIX — `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x out-of-process, plus `Inferpal.InProc` (**net472**) for everything `devenv.exe` hosts and its `Inferpal.Fim` sidecar · VS Code: TypeScript + JSON-RPC host |
