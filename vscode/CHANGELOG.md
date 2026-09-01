@@ -3,6 +3,11 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.4
+
+- Version alignment only — the two front-ends share one number. The change in 1.6.4 is in the
+  Visual Studio package manifest, which the Marketplace refused to accept.
+
 ## 1.6.3
 
 - **A finished background task could be listed twice.** `/task` moved a task out of "running" and

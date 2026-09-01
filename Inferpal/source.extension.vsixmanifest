@@ -28,9 +28,19 @@
     <Tags>AI, LLM, Ollama, LM Studio, Assistant, Code, Local, Agentic, Autocomplete, RAG</Tags>
   </Metadata>
 
-  <!-- VS 2026 (18.x) ONLY since the move to hybrid hosting: loading a .NET 8 extension inside
-       devenv is an 18.x capability (DotnetTargetVersions). The 17.x targets were removed -
-       leaving them would have promised an install that could not load. -->
+  <!-- The Marketplace REFUSES 18.0 as a lower bound, measured on the first submission:
+       "This API version is experimental, and not allowed in the Marketplace at this time.
+       Please change your installation target to use the latest stable API version 17.14."
+       And since Visual Studio 2026 the UPPER bound is no longer evaluated at all: only the
+       lower bound decides compatibility (aka.ms/vs2026extensioncompat). The consequence is
+       worth stating plainly: "Visual Studio 2026 only" can no longer be expressed in this
+       field, by anyone. The restriction to 18.x, made when hybrid hosting arrived, was right
+       on the substance - the in-process half is a .NET 8 component and that is a 2026
+       capability - it simply has no declarative support left.
+       What still carries the requirement is the <Prerequisite> on the core editor below,
+       kept at [18.0,). NOT VERIFIED: no Visual Studio 2022 was available to confirm that it
+       actually refuses the install. Until that is measured it is an intention, not a
+       guarantee, and the listing shows the extension as available from 17.14. -->
   <!-- ExtensionType: "VSSDK+VisualStudio.Extensibility" (hybrid), NOT
        "VisualStudio.Extensibility" alone. That value is what tells the extension manager the VSIX
        ALSO carries VSSDK components (the assets below); with the out-of-process value alone, the
@@ -39,13 +49,13 @@
        assets, installed under Common7\IDE\Extensions\ - whereas pure Extensibility extensions
        land under VSExtensions\, where the in-process half does not load. -->
   <Installation ExtensionType="VSSDK+VisualStudio.Extensibility">
-    <InstallationTarget Id="Microsoft.VisualStudio.Community"    Version="[18.0, 19.0)">
+    <InstallationTarget Id="Microsoft.VisualStudio.Community"    Version="[17.14,)">
       <ProductArchitecture>amd64</ProductArchitecture>
     </InstallationTarget>
-    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[18.0, 19.0)">
+    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[17.14,)">
       <ProductArchitecture>amd64</ProductArchitecture>
     </InstallationTarget>
-    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise"   Version="[18.0, 19.0)">
+    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise"   Version="[17.14,)">
       <ProductArchitecture>amd64</ProductArchitecture>
     </InstallationTarget>
     <DotnetTargetVersions>net8.0-windows</DotnetTargetVersions>
