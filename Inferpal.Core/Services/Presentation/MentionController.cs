@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Inferpal.Localization;
@@ -40,14 +40,14 @@ internal static class MentionController
 {
     /// <summary>Trailing bare token: <c>@</c> followed by word chars/dots at the end of the prompt.</summary>
     internal static readonly Regex MentionRegex =
-        new(@"@([\w.]*)$", RegexOptions.Compiled);
+        new(@"@([\w.]*)$", RegexOptions.Compiled, RegexBudget.Default);
 
     // A query-based category is "committed" once a space follows its @token
     // (e.g. "@file Foo", "@folder Serv", "@code auth logic"). Only file/code/folder drill down;
     // the instant providers (clipboard/tree/diff/problems) attach straight from the category menu.
     internal static readonly Regex MentionQueryRegex =
         new(@"@(?<cat>file|code|folder)[ ](?<q>[^\n@]*)$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     internal static readonly MentionCategory[] Categories =
     [

@@ -53,11 +53,18 @@ internal static partial class McpOAuthMetadata
         if (string.IsNullOrEmpty(authorize) || string.IsNullOrEmpty(token))
             throw new FormatException("Authorization Server Metadata is missing authorization_endpoint or token_endpoint.");
 
+        // Checked here, at the parse, rather than at each use: this record is the only thing the
+        // flow carries forward, so validating it once means no later reader has to remember.
+        RequireWebEndpoint(authorize, "authorization_endpoint");
+        RequireWebEndpoint(token,     "token_endpoint");
+        var registration = ReadString(root, "registration_endpoint");
+        if (!string.IsNullOrEmpty(registration)) RequireWebEndpoint(registration, "registration_endpoint");
+
         return new AuthServerMetadata(
             ReadString(root, "issuer"),
             authorize!,
             token!,
-            ReadString(root, "registration_endpoint"),
+            registration,
             ReadStringArray(root, "scopes_supported"),
             ReadStringArray(root, "code_challenge_methods_supported"));
     }
@@ -95,6 +102,53 @@ internal static partial class McpOAuthMetadata
         var s = $"{uri.Scheme.ToLowerInvariant()}://{uri.Host.ToLowerInvariant()}";
         return uri.IsDefaultPort ? s : $"{s}:{uri.Port}";
     }
+
+    /// <summary>
+    /// Validates a URL that came out of <b>remote</b> discovery before anything is done with it, and
+    /// returns it parsed. HTTPS anywhere, HTTP only on loopback; everything else is refused.
+    /// </summary>
+    /// <param name="url">The candidate, from a metadata document or a <c>WWW-Authenticate</c> header.</param>
+    /// <param name="what">Field name, for the message the user will read.</param>
+    /// <exception cref="InvalidOperationException">The URL is not a web endpoint we may use.</exception>
+    /// <remarks>
+    /// <para>
+    /// <b>Every string here is chosen by the far end.</b> The authorization-server URL comes from the
+    /// MCP server's own Protected Resource Metadata, the endpoints from a document fetched at that
+    /// URL, and the resource-metadata URL itself from a <c>WWW-Authenticate</c> response header. They
+    /// were used unchecked, and two of the uses are not "just" a bad request:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><c>authorization_endpoint</c> is handed to the browser opener, which shells out with
+    ///         <c>UseShellExecute = true</c> — on Windows that runs whatever the scheme is registered
+    ///         to, so a <c>file:</c> or custom-scheme value turns "authorize this MCP server" into
+    ///         "launch this program".</item>
+    ///   <item><c>token_endpoint</c> receives the authorization code and the client secret. Over
+    ///         plain <c>http</c> to an arbitrary host, that is the credential itself, in the clear,
+    ///         to a party of the server's choosing.</item>
+    /// </list>
+    /// <para>
+    /// Loopback <c>http</c> stays allowed because that is how local MCP servers are actually run, and
+    /// it is the one case where plaintext costs nothing.
+    /// </para>
+    /// </remarks>
+    public static Uri RequireWebEndpoint(string? url, string what)
+    {
+        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            throw new InvalidOperationException($"The authorization server's {what} is not an absolute URL: '{url}'.");
+
+        if (uri.Scheme == Uri.UriSchemeHttps) return uri;
+
+        if (uri.Scheme == Uri.UriSchemeHttp && IsLoopback(uri)) return uri;
+
+        throw new InvalidOperationException(
+            $"Refusing the authorization server's {what}: '{url}'. " +
+            "Only https, or http on loopback, may be used — this value comes from the remote server.");
+    }
+
+    /// <summary>Loopback by literal address or by the reserved name, without a DNS lookup.</summary>
+    private static bool IsLoopback(Uri uri) =>
+        uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+        || (System.Net.IPAddress.TryParse(uri.Host.Trim('[', ']'), out var ip) && System.Net.IPAddress.IsLoopback(ip));
 
     private static string? ReadString(JsonElement obj, string name) =>
         obj.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;

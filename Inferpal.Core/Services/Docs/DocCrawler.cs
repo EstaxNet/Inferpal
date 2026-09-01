@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using Inferpal.Services.Tools;
@@ -31,13 +31,18 @@ internal sealed class DocCrawler
 
     private static readonly HttpClient _http = CreateClient();
 
+    // Both patterns parse attacker-controlled HTML, so both carry a match budget - the tactic
+    // FetchUrlTool already applied to the exact same input class. _titleRegex is the dangerous
+    // one: a page that opens <title> and never closes it makes the lazy group scan to end of
+    // document, once per starting position. Without the budget the failure mode is the worst
+    // available - the crawl never returns and the turn hangs with no error.
     private static readonly Regex _hrefRegex = new(
         "href\\s*=\\s*[\"']([^\"'#]+)[\"']",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     private static readonly Regex _titleRegex = new(
         @"<title[^>]*>([\s\S]*?)</title>",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     // File extensions that are not crawlable documentation pages.
     private static readonly HashSet<string> _skipExtensions =
@@ -54,7 +59,15 @@ internal sealed class DocCrawler
         // public documentation URL bounce the crawler onto 127.0.0.1 or 169.254.169.254 without
         // ever passing the SSRF guard again — the exact hole FetchUrlTool closes by hand.
         var handler = new HttpClientHandler { AllowAutoRedirect = false };
-        var client  = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        var client  = new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(30),
+            // Same ceiling as FetchUrlTool, and for the same reason: what comes back is a page
+            // nobody here controls. GetAsync buffers the whole body before returning, so without
+            // a cap one oversized (or hostile) page is read entirely into the process that hosts
+            // the chat - and @Docs crawls up to MaxPages of them, following links off-site.
+            MaxResponseContentBufferSize = 8 * 1024 * 1024,
+        };
         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
         client.DefaultRequestHeaders.TryAddWithoutValidation("Accept",
@@ -166,7 +179,17 @@ internal sealed class DocCrawler
     private static IEnumerable<(Uri uri, string normalized)> ExtractLinks(
         string html, Uri pageUrl, string host, string pathPrefix)
     {
-        foreach (Match m in _hrefRegex.Matches(html))
+        // A budget that fires must cost this page's links, never the crawl: MatchCollection is
+        // lazy, so the exception surfaces here, mid-enumeration, and is materialised away first.
+        List<Match> matches;
+        try { matches = _hrefRegex.Matches(html).ToList(); }
+        catch (RegexMatchTimeoutException ex)
+        {
+            Diagnostics.Swallow("DocCrawler.ExtractLinks", ex);
+            yield break;
+        }
+
+        foreach (Match m in matches)
         {
             var raw = m.Groups[1].Value.Trim();
             if (raw.Length == 0 ||
@@ -204,12 +227,19 @@ internal sealed class DocCrawler
 
     private static string ExtractTitle(string html, Uri url)
     {
-        var m = _titleRegex.Match(html);
-        if (m.Success)
+        // Worst case the page is filed under its URL — a title is a nicety, never worth a hang.
+        try
         {
-            var title = WebUtility.HtmlDecode(Regex.Replace(m.Groups[1].Value, @"\s+", " ")).Trim();
-            if (title.Length > 0) return title.Length > 200 ? title[..200] : title;
+            var m = _titleRegex.Match(html);
+            if (m.Success)
+            {
+                var collapsed = Regex.Replace(m.Groups[1].Value, @"\s+", " ", RegexOptions.None,
+                                              RegexBudget.Default);
+                var title = WebUtility.HtmlDecode(collapsed).Trim();
+                if (title.Length > 0) return title.Length > 200 ? title[..200] : title;
+            }
         }
+        catch (RegexMatchTimeoutException ex) { Diagnostics.Swallow("DocCrawler.ExtractTitle", ex); }
         return url.ToString();
     }
 }

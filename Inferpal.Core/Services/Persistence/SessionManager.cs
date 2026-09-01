@@ -103,7 +103,7 @@ internal static class SessionManager
         var title = new string(raw.Trim()
             .Select(c => char.IsLetterOrDigit(c) || c == ' ' ? c : ' ')
             .ToArray()).Trim();
-        title = Regex.Replace(title, @"\s+", "_");
+        title = Regex.Replace(title, @"\s+", "_", RegexOptions.None, RegexBudget.Default);
         return string.IsNullOrWhiteSpace(title) ? fallback : title;
     }
 

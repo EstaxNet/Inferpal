@@ -1,4 +1,4 @@
-# Architecture
+﻿# Architecture
 
 This page describes how Inferpal is put together. For build/test/contribution mechanics see
 **[Development](development.md)**.
@@ -13,8 +13,9 @@ pipeline.
 
 Two adapters consume it:
 
-- **Visual Studio** (`Inferpal/`) — the primary target, described in the rest of this page
-  (`VsEditorSurface`, `VsApprovalService`, Remote UI tool window, in-process MEF ghost text).
+- **Visual Studio** (`Inferpal/` + `Inferpal.InProc/` + `Inferpal.Fim/`) — the primary target,
+  described in the rest of this page (`VsEditorSurface`, `VsApprovalService`, Remote UI tool
+  window, and everything that must live inside `devenv.exe`).
 - **VS Code** (`vscode/` + `Inferpal.Host/`, at feature parity since 1.2.0) — `Inferpal.Host` is a console
   process hosting the Core behind **header-framed JSON-RPC on stdio** (`initialize`,
   `chat/send` with streamed notifications, `models/list`, `fim/complete`, `textDocument/did*`
@@ -43,23 +44,40 @@ flowchart LR
     end
     subgraph dev["Remote UI rendering — devenv.exe"]
         wpf[WPF DataTemplate rendering<br/>DataTrigger on MarkdownBlock.Type]
-        ghost[GhostText MEF<br/>adornments → IWpfTextView]
+        ghost[Inferpal.InProc net472<br/>MEF adornments, package, /tdd driver]
     end
     host -- "Remote UI: [DataMember] primitives only" --> dev
 ```
 
-### In-process ghost text
+### The in-process half — `Inferpal.InProc` (net472) and its `Inferpal.Fim` sidecar
 
-Inline completions need `IWpfTextView`, which is not available to out-of-process extensions.
-The `GhostText` components are therefore **in-process**: MEF parts
-(`IWpfTextViewCreationListener`, `AdornmentLayerDefinition`) plus a minimal `AsyncPackage`
-that forces Visual Studio to load `Inferpal.dll` inside `devenv.exe`. They ship in the **same
-VSIX and assembly** as the rest of the extension and run in `devenv.exe`. Visual Studio only
-inventories them through the `MefComponent` / `VsPackage` assets of the packaged manifest, and
-only when that manifest declares the hybrid installation type
-`ExtensionType="VSSDK+VisualStudio.Extensibility"` — with the out-of-process type alone the VSIX
-lands in `Common7\IDE\VSExtensions\` and nobody processes its assets. Miss either half and the
-class loads nowhere and nothing says so — the chat keeps working.
+Some features cannot be served from outside the editor: inline completions need
+`IWpfTextView`, the inline-diff preview needs an adornment layer, and the `/tdd` debugger
+capture needs EnvDTE. Everything in that category lives in **`Inferpal.InProc`** — MEF parts
+(`IWpfTextViewCreationListener`, `AdornmentLayerDefinition`), a minimal `AsyncPackage`, the
+solution/debugger/build trackers and the chat auto-scroller.
+
+**It is a separate assembly, and it targets `net472`.** `devenv.exe` is a .NET Framework 4.7.2
+process, and its MEF discovery reflects over the assembly declared as an asset: a .NET 8
+assembly has a reference closure the Framework cannot resolve, so every one of our types is
+rejected — silently. Since 1.6.0 the shipped in-process assembly is therefore
+`Inferpal.InProc.dll`, never `Inferpal.dll`.
+
+It does **not** reference `Inferpal.Core`. What it shares with the Core it shares **in source**
+(`<Compile Link>`: the signal bus, `Diagnostics`, the debugger DTOs, `RetryGate`), so the two
+ends of a file channel cannot drift apart. Inference lives in the Core, so completions are
+served by **`Inferpal.Fim`**, a small net8 console the in-process half starts on demand and
+talks to over the same header-framed JSON-RPC grammar as `Inferpal.Host`. The sidecar *is* the
+Core — no backend logic is duplicated. It is recycled when `config.json` changes, killed when
+the package is disposed, and dies with `devenv` anyway (its stdin closes).
+
+Visual Studio only inventories the in-process half through the `MefComponent` / `VsPackage`
+assets of the packaged manifest, and only when that manifest declares the hybrid installation
+type `ExtensionType="VSSDK+VisualStudio.Extensibility"` — with the out-of-process type alone the
+VSIX lands in `Common7\IDE\VSExtensions\` and nobody processes its assets. Miss any of these
+and the components load nowhere and nothing says so: the chat is out-of-process and keeps
+working. That silence is why the in-process half publishes a heartbeat per load door
+(`InProcAliveSignal`) and why `/diagnostics` reports which one is missing.
 
 ## Agentic loop
 

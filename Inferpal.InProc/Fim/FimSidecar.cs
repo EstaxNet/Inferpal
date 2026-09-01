@@ -49,7 +49,13 @@ internal static class FimSidecar
     private static Stream?  _stdin;
     private static long     _configStamp = -1;
     private static int      _nextId;
-    private static bool     _disabled;   // start failed: do not retry on every keystroke
+    private static long     _seenStamp = -1;
+
+    // Two natures of failure, not one: a missing executable is permanent, a failed start is not.
+    // A single boolean conflated them and nothing ever cleared it, so an antivirus holding the exe
+    // for a second killed ghost text for the whole life of that devenv - with its only trace in
+    // the in-process diagnostics ring, which `/diagnostics` does not read.
+    private static readonly RetryGate _startGate = new RetryGate(TimeSpan.FromSeconds(30));
 
     private static readonly ConcurrentDictionary<int, TaskCompletionSource<string?>> _pending =
         new ConcurrentDictionary<int, TaskCompletionSource<string?>>();
@@ -115,11 +121,21 @@ internal static class FimSidecar
 
     private static bool EnsureStarted(long configStamp)
     {
+        // A new configuration is new evidence: a start that failed under the previous one says
+        // nothing about this one. ⚠ The comparison is against the last SEEN stamp, not against
+        // `_configStamp` - which is only written after a SUCCESSFUL start, and would therefore
+        // differ on every call while we keep failing: the cooldown would never hold.
+        if (configStamp != _seenStamp)
+        {
+            _seenStamp = configStamp;
+            _startGate.ClearCooldown();
+        }
+
         // The configuration moved (backend, model, key): the sidecar read the old one at startup.
         if (_process != null && configStamp != _configStamp) RecycleLocked();
         if (_process != null && !_process.HasExited) return true;
         if (_process != null) RecycleLocked();            // died on its own: start again
-        if (_disabled) return false;
+        if (!_startGate.MayTry()) return false;
 
         var dir = DirectoryOverride
                   ?? Path.GetDirectoryName(typeof(FimSidecar).Assembly.Location)
@@ -130,7 +146,7 @@ internal static class FimSidecar
             // No exception: an incomplete VSIX must not flood the log on every keystroke. Say it
             // once, and ghost text simply stays quiet.
             Diagnostics.Record("FimSidecar.Start", "not found: " + exe);
-            _disabled = true;
+            _startGate.LatchPermanently();   // an incomplete VSIX does not repair itself
             return false;
         }
 
@@ -147,7 +163,7 @@ internal static class FimSidecar
                 WorkingDirectory       = dir,
             };
             var proc = Process.Start(psi);
-            if (proc is null) { _disabled = true; return false; }
+            if (proc is null) { _startGate.Backoff(); return false; }
 
             _process     = proc;
             _stdin       = proc.StandardInput.BaseStream;
@@ -168,7 +184,7 @@ internal static class FimSidecar
         catch (Exception ex)
         {
             Diagnostics.Swallow("FimSidecar.Start", ex);
-            _disabled = true;
+            _startGate.Backoff();            // antivirus, memory pressure... : this can pass
             return false;
         }
     }

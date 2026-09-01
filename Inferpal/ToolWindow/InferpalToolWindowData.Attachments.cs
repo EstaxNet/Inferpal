@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -152,15 +152,14 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.AttachError(m))));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachError(m))));
             return;
         }
 
         if (view is null)
         {
             await RunOnVMContextAsync(() =>
-                Messages.Insert(Messages.Count - 2,
-                    ChatMessageItem.AssistantMsg(Strings.AttachNoActiveFile)));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachNoActiveFile)));
             return;
         }
 
@@ -175,7 +174,7 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.AttachReadError(m))));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachReadError(m))));
         }
     }
 
@@ -191,15 +190,14 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.AttachSelectionError(m))));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachSelectionError(m))));
             return;
         }
 
         if (view is null)
         {
             await RunOnVMContextAsync(() =>
-                Messages.Insert(Messages.Count - 2,
-                    ChatMessageItem.AssistantMsg(Strings.AttachNoActiveFile)));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachNoActiveFile)));
             return;
         }
 
@@ -224,7 +222,7 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.AttachSelectionReadError(m))));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachSelectionReadError(m))));
         }
     }
 
@@ -239,8 +237,7 @@ internal partial class InferpalToolWindowData
             if (new FileInfo(filePath).Length > 512_000)
             {
                 await RunOnVMContextAsync(() =>
-                    Messages.Insert(Messages.Count - 2,
-                        ChatMessageItem.AssistantMsg(Strings.AttachFileTooLarge)));
+                    InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachFileTooLarge)));
                 return;
             }
 
@@ -252,8 +249,7 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                Messages.Insert(Messages.Count - 2,
-                    ChatMessageItem.AssistantMsg(Strings.BrowseError(m))));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.BrowseError(m))));
         }
     }
 
@@ -340,8 +336,7 @@ internal partial class InferpalToolWindowData
         switch (PinnedFilesPolicy.Decide(current, path))
         {
             case PinDecision.CapReached:
-                Messages.Insert(Messages.Count - 2,
-                    ChatMessageItem.AssistantMsg(Strings.PinLimitReached(PinnedFilesPolicy.MaxPinned)));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.PinLimitReached(PinnedFilesPolicy.MaxPinned)));
                 return;
             case PinDecision.Duplicate:
             case PinDecision.Invalid:

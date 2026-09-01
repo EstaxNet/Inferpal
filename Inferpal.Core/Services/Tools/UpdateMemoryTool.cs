@@ -1,17 +1,48 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Text.Json;
 using Inferpal.Localization;
+using Inferpal.Services.Execution;
 
 namespace Inferpal.Services.Tools;
 
+/// <summary>
+/// Writes the agent's persistent memory (<c>.inferpal/memory.md</c>).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Approved, confined and snapshotted since the post-1.6.1 review</b>, and of the three that
+/// matters most is the approval — because of where this file goes. <c>memory.md</c> is read by
+/// <c>SystemPromptBuilder</c> and injected into the system prompt of <b>every future session</b>.
+/// A tool that writes it unattended is a tool that lets the model edit its own future instructions,
+/// permanently, with no human in the loop: the persistence half of a prompt-injection chain, where
+/// the content can come from a web page or a file the model was asked to read.
+/// </para>
+/// <para>
+/// This is not hypothetical here. The §25 validation runs found a hallucinated <c>memory.md</c>
+/// left inside the guinea-pig repository, and the run after it started with that memory loaded —
+/// the harness was fixed to clean it, which is the right fix for a harness and no fix at all for
+/// the product.
+/// </para>
+/// <para>
+/// <c>mode: "clear"</c> and <c>"replace"</c> also destroy what the user accumulated, which is
+/// what the snapshot is for.
+/// </para>
+/// </remarks>
 internal class UpdateMemoryTool : ITool
 {
     private readonly IEditorSurface _editor;
+    private readonly IApprovalService _approval;
+    private readonly FileHistoryService _history;
+    private readonly Func<string> _getWorkspaceRoot;
 
-    public UpdateMemoryTool(IEditorSurface editor)
+    public UpdateMemoryTool(IEditorSurface editor, IApprovalService approval,
+                            FileHistoryService history, Func<string> getWorkspaceRoot)
     {
-        _editor = editor;
+        _editor           = editor;
+        _approval         = approval;
+        _history          = history;
+        _getWorkspaceRoot = getWorkspaceRoot;
     }
 
     public string Name => "update_memory";
@@ -54,6 +85,21 @@ internal class UpdateMemoryTool : ITool
 
         var ollamaDir = Path.Combine(projectRoot, ".inferpal");
         var memPath   = Path.Combine(ollamaDir, "memory.md");
+
+        // The project root is found by walking up from the CWD and from open editor paths, so it
+        // is a guess — one that can land outside the workspace. Every other writing tool is
+        // confined; this one was not.
+        PathSanitizer.AssertUnderRoot(memPath, _getWorkspaceRoot());
+
+        // Asked on the path, like every other file tool, so a rule or a force-prompt written for
+        // a path covers this write too.
+        var details = string.Join(Environment.NewLine, $"{memPath} ({mode})", string.Empty, content);
+        if (!await _approval.RequestApprovalAsync(Name, details, ct, subject: memPath))
+            return Strings.RunCancelled;
+
+        // Before the write, so /undo-run can put back a memory that "clear" or "replace" removed.
+        if (File.Exists(memPath)) await _history.SnapshotAsync(memPath, ct);
+
         Directory.CreateDirectory(ollamaDir);
 
         string newContent;

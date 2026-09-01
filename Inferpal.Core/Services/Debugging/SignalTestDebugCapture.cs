@@ -1,4 +1,4 @@
-using Inferpal.Services.Signals;
+﻿using Inferpal.Services.Signals;
 
 namespace Inferpal.Services.Debugging;
 
@@ -36,8 +36,10 @@ internal sealed class SignalTestDebugCapture : TestDebugCaptureBase
             var id = DebugCommandSignal.WriteRequest(request);
             if (id is null) return null;
 
-            var response = await DebugCommandSignal.WaitForResponseAsync(id, CaptureTimeout, ct);
-            if (response is null) DebugCommandSignal.DiscardRequest();
+            // The channel withdraws the request on every answerless path, cancellation included:
+            // pressing Stop mid-capture used to leave it on disk, and a debug session opened by
+            // itself seconds later on a run the user had abandoned.
+            var response = await DebugCommandSignal.WaitForAnswerAsync(id, CaptureTimeout, ct);
             return response is { Ok: true } ? response.State : null;
         }
         finally

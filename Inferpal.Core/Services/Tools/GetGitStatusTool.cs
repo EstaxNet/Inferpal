@@ -50,7 +50,7 @@ internal class GetGitStatusTool : ITool
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var startPath    = args.TryGetProperty("path",         out var p) ? p.GetString() : null;
-        var includeDiff  = args.TryGetProperty("include_diff", out var d) && d.GetBoolean();
+        var includeDiff  = args.Bool("include_diff", false);
 
         // Same confinement contract as every other path-taking tool: this was the one tool that
         // took the model's raw path and would read the git status of any repository on the

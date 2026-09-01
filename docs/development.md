@@ -125,11 +125,16 @@ Inferpal.Core/
                      Presentation, Prompting, Shell
 Inferpal/
 ├── Commands/        VS menu commands + editor context-menu code actions
-├── GhostText/       In-process MEF: inline completions, auto-scroll, VS event trackers
 ├── Localization/    string-resources.json (%key% tokens for VS commands)
 ├── Services/
 │   └── VsIntegration/  VsContextHolder, VsEditorSurface, VsApprovalService…
 └── ToolWindow/      RemoteUI view models, content, settings
+Inferpal.InProc/     Everything devenv.exe hosts, in net472 (see architecture.md):
+├── GhostText/       MEF inline completions, inline-diff preview, /tdd debugger driver,
+│                    solution/debugger/build trackers, chat auto-scroll
+├── Fim/             Client of the inference sidecar + the three settings it reads itself
+└── Compat.cs        Language support types the net472 BCL does not provide
+Inferpal.Fim/        net8 inference sidecar the in-process half starts on demand (JSON-RPC/stdio)
 Inferpal.Host/       Console host exposing Inferpal.Core over JSON-RPC/stdio (VS Code backend)
 vscode/              VS Code extension (TypeScript): webview chat, FIM, editor bridge
 Inferpal.Tests/      xUnit test project

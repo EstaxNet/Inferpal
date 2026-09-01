@@ -95,6 +95,7 @@
        front-ends. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <Compile Include="..\Inferpal.Core\Services\Diagnostics.cs"                      Link="Shared\Diagnostics.cs" />
+    <Compile Include="..\Inferpal.Core\Services\RetryGate.cs"                        Link="Shared\RetryGate.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\SignalFile.cs"               Link="Shared\Signals\SignalFile.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\SignalScope.cs"              Link="Shared\Signals\SignalScope.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\ActiveSolutionSignal.cs"     Link="Shared\Signals\ActiveSolutionSignal.cs" />

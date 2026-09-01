@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -83,7 +83,10 @@ internal sealed record DocSite(
     /// <summary>Converts a label into a short, unique-enough kebab-case id.</summary>
     private static string Slugify(string text)
     {
-        var slug = Regex.Replace(text.ToLowerInvariant(), @"[^a-z0-9]+", "-")
+        // The label can be a crawled page title: same untrusted class as the rest of Services/Docs,
+        // same budget. The pattern is linear, but the rule is the guard rail, not the pattern.
+        var slug = Regex.Replace(text.ToLowerInvariant(), @"[^a-z0-9]+", "-",
+                                 RegexOptions.None, RegexBudget.Default)
                         .Trim('-');
         if (slug.Length > 32) slug = slug[..32].TrimEnd('-');
         return string.IsNullOrEmpty(slug) ? "doc" : slug;

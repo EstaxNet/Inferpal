@@ -1340,8 +1340,19 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _config.Save();
 
         // Reconnect MCP servers from the freshly-saved config and report status.
-        await _mcp.RefreshAsync();
-        await RunOnVMContextAsync(() => { McpStatusText = BuildMcpStatus(); RefreshRowStatuses(); });
+        //
+        // ⚠ NOT under a running turn. RefreshAsync tears every server down and respawns it, and an
+        // agent loop that is mid-`mcp__server__tool` gets its client disposed underneath: the call
+        // comes back as an error the model then has to reason about, because someone pressed Save.
+        // The host closed the same class of race with its turn slot (revue pré-1.6.0, §2.6); here
+        // the mechanism already exists — GpuScheduler models "a chat turn is in flight" (every run
+        // holds a lease) and the background index loops already wait on it. Saving must not block
+        // on a long run, so the reconnect is deferred rather than awaited: the configuration is
+        // saved either way, and the servers pick it up as soon as the turn ends.
+        if (GpuScheduler.IsChatActive)
+            _ = ReconnectMcpWhenChatIdleAsync();
+        else
+            await ReconnectMcpAsync();
 
         // Apply the culture override and refresh all labels immediately.
         Strings.ApplyLanguage(langCode);
@@ -1588,6 +1599,20 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     }
 
     /// <summary>Reconnects the MCP servers from the freshly-saved config and refreshes row statuses.</summary>
+    /// <summary>Waits for the running turn to end, then reconnects. Never throws — it runs detached.</summary>
+    private async Task ReconnectMcpWhenChatIdleAsync()
+    {
+        try
+        {
+            // Bounded: a run that never releases its lease must not strand the server list forever.
+            using var budget = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+            await GpuScheduler.WaitForChatIdleAsync(budget.Token);
+        }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.WaitChatIdle", ex); }
+
+        await ReconnectMcpAsync();
+    }
+
     private async Task ReconnectMcpAsync()
     {
         try

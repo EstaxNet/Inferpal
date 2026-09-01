@@ -51,9 +51,16 @@ internal static class TestAssemblyLocator
             foreach (var sub in subdirs)
             {
                 var leaf = Path.GetFileName(sub);
-                if (leaf.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
-                    leaf.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
-                    leaf.Equals("node_modules", StringComparison.OrdinalIgnoreCase)) continue;
+
+                // The common exclusion list, minus the one directory this locator exists to open.
+                // It cannot call WorkspaceScan.EnumerateFiles — that helper excludes `bin`, which
+                // is precisely where a test assembly lives — but the *names* are the same question,
+                // and keeping a private copy of three of them is how the seven copies WorkspaceScan
+                // replaced came about. Its own list had already lost `packages`, `dist` and
+                // `.inferpal`.
+                if (!leaf.Equals("bin", StringComparison.OrdinalIgnoreCase) &&
+                    WorkspaceScan.ExcludedDirNames.Contains(leaf, StringComparer.OrdinalIgnoreCase))
+                    continue;
 
                 if (leaf.Equals("bin", StringComparison.OrdinalIgnoreCase))
                 {

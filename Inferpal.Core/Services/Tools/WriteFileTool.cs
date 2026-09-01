@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services;
@@ -37,9 +37,9 @@ internal class WriteFileTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path    = PathSanitizer.Sanitize(args.GetProperty("path").GetString());
+        var path    = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
-        var content = args.GetProperty("content").GetString()!;
+        var content = args.Str("content") ?? throw new ArgumentException("content is required.");
 
         var exists     = File.Exists(path);
         var oldContent = exists ? await File.ReadAllTextAsync(path, ct) : string.Empty;

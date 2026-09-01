@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -94,6 +94,11 @@ internal partial class InferpalToolWindowData
     // /branch <name>    → switch to an existing session/branch
     private async Task HandleBranchCommandAsync(string[] parts, CancellationToken ct)
     {
+        // Uniform with the other two callers of RestoreConversation. Unreachable during a turn
+        // today (SendAsync turns Enter into a cancel while IsLoading), but the invariant belongs
+        // with the operation, not with the current routing of one keystroke.
+        await SettleCurrentTurnAsync();
+
         List<SavedMessage> snapshot = [];
         var currentName = string.Empty;
         await RunOnVMContextAsync(() =>
@@ -249,7 +254,7 @@ internal partial class InferpalToolWindowData
         {
             await RunOnVMContextAsync(() =>
             {
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgCancelled));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgCancelled));
                 ScrollToBottom();
             });
         }
@@ -258,7 +263,7 @@ internal partial class InferpalToolWindowData
             var msg = ex.Message;
             await RunOnVMContextAsync(() =>
             {
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
                 ScrollToBottom();
             });
         }
@@ -403,10 +408,10 @@ internal partial class InferpalToolWindowData
             CurrentStep = string.Empty;
 
             if (proposal.Notice is { } notice)
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(notice));
+                InsertThemed(ChatMessageItem.AssistantMsg(notice));
 
             if (proposal.Message is { } message)
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(message));
+                InsertThemed(ChatMessageItem.AssistantMsg(message));
 
             if (proposal.Proposal is { } proposed)
             {
@@ -637,7 +642,7 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 Finalize();
-                Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
                 ScrollToBottom();
             });
         }

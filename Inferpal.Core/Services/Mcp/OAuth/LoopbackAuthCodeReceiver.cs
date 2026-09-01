@@ -64,9 +64,28 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
         return ((IPEndPoint)probe.LocalEndpoint).Port;   // Dispose closes the probe socket
     }
 
+    /// <summary>
+    /// Opens <paramref name="url"/> in the default browser — after checking it is one.
+    /// </summary>
+    /// <remarks>
+    /// <c>UseShellExecute = true</c> is what makes "open in the user's browser" work, and it is also
+    /// what makes this line dangerous: ShellExecute runs whatever the scheme is registered to, so a
+    /// non-web URL here is a program launch. The string is built from the authorization server's
+    /// advertised <c>authorization_endpoint</c>, i.e. it comes from the far end. The flow validates
+    /// it at discovery (<c>McpOAuthMetadata.RequireWebEndpoint</c>); this second check is here
+    /// because the dangerous call is <b>here</b>, and a future caller reaching this class by another
+    /// path would not inherit the first one.
+    /// </remarks>
     private static void OpenBrowser(string url)
     {
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            Diagnostics.Record("McpOAuth", $"Refused to open a non-web authorization URL: {url}");
+            return;   // the listener then simply times out, which is the honest outcome
+        }
+
+        try { Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }); }
         catch { /* if the browser can't be launched the listener simply times out */ }
     }
 

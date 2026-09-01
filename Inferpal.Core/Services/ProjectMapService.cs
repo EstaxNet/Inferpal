@@ -206,7 +206,7 @@ internal sealed class ProjectMapService
     // namespace declaration (file-scoped or block-scoped)
     private static readonly Regex _nsRx = new(
         @"(?m)^[ \t]*namespace\s+([\w][\w\.]*)",
-        RegexOptions.Compiled | RegexOptions.Multiline);
+        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
     // type declarations: class, interface, record, enum, struct
     private static readonly Regex _typeRx = new(
@@ -215,12 +215,12 @@ internal sealed class ProjectMapService
         @"(?:\s*<[^{;]*?)?" +                       // optional generics
         @"(?:\s*:\s*([\w,\s<>\[\]\.]+?))?" +        // optional base list
         @"\s*(?:\{|where\b)",
-        RegexOptions.Compiled | RegexOptions.Multiline);
+        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
     // using directives (project-internal will be detected by matching known NS)
     private static readonly Regex _usingRx = new(
         @"(?m)^[ \t]*using\s+([\w][\w\.]*)\s*;",
-        RegexOptions.Compiled | RegexOptions.Multiline);
+        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
     private static string? ExtractNamespace(string src)
     {
@@ -241,7 +241,7 @@ internal sealed class ProjectMapService
             var baseTypes = string.IsNullOrWhiteSpace(bases)
                 ? []
                 : bases.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                       .Select(b => Regex.Replace(b, @"<.+>", "").Trim())
+                       .Select(b => Regex.Replace(b, @"<.+>", "", RegexOptions.None, RegexBudget.Default).Trim())
                        .Where(b => b.Length > 0)
                        .ToList();
 

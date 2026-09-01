@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
@@ -54,13 +54,13 @@ internal static class CodeChunker
         @"^\s*(?:(?:public|internal|private|protected|file)\s+)*" +
         @"(?:(?:abstract|sealed|static|partial|readonly|new)\s+)*" +
         @"(?:class|interface|struct|record|enum)\s+(\w+)",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexBudget.Default);
 
     // Method or property declaration (used for intra-type splitting)
     private static readonly Regex _methodDecl = new(
         @"^\s*(?:(?:public|private|protected|internal|static|virtual|override|abstract|async|new|sealed|extern)\s+)+" +
         @"(?:[\w<>\[\]?,\s]+\s+)?(\w+)\s*[<(]",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexBudget.Default);
 
     // ── Public API ─────────────────────────────────────────────────────────────
 

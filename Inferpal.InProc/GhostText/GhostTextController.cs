@@ -141,6 +141,11 @@ internal sealed class GhostTextController
         catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.Trigger", ex); }
     }
 
+    /// <summary>How many lines of context the FIM prompt keeps on each side of the caret.</summary>
+    /// <remarks>Same numbers as before, now used to bound the READ instead of trimming after it.</remarks>
+    private const int PrefixLines = 64;
+    private const int SuffixLines = 16;
+
     private (string prefix, string suffix, SnapshotPoint anchor, ITextSnapshot snapshot)?
         ReadContext(CancellationToken token)
     {
@@ -149,16 +154,25 @@ internal sealed class GhostTextController
         var snapshot = _view.TextBuffer.CurrentSnapshot;
         var caretPos = _view.Caret.Position.BufferPosition;
         var cursor   = caretPos.Position;
-        var text     = snapshot.GetText();
+
+        // ⚠ Read only the lines we keep. This used to be `snapshot.GetText()` — the WHOLE
+        // document, copied into a fresh string, on the UI thread of devenv, at every debounce
+        // tick — to then throw away everything but 64 lines before the caret and 16 after. On a
+        // large or generated file that is a multi-megabyte allocation per pause in typing, in the
+        // one process where a stall is visible to the user as "Visual Studio froze". The editor
+        // addresses text by line, so ask it for the lines.
+        var caretLine = snapshot.GetLineFromPosition(cursor);
+        var firstLine = snapshot.GetLineFromLineNumber(Math.Max(0, caretLine.LineNumber - PrefixLines));
+        var lastLine  = snapshot.GetLineFromLineNumber(
+            Math.Min(snapshot.LineCount - 1, caretLine.LineNumber + SuffixLines));
 
         // Don't fire when IntelliSense trigger chars were just typed.
-        if (cursor > 0 && IsIntelliSenseTrigger(text[cursor - 1])) return null;
+        if (cursor > 0 && IsIntelliSenseTrigger(snapshot[cursor - 1])) return null;
 
-        return (
-            TailLines(text[..cursor], 64),
-            HeadLines(text[cursor..], 16),
-            caretPos,
-            snapshot);
+        var prefix = snapshot.GetText(Span.FromBounds(firstLine.Start.Position, cursor));
+        var suffix = snapshot.GetText(Span.FromBounds(cursor, lastLine.End.Position));
+
+        return (prefix, suffix, caretPos, snapshot);
     }
 
     // ── Keyboard — Tab accepts, Escape dismisses ───────────────────────────────
@@ -233,29 +247,4 @@ internal sealed class GhostTextController
         ['.', '(', '[', '<', '"', '\'', ',', ' '];
 
     private static bool IsIntelliSenseTrigger(char c) => IntelliSenseTriggers.Contains(c);
-
-    // Keeps the last `count` newline-delimited segments (= up to `count` lines before the cursor).
-    private static string TailLines(string text, int count)
-    {
-        var span  = text.AsSpan();
-        var found = 0;
-        var idx   = span.Length;
-        while (idx > 0 && found < count) { idx--; if (span[idx] == '\n') found++; }
-        if (found == count && idx < span.Length && span[idx] == '\n') idx++;
-        return text[idx..];
-    }
-
-    // Keeps the first `count` newline-delimited segments (= up to `count` lines after the cursor).
-    private static string HeadLines(string text, int count)
-    {
-        var span  = text.AsSpan();
-        var found = 0;
-        var idx   = 0;
-        while (idx < span.Length && found < count)
-        {
-            if (span[idx] == '\n') found++;
-            idx++;
-        }
-        return text[..idx];
-    }
 }

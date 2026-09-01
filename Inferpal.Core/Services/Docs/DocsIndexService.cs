@@ -1,4 +1,4 @@
-using Inferpal.Config;
+﻿using Inferpal.Config;
 
 namespace Inferpal.Services.Docs;
 
@@ -42,9 +42,20 @@ internal sealed class DocsIndexService
     public int    ChunkCount { get; private set; }
 
     /// <summary>Snapshot of the configured documentation sources with their crawl stats.</summary>
-    public IReadOnlyList<(DocSite Site, int PageCount, int ChunkCount)> Sites
+    /// <remarks>
+    /// Async because the lock it takes is also taken by async code. The synchronous
+    /// <c>_chunkLock.Wait()</c> this replaces held today only by accident: no path currently keeps
+    /// <c>_chunkLock</c> across an <c>await</c> (the network work sits behind a different
+    /// semaphore, <c>_indexLock</c>), so nothing deadlocked — but that is an invariant nobody
+    /// stated and no test defends, and the day someone adds an <c>await</c> inside one of those
+    /// sections, <c>/docs</c> freezes the calling thread with no error (revue post-1.6.0, item 4.6).
+    /// </remarks>
+    public async Task<IReadOnlyList<(DocSite Site, int PageCount, int ChunkCount)>> SitesAsync(
+        CancellationToken ct = default)
     {
-        get { _chunkLock.Wait(); try { return _sites.ToList(); } finally { _chunkLock.Release(); } }
+        await _chunkLock.WaitAsync(ct);
+        try { return _sites.ToList(); }
+        finally { _chunkLock.Release(); }
     }
 
     private string EmbeddingModel =>

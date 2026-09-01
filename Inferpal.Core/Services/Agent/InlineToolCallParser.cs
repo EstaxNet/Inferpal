@@ -35,20 +35,20 @@ namespace Inferpal.Services.Agent;
 internal static class InlineToolCallParser
 {
     private static readonly Regex ToolCallTagRegex =
-        new(@"<tool_call>\s*(\{.*?\})\s*</tool_call>", RegexOptions.Singleline | RegexOptions.Compiled);
+        new(@"<tool_call>\s*(\{.*?\})\s*</tool_call>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
 
     // Qwen/GLM-style XML call: <tool_call><function=NAME>…params…</function></tool_call>.
     // Group 1 is the function name; group 2 is the (possibly empty) parameter block.
     private static readonly Regex FunctionCallXmlRegex =
         new(@"<tool_call>\s*<function=([^>]+?)>(.*?)</function>\s*</tool_call>",
-            RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
 
     // One <parameter=KEY>VALUE</parameter> pair inside a function block.
     private static readonly Regex ParameterXmlRegex =
-        new(@"<parameter=([^>]+?)>(.*?)</parameter>", RegexOptions.Singleline | RegexOptions.Compiled);
+        new(@"<parameter=([^>]+?)>(.*?)</parameter>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
 
     private static readonly Regex CodeFenceRegex =
-        new(@"^```(?:json)?\s*\n?(.*?)\n?```$", RegexOptions.Singleline | RegexOptions.Compiled);
+        new(@"^```(?:json)?\s*\n?(.*?)\n?```$", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
 
     /// <summary>
     /// Attempts to extract tool calls from text content the model produced.

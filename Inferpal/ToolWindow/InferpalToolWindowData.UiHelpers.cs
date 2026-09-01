@@ -80,6 +80,45 @@ internal partial class InferpalToolWindowData
     // Awaitable: ensures the action runs with SynchronizationContext.Current = our context.
     // Because NonConcurrentSynchronizationContext is FIFO, awaiting this after RunAgentAsync
     // guarantees all prior Post() calls (onToken etc.) have already completed.
+    /// <summary>
+    /// Cancels the turn in flight (if any) and waits for it to unwind, so the caller may replace
+    /// the conversation. No-op when nothing is running.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why the wait, and not just a cancel.</b> Loading a session, <c>/clear</c> and
+    /// <c>/branch</c> all replace <c>_history</c> and refill <c>Messages</c>. Done under a running
+    /// agent loop, that is the race the host side closed with its turn slot (revue pré-1.6.0,
+    /// §2.6) and that this front-end — the primary one — never had: the loop holds the OLD list, so
+    /// its answer is appended to the freshly restored conversation when it lands, and the render
+    /// pass looks for a streaming bubble that <c>Messages.Clear()</c> has already removed
+    /// (<c>IndexOf</c> = -1 ⇒ an insert at -1, caught as a bare error bubble in the wrong
+    /// conversation).
+    /// </para>
+    /// <para>
+    /// Same shape as <c>RunPendingTurnAsync</c>, which already does this for code actions: cancel,
+    /// await the turn's own completion signal, with a belt so a turn that never finalises cannot
+    /// make the session panel permanently dead.
+    /// </para>
+    /// </remarks>
+    private async Task SettleCurrentTurnAsync()
+    {
+        Task? previousTurn = null;
+        await RunOnVMContextAsync(() =>
+        {
+            if (!IsLoading) return;
+            previousTurn = _turnDone?.Task;
+            _currentCts?.Cancel();
+        });
+
+        if (previousTurn is null) return;
+        // VSTHRD003 as in RunPendingTurnAsync: the TCS completes on this VM's
+        // NonConcurrentSynchronizationContext in an out-of-process host — no JTF to deadlock on.
+#pragma warning disable VSTHRD003
+        await Task.WhenAny(previousTurn, Task.Delay(TimeSpan.FromSeconds(15)));
+#pragma warning restore VSTHRD003
+    }
+
     private Task RunOnVMContextAsync(Action action)
     {
         // RunContinuationsAsynchronously is load-bearing: without it, SetResult runs the awaiting
@@ -128,6 +167,30 @@ internal partial class InferpalToolWindowData
         ThemeInputBorder = p.InputBorder;
         ThemeHoverBg     = p.HoverBg;
         UpdateMessageBubbles();
+    }
+
+    /// <summary>
+    /// Themes a chat item and inserts it just before the two scroll anchors — the only correct way
+    /// to add a bubble. Returns it, so a caller that needs the reference keeps one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The funnel exists because the two steps kept coming apart.</b> Fifteen sites built the
+    /// item <em>inline inside</em> the <c>Messages.Insert(…)</c> call, which makes theming
+    /// impossible — there is no reference to theme — so those bubbles rendered with default colours
+    /// under a dark theme. The pre-1.6.0 review had already fixed four of them one by one, in
+    /// <c>ChatTurn</c>, and the comment it left there ("every other insertion themes; these four
+    /// didn't") was true of that file only.
+    /// </para>
+    /// <para>
+    /// Must run on the VM context, like every <c>Messages</c> mutation.
+    /// </para>
+    /// </remarks>
+    private ChatMessageItem InsertThemed(ChatMessageItem item)
+    {
+        ApplyItemTheme(item);
+        Messages.Insert(Messages.Count - 2, item);
+        return item;
     }
 
     private void ApplyItemTheme(ChatMessageItem item)

@@ -1,4 +1,4 @@
-# Builds a platform-specific VSIX with the self-contained Inferpal.Host embedded.
+﻿# Builds a platform-specific VSIX with the self-contained Inferpal.Host embedded.
 # Usage: .\package.ps1 [-Target win32-x64|win32-arm64|linux-x64|linux-arm64|darwin-x64|darwin-arm64]
 # All platform VSIXs must share the same version (Marketplace requirement).
 param([string]$Target = 'win32-x64')

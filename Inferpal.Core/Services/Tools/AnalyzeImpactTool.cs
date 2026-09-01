@@ -141,13 +141,13 @@ internal class AnalyzeImpactTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var filePath = PathSanitizer.Sanitize(args.GetProperty("path").GetString());
+        var filePath = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(filePath, _getRoot());
         if (!File.Exists(filePath))
             return Strings.ToolFileNotFound(filePath);
 
         var symbol = args.TryGetProperty("symbol", out var sv) ? sv.GetString()?.Trim() : null;
-        var depth  = args.TryGetProperty("depth",  out var dv) ? Math.Clamp(dv.GetInt32(), 1, 3) : 2;
+        var depth  = Math.Clamp(args.Int("depth", 2), 1, 3);
 
         var source   = await File.ReadAllTextAsync(filePath, ct);
         var ext      = Path.GetExtension(filePath).ToLowerInvariant();

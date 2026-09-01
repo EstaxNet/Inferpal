@@ -1,14 +1,22 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services.Editor;
+using Inferpal.Services.Execution;
 
 namespace Inferpal.Services.Tools;
 
 internal class InsertAtCursorTool : ITool
 {
     private readonly IEditorSurface _editor;
+    private readonly IApprovalService _approval;
+    private readonly FileHistoryService _history;
 
-    public InsertAtCursorTool(IEditorSurface editor) => _editor = editor;
+    public InsertAtCursorTool(IEditorSurface editor, IApprovalService approval, FileHistoryService history)
+    {
+        _editor   = editor;
+        _approval = approval;
+        _history  = history;
+    }
 
     public string Name => "insert_at_cursor";
 
@@ -28,12 +36,14 @@ internal class InsertAtCursorTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        if (!_editor.IsAvailable)
-            return Strings.ActiveDocNoContext;
-
         if (!args.TryGetProperty("text", out var textEl) || textEl.ValueKind != JsonValueKind.String)
             return "Missing required parameter: text";
         var text = textEl.GetString()!;
+
+        // Approval + snapshot, like every other tool that changes a file — see EditorWriteGate
+        // for what this used to bypass.
+        var gate = await EditorWriteGate.AuthorizeAsync(_editor, _approval, _history, Name, text, ct);
+        if (!gate.MayProceed) return gate.Refusal!;
 
         var path = await _editor.InsertAtCursorAsync(text, ct);
         if (path is null)

@@ -27,9 +27,9 @@ internal class SearchInFilesTool : ITool
 
     public Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path        = PathSanitizer.Sanitize(args.GetProperty("path").GetString());
+        var path        = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
-        var search      = args.GetProperty("pattern").GetString()!;
+        var search      = args.Str("pattern") ?? throw new ArgumentException("pattern is required.");
         var filePattern = args.TryGetProperty("file_pattern", out var fp) ? fp.GetString() ?? "*" : "*";
 
         if (!Directory.Exists(path))

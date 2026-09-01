@@ -30,6 +30,11 @@ internal sealed class McpOAuthFlow
     {
         _receiver = receiver;
         _http     = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+
+        // Metadata documents and token responses are small by specification and remote by nature;
+        // without a ceiling, ReadAsStringAsync buffers whatever the far end decides to send.
+        _http.MaxResponseContentBufferSize = 1024 * 1024;
+        _http.Timeout = TimeSpan.FromSeconds(30);
     }
 
     /// <summary>Performs the full interactive authorization and returns the resulting OAuth state
@@ -101,12 +106,18 @@ internal sealed class McpOAuthFlow
     {
         // 1) Protected Resource Metadata → authorization server URL (fall back to the server origin).
         Uri authServer = new(new Uri(McpOAuthMetadata.DefaultProtectedResourceMetadataUrl(server.Url)), "/");
-        var prmUrl = server.ResourceMetadataUrl ?? McpOAuthMetadata.DefaultProtectedResourceMetadataUrl(server.Url);
+
+        // The resource-metadata URL is read out of a WWW-Authenticate header, i.e. it is whatever the
+        // far end put there — it is fetched, so it must clear the same bar as the endpoints.
+        var prmUrl = server.ResourceMetadataUrl is { Length: > 0 } advertised
+            ? McpOAuthMetadata.RequireWebEndpoint(advertised, "resource_metadata URL").ToString()
+            : McpOAuthMetadata.DefaultProtectedResourceMetadataUrl(server.Url);
+
         if (await TryGetAsync(prmUrl, ct).ConfigureAwait(false) is { } prmJson)
         {
             var prm = McpOAuthMetadata.ParseProtectedResourceMetadata(prmJson);
             if (prm.AuthorizationServers.Count > 0)
-                authServer = new Uri(prm.AuthorizationServers[0]);
+                authServer = McpOAuthMetadata.RequireWebEndpoint(prm.AuthorizationServers[0], "authorization server URL");
         }
 
         // 2) Authorization Server Metadata → endpoints (fall back to conventional default paths).

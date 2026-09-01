@@ -106,8 +106,8 @@ internal static class ChildProcess
         using var proc = Start(psi);
 
         // No token on the reads: the pipes end when the child does, including when we kill it.
-        var stdoutTask = proc.StandardOutput.ReadToEndAsync();
-        var stderrTask = proc.StandardError.ReadToEndAsync();
+        var stdoutTask = ReadCappedAsync(proc.StandardOutput);
+        var stderrTask = ReadCappedAsync(proc.StandardError);
 
         try
         {
@@ -130,6 +130,76 @@ internal static class ChildProcess
 
         static string Salvage(Task<string> read) =>
             read.IsCompletedSuccessfully ? read.Result : string.Empty;
+    }
+
+    /// <summary>
+    /// Ceiling on what a single captured stream contributes to memory. Past it the <b>middle</b>
+    /// is dropped, never the end.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The detached twin of this capture — <c>BackgroundShellRegistry</c> — has been bounded since
+    /// it was written, with the reason spelled out on its own constant: "without a ceiling its
+    /// buffer is an unbounded leak in the host process". The foreground path, which is the one
+    /// almost every command takes, read to the end of the pipe with no ceiling at all: one
+    /// <c>type</c> of a large file, one verbose build, one <c>git log -p</c> on a big repository,
+    /// and the extension host holds the whole thing in a UTF-16 string — twice, while it is copied.
+    /// </para>
+    /// <para>
+    /// It drops the middle rather than the oldest half (the background twin's rule) because the
+    /// two are read differently: a background job is <em>polled</em> forward, so its oldest lines
+    /// are the expendable ones, whereas a foreground result is parsed — and every parser in this
+    /// repository reads the <b>summary at the end</b> (<c>run_tests</c>) or the <b>first lines</b>
+    /// (a compiler's first error). Truncating either end would break a parser; the middle of a
+    /// megabyte of output is what nobody reads.
+    /// </para>
+    /// </remarks>
+    internal const int MaxCapturedChars = 1024 * 1024;
+
+    private const string DropMarker = "\n[… middle of the output dropped to bound memory …]\n";
+
+    /// <summary>
+    /// Drains <paramref name="reader"/> to the end, keeping at most <see cref="MaxCapturedChars"/>
+    /// characters: the head and the tail, with a marker where the middle was. The pipe is always
+    /// drained fully — a child whose output we stopped storing must still be able to write, or it
+    /// blocks forever on a full buffer, which is the deadlock this class exists to prevent.
+    /// </summary>
+    internal static async Task<string> ReadCappedAsync(StreamReader reader)
+    {
+        const int HeadChars  = MaxCapturedChars / 4;
+        var       tailChars  = MaxCapturedChars - HeadChars;
+
+        var head    = new System.Text.StringBuilder();
+        var tail    = new System.Text.StringBuilder();
+        var dropped = 0L;
+        var buffer  = new char[16 * 1024];
+
+        while (true)
+        {
+            var n = await reader.ReadAsync(buffer, 0, buffer.Length);
+            if (n == 0) break;
+
+            var offset = 0;
+            if (head.Length < HeadChars)
+            {
+                var take = Math.Min(HeadChars - head.Length, n);
+                head.Append(buffer, 0, take);
+                offset = take;
+            }
+            if (offset >= n) continue;
+
+            tail.Append(buffer, offset, n - offset);
+            if (tail.Length <= tailChars) continue;
+
+            var excess = tail.Length - tailChars;
+            tail.Remove(0, excess);
+            dropped += excess;
+        }
+
+        return dropped == 0
+            ? head.Append(tail).ToString()
+            : head.Append(DropMarker.Replace("dropped", $"({dropped:N0} chars) dropped"))
+                  .Append(tail).ToString();
     }
 
     /// <summary>

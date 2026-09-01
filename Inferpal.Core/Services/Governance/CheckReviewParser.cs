@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using Inferpal.Localization;
 
@@ -61,12 +61,12 @@ internal static class CheckReviewParser
         \s*[)\]]?\s*[:\-–—]?\s*
         (?<msg>.*)$
         """,
-        RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     // Severity stated after the message ("… (blocker)") rather than before it.
     private static readonly Regex TrailingSeverity = new(
         @"[\[(]\s*(?<sev>blocker|blocking|critical|error|warning|warn|nit|minor|info)\s*[\])]\s*$",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     /// <summary>
     /// Splits <paramref name="modelOutput"/> into anchored findings and the remaining prose.

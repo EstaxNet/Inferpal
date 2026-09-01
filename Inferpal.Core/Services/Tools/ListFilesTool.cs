@@ -25,7 +25,7 @@ internal class ListFilesTool : ITool
 
     public Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path    = PathSanitizer.Sanitize(args.GetProperty("path").GetString());
+        var path    = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
         var pattern = args.TryGetProperty("pattern", out var p) ? p.GetString() ?? "*" : "*";
 

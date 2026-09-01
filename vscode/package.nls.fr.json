@@ -1,5 +1,5 @@
 {
-  "inferpal.description": "Assistant développeur IA pour LLM auto-hébergés — Ollama, LM Studio ou tout serveur compatible OpenAI. Agent avec appels d’outils, 100 % local, zéro télémétrie.",
+  "inferpal.description": "Assistant IA pour LLM auto-hébergés — Ollama, LM Studio, tout serveur compatible OpenAI. Il code, compile, teste et attache un vrai débogueur sur un test en échec. 100 % local, zéro télémétrie.",
   "inferpal.view.chat": "Chat",
   "inferpal.command.restartHost": "Inferpal : Redémarrer le host",
   "inferpal.command.resetChat": "Inferpal : Nouvelle conversation",

@@ -70,8 +70,14 @@ internal sealed class ShellSession
         var psi = ShellLauncher.BuildStartInfo(dialect, shell, script);
 
         using var process = ChildProcess.Start(psi);
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
-        var stderrTask = process.StandardError.ReadToEndAsync(cts.Token);
+
+        // Bounded, and with no token of their own — both for the same reason as in ChildProcess,
+        // which is the twin of this method: killing the tree closes the pipes, so the reads finish
+        // by themselves, and a command killed on timeout can still hand back what it printed.
+        // Cancelling the reads instead threw that output away, which is exactly what a timeout
+        // most needs to show (the build's last lines before it hung).
+        var stdoutTask = ChildProcess.ReadCappedAsync(process.StandardOutput);
+        var stderrTask = ChildProcess.ReadCappedAsync(process.StandardError);
         try
         {
             await process.WaitForExitAsync(cts.Token);
@@ -82,7 +88,18 @@ internal sealed class ShellSession
             // kill the whole tree to avoid leaving an orphaned powershell.exe.
             try { process.Kill(entireProcessTree: true); } catch { }
             if (ct.IsCancellationRequested) throw; // user cancelled — abort the run
-            return $"Error: command timed out after {_config.CommandTimeoutSeconds}s.";
+
+            // A bounded wait for the pipes the kill just closed, then report the partial output:
+            // the previous version returned the one-line timeout message alone, so a command that
+            // ran for its whole budget and printed a thousand useful lines told the model nothing.
+            await Task.WhenAny(Task.WhenAll(stdoutTask, stderrTask),
+                               Task.Delay(TimeSpan.FromSeconds(2), CancellationToken.None));
+
+            var salvaged = ShellStateProtocol.ParseForeground(Salvage(stdoutTask), marker).Output;
+            var timedOut = $"Error: command timed out after {_config.CommandTimeoutSeconds}s.";
+            return string.IsNullOrWhiteSpace(salvaged)
+                ? timedOut
+                : $"{timedOut}\n[output before the timeout]\n{salvaged.TrimEnd()}";
         }
 
         var rawStdout = await stdoutTask;
@@ -96,6 +113,10 @@ internal sealed class ShellSession
             output += $"\n[stderr]\n{stderr.Trim()}";
         return output;
     }
+
+    /// <summary>What a read produced, or nothing if it has not finished — never a throw.</summary>
+    private static string Salvage(Task<string> read) =>
+        read.IsCompletedSuccessfully ? read.Result : string.Empty;
 
     private void ApplyState(ShellRunState state)
     {

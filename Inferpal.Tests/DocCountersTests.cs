@@ -140,6 +140,20 @@ public class DocCountersTests
         AssertCounter(extPath, actual, int.Parse(extClaim.Groups[1].Value),
                       text => Regex.Replace(text, @"\d+ built-in tools", $"{actual} built-in tools"),
                       "built-in tools (Marketplace description)");
+
+        // ⚠ And the long-form listing body, which is a THIRD copy of the claim. It is the one that
+        // had drifted the furthest — still "26 built-in tools" after the 1.6.0 release, because
+        // only the two above were guarded. A counter that exists in three places and is checked in
+        // two is a counter that will be wrong in the third (found by the post-1.6.0 review).
+        var listPath  = Path.Combine(RepoRoot(), "MARKETPLACE.md");
+        if (File.Exists(listPath))   // private-repo only: the listing copy never ships publicly
+        {
+            var listClaim = Regex.Match(File.ReadAllText(listPath), @"(\d+) built-in tools");
+            Assert.True(listClaim.Success, "MARKETPLACE.md no longer states 'N built-in tools'.");
+            AssertCounter(listPath, actual, int.Parse(listClaim.Groups[1].Value),
+                          text => Regex.Replace(text, @"\d+ built-in tools", $"{actual} built-in tools"),
+                          "built-in tools (Marketplace listing)");
+        }
     }
 
     [Fact]

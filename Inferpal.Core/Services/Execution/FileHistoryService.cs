@@ -56,7 +56,11 @@ internal class FileHistoryService
             var historyDir = GetHistoryDir(filePath);
             Directory.CreateDirectory(historyDir);
 
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff");
+            // UTC + invariant. Local time repeats an hour every autumn, and the name is not just a
+            // label: it is what the lookup below sorts on. A Buddhist or Umm al-Qura default calendar
+            // (th-TH, ar-SA) would also rewrite the year outright.
+            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss-fff",
+                                                     System.Globalization.CultureInfo.InvariantCulture);
             var suffix    = SnapshotSuffix(filePath);
             var snapPath  = Path.Combine(historyDir, $"{timestamp}_{suffix}");
 
@@ -89,9 +93,12 @@ internal class FileHistoryService
     {
         try
         {
+            // Same ordering as the lookup, and for the same reason: pruning by name would delete
+            // the NEWEST snapshots for an hour every autumn.
             var snaps = Directory.EnumerateFiles(historyDir)
                 .Where(f => MatchesSuffix(f, suffix))
-                .OrderByDescending(f => f) // timestamp prefix sorts lexically == chronologically
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .ThenByDescending(f => f)
                 .Skip(MaxSnapshotsPerFile)
                 .ToList();
 
@@ -108,9 +115,16 @@ internal class FileHistoryService
 
         var suffix = SnapshotSuffix(originalPath);
 
+        // Ordered by WRITE TIME, not by name. The name is written by this class and used to be
+        // trusted as a sort key, which made "which snapshot is the most recent?" — the question
+        // that decides what restore_file puts back — depend on the local clock: at the autumn
+        // fall-back an hour of snapshots sorts before older ones, so the tool restored the older
+        // content. It also survives the mix of local-named (pre-fix) and UTC-named files sitting
+        // in the same folder after an upgrade.
         return Directory.EnumerateFiles(historyDir)
             .Where(f => MatchesSuffix(f, suffix))
-            .OrderByDescending(f => f)
+            .OrderByDescending(File.GetLastWriteTimeUtc)
+            .ThenByDescending(f => f)
             .FirstOrDefault();
     }
 
@@ -132,7 +146,12 @@ internal class FileHistoryService
     /// <summary>Starts a new change-tracking run; subsequent snapshots/creations attach to it.</summary>
     internal string BeginRun()
     {
-        var run = new HistoryRun(DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff"));
+        // UTC, and invariant formatting. Local time repeats an hour every autumn, so two runs could
+        // be handed the same identifier, and the lexicographic order of identifiers lied for that
+        // hour — §27.6 fixed exactly this in SessionManager and left this site behind (revue
+        // post-1.6.0, item 4.5). The identifier is shown to nobody: it keys /undo-run.
+        var run = new HistoryRun(DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss-fff",
+                                                          System.Globalization.CultureInfo.InvariantCulture));
         lock (_runLock)
         {
             _runs.Add(run);

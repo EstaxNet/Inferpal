@@ -131,6 +131,28 @@ internal class RunTestsTool : ITool
 
     // ── Output parsers ─────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// What a runner that exits 0 without a readable summary is worth: <b>nothing proven</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Deliberately carries no <c>✓</c>. <see cref="Commands.TddCommandHandler.TestsPassed"/> reads
+    /// a leading <c>✓</c> as green, so this line keeps the loop running instead of letting it
+    /// announce a victory nobody measured — same tactic as the "no test matched the filter"
+    /// message, and same lesson: <b>never infer green from an exit code alone</b>.
+    /// </para>
+    /// <para>
+    /// The 1.5.2 patch closed one named instance of this (a vstest filter matching zero tests) and
+    /// left the general fallback in place in all four parsers. It is the same defect: a runner
+    /// whose summary format moves — which is exactly what vstest did between SDK 8 and 9 — turns
+    /// every red run green, in silence. The raw output still follows, which is what the model
+    /// actually reads.
+    /// </para>
+    /// </remarks>
+    internal const string NothingProven =
+        "⚠ The runner exited 0 but no test summary could be parsed — nothing was proven. " +
+        "Read the raw output below; do not treat this as a pass.";
+
     internal static string ParseDotnetOutput(string raw, int exitCode)
     {
         var sb = new StringBuilder();
@@ -188,7 +210,7 @@ internal class RunTestsTool : ITool
         }
         else if (exitCode == 0)
         {
-            sb.AppendLine("✓ Tests passed (no summary line detected).");
+            sb.AppendLine(NothingProven);
         }
 
         // Extract failed test blocks (name + error message, skip stack traces)
@@ -273,7 +295,7 @@ internal class RunTestsTool : ITool
         return failures;
     }
 
-    private static string ParsePytestOutput(string raw, int exitCode)
+    internal static string ParsePytestOutput(string raw, int exitCode)
     {
         var sb = new StringBuilder();
 
@@ -282,7 +304,7 @@ internal class RunTestsTool : ITool
         if (summaryMatch.Success)
             sb.AppendLine(summaryMatch.Groups[1].Value.Trim());
         else if (exitCode == 0)
-            sb.AppendLine("✓ All tests passed.");
+            sb.AppendLine(NothingProven);
 
         // FAILED lines: "FAILED tests/test_x.py::test_name - AssertionError: ..."
         var failedLines = raw.Split('\n')
@@ -327,7 +349,7 @@ internal class RunTestsTool : ITool
         if (any)
             sb.AppendLine($"{(failed == 0 ? "✓ PASSED" : "✗ FAILED")} — Failed: {failed}, Passed: {passed}, Ignored: {ignored}, Total: {passed + failed + ignored}");
         else if (exitCode == 0)
-            sb.AppendLine("✓ Tests passed (no summary line detected).");
+            sb.AppendLine(NothingProven);
 
         var failing = raw.Split('\n')
             .Select(l => l.Trim())
@@ -362,7 +384,18 @@ internal class RunTestsTool : ITool
             .ToList();
 
         if (exitCode == 0)
-            sb.AppendLine("✓ Tests passed.");
+        {
+            // go test prints no summary line: its exit code IS the verdict, and that is the one
+            // runner where reading it is legitimate. What is not legitimate is reading it when
+            // nothing ran: exit 0 without a single "ok <package>" line means every package was
+            // "[no test files]" or matched nothing, and calling that a pass is the same silent
+            // green as the three parsers above.
+            var ranAPackage = Regex.IsMatch(raw, @"^ok\s+\S", RegexOptions.Multiline, RegexBudget.Default);
+            sb.AppendLine(ranAPackage
+                ? "✓ Tests passed (verdict from go's exit code — go test prints no summary)."
+                : "⚠ go test exited 0 but no package reported \"ok\" — no test ran, so nothing " +
+                  "was proven. Read the raw output below; do not treat this as a pass.");
+        }
         else
             sb.AppendLine($"✗ FAILED — {(failing.Count > 0 ? $"{failing.Count} failing test(s)" : "see output")}");
 

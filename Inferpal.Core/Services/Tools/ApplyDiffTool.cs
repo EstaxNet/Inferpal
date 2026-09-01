@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using Inferpal.Localization;
 
@@ -44,10 +44,10 @@ internal class ApplyDiffTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path       = PathSanitizer.Sanitize(args.GetProperty("path").GetString());
+        var path       = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
-        var oldContent = args.GetProperty("old_content").GetString() ?? throw new ArgumentException("old_content required");
-        var newContent = args.GetProperty("new_content").GetString() ?? "";
+        var oldContent = args.Str("old_content") ?? throw new ArgumentException("old_content is required.");
+        var newContent = args.Str("new_content") ?? "";
         var occurrence = args.TryGetProperty("occurrence", out var occ) ? occ.GetString() : null;
 
         if (!File.Exists(path))

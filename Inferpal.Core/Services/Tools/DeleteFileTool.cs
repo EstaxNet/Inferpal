@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services;
@@ -32,7 +32,7 @@ internal class DeleteFileTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path = PathSanitizer.Sanitize(args.GetProperty("path").GetString());
+        var path = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
 
         if (!File.Exists(path))

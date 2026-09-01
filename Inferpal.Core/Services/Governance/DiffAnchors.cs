@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace Inferpal.Services.Governance;
 
@@ -21,11 +21,11 @@ internal sealed class DiffAnchors
     // "@@ -12,3 +40,7 @@" — only the new-side range matters: findings point at the code as it is
     // after the change, which is what the reviewer opens in the editor.
     private static readonly Regex HunkHeader = new(
-        @"^@@ -\d+(?:,\d+)? \+(?<start>\d+)(?:,(?<count>\d+))? @@", RegexOptions.Compiled);
+        @"^@@ -\d+(?:,\d+)? \+(?<start>\d+)(?:,(?<count>\d+))? @@", RegexOptions.Compiled, RegexBudget.Default);
 
     // "+++ b/path/to/file.cs" — the new path. "/dev/null" means the file was deleted.
     private static readonly Regex NewFile = new(
-        @"^\+\+\+ (?:b/)?(?<path>.+)$", RegexOptions.Compiled);
+        @"^\+\+\+ (?:b/)?(?<path>.+)$", RegexOptions.Compiled, RegexBudget.Default);
 
     private readonly Dictionary<string, List<(int From, int To)>> _byFile =
         new(StringComparer.OrdinalIgnoreCase);

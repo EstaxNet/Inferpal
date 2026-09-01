@@ -73,6 +73,17 @@ internal static class InProcConfig
         }
     }
 
+    /// <summary>
+    /// Relit le fichier. Un fichier <b>absent</b> rend les valeurs par défaut ; un fichier
+    /// <b>illisible</b> rend les dernières valeurs lues avec succès.
+    /// </summary>
+    /// <remarks>
+    /// La distinction n'est pas cosmétique : <c>Enabled</c> vaut <c>true</c> par défaut, donc un
+    /// <c>config.json</c> tronqué — une écriture concurrente, un disque plein — <b>rallumait</b>
+    /// la complétion inline chez quelqu'un qui l'avait éteinte, et remettait le sidecar à
+    /// consommer du GPU sans un mot. Une préférence qu'on ne sait plus lire n'est pas une
+    /// préférence qui vient de changer (revue post-1.6.0, item 4.4).
+    /// </remarks>
     private static Snapshot Read(long stamp)
     {
         var snap = new Snapshot { Stamp = stamp };
@@ -95,7 +106,20 @@ internal static class InProcConfig
                 snap.Model = string.IsNullOrEmpty(value) ? null : value;
             }
         }
-        catch (Exception ex) { Diagnostics.Swallow("InProcConfig.Read", ex); }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("InProcConfig.Read", ex);
+            // Les dernières valeurs LUES, au nouveau stamp pour ne pas relire à chaque frappe un
+            // fichier qui ne se laisse pas lire. Rien n'est perdu : la prochaine écriture valide
+            // change le stamp et repasse ici.
+            return new Snapshot
+            {
+                Enabled = _cached.Enabled,
+                Mode    = _cached.Mode,
+                Model   = _cached.Model,
+                Stamp   = stamp,
+            };
+        }
         return snap;
     }
 }

@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using StreamJsonRpc;
 
 namespace Inferpal.Host;
@@ -26,17 +26,45 @@ internal sealed class RpcSecretStore
     /// <summary>Key the adapter files the wrapped blob under, in its own secret storage.</summary>
     private const string SecretKey = "inferpal.mcp.tokens";
 
+    /// <summary>
+    /// Ceiling on one round-trip to the editor. The call is synchronous by contract — the token
+    /// store's interface is <c>byte[] Protect(byte[])</c>, shared with the DPAPI implementation —
+    /// so without a bound the calling thread waits forever on an editor that never answers: a
+    /// closed panel, a busy adapter, an extension host that crashed between request and reply.
+    /// Ten seconds is far past a keychain round-trip and far short of "the session is stuck".
+    /// </summary>
+    private static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(10);
+
     private readonly JsonRpc _rpc;
 
     public RpcSecretStore(JsonRpc rpc) => _rpc = rpc;
 
+    /// <summary>
+    /// Blocks on one reverse RPC with a deadline, unwrapping the usual
+    /// <see cref="AggregateException"/> so callers see the failure the adapter reported.
+    /// </summary>
+    private T Invoke<T>(string method, object arguments)
+    {
+        using var budget = new CancellationTokenSource(CallTimeout);
+        try
+        {
+            return _rpc.InvokeWithParameterObjectAsync<T>(method, arguments, budget.Token)
+                       .GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException) when (budget.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"The editor did not answer '{method}' within {CallTimeout.TotalSeconds:N0} s; " +
+                "the MCP token store cannot encrypt right now.");
+        }
+    }
+
     /// <summary>Hands the plaintext to the editor and returns what it stored back (opaque).</summary>
     public byte[] Protect(byte[] plaintext)
     {
-        var wrapped = _rpc.InvokeWithParameterObjectAsync<string>(
+        var wrapped = Invoke<string>(
             "secrets/protect",
-            new { key = SecretKey, value = Convert.ToBase64String(plaintext) })
-            .GetAwaiter().GetResult();
+            new { key = SecretKey, value = Convert.ToBase64String(plaintext) });
 
         return Encoding.UTF8.GetBytes(wrapped);
     }
@@ -44,10 +72,9 @@ internal sealed class RpcSecretStore
     /// <summary>Asks the editor to unwrap a payload previously produced by <see cref="Protect"/>.</summary>
     public byte[] Unprotect(byte[] wrapped)
     {
-        var plain = _rpc.InvokeWithParameterObjectAsync<string>(
+        var plain = Invoke<string>(
             "secrets/unprotect",
-            new { key = SecretKey, value = Encoding.UTF8.GetString(wrapped) })
-            .GetAwaiter().GetResult();
+            new { key = SecretKey, value = Encoding.UTF8.GetString(wrapped) });
 
         return Convert.FromBase64String(plain);
     }

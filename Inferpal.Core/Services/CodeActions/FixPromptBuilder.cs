@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using Inferpal.Localization;
 
@@ -15,7 +15,7 @@ internal static class FixPromptBuilder
     // dotnet build / VS error list: "/path/to/File.cs(12,5): error CS0001: ..."
     private static readonly Regex PathRx = new(
         @"^([^\r\n]+\.cs)\(\d+,\d+\):\s*(?:error|warning)",
-        RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
 
     /// <summary>Max number of distinct affected files appended to the prompt.</summary>
     private const int MaxFiles = 5;

@@ -135,6 +135,10 @@ internal partial class InferpalToolWindowData
 
     private async Task ClearAsync(object? _, CancellationToken ct)
     {
+        // A turn in flight owns _history and the streaming bubble: let it unwind before the
+        // conversation is replaced under it (see SettleCurrentTurnAsync).
+        await SettleCurrentTurnAsync();
+
         // Capture snapshot and first user message on the VM context before clearing.
         bool hasMessages = false;
         string firstUserContent = string.Empty;
@@ -183,6 +187,8 @@ internal partial class InferpalToolWindowData
     {
         try
         {
+            await SettleCurrentTurnAsync();
+
             string name = string.Empty;
             await RunOnVMContextAsync(() =>
                 name = string.IsNullOrWhiteSpace(SelectedSession) ? "last_session" : SelectedSession);

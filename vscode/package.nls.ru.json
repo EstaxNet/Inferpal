@@ -1,5 +1,5 @@
 {
-  "inferpal.description": "ИИ-ассистент разработчика для самостоятельно размещённых LLM — Ollama, LM Studio или любой OpenAI-совместимый сервер. Агент с вызовом инструментов, 100 % локально, без телеметрии.",
+  "inferpal.description": "ИИ-ассистент для self-hosted LLM — Ollama, LM Studio, любой OpenAI-совместимый сервер. Пишет код, собирает, тестирует и подключает настоящий отладчик при падении теста. 100 % локально, без телеметрии.",
   "inferpal.view.chat": "Чат",
   "inferpal.command.restartHost": "Inferpal: перезапустить хост",
   "inferpal.command.resetChat": "Inferpal: новый диалог",

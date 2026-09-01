@@ -1,4 +1,4 @@
-# Features
+﻿# Features
 
 A functional tour of what Inferpal does. Each area links to a deeper reference where one
 exists.
@@ -243,6 +243,12 @@ exists.
   **sanitized support bundle** for GitHub issues: remote endpoints redacted, API key never
   included, profile and workspace paths masked. The chat shows exactly the text that was
   copied — you read what you are about to send, and nothing leaves the machine on its own.
+- **`/diagnostics` also answers "why is my ghost text gone?"** — the Visual Studio half that lives
+  inside `devenv.exe` (inline completions, inline-diff preview, the `/tdd` debugger driver) fails
+  silently by nature: the chat is out-of-process and keeps working. Each of its load paths
+  publishes a heartbeat, and `/diagnostics` names the one that is missing — in the chat and in the
+  support bundle. It says so only on **proof of absence**, never on absence of proof: in VS Code,
+  where there is no in-process half at all, it stays quiet.
 
 ## Localization & theming
 

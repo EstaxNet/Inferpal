@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -354,7 +354,7 @@ internal partial class InferpalToolWindowData
 
     private Task NotifyMentionAsync(string message) =>
         RunOnVMContextAsync(() =>
-            Messages.Insert(Messages.Count - 2, ChatMessageItem.AssistantMsg(message)));
+            InsertThemed(ChatMessageItem.AssistantMsg(message)));
 
     /// <summary>Removes the trailing @mention token (committed "@file foo" or bare "@foo").</summary>
     private void StripMentionToken() => Prompt = MentionController.StripMentionToken(_prompt);

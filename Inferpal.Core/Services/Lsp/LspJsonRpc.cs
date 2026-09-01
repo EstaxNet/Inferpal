@@ -108,7 +108,18 @@ internal sealed class LspJsonRpc : IDisposable
                     }
                 }
 
-                if (contentLength <= 0 || contentLength > 100_000_000) continue;
+                // A frame we refuse is a frame we cannot skip: the body is still sitting in the
+                // pipe, and `continue` used to go read it as if it were headers — every message
+                // after it parsed as garbage, in silence, for the life of the server. The two
+                // sibling readers of this same framing (FimSidecar, FimRpcLoop) end the loop
+                // instead, and that is the right answer: an unreadable length means the sender and
+                // this reader no longer agree on where messages begin.
+                if (contentLength <= 0 || contentLength > MaxBodyBytes)
+                {
+                    Diagnostics.Record("Lsp",
+                        $"Refusing a frame declaring {contentLength} bytes; the channel is out of sync and is being closed.");
+                    return;
+                }
 
                 // ── Read body as raw bytes (Content-Length is a byte count) ───
                 var body  = new byte[contentLength];
@@ -136,6 +147,17 @@ internal sealed class LspJsonRpc : IDisposable
     }
 
     /// <summary>Reads one text line from <paramref name="stream"/> byte-by-byte.</summary>
+    /// <summary>
+    /// Ceiling on a single message body. The two sibling readers of this framing cap at 8 MB;
+    /// this one allowed 100 MB and allocated the array before reading a byte, so a bogus header
+    /// bought a 100 MB allocation. A language server's largest real message — a full workspace
+    /// symbol dump — is orders of magnitude below this.
+    /// </summary>
+    private const int MaxBodyBytes = 8 * 1024 * 1024;
+
+    /// <summary>A header line longer than this is not a header line.</summary>
+    private const int MaxHeaderLineChars = 4 * 1024;
+
     private static async Task<string?> ReadHeaderLineAsync(Stream stream, CancellationToken ct)
     {
         var buf = new byte[1];
@@ -145,6 +167,10 @@ internal sealed class LspJsonRpc : IDisposable
         {
             if (await stream.ReadAsync(buf.AsMemory(0, 1), ct) == 0)
                 return null; // EOF
+
+            // Binary on the wire (a desynced stream, a server printing to stdout) contains no
+            // newline for as long as it lasts, and this builder grew for all of it.
+            if (sb.Length > MaxHeaderLineChars) return null;
 
             byte b = buf[0];
             if (b == '\n')

@@ -52,8 +52,8 @@ internal class FetchUrlTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var url      = args.GetProperty("url").GetString() ?? throw new ArgumentException("url required");
-        var maxChars = args.TryGetProperty("max_chars", out var mc) ? mc.GetInt32() : 8000;
+        var url      = args.Str("url") ?? throw new ArgumentException("url is required.");
+        var maxChars = args.Int("max_chars", 8000);
         maxChars     = Math.Clamp(maxChars, 500, 50_000);
 
         // Outbound network = exfiltration channel. Gate it like the other side-effecting tools so a

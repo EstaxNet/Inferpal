@@ -450,21 +450,18 @@ internal sealed class CSharpSemanticIndex
         return refs;
     }, LazyThreadSafetyMode.ExecutionAndPublication);
 
-    /// <summary>Same skip list as the semantic index and the bench scanner.</summary>
-    private static IEnumerable<string> EnumerateCSharpFiles(string root)
-    {
-        IEnumerable<string> all;
-        try { all = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories); }
-        catch (Exception ex) { Diagnostics.Swallow("CSharpSemanticIndex.Enumerate", ex); yield break; }
-
-        foreach (var path in all)
-        {
-            if (path.Contains(@"\obj\", StringComparison.OrdinalIgnoreCase) ||
-                path.Contains(@"\bin\", StringComparison.OrdinalIgnoreCase) ||
-                path.Contains(@"\.git\", StringComparison.OrdinalIgnoreCase) ||
-                path.Contains(@"\.inferpal\", StringComparison.OrdinalIgnoreCase))
-                continue;
-            yield return path;
-        }
-    }
+    /// <summary>
+    /// C# files under <paramref name="root"/>, common exclusions applied.
+    /// </summary>
+    /// <remarks>
+    /// This used to carry its own four-entry list, matched on <c>\obj\</c> — a <b>backslash</b>.
+    /// The host ships for linux-x64 and darwin-arm64 (VS Code, since 1.5.0), and on those the list
+    /// excluded exactly nothing: the semantic index read <c>bin/</c>, <c>obj/</c>, <c>.git/</c> and
+    /// <c>.inferpal/history/</c> — the last of which holds snapshot COPIES of the user's own
+    /// sources, so "find references" answered with duplicates of an older version of the file the
+    /// user was looking at. <see cref="WorkspaceScan"/> exists because seven copies of this list
+    /// had drifted apart once already; this was the eighth, and it was the same defect.
+    /// </remarks>
+    private static IEnumerable<string> EnumerateCSharpFiles(string root) =>
+        WorkspaceScan.EnumerateFiles(root, "*.cs");
 }

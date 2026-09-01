@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -135,7 +135,7 @@ internal static class DocContextExtractor
     // namespace declaration — file-scoped (`namespace X.Y;`) or block-scoped (`namespace X.Y {`)
     private static readonly Regex _nsRx = new(
         @"(?m)^[ \t]*namespace\s+([\w][\w\.]*)",
-        RegexOptions.Compiled | RegexOptions.Multiline);
+        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
     // type declarations: class, interface, record, enum, struct (with optional modifiers + generics + base list)
     private static readonly Regex _typeRx = new(
@@ -144,7 +144,7 @@ internal static class DocContextExtractor
         @"(?:\s*<[^{;]*?)?" +                            // optional generics
         @"(?:\s*:\s*([\w,\s<>\[\]\.]+?))?" +             // optional base list
         @"\s*(?:\{|where\b|;)",
-        RegexOptions.Compiled | RegexOptions.Multiline);
+        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
     // members with `override` modifier (method / property / indexer)
     private static readonly Regex _overrideRx = new(
@@ -152,7 +152,7 @@ internal static class DocContextExtractor
         @"override\s+" +
         @"(?:async\s+|static\s+)*(?:[\w<>\[\]?,\.\s]+?\s+)" +
         @"([\w]+)\s*[\(<\[]",
-        RegexOptions.Compiled | RegexOptions.Multiline);
+        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
     // explicit interface implementations: `ReturnType IFoo.Member(...)`
     // Heuristic: the interface qualifier starts with 'I' followed by uppercase.
@@ -160,7 +160,7 @@ internal static class DocContextExtractor
         @"(?m)^[ \t]*(?:(?:public|protected|internal|private|static|async|unsafe|readonly|new)\s+)*" +
         @"(?:[\w<>\[\]?,\.\s]+?\s+)" +
         @"(I[A-Z]\w*)\.([\w]+)\s*[\(<]",
-        RegexOptions.Compiled | RegexOptions.Multiline);
+        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
     // ── Parsers ────────────────────────────────────────────────────────────────
 
@@ -185,7 +185,7 @@ internal static class DocContextExtractor
                 ? new List<string>()
                 : rawBases
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(b => Regex.Replace(b, @"<.+?>", "").Trim())
+                    .Select(b => Regex.Replace(b, @"<.+?>", "", RegexOptions.None, RegexBudget.Default).Trim())
                     .Where(b => b.Length > 0 && !string.Equals(b, "where", StringComparison.Ordinal))
                     .ToList();
 
@@ -295,7 +295,7 @@ internal static class DocContextExtractor
 
     private static readonly Regex _xmlSummaryInlineRx = new(
         @"<summary>\s*(.*?)\s*</summary>",
-        RegexOptions.Compiled | RegexOptions.Singleline);
+        RegexOptions.Compiled | RegexOptions.Singleline, RegexBudget.Default);
 
     /// <summary>
     /// Extracts member signatures and their XML <c>&lt;summary&gt;</c> doc from an
@@ -338,7 +338,7 @@ internal static class DocContextExtractor
                 var m = _xmlSummaryInlineRx.Match(docAccum.ToString());
                 if (m.Success)
                 {
-                    pendingSummary = Regex.Replace(m.Groups[1].Value, @"\s*///\s*", " ").Trim();
+                    pendingSummary = Regex.Replace(m.Groups[1].Value, @"\s*///\s*", " ", RegexOptions.None, RegexBudget.Default).Trim();
                     if (pendingSummary.Length == 0) pendingSummary = null;
                 }
             }

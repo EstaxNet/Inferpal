@@ -130,14 +130,53 @@ internal static class SignalFile
     }
 
     /// <summary>Serialises <paramref name="payload"/> to <paramref name="path"/>. Never throws.</summary>
-    internal static void Write<T>(string path, T payload, string context)
+    /// <remarks>
+    /// <para>
+    /// <b>Write-then-rename, not write-in-place.</b> <c>File.WriteAllText</c> truncates and then
+    /// fills, so a reader that arrives in between sees an empty or half-written file. For the
+    /// channels that carry a <em>hint</em> (<c>inproc_alive</c>, <c>chat_busy</c>,
+    /// <c>active_solution</c>) that was tolerable and documented: <see cref="TryRead"/> reads a
+    /// torn file as "no signal", which errs in the safe direction. For the debugger's
+    /// <b>command</b> channel it was not — a request read at half is a request dropped in silence,
+    /// and the caller then waits out its entire two-minute budget for an answer nobody will send.
+    /// </para>
+    /// <para>
+    /// The fix belongs here rather than in that one channel: the window is a property of how the
+    /// file is written, every channel writes through this method, and the cost is a rename. The
+    /// staging name carries the PID because two processes share this directory by design (devenv
+    /// and the out-of-process host), and two of them staging under the same name would reintroduce
+    /// the tear they came here to avoid.
+    /// </para>
+    /// <para>
+    /// ⚠ This file is compiled into <c>Inferpal.InProc</c> (net472) by source link, so the
+    /// modern <c>File.Move(src, dst, overwrite)</c> overload is not available:
+    /// <c>File.Replace</c> — which exists on both frameworks — does the same job when the
+    /// destination is already there, and a plain <c>Move</c> covers the first write.
+    /// </para>
+    /// </remarks>
+    /// <returns>
+    /// Whether the signal reached disk. Most callers publish a hint and have nothing to do about a
+    /// failure, but the debugger's command channel has to tell its caller "no request was sent"
+    /// rather than let it wait out a two-minute budget for an answer that was never asked for.
+    /// </returns>
+    internal static bool Write<T>(string path, T payload, string context)
     {
+        var staging = $"{path}.{CurrentPid}.staging";
         try
         {
             Directory.CreateDirectory(Dir);
-            File.WriteAllText(path, JsonSerializer.Serialize(payload));
+            File.WriteAllText(staging, JsonSerializer.Serialize(payload));
+
+            if (File.Exists(path)) File.Replace(staging, path, destinationBackupFileName: null);
+            else                   File.Move(staging, path);
+            return true;
         }
-        catch (Exception ex) { Diagnostics.Swallow(context, ex); }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow(context, ex);
+            try { if (File.Exists(staging)) File.Delete(staging); } catch { /* cleanup */ }
+            return false;
+        }
     }
 
     /// <summary>Reads and deserialises, or <c>null</c> when absent, unreadable or malformed.</summary>

@@ -179,13 +179,11 @@ internal sealed class SignalDebugSession : IDebugSession
             var id = DebugCommandSignal.WriteRequest(request);
             if (id is null) return null;
 
-            var response = await DebugCommandSignal.WaitForResponseAsync(id, timeout, ct);
-            if (response is null)
-                // Nobody answered in time. Withdraw the request so a driver that wakes up later
-                // cannot start the user's program long after the agent gave up on it.
-                DebugCommandSignal.DiscardRequest();
-
-            return response;
+            // WaitForAnswerAsync withdraws the request itself on every path that produces no
+            // answer - timeout, driver gone, AND cancellation. The withdrawal used to live here,
+            // on the timeout branch only: a cancelled turn left a live request behind, and a
+            // driver waking up later would start the user's program long after the agent gave up.
+            return await DebugCommandSignal.WaitForAnswerAsync(id, timeout, ct);
         }
         finally
         {

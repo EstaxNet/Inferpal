@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using Inferpal.Config;
 using Inferpal.Localization;
@@ -65,7 +65,7 @@ internal sealed class RunCommandTool : ITool, IDisposable
         if (!await _approval.RequestApprovalAsync("run_command", details, ct, subject: command))
             return Strings.RunCancelled;
 
-        var background = args.TryGetProperty("background", out var bg) && bg.ValueKind == JsonValueKind.True;
+        var background = args.Bool("background", false);
         if (background)
         {
             var (cwd, env) = _session.Snapshot();

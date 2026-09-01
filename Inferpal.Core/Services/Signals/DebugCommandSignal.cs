@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Inferpal.Services.Debugging;
@@ -92,8 +92,12 @@ internal static class DebugCommandSignal
             Directory.CreateDirectory(SignalFile.Dir);
             // A leftover answer must never satisfy this request's wait.
             SignalFile.Delete(ResponsePath);
-            File.WriteAllText(RequestPath, JsonSerializer.Serialize(request));
-            return request.Id;
+            // Through SignalFile, which stages and renames: this is the one channel where a torn
+            // read is not "no signal" but a request dropped in silence, and the driver polls it
+            // every 60 ms while the caller waits two minutes for an answer nobody will send.
+            return SignalFile.Write(RequestPath, request, "DebugCommandSignal.WriteRequest")
+                ? request.Id
+                : null;
         }
         catch (Exception ex)
         {
@@ -102,19 +106,51 @@ internal static class DebugCommandSignal
         }
     }
 
-    /// <summary>Polls for the answer to <paramref name="id"/>. <c>null</c> on timeout.</summary>
-    internal static async Task<DebugCommandResponse?> WaitForResponseAsync(
+    /// <summary>
+    /// Waits for the answer to <paramref name="id"/> and <b>withdraws the request on every path
+    /// that does not produce one</b>: timeout, driver gone, or cancellation. <c>null</c> when no
+    /// answer came; cancellation propagates, after the withdrawal.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The withdrawal is the whole point of this method existing, and it belongs here rather than
+    /// at the call sites: both callers used to discard on the timeout branch only, so a cancelled
+    /// turn left a live request on disk. For <c>/debug</c> that means a driver waking up later
+    /// <b>starts the user's program</b> long after the agent gave up on it; for the §25 capture it
+    /// means a debug session opening by itself seconds after the user pressed Stop. Two call
+    /// sites, one invariant — so the invariant lives in one place.
+    /// </para>
+    /// <para>
+    /// The loop also re-checks that the driver is still alive. It was only checked once, before
+    /// the request was written: a devenv closing right after that check cost the caller its full
+    /// budget (two minutes for a capture) staring at a peer that could no longer answer.
+    /// </para>
+    /// </remarks>
+    internal static async Task<DebugCommandResponse?> WaitForAnswerAsync(
         string id, TimeSpan timeout, CancellationToken ct)
     {
-        var deadline = SignalFile.Now + timeout;
-        while (SignalFile.Now < deadline)
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            var response = TryReadResponse(id);
-            if (response is not null) return response;
-            await Task.Delay(60, ct);
+            var deadline = SignalFile.Now + timeout;
+            while (SignalFile.Now < deadline)
+            {
+                ct.ThrowIfCancellationRequested();
+                var response = TryReadResponse(id);
+                if (response is not null) return response;
+                // The peer died mid-wait: nothing will ever answer, and waiting out the budget
+                // only makes the failure slower, not surer.
+                if (!IsDriverReady()) break;
+                await Task.Delay(60, ct);
+            }
+            var last = TryReadResponse(id);
+            if (last is null) DiscardRequest();
+            return last;
         }
-        return TryReadResponse(id);
+        catch (OperationCanceledException)
+        {
+            DiscardRequest();
+            throw;
+        }
     }
 
     internal static DebugCommandResponse? TryReadResponse(string id)

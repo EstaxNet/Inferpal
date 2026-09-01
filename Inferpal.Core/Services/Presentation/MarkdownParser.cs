@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Extensions.Tables;
@@ -17,7 +17,7 @@ internal static class MarkdownParser
             .Build();
 
     private static readonly Regex _thinkTagRegex =
-        new(@"<think>[\s\S]*?</think>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        new(@"<think>[\s\S]*?</think>", RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     /// <summary>
     /// Removes all <c>&lt;think&gt;...&lt;/think&gt;</c> blocks from <paramref name="content"/>

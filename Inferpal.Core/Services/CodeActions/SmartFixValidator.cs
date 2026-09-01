@@ -79,7 +79,7 @@ internal sealed class SmartFixValidator
     // doesn't get spammed with "errors" that are really "tool not installed".
     private static readonly Regex ToolMissingRegex = new(
         @"is not recognized as|n'est pas reconnu|command not found|No such file|cannot find the path|could not be found|ENOENT",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     public async Task<string?> ValidateAsync(string writtenFilePath, CancellationToken ct)
     {

@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -76,10 +76,10 @@ internal sealed class RenameSymbolTool : ITool
                               ?? _getRoot());
         // rename_symbol WRITES files — keep it inside the workspace like write_file/apply_diff.
         PathSanitizer.AssertUnderRoot(root, _getRoot());
-        var oldName     = args.GetProperty("old_name").GetString()?.Trim() ?? string.Empty;
-        var newName     = args.GetProperty("new_name").GetString()?.Trim() ?? string.Empty;
+        var oldName     = args.Trimmed("old_name") ?? string.Empty;
+        var newName     = args.Trimmed("new_name") ?? string.Empty;
         var filePattern = args.TryGetProperty("file_pattern", out var fp) ? fp.GetString() : null;
-        var dryRun      = !args.TryGetProperty("dry_run", out var dr) || dr.GetBoolean();
+        var dryRun      = args.Bool("dry_run", true);
 
         if (string.IsNullOrEmpty(oldName) || string.IsNullOrEmpty(newName))
             return "old_name and new_name are required.";

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -16,8 +16,23 @@ internal class WebSearchTool : ITool
 
     private static HttpClient CreateClient()
     {
-        var handler = new HttpClientHandler { AllowAutoRedirect = true };
-        var client  = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) };
+        // The same two guarantees as the other two HTTP clients in this repository, for the same
+        // reasons — and they were written there and not here, which is the whole defect: three
+        // clients, one invariant, stated twice (revue post-1.6.0, item 4.1).
+        //
+        //  · No automatic redirect. `FetchUrlTool` and `DocCrawler` both say it in the same words:
+        //    an automatic redirect lets a public URL bounce the request onto 127.0.0.1 or
+        //    169.254.169.254 without passing the SSRF guard again. Here the host is fixed and the
+        //    query escaped, so exploiting it takes a redirect served by DuckDuckGo itself — a thin
+        //    risk, but the cost of closing it is a flag, and the cost of leaving it is that the
+        //    next reader of these three files cannot tell which of the two rules is the real one.
+        //  · A response ceiling. Without it the whole body is buffered before any truncation.
+        var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        var client  = new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(20),
+            MaxResponseContentBufferSize = 8 * 1024 * 1024,
+        };
         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
         client.DefaultRequestHeaders.TryAddWithoutValidation("Accept",
@@ -40,9 +55,9 @@ internal class WebSearchTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var query = args.GetProperty("query").GetString() ?? throw new ArgumentException("query required");
+        var query = args.Str("query") ?? throw new ArgumentException("query is required.");
         var max   = Math.Clamp(
-            args.TryGetProperty("max_results", out var mr) ? mr.GetInt32() : 5, 1, 10);
+            args.Int("max_results", 5), 1, 10);
 
         // The query string is sent to an external search engine — a covert exfiltration channel for
         // a prompt-injected model. Gate it like fetch_url (session "always allow" keeps it unobtrusive).
@@ -50,7 +65,7 @@ internal class WebSearchTool : ITool
             return "Cancelled by user.";
 
         var url  = $"https://html.duckduckgo.com/html/?q={Uri.EscapeDataString(query)}&kl=wt-wt";
-        var html = await _http.GetStringAsync(url, ct);
+        var html = await GetFollowingSameHostRedirectsAsync(new Uri(url), ct);
 
         var results = ParseResults(html, max);
         if (results.Count == 0)
@@ -58,6 +73,38 @@ internal class WebSearchTool : ITool
 
         return string.Join("\n\n", results.Select((r, i) =>
             $"{i + 1}. {r.Title}\n   URL: {r.Url}\n   {r.Snippet}"));
+    }
+
+    /// <summary>
+    /// GETs <paramref name="uri"/>, following redirects <b>by hand</b> and only while they stay on
+    /// DuckDuckGo over HTTPS. Turning the handler's automatic redirects off without this would have
+    /// been a silent feature regression rather than a fix: the engine does redirect (locale, /html/
+    /// path moves), and the tool would have parsed the redirect stub and reported "no results".
+    /// </summary>
+    private static async Task<string> GetFollowingSameHostRedirectsAsync(Uri uri, CancellationToken ct)
+    {
+        for (var hop = 0; hop < 4; hop++)
+        {
+            using var response = await _http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+
+            if ((int)response.StatusCode is < 300 or > 399 || response.Headers.Location is null)
+            {
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync(ct);
+            }
+
+            var next = response.Headers.Location.IsAbsoluteUri
+                ? response.Headers.Location
+                : new Uri(uri, response.Headers.Location);
+
+            if (next.Scheme != Uri.UriSchemeHttps ||
+                !(next.Host.Equals("duckduckgo.com", StringComparison.OrdinalIgnoreCase) ||
+                  next.Host.EndsWith(".duckduckgo.com", StringComparison.OrdinalIgnoreCase)))
+                throw new HttpRequestException($"web_search refused a redirect off the search engine: {next.Scheme}://{next.Host}");
+
+            uri = next;
+        }
+        throw new HttpRequestException("web_search: too many redirects.");
     }
 
     private static List<(string Title, string Url, string Snippet)> ParseResults(string html, int max)

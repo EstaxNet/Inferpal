@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using Inferpal.Services.Debugging;
 using Inferpal.Services.Signals;
 using Xunit;
@@ -135,26 +135,80 @@ public class DebugCommandSignalTests : IDisposable
     }
 
     [Fact]
-    public async Task WaitForResponse_TimesOut_WhenNoDriverAnswers()
+    public async Task WaitForAnswer_TimesOut_AndWithdrawsTheRequest()
     {
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
         DebugCommandSignal.WriteRequest(Request());
 
-        var response = await DebugCommandSignal.WaitForResponseAsync(
+        var response = await DebugCommandSignal.WaitForAnswerAsync(
             "r1", TimeSpan.FromMilliseconds(250), CancellationToken.None);
 
         Assert.Null(response);
+        Assert.False(File.Exists(DebugCommandSignal.RequestPath),
+            "an unanswered request must not survive its own wait: a driver claiming it later " +
+            "would act on a command the caller has already given up on.");
     }
 
     [Fact]
-    public async Task WaitForResponse_ReturnsTheAnswer_OnceWritten()
+    public async Task WaitForAnswer_ReturnsTheAnswer_OnceWritten()
     {
-        var wait = DebugCommandSignal.WaitForResponseAsync("r1", TimeSpan.FromSeconds(5), CancellationToken.None);
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+        var wait = DebugCommandSignal.WaitForAnswerAsync("r1", TimeSpan.FromSeconds(5), CancellationToken.None);
 
         DebugCommandSignal.WriteResponse(new DebugCommandResponse("r1", Ok: true, Text: "42"));
 
         var response = await wait;
         Assert.NotNull(response);
         Assert.Equal("42", response.Text);
+    }
+
+    /// <summary>
+    /// Cancelling withdraws the request too — the branch the two callers used to miss.
+    /// </summary>
+    /// <remarks>
+    /// Both call sites discarded on the timeout branch only, so a cancelled turn left a live
+    /// request on disk. For <c>/debug</c> that means a driver waking up afterwards <b>starts the
+    /// user's program</b> after the agent gave up; for the §25 capture, a debug session opening by
+    /// itself seconds after the user pressed Stop. The withdrawal now lives in the channel, so
+    /// neither caller can forget it again.
+    /// </remarks>
+    [Fact]
+    public async Task WaitForAnswer_WithdrawsTheRequest_WhenTheCallerCancels()
+    {
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+        DebugCommandSignal.WriteRequest(Request(op: "start"));
+        using var cts = new CancellationTokenSource();
+
+        var wait = DebugCommandSignal.WaitForAnswerAsync("r1", TimeSpan.FromMinutes(2), cts.Token);
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wait);
+        Assert.False(File.Exists(DebugCommandSignal.RequestPath),
+            "a cancelled wait must withdraw its request: this one carries op \"start\".");
+    }
+
+    /// <summary>
+    /// A peer that dies mid-wait ends the wait, instead of burning the whole budget on a devenv
+    /// that can no longer answer (two minutes, for a §25 capture).
+    /// </summary>
+    [Fact]
+    public async Task WaitForAnswer_GivesUp_WhenTheDriverDiesMidWait()
+    {
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+        DebugCommandSignal.WriteRequest(Request());
+
+        var alive = true;
+        SignalFile._isProcessAliveOverride = _ => alive;
+
+        var started = DateTimeOffset.UtcNow;
+        var wait    = DebugCommandSignal.WaitForAnswerAsync("r1", TimeSpan.FromMinutes(2), CancellationToken.None);
+        await Task.Delay(120);
+        alive = false;                                   // the devenv closes
+
+        Assert.Null(await wait);
+        Assert.True(DateTimeOffset.UtcNow - started < TimeSpan.FromSeconds(20),
+            "the wait outlived the driver: it only checked liveness once, before writing.");
+        Assert.False(File.Exists(DebugCommandSignal.RequestPath));
     }
 
     [Fact]

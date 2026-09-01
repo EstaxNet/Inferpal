@@ -253,7 +253,11 @@
     </Content>
     <!-- GPL-3.0 license embedded at the VSIX root — required by the VSIX 2.0 schema:
          <License> must reference a .txt/.rtf file INSIDE the package (not a URL),
-         otherwise Marketplace validation fails. Copy of ..\LICENSE. -->
+         otherwise Marketplace validation fails.
+         ⚠ Ce fichier n'est PAS une copie de ..\LICENSE : un VSIX n'expose qu'UN fichier de
+         licence, celui-ci porte donc ..\NOTICE (copyright + termes additionnels §7) SUIVI du
+         texte GPL v3 verbatim. Le dépôt, lui, sépare les deux — LICENSE doit rester verbatim,
+         sinon GitHub ne reconnaît plus la licence. Modifier l'un = régénérer celui-ci. -->
     <Content Include="LICENSE.txt">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

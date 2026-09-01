@@ -49,7 +49,7 @@ public class ConventionCoverageTests
         var callSite = new System.Text.RegularExpressions.Regex(
             @"(?<![\w.])(?:Regex\.(?:IsMatch|Match|Matches|Replace|Split)|new\s+Regex|(?<=\bRegex\s+\w{1,64}\s*=\s*)new)\s*\(");
 
-        foreach (var file in ToolsSources())
+        foreach (var file in UntrustedInputSources())
         {
             var source = File.ReadAllText(file);
             foreach (System.Text.RegularExpressions.Match m in callSite.Matches(source))
@@ -108,6 +108,16 @@ public class ConventionCoverageTests
 
     private static IEnumerable<string> ToolsSources() =>
         CoreSources(Path.Combine("Services", "Tools"));
+
+    /// <summary>
+    /// Where a regex meets input nobody in this repository controls. <c>Services\Tools</c> parses
+    /// the workspace; <c>Services\Docs</c> parses HTML fetched from the open web, which is the
+    /// least controlled input the product touches - and it was outside the rule until the
+    /// post-1.6.0 review found the crawler running unbounded patterns over it, while its twin
+    /// <c>FetchUrlTool</c> had been bounding the same ones since it was written.
+    /// </summary>
+    private static IEnumerable<string> UntrustedInputSources() =>
+        ToolsSources().Concat(CoreSources(Path.Combine("Services", "Docs")));
 
     private static IEnumerable<string> CoreSources(string subdir) =>
         Directory.EnumerateFiles(

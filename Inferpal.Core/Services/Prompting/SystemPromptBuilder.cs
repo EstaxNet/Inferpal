@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using Inferpal.Config;
 
@@ -96,7 +96,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
             if (!File.Exists(pinnedPath)) continue;
             try
             {
-                var pinnedContent = File.ReadAllText(pinnedPath, Encoding.UTF8).Trim();
+                var pinnedContent = CapSection(File.ReadAllText(pinnedPath, Encoding.UTF8).Trim(),
+                                               Path.GetFileName(pinnedPath));
                 if (!string.IsNullOrEmpty(pinnedContent))
                     sections.Add(new(PromptSectionKind.Pinned, Path.GetFileName(pinnedPath),
                         "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n" + pinnedContent));
@@ -119,7 +120,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
                 {
                     var matched = rules.Where(r => RulesService.Matches(r, activeFileRelPath)).ToList();
                     if (matched.Count > 0)
-                        sections.Add(new(PromptSectionKind.Rules, matched.Count.ToString(), RulesService.Render(matched)));
+                        sections.Add(new(PromptSectionKind.Rules, matched.Count.ToString(),
+                                         CapSection(RulesService.Render(matched), ".inferpal/rules")));
                 }
             }
             catch (Exception ex) { Diagnostics.Swallow("SystemPromptBuilder.Rules", ex); }
@@ -128,13 +130,42 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
         return sections;
     }
 
+    /// <summary>
+    /// Ceiling on one file-backed prompt section (~8k tokens). Every section here comes from a
+    /// file this process does not control: <c>memory.md</c> is written by the agent itself,
+    /// <c>notes.md</c> and <c>context.md</c> by the user, the rules by whoever authored the
+    /// repository, and a pinned file is whatever the user pinned — a build log, a generated header.
+    /// None of them were bounded.
+    /// </summary>
+    /// <remarks>
+    /// This is the failure the repository has already paid for twice, one layer down: an oversized
+    /// block makes the backend truncate the request <b>from the head</b>, which is exactly where the
+    /// system prompt lives — so the section that grew silently evicts the instructions it was meant
+    /// to add. <c>MaxToolResultCharsInContext</c> and <c>HistoryCompaction</c> bound the other two
+    /// inputs for that reason; the system prompt was the one left open.
+    /// </remarks>
+    internal const int MaxFileSectionChars = 32_000;
+
+    /// <summary>Caps one section and says so in the prompt — a silent cut would make the model
+    /// answer from half a rule without either party knowing.</summary>
+    internal static string CapSection(string text, string what)
+    {
+        if (text.Length <= MaxFileSectionChars) return text;
+
+        Diagnostics.Record("SystemPrompt",
+            $"'{what}' is {text.Length} chars; truncated to {MaxFileSectionChars} for the system prompt.");
+        return SafeTruncate.Truncate(text, MaxFileSectionChars)
+             + $"\n\n[... {what} truncated to {MaxFileSectionChars} characters out of {text.Length} "
+             + "to keep the system prompt inside the context window]";
+    }
+
     /// <summary>Adds a <c>## header</c> file-backed section; missing/empty/unreadable file ⇒ no-op.</summary>
     private static void AddFileSection(List<PromptSection> sections, PromptSectionKind kind, string path, string header, string detail)
     {
         if (!File.Exists(path)) return;
         try
         {
-            var text = File.ReadAllText(path, Encoding.UTF8).Trim();
+            var text = CapSection(File.ReadAllText(path, Encoding.UTF8).Trim(), detail);
             if (!string.IsNullOrEmpty(text))
                 sections.Add(new(kind, detail, "\n\n## " + header + "\n\n" + text));
         }

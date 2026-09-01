@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using Inferpal.Localization;
 
@@ -40,7 +40,7 @@ internal class RestoreFileTool : ITool
         // write_file — workspace confinement (target AND source snapshot, so the model can't
         // copy an arbitrary on-disk file into/over anything) + diff approval + pre-snapshot.
         var root = _getWorkspaceRoot();
-        var path = PathSanitizer.Sanitize(args.GetProperty("path").GetString());
+        var path = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(path, root);
 
         string? snapPath = null;

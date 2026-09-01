@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -59,6 +59,11 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         _http = handler is null
             ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
             : new HttpClient(handler, disposeHandler: false);
+        // Applies to the buffered JSON path (ReadAsStringAsync); the SSE path reads the stream
+        // itself and is bounded by MaxSseEventChars below. Both exist for the same reason: the
+        // body is written by the server, and "the user configured it" is not "the user vouches
+        // for every byte it will ever send".
+        _http.MaxResponseContentBufferSize = 32 * 1024 * 1024;
     }
 
     public string ServerName => _config.Name;
@@ -339,6 +344,9 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             return false;
         }
     }
+
+    /// <summary>Ceiling on one accumulated SSE event; past it the event is dropped, not buffered.</summary>
+    private const int MaxSseEventChars = 32 * 1024 * 1024;
 
     /// <summary>Yields the <c>data</c> payload of each SSE event from <paramref name="stream"/> (multiple
     /// <c>data:</c> lines joined by newline); non-data fields and comments are ignored.</summary>

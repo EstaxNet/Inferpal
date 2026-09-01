@@ -1,4 +1,4 @@
-using Inferpal.Services.Tools;
+﻿using Inferpal.Services.Tools;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -139,8 +139,9 @@ public class RunTestsParsersTests
             """;
         var result = RunTestsTool.ParseGoOutput(raw, 0);
 
-        Assert.Contains("✓ Tests passed.", result);
+        Assert.Contains("✓ Tests passed", result);
         Assert.DoesNotContain("Failing tests:", result);
+        Assert.True(Services.Commands.TddCommandHandler.TestsPassed(result));
     }
 
     [Fact]
@@ -158,5 +159,61 @@ public class RunTestsParsersTests
         Assert.Contains("✗ FAILED", result);
         Assert.Contains("TestFoo", result);
         Assert.Contains("foo_test.go:10", result);
+    }
+
+    // ── "exit 0 = green": the fallback 1.5.2 closed on ONE case ────────────────
+    //
+    // The 1.5.2 patch wrote the rule - never a silent exit-0-means-green fallback - and applied it
+    // to the single vstest "no test matched the filter" case. The GENERAL fallback stayed in all
+    // four parsers: unreadable summary + zero exit code => "✓ Tests passed". The chain runs all
+    // the way through - LooksLikeTestReport lets it past, TestsPassed reads the leading ✓, /tdd
+    // returns "test suite green" - so the loop can announce a victory nobody measured.
+    // One test per runner, each seen red without its fix.
+
+    [Fact]
+    public void Dotnet_ExitZeroWithoutSummary_IsNotReportedGreen()
+    {
+        // The case that actually happens: the vstest summary block changes shape (SDK 8 -> 9), or
+        // the solution holds no test project at all. `dotnet test` returns 0 and prints no
+        // summary this parser can read.
+        var result = RunTestsTool.ParseDotnetOutput("Determining projects to restore...\n  0 Warning(s)\n", 0);
+
+        Assert.DoesNotContain("✓", result);
+        Assert.False(Services.Commands.TddCommandHandler.TestsPassed(result),
+                     "an unreadable summary proves nothing: /tdd must keep going, not conclude");
+    }
+
+    [Fact]
+    public void Pytest_ExitZeroWithoutSummary_IsNotReportedGreen()
+    {
+        var result = RunTestsTool.ParsePytestOutput("collected 0 items\n", 0);
+
+        Assert.DoesNotContain("✓", result);
+        Assert.False(Services.Commands.TddCommandHandler.TestsPassed(result));
+    }
+
+    [Fact]
+    public void Cargo_ExitZeroWithoutSummary_IsNotReportedGreen()
+    {
+        var result = RunTestsTool.ParseCargoOutput("   Compiling demo v0.1.0\n    Finished test profile\n", 0);
+
+        Assert.DoesNotContain("✓", result);
+        Assert.False(Services.Commands.TddCommandHandler.TestsPassed(result));
+    }
+
+    [Fact]
+    public void Go_ExitZeroWithNoPackageThatRan_IsNotReportedGreen()
+    {
+        // go is the only runner whose exit code IS the verdict - but not when nothing ran:
+        // "[no test files]" everywhere still returns 0, and that is the easiest false green to
+        // produce (a `go test` fired at the root of a repository that has no tests).
+        var raw = """
+            ?       example.com/pkg  [no test files]
+            ?       example.com/cmd  [no test files]
+            """;
+        var result = RunTestsTool.ParseGoOutput(raw, 0);
+
+        Assert.DoesNotContain("✓", result);
+        Assert.False(Services.Commands.TddCommandHandler.TestsPassed(result));
     }
 }

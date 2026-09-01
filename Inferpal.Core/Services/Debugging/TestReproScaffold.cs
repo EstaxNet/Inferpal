@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -98,6 +98,37 @@ internal static class TestReproScaffold
     private static int _purgeDone;
 
     /// <summary>
+    /// Whether <paramref name="path"/> is a managed assembly rather than the debris of an
+    /// interrupted build: it exists, it is not empty, and it starts with the <c>MZ</c> of a PE
+    /// image. Cheap on purpose — this runs before every capture, and the failure it screens for is
+    /// truncation, not a subtly invalid image.
+    /// </summary>
+    internal static bool LooksLikeAssembly(string path)
+    {
+        try
+        {
+            var info = new FileInfo(path);
+            if (!info.Exists || info.Length < 128) return false;
+
+            using var stream = File.OpenRead(path);
+            return stream.ReadByte() == 'M' && stream.ReadByte() == 'Z';
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow($"TestReproScaffold.LooksLikeAssembly({path})", ex);
+            return false;
+        }
+    }
+
+    /// <summary>Drops a build folder so the next call rebuilds it. Never throws.</summary>
+    private static void DiscardBuild(string? dir)
+    {
+        if (string.IsNullOrEmpty(dir)) return;
+        try { Directory.Delete(dir!, recursive: true); }
+        catch (Exception ex) { Diagnostics.Swallow($"TestReproScaffold.DiscardBuild({dir})", ex); }
+    }
+
+    /// <summary>
     /// Best-effort removal of build folders for other source versions under
     /// <paramref name="baseDir"/>. A folder still in use (an older host mid-build on Windows)
     /// fails its delete and is retried at the next boot — never an error.
@@ -151,7 +182,13 @@ internal static class TestReproScaffold
         try
         {
             var dll = RunnerDllPath();
-            if (File.Exists(dll)) return dll;
+            if (LooksLikeAssembly(dll)) return dll;
+            // Present but not an assembly: a build killed at the wrong moment (the machine went to
+            // sleep, the user closed VS) leaves a zero-byte or half-written dll in a folder keyed
+            // by SOURCE hash, so nothing ever invalidates it — every §25 capture on that machine
+            // failed from then on, until someone deleted %AppData% by hand. Dropping the folder
+            // costs one rebuild; keeping it costs the feature (revue post-1.6.0, item 4.3).
+            if (File.Exists(dll)) DiscardBuild(Path.GetDirectoryName(dll));
 
             var baseDir = BaseDir();
             var hash    = SourceHash();
@@ -171,7 +208,9 @@ internal static class TestReproScaffold
                 return null;
             }
 
-            if (File.Exists(dll)) return dll; // the other host built it while we waited
+            // Même contrôle qu'à l'entrée : l'autre hôte a pu être tué en cours de build, et son
+            // reliquat est alors exactement le fichier qu'on refuse de servir.
+            if (LooksLikeAssembly(dll)) return dll; // the other host built it while we waited
 
             await File.WriteAllTextAsync(Path.Combine(dir, "InferpalTestRepro.csproj"), ProjectFile, ct);
             await File.WriteAllTextAsync(Path.Combine(dir, "Program.cs"), ProgramFile, ct);
@@ -187,10 +226,16 @@ internal static class TestReproScaffold
                 CreateNoWindow  = true,
             };
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromMinutes(3), ct);
-            if (run.TimedOut || run.ExitCode != 0 || !File.Exists(dll))
+            if (run.TimedOut || run.ExitCode != 0 || !LooksLikeAssembly(dll))
             {
                 Diagnostics.Swallow("TestReproScaffold.Build",
                     new InvalidOperationException($"exit {run.ExitCode}: {Truncate(run.Combined)}"));
+                // Ne pas laisser derrière soi ce qu'on vient de refuser : sans ça, un build
+                // interrompu redevient le cache d'entrée du prochain appel. ⚠ Le dossier de
+                // SORTIE, pas le dossier de hash : ce dernier porte `.build.lock`, encore ouvert
+                // ici — sous Windows sa suppression échouerait, en silence, et la garde serait
+                // décorative.
+                DiscardBuild(Path.GetDirectoryName(dll));
                 return null;
             }
             return dll;

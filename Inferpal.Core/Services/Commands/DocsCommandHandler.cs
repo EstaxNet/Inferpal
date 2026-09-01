@@ -1,4 +1,4 @@
-using Inferpal.Config;
+﻿using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Services.Docs;
 
@@ -79,7 +79,7 @@ internal static class DocsCommandHandler
             {
                 if (sites.Count == 0) return Strings.DocsNoSites;
 
-                var stats = docs.Sites.ToDictionary(x => x.Site.Id, x => (x.PageCount, x.ChunkCount));
+                var stats = (await docs.SitesAsync(ct)).ToDictionary(x => x.Site.Id, x => (x.PageCount, x.ChunkCount));
                 return DocSite.FormatList(sites, stats);
             }
         }

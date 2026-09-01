@@ -97,6 +97,29 @@ internal sealed class PermissionPolicy
     /// </summary>
     public static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(100);
 
+    /// <summary>
+    /// Budget des deux jeux <b>intégrés</b> — dix fois celui des règles utilisateur, et la
+    /// différence est voulue.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Les deux budgets n'ont pas la même conséquence. Un motif <em>utilisateur</em> qui expire est
+    /// <b>ignoré</b> : la règle ne décide pas, on retombe sur le prompt, et personne ne le voit.
+    /// Un motif <em>intégré</em> qui expire rend le sujet <see cref="IsOpaqueExecution">opaque</see>,
+    /// donc <b>force un prompt</b> — visible, sur une commande peut-être parfaitement ordinaire.
+    /// </para>
+    /// <para>
+    /// ⚠ Payé le 2026-08-30, une heure après avoir introduit le budget : la suite a rougi sur
+    /// <c>powershell -ExecutionPolicy Bypass -File build.ps1</c>, en parallèle des deux jambes de
+    /// test, et sur cette jambe-là seulement — irreproductible en isolation. C'était la contention,
+    /// pas le motif. Le coût réel mesuré du pire cas est de 15 ms sur 64 Ko : une seconde est
+    /// soixante-dix fois cette marge, et borne toujours le cas pathologique. Un garde-fou dont le
+    /// mode d'échec est du bruit apprend aux gens à cliquer sans lire — ce qui coûte plus cher que
+    /// ce qu'il protège.
+    /// </para>
+    /// </remarks>
+    public static readonly TimeSpan BuiltInMatchTimeout = TimeSpan.FromSeconds(1);
+
     private readonly IReadOnlyList<PermissionRule> _rules;
 
     public PermissionPolicy(IReadOnlyList<PermissionRule> rules) => _rules = rules ?? [];
@@ -114,27 +137,71 @@ internal sealed class PermissionPolicy
     // -EncodedCommand, FromBase64String…). Those constructs are handled one tier up:
     // IsOpaqueExecution forces the human prompt so no auto-approval path applies. The
     // approval prompt — where a human reads the raw command — is the actual boundary.
+    //
+    // ⚠ Every pattern here carries BuiltInMatchTimeout, for the reason written on MatchTimeout itself:
+    // these run on the approval path, over text nobody in this process wrote. The user-rule leg
+    // was bounded and this one was not (revue post-1.6.1) — measured on the first pattern below
+    // in its previous form: 49 s on a 64 KB subject, ~3 h extrapolated at 1 MB, with no prompt,
+    // no error and no way for the user to know why the turn had stopped.
     private static readonly Regex[] HardDeny =
     [
-        // rm -rf targeting filesystem root / home / wildcard root, or with --no-preserve-root
-        new(@"\brm\s+-[a-zA-Z]*[rR][a-zA-Z]*[fF][a-zA-Z]*\s+(/|~|\$HOME|/\*|\.\s*$)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\brm\b[^|&;]*--no-preserve-root", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // rm -rf targeting filesystem root / home / wildcard root, or with --no-preserve-root.
+        // The two flags are found by same-position lookaheads rather than by three consecutive
+        // [a-zA-Z]* runs: the old form was quadratic on a long flag cluster (the 49 s above) AND
+        // order-sensitive, so `-fr` — the same command, flags swapped — was never denied at all.
+        new(@"\brm\s+-(?=[a-zA-Z]*[rR])(?=[a-zA-Z]*[fF])[a-zA-Z]+\s+(/|~|\$HOME|/\*|\.\s*$)", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
+        new(@"\brm\b[^|&;]*--no-preserve-root", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Remove-Item -Recurse -Force (any order) targeting a bare drive root (C:\, D:/ …)
-        new(@"Remove-Item\b(?=[^|&;]*-Rec)(?=[^|&;]*-Force)[^|&;]*\s['""]?[A-Za-z]:[\\/]?['""]?(\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"Remove-Item\b(?=[^|&;]*-Rec)(?=[^|&;]*-Force)[^|&;]*\s['""]?[A-Za-z]:[\\/]?['""]?(\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Disk / volume destruction
-        new(@"\b(mkfs(\.\w+)?|Format-Volume|Clear-Disk|diskpart)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bformat\s+[A-Za-z]:", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bdd\b[^|&;]*\bif=", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\b(mkfs(\.\w+)?|Format-Volume|Clear-Disk|diskpart)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
+        new(@"\bformat\s+[A-Za-z]:", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
+        new(@"\bdd\b[^|&;]*\bif=", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Classic fork bomb
-        new(@":\(\)\s*\{\s*:\s*\|\s*:", RegexOptions.Compiled),
+        new(@":\(\)\s*\{\s*:\s*\|\s*:", RegexOptions.Compiled, BuiltInMatchTimeout),
     ];
 
     /// <summary>True when <paramref name="subject"/> hits the built-in hard denylist — the
     /// catastrophic-command floor that no rule, config switch or session grant can disable.
     /// It matches literal text only; obfuscated equivalents are caught by the force-prompt
     /// tier (<see cref="IsOpaqueExecution"/>), not blocked.</summary>
+    /// <remarks>
+    /// A pattern that cannot be evaluated within budget does <b>not</b> deny — a guard that could
+    /// not read its input has established nothing, and blocking on it would turn a pathological
+    /// string into a denial-of-service of the other direction. The subject is instead treated as
+    /// <see cref="IsOpaqueExecution">opaque</see>, which is the tier that exists for exactly this
+    /// state: the effect of the text cannot be determined from the text, so a human reads it.
+    /// </remarks>
     public static bool IsHardDenied(string? subject) =>
-        !string.IsNullOrEmpty(subject) && HardDeny.Any(r => r.IsMatch(subject));
+        !string.IsNullOrEmpty(subject) && MatchesAny(HardDeny, subject!, "hard denylist", out _);
+
+    /// <summary>
+    /// Runs a built-in pattern set over <paramref name="subject"/>. A pattern that exceeds
+    /// <see cref="MatchTimeout"/> counts as "no match" and raises <paramref name="unreadable"/>:
+    /// the two are different facts, and every caller here needs to tell them apart.
+    /// </summary>
+    /// <remarks>Internal rather than private so a test can drive it with its own pathological
+    /// pattern: after the rewrite above, no built-in pattern can time out any more, so the
+    /// timeout branch would otherwise be unreachable code that nothing exercises.</remarks>
+    internal static bool MatchesAny(Regex[] patterns, string subject, string what, out bool unreadable)
+    {
+        unreadable = false;
+        foreach (var pattern in patterns)
+        {
+            try
+            {
+                if (pattern.IsMatch(subject)) return true;
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                unreadable = true;
+                Diagnostics.Record("Permission",
+                    $"A {what} pattern timed out on a {subject.Length}-char subject; " +
+                    "the call is treated as opaque (human prompt), never as approved.");
+            }
+        }
+        return false;
+    }
 
     // Indirect-execution constructs that defeat text-based matching: what actually runs is
     // not the text the rules engine read. Matching one of these never *blocks* — it only
@@ -144,32 +211,32 @@ internal sealed class PermissionPolicy
     private static readonly Regex[] OpaqueExecution =
     [
         // Invoke-Expression and its alias run a string the rules engine never saw
-        new(@"\b(iex|Invoke-Expression)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\b(iex|Invoke-Expression)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Nested PowerShell with an -Encoded* switch (-e, -ec, -enc, -EncodedCommand…);
         // (?![px]) keeps the legitimate -ExecutionPolicy / -ep flags out of the match
-        new(@"\b(powershell|pwsh)(\.exe)?\b[^|&;]*[\s'""]-e(?![px])\w*", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\b(powershell|pwsh)(\.exe)?\b[^|&;]*[\s'""]-e(?![px])\w*", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Base64 payload decoded at run time, feeding whatever comes next
-        new(@"FromBase64String", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"FromBase64String", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Script block built from a string at run time
-        new(@"\[\s*scriptblock\s*\]\s*::\s*Create", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\[\s*scriptblock\s*\]\s*::\s*Create", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Call operator on a variable/subexpression (& $cmd, & $(…)) or dot-sourcing one (. $script)
-        new(@"(&\s*|(?<=^|[;|&(\s])\.\s+)\$", RegexOptions.Compiled),
+        new(@"(&\s*|(?<=^|[;|&(\s])\.\s+)\$", RegexOptions.Compiled, BuiltInMatchTimeout),
 
         // ── POSIX equivalents (§23) — same tier, same contract: force the prompt, never block ──
         // eval runs a string the rules engine never saw (the iex of POSIX shells)
-        new(@"\beval\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\beval\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Piping anything into an interpreter executes downloaded/generated text — the script
         // interpreters are the same family as the shells (curl … | python3 ≡ curl … | sh),
         // not obfuscation (pre-1.6.0 architecture review).
-        new(@"\|\s*(sudo\s+)?(sh|bash|zsh|dash|ksh|python[0-9.]*|perl|ruby|node)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\|\s*(sudo\s+)?(sh|bash|zsh|dash|ksh|python[0-9.]*|perl|ruby|node)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Invoke-Command / icm runs a script block, possibly remotely — same tier as iex
-        new(@"\b(icm|Invoke-Command)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\b(icm|Invoke-Command)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Base64 payload decoded at run time (mirror of FromBase64String)
-        new(@"\bbase64\b[^|&;]*(\s-[dD]\b|--decode)", RegexOptions.Compiled),
+        new(@"\bbase64\b[^|&;]*(\s-[dD]\b|--decode)", RegexOptions.Compiled, BuiltInMatchTimeout),
         // A shell -c whose payload is a variable — a literal -c 'text' stays readable and does not match
-        new(@"\b(sh|bash|zsh|dash|ksh)\b[^|&;]*-c\s*[""']?\s*\$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\b(sh|bash|zsh|dash|ksh)\b[^|&;]*-c\s*[""']?\s*\$", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Sourcing or exec-ing a path held in a variable
-        new(@"\b(source|exec)\s+[""']?\$", RegexOptions.Compiled),
+        new(@"\b(source|exec)\s+[""']?\$", RegexOptions.Compiled, BuiltInMatchTimeout),
     ];
 
     /// <summary>
@@ -178,8 +245,24 @@ internal sealed class PermissionPolicy
     /// operator on a variable) whose effect the rules cannot read from the text. Callers
     /// use it to force the interactive prompt instead of any auto-approval — never to block.
     /// </summary>
-    public static bool IsOpaqueExecution(string? subject) =>
-        !string.IsNullOrEmpty(subject) && OpaqueExecution.Any(r => r.IsMatch(subject));
+    /// <remarks>
+    /// A subject that <em>either</em> built-in set failed to evaluate within budget is opaque too,
+    /// and by the same definition: this tier's question is "can the text tell us what will run?",
+    /// and a guard that timed out answered no. Folding the unreadable state in here — rather than
+    /// inventing a third outcome — keeps one rule for callers: opaque means a human reads it.
+    /// </remarks>
+    public static bool IsOpaqueExecution(string? subject)
+    {
+        if (string.IsNullOrEmpty(subject)) return false;
+
+        if (MatchesAny(OpaqueExecution, subject!, "opaque-execution", out var opaqueUnreadable)) return true;
+
+        // Cheap in the normal case (the denylist is bounded and matches nothing), and the only
+        // way the hard-deny timeout reaches a decision: Evaluate() has already turned a real
+        // hard-deny match into Deny, so reaching here means it did not match — or could not say.
+        MatchesAny(HardDeny, subject!, "hard denylist", out var denyUnreadable);
+        return opaqueUnreadable || denyUnreadable;
+    }
 
     /// <summary>Classifies a tool call. See the type remarks for the evaluation order.</summary>
     /// <remarks>
