@@ -1,7 +1,14 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
+
+## 1.6.6
+
+- Version alignment only — the two front-ends share one number, and this one is entirely in the
+  Visual Studio package: it had stopped carrying Roslyn since 1.6.0, which left its semantic index
+  holding no C# file at all. The VS Code extension was never affected: its host is published
+  self-contained, so `Microsoft.CodeAnalysis` ships with it and always has.
 
 ## 1.6.5
 

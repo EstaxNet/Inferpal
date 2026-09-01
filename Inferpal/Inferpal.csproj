@@ -430,6 +430,79 @@
     </ItemGroup>
   </Target>
 
+  <!-- ── Put Roslyn back into the VSIX ─────────────────────────────────────
+       Second exception to the same rule, found the same way and for the same reason: the SDK
+       drops what it believes Visual Studio provides, and for Roslyn that belief is wrong for an
+       out-of-process payload.
+
+       Measured (2026-09-02), in three places, because "Visual Studio has Roslyn" is true and
+       irrelevant — the question is whether OUR host resolves it:
+         · the package: no Microsoft.CodeAnalysis* since 1.6.0;
+         · the out-of-process host closure (ServiceHub.Host.Extensibility.amd64,
+           ServiceHub.Host.Extensibility.x64.deps.json, 78 libraries): absent, and its
+           runtimeconfig declares no additional probing path;
+         · the shared framework: absent.
+       Visual Studio does carry thirteen copies of Roslyn, and every one of them sits inside some
+       component's own folder — LanguageServices, Copilot, IntelliCode, MSBuild, and
+       AppModernizationForDotNet, the out-of-process extension whose shape ours copies, which
+       ships its own. Nothing shared provides it, so the package must carry it.
+
+       What it costs when missing, and all of it silent: RoslynChunker is tier 1 of the RAG
+       chunker for every .cs file, and the FileNotFoundException is raised when the CLR JITs
+       Chunk, so it escapes that method's own catch and lands in the indexing loop's
+       `catch { /* skip unreadable files */ }` — every C# file is dropped from the semantic
+       index. analyze_impact and rename_symbol swallow it into Diagnostics and fall back to
+       their textual path.
+
+       ⚠ Why 1.6.1's "worked in every respect except the RAG index" could not see this: Roslyn's
+       only paths run INSIDE the RAG index, which was already dead from the missing SQLite
+       engine. That evidence bounded the defect to SQLite, and it could not have shown anything
+       else. Absence of a symptom in a component that never ran is not evidence.
+
+       ⚠ The two assemblies and nothing more. Roslyn's own dependencies — System.Collections.
+       Immutable, System.Reflection.Metadata, System.Threading.Tasks.Dataflow — are in the host
+       closure (10.0.10) AND in the shared framework; shipping our copies is precisely what 1.6.4
+       did wrong. The satellites stay out too: we parse syntax trees, we never render a localized
+       diagnostic.
+
+       Verified with the repo's bare-folder harness (extract the VSIX, drop a net8 app with no
+       deps.json beside it so the runtime probes that directory and nothing else) carrying a
+       positive witness: before, SQLite green and both Roslyn probes FileNotFoundException on
+       Microsoft.CodeAnalysis 4.14.0.0; after, three green. Locked by Test-VsVsix. -->
+  <Target Name="RestoreRoslynToVsix"
+          BeforeTargets="GenerateTemplatesManifest;GenerateFileManifest">
+    <ItemGroup>
+      <_VsixAlreadyR Include="@(VSIXSourceItem)">
+        <FlatName>%(Filename)%(Extension)</FlatName>
+      </_VsixAlreadyR>
+
+      <!-- Exact file names, not a prefix: "Microsoft.CodeAnalysis.*" would also match the
+           thirteen satellite folders and the analyzer assembly. -->
+      <_VsixRoslyn Include="@(ReferenceCopyLocalPaths)"
+                   Condition="'%(Extension)' == '.dll' And
+                              ('%(Filename)' == 'Microsoft.CodeAnalysis' Or
+                               '%(Filename)' == 'Microsoft.CodeAnalysis.CSharp')">
+        <FlatName>%(Filename)%(Extension)</FlatName>
+        <TargetPath>%(Filename)%(Extension)</TargetPath>
+      </_VsixRoslyn>
+      <_VsixRoslyn Remove="@(_VsixAlreadyR)" MatchOnMetadata="FlatName" />
+      <VSIXSourceItem Include="@(_VsixRoslyn)" />
+    </ItemGroup>
+
+    <!-- Assert the POSTCONDITION, not that the target did something: a no-op is correct when the
+         SDK stops pruning Roslyn, and a failure to match is not. Without this the package would
+         go back to a parser-less facade in silence — the exact way this shipped for six
+         versions. -->
+    <ItemGroup>
+      <_RoslynInVsix Include="@(VSIXSourceItem)"
+                     Condition="'%(Filename)%(Extension)' == 'Microsoft.CodeAnalysis.dll'" />
+      <_RoslynCSharpInVsix Include="@(VSIXSourceItem)"
+                           Condition="'%(Filename)%(Extension)' == 'Microsoft.CodeAnalysis.CSharp.dll'" />
+    </ItemGroup>
+    <Error Condition="'@(_RoslynInVsix)' == '' Or '@(_RoslynCSharpInVsix)' == ''"
+           Text="RestoreRoslynToVsix: the VSIX carries no Microsoft.CodeAnalysis.dll and/or Microsoft.CodeAnalysis.CSharp.dll. Nothing else provides them — not the out-of-process host closure, not the shared framework — so the RAG index would silently drop every C# file, and analyze_impact / rename_symbol would fall back to text." />
+  </Target>
+
   <!-- ── Prune non-Windows runtime assets from the VSIX ──────────────────────
        SQLitePCLRaw (via Microsoft.Data.Sqlite) pulls ~15 MB of Linux/macOS/wasm natives
        (libe_sqlite3.so/.dylib/.a). Useless (Windows amd64-only extension) and worse:
