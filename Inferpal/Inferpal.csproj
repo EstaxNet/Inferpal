@@ -401,6 +401,13 @@
         <TargetPath>%(Filename)%(Extension)</TargetPath>
       </_VsixRestore>
 
+      <!-- ⚠ Natives never travel through the managed restore above: it flattens whatever it is
+           given, and among the RID copies of one native there is no reason the flattened one is
+           the right architecture. Measured the hard way - the flat e_sqlite3.dll came out ARM64
+           on an amd64-only extension, shadowed the x64 copy, and the package failed exactly as
+           before with a different exception. -->
+      <_VsixRestore Remove="@(_VsixRestore)" Condition="'%(Extension)' == '.dll' And '%(Filename)' == 'e_sqlite3'" />
+
       <!-- What the IDE owns: it ships them, it serves them, and shipping our own copy would
            put a second one in front of the host's. -->
       <_VsixRestore Remove="@(_VsixRestore)"
@@ -422,12 +429,27 @@
            is 3.8 MB in an 11 MB package; the cost of guessing wrong is a feature that fails
            silently on every machine. -->
       <_VsixNative Include="@(NativeCopyLocalItems);@(RuntimeTargetsCopyLocalItems)"
-                   Condition="'%(Extension)' == '.dll'">
+                   Condition="'%(Extension)' == '.dll' And '%(DestinationSubDirectory)' != ''">
         <FlatName>%(Filename)%(Extension)</FlatName>
       </_VsixNative>
       <_VsixNative Remove="@(_VsixAlready)" MatchOnMetadata="FlatName" />
       <VSIXSourceItem Include="@(_VsixNative)">
         <TargetPath>%(_VsixNative.DestinationSubDirectory)%(Filename)%(Extension)</TargetPath>
+      </VSIXSourceItem>
+
+      <!-- The flat copy, named explicitly and taken from win-x64 - the one and only architecture
+           this extension installs on (ProductArchitecture amd64 on all three targets). -->
+      <!-- Deux listes dans un seul Include : %(DestinationSubDirectory) ne peut alors pas
+           etre qualifie, et non qualifie il batche sur VSIXSourceItem lui-meme, dont les
+           autres elements n ont pas cette metadonnee (MSB4096). D ou la liste intermediaire. -->
+      <_VsixFlatNative Include="@(NativeCopyLocalItems);@(RuntimeTargetsCopyLocalItems)"
+                       Condition="'%(Filename)%(Extension)' == 'e_sqlite3.dll'">
+        <Rid>%(DestinationSubDirectory)</Rid>
+      </_VsixFlatNative>
+      <_VsixFlatNative Remove="@(_VsixFlatNative)"
+                       Condition="!$([System.String]::Copy('%(Rid)').Replace('/','\').StartsWith('runtimes\win-x64\'))" />
+      <VSIXSourceItem Include="@(_VsixFlatNative)">
+        <TargetPath>e_sqlite3.dll</TargetPath>
       </VSIXSourceItem>
     </ItemGroup>
   </Target>

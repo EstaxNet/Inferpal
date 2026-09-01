@@ -3,6 +3,12 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.3
+
+- Version alignment only, again — the two front-ends share one number. 1.6.2 shipped a fix for the
+  Visual Studio package that did not work; 1.6.3 is the one that does. Nothing in either release
+  touches the VS Code extension.
+
 ## 1.6.2
 
 - Version alignment only — the two front-ends share one number. The fix in this release is in the
