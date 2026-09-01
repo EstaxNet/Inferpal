@@ -361,6 +361,77 @@
     </ItemGroup>
   </Target>
 
+  <!-- ── Put back what the SDK pruned and this extension actually needs ─────
+       Measured 2026-09-01, comparing the shipped packages: 1.5.2 carried 259 entries and
+       15.8 MB, 1.6.0 and 1.6.1 carry 101 and 3.3 MB. Forty-one assemblies stopped shipping
+       with the switch to VssdkCompatibleExtension, because the VSSDK removes from a package
+       what it believes Visual Studio provides at run time.
+
+       That belief is an IN-PROCESS one: it holds for an assembly loaded into devenv, whose
+       load path holds all of them. This extension's payload runs OUT of process, in a .NET 8
+       host that probes the extension's own folder — so for everything that is not owned by
+       the IDE itself, the assumption is simply false.
+
+       The instance that made it visible: Microsoft.Data.Sqlite.dll shipped without
+       SQLitePCLRaw.core / .provider.e_sqlite3 / .batteries_v2 or the native e_sqlite3.dll —
+       a facade with no engine, which throws at the first connection, i.e. the RAG index. A
+       full scan of a VS 18 installation finds no provider.e_sqlite3 and NO e_sqlite3.dll at
+       all. But fixing only that instance would leave the class: Roslyn and its closure went
+       the same way, and nothing says the next dependency will announce itself as loudly.
+
+       So the rule is a property, not a list: every copy-local NuGet assembly the build
+       produces goes into the package, EXCEPT the ones Visual Studio genuinely owns and
+       serves to its own host (Microsoft.VisualStudio.*, Microsoft.ServiceHub.*). Whatever is
+       already in the package stays as it is — this only adds back what was dropped.
+
+       Why nobody saw it: deploy-dev.ps1 copies the BUILD OUTPUT, which has everything. Only
+       a package install was affected — the same shape as every other defect of this arc.
+       Locked by Test-VsVsix, which now opens the Visual Studio package before publishing it. -->
+  <Target Name="RestorePrunedRuntimeDependenciesToVsix"
+          BeforeTargets="GenerateTemplatesManifest;GenerateFileManifest">
+    <ItemGroup>
+      <!-- Keyed by flat file name so the de-duplication below can match on it. -->
+      <_VsixAlready Include="@(VSIXSourceItem)">
+        <FlatName>%(Filename)%(Extension)</FlatName>
+      </_VsixAlready>
+
+      <_VsixRestore Include="@(ReferenceCopyLocalPaths)"
+                    Condition="'%(Extension)' == '.dll' And '%(ReferenceCopyLocalPaths.NuGetPackageId)' != ''">
+        <FlatName>%(Filename)%(Extension)</FlatName>
+        <TargetPath>%(Filename)%(Extension)</TargetPath>
+      </_VsixRestore>
+
+      <!-- What the IDE owns: it ships them, it serves them, and shipping our own copy would
+           put a second one in front of the host's. -->
+      <_VsixRestore Remove="@(_VsixRestore)"
+                    Condition="$([System.String]::Copy('%(Filename)').StartsWith('Microsoft.VisualStudio.'))
+                            Or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.ServiceHub.'))" />
+
+      <!-- Never add a second entry for something already packaged. -->
+      <_VsixRestore Remove="@(_VsixAlready)" MatchOnMetadata="FlatName" />
+
+      <VSIXSourceItem Include="@(_VsixRestore)" />
+
+      <!-- The natives. PruneNonWindowsRuntimeAssets has already removed every non-Windows one,
+           so what remains is win / win-x64 / win-arm64.
+           ⚠ e_sqlite3.dll ends up BOTH flat at the root and under runtimes\win-*\native\, and
+           that is deliberate rather than an oversight: a DllImport probes the directory the
+           assembly sits in, while the runtimes\<rid>\ layout is only resolved through a
+           deps.json — which a VSIX payload does not carry. Which of the two the out-of-process
+           host actually uses is not something the package can know, so it ships both. The cost
+           is 3.8 MB in an 11 MB package; the cost of guessing wrong is a feature that fails
+           silently on every machine. -->
+      <_VsixNative Include="@(NativeCopyLocalItems);@(RuntimeTargetsCopyLocalItems)"
+                   Condition="'%(Extension)' == '.dll'">
+        <FlatName>%(Filename)%(Extension)</FlatName>
+      </_VsixNative>
+      <_VsixNative Remove="@(_VsixAlready)" MatchOnMetadata="FlatName" />
+      <VSIXSourceItem Include="@(_VsixNative)">
+        <TargetPath>%(_VsixNative.DestinationSubDirectory)%(Filename)%(Extension)</TargetPath>
+      </VSIXSourceItem>
+    </ItemGroup>
+  </Target>
+
   <!-- ── Prune non-Windows runtime assets from the VSIX ──────────────────────
        SQLitePCLRaw (via Microsoft.Data.Sqlite) pulls ~15 MB of Linux/macOS/wasm natives
        (libe_sqlite3.so/.dylib/.a). Useless (Windows amd64-only extension) and worse:

@@ -3,6 +3,13 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.2
+
+- Version alignment only — the two front-ends share one number. The fix in this release is in the
+  Visual Studio package, which shipped `Microsoft.Data.Sqlite` without the SQLitePCLRaw provider or
+  the native `e_sqlite3`. The VS Code build carries its own self-contained host and has always
+  shipped both, so nothing here changes for you.
+
 ## 1.6.1
 
 
