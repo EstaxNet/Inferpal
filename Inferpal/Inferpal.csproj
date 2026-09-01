@@ -503,6 +503,61 @@
            Text="RestoreRoslynToVsix: the VSIX carries no Microsoft.CodeAnalysis.dll and/or Microsoft.CodeAnalysis.CSharp.dll. Nothing else provides them — not the out-of-process host closure, not the shared framework — so the RAG index would silently drop every C# file, and analyze_impact / rename_symbol would fall back to text." />
   </Target>
 
+  <!-- ── Put back what the FIM sidecar cannot start without ────────────────
+       Third exception, same class, and the one nobody could have seen from inside the process
+       model the other two live in: Inferpal.Fim is a SEPARATE net8 process. It does not get the
+       out-of-process host's TPA, it does not get devenv's bindingRedirect, and it resolves
+       strictly through its own Inferpal.Fim.deps.json against the machine's shared framework.
+
+       Measured (2026-09-02) by running Inferpal.Fim.exe from the extracted package, with the same
+       exe from the build output as a positive witness:
+         package      -> FileNotFoundException: System.Text.Json 9.0.0.0, from
+                         InferpalConfig.LoadUncached() — the sidecar dies before its first line
+         build output -> starts, exits 0
+       So ghost-text FIM was dead on every VSIX install since 1.6.0, and silently: the failure is
+       an immediate process death inside the in-process half, whose Diagnostics ring is not the
+       one /diagnostics reads.
+
+       Why the SDK dropped it: Visual Studio does provide System.Text.Json 9 — to devenv, through
+       a bindingRedirect, and to the out-of-process host, at 10.0.0.0 from ServiceHub's
+       SharedAssemblies. Neither reaches a child process. The shared framework of net8 carries
+       8.0.0.0, and 8 does not satisfy a request for 9.
+
+       ⚠ At the package root ON PURPOSE, and it is not the 1.6.4 mistake. A managed host consults
+       its TPA before probing a directory: the out-of-process host already resolves this assembly
+       from its own closure at 10.0.0.0, so a 9.0.0 copy sitting in the extension folder is inert
+       for it — which 1.6.0 through 1.6.5 confirm from the other side, having shipped none and
+       worked. The sidecar, resolving from its own directory, is the only reader.
+
+       ⚠ ONE assembly, because one is what the measurement named. Its deps.json also lists
+       System.Collections.Immutable, System.Reflection.Metadata and System.IO.Pipelines as absent,
+       and those stay out until a run demands them — System.IO.Pipelines especially, which belongs
+       to the host's transport stack and is exactly what 1.6.4 should not have shipped. -->
+  <Target Name="RestoreSidecarRuntimeToVsix"
+          BeforeTargets="GenerateTemplatesManifest;GenerateFileManifest">
+    <ItemGroup>
+      <_VsixAlreadyS Include="@(VSIXSourceItem)">
+        <FlatName>%(Filename)%(Extension)</FlatName>
+      </_VsixAlreadyS>
+      <_VsixSidecar Include="@(ReferenceCopyLocalPaths)"
+                    Condition="'%(Extension)' == '.dll' And '%(Filename)' == 'System.Text.Json'">
+        <FlatName>%(Filename)%(Extension)</FlatName>
+        <TargetPath>%(Filename)%(Extension)</TargetPath>
+      </_VsixSidecar>
+      <_VsixSidecar Remove="@(_VsixAlreadyS)" MatchOnMetadata="FlatName" />
+      <VSIXSourceItem Include="@(_VsixSidecar)" />
+    </ItemGroup>
+
+    <!-- Postcondition, not "the target did something": a no-op is correct the day the SDK stops
+         pruning it, a failure to match never is. -->
+    <ItemGroup>
+      <_StjInVsix Include="@(VSIXSourceItem)"
+                  Condition="'%(Filename)%(Extension)' == 'System.Text.Json.dll'" />
+    </ItemGroup>
+    <Error Condition="'@(_StjInVsix)' == ''"
+           Text="RestoreSidecarRuntimeToVsix: the VSIX carries no System.Text.Json.dll. Inferpal.Fim is a separate process resolving through its own deps.json; without it the sidecar dies at startup and ghost-text FIM is dead on every package install, silently." />
+  </Target>
+
   <!-- ── Prune non-Windows runtime assets from the VSIX ──────────────────────
        SQLitePCLRaw (via Microsoft.Data.Sqlite) pulls ~15 MB of Linux/macOS/wasm natives
        (libe_sqlite3.so/.dylib/.a). Useless (Windows amd64-only extension) and worse:
