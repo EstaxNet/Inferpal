@@ -7,6 +7,7 @@
   "Restart": "Перезапустить",
   "Inferpal host failed to start: {0}": "Не удалось запустить хост Inferpal: {0}",
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Хост Inferpal не запущен — используйте «Inferpal: перезапустить хост».",
+  "Inferpal needs an open folder to start — open one and it starts on its own.": "Для запуска Inferpal нужна открытая папка — откройте её, и он запустится сам.",
   "Naming the session…": "Создание имени сеанса…",
   "{0} msg · from {1} @ turn {2}": "{0} сообщ. · из {1} @ шаг {2}",
   "The command failed.": "Команда завершилась ошибкой.",

@@ -7,6 +7,7 @@
   "Restart": "Redémarrer",
   "Inferpal host failed to start: {0}": "Échec du démarrage du host Inferpal : {0}",
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Le host Inferpal n’est pas en cours d’exécution — utilisez « Inferpal : Redémarrer le host ».",
+  "Inferpal needs an open folder to start — open one and it starts on its own.": "Inferpal a besoin d’un dossier ouvert pour démarrer — ouvrez-en un et il démarre tout seul.",
   "Naming the session…": "Nommage de la session…",
   "{0} msg · from {1} @ turn {2}": "{0} msg · depuis {1} @ tour {2}",
   "The command failed.": "La commande a échoué.",

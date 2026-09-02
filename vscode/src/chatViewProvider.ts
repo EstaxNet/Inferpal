@@ -4,6 +4,7 @@
 import * as vscode from 'vscode';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
+import { hostUnavailableMessage, promptOpenFolder } from './hostStatus';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, renderExport, toSavedMessages, toTranscript } from './chatSessions';
 import { CodeActionResult, SavedMessage, SlashEffect } from './protocol';
@@ -822,12 +823,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     if (!host?.isRunning) {
-      this.append({
-        role: 'error',
-        text: vscode.l10n.t('Inferpal host is not running — use "Inferpal: Restart Host".'),
-        timestamp: ChatViewProvider.now(),
-      });
+      // Two states, two remedies: with no folder open the host was never spawned, and
+      // "Restart Host" cannot change that (hostStatus.ts).
+      this.append({ role: 'error', text: hostUnavailableMessage(), timestamp: ChatViewProvider.now() });
       this.hydrate();
+      promptOpenFolder();
       return;
     }
 

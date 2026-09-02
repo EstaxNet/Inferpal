@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import { HostClient } from './hostClient';
+import { hostUnavailableMessage, promptOpenFolder } from './hostStatus';
 import { SettingsSchema } from './protocol';
 
 interface SettingsInbound {
@@ -61,7 +62,10 @@ export class SettingsPanel {
     switch (msg.type) {
       case 'ready': {
         if (!host?.isRunning) {
-          this.post({ type: 'error', message: vscode.l10n.t('Inferpal host is not running — use "Inferpal: Restart Host".') });
+          // Same two states as the chat bubble — an empty form telling the user to restart a
+          // host that no folder allowed to start is the worst of the two wordings.
+          this.post({ type: 'error', message: hostUnavailableMessage() });
+          promptOpenFolder();
           return;
         }
         try {

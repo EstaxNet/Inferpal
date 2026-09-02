@@ -7,6 +7,7 @@
   "Restart": "重启",
   "Inferpal host failed to start: {0}": "Inferpal 主机启动失败：{0}",
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Inferpal 主机未运行 — 请使用 “Inferpal: 重启主机”。",
+  "Inferpal needs an open folder to start — open one and it starts on its own.": "Inferpal 需要打开一个文件夹才能启动 — 打开文件夹后它会自动启动。",
   "Naming the session…": "正在命名会话…",
   "{0} msg · from {1} @ turn {2}": "{0} 条 · 来自 {1} 第 {2} 轮",
   "The command failed.": "命令执行失败。",

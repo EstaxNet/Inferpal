@@ -8,6 +8,7 @@ import { SettingsPanel } from './settingsPanel';
 import { DebugBridge } from './debugBridge';
 import { EditorBridge } from './editorBridge';
 import { HostClient } from './hostClient';
+import { promptOpenFolder, workspaceRoot } from './hostStatus';
 import { FimProvider } from './inlineCompletions';
 
 let host: HostClient | undefined;
@@ -150,18 +151,15 @@ async function startHostCore(
     host = undefined;
   }
 
-  const rootDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const rootDir = workspaceRoot();
   if (!rootDir) {
     log('[inferpal] no workspace folder open — host not started');
     // Always tell the user (not only on manual restart): the empty-looking chat and the
-    // unreachable settings panel are baffling without this hint.
-    void vscode.window
-      .showWarningMessage(vscode.l10n.t('Inferpal needs an open folder to start.'), vscode.l10n.t('Open Folder'))
-      .then((choice) => {
-        if (choice) {
-          void vscode.commands.executeCommand('vscode.openFolder');
-        }
-      });
+    // unreachable settings panel are baffling without this hint. The chat and the settings
+    // panel say the same thing when they are the ones being clicked (hostStatus.ts) — this
+    // toast can be dismissed, and it was, which is how a fresh install got told to restart
+    // a host that was never meant to be running.
+    promptOpenFolder();
     return;
   }
 

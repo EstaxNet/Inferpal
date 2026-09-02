@@ -7,6 +7,7 @@
   "Restart": "Uruchom ponownie",
   "Inferpal host failed to start: {0}": "Nie udało się uruchomić hosta Inferpal: {0}",
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Host Inferpal nie działa — użyj „Inferpal: Uruchom ponownie hosta”.",
+  "Inferpal needs an open folder to start — open one and it starts on its own.": "Inferpal wymaga otwartego folderu, aby się uruchomić — otwórz folder, a uruchomi się sam.",
   "Naming the session…": "Nazywanie sesji…",
   "{0} msg · from {1} @ turn {2}": "{0} wiad. · z {1} @ tura {2}",
   "The command failed.": "Polecenie nie powiodło się.",

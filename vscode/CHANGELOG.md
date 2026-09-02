@@ -5,10 +5,17 @@ extension share one engine and one version number.
 
 ## 1.6.6
 
-- Version alignment only — the two front-ends share one number, and this one is entirely in the
-  Visual Studio package: it had stopped carrying Roslyn since 1.6.0, which left its semantic index
-  holding no C# file at all. The VS Code extension was never affected: its host is published
-  self-contained, so `Microsoft.CodeAnalysis` ships with it and always has.
+- **A first install with no folder open is no longer told to restart the host.** Without a
+  workspace folder the extension deliberately never starts one — the workspace root is a required
+  handshake parameter — but the chat and the settings panel still advised *« Inferpal: Restart
+  Host »*, which cannot help in that state. Both now say what is actually missing and offer
+  *Open Folder*, in all ten languages.
+- The nine localization bundles are now guarded by a test: a key added to eight of them used to
+  ship as a half-translated UI, silently.
+- The rest of this release is in the Visual Studio package: it had stopped carrying Roslyn since
+  1.6.0, which left its semantic index holding no C# file at all. The VS Code extension was never
+  affected there — its host is published self-contained, so `Microsoft.CodeAnalysis` ships with it
+  and always has.
 
 ## 1.6.5
 

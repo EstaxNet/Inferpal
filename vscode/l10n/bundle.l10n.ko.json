@@ -7,6 +7,7 @@
   "Restart": "다시 시작",
   "Inferpal host failed to start: {0}": "Inferpal 호스트를 시작하지 못했습니다: {0}",
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "Inferpal 호스트가 실행 중이 아닙니다 — \"Inferpal: 호스트 다시 시작\"을 사용하세요.",
+  "Inferpal needs an open folder to start — open one and it starts on its own.": "Inferpal을 시작하려면 열린 폴더가 필요합니다 — 폴더를 열면 자동으로 시작됩니다.",
   "Naming the session…": "세션 이름을 생성하는 중…",
   "{0} msg · from {1} @ turn {2}": "{0}개 · {1} 의 턴 {2} 에서",
   "The command failed.": "명령이 실패했습니다.",
