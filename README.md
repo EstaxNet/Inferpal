@@ -143,4 +143,4 @@ Licensed under the [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0).
 
 ## Acknowledgments
 
-Developed with the assistance of **Claude Opus 4.8** (Anthropic).
+Developed with the assistance of **Claude Opus 5.0** (Anthropic).
