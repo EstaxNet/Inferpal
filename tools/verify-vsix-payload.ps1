@@ -58,7 +58,12 @@ function Get-VsixBuildPostconditions {
     try { $text = [IO.File]::ReadAllText($csproj) } catch { return $null }
     $rx = '<_\w*InVsix\s+Include="@\(VSIXSourceItem\)"[^>]*?Condition="''%\(Filename\)%\(Extension\)''\s*==\s*''([^'']+)'''
     $names = [regex]::Matches($text, $rx) | ForEach-Object { $_.Groups[1].Value }
-    return @($names | Sort-Object -Unique)
+    # The comma is load-bearing: `return @()` UNROLLS to $null on assignment, which is the
+    # value this function reserves for "unreadable". Without it, zero postconditions -- the
+    # case the witness below exists for -- would be reported as a missing csproj, sending the
+    # reader to look for a file that is right there. Measured on this very function the day
+    # it was written, having fixed the same defect in Get-GalleryVersions hours earlier.
+    return ,@($names | Sort-Object -Unique)
 }
 
 <#
