@@ -88,6 +88,16 @@ jobs:
       - name: Build VS 2026 VSIX
         run: dotnet build Inferpal/Inferpal.csproj -c Release --no-restore
 
+      # ⚠ THE content gate, and it runs HERE because this is the path that actually publishes.
+      # Five releases -- 1.6.0 through 1.6.5 -- shipped with SDK-pruned assemblies, and every
+      # check written to catch that lived in the release tooling, which is private and therefore
+      # absent from the tree this runner checks out. The bytes attached below are the ones people
+      # download and the ones a provenance check treats as ground truth; until now they were the
+      # only artifact in the whole chain that no content gate ever opened.
+      - name: Verify the VS package carries what the build declares
+        shell: pwsh
+        run: ./tools/verify-vsix-payload.ps1 -Vsix Inferpal/bin/Release/net8.0-windows/Inferpal.vsix -RepoRoot .
+
       - name: Install extension dependencies
         working-directory: vscode
         run: npm ci
