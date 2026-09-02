@@ -7,6 +7,16 @@ on:
   push:
     tags: ['v*']
 
+# The release for a tag is written once. Two runs on the same ref — a manual re-dispatch, a
+# re-run of a flaky step, a force-pushed tag — would both reach the upload step, and
+# `action-gh-release` REPLACES same-named assets in place. Builds are not byte-reproducible
+# (zip entries carry wall-clock time), so the second run silently changes the bytes and the
+# SHA256SUMS.txt of a release people may already have downloaded and verified. Queue, never
+# cancel: cancelling mid-upload is the one way to leave a release half-written.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write   # create the release and upload assets
 
@@ -31,13 +41,43 @@ jobs:
 
       - name: Check tag matches Directory.Build.props
         shell: pwsh
+        # ⚠ The tag arrives through `env:`, never interpolated into the script body. A `${{ }}`
+        # expression inside a `run:` block is substituted as TEXT before the shell parses it, so a
+        # tag carrying a quote closes the string and the rest of its name runs as PowerShell. Only
+        # someone with push access can create a tag here, which is why this is a hardening fix and
+        # not an incident — but it is the one pattern GitHub's own guidance says never to write,
+        # and the correct form costs a line.
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
           $props = Get-Content Directory.Build.props -Raw
           if ($props -notmatch '<Version>([^<]+)</Version>') { throw 'No <Version> in Directory.Build.props' }
           $version = $Matches[1]
-          $tag = '${{ github.ref_name }}'.TrimStart('v')
+          $tag = $env:TAG_NAME.TrimStart('v')
           if ($tag -ne $version) { throw "Tag v$tag does not match Directory.Build.props <Version>$version</Version> - bump the props (or the tag) first." }
           "VERSION=$version" | Out-File $env:GITHUB_ENV -Append
+
+      # The release is the trust anchor: `Test-ArtifactProvenance` proves a published binary by
+      # comparing its hash to the SHA256SUMS.txt of THIS job. That premise holds only while the
+      # assets are immutable, so a re-run over an existing release must stop here rather than
+      # rewrite it. Deleting the release (or the tag) is a deliberate human act; overwriting it
+      # by accident is not. Set ALLOW_RELEASE_OVERWRITE=true on a manual dispatch to bypass.
+      - name: Refuse to overwrite an existing release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          $existing = gh release view $env:TAG_NAME --json tagName --jq '.tagName' 2>$null
+          if ($LASTEXITCODE -eq 0 -and $existing) {
+            if ($env:ALLOW_RELEASE_OVERWRITE -eq 'true') {
+              Write-Host "::warning::release $existing exists; overwriting on explicit request"
+            } else {
+              throw "A release already exists for $env:TAG_NAME. Its assets and SHA256SUMS.txt are what provenance checks against, so this job will not rewrite them. Delete the release deliberately, or publish a new version."
+            }
+          } else {
+            Write-Host "no release for $env:TAG_NAME yet - proceeding"
+          }
 
       - name: Restore
         run: dotnet restore Inferpal.sln
@@ -82,9 +122,22 @@ jobs:
           [System.IO.File]::WriteAllText("$dist/SHA256SUMS.txt", ($sums -join "`n") + "`n")
           Get-ChildItem $dist | ForEach-Object { Write-Host "  $($_.Name)  ($([math]::Round($_.Length/1MB,1)) MB)" }
 
+      # ⚠ Pinned to a commit, not to `@v3`. This is the only THIRD-PARTY action in the repository
+      # and the only step that runs with `contents: write`: a moving major tag means whoever
+      # controls that upstream account can, at any later date, run their code with permission to
+      # publish assets under this project's releases. For a product whose whole claim is "runs
+      # locally, trust the binary you download", the release job is the trust anchor — and the
+      # SHA256SUMS.txt written two steps above proves nothing against an attacker inside the job.
+      # The `actions/*` steps keep their major tags on purpose: first-party, and pinning them would
+      # mean hand-bumping their security updates. Bump this SHA deliberately, from the tag you
+      # intend (v3 = 3d0d9888, 2026-07-13).
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         with:
           name: Inferpal ${{ env.VERSION }}
           files: dist/${{ env.VERSION }}/*
+          # A glob that matches nothing publishes an EMPTY release without failing. The assemble
+          # step above is what fills that folder; if it ever silently produces less, the release
+          # must not be created rather than created short.
+          fail_on_unmatched_files: true
           generate_release_notes: true
