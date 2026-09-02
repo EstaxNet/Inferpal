@@ -96,9 +96,19 @@ internal sealed class LspJsonRpc : IDisposable
                 // ── Parse headers ─────────────────────────────────────────────
                 int contentLength = 0;
                 string? line;
+                var sawHeader = false;
 
                 while ((line = await ReadHeaderLineAsync(_input, _cts.Token)) is not null)
                 {
+                    // ⚠ Third reader of this same framing, third time the same gap: a UTF-8
+                    // BOM ahead of the first header makes the line stop matching the marker,
+                    // the length stays unknown, and the channel is torn down as "out of sync".
+                    // Any client whose stdin writer emits its preamble does this -- measured on
+                    // 2026-09-03 against the FIM sidecar, where it cost an evening of blaming
+                    // the product for a defect that lived in the probe's own client.
+                    if (sawHeader is false && line.Length > 0 && line[0] == '\uFEFF') line = line.Substring(1);
+                    sawHeader = true;
+
                     if (line.Length == 0) break; // blank line = end of headers
 
                     if (line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase) &&

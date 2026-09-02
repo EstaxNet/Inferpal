@@ -276,6 +276,14 @@ internal static class FimSidecar
 
             var text = line.ToString();
             line.Length = 0;
+            // WARNING: a UTF-8 BOM ahead of the stream arrives here as these three chars (bytes
+            // are cast one by one). Without this line the first header no longer starts with the
+            // marker, the length stays unknown, and the session ends CLEANLY: no error, no trace,
+            // no answer. The same gap was in all three readers of this framing; measured on
+            // 2026-09-03 against the sidecar, where it had the product blamed for an evening while
+            // the BOM came from the probe's own client.
+            if (!any && text.StartsWith("\u00EF\u00BB\u00BF", StringComparison.Ordinal))
+                text = text.Substring(3);
             if (text.Length == 0) return any ? length : -1;   // end of headers
 
             any = true;

@@ -159,6 +159,28 @@ internal sealed class FimRpcLoop
         return Encoding.UTF8.GetString(body);
     }
 
+    /// <summary>A UTF-8 BOM at the head of the stream, read byte by byte, arrives as these three chars.</summary>
+    /// <remarks>
+    /// Measured on 2026-09-03, and it cost an evening of diagnosis aimed at the wrong culprit. Any
+    /// client whose stdin writer emits its preamble puts <c>EF BB BF</c> ahead of
+    /// <c>Content-Length:</c> — <c>Process.StandardInput</c> under Windows PowerShell does exactly
+    /// that, and merely touching the property to take its <c>BaseStream</c> is enough. The first
+    /// header then no longer starts with the marker, <c>length</c> stays at -1, the following blank
+    /// line returns -1, and the loop ends <b>cleanly</b>: exit code 0, empty stderr, no answer at
+    /// all. A perfectly healthy sidecar that looks dead.
+    ///
+    /// Two fixes, and the second matters as much: the BOM is tolerated, and the case where headers
+    /// were read without any usable length is now TRACED. "The stream is closed" and "I did not
+    /// understand what you sent me" are not repaired in the same place, and a reader that returns
+    /// -1 for both conflates them in silence.
+    /// </remarks>
+    private const string Utf8BomAsChars = "\u00EF\u00BB\u00BF";
+
+    private static string StripLeadingBom(string text) =>
+        text.StartsWith(Utf8BomAsChars, StringComparison.Ordinal) ? text[Utf8BomAsChars.Length..]
+        : text.Length > 0 && text[0] == '\uFEFF'                  ? text[1..]
+        : text;
+
     private async Task<int> ReadHeadersAsync(CancellationToken ct)
     {
         var line   = new StringBuilder();
@@ -176,7 +198,15 @@ internal sealed class FimRpcLoop
 
             var text = line.ToString();
             line.Clear();
-            if (text.Length == 0) return any ? length : -1;
+            if (!any) text = StripLeadingBom(text);
+            if (text.Length == 0)
+            {
+                if (any && length < 0)
+                    Diagnostics.Record("FimRpcLoop",
+                        "Headers read with no usable Content-Length: the sender and this reader " +
+                        "no longer agree on where messages begin. Ending the session.");
+                return any ? length : -1;
+            }
 
             any = true;
             const string marker = "Content-Length:";
