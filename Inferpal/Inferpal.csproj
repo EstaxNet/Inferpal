@@ -539,8 +539,20 @@
       <_VsixAlreadyS Include="@(VSIXSourceItem)">
         <FlatName>%(Filename)%(Extension)</FlatName>
       </_VsixAlreadyS>
+      <!-- ⚠ System.Text.Encodings.Web is here because a measurement named it, not by symmetry:
+           the sidecar's own deps.json declares it at 9.0.0.0, the shared net8 framework serves
+           8.0.x, and `FimRpcLoop.WriteResult` binds it through `JsonSerializer.Serialize` on the
+           response path of every completion. It WAS in the package already — by accident of what
+           the SDK happened not to prune, named by no rule and required by no gate, which is the
+           exact shape 1.6.0-1.6.5 shipped in. The other four 9.0.0.0 entries of that deps.json
+           (System.Collections.Immutable, System.Reflection.Metadata, System.IO.Pipelines,
+           System.Security.Cryptography.ProtectedData) stay OUT until a run demands them —
+           System.IO.Pipelines above all, which belongs to the host's transport stack and is
+           precisely what 1.6.4 should not have shipped. -->
       <_VsixSidecar Include="@(ReferenceCopyLocalPaths)"
-                    Condition="'%(Extension)' == '.dll' And '%(Filename)' == 'System.Text.Json'">
+                    Condition="'%(Extension)' == '.dll' And
+                               ('%(Filename)' == 'System.Text.Json' Or
+                                '%(Filename)' == 'System.Text.Encodings.Web')">
         <FlatName>%(Filename)%(Extension)</FlatName>
         <TargetPath>%(Filename)%(Extension)</TargetPath>
       </_VsixSidecar>
@@ -553,9 +565,13 @@
     <ItemGroup>
       <_StjInVsix Include="@(VSIXSourceItem)"
                   Condition="'%(Filename)%(Extension)' == 'System.Text.Json.dll'" />
+      <_EncWebInVsix Include="@(VSIXSourceItem)"
+                     Condition="'%(Filename)%(Extension)' == 'System.Text.Encodings.Web.dll'" />
     </ItemGroup>
     <Error Condition="'@(_StjInVsix)' == ''"
            Text="RestoreSidecarRuntimeToVsix: the VSIX carries no System.Text.Json.dll. Inferpal.Fim is a separate process resolving through its own deps.json; without it the sidecar dies at startup and ghost-text FIM is dead on every package install, silently." />
+    <Error Condition="'@(_EncWebInVsix)' == ''"
+           Text="RestoreSidecarRuntimeToVsix: the VSIX carries no System.Text.Encodings.Web.dll. System.Text.Json 9.0.0.0 binds it from JsonSerializer.Serialize, which the sidecar reaches on the response path of every completion; the shared net8 framework only serves 8.0.x." />
   </Target>
 
   <!-- ── Prune non-Windows runtime assets from the VSIX ──────────────────────
