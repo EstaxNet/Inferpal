@@ -69,7 +69,8 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           $existing = gh release view $env:TAG_NAME --json tagName --jq '.tagName' 2>$null
-          if ($LASTEXITCODE -eq 0 -and $existing) {
+          $found = ($LASTEXITCODE -eq 0 -and $existing)
+          if ($found) {
             if ($env:ALLOW_RELEASE_OVERWRITE -eq 'true') {
               Write-Host "::warning::release $existing exists; overwriting on explicit request"
             } else {
@@ -78,6 +79,13 @@ jobs:
           } else {
             Write-Host "no release for $env:TAG_NAME yet - proceeding"
           }
+          # The NOMINAL path leaves $LASTEXITCODE = 1: `gh release view` returns 1 when the
+          # release does not exist, and the pwsh step exits with the last native exit code.
+          # This guard therefore failed EVERY release on its own success path -- measured on
+          # v1.6.7, which printed "proceeding" and then exited 1. Same trap this repo has paid
+          # four times on .ps1 scripts: a script without an explicit exit returns the code of
+          # its last native command.
+          exit 0
 
       - name: Restore
         run: dotnet restore Inferpal.sln
