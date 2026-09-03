@@ -136,5 +136,8 @@
   "Fix with AI": "Mit KI beheben",
   "Fix the following errors:": "Behebe die folgenden Fehler:",
   "Open Folder": "Ordner öffnen",
-  "Refresh models": "Modelle aktualisieren"
+  "Refresh models": "Modelle aktualisieren",
+  "Show all models": "Alle Modelle anzeigen",
+  "No model listed — is the backend reachable?": "Kein Modell aufgelistet — ist das Backend erreichbar?",
+  "No match": "Keine Übereinstimmung"
 }

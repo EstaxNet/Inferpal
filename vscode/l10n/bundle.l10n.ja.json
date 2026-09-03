@@ -136,5 +136,8 @@
   "Fix with AI": "AI で修正",
   "Fix the following errors:": "次のエラーを修正してください:",
   "Open Folder": "フォルダーを開く",
-  "Refresh models": "モデルを更新"
+  "Refresh models": "モデルを更新",
+  "Show all models": "すべてのモデルを表示",
+  "No model listed — is the backend reachable?": "モデルが一覧にありません — バックエンドに接続できますか?",
+  "No match": "一致なし"
 }

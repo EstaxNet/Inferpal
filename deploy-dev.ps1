@@ -73,9 +73,13 @@ function Get-MTime([string]$Path) {
 function Get-VsPath {
     $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
     if (Test-Path $vsWhere) {
-        $p = & $vsWhere -all -prerelease -products * -version '[18.0,19.0)' `
-             -requires Microsoft.Component.MSBuild -property installationPath 2>$null |
-             Select-Object -First 1
+        # Never « | Select-Object -First 1 » on a NATIVE command: -First stops the pipeline as
+        # soon as it has its line, PowerShell then terminates vswhere, and $LASTEXITCODE becomes
+        # -1 at random. Measured 2026-09-03 on THIS line: 4 x -1 out of 15 draws; as @(& ...)[0],
+        # 15 x 0. The script does not call `exit` on its nominal path: its exit code is that of
+        # its last native command.
+        $p = @(& $vsWhere -all -prerelease -products * -version '[18.0,19.0)' `
+               -requires Microsoft.Component.MSBuild -property installationPath 2>$null)[0]
         if ($p) { return $p }
     }
     return Get-ChildItem 'C:\Program Files\Microsoft Visual Studio\18' -Directory -ErrorAction SilentlyContinue |

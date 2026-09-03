@@ -136,5 +136,8 @@
   "Fix with AI": "AI로 수정",
   "Fix the following errors:": "다음 오류를 수정하세요:",
   "Open Folder": "폴더 열기",
-  "Refresh models": "모델 새로 고침"
+  "Refresh models": "모델 새로 고침",
+  "Show all models": "모든 모델 표시",
+  "No model listed — is the backend reachable?": "나열된 모델이 없습니다 — 백엔드에 연결할 수 있나요?",
+  "No match": "일치 항목 없음"
 }

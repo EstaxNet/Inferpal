@@ -136,5 +136,8 @@
   "Fix with AI": "用 AI 修复",
   "Fix the following errors:": "修复以下错误：",
   "Open Folder": "打开文件夹",
-  "Refresh models": "刷新模型"
+  "Refresh models": "刷新模型",
+  "Show all models": "显示所有模型",
+  "No model listed — is the backend reachable?": "未列出任何模型 — 后端可访问吗?",
+  "No match": "无匹配项"
 }

@@ -1,4 +1,4 @@
-﻿// Inferpal chat webview. The extension host owns the transcript; this script only renders
+// Inferpal chat webview. The extension host owns the transcript; this script only renders
 // state pushed via postMessage and reports user intents back. It must survive being
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
@@ -64,7 +64,7 @@ searchToggle.textContent = '🔍';
 searchToggle.title = t('searchTitle');
 topbarEl.append(connDot, connText, connRetry, vramEl, topSpacer, searchToggle);
 
-// Search bar: dims non-matching bubbles (VS parity: greyed out, not hidden).
+// Search bar: dims non-matching bubbles (VS parity: dimmed, not hidden).
 const searchBar = document.createElement('div');
 searchBar.id = 'searchbar';
 searchBar.hidden = true;
@@ -988,20 +988,35 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       renderChips(msg.chips ?? []);
       renderTranscript(msg.transcript ?? []);
 
+      // ⚠ The one field in this block without its defensive default, while the comment above
+      // makes it a rule — and this is an iteration, so `undefined` killed the whole handler and
+      // left the view half rendered.
+      const models = msg.models ?? [];
       modelEl.textContent = '';
-      for (const name of msg.models) {
+      for (const name of models) {
         const opt = document.createElement('option');
         opt.value = name;
         opt.textContent = name;
         opt.selected = name === msg.model;
         modelEl.appendChild(opt);
       }
-      if (msg.model && !msg.models.includes(msg.model)) {
+      if (msg.model && !models.includes(msg.model)) {
         const opt = document.createElement('option');
         opt.value = msg.model;
         opt.textContent = msg.model;
         opt.selected = true;
         modelEl.appendChild(opt);
+      }
+      if (models.length === 0) {
+        // ⚠ "the host listed NO model" and "the backend serves one" rendered the SAME thing:
+        // a one-entry list — the entry added just above, which is the CONFIGURED model, not a
+        // served one. Measured 2026-09-03: under LM Studio a server exposing only the
+        // OpenAI-compatible surface answered green badge + zero models, and nothing on screen
+        // told that case apart from a backend with a single model.
+        const warn = document.createElement('option');
+        warn.disabled = true;
+        warn.textContent = t('noModelListed');
+        modelEl.appendChild(warn);
       }
       applyAgentMode(msg.agentMode);
       setBackendStatus(msg.status);

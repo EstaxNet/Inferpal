@@ -74,7 +74,9 @@ export class SettingsPanel {
           try {
             models = await host.modelsList();
           } catch {
-            // backend unreachable — the model inputs stay free-text
+            // ⚠ A host or RPC failure, NOT an unreachable backend: that one does not fail, it
+            // returns an empty list through the success path (measured 2026-09-03). Both end up
+            // as `models = []` here, and the popup is what names them.
           }
           // Labels/hints/sections from the host's .resx — identical wording to the VS window.
           let strings: Record<string, string> = {};
@@ -189,6 +191,9 @@ export class SettingsPanel {
       'Connected': t('Connected'),
       'Backend unreachable': t('Backend unreachable'),
       'Refresh models': t('Refresh models'),
+      'Show all models': t('Show all models'),
+      'No model listed — is the backend reachable?': t('No model listed — is the backend reachable?'),
+      'No match': t('No match'),
       'Inline diff preview for code actions': t('Inline diff preview for code actions'),
     };
   }

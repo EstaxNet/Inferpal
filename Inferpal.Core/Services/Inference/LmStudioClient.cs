@@ -179,21 +179,53 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// ⚠ Two surfaces, and the connection badge does not query this one.
+    /// <see cref="CheckConnectionAsync"/> is inherited from <see cref="OpenAiCompatibleClient"/> and probes
+    /// <c>{base}/v1/models</c> — the surface the chat actually talks; the listing below comes from the
+    /// NATIVE API <c>{base}/api/v1|v0/models</c>, the only one carrying loaded state and size. A server
+    /// that serves only the OpenAI-compatible surface — a reverse proxy routing just <c>/v1</c>, the
+    /// most common shape of an LM Studio exposed on a domain — therefore answered "connected" with ZERO
+    /// models. Measured 2026-09-03 against a stand-in server serving only <c>/v1/models</c>: badge
+    /// <c>true</c>, empty list; control arm in <c>openai-compatible</c> on the same server, one model. And
+    /// on the UI side an empty list does not read as a failure: the picker puts the configured model back
+    /// and shows one entry, exactly like a backend serving a single model.
+    ///
+    /// Hence the fallback to the OpenAI-compatible surface when the native one answers nothing. It cannot
+    /// lie the other way: what it lists is what the chat can actually talk to.
+    /// </remarks>
     public override async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct, string? url = null)
     {
-        try   { return (await GetNativeModelsAsync(ct)).Select(m => m.Id).ToList(); }
-        catch { return []; }
+        try
+        {
+            var native = (await GetNativeModelsAsync(ct)).Select(m => m.Id).ToList();
+            if (native.Count > 0) return native;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            Diagnostics.Swallow("LmStudioClient.ListModels(native)", ex);
+        }
+        return await base.ListModelsAsync(ct, url);
     }
 
     /// <inheritdoc/>
+    /// <remarks>Same fallback as <see cref="ListModelsAsync"/>, and for the same measurement: without it a
+    /// server serving only the OpenAI-compatible surface returns an empty installed list, so VRAM
+    /// estimation and <c>/hardware</c> go silent on a reachable backend. The fallback surface exposes no
+    /// size (0), which degrades the estimate — but zero models removes it.</remarks>
     public override async Task<IReadOnlyList<InstalledModelInfo>> ListInstalledModelsAsync(CancellationToken ct, string? url = null)
     {
         try
         {
             // v1 reports on-disk size_bytes (improves VRAM estimation); v0 has none → 0.
-            return (await GetNativeModelsAsync(ct)).Select(m => new InstalledModelInfo(m.Id, m.SizeBytes)).ToList();
+            var native = (await GetNativeModelsAsync(ct)).Select(m => new InstalledModelInfo(m.Id, m.SizeBytes)).ToList();
+            if (native.Count > 0) return native;
         }
-        catch { return []; }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            Diagnostics.Swallow("LmStudioClient.ListInstalledModels(native)", ex);
+        }
+        return await base.ListInstalledModelsAsync(ct, url);
     }
 
     // ── Model management (native load / unload / download) ─────────────────────

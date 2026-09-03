@@ -3,12 +3,30 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.7
+
+- **LM Studio behind a reverse proxy listed no model at all, while the badge said connected.**
+  The connection badge probes `{base}/v1/models` — the surface the chat actually talks — but the
+  model list came only from LM Studio's native API `{base}/api/v1|v0/models`. A server that
+  serves only the OpenAI-compatible surface therefore answered *Connected* with zero models, and
+  an empty list is invisible: the picker puts the configured model back, which looks exactly like
+  a backend serving one model. The list now falls back to the OpenAI-compatible surface when the
+  native one answers nothing, and the chat picker says so when nothing was listed at all.
+- **The model fields in the settings panel list every model again, not just the one already in
+  the box.** They were `<input list="models">`, and the browser filters a `<datalist>` against
+  what the field already contains: a field holding a model id offered exactly that id, and no
+  gesture showed the others — while the Visual Studio window, a combo box, always lists them all.
+  The host was never at fault: driving it over JSON-RPC, `models/list` returns the backend's full
+  list, and the extension's output log carries no failure. Each model field now has a caret that
+  opens the complete list; typing still narrows it, and a model the backend does not list can
+  still be typed by hand.
+
 ## 1.6.6
 
 - **A first install with no folder open is no longer told to restart the host.** Without a
   workspace folder the extension deliberately never starts one — the workspace root is a required
-  handshake parameter — but the chat and the settings panel still advised *« Inferpal: Restart
-  Host »*, which cannot help in that state. Both now say what is actually missing and offer
+  handshake parameter — but the chat and the settings panel still advised *« Inferpal: Restart
+  Host »*, which cannot help in that state. Both now say what is actually missing and offer
   *Open Folder*, in all ten languages.
 - The nine localization bundles are now guarded by a test: a key added to eight of them used to
   ship as a half-translated UI, silently.

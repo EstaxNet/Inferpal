@@ -209,3 +209,44 @@ details summary {
   font-size: 0.9em;
   opacity: 0.8;
 }
+
+/* ──────────────────── Model picker ────────────────────────────────────────────
+   One popup, shared by the six model fields, anchored on whichever has focus.
+   It replaces a <datalist> whose options the browser filtered against what the
+   field already contained: a filled field offered nothing but itself. */
+#modelpop {
+  position: absolute;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.modelrow {
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modelrow:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.modelrow.empty {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.modelrow.empty:hover {
+  background: transparent;
+}
+
+.sidebtn.caret {
+  padding: 5px 8px;
+  line-height: 1;
+}

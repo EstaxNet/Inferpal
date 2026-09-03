@@ -1,4 +1,4 @@
-﻿// Sidebar chat: WebviewViewProvider + typed postMessage protocol. The extension host
+// Sidebar chat: WebviewViewProvider + typed postMessage protocol. The extension host
 // (this class) is the source of truth for the transcript — the webview can be destroyed
 // on hide and is re-hydrated on every resolveWebviewView.
 import * as vscode from 'vscode';
@@ -211,6 +211,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       this.models = await host.modelsList();
     } catch (err) {
+      // ⚠ This is NOT the unreachable-backend path, contrary to what this block long implied:
+      // measured 2026-09-03, all three providers swallow the HTTP failure and return an EMPTY
+      // list, so `models/list` SUCCEEDS. This catch only ever sees a host or RPC failure. The
+      // empty list goes through the success path instead — and the view is what names it now
+      // (a disabled "no model listed" option).
       this.log(`[chat] models/list failed: ${String(err)}`);
       this.models = this.model ? [this.model] : [];
     }
@@ -278,9 +283,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // keep the previous autocomplete list
     }
     try {
-      this.models = await host.modelsList();
+      const listed = await host.modelsList();
+      // ⚠ An empty list used to REPLACE the previous one here, while the catch below promised the
+      // opposite — and it is the success path that returns it, not the catch (see bootstrap). So
+      // saving the settings with the backend down silently emptied the picker. The previous list is
+      // kept only when the new one is empty: a backend that REALLY lost models must still be able
+      // to remove them.
+      if (listed.length > 0) {
+        this.models = listed;
+      }
     } catch {
-      // backend unreachable — keep the previous list
+      // host or RPC failure: keep the previous list (see bootstrap for why this is not the
+      // "backend unreachable" case).
     }
     this.hydrate();
     void this.pollBackendStatus();

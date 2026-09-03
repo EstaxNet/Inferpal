@@ -136,5 +136,8 @@
   "Fix with AI": "Исправить с ИИ",
   "Fix the following errors:": "Исправь следующие ошибки:",
   "Open Folder": "Открыть папку",
-  "Refresh models": "Обновить модели"
+  "Refresh models": "Обновить модели",
+  "Show all models": "Показать все модели",
+  "No model listed — is the backend reachable?": "Модели не перечислены — доступен ли бэкенд?",
+  "No match": "Нет совпадений"
 }

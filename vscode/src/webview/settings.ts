@@ -138,10 +138,20 @@ function render(): void {
   });
   app.appendChild(tabbar);
 
-  const modelList = document.createElement('datalist');
-  modelList.id = 'models';
-  renderModelOptions(modelList);
-  app.appendChild(modelList);
+  // ⚠ NOT a <datalist>. Chromium filters its options against what the field ALREADY contains:
+  // a field holding a model id offered nothing but ITSELF, and no gesture showed the others —
+  // while the Visual Studio window, a combo box, lists them all whatever is in the box.
+  // Measured 2026-09-03: `models/list` did return the backend's 8 models, the extension received
+  // them (no failure in the log), the browser displayed one. The defect was entirely in the
+  // rendering, and it did not look like one: a one-entry list reads as a backend serving one
+  // model.
+  // Rendering starts from scratch (app.textContent = ''), so the old popup and its target are
+  // detached: forgetting them here avoids writing into a field no longer in the page.
+  modelPopupTarget = null;
+  modelPopup = document.createElement('div');
+  modelPopup.id = 'modelpop';
+  modelPopup.hidden = true;
+  app.appendChild(modelPopup);
 
   // Initial reveal state, like VS: roles shown when any role field is set.
   gateOn.roles = ['agentModel', 'codeActionsModel', 'inlineCompletionModel', 'inlineEditModel', 'utilityModel']
@@ -206,13 +216,92 @@ function renderToggle(toggle: { gate: 'roles' | 'advanced'; label: string; hint?
   return row;
 }
 
-function renderModelOptions(list: HTMLElement): void {
-  list.textContent = '';
-  for (const name of models) {
-    const opt = document.createElement('option');
-    opt.value = name;
-    list.appendChild(opt);
+/**
+ * The model picker: one popup, anchored on the focused field.
+ *
+ * On open it shows the WHOLE list, like the Visual Studio combo box — that is the point of the
+ * fix. Typing then narrows it, which is what the field keeps of its old datalist without keeping
+ * its defect. The field stays free: a model the backend does not list (unreachable backend, an id
+ * typed by hand) can still be typed, and empty still means "inherit the chat model".
+ */
+let modelPopup: HTMLDivElement | null = null;
+let modelPopupTarget: HTMLInputElement | null = null;
+
+function closeModelPopup(): void {
+  if (modelPopup) {
+    modelPopup.hidden = true;
   }
+  modelPopupTarget = null;
+}
+
+function openModelPopup(box: HTMLInputElement): void {
+  if (!modelPopup) {
+    return;
+  }
+  modelPopupTarget = box;
+  renderModelPopup('');
+  modelPopup.hidden = false;
+  const r = box.getBoundingClientRect();
+  modelPopup.style.left = `${r.left + window.scrollX}px`;
+  modelPopup.style.top = `${r.bottom + window.scrollY + 2}px`;
+  modelPopup.style.width = `${r.width}px`;
+}
+
+function renderModelPopup(filter: string): void {
+  if (!modelPopup) {
+    return;
+  }
+  modelPopup.textContent = '';
+  const needle = filter.trim().toLowerCase();
+  const shown = needle ? models.filter((m) => m.toLowerCase().includes(needle)) : models;
+
+  if (shown.length === 0) {
+    // The two reasons for having nothing to show are not repaired in the same place: no model
+    // at all (unreachable backend, or a refused token) is not "what you typed matches nothing".
+    // An empty, silent popup would conflate them.
+    const empty = document.createElement('div');
+    empty.className = 'modelrow empty';
+    empty.textContent = models.length === 0
+      ? t('No model listed — is the backend reachable?')
+      : t('No match');
+    modelPopup.appendChild(empty);
+    return;
+  }
+
+  for (const name of shown) {
+    const row = document.createElement('div');
+    row.className = 'modelrow';
+    row.textContent = name;
+    // mousedown, not click: it fires BEFORE the field's blur, and its preventDefault keeps the
+    // field focused — otherwise the popup closes under the cursor before the pick lands.
+    row.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (modelPopupTarget) {
+        modelPopupTarget.value = name;
+      }
+      closeModelPopup();
+    });
+    modelPopup.appendChild(row);
+  }
+}
+
+/** The caret that opens the whole list — the one gesture that was missing. */
+function buildModelCaret(box: HTMLInputElement): HTMLButtonElement {
+  const caret = document.createElement('button');
+  caret.type = 'button';
+  caret.className = 'sidebtn caret';
+  caret.textContent = '▾';
+  caret.title = t('Show all models');
+  caret.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    if (modelPopupTarget === box) {
+      closeModelPopup();
+    } else {
+      box.focus();
+      openModelPopup(box);
+    }
+  });
+  return caret;
 }
 
 function renderField(field: Field): HTMLElement {
@@ -262,7 +351,26 @@ function renderField(field: Field): HTMLElement {
       const box = document.createElement('input');
       box.type = field.kind === 'password' ? 'password' : 'text';
       if (field.kind === 'model') {
-        box.setAttribute('list', 'models');
+        box.autocomplete = 'off';
+        box.addEventListener('input', () => {
+          if (modelPopupTarget === box) {
+            renderModelPopup(box.value);
+          }
+        });
+        box.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown' && modelPopupTarget !== box) {
+            e.preventDefault();
+            openModelPopup(box);
+          } else if (e.key === 'Escape' && modelPopupTarget === box) {
+            e.preventDefault();
+            closeModelPopup();
+          }
+        });
+        box.addEventListener('blur', () => {
+          if (modelPopupTarget === box) {
+            closeModelPopup();
+          }
+        });
       }
       if (compact) {
         box.classList.add('num');
@@ -303,10 +411,20 @@ function renderField(field: Field): HTMLElement {
   }
 
   row.append(labelLine);
-  if (field.button) {
+  // The caret ALWAYS goes with a model field: only the chat model carries the refresh button, so
+  // the five other fields had no way at all to open the list.
+  const caret = field.kind === 'model' ? buildModelCaret(input as HTMLInputElement) : null;
+  if (field.button || caret) {
     const line = document.createElement('div');
     line.className = 'inputline';
     line.append(input);
+    if (caret) {
+      line.append(caret);
+    }
+    if (!field.button) {
+      row.append(line);
+      return row;
+    }
     const btn = document.createElement('button');
     btn.className = 'sidebtn';
     if (field.button === 'test') {
@@ -410,9 +528,10 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
     case 'models': {
       models = msg.models ?? [];
-      const list = document.getElementById('models');
-      if (list) {
-        renderModelOptions(list);
+      // An open popup must reflect the list just re-read: otherwise the ↻ button would have no
+      // visible effect until the next time it is opened.
+      if (modelPopupTarget) {
+        renderModelPopup(modelPopupTarget.value);
       }
       break;
     }
