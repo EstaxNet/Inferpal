@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -206,7 +206,7 @@ internal partial class InferpalToolWindowData
             for (int round = 1; round <= MaxRounds; round++)
             {
                 tok.ThrowIfCancellationRequested();
-                await RunOnVMContextAsync(() => CurrentStep = $"🔨 Build {round}/{MaxRounds}…");
+                await RunOnVMContextAsync(() => CurrentStep = Strings.FixBuildBuildingRound(round, MaxRounds));
 
                 // ── Build ──────────────────────────────────────────────────────
                 string buildOutput;
@@ -291,9 +291,9 @@ internal partial class InferpalToolWindowData
 
         await RunOnVMContextAsync(() =>
         {
-            CurrentStep = $"🔧 Fix {round}…";
+            CurrentStep = Strings.FixBuildFixingRound(round) + "…";
             streamItem  = ChatMessageItem.StreamingMsg();
-            streamItem.Label = $"🔧 Fix {round}";
+            streamItem.Label = Strings.FixBuildFixingRound(round);
             ApplyItemTheme(streamItem);
             Messages.Insert(Messages.Count - 2, streamItem);
             ScrollToBottom();
@@ -475,7 +475,13 @@ internal partial class InferpalToolWindowData
         {
             try { await _vs.Documents().OpenTextDocumentAsync(new Uri(path), ct); }
             catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Diagnostics.Swallow($"HandlePlanCommandAsync.Open({path})", ex); }
+            catch (Exception ex)
+            {
+                // The user asked for a plan to be opened: a silent failure reads as "the command
+                // did nothing", which is indistinguishable from an empty plan.
+                Diagnostics.Swallow($"HandlePlanCommandAsync.Open({path})", ex);
+                await ShowInfoAsync(Strings.PlanOpenFailed(path));
+            }
         }
     }
 

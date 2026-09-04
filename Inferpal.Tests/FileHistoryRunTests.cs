@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Inferpal.Services;
 using Xunit;
 
@@ -32,6 +32,62 @@ public class FileHistoryRunTests
 
         Assert.Equal(second, svc.Runs[0].Id);
         Assert.Equal(first,  svc.Runs[1].Id);
+    }
+
+    /// <summary>
+    /// What is written <b>after</b> a run belongs to no run.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>BeginRun</c> had no counterpart, so <c>_currentRun</c> stayed the last open run
+    /// forever. The contract written on <c>RecordToolCall</c> — "No-op when no run is active" —
+    /// was therefore only true before the session's first run. Consequence: a <c>/restore</c> or a
+    /// tool launched by a slash command after the turn attached to it, <c>/undo-run</c> reverted
+    /// it along with the turn, and <c>/replay</c> listed it in the journal of a run where it never
+    /// happened.
+    /// </remarks>
+    [Fact]
+    public async Task AfterEndRun_ALaterWriteBelongsToNoRun()
+    {
+        using var tmp = new TempDir();
+        var during = tmp.File("during.txt", "before-run");
+        var after  = tmp.File("after.txt",  "after-run");
+
+        var svc = new FileHistoryService();
+        svc.BeginRun();
+        await svc.SnapshotAsync(during, CancellationToken.None);
+        svc.EndRun();
+
+        // The next gesture: outside any run.
+        await svc.SnapshotAsync(after, CancellationToken.None);
+        svc.NoteCreated(Path.Combine(tmp.Path, "ghost.txt"));
+
+        var run = svc.Runs.Single();
+        Assert.Equal(1, run.FileCount);
+        Assert.Equal(during, run.Changes.Single().OriginalPath);
+    }
+
+    /// <summary>The scope closes the run on every exit path, exception included.</summary>
+    [Fact]
+    public async Task BeginRunScope_ClosesTheRun_EvenOnAnEarlyExit()
+    {
+        using var tmp = new TempDir();
+        var inside  = tmp.File("inside.txt",  "x");
+        var outside = tmp.File("outside.txt", "y");
+
+        var svc = new FileHistoryService();
+        try
+        {
+            using var scope = svc.BeginRunScope();
+            await svc.SnapshotAsync(inside, CancellationToken.None);
+            throw new InvalidOperationException("abrupt exit, like a cancelled /tdd");
+        }
+        catch (InvalidOperationException) { }
+
+        await svc.SnapshotAsync(outside, CancellationToken.None);
+
+        var run = svc.Runs.Single();
+        Assert.Equal(1, run.FileCount);
+        Assert.Equal(inside, run.Changes.Single().OriginalPath);
     }
 
     // ── Undo integration (real temp files) ──────────────────────────────────────

@@ -232,6 +232,10 @@ internal sealed partial class HostServer : IDisposable
         }
         finally
         {
+            // Mirrors the VS window: the tracking run opened for this turn is closed here,
+            // otherwise a later write (a /restore, a tool launched by a slash command) still
+            // attaches to it and /undo-run reverts that write along with the turn we just watched.
+            s.Tools.History.EndRun();   // `s`, not Session(): nothing may throw inside this finally
             ReleaseTurn(cts);
         }
     }

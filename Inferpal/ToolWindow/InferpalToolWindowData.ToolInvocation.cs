@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -198,11 +198,13 @@ internal partial class InferpalToolWindowData
             modelName     = _config.DefaultModel;
         });
 
-        string? filePath = await ShowSaveFileDialogAsync();
-        if (filePath is null) return;
-
+        // ⚠ Opening the dialog is INSIDE the try: outside it, its failure escaped
+        // Strings.ExportFailed and rose into the command machinery, where nobody renders it.
         try
         {
+            string? filePath = await ShowSaveFileDialogAsync();
+            if (filePath is null) return;
+
             var isTxt    = Path.GetExtension(filePath).Equals(".txt", StringComparison.OrdinalIgnoreCase);
             var date     = DateTime.Now.ToString("f", CultureInfo.CurrentCulture);
             var duration = _sessionStartTime.HasValue
@@ -222,24 +224,18 @@ internal partial class InferpalToolWindowData
         }
     }
 
-    private static Task<string?> ShowSaveFileDialogAsync()
-    {
-        var tcs    = new TaskCompletionSource<string?>();
-        var thread = new System.Threading.Thread(() =>
+    private static Task<string?> ShowSaveFileDialogAsync() =>
+        StaDialog.RunAsync(() =>
         {
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
-                Title      = "Export Conversation",
-                Filter     = "Markdown (*.md)|*.md|Text (*.txt)|*.txt",
+                Title      = Strings.DialogExportTitle,
+                Filter     = Strings.DialogExportFilter,
                 DefaultExt = ".md",
                 FileName   = $"conversation_{DateTime.Now:yyyy-MM-dd_HHmm}",
             };
-            tcs.SetResult(dlg.ShowDialog() == true ? dlg.FileName : null);
-        });
-        thread.SetApartmentState(System.Threading.ApartmentState.STA);
-        thread.Start();
-        return tcs.Task;
-    }
+            return dlg.ShowDialog() == true ? dlg.FileName : null;
+        }, "ExportDialog");
 
     // EmptyToolRegistry is now internal and lives in Inferpal.Services (see EmptyToolRegistry.cs).
 

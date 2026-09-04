@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -210,7 +210,7 @@ internal partial class InferpalToolWindowData
                 if (_stepResume is not null)
                     ResumeStep();
                 else
-                    await ShowInfoAsync("No agent step is currently paused.");
+                    await ShowInfoAsync(Strings.NoAgentStepPaused);
                 break;
 
             case SlashCommandId.Note:       await HandleNoteCommandAsync(parts, ct);     break;
@@ -361,9 +361,18 @@ internal partial class InferpalToolWindowData
         // /undo-run covers it exactly like any other write (roadmap §18, decision (b)).
         if (result.Apply is { } proposal)
         {
-            await ShowInfoAsync(await Services.Tasks.TaskProposalApplication.ApplyAsync(
-                proposal, _tools, ReadFileForProposal, CancellationToken.None,
-                beginRun: () => _tools.History.BeginRun()));
+            try
+            {
+                await ShowInfoAsync(await Services.Tasks.TaskProposalApplication.ApplyAsync(
+                    proposal, _tools, ReadFileForProposal, CancellationToken.None,
+                    beginRun: () => _tools.History.BeginRun()));
+            }
+            finally
+            {
+                // Mirror of the chat turn: what is written AFTER the application no longer belongs
+                // to its run, otherwise /undo-run reverts it along with it.
+                _tools.History.EndRun();
+            }
             return;
         }
 

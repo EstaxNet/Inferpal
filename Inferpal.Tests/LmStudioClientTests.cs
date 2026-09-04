@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Inferpal.Config;
+using Inferpal.Models;
 using Inferpal.Services;
 using Inferpal.Services.Inference;
 using Xunit;
@@ -19,6 +20,9 @@ namespace Inferpal.Tests;
 // extracting the *loaded* context window (n_ctx the running instance was loaded with), which feeds the
 // proactive context-fit guard. The model's max_context_length is its capability, not the loaded n_ctx,
 // so a model can be loaded well below what it supports (the root of the LM Studio context-overflow bug).
+// [Collection]: the empty turn records its finding in the STATIC Diagnostics ring, like
+// DiagnosticsTests — the two classes must therefore be serialized against each other.
+[Collection("Diagnostics")]
 public class LmStudioClientTests
 {
     private static List<JsonElement> Instances(string json)
@@ -160,6 +164,82 @@ public class LmStudioClientTests
 
         // Witness: the probe did try the native surface first, otherwise the test measures nothing.
         Assert.Contains("/api/v1/models", server.Paths);
+    }
+
+    /// <summary>
+    /// A turn that returns NOTHING leaves a trace of what the stream contained.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Reported from a machine on the network: every message answered "the model returned no
+    /// response", and the investigation stopped there — the accused server turned out perfectly
+    /// healthy (listing, chat, streaming, 28 tools, forced tool_choice), and <b>nothing recorded
+    /// what the stream contained</b>. It was the client's only failure leaving no trace at all:
+    /// everything else throws an AgentHttpException that carries its cause to the screen.
+    /// </remarks>
+    [Fact]
+    public async Task AnEmptyTurn_RecordsWhatTheStreamContained()
+    {
+        Diagnostics.Clear();
+
+        // A perfectly valid SSE stream… and an empty one: the exact shape of the reported symptom.
+        const string empty = """
+            data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+            data: [DONE]
+
+            """;
+        using var server = new LoopbackServer(path => path.StartsWith("/v1/chat/completions") ? empty : null);
+        var client = new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = server.BaseUrl });
+
+        var turn = await client.SendChatAsync(
+            "my-model", [new ChatMessageDto("user", "hello")],
+            EmptyToolRegistry.Instance, onToken: null, CancellationToken.None);
+
+        Assert.Equal(string.Empty, turn.TextContent);
+
+        // The trace names what was needed to diagnose: the requested model, the server, the shape
+        // of the stream. Without it, all that is left is "no response".
+        var entry = Assert.Single(Diagnostics.Snapshot());
+        Assert.Contains("my-model",     entry.Context, StringComparison.Ordinal);
+        Assert.Contains(server.BaseUrl, entry.Context, StringComparison.Ordinal);
+        Assert.Contains("stop",         entry.Context, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The URL passed to <c>ListModelsAsync</c> holds for <b>both</b> surfaces, the native one
+    /// included.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The parameter was honoured by the two other providers and <b>silently ignored</b> here:
+    /// the native probe queried the CONFIGURED server while the OpenAI-compatible fallback queried
+    /// the one it was handed. No caller paid for it — the one that passes a URL rebuilds a client
+    /// whose config already carries it — but the obvious gesture (passing the URL to the existing
+    /// client) would have listed one server's models while presenting them as another's.
+    /// </remarks>
+    [Fact]
+    public async Task ListModels_HonoursTheUrlOverride_OnTheNativeSurfaceToo()
+    {
+        using var configured = new LoopbackServer(path => path switch
+        {
+            "/api/v1/models" => """{"models":[{"key":"the-one-from-config"}]}""",
+            "/v1/models"     => OpenAiPayload,
+            _                => null,
+        });
+        using var typed = new LoopbackServer(path => path switch
+        {
+            "/api/v1/models" => NativePayload,
+            "/v1/models"     => OpenAiPayload,
+            _                => null,
+        });
+
+        var client = new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = configured.BaseUrl });
+
+        Assert.Equal(["servi-par-api-native"],
+                     await client.ListModelsAsync(CancellationToken.None, typed.BaseUrl));
+
+        // Witness in both directions: the requested server was probed, the other was not touched.
+        Assert.Contains("/api/v1/models", typed.Paths);
+        Assert.Empty(configured.Paths);
     }
 
     [Fact]

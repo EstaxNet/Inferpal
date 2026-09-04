@@ -753,7 +753,13 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
     private Task RunOnVMContextAsync(Action action)
     {
-        var tcs = new TaskCompletionSource();
+        // ⚠ RunContinuationsAsynchronously is load-bearing, and it was missing here while its twin
+        // in the chat window carries it with its reason written down since the pre-1.6.0 review
+        // (§2.4): without it, SetResult runs the caller's continuation INLINE on the VM pump — so
+        // everything after an `await RunOnVMContextAsync(...)` executes on the pump. Here that is
+        // the settings save: `_config.Save()`, the MCP reconnection (processes and network) and the
+        // label reload all ran behind the panel's own pump.
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         SynchronizationContext.Post(_ =>
         {
             try   { action(); tcs.SetResult(); }
@@ -1209,7 +1215,27 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
     // ── Handlers ───────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// The Save button. It cannot fail <b>in silence</b>: without this try, a refused write (full
+    /// disk, read-only %AppData%, locked file) rose into the Remote UI command machinery, which
+    /// renders none of it — the panel was left with neither a "✓" nor a message, exactly as if the
+    /// click had never been taken into account.
+    /// </summary>
     private async Task SaveAsync(object? _, CancellationToken ct)
+    {
+        try
+        {
+            await SaveCoreAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("Settings.Save", ex);
+            var message = ex.Message;
+            await RunOnVMContextAsync(() => SaveStatus = Strings.SettingsSaveFailed(message));
+        }
+    }
+
+    private async Task SaveCoreAsync(CancellationToken ct)
     {
         string url = string.Empty, model = string.Empty, customPrompt = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
         string selectedProviderName = string.Empty, apiKey = string.Empty;
@@ -1290,6 +1316,26 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         var providerCode = ProviderOptions.FirstOrDefault(p => p.Name == selectedProviderName).Code
                            ?? Services.Inference.InferenceProviderFactory.Ollama;
 
+        // ⚠ What could not be read is NAMED to the user, never swallowed. The save itself goes
+        // through: refusing the whole form would also cancel the other valid edits the user just
+        // made. The label is captured lazily — the language can change in the SAME save, and the
+        // sentence would then be rendered in the new language with field names in the old one.
+        var ignored = new List<Func<string>>();
+        void Note(string? text, bool applied, Func<string> label)
+        {
+            if (SettingsFallback.WasIgnored(text, applied)) ignored.Add(label);
+        }
+
+        // A numeric box: the value if it parses, what the config already carries on a typo, the
+        // default if the box was cleared on purpose — and the field named in the first two cases
+        // only.
+        int ReadInt(string? text, Func<string> label, int current, int whenCleared, Func<int, int> clamp)
+        {
+            var ok = int.TryParse(text, out var v);
+            Note(text, ok, label);
+            return ok ? clamp(v) : SettingsFallback.For(text, current, whenCleared);
+        }
+
         _config.Language              = langCode;
         _config.Provider              = providerCode;
         _config.ApiKey                = apiKey;
@@ -1300,25 +1346,35 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _config.SecurityAlertsDisabled   = secAlertsDisabled;
         _config.SmartFixEnabled          = smartFixEnabled;
         _config.AgentModeEnabled         = agentModeEnabled;
-        _config.AgentMaxIterations       = int.TryParse(agentMaxIterationsText, out var ami)  ? Math.Max(0, ami)        : 20;
+        _config.AgentMaxIterations       = ReadInt(agentMaxIterationsText, () => Strings.LabelAgentMaxIterations,
+                                                   _config.AgentMaxIterations, 20, v => Math.Max(0, v));
         _config.QuickTimeoutSeconds      = quickTimeoutSec  > 0 ? Math.Clamp(quickTimeoutSec,  10, 3600) : 120;
         _config.NormalTimeoutSeconds     = normalTimeoutSec > 0 ? Math.Clamp(normalTimeoutSec, 10, 3600) : 300;
         _config.DeepTimeoutSeconds       = deepTimeoutSec   > 0 ? Math.Clamp(deepTimeoutSec,   10, 3600) : 600;
-        _config.ContextWindowSize        = int.TryParse(ctxSizeText, out var cs) ? Math.Max(0, cs) : 0;
-        _config.ContextWindowKeepTurns   = int.TryParse(ctxKeepText, out var ck) ? Math.Max(1, ck) : 4;
-        _config.VramBudgetGb             = double.TryParse(vramBudgetText, System.Globalization.NumberStyles.Float,
-                                               System.Globalization.CultureInfo.CurrentCulture, out var vb) && vb > 0
-                                               ? Math.Round(vb, 1) : 0;
+        _config.ContextWindowSize        = ReadInt(ctxSizeText, () => Strings.LabelContextWindowSize,
+                                                   _config.ContextWindowSize, 0, v => Math.Max(0, v));
+        _config.ContextWindowKeepTurns   = ReadInt(ctxKeepText, () => Strings.LabelContextWindowKeepTurns,
+                                                   _config.ContextWindowKeepTurns, 4, v => Math.Max(1, v));
+        // ⚠ Inline, not ReadInt: the culture here is the user's (decimal comma), and the guard is
+        // not "it parses" but "it parses AND it is > 0" — a zero or negative budget is applied no
+        // more than a typo is, so it is named the same way.
+        var vbOk = double.TryParse(vramBudgetText, System.Globalization.NumberStyles.Float,
+                                   System.Globalization.CultureInfo.CurrentCulture, out var vb) && vb > 0;
+        Note(vramBudgetText, vbOk, () => Strings.LabelVramBudget);
+        _config.VramBudgetGb             = vbOk ? Math.Round(vb, 1)
+                                               : SettingsFallback.For(vramBudgetText, _config.VramBudgetGb, 0);
         _config.CustomSystemPrompt        = customPrompt;
         _config.PinnedContextFiles        = pinnedContextFiles;
         _config.PromptTemplates           = promptTemplates;
         _config.CustomTools               = customTools;
         _config.PermissionRules           = permissionRules;
         _config.PersonaAutoSwitch         = personaAutoSwitch;
-        _config.OodaTurnThreshold         = int.TryParse(oodaThreshText, out var ot) ? Math.Max(0, ot) : 10;
+        _config.OodaTurnThreshold         = ReadInt(oodaThreshText, () => Strings.LabelOodaTurnThreshold,
+                                                    _config.OodaTurnThreshold, 10, v => Math.Max(0, v));
         _config.CompactionEnabled         = compactionEnabled;
         _config.CompactionTimeoutSeconds  = compactTimeoutSec > 0 ? Math.Clamp(compactTimeoutSec, 10, 300) : 45;
-        _config.KvCacheAnchorMessages     = int.TryParse(kvAnchorText, out var kv) ? Math.Clamp(kv, 0, 20) : 3;
+        _config.KvCacheAnchorMessages     = ReadInt(kvAnchorText, () => Strings.LabelKvCacheAnchor,
+                                                    _config.KvCacheAnchorMessages, 3, v => Math.Clamp(v, 0, 20));
         _config.InlineCompletionMode      = inlineModeCode;
         _config.InlineCompletionEnabled   = inlineEnabled;
         _config.InlineCompletionModel     = inlineModel.Trim();
@@ -1330,13 +1386,20 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _config.RagEnabled                = ragEnabled;
         _config.RagAutoContextEnabled     = ragAutoContextEnabled;
         _config.RagEmbeddingModel         = ragEmbeddingModel.Trim();
-        _config.RagTopK                   = int.TryParse(ragTopKText, out var rk) ? Math.Clamp(rk, 1, 20) : 5;
-        _config.RagSimilarityThreshold    = float.TryParse(ragSimilarityThresholdText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var rst) ? Math.Clamp(rst, 0f, 1f) : 0.20f;
+        _config.RagTopK                   = ReadInt(ragTopKText, () => Strings.LabelRagTopK,
+                                                    _config.RagTopK, 5, v => Math.Clamp(v, 1, 20));
+        // ⚠ Inline, not ReadInt: invariant culture here (the threshold is written with a dot).
+        var rstOk = float.TryParse(ragSimilarityThresholdText, System.Globalization.NumberStyles.Float,
+                                   System.Globalization.CultureInfo.InvariantCulture, out var rst);
+        Note(ragSimilarityThresholdText, rstOk, () => Strings.LabelRagSimilarityThreshold);
+        _config.RagSimilarityThreshold    = rstOk ? Math.Clamp(rst, 0f, 1f)
+                                    : SettingsFallback.For(ragSimilarityThresholdText, _config.RagSimilarityThreshold, 0.20f);
         _config.LspEnabled                = lspEnabled;
         _config.McpEnabled                = mcpEnabled;
         _config.McpServersJson            = mcpServersJson;
         _config.ModelAutoUnloadEnabled    = modelAutoUnload;
-        _config.ModelIdleTimeoutMinutes   = int.TryParse(modelIdleTimeoutText, out var mit) ? Math.Max(1, mit) : 10;
+        _config.ModelIdleTimeoutMinutes   = ReadInt(modelIdleTimeoutText, () => Strings.LabelModelIdleTimeout,
+                                                    _config.ModelIdleTimeoutMinutes, 10, v => Math.Max(1, v));
         _config.Save();
 
         // Reconnect MCP servers from the freshly-saved config and report status.
@@ -1357,7 +1420,12 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         // Apply the culture override and refresh all labels immediately.
         Strings.ApplyLanguage(langCode);
         _config.NotifyLanguageChanged();   // re-localize the already-open chat window live
-        await RunOnVMContextAsync(() => { ApplyLabels(); SaveStatus = "✓"; });
+        // The labels resolve HERE, after ApplyLanguage: in the language that was just chosen, like
+        // the sentence carrying them.
+        var ignoredStatus = ignored.Count == 0
+            ? string.Empty
+            : " " + Strings.SettingsFieldsIgnored(ignored.Count, string.Join(", ", ignored.Select(f => f())));
+        await RunOnVMContextAsync(() => { ApplyLabels(); SaveStatus = "✓" + ignoredStatus; });
     }
 
     // ── MCP server list management ───────────────────────────────────────────
@@ -1771,10 +1839,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     /// The dialog is parented to a hidden topmost owner window so it surfaces in front of the
     /// floating (topmost) settings tool window instead of opening behind it.
     /// </summary>
-    private static Task<string?> ShowOpenFileDialogAsync()
-    {
-        var tcs = new TaskCompletionSource<string?>();
-        var thread = new System.Threading.Thread(() =>
+    private static Task<string?> ShowOpenFileDialogAsync() =>
+        StaDialog.RunAsync(() =>
         {
             System.Windows.Window? owner = null;
             try
@@ -1795,24 +1861,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                 var dlg = new Microsoft.Win32.OpenFileDialog
                 {
                     Title  = Strings.PinnedPickerTitle,
-                    Filter = "All Files (*.*)|*.*"
+                    Filter = Strings.DialogAllFiles
                 };
-                var ok = dlg.ShowDialog(owner) == true;
-                tcs.SetResult(ok ? dlg.FileName : null);
-            }
-            catch (Exception ex)
-            {
-                tcs.SetException(ex);
+                return dlg.ShowDialog(owner) == true ? dlg.FileName : null;
             }
             finally
             {
-                owner?.Close();
+                owner?.Close();   // the owner window does not outlive the dialog, failure included
             }
-        });
-        thread.SetApartmentState(System.Threading.ApartmentState.STA);
-        thread.Start();
-        return tcs.Task;
-    }
+        }, "PinnedFileDialog");
 
     // ── Custom slash commands (/name=text) ──────────────────────────────────
     private void BuildSlashRows() => BuildSlashRowsFrom(_config.PromptTemplates);
@@ -2033,6 +2090,18 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                     if (!AvailableModels.Contains(m))
                         AvailableModels.Add(m);
 
+                // ⚠ Avoiding Clear() only covers HALF of the mechanism the comment above names. A
+                // Selector nulls its SelectedItem when that item leaves the collection, and it does
+                // not care whether it left through Clear() or through the last RemoveAt: a backend
+                // that lists nothing (unreachable, or a fresh install with no model pulled) emptied
+                // this collection one item at a time and reached exactly the state the comment says
+                // it avoids — SelectedModel written back empty, and the next Save storing an empty
+                // DefaultModel. The five role models and the embedding model below have carried the
+                // remedy for this since they were written ("Resetting them here would silently wipe
+                // the config"); the chat model, the one that matters most, had none.
+                if (!string.IsNullOrEmpty(current) && !AvailableModels.Contains(current))
+                    AvailableModels.Add(current);
+
                 if (AvailableModels.Count > 0)
                     SelectedModel = AvailableModels.Contains(current) ? current : AvailableModels[0];
 
@@ -2076,6 +2145,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                     RagEmbeddingModel = AvailableEmbeddingModels[0];
             });
         }
-        catch (Exception ex) { Diagnostics.Swallow("Settings.Save", ex); }
+        // ⚠ The context names ITS OWN method, not a neighbour: this catch belongs to the model-list
+        // refresh, and it announced itself as "Settings.Save". In /diagnostics, a failed refresh
+        // therefore read as a failed save.
+        catch (Exception ex) { Diagnostics.Swallow("Settings.RefreshModels", ex); }
     }
 }

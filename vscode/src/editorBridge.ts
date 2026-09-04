@@ -15,6 +15,25 @@ function isMirrorable(doc: vscode.TextDocument): boolean {
 }
 
 /**
+ * Cheap upper bound on the size, without building the document text.
+ *
+ * UTF-8 never uses fewer bytes than there are UTF-16 code units, so `chars > ceiling` proves
+ * `bytes > ceiling`: rejecting here can never drop a document that would have been mirrorable.
+ * The exact byte check stays where the text is needed anyway — inside the debounced callback.
+ *
+ * ⚠ It exists because `isMirrorable` built the WHOLE document text on every keystroke, ahead of
+ * the debounce whose stated job is to keep typing cheap: the guard paid, per keypress, the cost
+ * it was there to avoid — and the debounced callback then built the text a second time.
+ */
+function couldBeMirrorable(doc: vscode.TextDocument): boolean {
+  if (doc.uri.scheme !== 'file') {
+    return false;
+  }
+  const end = doc.lineAt(doc.lineCount - 1).range.end;
+  return doc.offsetAt(end) <= MAX_MIRRORED_BYTES;
+}
+
+/**
  * Tracks the last active *text* editor. `window.activeTextEditor` becomes undefined
  * the moment focus moves to the Inferpal webview, so the answer to the host's
  * `editor/activeDocument` must come from this cache — the last real editor is what
@@ -23,6 +42,17 @@ function isMirrorable(doc: vscode.TextDocument): boolean {
 export class EditorBridge implements EditorDelegate, vscode.Disposable {
   private lastActive: vscode.TextEditor | undefined;
   private readonly changeTimers = new Map<string, NodeJS.Timeout>();
+  /**
+   * Paths currently mirrored into the host's overlay.
+   *
+   * ⚠ Needed because the overlay WINS over disk: `ReadFileTool` returns the buffered text and
+   * never opens the file when an entry exists. A document mirrored below the ceiling and then
+   * grown past it used to be dropped from the change handler with no `didClose`, so the host
+   * kept serving the last version under 1 MB — for as long as the file stayed open, with nothing
+   * saying so. The header comment promised the opposite ("the host reads them from disk
+   * instead"), which is only true when the overlay holds no entry.
+   */
+  private readonly mirrored = new Set<string>();
   private readonly disposables: vscode.Disposable[] = [];
   private host: HostClient | undefined;
   private approvalCard:
@@ -78,6 +108,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     for (const doc of vscode.workspace.textDocuments) {
       if (isMirrorable(doc)) {
         host.didOpen({ path: doc.uri.fsPath, text: doc.getText() });
+        this.mirrored.add(doc.uri.fsPath);
       }
     }
     if (this.lastActive?.document.uri.scheme === 'file') {
@@ -97,19 +128,31 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
       vscode.workspace.onDidOpenTextDocument((doc) => {
         if (isMirrorable(doc)) {
           this.host?.didOpen({ path: doc.uri.fsPath, text: doc.getText() });
+          this.mirrored.add(doc.uri.fsPath);
         }
       }),
       vscode.workspace.onDidChangeTextDocument((e) => {
-        if (!isMirrorable(e.document)) {
+        if (e.document.uri.scheme !== 'file') {
           return;
         }
         const key = e.document.uri.fsPath;
+        if (!couldBeMirrorable(e.document)) {
+          this.dropMirror(key);
+          return;
+        }
         clearTimeout(this.changeTimers.get(key));
         this.changeTimers.set(
           key,
           setTimeout(() => {
             this.changeTimers.delete(key);
-            this.host?.didChange({ path: key, text: e.document.getText() });
+            // The exact size is decided HERE, where the text has to be built anyway.
+            const text = e.document.getText();
+            if (Buffer.byteLength(text, 'utf8') > MAX_MIRRORED_BYTES) {
+              this.dropMirror(key);
+              return;
+            }
+            this.host?.didChange({ path: key, text });
+            this.mirrored.add(key);
           }, CHANGE_DEBOUNCE_MS),
         );
       }),
@@ -118,10 +161,27 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
           const key = doc.uri.fsPath;
           clearTimeout(this.changeTimers.get(key));
           this.changeTimers.delete(key);
+          this.mirrored.delete(key);
           this.host?.didClose(key);
         }
       }),
     );
+  }
+
+  /**
+   * Removes a document from the host's overlay so reads fall back to disk.
+   *
+   * Called when a mirrored document grows past the ceiling: leaving the entry behind is what
+   * made the model read a stale file. `didClose` on a path that was never mirrored is a no-op
+   * on the host side, but the set keeps the notification from firing on every keystroke of a
+   * large file.
+   */
+  private dropMirror(path: string): void {
+    clearTimeout(this.changeTimers.get(path));
+    this.changeTimers.delete(path);
+    if (this.mirrored.delete(path)) {
+      this.host?.didClose(path);
+    }
   }
 
   // ── EditorDelegate (host → editor requests) ────────────────────────────────

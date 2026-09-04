@@ -1,4 +1,4 @@
-﻿using System.Net.Http;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Inferpal.Config;
@@ -227,6 +227,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // Accumulate streamed tool-call fragments by index (name + arguments arrive piecewise).
         var toolAcc        = new SortedDictionary<int, (string Name, System.Text.StringBuilder Args)>();
         int tokensUsed = 0, promptTokens = 0;
+        // What the stream contained: the one thing missing to diagnose an empty turn.
+        var chunkCount   = 0;
+        string? finishReason = null;
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -277,6 +280,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     tokensUsed   = usage.TotalTokens
                                    ?? ((usage.PromptTokens ?? 0) + (usage.CompletionTokens ?? 0));
                 }
+
+                chunkCount++;
+                if (chunk?.Choices is { Count: > 0 } fin && fin[0].FinishReason is { Length: > 0 } fr)
+                    finishReason = fr;
 
                 var delta = chunk?.Choices is { Count: > 0 } ch ? ch[0].Delta : null;
                 if (delta is null) continue;
@@ -384,6 +391,24 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             && toolCalls is null && !contentPrintable && reasoningBuilder.Length == 0)
         {
             return await SendChatAsync(model, messages, tools, onToken, ct, complexity, "auto", onThinking);
+        }
+
+        // ⚠ A turn that returns NOTHING — no text, no tool call, no reasoning, and no error — was
+        // the only failure in this file leaving no trace at all: everything else throws an
+        // AgentHttpException that carries its cause to the screen. The user sees "the model
+        // returned no response", and nobody — not even us — can know what the server had sent.
+        // Reported from a machine on the network: measuring the very server it accused showed it
+        // perfectly healthy (model list, chat, streaming, 28 tools, forced tool_choice), and the
+        // investigation stopped there for want of this trace. It exists now: every empty turn
+        // records what was observed, readable with /diagnostics.
+        if (toolCalls is null && !contentPrintable && reasoningBuilder.Length == 0)
+        {
+            Diagnostics.Swallow(
+                $"Empty turn — model \"{model}\", server {base_}, tool_choice \"{toolChoice ?? "(none)"}\", "
+                + $"{chunkCount} SSE chunk(s) received, finish_reason \"{finishReason ?? "(none)"}\", "
+                + $"{contentText.Length} char(s) of non-printable content, "
+                + $"{(defs?.Count ?? 0)} tool(s) declared, {promptTokens} prompt token(s)",
+                new InvalidOperationException("no content, no tool call, no server error"));
         }
 
         return new ChatTurnResult(contentText, toolCalls, tokensUsed, promptTokens);

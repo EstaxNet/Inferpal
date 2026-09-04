@@ -32,17 +32,29 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     // false: the OpenAI chat wire LM Studio inherits carries no per-request keep_alive hint.
     public override ProviderCapabilities Capabilities => ProviderCapabilities.LmStudio;
 
-    /// <summary>Host root (no API suffix), tolerating a <c>/v1</c> suffix on BaseUrl.</summary>
-    private string HostRoot
+    /// <summary>
+    /// Host root (no API suffix), tolerating a <c>/v1</c> suffix — taken from
+    /// <paramref name="url"/> when a caller forces one, otherwise from the configuration.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The <c>url</c> parameter of <c>ListModelsAsync</c> / <c>ListInstalledModelsAsync</c> was
+    /// honoured by the two other providers (<c>url ?? _config.BaseUrl</c>) and <b>silently
+    /// ignored</b> here: the native probe queried the CONFIGURED server while the
+    /// OpenAI-compatible fallback queried the one it was handed. No caller paid for it today —
+    /// the one that passes a URL rebuilds a client whose config already carries it — but it is a
+    /// trap: the obvious gesture would have listed one server's models while presenting them as
+    /// another's.
+    /// </remarks>
+    private string HostRootFor(string? url)
     {
-        get
-        {
-            var b = (_config.BaseUrl ?? string.Empty).Trim().TrimEnd('/');
-            if (b.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
-                b = b[..^3].TrimEnd('/');
-            return b;
-        }
+        var b = (url ?? _config.BaseUrl ?? string.Empty).Trim().TrimEnd('/');
+        if (b.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
+            b = b[..^3].TrimEnd('/');
+        return b;
     }
+
+    private string HostRoot => HostRootFor(null);
+
 
     /// <summary>Native REST API root: <c>{host}/api/v1</c> (LM Studio 0.4.0+).</summary>
     private string NativeBase => HostRoot + "/api/v1";
@@ -61,12 +73,14 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     // ({"models":[{"key",...}]}) first, then the legacy v0 payload ({"data":[{"id",...}]}). Whichever
     // returns a non-empty list wins, so a server that only speaks one of the two still populates the
     // model selectors (the bug this guards against: an empty/partial list despite installed models).
-    private async Task<List<NativeModel>> GetNativeModelsAsync(CancellationToken ct, int timeoutSeconds = 5)
+    private async Task<List<NativeModel>> GetNativeModelsAsync(CancellationToken ct, int timeoutSeconds = 5, string? url = null)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+        var nativeBase = HostRootFor(url) + "/api/v1";
+        var legacyBase = HostRootFor(url) + "/api/v0";
 
-        using (var req = new HttpRequestMessage(HttpMethod.Get, $"{NativeBase}/models"))
+        using (var req = new HttpRequestMessage(HttpMethod.Get, $"{nativeBase}/models"))
         {
             AddAuth(req);
             using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
@@ -83,7 +97,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             }
         }
 
-        using (var req = new HttpRequestMessage(HttpMethod.Get, $"{LegacyBase}/models"))
+        using (var req = new HttpRequestMessage(HttpMethod.Get, $"{legacyBase}/models"))
         {
             AddAuth(req);
             using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
@@ -198,7 +212,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     {
         try
         {
-            var native = (await GetNativeModelsAsync(ct)).Select(m => m.Id).ToList();
+            var native = (await GetNativeModelsAsync(ct, url: url)).Select(m => m.Id).ToList();
             if (native.Count > 0) return native;
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -218,7 +232,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         try
         {
             // v1 reports on-disk size_bytes (improves VRAM estimation); v0 has none → 0.
-            var native = (await GetNativeModelsAsync(ct)).Select(m => new InstalledModelInfo(m.Id, m.SizeBytes)).ToList();
+            var native = (await GetNativeModelsAsync(ct, url: url)).Select(m => new InstalledModelInfo(m.Id, m.SizeBytes)).ToList();
             if (native.Count > 0) return native;
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)

@@ -13,6 +13,9 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
 {
     // ── Scriptable state ────────────────────────────────────────────────────────
     public ProviderCapabilities Capabilities { get; set; } = ProviderCapabilities.Ollama;
+
+    /// <summary>The server failure messages must name (see MsgEmptyResponseFrom).</summary>
+    public string ServerAddress { get; set; } = "http://localhost:1234";
     public List<string>             ModelNames { get; set; } = [];
     public List<RunningModelInfo>   Running    { get; set; } = [];
     public List<InstalledModelInfo> Installed  { get; set; } = [];

@@ -203,8 +203,16 @@ internal sealed class GhostTextController
         {
             // Guard: if the buffer changed since the completion was triggered, the insertion
             // position would be wrong — discard the stale completion instead of misplacing it.
+            //
+            // ⚠ A MISSING snapshot is the same case, and the guard let it through.
+            // `_triggerSnapshot` is nulled by OnCaretMoved and OnTextChanged, synchronously under
+            // the lock, while hiding the adornment goes through the dispatcher: in between, the
+            // completion is still "pending" and Tab inserted it AT THE NEW CARET, unguarded —
+            // exactly the misplacement this block exists to prevent. Not knowing where a
+            // completion was computed is a reason not to insert it, not a reason to insert it
+            // anywhere.
             var triggered = _triggerSnapshot;
-            if (triggered is not null && !ReferenceEquals(_view.TextBuffer.CurrentSnapshot, triggered))
+            if (triggered is null || !ReferenceEquals(_view.TextBuffer.CurrentSnapshot, triggered))
                 return;
 
             _triggerSnapshot = null; // consumed

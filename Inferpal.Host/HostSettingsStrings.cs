@@ -42,6 +42,13 @@ internal sealed partial class HostServer
     [JsonRpcMethod("settings/strings")]
     public Dictionary<string, string> SettingsStrings() => new()
     {
+        // ── Save status ──────────────────────────────────────────────────────
+        // ⚠ Served here, and not from the adapter's own strings, so that the sentence naming the
+        // ignored fields is THE SAME as the Visual Studio window's: it quotes labels that already
+        // come from here. Two translations of one sentence would drift.
+        // The panel substitutes {0}=count and {1}=labels.
+        [nameof(Strings.SettingsFieldsIgnored)]   = Strings.SettingsFieldsIgnoredTemplate,
+
         // ── Sections ─────────────────────────────────────────────────────────
         [nameof(Strings.SectionConnection)]        = Strings.SectionConnection,
         [nameof(Strings.SectionBehavior)]          = Strings.SectionBehavior,

@@ -16,13 +16,29 @@ internal static class InferenceProviderFactory
     /// <summary>Identifier persisted in <see cref="InferpalConfig.Provider"/>.</summary>
     public const string OpenAiCompatible = "openai-compatible";
 
-    public static IInferenceProvider Create(InferpalConfig config) =>
-        (config.Provider?.Trim().ToLowerInvariant()) switch
+    public static IInferenceProvider Create(InferpalConfig config)
+    {
+        var code = config.Provider?.Trim().ToLowerInvariant();
+
+        // ⚠ Falling back to Ollama is the right behaviour — a config with no `provider` predates
+        // multi-backend support — but it was COMPLETELY silent, including for a hand-written or
+        // misspelled code: the product then talked to a different backend than the one you
+        // believed you had chosen, and nothing anywhere said so. It cost a false measurement to
+        // the VS Code front-end review, which had written "openai" instead of
+        // "openai-compatible". The fallback stays; it is traced.
+        if (!string.IsNullOrEmpty(code) && code != Ollama && code != LmStudio && code != OpenAiCompatible)
+            // English like every other Diagnostics context: this is text the user reads in
+            // /diagnostics.
+            Diagnostics.Swallow($"InferenceProviderFactory: unknown backend code \"{code}\" — falling back to Ollama",
+                                new ArgumentOutOfRangeException(nameof(config.Provider), code, null));
+
+        return code switch
         {
             LmStudio         => new LmStudioClient(config),
             OpenAiCompatible => new OpenAiCompatibleClient(config),
             _                => new OllamaClient(config),
         };
+    }
 
     /// <summary>
     /// The capabilities a given provider <paramref name="code"/> advertises, without instantiating a

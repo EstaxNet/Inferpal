@@ -20,6 +20,16 @@ internal interface IInferenceProvider : IOllamaChatClient
     /// <summary>What this backend can do beyond plain chat — used to gate Ollama-only UI/features.</summary>
     ProviderCapabilities Capabilities { get; }
 
+    /// <summary>
+    /// The server this provider talks to, for the messages that must <b>name</b> it.
+    /// </summary>
+    /// <remarks>
+    /// A failure message that names neither the model nor the server leaves the user — and us —
+    /// without the slightest starting point. That is what made a failure reported from another
+    /// machine impossible to diagnose remotely.
+    /// </remarks>
+    string ServerAddress { get; }
+
     /// <inheritdoc cref="OllamaClient.RunAgentAsync"/>
     Task<AgentResult> RunAgentAsync(
         string model,

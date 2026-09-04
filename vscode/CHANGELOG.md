@@ -3,6 +3,43 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.8
+
+- **A numeric setting that could not be read is now named, instead of being dropped in silence.**
+  Saving still goes through — refusing the whole form would throw away the other, valid edits you
+  just made — and the status line says which boxes were skipped: *"Settings saved. 2 field(s)
+  ignored (unreadable value): Max iterations, Results per query"*. The reading itself was wrong
+  too: `parseInt('12abc')` is **12**, so a mistyped box did not get ignored — it silently stored a
+  truncation you never typed. Numbers are read strictly now. An empty box is never reported:
+  clearing one is a deliberate gesture, not a lost value.
+- **Four gestures did nothing at all when the host was not running**: "save / load / delete
+  session" from the command palette, the ↻ button in the settings panel, `/branch <name>`, and —
+  worst — **Save** in the settings panel, which left the panel showing its previous status, so
+  "Settings saved." if you had saved once before. Nothing was written and nothing said so. All
+  four now name the real cause: host stopped, or no folder open.
+- **A document that grew past the mirroring ceiling stayed stale in the model's view.** A file
+  opened under 1 MB and then grown past it (a paste, an appended log) left the assistant reading
+  its last version under the ceiling for as long as the file stayed open — and editing on top of
+  that — with nothing saying so.
+- **Typing is cheaper.** The size guard built the whole document on every keystroke to decide
+  whether the document was too big to build, ahead of the debounce whose job is to keep typing
+  cheap; the debounced callback then built it a second time. Same shape in the inline-completion
+  provider.
+- **Under Linux, `a.cs` and `A.cs` are no longer the same breakpoint.** Case folding is a property
+  of the file system, not of the process, and two path comparators folded it unconditionally — so
+  removing one breakpoint removed the other, and the debugger tools reported the wrong file to the
+  model.
+- **"The model returned no response" no longer blames the model.** It said the configured model
+  might not support text generation and advised switching models; measured against the server it
+  accused, that server was serving that very model perfectly. The message now states what was
+  observed — which model, which server, request accepted and stream closed without a single token,
+  so not a connection problem — and what the stream contained is recorded for `/diagnostics`.
+- **`/undo-run` reverts only the run you watched.** A tracking run was opened but never closed, so
+  anything written afterwards — a `/restore`, a tool launched from a slash command — still
+  attached to it.
+- Step mode, the agent-pause message and `/resume` are **translated** in all ten languages; they
+  were English literals, three lines below their already-translated plan-mode twins.
+
 ## 1.6.7
 
 - **LM Studio behind a reverse proxy listed no model at all, while the badge said connected.**

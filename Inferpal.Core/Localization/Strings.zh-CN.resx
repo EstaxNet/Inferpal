@@ -67,6 +67,7 @@
   <data name="BtnLoadSession" xml:space="preserve"><value>加载 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 取消</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
+  <data name="SettingsFieldsIgnored" xml:space="preserve"><value>已忽略 {0} 个字段（值无法识别）：{1}</value></data>
   <data name="BtnSend" xml:space="preserve"><value>发送 →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>刷新模型列表</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>将对话导出为 .md 或 .txt</value></data>
@@ -245,6 +246,7 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 令牌 · 会话：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>未配置 Ollama URL，请打开设置进行配置。</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>模型未返回任何响应。配置的模型可能不支持文本生成 — 请尝试默认聊天模型。</value></data>
+  <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>模型 **{0}** 没有生成任何文本。服务器（{1}）接受了请求，未返回任何 token，也没有报告错误就关闭了数据流 —— 因此这不是连接问题。数据流的详情见 `/diagnostics`。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>连接超时 — {0} 的后端已停止响应（空闲超时）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>无法连接到 {0} 的后端。请在设置中检查 URL。</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0} 的推理服务器返回了错误：
@@ -910,6 +912,20 @@ ollama serve
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — 计划模式与持久计划。&#10;&#10;- `/plan` — 切换计划模式（只读）&#10;- `/plan list` — 列出本仓库的计划&#10;- `/plan save [名称]` — 把上一条回答中的计划保存到 `.inferpal/plans/`&#10;- `/plan &lt;名称&gt;` — 打开一个计划&#10;- `/plan next` — 显示下一个未完成的步骤&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — 勾选或取消勾选某个步骤</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **计划模式已开启** — 只读：智能体可以探索并提出计划，但不能修改文件或执行命令。再次切换（或 `/plan`）即可应用改动。用 `/plan save` 保存计划，它就能在 `/clear` 之后依然存在。</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>计划模式**已关闭**。</value></data>
+  <data name="StepModeOn" xml:space="preserve"><value>🦶 **单步模式已开启** — 每次工具调用后代理会暂停。使用 ▶ 继续（或 `/resume`）继续执行。</value></data>
+  <data name="StepModeOff" xml:space="preserve"><value>单步模式**已关闭**。</value></data>
+  <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **代理在工具调用后已暂停。** 点击 ▶ 继续（或输入 `/resume`）继续执行，或点击取消中止。</value></data>
+  <data name="NoAgentStepPaused" xml:space="preserve"><value>当前没有暂停的代理步骤。</value></data>
+  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
+  <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 编译 {0}/{1}…</value></data>
+  <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 修复 {0}</value></data>
+  <data name="DialogAttachTitle" xml:space="preserve"><value>选择要附加的文件</value></data>
+  <data name="DialogAllFiles" xml:space="preserve"><value>所有文件 (*.*)|*.*</value></data>
+  <data name="DialogExportTitle" xml:space="preserve"><value>导出对话</value></data>
+  <data name="DialogExportFilter" xml:space="preserve"><value>Markdown (*.md)|*.md|文本 (*.txt)|*.txt</value></data>
+  <data name="SessionLoadFailed" xml:space="preserve"><value>⚠ 无法加载会话“{0}” — 文件缺失或无法读取。</value></data>
+  <data name="PlanOpenFailed" xml:space="preserve"><value>⚠ 无法打开计划文件：{0}</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>✗ 设置未保存：{0}</value></data>
   <data name="PlanListEmpty" xml:space="preserve"><value>还没有任何计划。在计划模式下让它生成一个，然后 `/plan save` 保存 —— 计划位于 `.inferpal/plans/`，会随代码一起提交。</value></data>
   <data name="PlanListHeader" xml:space="preserve"><value>### 本仓库的计划</value></data>
   <data name="PlanSaved" xml:space="preserve"><value>计划 **{0}** 已保存，共 {1} 个步骤 → `{2}`。它能在 `/clear` 和重启后保留；用 `/plan next` 继续。</value></data>

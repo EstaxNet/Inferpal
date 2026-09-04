@@ -64,6 +64,7 @@
   <data name="BtnLoadSession" xml:space="preserve"><value>Wczytaj ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Anuluj</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Zapisz</value></data>
+  <data name="SettingsFieldsIgnored" xml:space="preserve"><value>Zignorowano pola ({0}) — nieczytelna wartość: {1}</value></data>
   <data name="BtnSend" xml:space="preserve"><value>Wyślij →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>Odśwież listę modeli</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>Eksportuj rozmowę do .md lub .txt</value></data>
@@ -245,6 +246,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  sesja: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Adres URL Ollama nie jest skonfigurowany. Otwórz ustawienia, aby go ustawić.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Model nie zwrócił żadnej odpowiedzi. Skonfigurowany model może nie obsługiwać generowania tekstu — spróbuj domyślnego modelu czatu.</value></data>
+  <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Model **{0}** nie wygenerował żadnego tekstu. Serwer ({1}) przyjął żądanie i zamknął strumień bez ani jednego tokenu i bez zgłoszenia błędu — to nie jest problem z połączeniem. Szczegóły zawartości strumienia znajdziesz w `/diagnostics`.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Przekroczono limit czasu połączenia — backend pod adresem {0} przestał odpowiadać (limit bezczynności).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Nie można połączyć się z backendem pod adresem {0}. Sprawdź URL w ustawieniach.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Serwer inferencji pod adresem {0} zwrócił błąd:
@@ -910,6 +912,20 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — tryb planu i trwałe plany.&#10;&#10;- `/plan` — przełącza tryb planu (tylko do odczytu)&#10;- `/plan list` — lista planów tego repozytorium&#10;- `/plan save [nazwa]` — zapisuje plan z ostatniej odpowiedzi do `.inferpal/plans/`&#10;- `/plan &lt;nazwa&gt;` — otwiera plan&#10;- `/plan next` — pokazuje następny nieukończony krok&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — zaznacza lub odznacza krok</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **Tryb planu WŁĄCZONY** — tylko do odczytu: agent bada kod i proponuje plan, ale nie może edytować plików ani uruchamiać poleceń. Przełącz ponownie (lub `/plan`), aby zastosować zmiany. Zapisz plan przez `/plan save`, a przetrwa `/clear`.</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>Tryb planu **WYŁĄCZONY**.</value></data>
+  <data name="StepModeOn" xml:space="preserve"><value>🦶 **Tryb krokowy WŁĄCZONY** — agent zatrzymuje się po każdym wywołaniu narzędzia. Użyj ▶ Wznów (lub `/resume`), aby kontynuować.</value></data>
+  <data name="StepModeOff" xml:space="preserve"><value>Tryb krokowy **WYŁĄCZONY**.</value></data>
+  <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **Agent wstrzymany po wywołaniu narzędzia.** Kliknij ▶ Wznów (lub wpisz `/resume`), aby kontynuować, albo Anuluj, aby przerwać.</value></data>
+  <data name="NoAgentStepPaused" xml:space="preserve"><value>Żaden krok agenta nie jest obecnie wstrzymany.</value></data>
+  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
+  <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 Kompilacja {0}/{1}…</value></data>
+  <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 Poprawka {0}</value></data>
+  <data name="DialogAttachTitle" xml:space="preserve"><value>Wybierz plik do załączenia</value></data>
+  <data name="DialogAllFiles" xml:space="preserve"><value>Wszystkie pliki (*.*)|*.*</value></data>
+  <data name="DialogExportTitle" xml:space="preserve"><value>Eksportuj rozmowę</value></data>
+  <data name="DialogExportFilter" xml:space="preserve"><value>Markdown (*.md)|*.md|Tekst (*.txt)|*.txt</value></data>
+  <data name="SessionLoadFailed" xml:space="preserve"><value>⚠ Nie można wczytać sesji „{0}” — brak pliku lub jest nieczytelny.</value></data>
+  <data name="PlanOpenFailed" xml:space="preserve"><value>⚠ Nie można otworzyć pliku planu: {0}</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>✗ Ustawienia nie zostały zapisane: {0}</value></data>
   <data name="PlanListEmpty" xml:space="preserve"><value>Nie ma jeszcze żadnego planu. Poproś o niego w trybie planu, a potem `/plan save` — plany leżą w `.inferpal/plans/` i są commitowane razem z kodem.</value></data>
   <data name="PlanListHeader" xml:space="preserve"><value>### Plany tego repozytorium</value></data>
   <data name="PlanSaved" xml:space="preserve"><value>Plan **{0}** zapisany z {1} krokiem/krokami → `{2}`. Przetrwa `/clear` i restart; `/plan next` go podejmie.</value></data>

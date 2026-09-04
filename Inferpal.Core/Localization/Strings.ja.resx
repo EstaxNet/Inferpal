@@ -64,6 +64,7 @@
   <data name="BtnLoadSession" xml:space="preserve"><value>読込 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ キャンセル</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
+  <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} 個のフィールドを無視しました（値を読み取れません）：{1}</value></data>
   <data name="BtnSend" xml:space="preserve"><value>送信 →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>モデル一覧を更新</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>会話を .md または .txt にエクスポート</value></data>
@@ -245,6 +246,7 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} トークン  ·  セッション：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama の URL が設定されていません。設定を開いて設定してください。</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>モデルが応答を返しませんでした。設定されたモデルがテキスト生成をサポートしていない可能性があります — デフォルトのチャットモデルをお試しください。</value></data>
+  <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>モデル **{0}** はテキストを生成しませんでした。サーバー ({1}) はリクエストを受け付け、トークンを 1 つも返さず、エラーも報告せずにストリームを閉じました — 接続の問題ではありません。ストリームの内容は `/diagnostics` にあります。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>接続タイムアウト — {0} のバックエンドが応答しなくなりました（無通信タイムアウト）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>{0} のバックエンドに接続できません。設定で URL を確認してください。</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0} の推論サーバーがエラーを返しました:
@@ -910,6 +912,20 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — プランモードと永続的なプラン。&#10;&#10;- `/plan` — プランモード (読み取り専用) を切り替え&#10;- `/plan list` — このリポジトリのプラン一覧&#10;- `/plan save [名前]` — 直前の回答のプランを `.inferpal/plans/` に保存&#10;- `/plan &lt;名前&gt;` — プランを開く&#10;- `/plan next` — 次の未完了ステップを表示&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — ステップのチェックを付け外し</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **プランモード ON** — 読み取り専用: エージェントは調査してプランを提案しますが、ファイルの編集もコマンドの実行もできません。もう一度切り替える (または `/plan`) と変更を適用できます。`/plan save` で保存すれば `/clear` でも消えません。</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>プランモード **OFF**。</value></data>
+  <data name="StepModeOn" xml:space="preserve"><value>🦶 **ステップモード ON** — 各ツール呼び出し後にエージェントが一時停止します。▶ 再開 (または `/resume`) で続行します。</value></data>
+  <data name="StepModeOff" xml:space="preserve"><value>ステップモード **OFF**。</value></data>
+  <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **ツール呼び出し後にエージェントが一時停止しました。** ▶ 再開をクリック (または `/resume` と入力) して続行するか、キャンセルで中止します。</value></data>
+  <data name="NoAgentStepPaused" xml:space="preserve"><value>現在、一時停止中のエージェントのステップはありません。</value></data>
+  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
+  <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 ビルド {0}/{1}…</value></data>
+  <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 修正 {0}</value></data>
+  <data name="DialogAttachTitle" xml:space="preserve"><value>添付するファイルを選択</value></data>
+  <data name="DialogAllFiles" xml:space="preserve"><value>すべてのファイル (*.*)|*.*</value></data>
+  <data name="DialogExportTitle" xml:space="preserve"><value>会話をエクスポート</value></data>
+  <data name="DialogExportFilter" xml:space="preserve"><value>Markdown (*.md)|*.md|テキスト (*.txt)|*.txt</value></data>
+  <data name="SessionLoadFailed" xml:space="preserve"><value>⚠ セッション「{0}」を読み込めませんでした — ファイルが見つからないか、読み取れません。</value></data>
+  <data name="PlanOpenFailed" xml:space="preserve"><value>⚠ プランファイルを開けませんでした: {0}</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>✗ 設定を保存できませんでした: {0}</value></data>
   <data name="PlanListEmpty" xml:space="preserve"><value>プランはまだありません。プランモードで作成を依頼し、`/plan save` で保存してください。プランは `.inferpal/plans/` にあり、コードと一緒にコミットされます。</value></data>
   <data name="PlanListHeader" xml:space="preserve"><value>### このリポジトリのプラン</value></data>
   <data name="PlanSaved" xml:space="preserve"><value>プラン **{0}** を {1} ステップで保存しました → `{2}`。`/clear` や再起動後も残ります。`/plan next` で再開できます。</value></data>

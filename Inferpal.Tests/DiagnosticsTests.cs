@@ -23,6 +23,41 @@ public class DiagnosticsTests : IDisposable
         Diagnostics.LogPathOverride = null;
     }
 
+    /// <summary>
+    /// An unknown backend code falls back to Ollama — but it <b>says so</b> now.
+    /// </summary>
+    /// <remarks>
+    /// The fallback is the right behaviour (a config predating multi-backend support has no
+    /// <c>provider</c>), but it was completely silent: the product then talked to a different
+    /// backend than the one you believed you had chosen. It cost a false measurement to the VS
+    /// Code front-end review, which had written "openai" instead of "openai-compatible".
+    /// </remarks>
+    [Theory]
+    [InlineData("openai")]          // the exact typo that spoiled a measurement
+    [InlineData("lm-studio")]       // not a code: the real one is "lmstudio", no dash
+    public void UnknownProviderCode_FallsBackToOllama_AndSaysSo(string code)
+    {
+        var provider = Services.Inference.InferenceProviderFactory.Create(
+            new Config.InferpalConfig { Provider = code });
+
+        Assert.IsType<Services.Inference.OllamaClient>(provider);
+        var entry = Assert.Single(Diagnostics.Snapshot());
+        Assert.Contains(code.Trim().ToLowerInvariant(), entry.Context, StringComparison.Ordinal);
+    }
+
+    /// <summary>The three valid codes — and the absence of a code — trace nothing.</summary>
+    [Theory]
+    [InlineData("ollama")]
+    [InlineData("lmstudio")]
+    [InlineData("openai-compatible")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void KnownProviderCode_TracesNothing(string? code)
+    {
+        Services.Inference.InferenceProviderFactory.Create(new Config.InferpalConfig { Provider = code! });
+        Assert.Empty(Diagnostics.Snapshot());
+    }
+
     [Fact]
     public void Swallow_RecordsContextAndExceptionDetail()
     {

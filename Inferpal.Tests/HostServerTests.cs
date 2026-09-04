@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Net.Http;
 using Inferpal.Config;
 using Inferpal.Host;
@@ -1142,7 +1142,10 @@ public class HostServerTests
         var resume = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
             "command/slash", new { text = "/resume" });
         Assert.True(resume.Handled);
-        Assert.Contains("No agent step", resume.Markdown, StringComparison.Ordinal);
+        // ⚠ Against the RESOURCE, not against English: this message is localized now, and the
+        // literal assertion failed on a French-locale machine — a test that freezes a string is
+        // precisely what forbids translating it.
+        Assert.Equal(Inferpal.Localization.Strings.NoAgentStepPaused, resume.Markdown);
     }
 
     // ── settings/strings (localized labels served to the VS Code settings panel) ──

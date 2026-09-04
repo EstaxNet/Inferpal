@@ -4,13 +4,23 @@
 // "distinct model per role" and "advanced settings" reveal toggles, and Test / refresh
 // buttons. The config JSON is mutated in place and saved WHOLE (config/update replaces
 // the config — absent fields would reset).
-import { t } from './l10n';
+import { fill, t } from './l10n';
 
 const vscode = acquireVsCodeApi();
 
 // Localized resources pushed by the extension (resx resource name → translated string).
 let R: Record<string, string> = {};
 const res = (key: string): string => R[key] ?? key;
+
+// The fields the last save could not read: decided when sending, rendered when the host answers
+// (`saveDone`), which is the only moment we know the save actually happened.
+let lastIgnored: string[] = [];
+
+/** A field label as it is quoted inside a sentence: without its trailing colon. Labels are
+ *  written to sit in front of a box, and quoted as-is inside an enumeration they read "Context
+ *  window :, Results per query :". Same gesture as `SettingsFallback.LabelForSentence` in the
+ *  Core, on the same labels. */
+const labelForSentence = (label: string): string => label.replace(/[\s\u00A0\u202F:\uFF1A]+$/, '');
 
 /**
  * The form is declared once in the Core (`SettingsSchema`) and served by the host over
@@ -462,6 +472,7 @@ function onSave(): void {
   // full-JSON round trip (config/update resets absent fields to their defaults).
   const allFields: Field[] = SCHEMA.tabs.flatMap((tab) => tab.sections.flatMap((s) => s.fields))
     .concat(SCHEMA.headerFields);
+  const ignored: string[] = [];
   for (const field of allFields) {
     const input = inputs.get(field.key);
     if (!input) {
@@ -471,17 +482,27 @@ function onSave(): void {
       case 'bool':
         config[field.key] = (input as HTMLInputElement).checked;
         break;
+      // ⚠ STRICT reading, and what could not be read is NAMED (mirroring the Visual Studio
+      // window). `parseInt('12abc')` is 12: the permissive reading therefore stored a value the
+      // user never typed, truncated without a word. An EMPTY box is not named — it keeps the
+      // current value, as before.
       case 'int': {
-        const n = parseInt(input.value, 10);
-        if (!Number.isNaN(n)) {
-          config[field.key] = n;
+        const raw = input.value.trim();
+        const ok = /^[+-]?\d+$/.test(raw);
+        if (ok) {
+          config[field.key] = parseInt(raw, 10);
+        } else if (raw !== '') {
+          ignored.push(labelForSentence(res(field.label)));
         }
         break;
       }
       case 'float': {
-        const n = parseFloat(input.value.replace(',', '.'));
-        if (!Number.isNaN(n)) {
-          config[field.key] = n;
+        const raw = input.value.trim().replace(',', '.');
+        const ok = /^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(raw);
+        if (ok) {
+          config[field.key] = parseFloat(raw);
+        } else if (raw !== '') {
+          ignored.push(labelForSentence(res(field.label)));
         }
         break;
       }
@@ -490,7 +511,18 @@ function onSave(): void {
         break;
     }
   }
+  lastIgnored = ignored;
   vscode.postMessage({ type: 'save', json: JSON.stringify(config, null, 2) });
+}
+
+/** What the status line says after a successful save: what is saved is saved, and what could not
+ *  be read is named. The sentence comes from the host (the same .resx as the Visual Studio
+ *  window), so both panels say the same thing in all ten languages. */
+function savedStatus(): string {
+  const saved = t('Settings saved.');
+  return lastIgnored.length === 0
+    ? saved
+    : `${saved} ${fill(res('SettingsFieldsIgnored'), lastIgnored.length, lastIgnored.join(', '))}`;
 }
 
 function setStatus(text: string): void {
@@ -539,8 +571,11 @@ window.addEventListener('message', (event: MessageEvent) => {
       setTestStatus(msg.ok ? t('Connected') : t('Backend unreachable'), msg.ok);
       break;
     case 'saveDone':
-      setStatus(msg.ok ? t('Settings saved.') : '');
-      if (msg.ok) {
+      setStatus(msg.ok ? savedStatus() : '');
+      // ⚠ The message only clears itself when it has nothing to teach: "saved" reads at a glance,
+      // while the list of ignored fields is what the user must be able to re-read in order to go
+      // and fix their input.
+      if (msg.ok && lastIgnored.length === 0) {
         setTimeout(() => setStatus(''), 2500);
       }
       break;

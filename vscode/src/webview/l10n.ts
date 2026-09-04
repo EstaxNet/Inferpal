@@ -5,7 +5,13 @@
 const dict: Record<string, string> = window.__l10n ?? {};
 
 export function t(key: string, ...args: (string | number)[]): string {
-  let text = dict[key] ?? key;
+  return fill(dict[key] ?? key, ...args);
+}
+
+/** {0}-style substitution on a string that is already localized — the settings panel needs it for
+ *  the labels and messages it gets from the host (`settings/strings`, the same .resx as VS)
+ *  instead of from this dictionary. One substitution, one implementation. */
+export function fill(text: string, ...args: (string | number)[]): string {
   for (let i = 0; i < args.length; i++) {
     text = text.split(`{${i}}`).join(String(args[i]));
   }

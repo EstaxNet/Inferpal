@@ -64,6 +64,7 @@
   <data name="BtnLoadSession" xml:space="preserve"><value>Carica ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Annulla</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Salva</value></data>
+  <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} campo/i ignorato/i (valore illeggibile): {1}</value></data>
   <data name="BtnSend" xml:space="preserve"><value>Invia →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>Aggiorna la lista dei modelli</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>Esporta la conversazione in .md o .txt</value></data>
@@ -245,6 +246,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  sessione: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama non configurato. Apri le impostazioni per impostarlo.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Il modello non ha restituito alcuna risposta. Il modello configurato potrebbe non supportare la generazione di testo — prova il modello chat predefinito.</value></data>
+  <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Il modello **{0}** non ha prodotto alcun testo. Il server ({1}) ha accettato la richiesta e ha chiuso il flusso senza un solo token e senza segnalare errori: non è quindi un problema di connessione. `/diagnostics` riporta cosa conteneva il flusso.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Timeout connessione — il backend su {0} ha smesso di rispondere (timeout di inattività).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Impossibile raggiungere il backend su {0}. Controlla l'URL nelle impostazioni.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Il server di inferenza su {0} ha restituito un errore:
@@ -910,6 +912,20 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — modalità piano e piani persistenti.&#10;&#10;- `/plan` — attiva/disattiva la modalità piano (sola lettura)&#10;- `/plan list` — elenca i piani di questo repository&#10;- `/plan save [nome]` — salva il piano dell'ultima risposta in `.inferpal/plans/`&#10;- `/plan &lt;nome&gt;` — apre un piano&#10;- `/plan next` — mostra il prossimo passo da fare&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — spunta o riapre un passo</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **Modalità piano ATTIVA** — sola lettura: l'agente esplora e propone un piano, ma non può modificare file né eseguire comandi. Disattivala (o `/plan`) per applicare. Salva il piano con `/plan save` così sopravvive a `/clear`.</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>Modalità piano **DISATTIVATA**.</value></data>
+  <data name="StepModeOn" xml:space="preserve"><value>🦶 **Modalità passo-passo ATTIVA** — l'agente si mette in pausa dopo ogni chiamata di strumento. Usa ▶ Riprendi (o `/resume`) per continuare.</value></data>
+  <data name="StepModeOff" xml:space="preserve"><value>Modalità passo-passo **DISATTIVATA**.</value></data>
+  <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **Agente in pausa dopo una chiamata di strumento.** Fai clic su ▶ Riprendi (o digita `/resume`) per continuare, o Annulla per interrompere.</value></data>
+  <data name="NoAgentStepPaused" xml:space="preserve"><value>Nessun passo dell'agente è attualmente in pausa.</value></data>
+  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
+  <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 Build {0}/{1}…</value></data>
+  <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 Correzione {0}</value></data>
+  <data name="DialogAttachTitle" xml:space="preserve"><value>Seleziona il file da allegare</value></data>
+  <data name="DialogAllFiles" xml:space="preserve"><value>Tutti i file (*.*)|*.*</value></data>
+  <data name="DialogExportTitle" xml:space="preserve"><value>Esporta la conversazione</value></data>
+  <data name="DialogExportFilter" xml:space="preserve"><value>Markdown (*.md)|*.md|Testo (*.txt)|*.txt</value></data>
+  <data name="SessionLoadFailed" xml:space="preserve"><value>⚠ Impossibile caricare la sessione «{0}» — file assente o illeggibile.</value></data>
+  <data name="PlanOpenFailed" xml:space="preserve"><value>⚠ Impossibile aprire il file di piano: {0}</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>✗ Impostazioni non salvate: {0}</value></data>
   <data name="PlanListEmpty" xml:space="preserve"><value>Nessun piano per ora. Chiedine uno in modalità piano, poi `/plan save`: i piani vivono in `.inferpal/plans/` e vengono versionati con il codice.</value></data>
   <data name="PlanListHeader" xml:space="preserve"><value>### Piani di questo repository</value></data>
   <data name="PlanSaved" xml:space="preserve"><value>Piano **{0}** salvato con {1} passo/i → `{2}`. Sopravvive a `/clear` e a un riavvio; `/plan next` lo riprende.</value></data>

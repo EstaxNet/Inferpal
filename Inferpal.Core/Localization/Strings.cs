@@ -45,6 +45,17 @@ internal static class Strings
     public static string BtnClear             => Get(nameof(BtnClear));
     public static string BtnLoadSession       => Get(nameof(BtnLoadSession));
     public static string BtnSave              => Get(nameof(BtnSave));
+
+    /// <summary>What the save could not read, named — {0}=count, {1}=field labels.</summary>
+    public static string SettingsFieldsIgnored(int count, string labels) =>
+        string.Format(Get(nameof(SettingsFieldsIgnored)), count, labels);
+
+    /// <summary>
+    /// The raw template of <see cref="SettingsFieldsIgnored"/>, for the front-end that substitutes
+    /// on its own: the VS Code panel receives it over <c>settings/strings</c> and fills it inside
+    /// the webview, where it knows the fields. The sentence stays the same on both sides.
+    /// </summary>
+    public static string SettingsFieldsIgnoredTemplate => Get(nameof(SettingsFieldsIgnored));
     public static string BtnCancel            => Get(nameof(BtnCancel));
     public static string BtnSend              => Get(nameof(BtnSend));
     public static string TooltipRefreshModels => Get(nameof(TooltipRefreshModels));
@@ -410,6 +421,21 @@ internal static class Strings
     public static string MsgNoUrl => Get(nameof(MsgNoUrl));
     public static string MsgEmptyResponse => Get(nameof(MsgEmptyResponse));
 
+    /// <summary>
+    /// A turn that produced nothing, told by <b>what was observed</b> — {0} = requested model,
+    /// {1} = server.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Replaces <see cref="MsgEmptyResponse"/> on the paths that know the model and the server.
+    /// The old text asserted "the configured model may not support text generation — try the
+    /// default chat model": a cause the code cannot know, shown at the exact place a user looks to
+    /// find out why nothing works. Reported from a machine on the network; measuring the server it
+    /// accused showed it serving that very model perfectly, tools and streaming included. The
+    /// message therefore sent the user to change a model that was not the cause.
+    /// </remarks>
+    public static string MsgEmptyResponseFrom(string model, string server) =>
+        string.Format(Get(nameof(MsgEmptyResponseFrom)), model, server);
+
     public static string MsgError(string message) =>
         string.Format(Get(nameof(MsgError)), message);
 
@@ -625,6 +651,10 @@ internal static class Strings
     // ── Fix-build loop ─────────────────────────────────────────────────────────
     public static string FixBuildSuccess(int rounds)        => string.Format(Get(nameof(FixBuildSuccess)),    rounds);
     public static string FixBuildGiveUp(int maxRounds)      => string.Format(Get(nameof(FixBuildGiveUp)),     maxRounds);
+    // ⚠ The two progress labels of the SAME loop, left as literals while its two end messages
+    // were localized.
+    public static string FixBuildBuildingRound(int round, int total) => string.Format(Get(nameof(FixBuildBuildingRound)), round, total);
+    public static string FixBuildFixingRound(int round)     => string.Format(Get(nameof(FixBuildFixingRound)), round);
     public static string BuildFailedProposal(int errorCount) => string.Format(Get(nameof(BuildFailedProposal)), errorCount);
 
     // ── Smart Fix Protocol ─────────────────────────────────────────────────────
@@ -984,6 +1014,26 @@ internal static class Strings
     public static string PlanUsage           => Get(nameof(PlanUsage));
     public static string PlanModeOn          => Get(nameof(PlanModeOn));
     public static string PlanModeOff         => Get(nameof(PlanModeOff));
+
+    // ⚠ The twin pair of step mode, left as an English literal in the VM AND in the host when §17
+    // localized the plan-mode one three lines above.
+    public static string StepModeOn          => Get(nameof(StepModeOn));
+    public static string StepModeOff         => Get(nameof(StepModeOff));
+    public static string AgentPausedForStep  => Get(nameof(AgentPausedForStep));
+    public static string NoAgentStepPaused   => Get(nameof(NoAgentStepPaused));
+    /// <summary>Agent-mode toggle banner — {0} = the localized name of the mode.</summary>
+    public static string AgentModeOn(string label) => string.Format(Get(nameof(AgentModeOn)), label);
+
+    /// <summary>Titles and filters of the VS window's file dialogs.</summary>
+    public static string DialogAttachTitle   => Get(nameof(DialogAttachTitle));
+    public static string DialogAllFiles      => Get(nameof(DialogAllFiles));
+    public static string DialogExportTitle   => Get(nameof(DialogExportTitle));
+    public static string DialogExportFilter  => Get(nameof(DialogExportFilter));
+
+    /// <summary>Three failures that used to say nothing.</summary>
+    public static string SessionLoadFailed(string name)  => string.Format(Get(nameof(SessionLoadFailed)),  name);
+    public static string PlanOpenFailed(string path)     => string.Format(Get(nameof(PlanOpenFailed)),     path);
+    public static string SettingsSaveFailed(string error) => string.Format(Get(nameof(SettingsSaveFailed)), error);
     public static string PlanListEmpty       => Get(nameof(PlanListEmpty));
     public static string PlanListHeader      => Get(nameof(PlanListHeader));
     public static string PlanNoSteps         => Get(nameof(PlanNoSteps));

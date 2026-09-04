@@ -64,6 +64,7 @@
   <data name="BtnLoadSession" xml:space="preserve"><value>불러오기 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 취소</value></data>
   <data name="BtnSave" xml:space="preserve"><value>저장</value></data>
+  <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0}개 필드 무시됨(값을 읽을 수 없음): {1}</value></data>
   <data name="BtnSend" xml:space="preserve"><value>보내기 →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>모델 목록 새로 고침</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>대화를 .md 또는 .txt로 내보내기</value></data>
@@ -245,6 +246,7 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 토큰  ·  세션: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL이 구성되지 않았습니다. 설정을 열어 설정하세요.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>모델이 응답을 반환하지 않았습니다. 구성된 모델이 텍스트 생성을 지원하지 않을 수 있습니다 — 기본 채팅 모델을 사용해 보세요.</value></data>
+  <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>모델 **{0}** 이(가) 텍스트를 생성하지 않았습니다. 서버({1})는 요청을 수락했고, 토큰을 하나도 보내지 않은 채 오류도 알리지 않고 스트림을 닫았습니다 — 연결 문제가 아닙니다. 스트림의 내용은 `/diagnostics`에 있습니다.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>연결 시간 초과 — {0}의 백엔드가 더 이상 응답하지 않습니다(무응답 시간 초과).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>{0}의 백엔드에 연결할 수 없습니다. 설정에서 URL을 확인하세요.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0}의 추론 서버가 오류를 반환했습니다:
@@ -910,6 +912,20 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — 계획 모드와 영구 계획.&#10;&#10;- `/plan` — 계획 모드(읽기 전용) 전환&#10;- `/plan list` — 이 저장소의 계획 목록&#10;- `/plan save [이름]` — 마지막 답변의 계획을 `.inferpal/plans/`에 저장&#10;- `/plan &lt;이름&gt;` — 계획 열기&#10;- `/plan next` — 다음 미완료 단계 표시&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — 단계 체크 또는 해제</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **계획 모드 켜짐** — 읽기 전용: 에이전트가 탐색하고 계획을 제안하지만 파일을 편집하거나 명령을 실행할 수는 없습니다. 다시 전환하면(또는 `/plan`) 변경을 적용할 수 있습니다. `/plan save`로 저장하면 `/clear` 후에도 남습니다.</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>계획 모드 **꺼짐**.</value></data>
+  <data name="StepModeOn" xml:space="preserve"><value>🦶 **단계별 모드 켜짐** — 각 도구 호출 후 에이전트가 일시 중지됩니다. ▶ 재개(또는 `/resume`)로 계속하세요.</value></data>
+  <data name="StepModeOff" xml:space="preserve"><value>단계별 모드 **꺼짐**.</value></data>
+  <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **도구 호출 후 에이전트가 일시 중지되었습니다.** ▶ 재개를 클릭(또는 `/resume` 입력)해 계속하거나 취소로 중단하세요.</value></data>
+  <data name="NoAgentStepPaused" xml:space="preserve"><value>현재 일시 중지된 에이전트 단계가 없습니다.</value></data>
+  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
+  <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 빌드 {0}/{1}…</value></data>
+  <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 수정 {0}</value></data>
+  <data name="DialogAttachTitle" xml:space="preserve"><value>첨부할 파일 선택</value></data>
+  <data name="DialogAllFiles" xml:space="preserve"><value>모든 파일 (*.*)|*.*</value></data>
+  <data name="DialogExportTitle" xml:space="preserve"><value>대화 내보내기</value></data>
+  <data name="DialogExportFilter" xml:space="preserve"><value>Markdown (*.md)|*.md|텍스트 (*.txt)|*.txt</value></data>
+  <data name="SessionLoadFailed" xml:space="preserve"><value>⚠ 세션 "{0}"을(를) 불러오지 못했습니다 — 파일이 없거나 읽을 수 없습니다.</value></data>
+  <data name="PlanOpenFailed" xml:space="preserve"><value>⚠ 계획 파일을 열 수 없습니다: {0}</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>✗ 설정이 저장되지 않았습니다: {0}</value></data>
   <data name="PlanListEmpty" xml:space="preserve"><value>아직 계획이 없습니다. 계획 모드에서 요청한 뒤 `/plan save`로 저장하세요. 계획은 `.inferpal/plans/`에 있으며 코드와 함께 커밋됩니다.</value></data>
   <data name="PlanListHeader" xml:space="preserve"><value>### 이 저장소의 계획</value></data>
   <data name="PlanSaved" xml:space="preserve"><value>계획 **{0}**을(를) {1}단계로 저장했습니다 → `{2}`. `/clear`와 재시작 후에도 남으며 `/plan next`로 이어서 진행합니다.</value></data>

@@ -64,6 +64,7 @@
   <data name="BtnLoadSession" xml:space="preserve"><value>Загрузить ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Отмена</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="SettingsFieldsIgnored" xml:space="preserve"><value>Пропущено полей: {0} (нечитаемое значение): {1}</value></data>
   <data name="BtnSend" xml:space="preserve"><value>Отправить →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>Обновить список моделей</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>Экспортировать разговор в .md или .txt</value></data>
@@ -245,6 +246,7 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} тк  ·  сессия: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama не настроен. Откройте настройки для его указания.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Модель не вернула ответ. Настроенная модель может не поддерживать генерацию текста — попробуйте модель чата по умолчанию.</value></data>
+  <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Модель **{0}** не выдала ни одного фрагмента текста. Сервер ({1}) принял запрос и закрыл поток без единого токена и без сообщения об ошибке — значит, дело не в соединении. Подробности о содержимом потока — в `/diagnostics`.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Таймаут подключения — бэкенд по адресу {0} перестал отвечать (таймаут бездействия).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Не удаётся подключиться к бэкенду по адресу {0}. Проверьте URL в настройках.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Сервер вывода по адресу {0} вернул ошибку:
@@ -910,6 +912,20 @@ ollama serve
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — режим плана и постоянные планы.&#10;&#10;- `/plan` — переключить режим плана (только чтение)&#10;- `/plan list` — список планов этого репозитория&#10;- `/plan save [имя]` — сохранить план из последнего ответа в `.inferpal/plans/`&#10;- `/plan &lt;имя&gt;` — открыть план&#10;- `/plan next` — показать следующий незавершённый шаг&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — отметить или снять отметку с шага</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **Режим плана ВКЛЮЧЁН** — только чтение: агент исследует и предлагает план, но не может изменять файлы и выполнять команды. Переключите снова (или `/plan`), чтобы применять изменения. Сохраните план через `/plan save`, и он переживёт `/clear`.</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>Режим плана **ВЫКЛЮЧЕН**.</value></data>
+  <data name="StepModeOn" xml:space="preserve"><value>🦶 **Пошаговый режим ВКЛЮЧЁН** — агент останавливается после каждого вызова инструмента. Нажмите ▶ Продолжить (или `/resume`).</value></data>
+  <data name="StepModeOff" xml:space="preserve"><value>Пошаговый режим **ВЫКЛЮЧЕН**.</value></data>
+  <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **Агент остановлен после вызова инструмента.** Нажмите ▶ Продолжить (или введите `/resume`), либо Отмена для прерывания.</value></data>
+  <data name="NoAgentStepPaused" xml:space="preserve"><value>Сейчас нет приостановленных шагов агента.</value></data>
+  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
+  <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 Сборка {0}/{1}…</value></data>
+  <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 Исправление {0}</value></data>
+  <data name="DialogAttachTitle" xml:space="preserve"><value>Выберите файл для вложения</value></data>
+  <data name="DialogAllFiles" xml:space="preserve"><value>Все файлы (*.*)|*.*</value></data>
+  <data name="DialogExportTitle" xml:space="preserve"><value>Экспорт беседы</value></data>
+  <data name="DialogExportFilter" xml:space="preserve"><value>Markdown (*.md)|*.md|Текст (*.txt)|*.txt</value></data>
+  <data name="SessionLoadFailed" xml:space="preserve"><value>⚠ Не удалось загрузить сессию «{0}» — файл отсутствует или нечитаем.</value></data>
+  <data name="PlanOpenFailed" xml:space="preserve"><value>⚠ Не удалось открыть файл плана: {0}</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>✗ Настройки не сохранены: {0}</value></data>
   <data name="PlanListEmpty" xml:space="preserve"><value>Планов пока нет. Попросите план в режиме плана и сохраните его через `/plan save` — планы лежат в `.inferpal/plans/` и коммитятся вместе с кодом.</value></data>
   <data name="PlanListHeader" xml:space="preserve"><value>### Планы этого репозитория</value></data>
   <data name="PlanSaved" xml:space="preserve"><value>План **{0}** сохранён, шагов: {1} → `{2}`. Он переживает `/clear` и перезапуск; `/plan next` продолжит его.</value></data>

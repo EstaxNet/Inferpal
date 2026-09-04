@@ -56,6 +56,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// <inheritdoc/>
     public abstract ProviderCapabilities Capabilities { get; }
 
+    /// <inheritdoc/>
+    public string ServerAddress => _config.BaseUrl ?? string.Empty;
+
     // ── Chat circuit breaker ───────────────────────────────────────────────────
     // 5 consecutive failures → 5-minute cooldown; all calls short-circuit until
     // the cooldown expires or the user clicks Retry (which calls ResetCircuit).

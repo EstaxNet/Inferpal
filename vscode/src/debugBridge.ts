@@ -531,12 +531,27 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
   }
 }
 
+/**
+ * Case folding is a property of the FILE SYSTEM, not of the process: Windows and macOS (default
+ * APFS) fold, Linux does not — and this extension ships a linux-x64 build. Folding there makes
+ * two genuinely distinct files (`a.cs` and `A.cs`) the same breakpoint, so removing one removes
+ * the other and `findBreakpoints` reports the wrong file back to the model.
+ *
+ * Same rule and same reason as `OpenDocumentOverlay` in the Core, which picks its comparer this
+ * way for §23 — the doctrine existed, this file just never got it.
+ */
+const FOLDS_CASE = process.platform !== 'linux';
+
+function normalizePath(p: string): string {
+  const slashed = p.replace(/\\/g, '/');
+  return FOLDS_CASE ? slashed.toLowerCase() : slashed;
+}
+
 function samePath(a: string, b: string): boolean {
-  const normalize = (p: string): string => p.replace(/\\/g, '/').toLowerCase();
-  return normalize(a) === normalize(b);
+  return normalizePath(a) === normalizePath(b);
 }
 
 function underRoot(root: string, file: string): boolean {
-  const normalize = (p: string): string => p.replace(/\\/g, '/').toLowerCase().replace(/\/+$/, '');
-  return normalize(file).startsWith(normalize(root) + '/');
+  const trimmed = (p: string): string => normalizePath(p).replace(/\/+$/, '');
+  return trimmed(file).startsWith(trimmed(root) + '/');
 }

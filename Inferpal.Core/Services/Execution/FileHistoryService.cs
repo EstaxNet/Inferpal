@@ -161,6 +161,38 @@ internal class FileHistoryService
         return run.Id;
     }
 
+    /// <summary>
+    /// Closes the current run: what is written afterwards belongs to no run.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Without it, <c>_currentRun</c> stayed the last OPEN run forever, and the contract written
+    /// two lines below — "No-op when no run is active" — was only true before the session's first
+    /// agent run. Consequence: a write made AFTER the run (a <c>/restore</c>, a tool launched by a
+    /// slash command) attached to it, so <c>/undo-run</c> reverted it along with the run, and
+    /// <c>/replay</c> listed it in the journal of a run where it never happened. The run stays in
+    /// the list: only the "current" one is closed.
+    /// </remarks>
+    internal void EndRun()
+    {
+        lock (_runLock) _currentRun = null;
+    }
+
+    /// <summary>
+    /// <see cref="BeginRun"/> + <see cref="EndRun"/> bound to a scope, for callers whose exits are
+    /// scattered (<c>/tdd</c> returns from eight places inside its loop). Callers that already own
+    /// a <c>finally</c> call <c>EndRun</c> directly.
+    /// </summary>
+    internal IDisposable BeginRunScope()
+    {
+        BeginRun();
+        return new RunScope(this);
+    }
+
+    private sealed class RunScope(FileHistoryService owner) : IDisposable
+    {
+        public void Dispose() => owner.EndRun();
+    }
+
     /// <summary>Records that a file was created this run (no prior content → undo deletes it).</summary>
     internal void NoteCreated(string filePath)
     {

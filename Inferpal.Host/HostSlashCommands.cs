@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services;
 using Inferpal.Services.Commands;
@@ -151,7 +151,7 @@ internal sealed partial class HostServer
                 s.StepResume.TrySetResult(true);
                 return new SlashCommandResult(true, null);
             }
-            return new SlashCommandResult(true, "No agent step is currently paused.");
+            return new SlashCommandResult(true, Strings.NoAgentStepPaused);
         }
 
         var parts = delegated.Parts;
@@ -349,20 +349,32 @@ internal sealed partial class HostServer
                     // `/task apply <id> <n>`: the write goes through the real registry, so the
                     // ordinary approval prompt appears and /undo-run covers it (§18, decision (b)).
                     if (task.Apply is { } proposal)
-                        return new SlashCommandResult(true,
-                            await TaskProposalApplication.ApplyAsync(
-                                proposal, s.Tools, ReadFileForProposal, cts.Token,
-                                beginRun: () => s.Tools.History.BeginRun()));
+                        try
+                        {
+                            return new SlashCommandResult(true,
+                                await TaskProposalApplication.ApplyAsync(
+                                    proposal, s.Tools, ReadFileForProposal, cts.Token,
+                                    beginRun: () => s.Tools.History.BeginRun()));
+                        }
+                        finally
+                        {
+                            // As on the VS side: what is written after the application no longer
+                            // belongs to its run, otherwise /undo-run reverts it along with it.
+                            s.Tools.History.EndRun();
+                        }
 
                     return new SlashCommandResult(true, task.Message);
                 }
 
                 case SlashCommandId.AgentStep:
-                    // Same texts as the VS toggle (deliberately English, model-adjacent UX).
+                    // Same texts as the VS toggle — and localized now. The previous comment read
+                    // "deliberately English, model-adjacent UX": the `/plan` next door, three lines
+                    // below, returns Strings.PlanModeOn in all ten languages. Two mode-toggle
+                    // messages, addressed to the user, in the same switch: the justification was
+                    // describing an oversight.
                     s.StepMode = !s.StepMode;
-                    return new SlashCommandResult(true, s.StepMode
-                        ? "🦶 **Step mode ON** — the agent will pause after each tool call. Use ▶ Resume (or `/resume`) to continue."
-                        : "Step mode **OFF**.",
+                    return new SlashCommandResult(true,
+                        s.StepMode ? Strings.StepModeOn : Strings.StepModeOff,
                         [new SlashEffectDto("stateChange", s.StepMode ? "on" : "off", "stepMode")]);
 
                 case SlashCommandId.Plan:

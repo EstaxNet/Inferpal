@@ -253,22 +253,16 @@ internal partial class InferpalToolWindowData
         }
     }
 
-    private static Task<string?> ShowOpenFileDialogAsync()
-    {
-        var tcs = new TaskCompletionSource<string?>();
-        var thread = new System.Threading.Thread(() =>
+    private static Task<string?> ShowOpenFileDialogAsync() =>
+        StaDialog.RunAsync(() =>
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Title  = "Select File to Attach",
-                Filter = "All Files (*.*)|*.*"
+                Title  = Strings.DialogAttachTitle,
+                Filter = Strings.DialogAllFiles
             };
-            tcs.SetResult(dlg.ShowDialog() == true ? dlg.FileName : null);
-        });
-        thread.SetApartmentState(System.Threading.ApartmentState.STA);
-        thread.Start();
-        return tcs.Task;
-    }
+            return dlg.ShowDialog() == true ? dlg.FileName : null;
+        }, "AttachFileDialog");
 
     private void AddAttachment(string label, string content, string? sourcePath = null)
     {

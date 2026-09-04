@@ -67,6 +67,8 @@
   <data name="BtnLoadSession" xml:space="preserve"><value>Load ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Cancel</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Save</value></data>
+  <!-- Save status: what was saved is saved, and what could not be read is named — {0}=count, {1}=field labels -->
+  <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} field(s) ignored (unreadable value): {1}</value></data>
   <data name="BtnSend" xml:space="preserve"><value>Send →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>Refresh the model list</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>Export conversation to .md or .txt</value></data>
@@ -245,6 +247,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  session : {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL not configured. Open Settings to set it.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>The model returned no response. The configured model may not support text generation — try the default chat model.</value></data>
+  <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>The model **{0}** produced no text. The server ({1}) accepted the request and closed the stream without a single token, and without reporting an error — so this is not a connection problem. `/diagnostics` carries what the stream contained.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Connection timed out — the backend at {0} stopped responding (inactivity timeout).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Cannot reach the backend at {0}. Check the URL in Settings.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>The inference server at {0} returned an error:
@@ -909,6 +912,20 @@ ollama serve
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — plan mode and persistent plans.&#10;&#10;- `/plan` — toggle read-only plan mode&#10;- `/plan list` — list the plans of this repository&#10;- `/plan save [name]` — save the plan from the last answer to `.inferpal/plans/`&#10;- `/plan &lt;name&gt;` — open a plan&#10;- `/plan next` — show the next unfinished step&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — tick or untick a step</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **Plan mode ON** — read-only: the agent explores and proposes a plan, but cannot edit files or run commands. Toggle again (or `/plan`) to apply changes. Save the plan with `/plan save` so it survives `/clear`.</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>Plan mode **OFF**.</value></data>
+  <data name="StepModeOn" xml:space="preserve"><value>🦶 **Step mode ON** — the agent will pause after each tool call. Use ▶ Resume (or `/resume`) to continue.</value></data>
+  <data name="StepModeOff" xml:space="preserve"><value>Step mode **OFF**.</value></data>
+  <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **Agent paused after tool call.** Click ▶ Resume (or type `/resume`) to continue, or Cancel to abort.</value></data>
+  <data name="NoAgentStepPaused" xml:space="preserve"><value>No agent step is currently paused.</value></data>
+  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
+  <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 Build {0}/{1}…</value></data>
+  <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 Fix {0}</value></data>
+  <data name="DialogAttachTitle" xml:space="preserve"><value>Select File to Attach</value></data>
+  <data name="DialogAllFiles" xml:space="preserve"><value>All Files (*.*)|*.*</value></data>
+  <data name="DialogExportTitle" xml:space="preserve"><value>Export Conversation</value></data>
+  <data name="DialogExportFilter" xml:space="preserve"><value>Markdown (*.md)|*.md|Text (*.txt)|*.txt</value></data>
+  <data name="SessionLoadFailed" xml:space="preserve"><value>⚠ Session "{0}" could not be loaded — the file is missing or unreadable.</value></data>
+  <data name="PlanOpenFailed" xml:space="preserve"><value>⚠ Could not open the plan file: {0}</value></data>
+  <data name="SettingsSaveFailed" xml:space="preserve"><value>✗ Settings not saved: {0}</value></data>
   <data name="PlanListEmpty" xml:space="preserve"><value>No plan yet. Ask for one in plan mode, then `/plan save` it — plans live in `.inferpal/plans/` and are committed with the code.</value></data>
   <data name="PlanListHeader" xml:space="preserve"><value>### Plans of this repository</value></data>
   <data name="PlanSaved" xml:space="preserve"><value>Plan **{0}** saved with {1} step(s) → `{2}`. It survives `/clear` and a restart; `/plan next` picks it back up.</value></data>

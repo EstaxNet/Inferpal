@@ -32,7 +32,7 @@ export class FimProvider implements vscode.InlineCompletionItemProvider {
     if (!host?.isRunning || !host.info?.fim || host.isChatBusy) {
       return undefined;
     }
-    if (document.uri.scheme !== 'file' || document.getText().length > MAX_DOC_CHARS) {
+    if (document.uri.scheme !== 'file') {
       return undefined;
     }
 
@@ -42,8 +42,14 @@ export class FimProvider implements vscode.InlineCompletionItemProvider {
       return undefined;
     }
 
+    // ⚠ The size check lives AFTER the debounce and shares the single `getText()`. It used to
+    // run before it, so every keystroke built the whole document once to decide whether the
+    // document was too big to build — then the surviving call built it a second time.
     const offset = document.offsetAt(position);
     const text = document.getText();
+    if (text.length > MAX_DOC_CHARS) {
+      return undefined;
+    }
     const prefix = text.slice(Math.max(0, offset - MAX_PREFIX_CHARS), offset);
     const suffix = text.slice(offset, offset + MAX_SUFFIX_CHARS);
 

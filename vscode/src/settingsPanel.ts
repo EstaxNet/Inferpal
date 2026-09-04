@@ -115,6 +115,10 @@ export class SettingsPanel {
       }
       case 'refreshModels': {
         if (!host?.isRunning) {
+          // ⚠ A bare return here is a ↻ button that does NOTHING: indistinguishable from a backend
+          // serving no model. The 'ready' and 'testConnection' cases already name that state;
+          // this one and 'save' did not.
+          this.post({ type: 'error', message: hostUnavailableMessage() });
           return;
         }
         try {
@@ -126,6 +130,9 @@ export class SettingsPanel {
       }
       case 'save': {
         if (!host?.isRunning || !msg.json) {
+          // Clicking Save cannot say nothing: with no host nothing is written, and the panel kept
+          // its previous status — so "Settings saved." if you had saved once before.
+          this.post({ type: 'error', message: hostUnavailableMessage() });
           return;
         }
         // config/update resets the host conversation context — confirm when one is running.

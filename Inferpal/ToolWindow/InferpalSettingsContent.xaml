@@ -1552,15 +1552,26 @@
         <!-- end TAB: Tools (Commands & tools) -->
 
         <!-- ══ Save bar (always visible) ═══════════════════════════════════ -->
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-            <Button Content="{Binding BtnSave}"
+        <!-- ⚠ Grid and not a horizontal StackPanel: now that the status names the fields it could
+             not read, it is a sentence and no longer a "✓". In a horizontal StackPanel a TextBlock
+             is given infinite width, so TextWrapping does nothing there and the sentence would run
+             out of the panel. -->
+        <Grid Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0"
+                    Content="{Binding BtnSave}"
                     Command="{Binding SaveCommand}"
                     Padding="16,6"/>
-            <TextBlock Text="{Binding SaveStatus}"
+            <TextBlock Grid.Column="1"
+                       Text="{Binding SaveStatus}"
                        Foreground="{Binding TextForeground}"
                        VerticalAlignment="Center"
+                       TextWrapping="Wrap"
                        FontSize="12" Margin="10,0,0,0"/>
-        </StackPanel>
+        </Grid>
 
     </StackPanel>
     </ScrollViewer>

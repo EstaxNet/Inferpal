@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -193,13 +193,33 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
                 name = string.IsNullOrWhiteSpace(SelectedSession) ? "last_session" : SelectedSession);
 
-            var session = await _store.LoadAsync(name, ct);
+            // ⚠ A load that returns nothing is indistinguishable, on screen, from an ignored
+            // click: the conversation does not move, the panel stays open, nothing is said.
+            // LoadAsync returns null when the file is gone and THROWS on unreadable JSON — both
+            // cases are therefore named (the exception, below, by the same message).
+            SessionData? session;
+            try
+            {
+                session = await _store.LoadAsync(name, ct);
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Swallow($"Session.Load({name})", ex);
+                await RunOnVMContextAsync(() => InsertThemed(
+                    ChatMessageItem.AssistantMsg(Strings.SessionLoadFailed(name))));
+                return;
+            }
+
             if (session is null || session.Messages.Count == 0)
             {
                 await RunOnVMContextAsync(() =>
                 {
                     if (Messages.Count == 0) { Messages.Add(_anchor0); Messages.Add(_anchor1); }
                     RefreshSessionsList();
+                    // A session that is listed but empty or gone: say so. The only legitimately
+                    // silent case is "no saved session", where there is nothing to load.
+                    if (!string.IsNullOrEmpty(name) && name != "last_session")
+                        InsertThemed(ChatMessageItem.AssistantMsg(Strings.SessionLoadFailed(name)));
                 });
                 return;
             }
@@ -251,9 +271,10 @@ internal partial class InferpalToolWindowData
     private async Task ToggleStepModeAsync()
     {
         await RunOnVMContextAsync(() => IsStepMode = !IsStepMode);
-        await ShowInfoAsync(IsStepMode
-            ? "🦶 **Step mode ON** — the agent will pause after each tool call. Use ▶ Resume (or `/resume`) to continue."
-            : "Step mode **OFF**.");
+        // Localized: §17 had localized the TWIN pair of plan mode, three lines below, and left
+        // this one as an English literal — in the VM as well as in the host. Nine users out of ten
+        // read English there, with nothing saying so.
+        await ShowInfoAsync(IsStepMode ? Strings.StepModeOn : Strings.StepModeOff);
     }
 
     /// <summary>Toggles plan mode (shared by the <c>/plan</c> command and the toolbar button).
@@ -287,7 +308,7 @@ internal partial class InferpalToolWindowData
         _config.AgentModeEnabled = IsAgentMode;
         _config.Save();
         await ShowInfoAsync(IsAgentMode
-            ? $"**{Strings.LabelModeAgent}** — Plan → Act → Observe"
+            ? Strings.AgentModeOn(Strings.LabelModeAgent)
             : $"**{Strings.LabelModeChat}**");
     }
 
@@ -316,8 +337,7 @@ internal partial class InferpalToolWindowData
 
         await RunOnVMContextAsync(() =>
         {
-            pauseBubble = ChatMessageItem.AssistantMsg(
-                "⏸ **Agent paused after tool call.** Click ▶ Resume (or type `/resume`) to continue, or Cancel to abort.");
+            pauseBubble = ChatMessageItem.AssistantMsg(Strings.AgentPausedForStep);
             pauseBubble.InitResumeCallback(() => Post(() => ResumeStep()));
             ApplyItemTheme(pauseBubble);
             Messages.Insert(Messages.Count - 2, pauseBubble);

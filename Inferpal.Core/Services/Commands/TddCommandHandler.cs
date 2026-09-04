@@ -55,11 +55,16 @@ internal static class TddCommandHandler
         // natural failure mode is rewriting the assertion to the observed buggy value. The sibling
         // shares the parent's FileHistoryService, and the run opened here groups every fix-round
         // write so /undo-run can revert the whole /tdd session (pre-1.6.0 architecture review, §1.5).
+        IDisposable? run = null;
         if (tools is ToolRegistry concrete)
         {
             tools = concrete.WithApprovalService(new TestFileWriteGuard(concrete.Approval));
-            concrete.History.BeginRun();
+            run   = concrete.History.BeginRunScope();
         }
+        // ⚠ The run closes on EVERY exit path — the loop has eight. Without this it stayed the
+        // "current" one after the command, and a later write attached to it: /undo-run reverted
+        // that write along with the /tdd session.
+        using var runScope = run;
 
         var argsObj = new Dictionary<string, string>();
         if (!string.IsNullOrWhiteSpace(projectRoot)) argsObj["path"]   = projectRoot!;

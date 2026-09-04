@@ -384,7 +384,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** `/branch <name>`: switching to a branch is a plain session load. */
   private async switchToSession(name: string): Promise<void> {
     const host = this.getHost();
-    if (!host?.isRunning || !name) {
+    if (!host?.isRunning) {
+      this.append({ role: 'error', text: hostUnavailableMessage(), timestamp: ChatViewProvider.now() });
+      this.hydrate();
+      return;
+    }
+    if (!name) {
       return;
     }
     try {
@@ -422,7 +427,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Command: save the conversation under a user-chosen name (LLM-suggested by default). */
   async saveSessionCommand(): Promise<void> {
     const host = this.getHost();
-    if (!host?.isRunning || this.transcript.length === 0) {
+    // ⚠ A palette command that does NOTHING is indistinguishable from one that failed: with no
+    // host, we say so. An empty conversation, on the other hand, is a normal case — there is
+    // nothing to save.
+    if (!host?.isRunning) {
+      void vscode.window.showWarningMessage(hostUnavailableMessage());
+      promptOpenFolder();
+      return;
+    }
+    if (this.transcript.length === 0) {
       return;
     }
     const first = this.transcript.find((m) => m.role === 'user')?.text ?? '';
@@ -456,6 +469,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   async loadSessionCommand(): Promise<void> {
     const host = this.getHost();
     if (!host?.isRunning) {
+      void vscode.window.showWarningMessage(hostUnavailableMessage());
+      promptOpenFolder();
       return;
     }
     const pick = await this.pickSession(vscode.l10n.t('Pick a session to load'));
@@ -472,6 +487,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   async deleteSessionCommand(): Promise<void> {
     const host = this.getHost();
     if (!host?.isRunning) {
+      void vscode.window.showWarningMessage(hostUnavailableMessage());
+      promptOpenFolder();
       return;
     }
     const pick = await this.pickSession(vscode.l10n.t('Pick a session to delete'));

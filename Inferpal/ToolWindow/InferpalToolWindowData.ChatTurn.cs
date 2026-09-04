@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -174,10 +174,19 @@ internal partial class InferpalToolWindowData
             // First-turn workspace context: silently prepend solution + open editors
             if (!_workspaceContextInjected && !userText.StartsWith('/'))
             {
-                _workspaceContextInjected = true;
+                // ⚠ The flag is set AFTER success. It used to be set before, and
+                // BuildWorkspaceContextAsync is best-effort: both of its tools carry a 5-second
+                // deadline and return an empty string when they fail. But the first turn of a
+                // session is exactly the one where Visual Studio is still loading its solution — a
+                // timeout therefore consumed the flag, and the model NEVER AGAIN got the session's
+                // workspace context, with nothing saying so. "No solution open" is not that case:
+                // get_solution_info then returns text, hence non-empty.
                 var workspaceCtx = await BuildWorkspaceContextAsync(ct);
                 if (!string.IsNullOrEmpty(workspaceCtx))
+                {
+                    _workspaceContextInjected = true;
                     historyText = workspaceCtx + "\n\n" + historyText;
+                }
             }
 
             // Auto-context: retrieve and inject the most relevant indexed chunks for this turn,
@@ -280,8 +289,25 @@ internal partial class InferpalToolWindowData
             {
                 if (streamingMsg is null)
                 {
-                    streamingMsg = ChatMessageItem.StreamingMsg(effectiveModel);
-                    Messages.Insert(Messages.Count - 2, streamingMsg);
+                    // ⚠ Par l'entonnoir, comme toute autre bulle. Celle-ci s'inserait sans etre
+                    // thematisee, et FinalizeStreamingBubble ne la thematise qu'a la FIN du tour :
+                    // sous un theme clair, le texte gardait le defaut du champ (#D4D4D4, la
+                    // couleur du theme SOMBRE) sur le fond clair de la fenetre (#F5F5F5), soit un
+                    // contraste de 1,36:1 -- le minimum WCAG pour du texte courant est 4,5:1, et
+                    // la valeur thematisee donne 15,29:1. La reponse etait donc illisible pendant
+                    // toute sa generation, puis apparaissait d'un coup a la fin.
+                    //
+                    // La garde de convention ne pouvait pas le voir : elle ne cherchait que les
+                    // bulles construites DANS l'appel, c'est-a-dire la forme
+                    // Messages.Insert(Messages.Count - 2, ChatMessageItem.StreamingMsg(...)) ;
+                    // celle-ci etait construite une ligne au-dessus. C'est la bulle la plus
+                    // regardee du produit.
+                    //
+                    // ⚠ Cette phrase-la faisait rougir la garde tant qu'elle lisait le texte brut :
+                    // elle trouvait son propre motif interdit dans la prose qui l'explique. Elle
+                    // neutralise desormais les commentaires (CodeOnly, arbre Roslyn), et ce
+                    // commentaire est la preuve vivante que c'est repare.
+                    streamingMsg = InsertThemed(ChatMessageItem.StreamingMsg(effectiveModel));
                     ScrollToBottom();
                 }
                 streamingMsg.Content += chunk;
@@ -541,7 +567,15 @@ internal partial class InferpalToolWindowData
                         break;
 
                     case Services.Agent.FinalAnswerKind.EmptyFallback:
-                        var emptyMsg = ChatMessageItem.AssistantMsg(Strings.MsgEmptyResponse);
+                        // ⚠ The message NAMES what was observed — requested model, server — instead
+                        // of betting on a cause. The old text asserted "the model may not support
+                        // text generation, try the chat model": reported from a machine on the
+                        // network, and measuring the server it accused showed it perfectly healthy
+                        // for that model — listing, chat, streaming, 28 tools, forced tool_choice.
+                        // The advice therefore sent the user hunting exactly where the fault was
+                        // not.
+                        var emptyMsg = ChatMessageItem.AssistantMsg(
+                            Strings.MsgEmptyResponseFrom(effectiveModel, _config.BaseUrl));
                         ApplyItemTheme(emptyMsg);
                         Messages.Insert(Messages.Count - 2, emptyMsg);
                         lastAssistant = emptyMsg;
@@ -621,6 +655,10 @@ internal partial class InferpalToolWindowData
                 // or the catch handlers didn't reach the removal code.
                 RemoveStatusBubble();
                 localCts?.Dispose();
+                // The tracking run opened above closes HERE: without this, everything written
+                // after the turn (a /restore, a tool launched by a slash command) still attached to
+                // it, and /undo-run reverted that along with the run we had just watched.
+                _tools.History.EndRun();
                 // Conditional finalisation: a code action can cancel THIS turn and start the next
                 // one before this finally runs — _currentCts then belongs to the NEW turn, and
                 // stomping IsLoading here killed its stop button and let a third send through
