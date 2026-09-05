@@ -46,19 +46,17 @@ internal static class PromptFilesService
         lock (_gate) _cachedDir = null;
     }
 
-    internal static IReadOnlyList<UserSlashTemplate> LoadUncached(string promptsDir)
+    internal static IReadOnlyList<UserSlashTemplate> LoadUncached(string promptsDir) =>
+        LoadUncached(promptsDir, out _);
+
+    /// <summary>Same, reporting the unreadable files. See <see cref="MarkdownFolder"/>.</summary>
+    internal static IReadOnlyList<UserSlashTemplate> LoadUncached(
+        string promptsDir, out IReadOnlyList<string> unreadable)
     {
-        if (string.IsNullOrEmpty(promptsDir) || !Directory.Exists(promptsDir))
-            return [];
-
         var result = new List<UserSlashTemplate>();
-        foreach (var file in Directory.EnumerateFiles(promptsDir, "*.md", SearchOption.TopDirectoryOnly)
-                                      .OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+        foreach (var (file, text) in Governance.MarkdownFolder.ReadAll(
+                     promptsDir, "PromptFilesService.Load", out unreadable))
         {
-            string text;
-            try { text = File.ReadAllText(file, Encoding.UTF8); }
-            catch { continue; }
-
             var (fm, body) = RulesService.ParseFrontMatter(text);
             body = body.Trim();
             if (body.Length == 0) continue;

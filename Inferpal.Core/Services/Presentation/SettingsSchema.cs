@@ -1,11 +1,31 @@
+using Inferpal.Localization;
+
 namespace Inferpal.Services.Presentation;
 
 /// <summary>What kind of control edits a setting.</summary>
 internal enum SettingKind { Text, Password, Bool, Int, Float, Model, Select, TextArea }
 
-/// <summary>An option of a <see cref="SettingKind.Select"/> field. Option texts are product names
-/// or fixed technical labels — never localized.</summary>
-internal sealed record SettingOption(string Value, string Text);
+/// <summary>An option of a <see cref="SettingKind.Select"/> field.</summary>
+/// <param name="Text">Verbatim text - a product name (Ollama, LM Studio) or a language name, which
+/// are the same in every language. Also the fallback of <paramref name="Localized"/>.</param>
+/// <param name="Localized">Resource lookup for options whose text is <b>ordinary prose</b>, resolved
+/// at render time so a language change takes effect.</param>
+/// <remarks>
+/// This type used to carry "Option texts are product names or fixed technical labels - never
+/// localized". That was true of two thirds of its uses and false of the third: "Fast", "Default",
+/// "High Accuracy" are adjectives, and they came out in English in a panel whose every other word
+/// is translated. A rule true of a subcase, written as if it held for all - the pattern this
+/// repository keeps paying for. The distinction now lives in the TYPE, not in a comment.
+///
+/// And it resolves <b>at display time</b>, never while building the schema:
+/// <see cref="SettingsSchema.Tabs"/> is a property initialised once, so a text resolved in there
+/// would freeze the language of the first access.
+/// </remarks>
+internal sealed record SettingOption(string Value, string Text, Func<string>? Localized = null)
+{
+    /// <summary>Display text in the language in force <i>now</i>.</summary>
+    internal string Display => Localized?.Invoke() ?? Text;
+}
 
 /// <summary>
 /// One editable setting. <paramref name="Key"/> is the camelCase key in the config JSON,
@@ -49,18 +69,26 @@ internal sealed record SettingTab(string Key, string Title, IReadOnlyList<Settin
 /// </remarks>
 internal static class SettingsSchema
 {
-    private static readonly SettingOption[] FimModes =
+    /// <summary>The three inline-completion presets. Public: the Visual Studio window kept its own
+    /// copy, which is exactly what this schema exists to remove.
+    /// <c>IReadOnlyList</c> and not an array: a public <c>static readonly T[]</c> protects the
+    /// reference, never its contents - any caller could write into it. This is the single source of
+    /// those lists, it must not be modifiable from outside.</summary>
+    public static readonly IReadOnlyList<SettingOption> FimModes =
     [
-        new("Fast",         "Fast (128 tok · 300 ms)"),
-        new("Default",      "Default (256 tok · 600 ms)"),
-        new("HighAccuracy", "High Accuracy (512 tok · 1 s)"),
+        new("Fast",         "Fast (128 tok · 300 ms)",     () => Strings.FimModeFast),
+        new("Default",      "Default (256 tok · 600 ms)",  () => Strings.FimModeDefault),
+        new("HighAccuracy", "High Accuracy (512 tok · 1 s)", () => Strings.FimModeHighAccuracy),
     ];
 
-    private static readonly SettingOption[] Providers =
+    /// <summary>Backend names - never translated. Public for the same reason as
+    /// <see cref="FimModes"/>: the VS window copy had already DRIFTED (it said
+    /// "OpenAI-compatible (generic)", the schema "OpenAI-compatible") and nobody had seen it.</summary>
+    public static readonly IReadOnlyList<SettingOption> Providers =
     [
         new("ollama",            "Ollama"),
         new("lmstudio",          "LM Studio"),
-        new("openai-compatible", "OpenAI-compatible"),
+        new("openai-compatible", "OpenAI-compatible (generic)"),
     ];
 
     /// <summary>Label the adapter resolves itself (not a .resx resource).</summary>

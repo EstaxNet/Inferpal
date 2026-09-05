@@ -17,21 +17,20 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private readonly IInferenceProvider _client;
     private readonly Services.Mcp.McpToolService _mcp;
 
-    // ── Inference backend list (code → display name, fixed — never localized) ─────
-    private static readonly (string Code, string Name)[] ProviderOptions =
-    [
-        (Services.Inference.InferenceProviderFactory.Ollama,           "Ollama"),
-        (Services.Inference.InferenceProviderFactory.LmStudio,         "LM Studio"),
-        (Services.Inference.InferenceProviderFactory.OpenAiCompatible, "OpenAI-compatible (generic)"),
-    ];
+    // The two option lists come from the SHARED SCHEMA, no local copy any more.
+    //
+    // They were copied here, and one had already drifted with nothing to say so: the VS window said
+    // "OpenAI-compatible (generic)", the schema served to VS Code said "OpenAI-compatible". Two
+    // descriptions of one list is a list someone will forget to fix - which is precisely why
+    // SettingsSchema exists.
+    //
+    // The FIM modes are now TRANSLATED, which changes the nature of the displayed text: it can no
+    // longer serve as a key. See the two places marked "by INDEX" below.
+    private static (string Code, string Name)[] ProviderOptions =>
+        [.. Services.Presentation.SettingsSchema.Providers.Select(o => (o.Value, o.Display))];
 
-    // ── Inline completion mode list (code → display name, fixed) ─────────────
-    private static readonly (string Code, string Name)[] InlineModeOptions =
-    [
-        ("Fast",         "Fast (128 tok · 300 ms)"),
-        ("Default",      "Default (256 tok · 600 ms)"),
-        ("HighAccuracy", "High Accuracy (512 tok · 1 s)"),
-    ];
+    private static (string Code, string Name)[] InlineModeOptions =>
+        [.. Services.Presentation.SettingsSchema.FimModes.Select(o => (o.Value, o.Display))];
 
     // ── Language list (code → display name, fixed — never localized so always readable) ───
     private static readonly (string Code, string Name)[] LanguageOptions =
@@ -697,12 +696,23 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             .FirstOrDefault(p => p.Code == _config.Provider).Name
             is { Length: > 0 } pn3 ? pn3 : ProviderOptions[0].Name;
 
+        // These labels are translated: the list must be refreshed on EVERY ApplyLabels, not only
+        // when it is empty. Without that, a language change left the menu in the old language while
+        // SelectedInlineMode took the new one - an item absent from its own collection, so a
+        // Selector that clears its selection, exactly the defect repaired in 1.6.8 on the chat
+        // model. Updated IN PLACE: never .Clear() on a TwoWay-bound collection (same rule as the
+        // language list, three blocks above).
+        var inlineModes = InlineModeOptions;
         if (AvailableInlineModes.Count == 0)
-            foreach (var (_, name) in InlineModeOptions)
+            foreach (var (_, name) in inlineModes)
                 AvailableInlineModes.Add(name);
-        SelectedInlineMode = InlineModeOptions
+        else
+            for (var i = 0; i < inlineModes.Length && i < AvailableInlineModes.Count; i++)
+                if (AvailableInlineModes[i] != inlineModes[i].Name)
+                    AvailableInlineModes[i] = inlineModes[i].Name;
+        SelectedInlineMode = inlineModes
             .FirstOrDefault(m => m.Code == _config.InlineCompletionMode).Name
-            is { Length: > 0 } mn2 ? mn2 : InlineModeOptions[1].Name;
+            is { Length: > 0 } mn2 ? mn2 : inlineModes[1].Name;
         BtnTest                  = Strings.BtnTest;
         BtnSave                  = Strings.BtnSave;
         TooltipRefreshModels     = Strings.TooltipRefreshModels;
@@ -1242,6 +1252,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         string th = string.Empty, tm = string.Empty, ts = string.Empty;
         string ctxSizeText = string.Empty, ctxKeepText = string.Empty, oodaThreshText = string.Empty, vramBudgetText = string.Empty;
         string kvAnchorText = string.Empty, selectedLangName = string.Empty;
+        var selectedInlineModeIndex = -1;
         string selectedInlineModeName = string.Empty, inlineModel = string.Empty, codeActionsModel = string.Empty, inlineEditModel = string.Empty, agentModel = string.Empty, utilityModel = string.Empty;
         string ragEmbeddingModel = string.Empty, ragTopKText = string.Empty, ragSimilarityThresholdText = string.Empty;
         string agentMaxIterationsText = string.Empty;
@@ -1284,7 +1295,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             compactTimeoutSec    = CombineDuration(CompactionTimeoutHoursText, CompactionTimeoutMinutesText, CompactionTimeoutSecondsText);
             kvAnchorText         = KvCacheAnchorMessagesText.Trim();
             selectedLangName     = SelectedLanguage;
-            selectedInlineModeName = SelectedInlineMode;
+            selectedInlineModeName  = SelectedInlineMode;
+            selectedInlineModeIndex = AvailableInlineModes.IndexOf(SelectedInlineMode);
             inlineEnabled          = InlineCompletionEnabled;
             inlineModel            = InlineCompletionModel;
             codeActionsModel       = CodeActionsModel;
@@ -1311,7 +1323,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
         // Resolve language code from display name (index 0 = auto = "").
         var langCode = LanguageOptions.FirstOrDefault(l => l.Name == selectedLangName).Code ?? string.Empty;
-        var inlineModeCode = InlineModeOptions.FirstOrDefault(m => m.Name == selectedInlineModeName).Code ?? "Default";
+        // By INDEX, not by text. Now that these labels are translated, a string comparison fails as
+        // soon as the language has changed - and the old fallback then wrote "Default", i.e. a
+        // language change quietly restored the factory mode. Same class as the nine numeric fields
+        // repaired in 1.6.8: what cannot be read is kept, it is not replaced by the factory value.
+        var modes = InlineModeOptions;
+        var inlineModeCode = selectedInlineModeIndex >= 0 && selectedInlineModeIndex < modes.Length
+            ? modes[selectedInlineModeIndex].Code
+            : modes.FirstOrDefault(m => m.Name == selectedInlineModeName).Code
+              ?? _config.InlineCompletionMode;
 
         var providerCode = ProviderOptions.FirstOrDefault(p => p.Name == selectedProviderName).Code
                            ?? Services.Inference.InferenceProviderFactory.Ollama;
@@ -1425,7 +1445,17 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         var ignoredStatus = ignored.Count == 0
             ? string.Empty
             : " " + Strings.SettingsFieldsIgnored(ignored.Count, string.Join(", ", ignored.Select(f => f())));
-        await RunOnVMContextAsync(() => { ApplyLabels(); SaveStatus = "✓" + ignoredStatus; });
+
+        // A DIFFERENT fact from the previous one: the rules field IS saved, it is some of its LINES
+        // that are inert. A user who has just written "deny run_command *.env" - an invalid regular
+        // expression - believes they put a restriction in place; /diagnostics would tell them, but
+        // nobody opens it at that moment.
+        Services.Execution.PermissionPolicy.ParseRules(_config.PermissionRules, out var droppedRules);
+        var rulesStatus = droppedRules.Count == 0
+            ? string.Empty
+            : " " + Strings.SettingsPermissionRulesIgnored(droppedRules.Count);
+
+        await RunOnVMContextAsync(() => { ApplyLabels(); SaveStatus = "✓" + ignoredStatus + rulesStatus; });
     }
 
     // ── MCP server list management ───────────────────────────────────────────

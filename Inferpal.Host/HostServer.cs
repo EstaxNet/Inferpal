@@ -178,6 +178,28 @@ internal sealed partial class HostServer : IDisposable
                 promptText = autoCtx + "\n\n" + promptText;
 
             s.History.Add(new ChatMessageDto("user", promptText));
+
+            // Pre-send context check.
+            // It did not exist here. The history was never bounded: it grew until it went past the
+            // model's num_ctx, and it was the backend that dropped its head - system prompt
+            // included - in silence. And the settings panel offered compactionEnabled,
+            // contextWindowKeepTurns and compactionTimeoutSeconds, three controls with no effect.
+            // Same service as the Visual Studio window, same order: after the user message.
+            var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
+                s.History, s.Config, s.Client, s.LastPromptTokens,
+                onStep: step => Notify("chat/step", new { text = step }),
+                ct: cts.Token);
+
+            if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
+            {
+                if (ctxDecision.Outcome == Services.Agent.ContextOutcome.Compacted)
+                    Services.Agent.HistoryCompaction.ApplySummary(s.History, ctxDecision.Plan, ctxDecision.Summary!);
+                else
+                    Services.Agent.HistoryCompaction.ApplyTruncation(s.History, ctxDecision.Plan);
+
+                s.LastPromptTokens = 0;
+                Notify("chat/tool", new ToolNotice("context_compact", string.Empty, ctxDecision.Notice, false));
+            }
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
             var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
             // An explicit per-request model always wins; otherwise the Model Router applies the
@@ -210,14 +232,26 @@ internal sealed partial class HostServer : IDisposable
                     ct:             cts.Token,
                     onThinking:     OnThinking);
 
-                s.History = result.UpdatedHistory;
-                return new ChatSendResult(result.FinalResponse, false, result.TokensUsed, result.PromptTokens);
+                s.History          = result.UpdatedHistory;
+                s.LastPromptTokens = result.PromptTokens;
+                // Both facts lived in OrchestratorResult and were read by nobody: a run cut short at
+                // its iteration limit returned a fluent answer, indistinguishable from a task
+                // carried to its end. Symmetric with the Visual Studio window.
+                var endNotice = result.ReachedIterationLimit ? Strings.AgentEndedAtIterationLimit
+                              : result.WasLoopDetected       ? Strings.AgentEndedOnRepeat
+                              : null;
+                return new ChatSendResult(
+                    FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
+                    false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice);
             }
 
             var turn = await s.Client.SendChatAsync(
                 model, s.History, EmptyToolRegistry.Instance, OnToken, cts.Token, onThinking: OnThinking);
             s.History.Add(new ChatMessageDto("assistant", turn.TextContent));
-            return new ChatSendResult(turn.TextContent, false, turn.TokensUsed, turn.PromptTokens);
+            s.LastPromptTokens = turn.PromptTokens;
+            return new ChatSendResult(
+                FinalAnswer(turn.TextContent, streamed.ToString(), [], model, s),
+                false, turn.TokensUsed, turn.PromptTokens);
         }
         catch (OperationCanceledException)
         {
@@ -387,7 +421,7 @@ internal sealed partial class HostServer : IDisposable
     /// switching <c>Provider</c>/<c>BaseUrl</c> still requires a new `initialize`.
     /// </summary>
     [JsonRpcMethod("config/update", UseSingleObjectParameterDeserialization = true)]
-    public void ConfigUpdate(ConfigUpdateParams p)
+    public ConfigUpdateResult ConfigUpdate(ConfigUpdateParams p)
     {
         var s        = Session();
         var incoming = JsonSerializer.Deserialize<InferpalConfig>(p.Json)
@@ -409,6 +443,12 @@ internal sealed partial class HostServer : IDisposable
             ApplyLanguage(s.Config);
             ResetHistory(s);   // custom prompt / pinned files may have changed
         });
+
+        // After the save, on the configuration that was kept: a rule the product could not read is
+        // not lost input - the field IS saved - but a protection the user believes they put in
+        // place and that does not apply.
+        Services.Execution.PermissionPolicy.ParseRules(s.Config.PermissionRules, out var dropped);
+        return new ConfigUpdateResult(dropped.Count);
     }
 
     // ── RAG index ──────────────────────────────────────────────────────────────
@@ -773,4 +813,33 @@ internal sealed partial class HostServer : IDisposable
         _session?.Dispose();
         _session = null;
     }
+
+    /// <summary>
+    /// What the turn actually puts on screen: the text, else the summary of the tools that ran,
+    /// else a message that NAMES what was observed.
+    /// </summary>
+    /// <remarks>
+    /// This fallback chain lived only in the Visual Studio window. On the VS Code side a turn with
+    /// no text ended <b>in silence</b>: no answer, no message, no explanation - exactly the defect
+    /// 1.6.8 led with, repaired on one side only. The diagnostic half is in the Core
+    /// (<c>OpenAiCompatibleClient</c> records every empty turn in <c>/diagnostics</c>) so both
+    /// editors already had it; it is the VISIBLE half that was missing.
+    ///
+    /// The decision is <see cref="ChatTurnPolicy.DecideFinalAnswer"/>, the same one the VM uses -
+    /// not a second implementation.
+    /// </remarks>
+    private static string FinalAnswer(
+        string? finalResponse, string streamed, IReadOnlyList<ToolExecution> executions,
+        string model, HostSession s) =>
+        ChatTurnPolicy.DecideFinalAnswer(
+            streamingBubbleVisible: MarkdownParser.HasPrintableText(streamed),
+            finalResponse:          finalResponse,
+            executionCount:         executions.Count) switch
+        {
+            // The stream already said everything: the adapter renders `text || streamText`.
+            FinalAnswerKind.StreamedAnswer => finalResponse ?? string.Empty,
+            FinalAnswerKind.FinalText      => finalResponse ?? string.Empty,
+            FinalAnswerKind.ToolSummary    => Strings.MsgAgentDone(ChatTurnPolicy.BuildToolSummary(executions)),
+            _                              => Strings.MsgEmptyResponseFrom(model, s.Client.ServerAddress),
+        };
 }

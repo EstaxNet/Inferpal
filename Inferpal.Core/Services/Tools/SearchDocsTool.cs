@@ -3,6 +3,7 @@ using System.Text.Json;
 using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Services.Docs;
+using Inferpal.Services.Rag;
 
 namespace Inferpal.Services.Tools;
 
@@ -70,18 +71,22 @@ internal sealed class SearchDocsTool : ITool
             return Strings.DocsNotReady(_docs.Status);
 
         // Embed the query unless the embedding circuit is open (keyword fallback then).
+        var model = string.IsNullOrEmpty(_config.RagEmbeddingModel)
+            ? "nomic-embed-text"
+            : _config.RagEmbeddingModel;
+
         float[]? queryEmbedding = null;
         if (!_client.IsEmbeddingCircuitOpen)
-        {
-            var model = string.IsNullOrEmpty(_config.RagEmbeddingModel)
-                ? "nomic-embed-text"
-                : _config.RagEmbeddingModel;
             queryEmbedding = await _client.GetEmbeddingAsync(query, model, ct);
-        }
 
         var results = await _docs.SearchAsync(queryEmbedding, query, topK, ct);
         if (results.Count == 0)
-            return Strings.DocsNoResults(query);
+            // Same reason as in SemanticSearchTool. Here semantic search is never turned off by a
+            // setting: an open breaker is a FAILURE, and it is reported as one.
+            return SearchDegradation.Explain(
+                Strings.DocsNoResults(query),
+                SearchDegradation.Classify(semanticRequested: true, queryEmbedding),
+                model);
 
         var sb          = new StringBuilder();
         bool isSemantic = queryEmbedding is { Length: > 0 } && results[0].Score is > 0f and < 1.001f;

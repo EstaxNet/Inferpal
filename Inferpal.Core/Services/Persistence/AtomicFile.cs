@@ -132,4 +132,37 @@ internal static class AtomicFile
     {
         try { if (File.Exists(temp)) File.Delete(temp); } catch { }
     }
+
+    /// <summary>
+    /// Copies <paramref name="path"/> aside before it is overwritten, and returns the copy's path
+    /// (<c>null</c> when there was nothing to copy or the copy failed). <b>The caller decides</b>
+    /// that the file is unreadable — this helper only knows how to keep the bytes.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The gesture this repository paid for twice in a row. An unreadable file is not merely
+    /// <i>ignored</i>: the load returns an empty document or factory defaults, and the next save
+    /// writes them OVER the original bytes. That is no longer a failed read, it is a loss. Measured
+    /// on <c>config.json</c> (backends, per-role models, MCP servers, permission rules) and on
+    /// <c>snippets.json</c> (up to a hundred fragments replaced by one).
+    ///
+    /// Best-effort by construction: NEVER prevent the save. Failing to archive is less serious than
+    /// leaving the user unable to write.
+    /// </remarks>
+    internal static string? PreserveAside(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return null;
+
+            var aside = $"{path}.unreadable-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+            if (File.Exists(aside)) return aside;   // already set aside within the same second
+            File.Copy(path, aside);
+            return aside;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("AtomicFile.PreserveAside", ex);
+            return null;
+        }
+    }
 }

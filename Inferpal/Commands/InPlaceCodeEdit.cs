@@ -99,7 +99,15 @@ internal static class InPlaceCodeEdit
             var filePath = TryGetLocalPath(view);
             if (filePath is not null)
             {
-                var requestId = Services.Signals.InlineDiffPreviewSignal.WriteRequest(filePath, docText, run.NewDocText!);
+                // The sentences leave WITH the request: the in-proc renderer has no Strings
+                // (net472, no reference to the Core) and without them its three failure exits are
+                // mute - a tick that does nothing, a keystroke that throws the rewrite away.
+                var notices = new Services.Signals.InlineDiffNotices(
+                    Strings.InlineDiffPreviewAbandoned,
+                    Strings.InlineDiffPreviewDrifted,
+                    Strings.InlineDiffPreviewApplyFailed);
+                var requestId = Services.Signals.InlineDiffPreviewSignal.WriteRequest(
+                    filePath, docText, run.NewDocText!, notices);
                 try
                 {
                     if (await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(

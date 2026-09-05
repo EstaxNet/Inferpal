@@ -56,6 +56,16 @@ internal static class Strings
     /// the webview, where it knows the fields. The sentence stays the same on both sides.
     /// </summary>
     public static string SettingsFieldsIgnoredTemplate => Get(nameof(SettingsFieldsIgnored));
+
+    // ⚠ A DIFFERENT fact from SettingsFieldsIgnored: the field itself IS saved — it is some of its
+    // lines that are inert. Confusing the two would tell the user they lost what they typed while
+    // it is right there. Said AT SAVE TIME, because nobody opens /diagnostics after writing a rule
+    // they believe they just put in place.
+    public static string SettingsPermissionRulesIgnored(int count) =>
+        string.Format(Get(nameof(SettingsPermissionRulesIgnored)), count);
+
+    /// <inheritdoc cref="SettingsFieldsIgnoredTemplate"/>
+    public static string SettingsPermissionRulesIgnoredTemplate => Get(nameof(SettingsPermissionRulesIgnored));
     public static string BtnCancel            => Get(nameof(BtnCancel));
     public static string BtnSend              => Get(nameof(BtnSend));
     public static string TooltipRefreshModels => Get(nameof(TooltipRefreshModels));
@@ -195,6 +205,15 @@ internal static class Strings
     public static string SectionInterface               => Get(nameof(SectionInterface));
     public static string SectionInlineCompletions            => Get(nameof(SectionInlineCompletions));
     public static string LabelInlineCompletionMode           => Get(nameof(LabelInlineCompletionMode));
+    // The three choices of that dropdown. They were hardcoded — "Fast", "Default", "High Accuracy"
+    // — under a SettingOption comment claiming an option's text is "a product name or a fixed
+    // technical label, never localized": true of the backend names and of the language names, false
+    // of these three, which are ordinary adjectives in a panel whose every other word is translated.
+    // The technical suffix ("128 tok · 300 ms") stays identical in all ten languages —
+    // SettingsSchemaDriftTests checks it language by language.
+    public static string FimModeFast                         => Get(nameof(FimModeFast));
+    public static string FimModeDefault                      => Get(nameof(FimModeDefault));
+    public static string FimModeHighAccuracy                 => Get(nameof(FimModeHighAccuracy));
     public static string HintInlineCompletionMode            => Get(nameof(HintInlineCompletionMode));
     public static string LabelInlineCompletionEnabled        => Get(nameof(LabelInlineCompletionEnabled));
     public static string HintInlineCompletionEnabled         => Get(nameof(HintInlineCompletionEnabled));
@@ -410,6 +429,11 @@ internal static class Strings
     public static string MsgTruncated          => Get(nameof(MsgTruncated));
     public static string DefaultSessionSnippet => Get(nameof(DefaultSessionSnippet));
     public static string MsgIterationLimit     => Get(nameof(MsgIterationLimit));
+    // ⚠ How a run ENDED, when it is not because the model was done. The answer stays — that is the
+    // original arbitration, "do not alarm when real work was done" — but it stops passing for a task
+    // carried to its end. Both facts lived in OrchestratorResult all along and were read by NOBODY.
+    public static string AgentEndedAtIterationLimit => Get(nameof(AgentEndedAtIterationLimit));
+    public static string AgentEndedOnRepeat         => Get(nameof(AgentEndedOnRepeat));
     public static string MsgLoopDetected      => Get(nameof(MsgLoopDetected));
     public static string MsgCircuitOpen       => Get(nameof(MsgCircuitOpen));
     public static string TokenUsage(string last, string session) =>
@@ -671,6 +695,11 @@ internal static class Strings
     public static string CommitConfirmHint      => Get(nameof(CommitConfirmHint));
 
     // ── Rules & Checks (.inferpal/rules, .inferpal/checks) ────────────────
+    // ⚠ A .inferpal/ file that cannot be READ is not a missing file: the rule stops constraining the
+    // model, the check stops being applied, and the list gets shorter without a word. This is the
+    // rule PlanStore.List had already written, for itself alone.
+    public static string GovernanceFilesUnreadable(int count, string names) =>
+        string.Format(Get(nameof(GovernanceFilesUnreadable)), count, names);
     public static string RulesNone               => Get(nameof(RulesNone));
     public static string ChecksNone              => Get(nameof(ChecksNone));
     public static string RulesListHeader         => Get(nameof(RulesListHeader));
@@ -943,6 +972,13 @@ internal static class Strings
 
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));
+    // The preview's three mute outcomes (in-proc). They are composed HERE, host-side, and travel
+    // WITH the request: Inferpal.InProc does not reference the Core and therefore has neither
+    // Strings nor satellites — giving it its own resources would add ten assemblies to the VSIX for
+    // three sentences. See InlineDiffNotices.
+    public static string InlineDiffPreviewAbandoned          => Get(nameof(InlineDiffPreviewAbandoned));
+    public static string InlineDiffPreviewDrifted            => Get(nameof(InlineDiffPreviewDrifted));
+    public static string InlineDiffPreviewApplyFailed        => Get(nameof(InlineDiffPreviewApplyFailed));
 
     // ── /hardware command ──────────────────────────────────────────────────────
     public static string HardwareUsage                       => Get(nameof(HardwareUsage));
@@ -973,6 +1009,12 @@ internal static class Strings
 
     public static string RagNoResults(string query) =>
         string.Format(Get(nameof(RagNoResults)), query);
+    // What is ADDED to a "nothing found" when the semantic half did not run. Without these two
+    // sentences an absent capability and an absence of results came out as the same words — and a
+    // model reading "nothing found" stops looking. See SearchDegradation.
+    public static string SearchKeywordOnlySemanticOff => Get(nameof(SearchKeywordOnlySemanticOff));
+    public static string SearchKeywordOnlyEmbeddingUnavailable(string model) =>
+        string.Format(Get(nameof(SearchKeywordOnlyEmbeddingUnavailable)), model);
 
     // ── Agent memory ───────────────────────────────────────────────────────────
     public static string UpdateMemoryNoProject => Get(nameof(UpdateMemoryNoProject));

@@ -48,8 +48,12 @@ internal static class RulesChecksPromptsCommandHandler
         if (IsInit(parts))
             return new(null, new ScaffoldRequest(dir, "example.md", RulesExampleContent));
 
-        var rules = RulesService.Load(dir);
-        if (rules.Count == 0) return new(Strings.RulesNone);
+        var rules = RulesService.Load(dir, out var unreadable);
+        // BEFORE the "no rules": if every file is unreadable the list is empty and the absence
+        // message would be the worst possible rendering - it would claim the user wrote no rule at
+        // all while their files are right there, simply not read.
+        if (rules.Count == 0)
+            return new(Unreadable(unreadable) is { } only ? Strings.RulesNone + "\n\n" + only : Strings.RulesNone);
 
         var sb = new StringBuilder(Strings.RulesListHeader);
         foreach (var r in rules)
@@ -57,7 +61,7 @@ internal static class RulesChecksPromptsCommandHandler
             var scope = r.AlwaysApply || r.Globs.Count == 0 ? "always" : string.Join(", ", r.Globs);
             sb.Append("\n- **").Append(r.Name).Append("** — `").Append(scope).Append('`');
         }
-        return new(sb.ToString());
+        return new(Append(sb, unreadable));
     }
 
     // ── /checks ───────────────────────────────────────────────────────────────--
@@ -75,13 +79,14 @@ internal static class RulesChecksPromptsCommandHandler
         if (IsInit(parts))
             return new(null, new ScaffoldRequest(dir, "no-secrets.md", ChecksExampleContent));
 
-        var checks = ChecksService.Load(dir);
-        if (checks.Count == 0) return new(Strings.ChecksNone);
+        var checks = ChecksService.Load(dir, out var unreadable);
+        if (checks.Count == 0)
+            return new(Unreadable(unreadable) is { } only ? Strings.ChecksNone + "\n\n" + only : Strings.ChecksNone);
 
         var sb = new StringBuilder(Strings.ChecksListHeader);
         foreach (var c in checks)
             sb.Append("\n- **").Append(c.Name).Append("**");
-        return new(sb.ToString());
+        return new(Append(sb, unreadable));
     }
 
     // ── /prompts ──────────────────────────────────────────────────────────────--
@@ -101,8 +106,9 @@ internal static class RulesChecksPromptsCommandHandler
         if (IsInit(parts))
             return new(null, new ScaffoldRequest(dir, "review-security.md", PromptsExampleContent));
 
-        var prompts = PromptFilesService.LoadUncached(dir);
-        if (prompts.Count == 0) return new(Strings.PromptsNone);
+        var prompts = PromptFilesService.LoadUncached(dir, out var unreadable);
+        if (prompts.Count == 0)
+            return new(Unreadable(unreadable) is { } only ? Strings.PromptsNone + "\n\n" + only : Strings.PromptsNone);
 
         var sb = new StringBuilder(Strings.PromptsListHeader);
         foreach (var p in prompts)
@@ -110,6 +116,26 @@ internal static class RulesChecksPromptsCommandHandler
             sb.Append("\n- `").Append(p.Name).Append('`');
             if (p.Hint is not null) sb.Append(" — ").Append(p.Hint);
         }
-        return new(sb.ToString());
+        return new(Append(sb, unreadable));
+    }
+
+    // The files that could not be read
+    //
+    // They are not absent: they are there, and they do not apply. A rule that stops constraining
+    // the model and a check that stops being applied announce themselves nowhere else - only this
+    // line makes them visible. PlanStore.List had already written the rule, for itself alone:
+    // "list it rather than hide it, so a permission problem shows up instead of a silently
+    // shorter list."
+
+    /// <summary>The warning line, or <c>null</c> when everything was read (nothing to say).</summary>
+    private static string? Unreadable(IReadOnlyList<string> unreadable) =>
+        unreadable.Count == 0
+            ? null
+            : Strings.GovernanceFilesUnreadable(unreadable.Count, string.Join(", ", unreadable));
+
+    private static string Append(StringBuilder sb, IReadOnlyList<string> unreadable)
+    {
+        if (Unreadable(unreadable) is { } line) sb.Append("\n\n").Append(line);
+        return sb.ToString();
     }
 }

@@ -136,11 +136,12 @@ internal sealed class LspSemanticProvider : IDisposable
                     : null;
             }
             catch (OperationCanceledException) { return null; }
-            catch
+            catch (Exception ex)
             {
                 // Server crashed or misbehaved — mark permanently failed so we
                 // don't keep spawning processes on every file.
-                _failed = true;
+                MarkFailed($"the {_languageId} language server crashed or misbehaved " +
+                           $"({ex.GetType().Name}: {ex.Message})");
                 CleanupProcess();
                 return null;
             }
@@ -163,7 +164,8 @@ internal sealed class LspSemanticProvider : IDisposable
                 var cmd = FindServerCommand(_languageId);
                 if (cmd is null)
                 {
-                    _failed = true;
+                    MarkFailed($"no language server for {_languageId} was found on PATH " +
+                               $"(looked for: {string.Join(", ", ServerNames(_languageId))})");
                     return false;
                 }
 
@@ -171,7 +173,7 @@ internal sealed class LspSemanticProvider : IDisposable
                 _process = StartProcess(cmd.Value.name, cmd.Value.args);
                 if (_process is null)
                 {
-                    _failed = true;
+                    MarkFailed($"'{cmd.Value.name}' is on PATH but could not be started");
                     return false;
                 }
 
@@ -190,7 +192,8 @@ internal sealed class LspSemanticProvider : IDisposable
                 {
                     // Null response means the server timed out — transient: allow up to 3 retries.
                     CleanupProcess();
-                    if (++_initFailures >= 3) _failed = true;
+                    if (++_initFailures >= 3)
+                        MarkFailed($"the {_languageId} language server did not answer 'initialize' three times");
                     return false;
                 }
 
@@ -199,11 +202,15 @@ internal sealed class LspSemanticProvider : IDisposable
                 _initialized  = true;
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
-                // Transient crash / pipe error — allow up to 3 retries before giving up.
+                // Transient crash / pipe error - allow up to 3 retries before giving up.
                 CleanupProcess();
-                if (++_initFailures >= 3) _failed = true;
+                if (++_initFailures >= 3)
+                    MarkFailed($"the {_languageId} language server failed to start three times " +
+                               $"({ex.GetType().Name}: {ex.Message})");
+                else
+                    Diagnostics.Swallow($"LspSemanticProvider.Init({_languageId})", ex);
                 return false;
             }
             finally
@@ -238,36 +245,50 @@ internal sealed class LspSemanticProvider : IDisposable
 
         // ── Server discovery ───────────────────────────────────────────────────
 
+        /// <summary>
+        /// The one door to <c>_failed</c>: it turns the LSP off for the whole session, and it says
+        /// why - once.
+        /// </summary>
+        /// <remarks>
+        /// Five sites wrote it by hand, all mute. What came out of that is the class this repository
+        /// already paid for over six versions with Roslyn: the user turns <c>lspEnabled</c> on to get
+        /// exact symbol boundaries, the server is not on PATH or dies once, and indexing falls back
+        /// to its sliding-window heuristic - a worse index, never announced. "An absent capability
+        /// rendered as a result."
+        ///
+        /// Once per session and per language, and that matters: <see cref="GetSymbolsAsync"/> is
+        /// called PER FILE during indexing. Tracing on every call would drown the diagnostics ring
+        /// (200 entries) under a single repeated fact.
+        /// </remarks>
+        private void MarkFailed(string reason)
+        {
+            if (_failed) return;          // already said
+            _failed = true;
+            Diagnostics.Record("Lsp",
+                $"Semantic indexing falls back to the heuristic chunker for this session: {reason}.");
+        }
+
+        /// <summary>The executables looked for, per language - named in the trace, otherwise
+        /// "no server found" does not tell you what to install.</summary>
+        private static string[] ServerNames(string languageId) => languageId switch
+        {
+            "typescript" or "javascript" => ["typescript-language-server"],
+            "python"                     => ["pylsp", "pyright-langserver"],
+            "go"                         => ["gopls"],
+            "rust"                       => ["rust-analyzer"],
+            _                            => [],
+        };
+
         private static (string name, string args)? FindServerCommand(string languageId)
         {
-            // Ordered by preference — first found on PATH wins.
-            // Using classic switch + explicit arrays to avoid C# collection-expression
-            // type-inference limitations inside switch expressions.
-            string[] names;
-            string   args;
+            // The names come from ServerNames, never a second list: they are the same ones the trace
+            // announces to the user when none is found. Two lists would end up advising an
+            // executable the code does not look for.
+            var names = ServerNames(languageId);
+            if (names.Length == 0) return null;
 
-            switch (languageId)
-            {
-                case "typescript":
-                case "javascript":
-                    names = new[] { "typescript-language-server" };
-                    args  = "--stdio";
-                    break;
-                case "python":
-                    names = new[] { "pylsp", "pyright-langserver" };
-                    args  = "--stdio";
-                    break;
-                case "go":
-                    names = new[] { "gopls" };
-                    args  = string.Empty;    // gopls defaults to stdio
-                    break;
-                case "rust":
-                    names = new[] { "rust-analyzer" };
-                    args  = "--stdio";
-                    break;
-                default:
-                    return null;
-            }
+            // gopls speaks stdio by default; the other three want the flag.
+            var args = languageId == "go" ? string.Empty : "--stdio";
 
             foreach (var name in names)
                 if (IsOnPath(name)) return (name, args);

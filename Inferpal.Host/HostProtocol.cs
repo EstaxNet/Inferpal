@@ -45,7 +45,10 @@ internal sealed record ChatSendResult(
     bool    Cancelled,
     int     TokensUsed,
     int     PromptTokens,
-    string? Error = null);
+    string? Error = null,
+    /// <summary>Why the run stopped, when it is not because the model was done. The answer stays in
+    /// <see cref="Text"/>; this is added after it, never in its place.</summary>
+    string? EndNotice = null);
 
 /// <summary>`chat/tool` notification — one executed tool call (uncapped output, like the VS bubble).</summary>
 internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors);
@@ -167,6 +170,15 @@ internal sealed record SlashCommandResult(
 /// <summary>`config/update` — full config JSON, as previously returned by `config/get`.</summary>
 internal sealed record ConfigUpdateParams(string Json);
 
+/// <summary>What the save could not use. One thing today, and the type exists so the next one joins
+/// it instead of becoming a second round trip.</summary>
+/// <remarks>
+/// The count is computed HERE because the decision lives in the Core (<c>PermissionPolicy</c>) and
+/// the VS Code panel is TypeScript: making it re-read the DSL would be a second implementation of
+/// the same rule, hence a programmed divergence.
+/// </remarks>
+internal sealed record ConfigUpdateResult(int PermissionRulesIgnored);
+
 /// <summary>`codeAction/run` — headless in-place code action (<paramref name="Kind"/> =
 /// <c>fix</c> | <c>refactor</c> | <c>doc</c>) over the adapter's document text and selection
 /// offsets. The host only runs the model step; applying (and previewing) stays editor-side.</summary>
@@ -252,7 +264,10 @@ internal sealed record SettingsOptionDto(string Value, string Text);
 /// names the adapter resolves against `settings/strings`.</summary>
 internal sealed record SettingsFieldDto(
     string Key, string Kind, string Label, string? Hint, string? Unit, string? Gate, string? Button,
-    List<SettingsOptionDto>? Options);
+    List<SettingsOptionDto>? Options,
+    /// <summary>Factory value of a numeric field, so the panel can honour "clearing the box restores
+    /// the default" - the affordance the Visual Studio window applies and this one ignored.</summary>
+    string? DefaultValue = null);
 
 /// <summary>A titled group of fields, with an optional reveal toggle.</summary>
 internal sealed record SettingsSectionDto(

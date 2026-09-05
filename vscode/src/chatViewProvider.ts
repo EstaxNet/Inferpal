@@ -1049,6 +1049,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       } else {
         this.append({ role: 'assistant', text: finalText, timestamp: ChatViewProvider.now() });
       }
+      // The answer STAYS: this is added after it. Without it, a run cut short at its iteration
+      // limit returned fluent text, indistinguishable from a task carried to its end - the fact
+      // lived in OrchestratorResult and was read by nobody, on either side.
+      if (!result.error && result.endNotice) {
+        this.append({ role: 'assistant', text: result.endNotice, timestamp: ChatViewProvider.now() });
+      }
       this.busy = false;
       this.lastTokens = result.tokensUsed;
       this.post({
@@ -1059,6 +1065,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         tokens: result.tokensUsed,
         promptTokens: this.promptTokens,
         timestamp: ChatViewProvider.now(),
+        endNotice: result.endNotice ?? null,
       });
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {

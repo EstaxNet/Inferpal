@@ -15,6 +15,8 @@ const res = (key: string): string => R[key] ?? key;
 // The fields the last save could not read: decided when sending, rendered when the host answers
 // (`saveDone`), which is the only moment we know the save actually happened.
 let lastIgnored: string[] = [];
+/** Permission rules the host could not read at the last save. */
+let lastRulesIgnored = 0;
 
 /** A field label as it is quoted inside a sentence: without its trailing colon. Labels are
  *  written to sit in front of a box, and quoted as-is inside an enumeration they read "Context
@@ -28,35 +30,11 @@ const labelForSentence = (label: string): string => label.replace(/[\s\u00A0\u20
  * here — it means adding it to the Core schema, where a test checks it against InferpalConfig and
  * against the .resx.
  */
-interface Option { value: string; text: string }
-
-interface Field {
-  /** camelCase key in the config JSON. */
-  key: string;
-  kind: 'text' | 'password' | 'bool' | 'int' | 'float' | 'model' | 'select' | 'textarea';
-  /** resx resource names for the label and the ⓘ tooltip. */
-  label: string;
-  hint?: string | null;
-  /** Unit suffix rendered after compact numeric fields (literal, like VS). */
-  unit?: string | null;
-  /** UI-only reveal group: 'roles' (distinct model per role) or 'advanced' (behavior). */
-  gate?: string | null;
-  /** Companion button: 'test' (connection check) or 'refreshModels'. */
-  button?: string | null;
-  options?: Option[] | null;
-}
-
-interface Section {
-  title: string;
-  fields: Field[];
-  toggleGate?: string | null;
-  toggleLabel?: string | null;
-  toggleHint?: string | null;
-}
-
-interface Tab { key: string; title: string; sections: Section[] }
-
-interface Schema { tabs: Tab[]; headerFields: Field[] }
+// The schema shapes come from protocol.ts, they are no longer redeclared here. They used to be -
+// a second set of interfaces for the same JSON - and that is what left this panel ignoring
+// `defaultValue`: the property existed host-side and was missing from the local copy. Types are
+// erased at build time, so the import costs the bundle nothing.
+import type { SettingsField as Field, SettingsSchema as Schema } from '../protocol';
 
 /** Served by the host at init; empty until then. */
 let SCHEMA: Schema = { tabs: [], headerFields: [] };
@@ -467,6 +445,24 @@ function setTestStatus(text: string, ok?: boolean): void {
   }
 }
 
+/** Clearing a numeric box RESTORES THE DEFAULT - the Visual Studio window affordance
+ *  (SettingsFallback: "empty" = restore the default, "unreadable" = keep what is configured).
+ *  This panel did not know those defaults, so the same gesture did nothing here: the host now
+ *  serves them with the schema. With no known default we touch nothing - the old behaviour beats
+ *  an invented value. */
+function applyDefault(
+  config: Record<string, unknown>, field: Field, parse: (s: string, radix?: number) => number,
+): void {
+  const raw = field.defaultValue;
+  if (raw === undefined || raw === null) {
+    return;
+  }
+  const value = parse(raw, 10);
+  if (!Number.isNaN(value)) {
+    config[field.key] = value;
+  }
+}
+
 function onSave(): void {
   // Mutate the parsed original so fields this form doesn't know about survive the
   // full-JSON round trip (config/update resets absent fields to their defaults).
@@ -491,7 +487,9 @@ function onSave(): void {
         const ok = /^[+-]?\d+$/.test(raw);
         if (ok) {
           config[field.key] = parseInt(raw, 10);
-        } else if (raw !== '') {
+        } else if (raw === '') {
+          applyDefault(config, field, parseInt);
+        } else {
           ignored.push(labelForSentence(res(field.label)));
         }
         break;
@@ -501,7 +499,9 @@ function onSave(): void {
         const ok = /^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(raw);
         if (ok) {
           config[field.key] = parseFloat(raw);
-        } else if (raw !== '') {
+        } else if (raw === '') {
+          applyDefault(config, field, parseFloat);
+        } else {
           ignored.push(labelForSentence(res(field.label)));
         }
         break;
@@ -519,10 +519,17 @@ function onSave(): void {
  *  be read is named. The sentence comes from the host (the same .resx as the Visual Studio
  *  window), so both panels say the same thing in all ten languages. */
 function savedStatus(): string {
-  const saved = t('Settings saved.');
-  return lastIgnored.length === 0
-    ? saved
-    : `${saved} ${fill(res('SettingsFieldsIgnored'), lastIgnored.length, lastIgnored.join(', '))}`;
+  const parts = [t('Settings saved.')];
+  if (lastIgnored.length > 0) {
+    parts.push(fill(res('SettingsFieldsIgnored'), lastIgnored.length, lastIgnored.join(', ')));
+  }
+  // A DIFFERENT fact from the previous one, not a variant: the rules field IS saved, it is some of
+  // its LINES that are inert. Confusing the two would tell the user they lost what they typed while
+  // it is right there.
+  if (lastRulesIgnored > 0) {
+    parts.push(fill(res('SettingsPermissionRulesIgnored'), lastRulesIgnored));
+  }
+  return parts.join(' ');
 }
 
 function setStatus(text: string): void {
@@ -538,7 +545,7 @@ function setStatus(text: string): void {
 window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; strings?: Record<string, string>;
-    schema?: Schema; message?: string; ok?: boolean;
+    schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number;
   };
   switch (msg.type) {
     case 'init':
@@ -571,11 +578,12 @@ window.addEventListener('message', (event: MessageEvent) => {
       setTestStatus(msg.ok ? t('Connected') : t('Backend unreachable'), msg.ok);
       break;
     case 'saveDone':
+      lastRulesIgnored = msg.rulesIgnored ?? 0;
       setStatus(msg.ok ? savedStatus() : '');
       // ⚠ The message only clears itself when it has nothing to teach: "saved" reads at a glance,
       // while the list of ignored fields is what the user must be able to re-read in order to go
       // and fix their input.
-      if (msg.ok && lastIgnored.length === 0) {
+      if (msg.ok && lastIgnored.length === 0 && lastRulesIgnored === 0) {
         setTimeout(() => setStatus(''), 2500);
       }
       break;

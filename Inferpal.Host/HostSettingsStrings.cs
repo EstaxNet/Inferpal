@@ -37,7 +37,36 @@ internal sealed partial class HostServer
         f.Unit,
         f.Gate,
         f.Button,
-        f.Options?.Select(o => new SettingsOptionDto(o.Value, o.Text)).ToList());
+        // .Display, not .Text: prose options (the three FIM modes) resolve HERE, at request time,
+        // in the language in force - the schema itself is built once.
+        f.Options?.Select(o => new SettingsOptionDto(o.Value, o.Display)).ToList(),
+        DefaultFor(f));
+
+    private static readonly Config.InferpalConfig _factoryDefaults = new();
+
+    /// <summary>
+    /// The factory value of a numeric box, or <c>null</c> for other fields.
+    /// </summary>
+    /// <remarks>
+    /// Clearing a numeric box restores the default in the Visual Studio window
+    /// (<see cref="Services.Presentation.SettingsFallback"/>: "empty" is the existing affordance for
+    /// "restore the default") and did <b>nothing</b> in the VS Code panel, which did not know those
+    /// defaults. The same gesture, two results - two implementations of one rule, what this
+    /// repository calls a programmed divergence. The panel now receives them instead of guessing.
+    /// </remarks>
+    private static string? DefaultFor(SettingField f)
+    {
+        if (f.Kind is not (SettingKind.Int or SettingKind.Float)) return null;
+
+        var property = typeof(Config.InferpalConfig).GetProperty(
+            f.Key, System.Reflection.BindingFlags.Public
+                 | System.Reflection.BindingFlags.Instance
+                 | System.Reflection.BindingFlags.IgnoreCase);
+
+        return property?.GetValue(_factoryDefaults) is { } value
+            ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)
+            : null;
+    }
 
     [JsonRpcMethod("settings/strings")]
     public Dictionary<string, string> SettingsStrings() => new()
@@ -48,6 +77,7 @@ internal sealed partial class HostServer
         // come from here. Two translations of one sentence would drift.
         // The panel substitutes {0}=count and {1}=labels.
         [nameof(Strings.SettingsFieldsIgnored)]   = Strings.SettingsFieldsIgnoredTemplate,
+        [nameof(Strings.SettingsPermissionRulesIgnored)] = Strings.SettingsPermissionRulesIgnoredTemplate,
 
         // ── Sections ─────────────────────────────────────────────────────────
         [nameof(Strings.SectionConnection)]        = Strings.SectionConnection,

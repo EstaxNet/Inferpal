@@ -37,8 +37,35 @@ internal sealed class HostSession : IDisposable
     /// <summary>Named-session persistence, same store (and files) as the VS extension.</summary>
     public ConversationStore Store { get; } = new();
 
-    /// <summary>Conversation history, seeded with the layered system prompt (index 0).</summary>
-    public List<ChatMessageDto> History { get; set; } = [];
+    /// <summary>
+    /// Conversation history, seeded with the layered system prompt (index 0). Replacing it resets
+    /// <see cref="LastPromptTokens"/> to zero, and that is not a refinement: the counter measures
+    /// the size of the PREVIOUS turn's prompt, and the pre-send context check decides on it.
+    /// Keeping the one from a conversation just left - <c>/clear</c>, loading a session, creating a
+    /// branch - would compact a short conversation the user has only just opened: a model call for
+    /// nothing, and turns thrown away.
+    ///
+    /// The ordinary turn reassigns both in the right order (history then counter), so it is not
+    /// affected.
+    /// </summary>
+    public List<ChatMessageDto> History
+    {
+        get => _history;
+        set { _history = value; LastPromptTokens = 0; }
+    }
+
+    private List<ChatMessageDto> _history = [];
+
+    /// <summary>
+    /// Prompt tokens the backend reported for the last turn - what the pre-send context check
+    /// measures to decide whether to compact.
+    /// </summary>
+    /// <remarks>
+    /// It did not exist, and that is why this host NEVER bounded its history: the conversation grew
+    /// until it went past the model's <c>num_ctx</c>, and it was the backend that dropped its head -
+    /// system prompt included - without a word. See <see cref="Services.Agent.ContextManager"/>.
+    /// </remarks>
+    public int LastPromptTokens { get; set; }
 
     /// <summary>Session file the conversation currently lives in (null = never saved, or reset).
     /// Mirror of the VS VM's <c>_currentSessionName</c>; <c>/branch</c> records it as the parent

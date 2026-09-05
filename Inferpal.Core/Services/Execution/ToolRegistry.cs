@@ -167,11 +167,27 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             .Select(line =>
             {
                 var eq = line.IndexOf('=');
-                if (eq <= 0) return null;
+                if (eq <= 0)
+                {
+                    Diagnostics.DroppedLine("CustomTools", "Custom tool ignored (expected name=command)", line);
+                    return null;
+                }
                 var name = line[..eq].Trim().ToLowerInvariant().Replace(' ', '_');
                 var cmd  = line[(eq + 1)..].Trim();
-                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(cmd)) return null;
-                if (_tools.ContainsKey(name)) return null; // built-in tools take priority
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(cmd))
+                {
+                    Diagnostics.DroppedLine("CustomTools", "Custom tool ignored (empty name or command)", line);
+                    return null;
+                }
+                // The most misleading of the three silences: the arbitration is right - a built-in
+                // keeps its name - but the user is left watching a tool they declared never being
+                // called, and CustomTools is read by the model rather than typed by them: nothing
+                // announces it anywhere else.
+                if (_tools.ContainsKey(name))
+                {
+                    Diagnostics.DroppedLine("CustomTools", $"Custom tool ignored ('{name}' is a built-in tool)", line);
+                    return null;
+                }
                 return (ITool)new UserShellTool(name, cmd, _approval, _config);
             })
             .Where(t => t is not null)!;

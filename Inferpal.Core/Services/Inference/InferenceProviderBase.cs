@@ -245,6 +245,40 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// <inheritdoc/>
     public abstract Task<bool> CheckConnectionAsync(string url, CancellationToken ct);
 
+    /// <summary>
+    /// True when the body returned by the connection probe carries the root property that
+    /// <b>signs</b> the expected backend (<c>models</c> for Ollama native, <c>data</c> for the
+    /// OpenAI-compatible surface). Otherwise records what was <i>observed</i> and returns false.
+    /// </summary>
+    /// <remarks>
+    /// A 2xx is not enough to conclude "connected", and that is not a theoretical precaution:
+    /// measured against an LM Studio instance behind a reverse proxy, <c>GET /api/tags</c> - like
+    /// <b>any</b> unknown route - returns <b>HTTP 200</b> whose entire body is
+    /// <c>{"error":"Unexpected endpoint or method. (GET /api/tags)"}</c>. A client configured for
+    /// Ollama and pointed at it therefore showed a green badge, an active send button and not one
+    /// message, while no chat turn could ever complete: a failure rendered as a normal result.
+    /// <see cref="ProviderProbe"/> has required the discriminating property since it was written and
+    /// states the rule in its own comment ("a bare status code is not enough"); the badge did not
+    /// apply it - the repository kept in code what its own comment forbade.
+    ///
+    /// The trace names no cause: it gives the endpoint probed, the fact that a 2xx came back, and
+    /// the body received. A dead server and a reachable server that is not the configured type give
+    /// the same red badge, but no longer the same line in <c>/diagnostics</c>.
+    /// </remarks>
+    internal static bool ConfirmsBackendPayload(string endpoint, string? body, string requiredRootProperty, string context)
+    {
+        if (ProviderProbe.HasRootProperty(body, requiredRootProperty)) return true;
+
+        var seen = (body ?? string.Empty).Trim();
+        if (seen.Length == 0) seen = "(empty)";
+        else if (seen.Length > 200) seen = seen[..200] + "…";
+
+        Diagnostics.Record(context,
+            $"{endpoint} answered 2xx WITHOUT the \"{requiredRootProperty}\" root property: the server "
+          + $"answers, but not as the configured backend. Body: {seen}");
+        return false;
+    }
+
     /// <inheritdoc/>
     public abstract Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct, string? url = null);
 
@@ -378,7 +412,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                 if (AgentLoopPolicy.IsLoop(sigCounts, calls))
                 {
                     var loopMsg = executions.Count > 0 ? string.Empty : Strings.MsgLoopDetected;
-                    return new AgentResult(loopMsg, executions, messages, totalTokens, lastPromptEval);
+                    return new AgentResult(loopMsg, executions, messages, totalTokens, lastPromptEval,
+                                           WasLoopDetected: true);
                 }
 
                 // A batch of independent, GPU-free, prompt-free read tools runs concurrently

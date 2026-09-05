@@ -5,6 +5,7 @@ namespace Inferpal.Tests;
 
 // Covers the pure decision logic of the backend auto-detection probe (which signature endpoint
 // responded → which provider), plus the base-URL root derivation. No network.
+[Collection("Diagnostics")]
 public class ProviderProbeTests
 {
     [Theory]
@@ -43,4 +44,51 @@ public class ProviderProbeTests
     [InlineData("[]",                         "data",   false)]
     public void HasRootProperty_RequiresJsonObjectWithProperty(string? body, string property, bool expected)
         => Assert.Equal(expected, ProviderProbe.HasRootProperty(body, property));
+
+    // The connection badge applies the same rule as the detection.
+    //
+    // It was written here all along ("a bare status code is not enough") and the badge did not apply
+    // it: CheckConnectionAsync concluded "connected" from IsSuccessStatusCode alone. The body below
+    // is not invented - it is the MEASURED answer of an LM Studio instance behind a reverse proxy,
+    // queried on Ollama's native endpoint.
+
+    [Theory]
+    // What a real backend returns, on the endpoint that signs it.
+    [InlineData("{\"models\":[]}", "models", true)]
+    [InlineData("{\"object\":\"list\",\"data\":[{\"id\":\"devstral\"}]}", "data", true)]
+    // The measurement: HTTP 200, an error body, no "models" property. A green badge until now.
+    [InlineData("{\"error\":\"Unexpected endpoint or method. (GET /api/tags)\"}", "models", false)]
+    // A reverse proxy serving its landing page on every unknown route.
+    [InlineData("<!DOCTYPE html><html><body>nginx</body></html>", "models", false)]
+    [InlineData("", "data", false)]
+    public void ConfirmsBackendPayload_RefusesA2xxThatIsNotTheConfiguredBackend(string body, string property, bool expected)
+        => Assert.Equal(expected,
+            InferenceProviderBase.ConfirmsBackendPayload("http://srv/api/tags", body, property, "Test"));
+
+    /// <summary>
+    /// A refusal must leave something to investigate: the recorded line names the endpoint probed,
+    /// the expected property and the body received - never a cause the code cannot know.
+    /// </summary>
+    [Fact]
+    public void ConfirmsBackendPayload_RecordsWhatWasObserved()
+    {
+        Diagnostics.Clear();
+
+        Assert.False(InferenceProviderBase.ConfirmsBackendPayload(
+            "http://srv/api/tags",
+            "{\"error\":\"Unexpected endpoint or method. (GET /api/tags)\"}",
+            "models",
+            "Ollama.CheckConnection"));
+
+        var entry = Assert.Single(Diagnostics.Snapshot(), e => e.Context == "Ollama.CheckConnection");
+        Assert.Contains("http://srv/api/tags", entry.Detail);
+        Assert.Contains("models", entry.Detail);
+        Assert.Contains("Unexpected endpoint or method", entry.Detail);
+
+        // And a success records nothing: a channel that speaks on the ordinary path stops being read.
+        Diagnostics.Clear();
+        Assert.True(InferenceProviderBase.ConfirmsBackendPayload(
+            "http://srv/api/tags", "{\"models\":[]}", "models", "Ollama.CheckConnection"));
+        Assert.Empty(Diagnostics.Snapshot());
+    }
 }

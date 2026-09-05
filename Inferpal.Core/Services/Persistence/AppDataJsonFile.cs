@@ -18,11 +18,25 @@ namespace Inferpal.Services.Persistence;
 /// others returned a default.
 /// </para>
 /// <para>
-/// <b>Absence and corruption are the same answer here, deliberately.</b> These files hold
-/// convenience state — past benchmark runs, arena votes, saved snippets — never anything the user
-/// cannot recreate. Refusing to start because a cache did not parse would trade a recoverable
-/// annoyance for a broken session. Anything whose loss matters (sessions, plans) does not come
-/// through here.
+/// <b>Absence and corruption are the same answer on the READ side, deliberately.</b> Refusing to
+/// start because a cache did not parse would trade a recoverable annoyance for a broken session, so
+/// a document that will not deserialise is reported to <c>/diagnostics</c> and answered with the
+/// caller fallback. Anything whose loss matters (sessions, plans) does not come through here.
+/// </para>
+/// <para>
+/// <b>What is not symmetric is the WRITE, and it was written here as though it were.</b> The
+/// original text justified the fallback with "these files hold convenience state - past benchmark
+/// runs, arena votes, saved snippets - never anything the user cannot recreate". True of the first
+/// two; false of the third. A snippet is a fragment of code the user <i>chose</i> to keep, usually
+/// out of a conversation that is long gone - and the cycle is then a loss: unreadable file, empty
+/// list, first addition, a hundred snippets replaced by one. The same defect as
+/// <c>config.json</c>, one folder further.
+/// </para>
+/// <para>
+/// Hence <paramref name="preserveUnreadable"/>: the distinction lives in a <b>parameter</b>, not in
+/// this paragraph. Disposable documents keep the cheap path; the ones that carry what the user
+/// wrote are set aside before being overwritten. A rule true of a subcase and written as if it held
+/// for all is the pattern this repository keeps paying for.
 /// </para>
 /// </remarks>
 internal sealed class AppDataJsonFile<T>
@@ -36,10 +50,18 @@ internal sealed class AppDataJsonFile<T>
     private readonly string _defaultPath;
     private readonly string _diagnosticName;
 
+    private readonly bool _preserveUnreadable;
+
     /// <param name="fileName">Leaf name, e.g. <c>"bench.json"</c>.</param>
     /// <param name="diagnosticName">Prefix for <see cref="Diagnostics.Swallow"/> contexts.</param>
-    public AppDataJsonFile(string fileName, string diagnosticName)
+    /// <param name="preserveUnreadable">
+    /// <c>true</c> when the document holds content the user authored: an existing file that will
+    /// not parse is copied aside before being overwritten. Leave <c>false</c> for state the product
+    /// recomputes on its own - archiving it would only clutter <c>%AppData%</c>.
+    /// </param>
+    public AppDataJsonFile(string fileName, string diagnosticName, bool preserveUnreadable = false)
     {
+        _preserveUnreadable = preserveUnreadable;
         // Fully qualified: the Path property below shadows System.IO.Path inside this type.
         _defaultPath = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Inferpal", fileName);
@@ -83,10 +105,39 @@ internal sealed class AppDataJsonFile<T>
     {
         try
         {
+            PreserveIfUnreadable();
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
             await AtomicFile.WriteAllTextAsync(Path, JsonSerializer.Serialize(value, _opts), ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { Diagnostics.Swallow($"{_diagnosticName}.Save", ex); }
+    }
+
+    /// <summary>
+    /// Sets aside an existing file that cannot be read, before the write overwrites it.
+    /// </summary>
+    /// <remarks>
+    /// The state is judged <b>at the moment it matters</b>, by re-reading, rather than through a
+    /// flag set at load time: a flag would be stale as soon as the user repairs the file by hand,
+    /// and it would not cover a save coming from another path. The cost is one re-read per save, on
+    /// documents that are written rarely.
+    /// </remarks>
+    private void PreserveIfUnreadable()
+    {
+        if (!_preserveUnreadable || !File.Exists(Path)) return;
+
+        try
+        {
+            if (JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts) is not null) return;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow($"{_diagnosticName}.PreserveCheck", ex);
+        }
+
+        var aside = AtomicFile.PreserveAside(Path);
+        if (aside is not null)
+            Diagnostics.Record($"{_diagnosticName}.Save",
+                $"{Path} was unreadable: its bytes are kept in {aside} before being overwritten.");
     }
 }

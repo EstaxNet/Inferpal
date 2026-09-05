@@ -1,6 +1,7 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Inferpal.Services.CodeActions;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -23,13 +24,20 @@ internal sealed class InlineDiffAdornment
     private static readonly SolidColorBrush AddedBg;
     private static readonly SolidColorBrush AddedFg;
     private static readonly SolidColorBrush ButtonBg;
+    private static readonly SolidColorBrush NoticeBg;
+    private static readonly SolidColorBrush NoticeFg;
     static InlineDiffAdornment()
     {
         RemovedBg = new SolidColorBrush(Color.FromArgb(0x38, 0xC0, 0x39, 0x2B)); RemovedBg.Freeze();
         AddedBg   = new SolidColorBrush(Color.FromArgb(0x30, 0x2E, 0xA0, 0x43)); AddedBg.Freeze();
         AddedFg   = new SolidColorBrush(Color.FromArgb(0xD0, 0x9C, 0xDC, 0xA8)); AddedFg.Freeze();
         ButtonBg  = new SolidColorBrush(Color.FromArgb(0xE0, 0x2D, 0x2D, 0x30)); ButtonBg.Freeze();
+        NoticeBg  = new SolidColorBrush(Color.FromArgb(0xF0, 0x3A, 0x30, 0x24)); NoticeBg.Freeze();
+        NoticeFg  = new SolidColorBrush(Color.FromArgb(0xF0, 0xE8, 0xC0, 0x88)); NoticeFg.Freeze();
     }
+
+    /// <summary>How long a notice stays up before it removes itself.</summary>
+    private static readonly TimeSpan NoticeLifetime = TimeSpan.FromSeconds(8);
 
     private readonly IWpfTextView    _view;
     private readonly IAdornmentLayer _layer;
@@ -40,6 +48,8 @@ internal sealed class InlineDiffAdornment
     private Action<int, bool>?  _onDecision;         // (hunk index, accepted)
     private Action<bool>?       _onDecideAll;        // accept-all / reject-all
     private HashSet<int>        _decided = [];
+    private UIElement?          _notice;             // transient one-liner, independent of _plan
+    private DispatcherTimer?    _noticeTimer;
 
     internal bool IsActive => _plan is not null;
 
@@ -74,17 +84,96 @@ internal sealed class InlineDiffAdornment
     internal void Hide()
     {
         _layer.RemoveAllAdornments();
+        ForgetNotice();          // the layer wipe took the element: do not keep its trace
         _plan = null;
         _shownSnapshot = null;
         _onDecision = null;
         _onDecideAll = null;
     }
+    // Notice
+
+    /// <summary>
+    /// Shows a single transient line at the top of the viewport, for the cases where the preview
+    /// ends <b>without applying anything</b>. Ignores a null/empty text (a request written by an
+    /// older host carries no notices - the preview keeps working, it just stays as mute as before).
+    /// </summary>
+    /// <remarks>
+    /// This is the in-process component's only channel to the user, and a channel was needed: the
+    /// three exits of <see cref="InlineDiffController"/> that apply nothing rendered exactly what an
+    /// ignored command renders - a tick clicked with no effect, a keystroke that throws the rewrite
+    /// away - and their only trace fell into the in-proc <c>Diagnostics</c> ring, which the
+    /// <c>/diagnostics</c> command (out-of-process host) does not read. Nobody, the user included,
+    /// could read the failure.
+    ///
+    /// It never fights the typist, which is the rule of this whole preview:
+    /// <see cref="UIElement.IsHitTestVisible"/> false (it takes neither click nor focus), anchored to
+    /// the viewport so never in the middle of the text, and it clears itself.
+    /// </remarks>
+    internal void ShowNotice(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        DismissNotice();
+
+        var ff       = _view.FormattedLineSource;
+        var fontSize = ff?.DefaultTextProperties.FontRenderingEmSize ?? 13.0;
+
+        var border = new Border
+        {
+            Background       = NoticeBg,
+            CornerRadius     = new CornerRadius(3),
+            Padding          = new Thickness(10, 3, 10, 4),
+            IsHitTestVisible = false,
+            Child            = new TextBlock
+            {
+                Text         = text,
+                Foreground   = NoticeFg,
+                FontSize     = fontSize,
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth     = Math.Max(200, _view.ViewportWidth - 60),
+            },
+        };
+        border.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        Canvas.SetLeft(border, Math.Max(_view.ViewportLeft,
+            _view.ViewportRight - border.DesiredSize.Width - 20));
+        Canvas.SetTop(border, _view.ViewportTop + 4);
+        _layer.AddAdornment(AdornmentPositioningBehavior.ViewportRelative, null, null, border, null);
+        _notice = border;
+
+        _noticeTimer = new DispatcherTimer(DispatcherPriority.ApplicationIdle, _view.VisualElement.Dispatcher)
+        {
+            Interval = NoticeLifetime,
+        };
+        _noticeTimer.Tick += (_, _) => DismissNotice();
+        _noticeTimer.Start();
+    }
+
+    /// <summary>Removes the notice if one is up. Idempotent.</summary>
+    internal void DismissNotice()
+    {
+        var notice = _notice;
+        ForgetNotice();
+        if (notice is not null) _layer.RemoveAdornment(notice);
+    }
+
+    /// <summary>Drops the bookkeeping without touching the layer - for the two paths that have just
+    /// called <c>RemoveAllAdornments</c>: the element is already gone, and keeping its reference
+    /// would, on the next notice, remove an element belonging to the following preview.</summary>
+    private void ForgetNotice()
+    {
+        _noticeTimer?.Stop();
+        _noticeTimer = null;
+        _notice      = null;
+    }
+
 
     // ── Rendering ─────────────────────────────────────────────────────────────
 
     private void Repaint()
     {
         _layer.RemoveAllAdornments();
+        ForgetNotice();
         var plan = _plan;
         var snapshot = _shownSnapshot;
         if (plan is null || snapshot is null) return;

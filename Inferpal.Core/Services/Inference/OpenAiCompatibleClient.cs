@@ -528,14 +528,28 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // while the breaker was open meant the one call able to notice the server coming back was
         // itself blocked — the connection indicator stayed red for the full 5 minutes after a
         // recovery (pre-1.6.0 architecture review, §3.3). A successful probe closes the circuit on the spot.
+        //
+        // And the status concludes nothing on its own: the body must carry "data", the property that
+        // signs the OpenAI-compatible surface. See ConfirmsBackendPayload - the measurement was made
+        // against Ollama, but it says nothing specific to Ollama: a server (or a reverse proxy) that
+        // returns 200 on every route gives a green badge for any configured backend.
+        var endpoint = $"{V1(url)}/models";
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            using var req = new HttpRequestMessage(HttpMethod.Get, $"{V1(url)}/models");
+            using var req = new HttpRequestMessage(HttpMethod.Get, endpoint);
             AddAuth(req);
             using var response = await _http.SendAsync(req, cts.Token);
-            if (response.IsSuccessStatusCode) { ResetCircuit(); return true; }
+            if (response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cts.Token);
+                if (ConfirmsBackendPayload(endpoint, body, "data", "OpenAiCompatible.CheckConnection"))
+                {
+                    ResetCircuit();
+                    return true;
+                }
+            }
             RecordFailure();
             return false;
         }

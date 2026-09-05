@@ -342,10 +342,15 @@ internal static class SlashCommandRouter
         {
             if (line.StartsWith('#')) continue;   // '#' prefix = disabled entry
             var eq = line.IndexOf('=');
-            if (eq <= 1) continue;
-            var name = line[..eq].Trim().ToLowerInvariant();
-            var text = line[(eq + 1)..].Trim();
-            if (!name.StartsWith('/') || string.IsNullOrEmpty(text)) continue;
+            var name = eq > 1 ? line[..eq].Trim().ToLowerInvariant() : string.Empty;
+            var text = eq > 1 ? line[(eq + 1)..].Trim() : string.Empty;
+            if (eq <= 1 || !name.StartsWith('/') || string.IsNullOrEmpty(text))
+            {
+                // Without this, a "/mycommand" the user believes they defined simply does not
+                // exist, and nothing says why.
+                Diagnostics.DroppedLine("UserTemplates", "Command template ignored (expected /name=text)", line);
+                continue;
+            }
             result.Add(new UserSlashTemplate(name, text));
         }
         return result;

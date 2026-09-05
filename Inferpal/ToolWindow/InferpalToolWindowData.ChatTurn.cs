@@ -356,6 +356,11 @@ internal partial class InferpalToolWindowData
 
             // Common result variables filled by whichever path runs.
             string               agentFinalResponse = string.Empty;
+            // How the run ENDED, when it is not because the model was done. Both facts lived in
+            // OrchestratorResult all along and were read by NOBODY: a run cut short at its
+            // iteration limit returned a fluent answer, indistinguishable from a task carried to
+            // its end.
+            string               agentEndNotice     = string.Empty;
             List<ToolExecution>  agentExecutions    = [];
             int                  agentTokensUsed    = 0;
 
@@ -477,6 +482,9 @@ internal partial class InferpalToolWindowData
                 agentFinalResponse = orchResult.FinalResponse;
                 agentExecutions    = orchResult.Executions;
                 agentTokensUsed    = orchResult.TokensUsed;
+                agentEndNotice     = orchResult.ReachedIterationLimit ? Strings.AgentEndedAtIterationLimit
+                                   : orchResult.WasLoopDetected       ? Strings.AgentEndedOnRepeat
+                                   : string.Empty;
             }
             else
             {
@@ -497,6 +505,7 @@ internal partial class InferpalToolWindowData
                     onThinking: OnThinking);
 
                 agentFinalResponse = result.FinalResponse;
+                agentEndNotice     = result.WasLoopDetected ? Strings.AgentEndedOnRepeat : string.Empty;
                 agentExecutions    = result.Executions;
                 agentTokensUsed    = result.TokensUsed;
             }
@@ -583,6 +592,14 @@ internal partial class InferpalToolWindowData
 
                     // FinalAnswerKind.StreamedAnswer: lastAssistant is already the streamed bubble.
                 }
+
+                // The answer STAYS - that is the original arbitration, "do not alarm when real work
+                // was done". What changes is that it stops passing for a task carried to its end: a
+                // discreet line follows it, saying why the run stopped. Without it, the only
+                // difference between "I finished" and "I was cut short" lived in a boolean nothing
+                // read.
+                if (agentEndNotice.Length > 0)
+                    InsertThemed(ChatMessageItem.AssistantMsg(agentEndNotice));
 
                 if (lastAssistant is not null)
                     MarkRegeneratable(lastAssistant);

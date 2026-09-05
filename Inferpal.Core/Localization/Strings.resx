@@ -14,6 +14,9 @@
   <data name="SectionBehavior" xml:space="preserve"><value>Behavior</value></data>
   <data name="SectionInlineCompletions" xml:space="preserve"><value>Inline Completions</value></data>
   <data name="LabelInlineCompletionMode" xml:space="preserve"><value>Performance mode:</value></data>
+  <data name="FimModeFast" xml:space="preserve"><value>Fast (128 tok · 300 ms)</value></data>
+  <data name="FimModeDefault" xml:space="preserve"><value>Default (256 tok · 600 ms)</value></data>
+  <data name="FimModeHighAccuracy" xml:space="preserve"><value>High Accuracy (512 tok · 1 s)</value></data>
   <data name="HintInlineCompletionMode" xml:space="preserve"><value>Fast: 128 tokens, debounce 300 ms — Low latency, shorter suggestions. Default: 256 tokens, debounce 600 ms — Balanced. High Accuracy: 512 tokens, debounce 1 s — Best quality, slower response.</value></data>
   <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>Enable ghost-text completions</value></data>
   <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>When checked, Inferpal shows AI-generated code suggestions inline as you type (ghost text). Press Tab to accept, Escape to dismiss.</value></data>
@@ -69,6 +72,7 @@
   <data name="BtnSave" xml:space="preserve"><value>Save</value></data>
   <!-- Save status: what was saved is saved, and what could not be read is named — {0}=count, {1}=field labels -->
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} field(s) ignored (unreadable value): {1}</value></data>
+  <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ {0} permission rule(s) could not be read and are not in force. See /diagnostics.</value></data>
   <data name="BtnSend" xml:space="preserve"><value>Send →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>Refresh the model list</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>Export conversation to .md or .txt</value></data>
@@ -241,6 +245,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(iteration limit reached — 20 turns)</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ The agent stopped at its iteration limit: what follows summarises what it had gathered, not a finished task.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ The agent was repeating the same tool calls and was stopped: what follows summarises what it had gathered.</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(loop detected — identical tool calls repeated, stopping)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(circuit breaker open — retries paused for 5 min after repeated failures)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Done — {0}</value></data>
@@ -453,6 +459,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 commit message</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pre-filled below — edit if needed, then press **Enter** to commit.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>No project rules. Create `.inferpal/rules/*.md` or run `/rules init`.</value></data>
+  <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} file(s) could not be read and are therefore NOT applied: {1}. See /diagnostics for the reason.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>No review checks. Create `.inferpal/checks/*.md` or run `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Project rules** (`.inferpal/rules`):</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review checks** (`.inferpal/checks`):</value></data>
@@ -491,6 +498,8 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
 Use `/index rebuild` to start indexing or wait for the background pass to complete.
 If RAG is disabled, set `ragEnabled = true` in settings.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>No relevant code found for: "{0}"</value></data>
+  <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ Only a keyword search ran: semantic search is turned off in the settings, so code that matches by meaning alone was never looked at.</value></data>
+  <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ Only a keyword search ran: the embedding model “{0}” did not answer, so code that matches by meaning alone was never looked at. See /diagnostics.</value></data>
 
   <!-- Agent memory -->
   <data name="UpdateMemoryNoProject" xml:space="preserve"><value>No .sln or .inferpal folder found — cannot locate the memory file.</value></data>
@@ -799,6 +808,9 @@ ollama serve
   <data name="TooltipXrayGauge" xml:space="preserve"><value>Context usage — click to open the X-Ray panel</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>Close</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Review the proposed changes in the editor — ✓/✗ on each change (✓✓/✗✗ for all). Typing dismisses the preview.</value></data>
+  <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ Preview dismissed (the document changed) — nothing was applied. Run the action again to regenerate it.</value></data>
+  <data name="InlineDiffPreviewDrifted" xml:space="preserve"><value>✋ Nothing was applied: the document changed between your decision and the edit. Run the action again.</value></data>
+  <data name="InlineDiffPreviewApplyFailed" xml:space="preserve"><value>✋ The accepted changes could not be applied.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Usage: `/hardware &lt;gb&gt;` — a positive number, e.g. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM budget set to {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Hardware profile</value></data>

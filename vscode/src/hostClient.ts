@@ -38,6 +38,7 @@ import {
   TextNote,
   ToolNotice,
   XRayPanel,
+  ConfigUpdateResult,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -413,8 +414,11 @@ export class HostClient {
     return this.connection().sendRequest<Record<string, string>>('settings/strings');
   }
 
-  configUpdate(json: string): Promise<void> {
-    return this.connection().sendRequest('config/update', { json });
+  /** Returns what the save could not use. The count is computed BY THE HOST: the permission DSL
+   *  lives in the Core, and re-reading it here would be a second implementation of the same rule -
+   *  hence a programmed divergence. */
+  configUpdate(json: string): Promise<ConfigUpdateResult> {
+    return this.connection().sendRequest<ConfigUpdateResult>('config/update', { json });
   }
 
   indexStart(): Promise<void> {

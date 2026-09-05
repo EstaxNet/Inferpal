@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace Inferpal.Services.Mcp;
 
@@ -34,6 +34,9 @@ internal sealed record McpOAuthConfig(
     string? ClientSecret = null,
     IReadOnlyList<string>? Scopes = null);
 
+/// <summary>An entry of the configured server list that never became a server, and why.</summary>
+internal sealed record McpRejectedServer(string Name, string Reason);
+
 internal sealed record McpServerConfig(
     string Name,
     string? Command,
@@ -51,8 +54,22 @@ internal sealed record McpServerConfig(
     /// Parses the raw config JSON into a list of server definitions.
     /// Never throws: malformed entries are skipped, returning whatever parsed cleanly.
     /// </summary>
-    public static IReadOnlyList<McpServerConfig> Parse(string? json)
+    public static IReadOnlyList<McpServerConfig> Parse(string? json) => Parse(json, out _);
+
+    /// <summary>
+    /// Same, returning the <b>rejected</b> entries and why.
+    /// </summary>
+    /// <remarks>
+    /// They surfaced nowhere. The "failed" entries of <c>Statuses()</c> only cover servers that
+    /// TRIED to start: an entry rejected here never was a server, so it disappeared from the screen
+    /// as well as from the diagnostics. Yet it is the most likely error - a misspelt key - and the
+    /// most opaque, since the server "does not exist".
+    /// </remarks>
+    public static IReadOnlyList<McpServerConfig> Parse(
+        string? json, out IReadOnlyList<McpRejectedServer> rejected)
     {
+        var problems = new List<McpRejectedServer>();
+        rejected = problems;
         if (string.IsNullOrWhiteSpace(json))
             return [];
 
@@ -74,7 +91,11 @@ internal sealed record McpServerConfig(
             foreach (var entry in root.EnumerateObject())
             {
                 var def = entry.Value;
-                if (def.ValueKind != JsonValueKind.Object) continue;
+                if (def.ValueKind != JsonValueKind.Object)
+                {
+                    Reject(problems, entry.Name, $"its entry is a {def.ValueKind}, not an object");
+                    continue;
+                }
 
                 var command = def.TryGetProperty("command", out var c) && c.ValueKind == JsonValueKind.String
                     ? c.GetString()
@@ -84,7 +105,14 @@ internal sealed record McpServerConfig(
                     : null;
 
                 // An entry must declare a transport: either a stdio command or an HTTP url.
-                if (string.IsNullOrWhiteSpace(command) && string.IsNullOrWhiteSpace(url)) continue;
+                // The most likely of the three: a misspelt key ("cmd" for "command"). The server
+                // then appeared NOWHERE - not even among the failures /mcp lists, which only cover
+                // the ones that tried to start.
+                if (string.IsNullOrWhiteSpace(command) && string.IsNullOrWhiteSpace(url))
+                {
+                    Reject(problems, entry.Name, $"it declares neither a \"command\" (stdio) nor a \"url\" (HTTP)");
+                    continue;
+                }
 
                 var args = new List<string>();
                 if (def.TryGetProperty("args", out var a) && a.ValueKind == JsonValueKind.Array)
@@ -106,13 +134,29 @@ internal sealed record McpServerConfig(
                     Url: url, Headers: headers.Count > 0 ? headers : null, OAuth: oauth, Enabled: enabled));
             }
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            // Malformed JSON → treat as "no servers configured" rather than crashing startup.
+            // Malformed JSON -> treat as "no servers configured" rather than crashing startup.
+            // The fallback is right; staying silent was not. One comma too many and EVERY MCP
+            // server disappears - the model loses all their tools at once, and nothing says so.
+            Reject(problems, string.Empty, $"the server list is not valid JSON, so no server is configured ({ex.Message})");
             return servers;
         }
 
         return servers;
+    }
+
+    /// <summary>Records a rejected entry once, for both readers: <c>/diagnostics</c> and the status
+    /// list the two front-ends already render.</summary>
+    private static void Reject(List<McpRejectedServer> problems, string name, string reason)
+    {
+        // A PAIR, not "name: reason" inside one string: the reason for invalid JSON carries the
+        // exception message, which itself contains colons (LineNumber, BytePositionInLine). Joining
+        // then splitting again would have produced an absurd server name on screen.
+        problems.Add(new McpRejectedServer(string.IsNullOrEmpty(name) ? "mcpServers" : name, reason));
+        Diagnostics.Record("Mcp", string.IsNullOrEmpty(name)
+            ? $"Server list ignored: {reason}."
+            : $"Server '{name}' ignored: {reason}.");
     }
 
     private static Dictionary<string, string> ReadStringMap(JsonElement def, string property)

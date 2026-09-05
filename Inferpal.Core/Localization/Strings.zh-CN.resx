@@ -14,6 +14,9 @@
   <data name="SectionBehavior" xml:space="preserve"><value>行为</value></data>
   <data name="SectionInlineCompletions" xml:space="preserve"><value>内联补全</value></data>
   <data name="LabelInlineCompletionMode" xml:space="preserve"><value>性能模式：</value></data>
+  <data name="FimModeFast" xml:space="preserve"><value>快速 (128 tok · 300 ms)</value></data>
+  <data name="FimModeDefault" xml:space="preserve"><value>默认 (256 tok · 600 ms)</value></data>
+  <data name="FimModeHighAccuracy" xml:space="preserve"><value>高精度 (512 tok · 1 s)</value></data>
   <data name="HintInlineCompletionMode" xml:space="preserve"><value>快速：128 个令牌，延迟 300 毫秒 — 低延迟，较短建议。默认：256 个令牌，延迟 600 毫秒 — 均衡。高精度：512 个令牌，延迟 1 秒 — 最佳质量，较慢。</value></data>
   <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>启用幽灵文本补全</value></data>
   <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>启用后，Inferpal 在您输入时以幽灵文本形式显示 AI 生成的代码建议。按 Tab 接受，按 Escape 忽略。</value></data>
@@ -68,6 +71,7 @@
   <data name="BtnCancel" xml:space="preserve"><value>✕ 取消</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>已忽略 {0} 个字段（值无法识别）：{1}</value></data>
+  <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ 有 {0} 条权限规则无法读取，因此未生效。请查看 /diagnostics。</value></data>
   <data name="BtnSend" xml:space="preserve"><value>发送 →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>刷新模型列表</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>将对话导出为 .md 或 .txt</value></data>
@@ -240,6 +244,8 @@
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>（已达到迭代上限 — 20 轮）</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ 智能体在迭代上限处停止：以下是它已收集内容的摘要，并非已完成的任务。</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ 智能体反复发出相同的工具调用而被停止：以下是它已收集内容的摘要。</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>（检测到循环 — 重复相同的工具调用，已停止）</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>（熔断器已开启 — 多次连接失败后暂停重试 5 分钟）</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 完成 — {0}</value></data>
@@ -456,6 +462,7 @@
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 提交信息</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>信息已预填到输入框 — 如需修改请编辑，然后按 **Enter** 确认提交。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>没有项目规则。请创建 `.inferpal/rules/*.md` 或运行 `/rules init`。</value></data>
+  <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ 有 {0} 个文件无法读取，因此并未生效：{1}。原因见 /diagnostics。</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>没有评审检查项。请创建 `.inferpal/checks/*.md` 或运行 `/checks init`。</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**项目规则** (`.inferpal/rules`):</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**评审检查项** (`.inferpal/checks`):</value></data>
@@ -494,6 +501,8 @@
 使用 `/index rebuild` 开始索引，或等待后台任务完成。
 如果 RAG 已禁用，请在设置中将 `ragEnabled = true`。</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>未找到与"{0}"相关的代码</value></data>
+  <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ 只运行了关键词搜索：设置中已关闭语义搜索，因此仅在含义上匹配的代码根本没有被查找。</value></data>
+  <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ 只运行了关键词搜索：嵌入模型“{0}”没有响应，因此仅在含义上匹配的代码根本没有被查找。请查看 /diagnostics。</value></data>
 
   <!-- Agent memory -->
   <data name="UpdateMemoryNoProject" xml:space="preserve"><value>未找到 .sln 或 .inferpal 文件夹 — 无法定位记忆文件。</value></data>
@@ -791,6 +800,9 @@ ollama serve
   <data name="TooltipXrayGauge" xml:space="preserve"><value>上下文使用情况 — 点击打开 X-Ray 面板</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>关闭</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 请在编辑器中查看建议的更改 — 每处更改可 ✓/✗（全部为 ✓✓/✗✗）。输入文字将关闭预览。</value></data>
+  <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ 预览已放弃（文档已更改）— 未应用任何更改。请重新运行该操作以重新生成。</value></data>
+  <data name="InlineDiffPreviewDrifted" xml:space="preserve"><value>✋ 未应用任何更改：在你做出决定与执行编辑之间，文档发生了更改。请重新运行该操作。</value></data>
+  <data name="InlineDiffPreviewApplyFailed" xml:space="preserve"><value>✋ 无法应用已接受的更改。</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>用法：`/hardware &lt;gb&gt;` — 正数，例如 `/hardware 24`。</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM 预算已设置为 {0} GB。</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## 硬件配置</value></data>

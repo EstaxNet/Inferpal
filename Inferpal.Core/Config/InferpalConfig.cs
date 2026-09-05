@@ -442,33 +442,104 @@ internal class InferpalConfig
 
     private static InferpalConfig LoadUncached()
     {
+        var path = EffectiveConfigPath;
         InferpalConfig cfg;
-        if (!File.Exists(EffectiveConfigPath))
+
+        if (!File.Exists(path))
         {
+            // First install: the ordinary case. Nothing is traced - a channel that speaks on the
+            // ordinary path stops being read.
             cfg = new InferpalConfig();
+        }
+        else if (TryRead(path, out var parsed, out var error))
+        {
+            cfg = parsed!;
         }
         else
         {
-            try
-            {
-                var json = File.ReadAllText(EffectiveConfigPath);
-                cfg = JsonSerializer.Deserialize<InferpalConfig>(json) ?? new InferpalConfig();
-            }
-            catch { cfg = new InferpalConfig(); }
+            // The fallback to factory defaults stays: the product has to start. What changes is
+            // that it is no longer MUTE. The code used to write `catch { }` - a user whose
+            // backends, per-role models, MCP servers and permission rules had "disappeared" had
+            // nowhere to look, and nothing told that apart from a first install.
+            Services.Diagnostics.Record("InferpalConfig.Load",
+                $"{path} exists but could not be read ({error!.GetType().Name}: {error.Message}) — "
+                + "factory defaults are used for this session, and the file will be set aside at the "
+                + "next save rather than overwritten.");
+            cfg = new InferpalConfig();
         }
+
         Strings.ApplyLanguage(cfg.Language);
         return cfg;
     }
 
+    /// <summary>
+    /// Reads and parses the file. <c>false</c> when it exists but cannot be turned into a
+    /// configuration - a write torn by a hard shutdown, a disk error, one comma too many after a
+    /// hand edit, a file held by another process, or <c>null</c> content.
+    /// </summary>
+    private static bool TryRead(string path, out InferpalConfig? cfg, out Exception? error)
+    {
+        cfg = null;
+        error = null;
+        try
+        {
+            cfg = JsonSerializer.Deserialize<InferpalConfig>(File.ReadAllText(path));
+            if (cfg is not null) return true;
+            error = new JsonException("the file is valid JSON but holds no object");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+            return false;
+        }
+    }
+
     public void Save()
     {
+        var path = EffectiveConfigPath;
+        PreserveUnreadableFile(path);
+
         // Atomic: a torn write here leaves the user without a usable configuration, and this
         // runs on every /model, /hardware, /docs and settings save.
         var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-        Services.Persistence.AtomicFile.WriteAllText(EffectiveConfigPath, json);
+        Services.Persistence.AtomicFile.WriteAllText(path, json);
 
         // Drop the cached parse: a save within the same file-time tick would otherwise keep
         // serving the previous values to Load().
         lock (_loadLock) { _cached = null; _cachedPath = null; _cachedStamp = default; }
+    }
+
+    /// <summary>
+    /// Copies an unreadable <c>config.json</c> aside before overwriting it.
+    /// </summary>
+    /// <remarks>
+    /// Without this, an unreadable file was not merely <i>ignored</i>, it was <b>destroyed</b>: the
+    /// load returned factory defaults, and the first <c>Save()</c> along - a setting, <c>/model</c>,
+    /// <c>/hardware</c>, <c>/docs</c> - wrote them over the original bytes. That is the 1.6.8 F8
+    /// defect ("a typo did not merely get ignored, it destroyed the setting") at whole-file scale.
+    ///
+    /// The state is judged <b>at the moment it matters</b>, by re-reading, rather than through a
+    /// flag set at load time: a flag would be stale as soon as the user repairs the file by hand,
+    /// and it would not cover a <c>Save()</c> from an instance built elsewhere. The cost is one
+    /// re-read per save - the hot path is <see cref="Load"/>, not this one.
+    /// </remarks>
+    private static void PreserveUnreadableFile(string path)
+    {
+        try
+        {
+            if (!File.Exists(path) || TryRead(path, out _, out _)) return;
+
+            var aside = Services.Persistence.AtomicFile.PreserveAside(path);
+            if (aside is not null)
+                Services.Diagnostics.Record("InferpalConfig.Save",
+                    $"{path} was unreadable: its bytes are kept in {aside} before being overwritten.");
+        }
+        catch (Exception ex)
+        {
+            // Best-effort: NEVER prevent the save. Failing to keep a copy is less serious than
+            // leaving the user unable to write their settings.
+            Services.Diagnostics.Swallow("InferpalConfig.PreserveUnreadable", ex);
+        }
     }
 }

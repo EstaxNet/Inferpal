@@ -292,84 +292,32 @@ internal partial class InferpalToolWindowData
     // and the chat notices.
     private async Task CompactOrTruncateAsync(CancellationToken ct)
     {
-        var plan = Services.Agent.HistoryCompaction.Decide(
-            _history,
-            _config.ContextWindowSize,
-            _lastPromptTokens,
-            _config.ContextWindowKeepTurns,
-            _config.KvCacheAnchorMessages,
-            _config.CompactionEnabled);
-        if (plan.Action == Services.Agent.CompactionAction.None) return;
+        // The decision, the summarising model call and its fuse lived HERE, so on the VS Code side
+        // the history was NEVER bounded and three settings of the panel did nothing there. All of
+        // that moved into ContextManager; what stays is what cannot move: mutating _history on the
+        // VM context (rule 6 - otherwise it is replaced under the turn loop that reads it) and
+        // placing the bubbles.
+        var decision = await Services.Agent.ContextManager.PrepareAsync(
+            _history, _config, _client, _lastPromptTokens,
+            onStep: step => Post(() => CurrentStep = step),
+            ct: ct);
 
-        // ── Path A: hard truncation (compaction disabled or nothing to compact) ──
-        if (plan.Action == Services.Agent.CompactionAction.Truncate)
-        {
-            await RunOnVMContextAsync(() =>
-            {
-                Services.Agent.HistoryCompaction.ApplyTruncation(_history, plan);
-                _lastPromptTokens = 0;
-                var warn = ChatMessageItem.AssistantMsg(Strings.MsgContextTruncated(plan.Count, plan.KeepTurns));
-                ApplyItemTheme(warn);
-                Messages.Insert(Messages.Count - 2, warn);
-                ScrollToBottom();
-            });
-            return;
-        }
+        if (decision.Outcome == Services.Agent.ContextOutcome.None) return;
 
-        // ── Path B: smart compaction ───────────────────────────────────────────
-        Post(() => CurrentStep = Strings.StatusCompacting);
-
-        var toCompact        = Services.Agent.HistoryCompaction.SliceToCompact(_history, plan);
-        var summarizeHistory = Services.Agent.HistoryCompaction.BuildSummarizeRequest(_history, toCompact);
-
-        string? summary = null;
-        try
-        {
-            var timeoutSec = Math.Max(10, _config.CompactionTimeoutSeconds);
-            using var compactCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            compactCts.CancelAfter(TimeSpan.FromSeconds(timeoutSec));
-
-            var result = await _client.RunAgentAsync(
-                model:   await ModelRouter.ResolveUtilityAsync(_config, _client, compactCts.Token),
-                history: summarizeHistory,
-                tools:   EmptyToolRegistry.Instance,
-                onStep:  _ => { },
-                onToken: null,
-                ct:      compactCts.Token);
-
-            summary = result.FinalResponse?.Trim();
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }
-        catch (Exception ex) { Diagnostics.Swallow("Context.CompactOrTruncate", ex); }
-
-        // ── Path B1: safety fuse fired — inline truncation, single message ─────
-        if (string.IsNullOrEmpty(summary))
-        {
-            await RunOnVMContextAsync(() =>
-            {
-                Services.Agent.HistoryCompaction.ApplyTruncation(_history, plan);
-                _lastPromptTokens = 0;
-                var fallback = ChatMessageItem.AssistantMsg(Strings.MsgContextCompactionFallback);
-                ApplyItemTheme(fallback);
-                Messages.Insert(Messages.Count - 2, fallback);
-                ScrollToBottom();
-            });
-            return;
-        }
-
-        // ── Path B2: compaction succeeded — replace compacted range with summary ──
         await RunOnVMContextAsync(() =>
         {
-            Services.Agent.HistoryCompaction.ApplySummary(_history, plan, summary);
+            if (decision.Outcome == Services.Agent.ContextOutcome.Compacted)
+                Services.Agent.HistoryCompaction.ApplySummary(_history, decision.Plan, decision.Summary!);
+            else
+                Services.Agent.HistoryCompaction.ApplyTruncation(_history, decision.Plan);
+
             _lastPromptTokens = 0;
 
-            var note = plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty;
-            var compactBubble = ChatMessageItem.ToolMsg(
-                "context_compact",
-                Strings.MsgContextCompacted(plan.Count, plan.KeepTurns) + note,
-                _config.ToolBubblesExpanded);
-            ApplyItemTheme(compactBubble);
-            Messages.Insert(Messages.Count - 2, compactBubble);
+            // A successful compaction is a tool event (collapsible); both fallbacks are warnings -
+            // the conversation has lost turns, and that reads in plain text.
+            InsertThemed(decision.Outcome == Services.Agent.ContextOutcome.Compacted
+                ? ChatMessageItem.ToolMsg("context_compact", decision.Notice, _config.ToolBubblesExpanded)
+                : ChatMessageItem.AssistantMsg(decision.Notice));
             ScrollToBottom();
         });
     }

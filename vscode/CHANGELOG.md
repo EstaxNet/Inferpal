@@ -3,6 +3,47 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.9
+
+A release given to **things that were quietly not happening**: settings with no effect, capabilities
+that fell back without a word, and answers that read as finished when they were not.
+
+- **Long conversations were never bounded, and three settings that promised to bound them did
+  nothing.** The history simply grew until it went past the model's context window, at which point
+  the backend dropped the head of the conversation — system prompt included — without a word: an
+  assistant that quietly forgets. Meanwhile the settings panel offered *Compact the conversation*,
+  *Turns to keep* and the compaction timeout, none of which had any effect here. The check now runs
+  in this editor too, from the same implementation as the Visual Studio window, and says what it
+  did: turns dropped, turns replaced by a summary, or a summary that did not arrive in time and
+  turns dropped instead.
+- **A turn that produced no text ended in silence.** No answer, no message, nothing to act on. You
+  now get the answer, or a summary of the tools that ran, or a message naming the model and the
+  server that returned nothing.
+- **An agent run that was cut short read exactly like one that finished.** When the loop hits its
+  iteration limit, or is stopped because the model kept repeating the same tool calls, what you get
+  is a summary of what it had gathered — and it arrived with nothing to say so. A short line now
+  follows the answer. The answer itself is untouched.
+- **Clearing a numeric setting did nothing.** Emptying a numeric box is how you restore its factory
+  value; the panel did not know those values, so the gesture silently changed nothing.
+- **"No relevant code found" was also what you got when the search never ran properly.** When the
+  query cannot be embedded — the embedding model was never pulled, the backend is down — only the
+  keyword half runs. An empty result now says so, and keeps *semantic search is off* apart from
+  *the embedding model did not answer*.
+- **The connection badge went green on any 2xx**, including from a server that answers "unknown
+  endpoint" — so a client pointed at the wrong kind of backend looked connected while no turn could
+  complete.
+- **A `config.json` or a `snippets.json` that could not be read was not just ignored — the next save
+  destroyed it.** The fallback stays, but the file is now copied aside first, and `/diagnostics`
+  says what happened.
+- **A rule you wrote could stop constraining the model, and nothing said so.** Unreadable files in
+  `.inferpal/rules`, `.inferpal/checks` and `.inferpal/prompts` are now named in their own listing.
+- **Permission rules, custom tools, command templates and MCP entries that could not be read** were
+  dropped without a word. They are now reported — permission rules in the save status, rejected MCP
+  entries in the server list, all of them in `/diagnostics`.
+- **Semantic indexing could silently fall back to the heuristic chunker for a whole session** when
+  no language server was on `PATH` or one died. It now says which of those happened, once, and
+  names the executables it looked for.
+
 ## 1.6.8
 
 - **A numeric setting that could not be read is now named, instead of being dropped in silence.**

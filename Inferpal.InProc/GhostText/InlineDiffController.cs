@@ -30,6 +30,7 @@ internal sealed class InlineDiffController
     private readonly string?             _filePath;
 
     private DiffPlan?     _plan;
+    private InlineDiffNotices? _notices;   // localized sentences delivered WITH the request
     private HashSet<int>  _accepted = [];
     private bool          _applying;   // our own buffer edit must not be read as a user edit
 
@@ -77,6 +78,7 @@ internal sealed class InlineDiffController
 
         InlineDiffPreviewSignal.Acknowledge(request.Id);
         _plan     = plan;
+        _notices  = request.Notices;   // the host clears the request right after the ack: keep them now
         _accepted = [];
         _adornment.Show(plan, OnHunkDecision, OnDecideAll);
     }
@@ -107,7 +109,14 @@ internal sealed class InlineDiffController
         if (plan is null || _accepted.Count == 0) return;
 
         var buffer = _view.TextBuffer;
-        if (buffer.CurrentSnapshot.GetText() != plan.OldText) return;   // drifted since shown
+        if (buffer.CurrentSnapshot.GetText() != plan.OldText)
+        {
+            // Drift between the decision and the write. Applying nothing is right; staying silent
+            // is not: the user has just clicked the tick and is handed back an unchanged file,
+            // which is indistinguishable from an ignored click.
+            _adornment.ShowNotice(_notices?.Drifted);
+            return;
+        }
 
         var merged = InlineDiffPlanner.Apply(plan, _accepted);
 
@@ -116,7 +125,13 @@ internal sealed class InlineDiffController
         var (start, oldLen, newSlice) = MinimalSpan(plan.OldText, merged);
         _applying = true;
         try { buffer.Replace(new Span(start, oldLen), newSlice); }
-        catch (Exception ex) { Services.Diagnostics.Swallow("InlineDiffController.Apply", ex); }
+        catch (Exception ex)
+        {
+            // This Swallow lands in the IN-PROC ring; `/diagnostics` reads the out-of-process
+            // host's. Without the notice below, this failure was legible to NOBODY.
+            Services.Diagnostics.Swallow("InlineDiffController.Apply", ex);
+            _adornment.ShowNotice(_notices?.ApplyFailed);
+        }
         finally { _applying = false; }
     }
 
@@ -141,10 +156,20 @@ internal sealed class InlineDiffController
     private void OnTextChanged(object? sender, TextContentChangedEventArgs e)
     {
         // The user typed while deciding: the plan's positions are void — reject what's left.
+        //
+        // And say so. What the keystroke throws away is not only the display: it is the REWRITE -
+        // the host cleared its request right after the ack, there is nothing left to resume, the
+        // action has to be run again and the generation paid for again. Disappearing without a word
+        // is what makes an abandonment indistinguishable from a successful apply.
         if (!_applying && _adornment.IsActive)
         {
             _plan = null;
-            _ = _view.VisualElement.Dispatcher.InvokeAsync(() => _adornment.Hide());
+            var notice = _notices?.Abandoned;
+            _ = _view.VisualElement.Dispatcher.InvokeAsync(() =>
+            {
+                _adornment.Hide();
+                _adornment.ShowNotice(notice);
+            });
         }
     }
 

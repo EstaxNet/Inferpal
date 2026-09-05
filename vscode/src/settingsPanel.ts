@@ -149,9 +149,11 @@ export class SettingsPanel {
         }
         try {
           const before = this.parseKeys(this.lastConfigJson);
-          await host.configUpdate(msg.json);
+          const result = await host.configUpdate(msg.json);
           this.lastConfigJson = msg.json;
-          this.post({ type: 'saveDone', ok: true });
+          // The rules field IS saved: it is some of its lines that are inert. Said here, not only
+          // in /diagnostics, which nobody opens after writing a rule they believe is in place.
+          this.post({ type: 'saveDone', ok: true, rulesIgnored: result?.permissionRulesIgnored ?? 0 });
           this.onSaved();
 
           // Provider/BaseUrl changes only take effect after a new `initialize`.

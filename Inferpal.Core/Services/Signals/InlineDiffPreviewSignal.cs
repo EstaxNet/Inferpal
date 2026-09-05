@@ -4,6 +4,25 @@ using System.Text.Json.Serialization;
 
 namespace Inferpal.Services.Signals;
 
+/// <summary>
+/// The three sentences the renderer may need to show, carried <b>with</b> the request.
+/// </summary>
+/// <remarks>
+/// They travel inside the request because the renderer cannot compose them:
+/// <c>Inferpal.InProc</c> targets net472 and does not reference the Core (it shares by source), so
+/// it has neither <c>Strings</c> nor localization satellites. Giving it its own would mean a second
+/// resource set and nine more satellite assemblies in the VSIX - for three sentences, in a package
+/// whose packaging history is already a minefield. The host has all ten languages: it composes, the
+/// in-proc component displays.
+///
+/// Nullable end to end: a request written by a host older than the renderer must not bring it down -
+/// the preview still works, it just stays as mute as before.
+/// </remarks>
+internal sealed record InlineDiffNotices(
+    [property: JsonPropertyName("abandoned")]   string Abandoned,
+    [property: JsonPropertyName("drifted")]     string Drifted,
+    [property: JsonPropertyName("applyFailed")] string ApplyFailed);
+
 /// <summary>A pending inline-diff preview: the rewrite of <see cref="FilePath"/> awaiting per-hunk
 /// review in the editor. <see cref="OldText"/> must still match the buffer when picked up.</summary>
 internal sealed record InlineDiffRequest(
@@ -12,7 +31,8 @@ internal sealed record InlineDiffRequest(
     [property: JsonPropertyName("ts")]   long   Ts,
     [property: JsonPropertyName("file")] string FilePath,
     [property: JsonPropertyName("old")]  string OldText,
-    [property: JsonPropertyName("new")]  string NewText);
+    [property: JsonPropertyName("new")]  string NewText,
+    [property: JsonPropertyName("notices")] InlineDiffNotices? Notices = null);
 
 /// <summary>Pickup receipt written by the renderer when it starts showing a request.</summary>
 internal sealed record InlineDiffAck(
@@ -42,13 +62,15 @@ internal static class InlineDiffPreviewSignal
 
     /// <summary>Publishes a preview request and returns its id. Best-effort: on I/O failure the
     /// pickup wait simply times out and the caller falls back to a direct apply.</summary>
-    internal static string WriteRequest(string filePath, string oldText, string newText)
+    internal static string WriteRequest(string filePath, string oldText, string newText,
+                                        InlineDiffNotices? notices = null)
     {
         var id = Guid.NewGuid().ToString("N");
         SignalFile.Delete(AckPath);   // a stale ack must not satisfy the new request's wait
         SignalFile.Write(RequestPath,
             new InlineDiffRequest(id, SignalFile.CurrentPid,
-                                  SignalFile.Now.ToUnixTimeMilliseconds(), filePath, oldText, newText),
+                                  SignalFile.Now.ToUnixTimeMilliseconds(), filePath, oldText, newText,
+                                  notices),
             "InlineDiffPreviewSignal.WriteRequest");
         return id;
     }

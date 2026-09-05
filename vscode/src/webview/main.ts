@@ -1140,6 +1140,10 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       } else if (msg.text) {
         addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp });
       }
+      // The line saying why the run stopped, AFTER the answer and without replacing it.
+      if (msg.endNotice) {
+        addBubble('assistant', { role: 'assistant', text: msg.endNotice, timestamp: msg.timestamp });
+      }
       if (msg.error) {
         addBubble('error', { role: 'error', text: msg.error, timestamp: msg.timestamp });
       }

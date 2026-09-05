@@ -38,6 +38,9 @@ export interface ChatSendResult {
   tokensUsed: number;
   promptTokens: number;
   error?: string | null;
+  /** Why the run stopped, when it is not because the model was done. The answer stays in `text`;
+   *  this is added after it, never in its place. */
+  endNotice?: string | null;
 }
 
 export interface ToolNotice {
@@ -244,6 +247,8 @@ export interface SettingsField {
   gate?: string | null;
   button?: string | null;
   options?: SettingsOption[] | null;
+  /** Factory value of a numeric field: clearing the box restores it, as in the VS window. */
+  defaultValue?: string | null;
 }
 
 export interface SettingsSection {
@@ -327,4 +332,10 @@ export interface DebugCaptureTestParams {
   args: string[];
   cwd: string;
   projectRoot: string;
+}
+
+/** `config/update` answer: what the save could not use. */
+export interface ConfigUpdateResult {
+  /** Permission rules the product could not read - the field is saved, these lines are inert. */
+  permissionRulesIgnored: number;
 }

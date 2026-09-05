@@ -14,6 +14,9 @@
   <data name="SectionBehavior" xml:space="preserve"><value>Zachowanie</value></data>
   <data name="SectionInlineCompletions" xml:space="preserve"><value>Uzupełnienia inline</value></data>
   <data name="LabelInlineCompletionMode" xml:space="preserve"><value>Tryb wydajności:</value></data>
+  <data name="FimModeFast" xml:space="preserve"><value>Szybki (128 tok · 300 ms)</value></data>
+  <data name="FimModeDefault" xml:space="preserve"><value>Domyślny (256 tok · 600 ms)</value></data>
+  <data name="FimModeHighAccuracy" xml:space="preserve"><value>Wysoka dokładność (512 tok · 1 s)</value></data>
   <data name="HintInlineCompletionMode" xml:space="preserve"><value>Szybki: 128 tokenów, opóźnienie 300 ms — Niska latencja, krótkie sugestie. Domyślny: 256 tokenów, opóźnienie 600 ms — Zrównoważony. Wysoka dokładność: 512 tokenów, opóźnienie 1 s — Najlepsza jakość, wolniejszy.</value></data>
   <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>Włącz uzupełnienia ghost-text</value></data>
   <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>Gdy zaznaczone, Inferpal wyświetla wbudowane sugestie kodu generowane przez AI podczas pisania (ghost text). Tab — akceptuj, Escape — odrzuć.</value></data>
@@ -65,6 +68,7 @@
   <data name="BtnCancel" xml:space="preserve"><value>✕ Anuluj</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Zapisz</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>Zignorowano pola ({0}) — nieczytelna wartość: {1}</value></data>
+  <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ Nie udało się odczytać {0} reguł(y) uprawnień — nie obowiązują. Zobacz /diagnostics.</value></data>
   <data name="BtnSend" xml:space="preserve"><value>Wyślij →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>Odśwież listę modeli</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>Eksportuj rozmowę do .md lub .txt</value></data>
@@ -240,6 +244,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sesja</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(osiągnięto limit iteracji — 20 tur)</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Agent zatrzymał się na limicie iteracji: poniższe podsumowuje to, co zebrał, a nie ukończone zadanie.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Agent powtarzał te same wywołania narzędzi i został zatrzymany: poniższe podsumowuje to, co zebrał.</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(wykryto pętlę — identyczne wywołania narzędzi powtórzono, zatrzymanie)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(bezpiecznik otwarty — ponowne próby wstrzymane na 5 min po powtarzających się błędach)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Gotowe — {0}</value></data>
@@ -456,6 +462,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 wiadomość commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Wiadomość wstępnie wypełniona poniżej — edytuj jeśli potrzeba, następnie naciśnij **Enter**, aby zacommitować.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Brak reguł projektu. Utwórz `.inferpal/rules/*.md` lub uruchom `/rules init`.</value></data>
+  <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać {0} plik(ów), więc NIE są stosowane: {1}. Przyczyna jest w /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Brak sprawdzeń recenzji. Utwórz `.inferpal/checks/*.md` lub uruchom `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Reguły projektu** (`.inferpal/rules`):</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**Sprawdzenia recenzji** (`.inferpal/checks`):</value></data>
@@ -494,6 +501,8 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
 Użyj `/index rebuild` aby rozpocząć indeksowanie lub poczekaj na ukończenie procesu w tle.
 Jeśli RAG jest wyłączony, ustaw `ragEnabled = true` w ustawieniach.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>Nie znaleziono odpowiedniego kodu dla: „{0}"</value></data>
+  <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ Uruchomiono wyłącznie wyszukiwanie po słowach kluczowych: wyszukiwanie semantyczne jest wyłączone w ustawieniach, więc kod pasujący tylko znaczeniem nie został sprawdzony.</value></data>
+  <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ Uruchomiono wyłącznie wyszukiwanie po słowach kluczowych: model osadzeń „{0}” nie odpowiedział, więc kod pasujący tylko znaczeniem nie został sprawdzony. Zobacz /diagnostics.</value></data>
 
   <!-- Agent memory -->
   <data name="UpdateMemoryNoProject" xml:space="preserve"><value>Nie znaleziono pliku .sln ani folderu .inferpal — nie można znaleźć pliku pamięci.</value></data>
@@ -791,6 +800,9 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="TooltipXrayGauge" xml:space="preserve"><value>Użycie kontekstu — kliknij, aby otworzyć panel X-Ray</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>Zamknij</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Przejrzyj proponowane zmiany w edytorze — ✓/✗ przy każdej zmianie (✓✓/✗✗ dla wszystkich). Pisanie zamyka podgląd.</value></data>
+  <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ Podgląd odrzucony (dokument się zmienił) — nic nie zastosowano. Uruchom akcję ponownie, aby ją wygenerować.</value></data>
+  <data name="InlineDiffPreviewDrifted" xml:space="preserve"><value>✋ Nic nie zastosowano: dokument zmienił się między Twoją decyzją a edycją. Uruchom akcję ponownie.</value></data>
+  <data name="InlineDiffPreviewApplyFailed" xml:space="preserve"><value>✋ Nie można zastosować zaakceptowanych zmian.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Użycie: `/hardware &lt;gb&gt;` — liczba dodatnia, np. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Budżet VRAM ustawiony na {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Profil sprzętu</value></data>

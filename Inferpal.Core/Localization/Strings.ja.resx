@@ -14,6 +14,9 @@
   <data name="SectionBehavior" xml:space="preserve"><value>動作</value></data>
   <data name="SectionInlineCompletions" xml:space="preserve"><value>インライン補完</value></data>
   <data name="LabelInlineCompletionMode" xml:space="preserve"><value>パフォーマンスモード：</value></data>
+  <data name="FimModeFast" xml:space="preserve"><value>高速 (128 tok · 300 ms)</value></data>
+  <data name="FimModeDefault" xml:space="preserve"><value>既定 (256 tok · 600 ms)</value></data>
+  <data name="FimModeHighAccuracy" xml:space="preserve"><value>高精度 (512 tok · 1 s)</value></data>
   <data name="HintInlineCompletionMode" xml:space="preserve"><value>高速：128トークン、遅延300ms — 低遅延・短い提案。デフォルト：256トークン、遅延600ms — バランス。高精度：512トークン、遅延1s — 最高品質・低速。</value></data>
   <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>ゴーストテキスト補完を有効にする</value></data>
   <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>有効にすると、Inferpal は入力中に AI 生成のコード提案をインライン表示します（ゴーストテキスト）。Tab で承認、Escape で却下。</value></data>
@@ -65,6 +68,7 @@
   <data name="BtnCancel" xml:space="preserve"><value>✕ キャンセル</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} 個のフィールドを無視しました（値を読み取れません）：{1}</value></data>
+  <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ 権限ルール {0} 件を読み取れず、適用されていません。/diagnostics を確認してください。</value></data>
   <data name="BtnSend" xml:space="preserve"><value>送信 →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>モデル一覧を更新</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>会話を .md または .txt にエクスポート</value></data>
@@ -240,6 +244,8 @@
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>セッション</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>（反復制限に達しました — 20 ターン）</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ エージェントは反復回数の上限で停止しました。以下はそれまでに集めた内容の要約であり、完了したタスクではありません。</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ エージェントが同じツール呼び出しを繰り返したため停止しました。以下はそれまでに集めた内容の要約です。</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>（ループ検出 — 同一のツール呼び出しが繰り返されたため停止します）</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>（サーキットブレーカー開放 — 繰り返し失敗のため 5 分間再試行を停止します）</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 完了 — {0}</value></data>
@@ -456,6 +462,7 @@
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 コミットメッセージ</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>メッセージが下に事前入力されています — 必要に応じて編集し、**Enter** でコミット。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>プロジェクトルールがありません。`.inferpal/rules/*.md` を作成するか `/rules init` を実行してください。</value></data>
+  <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} 個のファイルを読み取れなかったため、適用されていません: {1}。原因は /diagnostics にあります。</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>レビューチェックがありません。`.inferpal/checks/*.md` を作成するか `/checks init` を実行してください。</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**プロジェクトルール** (`.inferpal/rules`):</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**レビューチェック** (`.inferpal/checks`):</value></data>
@@ -494,6 +501,8 @@
 インデックスを作成するには `/index rebuild` を使用するか、バックグラウンド処理が完了するまでお待ちください。
 RAGが無効な場合は、設定で `ragEnabled = true` に設定してください。</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>「{0}」に関連するコードが見つかりませんでした</value></data>
+  <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ キーワード検索のみが実行されました。設定でセマンティック検索が無効になっているため、意味だけで一致するコードは検索されていません。</value></data>
+  <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ キーワード検索のみが実行されました。埋め込みモデル「{0}」が応答しなかったため、意味だけで一致するコードは検索されていません。/diagnostics を確認してください。</value></data>
 
   <!-- Agent memory -->
   <data name="UpdateMemoryNoProject" xml:space="preserve"><value>.sln ファイルまたは .inferpal フォルダが見つかりません — メモリファイルを見つけられません。</value></data>
@@ -791,6 +800,9 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="TooltipXrayGauge" xml:space="preserve"><value>コンテキスト使用量 — クリックで X-Ray パネルを開きます</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>閉じる</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 エディター内で提案された変更を確認してください — 各変更に ✓/✗（すべては ✓✓/✗✗）。入力するとプレビューは閉じます。</value></data>
+  <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ プレビューを破棄しました（ドキュメントが変更されました）— 何も適用されていません。もう一度アクションを実行してください。</value></data>
+  <data name="InlineDiffPreviewDrifted" xml:space="preserve"><value>✋ 何も適用されていません: 決定と編集の間にドキュメントが変更されました。もう一度アクションを実行してください。</value></data>
+  <data name="InlineDiffPreviewApplyFailed" xml:space="preserve"><value>✋ 承認された変更を適用できませんでした。</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>使い方: `/hardware &lt;gb&gt;` — 正の数、例: `/hardware 24`。</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ VRAM バジェットを {0} GB に設定しました。</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## ハードウェアプロファイル</value></data>

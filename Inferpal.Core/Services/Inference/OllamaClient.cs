@@ -199,15 +199,26 @@ internal class OllamaClient : InferenceProviderBase
 
     /// <summary>Pings <c>/api/tags</c> with a 5-second timeout to verify Ollama is reachable.
     /// Traverses the breaker cooldown (see the OpenAI-compatible sibling): the probe is the one
-    /// call that can notice the server coming back, and a success closes the circuit.</summary>
+    /// call that can notice the server coming back, and a success closes the circuit.
+    /// The 2xx concludes nothing on its own: the body must carry <c>models</c>, the property that
+    /// signs the native API - see <see cref="ConfirmsBackendPayload"/> for the measurement.</summary>
     public override async Task<bool> CheckConnectionAsync(string url, CancellationToken ct)
     {
+        var endpoint = $"{url.TrimEnd('/')}/api/tags";
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            using var response = await _http.GetAsync($"{url.TrimEnd('/')}/api/tags", cts.Token);
-            if (response.IsSuccessStatusCode) { ResetCircuit(); return true; }
+            using var response = await _http.GetAsync(endpoint, cts.Token);
+            if (response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cts.Token);
+                if (ConfirmsBackendPayload(endpoint, body, "models", "Ollama.CheckConnection"))
+                {
+                    ResetCircuit();
+                    return true;
+                }
+            }
             RecordFailure();
             return false;
         }
@@ -519,7 +530,11 @@ internal record AgentResult(
     /// <summary>Full conversation history including all tool turns, ready for the next call.</summary>
     List<ChatMessageDto> UpdatedHistory,
     int                  TokensUsed   = 0,
-    int                  PromptTokens = 0);
+    int                  PromptTokens = 0,
+    /// <summary>The loop stopped because the model kept repeating the same tool batch. The answer
+    /// stays (a summary of what had been gathered): this flag only says it is not a task carried to
+    /// its end. Without it, the two came out the same.</summary>
+    bool                 WasLoopDetected = false);
 
 /// <summary>A single tool invocation within an agentic loop run.</summary>
 internal record ToolExecution(

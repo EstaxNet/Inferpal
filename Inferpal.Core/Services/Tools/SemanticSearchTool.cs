@@ -81,12 +81,12 @@ internal sealed class SemanticSearchTool : ITool
         float[]? queryEmbedding = null;
         List<(RagChunk Chunk, float Score)>? cachedResults = null;
 
+        var model = string.IsNullOrEmpty(_config.RagEmbeddingModel)
+            ? "nomic-embed-text"
+            : _config.RagEmbeddingModel;
+
         if (_config.RagEnabled)
         {
-            var model = string.IsNullOrEmpty(_config.RagEmbeddingModel)
-                ? "nomic-embed-text"
-                : _config.RagEmbeddingModel;
-
             // Try shadow cache first — free if query matches exactly
             var (shadowEmb, shadowRes) = _index.TryGetShadow(query);
             if (shadowEmb is not null)
@@ -114,7 +114,13 @@ internal sealed class SemanticSearchTool : ITool
         }
 
         if (results.Count == 0)
-            return Strings.RagNoResults(query);
+            // A "nothing found" does not say the same thing depending on whether the FULL search
+            // ran or only its lexical half did. A model reading a flat negative concludes the code
+            // does not exist and stops looking.
+            return SearchDegradation.Explain(
+                Strings.RagNoResults(query),
+                SearchDegradation.Classify(_config.RagEnabled, queryEmbedding),
+                model);
 
         // ── Format results ────────────────────────────────────────────────────
         var sb     = new StringBuilder();

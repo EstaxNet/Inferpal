@@ -14,6 +14,9 @@
   <data name="SectionBehavior" xml:space="preserve"><value>Comportamiento</value></data>
   <data name="SectionInlineCompletions" xml:space="preserve"><value>Completaciones en línea</value></data>
   <data name="LabelInlineCompletionMode" xml:space="preserve"><value>Modo de rendimiento:</value></data>
+  <data name="FimModeFast" xml:space="preserve"><value>Rápido (128 tok · 300 ms)</value></data>
+  <data name="FimModeDefault" xml:space="preserve"><value>Predeterminado (256 tok · 600 ms)</value></data>
+  <data name="FimModeHighAccuracy" xml:space="preserve"><value>Alta precisión (512 tok · 1 s)</value></data>
   <data name="HintInlineCompletionMode" xml:space="preserve"><value>Rápido: 128 tokens, retardo 300 ms — Baja latencia, sugerencias cortas. Predeterminado: 256 tokens, retardo 600 ms — Equilibrado. Alta precisión: 512 tokens, retardo 1 s — Mejor calidad, más lento.</value></data>
   <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>Activar completaciones ghost-text</value></data>
   <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>Cuando está marcado, Inferpal muestra sugerencias de código generadas por IA en línea mientras escribe (ghost text). Tab para aceptar, Escape para descartar.</value></data>
@@ -68,6 +71,7 @@
   <data name="BtnCancel" xml:space="preserve"><value>✕ Cancelar</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Guardar</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} campo(s) ignorado(s) (valor ilegible): {1}</value></data>
+  <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ No se pudieron leer {0} regla(s) de permisos, y no están en vigor. Consulta /diagnostics.</value></data>
   <data name="BtnSend" xml:space="preserve"><value>Enviar →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>Actualizar la lista de modelos</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>Exportar la conversación a .md o .txt</value></data>
@@ -240,6 +244,8 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sesión</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(límite de iteraciones alcanzado — 20 turnos)</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ El agente se detuvo en su límite de iteraciones: lo siguiente resume lo que había reunido, no una tarea terminada.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ El agente repetía las mismas llamadas a herramientas y fue detenido: lo siguiente resume lo que había reunido.</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(bucle detectado — llamadas de herramientas idénticas repetidas, deteniéndose)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(disyuntor abierto — reintentos pausados 5 min tras fallos repetidos)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Listo — {0}</value></data>
@@ -456,6 +462,7 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 mensaje de commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Mensaje prellenado abajo — edita si es necesario y pulsa **Intro** para confirmar el commit.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Sin reglas de proyecto. Crea `.inferpal/rules/*.md` o ejecuta `/rules init`.</value></data>
+  <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ No se pudieron leer {0} archivo(s), por lo que NO se aplican: {1}. La causa está en /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Sin checks de revisión. Crea `.inferpal/checks/*.md` o ejecuta `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Reglas de proyecto** (`.inferpal/rules`):</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**Checks de revisión** (`.inferpal/checks`):</value></data>
@@ -494,6 +501,8 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
 Use `/index rebuild` para iniciar la indexación o espere el proceso en segundo plano.
 Si RAG está desactivado, configure `ragEnabled = true` en los ajustes.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>No se encontró código relevante para: «{0}»</value></data>
+  <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ Solo se ejecutó la búsqueda por palabras clave: la búsqueda semántica está desactivada en los ajustes, así que el código que coincide solo por significado no se ha mirado.</value></data>
+  <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ Solo se ejecutó la búsqueda por palabras clave: el modelo de embeddings «{0}» no respondió, así que el código que coincide solo por significado no se ha mirado. Consulta /diagnostics.</value></data>
 
   <!-- Agent memory -->
   <data name="UpdateMemoryNoProject" xml:space="preserve"><value>No se encontró .sln ni carpeta .inferpal — no se puede localizar el archivo de memoria.</value></data>
@@ -791,6 +800,9 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="TooltipXrayGauge" xml:space="preserve"><value>Uso del contexto — haga clic para abrir el panel X-Ray</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>Cerrar</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Revisa los cambios propuestos en el editor — ✓/✗ en cada cambio (✓✓/✗✗ para todos). Escribir cierra la vista previa.</value></data>
+  <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ Vista previa descartada (el documento cambió): no se aplicó nada. Vuelve a ejecutar la acción para regenerarla.</value></data>
+  <data name="InlineDiffPreviewDrifted" xml:space="preserve"><value>✋ No se aplicó nada: el documento cambió entre tu decisión y la edición. Vuelve a ejecutar la acción.</value></data>
+  <data name="InlineDiffPreviewApplyFailed" xml:space="preserve"><value>✋ No se pudieron aplicar los cambios aceptados.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Uso: `/hardware &lt;gb&gt;` — un número positivo, p. ej. `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Presupuesto de VRAM establecido en {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Perfil de hardware</value></data>

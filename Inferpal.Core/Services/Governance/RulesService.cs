@@ -35,19 +35,18 @@ internal sealed record ProjectRule(
 internal static class RulesService
 {
     /// <summary>Reads every <c>*.md</c> rule from <paramref name="rulesDir"/>. Missing dir ⇒ empty.</summary>
-    public static IReadOnlyList<ProjectRule> Load(string rulesDir)
+    public static IReadOnlyList<ProjectRule> Load(string rulesDir) => Load(rulesDir, out _);
+
+    /// <summary>
+    /// Same, reporting the <b>unreadable</b> files. ⚠ A rule that cannot be read stops constraining
+    /// the model, and the injection path can say nothing about it — the <c>/rules</c> listing is
+    /// what shows it. See <see cref="MarkdownFolder"/>.
+    /// </summary>
+    public static IReadOnlyList<ProjectRule> Load(string rulesDir, out IReadOnlyList<string> unreadable)
     {
-        if (string.IsNullOrEmpty(rulesDir) || !Directory.Exists(rulesDir))
-            return [];
-
         var rules = new List<ProjectRule>();
-        foreach (var file in Directory.EnumerateFiles(rulesDir, "*.md", SearchOption.TopDirectoryOnly)
-                                      .OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+        foreach (var (file, text) in MarkdownFolder.ReadAll(rulesDir, "RulesService.Load", out unreadable))
         {
-            string text;
-            try { text = File.ReadAllText(file, Encoding.UTF8); }
-            catch { continue; }
-
             var (fm, body) = ParseFrontMatter(text);
             if (string.IsNullOrWhiteSpace(body)) continue;
 

@@ -371,18 +371,53 @@ internal sealed class PermissionPolicy
         }
     }
 
-    /// <summary>Parses newline-separated DSL text into rules, preserving order and skipping bad lines.</summary>
-    public static IReadOnlyList<PermissionRule> ParseRules(string? text)
+    /// <summary>
+    /// Parses newline-separated DSL text into rules, preserving order and skipping bad lines -
+    /// <b>and recording each one it skipped.</b>
+    /// </summary>
+    /// <remarks>
+    /// Skipping rather than throwing is the right arbitration: one faulty line must not disable the
+    /// whole ruleset. What was missing was SAYING so. A user who writes
+    /// <c>deny run_command *.env</c> - an invalid regular expression, <c>*</c> cannot open a
+    /// pattern - believes they put a restriction in place: it does not exist, and nothing anywhere
+    /// told them.
+    ///
+    /// This is not a security hole - the real boundary remains the approval prompt, where a human
+    /// reads the raw command - but a stated intent that disappeared without a trace. And the remedy
+    /// was already in this file, for the branch next door: an <c>allow</c> rule coming from the
+    /// overlay is refused <i>and recorded</i>.
+    /// </remarks>
+    public static IReadOnlyList<PermissionRule> ParseRules(string? text) => ParseRules(text, out _);
+
+    /// <summary>
+    /// Same, returning the skipped lines separately. The settings panel NAMES them at save time:
+    /// <c>/diagnostics</c> answers whoever thinks to open it, and nobody does while writing a rule
+    /// they believe they just put in place.
+    /// </summary>
+    public static IReadOnlyList<PermissionRule> ParseRules(string? text, out IReadOnlyList<string> dropped)
     {
+        var skipped = new List<string>();
+        dropped = skipped;
         if (string.IsNullOrWhiteSpace(text)) return [];
+
         var rules = new List<PermissionRule>();
         foreach (var line in text.Split('\n'))
         {
             var rule = ParseLine(line);
-            if (rule is not null) rules.Add(rule);
+            if (rule is not null) { rules.Add(rule); continue; }
+
+            // What the parser skips NORMALLY (blank line, comment) is not a rejection. DroppedLine
+            // owns that test; it reports whether it recorded, rather than letting the caller decide
+            // again - two copies of the same test end up diverging.
+            if (Diagnostics.DroppedLine("Permission", "Rule ignored (malformed line or invalid regex)", line))
+                skipped.Add(line.Trim());
         }
         return rules;
     }
+
+    // IsIgnorable and Excerpt lived here. They moved into Diagnostics.DroppedLine as soon as the
+    // third parser needed them: three copies of one decision is a copy someone will forget to fix -
+    // and forgetting it three times is exactly why those lines were mute.
 
     /// <summary>
     /// Parses the workspace <c>.inferpal/permissions.json</c> overlay — a JSON object with a
@@ -404,13 +439,27 @@ internal sealed class PermissionPolicy
         {
             using var doc = JsonDocument.Parse(json);
             if (!doc.RootElement.TryGetProperty("rules", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            {
+                Diagnostics.Record("Permission",
+                    "Workspace overlay has no \"rules\" array: none of its restrictions are in force.");
                 return [];
+            }
             var rules = new List<PermissionRule>();
             foreach (var item in arr.EnumerateArray())
             {
-                if (item.ValueKind != JsonValueKind.String) continue;
+                if (item.ValueKind != JsonValueKind.String)
+                {
+                    Diagnostics.Record("Permission",
+                        $"Workspace overlay: ignored a non-string entry in \"rules\" ({item.ValueKind}).");
+                    continue;
+                }
                 var rule = ParseLine(item.GetString());
-                if (rule is null) continue;
+                if (rule is null)
+                {
+                    Diagnostics.DroppedLine("Permission",
+                        "Workspace overlay: rule ignored (malformed line or invalid regex)", item.GetString());
+                    continue;
+                }
                 if (rule.Decision == PermissionDecision.Allow)
                 {
                     Diagnostics.Record("Permission",
@@ -421,8 +470,13 @@ internal sealed class PermissionPolicy
             }
             return rules;
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            // The worse of the two silences: an overlay with broken JSON produced ZERO deny rules.
+            // A project shipping its permissions.json to restrict itself lost every restriction,
+            // and nothing - not even reading the file, which succeeded - said so.
+            Diagnostics.Record("Permission",
+                $"Workspace overlay is not valid JSON: none of its deny rules are in force ({ex.Message}).");
             return [];
         }
     }

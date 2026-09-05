@@ -19,19 +19,15 @@ internal sealed record ReviewCheck(string Name, string Criteria);
 internal static class ChecksService
 {
     /// <summary>Reads every <c>*.md</c> check from <paramref name="checksDir"/>. Missing dir ⇒ empty.</summary>
-    public static IReadOnlyList<ReviewCheck> Load(string checksDir)
+    public static IReadOnlyList<ReviewCheck> Load(string checksDir) => Load(checksDir, out _);
+
+    /// <summary>Same, reporting the unreadable files — otherwise <c>/check</c> reviews a diff
+    /// against fewer criteria than the user believes. See <see cref="MarkdownFolder"/>.</summary>
+    public static IReadOnlyList<ReviewCheck> Load(string checksDir, out IReadOnlyList<string> unreadable)
     {
-        if (string.IsNullOrEmpty(checksDir) || !Directory.Exists(checksDir))
-            return [];
-
         var checks = new List<ReviewCheck>();
-        foreach (var file in Directory.EnumerateFiles(checksDir, "*.md", SearchOption.TopDirectoryOnly)
-                                      .OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+        foreach (var (file, text) in MarkdownFolder.ReadAll(checksDir, "ChecksService.Load", out unreadable))
         {
-            string text;
-            try { text = File.ReadAllText(file, Encoding.UTF8); }
-            catch { continue; }
-
             var (fm, body) = RulesService.ParseFrontMatter(text);
             if (string.IsNullOrWhiteSpace(body)) continue;
 

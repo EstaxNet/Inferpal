@@ -54,6 +54,43 @@ internal static class Diagnostics
         catch { /* diagnostics must never throw — it runs inside catch blocks */ }
     }
 
+    /// <summary>
+    /// Records a line the user wrote - a permission rule, a custom tool, a command template - that
+    /// the product could not use. Blank lines and <c>#</c> comments are <b>never</b> reported.
+    /// </summary>
+    /// <remarks>
+    /// The gesture repeated itself in three parsers, and it was missing from all three. Skipping a
+    /// faulty line rather than throwing the whole set away is the right arbitration - saying so is
+    /// what was missing: a user who writes a rule, a tool or a command believes it is in place.
+    ///
+    /// Two precautions, because a noisy channel stops being read: what the parsers skip NORMALLY
+    /// (blank line, comment) is not reported, and the line is bounded - it comes from the settings
+    /// and can be long.
+    ///
+    /// The text is in ENGLISH, like this whole channel: it is read by users of all ten languages
+    /// and it also carries exception messages. Locked by rule 13 of ConventionCoverageTests.
+    /// </remarks>
+    /// <returns><c>true</c> when the line was actually reported - i.e. it was a real rejection and
+    /// not something the parsers skip normally. Callers that also want to <b>count</b> rejections
+    /// read this rather than re-implementing the same test.</returns>
+    internal static bool DroppedLine(string context, string reason, string? line)
+    {
+        // Two net472 traps, and this file is shared BY SOURCE with Inferpal.InProc
+        // (<Compile Link>) - so it compiles under both:
+        //  - StartsWith(char) does not exist in net472: the string overload is the only common one;
+        //  - net472 reference assemblies carry no [NotNullWhen] on IsNullOrWhiteSpace, so
+        //    nullability flow does not pass through it and the dereference comes out as CS8602 -
+        //    an error in Release only, where warnings are errors. Hence the explicit null test.
+        if (line is null) return false;
+        var trimmed = line.TrimStart();
+        if (trimmed.Length == 0 || trimmed.StartsWith("#", StringComparison.Ordinal)) return false;
+
+        var excerpt = line.Trim();
+        if (excerpt.Length > 120) excerpt = excerpt[..120] + "…";
+        Record(context, $"{reason}: {excerpt}");
+        return true;
+    }
+
     /// <summary>Snapshot of the in-memory ring, oldest first.</summary>
     internal static IReadOnlyList<DiagnosticEntry> Snapshot()
     {

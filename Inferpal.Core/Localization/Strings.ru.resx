@@ -14,6 +14,9 @@
   <data name="SectionBehavior" xml:space="preserve"><value>Поведение</value></data>
   <data name="SectionInlineCompletions" xml:space="preserve"><value>Встроенные завершения</value></data>
   <data name="LabelInlineCompletionMode" xml:space="preserve"><value>Режим производительности:</value></data>
+  <data name="FimModeFast" xml:space="preserve"><value>Быстрый (128 tok · 300 ms)</value></data>
+  <data name="FimModeDefault" xml:space="preserve"><value>По умолчанию (256 tok · 600 ms)</value></data>
+  <data name="FimModeHighAccuracy" xml:space="preserve"><value>Высокая точность (512 tok · 1 s)</value></data>
   <data name="HintInlineCompletionMode" xml:space="preserve"><value>Быстрый: 128 токенов, задержка 300 мс — Низкая задержка, короткие предложения. По умолчанию: 256 токенов, задержка 600 мс — Сбалансированный. Высокая точность: 512 токенов, задержка 1 с — Лучшее качество, медленнее.</value></data>
   <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>Включить ghost-text дополнения</value></data>
   <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>Если включено, Inferpal показывает встроенные предложения кода, генерируемые ИИ во время набора (ghost text). Tab — принять, Escape — отклонить.</value></data>
@@ -65,6 +68,7 @@
   <data name="BtnCancel" xml:space="preserve"><value>✕ Отмена</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Сохранить</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>Пропущено полей: {0} (нечитаемое значение): {1}</value></data>
+  <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ Не удалось прочитать правил доступа: {0} — они не действуют. См. /diagnostics.</value></data>
   <data name="BtnSend" xml:space="preserve"><value>Отправить →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>Обновить список моделей</value></data>
   <data name="TooltipExport" xml:space="preserve"><value>Экспортировать разговор в .md или .txt</value></data>
@@ -240,6 +244,8 @@
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>сессия</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(достигнут лимит итераций — 20 ходов)</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Агент остановился на пределе итераций: ниже — сводка собранного, а не завершённая задача.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Агент повторял одни и те же вызовы инструментов и был остановлен: ниже — сводка собранного.</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(обнаружена петля — одинаковые вызовы инструментов повторяются, остановка)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(автоматический выключатель открыт — повторные попытки приостановлены на 5 мин)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Готово — {0}</value></data>
@@ -456,6 +462,7 @@
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 сообщение коммита</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Сообщение заполнено ниже — при необходимости отредактируйте, затем нажмите **Enter** для коммита.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Нет правил проекта. Создайте `.inferpal/rules/*.md` или выполните `/rules init`.</value></data>
+  <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать файлов: {0} — они НЕ применяются: {1}. Причина — в /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Нет проверок ревью. Создайте `.inferpal/checks/*.md` или выполните `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Правила проекта** (`.inferpal/rules`):</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**Проверки ревью** (`.inferpal/checks`):</value></data>
@@ -494,6 +501,8 @@
 Используйте `/index rebuild` для запуска индексации или дождитесь фонового прохода.
 Если RAG отключён, установите `ragEnabled = true` в настройках.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>Соответствующий код не найден для: «{0}»</value></data>
+  <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ Выполнен только поиск по ключевым словам: семантический поиск отключён в настройках, поэтому код, совпадающий лишь по смыслу, не рассматривался.</value></data>
+  <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ Выполнен только поиск по ключевым словам: модель эмбеддингов «{0}» не ответила, поэтому код, совпадающий лишь по смыслу, не рассматривался. См. /diagnostics.</value></data>
 
   <!-- Agent memory -->
   <data name="UpdateMemoryNoProject" xml:space="preserve"><value>Файл .sln или папка .inferpal не найдены — невозможно найти файл памяти.</value></data>
@@ -791,6 +800,9 @@ ollama serve
   <data name="TooltipXrayGauge" xml:space="preserve"><value>Использование контекста — нажмите, чтобы открыть панель X-Ray</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>Закрыть</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Просмотрите предложенные изменения в редакторе — ✓/✗ для каждого изменения (✓✓/✗✗ для всех). Ввод текста закрывает предпросмотр.</value></data>
+  <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ Предпросмотр отменён (документ изменился) — ничего не применено. Запустите действие снова, чтобы сгенерировать его заново.</value></data>
+  <data name="InlineDiffPreviewDrifted" xml:space="preserve"><value>✋ Ничего не применено: документ изменился между вашим решением и правкой. Запустите действие снова.</value></data>
+  <data name="InlineDiffPreviewApplyFailed" xml:space="preserve"><value>✋ Не удалось применить принятые изменения.</value></data>
   <data name="HardwareUsage" xml:space="preserve"><value>Использование: `/hardware &lt;gb&gt;` — положительное число, например `/hardware 24`.</value></data>
   <data name="HardwareBudgetSet" xml:space="preserve"><value>✅ Бюджет VRAM установлен на {0} GB.</value></data>
   <data name="HardwareReportHeading" xml:space="preserve"><value>## Профиль оборудования</value></data>

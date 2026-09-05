@@ -56,6 +56,10 @@ internal sealed class McpToolService : IAsyncDisposable
 
     private List<ServerEntry> _servers = [];
     private IReadOnlyList<McpServerStatus> _failed = [];   // servers that could not be started at all
+    // Entries REJECTED while reading the configuration: they never were servers, so _failed could
+    // not carry them - and they appeared nowhere. They join the same snapshot, so both front-ends
+    // render them without a line of extra code.
+    private IReadOnlyList<McpServerStatus> _rejected = [];
     private volatile IReadOnlyList<ITool> _tools = [];
     private volatile IReadOnlyList<McpServerStatus> _status = [];
     // volatile: re-checked after awaits on threads other than the disposing one.
@@ -120,7 +124,8 @@ internal sealed class McpToolService : IAsyncDisposable
                 return;
             }
 
-            var servers = McpServerConfig.Parse(_config.McpServersJson);
+            var servers = McpServerConfig.Parse(_config.McpServersJson, out var rejected);
+            _rejected = [.. rejected.Select(r => new McpServerStatus(r.Name, false, 0, r.Reason))];
             var entries = new List<ServerEntry>();
             var failed  = new List<McpServerStatus>();
 
@@ -293,6 +298,7 @@ internal sealed class McpToolService : IAsyncDisposable
         _tools  = _servers.SelectMany(e => e.Tools).ToList();
         _status =
         [
+            .. _rejected,
             .. _failed,
             .. _servers.Select(e => new McpServerStatus(e.Config.Name, e.Connected, e.Tools.Count, e.Error)),
         ];
@@ -301,9 +307,10 @@ internal sealed class McpToolService : IAsyncDisposable
     private async Task TeardownAsync()
     {
         var old = _servers;
-        _servers = [];
-        _failed  = [];
-        _tools   = [];
+        _servers  = [];
+        _failed   = [];
+        _rejected = [];
+        _tools    = [];
         foreach (var entry in old)
             await entry.Client.DisposeAsync().ConfigureAwait(false);
     }

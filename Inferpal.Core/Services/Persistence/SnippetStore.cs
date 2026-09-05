@@ -15,7 +15,7 @@ internal static class SnippetStore
 {
     private const int MaxSnippets = 100;
 
-    private static readonly AppDataJsonFile<List<Snippet>> _file = new("snippets.json", "SnippetStore");
+    private static readonly AppDataJsonFile<List<Snippet>> _file = new("snippets.json", "SnippetStore", preserveUnreadable: true);
 
     // Overridden in tests to avoid writing to %APPDATA%.
     internal static string? _fileOverride

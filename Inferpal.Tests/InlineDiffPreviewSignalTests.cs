@@ -41,6 +41,42 @@ public class InlineDiffPreviewSignalTests : IDisposable
         Assert.Equal("new", read.NewText);
     }
 
+    // The sentences the renderer cannot compose.
+    //
+    // Inferpal.InProc targets net472 and does not reference the Core: it has neither Strings nor
+    // satellites. Without this transport its three exits that apply nothing stay mute - a tick
+    // clicked with no effect, a keystroke that throws the rewrite away - and their only trace falls
+    // into the in-proc Diagnostics ring, which /diagnostics (out-of-process host) does not read.
+
+    [Fact]
+    public void Request_CarriesTheNoticesTheRendererCannotCompose()
+    {
+        var notices = new InlineDiffNotices("abandoned", "drifted", "failed");
+
+        InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new", notices);
+        var read = InlineDiffPreviewSignal.TryReadRequestFor(FilePath);
+
+        Assert.NotNull(read);
+        Assert.Equal(notices, read.Notices);
+    }
+
+    /// <summary>
+    /// A request with no sentences (a host older than the renderer, or a caller that does not pass
+    /// them) must read back, not throw: the preview works, it just stays as mute as before. The
+    /// failure to avoid is a renderer tripping over a missing field - it would cost the WHOLE
+    /// preview for three sentences.
+    /// </summary>
+    [Fact]
+    public void Request_WithoutNotices_StillReadsBack()
+    {
+        InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
+        var read = InlineDiffPreviewSignal.TryReadRequestFor(FilePath);
+
+        Assert.NotNull(read);
+        Assert.Null(read.Notices);
+        Assert.Equal("new", read.NewText);
+    }
+
     [Fact]
     public void Request_ForAnotherFile_IsInvisible()
     {
