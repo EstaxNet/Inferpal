@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using Inferpal.Config;
+using Inferpal.Services;
 using Inferpal.Services.Lsp;
 using Inferpal.Services.Rag;
 using Xunit;
@@ -11,6 +12,8 @@ namespace Inferpal.Tests;
 // while the pass runs no longer stays stale until the next boot. The drain (and the normal watcher
 // path) reuses the embeddings of chunks whose hash is unchanged instead of re-embedding
 // le fichier entier.
+// Serialized: two tests here read the Diagnostics ring buffer, which is static.
+[Collection("Diagnostics")]
 public sealed class ProjectIndexServiceWatcherTests : IDisposable
 {
     // Redirects the SQLite database out of the real %AppData% for the whole test process (same
@@ -109,6 +112,61 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
             var chunks = await svc.GetFileChunksAsync(file, _root, CancellationToken.None);
             return chunks.Any(c => c.Content.Contains("AlphaRewritten"));
         }, "re-indexing of the file rewritten during the pass (post-SaveAsync drain)", () => svc.Status);
+    }
+
+    [Fact]
+    public async Task IndexingPass_ReportsTheFilesItSkipped_InsteadOfSwallowingThem()
+    {
+        // ⚠ The indexing loop's per-file catch said "skip unreadable files" and said it to NOBODY.
+        // That is what made a missing Roslyn chunker invisible for SIX versions: every .cs in the
+        // workspace was dropped whole, and the index reported itself ready. 1.6.6 fixed the cause;
+        // the silence that hid it stayed. This test closes the class, not the instance.
+        //
+        // ⚠ And it counts AGAINST THE TOTAL: "1 of 2" is a file accident, "2 of 2" is a systematic
+        // failure, and that difference is what was missing.
+        Diagnostics.Clear();
+
+        await File.WriteAllTextAsync(Path.Combine(_root, "Good.cs"),   SampleClass("Good"));
+        await File.WriteAllTextAsync(Path.Combine(_root, "Broken.cs"), SampleClass("Broken"));
+
+        var provider = new FakeInferenceProvider();
+        provider.OnEmbedding = text =>
+            text.Contains("Broken", StringComparison.Ordinal)
+                ? throw new InvalidOperationException("chunker exploded")
+                : [0.1f, 0.2f];
+
+        var svc = NewService(provider);
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "end of the pass", () => svc.Status);
+
+        var matches = Diagnostics.Snapshot()
+            .Where(e => e.Context == "ProjectIndexService" && e.Detail.Contains("skipped", StringComparison.Ordinal))
+            .ToList();
+        Assert.True(matches.Count > 0,
+            "The pass discarded a file without saying so: exactly the silence that hid the missing "
+            + "Roslyn chunker for six versions.");
+
+        // The count, the total, and the first cause observed - the three make the diagnosis.
+        var detail = matches[0].Detail;
+        Assert.Contains("1 of 2", detail, StringComparison.Ordinal);
+        Assert.Contains("Broken.cs", detail, StringComparison.Ordinal);
+        Assert.Contains("InvalidOperationException", detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task IndexingPass_SaysNothing_WhenItSkippedNothing()
+    {
+        // Reference arm: without it, "the pass speaks" would be green even if it spoke ALWAYS - and
+        // a line on every healthy pass is noise one learns to ignore.
+        Diagnostics.Clear();
+        await File.WriteAllTextAsync(Path.Combine(_root, "Fine.cs"), SampleClass("Fine"));
+
+        var svc = NewService(new FakeInferenceProvider());
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "end of the pass", () => svc.Status);
+
+        Assert.DoesNotContain(Diagnostics.Snapshot(),
+            e => e.Context == "ProjectIndexService" && e.Detail.Contains("skipped", StringComparison.Ordinal));
     }
 
     [Fact]

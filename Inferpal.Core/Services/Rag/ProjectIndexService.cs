@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using Inferpal.Config;
 using Inferpal.Services.Lsp;
 
@@ -309,6 +309,16 @@ internal sealed class ProjectIndexService : IDisposable
             }
 
             // ── Enumerate source files ────────────────────────────────────────
+            // ⚠ What the pass DISCARDED, and why. The per-file catch below said "skip unreadable
+            // files" and said it to nobody: that is what made a missing Roslyn chunker invisible for
+            // six versions - every .cs in the workspace was dropped whole, and the index reported
+            // itself ready. The cause was fixed in 1.6.6; the silence that hid it was not. A truly
+            // unreadable file is ordinary, so we do not speak per file: we count, and say it ONCE at
+            // the end of the pass with the first exception seen - the "n out of N" ratio is what
+            // makes a systematic failure readable at a glance.
+            var skipped      = 0;
+            var firstSkipped = string.Empty;
+
             var files = EnumerateSourceFiles(rootDir).ToList();
             if (files.Count == 0)
             {
@@ -373,7 +383,13 @@ internal sealed class ProjectIndexService : IDisposable
                     }
                 }
                 catch (OperationCanceledException) { throw; }
-                catch { /* skip unreadable files */ }
+                catch (Exception ex)
+                {
+                    // Still no PER-FILE trace: the loop sees thousands of them.
+                    skipped++;
+                    if (firstSkipped.Length == 0)
+                        firstSkipped = $"{Path.GetFileName(files[fi])} — {ex.GetType().Name}: {ex.Message}";
+                }
 
                 // Refresh the in-memory index every 20 files (merge — keep the boot-loaded
                 // entries for files not yet verified); the authoritative replace happens below.
@@ -388,6 +404,12 @@ internal sealed class ProjectIndexService : IDisposable
             // ── Persist final index ───────────────────────────────────────────
             await ApplyChunksAsync(newChunks, replaceAll: true, ct);
             await db.SaveAsync(newChunks, ct);
+            // ⚠ Reported even when the pass "succeeds": a full index built on zero files read is
+            // exactly the state that used to read as normal.
+            if (skipped > 0)
+                Diagnostics.Record("ProjectIndexService",
+                    $"{skipped} of {files.Count} file(s) skipped while indexing; first: {firstSkipped}");
+
             var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
             Status = $"RAG: ✅ {ChunkCount} chunks from {files.Count} files{embStatus}";
 
