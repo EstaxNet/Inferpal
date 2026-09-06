@@ -544,15 +544,32 @@
            8.0.x, and `FimRpcLoop.WriteResult` binds it through `JsonSerializer.Serialize` on the
            response path of every completion. It WAS in the package already — by accident of what
            the SDK happened not to prune, named by no rule and required by no gate, which is the
-           exact shape 1.6.0-1.6.5 shipped in. The other four 9.0.0.0 entries of that deps.json
-           (System.Collections.Immutable, System.Reflection.Metadata, System.IO.Pipelines,
-           System.Security.Cryptography.ProtectedData) stay OUT until a run demands them —
-           System.IO.Pipelines above all, which belongs to the host's transport stack and is
-           precisely what 1.6.4 should not have shipped. -->
+           exact shape 1.6.0-1.6.5 shipped in.
+
+           System.IO.Pipelines is here since 2026-09-07 because THE RUN CAME. This target used to
+           say the four remaining 9.0.0.0 entries would "stay OUT until a run demands them", and no
+           run ever did - because the gate only proved the sidecar STARTED. Driving a real framed
+           `fim/complete` through the packaged sidecar (stdin left OPEN) names it: the reference
+           sidecar answers in milliseconds, the packaged one answers NEVER, stays alive and exits 0
+           with an empty stderr - the exception dies in FimRpcLoop's Diagnostics.Swallow. Adding
+           this one assembly, and only this one, makes it answer; adding the other two
+           (System.Collections.Immutable, System.Reflection.Metadata) changes nothing - measured
+           one at a time and together. Ghost text was therefore SILENT on every package install
+           since 1.6.6.
+
+           This is not the 1.6.4 mistake, and the difference is measured rather than argued: the
+           out-of-process host serves System.IO.Pipelines from its own SharedAssemblies (both the
+           net8.0 and net10.0 legs carry it), so a copy sitting in the extension folder is INERT to
+           it - a managed host consults its TPA before probing a directory. The sidecar is a
+           separate process resolving from its own directory, and has no other way to get it. Same
+           reasoning, and the same kind of evidence, as System.Text.Json above.
+
+           System.Security.Cryptography.ProtectedData stays OUT: no run has demanded it. -->
       <_VsixSidecar Include="@(ReferenceCopyLocalPaths)"
                     Condition="'%(Extension)' == '.dll' And
                                ('%(Filename)' == 'System.Text.Json' Or
-                                '%(Filename)' == 'System.Text.Encodings.Web')">
+                                '%(Filename)' == 'System.Text.Encodings.Web' Or
+                                '%(Filename)' == 'System.IO.Pipelines')">
         <FlatName>%(Filename)%(Extension)</FlatName>
         <TargetPath>%(Filename)%(Extension)</TargetPath>
       </_VsixSidecar>
@@ -567,9 +584,13 @@
                   Condition="'%(Filename)%(Extension)' == 'System.Text.Json.dll'" />
       <_EncWebInVsix Include="@(VSIXSourceItem)"
                      Condition="'%(Filename)%(Extension)' == 'System.Text.Encodings.Web.dll'" />
+      <_PipelinesInVsix Include="@(VSIXSourceItem)"
+                        Condition="'%(Filename)%(Extension)' == 'System.IO.Pipelines.dll'" />
     </ItemGroup>
     <Error Condition="'@(_StjInVsix)' == ''"
            Text="RestoreSidecarRuntimeToVsix: the VSIX carries no System.Text.Json.dll. Inferpal.Fim is a separate process resolving through its own deps.json; without it the sidecar dies at startup and ghost-text FIM is dead on every package install, silently." />
+    <Error Condition="'@(_PipelinesInVsix)' == ''"
+           Text="RestoreSidecarRuntimeToVsix: the VSIX carries no System.IO.Pipelines.dll. Measured 2026-09-07: without it the packaged sidecar starts, stays alive and answers NO completion — ghost text silently dead on every package install. The host resolves its own copy from SharedAssemblies, so this one is inert to it." />
     <Error Condition="'@(_EncWebInVsix)' == ''"
            Text="RestoreSidecarRuntimeToVsix: the VSIX carries no System.Text.Encodings.Web.dll. System.Text.Json 9.0.0.0 binds it from JsonSerializer.Serialize, which the sidecar reaches on the response path of every completion; the shared net8 framework only serves 8.0.x." />
   </Target>
