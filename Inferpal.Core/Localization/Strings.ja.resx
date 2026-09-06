@@ -345,6 +345,9 @@
   <data name="BrowseError" xml:space="preserve"><value>⚠ 参照エラー：{0}</value></data>
 
   <!-- Export -->
+  <data name="ContextGaugeTooltip" xml:space="preserve"><value>コンテキスト: {0} / {1} トークン ({2}%) — クリックで X-Ray パネル</value></data>
+  <data name="ChatRoleYou" xml:space="preserve"><value>あなた</value></data>
+  <data name="ChatRoleAssistant" xml:space="preserve"><value>アシスタント</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ エクスポートするメッセージがありません。</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>`{0}` にエクスポートしました</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ エクスポート失敗：{0}</value></data>

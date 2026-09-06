@@ -56,17 +56,3 @@ export async function pickSession(host: HostClient, placeholder: string): Promis
   );
   return picked?.name;
 }
-
-/** Markdown rendering of a conversation for `/export` and the export command. */
-export function renderExport(transcript: readonly WvTranscriptItem[]): string {
-  const lines: string[] = [];
-  for (const item of transcript) {
-    if (item.role === 'tool') {
-      lines.push(`### 🔧 ${item.text}`, '', '```', item.toolOutput ?? '', '```', '');
-    } else {
-      const label = item.role === 'user' ? '## 🧑' : item.role === 'error' ? '## ⚠' : '## 🤖';
-      lines.push(`${label}${item.timestamp ? ` _${item.timestamp}_` : ''}`, '', item.text, '');
-    }
-  }
-  return lines.join('\n');
-}

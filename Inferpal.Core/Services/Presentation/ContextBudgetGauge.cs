@@ -1,4 +1,5 @@
-using System.Globalization;
+﻿using System.Globalization;
+using Inferpal.Localization;
 
 namespace Inferpal.Services.Presentation;
 
@@ -26,11 +27,16 @@ internal static class ContextBudgetGauge
                   : pct < 95 ? "#D06000"
                              : "#CC2222";
 
-        // Invariant: the tooltip is English ("Context:" / "tokens"), so the numbers stay invariant
-        // for a consistent, deterministic readout rather than a localized thousands separator.
-        var tooltip = $"Context: {promptTokens.ToString("N0", CultureInfo.InvariantCulture)} / " +
-                      $"{limit.ToString("N0", CultureInfo.InvariantCulture)} tokens " +
-                      $"({pct.ToString("F0", CultureInfo.InvariantCulture)}%)";
+        // ⚠ This was English, with invariant separators, and the original comment justified the
+        // English by the NUMBERS ("a consistent, deterministic readout") — an argument that says
+        // nothing about the language. Meanwhile the VS Code panel said the same thing, translated
+        // and formatted for the locale, about an element that does exactly the same thing on both
+        // sides (clicking it opens the X-Ray). The sentence is now the SAME, word for word, lifted
+        // from the extension's l10n bundles.
+        var tooltip = Strings.ContextGaugeTooltip(
+            promptTokens.ToString("N0", CultureInfo.CurrentCulture),
+            limit.ToString("N0", CultureInfo.CurrentCulture),
+            pct.ToString("F0", CultureInfo.CurrentCulture));
 
         return new ContextBudget(pct, color, tooltip);
     }

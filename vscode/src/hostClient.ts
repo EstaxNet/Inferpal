@@ -17,6 +17,8 @@ import {
   ChatSendResult,
   CodeActionParams,
   CodeActionResult,
+  ChatExportParams,
+  ConnectionCheckResult,
   DocumentParams,
   EditResultDto,
   IndexStatusResult,
@@ -36,6 +38,7 @@ import {
   SlashCommandResult,
   StepUpdateNotice,
   TextNote,
+  ThinkingNote,
   ToolNotice,
   XRayPanel,
   ConfigUpdateResult,
@@ -59,7 +62,10 @@ export interface EditorDelegate {
 /** Streamed chat events (host notifications) fanned out to the UI. */
 export interface ChatEvents {
   onToken?(text: string): void;
-  onThinking?(text: string): void;
+  /** `text` is the throttled rolling tail of the model's reasoning on the agent path, and null in
+   *  plain chat - where surfacing a reasoning model's whole deliberation reads as stray output.
+   *  The Core decides which; this is only the wire. */
+  onThinking?(text: string | null): void;
   onStep?(text: string): void;
   onPlan?(plan: PlanNotice): void;
   onStepUpdate?(update: StepUpdateNotice): void;
@@ -242,7 +248,7 @@ export class HostClient {
 
     // ── Streamed chat notifications ─────────────────────────────────────────
     conn.onNotification('chat/token', (n: TextNote) => this.events.onToken?.(n.text));
-    conn.onNotification('chat/thinking', (n: TextNote) => this.events.onThinking?.(n.text));
+    conn.onNotification('chat/thinking', (n: ThinkingNote) => this.events.onThinking?.(n.text ?? null));
     conn.onNotification('chat/step', (n: TextNote) => this.events.onStep?.(n.text));
     conn.onNotification('chat/plan', (n: PlanNotice) => this.events.onPlan?.(n));
     conn.onNotification('chat/stepUpdate', (n: StepUpdateNotice) => this.events.onStepUpdate?.(n));
@@ -370,12 +376,23 @@ export class HostClient {
     }
   }
 
-  modelsList(): Promise<string[]> {
-    return this.connection().sendRequest<string[]>('models/list');
+  /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved
+   *  configuration; the settings panel passes what its form currently holds, because a refresh that
+   *  lists the previous URL's models is a control that answers about something else. */
+  modelsList(overrides?: { baseUrl?: string; provider?: string; apiKey?: string }): Promise<string[]> {
+    return this.connection().sendRequest<string[]>('models/list', overrides ?? {});
   }
 
-  connectionCheck(): Promise<boolean> {
-    return this.connection().sendRequest<boolean>('connection/check');
+  /** Renders the export document - the same one the Visual Studio window produces, because it is
+   *  the same Core exporter. The adapter picks the format and supplies its bubbles. */
+  chatExport(params: ChatExportParams): Promise<string> {
+    return this.connection().sendRequest<string>('chat/export', params);
+  }
+
+  /** Probes `baseUrl` - the value in the form, not the saved one - and names the backend that
+   *  answered. Omitting it falls back to the saved configuration. */
+  connectionCheck(baseUrl?: string): Promise<ConnectionCheckResult> {
+    return this.connection().sendRequest<ConnectionCheckResult>('connection/check', { baseUrl });
   }
 
   /** Connection badge for the header (reachability + VRAM line). Polled — never throws

@@ -12,7 +12,13 @@ import { SettingsSchema } from './protocol';
 interface SettingsInbound {
   type: 'ready' | 'save' | 'testConnection' | 'refreshModels';
   json?: string;
+  // ⚠ What the FORM holds, not what is saved. The webview was already sending `baseUrl` and the
+  // handler never read it: Test answered about the saved URL, so it could report "Connected" about
+  // a different one. A field declared and never read is worse than a missing field - it makes you
+  // believe the information travels.
   baseUrl?: string;
+  provider?: string;
+  apiKey?: string;
 }
 
 export class SettingsPanel {
@@ -101,15 +107,17 @@ export class SettingsPanel {
       }
       case 'testConnection': {
         if (!host?.isRunning) {
-          this.post({ type: 'testResult', ok: false });
+          this.post({ type: 'testResult', ok: false, provider: null });
           return;
         }
         try {
-          // Checks the host's configured URL (like the VS Test button, which probes after save).
-          const ok = await host.connectionCheck();
-          this.post({ type: 'testResult', ok });
+          // Probe the URL the user is LOOKING AT - the one in the form - and name the backend that
+          // answered, exactly like the Visual Studio Test button (which reads BaseUrl from its own
+          // form, auto-selects the detected provider, then refreshes models from that URL).
+          const result = await host.connectionCheck(msg.baseUrl);
+          this.post({ type: 'testResult', ok: result.ok, provider: result.provider });
         } catch {
-          this.post({ type: 'testResult', ok: false });
+          this.post({ type: 'testResult', ok: false, provider: null });
         }
         return;
       }
@@ -122,7 +130,12 @@ export class SettingsPanel {
           return;
         }
         try {
-          this.post({ type: 'models', models: await host.modelsList() });
+          this.post({
+            type: 'models',
+            models: await host.modelsList({
+              baseUrl: msg.baseUrl, provider: msg.provider, apiKey: msg.apiKey,
+            }),
+          });
         } catch (err) {
           this.log(`[settings] models/list failed: ${String(err)}`);
         }

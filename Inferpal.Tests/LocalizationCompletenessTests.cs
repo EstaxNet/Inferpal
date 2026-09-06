@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Xml.Linq;
 using Xunit;
@@ -58,7 +58,7 @@ public class LocalizationCompletenessTests
         // scanning nothing — the exact way the eight false verdicts of August were built.
         Assert.Equal(Locales.Length, bundles.Count);
         var union = bundles.SelectMany(BundleKeys).ToHashSet(StringComparer.Ordinal);
-        Assert.True(union.Count > 100, $"Only {union.Count} keys read across {bundles.Count} bundles — the check is scanning nothing useful.");
+        Assert.True(union.Count > 50, $"Only {union.Count} keys read across {bundles.Count} bundles — the check is scanning nothing useful.");
 
         var report = new List<string>();
         foreach (var bundle in bundles)

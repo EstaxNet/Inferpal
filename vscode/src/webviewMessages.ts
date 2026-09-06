@@ -88,7 +88,9 @@ export type ExtToWebview =
   | WvHydrate
   | { type: 'turnStarted'; prompt: string; timestamp: string; history: string[] }
   | { type: 'token'; text: string }
-  | { type: 'thinking' }
+  /** `text` = the throttled reasoning tail (agent path, already prefixed with its emoji); absent
+   *  in plain chat, where the webview falls back to its generic indicator. */
+  | { type: 'thinking'; text?: string | null }
   | { type: 'status'; text: string }
   | { type: 'assistant'; text: string; timestamp: string }
   | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; timestamp: string; expanded: boolean }

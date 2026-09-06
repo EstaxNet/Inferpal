@@ -1,4 +1,5 @@
-using System.Text;
+﻿using System.Text;
+using Inferpal.Localization;
 
 namespace Inferpal.Services.Persistence;
 
@@ -13,6 +14,31 @@ internal sealed record ExportMessage(string Role, string Label, string Content, 
 /// </summary>
 internal static class ConversationExporter
 {
+    /// <summary>
+    /// A turn's label, for the bubble as well as for the export: "You", the model name (or
+    /// "Assistant" when there is none), or <c>🔧 tool-name</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ It lives here because it lived in TWO places, and was wrong in both. On the Visual Studio
+    /// side, <c>ChatMessageItem.UserMsg</c> wrote <c>Label = "Vous"</c> — hardcoded, in French —
+    /// and that label goes into the exported document: a Japanese reader got "Vous" heading every
+    /// one of their turns. On the VS Code side, the TypeScript exporter wrote its own emoji labels
+    /// and never went through a resource at all. One possible caller now, and it is translated in
+    /// all ten languages.
+    /// </remarks>
+    /// <param name="role">"user", "assistant" or "tool".</param>
+    /// <param name="name">
+    /// The model name for an assistant turn, the tool name for a tool turn. Empty for a user turn,
+    /// and ignored there.
+    /// </param>
+    public static string RoleLabel(string role, string? name = null) => role switch
+    {
+        "user"      => Strings.ChatRoleYou,
+        "tool"      => $"🔧 {name}",
+        "assistant" => string.IsNullOrEmpty(name) ? Strings.ChatRoleAssistant : name!,
+        _           => string.Empty,
+    };
+
     /// <summary>"12m 34s" — or "—" when the session start was never recorded.</summary>
     public static string FormatDuration(TimeSpan? duration) =>
         duration.HasValue

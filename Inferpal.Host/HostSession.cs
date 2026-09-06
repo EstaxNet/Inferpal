@@ -1,4 +1,4 @@
-using Inferpal.Config;
+﻿using Inferpal.Config;
 using Inferpal.Models;
 using Inferpal.Services;
 using Inferpal.Services.Docs;
@@ -35,6 +35,12 @@ internal sealed class HostSession : IDisposable
     public Services.Debugging.ITestDebugCapture? TestCapture { get; init; }
 
     /// <summary>Named-session persistence, same store (and files) as the VS extension.</summary>
+    /// <summary>
+    /// The connection heartbeat's state machine. One instance per session: it starts OPTIMISTIC, so
+    /// the first successful check is silent and the first failed one announces.
+    /// </summary>
+    public ConnectionStatusPresenter Connection { get; } = new();
+
     public ConversationStore Store { get; } = new();
 
     /// <summary>

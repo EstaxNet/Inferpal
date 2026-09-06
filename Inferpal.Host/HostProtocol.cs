@@ -1,4 +1,4 @@
-namespace Inferpal.Host;
+﻿namespace Inferpal.Host;
 
 // ── Wire DTOs of the Host ⇄ editor-adapter protocol ──────────────────────────
 // Serialized by StreamJsonRpc's SystemTextJsonFormatter; every request carries a
@@ -118,7 +118,70 @@ internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string
 
 /// <summary>`backend/status` answer — the adapter's connection badge. <paramref name="VramBadge"/>
 /// is the compact "model · X.X GB" line (empty when unreachable, unsupported or nothing loaded).</summary>
-internal sealed record BackendStatusResult(bool Connected, string VramBadge);
+/// <param name="EdgeNotice">
+/// The sentence to put IN THE THREAD when this heartbeat just crossed an edge — went unreachable,
+/// or came back — and <c>null</c> the rest of the time, which is nearly always.
+/// </param>
+/// <remarks>
+/// ⚠ Did not exist: in VS Code an outage only changed the colour of a dot, while the Visual Studio
+/// window has always put a line in the conversation and lit its Retry button. The decision (which
+/// edge, and is the first check silent?) belongs to the Core — <c>ConnectionStatusPresenter</c> —
+/// not to a second state machine written here.
+/// </remarks>
+internal sealed record BackendStatusResult(bool Connected, string VramBadge, string? EdgeNotice = null);
+
+/// <summary>
+/// `connection/check` — what the settings panel's Test button found AT THE URL IT WAS GIVEN.
+/// </summary>
+/// <param name="Ok">A backend answered, carrying the root property that signs it.</param>
+/// <param name="Provider">
+/// The detected backend code (<c>ollama</c> | <c>lmstudio</c> | <c>openai-compatible</c>), so the
+/// panel can pre-select it the way the Visual Studio window does; <c>null</c> when nothing answered.
+/// </param>
+/// <remarks>
+/// ⚠ Used to return <c>bool</c> and probe <c>Config.BaseUrl</c> — the SAVED url — while the webview
+/// was sending it the one the user had just typed: the panel could therefore report "Connected"
+/// about a different address, and the case that misleads most is the ordinary one (the old one
+/// works, the new one is wrong). The comment covering the gap invoked a symmetry with the VS window
+/// that does not exist: that one reads the typed value, pre-selects the detected backend, then
+/// refreshes the models from that url.
+/// </remarks>
+internal sealed record ConnectionCheckResult(bool Ok, string? Provider);
+
+/// <summary>`connection/check` — the url to probe. Empty = the configured one.</summary>
+internal sealed record ConnectionCheckParams(string? BaseUrl = null);
+
+/// <summary>
+/// `models/list` — the settings FORM's values when it has any. Each empty one falls back to the
+/// saved configuration: that is the panel's first load, and the ↻ of an ordinary session.
+/// </summary>
+internal sealed record ModelsListParams(string? BaseUrl = null, string? Provider = null, string? ApiKey = null);
+
+// ── Conversation export (the rendering lives in the Core, not in the adapter) ─
+
+/// <summary>One adapter bubble, flattened for export.</summary>
+/// <param name="Role">"user", "assistant" or "tool" — anything else is ignored.</param>
+/// <param name="Name">Model name (assistant turn) or tool name (tool turn).</param>
+/// <param name="Timestamp">Already-formatted local time, exactly as the adapter shows it.</param>
+internal sealed record ChatExportMessage(string Role, string? Name, string Content, string? Timestamp);
+
+/// <summary>
+/// `chat/export` — the adapter sends what it SHOWS, the Core renders the document.
+/// </summary>
+/// <remarks>
+/// ⚠ This method exists because the export was written TWICE: `ConversationExporter` in the Core for
+/// Visual Studio, and eleven lines of TypeScript for VS Code. The copy dropped the whole stats
+/// header (model, turns, tool calls, tokens, date, duration) and ignored the `.txt` filter its own
+/// save dialog offered — picking "Text" wrote Markdown. The rendering is shared; what each adapter
+/// keeps is what it sees.
+/// </remarks>
+/// <param name="SessionTokens">The thread's token total, held by the adapter as the VS window does.</param>
+/// <param name="DurationSeconds">Age of the thread; absent = "—", as on the VS side.</param>
+internal sealed record ChatExportParams(
+    bool                             AsPlainText,
+    IReadOnlyList<ChatExportMessage> Messages,
+    int                              SessionTokens   = 0,
+    int?                             DurationSeconds = null);
 
 /// <summary>`command/list` entry — one slash command for the adapter's autocomplete popup
 /// (built-ins with their localized hints, then user templates).</summary>

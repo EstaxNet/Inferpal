@@ -345,6 +345,9 @@
   <data name="BrowseError" xml:space="preserve"><value>⚠ 浏览文件时出错：{0}</value></data>
 
   <!-- Export -->
+  <data name="ContextGaugeTooltip" xml:space="preserve"><value>上下文：{0} / {1} 个令牌（{2}%）— 点击打开 X-Ray 面板</value></data>
+  <data name="ChatRoleYou" xml:space="preserve"><value>你</value></data>
+  <data name="ChatRoleAssistant" xml:space="preserve"><value>助手</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ 没有可导出的消息。</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>已导出至 `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ 导出失败：{0}</value></data>

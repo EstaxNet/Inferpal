@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 using System.Threading;
 using Microsoft.VisualStudio.Extensibility.UI;
@@ -204,21 +204,21 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     private static string Now() => DateTime.Now.ToString("t", System.Globalization.CultureInfo.CurrentCulture);
 
     internal static ChatMessageItem UserMsg(string content) =>
-        new() { Role = "user", Content = content, Label = "Vous", Timestamp = Now() };
+        new() { Role = "user", Content = content, Label = ConversationExporter.RoleLabel("user"), Timestamp = Now() };
 
     internal static ChatMessageItem AssistantMsg(string content = "")
     {
-        var item = new ChatMessageItem { Role = "assistant", Content = content, Label = "Assistant", Timestamp = Now() };
+        var item = new ChatMessageItem { Role = "assistant", Content = content, Label = ConversationExporter.RoleLabel("assistant"), Timestamp = Now() };
         item.ParseMarkdown();
         return item;
     }
 
     internal static ChatMessageItem StreamingMsg(string? modelName = null) =>
-        new() { Role = "assistant", Label = string.IsNullOrEmpty(modelName) ? "Assistant" : modelName, IsStreaming = true, Timestamp = Now() };
+        new() { Role = "assistant", Label = ConversationExporter.RoleLabel("assistant", modelName), IsStreaming = true, Timestamp = Now() };
 
     internal static ChatMessageItem ToolMsg(string toolName, string content, bool expanded = false) =>
         new() { Role = "tool", ToolName = toolName, Content = content,
-                Label = $"🔧 {toolName}", IsExpanded = expanded, Timestamp = Now() };
+                Label = ConversationExporter.RoleLabel("tool", toolName), IsExpanded = expanded, Timestamp = Now() };
 
     internal static ChatMessageItem Anchor() =>
         new() { Role = "anchor" };

@@ -6,7 +6,7 @@ import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
 import { hostUnavailableMessage, promptOpenFolder } from './hostStatus';
 import { renderChatHtml } from './webview/chatWebviewHtml';
-import { pickSession, renderExport, toSavedMessages, toTranscript } from './chatSessions';
+import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import { CodeActionResult, SavedMessage, SlashEffect } from './protocol';
 import {
   WebviewToExt,
@@ -41,6 +41,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private toolBubblesExpanded = false;
   private promptTokens = 0;
   private lastTokens = 0;
+  /** The thread's token total and the time of its first turn - the export's stats header asks for
+   *  both, and the Visual Studio window has always held them (`_sessionTokens`,
+   *  `_sessionStartTime`). Here there was nothing: the TypeScript exporter wrote no header at all,
+   *  so nobody noticed. Reset with the rest of the thread. */
+  private sessionTokens = 0;
+  private sessionStart: number | null = null;
   private statusTimer: NodeJS.Timeout | undefined;
   /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
   private pendingAttachments: { name: string; content: string }[] = [];
@@ -146,6 +152,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.plan = null;
     this.promptTokens = 0;
     this.lastTokens = 0;
+    this.sessionTokens = 0;
+    this.sessionStart = null;
     this.hydrate();
   }
 
@@ -161,7 +169,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.post({ type: 'token', text });
       },
       onStep: (text) => this.post({ type: 'status', text }),
-      onThinking: () => this.post({ type: 'thinking' }),
+      // ⚠ The text was THROWN AWAY here, while the host streamed it with no throttle: a
+      // reasoning model's thinking phase showed nothing but a frozen status. On the agent path the
+      // tail IS step progress; in plain chat the host sends nothing and the generic indicator takes
+      // over.
+      onThinking: (text) => this.post({ type: 'thinking', text }),
       onPlan: (plan) => {
         this.plan = { goal: plan.goal, steps: plan.steps.map((text) => ({ text, status: 'pending' })) };
         this.post({ type: 'plan', plan: this.plan });
@@ -316,13 +328,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.post({ type: 'backendStatus', status: { connected: false, vramBadge: '' } });
       return;
     }
+    let edgeNotice: string | null = null;
     try {
       const s = await host.backendStatus();
       this.status = { connected: s.connected, vramBadge: s.vramBadge };
+      edgeNotice = s.edgeNotice ?? null;
     } catch {
       this.status = { connected: false, vramBadge: '' };
     }
     this.post({ type: 'backendStatus', status: this.status });
+    // ⚠ An outage ANNOUNCES itself, it is not to be guessed. Without this line, losing the backend
+    // mid-session only changed the colour of a dot here - the Visual Studio window has always put
+    // the sentence in the thread. The Core says WHEN (edge crossed, first successful check silent);
+    // the adapter only renders it.
+    if (edgeNotice) {
+      this.append({ role: 'assistant', text: edgeNotice, timestamp: ChatViewProvider.now() });
+      this.hydrate();
+    }
   }
 
   // ── Sessions ────────────────────────────────────────────────────────────────
@@ -501,10 +523,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return pickSession(this.getHost()!, placeholder);
   }
 
-  /** Command: export the conversation to a Markdown or text file (VS toolbar parity). */
+  /**
+   * Command: export the conversation to a Markdown or text file.
+   *
+   * ⚠ The document is rendered by the **Core** exporter, through the host - the same one the
+   * Visual Studio window uses. It used to be rendered here, in eleven lines of TypeScript, which
+   * dropped the entire stats header (model, turns, tool calls, tokens, date, duration) and ignored
+   * the `.txt` filter this very dialog offers: choosing *Text* wrote Markdown into a `.txt`. An
+   * affordance offered and not honoured is the class this repository keeps paying for.
+   */
   async exportCommand(): Promise<void> {
     if (this.transcript.length === 0) {
       void vscode.window.showInformationMessage(vscode.l10n.t('Nothing to export — the conversation is empty.'));
+      return;
+    }
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      void vscode.window.showErrorMessage(hostUnavailableMessage());
       return;
     }
     const target = await vscode.window.showSaveDialog({
@@ -514,8 +549,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!target) {
       return;
     }
-    await vscode.workspace.fs.writeFile(target, Buffer.from(renderExport(this.transcript), 'utf8'));
-    void vscode.window.showInformationMessage(vscode.l10n.t('Conversation exported: {0}', target.fsPath));
+    try {
+      const document = await host.chatExport({
+        asPlainText: target.fsPath.toLowerCase().endsWith('.txt'),
+        messages: this.transcript.map((item) => ({
+          role: item.role,
+          // For a tool turn, `text` IS the tool name and `toolOutput` the body.
+          name: item.role === 'tool' ? item.text : undefined,
+          content: (item.role === 'tool' ? item.toolOutput : item.text) ?? '',
+          timestamp: item.timestamp,
+        })),
+        sessionTokens: this.sessionTokens,
+        durationSeconds: this.sessionStart === null
+          ? undefined : Math.round((Date.now() - this.sessionStart) / 1000),
+      });
+      await vscode.workspace.fs.writeFile(target, Buffer.from(document, 'utf8'));
+      void vscode.window.showInformationMessage(vscode.l10n.t('Conversation exported: {0}', target.fsPath));
+    } catch (err) {
+      void vscode.window.showErrorMessage(vscode.l10n.t('Export failed: {0}', String(err)));
+    }
   }
 
   // ── Prompt history (persisted workspace-side, navigated in the webview) ─────
@@ -871,6 +923,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.busy = true;
     this.streamText = '';
     this.plan = null;
+    // Like the Visual Studio window (`_sessionStartTime ??= DateTime.Now`): the thread starts at
+    // the first turn, not when the panel is opened.
+    this.sessionStart ??= Date.now();
     const timestamp = ChatViewProvider.now();
     this.append({ role: 'user', text: prompt, timestamp });
     const history = this.appendHistory(prompt);
@@ -961,6 +1016,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.plan = null;
           this.promptTokens = 0;
           this.lastTokens = 0;
+          this.sessionTokens = 0;
+          this.sessionStart = null;
           rehydrate = true;
           break;
         case 'stateChange':
@@ -1057,6 +1114,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       this.busy = false;
       this.lastTokens = result.tokensUsed;
+      this.sessionTokens += result.tokensUsed;
       this.post({
         type: 'turnEnded',
         text: finalText,

@@ -166,7 +166,23 @@ internal sealed partial class HostServer : IDisposable
         // Mirror of the streamed text: returned as the partial answer on cancellation.
         var streamed = new StringBuilder();
         void OnToken(string t) { streamed.Append(t); Notify("chat/token", new { text = t }); }
-        void OnThinking(string t) => Notify("chat/thinking", new { text = t });
+        // ⚠ The reasoning channel was relayed RAW, one notification per delta - thousands of
+        // JSON-RPC messages over stdio for one thinking phase of a reasoning model - and the
+        // adapter threw the text away. Both halves were wrong: nothing bounded the rate, and what
+        // it carried was read by nobody. ThinkingPreview (the same one the Visual Studio window
+        // uses) accumulates, bounds the memory, and emits at most every 120 ms.
+        var thinking = new ThinkingPreview();
+
+        // And the TEXT only goes out on the agent path. In plain chat a reasoning model pours out
+        // its whole deliberation - sometimes off-topic - and showing it reads as stray output: we
+        // then send a heartbeat only, and the adapter shows its generic indicator. Same arbitration
+        // as the VM, at the same place in the code.
+        var showReasoningTail = false;
+        void OnThinking(string t)
+        {
+            if (thinking.Append(t) is not { } tail) return;
+            Notify("chat/thinking", new { text = showReasoningTail ? tail : null });
+        }
 
         try
         {
@@ -202,6 +218,8 @@ internal sealed partial class HostServer : IDisposable
             }
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
             var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
+            // The reasoning tail is step progress only on the orchestrated path.
+            showReasoningTail = agentMode;
             // An explicit per-request model always wins; otherwise the Model Router applies the
             // same role chains as the VS adapter (agent loop → AgentModel, plain chat → DefaultModel).
             var model     = !string.IsNullOrWhiteSpace(p.Model)
@@ -363,17 +381,90 @@ internal sealed partial class HostServer : IDisposable
             : new CodeActionResultDto("edited", edits, run.NewDocText);
     }
 
-    // ── Backend ────────────────────────────────────────────────────────────────
-
-    [JsonRpcMethod("models/list")]
-    public async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct)
-        => await Session().Client.ListModelsAsync(ct);
-
-    [JsonRpcMethod("connection/check")]
-    public Task<bool> CheckConnectionAsync(CancellationToken ct)
+    /// <summary>
+    /// Renders the export document - the SAME one the Visual Studio window produces, because it is
+    /// the same <see cref="ConversationExporter"/>. The adapter picks the format (the extension of
+    /// the file the user named) and supplies its bubbles; the model and the date come from here.
+    /// </summary>
+    [JsonRpcMethod("chat/export", UseSingleObjectParameterDeserialization = true)]
+    public Task<string> ChatExportAsync(ChatExportParams p, CancellationToken ct)
     {
         var s = Session();
-        return s.Client.CheckConnectionAsync(s.Config.BaseUrl, ct);
+
+        // Same filter as the VM: status and error bubbles are not turns.
+        var messages = (p.Messages ?? [])
+            .Where(m => m.Role is "user" or "assistant" or "tool")
+            .Select(m => new ExportMessage(m.Role,
+                                           ConversationExporter.RoleLabel(m.Role, m.Name),
+                                           m.Content ?? string.Empty,
+                                           m.Timestamp ?? string.Empty))
+            .ToList();
+
+        var duration = p.DurationSeconds is int seconds && seconds > 0
+            ? TimeSpan.FromSeconds(seconds) : (TimeSpan?)null;
+
+        return Task.FromResult(ConversationExporter.Build(
+            messages, p.AsPlainText, s.Config.DefaultModel, p.SessionTokens,
+            DateTime.Now.ToString("f", CultureInfo.CurrentCulture),
+            ConversationExporter.FormatDuration(duration)));
+    }
+
+    // ── Backend ────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Lists the models of the backend the panel HAS IN FRONT OF IT, not of the saved one: the
+    /// three values come from the form when it supplies them, from the configuration otherwise
+    /// (the refresh button of an ordinary session, or the first load).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Only ever read the session. The VS Code panel therefore offered a refresh that listed the
+    /// models of the OLD url after you typed a new one - the other half of the Test button's
+    /// defect, same class: <i>the panel acts on what is saved while the user is looking at what
+    /// they typed</i>. The Visual Studio window has always built a throwaway
+    /// <see cref="InferpalConfig"/> from its form values (<c>RefreshModelsAsync</c>); this does
+    /// exactly the same.
+    /// </remarks>
+    [JsonRpcMethod("models/list", UseSingleObjectParameterDeserialization = true)]
+    public async Task<IReadOnlyList<string>> ListModelsAsync(ModelsListParams p, CancellationToken ct)
+    {
+        var s = Session();
+        if (string.IsNullOrWhiteSpace(p.BaseUrl) && string.IsNullOrWhiteSpace(p.Provider)
+                                                 && string.IsNullOrWhiteSpace(p.ApiKey))
+            return await s.Client.ListModelsAsync(ct);
+
+        var url   = string.IsNullOrWhiteSpace(p.BaseUrl) ? s.Config.BaseUrl : p.BaseUrl.Trim();
+        var draft = new InferpalConfig
+        {
+            Provider = string.IsNullOrWhiteSpace(p.Provider) ? s.Config.Provider : p.Provider.Trim(),
+            BaseUrl  = url,
+            ApiKey   = p.ApiKey ?? s.Config.ApiKey,
+        };
+        return await _providerFactory(draft).ListModelsAsync(ct, url);
+    }
+
+    /// <summary>
+    /// Probes the url the panel gives it - the form's - and NAMES the backend that answered. Mirror
+    /// of the Visual Studio window's Test button.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Used to probe <c>Config.BaseUrl</c>, the saved url, ignoring the one the webview was
+    /// sending: "Connected" could therefore be about an address other than the one displayed. See
+    /// <see cref="ConnectionCheckResult"/>.
+    /// <para>
+    /// The probe is <see cref="ProviderProbe"/>, not <c>CheckConnectionAsync</c>: it requires the
+    /// root property that signs the backend, so a positive answer proves reachability AND identity
+    /// at once - the same reasoning as the VS window, and what lets us pre-select the right
+    /// provider instead of leaving the user to guess.
+    /// </para>
+    /// </remarks>
+    [JsonRpcMethod("connection/check", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ConnectionCheckResult> CheckConnectionAsync(ConnectionCheckParams p, CancellationToken ct)
+    {
+        var s   = Session();
+        var url = string.IsNullOrWhiteSpace(p.BaseUrl) ? s.Config.BaseUrl : p.BaseUrl.Trim();
+
+        var detected = await ProviderProbe.DetectAsync(url, s.Config.ApiKey, ct);
+        return new ConnectionCheckResult(detected is not null, detected);
     }
 
     /// <summary>Connection badge for the adapter's header: reachability + the compact VRAM line
@@ -396,7 +487,20 @@ internal sealed partial class HostServer : IDisposable
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { Diagnostics.Swallow("HostServer.BackendStatus", ex); }
         }
-        return new BackendStatusResult(connected, badge);
+        // ⚠ The EDGE, not the state. A dot that changes colour says "this is how it is now"; it
+        // does not say "it just dropped", and that sentence is what the Visual Studio window has
+        // always put in the thread. The decision belongs to the Core: first check silent if it
+        // succeeds, announced if it fails, and nothing at all while nothing moves.
+        var status = s.Connection.Evaluate(connected);
+        var notice = status.Transition switch
+        {
+            ConnectionTransition.Restored => Strings.MsgHeartbeatRestored,
+            ConnectionTransition.Lost     => Strings.MsgConnectionGuardFailed(
+                                                 s.Config.BaseUrl,
+                                                 InferenceProviderFactory.DisplayName(s.Config.Provider)),
+            _                             => null,
+        };
+        return new BackendStatusResult(connected, badge, notice);
     }
 
     [JsonRpcMethod("fim/complete", UseSingleObjectParameterDeserialization = true)]

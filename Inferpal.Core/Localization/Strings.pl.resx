@@ -345,6 +345,9 @@ Kopia zapasowa: {0}</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Błąd przeglądania: {0}</value></data>
 
   <!-- Export -->
+  <data name="ContextGaugeTooltip" xml:space="preserve"><value>Kontekst: {0} / {1} tokenów ({2}%) — kliknij, aby otworzyć panel X-Ray</value></data>
+  <data name="ChatRoleYou" xml:space="preserve"><value>Ty</value></data>
+  <data name="ChatRoleAssistant" xml:space="preserve"><value>Asystent</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Brak wiadomości do wyeksportowania.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Wyeksportowano do `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Eksport nie powiódł się: {0}</value></data>

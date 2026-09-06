@@ -64,6 +64,12 @@ export interface TextNote {
   text: string;
 }
 
+/** `chat/thinking` — the throttled reasoning tail, or no text at all when the host only means
+ *  "the model is thinking" (plain chat). */
+export interface ThinkingNote {
+  text?: string | null;
+}
+
 export interface DocumentParams {
   path: string;
   text?: string;
@@ -89,6 +95,37 @@ export interface IndexStatusResult {
 export interface BackendStatusResult {
   connected: boolean;
   vramBadge: string;
+  /** The line to put IN THE THREAD when this heartbeat just crossed an edge — went unreachable, or
+   *  came back — and null the rest of the time. A dot that changes colour says "this is how it is
+   *  now"; it does not say "it just dropped". The Core decides which edge, and whether the very
+   *  first check is silent. */
+  edgeNotice?: string | null;
+}
+
+/** `connection/check` — what the Test button found AT THE URL IT WAS GIVEN.
+ *  `provider` is the detected backend code (`ollama` | `lmstudio` | `openai-compatible`), so the
+ *  panel can pre-select it the way the Visual Studio window does; null when nothing answered. */
+export interface ConnectionCheckResult {
+  ok: boolean;
+  provider: string | null;
+}
+
+/** One bubble, flattened for `chat/export`. `name` is the model (assistant) or tool name. */
+export interface ChatExportMessage {
+  role: string;
+  name?: string;
+  content: string;
+  timestamp?: string;
+}
+
+/** `chat/export` — the adapter sends what it SHOWS, the Core renders the document. The whole
+ *  point is that there is one exporter: the stats header and the .txt/.md layouts are the Core's,
+ *  not something each editor writes again (and loses). */
+export interface ChatExportParams {
+  asPlainText: boolean;
+  messages: ChatExportMessage[];
+  sessionTokens?: number;
+  durationSeconds?: number;
 }
 
 /** `command/list` entry — one slash command for the autocomplete popup. */
@@ -336,6 +373,6 @@ export interface DebugCaptureTestParams {
 
 /** `config/update` answer: what the save could not use. */
 export interface ConfigUpdateResult {
-  /** Permission rules the product could not read - the field is saved, these lines are inert. */
+  /** Permission rules the product could not read — the field is saved, these lines are inert. */
   permissionRulesIgnored: number;
 }

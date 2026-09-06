@@ -428,7 +428,15 @@ function renderField(field: Field): HTMLElement {
     } else {
       btn.textContent = '↻';
       btn.title = t('Refresh models');
-      btn.addEventListener('click', () => vscode.postMessage({ type: 'refreshModels' }));
+      // ⚠ The FORM's values, not the saved ones: without them the refresh listed the models of
+      // the old URL after you typed a new one. Same class as the Test button - the panel acts on
+      // what is saved while the user is looking at what they typed.
+      btn.addEventListener('click', () => vscode.postMessage({
+        type: 'refreshModels',
+        baseUrl:  (inputs.get('baseUrl')  as HTMLInputElement | undefined)?.value,
+        provider: (inputs.get('provider') as HTMLSelectElement | undefined)?.value,
+        apiKey:   (inputs.get('apiKey')   as HTMLInputElement | undefined)?.value,
+      }));
       line.append(btn);
     }
     row.append(line);
@@ -545,7 +553,7 @@ function setStatus(text: string): void {
 window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; strings?: Record<string, string>;
-    schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number;
+    schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number; provider?: string | null;
   };
   switch (msg.type) {
     case 'init':
@@ -574,9 +582,27 @@ window.addEventListener('message', (event: MessageEvent) => {
       }
       break;
     }
-    case 'testResult':
-      setTestStatus(msg.ok ? t('Connected') : t('Backend unreachable'), msg.ok);
+    case 'testResult': {
+      // The detected backend is PRE-SELECTED, as in the Visual Studio window: without that, a URL
+      // answering as another provider than the one in the dropdown leaves the user guessing which
+      // to pick - and the probe has just named it.
+      const detected = msg.provider ?? null;
+      let named: string | null = null;
+      if (detected) {
+        const select = inputs.get('provider') as HTMLSelectElement | undefined;
+        if (select) {
+          const option = [...select.options].find((o) => o.value === detected);
+          if (option) {
+            select.value = detected;
+            named = option.textContent;
+          }
+        }
+      }
+      setTestStatus(
+        msg.ok ? (named ? `${t('Connected')} — ${named}` : t('Connected')) : t('Backend unreachable'),
+        msg.ok);
       break;
+    }
     case 'saveDone':
       lastRulesIgnored = msg.rulesIgnored ?? 0;
       setStatus(msg.ok ? savedStatus() : '');

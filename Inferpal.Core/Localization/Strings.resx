@@ -346,6 +346,9 @@ Backup: {0}</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Browse error: {0}</value></data>
 
   <!-- Export -->
+  <data name="ContextGaugeTooltip" xml:space="preserve"><value>Context: {0} / {1} tokens ({2}%) — click for the X-Ray panel</value></data>
+  <data name="ChatRoleYou" xml:space="preserve"><value>You</value></data>
+  <data name="ChatRoleAssistant" xml:space="preserve"><value>Assistant</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ No messages to export.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Exported to `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Export failed: {0}</value></data>

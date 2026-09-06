@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Net.Http;
 using Inferpal.Config;
 using Inferpal.Host;
@@ -228,7 +228,7 @@ public class HostServerTests
         using var h = CreateHarness();
 
         await Assert.ThrowsAsync<RemoteInvocationException>(
-            () => h.Client.InvokeAsync<string[]>("models/list").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
+            () => h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
     }
 
     // ── chat ───────────────────────────────────────────────────────────────────
@@ -352,7 +352,7 @@ public class HostServerTests
         h.Fake.ModelNames = ["llama3.1", "qwen3"];
         await h.InitializeAsync();
 
-        var models = await h.Client.InvokeAsync<string[]>("models/list")
+        var models = await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         Assert.Equal(["llama3.1", "qwen3"], models);
@@ -691,7 +691,7 @@ public class HostServerTests
             "textDocument/didClose", new { path = @"C:\proj\a.cs" });
 
         // Notifications are one-way: a round-trip request guarantees they were dispatched.
-        await h.Client.InvokeAsync<string[]>("models/list").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         var overlay = h.Server.CurrentSession!.Overlay;
         Assert.True(overlay.TryGet(@"C:\proj\b.cs", out var text));

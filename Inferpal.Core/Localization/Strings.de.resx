@@ -345,6 +345,9 @@ Sicherung: {0}</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Durchsuchungsfehler: {0}</value></data>
 
   <!-- Export -->
+  <data name="ContextGaugeTooltip" xml:space="preserve"><value>Kontext: {0} / {1} Token ({2} %) — Klick für das X-Ray-Panel</value></data>
+  <data name="ChatRoleYou" xml:space="preserve"><value>Sie</value></data>
+  <data name="ChatRoleAssistant" xml:space="preserve"><value>Assistent</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Keine Nachrichten zum Exportieren.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Nach `{0}` exportiert</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Export fehlgeschlagen: {0}</value></data>

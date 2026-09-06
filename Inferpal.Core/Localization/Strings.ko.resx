@@ -345,6 +345,9 @@
   <data name="BrowseError" xml:space="preserve"><value>⚠ 찾아보기 오류: {0}</value></data>
 
   <!-- Export -->
+  <data name="ContextGaugeTooltip" xml:space="preserve"><value>컨텍스트: {0} / {1} 토큰 ({2}%) — 클릭하여 X-Ray 패널 열기</value></data>
+  <data name="ChatRoleYou" xml:space="preserve"><value>나</value></data>
+  <data name="ChatRoleAssistant" xml:space="preserve"><value>어시스턴트</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ 내보낼 메시지가 없습니다.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>`{0}`으로 내보냈습니다</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ 내보내기 실패: {0}</value></data>

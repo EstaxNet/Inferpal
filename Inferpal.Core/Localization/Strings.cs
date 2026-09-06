@@ -623,6 +623,19 @@ internal static class Strings
     public static string PinLimitReached(int max)            => string.Format(Get(nameof(PinLimitReached)),           max);
 
     // ── Export ─────────────────────────────────────────────────────────────────
+    /// <summary>The context gauge's tooltip. ⚠ It was ENGLISH, with invariant separators, in the VS
+    /// window while the VS Code panel said the same thing translated: two editors, two sentences,
+    /// for the same clickable element. The value is lifted <b>verbatim</b> from the extension's
+    /// l10n bundles, so that the two say literally the same thing.</summary>
+    public static string ContextGaugeTooltip(string used, string limit, string percent) =>
+        string.Format(Get(nameof(ContextGaugeTooltip)), used, limit, percent);
+
+    /// <summary>Label of the "user" bubble. ⚠ It was hardcoded, in FRENCH (<c>Label = "Vous"</c>),
+    /// in ChatMessageItem.UserMsg — and it goes into the exported document, so a Japanese reader
+    /// got "Vous" heading every one of their turns.</summary>
+    public static string ChatRoleYou             => Get(nameof(ChatRoleYou));
+    /// <inheritdoc cref="ChatRoleYou"/>
+    public static string ChatRoleAssistant       => Get(nameof(ChatRoleAssistant));
     public static string ExportNoMessages        => Get(nameof(ExportNoMessages));
     public static string ExportSuccess(string f) => string.Format(Get(nameof(ExportSuccess)), f);
     public static string ExportFailed(string e)  => string.Format(Get(nameof(ExportFailed)),  e);

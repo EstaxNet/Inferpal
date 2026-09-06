@@ -345,6 +345,9 @@
   <data name="BrowseError" xml:space="preserve"><value>⚠ Ошибка обзора: {0}</value></data>
 
   <!-- Export -->
+  <data name="ContextGaugeTooltip" xml:space="preserve"><value>Контекст: {0} / {1} токенов ({2} %) — щёлкните для панели X-Ray</value></data>
+  <data name="ChatRoleYou" xml:space="preserve"><value>Вы</value></data>
+  <data name="ChatRoleAssistant" xml:space="preserve"><value>Ассистент</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Нет сообщений для экспорта.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Экспортировано в `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Ошибка экспорта: {0}</value></data>
