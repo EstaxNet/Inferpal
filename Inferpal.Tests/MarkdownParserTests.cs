@@ -101,4 +101,55 @@ public class MarkdownParserTests
         Assert.Contains(blocks, b => b.Type == "numbered_item" && b.Text.Contains("exemple"));
         Assert.Contains(blocks, b => b.Type == "code_block" && b.Text.Contains("var x = 1;"));
     }
+
+    // ── <think> stripping ─────────────────────────────────────────────────────
+    //
+    // Stated for as long as the parser has existed, and tested by nobody. What it costs when it
+    // breaks is not subtle: the model's raw chain of thought is rendered in the chat bubble AND
+    // lands in the exported conversation, for every reasoning model (qwen3, deepseek-r1,
+    // magistral...). Visible - but "my export contains the reasoning" is not a symptom that points
+    // at this regex.
+
+    [Fact]
+    public void Parse_RemovesThinkBlocks_AndKeepsWhatSurroundsThem()
+    {
+        var blocks = MarkdownParser.Parse("before\n<think>secret reasoning</think>\nafter");
+        var text   = string.Join("\n", blocks.Select(b => b.Text));
+
+        Assert.DoesNotContain("secret reasoning", text);
+        Assert.DoesNotContain("<think>", text);
+        Assert.Contains("before", text);
+        Assert.Contains("after", text);
+    }
+
+    [Theory]
+    // Several blocks: the pattern is non-greedy, it must not swallow what sits between them.
+    [InlineData("<think>a</think>keep<think>b</think>", "keep")]
+    // Multi-line: models emit their reasoning over dozens of lines.
+    [InlineData("<think>\nline 1\nline 2\n</think>visible", "visible")]
+    // Case: the pattern is IgnoreCase, and models are not consistent about it.
+    [InlineData("<THINK>noise</THINK>visible", "visible")]
+    [InlineData("<Think>noise</Think>visible", "visible")]
+    public void StripThinkTags_HandlesTheFormsModelsActuallyEmit(string content, string expected)
+    {
+        var stripped = MarkdownParser.StripThinkTags(content);
+
+        Assert.Equal(expected, stripped);
+    }
+
+    [Fact]
+    public void StripThinkTags_NullOrEmpty_YieldsEmpty()
+    {
+        Assert.Equal(string.Empty, MarkdownParser.StripThinkTags(null));
+        Assert.Equal(string.Empty, MarkdownParser.StripThinkTags(""));
+    }
+
+    [Fact]
+    public void AThinkOnlyMessage_ProducesNoBlockAtAll()
+    {
+        // What is left after stripping is empty: Parse must return an empty list rather than a
+        // blank bubble. That is the "the model produced nothing but reasoning" case, which the
+        // orchestrator then treats as an empty turn.
+        Assert.Empty(MarkdownParser.Parse("<think>nothing but reasoning</think>"));
+    }
 }
