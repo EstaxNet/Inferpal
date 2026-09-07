@@ -33,6 +33,10 @@ namespace Inferpal.Tests;
 //                          binding). The whitelist was MEASURED before it was written: the
 //                          stated doctrine left out AsyncCommand (83 sites), double and a bare
 //                          [DataContract] type - it forbade what works.
+//   7. Ambient culture   - the language is overridden through Strings.OverrideCulture, never
+//                          written into the thread: these processes are not ours (devenv, the
+//                          Extensibility host), and a forced culture changes the formatting of
+//                          code that is not ours either, without throwing anything.
 public class ConventionCoverageTests
 {
     // ── 1. SafeFileWriter sous Services\Tools ─────────────────────────────────
@@ -176,6 +180,68 @@ public class ConventionCoverageTests
             + "With virtualization or logical scrolling on, off-screen bubbles have no container: "
             + "BringIntoView has nothing to bring and ScrollToEnd aims at a wrong extent - the "
             + "conversation silently stops following the stream.");
+    }
+
+    // ── 7. The language is not changed by mutating the thread ─────────────────
+
+    [Fact]
+    public void NothingMutatesTheAmbientCulture()
+    {
+        // Strings.OverrideCulture exists for this: the language the user picked is consulted FIRST
+        // in Get(), instead of forcing the thread culture. The reason is that the product lives in
+        // processes it does not own - devenv for the in-process half, the Extensibility host for
+        // the window - and writing an ambient culture there changes it for code that is not ours,
+        // on a thread we do not pick. What breaks then is not our interface: it is the number and
+        // date formatting of everything sharing that thread, with nothing thrown.
+        //
+        // Static on top of that (DefaultThreadCurrentCulture) and the whole process switches.
+        // Measured at zero: free to lock, therefore locked now.
+        string[] forbidden =
+        [
+            "CurrentUICulture", "CurrentCulture",
+            "DefaultThreadCurrentUICulture", "DefaultThreadCurrentCulture",
+        ];
+
+        var offenders = new List<string>();
+        var reads     = 0;
+
+        foreach (var file in CoreSources("Services").Concat(CoreSources("Config"))
+                                                    .Concat(CoreSources("Localization"))
+                                                    .Concat(ViewModelSources())
+                                                    .Concat(ProjectSources("Inferpal.Host"))
+                                                    .Concat(ProjectSources("Inferpal.Fim"))
+                                                    .Concat(ProjectSources("Inferpal.InProc")))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            // Witness: those properties really are READ somewhere. Without it, a rename on the BCL
+            // side - or a scan gone blind - would make the rule green for nothing.
+            reads += root.DescendantNodes().OfType<MemberAccessExpressionSyntax>()
+                .Count(ma => forbidden.Contains(ma.Name.Identifier.ValueText));
+
+            foreach (var assign in root.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+            {
+                var target = assign.Left switch
+                {
+                    MemberAccessExpressionSyntax ma => ma.Name.Identifier.ValueText,
+                    IdentifierNameSyntax id         => id.Identifier.ValueText,
+                    _                               => null,
+                };
+                if (target is null || !forbidden.Contains(target)) continue;
+
+                var line = assign.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Rel(file)}({line}): {assign.Left} = ...");
+            }
+        }
+
+        Assert.True(reads >= 5,
+            $"The scan found only {reads} ambient-culture read(s): the rule checks nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "The ambient culture is written instead of being overridden. This process is not ours "
+            + "(devenv, Extensibility host) and neither is the thread: go through "
+            + "Strings.OverrideCulture, which Get() consults first. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     // ── 6. The types that cross the Remote UI boundary ────────────────────────
