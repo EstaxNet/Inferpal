@@ -37,6 +37,11 @@ namespace Inferpal.Tests;
 //                          written into the thread: these processes are not ours (devenv, the
 //                          Extensibility host), and a forced culture changes the formatting of
 //                          code that is not ours either, without throwing anything.
+//   8. GPU discipline    - an embedding loop YIELDS before every call, a query NEVER waits (it
+//                          runs inside an agent run already holding the lease: waiting for
+//                          yourself is a deadlock). The criterion is the SHAPE - in a loop means
+//                          background work, outside a loop means someone is waiting - not a list
+//                          of files.
 public class ConventionCoverageTests
 {
     // ── 1. SafeFileWriter sous Services\Tools ─────────────────────────────────
@@ -180,6 +185,79 @@ public class ConventionCoverageTests
             + "With virtualization or logical scrolling on, off-screen bubbles have no container: "
             + "BringIntoView has nothing to bring and ScrollToEnd aims at a wrong extent - the "
             + "conversation silently stops following the stream.");
+    }
+
+    // ── 8. Who yields the GPU, and who must NEVER wait for it ─────────────────
+
+    [Fact]
+    public void EmbeddingLoopsYieldTheGpu_AndQueriesNeverWaitForIt()
+    {
+        // Two halves of one rule, with opposite failures, both silent:
+        //
+        //   - an embedding loop that does NOT yield steals the GPU from a chat turn in flight -
+        //     the user sees a model stuttering or timing out, with no error anywhere;
+        //   - a query that waits is a DEADLOCK: the agent already holds the chat lease for its
+        //     whole run, and search_codebase / search_docs are called FROM that run. Waiting for
+        //     the chat to go idle is waiting for yourself.
+        //
+        // The criterion is a SHAPE, not a list of files: embedding inside a loop is background
+        // work (it yields); embedding outside a loop is answering someone who is waiting (it never
+        // does).
+        const string Embed = "GetEmbeddingAsync";
+        const string Yield = "WaitForChatIdleAsync";
+
+        var loops = 0;
+        var oneShots = 0;
+        var offenders = new List<string>();
+
+        // We look for the CALL, not the word. node.ToString() also renders comments: the comment
+        // documenting the wait ("Yield the shared GPU...") would have satisfied the first half,
+        // and a header comment would have failed the second. False green and false red in the same
+        // expression - the first version of both checks carried them.
+        static bool Yields(SyntaxNode scope) =>
+            scope.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(i =>
+                i.Expression is MemberAccessExpressionSyntax m && m.Name.Identifier.ValueText == Yield);
+
+        foreach (var file in CoreSources("Services"))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var call in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (call.Expression is not MemberAccessExpressionSyntax ma
+                 || ma.Name.Identifier.ValueText != Embed) continue;
+
+                var line = call.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                var loop = call.Ancestors()
+                    .TakeWhile(a => a is not MethodDeclarationSyntax)
+                    .FirstOrDefault(a => a is ForStatementSyntax or ForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax);
+
+                if (loop is not null)
+                {
+                    loops++;
+                    if (!Yields(loop))
+                        offenders.Add($"{Rel(file)}({line}): embeds in a loop without yielding the GPU");
+                    continue;
+                }
+
+                oneShots++;
+                var scope = call.Ancestors().FirstOrDefault(a => a is MethodDeclarationSyntax or LocalFunctionStatementSyntax);
+                if (scope is not null && Yields(scope))
+                    offenders.Add($"{Rel(file)}({line}): a query waiting for the GPU - deadlock");
+            }
+        }
+
+        // One witness per half: without both, a scan gone blind would pass while judging neither
+        // the loops nor the queries.
+        Assert.True(loops >= 2, $"Only {loops} in-loop embedding(s) found: the background half judges nothing.");
+        Assert.True(oneShots >= 2, $"Only {oneShots} one-shot embedding(s) found: the query half judges nothing.");
+
+        Assert.True(offenders.Count == 0,
+            "GPU discipline broken. An embedding loop yields before every call "
+            + "(GpuScheduler.WaitForChatIdleAsync); a query NEVER does - it is called from an agent "
+            + "run already holding the chat lease, so waiting for the chat to be idle is waiting "
+            + "for itself. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     // ── 7. The language is not changed by mutating the thread ─────────────────
