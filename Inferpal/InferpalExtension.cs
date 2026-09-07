@@ -10,9 +10,15 @@ using Microsoft.VisualStudio.Extensibility;
 namespace Inferpal;
 
 /// <summary>
-/// Extension entry point. Registers all services in the DI container and declares metadata
-/// consumed by the VS Extensibility SDK to generate the VSIX manifest.
+/// Extension entry point. Registers every service in the DI container.
 /// </summary>
+/// <remarks>
+/// It does NOT declare the VSIX manifest metadata any more, whatever the previous wording of this
+/// comment said: since the hybrid packaging switch, the packaged manifest is
+/// <c>source.extension.vsixmanifest</c> and <c>ExtensionConfiguration.Metadata</c> is refused by
+/// the SDK under <c>RequiresInProcessHosting</c> (<c>VSEXT0007</c>). The version comes from the
+/// <c>|Inferpal;GetVsixVersion|</c> token, resolved out of <c>Directory.Build.props</c>.
+/// </remarks>
 /// <remarks>
 /// Services registered here are available as constructor parameters in all
 /// <see cref="Microsoft.VisualStudio.Extensibility.ExtensionPart"/> types
