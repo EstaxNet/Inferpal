@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -27,6 +28,11 @@ namespace Inferpal.Tests;
 //                          aims at a wrong extent. The agreement was STATED - in a comment - and
 //                          held by nobody; breaking any of the three kills auto-scroll with no
 //                          error, no exception, and no trace.
+//   6. Remote UI boundary - a [DataMember] property carries a type the boundary can actually
+//                          cross, otherwise it is INVISIBLE on the VS side (no error, no
+//                          binding). The whitelist was MEASURED before it was written: the
+//                          stated doctrine left out AsyncCommand (83 sites), double and a bare
+//                          [DataContract] type - it forbade what works.
 public class ConventionCoverageTests
 {
     // ── 1. SafeFileWriter sous Services\Tools ─────────────────────────────────
@@ -172,6 +178,89 @@ public class ConventionCoverageTests
             + "conversation silently stops following the stream.");
     }
 
+    // ── 6. The types that cross the Remote UI boundary ────────────────────────
+
+    [Fact]
+    public void DataMemberProperties_CarryATypeTheBoundaryCanActuallyCross()
+    {
+        // A property exposed to devenv whose type does not cross is INVISIBLE on the VS side. No
+        // error, no exception, no warning: the binding finds nothing and the element stays empty.
+        // It is the most expensive failure shape in this repository to diagnose, because the code
+        // looks right on both sides.
+        //
+        // The contract is a WHITELIST, and it was measured before being written: the stated
+        // doctrine ("only string/bool/int/ObservableCollection<T>") was stricter than the product,
+        // which also exposes 83 AsyncCommand, two double and one ChatMessageItem? (the scrolling
+        // anchor). Forbidding what works is the rule people learn to work around.
+        var files = ViewModelSources();
+
+        var contracts = new HashSet<string>(StringComparer.Ordinal);
+        var trees     = new List<(string File, SyntaxNode Root)>();
+        foreach (var file in files)
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            trees.Add((file, root));
+            foreach (var type in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
+                if (type.AttributeLists.SelectMany(a => a.Attributes)
+                        .Any(a => a.Name.ToString() is "DataContract" or "DataContractAttribute"))
+                    contracts.Add(type.Identifier.ValueText);
+        }
+        Assert.True(contracts.Count >= 8,
+            $"Only {contracts.Count} [DataContract] type(s) found: the derivation is broken.");
+
+        // The only shapes the boundary can carry. AsyncCommand is the SDK command type - it is how
+        // an action crosses the boundary, there is no alternative.
+        string[] primitives = ["string", "bool", "int", "double"];
+        var shapes = new HashSet<string>(StringComparer.Ordinal);
+
+        bool Crosses(TypeSyntax type)
+        {
+            var name = type.ToString().Replace(" ", string.Empty).TrimEnd('?');
+
+            if (primitives.Contains(name))              { shapes.Add("primitive"); return true; }
+            if (name == "AsyncCommand")                 { shapes.Add("command");   return true; }
+            if (contracts.Contains(name))               { shapes.Add("contract");  return true; }
+
+            var collection = Regex.Match(name, @"^ObservableCollection<([A-Za-z0-9_]+)>$");
+            if (collection.Success
+                && (primitives.Contains(collection.Groups[1].Value) || contracts.Contains(collection.Groups[1].Value)))
+            {
+                shapes.Add("collection");
+                return true;
+            }
+            return false;
+        }
+
+        var offenders = new List<string>();
+        var seen      = 0;
+        foreach (var (file, root) in trees)
+            foreach (var prop in root.DescendantNodes().OfType<PropertyDeclarationSyntax>())
+            {
+                if (!prop.AttributeLists.SelectMany(a => a.Attributes)
+                        .Any(a => a.Name.ToString() is "DataMember" or "DataMemberAttribute")) continue;
+
+                seen++;
+                if (Crosses(prop.Type)) continue;
+
+                var line = prop.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Rel(file)}({line}): {prop.Identifier.ValueText} is a {prop.Type}");
+            }
+
+        // Two witnesses, because two things can break: the enumeration (it no longer reads any
+        // property) and the classifier (it accepts everything, or nothing). A "zero violation"
+        // means nothing without both.
+        Assert.True(seen > 100, $"Only {seen} [DataMember] propertie(s) read: the rule scans nothing.");
+        foreach (var shape in new[] { "primitive", "command", "collection", "contract" })
+            Assert.Contains(shape, shapes);
+
+        Assert.True(offenders.Count == 0,
+            "Property exposed to devenv with a type the Remote UI boundary cannot carry. It will be "
+            + "INVISIBLE on the VS side: no error, no binding, the element stays empty. The only "
+            + "shapes that cross are the primitives (string/bool/int/double), AsyncCommand, a "
+            + "[DataContract] type, and an ObservableCollection of either of the last two. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
     /// <summary>
     /// The witness of <see cref="CodeOnly"/>: it neutralizes comments in BOTH directions that
     /// matter, and shifts nothing.
@@ -265,6 +354,20 @@ public class ConventionCoverageTests
     /// witness. <c>LocalizationCompletenessTests</c> uses it to sweep the VS adapter for the
     /// <c>%Key%</c> tokens of the command table.
     /// </remarks>
+    /// <summary>
+    /// The VS adapter view models (<c>Inferpal\ToolWindow</c>), WITH ITS WITNESS - the same guard
+    /// as <see cref="ProjectSources"/>.
+    /// </summary>
+    private static IReadOnlyList<string> ViewModelSources()
+    {
+        var dir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        Assert.True(Directory.Exists(dir), $"The convention scan targets {dir}, which does not exist - the rule checks nothing any more.");
+
+        var files = Directory.EnumerateFiles(dir, "*.cs", SearchOption.TopDirectoryOnly).ToList();
+        Assert.NotEmpty(files);
+        return files;
+    }
+
     internal static IReadOnlyList<string> ProjectSources(string project)
     {
         var dir = Path.Combine(RepoRoot(), project);
