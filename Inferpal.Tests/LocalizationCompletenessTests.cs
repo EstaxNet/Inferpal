@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Xunit;
 
@@ -11,6 +12,13 @@ namespace Inferpal.Tests;
 /// the drift is invisible until a user reports a half-translated UI. Eight keys had already
 /// slipped through before this test existed.
 /// </summary>
+/// <remarks>
+/// The product shows translated text through THREE channels, and each has its own way of staying
+/// quiet when a key is missing: the <c>.resx</c> files (English fallback), the VS Code bundles
+/// (<c>l10n.t</c> returns the source string), and the <b>VSIX command table</b> (an unresolved
+/// <c>%Key%</c> token). All three are held here, each in both directions - the displayed string no
+/// file translates, and the translation nothing displays any more.
+/// </remarks>
 public class LocalizationCompletenessTests
 {
     private static readonly string[] Locales = ["fr", "de", "es", "it", "ru", "ja", "ko", "pl", "zh-CN"];
@@ -116,5 +124,167 @@ public class LocalizationCompletenessTests
 
         Assert.True(report.Count == 0,
             "Orphaned keys (remove them from the listed .resx files):\n" + string.Join("\n", report));
+    }
+
+    /// <summary>Repository root - first ancestor of the test binary holding the .sln.</summary>
+    private static string RepoRootDir()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        return dir!;
+    }
+
+    // ── The .resx files and Strings.cs: the half of the rule nobody held ───────────────────
+    //
+    // "Every new localization key -> translated in the 10 .resx AND A PROPERTY IN Strings.cs": the
+    // two tests above hold the first half, the second was held by nobody. It fails silently on both
+    // sides - Strings.Get returns the KEY itself when the resource is missing (`?? key`), so the
+    // user reads "AgentPlanLabel" where a sentence belongs; and an entry no property asks for any
+    // more is a dead translation nine languages keep carrying. Measured: 731 = 731, no gap. Free to
+    // lock, therefore locked now rather than the day a violation appears.
+
+    /// <summary>
+    /// The keys <c>Strings.cs</c> actually asks for - <c>Get(nameof(X))</c> and the rare
+    /// <c>Get("X")</c>. CARRIES THE WITNESS of its own enumeration.
+    /// </summary>
+    /// <remarks>
+    /// Comments are neutralized (<c>ConventionCoverageTests.CodeOnly</c>): a commented-out property
+    /// exposes nothing, and counting its key would make the mirror falsely green - the exact false
+    /// green the neutralizer exists to close.
+    /// </remarks>
+    private static HashSet<string> StringsAccessorKeys()
+    {
+        var path = Path.Combine(LocalizationDir(), "Strings.cs");
+        Assert.True(File.Exists(path), $"{path} does not exist - the rule checks nothing any more.");
+
+        var code = ConventionCoverageTests.CodeOnly(path);
+        var keys = Regex.Matches(code, @"(?<![A-Za-z0-9_])Get\(\s*nameof\(\s*([A-Za-z0-9_]+)\s*\)")
+            .Select(m => m.Groups[1].Value)
+            .Concat(Regex.Matches(code, @"(?<![A-Za-z0-9_])Get\(\s*""([^""]+)""")
+                .Select(m => m.Groups[1].Value))
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.True(keys.Count > 100, $"Only {keys.Count} key(s) read from Strings.cs - the enumerator is too narrow.");
+        Assert.Contains("LabelLanguage", keys);
+        return keys;
+    }
+
+    [Fact]
+    public void EveryNeutralResxKey_IsExposedByStrings()
+    {
+        var neutral = KeysOf(Path.Combine(LocalizationDir(), "Strings.resx"));
+        Assert.NotEmpty(neutral);
+
+        var orphaned = neutral.Except(StringsAccessorKeys()).Order().ToList();
+        Assert.True(orphaned.Count == 0,
+            $"{orphaned.Count} key(s) translated in all ten .resx that Strings.cs exposes to nobody "
+            + "- either the property is missing, or the translation is dead: "
+            + string.Join(", ", orphaned.Take(10)));
+    }
+
+    [Fact]
+    public void NoStringsAccessor_AsksForAKeyTheNeutralResxLacks()
+    {
+        var neutral = KeysOf(Path.Combine(LocalizationDir(), "Strings.resx"));
+        var missing = StringsAccessorKeys().Except(neutral).Order().ToList();
+
+        Assert.True(missing.Count == 0,
+            $"{missing.Count} propertie(s) of Strings.cs ask for a key the neutral .resx lacks. "
+            + "Strings.Get then returns the KEY itself: the user reads the identifier instead of "
+            + "the sentence, in all ten languages, and no build fails - "
+            + string.Join(", ", missing.Take(10)));
+    }
+
+    // ── Third channel: the VSIX command table ─────────────────────────────────────────────
+    //
+    // The labels Visual Studio shows for OUR COMMANDS come neither from the .resx files nor from
+    // the VS Code bundles: they come from Inferpal\Localization\string-resources.json (plus one
+    // file per language), named from the code by a "%Key%" token in a CommandConfiguration or a
+    // MenuConfiguration. The token ships AS IS inside the packaged extension.json - VS resolves it
+    // at run time - so a token with no entry fails no build, neither Debug nor Release
+    // warnings-as-errors.
+    //
+    // Measured: "%InferpalMapCommand%" - the Alt+M command, the one that opens the project
+    // architecture map - had an entry in NONE of the ten files. The command works, its shortcut is
+    // wired; but everywhere VS NAMES it (Tools > Options > Environment > Keyboard, feature search)
+    // it had no name. Nine commands out of ten carried theirs: the tenth was the one nothing
+    // looked at.
+
+    /// <summary>
+    /// The <c>%Key%</c> tokens the VS adapter references, token to declaring file. CARRIES THE
+    /// WITNESS of its enumeration.
+    /// </summary>
+    /// <remarks>
+    /// The pattern requires the WHOLE literal (<c>"%Key%"</c>, quotes included): that is the shape
+    /// the SDK recognises, and the only one that tells a token from a format <c>%</c>. Comments are
+    /// neutralized - a token quoted in prose is not a command.
+    /// </remarks>
+    private static Dictionary<string, string> CommandTokens()
+    {
+        var token = new Regex("\"%([A-Za-z0-9_.]+)%\"");
+        var found = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var file in ConventionCoverageTests.ProjectSources("Inferpal"))
+            foreach (Match m in token.Matches(ConventionCoverageTests.CodeOnly(file)))
+                found.TryAdd(m.Groups[1].Value, Path.GetRelativePath(RepoRootDir(), file));
+
+        // One per shape of declaration site: a command, then a menu.
+        foreach (var witness in new[] { "InferpalChatCommand", "InferpalMenu" })
+            Assert.True(found.ContainsKey(witness), $"The enumerator no longer sees \"%{witness}%\".");
+        return found;
+    }
+
+    /// <summary>The neutral file, then the nine languages - "" means the neutral one.</summary>
+    private static HashSet<string> CommandResourceKeys(string locale)
+    {
+        var dir  = Path.Combine(RepoRootDir(), "Inferpal", "Localization");
+        var path = locale.Length == 0
+            ? Path.Combine(dir, "string-resources.json")
+            : Path.Combine(dir, locale, "string-resources.json");
+        Assert.True(File.Exists(path), $"{path} does not exist - the rule checks nothing any more.");
+
+        return JsonDocument.Parse(File.ReadAllText(path)).RootElement
+            .EnumerateObject().Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void EveryCommandToken_IsDeclaredInAllStringResources()
+    {
+        var tokens  = CommandTokens();
+        var locales = new[] { string.Empty }.Concat(Locales).ToList();
+
+        var gaps = tokens.Keys.Order()
+            .Select(t => (Token: t, Missing: locales
+                .Where(l => !CommandResourceKeys(l).Contains(t))
+                .Select(l => l.Length == 0 ? "neutral" : l).ToList()))
+            .Where(x => x.Missing.Count > 0)
+            .Select(x => $"\"%{x.Token}%\" ({tokens[x.Token]}) missing in: {string.Join(", ", x.Missing)}")
+            .ToList();
+
+        Assert.True(gaps.Count == 0,
+            "Command token with no label: VS has nothing to show wherever it names the command, "
+            + "and no build says so -" + Environment.NewLine + "  "
+            + string.Join(Environment.NewLine + "  ", gaps));
+    }
+
+    [Fact]
+    public void NoStringResource_CarriesATokenNothingReferences()
+    {
+        // The mirror, for the same reason as NoLocale_CarriesAKeyTheNeutralResxDropped: a label
+        // whose command is gone later reads as "already translated".
+        var used   = CommandTokens().Keys.ToHashSet(StringComparer.Ordinal);
+        var report = new List<string>();
+
+        foreach (var locale in new[] { string.Empty }.Concat(Locales))
+        {
+            var orphaned = CommandResourceKeys(locale).Except(used).Order().ToList();
+            if (orphaned.Count > 0)
+                report.Add($"{(locale.Length == 0 ? "neutral" : locale)}: {orphaned.Count} orphaned → {string.Join(", ", orphaned.Take(5))}");
+        }
+
+        Assert.True(report.Count == 0,
+            "Command labels no token asks for any more (remove them):\n" + string.Join("\n", report));
     }
 }

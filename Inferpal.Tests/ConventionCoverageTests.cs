@@ -1,4 +1,7 @@
 ﻿using System.IO;
+using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -17,6 +20,13 @@ namespace Inferpal.Tests;
 //                          additive by nature, there is no atomic append.
 //   4. WorkspaceScan     - every recursive enumeration in a tool goes through the shared
 //                          exclusions (bin/obj/.git/node_modules/.inferpal...).
+//   5. Chat scrolling    - the literal Tag that ties the XAML list to the in-process WPF class
+//                          handlers (two projects, no compiler link between them), and the two
+//                          attributes (IsVirtualizing/CanContentScroll set to False) without
+//                          which BringIntoView has nothing to bring into view and ScrollToEnd
+//                          aims at a wrong extent. The agreement was STATED - in a comment - and
+//                          held by nobody; breaking any of the three kills auto-scroll with no
+//                          error, no exception, and no trace.
 public class ConventionCoverageTests
 {
     // ── 1. SafeFileWriter sous Services\Tools ─────────────────────────────────
@@ -104,7 +114,169 @@ public class ConventionCoverageTests
         }
     }
 
+    // ── 5. The scrolling contract of the chat list ────────────────────────────
+
+    [Fact]
+    public void TheChatList_KeepsTheContractTheAutoScrollerDependsOn()
+    {
+        // Three facts that must keep agreeing across a XAML file (project Inferpal) and an
+        // in-process class (project Inferpal.InProc), with NO compiler link between them:
+        //
+        //   - the literal Tag, by which the two WPF class handlers recognise THE chat list among
+        //     every ListBox living in devenv - renaming one side breaks no build, it simply turns
+        //     scrolling off;
+        //   - IsVirtualizing="False" and CanContentScroll="False", without which the ScrollViewer
+        //     scrolls by ITEM (logical scrolling) and off-screen bubbles have no container:
+        //     BringIntoView has nothing to bring, and ScrollToEnd aims at a wrong extent.
+        //
+        // All three fail the same way: the conversation stops following the stream, with no error,
+        // no exception and no trace - the user concludes the model stopped answering. The comment
+        // on ChatAutoScroller already STATED the agreement ("Must match the literal Tag set on the
+        // chat ListBox in InferpalToolWindowContent.xaml"); nobody held it.
+        var scroller = Path.Combine(RepoRoot(), "Inferpal.InProc", "GhostText", "ChatAutoScroller.cs");
+        Assert.True(File.Exists(scroller), $"{scroller} does not exist - the rule checks nothing any more.");
+
+        var tagConst = Regex.Match(CodeOnly(scroller), @"ChatListTag\s*=\s*""([^""]+)""");
+        Assert.True(tagConst.Success, "ChatAutoScroller no longer exposes a ChatListTag literal: the rule derives nothing.");
+        var tag = tagConst.Groups[1].Value;
+
+        var xamlDir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        var xamls   = Directory.EnumerateFiles(xamlDir, "*.xaml", SearchOption.TopDirectoryOnly).ToList();
+        Assert.True(xamls.Count >= 2, $"Only {xamls.Count} XAML file(s) found: the rule reads nothing.");
+
+        var element = new Regex(@"<[A-Za-z][^>]*?>", RegexOptions.Singleline);
+        var matches = xamls
+            .SelectMany(x => element.Matches(File.ReadAllText(x)).Select(m => (Xaml: x, El: m.Value)))
+            .Where(e => Regex.IsMatch(e.El, $@"Tag\s*=\s*""{Regex.Escape(tag)}"""))
+            .ToList();
+
+        Assert.True(matches.Count == 1,
+            $"{matches.Count} XAML element(s) carry Tag=\"{tag}\"; there must be exactly one. "
+            + "Chat auto-scroll is a global WPF class handler filtered by that Tag: at zero it "
+            + "attaches to nothing, at two it follows the wrong list - and neither says a word.");
+
+        var chatList = matches[0].El;
+        var missing = new[]
+            {
+                @"VirtualizingPanel\.IsVirtualizing\s*=\s*""False""",
+                @"ScrollViewer\.CanContentScroll\s*=\s*""False""",
+            }
+            .Where(attr => !Regex.IsMatch(chatList, attr))
+            .Select(attr => attr.Replace(@"\.", ".").Replace(@"\s*", string.Empty))
+            .ToList();
+
+        Assert.True(missing.Count == 0,
+            $"The chat list ({Rel(matches[0].Xaml)}) lost: {string.Join(", ", missing)}. "
+            + "With virtualization or logical scrolling on, off-screen bubbles have no container: "
+            + "BringIntoView has nothing to bring and ScrollToEnd aims at a wrong extent - the "
+            + "conversation silently stops following the stream.");
+    }
+
+    /// <summary>
+    /// The witness of <see cref="CodeOnly"/>: it neutralizes comments in BOTH directions that
+    /// matter, and shifts nothing.
+    /// </summary>
+    /// <remarks>
+    /// Without it the repair would be invisible: the rules above are green before and after, since
+    /// no source in the repository breaks them. That is exactly the failure mode this file exists
+    /// to close - a rule that measures nothing is green for the worst possible reason.
+    /// </remarks>
+    [Fact]
+    public void CodeOnly_NeutralizesComments_InBothDirections()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"inferpal-codeonly-{Guid.NewGuid():N}.cs");
+        var source = string.Join(Environment.NewLine,
+        [
+            "class Subject",
+            "{",
+            "    // Tag=\"InferpalChatList\" quoted in prose",
+            "    /// <summary>File.WriteAllText(path, text) in an XML comment</summary>",
+            "    void Real() { Called(); }",
+            "    /* Called();",
+            "       Called(); */",
+            "    void Other() { }",
+            "}",
+        ]);
+        File.WriteAllText(path, source);
+        try
+        {
+            var code = CodeOnly(path);
+
+            // False RED: prose documenting a forbidden pattern must no longer carry it.
+            Assert.DoesNotContain("InferpalChatList", code, StringComparison.Ordinal);
+            Assert.DoesNotContain("File.WriteAllText", code, StringComparison.Ordinal);
+
+            // False GREEN: a COMMENTED-OUT call no longer counts as present. The real one does.
+            Assert.Equal(1, Regex.Matches(code, @"Called\(").Count);
+            Assert.Contains("void Real()", code, StringComparison.Ordinal);
+            Assert.Contains("void Other()", code, StringComparison.Ordinal);
+
+            // Offsets are preserved: same length, same newlines - otherwise the line numbers in
+            // the failure messages would point at the wrong line.
+            Assert.Equal(source.Length, code.Length);
+            Assert.Equal(source.Count(c => c == '\n'), code.Count(c => c == '\n'));
+        }
+        finally { File.Delete(path); }
+    }
+
     // ── Plumbing ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// The text of a source file with its COMMENTS neutralized - replaced by spaces, length for
+    /// length, newlines preserved: offsets, and therefore the line numbers of failure messages,
+    /// stay exact.
+    /// </summary>
+    /// <remarks>
+    /// A convention scan that reads raw text finds its patterns INSIDE comments, and that is paid
+    /// for in both directions. False RED: the rule fails on the prose documenting the very defect
+    /// it forbids. False GREEN: a rule requiring the presence of a call is satisfied by finding it
+    /// COMMENTED OUT, i.e. disabled. Here the language is C#, so a syntax tree decides what a
+    /// regex cannot. One reader per language, never two - this is the C# one, hence
+    /// <c>internal</c>.
+    /// </remarks>
+    internal static string CodeOnly(string path)
+    {
+        var text   = File.ReadAllText(path);
+        var buffer = text.ToCharArray();
+        var root   = CSharpSyntaxTree.ParseText(text, path: path).GetRoot();
+
+        foreach (var trivia in root.DescendantTrivia(descendIntoTrivia: true))
+        {
+            if (!trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)
+                && !trivia.IsKind(SyntaxKind.MultiLineCommentTrivia)
+                && !trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)
+                && !trivia.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
+                continue;
+
+            var span = trivia.FullSpan;
+            for (var i = span.Start; i < span.End && i < buffer.Length; i++)
+                if (buffer[i] != '\n' && buffer[i] != '\r')
+                    buffer[i] = ' ';
+        }
+        return new string(buffer);
+    }
+
+    /// <summary>
+    /// Every <c>.cs</c> file of one project of the repository, WITH ITS WITNESS - a renamed folder
+    /// or a broken glob would otherwise make a rule pass by scanning nothing.
+    /// </summary>
+    /// <remarks>
+    /// <c>internal</c> for the same reason as <see cref="CodeOnly"/>: one enumerator, therefore one
+    /// witness. <c>LocalizationCompletenessTests</c> uses it to sweep the VS adapter for the
+    /// <c>%Key%</c> tokens of the command table.
+    /// </remarks>
+    internal static IReadOnlyList<string> ProjectSources(string project)
+    {
+        var dir = Path.Combine(RepoRoot(), project);
+        Assert.True(Directory.Exists(dir), $"The convention scan targets {dir}, which does not exist - the rule checks nothing any more.");
+
+        var files = Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+            .ToList();
+        Assert.NotEmpty(files);
+        return files;
+    }
 
     private static IEnumerable<string> ToolsSources() =>
         CoreSources(Path.Combine("Services", "Tools"));

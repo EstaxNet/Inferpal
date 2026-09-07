@@ -2,6 +2,7 @@
   "InferpalMenu": "Inferpal",
   "InferpalChatCommand": "Inferpal Chat",
   "InferpalSettingsCommand": "Inferpal Settings...",
+  "InferpalMapCommand": "Inferpal Project Map",
   "ContextMenuAskInferpal": "Ask Inferpal",
   "ContextMenuExplain": "Explain",
   "ContextMenuRefactor": "Refactor",
