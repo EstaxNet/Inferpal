@@ -21,6 +21,7 @@ internal class InferpalToolWindow : VsToolWindow
     private readonly ModelLifetimeService  _lifetimeService;
     private readonly VsBuildMonitor        _buildMonitor;
     private readonly DocsIndexService      _docsIndex;
+    private readonly Services.Debugging.IDebugSession _debug;
 
     public InferpalToolWindow(
         VisualStudioExtensibility extensibility,
@@ -31,7 +32,8 @@ internal class InferpalToolWindow : VsToolWindow
         ProjectIndexService       indexService,
         ModelLifetimeService      lifetimeService,
         VsBuildMonitor            buildMonitor,
-        DocsIndexService          docsIndex)
+        DocsIndexService          docsIndex,
+        Services.Debugging.IDebugSession debug)
         : base(extensibility)
     {
         _client          = client;
@@ -42,6 +44,7 @@ internal class InferpalToolWindow : VsToolWindow
         _lifetimeService = lifetimeService;
         _buildMonitor    = buildMonitor;
         _docsIndex       = docsIndex;
+        _debug           = debug;
         Title            = "Inferpal";
     }
 
@@ -58,7 +61,7 @@ internal class InferpalToolWindow : VsToolWindow
 
     public override Task<IRemoteUserControl> GetContentAsync(CancellationToken ct)
     {
-        _data ??= new InferpalToolWindowData(_client, _tools, _config, Extensibility, _contextHolder, _indexService, _lifetimeService, _buildMonitor, _docsIndex);
+        _data ??= new InferpalToolWindowData(_client, _tools, _config, Extensibility, _contextHolder, _indexService, _lifetimeService, _buildMonitor, _docsIndex, _debug);
         return Task.FromResult<IRemoteUserControl>(new InferpalToolWindowContent(_data));
     }
 }

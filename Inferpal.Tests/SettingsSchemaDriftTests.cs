@@ -196,4 +196,174 @@ public class SettingsSchemaDriftTests
         // And opening shows EVERYTHING: that is the property, the rest is presentation.
         Assert.Matches(new Regex(@"function openModelPopup[\s\S]{0,600}?renderModelPopup\(''\)"), source);
     }
+
+    /// <summary>
+    /// A TypeScript source with its <b>comments neutralized</b> - replaced by spaces, length for
+    /// length, newlines preserved, so offsets and line numbers stay exact.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A scan that reads raw text finds its patterns <b>inside comments</b>: a false red (the rule
+    /// fires on the prose documenting the very defect it forbids) as much as a false green (a rule
+    /// requiring a call to be present is satisfied by finding it commented out, i.e. disabled).
+    /// </para>
+    /// <para>
+    /// There is no TypeScript syntax tree available here (Roslyn only reads C#), so this is a
+    /// hand-written automaton - the shape this repository distrusts, hence its witness. The traps
+    /// that matter come from real sources: a <b>regular expression</b> can contain a quote, a star
+    /// and slashes - taking it for a string or a comment derails the rest of the line; and a
+    /// <b>division</b> must not be taken for a regular expression.
+    /// </para>
+    /// <para>
+    /// Same dividing line as on the PowerShell side: the neutralizer is wired in where a rule looks
+    /// for a <b>shape of code</b>, never where it looks for a <b>structure</b> (a section header
+    /// comment used as a landmark).
+    /// </para>
+    /// </remarks>
+    internal static string NeutralizeTypeScriptComments(string text)
+    {
+        var b = text.ToCharArray();
+        var n = b.Length;
+
+        void Blank(int from, int to)
+        {
+            for (var k = from; k < to && k < n; k++)
+                if (b[k] != '\n' && b[k] != '\r') b[k] = ' ';
+        }
+
+        // A '/' opens a regular expression when what precedes it cannot be an operand - otherwise
+        // it is a division. The look-behind reads the ALREADY neutralized buffer: a comment has
+        // become spaces there, so it cannot hide the operator.
+        bool RegexCanStartAt(int at)
+        {
+            var k = at - 1;
+            while (k >= 0 && char.IsWhiteSpace(b[k])) k--;
+            if (k < 0) return true;
+            if ("(,=:[!&|?{};+-*%~^<>".IndexOf(b[k]) >= 0) return true;
+            if (!char.IsLetter(b[k])) return false;
+
+            var end = k + 1;                       // a keyword, not an identifier: `return /re/`
+            while (k >= 0 && (char.IsLetterOrDigit(b[k]) || b[k] == '_')) k--;
+            return new string(b, k + 1, end - k - 1) is "return" or "typeof" or "case" or "in"
+                or "of" or "new" or "delete" or "void" or "instanceof" or "do" or "else"
+                or "yield" or "await";
+        }
+
+        var templates = new Stack<int>();          // brace depth on entering each ${ }
+        var depth = 0;
+        var inTemplate = false;
+        var i = 0;
+
+        while (i < n)
+        {
+            if (inTemplate)                        // template literal: everything is text...
+            {
+                if (b[i] == '\\') { i += 2; continue; }
+                if (b[i] == '$' && i + 1 < n && b[i + 1] == '{')   // ...except the interpolation
+                {
+                    templates.Push(depth); depth++; inTemplate = false; i += 2; continue;
+                }
+                if (b[i] == '`') { inTemplate = false; i++; continue; }
+                i++; continue;
+            }
+
+            var c = b[i];
+
+            if (c == '/' && i + 1 < n && b[i + 1] == '/')          // line comment
+            {
+                var close = text.IndexOf('\n', i);
+                var stop  = close < 0 ? n : close;
+                Blank(i, stop); i = stop; continue;
+            }
+            if (c == '/' && i + 1 < n && b[i + 1] == '*')          // block comment
+            {
+                var close = text.IndexOf("*/", i + 2, StringComparison.Ordinal);
+                var stop  = close < 0 ? n : close + 2;
+                Blank(i, stop); i = stop; continue;
+            }
+            if (c == '\'' || c == '"')                             // string: \ escapes, and it does
+            {                                                      // not cross a newline - an
+                var quote = c;                                     // unbalanced quote therefore
+                i++;                                               // only eats its own line.
+                while (i < n && b[i] != '\n')
+                {
+                    if (b[i] == '\\') { i += 2; continue; }
+                    if (b[i] == quote) { i++; break; }
+                    i++;
+                }
+                continue;
+            }
+            if (c == '`') { inTemplate = true; i++; continue; }
+            if (c == '/' && RegexCanStartAt(i))                    // regular expression
+            {
+                i++;
+                var inClass = false;                               // [ ... ]: a / is literal there
+                while (i < n && b[i] != '\n')
+                {
+                    if (b[i] == '\\') { i += 2; continue; }
+                    if (b[i] == '[') inClass = true;
+                    else if (b[i] == ']') inClass = false;
+                    else if (b[i] == '/' && !inClass) { i++; break; }
+                    i++;
+                }
+                continue;
+            }
+            if (c == '{') { depth++; i++; continue; }
+            if (c == '}')
+            {
+                if (templates.Count > 0 && depth == templates.Peek() + 1)
+                {
+                    templates.Pop(); depth--; inTemplate = true; i++; continue;
+                }
+                depth--; i++; continue;
+            }
+            i++;
+        }
+        return new string(b);
+    }
+
+    /// <summary>The witness of <see cref="NeutralizeTypeScriptComments"/>: both directions, the
+    /// traps taken from real sources, and the offsets.</summary>
+    /// <remarks>
+    /// Without it the repair would be invisible: no source under <c>vscode\src</c> is in breach and
+    /// every anchor of the rules above sits in real code, so they are green before and after. That
+    /// is the failure mode this file exists to close.
+    /// </remarks>
+    [Fact]
+    public void NeutralizeTypeScriptComments_KeepsCodeAndDropsComments()
+    {
+        var source = string.Join(Environment.NewLine,
+        [
+            "const url = 'http://x//y';                       // line: banned()",
+            "const tpl = `a // b ${ real(1) } c`;",
+            "const re  = s.replace(/[\\\\/:*?\"<>|]+/g, ' ');   // banned()",
+            "const div = total / count;                       // banned()",
+            "/* block:",
+            "   banned(); */",
+            "real(2);",
+            "// real(3)",
+            "function real(n: number) { return n; }",
+        ]);
+
+        var code = NeutralizeTypeScriptComments(source);
+
+        // False RED: prose documenting a forbidden pattern no longer carries it. The three
+        // end-of-line comments are the traps: a regular expression taken for a string (because of
+        // the quote inside its character class), and a division taken for a regular expression,
+        // would derail the rest of their line - and so let it through.
+        Assert.DoesNotContain("banned", code, StringComparison.Ordinal);
+
+        // False GREEN: a COMMENTED-OUT call no longer counts as present. The three real ones do.
+        Assert.Equal(3, Regex.Matches(code, @"real\(").Count);
+
+        // What is CODE, or TEXT inside a string or a template, survives intact.
+        Assert.Contains("'http://x//y'", code, StringComparison.Ordinal);
+        Assert.Contains("`a // b ${ real(1) } c`", code, StringComparison.Ordinal);
+        Assert.Contains("replace(/[\\\\/:*?\"<>|]+/g", code, StringComparison.Ordinal);
+        Assert.Contains("total / count", code, StringComparison.Ordinal);
+
+        // Offsets are preserved: otherwise the line numbers in messages would lie.
+        Assert.Equal(source.Length, code.Length);
+        Assert.Equal(source.Count(ch => ch == '\n'), code.Count(ch => ch == '\n'));
+    }
 }

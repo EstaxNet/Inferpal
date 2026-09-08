@@ -202,12 +202,19 @@ internal sealed record MentionSearchParams(string Category, string Query);
 internal sealed record MentionItemDto(string Label, string Detail, string Value);
 
 /// <summary>`mention/resolve` — materializes an instant or selected mention host-side.
-/// <paramref name="Category"/> ∈ <c>tree</c> | <c>diff</c> | <c>folder</c> (Value = full path) |
-/// <c>code</c> (Value = semantic query).</summary>
+/// <paramref name="Category"/> ∈ <c>tree</c> | <c>diff</c> | <c>debugger</c> |
+/// <c>folder</c> (Value = full path) | <c>code</c> (Value = semantic query).</summary>
 internal sealed record MentionResolveParams(string Category, string? Value = null);
 
-/// <summary>`mention/resolve` answer: the chip label + attached content (null = nothing).</summary>
-internal sealed record MentionResolveResult(string? Name, string? Content);
+/// <summary>
+/// `mention/resolve` answer: the chip label + attached content (null = nothing to attach).
+/// </summary>
+/// <param name="Notice">
+/// A localized sentence to show the user <b>instead of</b> a chip — "nothing is paused", not
+/// "something went wrong". Without it the adapter had no way to tell an empty answer from a
+/// failure, and both came out as silence: the user types <c>@debugger</c> and nothing happens.
+/// </param>
+internal sealed record MentionResolveResult(string? Name, string? Content, string? Notice = null);
 
 /// <summary>`command/slash` — a chat input starting with <c>/</c>. The host executes the
 /// commands it can serve headlessly; <c>Handled = false</c> tells the adapter to send the

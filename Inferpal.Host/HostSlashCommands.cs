@@ -733,6 +733,19 @@ internal sealed partial class HostServer
                         "get_git_status", JsonSerializer.SerializeToElement(new { include_diff = true }), ct);
                     return new MentionResolveResult("📊 git diff", diff);
                 }
+                case "debugger":
+                {
+                    // Served here rather than by the adapter: the VS Code side answered from
+                    // `vscode.debug.activeDebugSession` and attached the session's NAME AND TYPE —
+                    // where Visual Studio attaches the stop reason, the call stack and the locals,
+                    // and where docs/mentions.md promises "the live debugger break state (via
+                    // get_debugger_state)" for both editors. Same reader as the tool, so the two
+                    // cannot drift apart again.
+                    var state = await Services.Debugging.DebuggerStateReader.TryReadAsync(s.Debug, s.RootDir, ct);
+                    return state is null
+                        ? new MentionResolveResult(null, null, Strings.MentionDebuggerNone)
+                        : new MentionResolveResult("🐞 @debugger", state);
+                }
                 case "folder" when !string.IsNullOrEmpty(p.Value):
                 {
                     var content = MentionController.BuildFolderContext(p.Value!, ct);

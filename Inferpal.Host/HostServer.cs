@@ -141,6 +141,7 @@ internal sealed partial class HostServer : IDisposable
             RootDir      = p.RootDir,
             Approval     = approval,
             TestCapture  = p.Debug ? new RpcTestDebugCapture(rpc) : null,
+            Debug        = debug,
         };
         ResetHistory(_session);
 

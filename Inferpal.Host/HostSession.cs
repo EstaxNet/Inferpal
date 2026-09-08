@@ -34,6 +34,14 @@ internal sealed class HostSession : IDisposable
     /// <summary>§25 capture port; null when the adapter did not declare `debug/*` support.</summary>
     public Services.Debugging.ITestDebugCapture? TestCapture { get; init; }
 
+    /// <summary>
+    /// The adapter's debugger, same nullability rule as <see cref="TestCapture"/>. Held here — not
+    /// only handed to the tool registry — because the <c>@debugger</c> mention asks the same
+    /// question as <c>get_debugger_state</c> and must tell "nothing is paused" apart from an answer,
+    /// which reading a tool's returned sentence cannot do.
+    /// </summary>
+    public Services.Debugging.IDebugSession? Debug { get; init; }
+
     /// <summary>Named-session persistence, same store (and files) as the VS extension.</summary>
     /// <summary>
     /// The connection heartbeat's state machine. One instance per session: it starts OPTIMISTIC, so

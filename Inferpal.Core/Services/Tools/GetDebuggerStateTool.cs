@@ -8,21 +8,12 @@ namespace Inferpal.Services.Tools;
 /// <c>@debugger</c> mention.
 /// </summary>
 /// <remarks>
-/// <para>
-/// <b>Two channels, and the second one was missing.</b> Visual Studio <i>pushes</i> its break state
-/// cross-process (<see cref="Inferpal.GhostText.VsDebuggerTracker"/> → <see cref="DebuggerStateSignal"/>),
-/// so a snapshot is already on disk when the model asks. Every other front-end answers on demand,
-/// through <see cref="IDebugSession"/> — VS Code drives the Debug Adapter Protocol from its
-/// extension. This tool read the pushed snapshot and nothing else, so under VS Code it replied
-/// <i>"No paused debug session"</i> to a user stopped at a breakpoint: not a missing capability but
-/// a wrong answer, and one the model cannot detect (§21's own rule about collapsing "could not
-/// start" into "ran without stopping", wearing a different hat).
-/// </para>
-/// <para>
-/// The signal is still consulted first where it exists: it costs no round trip and survives a
-/// command driver that never advertised itself, which is the case a devenv whose in-process package
-/// failed to load degrades to.
-/// </para>
+/// <b>The two channels live in <see cref="DebuggerStateReader"/>, not here.</b> This tool read the
+/// pushed Visual Studio snapshot and nothing else, so under VS Code it replied <i>"No paused debug
+/// session"</i> to a user stopped at a breakpoint: not a missing capability but a wrong answer, and
+/// one the model cannot detect (§21's own rule about collapsing "could not start" into "ran without
+/// stopping", wearing a different hat). Sharing the reader with the two <c>@debugger</c> mentions is
+/// what keeps the three call sites from drifting apart again.
 /// </remarks>
 internal sealed class GetDebuggerStateTool(IDebugSession? session = null, Func<string>? root = null) : ITool
 {
@@ -44,15 +35,7 @@ internal sealed class GetDebuggerStateTool(IDebugSession? session = null, Func<s
     };
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
-    {
-        // Pushed snapshot (Visual Studio): already on disk, no round trip.
-        if (DebuggerStateSignal.TryRead() is { } snap) return DebuggerStateSignal.Format(snap);
-
-        // On-demand port (VS Code today): the editor is asked only when nothing was pushed.
-        if (session is { IsAvailable: true } live && await live.GetStateAsync(ct) is { } state)
-            return DebugStateFormatter.Format(state, root?.Invoke());
-
-        return "No paused debug session. Start debugging and hit a breakpoint (or an exception), "
-             + "then call this tool again.";
-    }
+        => await DebuggerStateReader.TryReadAsync(session, root?.Invoke(), ct)
+           ?? "No paused debug session. Start debugging and hit a breakpoint (or an exception), "
+            + "then call this tool again.";
 }

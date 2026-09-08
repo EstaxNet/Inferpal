@@ -29,7 +29,8 @@ internal partial class InferpalToolWindowData
     public InferpalToolWindowData(IInferenceProvider client, ToolRegistry tools, InferpalConfig config,
         VisualStudioExtensibility extensibility, VsContextHolder contextHolder,
         ProjectIndexService indexService, ModelLifetimeService lifetimeService,
-        VsBuildMonitor buildMonitor, DocsIndexService docsIndex)
+        VsBuildMonitor buildMonitor, DocsIndexService docsIndex,
+        Services.Debugging.IDebugSession? debug = null)
     {
         _client          = client;
         _orchestrator    = new AgentOrchestrator(client, config);
@@ -40,6 +41,7 @@ internal partial class InferpalToolWindowData
         _contextHolder   = contextHolder;
         _indexService    = indexService;
         _docsIndex       = docsIndex;
+        _debug           = debug;
         _lifetimeService = lifetimeService;
         _buildMonitor    = buildMonitor;
         _buildMonitor.BuildFailed += OnVsBuildFailed;

@@ -767,8 +767,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.post({ type: 'chips', chips: this.pendingAttachments.map((a) => ({ name: a.name })) });
   }
 
-  /** Materializes an instant/selected mention: clipboard/problems/debugger are editor-side,
-   * tree/diff/folder/code go through the host (mention/resolve). */
+  /** Materializes an instant/selected mention: clipboard and problems are editor-side (they read
+   * panels only the adapter can see); everything else goes through the host (mention/resolve).
+   *
+   * ⚠ `debugger` used to be editor-side too, and it attached the session's NAME AND TYPE — where
+   * Visual Studio attaches the stop reason, the call stack and the locals, and where the docs
+   * promise the break state for both editors. It reads the same port as `debug_inspect`, through
+   * the host, so the two editors now answer the same question the same way. */
   private async resolveMention(category: string, value?: string): Promise<void> {
     switch (category) {
       case 'clipboard': {
@@ -787,15 +792,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         return;
       }
-      case 'debugger': {
-        const session = vscode.debug.activeDebugSession;
-        if (!session) {
-          void vscode.window.showInformationMessage(vscode.l10n.t('No debugger session is active.'));
-          return;
-        }
-        this.addChip('🐞 ' + session.name, `Debug session: ${session.name} (type: ${session.type})`);
-        return;
-      }
       default: {
         const host = this.getHost();
         if (!host?.isRunning) {
@@ -805,6 +801,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           const result = await host.mentionResolve(category, value);
           if (result.name && result.content) {
             this.addChip(result.name, result.content);
+          } else if (result.notice) {
+            // Nothing to attach, and a reason for it: a message, never silence.
+            void vscode.window.showInformationMessage(result.notice);
           }
         } catch (err) {
           this.log(`[chat] mention/resolve failed: ${String(err)}`);

@@ -1262,6 +1262,66 @@ public class HostServerTests
     }
 
     [Fact]
+    public async Task DebuggerMention_AttachesTheBreakState_FromTheAdaptersOwnDebugger()
+    {
+        // The VS Code adapter used to answer this mention itself, from
+        // `vscode.debug.activeDebugSession`, and attached the session's NAME AND TYPE — where
+        // Visual Studio attaches the stop reason, the call stack and the locals, and where
+        // docs/mentions.md promises the break state for both editors. It is served here now, from
+        // the same reader as get_debugger_state.
+        using var h = CreateHarness();
+        h.Target.PausedState = new
+        {
+            reason   = "breakpoint",
+            threadId = 0,
+            frames   = new[] { new { id = 3, function = "Program.Compute", file = @"C:\ws\Program.cs", line = 14 } },
+            locals   = new[] { new { name = "total", type = "int", value = "106" } },
+        };
+        await h.InitializeAsync(debug: true, rootDir: @"C:\ws").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.MentionResolveResult>(
+            "mention/resolve", new { category = "debugger" });
+
+        Assert.Equal("🐞 @debugger", result.Name);
+        Assert.Contains("Program.Compute", result.Content);
+        Assert.Contains("total", result.Content);
+        Assert.Null(result.Notice);
+        Assert.Contains("state", h.Target.DebugCalls);   // it really crossed the wire
+    }
+
+    [Fact]
+    public async Task DebuggerMention_WithNothingPaused_SaysSo_InsteadOfSilence()
+    {
+        // Nothing to attach is not nothing to say. `mention/resolve` had no way to tell an empty
+        // answer from a failure, so both reached the user as an @mention that did nothing at all.
+        using var h = CreateHarness();
+        h.Target.PausedState = null;
+        await h.InitializeAsync(debug: true).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.MentionResolveResult>(
+            "mention/resolve", new { category = "debugger" });
+
+        Assert.Null(result.Name);
+        Assert.Null(result.Content);
+        Assert.Equal(Strings.MentionDebuggerNone, result.Notice);
+    }
+
+    [Fact]
+    public async Task DebuggerMention_WithNoDebuggerDeclared_SaysSoToo()
+    {
+        // An adapter that never declared `debug/*` has no port to ask. That is still an answer the
+        // user must see, not a mention that silently does nothing.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.MentionResolveResult>(
+            "mention/resolve", new { category = "debugger" });
+
+        Assert.Equal(Strings.MentionDebuggerNone, result.Notice);
+        Assert.Empty(h.Target.DebugCalls);               // nothing was asked of an absent adapter
+    }
+
+    [Fact]
     public async Task DebugStart_ThatTheAdapterRefuses_IsNotReportedAsACompletedRun()
     {
         // The VS Code case this exists for: a workspace with no launch configuration. "It ran and

@@ -36,6 +36,14 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private readonly VsContextHolder           _contextHolder;
     private readonly ProjectIndexService       _indexService;
     private readonly DocsIndexService          _docsIndex;
+
+    /// <summary>
+    /// The debugger port, so the <c>@debugger</c> mention reads through
+    /// <see cref="Services.Debugging.DebuggerStateReader"/> like everyone else. Visual Studio
+    /// answers from the pushed signal in practice; the port is what keeps this site from being a
+    /// third private answer to the same question.
+    /// </summary>
+    private readonly Services.Debugging.IDebugSession? _debug;
     private readonly ModelLifetimeService      _lifetimeService;
     private readonly VsBuildMonitor            _buildMonitor;
 

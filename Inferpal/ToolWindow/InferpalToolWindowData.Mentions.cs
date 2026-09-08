@@ -327,15 +327,18 @@ internal partial class InferpalToolWindowData
                 }
                 case MentionKind.Debugger:
                 {
-                    // Read the signal directly (not via the tool) so "not paused" can be a
-                    // notification instead of a useless attachment chip.
-                    var snap = Services.Signals.DebuggerStateSignal.TryRead();
-                    if (snap is null)
+                    // Read the state directly (not via the tool) so "not paused" can be a
+                    // notification instead of a useless attachment chip — the tool has to answer a
+                    // sentence, and reading a tool's own message back is the §18 mistake.
+                    // Same reader as the tool and as the VS Code mention: three call sites, one
+                    // answer to "is the debugger paused, and where?".
+                    var state = await Services.Debugging.DebuggerStateReader.TryReadAsync(
+                        _debug, _indexService.RootDir, ct);
+                    if (state is null)
                     {
                         await NotifyMentionAsync(Strings.MentionDebuggerNone);
                         return;
                     }
-                    var state = Services.Signals.DebuggerStateSignal.Format(snap);
                     await RunOnVMContextAsync(() => AddAttachment("🐞 @debugger", state));
                     break;
                 }

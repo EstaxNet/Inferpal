@@ -148,10 +148,13 @@ export interface MentionItem {
   value: string;
 }
 
-/** `mention/resolve` answer: chip label + content (nulls = nothing to attach). */
+/** `mention/resolve` answer: chip label + content (nulls = nothing to attach).
+ * `notice` is a localized sentence to show INSTEAD of a chip — "nothing is paused", not a
+ * failure. Without it an empty answer and a broken one both came out as silence. */
 export interface MentionResolveResult {
   name: string | null;
   content: string | null;
+  notice?: string | null;
 }
 
 /** One editor-side effect a handled slash command asks the adapter to apply.
