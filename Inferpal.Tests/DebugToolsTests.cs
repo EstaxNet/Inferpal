@@ -357,14 +357,57 @@ public class DebugToolsTests
     }
 
     [Fact]
-    public void Registry_WithADebugSurface_AddsExactlyTheTwoDebugTools()
+    public void Registry_WithADebugSurface_AddsExactlyTheThreeDebugTools()
     {
         var without = BuildRegistry(debug: null).Definitions.Select(d => d.Function.Name).ToHashSet();
         var with    = BuildRegistry(new FakeDebugSession()).Definitions.Select(d => d.Function.Name).ToHashSet();
 
+        // get_debugger_state used to be registered unconditionally, ten lines above the comment
+        // explaining why a tool that can only answer "unavailable here" must not exist. With no
+        // debugger of any kind — no in-process VS peer to push a snapshot, no port to ask — that is
+        // literally all it could say, on every turn, forever.
         Assert.Equal(
-            new[] { DebugControlTool.ToolName, DebugInspectTool.ToolName }.OrderBy(n => n),
+            new[] { DebugControlTool.ToolName, DebugInspectTool.ToolName, GetDebuggerStateTool.ToolName }.OrderBy(n => n),
             with.Except(without).OrderBy(n => n));
+    }
+
+    [Fact]
+    public async Task GetDebuggerState_AsksThePort_WhenNoSnapshotWasPushed()
+    {
+        // The Visual Studio front-end PUSHES its break state to a signal file; every other
+        // front-end answers on demand through IDebugSession. The tool read the pushed snapshot and
+        // nothing else, so under VS Code — which drives a real debugger over the DAP — it replied
+        // "No paused debug session" to a user stopped at a breakpoint. Not a missing capability:
+        // a wrong answer, and one the model has no way to detect.
+        var session = new FakeDebugSession { State = FakeDebugSession.Paused() };
+        var tool    = new GetDebuggerStateTool(session, () => @"C:\ws");
+
+        var answer = await tool.ExecuteAsync(default, CancellationToken.None);
+
+        Assert.Contains("Debugger paused", answer);
+        Assert.Contains("Program.Compute", answer);
+    }
+
+    [Fact]
+    public async Task GetDebuggerState_SaysNoSession_WhenNothingIsPausedAnywhere()
+    {
+        var session = new FakeDebugSession { State = null };
+        var tool    = new GetDebuggerStateTool(session, () => @"C:\ws");
+
+        Assert.Contains("No paused debug session",
+                        await tool.ExecuteAsync(default, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetDebuggerState_DoesNotAskAnUnavailablePort()
+    {
+        // "Unavailable" is the shape a devenv whose in-process package failed to load degrades to.
+        // Asking it anyway would block on a channel nobody is serving.
+        var session = new FakeDebugSession { IsAvailable = false, State = FakeDebugSession.Paused() };
+        var tool    = new GetDebuggerStateTool(session, () => @"C:\ws");
+
+        Assert.Contains("No paused debug session",
+                        await tool.ExecuteAsync(default, CancellationToken.None));
     }
 
     [Fact]

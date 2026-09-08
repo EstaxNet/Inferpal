@@ -66,9 +66,12 @@ internal static class DebuggerStateSignal
     internal static DebuggerSnapshot? TryRead()
     {
         // §22: same reason as ActiveSolutionSignal — a host with no in-process VS peer would report
-        // Visual Studio's break state as its own. `get_debugger_state` then reads "No paused debug
-        // session", which is true of this editor, instead of handing the model another editor's
-        // call stack.
+        // Visual Studio's break state as its own, so this channel stays silent there.
+        // ⚠ "Silent" is not "not paused", and this comment claimed it was: it read «`get_debugger_state`
+        // then reads "No paused debug session", which is true of this editor». It is true of this
+        // CHANNEL. A front-end that drives its own debugger (VS Code, over the DAP) was answered
+        // "you are not debugging" while stopped at a breakpoint — the tool now asks IDebugSession
+        // when nothing was pushed here.
         if (!SignalScope.HasVsInProcessPeer) return null;
 
         var snap = SignalFile.TryRead<DebuggerSnapshot>(FilePath);

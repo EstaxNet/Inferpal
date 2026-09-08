@@ -26,6 +26,13 @@ namespace Inferpal.Host;
 /// </summary>
 internal sealed partial class HostServer : IDisposable
 {
+    /// <summary>
+    /// The editor on the other end of this RPC, as the model is told it. The host serves exactly
+    /// one adapter today; the day it serves a second, this becomes a handshake field rather than a
+    /// constant — it is never inferred from the process tree.
+    /// </summary>
+    internal const string EditorName = "Visual Studio Code";
+
     private readonly Func<InferpalConfig, IInferenceProvider> _providerFactory;
     private readonly Func<InferpalConfig> _configFactory;
     private readonly TaskCompletionSource _shutdown = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -828,7 +835,7 @@ internal sealed partial class HostServer : IDisposable
     /// plan-mode instructions.</summary>
     private static string BuildSystemPromptText(HostSession s)
     {
-        var prompt = new SystemPromptBuilder(s.Config).Build(
+        var prompt = new SystemPromptBuilder(s.Config, EditorName).Build(
             Strings.SystemPrompt,
             projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
             disabledSectionIds: s.XrayDisabledSections);
@@ -839,7 +846,7 @@ internal sealed partial class HostServer : IDisposable
 
     /// <summary>Prompt layers for the X-Ray panel — same inputs as <see cref="BuildSystemPromptText"/>.</summary>
     private static IReadOnlyList<PromptSection> BuildPromptSections(HostSession s) =>
-        new SystemPromptBuilder(s.Config).BuildSections(
+        new SystemPromptBuilder(s.Config, EditorName).BuildSections(
             Strings.SystemPrompt,
             projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
 

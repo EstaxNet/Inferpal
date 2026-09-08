@@ -223,7 +223,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>Sei Inferpal, un assistente sviluppatore IA locale integrato in Visual Studio 2026. Hai accesso a strumenti per leggere/scrivere file, elencare directory, cercare nel codice ed eseguire comandi PowerShell. Usa questi strumenti quanto necessario prima di rispondere. Rispondi nella stessa lingua dell'utente.</value></data>
+  <data name="SystemPrompt" xml:space="preserve"><value>Sei Inferpal, un assistente sviluppatore IA locale integrato nell'editor di codice dell'utente. Hai accesso a strumenti per leggere/scrivere file, elencare directory, cercare nel codice ed eseguire comandi shell. Usa questi strumenti quanto necessario prima di rispondere. Rispondi nella stessa lingua dell'utente.</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>

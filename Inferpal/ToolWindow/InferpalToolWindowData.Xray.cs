@@ -44,7 +44,7 @@ internal partial class InferpalToolWindowData
     private void RefreshXrayPanel()
     {
         var root     = FindProjectRoot();
-        var sections = new SystemPromptBuilder(_config).BuildSections(
+        var sections = new SystemPromptBuilder(_config, EditorName).BuildSections(
             Strings.SystemPrompt, null, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
@@ -79,7 +79,7 @@ internal partial class InferpalToolWindowData
     private void RefreshXrayTotals()
     {
         var root     = FindProjectRoot();
-        var sections = new SystemPromptBuilder(_config).BuildSections(
+        var sections = new SystemPromptBuilder(_config, EditorName).BuildSections(
             Strings.SystemPrompt, null, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,

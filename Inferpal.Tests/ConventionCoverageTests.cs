@@ -42,6 +42,12 @@ namespace Inferpal.Tests;
 //                          yourself is a deadlock). The criterion is the SHAPE - in a loop means
 //                          background work, outside a loop means someone is waiting - not a list
 //                          of files.
+//   9. Variable facts    - what the MODEL reads (a tool description, the base system prompt)
+//                          asserts neither an editor nor a shell: one Core serves both Visual
+//                          Studio and VS Code, and the shell has been resolved per machine since
+//                          §23. The prompt said "Visual Studio 2026 ... PowerShell" in all TEN
+//                          languages, and run_command's description said PowerShell on the
+//                          published linux-x64 / darwin-arm64 packages.
 public class ConventionCoverageTests
 {
     // ── 1. SafeFileWriter sous Services\Tools ─────────────────────────────────
@@ -185,6 +191,106 @@ public class ConventionCoverageTests
             + "With virtualization or logical scrolling on, off-screen bubbles have no container: "
             + "BringIntoView has nothing to bring and ScrollToEnd aims at a wrong extent - the "
             + "conversation silently stops following the stream.");
+    }
+
+    // ── 9. What the MODEL reads asserts no variable fact ──────────────────────
+
+    /// <summary>The two facts the product knows to be variable, and that its own text asserted.</summary>
+    private static readonly string[] VariableFacts = ["Visual Studio", "PowerShell", "powershell"];
+
+    [Fact]
+    public void ModelFacingToolText_NamesNeitherAnEditorNorAShell()
+    {
+        // A tool description is not prose: it is the SPECIFICATION the model reads to decide how
+        // to write its call. `run_command` announced "Runs a PowerShell command", and the shell has
+        // been resolved per machine since §23 — on the linux-x64 and darwin-arm64 packages
+        // published since 1.5.0, that shell is /bin/bash. The model wrote Get-ChildItem and
+        // $env:FOO, bash refused them, and the agent spent its iteration budget rediscovering by
+        // trial and error what the tool could have said in one sentence. Same family for the
+        // editor: get_solution_info and get_open_editors named Visual Studio to the VS Code
+        // front-end.
+        //
+        // ⚠ The rule reads the Description and Parameters PROPERTIES, not the file: run_command
+        // must be able to name both dialects in the code that CHOOSES between them — that is the
+        // whole point. What is forbidden is writing the fact down where the model reads it.
+        var offenders    = new List<string>();
+        var descriptions = 0;
+
+        foreach (var file in ToolsSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var property in root.DescendantNodes().OfType<PropertyDeclarationSyntax>())
+            {
+                var name = property.Identifier.ValueText;
+                if (name is not ("Description" or "Parameters")) continue;
+                if (name == "Description") descriptions++;
+
+                foreach (var text in ModelFacingText(property))
+                    foreach (var fact in VariableFacts)
+                        if (text.Contains(fact, StringComparison.Ordinal))
+                            offenders.Add($"{Rel(file)} : {name} → « {text.Trim()} »");
+            }
+        }
+
+        // Witness: the rule is only worth something if it actually read tool descriptions. A moved
+        // folder or a renamed property turns "no offender" back into "nothing was read".
+        Assert.True(descriptions >= 20,
+            $"The scan read only {descriptions} Description propertie(s) under Services/Tools: the rule no longer checks anything.");
+
+        Assert.True(offenders.Count == 0,
+            "Model-facing text naming an editor or a shell. One Core serves both front-ends and "
+            + "three operating systems: state the fact instead of asserting it (the dialect comes "
+            + "from ShellLauncher.Resolve, the editor is declared by the front-end):"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    [Fact]
+    public void TheBaseSystemPrompt_AssertsNeitherEditorNorShell()
+    {
+        // The SAME resource is served to both front-ends: Inferpal.Host hands it to VS Code
+        // verbatim. "integrated in Visual Studio 2026" was therefore false for every VS Code user,
+        // in all ten languages, and "PowerShell commands" false for every Linux/macOS machine. Both
+        // facts are now built at runtime by SystemPromptBuilder.EnvironmentFacts, where they hold.
+        var dir       = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
+        var files     = Directory.EnumerateFiles(dir, "Strings*.resx").ToList();
+        var inspected = 0;
+        var offenders = new List<string>();
+
+        foreach (var file in files)
+        {
+            var m = Regex.Match(File.ReadAllText(file),
+                                @"<data name=""SystemPrompt""[^>]*>\s*<value>(.*?)</value>",
+                                RegexOptions.Singleline);
+            if (!m.Success) continue;
+
+            inspected++;
+            foreach (var fact in VariableFacts)
+                if (m.Groups[1].Value.Contains(fact, StringComparison.Ordinal))
+                    offenders.Add($"{Path.GetFileName(file)} : « {fact} »");
+        }
+
+        // Witness: all ten languages, otherwise a broken pattern would make the rule green on zero files.
+        Assert.True(inspected == 10,
+            $"The scan read {inspected} SystemPrompt value(s) out of the 10 expected in {dir}: the rule no longer checks anything.");
+
+        Assert.True(offenders.Count == 0,
+            "The base system prompt asserts an editor or a shell. Both facts vary from one "
+            + "front-end and one machine to the next: they belong to EnvironmentFacts, not to a "
+            + "translation:" + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    /// <summary>The text a model will read inside a property: literals and the fixed parts of
+    /// interpolated strings. Identifiers (<c>ShellDialect.PowerShell</c>) are not.</summary>
+    private static IEnumerable<string> ModelFacingText(PropertyDeclarationSyntax property)
+    {
+        foreach (var node in property.DescendantNodes())
+        {
+            if (node is LiteralExpressionSyntax literal && literal.IsKind(SyntaxKind.StringLiteralExpression))
+                yield return literal.Token.ValueText;
+            else if (node is InterpolatedStringTextSyntax interpolated)
+                yield return interpolated.TextToken.ValueText;
+        }
     }
 
     // ── 8. Who yields the GPU, and who must NEVER wait for it ─────────────────

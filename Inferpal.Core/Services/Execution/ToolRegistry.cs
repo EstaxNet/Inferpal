@@ -96,7 +96,6 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new GetSolutionInfoTool(editor));
         Register(new GetOpenEditorsTool(editor));
         Register(new GetGitStatusTool(editor, () => indexService.RootDir));
-        Register(new GetDebuggerStateTool());
         Register(new RunTestsTool());
         Register(new InsertAtCursorTool(editor, approval, _fileHistory));
         Register(new ReplaceSelectionTool(editor, approval, _fileHistory));
@@ -118,6 +117,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             var budget = new DebugStepBudget();
             Register(new DebugControlTool(debug, approval, budget, () => indexService.RootDir));
             Register(new DebugInspectTool(debug, () => indexService.RootDir));
+            // Same gate, and it was missing here. `get_debugger_state` was registered
+            // unconditionally, ten lines above the comment forbidding exactly that: with no
+            // debugger of any kind its every answer is "no paused debug session".
+            Register(new GetDebuggerStateTool(debug, () => indexService.RootDir));
         }
 
         // ⚠ No `delegate` tool here, and this one is closed rather than merely absent. It was built

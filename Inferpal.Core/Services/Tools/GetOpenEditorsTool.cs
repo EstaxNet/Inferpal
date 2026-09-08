@@ -14,7 +14,7 @@ internal class GetOpenEditorsTool : ITool
     public string Name => "get_open_editors";
 
     public string Description =>
-        "Returns the list of files currently open in Visual Studio, with the active file clearly " +
+        "Returns the list of files currently open in the editor, with the active file clearly " +
         "identified. Use this to understand which files the user is currently working with, and to " +
         "provide context without asking the user to specify which file they are looking at.";
 

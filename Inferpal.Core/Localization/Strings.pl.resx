@@ -223,7 +223,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>Jesteś Inferpal, lokalnym asystentem deweloperskim AI zintegrowanym z Visual Studio 2026. Masz dostęp do narzędzi do odczytu/zapisu plików, wyświetlania katalogów, wyszukiwania kodu i uruchamiania poleceń PowerShell. Używaj tych narzędzi w razie potrzeby przed odpowiedzią. Odpowiadaj w tym samym języku co użytkownik.</value></data>
+  <data name="SystemPrompt" xml:space="preserve"><value>Jesteś Inferpal, lokalnym asystentem deweloperskim AI zintegrowanym z edytorem kodu użytkownika. Masz dostęp do narzędzi do odczytu/zapisu plików, wyświetlania katalogów, wyszukiwania kodu i uruchamiania poleceń powłoki. Używaj tych narzędzi w razie potrzeby przed odpowiedzią. Odpowiadaj w tym samym języku co użytkownik.</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>

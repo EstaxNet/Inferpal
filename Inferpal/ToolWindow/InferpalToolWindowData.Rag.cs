@@ -24,6 +24,13 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
+    /// <summary>
+    /// The editor this front-end runs in, as the model is told it (see
+    /// <see cref="Services.Prompting.SystemPromptBuilder.EnvironmentFacts"/>). Declared here rather
+    /// than inferred in the Core, which stays editor-agnostic by construction.
+    /// </summary>
+    internal const string EditorName = "Visual Studio";
+
     #region Indexation RAG, premier lancement, OODA & compaction
 
     // ── RAG indexing ──────────────────────────────────────────────────────────
@@ -327,7 +334,7 @@ internal partial class InferpalToolWindowData
     private string BuildSystemPrompt(string? language = null)
     {
         var dir = FindProjectRoot();
-        var prompt = new SystemPromptBuilder(_config).Build(
+        var prompt = new SystemPromptBuilder(_config, EditorName).Build(
             Strings.SystemPrompt,
             language,
             _activeTemplateSuffix,

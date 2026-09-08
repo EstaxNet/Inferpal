@@ -292,7 +292,7 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Xray:
                 {
-                    var sections = new SystemPromptBuilder(s.Config).BuildSections(
+                    var sections = new SystemPromptBuilder(s.Config, EditorName).BuildSections(
                         Strings.SystemPrompt,
                         projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
                     return new SlashCommandResult(true, XRayCommandHandler.Handle(

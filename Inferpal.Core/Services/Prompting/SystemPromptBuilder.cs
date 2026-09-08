@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Inferpal.Config;
 
@@ -19,8 +20,36 @@ internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, str
 /// <c>memory.md</c>, <c>notes.md</c>) → glob-scoped rules.
 /// Extracted from the tool-window VM so the layering is unit-testable without VS.
 /// </summary>
-internal sealed class SystemPromptBuilder(InferpalConfig config)
+internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorName = null)
 {
+    /// <summary>
+    /// The two facts the base prompt used to assert, stated from what this process can actually
+    /// observe — appended to the base layer so no new <c>/xray</c> section appears.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The localised prompt said "integrated in Visual Studio 2026 … run PowerShell commands", in
+    /// all ten languages, and the same resource is what <c>Inferpal.Host</c> hands to the VS Code
+    /// front-end. Every VS Code user was therefore told the wrong editor, and every Linux/macOS
+    /// user the wrong shell — on VSIX published for linux-x64 and darwin-arm64 since 1.5.0. A model
+    /// told it lives in Visual Studio answers with Solution Explorer and Rebuild Solution.
+    /// </para>
+    /// <para>
+    /// The editor is <b>declared</b> by the front-end, never inferred — same rule as
+    /// <c>SignalScope.DeclareNoVsInProcessPeer</c>, and for the same reason: a process that guesses
+    /// its own role guesses wrong the day a third front-end appears. When no name is declared the
+    /// line simply omits it rather than naming an editor at random.
+    /// </para>
+    /// </remarks>
+    internal string EnvironmentFacts()
+    {
+        var shell = Shell.ShellLauncher.Resolve().Dialect == Shell.ShellDialect.PowerShell
+            ? "PowerShell" : "bash";
+        var editor = string.IsNullOrWhiteSpace(editorName) ? string.Empty : $"Editor: {editorName}. ";
+        return $"\n\n{editor}Operating system: {RuntimeInformation.OSDescription}. "
+             + $"The run_command shell is {shell}.";
+    }
+
     /// <summary>Persona snippet appended when persona auto-switch is on, keyed by editor language.</summary>
     internal static string PersonaSnippetFor(string language) => language switch
     {
@@ -75,7 +104,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config)
         string? projectRoot       = null,
         string? activeFileRelPath = null)
     {
-        var sections = new List<PromptSection> { new(PromptSectionKind.Base, null, basePrompt) };
+        var sections = new List<PromptSection> { new(PromptSectionKind.Base, null, basePrompt + EnvironmentFacts()) };
 
         if (config.PersonaAutoSwitch && !string.IsNullOrEmpty(language))
         {

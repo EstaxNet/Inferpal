@@ -32,11 +32,15 @@ public class SystemPromptBuilderTests : IDisposable
         return full;
     }
 
+    /// <summary>The base layer is the prompt plus the environment facts — see
+    /// <see cref="EnvironmentFactsTests"/> for what those facts are and why they exist.</summary>
+    private static string Base(SystemPromptBuilder b) => "BASE" + b.EnvironmentFacts();
+
     [Fact]
-    public void BaseOnly_ReturnsBasePromptVerbatim()
+    public void BaseOnly_IsTheBasePromptAndTheEnvironmentFacts()
     {
-        var prompt = new SystemPromptBuilder(new InferpalConfig()).Build("BASE");
-        Assert.Equal("BASE", prompt);
+        var builder = new SystemPromptBuilder(new InferpalConfig());
+        Assert.Equal(Base(builder), builder.Build("BASE"));
     }
 
     [Fact]
@@ -52,8 +56,8 @@ public class SystemPromptBuilderTests : IDisposable
     [Fact]
     public void UnknownLanguage_AppendsNothing()
     {
-        var prompt = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = true }).Build("BASE", language: "cobol");
-        Assert.Equal("BASE", prompt);
+        var builder = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = true });
+        Assert.Equal(Base(builder), builder.Build("BASE", language: "cobol"));
     }
 
     [Fact]
@@ -129,7 +133,7 @@ public class SystemPromptBuilderTests : IDisposable
     [Fact]
     public void NullProjectRoot_SkipsProjectLayers()
     {
-        var prompt = new SystemPromptBuilder(new InferpalConfig()).Build("BASE", projectRoot: null);
-        Assert.Equal("BASE", prompt);
+        var builder = new SystemPromptBuilder(new InferpalConfig());
+        Assert.Equal(Base(builder), builder.Build("BASE", projectRoot: null));
     }
 }

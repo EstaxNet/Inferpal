@@ -223,7 +223,7 @@
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>你是 Inferpal，一个集成在 Visual Studio 2026 中的本地 AI 开发助手。你可以使用工具读写文件、列出目录、搜索代码并运行 PowerShell 命令。在回复之前请尽可能使用这些工具。请使用用户所使用的语言进行回复。</value></data>
+  <data name="SystemPrompt" xml:space="preserve"><value>你是 Inferpal，一个集成在用户代码编辑器中的本地 AI 开发助手。你可以使用工具读写文件、列出目录、搜索代码并运行 shell 命令。在回复之前请尽可能使用这些工具。请使用用户所使用的语言进行回复。</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>

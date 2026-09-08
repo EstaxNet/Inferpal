@@ -18,8 +18,8 @@ internal class GetSolutionInfoTool : ITool
 
     public string Name        => "get_solution_info";
     public string Description =>
-        "Returns the structure of the Visual Studio solution: solution name, projects with their " +
-        "target frameworks, output types, project references, and NuGet packages.";
+        "Returns the structure of the .NET solution open in the workspace: solution name, projects with " +
+        "their target frameworks, output types, project references, and NuGet packages.";
 
     public object Parameters => new
     {

@@ -7,7 +7,7 @@ using Inferpal.Services.Shell;
 namespace Inferpal.Services.Tools;
 
 /// <summary>
-/// Runs PowerShell commands for the agent. The shell is a <em>persistent session</em>: working
+/// Runs shell commands for the agent. The shell is a <em>persistent session</em>: working
 /// directory and environment variables set by one command are preserved for the next (see
 /// <see cref="ShellSession"/>). Long-running commands can be launched in the <em>background</em>
 /// and then read incrementally (<c>action: "poll"</c>) or terminated (<c>action: "stop"</c>).
@@ -26,18 +26,42 @@ internal sealed class RunCommandTool : ITool, IDisposable
 
     public string Name => "run_command";
 
-    public string Description =>
-        "Runs a PowerShell command in a persistent session (working directory and environment variables "
-        + "set by 'cd' or '$env:' persist to later calls). Set background=true for long-running commands "
-        + "(builds, servers, watchers): it returns a job id immediately. Use action='poll' with that id to "
-        + "read new output, and action='stop' to terminate it.";
+    /// <summary>
+    /// How this machine's shell is named to the model, and how it sets an environment variable.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Read from <see cref="ShellLauncher"/>, never written down. The execution path has spoken
+    /// two dialects since §23 (PowerShell on Windows or where <c>pwsh</c> is on PATH, POSIX
+    /// otherwise), but this description — the only thing telling the model <i>how to write the
+    /// command</i> — still said "PowerShell" everywhere. On the published Linux and macOS VSIX that
+    /// is a Windows script handed to <c>/bin/bash</c>: the model writes <c>Get-ChildItem</c> and
+    /// <c>$env:FOO</c>, bash refuses them, and the agent spends its iteration budget discovering by
+    /// trial and error what the tool could have said in one sentence. <c>UserShellTool</c> carries
+    /// the same fault on the execution side, and it was repaired there in the pre-1.6.0 review.
+    /// </remarks>
+    private static (string Shell, string SetEnv) Speak() =>
+        ShellLauncher.Resolve().Dialect == ShellDialect.PowerShell
+            ? ("PowerShell", "$env:NAME='…'")
+            : ("bash",       "export NAME=…");
+
+    public string Description
+    {
+        get
+        {
+            var (shell, setEnv) = Speak();
+            return $"Runs a {shell} command in a persistent session (working directory and environment "
+                 + $"variables set by 'cd' or `{setEnv}` persist to later calls). Set background=true for "
+                 + "long-running commands (builds, servers, watchers): it returns a job id immediately. Use "
+                 + "action='poll' with that id to read new output, and action='stop' to terminate it.";
+        }
+    }
 
     public object Parameters => new
     {
         type = "object",
         properties = new
         {
-            command           = new { type = "string", description = "PowerShell command to execute. Required unless using action=poll/stop/list." },
+            command           = new { type = "string", description = $"{Speak().Shell} command to execute. Required unless using action=poll/stop/list." },
             working_directory = new { type = "string", description = "Working directory for this command (optional; otherwise the session's current directory)." },
             background        = new { type = "boolean", description = "Run detached and return a job id immediately instead of waiting (for long-running commands)." },
             action            = new { type = "string", description = "Manage a background job instead of running a command: 'poll' (read new output), 'stop' (terminate), or 'list'." },
