@@ -62,7 +62,7 @@ internal sealed class DebugControlTool(
             return "No debugger is reachable from this editor session. Do not retry; reason from the "
                  + "source instead, or ask the user to run the program.";
 
-        var action = args.TryGetProperty("action", out var a) ? a.GetString()?.Trim().ToLowerInvariant() : null;
+        var action = args.Keyword("action");
         if (string.IsNullOrEmpty(action))
             return "Error: 'action' is required (set_breakpoint, clear_breakpoint, list_breakpoints, "
                  + "start, continue, step_over, step_into, step_out, stop).";

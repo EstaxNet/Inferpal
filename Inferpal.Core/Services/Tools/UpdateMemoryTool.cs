@@ -76,8 +76,16 @@ internal class UpdateMemoryTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var mode    = args.TryGetProperty("mode",    out var m) ? m.GetString() ?? "append" : "append";
-        var content = args.TryGetProperty("content", out var c) ? c.GetString() ?? string.Empty : string.Empty;
+        // ⚠ Keyword, not GetString: the switch below falls back to "append", so mode='Replace'
+        // APPENDED instead of overwriting -- a write silently different from the one asked for, in
+        // the file re-injected into the system prompt of every later session. And an unknown mode
+        // is refused BEFORE the approval prompt: having the user approve a write we are going to
+        // perform differently is worse than refusing it.
+        var mode    = args.Keyword("mode") ?? "append";
+        if (mode is not ("append" or "replace" or "clear"))
+            return $"Unknown mode '{mode}'. Use one of: 'append' (default), 'replace', 'clear'.";
+
+        var content = args.Str("content") ?? string.Empty;
 
         var projectRoot = FindProjectRoot();
         if (projectRoot is null)

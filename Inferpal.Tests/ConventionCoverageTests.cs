@@ -48,6 +48,12 @@ namespace Inferpal.Tests;
 //                          §23. The prompt said "Visual Studio 2026 ... PowerShell" in all TEN
 //                          languages, and run_command's description said PowerShell on the
 //                          published linux-x64 / darwin-arm64 packages.
+//  10. Model keywords    - an argument the code COMPARES against literals is read through
+//                          ToolArgs.Keyword, never any other way. This is the half the "read
+//                          model arguments without trusting them" rule does not cover: that one
+//                          closes the reads that THROW, this one the reads that return a WRONG
+//                          ANSWER with no error - 'Callers' does not match "callers", and the
+//                          report comes out with no sections at all.
 public class ConventionCoverageTests
 {
     // ── 1. SafeFileWriter sous Services\Tools ─────────────────────────────────
@@ -556,6 +562,148 @@ public class ConventionCoverageTests
             Assert.Equal(source.Count(c => c == '\n'), code.Count(c => c == '\n'));
         }
         finally { File.Delete(path); }
+    }
+
+    // ── 10. A model keyword is read through Keyword, never any other way ──────
+
+    [Fact]
+    public void ModelKeywords_AreReadThroughToolArgsKeyword()
+    {
+        // The "read model arguments without trusting them" rule closes the argument reads that
+        // THROW. This one closes the other half: the reads that return a WRONG ANSWER, with no
+        // error and no trace.
+        //
+        // Measured 2026-09-09: nine sites read a keyword written by the model, each deciding its
+        // own normalisation - four trimmed and lower-cased, one lower-cased only, three did
+        // neither. And ToolArgs.Keyword, written for exactly this and whose comment claimed "the
+        // shape every action/mode uses", had ONE caller in the whole repository: its own unit test.
+        //
+        // What the three unnormalised sites cost - never an exception, always an answer the model
+        // has no way to doubt:
+        //   . direction: "Callers"  -> trace_dependency rendered a report with NEITHER the Callers
+        //                              section NOR the Callees one. The model concludes "no caller".
+        //   . bridges:   " all"     -> trace_nexus walked the WHOLE workspace to conclude there are
+        //                              no bridges between the languages.
+        //   . mode:      "Replace"  -> update_memory APPENDED instead of overwriting, in the file
+        //                              re-injected into every later session's system prompt.
+        //
+        // The criterion is a PROPERTY, not a list of argument names: "the code compares this value
+        // against a literal" - so a mode/action/direction added tomorrow inherits the rule without
+        // anyone remembering to enrol it.
+        //
+        // What it does NOT see, said rather than implied: the comparison must live in the SAME
+        // method as the read. Two of the nine compare elsewhere - run_command hands its `action` to
+        // HandleAction (a parameter there), apply_diff/apply_edits hand their `occurrence` to
+        // ApplyDiffMatcher (another file, which normalises on its own). Following those would need
+        // a semantic model and would make the rule brittle; it judges 7, and a site moved out of
+        // its reach drops out of the counter - which is what the witness watches.
+        string[] readers = ["TryGetProperty", "Str", "Trimmed", "Keyword"];
+
+        var keywordArgs = 0;
+        var offenders   = new List<string>();
+
+        // We look for the CALL and the LITERAL, never the word: node.ToString() also renders
+        // comments, which is both a false green and a false red waiting to happen.
+        static bool ReadsAnArgument(SyntaxNode init, string[] readers, out bool viaKeyword)
+        {
+            var calls = init.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()
+                .Select(i => (i.Expression as MemberAccessExpressionSyntax)?.Name.Identifier.ValueText)
+                .Where(n => n is not null)
+                .ToList();
+            viaKeyword = calls.Contains("Keyword");
+            return calls.Any(n => readers.Contains(n!));
+        }
+
+        static bool ComparedToALiteral(SyntaxNode scope, string name)
+        {
+            static bool IsString(SyntaxNode? n) =>
+                n is LiteralExpressionSyntax l && l.IsKind(SyntaxKind.StringLiteralExpression);
+            static bool Is(SyntaxNode? n, string name) =>
+                n is IdentifierNameSyntax id && id.Identifier.ValueText == name;
+
+            foreach (var node in scope.DescendantNodes())
+            {
+                switch (node)
+                {
+                    // `x switch { "a" => ...` and `switch (x) { case "a":`
+                    case SwitchExpressionSyntax se when Is(se.GoverningExpression, name):
+                    case SwitchStatementSyntax ss when Is(ss.Expression, name):
+                        if (node.DescendantNodes().Any(IsString)) return true;
+                        break;
+
+                    // `x is "a" or "b"`
+                    case IsPatternExpressionSyntax ip when Is(ip.Expression, name):
+                        if (ip.Pattern.DescendantNodesAndSelf().Any(IsString)) return true;
+                        break;
+
+                    // `x == "a"` / `x != "a"`
+                    case BinaryExpressionSyntax be
+                        when be.IsKind(SyntaxKind.EqualsExpression) || be.IsKind(SyntaxKind.NotEqualsExpression):
+                        if ((Is(be.Left, name) && IsString(be.Right)) || (Is(be.Right, name) && IsString(be.Left)))
+                            return true;
+                        break;
+
+                    // `x.Equals("a")` - Contains/StartsWith are deliberately out: looking for a
+                    // substring is not choosing from a closed set.
+                    case InvocationExpressionSyntax inv
+                        when inv.Expression is MemberAccessExpressionSyntax m
+                          && m.Name.Identifier.ValueText == "Equals" && Is(m.Expression, name):
+                        if (inv.ArgumentList.Arguments.Any(a => IsString(a.Expression))) return true;
+                        break;
+                }
+            }
+            return false;
+        }
+
+        foreach (var file in ToolsSources().Where(f => Path.GetFileName(f) != "ToolArgs.cs"))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var scope in root.DescendantNodes()
+                                      .Where(n => n is MethodDeclarationSyntax or LocalFunctionStatementSyntax))
+            {
+                // The two ways of naming what was just read: `var x = args....` and
+                // `if (args.... is { } x)`. Knowing only the first would leave a hole the very
+                // shape of this defect can come back through.
+                var declared = new List<(string Name, SyntaxNode Init, int Line)>();
+
+                foreach (var v in scope.DescendantNodes().OfType<VariableDeclaratorSyntax>())
+                    if (v.Initializer is { } init)
+                        declared.Add((v.Identifier.ValueText, init.Value,
+                                      init.GetLocation().GetLineSpan().StartLinePosition.Line + 1));
+
+                foreach (var ip in scope.DescendantNodes().OfType<IsPatternExpressionSyntax>())
+                    if (ip.Pattern.DescendantNodesAndSelf().OfType<SingleVariableDesignationSyntax>().FirstOrDefault()
+                        is { } d)
+                        declared.Add((d.Identifier.ValueText, ip.Expression,
+                                      ip.GetLocation().GetLineSpan().StartLinePosition.Line + 1));
+
+                foreach (var (name, init, line) in declared)
+                {
+                    if (!ReadsAnArgument(init, readers, out var viaKeyword)) continue;
+                    if (!ComparedToALiteral(scope, name)) continue;
+
+                    keywordArgs++;
+                    if (!viaKeyword)
+                        offenders.Add($"{Rel(file)}({line}) : '{name}' compared against literals "
+                                    + "without going through ToolArgs.Keyword");
+                }
+            }
+        }
+
+        // The witness. It covers BOTH halves of the scan at once, because the counter is their
+        // intersection: a broken read detector and a broken comparison detector both return zero,
+        // and a zero with no witness would be green.
+        Assert.True(keywordArgs >= 6,
+            $"Only {keywordArgs} model keyword(s) found: the rule no longer judges anything "
+            + "(argument read or comparison against a literal - the counter is their intersection).");
+
+        Assert.True(offenders.Count == 0,
+            "A keyword written by the MODEL is read without normalisation. The code compares this "
+            + "value against literals: 'Callers', 'Replace' or a value with spaces around it match "
+            + "none of them, and the tool then returns a wrong answer WITH NO ERROR - an empty "
+            + "report, or a write different from the one asked for. Go through ToolArgs.Keyword:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     // ── Plumbing ──────────────────────────────────────────────────────────────

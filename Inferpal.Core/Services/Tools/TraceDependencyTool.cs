@@ -72,7 +72,13 @@ internal class TraceDependencyTool : ITool
 
         var symbol    = args.TryGetProperty("symbol",    out var sv) ? sv.GetString()?.Trim() : null;
         var depth     = Math.Clamp(args.Int("depth", 1), 0, MaxAllowedDepth);
-        var direction = args.TryGetProperty("direction", out var di) ? di.GetString() ?? "callees" : "callees";
+        // ⚠ Keyword, not GetString: "Callers", or "callees" with a space around it, matched
+        // neither literal below, so NEITHER the Callers section NOR the Callees section was
+        // rendered -- a well-formed report, without the answer, and without an error. The model
+        // concluded the method has no callers.
+        var direction = args.Keyword("direction") ?? "callees";
+        if (direction is not ("callees" or "callers" or "both"))
+            return $"Unknown direction '{direction}'. Use one of: 'callees' (default), 'callers', 'both'.";
 
         var source = await File.ReadAllTextAsync(filePath, ct);
         var ext    = Path.GetExtension(filePath).ToLowerInvariant();

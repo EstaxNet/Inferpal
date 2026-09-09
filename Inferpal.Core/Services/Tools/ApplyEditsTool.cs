@@ -77,7 +77,7 @@ internal sealed class ApplyEditsTool : ITool
             PathSanitizer.AssertUnderRoot(path, root);
             var old = e.TryGetProperty("old_content", out var o) ? o.GetString() : null;
             var neu = e.TryGetProperty("new_content", out var n) ? n.GetString() : null;
-            var occ = e.TryGetProperty("occurrence",  out var c) ? c.GetString() : null;
+            var occ = e.Keyword("occurrence");
             if (string.IsNullOrEmpty(path) || old is null || neu is null) continue;
             edits.Add(new Edit(path, old, neu, occ));
         }

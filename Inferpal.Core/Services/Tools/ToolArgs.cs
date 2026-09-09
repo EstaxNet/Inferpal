@@ -35,6 +35,22 @@ internal static class ToolArgs
         args.Str(name)?.Trim() is { Length: > 0 } s ? s : null;
 
     /// <summary>A trimmed, lower-cased argument — the shape every <c>action</c>/<c>mode</c> uses.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the only reader of an argument the code compares against a fixed set of values</b>
+    /// (<c>action</c>, <c>mode</c>, <c>direction</c>, <c>occurrence</c>, <c>runner</c>,
+    /// <c>bridges</c>). Until 2026-09-09 the sentence above was an aspiration: nine sites each
+    /// decided normalisation for themselves, and this helper had exactly one caller — its own unit
+    /// test. Four sites trimmed and lower-cased, one lower-cased only, and three did neither.
+    /// </para>
+    /// <para>
+    /// What that cost is not a thrown call but a <i>wrong answer with no error</i>:
+    /// <c>direction: "Callers"</c> rendered a call-graph report with neither section,
+    /// <c>bridges: " all"</c> scanned the whole workspace to report no cross-language bridges, and
+    /// <c>mode: "Replace"</c> <b>appended</b> to the memory file instead of overwriting it. A model
+    /// cannot detect any of the three. Locked by rule 22 of <c>ConventionCoverageTests</c>.
+    /// </para>
+    /// </remarks>
     public static string? Keyword(this JsonElement args, string name) =>
         args.Trimmed(name)?.ToLowerInvariant();
 

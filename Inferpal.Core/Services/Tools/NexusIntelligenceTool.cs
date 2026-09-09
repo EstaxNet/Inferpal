@@ -61,10 +61,17 @@ internal sealed class NexusIntelligenceTool : ITool
         var focus  = args.TryGetProperty("focus", out var fv)  ? fv.GetString()?.Trim().ToLowerInvariant() : null;
         // 'bridges' selects which bridge kinds to scan. (Renamed from 'mode' so it no longer
         // collides with analyze_code's own 'mode' strategy selector, which forwards the same args.)
-        var mode   = args.TryGetProperty("bridges", out var mv) ? mv.GetString()?.ToLowerInvariant() : "all";
+        // ⚠ Keyword, like 'focus' just above: lower-casing alone let surrounding spaces
+        // through, and an unrecognised value lit none of the three scans. The cost of that
+        // silence is the highest of the three -- the tool still walked the WHOLE workspace to
+        // conclude there are no bridges between the languages.
+        var mode   = args.Keyword("bridges") ?? "all";
 
         if (string.IsNullOrEmpty(root) || !Directory.Exists(root))
             return $"Directory not found: '{root}'. Provide a valid 'root' parameter.";
+
+        if (mode is not ("all" or "rest" or "interop" or "signalr"))
+            return $"Unknown bridges filter '{mode}'. Use one of: 'all' (default), 'rest', 'interop', 'signalr'.";
 
         bool doRest     = mode is "all" or "rest";
         bool doInterop  = mode is "all" or "interop";

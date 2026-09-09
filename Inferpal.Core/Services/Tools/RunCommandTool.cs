@@ -72,9 +72,8 @@ internal sealed class RunCommandTool : ITool, IDisposable
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var action = args.TryGetProperty("action", out var ac) ? ac.GetString() : null;
-        if (!string.IsNullOrWhiteSpace(action))
-            return HandleAction(action!.Trim().ToLowerInvariant(), args);
+        if (args.Keyword("action") is { } action)
+            return HandleAction(action, args);
 
         if (!args.TryGetProperty("command", out var cmdEl) || cmdEl.GetString() is not { Length: > 0 } command)
             return "Error: 'command' is required (or use action='poll'/'stop'/'list').";

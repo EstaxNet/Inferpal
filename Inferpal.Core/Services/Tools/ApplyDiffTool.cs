@@ -48,7 +48,7 @@ internal class ApplyDiffTool : ITool
         PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
         var oldContent = args.Str("old_content") ?? throw new ArgumentException("old_content is required.");
         var newContent = args.Str("new_content") ?? "";
-        var occurrence = args.TryGetProperty("occurrence", out var occ) ? occ.GetString() : null;
+        var occurrence = args.Keyword("occurrence");
 
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);

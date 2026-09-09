@@ -41,7 +41,7 @@ internal sealed class DebugInspectTool(IDebugSession session, Func<string> root)
             return "No debugger is reachable from this editor session. Do not retry; reason from the "
                  + "source instead, or ask the user to run the program.";
 
-        var action = args.TryGetProperty("action", out var a) ? a.GetString()?.Trim().ToLowerInvariant() : null;
+        var action = args.Keyword("action");
 
         if (action == "evaluate")
         {

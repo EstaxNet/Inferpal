@@ -58,7 +58,7 @@ internal sealed class AnalyzeCodeTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var mode = args.TryGetProperty("mode", out var mv) ? mv.GetString()?.Trim().ToLowerInvariant() : null;
+        var mode = args.Keyword("mode");
 
         return mode switch
         {

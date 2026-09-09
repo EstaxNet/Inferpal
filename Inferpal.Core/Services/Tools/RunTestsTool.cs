@@ -54,7 +54,7 @@ internal class RunTestsTool : ITool
         var rawPath = args.TryGetProperty("path",           out var p) ? p.GetString()?.Trim() : null;
         var path    = string.IsNullOrWhiteSpace(rawPath) ? null : PathSanitizer.Sanitize(rawPath);
         var filter  = args.TryGetProperty("filter",         out var f) ? f.GetString()?.Trim() : null;
-        var forced  = args.TryGetProperty("runner",         out var r) ? r.GetString()?.Trim().ToLowerInvariant() : null;
+        var forced  = args.Keyword("runner");
         var timeout = args.TryGetProperty("timeout_seconds",out var t) && t.TryGetInt32(out var ts) ? ts : DefaultTimeoutSeconds;
 
         var workDir = ResolveWorkDir(path);
