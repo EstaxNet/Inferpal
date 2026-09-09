@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Inferpal.Localization;
 using Inferpal.Services.Editor;
 
 namespace Inferpal.Services.Tools;
@@ -27,6 +28,16 @@ internal class GetOpenEditorsTool : ITool
 
     public Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
+        // ⚠ Without this check, an unavailable surface returned an empty list and the tool
+        // ASSERTED "No files are currently open in the editor" -- a false sentence, in the one
+        // tool whose job is to answer that question. The model concluded the user had nothing
+        // open and advised them to open a file that already was. IsAvailable states the contract
+        // in so many words ("tools use it to tell the user how to recover instead of claiming no
+        // file is open") and two sites out of three held it: GetActiveDocumentTool and
+        // EditorWriteGate. Same defect as get_debugger_state (§22), one port further.
+        if (!_editor.IsAvailable)
+            return Task.FromResult(Strings.ActiveDocNoContext);
+
         var openPaths  = _editor.GetOpenDocumentPaths();
         var activePath = _editor.ActiveDocumentPath;
 
