@@ -184,9 +184,21 @@ internal static class DiagnosticsCommandHandler
     }
 
     /// <summary>
-    /// Diagnostic details often quote exception messages carrying absolute paths; the user profile
-    /// collapses to <c>~</c> and the workspace root to <c>&lt;workspace&gt;</c> before export.
+    /// Everything a diagnostic entry must lose before it leaves the machine: absolute paths (the
+    /// user profile collapses to <c>~</c>, the workspace root to <c>&lt;workspace&gt;</c>) and
+    /// credential-shaped runs.
     /// </summary>
+    /// <remarks>
+    /// The second arrived on 2026-09-09 and had been missing from the start: this bundle redacted
+    /// the config API key -- the place a secret is EXPECTED -- and exported the ring verbatim, which
+    /// is where one actually shows up. <c>Permission</c> entries carry the <b>raw command line</b>
+    /// the model wrote (the force-prompt branch fires precisely on the opaque ones);
+    /// <c>DocCrawler</c> and <c>McpOAuth</c> carry <b>raw URLs</b>. A refused
+    /// <c>curl -H "Authorization: Bearer …"</c> therefore went out as written, into the file the
+    /// user pastes into a public issue.
+    /// ⚠ Applied on EXPORT only: <c>/diagnostics list</c> still shows the truth, because there the
+    /// user is debugging their own machine and needs the real command.
+    /// </remarks>
     internal static string SanitizePaths(string detail, string? workspaceRoot)
     {
         if (!string.IsNullOrEmpty(workspaceRoot))
@@ -196,6 +208,6 @@ internal static class DiagnosticsCommandHandler
         if (!string.IsNullOrEmpty(home))
             detail = detail.Replace(home, "~", StringComparison.OrdinalIgnoreCase);
 
-        return detail;
+        return SecretRedactor.Redact(detail);
     }
 }
