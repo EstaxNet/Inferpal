@@ -85,7 +85,7 @@ internal sealed class DebugControlTool(
 
     private (string? File, int Line, string? Error) ReadLocation(JsonElement args)
     {
-        if (!args.TryGetProperty("file", out var f) || f.GetString() is not { Length: > 0 } raw)
+        if (args.Str("file") is not { Length: > 0 } raw)
             return (null, 0, "Error: 'file' is required for this action.");
 
         if (!args.TryGetProperty("line", out var l) || !l.TryGetInt32(out var line) || line < 1)

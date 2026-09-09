@@ -45,7 +45,7 @@ internal sealed class DebugInspectTool(IDebugSession session, Func<string> root)
 
         if (action == "evaluate")
         {
-            if (!args.TryGetProperty("expression", out var e) || e.GetString() is not { Length: > 0 } expression)
+            if (args.Str("expression") is not { Length: > 0 } expression)
                 return "Error: 'expression' is required for action='evaluate'.";
 
             var state = await session.GetStateAsync(ct);

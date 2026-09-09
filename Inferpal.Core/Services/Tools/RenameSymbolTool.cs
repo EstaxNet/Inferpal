@@ -71,14 +71,12 @@ internal sealed class RenameSymbolTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var root        = PathSanitizer.Sanitize(
-                              (args.TryGetProperty("root", out var rv) ? rv.GetString() : null)
-                              ?? _getRoot());
+        var root        = PathSanitizer.Sanitize(args.Str("root") ?? _getRoot());
         // rename_symbol WRITES files — keep it inside the workspace like write_file/apply_diff.
         PathSanitizer.AssertUnderRoot(root, _getRoot());
         var oldName     = args.Trimmed("old_name") ?? string.Empty;
         var newName     = args.Trimmed("new_name") ?? string.Empty;
-        var filePattern = args.TryGetProperty("file_pattern", out var fp) ? fp.GetString() : null;
+        var filePattern = args.Str("file_pattern");
         var dryRun      = args.Bool("dry_run", true);
 
         if (string.IsNullOrEmpty(oldName) || string.IsNullOrEmpty(newName))

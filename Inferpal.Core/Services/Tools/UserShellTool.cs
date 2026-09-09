@@ -21,7 +21,7 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var extra   = args.TryGetProperty("args", out var a) ? a.GetString() : null;
+        var extra   = args.Str("args");
         var fullCmd = string.IsNullOrEmpty(extra) ? command : $"{command} {extra}";
 
         if (!await approval.RequestApprovalAsync(name, fullCmd, ct))

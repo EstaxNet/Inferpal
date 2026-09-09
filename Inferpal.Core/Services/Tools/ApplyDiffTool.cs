@@ -47,7 +47,13 @@ internal class ApplyDiffTool : ITool
         var path       = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
         var oldContent = args.Str("old_content") ?? throw new ArgumentException("old_content is required.");
-        var newContent = args.Str("new_content") ?? "";
+        // ⚠ Was `?? ""`, on an argument the schema declares REQUIRED: omitting it therefore
+        // became a DELETION of the matched block, and the answer said "diff applied". The model
+        // reads a success for a call it wrote wrong, and carries on as if its replacement text
+        // were in place. The empty string stays valid -- it is how a block is deleted -- but it
+        // has to be written.
+        var newContent = args.Str("new_content")
+            ?? throw new ArgumentException("new_content is required (send \"\" to delete the matched block).");
         var occurrence = args.Keyword("occurrence");
 
         if (!File.Exists(path))

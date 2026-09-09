@@ -75,10 +75,10 @@ internal sealed class RunCommandTool : ITool, IDisposable
         if (args.Keyword("action") is { } action)
             return HandleAction(action, args);
 
-        if (!args.TryGetProperty("command", out var cmdEl) || cmdEl.GetString() is not { Length: > 0 } command)
+        if (args.Str("command") is not { Length: > 0 } command)
             return "Error: 'command' is required (or use action='poll'/'stop'/'list').";
 
-        var rawWorkDir = args.TryGetProperty("working_directory", out var wd) ? wd.GetString() : null;
+        var rawWorkDir = args.Str("working_directory");
         var workDir    = string.IsNullOrWhiteSpace(rawWorkDir) ? null : PathSanitizer.Sanitize(rawWorkDir);
 
         // Surface a model-chosen working directory in the prompt: approving "git clean -fdx"
@@ -139,7 +139,7 @@ internal sealed class RunCommandTool : ITool, IDisposable
     }
 
     private static string? GetId(JsonElement args) =>
-        args.TryGetProperty("id", out var idEl) && idEl.GetString() is { Length: > 0 } id ? id : null;
+        args.Str("id") is { Length: > 0 } id ? id : null;
     /// <summary>Kills the background jobs this tool started — they outlive the editor otherwise.</summary>
     public void Dispose() => _background.Dispose();
 

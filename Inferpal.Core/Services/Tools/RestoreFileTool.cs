@@ -44,14 +44,10 @@ internal class RestoreFileTool : ITool
         PathSanitizer.AssertUnderRoot(path, root);
 
         string? snapPath = null;
-        if (args.TryGetProperty("snapshot", out var snapEl) && snapEl.ValueKind == JsonValueKind.String)
+        if (args.Str("snapshot") is { } snapRaw)
         {
-            var snapRaw = snapEl.GetString();
-            if (snapRaw is not null)
-            {
-                snapPath = PathSanitizer.Sanitize(snapRaw);
-                PathSanitizer.AssertUnderRoot(snapPath, root);
-            }
+            snapPath = PathSanitizer.Sanitize(snapRaw);
+            PathSanitizer.AssertUnderRoot(snapPath, root);
         }
 
         snapPath ??= _history.FindMostRecentSnapshot(path);

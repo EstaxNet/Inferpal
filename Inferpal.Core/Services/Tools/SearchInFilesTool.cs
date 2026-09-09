@@ -30,7 +30,7 @@ internal class SearchInFilesTool : ITool
         var path        = PathSanitizer.Sanitize(args.Str("path"));
         PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
         var search      = args.Str("pattern") ?? throw new ArgumentException("pattern is required.");
-        var filePattern = args.TryGetProperty("file_pattern", out var fp) ? fp.GetString() ?? "*" : "*";
+        var filePattern = args.Str("file_pattern") ?? "*";
 
         if (!Directory.Exists(path))
             return Task.FromResult(Strings.DirNotFound(path));

@@ -49,7 +49,7 @@ internal class GetGitStatusTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var startPath    = args.TryGetProperty("path",         out var p) ? p.GetString() : null;
+        var startPath    = args.Str("path");
         var includeDiff  = args.Bool("include_diff", false);
 
         // Same confinement contract as every other path-taking tool: this was the one tool that

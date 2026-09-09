@@ -36,9 +36,8 @@ internal class ReplaceSelectionTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        if (!args.TryGetProperty("text", out var textEl) || textEl.ValueKind != JsonValueKind.String)
+        if (args.Str("text") is not { } text)
             return "Missing required parameter: text";
-        var text = textEl.GetString()!;
 
         // This one DESTROYS the selected text, so the prompt is the more load-bearing of the two —
         // see EditorWriteGate for what running without it bypassed.

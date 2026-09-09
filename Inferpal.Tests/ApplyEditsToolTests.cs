@@ -112,6 +112,55 @@ public class ApplyEditsToolTests
         Assert.Equal("int x = 1;", await File.ReadAllTextAsync(a));   // denial → no write
     }
 
+    // ── A malformed edit is a failed batch, not a dropped line ────────────────
+    //
+    // The description the model reads promises, word for word: "If ANY edit cannot be applied, NO
+    // file is changed." A malformed entry used to be skipped, and the answer then reported success
+    // for the survivors — "Applied 2 edit(s)" on a batch of 3. The model has no way to see the one
+    // that vanished, so it carries on believing the change is in the file.
+
+    private static JsonElement Raw(string json) => JsonDocument.Parse(json).RootElement.Clone();
+
+    [Theory]
+    // new_content missing — used to be dropped; "" stays valid and means "delete the block".
+    [InlineData("""{"edits":[{"path":"@A","old_content":"x = 1"},{"path":"@B","old_content":"y = 2","new_content":"y = 20"}]}""",
+                "new_content")]
+    // old_content missing.
+    [InlineData("""{"edits":[{"path":"@A","new_content":"x = 10"},{"path":"@B","old_content":"y = 2","new_content":"y = 20"}]}""",
+                "old_content")]
+    // a wrong-typed value is the same event as a missing one: it is not a string.
+    [InlineData("""{"edits":[{"path":"@A","old_content":"x = 1","new_content":42},{"path":"@B","old_content":"y = 2","new_content":"y = 20"}]}""",
+                "new_content")]
+    // not an object at all.
+    [InlineData("""{"edits":["oops",{"path":"@B","old_content":"y = 2","new_content":"y = 20"}]}""",
+                "not an object")]
+    public async Task AMalformedEdit_AbortsTheWholeBatchAndNamesIt(string json, string named)
+    {
+        using var tmp = new TempDir();
+        var a = tmp.File("A.cs", "int x = 1;");
+        var b = tmp.File("B.cs", "int y = 2;");
+
+        var args   = Raw(json.Replace("@A", a.Replace("\\", "\\\\")).Replace("@B", b.Replace("\\", "\\\\")));
+        var result = await Tool(tmp.Path).ExecuteAsync(args, CancellationToken.None);
+
+        Assert.Contains(named, result, StringComparison.Ordinal);
+        // The well-formed edit of the same batch must NOT have been applied.
+        Assert.Equal("int x = 1;", await File.ReadAllTextAsync(a));
+        Assert.Equal("int y = 2;", await File.ReadAllTextAsync(b));
+    }
+
+    [Fact]
+    public async Task AnEmptyNewContent_StaysAValidDeletion()
+    {
+        // The counterpart of the rule above: "" is how a block is deleted, and it must keep working.
+        using var tmp = new TempDir();
+        var a = tmp.File("A.cs", "int x = 1;");
+
+        await Tool(tmp.Path).ExecuteAsync(Args((a, "int x = 1;", "")), CancellationToken.None);
+
+        Assert.Equal("", await File.ReadAllTextAsync(a));
+    }
+
     private sealed class TempDir : IDisposable
     {
         public string Path { get; } =

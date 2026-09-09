@@ -55,7 +55,7 @@ internal class GetDiagnosticsTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var rawPath = args.TryGetProperty("path", out var p) ? p.GetString() : null;
+        var rawPath = args.Str("path");
 
         // Editor fast path: live language-service diagnostics beat a 90 s build, but only
         // when the model didn't ask for a specific project (an explicit path means "build

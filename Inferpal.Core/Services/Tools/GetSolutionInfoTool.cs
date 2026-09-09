@@ -39,7 +39,7 @@ internal class GetSolutionInfoTool : ITool
     {
         string? slnPath = null;
 
-        if (args.TryGetProperty("path", out var p) && p.GetString() is string provided && !string.IsNullOrWhiteSpace(provided))
+        if (args.Trimmed("path") is { } provided)
         {
             if (Directory.Exists(provided))
                 slnPath = Directory.GetFiles(provided, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault();

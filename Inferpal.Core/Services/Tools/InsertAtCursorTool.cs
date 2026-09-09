@@ -36,9 +36,8 @@ internal class InsertAtCursorTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        if (!args.TryGetProperty("text", out var textEl) || textEl.ValueKind != JsonValueKind.String)
+        if (args.Str("text") is not { } text)
             return "Missing required parameter: text";
-        var text = textEl.GetString()!;
 
         // Approval + snapshot, like every other tool that changes a file — see EditorWriteGate
         // for what this used to bypass.

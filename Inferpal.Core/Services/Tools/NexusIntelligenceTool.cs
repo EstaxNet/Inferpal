@@ -53,12 +53,10 @@ internal sealed class NexusIntelligenceTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var root   = PathSanitizer.Sanitize(
-                         (args.TryGetProperty("root",  out var rv) ? rv.GetString() : null)
-                         ?? _getRoot());
+        var root   = PathSanitizer.Sanitize(args.Str("root") ?? _getRoot());
         // Keep scanning inside the workspace — the LLM must not point this at arbitrary disk paths.
         PathSanitizer.AssertUnderRoot(root, _getRoot());
-        var focus  = args.TryGetProperty("focus", out var fv)  ? fv.GetString()?.Trim().ToLowerInvariant() : null;
+        var focus  = args.Keyword("focus");
         // 'bridges' selects which bridge kinds to scan. (Renamed from 'mode' so it no longer
         // collides with analyze_code's own 'mode' strategy selector, which forwards the same args.)
         // ⚠ Keyword, like 'focus' just above: lower-casing alone let surrounding spaces

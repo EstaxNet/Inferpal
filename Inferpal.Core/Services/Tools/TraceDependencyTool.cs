@@ -70,7 +70,7 @@ internal class TraceDependencyTool : ITool
         if (!File.Exists(filePath))
             return Strings.ToolFileNotFound(filePath);
 
-        var symbol    = args.TryGetProperty("symbol",    out var sv) ? sv.GetString()?.Trim() : null;
+        var symbol    = args.Trimmed("symbol");
         var depth     = Math.Clamp(args.Int("depth", 1), 0, MaxAllowedDepth);
         // ⚠ Keyword, not GetString: "Callers", or "callees" with a space around it, matched
         // neither literal below, so NEITHER the Callers section NOR the Callees section was

@@ -70,16 +70,36 @@ internal sealed class ApplyEditsTool : ITool
 
         var root  = _getWorkspaceRoot();
         var edits = new List<Edit>();
+        var index = 0;
         foreach (var e in editsEl.EnumerateArray())
         {
-            if (e.ValueKind != JsonValueKind.Object) continue;
-            var path = PathSanitizer.Sanitize(e.TryGetProperty("path", out var p) ? p.GetString() : null);
+            index++;
+
+            // ⚠ A malformed entry used to be `continue`d away, and the answer then reported the
+            // success of the SURVIVORS: "Applied 3 edit(s)" on a batch of 5. The model cannot see
+            // the two that were dropped -- and the description IT reads promises the opposite,
+            // word for word: "If ANY edit cannot be applied, NO file is changed". The matching
+            // failure below already aborts the whole batch naming the offending edit; a read
+            // failure is the same event and is said the same way.
+            if (e.ValueKind != JsonValueKind.Object)
+                return Strings.ApplyEditsAborted($"edit #{index} is not an object");
+
+            // No null check on `path`: Sanitize already throws a readable, localised message when
+            // it is missing (ToolPathRequired). The check that used to be here could never fire.
+            var path = PathSanitizer.Sanitize(e.Str("path"));
             PathSanitizer.AssertUnderRoot(path, root);
-            var old = e.TryGetProperty("old_content", out var o) ? o.GetString() : null;
-            var neu = e.TryGetProperty("new_content", out var n) ? n.GetString() : null;
-            var occ = e.Keyword("occurrence");
-            if (string.IsNullOrEmpty(path) || old is null || neu is null) continue;
-            edits.Add(new Edit(path, old, neu, occ));
+
+            var old = e.Str("old_content");
+            var neu = e.Str("new_content");
+            if (old is null)
+                return Strings.ApplyEditsAborted(
+                    $"edit #{index} in {RelPath(root, path)}: 'old_content' is missing or is not a string");
+            if (neu is null)
+                return Strings.ApplyEditsAborted(
+                    $"edit #{index} in {RelPath(root, path)}: 'new_content' is missing or is not a string "
+                    + "(send \"\" to delete the matched block)");
+
+            edits.Add(new Edit(path, old, neu, e.Keyword("occurrence")));
         }
         if (edits.Count == 0) return Strings.ApplyEditsEmpty;
 

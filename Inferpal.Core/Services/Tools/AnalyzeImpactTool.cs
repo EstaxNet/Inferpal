@@ -146,7 +146,7 @@ internal class AnalyzeImpactTool : ITool
         if (!File.Exists(filePath))
             return Strings.ToolFileNotFound(filePath);
 
-        var symbol = args.TryGetProperty("symbol", out var sv) ? sv.GetString()?.Trim() : null;
+        var symbol = args.Trimmed("symbol");
         var depth  = Math.Clamp(args.Int("depth", 2), 1, 3);
 
         var source   = await File.ReadAllTextAsync(filePath, ct);
