@@ -54,7 +54,7 @@
 
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>推論バックエンド：</value></data>
-  <data name="HintProvider" xml:space="preserve"><value>使用するローカルモデルサーバー：Ollama（ハードウェア対応機能をフル装備）または LM Studio、llama.cpp、vLLM などの OpenAI 互換サーバー。Visual Studio の再読み込み後に有効になります。</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>使用するローカルモデルサーバー：Ollama（ハードウェア対応機能をフル装備）または LM Studio、llama.cpp、vLLM などの OpenAI 互換サーバー。エディターの再読み込み後に有効になります。</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API キー（任意）：</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>認証が必要な OpenAI 互換サーバーに Bearer トークンとして送信されます。Ollama と LM Studio では空のままにしてください（キー不要）。</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>サーバー URL：</value></data>
@@ -193,7 +193,7 @@
   <data name="HintPromptTemplates" xml:space="preserve"><value>独自のスラッシュコマンドを定義します。形式：/mycommand=詳しく説明してください：{args}。{args}はコマンド名の後に入力した単語に置き換えられます。テンプレートはオートコンプリートの候補に表示されます。</value></data>
   <data name="LabelPermissionRules" xml:space="preserve"><value>権限ルール（1行に1つ：allow|deny &lt;ツール|*&gt; &lt;正規表現&gt;）：</value></data>
   <data name="HintPermissionRules" xml:space="preserve"><value>承認プロンプトの前に評価されるルール。「allow」は一致するツール呼び出しを自動承認し、「deny」はブロック、一致しなければプロンプトを表示します。最初に一致したものが優先されます。正規表現はコマンドまたはファイルパスと照合されます。コミット可能なオーバーレイ .inferpal/permissions.json に加えて適用され、さらに回避不可能な組み込みの破壊的コマンド拒否リストが常に適用されます。例：allow run_command ^dotnet</value></data>
-  <data name="LabelCustomTools" xml:space="preserve"><value>カスタムエージェントツール（1行に1つ：名前=powershellコマンド）：</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>カスタムエージェントツール（1行に1つ：名前=シェルコマンド）：</value></data>
   <data name="HintCustomTools" xml:space="preserve"><value>エージェントが呼び出せるシェルツールを定義します。形式：my_tool=dotnet test。名前はsnake_caseである必要があります。モデルが引数を提供する場合、オプションの{args}パラメータが追加されます。実行前に承認が必要です。</value></data>
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>言語に応じてペルソナを自動切替</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>有効にすると、アクティブなドキュメントが切り替わった際に、言語固有のヒント（C#、Python、TypeScript…）でシステムプロンプトが自動的に補完されます。</value></data>
@@ -202,7 +202,7 @@
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>セッション要約を生成中…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA セッション要約**（ターン {0}）</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>これまでの会話を要約してください。OODA スタイルのリキャップを3つのセクションで作成してください — 目標（ユーザーが達成したいこと）、進捗（完了した手順）、未解決（残っているタスクまたは未解決の質問）。150 語以内でお願いします。</value></data>
-  <data name="LabelLanguage" xml:space="preserve"><value>インターフェイス言語（Visual Studio を上書き）：</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>インターフェイス言語（エディターの設定を上書き）：</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>Visual Studio の言語に関係なく表示言語を強制します。「自動」は Visual Studio の言語を使用します。</value></data>
   <data name="LangAuto" xml:space="preserve"><value>自動（Visual Studio）</value></data>
   <data name="HintSend" xml:space="preserve"><value>Enter で送信  ·  Shift+Enter で改行  ·  Shift+↑↓ 履歴</value></data>
@@ -368,53 +368,7 @@
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ コードアクションに失敗しました。バックエンド接続とモデルを確認してください。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>使用法：`{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>使用法：`/restore &lt;パス&gt;` — `.inferpal/history/` から最新のバックアップを復元します</value></data>
-  <data name="SlashHelp" xml:space="preserve"><value>不明なコマンド：`{0}`
-
-**メタ**
-- `/clear` — 会話をクリア
-- `/model &lt;名前&gt;` — モデルを切り替え
-- `/tools on|off` — ツールを有効/無効化
-- `/export` — 会話をファイルにエクスポート
-- `/restore &lt;パス&gt;` — 最新のバックアップからファイルを復元
-- `/help` — 使用可能なコマンドをすべて表示
-
-**ファイルシステム**
-- `/read &lt;パス&gt;` — ファイルをコンテキストとして添付
-- `/ls &lt;パス&gt; [パターン]` — ディレクトリ内のファイルを一覧表示
-- `/grep &lt;ディレクトリ&gt; &lt;パターン&gt; [拡張子]` — ファイル内のテキストを検索
-
-**コードアクション**
-- `/explain` — アクティブなファイル（または選択範囲）を説明
-- `/fix` — アクティブなファイルの修正を提案
-- `/review` — 構造化されたコードレビュー
-- `/refactor` — リファクタリングの提案
-- `/test` — ユニットテストを生成
-- `/doc` — 名前空間/継承コンテキスト付きドキュメント生成（C#/TS/Python/Go/Rust）
-
-**シェル**
-- `/run &lt;コマンド&gt;` — PowerShell コマンドを実行
-
-**ウェブ**
-- `/fetch &lt;url&gt;` — ウェブページをテキストとして表示
-- `/search &lt;クエリ&gt;` — DuckDuckGo ウェブ検索
-
-**Git**
-- `/commit` — 差分を分析し、コミットメッセージを提案して入力欄に事前入力
-- `/git [パス]` — git ステータス、ログ、変更の概要を表示
-
-**Visual Studio / ビルド**
-- `/map` — プロジェクトの依存関係グラフを表示
-- `/solution [パス]` — ソリューション構造を表示
-- `/build [パス]` — コンパイルしてエラーを表示
-- `/fix-build [パス]` — コンパイル → AI がエラーを修正 → 再コンパイル、クリーンになるまで繰り返す（最大 5 ラウンド）
-
-**プロジェクトコンテキスト**
-- `/context` — アクティブな `.inferpal/context.md` を表示（各システムプロンプトに注入）
-- `/memory` — エージェントメモリを表示（`.inferpal/memory.md`、各システムプロンプトに注入）
-
-**履歴**
-- `/history` — 保存されたセッションを日付とプレビュー付きで一覧表示
-- `/history &lt;キーワード&gt;` — 保存されたすべてのセッションをフルテキスト検索</value></data>
+  <data name="SlashUnknownCommand" xml:space="preserve"><value>不明なコマンド：`{0}`</value></data>
 
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>保存されたセッションはありません。セッションは `/clear` で自動的にアーカイブされます。</value></data>
@@ -664,7 +618,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SlashHintRead" xml:space="preserve"><value>ファイルをコンテキストとして添付</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>ディレクトリ内のファイルを一覧表示</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>ファイル内のテキストを検索</value></data>
-  <data name="SlashHintRun" xml:space="preserve"><value>PowerShell コマンドを実行</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>シェルコマンドを実行</value></data>
   <data name="SlashHintFetch" xml:space="preserve"><value>Web ページをテキストとして表示</value></data>
   <data name="SlashHintSearch" xml:space="preserve"><value>DuckDuckGo Web 検索</value></data>
   <data name="SlashHintSearchCode" xml:space="preserve"><value>コードベースのセマンティック検索</value></data>

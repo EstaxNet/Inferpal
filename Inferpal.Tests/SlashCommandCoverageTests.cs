@@ -24,7 +24,7 @@ public class SlashCommandCoverageTests
         {
             var action = Route(cmd); // no args → usage/info is fine, the UNKNOWN fallback is not
             if (action is SlashInfoAction info)
-                Assert.True(info.Message != Strings.SlashHelp(cmd),
+                Assert.True(info.Message != SlashCommandRouter.UnknownCommandMessage(cmd),
                     $"Command {cmd} fell through to the unknown-command help — not wired in Route().");
         }
     }
@@ -197,6 +197,13 @@ public class SlashCommandCoverageTests
     public void UnknownCommand_FallsBackToHelp()
     {
         var action = Assert.IsType<SlashInfoAction>(Route("/definitely-not-a-command"));
-        Assert.Equal(Strings.SlashHelp("/definitely-not-a-command"), action.Message);
+        Assert.Equal(SlashCommandRouter.UnknownCommandMessage("/definitely-not-a-command"), action.Message);
+
+        // The point of the repair: the list is GENERATED, so it can no longer drift. It was
+        // frozen by hand in all ten languages and had reached 26 of the 57 shipped commands,
+        // plus one (`/search`) that does not exist -- shown at the moment the user has just
+        // typed something the product did not recognise.
+        foreach (var (cmd, _, _) in SlashCommandRouter.Catalog)
+            Assert.Contains($"`{cmd}`", action.Message, StringComparison.Ordinal);
     }
 }

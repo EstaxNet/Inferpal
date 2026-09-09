@@ -648,7 +648,15 @@ internal static class Strings
     public static string SlashNoActiveDocument            => Get(nameof(SlashNoActiveDocument));
     public static string SlashUsage(string syntax)        => string.Format(Get(nameof(SlashUsage)),        syntax);
     public static string SlashUsageRestore                => Get(nameof(SlashUsageRestore));
-    public static string SlashHelp(string unknownCmd)     => string.Format(Get(nameof(SlashHelp)),         unknownCmd);
+    /// <summary>Header alone: the command list that follows is generated from the Catalog.</summary>
+    /// <remarks>
+    /// Was <c>SlashHelp</c>, and carried a hand-written list of commands in all ten languages —
+    /// the twin of <c>SlashHelpAll</c>, dropped for exactly this reason and left alive here.
+    /// Measured 2026-09-09: it listed 26 of the 57 shipped commands and one, <c>/search</c>, that
+    /// does not exist. It is shown at the worst possible moment — the user has just typed a command
+    /// the product did not recognise — while <c>/help</c>, generated, was right all along.
+    /// </remarks>
+    public static string SlashUnknownCommand(string cmd)  => string.Format(Get(nameof(SlashUnknownCommand)), cmd);
 
     // `/help` section titles — the help text itself is generated from SlashCommandRouter.Catalog
     // (the hand-written SlashHelpAll had drifted from the shipped commands and was dropped).

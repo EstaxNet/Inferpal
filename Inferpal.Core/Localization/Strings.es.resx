@@ -53,11 +53,11 @@
   <data name="SectionInterface" xml:space="preserve"><value>Interfaz</value></data>
 
   <!-- UI labels -->
-  <data name="LabelLanguage" xml:space="preserve"><value>Idioma de la interfaz (reemplaza Visual Studio):</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>Idioma de la interfaz (reemplaza el del editor):</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>De forma predeterminada, Inferpal usa el idioma de Visual Studio. Selecciona un idioma aquí para forzarlo independientemente. El cambio surte efecto inmediatamente después de guardar.</value></data>
   <data name="LangAuto" xml:space="preserve"><value>Auto (Visual Studio)</value></data>
   <data name="LabelProvider" xml:space="preserve"><value>Backend de inferencia:</value></data>
-  <data name="HintProvider" xml:space="preserve"><value>Servidor de modelos local a usar: Ollama (funciones hardware-aware completas) o un servidor compatible con OpenAI como LM Studio, llama.cpp o vLLM. Surte efecto tras recargar Visual Studio.</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>Servidor de modelos local a usar: Ollama (funciones hardware-aware completas) o un servidor compatible con OpenAI como LM Studio, llama.cpp o vLLM. Surte efecto tras recargar el editor.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Clave de API (opcional):</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Se envía como token Bearer a servidores compatibles con OpenAI que requieren autenticación. Déjalo vacío para Ollama y LM Studio (no se necesita clave).</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>URL del servidor:</value></data>
@@ -196,7 +196,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="HintPromptTemplates" xml:space="preserve"><value>Define tus propios comandos slash. Formato: /micomando=Explica esto en detalle: {args}. {args} se reemplaza por las palabras escritas tras el nombre del comando. Las plantillas aparecen en las sugerencias de autocompletado.</value></data>
   <data name="LabelPermissionRules" xml:space="preserve"><value>Reglas de permiso (una por línea: allow|deny &lt;herramienta|*&gt; &lt;regex&gt;):</value></data>
   <data name="HintPermissionRules" xml:space="preserve"><value>Reglas evaluadas antes del aviso de aprobación. «allow» aprueba automáticamente una llamada coincidente, «deny» la bloquea, si no hay coincidencia se muestra el aviso; gana la primera coincidencia. La regex se compara con el comando o la ruta del archivo. Se suma a la superposición versionable .inferpal/permissions.json, más una lista de denegación integrada no eludible de comandos catastróficos. Ejemplo: allow run_command ^dotnet</value></data>
-  <data name="LabelCustomTools" xml:space="preserve"><value>Herramientas de agente personalizadas (una por línea: nombre=comando_powershell):</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>Herramientas de agente personalizadas (una por línea: nombre=comando_shell):</value></data>
   <data name="HintCustomTools" xml:space="preserve"><value>Define herramientas shell que el agente puede llamar. Formato: mi_herramienta=dotnet test. El nombre debe ser snake_case. Se añadirá un parámetro opcional {args} cuando el modelo lo proporcione. Requiere aprobación antes de ejecutarse.</value></data>
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Cambiar persona automáticamente según el lenguaje</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Cuando está activado, el prompt del sistema se enriquece automáticamente con una pista específica del lenguaje (C#, Python, TypeScript…) al cambiar el documento activo.</value></data>
@@ -368,53 +368,7 @@ Copia de seguridad: {0}</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ La acción de código ha fallado: comprueba la conexión con el backend y el modelo.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Uso: `{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>Uso: `/restore &lt;ruta&gt;` — restaura la copia de seguridad más reciente desde `.inferpal/history/`</value></data>
-  <data name="SlashHelp" xml:space="preserve"><value>Comando desconocido: `{0}`
-
-**Meta**
-- `/clear` — borrar la conversación
-- `/model &lt;nombre&gt;` — cambiar modelo
-- `/tools on|off` — activar o desactivar herramientas
-- `/export` — exportar la conversación a un archivo
-- `/restore &lt;ruta&gt;` — restaurar un archivo desde su copia de seguridad más reciente
-- `/help` — mostrar todos los comandos disponibles
-
-**Sistema de archivos**
-- `/read &lt;ruta&gt;` — adjuntar un archivo como contexto
-- `/ls &lt;ruta&gt; [patrón]` — listar archivos en un directorio
-- `/grep &lt;dir&gt; &lt;patrón&gt; [ext]` — buscar texto en archivos
-
-**Acciones de código**
-- `/explain` — explicar el archivo activo (o la selección)
-- `/fix` — sugerir correcciones para el archivo activo
-- `/review` — revisión de código estructurada
-- `/refactor` — sugerencias de refactorización
-- `/test` — generar pruebas unitarias
-- `/doc` — generar comentarios de documentación XML
-
-**Shell**
-- `/run &lt;comando&gt;` — ejecutar un comando PowerShell
-
-**Web**
-- `/fetch &lt;url&gt;` — mostrar una página web como texto
-- `/search &lt;consulta&gt;` — búsqueda web DuckDuckGo
-
-**Git**
-- `/commit` — analiza el diff, propone un mensaje de commit y prerellena la entrada para confirmar
-- `/git [ruta]` — mostrar estado git, log y resumen de cambios
-
-**Visual Studio / Build**
-- `/map` — mostrar el grafo de dependencias del proyecto
-- `/solution [ruta]` — mostrar estructura de la solución
-- `/build [ruta]` — compilar y mostrar errores
-- `/fix-build [ruta]` — compila → la IA corrige errores → recompila hasta que esté limpio (máx. 5 rondas)
-
-**Contexto de proyecto**
-- `/context` — mostrar el `.inferpal/context.md` activo (inyectado en cada system prompt)
-- `/memory` — ver la memoria del agente (`.inferpal/memory.md`, inyectada en cada system prompt)
-
-**Historial**
-- `/history` — listar todas las sesiones guardadas con fecha y vista previa
-- `/history &lt;término&gt;` — búsqueda de texto completo en todas las sesiones guardadas</value></data>
+  <data name="SlashUnknownCommand" xml:space="preserve"><value>Comando desconocido: `{0}`</value></data>
 
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>No hay sesiones guardadas. Las sesiones se archivan automáticamente con `/clear`.</value></data>
@@ -664,7 +618,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="SlashHintRead" xml:space="preserve"><value>adjuntar un archivo como contexto</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>listar los archivos de un directorio</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>buscar texto en los archivos</value></data>
-  <data name="SlashHintRun" xml:space="preserve"><value>ejecutar un comando de PowerShell</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>ejecutar un comando de shell</value></data>
   <data name="SlashHintFetch" xml:space="preserve"><value>mostrar una página web como texto</value></data>
   <data name="SlashHintSearch" xml:space="preserve"><value>búsqueda web con DuckDuckGo</value></data>
   <data name="SlashHintSearchCode" xml:space="preserve"><value>búsqueda semántica en el código</value></data>

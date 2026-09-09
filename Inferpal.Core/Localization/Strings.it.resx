@@ -54,7 +54,7 @@
 
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>Backend di inferenza:</value></data>
-  <data name="HintProvider" xml:space="preserve"><value>Server di modelli locale da usare: Ollama (funzioni hardware-aware complete) o un server compatibile con OpenAI come LM Studio, llama.cpp o vLLM. Ha effetto dopo il ricaricamento di Visual Studio.</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>Server di modelli locale da usare: Ollama (funzioni hardware-aware complete) o un server compatibile con OpenAI come LM Studio, llama.cpp o vLLM. Ha effetto dopo il ricaricamento dell'editor.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Chiave API (facoltativa):</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Inviata come token Bearer ai server compatibili con OpenAI che richiedono autenticazione. Lasciare vuoto per Ollama e LM Studio (nessuna chiave necessaria).</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>URL del server:</value></data>
@@ -193,7 +193,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="HintPromptTemplates" xml:space="preserve"><value>Definisci i tuoi comandi slash. Formato: /miocomando=Spiega questo in dettaglio: {args}. {args} viene sostituito dalle parole digitate dopo il nome del comando. I template appaiono nei suggerimenti di completamento automatico.</value></data>
   <data name="LabelPermissionRules" xml:space="preserve"><value>Regole di autorizzazione (una per riga: allow|deny &lt;strumento|*&gt; &lt;regex&gt;):</value></data>
   <data name="HintPermissionRules" xml:space="preserve"><value>Regole valutate prima della richiesta di approvazione. «allow» approva automaticamente una chiamata corrispondente, «deny» la blocca, altrimenti viene mostrata la richiesta; vince la prima corrispondenza. La regex viene confrontata con il comando o il percorso del file. Si aggiunge all'overlay versionabile .inferpal/permissions.json, più una denylist integrata non aggirabile di comandi catastrofici. Esempio: allow run_command ^dotnet</value></data>
-  <data name="LabelCustomTools" xml:space="preserve"><value>Strumenti agente personalizzati (uno per riga: nome=comando_powershell):</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>Strumenti agente personalizzati (uno per riga: nome=comando_shell):</value></data>
   <data name="HintCustomTools" xml:space="preserve"><value>Definisci strumenti shell che l'agente può chiamare. Formato: mio_strumento=dotnet test. Il nome deve essere snake_case. Un parametro {args} opzionale viene aggiunto quando il modello lo fornisce. Richiede approvazione prima dell'esecuzione.</value></data>
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Cambio automatico persona per linguaggio</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Quando attivo, il prompt di sistema viene arricchito automaticamente con un suggerimento specifico del linguaggio (C#, Python, TypeScript…) al cambio del documento attivo.</value></data>
@@ -202,7 +202,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generazione riepilogo sessione…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Riepilogo sessione OODA** (turno {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Riassumi la nostra conversazione finora. Produci un riepilogo in stile OODA con tre sezioni — Obiettivo (cosa vuole fare l'utente), Progresso (passi già completati) e Aperto (compiti rimanenti o domande irrisolte). Massimo 150 parole.</value></data>
-  <data name="LabelLanguage" xml:space="preserve"><value>Lingua dell'interfaccia (sovrascrive Visual Studio):</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>Lingua dell'interfaccia (sovrascrive quella dell'editor):</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>Forza una lingua di visualizzazione indipendentemente dalla lingua di Visual Studio. «Automatico» utilizza la lingua di Visual Studio.</value></data>
   <data name="LangAuto" xml:space="preserve"><value>Automatico (Visual Studio)</value></data>
   <data name="HintSend" xml:space="preserve"><value>Invio per mandare  ·  Maiusc+Invio per a capo  ·  Maiusc+↑↓ cronologia</value></data>
@@ -368,53 +368,7 @@ Backup: {0}</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ L'azione sul codice non è riuscita: controlla la connessione al backend e il modello.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Uso: `{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>Uso: `/restore &lt;percorso&gt;` — ripristina il backup più recente da `.inferpal/history/`</value></data>
-  <data name="SlashHelp" xml:space="preserve"><value>Comando sconosciuto: `{0}`
-
-**Meta**
-- `/clear` — cancella la conversazione
-- `/model &lt;nome&gt;` — cambia modello
-- `/tools on|off` — abilita o disabilita gli strumenti
-- `/export` — esporta la conversazione in un file
-- `/restore &lt;percorso&gt;` — ripristina un file dal suo backup più recente
-- `/help` — mostra tutti i comandi disponibili
-
-**File system**
-- `/read &lt;percorso&gt;` — allega un file come contesto
-- `/ls &lt;percorso&gt; [pattern]` — elenca i file in una directory
-- `/grep &lt;dir&gt; &lt;pattern&gt; [ext]` — cerca testo nei file
-
-**Azioni sul codice**
-- `/explain` — spiega il file attivo (o la selezione)
-- `/fix` — suggerisci correzioni per il file attivo
-- `/review` — revisione del codice strutturata
-- `/refactor` — suggerimenti di refactoring
-- `/test` — genera unit test
-- `/doc` — genera commenti di documentazione XML
-
-**Shell**
-- `/run &lt;comando&gt;` — esegui un comando PowerShell
-
-**Web**
-- `/fetch &lt;url&gt;` — mostra una pagina web come testo
-- `/search &lt;query&gt;` — ricerca web DuckDuckGo
-
-**Git**
-- `/commit` — analizza il diff, propone un messaggio di commit e lo precompila
-- `/git [percorso]` — mostra stato git, log e riepilogo modifiche
-
-**Visual Studio / Build**
-- `/map` — mostra il grafo delle dipendenze del progetto
-- `/solution [percorso]` — mostra la struttura della soluzione
-- `/build [percorso]` — compila e mostra gli errori
-- `/fix-build [percorso]` — compila → l'IA corregge gli errori → ricompila finché pulito (max 5 cicli)
-
-**Contesto progetto**
-- `/context` — mostra il `.inferpal/context.md` attivo (iniettato in ogni prompt di sistema)
-- `/memory` — visualizza la memoria dell'agente (`.inferpal/memory.md`, iniettata in ogni prompt di sistema)
-
-**Cronologia**
-- `/history` — elencare tutte le sessioni salvate con data e anteprima
-- `/history &lt;termine&gt;` — ricerca full-text in tutte le sessioni salvate</value></data>
+  <data name="SlashUnknownCommand" xml:space="preserve"><value>Comando sconosciuto: `{0}`</value></data>
 
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Nessuna sessione salvata. Le sessioni vengono archiviate automaticamente con `/clear`.</value></data>
@@ -664,7 +618,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="SlashHintRead" xml:space="preserve"><value>allegare un file come contesto</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>elencare i file di una directory</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>cercare testo nei file</value></data>
-  <data name="SlashHintRun" xml:space="preserve"><value>eseguire un comando PowerShell</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>eseguire un comando shell</value></data>
   <data name="SlashHintFetch" xml:space="preserve"><value>mostrare una pagina web come testo</value></data>
   <data name="SlashHintSearch" xml:space="preserve"><value>ricerca web DuckDuckGo</value></data>
   <data name="SlashHintSearchCode" xml:space="preserve"><value>ricerca semantica nel codice</value></data>

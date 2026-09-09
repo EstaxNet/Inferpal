@@ -48,6 +48,13 @@ namespace Inferpal.Tests;
 //                          §23. The prompt said "Visual Studio 2026 ... PowerShell" in all TEN
 //                          languages, and run_command's description said PowerShell on the
 //                          published linux-x64 / darwin-arm64 packages.
+//  11. Shared UI text   - a label the host serves to BOTH front-ends names neither an editor
+//                          nor a shell. `settings/strings` and `command/list` render these
+//                          strings verbatim in VS Code, and the shell is resolved per machine,
+//                          so naming ours makes the sentence false for the other half of the
+//                          users. The criterion is "is it served to both", never "does it say
+//                          Visual Studio": three strings live only in the VS window and are
+//                          right to name it.
 //  10. Model keywords    - an argument the code COMPARES against literals is read through
 //                          ToolArgs.Keyword, never any other way. This is the half the "read
 //                          model arguments without trusting them" rule does not cover: that one
@@ -562,6 +569,79 @@ public class ConventionCoverageTests
             Assert.Equal(source.Count(c => c == '\n'), code.Count(c => c == '\n'));
         }
         finally { File.Delete(path); }
+    }
+
+    // ── 11. What the USER reads does not assert the editor either ────────────
+
+    [Fact]
+    public void SharedUiText_NamesNeitherAnEditorNorAShell()
+    {
+        // The user-facing half of the "variable facts" rule. That one closes what the MODEL reads;
+        // the same Core also serves the text the USER reads, to BOTH front-ends, and nobody looked.
+        //
+        // The channel is explicit, and its own comment sells it as a feature: `settings/strings`
+        // serves the labels "straight from the same .resx resources as the Visual Studio settings
+        // window. The VS Code settings webview renders them VERBATIM, so both editors share the
+        // exact same wording in all 10 languages." True -- and exactly why a label naming ONE
+        // editor becomes false for the other.
+        //
+        // Measured 2026-09-09: of 731 entries, seven name an editor or a shell. FOUR are served to
+        // both front-ends and are therefore false for one of them:
+        //   . LabelLanguage    "(overrides Visual Studio)"                  -> VS Code
+        //   . HintProvider     "Takes effect after reloading Visual Studio" -> VS Code, and it
+        //     names a REMEDY THEY CANNOT PERFORM
+        //   . LabelCustomTools "name=powershell_command"                    -> VS Code and every
+        //     Linux/macOS host. Fourth survival of the PowerShell assumption.
+        //   . SlashHintRun     "run a PowerShell command"                   -> every non-Windows host
+        //
+        // And THREE are legitimate, which is the heart of the rule: HintLanguage, LangAuto and
+        // LabelToolCommand live only in the VS window, never in the schema or the catalogue. The
+        // criterion is therefore not "this text says Visual Studio" but "is this text SERVED TO
+        // BOTH". A rule on the word alone would redden three correct strings -- and a rule that is
+        // wrong is a rule people learn to disarm.
+        var schema  = CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "Presentation", "SettingsSchema.cs"));
+        var catalog = CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "SlashCommandRouter.cs"));
+
+        // The resource names the host actually sends: string literals of the settings schema, and
+        // the Strings.X of the slash-command catalogue (served through `command/list`).
+        var shared = new HashSet<string>(StringComparer.Ordinal);
+        foreach (Match m in Regex.Matches(schema, "\"(Label|Hint|Title|Tab)[A-Za-z0-9]+\""))
+            shared.Add(m.Value.Trim('"'));
+        foreach (Match m in Regex.Matches(catalog, @"Strings\.(\w+)"))
+            shared.Add(m.Groups[1].Value);
+
+        var resxDir = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
+        var files   = Directory.GetFiles(resxDir, "Strings*.resx");
+
+        var offenders = new List<string>();
+        var scanned   = 0;
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(file);
+            foreach (Match m in Regex.Matches(text, @"<data name=""(\w+)""[^>]*><value>(.*?)</value>",
+                                              RegexOptions.Singleline))
+            {
+                if (!shared.Contains(m.Groups[1].Value)) continue;
+                scanned++;
+                foreach (var fact in VariableFacts)
+                    if (m.Groups[2].Value.Contains(fact, StringComparison.OrdinalIgnoreCase))
+                        offenders.Add($"{Path.GetFileName(file)} / {m.Groups[1].Value} : '{fact}'");
+            }
+        }
+
+        // Two witnesses, because two things can break silently: collecting the shared names (it
+        // finds none any more) and reading the .resx (it reads no values any more).
+        Assert.True(shared.Count >= 40,
+            $"Only {shared.Count} shared resource name(s) collected: the scan judges nothing.");
+        Assert.True(scanned >= 400,
+            $"Only {scanned} shared value(s) read across {files.Length} file(s): the scan judges nothing.");
+
+        Assert.True(offenders.Count == 0,
+            "A text served to BOTH front-ends names an editor or a shell. `settings/strings` and "
+            + "`command/list` render these strings verbatim in VS Code, and the shell is resolved "
+            + "per machine, so the sentence is false for the other half of the users. Reword in "
+            + "neutral terms ('the editor', 'shell') rather than naming ours:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     // ── 10. A model keyword is read through Keyword, never any other way ──────

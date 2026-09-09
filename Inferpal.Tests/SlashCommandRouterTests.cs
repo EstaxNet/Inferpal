@@ -191,7 +191,9 @@ public class SlashCommandRouterTests
         Assert.Equal(SlashCommandRouter.BuildHelp(), help.Message);
 
         var unknown = Assert.IsType<SlashInfoAction>(Route("/frobnicate now"));
-        Assert.Equal(Strings.SlashHelp("/frobnicate"), unknown.Message);
+        Assert.Equal(SlashCommandRouter.UnknownCommandMessage("/frobnicate"), unknown.Message);
+        // The unknown-command answer carries the same generated list as /help.
+        Assert.Contains(SlashCommandRouter.BuildHelp(), unknown.Message, StringComparison.Ordinal);
     }
 
     // ── User templates ─────────────────────────────────────────────────────────

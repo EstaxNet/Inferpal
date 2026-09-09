@@ -53,11 +53,11 @@
   <data name="SectionInterface" xml:space="preserve"><value>界面</value></data>
 
   <!-- UI labels -->
-  <data name="LabelLanguage" xml:space="preserve"><value>界面语言（覆盖 Visual Studio）：</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>界面语言（覆盖编辑器设置）：</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>默认情况下，Inferpal 使用 Visual Studio 的显示语言。在此选择语言可强制使用特定语言，与 Visual Studio 设置无关。保存后立即生效。</value></data>
   <data name="LangAuto" xml:space="preserve"><value>自动（Visual Studio）</value></data>
   <data name="LabelProvider" xml:space="preserve"><value>推理后端：</value></data>
-  <data name="HintProvider" xml:space="preserve"><value>要使用的本地模型服务器：Ollama（完整的硬件感知功能）或兼容 OpenAI 的服务器，如 LM Studio、llama.cpp 或 vLLM。重新加载 Visual Studio 后生效。</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>要使用的本地模型服务器：Ollama（完整的硬件感知功能）或兼容 OpenAI 的服务器，如 LM Studio、llama.cpp 或 vLLM。重新加载编辑器后生效。</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API 密钥（可选）：</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>作为 Bearer 令牌发送到需要身份验证的 OpenAI 兼容服务器。Ollama 和 LM Studio 请留空（无需密钥）。</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>服务器地址：</value></data>
@@ -196,7 +196,7 @@
   <data name="HintPromptTemplates" xml:space="preserve"><value>定义您自己的斜杠命令。格式：/我的命令=详细解释：{args}。{args}将替换为命令名称后输入的单词。模板会出现在自动完成建议中。</value></data>
   <data name="LabelPermissionRules" xml:space="preserve"><value>权限规则（每行一条：allow|deny &lt;工具|*&gt; &lt;正则&gt;）：</value></data>
   <data name="HintPermissionRules" xml:space="preserve"><value>在批准提示之前评估的规则。“allow”自动批准匹配的工具调用，“deny”将其阻止，无匹配则回退到提示；以首个匹配为准。正则表达式与命令或文件路径进行匹配。叠加在可提交的 .inferpal/permissions.json 覆盖文件之上，并始终应用内置的、不可绕过的灾难性命令拒绝列表。示例：allow run_command ^dotnet</value></data>
-  <data name="LabelCustomTools" xml:space="preserve"><value>自定义代理工具（每行一条：名称=powershell_命令）：</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>自定义代理工具（每行一条：名称=shell_命令）：</value></data>
   <data name="HintCustomTools" xml:space="preserve"><value>定义代理可以调用的shell工具。格式：my_tool=dotnet test。名称必须为snake_case。当模型提供参数时，可选的{args}参数将被追加。执行前需要批准。</value></data>
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>根据文件语言自动切换角色</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>启用后，当活动文档更改时，系统提示将自动添加语言特定提示（C#、Python、TypeScript…）。</value></data>
@@ -368,53 +368,7 @@
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ 代码操作失败。请检查后端连接和模型。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>用法：`{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>用法：`/restore &lt;路径&gt;` — 从 `.inferpal/history/` 还原最近的备份</value></data>
-  <data name="SlashHelp" xml:space="preserve"><value>未知命令：`{0}`
-
-**Meta**
-- `/clear` — 清空对话
-- `/model &lt;名称&gt;` — 切换模型
-- `/tools on|off` — 启用或禁用工具调用
-- `/export` — 将对话导出为文件
-- `/restore &lt;路径&gt;` — 从最近备份还原文件
-- `/help` — 显示所有可用命令
-
-**文件系统**
-- `/read &lt;路径&gt;` — 将文件作为上下文附加
-- `/ls &lt;路径&gt; [模式]` — 列出目录中的文件
-- `/grep &lt;目录&gt; &lt;模式&gt; [扩展名]` — 在文件中搜索文本
-
-**代码操作**
-- `/explain` — 解释活动文件（或选区）
-- `/fix` — 为活动文件提供修复建议
-- `/review` — 结构化代码审查
-- `/refactor` — 重构建议
-- `/test` — 生成单元测试
-- `/doc` — 生成 XML 文档注释
-
-**Shell**
-- `/run &lt;命令&gt;` — 运行 PowerShell 命令
-
-**Web**
-- `/fetch &lt;url&gt;` — 以文本形式显示网页
-- `/search &lt;查询&gt;` — DuckDuckGo 网络搜索
-
-**Git**
-- `/commit` — 分析差异，生成提交信息并预填到输入框确认
-- `/git [路径]` — 显示 git 状态、日志和修改摘要
-
-**Visual Studio / Build**
-- `/map` — 显示项目依赖关系图
-- `/solution [路径]` — 显示解决方案结构
-- `/build [路径]` — 编译并显示错误
-- `/fix-build [路径]` — 编译 → AI 修复错误 → 重新编译，直到成功（最多 5 轮）
-
-**项目上下文**
-- `/context` — 显示当前 `.inferpal/context.md`（自动注入每个系统提示）
-- `/memory` — 查看代理记忆（`.inferpal/memory.md`，自动注入每个系统提示）
-
-**历史**
-- `/history` — 列出所有已保存的会话（含日期和预览）
-- `/history &lt;关键词&gt;` — 在所有已保存的会话中进行全文搜索</value></data>
+  <data name="SlashUnknownCommand" xml:space="preserve"><value>未知命令：`{0}`</value></data>
 
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>没有保存的会话。会话在 `/clear` 时自动归档。</value></data>
@@ -664,7 +618,7 @@ ollama serve
   <data name="SlashHintRead" xml:space="preserve"><value>将文件作为上下文附加</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>列出目录中的文件</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>在文件中搜索文本</value></data>
-  <data name="SlashHintRun" xml:space="preserve"><value>运行 PowerShell 命令</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>运行 shell 命令</value></data>
   <data name="SlashHintFetch" xml:space="preserve"><value>以文本形式显示网页</value></data>
   <data name="SlashHintSearch" xml:space="preserve"><value>DuckDuckGo 网络搜索</value></data>
   <data name="SlashHintSearchCode" xml:space="preserve"><value>代码库语义搜索</value></data>

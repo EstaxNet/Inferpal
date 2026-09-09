@@ -53,11 +53,11 @@
   <data name="SectionInterface" xml:space="preserve"><value>Interface</value></data>
 
   <!-- UI labels -->
-  <data name="LabelLanguage" xml:space="preserve"><value>Interface language (overrides Visual Studio):</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>Interface language (overrides the editor's):</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>By default Inferpal uses Visual Studio's display language. Select a language here to force a different one. The change takes effect immediately after saving.</value></data>
   <data name="LangAuto" xml:space="preserve"><value>Auto (Visual Studio)</value></data>
   <data name="LabelProvider" xml:space="preserve"><value>Inference backend:</value></data>
-  <data name="HintProvider" xml:space="preserve"><value>Local model server to use: Ollama (full hardware-aware features) or an OpenAI-compatible server such as LM Studio, llama.cpp, or vLLM. Takes effect after reloading Visual Studio.</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>Local model server to use: Ollama (full hardware-aware features) or an OpenAI-compatible server such as LM Studio, llama.cpp, or vLLM. Takes effect after the editor is reloaded.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API key (optional):</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Sent as a Bearer token to OpenAI-compatible servers that require authentication. Leave empty for Ollama and LM Studio (no key needed).</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>Server URL:</value></data>
@@ -197,7 +197,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="HintPromptTemplates" xml:space="preserve"><value>Define your own slash commands. Format: /mycommand=Explain this in detail: {args}. The {args} placeholder is replaced by any words typed after the command name. Templates appear in autocomplete suggestions.</value></data>
   <data name="LabelPermissionRules" xml:space="preserve"><value>Permission rules (one per line: allow|deny &lt;tool|*&gt; &lt;regex&gt;):</value></data>
   <data name="HintPermissionRules" xml:space="preserve"><value>Rules evaluated before the approval prompt. 'allow' auto-approves a matching tool call, 'deny' blocks it, no match falls back to the prompt; first match wins. The regex is matched against the command or file path. Applied on top of the committable .inferpal/permissions.json overlay, plus a built-in non-bypassable denylist of catastrophic commands. Example: allow run_command ^dotnet</value></data>
-  <data name="LabelCustomTools" xml:space="preserve"><value>Custom agent tools (one per line: name=powershell_command):</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>Custom agent tools (one per line: name=shell_command):</value></data>
   <data name="HintCustomTools" xml:space="preserve"><value>Define shell tools the agent can call. Format: my_tool=dotnet test. The tool name must be snake_case. An optional {args} parameter will be appended when the model provides extra arguments. Requires approval before running.</value></data>
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Auto-switch persona by file language</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>When checked, the system prompt is automatically enriched with a language-specific hint (C#, Python, TypeScript…) when the active editor document changes.</value></data>
@@ -369,49 +369,7 @@ Backup: {0}</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ The code action failed — check the backend connection and the model.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Usage: `{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>Usage: `/restore &lt;path&gt;` — restores the most recent backup from `.inferpal/history/`</value></data>
-  <data name="SlashHelp" xml:space="preserve"><value>Unknown command: `{0}`
-
-**Meta**
-- `/clear` — clear the conversation
-- `/model &lt;name&gt;` — switch model
-- `/tools on|off` — enable or disable tool calling
-- `/export` — export conversation to a file
-- `/restore &lt;path&gt;` — restore a file from its most recent backup
-- `/help` — show all available commands
-
-**File system**
-- `/read &lt;path&gt;` — attach a file as context
-- `/ls &lt;path&gt; [pattern]` — list files in a directory
-- `/grep &lt;dir&gt; &lt;pattern&gt; [ext]` — search text in files
-
-**Code actions**
-- `/explain` — explain the active file (or selection)
-- `/fix` — suggest fixes for the active file
-- `/review` — structured code review
-- `/refactor` — refactor suggestions
-- `/test` — generate unit tests
-- `/doc` — generate documentation with namespace/inheritance context (C#/TS/Python/Go/Rust)
-
-**Shell**
-- `/run &lt;command&gt;` — run a PowerShell command
-
-**Web**
-- `/fetch &lt;url&gt;` — show a web page as text
-- `/search &lt;query&gt;` — DuckDuckGo web search
-
-**Git**
-- `/commit` — analyse the diff, propose a commit message and pre-fill the prompt to confirm
-- `/git [path]` — show git status, log, and diff summary
-
-**Visual Studio / Build**
-- `/map` — show project dependency graph
-- `/solution [path]` — show solution structure
-- `/build [path]` — compile and show errors
-- `/fix-build [path]` — compile → AI fixes errors → recompile, repeat until clean (max 5 rounds)
-
-**Project context**
-- `/context` — show the active `.inferpal/context.md` (injected into every system prompt)
-- `/memory` — view agent memory (`.inferpal/memory.md`, injected into every system prompt)</value></data>
+  <data name="SlashUnknownCommand" xml:space="preserve"><value>Unknown command: `{0}`</value></data>
 
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>No saved sessions found. Sessions are archived automatically on `/clear`.</value></data>
@@ -672,7 +630,7 @@ ollama serve
   <data name="SlashHintRead" xml:space="preserve"><value>attach a file as context</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>list files in a directory</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>search text in files</value></data>
-  <data name="SlashHintRun" xml:space="preserve"><value>run a PowerShell command</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>run a shell command</value></data>
   <data name="SlashHintFetch" xml:space="preserve"><value>show a web page as text</value></data>
   <data name="SlashHintSearch" xml:space="preserve"><value>DuckDuckGo web search</value></data>
   <data name="SlashHintSearchCode" xml:space="preserve"><value>semantic codebase search</value></data>

@@ -54,7 +54,7 @@
 
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>Бэкенд вывода:</value></data>
-  <data name="HintProvider" xml:space="preserve"><value>Локальный сервер моделей: Ollama (полный набор hardware-aware функций) или OpenAI-совместимый сервер, например LM Studio, llama.cpp или vLLM. Вступает в силу после перезагрузки Visual Studio.</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>Локальный сервер моделей: Ollama (полный набор hardware-aware функций) или OpenAI-совместимый сервер, например LM Studio, llama.cpp или vLLM. Вступает в силу после перезагрузки редактора.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Ключ API (необязательно):</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Отправляется как токен Bearer на OpenAI-совместимые серверы, требующие аутентификации. Оставьте пустым для Ollama и LM Studio (ключ не нужен).</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>URL сервера:</value></data>
@@ -193,7 +193,7 @@
   <data name="HintPromptTemplates" xml:space="preserve"><value>Определите собственные slash-команды. Формат: /моякоманда=Объясни подробно: {args}. {args} заменяется словами после имени команды. Шаблоны отображаются в подсказках автодополнения.</value></data>
   <data name="LabelPermissionRules" xml:space="preserve"><value>Правила разрешений (по одному в строке: allow|deny &lt;инструмент|*&gt; &lt;regex&gt;):</value></data>
   <data name="HintPermissionRules" xml:space="preserve"><value>Правила вычисляются перед запросом подтверждения. «allow» автоматически одобряет подходящий вызов инструмента, «deny» блокирует его, иначе показывается запрос; побеждает первое совпадение. Регулярное выражение сопоставляется с командой или путём к файлу. Дополняет фиксируемый в репозитории оверлей .inferpal/permissions.json, а также встроенный неотключаемый чёрный список катастрофических команд. Пример: allow run_command ^dotnet</value></data>
-  <data name="LabelCustomTools" xml:space="preserve"><value>Пользовательские инструменты агента (по одному в строке: имя=powershell_команда):</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>Пользовательские инструменты агента (по одному в строке: имя=команда_оболочки):</value></data>
   <data name="HintCustomTools" xml:space="preserve"><value>Определите shell-инструменты, которые агент может вызывать. Формат: мой_инструмент=dotnet test. Имя должно быть в snake_case. Опциональный параметр {args} добавляется, когда модель предоставляет аргументы. Требует подтверждения перед выполнением.</value></data>
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Автопереключение персоны по языку файла</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Если включено, системный промпт автоматически дополняется подсказкой для конкретного языка (C#, Python, TypeScript…) при смене активного документа.</value></data>
@@ -202,7 +202,7 @@
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Генерация сводки сессии…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Сводка сессии OODA** (ход {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Подведи итог нашего разговора до сих пор. Составь краткую сводку в стиле OODA с тремя разделами — Цель (чего хочет достичь пользователь), Прогресс (уже выполненные шаги) и Открытые (оставшиеся задачи или неразрешённые вопросы). Не более 150 слов.</value></data>
-  <data name="LabelLanguage" xml:space="preserve"><value>Язык интерфейса (переопределяет Visual Studio):</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>Язык интерфейса (переопределяет язык редактора):</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>Принудительно задаёт язык отображения независимо от языка Visual Studio. «Авто» использует язык Visual Studio.</value></data>
   <data name="LangAuto" xml:space="preserve"><value>Авто (Visual Studio)</value></data>
   <data name="HintSend" xml:space="preserve"><value>Enter для отправки  ·  Shift+Enter для новой строки  ·  Shift+↑↓ история</value></data>
@@ -368,53 +368,7 @@
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Не удалось выполнить действие с кодом — проверьте подключение к бэкенду и модель.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Использование: `{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>Использование: `/restore &lt;путь&gt;` — восстанавливает последнюю резервную копию из `.inferpal/history/`</value></data>
-  <data name="SlashHelp" xml:space="preserve"><value>Неизвестная команда: `{0}`
-
-**Мета**
-- `/clear` — очистить разговор
-- `/model &lt;имя&gt;` — сменить модель
-- `/tools on|off` — включить или отключить инструменты
-- `/export` — экспортировать разговор в файл
-- `/restore &lt;путь&gt;` — восстановить файл из последней резервной копии
-- `/help` — показать все доступные команды
-
-**Файловая система**
-- `/read &lt;путь&gt;` — прикрепить файл как контекст
-- `/ls &lt;путь&gt; [шаблон]` — список файлов в директории
-- `/grep &lt;дир&gt; &lt;шаблон&gt; [расш]` — поиск текста в файлах
-
-**Действия с кодом**
-- `/explain` — объяснить активный файл (или выделение)
-- `/fix` — предложить исправления для активного файла
-- `/review` — структурированное ревью кода
-- `/refactor` — предложения по рефакторингу
-- `/test` — сгенерировать юнит-тесты
-- `/doc` — сгенерировать XML-комментарии документации
-
-**Оболочка**
-- `/run &lt;команда&gt;` — выполнить команду PowerShell
-
-**Веб**
-- `/fetch &lt;url&gt;` — показать веб-страницу как текст
-- `/search &lt;запрос&gt;` — поиск DuckDuckGo
-
-**Git**
-- `/commit` — проанализировать diff, предложить сообщение коммита и заполнить поле ввода
-- `/git [путь]` — показать статус git, лог и сводку изменений
-
-**Visual Studio / Сборка**
-- `/map` — показать граф зависимостей проекта
-- `/solution [путь]` — показать структуру решения
-- `/build [путь]` — скомпилировать и показать ошибки
-- `/fix-build [путь]` — компиляция → ИИ исправляет ошибки → повторная компиляция до чистоты (макс. 5 раундов)
-
-**Контекст проекта**
-- `/context` — показать активный `.inferpal/context.md` (вставляется в каждый системный промпт)
-- `/memory` — просмотреть память агента (`.inferpal/memory.md`, вставляется в каждый системный промпт)
-
-**История**
-- `/history` — показать все сохранённые сессии с датой и предпросмотром
-- `/history &lt;запрос&gt;` — полнотекстовый поиск по всем сохранённым сессиям</value></data>
+  <data name="SlashUnknownCommand" xml:space="preserve"><value>Неизвестная команда: `{0}`</value></data>
 
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Нет сохранённых сессий. Сессии архивируются автоматически при `/clear`.</value></data>
@@ -662,7 +616,7 @@ ollama serve
   <data name="SlashHintRead" xml:space="preserve"><value>прикрепить файл как контекст</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>показать файлы в каталоге</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>искать текст в файлах</value></data>
-  <data name="SlashHintRun" xml:space="preserve"><value>выполнить команду PowerShell</value></data>
+  <data name="SlashHintRun" xml:space="preserve"><value>выполнить команду оболочки</value></data>
   <data name="SlashHintFetch" xml:space="preserve"><value>показать веб-страницу как текст</value></data>
   <data name="SlashHintSearch" xml:space="preserve"><value>веб-поиск DuckDuckGo</value></data>
   <data name="SlashHintSearchCode" xml:space="preserve"><value>семантический поиск по коду</value></data>

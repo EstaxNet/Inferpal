@@ -169,6 +169,19 @@ internal static class SlashCommandRouter
     /// `/branch`, `/arena`, `/bench`, `/xray`, `/replay`, `/undo-run`, `/diagnostics`, `/task`,
     /// `/docs`) in all ten languages while claiming to list everything.
     /// </summary>
+    /// <summary>
+    /// The answer to a command the router does not know: the localized header, then the same
+    /// generated list as <c>/help</c>.
+    /// </summary>
+    /// <remarks>
+    /// One builder, so the router and its tests cannot drift apart. The list used to be frozen by
+    /// hand in the ten <c>.resx</c> — twin of <c>SlashHelpAll</c>, dropped for that reason and left
+    /// alive here. Measured 2026-09-09: 26 of the 57 shipped commands, plus <c>/search</c>, which
+    /// does not exist. Shown at the worst moment: the user has just typed something unrecognised.
+    /// </remarks>
+    internal static string UnknownCommandMessage(string cmd) =>
+        Strings.SlashUnknownCommand(cmd) + "\n\n" + BuildHelp();
+
     internal static string BuildHelp()
     {
         var sb = new System.Text.StringBuilder();
@@ -326,7 +339,7 @@ internal static class SlashCommandRouter
                     var args = parts.Length > 1 ? string.Join(" ", parts[1..]) : "";
                     return new SlashPromptAction(userTemplate.Text.Replace("{args}", args));
                 }
-                return new SlashInfoAction(Strings.SlashHelp(cmd));
+                return new SlashInfoAction(UnknownCommandMessage(cmd));
         }
     }
 
