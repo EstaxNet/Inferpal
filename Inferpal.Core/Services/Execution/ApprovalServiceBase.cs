@@ -72,12 +72,23 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // blocked: it falls through to the prompt, where the human reads the raw text.
         // `forcePrompt` joins it for the same reason from the other end: the text is perfectly
         // readable, but the repository wrote it, so no consent the user gave their own agent applies.
-        var opaque = PermissionPolicy.IsOpaqueExecution(matchOn) || forcePrompt;
+        //
+        // And a write aimed at the agent's OWN FUTURE INSTRUCTIONS joins them from a third:
+        // .inferpal/context.md, memory.md, notes.md and rules/*.md are injected into the system
+        // prompt of every later session, so a silent write there is the persistence half of a
+        // prompt-injection chain. UpdateMemoryTool's remarks said so and nothing held it -- seven
+        // write paths reached those files and not one asked for a prompt (measured 2026-09-09).
+        // Here rather than in a decorator: a property held at the funnel cannot be forgotten by the
+        // eighth write path. See AgentInstructionFiles for what it does and does not cover.
+        var instructions = AgentInstructionFiles.Targets(matchOn);
+        var opaque = PermissionPolicy.IsOpaqueExecution(matchOn) || instructions || forcePrompt;
         if (opaque && (decision == PermissionDecision.Allow
                        || _config.SecurityAlertsDisabled
                        || _sessionAllowed.ContainsKey(toolName)))
             Diagnostics.Record("Permission",
-                $"Force-prompt ({(forcePrompt ? "repository-authored" : "opaque execution")}) {toolName}: {matchOn}");
+                $"Force-prompt ({(forcePrompt ? "repository-authored"
+                                 : instructions ? "agent instructions"
+                                 : "opaque execution")}) {toolName}: {matchOn}");
 
         if (!opaque)
         {
