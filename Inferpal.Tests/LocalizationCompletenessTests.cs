@@ -13,7 +13,7 @@ namespace Inferpal.Tests;
 /// slipped through before this test existed.
 /// </summary>
 /// <remarks>
-/// The product shows translated text through THREE channels, and each has its own way of staying
+/// The product shows translated text through FOUR channels, and each has its own way of staying
 /// quiet when a key is missing: the <c>.resx</c> files (English fallback), the VS Code bundles
 /// (<c>l10n.t</c> returns the source string), and the <b>VSIX command table</b> (an unresolved
 /// <c>%Key%</c> token). All three are held here, each in both directions - the displayed string no
@@ -286,5 +286,78 @@ public class LocalizationCompletenessTests
 
         Assert.True(report.Count == 0,
             "Command labels no token asks for any more (remove them):\n" + string.Join("\n", report));
+    }
+
+    // -- VS Code manifest (vscode/package.nls*.json) ---------------------------
+    //
+    // The FOURTH channel of translated text, and the last one with no guard. `vscode/package.json`
+    // refers to its labels through `%key%` tokens that VS Code resolves at activation against
+    // `package.nls[.<locale>].json`. Nothing checked it: not `npm run typecheck`, not the VSIX
+    // build, not the three rules above.
+    //
+    // Its failure is in the worst possible order -- silent in the repository, visible to the user:
+    //   . missing from the NEUTRAL file  -> VS Code shows the raw token,
+    //     "%inferpal.config.model%", in all ten languages, in the very place the user configures
+    //     the product;
+    //   . missing from a TRANSLATED file -> English fallback, a half-translated UI.
+    //
+    // It is the mirror of the defect found on 2026-09-08: the VSIX command table, the twin channel
+    // on the Visual Studio side, was equally unguarded and shipped a command with no label in all
+    // ten files. Measured here at ZERO violations (19 tokens x 10 bundles): free, hence locked now.
+
+    private static string VsCodeDir() => Path.Combine(RepoRootDir(), "vscode");
+
+    /// <summary>The <c>%key%</c> tokens the manifest asks for.</summary>
+    private static HashSet<string> ManifestTokens() =>
+        new(Regex.Matches(File.ReadAllText(Path.Combine(VsCodeDir(), "package.json")), @"""%([^%""]+)%""")
+                 .Select(m => m.Groups[1].Value),
+            StringComparer.Ordinal);
+
+    [Fact]
+    public void EveryManifestToken_IsTranslatedInEveryNlsBundle()
+    {
+        var tokens  = ManifestTokens();
+        var bundles = Directory.GetFiles(VsCodeDir(), "package.nls*.json").Order().ToList();
+
+        // Two witnesses, because two things can break silently: the token pattern (it finds none,
+        // and the rule passes by comparing nothing) and the bundle enumeration (a renamed folder, a
+        // broken glob). The second is an EQUALITY, not a minimum: the neutral file plus the nine
+        // locales, no more and no less.
+        Assert.True(tokens.Count >= 10,
+            $"Only {tokens.Count} %key% token(s) read from package.json: the rule compares nothing.");
+        Assert.Equal(Locales.Length + 1, bundles.Count);
+
+        var report = new List<string>();
+        foreach (var bundle in bundles)
+        {
+            var missing = tokens.Except(BundleKeys(bundle)).Order().ToList();
+            if (missing.Count > 0)
+                report.Add($"{Path.GetFileName(bundle)}: {missing.Count} missing -> {string.Join(", ", missing.Take(5))}");
+        }
+
+        Assert.True(report.Count == 0,
+            "VS Code manifest tokens nothing translates. Missing from the neutral file, VS Code "
+            + "shows \"%key%\" verbatim in the settings; missing from a translated file, it falls "
+            + "back to English:\n" + string.Join("\n", report));
+    }
+
+    [Fact]
+    public void NoNlsBundle_CarriesAKeyTheManifestNoLongerAsks()
+    {
+        // The other direction. An orphaned entry breaks nothing -- and that is the problem: it
+        // survives renames, gets translated into ten languages, and nobody displays it.
+        var tokens = ManifestTokens();
+        var report = new List<string>();
+
+        foreach (var bundle in Directory.GetFiles(VsCodeDir(), "package.nls*.json").Order())
+        {
+            var orphaned = BundleKeys(bundle).Except(tokens).Order().ToList();
+            if (orphaned.Count > 0)
+                report.Add($"{Path.GetFileName(bundle)}: {orphaned.Count} orphan(s) -> {string.Join(", ", orphaned.Take(5))}");
+        }
+
+        Assert.True(report.Count == 0,
+            "VS Code manifest labels no token asks for any more (remove them):\n"
+            + string.Join("\n", report));
     }
 }
