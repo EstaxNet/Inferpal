@@ -24,9 +24,11 @@ internal readonly record struct DiagnosticsCommandResult(string Message, string?
 /// <c>null</c> omits the line. Passed in by the caller rather than read here: this handler is pure
 /// by doctrine, and a test reading the real <c>%TEMP%</c> would depend on the machine running it.
 /// </param>
+/// <param name="McpServers">One line per configured MCP server, already rendered by the caller
+/// (this handler is pure by doctrine and never reads a service). Null when MCP is off.</param>
 internal sealed record DiagnosticsExportContext(
     InferpalConfig Config, string FrontEnd, string? BackendStatus = null, string? WorkspaceRoot = null,
-    string? InProcHalf = null);
+    string? InProcHalf = null, IReadOnlyList<string>? McpServers = null);
 
 /// <summary>
 /// Execution logic for <c>/diagnostics</c> — surfaces the in-memory <see cref="Diagnostics"/> ring so
@@ -152,6 +154,17 @@ internal static class DiagnosticsCommandHandler
           // with approvals muted reads very differently.
           .Append(c.SecurityAlertsDisabled ? " · **security alerts DISABLED**" : " · security alerts on")
           .Append('\n');
+
+        // ⚠ "MCP: on" said nothing about what is ACTUALLY running (measured 2026-09-10): a
+        // declared server that had not started left a report where everything looks normal and
+        // the expected tools are missing, without a word about the cause. This is exactly where a
+        // maintainer looks for it.
+        if (ctx.McpServers is { Count: > 0 } mcp)
+        {
+            sb.Append("- **MCP servers** (").Append(mcp.Count).Append("):");
+            foreach (var line in mcp) sb.Append("\n  - ").Append(line);
+            sb.Append('\n');
+        }
 
         var entries = Diagnostics.Snapshot();
         sb.Append("- **Recent diagnostics** (").Append(Math.Min(entries.Count, MaxExported))

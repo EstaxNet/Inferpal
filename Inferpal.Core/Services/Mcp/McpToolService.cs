@@ -107,6 +107,23 @@ internal sealed class McpToolService : IAsyncDisposable
     public IReadOnlyList<McpServerStatus> Status => _status;
 
     /// <summary>
+    /// One line per configured server for the <c>/diagnostics export</c> bundle. English by
+    /// doctrine — its audience is a public issue tracker, not the chat locale.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The bundle only carried "MCP: on" (measured 2026-09-10): a declared server that had
+    /// not started produced a report where everything looks normal and the expected tools are
+    /// missing, without a word about the cause. The rendering lives here rather than in the
+    /// handler because <c>DiagnosticsCommandHandler</c> is pure by doctrine: state is passed to it.
+    /// </remarks>
+    public IReadOnlyList<string> DescribeForBundle() =>
+        [.. _status.Select(s => s.Connected
+            ? $"{s.Name} — connected, {s.ToolCount} tool(s)"
+            : s.AuthRequired
+                ? $"{s.Name} — NOT connected: authorization required"
+                : $"{s.Name} — NOT connected: {s.Error ?? "no reason reported"}")];
+
+    /// <summary>
     /// Tears down any running servers and re-connects from the current config. Safe to call
     /// repeatedly (e.g. after the user edits MCP settings); calls are serialized.
     /// </summary>
@@ -126,6 +143,15 @@ internal sealed class McpToolService : IAsyncDisposable
 
             var servers = McpServerConfig.Parse(_config.McpServersJson, out var rejected);
             _rejected = [.. rejected.Select(r => new McpServerStatus(r.Name, false, 0, r.Reason))];
+
+            // ⚠ A declared server that does not start left NO readable trace (measured
+            // 2026-09-10): the error was filed in McpServerStatus.Error and read by the Visual
+            // Studio settings window alone. In VS Code — no panel, no diagnostic entry, no
+            // message — the user simply saw their tools missing. The /diagnostics channel exists
+            // on BOTH sides: it is the floor, and it is where someone wondering why their tools
+            // are missing will eventually look.
+            foreach (var r in _rejected)
+                Diagnostics.Record("Mcp", $"Server '{r.Name}' rejected by the configuration: {r.Error}");
             var entries = new List<ServerEntry>();
             var failed  = new List<McpServerStatus>();
 
@@ -135,6 +161,12 @@ internal sealed class McpToolService : IAsyncDisposable
                 var ok     = await client.StartAsync(CancellationToken.None).ConfigureAwait(false);
                 if (!ok)
                 {
+                    // Two distinct outcomes: "you need to authorize" is an action for the user,
+                    // "it did not start" is a fault. Conflating them sends people looking in the
+                    // wrong place.
+                    Diagnostics.Record("Mcp", client.NeedsAuthorization
+                        ? $"Server '{server.Name}' needs authorization: its tools are not available."
+                        : $"Server '{server.Name}' did not start: {client.LastError}");
                     failed.Add(new McpServerStatus(server.Name, false, 0, client.LastError, client.NeedsAuthorization));
                     await client.DisposeAsync().ConfigureAwait(false);
                     continue;

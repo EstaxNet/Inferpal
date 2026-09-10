@@ -203,6 +203,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private IEnumerable<ITool> McpTools =>
         _mcp.Tools.Select(t => t is Mcp.McpTool m ? m.WithApproval(_approval) : t);
 
+    /// <summary>MCP server lines for the support bundle. The chat view-model holds this registry,
+    /// not the MCP service (only the settings window does), and the bundle must say the same
+    /// thing in both front-ends — so the single reader is delegated from here.</summary>
+    public IReadOnlyList<string> DescribeMcpForBundle() => _mcp.DescribeForBundle();
+
     public IReadOnlyList<ToolDefinition> Definitions =>
         _tools.Values
             .Concat(UserTools)

@@ -588,7 +588,8 @@ internal partial class InferpalToolWindowData
         var result = Services.Commands.DiagnosticsCommandHandler.Handle(parts,
             new Services.Commands.DiagnosticsExportContext(
                 _config, "Visual Studio", ConnectionStatusText, FindProjectRoot(),
-                Services.Signals.InProcAliveSignal.DescribeForBundle()),
+                Services.Signals.InProcAliveSignal.DescribeForBundle(),
+                _tools.DescribeMcpForBundle()),
             Services.Signals.InProcAliveSignal.IsLoadedOrNull());
 
         if (result.CopyToClipboard is { } bundle)

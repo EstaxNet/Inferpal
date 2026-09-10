@@ -280,7 +280,8 @@ internal sealed partial class HostServer
                     var result = DiagnosticsCommandHandler.Handle(parts, new DiagnosticsExportContext(
                         s.Config, "VS Code host",
                         WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
-                        InProcHalf: InProcAliveSignal.DescribeForBundle()),
+                        InProcHalf: InProcAliveSignal.DescribeForBundle(),
+                        McpServers: s.Mcp.DescribeForBundle()),
                         InProcAliveSignal.IsLoadedOrNull());
                     return result.CopyToClipboard is { } bundle
                         ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("copyToClipboard", bundle)])
