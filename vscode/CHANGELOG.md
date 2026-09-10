@@ -3,6 +3,55 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.10
+
+The largest release of the 1.6 line, and none of it came from a bug report. Nothing crashed: a tool
+that did a different thing and called it done, a setting that named the wrong editor, a list that had
+quietly stopped matching the product — each looked like ordinary behaviour until it was measured.
+
+- **The support bundle could publish a token you never meant to share.** `/diagnostics export`
+  builds the file you paste into a bug report, and it was careful with the place a secret is
+  *expected* — your API key printed as *set (redacted)*. But it also included the recent diagnostics
+  verbatim, and that is where one actually turns up: a blocked or confirmed command is recorded with
+  its full text, so a `curl` carrying an `Authorization` header or a URL with a password went in
+  exactly as written. Credential-shaped text is masked on the way out now. `/diagnostics` on screen
+  is unchanged — you are debugging your own machine there.
+- **Approving a file write once no longer lets the assistant rewrite its own instructions.** Four
+  files are fed back into the system prompt on every later session: your project context, its
+  memory, your notes, your rules. Once you had answered *Always* to a write, later writes to those
+  four went through without asking. They always ask now, whatever you allowed earlier — and they
+  only **ask**: writing memory is a normal thing to do, it just has to be visible.
+- **A multi-file edit could apply some of its edits and report success.** The tool promises that if
+  any edit cannot be applied, no file is changed. That held for an edit that did not match your
+  file, but an edit the assistant wrote incorrectly was dropped in silence and the others applied —
+  *"Applied 2 edits"* on a batch of three. A single-file edit missing its replacement text deleted
+  the matched block instead of refusing.
+- **Three tools ignored an option unless it was spelled in lower case with no stray spaces.** You
+  saw work that looked finished and was not: a call-graph report with no sections at all, a scan of
+  the whole workspace concluding there are no links between your C# and your TypeScript, and
+  *replace the memory* quietly appending instead.
+- **The assistant was told it was running in Visual Studio.** It answered with Solution Explorer and
+  the Build menu, and on Linux and macOS it was told to write PowerShell — so it opened with
+  `Get-ChildItem` and spent turns rediscovering bash. The facts about your editor, your OS and your
+  shell are built at runtime now. Asked about your debugger it could answer *"no paused session"*
+  while you were stopped at a breakpoint; asked whether you had a file open it could say no while
+  you were looking at one.
+- **The settings panel said things that do not apply here.** The language setting claimed to
+  override *Visual Studio*, the backend setting said changes take effect after *reloading Visual
+  Studio* — a step you cannot perform — and the custom-tools field asked for PowerShell on machines
+  where the shell is bash.
+- **Ghost text had been dead on every VSIX install since 1.6.6.** The completion sidecar is a
+  separate process and the package was missing one assembly it needed to start.
+- **Mistyping a command answered with a list written out by hand.** It named 26 of the 57 commands
+  that ship and offered one that no longer exists. It is generated now, from the same table `/help`
+  uses.
+- **Losing the backend mid-session was never announced** — a dot changed colour, and you learned
+  about the outage from your next message failing. A reasoning model's thinking phase showed a
+  frozen indicator, and exporting a conversation dropped everything but the messages, with the
+  *Text* format writing Markdown into a `.txt` file.
+- **Your own turns were labelled in French in exported conversations**, whatever your language, and
+  two messages plus the context-window gauge stayed in English in all ten.
+
 ## 1.6.9
 
 A release given to **things that were quietly not happening**: settings with no effect, capabilities
