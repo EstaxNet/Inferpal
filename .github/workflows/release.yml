@@ -148,9 +148,12 @@ jobs:
       # SHA256SUMS.txt written two steps above proves nothing against an attacker inside the job.
       # The `actions/*` steps keep their major tags on purpose: first-party, and pinning them would
       # mean hand-bumping their security updates. Bump this SHA deliberately, from the tag you
-      # intend (v3 = 3d0d9888, 2026-07-13).
+      # intend, and CHECK IT AT THE SOURCE: Dependabot proposes a SHA, it does not prove one.
+      # Verified 2026-09-11 against the API: tag v3.0.3 -> efb35369, and the moving v3 now points
+      # at the same commit (it moved off 3d0d9888 on 2026-08-30, which is what made the previous
+      # line of this comment false).
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           name: Inferpal ${{ env.VERSION }}
           files: dist/${{ env.VERSION }}/*
