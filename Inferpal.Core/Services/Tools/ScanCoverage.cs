@@ -34,4 +34,25 @@ internal readonly record struct ScanCoverage(int Total, int Scanned)
 
     /// <summary>The localized warning to append to a partial report, or an empty string.</summary>
     public string Warning() => IsPartial ? Strings.ScanPartial(Scanned, Total) : string.Empty;
+
+    /// <summary>
+    /// The more truncated of two scans. A tool whose sections do not all read the same subset must
+    /// warn about the <b>worst</b> of them, not about whichever one it happened to measure last.
+    /// </summary>
+    /// <remarks>
+    /// Written for <c>trace_dependency</c> (2026-09-10), which scans twice — once for callers, once
+    /// to build the callee definition index — and reported only the first. In
+    /// <c>direction: "callees"</c> the caller scan never runs, so the coverage stayed
+    /// <c>default</c> and <b>no warning was ever emitted</b> while the index had quietly skipped
+    /// every file past the cap.
+    /// </remarks>
+    public static ScanCoverage Worst(ScanCoverage a, ScanCoverage b)
+    {
+        if (a.IsPartial && b.IsPartial) return a.Scanned <= b.Scanned ? a : b;
+        if (a.IsPartial) return a;
+        if (b.IsPartial) return b;
+        // Neither is partial: keep the one that actually looked at something, so a section that
+        // did not run (default) never displaces a real, complete scan.
+        return a.Total >= b.Total ? a : b;
+    }
 }

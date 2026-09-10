@@ -15,7 +15,10 @@ internal class TraceDependencyTool : ITool
 {
     private const int MaxAllowedDepth   = 3;
     private const int MaxCallsPerMethod = 30;
-    private const int MaxFilesScanned   = 400;
+    /// <summary>Files read per cross-file scan. ⚠ This is NOT the 500 of the two other
+    /// analysis tools: each has its own, and assuming they shared one produced a wrong
+    /// measurement first time round.</summary>
+    internal const int MaxFilesScanned  = 400;
 
 
     private readonly Func<string?> _getRoot;
@@ -99,10 +102,17 @@ internal class TraceDependencyTool : ITool
             return Strings.TraceDepsNoMethods(Path.GetFileName(filePath));
 
         // ── Build cross-file index ────────────────────────────────────────────
+        // ⚠ This scan is CAPPED like the caller one, and it did not say so (2026-09-10). What
+        // the index does not hold is rendered "[external]" — an assertion, not a silence: the
+        // model reads "this call leaves your code" about a method living in file no. 401. On this
+        // repository (652 .cs, cap 400) 252 files are out. And in `direction: "callees"` the
+        // caller scan does not run, so coverage stayed `default` and NO warning was ever emitted
+        // — while the rule is written ten lines below, about the other scan.
         var rootDir = Path.GetDirectoryName(filePath)!;
         DefinitionIndex? index = null;
+        var indexCoverage = default(ScanCoverage);
         if (depth > 0)
-            index = await BuildIndexAsync(rootDir, ext, ct);
+            (index, indexCoverage) = await BuildIndexAsync(rootDir, ext, ct);
 
         // ── Render ────────────────────────────────────────────────────────────
         var sb = new StringBuilder();
@@ -135,7 +145,7 @@ internal class TraceDependencyTool : ITool
                 ct.ThrowIfCancellationRequested();
                 sb.AppendLine($"▶ **{m.Name}**{m.Signature}  *(line {m.Line})*");
                 var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { m.Name };
-                AppendCalleeTree(sb, m, filePath, index, depth, 1, visited, "  ");
+                AppendCalleeTree(sb, m, filePath, index, indexCoverage.IsPartial, depth, 1, visited, "  ");
                 sb.AppendLine();
             }
         }
@@ -151,7 +161,12 @@ internal class TraceDependencyTool : ITool
         sb.AppendLine(Strings.TraceDepsFooter(methods.Count, allCallees.Count, resolved));
         // A capped cross-file scan must say so: an empty caller list is otherwise indistinguishable
         // from "this method is never called".
-        if (coverage.IsPartial) sb.AppendLine(coverage.Warning());
+        //
+        // ⚠ BOTH scans count, and only the first was reported (2026-09-10): in
+        // `direction: "callees"` the caller one does not run, coverage stayed `default` and the
+        // capped index was announced nowhere. We warn about the worse of the two.
+        var worst = ScanCoverage.Worst(coverage, indexCoverage);
+        if (worst.IsPartial) sb.AppendLine(worst.Warning());
 
         return sb.ToString().TrimEnd();
     }
@@ -163,6 +178,7 @@ internal class TraceDependencyTool : ITool
         MethodInfo       method,
         string           baseFile,
         DefinitionIndex? index,
+        bool             indexPartial,
         int              maxDepth,
         int              depth,
         HashSet<string>  visited,
@@ -197,7 +213,10 @@ internal class TraceDependencyTool : ITool
             }
             else
             {
-                loc = "[external]";
+                // ASSERTING the call leaves the repository presupposes having read the whole
+                // repository. When the scan was capped we INDICATE — the same discriminator as
+                // the XML doc of IsAvailable.
+                loc = indexPartial ? "[not in scanned subset]" : "[external]";
             }
 
             bool cyclic = visited.Contains(call);
@@ -208,7 +227,7 @@ internal class TraceDependencyTool : ITool
             if (!cyclic && callee is not null && depth < maxDepth)
             {
                 visited.Add(call);
-                AppendCalleeTree(sb, callee, baseFile, index, maxDepth, depth + 1, visited, childIndent);
+                AppendCalleeTree(sb, callee, baseFile, index, indexPartial, maxDepth, depth + 1, visited, childIndent);
                 visited.Remove(call);
             }
         }
@@ -274,10 +293,14 @@ internal class TraceDependencyTool : ITool
 
     // ── Index building ────────────────────────────────────────────────────────
 
-    private static async Task<DefinitionIndex> BuildIndexAsync(string rootDir, string ext, CancellationToken ct)
+    /// <summary>Builds the callee definition index and returns how much of the tree it read — an
+    /// index built from a capped scan cannot call anything it missed "external".</summary>
+    private static async Task<(DefinitionIndex Index, ScanCoverage Coverage)> BuildIndexAsync(
+        string rootDir, string ext, CancellationToken ct)
     {
         var index = new DefinitionIndex();
-        foreach (var file in EnumerateSourceFiles(rootDir, ext).Take(MaxFilesScanned))
+        var (indexed, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
+        foreach (var file in indexed)
         {
             ct.ThrowIfCancellationRequested();
             try
@@ -291,7 +314,7 @@ internal class TraceDependencyTool : ITool
             catch (OperationCanceledException) { }
             catch (Exception ex) { Diagnostics.Swallow("TraceDependencyTool.IndexMethods", ex); }
         }
-        return index;
+        return (index, coverage);
     }
 
     // ── File enumeration ──────────────────────────────────────────────────────

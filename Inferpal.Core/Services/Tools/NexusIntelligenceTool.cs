@@ -14,6 +14,14 @@ internal sealed class NexusIntelligenceTool : ITool
 {
     private const int MaxFilesScanned = 500;
 
+    /// <summary>
+    /// Orphan lines listed before truncating. ⚠ The total is printed NEXT TO IT, and it was not
+    /// (2026-09-10): both orphan lists — DEFECTS, the things a user goes and fixes — stopped at
+    /// ten without saying so. Thirty-five TS calls with no C# endpoint read as "there are ten",
+    /// and the model reported ten.
+    /// </summary>
+    private const int MaxOrphansListed = 10;
+
     private readonly Func<string?> _getRoot;
 
     public NexusIntelligenceTool(Func<string?> getRoot) => _getRoot = getRoot;
@@ -200,9 +208,11 @@ internal sealed class NexusIntelligenceTool : ITool
 
         if (orphans.Count > 0)
         {
-            sb.AppendLine("  *TS callers with no matching C# endpoint:*");
-            foreach (var o in orphans.Take(10))
+            sb.AppendLine($"  *TS callers with no matching C# endpoint ({orphans.Count}):*");
+            foreach (var o in orphans.Take(MaxOrphansListed))
                 sb.AppendLine($"    • {o.Verb.PadRight(7)} `{o.Route}`  — `{o.RelFile}:{o.Line}`");
+            if (orphans.Count > MaxOrphansListed)
+                sb.AppendLine($"    … +{orphans.Count - MaxOrphansListed} more");
             sb.AppendLine();
         }
 
@@ -299,9 +309,11 @@ internal sealed class NexusIntelligenceTool : ITool
 
         if (orphans.Count > 0)
         {
-            sb.AppendLine("  *TS SignalR calls with no matching C# hub method:*");
-            foreach (var o in orphans.Take(10))
+            sb.AppendLine($"  *TS SignalR calls with no matching C# hub method ({orphans.Count}):*");
+            foreach (var o in orphans.Take(MaxOrphansListed))
                 sb.AppendLine($"    • .{o.Direction}(\"{o.Name}\")  — `{o.RelFile}:{o.Line}`");
+            if (orphans.Count > MaxOrphansListed)
+                sb.AppendLine($"    … +{orphans.Count - MaxOrphansListed} more");
             sb.AppendLine();
         }
 

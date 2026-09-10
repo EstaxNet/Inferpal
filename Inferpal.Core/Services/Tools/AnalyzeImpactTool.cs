@@ -139,6 +139,12 @@ internal class AnalyzeImpactTool : ITool
     /// <summary>Reference lines listed before truncating — the report is read by a model.</summary>
     private const int MaxSemanticReferences = 40;
 
+    /// <summary>Exported names listed in the public-API section before the count takes over.</summary>
+    private const int MaxExportedNames = 10;
+
+    /// <summary>Referenced types shown inline per dependant, the rest counted.</summary>
+    private const int MaxReferencedTypes = 3;
+
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var filePath = PathSanitizer.Sanitize(args.Str("path"));
@@ -253,8 +259,14 @@ internal class AnalyzeImpactTool : ITool
             foreach (var t in api.Types)
                 sb.AppendLine($"  {KindIcon(t.Kind)} {t.Kind,-12} {t.Name}{(t.IsAbstract ? "  *(abstract)*" : "")}");
         if (api.ExportedNames.Count > 0)
-            foreach (var n in api.ExportedNames.Take(10))
+        {
+            // ⚠ The "+N" was missing (2026-09-10): a module exporting forty names showed ten,
+            // and the model concluded its public surface holds ten.
+            foreach (var n in api.ExportedNames.Take(MaxExportedNames))
                 sb.AppendLine($"  📤 {n}");
+            if (api.ExportedNames.Count > MaxExportedNames)
+                sb.AppendLine($"  … +{api.ExportedNames.Count - MaxExportedNames} more exported name(s)");
+        }
         if (api.Namespace is not null)
             sb.AppendLine($"  📦 namespace `{api.Namespace}`");
 
@@ -271,8 +283,11 @@ internal class AnalyzeImpactTool : ITool
             {
                 var icon  = RoleIcon(d.Role);
                 var badge = d.Role != FileRole.Source ? $"  `{d.Role}`" : "";
+                // "uses: A, B, C" reads as the complete list: the rest is counted.
+                var extra = d.ReferencedTypes.Count - MaxReferencedTypes;
                 var refs  = d.ReferencedTypes.Count > 0
-                    ? $"  uses: {string.Join(", ", d.ReferencedTypes.Take(3))}"
+                    ? $"  uses: {string.Join(", ", d.ReferencedTypes.Take(MaxReferencedTypes))}"
+                      + (extra > 0 ? $" (+{extra})" : "")
                     : "";
                 var how   = d.DependencyKind != DependencyKind.Uses
                     ? $"  [{d.DependencyKind}]"
@@ -288,6 +303,18 @@ internal class AnalyzeImpactTool : ITool
         {
             sb.AppendLine();
             sb.AppendLine($"## Layer 2 · Transitive dependants  ({transitive.Count})");
+
+            // ⚠ The coverage line at the bottom of the report describes the LAYER 1 scan. Layer 2
+            // reads LESS — its seeds and its files are re-capped — and nothing said so
+            // (2026-09-10): "Layer 2 (0)" therefore read as "nothing depends on this file
+            // transitively" when a third of what the line announced had been looked at. A number
+            // that is too wide is worse than an absent one: it gives false precision.
+            var l2Seeds = Math.Min(layer1.Count, MaxTransitivePerFile * 4);
+            var l2Files = Math.Min(allFiles.Count, MaxTransitiveFiles * 3);
+            if (l2Seeds < layer1.Count || l2Files < allFiles.Count)
+                sb.AppendLine($"  *(searched {l2Files} of the {allFiles.Count} scanned file(s), "
+                            + $"from {l2Seeds} of the {layer1.Count} direct dependant(s))*");
+
             if (transitive.Count == 0)
             {
                 sb.AppendLine("  *(none)*");

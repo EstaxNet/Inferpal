@@ -56,6 +56,56 @@ public class ScanCoverageTests
         Assert.False(coverage.IsPartial);
     }
 
+    // ── Worst: a tool that scans TWICE warns about the worse of the two ─────
+
+    [Fact]
+    public void Worst_PrefersThePartialScanOverTheCompleteOne()
+    {
+        var complete = new ScanCoverage(Total: 300, Scanned: 300);
+        var partial  = new ScanCoverage(Total: 652, Scanned: 500);
+
+        Assert.True(ScanCoverage.Worst(complete, partial).IsPartial);
+        Assert.True(ScanCoverage.Worst(partial, complete).IsPartial);
+    }
+
+    [Fact]
+    public void Worst_ASectionThatNeverRanDoesNotSilenceTheOneThatDid()
+    {
+        // The 2026-09-10 defect reduced to its shape: in `direction: "callees"` the caller scan
+        // never runs and returns `default` — not partial, therefore silent. That `default` was
+        // what got reported, while the index had quietly left files out.
+        var neverRan = default(ScanCoverage);
+        var indexed  = new ScanCoverage(Total: 652, Scanned: 400);
+
+        var worst = ScanCoverage.Worst(neverRan, indexed);
+
+        Assert.True(worst.IsPartial);
+        Assert.Equal(400, worst.Scanned);
+        Assert.Equal(652, worst.Total);
+    }
+
+    [Fact]
+    public void Worst_BetweenTwoPartialScans_KeepsTheNarrowerOne()
+    {
+        var wide   = new ScanCoverage(Total: 652, Scanned: 500);
+        var narrow = new ScanCoverage(Total: 652, Scanned: 180);
+
+        Assert.Equal(180, ScanCoverage.Worst(wide, narrow).Scanned);
+        Assert.Equal(180, ScanCoverage.Worst(narrow, wide).Scanned);
+    }
+
+    [Fact]
+    public void Worst_OfTwoCompleteScans_KeepsTheOneThatReadSomething()
+    {
+        // Witness: without this, a `default` returned by a section that did not run would displace
+        // a complete scan and the report would lose the only number it had.
+        var real = new ScanCoverage(Total: 42, Scanned: 42);
+
+        Assert.Equal(42, ScanCoverage.Worst(default, real).Total);
+        Assert.Equal(42, ScanCoverage.Worst(real, default).Total);
+        Assert.False(ScanCoverage.Worst(real, default).IsPartial);
+    }
+
     [Fact]
     public void Take_EnumeratesTheSourceOnlyOnce()
     {
