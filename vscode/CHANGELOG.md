@@ -3,6 +3,42 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.11
+
+The first release driven by reports from people other than the maintainer. Most of what follows is
+the same theme as 1.6.10: cases where Inferpal answered, and the answer was not true.
+
+- **A new `/permissions` command shows the rules actually in force.** A project can ship a
+  `.inferpal/permissions.json` to restrict what the assistant may do in it — and that file could
+  stop applying **entirely** without anything visible saying so: invalid JSON, a missing `rules`
+  array, one mistyped line. It was also the only one of the four project files with no way to list
+  it, while being the one that *restricts* rather than advises. `/permissions` now shows the
+  workspace overlay and your per-machine rules in the order they are evaluated, names an overlay it
+  could not read, and separately reports `allow` rules — which a project overlay is not allowed to
+  grant, by design rather than by mistake.
+- **An MCP server that failed to start said nothing at all.** You add a server, its tools never
+  appear, and there was no message, no diagnostic entry, nothing — just missing tools. In VS Code
+  there was no place at all that showed the reason. Every failure is now recorded in
+  `/diagnostics`, and *needs authorization* is kept apart from *did not start*. The
+  `/diagnostics export` bundle lists each server with its tool count or its error.
+- **The approval prompt showed nothing at all on files longer than 300 lines.** Before the assistant
+  writes to a file, Inferpal asks you first and shows the change — that prompt is the only moment
+  you see what you are agreeing to. It stopped showing anything past 300 lines: a single changed
+  line in a 400-line source got you one sentence where the change should have been. The limit was
+  measuring the size of the *file* rather than the size of the *change*.
+- **"Build failed — 20 errors" when there were eighty.** After a file write Inferpal can run a quick
+  build; both the assistant's copy and the banner in the chat counted the error list *after*
+  trimming it for display, so any build with more errors than the display limit reported the limit
+  as the total.
+- **Analysis tools cut their answer short without saying so.** The call-graph tool built its index
+  of definitions from a capped scan and then labelled everything it had not indexed as *external to
+  your codebase* — a method living in your own repository reported as belonging to some library.
+  Cross-language reports listed at most ten unmatched calls out of however many there were.
+- **The assistant was told things about your machine that were not true**, and a connection failure
+  now names the backend it was configured for instead of only blaming the server.
+- **Three messages in the diff view were never translated** — one of them was hard-coded in French
+  for every language.
+
 ## 1.6.10
 
 The largest release of the 1.6 line, and none of it came from a bug report. Nothing crashed: a tool
