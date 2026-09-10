@@ -38,10 +38,14 @@ internal sealed class VsBuildMonitor : IDisposable
 {
     /// <summary>
     /// Fired on a background thread when a build completes with at least one compilation error.
-    /// <para><c>errorCount</c> — number of distinct error lines.</para>
+    /// <para><c>errorCount</c> — number of distinct error lines <b>found</b>, which is not
+    /// necessarily the number listed in <c>errorLines</c>: the text is capped and says so.</para>
     /// <para><c>errorLines</c> — newline-separated error messages.</para>
     /// </summary>
     public event Action<int, string>? BuildFailed;
+
+    /// <summary>Error lines carried in the payload; the count reported alongside is the full one.</summary>
+    private const int MaxErrorLinesListed = 20;
 
     private FileSystemWatcher? _watcher;
 
@@ -161,16 +165,24 @@ internal sealed class VsBuildMonitor : IDisposable
 
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(90), CancellationToken.None);
 
+            // ⚠ The count came off the list AFTER `.Take(20)` (measured 2026-09-10), and it is the
+            // one the banner shows: "❌ Build failed — 20 compilation error(s) detected" on a build
+            // that has eighty. The user decides whether to run /fix-build on that number. The
+            // count now covers EVERYTHING found; what is not listed is announced in the text.
             var errorLines = run.Combined
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .Where(l => GetDiagnosticsTool.ErrorLineRegex.IsMatch(l))
                 .Select(l => l.Trim())
                 .Distinct()
-                .Take(20)
                 .ToList();
 
             if (errorLines.Count > 0)
-                BuildFailed?.Invoke(errorLines.Count, string.Join("\n", errorLines));
+            {
+                var text = string.Join("\n", errorLines.Take(MaxErrorLinesListed));
+                if (errorLines.Count > MaxErrorLinesListed)
+                    text += $"\n… +{errorLines.Count - MaxErrorLinesListed} more";
+                BuildFailed?.Invoke(errorLines.Count, text);
+            }
         }
         catch { /* non-critical */ }
     }

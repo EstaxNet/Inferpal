@@ -121,9 +121,8 @@ internal sealed class SmartFixValidator
                     .Where(l => GetDiagnosticsTool.ErrorLineRegex.IsMatch(l))
                     .Select(l => l.Trim())
                     .Distinct()
-                    .Take(20)
                     .ToList();
-                return Strings.SmartFixBuildErrors(errors.Count, string.Join("\n", errors));
+                return Strings.SmartFixBuildErrors(errors.Count, Listed(errors));
             }
 
             // Generic ecosystems: the exit code is the reliable failure signal across toolchains.
@@ -131,7 +130,7 @@ internal sealed class SmartFixValidator
             if (ToolMissingRegex.IsMatch(output)) return null;   // toolchain absent → stay silent
 
             var lines = ExtractErrorLines(output);
-            return Strings.SmartFixBuildErrors(lines.Count, string.Join("\n", lines));
+            return Strings.SmartFixBuildErrors(lines.Count, Listed(lines));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -148,9 +147,29 @@ internal sealed class SmartFixValidator
         }
     }
 
+    /// <summary>Error lines rendered into the note. The COUNT that goes with them is the count of
+    /// the full list, never of this slice.</summary>
+    /// <remarks>
+    /// ⚠ Measured 2026-09-10: both branches counted the list AFTER `.Take(...)`, and the
+    /// message they fill states "{0} compilation error(s) detected". Eighty errors therefore
+    /// reached the model as "20" — not a silence, a WRONG NUMBER, in the loop that runs after
+    /// EVERY write. The model fixes its twenty, rebuilds, finds sixty: it reads those as errors
+    /// it has just introduced.
+    /// </remarks>
+    internal const int MaxErrorLinesListed = 25;
+
+    /// <summary>Joins at most <see cref="MaxErrorLinesListed"/> lines and says what it left out.</summary>
+    internal static string Listed(List<string> lines)
+    {
+        var text = string.Join("\n", lines.Take(MaxErrorLinesListed));
+        return lines.Count > MaxErrorLinesListed
+            ? text + $"\n… +{lines.Count - MaxErrorLinesListed} more"
+            : text;
+    }
+
     // Prefer lines that look like compiler errors ("error" anywhere); fall back to all non-empty
-    // lines (e.g. Go's `file.go:10:5: msg` format has no "error" keyword). Capped for the context.
-    private static List<string> ExtractErrorLines(string output)
+    // lines (e.g. Go's `file.go:10:5: msg` format has no "error" keyword).
+    internal static List<string> ExtractErrorLines(string output)
     {
         var all = output
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
@@ -159,7 +178,7 @@ internal sealed class SmartFixValidator
             .ToList();
 
         var errorish = all.Where(l => l.Contains("error", StringComparison.OrdinalIgnoreCase)).ToList();
-        return (errorish.Count > 0 ? errorish : all).Take(25).ToList();
+        return errorish.Count > 0 ? errorish : all;
     }
 
     private string? FindMarker(string dir, string glob)

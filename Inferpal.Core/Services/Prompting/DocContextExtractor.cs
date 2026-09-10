@@ -16,6 +16,9 @@ internal static class DocContextExtractor
 {
     private const int MaxInterfaceFileBytes = 20_000;
     private const int MaxInterfaceFiles     = 6;
+    /// <summary>Members listed per interface contract; the rest is counted, never dropped
+    /// silently — the model writes `&lt;inheritdoc&gt;` from this list.</summary>
+    private const int MaxContractMembers    = 12;
 
     // ── Public entry point ─────────────────────────────────────────────────────
 
@@ -113,11 +116,15 @@ internal static class DocContextExtractor
                 foreach (var (ifaceName, members) in contracts)
                 {
                     sb.AppendLine($"- `{ifaceName}`:");
-                    foreach (var mem in members.Take(12))
+                    foreach (var mem in members.Take(MaxContractMembers))
                     {
                         var docHint = mem.Summary is not null ? $" — *{TruncateSummary(mem.Summary, 80)}*" : "";
                         sb.AppendLine($"  - `{mem.Signature}`{docHint}");
                     }
+                    // Without this line a twenty-member interface showed twelve, and the model
+                    // documented "the interface" believing it had seen the whole of it.
+                    if (members.Count > MaxContractMembers)
+                        sb.AppendLine($"  - … +{members.Count - MaxContractMembers} more member(s)");
                 }
             }
         }
