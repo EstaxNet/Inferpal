@@ -468,14 +468,17 @@ internal class RunTestsTool : ITool
     {
         if (explicitPath is not null)
         {
-            if (explicitPath.EndsWith(".sln",   StringComparison.OrdinalIgnoreCase) ||
+            // SolutionFiles recognises BOTH formats: a `path` pointing at a .slnx otherwise
+            // picked the wrong runner (issue #9).
+            if (SolutionFiles.IsSolution(explicitPath) ||
                 explicitPath.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
                 return "dotnet";
         }
 
         // WorkspaceScan: lazy (GetFiles materialized the whole tree before .Any()) and excluded
         // dirs skipped — a vendored .sln under node_modules must not flip the runner to dotnet.
-        if (WorkspaceScan.EnumerateFiles(workDir, "*.sln").Any() ||
+        if (WorkspaceScan.EnumerateFiles(workDir, "*.sln").Any()  ||
+            WorkspaceScan.EnumerateFiles(workDir, "*.slnx").Any() ||
             WorkspaceScan.EnumerateFiles(workDir, "*.csproj").Any())
             return "dotnet";
 

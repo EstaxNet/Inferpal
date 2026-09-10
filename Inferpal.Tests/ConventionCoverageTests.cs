@@ -786,6 +786,57 @@ public class ConventionCoverageTests
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
+    // ── 12. A solution is looked up by its EXTENSION, never by `*.sln` ────
+
+    [Fact]
+    public void ASolutionIsNeverLookedUpByThe_sln_Pattern()
+    {
+        // Issue #9, measured 2026-09-10. `Directory.GetFiles(dir, "*.sln")` OFTEN returns `.slnx`
+        // files as well — through 8.3 short-name matching, which is configured PER VOLUME. The same
+        // code found the solution on the maintainer's system volume and not on the reporter's
+        // `G:\`: wrong workspace root, `read_file` refusing the project's own paths, and
+        // "No .sln file found — cannot find .inferpal/context.md".
+        //
+        // ⚠ The rule exists because the first pass fixed the SIX Core sites and left the TWO in
+        // the VS adapter — including the one that renders exactly the message above. A pattern
+        // spread over two projects is not held in one's head; SolutionFiles is the funnel.
+        var offenders = new List<string>();
+        var sites     = 0;
+
+        foreach (var file in CoreSources("Services").Concat(ViewModelSources())
+                                                    .Concat(ProjectSources("Inferpal.Host"))
+                                                    .Concat(ProjectSources("Inferpal.InProc")))
+        {
+            // The funnel class is the only place allowed to name the format, and its text documents
+            // the trap precisely: it exempts itself, by name.
+            if (Path.GetFileName(file).Equals("SolutionFiles.cs", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var source = CodeOnly(file);
+
+            // A file that names BOTH formats has done the work: it is looking for project markers,
+            // not for "the" solution, and the list is explicit. What the rule is after is the
+            // pattern that DECIDES ALONE — the one that lets 8.3 answer.
+            if (source.Contains("\"*.slnx\"", StringComparison.Ordinal)) continue;
+
+            // Witness: the rule is only worth something if it actually sees file lookups.
+            sites += System.Text.RegularExpressions.Regex.Matches(source, @"(?:GetFiles|EnumerateFiles)\s*\(").Count;
+
+            foreach (System.Text.RegularExpressions.Match m in
+                     System.Text.RegularExpressions.Regex.Matches(source, "\"\\*\\.sln\""))
+                offenders.Add($"{Rel(file)}({source[..m.Index].Count(c => c == '\n') + 1}) : \"*.sln\"");
+        }
+
+        Assert.True(sites >= 20,
+            $"Only {sites} file lookup(s) found — the rule no longer measures anything.");
+
+        Assert.True(offenders.Count == 0,
+            "A solution looked up with the « *.sln » pattern gives an answer that depends on the "
+            + "volume (8.3 short names): it finds .slnx files on one machine and not on another. "
+            + "Go through Services/SolutionFiles, which filters on the extension. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
     // ── Plumbing ──────────────────────────────────────────────────────────────
 
     /// <summary>

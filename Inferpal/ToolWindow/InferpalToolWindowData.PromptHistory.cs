@@ -79,7 +79,10 @@ internal partial class InferpalToolWindowData
     {
         var dir = FindProjectRoot();
         // VS-specific pre-check: without a solution the root is meaningless here.
-        if (Directory.GetFiles(dir, "*.sln", SearchOption.TopDirectoryOnly).Length == 0)
+        // ⚠ Goes through SolutionFiles, like the six Core sites (issue #9): THIS test is what
+        // produced "No .sln file found — cannot find .inferpal/context.md" on a .slnx solution,
+        // and the first pass left it behind while fixing the Core — the visible half of the report.
+        if (!Services.SolutionFiles.DirectoryHasSolution(dir))
         {
             await ShowInfoAsync(Strings.SlashContextNoSln);
             return;
@@ -195,7 +198,7 @@ internal partial class InferpalToolWindowData
             else
             {
                 var root = FindProjectRoot();
-                slnPath = Directory.GetFiles(root, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault()
+                slnPath = Services.SolutionFiles.FirstIn(root)
                        ?? Directory.GetFiles(root, "*.csproj", SearchOption.TopDirectoryOnly).FirstOrDefault();
             }
 
