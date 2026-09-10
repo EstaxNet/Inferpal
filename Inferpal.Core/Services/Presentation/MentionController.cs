@@ -68,7 +68,7 @@ internal static class MentionController
             ".cs", ".ts", ".js", ".tsx", ".jsx", ".py", ".go", ".java",
             ".cpp", ".h", ".hpp", ".razor", ".vue", ".fs",
             ".json", ".xml", ".yaml", ".yml", ".md", ".config",
-            ".csproj", ".sln", ".props", ".targets",
+            ".csproj", ".sln", ".slnx", ".props", ".targets",
         };
 
     private static bool IsSkippedDir(string dir) => WorkspaceScan.IsExcludedDirName(dir);

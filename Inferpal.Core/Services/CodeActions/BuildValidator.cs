@@ -36,8 +36,8 @@ internal static class BuildValidators
     public static IReadOnlyList<BuildValidator> Defaults { get; } =
     [
         new("dotnet",
-            [".cs", ".csproj", ".sln", ".fs", ".fsproj", ".vb", ".vbproj", ".props", ".targets", ".razor", ".xaml"],
-            ["*.csproj", "*.sln"],
+            [".cs", ".csproj", ".sln", ".slnx", ".fs", ".fsproj", ".vb", ".vbproj", ".props", ".targets", ".razor", ".xaml"],
+            ["*.csproj", "*.sln", "*.slnx"],
             "dotnet build \"{project}\" --no-restore -v minimal",
             UseDotnetErrorFilter: true),
         new("typescript", [".ts", ".tsx", ".mts", ".cts"], ["tsconfig.json"], "npx --no-install tsc --noEmit"),

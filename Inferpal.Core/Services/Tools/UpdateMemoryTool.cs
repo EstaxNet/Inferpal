@@ -150,7 +150,7 @@ internal class UpdateMemoryTool : ITool
         var dir = Directory.GetCurrentDirectory();
         for (int i = 0; i < 8; i++)
         {
-            if (Directory.GetFiles(dir, "*.sln", SearchOption.TopDirectoryOnly).Length > 0) return dir;
+            if (SolutionFiles.DirectoryHasSolution(dir)) return dir;
             if (Directory.Exists(Path.Combine(dir, ".inferpal")))                        return dir;
             var parent = Directory.GetParent(dir)?.FullName;
             if (parent is null || parent == dir) break;
@@ -163,7 +163,7 @@ internal class UpdateMemoryTool : ITool
             var d = Path.GetDirectoryName(p);
             for (int i = 0; i < 8 && !string.IsNullOrEmpty(d); i++)
             {
-                if (Directory.GetFiles(d, "*.sln", SearchOption.TopDirectoryOnly).Length > 0) return d;
+                if (SolutionFiles.DirectoryHasSolution(d)) return d;
                 if (Directory.Exists(Path.Combine(d, ".inferpal")))                        return d;
                 d = Directory.GetParent(d)?.FullName;
             }

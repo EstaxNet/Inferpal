@@ -544,7 +544,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             if (response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadAsStringAsync(cts.Token);
-                if (ConfirmsBackendPayload(endpoint, body, "data", "OpenAiCompatible.CheckConnection"))
+                if (ConfirmsBackendPayload(endpoint, body, "data", "OpenAiCompatible.CheckConnection", _config.Provider))
                 {
                     ResetCircuit();
                     return true;

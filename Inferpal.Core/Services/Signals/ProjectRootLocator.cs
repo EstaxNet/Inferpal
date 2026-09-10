@@ -19,7 +19,7 @@ internal sealed class ProjectRootLocator
         Func<string, IEnumerable<string>>? getSubDirs     = null)
     {
         _dirContainsSln = dirContainsSln
-            ?? (dir => Directory.GetFiles(dir, "*.sln", SearchOption.TopDirectoryOnly).Length > 0);
+            ?? SolutionFiles.DirectoryHasSolution;
         _getSubDirs = getSubDirs ?? Directory.GetDirectories;
     }
 

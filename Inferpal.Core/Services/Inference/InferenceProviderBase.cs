@@ -265,7 +265,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// the body received. A dead server and a reachable server that is not the configured type give
     /// the same red badge, but no longer the same line in <c>/diagnostics</c>.
     /// </remarks>
-    internal static bool ConfirmsBackendPayload(string endpoint, string? body, string requiredRootProperty, string context)
+    internal static bool ConfirmsBackendPayload(string endpoint, string? body, string requiredRootProperty,
+                                                string context, string configuredProvider)
     {
         if (ProviderProbe.HasRootProperty(body, requiredRootProperty)) return true;
 
@@ -273,9 +274,16 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         if (seen.Length == 0) seen = "(empty)";
         else if (seen.Length > 200) seen = seen[..200] + "…";
 
+        // ⚠ The line NAMES the active backend (issue #8, 2026-09-10). Without it, "not as the
+        // configured backend" sends people to look at the SERVER, when the cause can be the
+        // opposite: an Ollama client pointed at an LM Studio URL, because the `provider` setting
+        // is not the one they think they picked. The reporter read this message, concluded
+        // "Inferpal calls the wrong endpoint" -- correct -- and had no way to know which of the
+        // two was misconfigured. The backend code settles it at a glance.
         Diagnostics.Record(context,
-            $"{endpoint} answered 2xx WITHOUT the \"{requiredRootProperty}\" root property: the server "
-          + $"answers, but not as the configured backend. Body: {seen}");
+            $"{endpoint} answered 2xx WITHOUT the \"{requiredRootProperty}\" root property. Inferpal is "
+          + $"configured for the \"{configuredProvider}\" backend and probed it as such; the server "
+          + $"answers, but not as that backend. Check the provider setting as well as the URL. Body: {seen}");
         return false;
     }
 

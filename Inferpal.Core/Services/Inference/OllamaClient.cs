@@ -213,7 +213,7 @@ internal class OllamaClient : InferenceProviderBase
             if (response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadAsStringAsync(cts.Token);
-                if (ConfirmsBackendPayload(endpoint, body, "models", "Ollama.CheckConnection"))
+                if (ConfirmsBackendPayload(endpoint, body, "models", "Ollama.CheckConnection", _config.Provider))
                 {
                     ResetCircuit();
                     return true;

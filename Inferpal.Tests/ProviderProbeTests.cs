@@ -63,7 +63,7 @@ public class ProviderProbeTests
     [InlineData("", "data", false)]
     public void ConfirmsBackendPayload_RefusesA2xxThatIsNotTheConfiguredBackend(string body, string property, bool expected)
         => Assert.Equal(expected,
-            InferenceProviderBase.ConfirmsBackendPayload("http://srv/api/tags", body, property, "Test"));
+            InferenceProviderBase.ConfirmsBackendPayload("http://srv/api/tags", body, property, "Test", "ollama"));
 
     /// <summary>
     /// A refusal must leave something to investigate: the recorded line names the endpoint probed,
@@ -78,17 +78,24 @@ public class ProviderProbeTests
             "http://srv/api/tags",
             "{\"error\":\"Unexpected endpoint or method. (GET /api/tags)\"}",
             "models",
-            "Ollama.CheckConnection"));
+            "Ollama.CheckConnection",
+            "ollama"));
 
         var entry = Assert.Single(Diagnostics.Snapshot(), e => e.Context == "Ollama.CheckConnection");
         Assert.Contains("http://srv/api/tags", entry.Detail);
         Assert.Contains("models", entry.Detail);
         Assert.Contains("Unexpected endpoint or method", entry.Detail);
 
+        // Issue #8: the line NAMES the configured backend. Without it, "not as the configured
+        // backend" sends people to look at the SERVER, when the cause can be an Ollama client
+        // pointed at an LM Studio URL because the `provider` setting is not the one they think
+        // they picked. The reporter had no way to know which of the two was misconfigured.
+        Assert.Contains("ollama", entry.Detail);
+
         // And a success records nothing: a channel that speaks on the ordinary path stops being read.
         Diagnostics.Clear();
         Assert.True(InferenceProviderBase.ConfirmsBackendPayload(
-            "http://srv/api/tags", "{\"models\":[]}", "models", "Ollama.CheckConnection"));
+            "http://srv/api/tags", "{\"models\":[]}", "models", "Ollama.CheckConnection", "ollama"));
         Assert.Empty(Diagnostics.Snapshot());
     }
 }

@@ -14,7 +14,6 @@ internal class GetSolutionInfoTool : ITool
     public GetSolutionInfoTool(IEditorSurface editor) => _editor = editor;
 
     // Solution folder pseudo-type — not a real project
-    private const string SolutionFolderGuid = "2150E333-8FDC-42A3-9474-1A3956D46DE8";
 
     public string Name        => "get_solution_info";
     public string Description =>
@@ -42,8 +41,8 @@ internal class GetSolutionInfoTool : ITool
         if (args.Trimmed("path") is { } provided)
         {
             if (Directory.Exists(provided))
-                slnPath = Directory.GetFiles(provided, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault();
-            else if (File.Exists(provided) && provided.EndsWith(".sln", StringComparison.OrdinalIgnoreCase))
+                slnPath = SolutionFiles.FirstIn(provided);
+            else if (File.Exists(provided) && SolutionFiles.IsSolution(provided))
                 slnPath = provided;
             else
                 return Strings.SolutionPathNotFound(provided);
@@ -59,7 +58,10 @@ internal class GetSolutionInfoTool : ITool
 
         var slnDir     = Path.GetDirectoryName(slnPath)!;
         var slnContent = await File.ReadAllTextAsync(slnPath, ct);
-        var projects   = ParseSolutionProjects(slnContent, slnDir);
+        // ⚠ The format picks the parser: a .slnx is XML, and the regex reading a .sln's
+        // Project(...) lines finds nothing in it -- "Projects : 0" on a valid solution
+        // (issue #9). See SolutionFiles, the single reader for both formats.
+        var projects   = SolutionFiles.ParseProjects(slnPath, slnContent);
 
         var sb = new StringBuilder();
         sb.AppendLine($"Solution : {Path.GetFileName(slnPath)}");
@@ -91,31 +93,6 @@ internal class GetSolutionInfoTool : ITool
         }
 
         return sb.ToString().TrimEnd();
-    }
-
-    // ── Parsing .sln ──────────────────────────────────────────────────────────
-
-    private static readonly Regex _projectLine = new(
-        @"Project\(""\{([A-F0-9\-]+)\}""\)\s*=\s*""([^""]+)""\s*,\s*""([^""]+)""",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
-
-    private static List<ProjectEntry> ParseSolutionProjects(string slnContent, string slnDir)
-    {
-        var results = new List<ProjectEntry>();
-
-        foreach (Match m in _projectLine.Matches(slnContent))
-        {
-            if (m.Groups[1].Value.Equals(SolutionFolderGuid, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var name     = m.Groups[2].Value;
-            var relPath  = m.Groups[3].Value.Replace('\\', Path.DirectorySeparatorChar);
-            var absPath  = Path.GetFullPath(Path.Combine(slnDir, relPath));
-
-            results.Add(new ProjectEntry(name, relPath, absPath));
-        }
-
-        return results;
     }
 
     // ── Parsing .csproj / .vbproj / .fsproj ──────────────────────────────────
@@ -169,8 +146,7 @@ internal class GetSolutionInfoTool : ITool
             _editor.GetOpenDocumentPaths(),
             activeSolutionDir: null,                 // step 0 already handled the signal above
             Directory.GetCurrentDirectory());
-        if (liveDir is not null &&
-            Directory.GetFiles(liveDir, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault() is { } liveSln)
+        if (liveDir is not null && SolutionFiles.FirstIn(liveDir) is { } liveSln)
             return liveSln;
 
         // 2. Durable last resort: the last solution Inferpal resolved this/previous session. Covers
@@ -181,6 +157,5 @@ internal class GetSolutionInfoTool : ITool
 
     // ── Types ─────────────────────────────────────────────────────────────────
 
-    private record ProjectEntry(string Name, string RelativePath, string AbsolutePath);
     private record ProjectInfo(string? TargetFramework, string? OutputType, List<string> ProjectRefs, List<string> Packages);
 }

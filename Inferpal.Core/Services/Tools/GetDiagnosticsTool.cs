@@ -120,7 +120,7 @@ internal class GetDiagnosticsTool : ITool
     private static string? FindProjectFile()
     {
         var cwd = Directory.GetCurrentDirectory();
-        foreach (var ext in new[] { "*.sln", "*.csproj" })
+        foreach (var ext in new[] { "*.sln", "*.slnx", "*.csproj" })
         {
             // WorkspaceScan: lazy + excluded dirs skipped — a stray .csproj under node_modules
             // or bin/ must not become "the" project file.

@@ -292,10 +292,10 @@ internal sealed class ProjectMapService
         var dir = start;
         for (int i = 0; i < 8; i++)
         {
-            if (Directory.GetFiles(dir, "*.sln", SearchOption.TopDirectoryOnly).Length > 0)
+            if (SolutionFiles.DirectoryHasSolution(dir))
                 return dir;
             foreach (var sub in Directory.GetDirectories(dir))
-                if (Directory.GetFiles(sub, "*.sln", SearchOption.TopDirectoryOnly).Length > 0)
+                if (SolutionFiles.DirectoryHasSolution(sub))
                     return sub;
 
             var parent = Directory.GetParent(dir)?.FullName;
