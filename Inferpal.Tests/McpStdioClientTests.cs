@@ -23,7 +23,8 @@ public class McpStdioClientTests
         var ok = await client.StartAsync(CancellationToken.None);
 
         Assert.False(ok);
-        var fired = await Task.WhenAny(closed.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        // 30 s: we wait for the event to ARRIVE; the delay is only a deadlock guard.
+        var fired = await Task.WhenAny(closed.Task, Task.Delay(TimeSpan.FromSeconds(30)));
         Assert.True(ReferenceEquals(fired, closed.Task), "Closed should fire when the process exits on its own.");
 
         await client.DisposeAsync();

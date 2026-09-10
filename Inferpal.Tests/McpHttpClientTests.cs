@@ -221,7 +221,8 @@ public class McpHttpClientTests
 
         Assert.True(await client.StartAsync(CancellationToken.None));
 
-        var done = await Task.WhenAny(changed.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        // 30 s: we wait for the event to ARRIVE; the delay is only a deadlock guard.
+        var done = await Task.WhenAny(changed.Task, Task.Delay(TimeSpan.FromSeconds(30)));
         Assert.Same(changed.Task, done);
     }
 

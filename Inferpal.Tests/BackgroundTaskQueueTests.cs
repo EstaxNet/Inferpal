@@ -9,7 +9,15 @@ namespace Inferpal.Tests;
 /// </summary>
 public class BackgroundTaskQueueTests
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
+    // ⚠ 30 s, not 5: this budget is not what the test MEASURES. It waits for something to
+    // HAPPEN; how long that takes depends on the load of the machine, not on the product. Three
+    // different tests of this family failed CI and twice failed the 1.6.11 release (2026-09-10),
+    // each consuming EXACTLY its 5 s on a runner that was compiling and running two test series
+    // in parallel. A test that is green locally and red one run in five on CI guards nothing.
+    // Lengthening it masks nothing: what is broken still fails, just later. ⚠ Do NOT apply this
+    // to a test that measures an OVERRUN (RulesServiceTests does, for a pathological glob):
+    // there, the budget IS the assertion.
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
     /// <summary>Polls until <paramref name="condition"/> holds; fails the test on timeout.</summary>
     private static async Task WaitUntil(Func<bool> condition, string what)

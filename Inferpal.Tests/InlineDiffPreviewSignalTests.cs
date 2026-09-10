@@ -142,7 +142,8 @@ public class InlineDiffPreviewSignalTests : IDisposable
     public async Task WaitForPickup_ReturnsTrue_OnceAcked()
     {
         var id = InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
-        var wait = InlineDiffPreviewSignal.WaitForPickupAsync(id, TimeSpan.FromSeconds(5), CancellationToken.None);
+        // 30 s: waiting for a FILE acknowledgement, not measuring latency.
+        var wait = InlineDiffPreviewSignal.WaitForPickupAsync(id, TimeSpan.FromSeconds(30), CancellationToken.None);
 
         InlineDiffPreviewSignal.Acknowledge(id);
 

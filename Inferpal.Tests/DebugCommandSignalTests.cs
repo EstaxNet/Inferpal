@@ -153,7 +153,9 @@ public class DebugCommandSignalTests : IDisposable
     public async Task WaitForAnswer_ReturnsTheAnswer_OnceWritten()
     {
         DebugCommandSignal.MarkReady(Environment.ProcessId);
-        var wait = DebugCommandSignal.WaitForAnswerAsync("r1", TimeSpan.FromSeconds(5), CancellationToken.None);
+        // 30 s: waiting for a FILE round trip, not measuring latency (see
+        // BackgroundTaskQueueTests for the full note).
+        var wait = DebugCommandSignal.WaitForAnswerAsync("r1", TimeSpan.FromSeconds(30), CancellationToken.None);
 
         DebugCommandSignal.WriteResponse(new DebugCommandResponse("r1", Ok: true, Text: "42"));
 
