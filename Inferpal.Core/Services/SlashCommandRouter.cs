@@ -33,7 +33,7 @@ internal enum SlashCommandId
     Commit, CommitExec, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
     Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
-    Onboard, Debug,
+    Onboard, Debug, Permissions,
 }
 
 /// <summary>User-defined prompt template (config <c>PromptTemplates</c>, one <c>/name=text</c> per line,
@@ -132,6 +132,7 @@ internal static class SlashCommandRouter
 
         ("/rules",    Strings.SlashHintRules,    SlashCategory.Governance),
         ("/checks",   Strings.SlashHintChecks,   SlashCategory.Governance),
+        ("/permissions", Strings.SlashHintPermissions, SlashCategory.Governance),
         ("/check",    Strings.SlashHintCheck,    SlashCategory.Governance),
         ("/prompts",  Strings.SlashHintPrompts,  SlashCategory.Governance),
 
@@ -234,6 +235,7 @@ internal static class SlashCommandRouter
             case "/check":             return new SlashDelegatedAction(SlashCommandId.Check,           parts);
             case "/rules":             return new SlashDelegatedAction(SlashCommandId.Rules,           parts);
             case "/checks":            return new SlashDelegatedAction(SlashCommandId.Checks,          parts);
+            case "/permissions":       return new SlashDelegatedAction(SlashCommandId.Permissions,     parts);
             case "/diagnostics":       return new SlashDelegatedAction(SlashCommandId.Diagnostics,     parts);
             case "/undo-run":          return new SlashDelegatedAction(SlashCommandId.UndoRun,         parts);
             case "/replay":            return new SlashDelegatedAction(SlashCommandId.Replay,          parts);

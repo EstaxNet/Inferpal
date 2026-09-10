@@ -426,6 +426,19 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} file(s) could not be read and are therefore NOT applied: {1}. See /diagnostics for the reason.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>No review checks. Create `.inferpal/checks/*.md` or run `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Project rules** (`.inferpal/rules`):</value></data>
+  <data name="SlashHintPermissions" xml:space="preserve"><value>list the permission rules actually in force, and what was ignored</value></data>
+  <data name="PermissionsHeader" xml:space="preserve"><value>**Permissions** — evaluated in this order, first match wins.</value></data>
+  <data name="PermissionsOverlaySection" xml:space="preserve"><value>**Workspace overlay** (`.inferpal/permissions.json`, deny-only, evaluated first)</value></data>
+  <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_No workspace is open._</value></data>
+  <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_No overlay in this workspace._</value></data>
+  <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ This file could not be read as a rule list: **none of its restrictions are in force**. It must be valid JSON with a `rules` array.</value></data>
+  <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Declares no deny rule._</value></data>
+  <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0} entry(ies) ignored (malformed line or invalid regex) — those restrictions are not in force.</value></data>
+  <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>{0} `allow` rule(s) ignored: a workspace overlay can only restrict.</value></data>
+  <data name="PermissionsConfigSection" xml:space="preserve"><value>**Per-machine rules** (settings, evaluated after the overlay)</value></data>
+  <data name="PermissionsConfigEmpty" xml:space="preserve"><value>_No rule configured._</value></data>
+  <data name="PermissionsConfigDropped" xml:space="preserve"><value>⚠ {0} line(s) ignored (malformed or invalid regex).</value></data>
+  <data name="PermissionsDenylistNote" xml:space="preserve"><value>A built-in denylist of catastrophic commands is enforced whatever the rules above say. It guards against accidents; it is not a security boundary.</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review checks** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nothing to review — the working tree is clean.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Reviewing the diff…</value></data>

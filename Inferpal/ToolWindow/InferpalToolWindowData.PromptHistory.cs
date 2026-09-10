@@ -561,6 +561,13 @@ internal partial class InferpalToolWindowData
             await ShowInfoAsync(msg);
     }
 
+    /// <summary>/permissions — the ruleset actually in force, in evaluation order. No
+    /// sub-verb: the command only READS, and there is nothing to scaffold (an empty overlay is
+    /// written by hand, a per-machine rule is set in the settings).</summary>
+    private async Task HandlePermissionsCommandAsync() =>
+        await ShowInfoAsync(Services.Commands.PermissionsCommandHandler.Permissions(
+            FindProjectRoot(), _config.PermissionRules));
+
     private async Task HandlePromptsCommandAsync(string[] parts, CancellationToken ct)
     {
         var result = Services.Commands.RulesChecksPromptsCommandHandler.Prompts(FindProjectRoot(), parts);

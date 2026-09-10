@@ -425,6 +425,19 @@
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} 個のファイルを読み取れなかったため、適用されていません: {1}。原因は /diagnostics にあります。</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>レビューチェックがありません。`.inferpal/checks/*.md` を作成するか `/checks init` を実行してください。</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**プロジェクトルール** (`.inferpal/rules`):</value></data>
+  <data name="SlashHintPermissions" xml:space="preserve"><value>実際に有効な権限ルールと、無視されたものを一覧表示</value></data>
+  <data name="PermissionsHeader" xml:space="preserve"><value>**権限** — この順で評価され、最初に一致したものが優先します。</value></data>
+  <data name="PermissionsOverlaySection" xml:space="preserve"><value>**ワークスペースのオーバーレイ** (`.inferpal/permissions.json`、deny のみ、最初に評価)</value></data>
+  <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_ワークスペースが開いていません。_</value></data>
+  <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_このワークスペースにオーバーレイはありません。_</value></data>
+  <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ このファイルをルール一覧として読めませんでした: **どの制限も有効ではありません**。`rules` 配列を持つ正しい JSON が必要です。</value></data>
+  <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_deny ルールは宣言されていません。_</value></data>
+  <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0} 件のエントリを無視しました（不正な行または正規表現）— それらの制限は有効ではありません。</value></data>
+  <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>{0} 件の `allow` ルールを無視しました。オーバーレイは制限することしかできません。</value></data>
+  <data name="PermissionsConfigSection" xml:space="preserve"><value>**このマシンのルール**（設定、オーバーレイの後に評価）</value></data>
+  <data name="PermissionsConfigEmpty" xml:space="preserve"><value>_ルールは設定されていません。_</value></data>
+  <data name="PermissionsConfigDropped" xml:space="preserve"><value>⚠ {0} 行を無視しました（不正または正規表現エラー）。</value></data>
+  <data name="PermissionsDenylistNote" xml:space="preserve"><value>致命的なコマンドの組込みデニーリストは、上記のルールに関わらず適用されます。事故防止のためのものであり、セキュリティ境界ではありません。</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**レビューチェック** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>レビュー対象がありません — 作業ツリーはクリーンです。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>差分をレビュー中…</value></data>

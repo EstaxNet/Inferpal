@@ -425,6 +425,19 @@
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ 有 {0} 个文件无法读取，因此并未生效：{1}。原因见 /diagnostics。</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>没有评审检查项。请创建 `.inferpal/checks/*.md` 或运行 `/checks init`。</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**项目规则** (`.inferpal/rules`):</value></data>
+  <data name="SlashHintPermissions" xml:space="preserve"><value>列出实际生效的权限规则，以及被忽略的内容</value></data>
+  <data name="PermissionsHeader" xml:space="preserve"><value>**权限** — 按此顺序求值，首个匹配生效。</value></data>
+  <data name="PermissionsOverlaySection" xml:space="preserve"><value>**工作区覆盖** (`.inferpal/permissions.json`，仅 deny，最先求值)</value></data>
+  <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_未打开工作区。_</value></data>
+  <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_此工作区没有覆盖文件。_</value></data>
+  <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ 无法将此文件读为规则列表：**其中的限制全部未生效**。它必须是包含 `rules` 数组的合法 JSON。</value></data>
+  <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_未声明任何 deny 规则。_</value></data>
+  <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ 已忽略 {0} 条条目（格式错误或正则无效）— 这些限制未生效。</value></data>
+  <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>已忽略 {0} 条 `allow` 规则：工作区覆盖只能收紧权限。</value></data>
+  <data name="PermissionsConfigSection" xml:space="preserve"><value>**本机规则**（设置，在覆盖之后求值）</value></data>
+  <data name="PermissionsConfigEmpty" xml:space="preserve"><value>_未配置任何规则。_</value></data>
+  <data name="PermissionsConfigDropped" xml:space="preserve"><value>⚠ 已忽略 {0} 行（格式错误或正则无效）。</value></data>
+  <data name="PermissionsDenylistNote" xml:space="preserve"><value>内置的灾难性命令禁用名单始终生效，不受上述规则影响。它防的是意外，而不是安全边界。</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**评审检查项** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>无内容可评审 — 工作区是干净的。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>正在评审差异…</value></data>

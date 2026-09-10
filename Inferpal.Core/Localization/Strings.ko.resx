@@ -425,6 +425,19 @@
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0}개 파일을 읽지 못해 적용되지 않았습니다: {1}. 원인은 /diagnostics 에 있습니다.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>리뷰 체크가 없습니다. `.inferpal/checks/*.md`를 만들거나 `/checks init`를 실행하세요.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**프로젝트 규칙** (`.inferpal/rules`):</value></data>
+  <data name="SlashHintPermissions" xml:space="preserve"><value>실제로 적용 중인 권한 규칙과 무시된 항목을 나열</value></data>
+  <data name="PermissionsHeader" xml:space="preserve"><value>**권한** — 이 순서로 평가되며 첫 일치가 이깁니다.</value></data>
+  <data name="PermissionsOverlaySection" xml:space="preserve"><value>**워크스페이스 오버레이** (`.inferpal/permissions.json`, deny 전용, 먼저 평가)</value></data>
+  <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_열린 워크스페이스가 없습니다._</value></data>
+  <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_이 워크스페이스에는 오버레이가 없습니다._</value></data>
+  <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ 이 파일을 규칙 목록으로 읽지 못했습니다: **어떤 제한도 적용되지 않습니다**. `rules` 배열을 가진 올바른 JSON이어야 합니다.</value></data>
+  <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_deny 규칙을 선언하지 않습니다._</value></data>
+  <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0}개 항목을 무시했습니다(잘못된 줄 또는 정규식) — 해당 제한은 적용되지 않습니다.</value></data>
+  <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>`allow` 규칙 {0}개를 무시했습니다: 오버레이는 제한만 할 수 있습니다.</value></data>
+  <data name="PermissionsConfigSection" xml:space="preserve"><value>**이 컴퓨터의 규칙**(설정, 오버레이 다음에 평가)</value></data>
+  <data name="PermissionsConfigEmpty" xml:space="preserve"><value>_설정된 규칙이 없습니다._</value></data>
+  <data name="PermissionsConfigDropped" xml:space="preserve"><value>⚠ {0}줄을 무시했습니다(잘못되었거나 정규식 오류).</value></data>
+  <data name="PermissionsDenylistNote" xml:space="preserve"><value>치명적인 명령어의 내장 차단 목록은 위 규칙과 무관하게 적용됩니다. 사고 방지용이며 보안 경계가 아닙니다.</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**리뷰 체크** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>검토할 내용이 없습니다 — 작업 트리가 깨끗합니다.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>diff 검토 중…</value></data>

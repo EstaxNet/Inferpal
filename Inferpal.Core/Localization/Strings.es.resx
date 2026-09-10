@@ -425,6 +425,19 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ No se pudieron leer {0} archivo(s), por lo que NO se aplican: {1}. La causa está en /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Sin checks de revisión. Crea `.inferpal/checks/*.md` o ejecuta `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Reglas de proyecto** (`.inferpal/rules`):</value></data>
+  <data name="SlashHintPermissions" xml:space="preserve"><value>listar las reglas de permisos realmente vigentes y lo que se ha ignorado</value></data>
+  <data name="PermissionsHeader" xml:space="preserve"><value>**Permisos** — evaluados en este orden; gana la primera coincidencia.</value></data>
+  <data name="PermissionsOverlaySection" xml:space="preserve"><value>**Overlay del workspace** (`.inferpal/permissions.json`, solo deny, evaluado primero)</value></data>
+  <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_No hay ningún workspace abierto._</value></data>
+  <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_No hay overlay en este workspace._</value></data>
+  <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ Este archivo no se ha podido leer como lista de reglas: **ninguna de sus restricciones está vigente**. Debe ser JSON válido con un array `rules`.</value></data>
+  <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_No declara ninguna regla deny._</value></data>
+  <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0} entrada(s) ignorada(s) (línea mal formada o regex no válida) — esas restricciones no están vigentes.</value></data>
+  <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>{0} regla(s) `allow` ignorada(s): un overlay de workspace solo puede restringir.</value></data>
+  <data name="PermissionsConfigSection" xml:space="preserve"><value>**Reglas de esta máquina** (ajustes, evaluadas después del overlay)</value></data>
+  <data name="PermissionsConfigEmpty" xml:space="preserve"><value>_Ninguna regla configurada._</value></data>
+  <data name="PermissionsConfigDropped" xml:space="preserve"><value>⚠ {0} línea(s) ignorada(s) (mal formada o regex no válida).</value></data>
+  <data name="PermissionsDenylistNote" xml:space="preserve"><value>Una denylist integrada de comandos catastróficos se aplica digan lo que digan las reglas anteriores. Protege frente a accidentes; no es una frontera de seguridad.</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**Checks de revisión** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nada que revisar — el árbol de trabajo está limpio.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Revisando el diff…</value></data>

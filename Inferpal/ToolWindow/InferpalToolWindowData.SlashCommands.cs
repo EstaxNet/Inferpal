@@ -223,6 +223,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Onboard:    await HandleOnboardCommandAsync(parts, ct);  break;
             case SlashCommandId.Rules:      await HandleRulesCommandAsync(parts, ct);    break;
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
+            case SlashCommandId.Permissions: await HandlePermissionsCommandAsync();      break;
             case SlashCommandId.Diagnostics: await HandleDiagnosticsCommandAsync(parts); break;
             case SlashCommandId.Bench:       await HandleBenchCommandAsync(parts, ct);    break;
             case SlashCommandId.Arena:       await HandleArenaCommandAsync(parts, ct);    break;

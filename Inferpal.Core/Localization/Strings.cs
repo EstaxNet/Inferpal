@@ -735,6 +735,27 @@ internal static class Strings
     public static string RulesNone               => Get(nameof(RulesNone));
     public static string ChecksNone              => Get(nameof(ChecksNone));
     public static string RulesListHeader         => Get(nameof(RulesListHeader));
+
+    // ── /permissions ──────────────────────────────────────────
+    // The only one of the four committable governance artifacts that RESTRICTS, and the only
+    // one with no listing (measured 2026-09-10): an unreadable overlay stopped applying every
+    // one of its rules and only /diagnostics said so.
+    public static string SlashHintPermissions          => Get(nameof(SlashHintPermissions));
+    public static string PermissionsHeader             => Get(nameof(PermissionsHeader));
+    public static string PermissionsOverlaySection     => Get(nameof(PermissionsOverlaySection));
+    public static string PermissionsNoWorkspace        => Get(nameof(PermissionsNoWorkspace));
+    public static string PermissionsOverlayAbsent      => Get(nameof(PermissionsOverlayAbsent));
+    public static string PermissionsOverlayUnusable    => Get(nameof(PermissionsOverlayUnusable));
+    public static string PermissionsOverlayEmpty       => Get(nameof(PermissionsOverlayEmpty));
+    public static string PermissionsOverlayMalformed(int count) =>
+        string.Format(Get(nameof(PermissionsOverlayMalformed)), count);
+    public static string PermissionsOverlayAllowIgnored(int count) =>
+        string.Format(Get(nameof(PermissionsOverlayAllowIgnored)), count);
+    public static string PermissionsConfigSection      => Get(nameof(PermissionsConfigSection));
+    public static string PermissionsConfigEmpty        => Get(nameof(PermissionsConfigEmpty));
+    public static string PermissionsConfigDropped(int count) =>
+        string.Format(Get(nameof(PermissionsConfigDropped)), count);
+    public static string PermissionsDenylistNote       => Get(nameof(PermissionsDenylistNote));
     public static string ChecksListHeader        => Get(nameof(ChecksListHeader));
     public static string CheckNoDiff             => Get(nameof(CheckNoDiff));
     public static string CheckReviewingLabel     => Get(nameof(CheckReviewingLabel));

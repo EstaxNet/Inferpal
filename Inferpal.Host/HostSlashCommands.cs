@@ -260,6 +260,10 @@ internal sealed partial class HostServer
                     return await HandleScaffoldSlashAsync(
                         RulesChecksPromptsCommandHandler.Checks(s.RootDir, parts), Strings.ChecksScaffolded, cts.Token);
 
+                case SlashCommandId.Permissions:
+                    return new SlashCommandResult(true,
+                        PermissionsCommandHandler.Permissions(s.RootDir, s.Config.PermissionRules));
+
                 case SlashCommandId.Prompts:
                 {
                     var result = await HandleScaffoldSlashAsync(

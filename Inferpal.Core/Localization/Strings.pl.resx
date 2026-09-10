@@ -425,6 +425,19 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać {0} plik(ów), więc NIE są stosowane: {1}. Przyczyna jest w /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Brak sprawdzeń recenzji. Utwórz `.inferpal/checks/*.md` lub uruchom `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Reguły projektu** (`.inferpal/rules`):</value></data>
+  <data name="SlashHintPermissions" xml:space="preserve"><value>wypisz rzeczywiście obowiązujące reguły uprawnień oraz to, co zostało pominięte</value></data>
+  <data name="PermissionsHeader" xml:space="preserve"><value>**Uprawnienia** — sprawdzane w tej kolejności, wygrywa pierwsze dopasowanie.</value></data>
+  <data name="PermissionsOverlaySection" xml:space="preserve"><value>**Nakładka przestrzeni roboczej** (`.inferpal/permissions.json`, tylko deny, sprawdzana jako pierwsza)</value></data>
+  <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_Żadna przestrzeń robocza nie jest otwarta._</value></data>
+  <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_Brak nakładki w tej przestrzeni roboczej._</value></data>
+  <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ Nie udało się odczytać tego pliku jako listy reguł: **żadne z jego ograniczeń nie obowiązuje**. Musi to być poprawny JSON z tablicą `rules`.</value></data>
+  <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Nie deklaruje żadnej reguły deny._</value></data>
+  <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ Pominięto {0} wpis(ów) (błędny wiersz lub wyrażenie regularne) — te ograniczenia nie obowiązują.</value></data>
+  <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>Pominięto {0} reguł(y) `allow`: nakładka przestrzeni roboczej może tylko ograniczać.</value></data>
+  <data name="PermissionsConfigSection" xml:space="preserve"><value>**Reguły tego komputera** (ustawienia, sprawdzane po nakładce)</value></data>
+  <data name="PermissionsConfigEmpty" xml:space="preserve"><value>_Nie skonfigurowano żadnej reguły._</value></data>
+  <data name="PermissionsConfigDropped" xml:space="preserve"><value>⚠ Pominięto {0} wiersz(y) (błędny format lub wyrażenie regularne).</value></data>
+  <data name="PermissionsDenylistNote" xml:space="preserve"><value>Wbudowana lista zakazanych, katastrofalnych poleceń obowiązuje niezależnie od powyższych reguł. Chroni przed przypadkiem; nie jest granicą bezpieczeństwa.</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**Sprawdzenia recenzji** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nie ma czego recenzować — drzewo robocze jest czyste.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Recenzowanie diffa…</value></data>

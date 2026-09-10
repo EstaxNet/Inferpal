@@ -425,6 +425,19 @@
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать файлов: {0} — они НЕ применяются: {1}. Причина — в /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Нет проверок ревью. Создайте `.inferpal/checks/*.md` или выполните `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Правила проекта** (`.inferpal/rules`):</value></data>
+  <data name="SlashHintPermissions" xml:space="preserve"><value>показать действующие правила разрешений и то, что было проигнорировано</value></data>
+  <data name="PermissionsHeader" xml:space="preserve"><value>**Разрешения** — проверяются в этом порядке, побеждает первое совпадение.</value></data>
+  <data name="PermissionsOverlaySection" xml:space="preserve"><value>**Оверлей рабочего пространства** (`.inferpal/permissions.json`, только deny, проверяется первым)</value></data>
+  <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_Рабочее пространство не открыто._</value></data>
+  <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_Оверлея в этом рабочем пространстве нет._</value></data>
+  <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ Этот файл не удалось прочитать как список правил: **ни одно его ограничение не действует**. Нужен корректный JSON с массивом `rules`.</value></data>
+  <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Не объявляет ни одного правила deny._</value></data>
+  <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ Проигнорировано записей: {0} (неверная строка или неверное регулярное выражение) — эти ограничения не действуют.</value></data>
+  <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>Проигнорировано правил `allow`: {0}. Оверлей может только ограничивать.</value></data>
+  <data name="PermissionsConfigSection" xml:space="preserve"><value>**Правила этой машины** (настройки, проверяются после оверлея)</value></data>
+  <data name="PermissionsConfigEmpty" xml:space="preserve"><value>_Правила не настроены._</value></data>
+  <data name="PermissionsConfigDropped" xml:space="preserve"><value>⚠ Проигнорировано строк: {0} (неверный формат или регулярное выражение).</value></data>
+  <data name="PermissionsDenylistNote" xml:space="preserve"><value>Встроенный чёрный список катастрофических команд действует независимо от правил выше. Это защита от случайностей, а не граница безопасности.</value></data>
   <data name="ChecksListHeader" xml:space="preserve"><value>**Проверки ревью** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Нечего проверять — рабочее дерево чистое.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Идёт проверка диффа…</value></data>
