@@ -8,6 +8,12 @@ namespace Inferpal.Tests;
 
 // Background tasks that propose writes (roadmap §18, the V2 of §9): the recorder that grants
 // nothing, the registry that opens the editing tools without opening execution, and the report.
+//
+// Serialized since 2026-09-10: the report renders the diff's truncation marker, which went
+// through Strings that day. It used to be compared against its hard-coded English form — red on a
+// French machine, and above all exposed to the pattern CultureSerialCollection documents: another
+// class switching the culture while this one compares.
+[Collection(CultureSerialCollection.Name)]
 public class TaskProposalTests
 {
     private static JsonElement Args(object o) =>
@@ -244,7 +250,11 @@ public class TaskProposalTests
             [new("write_file", "p", "write p", new DiffInfo(old, neu, "p"))]);
 
         // Exactly one truncation marker: two would mean two cappers disagreeing about the count.
-        Assert.Equal(2, text.Split("more diff line(s)").Length);
+        // The marker is DERIVED from Strings, not an English literal: it is text translated into
+        // ten languages, and hard-coding it only tested the product on an English machine.
+        var marker = Strings.DiffMoreLines(
+            DiffComputer.Compute(old, neu).Count - TaskProposalReport.MaxDiffLines);
+        Assert.Equal(2, text.Split(marker).Length);
         Assert.True(text.Split('\n').Count(l => l.StartsWith('+') || l.StartsWith('-'))
                     <= TaskProposalReport.MaxDiffLines);
     }

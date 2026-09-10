@@ -304,6 +304,9 @@ Kontynuować?</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content nie znaleziony w {0}. Sprawdź spacje, podziały wierszy i wcięcia.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content znaleziony {0} razy w {1}. Podaj więcej kontekstu, aby dopasowanie było unikalne.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Zmiana zastosowana w {0}.</value></data>
+  <data name="DiffTooLarge" xml:space="preserve"><value>Zmiana zbyt duża, aby wyświetlić podgląd ({0} → {1} wiersz(y))</value></data>
+  <data name="DiffUnchangedLines" xml:space="preserve"><value>  {0} niezmieniony(ch) wiersz(y)</value></data>
+  <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} wiersz(y) różnic więcej)</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits wymaga co najmniej jednej edycji.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>Zastosować zmiany w {0} plik(ach)?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Nie zastosowano żadnych zmian — {0}.</value></data>

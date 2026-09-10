@@ -304,6 +304,9 @@ Continuare?</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content non trovato in {0}. Controlla spazi, interruzioni di riga e indentazione.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content trovato {0} volte in {1}. Fornisci più contesto per rendere la corrispondenza univoca.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Modifica applicata in {0}.</value></data>
+  <data name="DiffTooLarge" xml:space="preserve"><value>Modifica troppo grande per l'anteprima ({0} → {1} righe)</value></data>
+  <data name="DiffUnchangedLines" xml:space="preserve"><value>  {0} riga/he invariata/e</value></data>
+  <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} riga/he di diff in più)</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits richiede almeno una modifica.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>Applicare le modifiche a {0} file?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Nessuna modifica applicata — {0}.</value></data>

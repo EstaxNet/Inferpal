@@ -570,6 +570,17 @@ internal static class Strings
     public static string DiffOk(string path) =>
         string.Format(Get(nameof(DiffOk)), path);
 
+    // The three lines the diff renderer writes ITSELF (as opposed to the file content, which it
+    // only copies). They reach the user in a DiffLineModel with the "…" prefix, at the approval
+    // prompt and in the chat bubble — interface text, in a product that speaks ten languages.
+    // They were hard-coded until 2026-09-10, DiffTooLarge in FRENCH for everyone.
+    public static string DiffTooLarge(int oldLines, int newLines) =>
+        string.Format(Get(nameof(DiffTooLarge)), oldLines, newLines);
+    public static string DiffUnchangedLines(int lines) =>
+        string.Format(Get(nameof(DiffUnchangedLines)), lines);
+    public static string DiffMoreLines(int lines) =>
+        string.Format(Get(nameof(DiffMoreLines)), lines);
+
     public static string ApplyEditsEmpty => Get(nameof(ApplyEditsEmpty));
     public static string ApplyEditsConfirm(int files) =>
         string.Format(Get(nameof(ApplyEditsConfirm)), files);

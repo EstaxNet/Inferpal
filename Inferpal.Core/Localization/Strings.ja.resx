@@ -304,6 +304,9 @@
   <data name="DiffOldNotFound" xml:space="preserve"><value>{0} で old_content が見つかりません。スペース、改行、インデントを確認してください。</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content が {1} で {0} 回見つかりました。一致を一意にするためにより多くのコンテキストを提供してください。</value></data>
   <data name="DiffOk" xml:space="preserve"><value>{0} で変更を適用しました。</value></data>
+  <data name="DiffTooLarge" xml:space="preserve"><value>変更が大きすぎてプレビューできません（{0} → {1} 行）</value></data>
+  <data name="DiffUnchangedLines" xml:space="preserve"><value>  変更なしの行: {0}</value></data>
+  <data name="DiffMoreLines" xml:space="preserve"><value>… (差分の行があと {0})</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits には少なくとも1つの編集が必要です。</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>{0} 個のファイルに編集を適用しますか？</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>変更は適用されませんでした — {0}。</value></data>

@@ -304,6 +304,9 @@
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content не найден в {0}. Проверьте пробелы, переносы строк и отступы.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content найден {0} раз(а) в {1}. Предоставьте больше контекста для уникальности совпадения.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Изменение применено в {0}.</value></data>
+  <data name="DiffTooLarge" xml:space="preserve"><value>Изменение слишком велико для предпросмотра ({0} → {1} строк)</value></data>
+  <data name="DiffUnchangedLines" xml:space="preserve"><value>  без изменений: {0} строк(и)</value></data>
+  <data name="DiffMoreLines" xml:space="preserve"><value>… (ещё строк различий: {0})</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits требует хотя бы одну правку.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>Применить изменения к {0} файлу(ам)?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Изменения не применены — {0}.</value></data>

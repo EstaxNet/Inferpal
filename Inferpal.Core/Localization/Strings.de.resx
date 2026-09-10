@@ -304,6 +304,9 @@ Fortfahren?</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content in {0} nicht gefunden. Überprüfen Sie Leerzeichen, Zeilenumbrüche und Einrückung.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content {0}-mal in {1} gefunden. Geben Sie mehr Kontext an, um die Übereinstimmung eindeutig zu machen.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Änderung in {0} angewendet.</value></data>
+  <data name="DiffTooLarge" xml:space="preserve"><value>Änderung zu groß für die Vorschau ({0} → {1} Zeilen)</value></data>
+  <data name="DiffUnchangedLines" xml:space="preserve"><value>  {0} unveränderte Zeile(n)</value></data>
+  <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} weitere Diff-Zeile(n))</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits erfordert mindestens eine Änderung.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>Änderungen auf {0} Datei(en) anwenden?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Keine Änderungen angewendet — {0}.</value></data>

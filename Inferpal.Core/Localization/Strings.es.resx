@@ -304,6 +304,9 @@ Haz clic en ↻ Reintentar en el encabezado cuando {1} esté en ejecución.</val
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content no encontrado en {0}. Verifique espacios, saltos de línea y sangría.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content encontrado {0} veces en {1}. Proporcione más contexto para que la coincidencia sea única.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Cambio aplicado en {0}.</value></data>
+  <data name="DiffTooLarge" xml:space="preserve"><value>Cambio demasiado grande para la vista previa ({0} → {1} líneas)</value></data>
+  <data name="DiffUnchangedLines" xml:space="preserve"><value>  {0} línea(s) sin cambios</value></data>
+  <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} línea(s) de diferencias más)</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits requiere al menos una edición.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>¿Aplicar cambios a {0} archivo(s)?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>No se aplicaron cambios — {0}.</value></data>
