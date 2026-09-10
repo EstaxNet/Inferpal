@@ -91,16 +91,10 @@ internal static class PathSanitizer
 
             for (var depth = 0; depth < 64; depth++)
             {
-                if (Directory.Exists(current))
+                if (Directory.Exists(current) || File.Exists(current))
                 {
-                    var resolved = new DirectoryInfo(current).ResolveLinkTarget(returnFinalTarget: true);
-                    var head     = resolved?.FullName ?? current;
+                    var head = ResolveChain(current);
                     return remainder.Length == 0 ? head : Path.Combine(head, remainder);
-                }
-                if (File.Exists(current))
-                {
-                    var resolved = new FileInfo(current).ResolveLinkTarget(returnFinalTarget: true);
-                    return resolved?.FullName ?? current;
                 }
 
                 var parent = Path.GetDirectoryName(current);
@@ -115,6 +109,47 @@ internal static class PathSanitizer
         {
             Diagnostics.Swallow($"PathSanitizer.ResolveLinks({path})", ex);
             return path;
+        }
+    }
+
+    /// <summary>
+    /// Resolves an <b>existing</b> path by following links at <b>every</b> level, not just the last.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>ResolveLinkTarget</c> answers about the component you hand it and says nothing about
+    /// its ancestors: on a path whose PARENT is the link it returns <c>null</c>, and the caller
+    /// happily concludes "not a link". That is the whole defect (measured 2026-09-10 on the macOS
+    /// CI leg): there <c>/var</c> is a symlink to <c>/private/var</c>, so a workspace under
+    /// <c>/var/folders/...</c> resolved to itself while a path the product derived from the
+    /// process's current directory -- which the kernel hands back already resolved -- came out
+    /// under <c>/private/var/...</c>. The two no longer shared a prefix and
+    /// <see cref="AssertUnderRoot"/> refused a perfectly legitimate write, with the very message a
+    /// user reported for an unrelated reason in issue #9.
+    /// <para>
+    /// Resolving more of the chain can only make the two sides agree on the <i>real</i> location; it
+    /// never widens what the sandbox allows, because the root and the target both go through here.
+    /// </para>
+    /// </remarks>
+    private static string ResolveChain(string existing)
+    {
+        var parent = Path.GetDirectoryName(existing);
+        if (string.IsNullOrEmpty(parent) || parent == existing)
+            return existing;                       // drive root / filesystem root
+
+        var combined = Path.Combine(ResolveChain(parent), Path.GetFileName(existing));
+        try
+        {
+            FileSystemInfo info = Directory.Exists(combined)
+                ? new DirectoryInfo(combined)
+                : new FileInfo(combined);
+            return info.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? combined;
+        }
+        catch (Exception ex)
+        {
+            // Best-effort, like the caller: an unreadable level keeps the textual form rather than
+            // opening a hole.
+            Diagnostics.Swallow($"PathSanitizer.ResolveChain({combined})", ex);
+            return combined;
         }
     }
 }

@@ -22,9 +22,19 @@ public class SignalDebugSessionTests : IDisposable
     {
         Cleanup();
         // Short waits: these tests are about the protocol, not about how long a build takes.
-        SignalDebugSession.StartTimeout  = TimeSpan.FromSeconds(5);
-        SignalDebugSession.ResumeTimeout = TimeSpan.FromSeconds(5);
-        SignalDebugSession.QueryTimeout  = TimeSpan.FromSeconds(5);
+        // ⚠ 30 s, not 5: this budget is not what these tests MEASURE — they check that an
+        // operation travels and comes back, not how long it takes. At 5 s the 1.6.11 release
+        // failed on `EachStepKind_TravelsAsItsOwnOperation`, which consumed EXACTLY its budget: a
+        // round trip over FILE signals, polled every 15 ms, on a runner that was compiling and
+        // running two test series in parallel. A test that is green locally and red one run in
+        // five on CI guards nothing — the failure mode this repository repairs everywhere else.
+        //
+        // Lengthening it masks nothing: the two tests that really do measure a delay set their own
+        // on the spot (10 s for the immediate give-up, 300 ms for the overrun), and a broken
+        // routing still fails — just later.
+        SignalDebugSession.StartTimeout  = TimeSpan.FromSeconds(30);
+        SignalDebugSession.ResumeTimeout = TimeSpan.FromSeconds(30);
+        SignalDebugSession.QueryTimeout  = TimeSpan.FromSeconds(30);
     }
 
     public void Dispose()
