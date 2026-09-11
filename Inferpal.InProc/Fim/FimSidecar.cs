@@ -100,8 +100,15 @@ internal static class FimSidecar
 
             Send(stdin, payload);
 
+            string? answer;
             using (ct.Register(() => Cancel(id)))
-                return NullIfEmpty(await tcs.Task.ConfigureAwait(false));
+                answer = NullIfEmpty(await tcs.Task.ConfigureAwait(false));
+
+            // ⚠ The door is recorded on an ANSWER, not on a start: a process that starts and then
+            // dies on the first request is not a working sidecar. Recording it clears the reason,
+            // so a failure that has been repaired stops being announced.
+            Services.Signals.InProcAliveSignal.Record(Services.Signals.InProcAliveSignal.ComponentFim);
+            return answer;
         }
         catch (Exception ex)
         {
@@ -146,6 +153,10 @@ internal static class FimSidecar
             // No exception: an incomplete VSIX must not flood the log on every keystroke. Say it
             // once, and ghost text simply stays quiet.
             Diagnostics.Record("FimSidecar.Start", "not found: " + exe);
+            // ⚠ And in the channel the user can READ: this ring is the in-process one, not the one
+            // /diagnostics renders. Without this line ghost text goes quiet and the cause exists
+            // for nobody.
+            Services.Signals.InProcAliveSignal.RecordFimUnavailable("sidecar executable not found");
             _startGate.LatchPermanently();   // an incomplete VSIX does not repair itself
             return false;
         }
@@ -163,7 +174,12 @@ internal static class FimSidecar
                 WorkingDirectory       = dir,
             };
             var proc = Process.Start(psi);
-            if (proc is null) { _startGate.Backoff(); return false; }
+            if (proc is null)
+            {
+                Services.Signals.InProcAliveSignal.RecordFimUnavailable("sidecar process did not start");
+                _startGate.Backoff();
+                return false;
+            }
 
             _process     = proc;
             _stdin       = proc.StandardInput.BaseStream;
@@ -184,6 +200,7 @@ internal static class FimSidecar
         catch (Exception ex)
         {
             Diagnostics.Swallow("FimSidecar.Start", ex);
+            Services.Signals.InProcAliveSignal.RecordFimUnavailable(ex.GetType().Name + " at start");
             _startGate.Backoff();            // antivirus, memory pressure... : this can pass
             return false;
         }

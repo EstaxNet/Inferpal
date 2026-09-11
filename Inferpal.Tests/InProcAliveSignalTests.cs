@@ -212,4 +212,58 @@ public sealed class InProcAliveSignalTests : IDisposable
         Assert.True(state.HasDebugger);
         Assert.Null(state.DebuggerReason);
     }
+    // ── The fourth door: the FIM sidecar ──────────────────────────────────────
+    //
+    // Ghost text is what a user notices first when it stops working, and the sidecar failures
+    // were written into the IN-PROCESS Diagnostics ring - not the one /diagnostics renders.
+    // "ghost text does nothing" therefore had no readable cause at all.
+
+    [Fact]
+    public void AFimFailure_TravelsToTheBundle_WithItsReason()
+    {
+        SignalScope.DeclareVsInstance(SignalFile.CurrentPid);
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentPackage);
+        InProcAliveSignal.RecordFimUnavailable("sidecar executable not found");
+
+        var state = InProcAliveSignal.TryRead()!;
+        Assert.False(state.HasFim);
+        Assert.Equal("sidecar executable not found", state.FimReason);
+
+        var bundle = InProcAliveSignal.DescribeForBundle();
+        Assert.Contains("FIM sidecar UNAVAILABLE", bundle);
+        Assert.Contains("not found", bundle);
+        // Witness: the line still says the rest - the in-process half is not replaced.
+        Assert.Contains("pid ", bundle);
+    }
+
+    [Fact]
+    public void AFimAnswer_ClearsTheReason_LikeTheDebuggerDoor()
+    {
+        SignalScope.DeclareVsInstance(SignalFile.CurrentPid);
+        InProcAliveSignal.RecordFimUnavailable("Win32Exception at start");
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentFim);
+
+        var state = InProcAliveSignal.TryRead()!;
+        Assert.True(state.HasFim);
+        Assert.Null(state.FimReason);
+        Assert.Contains("FIM sidecar answering", InProcAliveSignal.DescribeForBundle());
+    }
+
+    [Fact]
+    public void TheTwoReasons_DoNotEraseEachOther()
+    {
+        // Reference arm: a driver failure and a sidecar failure are two facts, and the two doors
+        // share a single file.
+        // ⚠ A door first: a heartbeat with no door at all is not one (TryRead requires it), and in
+        // production there always is one - the package records itself before trying the driver, and
+        // the FIM sidecar only starts after the MEF door.
+        SignalScope.DeclareVsInstance(SignalFile.CurrentPid);
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentPackage);
+        InProcAliveSignal.RecordDebuggerUnavailable("VS debugger service unavailable");
+        InProcAliveSignal.RecordFimUnavailable("sidecar process did not start");
+
+        var state = InProcAliveSignal.TryRead()!;
+        Assert.Equal("VS debugger service unavailable", state.DebuggerReason);
+        Assert.Equal("sidecar process did not start", state.FimReason);
+    }
 }

@@ -47,6 +47,17 @@ internal static class InProcAliveSignal
     /// </summary>
     internal const string ComponentDebugger = "debugger";
 
+    /// <summary>
+    /// The FIM sidecar — recorded once a completion has actually come back from it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A fourth door for the same reason as the third: ghost text is what a user notices missing
+    /// first, and its failures were written to the in-process <c>Diagnostics</c> ring — not the one
+    /// <c>/diagnostics</c> reads. The sidecar is a child process with neither the host's TPA nor
+    /// devenv's binding redirects, so "it does not start" is a real and invisible state.
+    /// </remarks>
+    internal const string ComponentFim = "fim";
+
     /// <summary>Path of the heartbeat, scoped to the declared IDE instance (§22 slice 2).</summary>
     internal static string FilePath => SignalFile.ScopedPathFor("inproc_alive");
 
@@ -74,14 +85,18 @@ internal static class InProcAliveSignal
     /// is not a door: it does not join <c>components</c>, or a reader counting doors would read a
     /// failure as a load.
     /// </remarks>
-    internal static void RecordDebuggerUnavailable(string reason) => Update(null, reason);
+    internal static void RecordDebuggerUnavailable(string reason) => Update(null, debuggerReason: reason);
 
-    private static void Update(string? component, string? reason)
+    /// <summary>Why ghost text is silent, for the half of the product that cannot reach the host ring.</summary>
+    internal static void RecordFimUnavailable(string reason) => Update(null, fimReason: reason);
+
+    private static void Update(string? component, string? debuggerReason = null, string? fimReason = null)
     {
         lock (Gate)
         {
             var known = new List<string>();
-            string? priorReason = null;
+            string? priorDebuggerReason = null;
+            string? priorFimReason = null;
             var prior = SignalFile.TryRead<Payload>(FilePath);
             // Previous state is only carried over when it came from THIS process: a file left by a
             // dead devenv that happened to hold the same PID would advertise components that are
@@ -89,19 +104,22 @@ internal static class InProcAliveSignal
             if (prior?.pid == SignalFile.CurrentPid)
             {
                 if (prior.components is not null) known.AddRange(prior.components);
-                priorReason = prior.debuggerReason;
+                priorDebuggerReason = prior.debuggerReason;
+                priorFimReason      = prior.fimReason;
             }
             if (component is not null && !known.Contains(component)) known.Add(component);
 
             // Recording the debugger door clears the reason, and the converse does not exist: the
             // two cannot both be true, and the door has the last word.
-            var finalReason = component == ComponentDebugger ? null : reason ?? priorReason;
+            var finalDebuggerReason = component == ComponentDebugger ? null : debuggerReason ?? priorDebuggerReason;
+            var finalFimReason      = component == ComponentFim      ? null : fimReason      ?? priorFimReason;
 
             SignalFile.Write(FilePath, new Payload
             {
                 pid            = SignalFile.CurrentPid,
                 components     = known.ToArray(),
-                debuggerReason = finalReason,
+                debuggerReason = finalDebuggerReason,
+                fimReason      = finalFimReason,
                 version        = typeof(InProcAliveSignal).Assembly.GetName().Version?.ToString(3),
                 ts             = SignalFile.Now.ToUnixTimeMilliseconds(),
             }, "InProcAliveSignal.Record");
@@ -119,7 +137,8 @@ internal static class InProcAliveSignal
     /// the package got far enough to say so. <c>null</c> = nothing to report (driver present, or the
     /// package never reached the question).</param>
     internal sealed record State(
-        int Pid, IReadOnlyList<string> Components, string? Version, string? DebuggerReason = null)
+        int Pid, IReadOnlyList<string> Components, string? Version, string? DebuggerReason = null,
+        string? FimReason = null)
     {
         /// <summary>The package is loaded: the pkgdef autoload worked.</summary>
         /// <remarks>⚠ Does not imply <see cref="HasDebugger"/> — see <see cref="ComponentPackage"/>.</remarks>
@@ -130,6 +149,9 @@ internal static class InProcAliveSignal
 
         /// <summary>The debugger driver is serving: the §25 capture of <c>/tdd</c> is available.</summary>
         public bool HasDebugger => Components.Contains(ComponentDebugger);
+
+        /// <summary>The FIM sidecar has answered at least once in this process.</summary>
+        public bool HasFim => Components.Contains(ComponentFim);
     }
 
     /// <summary>
@@ -163,7 +185,7 @@ internal static class InProcAliveSignal
         }
         catch (Exception ex) { Diagnostics.Swallow("InProcAliveSignal.StartTime", ex); }
 
-        return new State(p.pid, p.components, p.version, p.debuggerReason);
+        return new State(p.pid, p.components, p.version, p.debuggerReason, p.fimReason);
     }
 
     /// <summary>
@@ -202,7 +224,10 @@ internal static class InProcAliveSignal
                    : s.DebuggerReason is { Length: > 0 } r ? $"/tdd debugger driver UNAVAILABLE ({r})"
                    : s.HasPackage                        ? "/tdd debugger driver UNAVAILABLE (not advertised)"
                                                          : "/tdd debugger driver unavailable (no package)";
-        return $"{half}, {driver}, pid {s.Pid}, v{s.Version ?? "unknown"}";
+        var fim = s.HasFim                              ? "FIM sidecar answering"
+                : s.FimReason is { Length: > 0 } f       ? $"FIM sidecar UNAVAILABLE ({f})"
+                                                         : "FIM sidecar not used yet";
+        return $"{half}, {driver}, {fim}, pid {s.Pid}, v{s.Version ?? "unknown"}";
     }
 
     /// <summary>Serialized shape. Public fields named like the JSON: this is a DTO, not a model.</summary>
@@ -211,6 +236,7 @@ internal static class InProcAliveSignal
         public int pid { get; set; }
         public string[]? components { get; set; }
         public string? debuggerReason { get; set; }
+        public string? fimReason { get; set; }
         public string? version { get; set; }
         public long ts { get; set; }
     }
