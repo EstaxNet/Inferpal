@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Inferpal.Services;
+using Inferpal.Services.Agent;
+using Inferpal.Services.Inference;
+using Inferpal.Services.Persistence;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -59,7 +62,11 @@ public class SessionManagerTests
         Assert.Equal(4, history.Count);
         Assert.Equal("system", history[0].Role);
         Assert.Equal("SYS",    history[0].Content);
-        Assert.Equal(["user", "assistant", "tool"], history.Skip(1).Select(m => m.Role));
+        // The tool result comes back as a labelled `user` turn: a saved transcript has no
+        // tool_calls, and the `tool` role without its call is what MapMessages drops.
+        Assert.Equal(["user", "assistant", "user"], history.Skip(1).Select(m => m.Role));
+        Assert.Contains("read_file", history[3].Content);
+        Assert.Contains("result",    history[3].Content);
     }
 
     [Fact]
@@ -74,6 +81,71 @@ public class SessionManagerTests
 
         Assert.Equal(2, history.Count);
         Assert.Equal("user", history[1].Role);
+    }
+
+    // ── Restore × backend: what the server actually receives ───────────────────
+
+    // The saved transcript carries the tool bubbles (role "tool") WITHOUT the assistant that called
+    // them — SavedMessage has no tool_calls. The restored history is therefore orphaned from end to
+    // end in the sense of ToolBlockBoundary: what MapMessages drops.
+    private const string ToolBubble = """
+        [input]
+        {"path":"Foo.cs"}
+
+        [output]
+        class Foo { }
+        """;
+
+    private static readonly SavedMessage[] RestoredTranscript =
+    [
+        new("user",      "what does Foo do?"),
+        new("tool",      ToolBubble, "read_file"),
+        new("assistant", "Foo is a widget."),
+    ];
+
+    [Fact]
+    public void RestoredHistory_HasNoOrphanedToolMessage()
+    {
+        var history = SessionManager.BuildRestoredHistory("SYS", RestoredTranscript);
+
+        Assert.False(ToolBlockBoundary.HasOrphanedToolMessage(history));
+        // Witness: "no orphan" is also true of a history its results were removed from.
+        Assert.Contains(history, m => (m.Content ?? "").Contains("class Foo { }"));
+    }
+
+    [Fact]
+    public void RestoredHistory_FoldsToolResultsIntoTheirTurn_SoTurnCountingStaysRight()
+    {
+        // A `user` turn is the product's unit of counting (contextWindowKeepTurns, /branch
+        // numbering, the rollback of regeneration). A restored tool result must not open one:
+        // otherwise a reloaded session sees its memory shortened and its last question replayed
+        // twice.
+        var history = SessionManager.BuildRestoredHistory("SYS",
+        [
+            new("user",      "q1"),
+            new("tool",      "r1", "read_file"),
+            new("tool",      "r2", "list_files"),
+            new("assistant", "a1"),
+            new("user",      "q2"),
+            new("assistant", "a2"),
+        ]);
+
+        Assert.Equal(2, history.Count(m => m.Role == "user"));
+        // Witness: both results are there, in the turn that produced them.
+        Assert.Contains("r1", history[1].Content);
+        Assert.Contains("r2", history[1].Content);
+        Assert.Contains("q1", history[1].Content);
+    }
+
+    [Fact]
+    public void RestoredHistory_KeepsToolResults_OnOpenAiCompatibleBackends()
+    {
+        var wire = OpenAiCompatibleClient.MapMessages(
+            SessionManager.BuildRestoredHistory("SYS", RestoredTranscript));
+
+        Assert.Contains(wire, m => (m.Content ?? "").Contains("class Foo { }"));
+        // Witness: the mapping did run over the rest of the transcript.
+        Assert.Contains(wire, m => (m.Content ?? "").Contains("Foo is a widget."));
     }
 
     // ── Title & file naming ────────────────────────────────────────────────────

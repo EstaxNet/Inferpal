@@ -333,12 +333,14 @@ internal sealed class AgentOrchestrator
         onStep(Strings.StatusAgentSynthesizing);
 
         // Head = system prompt + original conversation, WITHOUT the 3-message plan trio appended at
-        // the tail of the anchored head (AgentPlanPrompt / plan JSON / AgentExecutePlan). tool_calls
-        // are stripped so nothing references a tool while the registry is empty.
-        var synth   = new List<ChatMessageDto>();
+        // the tail of the anchored head (AgentPlanPrompt / plan JSON / AgentExecutePlan). Nothing
+        // may reference a tool while the registry is empty — so the whole head is flattened, calls
+        // AND answers. ⚠ Stripping only the tool_calls (what this did) left the tool results behind
+        // without the call they answered: an orphan that OpenAI-compatible backends never see,
+        // MapMessages dropping it to keep the request valid. Earlier turns' findings vanished from
+        // the synthesis on those backends — silently, and only there. See ToolTranscript.
         var headEnd = Math.Max(1, anchorCount - 3);
-        for (int i = 0; i < headEnd && i < messages.Count; i++)
-            synth.Add(messages[i].ToolCalls is null ? messages[i] : messages[i] with { ToolCalls = null });
+        var synth   = ToolTranscript.Flatten(messages.Take(Math.Min(headEnd, messages.Count)));
 
         // The gathered tool results + the synthesis instruction, in a single user turn so "those
         // results" in the prompt resolves to the digest directly above it. Bounded to ~60% of the

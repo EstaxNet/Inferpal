@@ -464,12 +464,19 @@ public class HostServerTests
             Assert.Equal(3, loaded!.Messages.Count);
             Assert.Equal("read_file", loaded.Messages[1].ToolName);
 
-            // Host history rebuilt: fresh system prompt + the 3 conversational turns.
+            // Host history rebuilt: fresh system prompt + the conversational turns. The tool result
+            // comes back AS PLAIN TEXT in the turn that produced it — a saved transcript has no
+            // tool_calls, and a `tool` message without its call is dropped by every
+            // OpenAI-compatible backend (2026-09-11). It does not open a turn of its own either:
+            // that is the unit compaction and /branch count.
             var history = h.Server.CurrentSession!.History;
-            Assert.Equal(4, history.Count);
+            Assert.Equal(3, history.Count);
             Assert.Equal("system", history[0].Role);
-            Assert.Equal("hello", history[1].Content);
-            Assert.Equal("hi there", history[3].Content);
+            Assert.Equal("user", history[1].Role);
+            Assert.StartsWith("hello", history[1].Content);
+            Assert.Contains("read_file",   history[1].Content);
+            Assert.Contains("tool output", history[1].Content);
+            Assert.Equal("hi there", history[2].Content);
         }
         finally
         {

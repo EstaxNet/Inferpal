@@ -85,11 +85,16 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             }
             else if (m.Role == "tool")
             {
-                // No pending call ⇒ this result is orphaned (its assistant parent was removed by a
-                // history rewrite). Inventing an id here produced a tool_call_id no assistant message
-                // declares, which OpenAI-compatible servers reject with a 400 — killing the run.
-                // Dropping the message is lossy but keeps the request valid; the summary/elision that
-                // removed the parent has already accounted for the content.
+                // No pending call ⇒ this result is orphaned (its assistant parent is gone). Inventing
+                // an id here produced a tool_call_id no assistant message declares, which
+                // OpenAI-compatible servers reject with a 400 — killing the run.
+                // ⚠ Dropping is a LAST-RESORT net, not a strategy: it is lossy, and silent to the
+                // user. It was covering two callers that built orphans by construction — session
+                // restore and the synthesis head — which each lost every tool result here while the
+                // Ollama backend kept them (2026-09-11; both now flatten via ToolTranscript). The
+                // history rewrites that remain are boundary-safe by construction (ToolBlockBoundary),
+                // so reaching this line again means a new caller broke that invariant: the
+                // Diagnostics entry is how it gets found.
                 if (pendingIds.Count == 0)
                 {
                     Diagnostics.Record("OpenAiCompatible", "Dropped an orphaned tool result (no matching tool_call).");

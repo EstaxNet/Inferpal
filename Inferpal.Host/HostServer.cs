@@ -606,7 +606,8 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>Loads a session: the host history is rebuilt (fresh system prompt + every
-    /// conversational turn, tool results included) and the transcript is returned for
+    /// conversational turn, tool results included as plain labelled turns — see
+    /// <c>SessionManager.BuildRestoredHistory</c>) and the transcript is returned for
     /// re-rendering. Null when the session doesn't exist.</summary>
     [JsonRpcMethod("session/load", UseSingleObjectParameterDeserialization = true)]
     public Task<SessionLoadResult?> SessionLoadAsync(SessionRefParams p, CancellationToken ct) =>

@@ -8,6 +8,8 @@ using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services;
+using Inferpal.Services.Agent;
+using Inferpal.Services.Inference;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -122,6 +124,50 @@ public class AgentOrchestratorSynthesisTests
         var result = await RunAsync(orch, new SingleToolRegistry());
 
         Assert.Equal(recipe, result.FinalResponse);
+    }
+
+    [Fact]
+    public async Task Synthesis_KeepsEarlierTurnsToolResults_ReadableByBothBackends()
+    {
+        // The history of a front-end that keeps tool turns (the VS Code host does:
+        // s.History = result.UpdatedHistory) carries an earlier turn's block. The synthesis head
+        // stripped its tool_calls and left the answers behind: orphaned, hence DROPPED by the
+        // OpenAI mapping — the previous turn's findings vanished from the synthesis, on that
+        // backend only and without a word.
+        List<ChatMessageDto> withEarlierBlock =
+        [
+            new("system", "you are an assistant"),
+            new("user", "What is in Foo.cs?"),
+            new("assistant", null, [new ToolCallDto(new ToolCallFunction("read_file", Args("""{"path":"Foo.cs"}""")))]),
+            new("tool", "class Foo { void Bar() {} }"),
+            new("assistant", "Foo has one method."),
+            new("user", "Give me the leek pie recipe"),
+        ];
+
+        const string recipe = "Here is the leek pie recipe: ...";
+        var fake = new ScriptedChatClient(
+        [
+            PlanReply(),
+            ToolCallReply("web_search", """{"query":"leek pie"}"""),
+            new ChatTurnResult(string.Empty, null, 0, 0),   // no printable answer → synthesis
+            new ChatTurnResult(recipe, null, 0, 0),
+        ]);
+        var orch = new AgentOrchestrator(fake, Config());
+
+        await orch.RunAsync(
+            model: "m", history: withEarlierBlock, tools: new SingleToolRegistry(),
+            onStep: _ => { }, onToken: null, onPlanReady: null, onStepUpdate: null,
+            onToolExecuted: null, onStreamReset: null, ct: CancellationToken.None);
+
+        var synth = fake.SeenMessages.Last();
+        // Witness: it really is the synthesis request being inspected.
+        Assert.Contains(synth, m => m.Content != null
+                                 && m.Content.EndsWith(Strings.AgentSynthesizePrompt("Give me the leek pie recipe")));
+
+        Assert.False(ToolBlockBoundary.HasOrphanedToolMessage(synth));
+        Assert.Contains(synth, m => (m.Content ?? "").Contains("class Foo { void Bar() {} }"));
+        Assert.Contains(OpenAiCompatibleClient.MapMessages(synth),
+                        m => (m.Content ?? "").Contains("class Foo { void Bar() {} }"));
     }
 
     [Fact]

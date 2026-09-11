@@ -183,4 +183,53 @@ public class ToolBlockBoundaryTests
         Assert.Equal(assistant.ToolCalls![0].Id, results[0].ToolCallId);
         Assert.Equal(assistant.ToolCalls![1].Id, results[1].ToolCallId);
     }
+
+    // ── ToolTranscript.Flatten — when the history can no longer carry a block ──
+    // A flattened history has no call left to carry: what matters is that it loses NOTHING on the
+    // way, where the MapMessages net dropped every orphaned answer.
+
+    [Fact]
+    public void Flatten_KeepsEveryToolResult_AndLeavesNoOrphan()
+    {
+        List<ChatMessageDto> history = [Sys(), User("q"), Calls(2), Tool("r0"), Tool("r1"), Asst("answer")];
+
+        var flat = ToolTranscript.Flatten(history);
+
+        Assert.False(ToolBlockBoundary.HasOrphanedToolMessage(flat));
+        // Witness: "no orphan" is also true of a history its results were removed from.
+        Assert.Contains(flat, m => (m.Content ?? "").Contains("r0"));
+        Assert.Contains(flat, m => (m.Content ?? "").Contains("r1"));
+        Assert.Contains(flat, m => m.Role == "assistant" && m.Content == "answer");
+        // And what comes out of it goes through the OpenAI mapping without losing anything either.
+        var mapped = OpenAiCompatibleClient.MapMessages(flat);
+        Assert.Contains(mapped, m => (m.Content ?? "").Contains("r0"));
+        Assert.Contains(mapped, m => (m.Content ?? "").Contains("r1"));
+    }
+
+    [Fact]
+    public void Flatten_NamesEachResultAfterTheCallItAnswers()
+    {
+        // The name is recovered positionally, the way MapMessages correlates its ids: it is the
+        // only provenance left once the call is gone.
+        List<ChatMessageDto> history = [Sys(), User(), Calls(1), Tool("file content")];
+
+        var flat = ToolTranscript.Flatten(history);
+
+        Assert.Contains(flat, m => m.Role == "user" && m.Content!.Contains("read_file")
+                                                    && m.Content!.Contains("file content"));
+    }
+
+    [Fact]
+    public void Flatten_DropsAnAssistantTurnThatOnlyAskedForTools()
+    {
+        List<ChatMessageDto> history = [Sys(), User(), Calls(1), Tool("r")];
+
+        var flat = ToolTranscript.Flatten(history);
+
+        Assert.DoesNotContain(flat, m => m.Role == "assistant");
+        Assert.DoesNotContain(flat, m => m.ToolCalls is { Count: > 0 });
+        // Witness: the same pass keeps an assistant that did have something to say.
+        var withText = ToolTranscript.Flatten([Sys(), User(), Calls(1) with { Content = "let me look" }, Tool("r")]);
+        Assert.Contains(withText, m => m.Role == "assistant" && m.Content == "let me look");
+    }
 }

@@ -10,8 +10,11 @@ namespace Inferpal.Services.Persistence;
 /// <c>%AppData%/Inferpal/sessions/</c>.
 /// </summary>
 /// <remarks>
-/// Each session file contains both the display messages and the raw API history,
-/// allowing a conversation to be resumed exactly where it left off.
+/// A session file contains the <b>display</b> transcript — role, text, tool name, timestamp — and
+/// nothing else. ⚠ Not the API history: no <c>tool_calls</c>, no arguments, no call ids (this
+/// sentence claimed the opposite until 2026-09-11, and that is what made "resumed exactly where it
+/// left off" sound credible). What gets rebuilt on load, and how, lives in
+/// <see cref="SessionManager.BuildRestoredHistory"/>.
 /// The special name <c>"last_session"</c> is reserved for the auto-save slot.
 /// </remarks>
 internal class ConversationStore

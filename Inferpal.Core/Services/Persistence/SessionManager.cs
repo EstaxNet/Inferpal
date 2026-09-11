@@ -78,13 +78,28 @@ internal static class SessionManager
     /// conversational message. Tool results are included so the model has the full context
     /// required to continue reasoning after the restore; UI-only roles are dropped.
     /// </summary>
+    /// <remarks>
+    /// ⚠ They are included <b>as plain text</b>, not as <c>tool</c> messages. A saved transcript
+    /// carries no <c>tool_calls</c> — <see cref="SavedMessage"/> only has the role, the text and the
+    /// tool name — so restoring them with the <c>tool</c> role built a history orphaned from end to
+    /// end: Ollama tolerated it, and every OpenAI-compatible backend had its tool results
+    /// <b>dropped</b> one by one by the net in <c>MapMessages</c>. An LM Studio user therefore
+    /// reloaded a conversation whose model could no longer see anything the tools had found, while
+    /// this very sentence claimed the opposite. They are folded into the <c>user</c> turn that
+    /// produced them and never open a new one — see <see cref="ToolTranscript.Append"/> for what one
+    /// extra turn would count wrong.
+    /// </remarks>
     public static List<ChatMessageDto> BuildRestoredHistory(
         string systemPrompt, IEnumerable<SavedMessage> messages)
     {
         var history = new List<ChatMessageDto> { new("system", systemPrompt) };
-        history.AddRange(messages
-            .Where(m => m.Role is "user" or "assistant" or "tool")
-            .Select(m => new ChatMessageDto(m.Role, m.Content)));
+        foreach (var m in messages)
+        {
+            if (m.Role is "user" or "assistant")
+                history.Add(new ChatMessageDto(m.Role, m.Content));
+            else if (m.Role == "tool")
+                ToolTranscript.Append(history, m.ToolName, m.Content);
+        }
         return history;
     }
 
