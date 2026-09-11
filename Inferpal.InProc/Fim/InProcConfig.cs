@@ -82,7 +82,7 @@ internal static class InProcConfig
     /// <c>config.json</c> tronqué — une écriture concurrente, un disque plein — <b>rallumait</b>
     /// la complétion inline chez quelqu'un qui l'avait éteinte, et remettait le sidecar à
     /// consommer du GPU sans un mot. Une préférence qu'on ne sait plus lire n'est pas une
-    /// préférence qui vient de changer (revue post-1.6.0, item 4.4).
+    /// préférence qui vient de changer.
     /// </remarks>
     private static Snapshot Read(long stamp)
     {

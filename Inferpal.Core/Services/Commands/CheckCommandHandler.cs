@@ -10,7 +10,7 @@ namespace Inferpal.Services.Commands;
 
 /// <summary>
 /// Pure logic of <c>/check</c> — review the current git diff against <c>.inferpal/checks/*.md</c>
-/// and give back findings <b>anchored to the diff</b> (roadmap §15).
+/// and give back findings <b>anchored to the diff</b>.
 /// </summary>
 /// <remarks>
 /// <para>

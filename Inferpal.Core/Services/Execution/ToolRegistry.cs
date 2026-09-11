@@ -125,9 +125,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
         // ⚠ No `delegate` tool here, and this one is closed rather than merely absent. It was built
         // and measured twice against gates registered before the code was written:
-        //   §11 (2026-07-31) — 91 % of the main thread's prompt tokens saved, accuracy halved
+        //   §11 — 91 % of the main thread's prompt tokens saved, accuracy halved
         //                      (4/12 → 2/12). Cut; the redesign was scoped as §20.
-        //   §20 (2026-08-02) — one sub-agent per target, explicit budget, audited citations. On a
+        //   §20 — one sub-agent per target, explicit budget, audited citations. On a
         //                      valid reference arm (58,3 %, inside the 40-80 % window): 7/36 against
         //                      21/36, and only 13,9 % of tokens saved because the parent re-explored
         //                      what the sub-agents failed to establish.
@@ -140,7 +140,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Used by a background task running in proposal mode (roadmap §18), whose approval service
+    /// Used by a background task running in proposal mode, whose approval service
     /// records every request and grants none. The service is injected into each tool's constructor,
     /// so it cannot be swapped by a wrapper: a fresh registry is the only construction where no tool
     /// holds a reference to the real prompting service. That is the point — not an inconvenience.

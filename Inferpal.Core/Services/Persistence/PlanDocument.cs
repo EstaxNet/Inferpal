@@ -13,17 +13,10 @@ namespace Inferpal.Services.Persistence;
 internal sealed record PlanStep(int Number, string Text, bool Done, int LineIndex);
 
 /// <summary>
-/// A persistent plan (roadmap §17): the markdown document under <c>.inferpal/plans/</c>, its steps,
+/// A persistent plan: the markdown document under <c>.inferpal/plans/</c>, its steps,
 /// and the one edit the product is allowed to make to it — ticking a box.
 /// </summary>
 /// <remarks>
-/// <para>
-/// <b>The defect this repairs, stated as the roadmap criterion requires.</b> Today <c>/plan</c> only
-/// toggles <see cref="Execution.PlanModeToolRegistry"/>: the plan itself is an ordinary chat message.
-/// It dies at the next <c>/clear</c>, does not survive a restart, and nothing anywhere links what was
-/// planned to what was done — there is no plan object in the code base at all. That is a named,
-/// observable defect, not a bet on a gain.
-/// </para>
 /// <para>
 /// <b>A plan is a human document the product annotates — not a serialised object it owns.</b> This is
 /// the design decision everything else follows from, and it is why <see cref="WithStepDone"/> does a

@@ -80,7 +80,7 @@ internal sealed class GhostTextPackage : AsyncPackage
         {
             // Through the shared funnel: the MEF listener bootstraps the same handler on the
             // first editor open, and depending on which ran first each used to create its OWN
-            // subscription — every failed build collected twice (§27.4).
+            // subscription — every failed build collected twice.
             BuildEventsBootstrap.EnsureCreated(buildMgr, solution, taskList);
         }
         catch { /* non-critical */ }
@@ -103,11 +103,11 @@ internal sealed class GhostTextPackage : AsyncPackage
 
         try
         {
-            // The reverse leg (roadmap §21): serves the host's debugger commands so `/debug` can
+            // The reverse leg: serves the host's debugger commands so `/debug` can
             // set breakpoints, run and step. Requires the DTE — without it there is nothing to
             // drive.
             //
-            // ⚠ Every outcome is now recorded, and that is the whole point (2026-08-27). This
+            // ⚠ Every outcome is now recorded, and that is the whole point. This
             // block used to be silent in all three failure branches: `Diagnostics.Swallow` writes
             // to the IN-PROC ring, while `/diagnostics` reads the out-of-process host's — so a
             // driver that never started was unobservable by anyone. Downstream, `/tdd` gates its

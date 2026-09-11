@@ -40,7 +40,7 @@ internal readonly record struct ScanCoverage(int Total, int Scanned)
     /// warn about the <b>worst</b> of them, not about whichever one it happened to measure last.
     /// </summary>
     /// <remarks>
-    /// Written for <c>trace_dependency</c> (2026-09-10), which scans twice — once for callers, once
+    /// Written for <c>trace_dependency</c>, which scans twice — once for callers, once
     /// to build the callee definition index — and reported only the first. In
     /// <c>direction: "callees"</c> the caller scan never runs, so the coverage stayed
     /// <c>default</c> and <b>no warning was ever emitted</b> while the index had quietly skipped

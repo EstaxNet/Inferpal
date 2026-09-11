@@ -159,7 +159,7 @@ internal static class PathSanitizer
             // `ResolveLinkTarget` hands back the destination AS RECORDED in the link — .NET reads
             // the link value and combines it with the link's directory, it never realpaths the
             // ancestors. So an absolute recorded target keeps whatever links its own ancestors
-            // contain. Measured on the macOS CI leg (2026-09-11), where `/var` is a link to
+            // contain. Measured on the macOS CI leg, where `/var` is a link to
             // `/private/var`: resolving `<root>/alias` returned `/var/folders/…/real` while the
             // root itself had already come out as `/private/var/folders/…`, the two stopped
             // sharing a prefix, and a legitimate write was refused. ⚠ Windows cannot see this —

@@ -41,26 +41,15 @@ public class InferpalExtension : Extension
     /// </summary>
     /// <remarks>
     /// ⚠ What the SDK infers from it is <c>"allowHostingInProcess": true</c> for every service in
-    /// <c>.vsextension\extension.json</c> — and VS takes that at its word: in the
-    /// <c>ActivityLog</c> of the live hive, <c>ExtensionMetadataInProcServiceBroker</c> tried to
-    /// create <b>inside devenv</b> <c>Inferpal.Services.VsIntegration.ActiveDocumentTracker</c>
-    /// and failed on <c>FileNotFoundException: System.Runtime, Version=8.0.0.0</c> from
-    /// <c>InferpalExtension..cctor()</c>. Same verdict as in MEF, one floor up: <b>nothing net8
-    /// activates inside devenv</b>. That is why the build sets this field back to <c>false</c> in
-    /// the generated JSON — target <c>ForceOutOfProcessHostingInExtensionJson</c>
-    /// (Inferpal.csproj).
+    /// <c>.vsextension\extension.json</c>, and VS takes that at its word: it then tries to create
+    /// our types <b>inside devenv</b>, which is a .NET Framework process — <b>nothing net8 activates
+    /// there</b>. The build therefore sets this field back to <c>false</c> in the generated JSON,
+    /// target <c>ForceOutOfProcessHostingInExtensionJson</c> (Inferpal.csproj).
     /// </remarks>
     /// <remarks>
-    /// The <c>net472 + VssdkCompatibleExtension + in-proc</c> triple is the contract for
-    /// everything devenv hosts: the official project template
-    /// (<c>VisualStudioExtensibilityInProcessProject</c>) targets <c>net472</c>, the two hybrids
-    /// Microsoft ships (Copilot Build Analyzer, Copilot testing) are <c>net472</c> all the way to
-    /// their Extensibility assembly, and the extension with the <b>same shape as ours</b> —
-    /// AppModernizationForDotNet — is <c>net10.0</c> with every service at
-    /// <c>allowHostingInProcess: false</c>, delegating what must live inside devenv to a
-    /// <b>separate net472 container</b>. Here that container is <c>Inferpal.InProc.dll</c> —
-    /// ghost text, inline diff preview, the <c>/tdd</c> debugger driver. This assembly stays
-    /// out-of-process, in the host VS starts alongside.
+    /// What must live inside devenv is delegated to a <b>separate net472 container</b>,
+    /// <c>Inferpal.InProc.dll</c> — ghost text, inline diff preview, the <c>/tdd</c> debugger
+    /// driver. This assembly stays out-of-process, in the host VS starts alongside.
     /// </remarks>
     /// <remarks>
     /// ⚠ <see cref="ExtensionConfiguration.Metadata"/> MUST stay null while

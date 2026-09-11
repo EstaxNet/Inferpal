@@ -24,7 +24,7 @@ internal interface IEditorSurface
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Who has to check it, measured rather than judged (2026-09-09).</b> The line is
+    /// <b>Who has to check it, measured rather than judged.</b> The line is
     /// <i>assertion</i> versus <i>hint</i>, not "is this a tool":
     /// </para>
     /// <list type="bullet">

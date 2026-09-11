@@ -26,7 +26,7 @@ namespace Inferpal.Services;
 /// <b>The list is the union of what the code base already believed</b>, not a fresh opinion:
 /// picking a subset would have changed more behaviour than adopting all of it. It stays a
 /// heuristic — a project whose real sources live in <c>build/</c> is misjudged here, and the way
-/// to tell Inferpal so is <c>.inferpal/project.json</c> (§19), which extends the index exclusions
+/// to tell Inferpal so is <c>.inferpal/project.json</c>, which extends the index exclusions
 /// on top of this list.
 /// </para>
 /// </remarks>
@@ -67,7 +67,7 @@ internal static class WorkspaceScan
     /// <remarks>
     /// Separator-agnostic like <see cref="IsExcludedPath"/> — <c>Path.GetFileName</c> alone only
     /// understands the native separator, so on Linux a Windows-style path kept its full
-    /// <c>C:\p\node_modules</c> as the "leaf" and was never excluded (§23).
+    /// <c>C:\p\node_modules</c> as the "leaf" and was never excluded.
     /// </remarks>
     public static bool IsExcludedDirName(string directoryPath)
     {

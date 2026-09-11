@@ -41,7 +41,7 @@ internal sealed record ReferenceResult(
 
 /// <summary>
 /// Cross-file <b>semantic</b> resolution for C#: what a name actually refers to, as opposed to
-/// what merely spells the same (roadmap §14).
+/// what merely spells the same.
 /// </summary>
 /// <remarks>
 /// <para>

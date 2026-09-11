@@ -7,39 +7,26 @@ namespace Inferpal.Services.Signals;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Why this channel exists.</b> When the in-process half fails to load, it dies in
-/// <b>silence</b>: the chat window is out-of-process and keeps working, so nothing looks broken
-/// while ghost text, the inline-edit diff preview and the <c>/tdd</c> debugger driver have simply
-/// ceased to exist. External probes can only guess at that fact from artefacts the IDE writes for
-/// itself (the MEF cache, the private registry hive, the module list, configuration markers), and
-/// none of them is within reach of a user — who is precisely the person that needs to know.
+/// ⚠ When the in-process half fails to load, it dies in <b>silence</b>: the chat window is
+/// out-of-process and keeps working, so nothing looks broken while ghost text, the inline-edit diff
+/// preview and the <c>/tdd</c> debugger driver have ceased to exist. This channel is the only place
+/// the product can say so itself, within reach of a user.
 /// </para>
 /// <para>
-/// <b>⚠ Why this is not <see cref="ActiveSolutionSignal"/>.</b> That channel is cleared by
-/// <c>VsSolutionTracker</c> when a solution closes: its absence proves nothing, and conflating the
-/// two questions has already produced a false red. A channel answering "am I loaded?" must not be
-/// the channel answering "which solution is open?". This one is <b>never</b> cleared from the
-/// inside: it is written once at initialization, and the only thing that invalidates it is the
-/// death of the process that wrote it.
+/// ⚠ This is not <see cref="ActiveSolutionSignal"/>: that one is cleared when a solution closes, so
+/// its absence proves nothing. This one is never cleared from the inside — written once at
+/// initialization, and only the death of the process invalidates it.
 /// </para>
 /// <para>
-/// <b>Three doors, three components.</b> The in-process half loads through independent doors — the
-/// package (<c>GhostTextPackage</c>, autoloaded from the pkgdef), MEF
-/// (<c>GhostTextViewListener</c>, when the first editor opens) and the <c>/tdd</c> debugger driver
-/// (<c>VsDebugDriver</c>, started by the package). Each can live without the others: MEF alone
-/// gives ghost text but no driver. Every door therefore registers by name, so a reader can say
-/// <em>which</em> one is missing instead of reading a boolean that blends unrelated failures.
+/// <b>Three independent doors</b> — the package (<c>GhostTextPackage</c>, autoloaded), MEF
+/// (<c>GhostTextViewListener</c>, at the first editor) and the debugger driver
+/// (<c>VsDebugDriver</c>). Each lives without the others: MEF alone gives ghost text but no driver.
+/// Every door registers by name, so a reader can say <em>which</em> one is missing.
 /// </para>
 /// <para>
-/// <b>⚠ The third door was added to answer a measured failure.</b> The package was loaded
-/// (<c>components: ["package"]</c>, <c>active_solution</c> written) and the driver had
-/// <em>not</em> started: no <c>debug_ready</c>. <c>TddCommandHandler</c> gates the §25 capture on
-/// <c>ITestDebugCapture.IsAvailable</c>, so <c>/tdd</c> fell back to its bare red loop without a
-/// word, and that read as a product defect. The three failure paths of the startup (debugger
-/// service missing, DTE missing, constructor throwing) were <b>mute</b>: their
-/// <c>Diagnostics.Swallow</c> lands in the <em>in-process</em> ring buffer, while
-/// <c>/diagnostics</c> reads the out-of-process one. Hence <see cref="RecordDebuggerUnavailable"/>:
-/// the reason travels through the only channel that code already writes.
+/// ⚠ Driver start-up failures travel through <see cref="RecordDebuggerUnavailable"/>: their
+/// <c>Diagnostics.Swallow</c> lands in the <em>in-process</em> ring, while <c>/diagnostics</c> reads
+/// the out-of-process one — nobody could read them otherwise.
 /// </para>
 /// </remarks>
 internal static class InProcAliveSignal
@@ -55,7 +42,7 @@ internal static class InProcAliveSignal
     internal const string ComponentMef = "mef";
 
     /// <summary>
-    /// The <c>/tdd</c> debugger driver (§25), started by the package once the IDE services answer.
+    /// The <c>/tdd</c> debugger driver, started by the package once the IDE services answer.
     /// A third door because it is a third failure.
     /// </summary>
     internal const string ComponentDebugger = "debugger";

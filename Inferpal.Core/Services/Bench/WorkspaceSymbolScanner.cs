@@ -30,7 +30,7 @@ internal sealed record ScannedFile(
 /// <para>
 /// Its only consumer is the measurement bench (<see cref="ContextBenchTasks"/>), which needs
 /// ground truth — "this type is declared in exactly this file" — to grade a model's navigation.
-/// It was written for the repository-map primer (roadmap §12), which was measured and removed;
+/// It was written for the repository-map primer, which was measured and removed;
 /// the scanning half survives because grading a bench needs facts about the repository whatever
 /// the feature under test.
 /// </para>

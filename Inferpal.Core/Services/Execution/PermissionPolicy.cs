@@ -140,7 +140,7 @@ internal sealed class PermissionPolicy
     //
     // ⚠ Every pattern here carries BuiltInMatchTimeout, for the reason written on MatchTimeout itself:
     // these run on the approval path, over text nobody in this process wrote. The user-rule leg
-    // was bounded and this one was not (revue post-1.6.1) — measured on the first pattern below
+    // was bounded and this one was not — measured on the first pattern below
     // in its previous form: 49 s on a 64 KB subject, ~3 h extrapolated at 1 MB, with no prompt,
     // no error and no way for the user to know why the turn had stopped.
     private static readonly Regex[] HardDeny =
@@ -222,7 +222,7 @@ internal sealed class PermissionPolicy
         // Call operator on a variable/subexpression (& $cmd, & $(…)) or dot-sourcing one (. $script)
         new(@"(&\s*|(?<=^|[;|&(\s])\.\s+)\$", RegexOptions.Compiled, BuiltInMatchTimeout),
 
-        // ── POSIX equivalents (§23) — same tier, same contract: force the prompt, never block ──
+        // ── POSIX equivalents — same tier, same contract: force the prompt, never block ──
         // eval runs a string the rules engine never saw (the iex of POSIX shells)
         new(@"\beval\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Piping anything into an interpreter executes downloaded/generated text — the script

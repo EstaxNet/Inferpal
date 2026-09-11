@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Inferpal.Services.Shell;
 
-/// <summary>Which script language the persistent shell speaks (ROADMAP §23).</summary>
+/// <summary>Which script language the persistent shell speaks.</summary>
 internal enum ShellDialect
 {
     /// <summary>Windows PowerShell or pwsh — the original dialect.</summary>
@@ -16,7 +16,7 @@ internal enum ShellDialect
 /// Resolves which shell this machine runs commands with, and how to hand it a script.
 /// </summary>
 /// <remarks>
-/// Resolution order (§23): Windows → <c>powershell.exe</c>, exactly as before; elsewhere →
+/// Resolution order: Windows → <c>powershell.exe</c>, exactly as before; elsewhere →
 /// <c>pwsh</c> when present on PATH (full PowerShell semantics, nothing else changes), otherwise
 /// <c>/bin/bash</c> with the POSIX dialect of <see cref="ShellStateProtocol"/>. Resolved per call
 /// rather than cached: it costs a PATH scan only off-Windows, and a cache would be one more
@@ -25,7 +25,7 @@ internal enum ShellDialect
 /// <summary>Immutable dialect + executable pair for the test seam — a reference type on purpose:
 /// reference reads/writes are atomic, where the nullable struct tuple it replaces could be read
 /// torn by a concurrently-running test class. A torn read materialized once on the ubuntu CI leg
-/// (2026-08-20): HasValue already true, Dialect still default(PowerShell = 0), FileName already
+///: HasValue already true, Dialect still default(PowerShell = 0), FileName already
 /// "/bin/bash" — a PowerShell wrapper handed to bash.</summary>
 internal sealed record ShellOverride(ShellDialect Dialect, string FileName);
 

@@ -28,7 +28,7 @@ internal sealed class BackgroundTaskToolRegistry(
     };
 
     /// <summary>
-    /// Additionally exposed when the task runs in <b>proposal mode</b> (roadmap §18): the file
+    /// Additionally exposed when the task runs in <b>proposal mode</b>: the file
     /// mutations whose intent is fully described by a diff.
     /// </summary>
     /// <remarks>

@@ -22,7 +22,7 @@ internal enum BackgroundTaskState
 /// </summary>
 /// <param name="QueuePosition">1-based rank among queued tasks; 0 once it is no longer waiting.</param>
 /// <param name="ProposeWrites">
-/// The task runs in <b>proposal mode</b> (roadmap §18): the editing tools are available to it, but
+/// The task runs in <b>proposal mode</b>: the editing tools are available to it, but
 /// every change is recorded instead of applied. Chosen per task at submission (<c>/task propose</c>)
 /// rather than by a setting — read-only stays the default because it is the form that asks nothing
 /// of the user when it finishes.

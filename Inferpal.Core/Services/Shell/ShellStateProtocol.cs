@@ -37,13 +37,13 @@ internal static class ShellStateProtocol
     private static string B64Utf16(string s) => Convert.ToBase64String(Encoding.Unicode.GetBytes(s));
     private static string FromB64Utf8(string s) => Encoding.UTF8.GetString(Convert.FromBase64String(s));
 
-    /// <summary>Dialect-dispatching overload (§23): same contract, PowerShell or POSIX wrapper.</summary>
+    /// <summary>Dialect-dispatching overload: same contract, PowerShell or POSIX wrapper.</summary>
     public static string BuildForegroundScript(ShellDialect dialect, string cwd, IReadOnlyDictionary<string, string> env, string command, string marker) =>
         dialect == ShellDialect.PowerShell
             ? BuildForegroundScript(cwd, env, command, marker)
             : BuildForegroundScriptPosix(cwd, env, command, marker);
 
-    /// <summary>Dialect-dispatching overload (§23): same contract, PowerShell or POSIX wrapper.</summary>
+    /// <summary>Dialect-dispatching overload: same contract, PowerShell or POSIX wrapper.</summary>
     public static string BuildBackgroundScript(ShellDialect dialect, string cwd, IReadOnlyDictionary<string, string> env, string command) =>
         dialect == ShellDialect.PowerShell
             ? BuildBackgroundScript(cwd, env, command)
@@ -88,7 +88,7 @@ internal static class ShellStateProtocol
         return sb.ToString();
     }
 
-    // ── POSIX dialect (§23) ─────────────────────────────────────────────────────
+    // ── POSIX dialect ─────────────────────────────────────────────────────
     // Same design, same injection-proofing: every piece of user data (cwd, env names and values,
     // the command itself) travels as a single-quoted base64 literal — the base64 alphabet contains
     // no shell metacharacter, so an LLM-supplied value can never break out into script. `eval` on
@@ -212,7 +212,7 @@ internal static class ShellStateProtocol
     /// next command, so <c>$env:FOO='x'</c> persists across calls without re-injecting the whole env.
     /// </summary>
     /// <remarks>
-    /// Doctrine (§27.6, deliberate): a variable <b>removed</b> by the command
+    /// Doctrine: a variable <b>removed</b> by the command
     /// (<c>Remove-Item env:</c>, <c>unset</c>) leaves no trace in the snapshot - it is therefore
     /// not persisted and reappears on the next call, inherited from the process. Same family as
     /// in-memory PowerShell variables and modules: out of scope for the state protocol. Persisting

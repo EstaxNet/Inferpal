@@ -243,7 +243,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     }
 
     // ── Model management (native load / unload / download) ─────────────────────
-    // Request-body shapes confirmed by runtime probe against LM Studio (2026-06-14):
+    // Request-body shapes confirmed by runtime probe against LM Studio:
     //   load     POST /api/v1/models/load     { "model": "<id>" }        → { instance_id, status, … }
     //   download POST /api/v1/models/download  { "model": "<id>" }        → JSON (no streamed progress)
     //   unload   POST /api/v1/models/unload    { "instance_id": "<id>" }  → { instance_id }   (NOT "model"!)

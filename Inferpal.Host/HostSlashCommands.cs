@@ -68,7 +68,7 @@ internal sealed partial class HostServer
     private BackgroundTaskQueue TaskQueue(HostSession s) => s.GetOrCreateTasks(
         runner: async (task, onStep, ct) =>
         {
-            // Proposal mode (§18): the editing tools become available, against a registry whose
+            // Proposal mode: the editing tools become available, against a registry whose
             // approval service records instead of granting — so the run still cannot write. Same
             // construction as the VS view-model, because the mode must not differ between editors.
             var recorder = task.ProposeWrites ? new ProposalRecorder() : null;
@@ -276,7 +276,7 @@ internal sealed partial class HostServer
                 {
                     // On the VS Code side there is no in-process peer: both calls return "n/a"
                     // and null, so nothing is shown. That is intended - staying quiet beats
-                    // reporting the state of the Visual Studio open next door (§22).
+                    // reporting the state of the Visual Studio open next door.
                     var result = DiagnosticsCommandHandler.Handle(parts, new DiagnosticsExportContext(
                         s.Config, "VS Code host",
                         WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
@@ -352,7 +352,7 @@ internal sealed partial class HostServer
                     var task = TaskCommandHandler.Handle(TaskQueue(s), parts);
 
                     // `/task apply <id> <n>`: the write goes through the real registry, so the
-                    // ordinary approval prompt appears and /undo-run covers it (§18, decision (b)).
+                    // ordinary approval prompt appears and /undo-run covers it).
                     if (task.Apply is { } proposal)
                         try
                         {

@@ -10,7 +10,7 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Consent, decided before this file existed (roadmap §21).</b> <c>start</c> executes the user's
+/// <b>Consent, decided before this file existed.</b> <c>start</c> executes the user's
 /// program, so it goes through <see cref="IApprovalService"/> exactly like <c>run_command</c>. No
 /// other action prompts: once the session is consented to, the breakpoints and steps that observe
 /// it are not separate executions, and a prompt per step would make the loop unusable. The

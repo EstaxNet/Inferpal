@@ -42,7 +42,7 @@ internal static class TestReproScaffold
         """;
 
     internal const string ProgramFile = """
-        // Inferpal test repro runner (§25): loads a test assembly in its own dependency context and
+        // Inferpal test repro runner: loads a test assembly in its own dependency context and
         // invokes one test method, so an attached or launching debugger observes the original throw
         // site with live locals. Generated and built on demand by TestReproScaffold — do not edit.
         using System.Reflection;
@@ -187,7 +187,7 @@ internal static class TestReproScaffold
             // sleep, the user closed VS) leaves a zero-byte or half-written dll in a folder keyed
             // by SOURCE hash, so nothing ever invalidates it — every §25 capture on that machine
             // failed from then on, until someone deleted %AppData% by hand. Dropping the folder
-            // costs one rebuild; keeping it costs the feature (revue post-1.6.0, item 4.3).
+            // costs one rebuild; keeping it costs the feature.
             if (File.Exists(dll)) DiscardBuild(Path.GetDirectoryName(dll));
 
             var baseDir = BaseDir();

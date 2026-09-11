@@ -16,7 +16,7 @@ internal sealed class NexusIntelligenceTool : ITool
 
     /// <summary>
     /// Orphan lines listed before truncating. ⚠ The total is printed NEXT TO IT, and it was not
-    /// (2026-09-10): both orphan lists — DEFECTS, the things a user goes and fixes — stopped at
+    ///: both orphan lists — DEFECTS, the things a user goes and fixes — stopped at
     /// ten without saying so. Thirty-five TS calls with no C# endpoint read as "there are ten",
     /// and the model reported ten.
     /// </summary>

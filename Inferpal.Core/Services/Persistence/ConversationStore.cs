@@ -165,7 +165,7 @@ internal class ConversationStore
 
     private static readonly HashSet<char> _invalidChars = [..Path.GetInvalidFileNameChars()];
 
-    // Doctrine (§27.6, deliberate): flattening can make two names collide ("a/b" and "a_b" share
+    // Doctrine: flattening can make two names collide ("a/b" and "a_b" share
     // the same file). Changing the encoding would break addressing for already saved sessions; and
     // names come from the UI (timestamped title on the VS side, filtered InputBox on the VS Code
     // side, where "last_session" is reserved on top of that), which makes the case marginal.

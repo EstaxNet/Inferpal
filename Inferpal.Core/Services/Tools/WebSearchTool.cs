@@ -18,7 +18,7 @@ internal class WebSearchTool : ITool
     {
         // The same two guarantees as the other two HTTP clients in this repository, for the same
         // reasons — and they were written there and not here, which is the whole defect: three
-        // clients, one invariant, stated twice (revue post-1.6.0, item 4.1).
+        // clients, one invariant, stated twice.
         //
         //  · No automatic redirect. `FetchUrlTool` and `DocCrawler` both say it in the same words:
         //    an automatic redirect lets a public URL bounce the request onto 127.0.0.1 or

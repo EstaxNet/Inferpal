@@ -63,7 +63,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     // 5 consecutive failures → 5-minute cooldown; all calls short-circuit until
     // the cooldown expires or the user clicks Retry (which calls ResetCircuit).
     //
-    // Doctrine (§27.6, deliberate - do not re-report):
+    // Doctrine:
     //  - State is PER INSTANCE, not static: a provider lives as long as its configuration
     //    (recreated when the backend/URL changes), and two configured backends must not
     //    partager leurs pannes.

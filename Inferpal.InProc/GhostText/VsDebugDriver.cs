@@ -11,7 +11,7 @@ using Task = System.Threading.Tasks.Task;
 namespace Inferpal.GhostText;
 
 /// <summary>
-/// Serves the out-of-process host's debugger commands (roadmap §21) by driving EnvDTE automation
+/// Serves the out-of-process host's debugger commands by driving EnvDTE automation
 /// from inside devenv. The mirror image of <see cref="VsDebuggerTracker"/>, which publishes break
 /// snapshots outwards: this one takes requests inwards, over
 /// <see cref="Services.Signals.DebugCommandSignal"/>.

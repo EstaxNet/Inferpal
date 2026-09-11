@@ -13,7 +13,7 @@ namespace Inferpal.Services.Commands;
 /// The project root is resolved by the VM and passed in, keeping this logic free of VS dependencies.
 /// Same pattern as <see cref="SnippetsCommandHandler"/>.
 /// <para>
-/// Doctrine (§27.6, deliberate): the handler writes <c>.inferpal/notes.md</c> itself through
+/// Doctrine: the handler writes <c>.inferpal/notes.md</c> itself through
 /// <see cref="NotesStore"/> instead of modelling the write as an effect - the store is pure,
 /// identical for both front-ends, and a modelled effect would be applied twice for nothing. Only
 /// the effects that differ per front-end (here <c>RefreshSystemPrompt</c>) are modelled.

@@ -18,7 +18,7 @@ internal sealed class OpenDocumentOverlay
 {
     // Path case-folding is a property of the file system, not of the process: Windows and macOS
     // (default APFS) fold case, Linux does not — an Ordinal comparer there keeps two genuinely
-    // distinct open files (a.cs / A.cs) from colliding into one shared buffer (§23).
+    // distinct open files (a.cs / A.cs) from colliding into one shared buffer.
     private static readonly StringComparer PathComparer =
         OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
 

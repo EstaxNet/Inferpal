@@ -5,7 +5,7 @@ namespace Inferpal.Services.Rag;
 
 /// <summary>
 /// What the semantic index refuses to read: the built-in list (build output, VCS/IDE metadata,
-/// Inferpal's own data directory) plus whatever <c>.inferpal/project.json</c> adds (roadmap §19).
+/// Inferpal's own data directory) plus whatever <c>.inferpal/project.json</c> adds.
 /// Pure and testable — the indexing service owns the IO, this owns the decision.
 /// </summary>
 /// <remarks>

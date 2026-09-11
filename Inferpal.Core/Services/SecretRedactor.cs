@@ -7,24 +7,17 @@ namespace Inferpal.Services;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Why it exists (measured 2026-09-09).</b> The support bundle is the product's only field
-/// channel — Inferpal ships zero telemetry, so a user reporting a problem pastes this file into a
-/// public issue, and <see cref="Commands.DiagnosticsCommandHandler.RedactEndpoint"/>'s own comment
-/// says as much. The bundle already took care of the place a secret was <i>expected</i>: the
-/// configured API key prints as "set (redacted)", and a non-loopback endpoint is withheld. But it
-/// then exported the diagnostics ring <b>verbatim</b>, and that ring is where the secret actually
-/// shows up:
+/// ⚠ The support bundle is the product's only field channel — Inferpal ships zero telemetry, so a
+/// user reporting a problem pastes this file into a <b>public issue</b>. The bundle already covered
+/// the place a secret was <i>expected</i> (the API key prints as "set (redacted)", a non-loopback
+/// endpoint is withheld) but exported the diagnostics ring verbatim — and the ring is where a
+/// secret actually shows up:
 /// </para>
 /// <list type="bullet">
-///   <item><c>Permission</c> / "Blocked …" and "Force-prompt …" carry the <b>raw command line</b>
-///   the model wrote — the force-prompt branch fires precisely on the opaque ones;</item>
-///   <item><c>Permission</c> / "Declined workspace validator" carries a repository command;</item>
+///   <item><c>Permission</c> entries carry the <b>raw command line</b> the model wrote — the
+///   force-prompt branch fires precisely on the opaque ones;</item>
 ///   <item><c>DocCrawler</c> and <c>McpOAuth</c> carry <b>raw URLs</b>.</item>
 /// </list>
-/// <para>
-/// So a <c>curl -H "Authorization: Bearer …"</c> the user asked for, blocked or merely prompted,
-/// went straight into the file they publish. The scrub that was there collapsed <i>paths</i> only.
-/// </para>
 /// <para>
 /// <b>Export only.</b> <c>/diagnostics list</c> still prints the truth: the user is debugging their
 /// own machine and needs the real command. Redaction belongs at the seam where the text leaves —

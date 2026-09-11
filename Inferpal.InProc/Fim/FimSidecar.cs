@@ -30,7 +30,7 @@ namespace Inferpal.GhostText;
 /// <b>GPU coordination.</b> None is added here: <c>StreamFimAsync</c> already yields to the chat
 /// through <c>GpuScheduler.ShouldFimYield()</c> / <c>ChatBusySignal</c>, which is a <i>file</i>
 /// signal and therefore cross-process by construction — precisely the case it was written for.
-/// The sidecar receives the PID of the hosting devenv so it lands in the same signal scope (§22).
+/// The sidecar receives the PID of the hosting devenv so it lands in the same signal scope.
 /// </para>
 /// <para>
 /// <b>Lifetime.</b> Started on demand, recycled when the configuration changes (backend or model),

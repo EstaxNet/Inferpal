@@ -20,7 +20,7 @@ internal sealed record ProfileRecommendation(string Key, string Proposed, string
 internal sealed record ProfileIgnoredKey(string Key, bool Sensitive);
 
 /// <summary>
-/// The committable project profile — <c>.inferpal/project.json</c> (roadmap §19). It travels with
+/// The committable project profile — <c>.inferpal/project.json</c>. It travels with
 /// the repository, so a clone can describe how it likes to be worked on without any of it reaching
 /// the machine's own settings.
 /// </summary>

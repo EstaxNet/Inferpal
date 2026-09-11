@@ -260,7 +260,7 @@ internal class AnalyzeImpactTool : ITool
                 sb.AppendLine($"  {KindIcon(t.Kind)} {t.Kind,-12} {t.Name}{(t.IsAbstract ? "  *(abstract)*" : "")}");
         if (api.ExportedNames.Count > 0)
         {
-            // ⚠ The "+N" was missing (2026-09-10): a module exporting forty names showed ten,
+            // ⚠ The "+N" was missing: a module exporting forty names showed ten,
             // and the model concluded its public surface holds ten.
             foreach (var n in api.ExportedNames.Take(MaxExportedNames))
                 sb.AppendLine($"  📤 {n}");
@@ -306,7 +306,7 @@ internal class AnalyzeImpactTool : ITool
 
             // ⚠ The coverage line at the bottom of the report describes the LAYER 1 scan. Layer 2
             // reads LESS — its seeds and its files are re-capped — and nothing said so
-            // (2026-09-10): "Layer 2 (0)" therefore read as "nothing depends on this file
+            //: "Layer 2 (0)" therefore read as "nothing depends on this file
             // transitively" when a third of what the line announced had been looked at. A number
             // that is too wide is worse than an absent one: it gives false precision.
             var l2Seeds = Math.Min(layer1.Count, MaxTransitivePerFile * 4);

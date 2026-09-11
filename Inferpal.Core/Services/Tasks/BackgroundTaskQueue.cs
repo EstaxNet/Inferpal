@@ -35,7 +35,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <summary>What a completed run hands back: its report, and the changes it proposed.</summary>
     /// <param name="Report">Final markdown answer.</param>
     /// <param name="Proposals">
-    /// Changes recorded but not applied (roadmap §18). Empty for a read-only task. Carried here
+    /// Changes recorded but not applied. Empty for a read-only task. Carried here
     /// rather than folded into the report because <c>/task apply</c> needs the structured diff, not
     /// prose about it.
     /// </param>

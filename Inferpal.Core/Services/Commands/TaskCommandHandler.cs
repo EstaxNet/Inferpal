@@ -4,7 +4,7 @@ using Inferpal.Localization;
 namespace Inferpal.Services.Commands;
 
 /// <summary>
-/// Pure logic of <c>/task</c> — detached agent runs (ROADMAP §9). The handler owns the routing and
+/// Pure logic of <c>/task</c> — detached agent runs. The handler owns the routing and
 /// the rendering; the queue owns the lifecycle, and the front-ends only supply the runner and
 /// display what comes back. Shared by VS and VS Code, like every other slash command.
 /// </summary>
@@ -20,7 +20,7 @@ internal static class TaskCommandHandler
     /// <summary>Outcome of a <c>/task</c> invocation: the markdown to display.</summary>
     /// <param name="Message">Markdown to display.</param>
     /// <param name="Apply">
-    /// A proposal the front-end must apply (roadmap §18). The handler never writes: applying goes
+    /// A proposal the front-end must apply. The handler never writes: applying goes
     /// through the real tools, so it gets the ordinary approval prompt, the snapshot and
     /// <c>/undo-run</c> coverage — which is exactly why the handler cannot do it itself.
     /// </param>

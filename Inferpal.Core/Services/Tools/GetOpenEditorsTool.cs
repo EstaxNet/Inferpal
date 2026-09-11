@@ -34,7 +34,7 @@ internal class GetOpenEditorsTool : ITool
         // open and advised them to open a file that already was. IsAvailable states the contract
         // in so many words ("tools use it to tell the user how to recover instead of claiming no
         // file is open") and two sites out of three held it: GetActiveDocumentTool and
-        // EditorWriteGate. Same defect as get_debugger_state (§22), one port further.
+        // EditorWriteGate. Same defect as get_debugger_state, one port further.
         if (!_editor.IsAvailable)
             return Task.FromResult(Strings.ActiveDocNoContext);
 

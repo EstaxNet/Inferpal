@@ -77,7 +77,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // .inferpal/context.md, memory.md, notes.md and rules/*.md are injected into the system
         // prompt of every later session, so a silent write there is the persistence half of a
         // prompt-injection chain. UpdateMemoryTool's remarks said so and nothing held it -- seven
-        // write paths reached those files and not one asked for a prompt (measured 2026-09-09).
+        // write paths reached those files and not one asked for a prompt.
         // Here rather than in a decorator: a property held at the funnel cannot be forgotten by the
         // eighth write path. See AgentInstructionFiles for what it does and does not cover.
         var instructions = AgentInstructionFiles.Targets(matchOn);

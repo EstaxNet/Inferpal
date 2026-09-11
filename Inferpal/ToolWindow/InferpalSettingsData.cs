@@ -765,7 +765,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     {
         // ⚠ RunContinuationsAsynchronously is load-bearing, and it was missing here while its twin
         // in the chat window carries it with its reason written down since the pre-1.6.0 review
-        // (§2.4): without it, SetResult runs the caller's continuation INLINE on the VM pump — so
+        //: without it, SetResult runs the caller's continuation INLINE on the VM pump — so
         // everything after an `await RunOnVMContextAsync(...)` executes on the pump. Here that is
         // the settings save: `_config.Save()`, the MCP reconnection (processes and network) and the
         // label reload all ran behind the panel's own pump.
@@ -1440,7 +1440,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         // ⚠ NOT under a running turn. RefreshAsync tears every server down and respawns it, and an
         // agent loop that is mid-`mcp__server__tool` gets its client disposed underneath: the call
         // comes back as an error the model then has to reason about, because someone pressed Save.
-        // The host closed the same class of race with its turn slot (revue pré-1.6.0, §2.6); here
+        // The host closed the same class of race with its turn slot; here
         // the mechanism already exists — GpuScheduler models "a chat turn is in flight" (every run
         // holds a lease) and the background index loops already wait on it. Saving must not block
         // on a long run, so the reconnect is deferred rather than awaited: the configuration is

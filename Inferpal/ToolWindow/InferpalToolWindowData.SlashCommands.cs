@@ -381,7 +381,7 @@ internal partial class InferpalToolWindowData
     }
 
     /// <summary>
-    /// <c>/debug</c> (roadmap §21) — reports the debugger's state, or opens the hypothesis loop.
+    /// <c>/debug</c> — reports the debugger's state, or opens the hypothesis loop.
     /// </summary>
     /// <remarks>
     /// The command drives nothing itself: a hypothesis becomes an ordinary agent turn, which
@@ -430,7 +430,7 @@ internal partial class InferpalToolWindowData
                 systemPrompt = _history.Count > 0 && _history[0].Role == "system"
                     ? _history[0].Content : null);
 
-            // Proposal mode (§18): the editing tools become available, but against a registry whose
+            // Proposal mode: the editing tools become available, but against a registry whose
             // approval service records instead of granting — so the run still cannot write anything.
             var recorder = task.ProposeWrites ? new Services.Tasks.ProposalRecorder() : null;
             var registry = recorder is null

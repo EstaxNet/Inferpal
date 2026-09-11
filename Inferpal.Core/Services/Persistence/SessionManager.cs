@@ -141,7 +141,7 @@ internal static class SessionManager
     /// <summary>Compact relative age for session listings (<c>5m ago</c> … <c>2026-06-12</c>).</summary>
     public static string FormatAge(DateTime savedAtUtc, DateTime nowUtc)
     {
-        // Doctrine (§27.6): instants come from JSON (Kind depending on the file's Z suffix) as
+        // Doctrine: instants come from JSON (Kind depending on the file's Z suffix) as
         // much as from DateTime.UtcNow - normalize here rather than demand discipline from the
         // callers: a Local Kind shifted the age by the time zone, down to negative "-2h ago".
         if (savedAtUtc.Kind == DateTimeKind.Local) savedAtUtc = savedAtUtc.ToUniversalTime();

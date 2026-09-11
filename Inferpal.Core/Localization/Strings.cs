@@ -547,7 +547,7 @@ internal static class Strings
     public static string DebugStartConfirm(string workspace) =>
         string.Format(Get(nameof(DebugStartConfirm)), workspace);
 
-    // ── /debug (roadmap §21) ───────────────────────────────────────────────
+    // ── /debug ───────────────────────────────────────────────
     public static string DebugUnavailable         => Get(nameof(DebugUnavailable));
     public static string DebugStopped             => Get(nameof(DebugStopped));
     public static string DebugUsage               => Get(nameof(DebugUsage));
@@ -740,7 +740,7 @@ internal static class Strings
 
     // ── /permissions ──────────────────────────────────────────
     // The only one of the four committable governance artifacts that RESTRICTS, and the only
-    // one with no listing (measured 2026-09-10): an unreadable overlay stopped applying every
+    // one with no listing: an unreadable overlay stopped applying every
     // one of its rules and only /diagnostics said so.
     public static string SlashHintPermissions          => Get(nameof(SlashHintPermissions));
     public static string PermissionsHeader             => Get(nameof(PermissionsHeader));
@@ -1084,7 +1084,7 @@ internal static class Strings
     public static string SlashMemoryLoaded(string path, int chars, string preview) =>
         string.Format(Get(nameof(SlashMemoryLoaded)), path, chars, preview);
 
-    // ── /onboard — committable project profile (roadmap §19) ───────────────────
+    // ── /onboard — committable project profile ───────────────────
     public static string SlashHintOnboard             => Get(nameof(SlashHintOnboard));
     public static string OnboardUsage                 => Get(nameof(OnboardUsage));
     public static string OnboardHeading               => Get(nameof(OnboardHeading));
@@ -1111,7 +1111,7 @@ internal static class Strings
     public static string OnboardProfileScaffolded(string path) =>
         string.Format(Get(nameof(OnboardProfileScaffolded)), path);
 
-    // ── /plan — plan mode and persistent plans (roadmap §17) ────────────────────
+    // ── /plan — plan mode and persistent plans ────────────────────
     public static string PlanUsage           => Get(nameof(PlanUsage));
     public static string PlanModeOn          => Get(nameof(PlanModeOn));
     public static string PlanModeOff         => Get(nameof(PlanModeOff));
@@ -1161,7 +1161,7 @@ internal static class Strings
     public static string PlanStepAlready(int number, string state) =>
         string.Format(Get(nameof(PlanStepAlready)), number, state);
 
-    // ── /task proposals — background tasks that propose writes (roadmap §18) ────
+    // ── /task proposals — background tasks that propose writes ────
     public static string TaskProposalsHeader(int count) =>
         string.Format(Get(nameof(TaskProposalsHeader)), count);
     public static string TaskProposalItem(int number, string tool, string details) =>

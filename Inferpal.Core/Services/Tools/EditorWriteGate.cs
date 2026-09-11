@@ -10,7 +10,7 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Why this exists (revue post-1.6.1).</b> These two tools mutate a file. They went through
+/// <b>Why this exists.</b> These two tools mutate a file. They went through
 /// none of what every other mutating tool goes through: no approval prompt, no permission rules,
 /// no snapshot — the constructor did not even take an <see cref="IApprovalService"/>. The rest of
 /// the code base already disagreed with that: <c>PlanModeToolRegistry</c>, whose allow-list is the

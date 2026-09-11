@@ -16,7 +16,7 @@ internal sealed record PlanSummary(string Name, string Path, string Title, int D
 }
 
 /// <summary>
-/// Reads and writes the plans of a workspace: <c>.inferpal/plans/*.md</c> (roadmap §17).
+/// Reads and writes the plans of a workspace: <c>.inferpal/plans/*.md</c>.
 /// </summary>
 /// <remarks>
 /// <para>

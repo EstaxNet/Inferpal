@@ -56,7 +56,7 @@ internal static class InferenceProviderFactory
 
     /// <summary>
     /// User-facing name of the configured backend, for connection messages: telling an LM Studio
-    /// user "cannot reach Ollama, run ollama serve" sent them chasing the wrong process (§27.6).
+    /// user "cannot reach Ollama, run ollama serve" sent them chasing the wrong process.
     /// </summary>
     public static string DisplayName(string? code) =>
         (code?.Trim().ToLowerInvariant()) switch

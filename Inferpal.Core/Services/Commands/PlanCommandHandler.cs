@@ -6,7 +6,7 @@ namespace Inferpal.Services.Commands;
 
 /// <summary>
 /// Pure logic of <c>/plan</c> — plan mode, and the persistent plans that outlive the conversation
-/// (roadmap §17).
+///.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -26,7 +26,7 @@ namespace Inferpal.Services.Commands;
 /// matters for a file that ships with every clone.
 /// </para>
 /// <para>
-/// Doctrine (§27.6, deliberate): unlike the "the handler decides, the view-model applies" pattern,
+/// Doctrine: unlike the "the handler decides, the view-model applies" pattern,
 /// this handler <b>writes on its own</b> into <c>.inferpal/plans/</c> through
 /// <see cref="PlanStore"/>. Modelling the write as an effect would apply it twice (VS view-model +
 /// host) for a store that is already pure, testable and identical on both sides - the modelled

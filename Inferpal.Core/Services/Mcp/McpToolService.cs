@@ -111,7 +111,7 @@ internal sealed class McpToolService : IAsyncDisposable
     /// doctrine — its audience is a public issue tracker, not the chat locale.
     /// </summary>
     /// <remarks>
-    /// ⚠ The bundle only carried "MCP: on" (measured 2026-09-10): a declared server that had
+    /// ⚠ The bundle only carried "MCP: on": a declared server that had
     /// not started produced a report where everything looks normal and the expected tools are
     /// missing, without a word about the cause. The rendering lives here rather than in the
     /// handler because <c>DiagnosticsCommandHandler</c> is pure by doctrine: state is passed to it.

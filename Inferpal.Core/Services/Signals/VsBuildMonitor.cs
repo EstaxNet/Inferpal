@@ -165,7 +165,7 @@ internal sealed class VsBuildMonitor : IDisposable
 
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(90), CancellationToken.None);
 
-            // ⚠ The count came off the list AFTER `.Take(20)` (measured 2026-09-10), and it is the
+            // ⚠ The count came off the list AFTER `.Take(20)`, and it is the
             // one the banner shows: "❌ Build failed — 20 compilation error(s) detected" on a build
             // that has eighty. The user decides whether to run /fix-build on that number. The
             // count now covers EVERYTHING found; what is not listed is announced in the text.

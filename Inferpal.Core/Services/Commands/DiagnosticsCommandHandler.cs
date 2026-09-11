@@ -13,7 +13,7 @@ internal readonly record struct DiagnosticsCommandResult(string Message, string?
 
 /// <summary>
 /// Everything the support bundle needs from the caller's world — passed in so the handler stays
-/// pure and testable (ROADMAP §24).
+/// pure and testable.
 /// </summary>
 /// <param name="Config">Live configuration; secrets are redacted before anything is rendered.</param>
 /// <param name="FrontEnd">Human-readable front-end label ("Visual Studio", "VS Code host").</param>
@@ -108,7 +108,7 @@ internal static class DiagnosticsCommandHandler
         }
     }
 
-    // ── Support bundle (§24) ────────────────────────────────────────────────────
+    // ── Support bundle ────────────────────────────────────────────────────
 
     private static string BuildSupportBundle(DiagnosticsExportContext ctx)
     {
@@ -155,7 +155,7 @@ internal static class DiagnosticsCommandHandler
           .Append(c.SecurityAlertsDisabled ? " · **security alerts DISABLED**" : " · security alerts on")
           .Append('\n');
 
-        // ⚠ "MCP: on" said nothing about what is ACTUALLY running (measured 2026-09-10): a
+        // ⚠ "MCP: on" said nothing about what is ACTUALLY running: a
         // declared server that had not started left a report where everything looks normal and
         // the expected tools are missing, without a word about the cause. This is exactly where a
         // maintainer looks for it.

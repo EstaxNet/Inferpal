@@ -21,7 +21,7 @@ internal sealed record DebugFrame(int Id, string Function, string? File, int? Li
 /// <remarks>
 /// ⚠ <paramref name="Value"/> and <paramref name="Type"/> are <b>opaque</b>: they are rendered by
 /// the debug adapter, not by us, and the two front-ends disagree on purpose. The feasibility probe
-/// (roadmap §21) measured the same string list shown as <c>"probe-42"</c> / <c>Count = 3</c> under
+/// measured the same string list shown as <c>"probe-42"</c> / <c>Count = 3</c> under
 /// Visual Studio and <c>'probe-42'</c> / <c>(3) [21, 42, 43]</c> under VS Code. Present them,
 /// never parse them, never compare them across editors — that is the §18 mistake (matching a
 /// tool's own message) wearing a different hat.
@@ -78,7 +78,7 @@ internal sealed record DebugStopState(
 /// </summary>
 /// <remarks>
 /// <para>
-/// Feasibility measured on 2026-08-04 (roadmap §21) before this interface existed: the seven
+/// Feasibility measured on 2026-08-04 before this interface existed: the seven
 /// operations below were driven end to end, without a human click, in <b>both</b> front-ends.
 /// The probes are kept in <c>docs/probes/debug-feasibility/</c>.
 /// </para>

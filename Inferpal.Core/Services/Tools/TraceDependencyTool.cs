@@ -102,7 +102,7 @@ internal class TraceDependencyTool : ITool
             return Strings.TraceDepsNoMethods(Path.GetFileName(filePath));
 
         // ── Build cross-file index ────────────────────────────────────────────
-        // ⚠ This scan is CAPPED like the caller one, and it did not say so (2026-09-10). What
+        // ⚠ This scan is CAPPED like the caller one, and it did not say so. What
         // the index does not hold is rendered "[external]" — an assertion, not a silence: the
         // model reads "this call leaves your code" about a method living in file no. 401. On this
         // repository (652 .cs, cap 400) 252 files are out. And in `direction: "callees"` the
@@ -162,7 +162,7 @@ internal class TraceDependencyTool : ITool
         // A capped cross-file scan must say so: an empty caller list is otherwise indistinguishable
         // from "this method is never called".
         //
-        // ⚠ BOTH scans count, and only the first was reported (2026-09-10): in
+        // ⚠ BOTH scans count, and only the first was reported: in
         // `direction: "callees"` the caller one does not run, coverage stayed `default` and the
         // capped index was announced nowhere. We warn about the worse of the two.
         var worst = ScanCoverage.Worst(coverage, indexCoverage);

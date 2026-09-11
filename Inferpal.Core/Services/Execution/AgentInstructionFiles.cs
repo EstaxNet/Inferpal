@@ -13,14 +13,11 @@ namespace Inferpal.Services.Execution;
 /// where the content can come from a web page, a file the model was asked to read, or an MCP server.
 /// </para>
 /// <para>
-/// <b>The doctrine was already written, in <c>UpdateMemoryTool</c>'s own remarks</b> — "a tool that
-/// writes it unattended is a tool that lets the model edit its own future instructions, permanently,
-/// with no human in the loop" — and held by nobody. Measured 2026-09-09: <b>seven</b> write paths
-/// reach these files (<c>update_memory</c>, <c>write_file</c>, <c>apply_diff</c>, <c>apply_edits</c>,
-/// <c>delete_file</c>, <c>restore_file</c>, and the caret writes behind <c>EditorWriteGate</c>) and
-/// <b>not one</b> asked for a forced prompt. Every one of them was reachable unattended: an
-/// <c>allow</c> rule, <c>SecurityAlertsDisabled</c>, or — the realistic one — a single "Always" on
-/// <c>write_file</c>, the main editing tool, clicked once and good for the rest of the session.
+/// ⚠ <b>Every write path reaches them</b> — <c>update_memory</c>, <c>write_file</c>,
+/// <c>apply_diff</c>, <c>apply_edits</c>, <c>delete_file</c>, <c>restore_file</c> and the caret
+/// writes behind <c>EditorWriteGate</c> — and each is reachable unattended: an <c>allow</c> rule,
+/// <c>SecurityAlertsDisabled</c>, or the realistic one, a single "Always" on <c>write_file</c>
+/// clicked once and good for the rest of the session.
 /// </para>
 /// <para>
 /// The answer is a <b>forced prompt, never a refusal</b>: writing memory or a rule is a legitimate,

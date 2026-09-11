@@ -31,7 +31,7 @@ internal sealed record CheckFinding(
 internal sealed record CheckReview(IReadOnlyList<CheckFinding> Findings, string Prose);
 
 /// <summary>
-/// Turns a review answer into findings anchored to the diff (roadmap §15).
+/// Turns a review answer into findings anchored to the diff.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -44,7 +44,7 @@ internal sealed record CheckReview(IReadOnlyList<CheckFinding> Findings, string 
 /// one; nothing makes it true. Each location is confronted with <see cref="DiffAnchors"/> and the
 /// result is <i>labelled</i>: exact, adjusted, or unanchored. Silently dropping unanchored
 /// findings would hide real remarks, and silently keeping them would present a guess as a
-/// location — the same "plausible but wrong" failure the semantic index (§14) exists to remove.
+/// location — the same "plausible but wrong" failure the semantic index exists to remove.
 /// </para>
 /// </remarks>
 internal static class CheckReviewParser

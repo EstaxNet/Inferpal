@@ -48,7 +48,7 @@ internal sealed class DocsIndexService
     /// <c>_chunkLock</c> across an <c>await</c> (the network work sits behind a different
     /// semaphore, <c>_indexLock</c>), so nothing deadlocked — but that is an invariant nobody
     /// stated and no test defends, and the day someone adds an <c>await</c> inside one of those
-    /// sections, <c>/docs</c> freezes the calling thread with no error (revue post-1.6.0, item 4.6).
+    /// sections, <c>/docs</c> freezes the calling thread with no error.
     /// </remarks>
     public async Task<IReadOnlyList<(DocSite Site, int PageCount, int ChunkCount)>> SitesAsync(
         CancellationToken ct = default)

@@ -110,7 +110,7 @@ internal sealed record DebugStopStateDto(
 /// </summary>
 internal sealed record DebugStartDto(DebugStopStateDto? State, string? Failure);
 
-/// <summary>`debug/captureTest` (§25): the repro-runner launch the adapter debugs.</summary>
+/// <summary>`debug/captureTest`: the repro-runner launch the adapter debugs.</summary>
 internal sealed record DebugCaptureTestParams(string Program, List<string> Args, string Cwd, string ProjectRoot);
 
 /// <summary>`index/status` snapshot.</summary>

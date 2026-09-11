@@ -21,7 +21,7 @@ namespace Inferpal.GhostText;
 /// (deploy-dev writes its Packages/AutoLoadPackages keys; VSIXInstaller merges them from the
 /// pkgdef on release installs), so this MEF side — which always loads with the first editor —
 /// stays as the belt-and-braces. Before the funnel, machines where BOTH ran subscribed the
-/// build events twice (§27.4). MEF components are discovered in-process
+/// build events twice. MEF components are discovered in-process
 /// (devenv.exe) via the MEFComponent registry key and reach VS COM services via
 /// <c>Package.GetGlobalService</c>.
 /// </para>

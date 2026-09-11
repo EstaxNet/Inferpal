@@ -433,7 +433,7 @@ internal partial class InferpalToolWindowData
     // /check <name> runs a single check. 100% local — no diff leaves the machine.
     /// <summary>
     /// <c>/check</c> — the whole flow lives in <see cref="Services.Commands.CheckCommandHandler"/>
-    /// so the Host serves the same command (roadmap §15); the VM only supplies git and the UI.
+    /// so the Host serves the same command; the VM only supplies git and the UI.
     /// </summary>
     /// <remarks>
     /// The answer is no longer streamed token by token: findings are anchored to the diff once the
@@ -460,7 +460,7 @@ internal partial class InferpalToolWindowData
 
     /// <summary>
     /// <c>/plan</c> — read-only plan mode, and the persistent plans of <c>.inferpal/plans/</c>
-    /// (roadmap §17). Same handler as the host: the list of sub-commands exists once.
+    ///. Same handler as the host: the list of sub-commands exists once.
     /// </summary>
     private async Task HandlePlanCommandAsync(string[] parts, CancellationToken ct)
     {
@@ -496,7 +496,7 @@ internal partial class InferpalToolWindowData
         _history.LastOrDefault(m => m.Role == "assistant")?.Content;
 
     /// <summary>
-    /// <c>/onboard</c> — the committable project profile (roadmap §19): report it, apply the part
+    /// <c>/onboard</c> — the committable project profile: report it, apply the part
     /// the user explicitly asks for, or draft <c>.inferpal/context.md</c>. Same handler as the
     /// host, so both front-ends refuse and recommend exactly the same things.
     /// </summary>

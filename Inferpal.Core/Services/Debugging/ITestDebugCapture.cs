@@ -1,7 +1,7 @@
 namespace Inferpal.Services.Debugging;
 
 /// <summary>
-/// Port for the `/tdd` × `/debug` crossing (ROADMAP §25): re-runs <b>one failing test</b> under
+/// Port for the `/tdd` × `/debug` crossing: re-runs <b>one failing test</b> under
 /// the host editor's debugger and returns the state at the first exception stop. Distinct from
 /// <see cref="IDebugSession"/> on purpose — that port drives an interactive session for the
 /// model, this one is a single fire-and-collect capture the `/tdd` loop injects into its fix

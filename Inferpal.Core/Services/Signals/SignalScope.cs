@@ -17,7 +17,7 @@ namespace Inferpal.Services.Signals;
 /// <para>
 /// The first correction (reduced slice) was a <b>read policy</b>: a process with no in-process VS
 /// peer does not consult those files at all. Tranche 2 then keyed the family-A channels — the §21
-/// debug transport included, once its human validation pass was done (2026-08-15) — on the devenv
+/// debug transport included, once its human validation pass was done — on the devenv
 /// PID via <see cref="VsInstanceKey"/>, so two VS instances stop reading each other's state.
 /// </para>
 /// <para>

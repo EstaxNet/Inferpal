@@ -74,7 +74,7 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
 
-    // Extra exclusion patterns contributed by .inferpal/project.json (roadmap §19). Read when the
+    // Extra exclusion patterns contributed by .inferpal/project.json. Read when the
     // root is pinned rather than per file: this sits in the enumeration loop. Additive only — the
     // profile can lengthen the built-in list, never shorten it (see IndexExclusions).
     private volatile IReadOnlyList<string> _profileExcludes = [];
