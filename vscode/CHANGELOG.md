@@ -3,6 +3,43 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.12
+
+Ten fixes of the same family: the product did something, said nothing, and what you saw was not
+what had happened.
+
+- **Reloading a conversation dropped everything the tools had found.** Reopening a saved session,
+  or switching to a branch with `/branch`, gave you the transcript back on screen while the
+  assistant silently lost the substance of it: the files it had read, the searches it had run, the
+  commands it had executed. It answered the next question as if that work had never happened. A
+  saved conversation records what each tool returned but not the internal call that produced it,
+  and a result without its call is a shape LM Studio and every other OpenAI-compatible server
+  rejects — so Inferpal was dropping each one to keep the request valid. Restored results are now
+  carried as plain text in the turn that produced them. Ollama users were not affected.
+
+- **A background task that failed announced itself exactly like one that succeeded.** `/task` runs
+  work while you carry on and tells you when one is done — and it said the same sentence whatever
+  happened, so a task that crashed or one you cancelled both read as work delivered. The three
+  outcomes are now told apart, and a failure names its cause.
+
+- **A pinned context file that no longer exists was skipped without a word.** Pinned files travel
+  with every request; when one cannot be found — a mistyped path, a file moved, a disconnected
+  drive — it was quietly left out. `/diagnostics` now records it, once per file.
+
+- **An error reported from the field could not be diagnosed.** `/diagnostics` recorded the type and
+  the message of every swallowed error, and for the most common kind the message says nothing at
+  all. Each entry now also says *where* it was thrown, compacted to stay readable in an issue.
+
+- **The licence shipped inside the extension did not contain the licence.** It carried the
+  copyright, the attribution terms and a *link* to gnu.org, while the GPL requires the text itself
+  to travel with the program. The package now ships it in full, and the attribution names the two
+  current Marketplace listings instead of a page that no longer exists.
+
+- **Linux and macOS: a write inside your own workspace could still be refused** when the workspace,
+  or a link inside it, was reached through a symbolic link.
+
+Visual Studio users get four more fixes in this release — the settings window, the message bubble
+and the conversation counters; see the repository changelog.
 ## 1.6.11
 
 The first release driven by reports from people other than the maintainer. Most of what follows is
