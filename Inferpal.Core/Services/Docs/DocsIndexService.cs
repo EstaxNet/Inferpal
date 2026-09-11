@@ -97,6 +97,31 @@ internal sealed class DocsIndexService
     /// Crawls <paramref name="site"/>, chunks and embeds every page, then persists the result and
     /// refreshes the in-memory index. Existing chunks for the same source are replaced.
     /// </summary>
+
+    /// <summary>
+    /// What a <c>/docs index</c> actually got, said to the user.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ An address refused by the SSRF guard produced "no readable pages found" — the message of
+    /// an empty site. A local documentation server (<c>localhost:8000</c>, an intranet host) is the
+    /// most likely case on a 100 % local product, so the user went off to check a site that works
+    /// perfectly in their browser. The cause is named.
+    /// ⚠ And the <see cref="DocCrawler.MaxPages"/> page cap is stated when it is reached:
+    /// otherwise <c>@Docs</c> answers "not in the documentation" about half a site the user
+    /// believes is indexed in full.
+    /// </remarks>
+    internal static string DescribeCrawlOutcome(string startUrl, int pageCount, bool refused)
+    {
+        if (refused)
+            return $"Docs: {startUrl} is a private or loopback address — refused on purpose "
+                 + "(the same guard that protects fetch_url). Nothing was indexed.";
+        if (pageCount == 0)
+            return $"Docs: no readable pages found at {startUrl}.";
+        return pageCount >= DocCrawler.MaxPages
+            ? $"Docs: {pageCount} pages (crawl limit of {DocCrawler.MaxPages} reached — the site may have more)"
+            : $"Docs: {pageCount} pages";
+    }
+
     public async Task AddOrReindexAsync(DocSite site, IProgress<string>? progress, CancellationToken ct)
     {
         if (!await _indexLock.WaitAsync(0, ct))
@@ -114,10 +139,12 @@ internal sealed class DocsIndexService
             var crawlProgress = new Progress<(int fetched, int total)>(p =>
                 Status = $"Docs: crawling {site.Title} — {p.fetched}/{Math.Max(p.fetched, p.total)} pages");
 
-            var pages = await crawler.CrawlAsync(site.StartUrl, crawlProgress, ct);
+            var refused = Tools.FetchUrlTool.IsPrivateOrLoopback(site.StartUrl);
+            var pages   = refused ? [] : await crawler.CrawlAsync(site.StartUrl, crawlProgress, ct);
             if (pages.Count == 0)
             {
-                progress?.Report($"Docs: no readable pages found at {site.StartUrl}.");
+                Status = DescribeCrawlOutcome(site.StartUrl, 0, refused);
+                progress?.Report(Status);
                 return;
             }
 
@@ -154,7 +181,10 @@ internal sealed class DocsIndexService
             await ReloadFromDbAsync(db, ct);
 
             var embNote = _client.IsEmbeddingCircuitOpen ? " (⚠ embedding circuit open, keyword fallback)" : string.Empty;
-            Status = $"Docs: ✅ {site.Title} — {pages.Count} pages, {chunks.Count} chunks{embNote}";
+            var crawlNote = pages.Count >= DocCrawler.MaxPages
+                ? $" (crawl limit of {DocCrawler.MaxPages} pages reached — the site may have more)"
+                : string.Empty;
+            Status = $"Docs: ✅ {site.Title} — {pages.Count} pages, {chunks.Count} chunks{crawlNote}{embNote}";
             progress?.Report(Status);
         }
         catch (OperationCanceledException)
