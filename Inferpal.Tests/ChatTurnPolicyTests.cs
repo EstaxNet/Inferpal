@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Inferpal.Localization;
@@ -12,6 +12,8 @@ namespace Inferpal.Tests;
 // previews, the context-enriched history text, the multi-file recap inputs, the
 // persisted-answer choice, and the prompt-history rules. UI insertion, theming,
 // and the LLM calls stay in the VM and are not tested here.
+// Switches Strings.OverrideCulture (process-wide): serialized collection.
+[Collection(CultureSerialCollection.Name)]
 public class ChatTurnPolicyTests
 {
     // ── OneLinePreview / FormatPromptHistory (/phistory) ───────────────────────
@@ -142,6 +144,50 @@ public class ChatTurnPolicyTests
         Assert.Contains("```", text);
         Assert.Contains("var x = 1;", text);
         Assert.EndsWith("explain", text);
+    }
+
+    // ── BuildBubbleText ────────────────────────────────────────────────────────
+    // The attached content lives only in the API history, never persisted: without the label in the
+    // bubble, a reloaded session handed back "explain this" with no trace of what "this" was.
+
+    [Fact]
+    public void BuildBubbleText_NoAttachments_ReturnsUserTextAsIs() =>
+        Assert.Equal("question", ChatTurnPolicy.BuildBubbleText("question", []));
+
+    [Fact]
+    public void BuildBubbleText_NamesEveryAttachment_AfterTheQuestion()
+    {
+        var text = ChatTurnPolicy.BuildBubbleText("explain this", ["Foo.cs", "Selection (Bar.cs)"]);
+
+        Assert.StartsWith("explain this", text);
+        Assert.Contains("Foo.cs", text);
+        Assert.Contains("Selection (Bar.cs)", text);
+        // What is saved is what is displayed: the recap must survive the round trip.
+        var restored = SessionManager.BuildRestoredHistory("SYS", [new("user", text)]);
+        Assert.Contains("Selection (Bar.cs)", restored[1].Content);
+    }
+
+    [Fact]
+    public void BuildBubbleText_IsLocalized_AndKeepsTheLabelsVerbatim()
+    {
+        // The label comes from the user (file name, @code query): it is not translated.
+        var en = RunWithCulture("en", () => ChatTurnPolicy.BuildBubbleText("q", ["Foo.cs"]));
+        var fr = RunWithCulture("fr", () => ChatTurnPolicy.BuildBubbleText("q", ["Foo.cs"]));
+
+        Assert.NotEqual(en, fr);
+        Assert.Contains("Foo.cs", en);
+        Assert.Contains("Foo.cs", fr);
+    }
+
+    private static string RunWithCulture(string culture, Func<string> body)
+    {
+        var previous = Strings.OverrideCulture?.Name;
+        try
+        {
+            Strings.ApplyLanguage(culture);
+            return body();
+        }
+        finally { Strings.ApplyLanguage(previous); }
     }
 
     // ── ModifiedFilePaths ──────────────────────────────────────────────────────

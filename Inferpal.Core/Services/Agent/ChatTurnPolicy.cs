@@ -92,6 +92,32 @@ internal static class ChatTurnPolicy
     }
 
     /// <summary>
+    /// The chat bubble for the same turn: the user's text, plus one line naming what was sent with
+    /// it. Unchanged when nothing was attached.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The bubble only kept the typed text, and the chips are cleared on send: a second later
+    /// nothing — on screen, in the exported conversation or in the session file — said that a file,
+    /// a selection or a <c>@diff</c> went with the question. Measured consequences: a reloaded
+    /// session handed the model "explain this" <b>without</b> what "this" referred to (the attached
+    /// content lives only in the API history, never persisted), and regeneration replayed the turn
+    /// having lost its attachments without saying so.
+    /// The content itself is deliberately not saved — a <c>@clipboard</c> or a <c>@diff</c> is the
+    /// snapshot of a moment that has passed, and an attached file can be read again. The
+    /// <b>label</b> is enough to stop lying.
+    ///
+    /// ⚠ Nothing to do on the VS Code side: there the mention stays written <c>@path</c> in the
+    /// text of the question itself, so the transcript already carries it. That is not a parity gap,
+    /// it is the same information carried differently.
+    /// </remarks>
+    public static string BuildBubbleText(string userText, IReadOnlyList<string> attachmentLabels)
+    {
+        if (attachmentLabels.Count == 0) return userText;
+        var recap = Strings.MsgAttachedRecap(string.Join(" · ", attachmentLabels));
+        return string.IsNullOrEmpty(userText) ? recap : userText + "\n\n" + recap;
+    }
+
+    /// <summary>
     /// Distinct file paths written by <c>write_file</c>/<c>apply_diff</c> during the run —
     /// drives the multi-file recap bubble (shown when ≥ 2 files were modified).
     /// </summary>

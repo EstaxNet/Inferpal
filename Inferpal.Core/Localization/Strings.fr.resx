@@ -328,6 +328,7 @@ Sauvegarde : {0}</value></data>
 {1}</value></data>
 
   <!-- Attachment / Browse errors -->
+  <data name="MsgAttachedRecap" xml:space="preserve"><value>📎 Joint : {0}</value></data>
   <data name="AttachError" xml:space="preserve"><value>⚠ Erreur lors de l'attachement : {0}</value></data>
   <data name="AttachReadError" xml:space="preserve"><value>⚠ Erreur de lecture (fichier joint) : {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Erreur lors de l'attachement de la sélection : {0}</value></data>

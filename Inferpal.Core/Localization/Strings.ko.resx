@@ -328,6 +328,7 @@
 {1}</value></data>
 
   <!-- Attachment / Browse errors -->
+  <data name="MsgAttachedRecap" xml:space="preserve"><value>📎 첨부: {0}</value></data>
   <data name="AttachError" xml:space="preserve"><value>⚠ 첨부 오류: {0}</value></data>
   <data name="AttachReadError" xml:space="preserve"><value>⚠ 첨부 읽기 오류: {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ 선택 영역 첨부 오류: {0}</value></data>

@@ -612,6 +612,8 @@ internal static class Strings
 
     // ── Attachment / Browse ────────────────────────────────────────────────────
     public static string AttachError(string msg)              => string.Format(Get(nameof(AttachError)),              msg);
+    /// <summary>What went with the question, named under the bubble: "📎 Attached: Foo.cs · Selection (Bar.cs)".</summary>
+    public static string MsgAttachedRecap(string labels)      => string.Format(Get(nameof(MsgAttachedRecap)),          labels);
     public static string AttachReadError(string msg)          => string.Format(Get(nameof(AttachReadError)),          msg);
     public static string AttachSelectionError(string msg)     => string.Format(Get(nameof(AttachSelectionError)),     msg);
     public static string AttachSelectionReadError(string msg) => string.Format(Get(nameof(AttachSelectionReadError)), msg);

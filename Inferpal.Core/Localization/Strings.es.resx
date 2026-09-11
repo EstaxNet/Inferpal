@@ -328,6 +328,7 @@ Copia de seguridad: {0}</value></data>
 {1}</value></data>
 
   <!-- Attachment / Browse errors -->
+  <data name="MsgAttachedRecap" xml:space="preserve"><value>📎 Adjunto: {0}</value></data>
   <data name="AttachError" xml:space="preserve"><value>⚠ Error al adjuntar: {0}</value></data>
   <data name="AttachReadError" xml:space="preserve"><value>⚠ Error de lectura al adjuntar: {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Error al adjuntar la selección: {0}</value></data>

@@ -328,6 +328,7 @@
 {1}</value></data>
 
   <!-- Attachment / Browse errors -->
+  <data name="MsgAttachedRecap" xml:space="preserve"><value>📎 添付: {0}</value></data>
   <data name="AttachError" xml:space="preserve"><value>⚠ 添付エラー：{0}</value></data>
   <data name="AttachReadError" xml:space="preserve"><value>⚠ 添付読み取りエラー：{0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ 選択範囲添付エラー：{0}</value></data>

@@ -158,7 +158,13 @@ internal partial class InferpalToolWindowData
                 IsLoading     = true;
                 _sendStarting = false;
                 _turnDone     = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                var userItem  = ChatMessageItem.UserMsg(userText);
+                // The bubble names what goes WITH the question. The chips were cleared just above:
+                // without this line nothing — on screen, in the export, or in the session file —
+                // said that a file, a selection or a @diff went with this turn, and a reloaded
+                // session handed the model "explain this" without what "this" refers to
+                // (Services/Agent/ChatTurnPolicy.BuildBubbleText).
+                var userItem  = ChatMessageItem.UserMsg(Services.Agent.ChatTurnPolicy.BuildBubbleText(
+                    userText, attachments.Select(a => a.Label).ToList()));
                 ApplyItemTheme(userItem);
                 Messages.Insert(Messages.Count - 2, userItem);
                 ScrollToBottom();

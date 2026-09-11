@@ -328,6 +328,7 @@
 {1}</value></data>
 
   <!-- Attachment / Browse errors -->
+  <data name="MsgAttachedRecap" xml:space="preserve"><value>📎 已附加：{0}</value></data>
   <data name="AttachError" xml:space="preserve"><value>⚠ 附加文件时出错：{0}</value></data>
   <data name="AttachReadError" xml:space="preserve"><value>⚠ 附加时读取文件出错：{0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ 附加选区时出错：{0}</value></data>

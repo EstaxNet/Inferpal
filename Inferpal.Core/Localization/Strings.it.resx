@@ -328,6 +328,7 @@ Backup: {0}</value></data>
 {1}</value></data>
 
   <!-- Attachment / Browse errors -->
+  <data name="MsgAttachedRecap" xml:space="preserve"><value>📎 Allegato: {0}</value></data>
   <data name="AttachError" xml:space="preserve"><value>⚠ Errore allegato: {0}</value></data>
   <data name="AttachReadError" xml:space="preserve"><value>⚠ Errore di lettura allegato: {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Errore allegato selezione: {0}</value></data>

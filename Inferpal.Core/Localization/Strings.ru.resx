@@ -328,6 +328,7 @@
 {1}</value></data>
 
   <!-- Attachment / Browse errors -->
+  <data name="MsgAttachedRecap" xml:space="preserve"><value>📎 Вложено: {0}</value></data>
   <data name="AttachError" xml:space="preserve"><value>⚠ Ошибка прикрепления: {0}</value></data>
   <data name="AttachReadError" xml:space="preserve"><value>⚠ Ошибка чтения при прикреплении: {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Ошибка прикрепления выделения: {0}</value></data>

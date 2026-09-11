@@ -328,6 +328,7 @@ Kopia zapasowa: {0}</value></data>
 {1}</value></data>
 
   <!-- Attachment / Browse errors -->
+  <data name="MsgAttachedRecap" xml:space="preserve"><value>📎 Załączono: {0}</value></data>
   <data name="AttachError" xml:space="preserve"><value>⚠ Błąd załącznika: {0}</value></data>
   <data name="AttachReadError" xml:space="preserve"><value>⚠ Błąd odczytu załącznika: {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Błąd załączania zaznaczenia: {0}</value></data>
