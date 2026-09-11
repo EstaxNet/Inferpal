@@ -122,7 +122,17 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
 
         foreach (var pinnedPath in PinnedFilesPolicy.ParseActive(config.PinnedContextFiles))
         {
-            if (!File.Exists(pinnedPath)) continue;
+            if (!File.Exists(pinnedPath))
+            {
+                // ⚠ A pinned file that is not there — mistyped path, file moved, disconnected
+                // network drive — was skipped WITHOUT A WORD. The user pinned it so it travels with
+                // every request, the 📌 chip still shows it (the chip comes from the settings, not
+                // from the disk), and it is not there. Same class as the three settings parsers that
+                // kept quiet about the lines they rejected.
+                ReportMissingPinOnce(pinnedPath);
+                continue;
+            }
+            ForgetMissingPin(pinnedPath);
             try
             {
                 var pinnedContent = CapSection(File.ReadAllText(pinnedPath, Encoding.UTF8).Trim(),
@@ -189,6 +199,27 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     }
 
     /// <summary>Adds a <c>## header</c> file-backed section; missing/empty/unreadable file ⇒ no-op.</summary>
+    // ⚠ Once per path and per process, not once per build: the system prompt is rebuilt on EVERY
+    // active-file change, so reporting on each pass would drown the ring's 200 entries under the
+    // same message — and a noisy channel stops being read (that is what DroppedLine exists for: it
+    // already keeps out what the parsers skip normally). A path that comes back leaves the set: if
+    // the file disappears again, we say so again.
+    private static readonly HashSet<string> _missingPinsReported =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private static void ReportMissingPinOnce(string path)
+    {
+        bool first;
+        lock (_missingPinsReported) first = _missingPinsReported.Add(path);
+        if (first) Diagnostics.DroppedLine("PinnedFiles", "Pinned context file not found", path);
+    }
+
+    /// <summary>The path is back: the next time it goes missing will be reported again.</summary>
+    private static void ForgetMissingPin(string path)
+    {
+        lock (_missingPinsReported) _missingPinsReported.Remove(path);
+    }
+
     private static void AddFileSection(List<PromptSection> sections, PromptSectionKind kind, string path, string header, string detail)
     {
         if (!File.Exists(path)) return;

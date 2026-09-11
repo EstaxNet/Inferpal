@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Linq;
 using Inferpal.Config;
 using Inferpal.Services;
@@ -166,5 +168,43 @@ public class ConfigLineSilenceTests
 
         Assert.Single(servers);
         Assert.Empty(Notes("Mcp"));
+    }
+    // ── Missing pinned file ───────────────────────────────────────────────────
+
+    [Fact]
+    public void AMissingPinnedFile_IsReportedOnce_NotOnEveryPromptRebuild()
+    {
+        Diagnostics.Clear();
+        // Unique path: the report is remembered per PROCESS, and a shared path would make this
+        // test depend on execution order.
+        var missing = Path.Combine(Path.GetTempPath(), "inferpal-missing-pin-" + Guid.NewGuid().ToString("N") + ".md");
+        var cfg     = new InferpalConfig { PinnedContextFiles = missing };
+
+        var prompt = new SystemPromptBuilder(cfg).Build("BASE");
+
+        Assert.DoesNotContain("Pinned:", prompt);   // witness: it really did not travel
+        Assert.Single(Notes("PinnedFiles"));
+
+        // The system prompt is rebuilt on EVERY active-file change: the same message two hundred
+        // times would drown the ring, and a noisy channel stops being read.
+        new SystemPromptBuilder(cfg).Build("BASE");
+        Assert.Single(Notes("PinnedFiles"));
+    }
+
+    /// <summary>Reference arm: a pinned file that EXISTS says nothing.</summary>
+    [Fact]
+    public void AnExistingPinnedFile_ReportsNothing()
+    {
+        Diagnostics.Clear();
+        var path = Path.Combine(Path.GetTempPath(), "inferpal-pin-" + Guid.NewGuid().ToString("N") + ".md");
+        File.WriteAllText(path, "PINNED CONTENT");
+        try
+        {
+            var prompt = new SystemPromptBuilder(new InferpalConfig { PinnedContextFiles = path }).Build("BASE");
+
+            Assert.Contains("PINNED CONTENT", prompt);   // witness: the pin was read
+            Assert.Empty(Notes("PinnedFiles"));
+        }
+        finally { File.Delete(path); }
     }
 }
