@@ -101,7 +101,7 @@ internal sealed partial class HostServer
         },
         // Dedicated notification, not a chat/step status line: the adapter renders it as a
         // persistent bubble (VS parity) instead of a status wiped by the next setBusy (revue §3.6).
-        onFinished: snapshot => Notify("task/finished", new { text = Strings.TaskFinishedNotice(snapshot.Id) }));
+        onFinished: snapshot => Notify("task/finished", new { text = TaskCommandHandler.FinishedNotice(snapshot) }));
 
     /// <summary>Current content of a proposed file, or null when it is not there.</summary>
     private static string? ReadFileForProposal(string path)

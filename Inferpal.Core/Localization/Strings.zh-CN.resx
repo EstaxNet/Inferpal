@@ -859,6 +859,8 @@ ollama serve
   <data name="TaskStillRunning" xml:space="preserve"><value>_仍在运行 —— 完成后报告将显示在此处。_</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>步骤</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_耗时：{0}。_</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>后台任务 `{0}` 失败 — {1}。使用 `/task {0}` 查看详情。</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>后台任务 `{0}` 已取消 — 未产生任何结果。</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>后台任务 `{0}` 已完成 —— 使用 `/task {0}` 查看报告。</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>常规</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>代码操作</value></data>

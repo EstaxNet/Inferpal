@@ -859,6 +859,8 @@ ollama serve
   <data name="TaskStillRunning" xml:space="preserve"><value>_Ещё выполняется — отчёт появится здесь после завершения._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Шаги</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Длительность: {0}._</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>Фоновая задача `{0}` завершилась ошибкой — {1}. `/task {0}` — подробности.</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>Фоновая задача `{0}` отменена — результата нет.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Фоновая задача `{0}` завершена — `/task {0}`, чтобы прочитать отчёт.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Общее</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Действия с кодом</value></data>

@@ -859,6 +859,8 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="TaskStillRunning" xml:space="preserve"><value>_Todavía en curso: el informe aparecerá aquí al terminar._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Pasos</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Duración: {0}._</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>La tarea en segundo plano `{0}` ha fallado: {1}. `/task {0}` para ver los detalles.</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>La tarea en segundo plano `{0}` se canceló: no se produjo nada.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>La tarea en segundo plano `{0}` ha terminado — `/task {0}` para leer su informe.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Acciones de código</value></data>

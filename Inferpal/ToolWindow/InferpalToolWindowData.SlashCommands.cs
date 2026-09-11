@@ -461,7 +461,7 @@ internal partial class InferpalToolWindowData
 
         // A finished task must announce itself: its report is worthless if nobody knows it exists.
         _backgroundTasks.TaskFinished += snapshot =>
-            _ = ShowInfoAsync(Strings.TaskFinishedNotice(snapshot.Id));
+            _ = ShowInfoAsync(Services.Commands.TaskCommandHandler.FinishedNotice(snapshot));
 
         return _backgroundTasks;
     }

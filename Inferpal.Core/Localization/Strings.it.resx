@@ -859,6 +859,8 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="TaskStillRunning" xml:space="preserve"><value>_Ancora in corso: il rapporto apparirà qui al termine._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Passaggi</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Durata: {0}._</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>L'attività in background `{0}` non è riuscita — {1}. `/task {0}` per i dettagli.</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>L'attività in background `{0}` è stata annullata — non è stato prodotto nulla.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>L'attività in background `{0}` è terminata — `/task {0}` per leggerne il rapporto.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Azioni sul codice</value></data>

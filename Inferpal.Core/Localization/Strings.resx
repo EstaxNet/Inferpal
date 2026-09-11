@@ -863,6 +863,8 @@ ollama serve
   <data name="TaskStillRunning" xml:space="preserve"><value>_Still running — its report will appear here once it finishes._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Steps</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Ran for {0}._</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>Background task `{0}` failed — {1}. `/task {0}` for the details.</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>Background task `{0}` was cancelled — nothing was produced.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Background task `{0}` finished — `/task {0}` to read its report.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code actions</value></data>

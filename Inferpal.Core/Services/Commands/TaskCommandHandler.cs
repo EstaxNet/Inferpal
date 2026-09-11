@@ -181,6 +181,37 @@ internal static class TaskCommandHandler
         _                             => Strings.TaskStateCancelled,
     };
 
+    /// <summary>
+    /// The sentence a task that has just ended announces in the chat - the same in both front-ends
+    /// (the VM subscribes to <c>TaskFinished</c>, the host pushes it as <c>task/finished</c>).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ All three outcomes rendered <b>the same sentence</b>: "finished - `/task &lt;id&gt;` to read its
+    /// report". A task that <b>failed</b> (backend down, model missing, tool error) and a
+    /// <b>cancelled</b> one therefore announced themselves as work done, and the failure only
+    /// existed for whoever went looking for it. That is the worst place for a false positive: a
+    /// background task exists precisely so that nobody watches it. Same arbitration as the MCP
+    /// servers - "you need to authorise" and "it did not start" are not fixed in the same place.
+    ///
+    /// ⚠ The cause is <b>named</b> in the bubble, on one line: deferring it to <c>/task</c> would be
+    /// the same defect one step further away. Bounded, because an exception message can be long and
+    /// a bubble is not a log.
+    /// </remarks>
+    internal static string FinishedNotice(BackgroundTaskSnapshot task) => task.State switch
+    {
+        BackgroundTaskState.Failed    => Strings.TaskFailedNotice(task.Id, FirstLine(task.Error)),
+        BackgroundTaskState.Cancelled => Strings.TaskCancelledNotice(task.Id),
+        _                             => Strings.TaskFinishedNotice(task.Id),
+    };
+
+    /// <summary>First useful line of an error, bounded - the rest lives in <c>/task</c>.</summary>
+    private static string FirstLine(string? error)
+    {
+        if (string.IsNullOrWhiteSpace(error)) return Strings.TaskStateFailed;
+        var line = error.Replace("\r", " ").Replace("\n", " ").Trim();
+        return Truncate(line, 160);
+    }
+
     internal static string FormatDuration(TimeSpan d) =>
         d.TotalMinutes >= 1 ? $"{(int)d.TotalMinutes}m {d.Seconds}s" : $"{d.TotalSeconds:0.0}s";
 

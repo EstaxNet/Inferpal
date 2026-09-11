@@ -1024,6 +1024,10 @@ internal static class Strings
     public static string TaskStepsTitle                      => Get(nameof(TaskStepsTitle));
     public static string TaskDuration(string duration)       => string.Format(Get(nameof(TaskDuration)), duration);
     public static string TaskFinishedNotice(string id)       => string.Format(Get(nameof(TaskFinishedNotice)), id);
+    /// <summary>A background task that FAILED: the failure is named in the bubble, not only in `/task`.</summary>
+    public static string TaskFailedNotice(string id, string reason) => string.Format(Get(nameof(TaskFailedNotice)), id, reason);
+    /// <summary>A cancelled background task: nothing was produced, and "finished" suggested otherwise.</summary>
+    public static string TaskCancelledNotice(string id)      => string.Format(Get(nameof(TaskCancelledNotice)), id);
 
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));

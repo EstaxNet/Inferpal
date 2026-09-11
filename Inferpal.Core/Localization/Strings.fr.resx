@@ -859,6 +859,8 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="TaskStillRunning" xml:space="preserve"><value>_Toujours en cours — le rapport s'affichera ici à la fin._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Étapes</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Durée : {0}._</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>La tâche de fond `{0}` a échoué — {1}. `/task {0}` pour le détail.</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>La tâche de fond `{0}` a été annulée — rien n'a été produit.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>La tâche de fond `{0}` est terminée — `/task {0}` pour lire son rapport.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Méta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Actions de code</value></data>

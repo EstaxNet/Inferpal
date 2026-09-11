@@ -859,6 +859,8 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="TaskStillRunning" xml:space="preserve"><value>_아직 실행 중입니다. 완료되면 여기에 보고서가 표시됩니다._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>단계</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_소요 시간: {0}._</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>백그라운드 작업 `{0}`이(가) 실패했습니다 — {1}. 자세한 내용은 `/task {0}`.</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>백그라운드 작업 `{0}`이(가) 취소되었습니다 — 생성된 결과가 없습니다.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>백그라운드 작업 `{0}` 이(가) 완료되었습니다 — `/task {0}` 으로 보고서를 확인하세요.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>일반</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>코드 작업</value></data>

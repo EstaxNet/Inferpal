@@ -1,5 +1,7 @@
-﻿using System.Text.Json;
+﻿using System;
+using System.Text.Json;
 using Inferpal.Models;
+using Inferpal.Localization;
 using Inferpal.Services;
 using Inferpal.Services.Commands;
 using Xunit;
@@ -331,5 +333,51 @@ public class TaskCommandTests
         var names = new BackgroundTaskToolRegistry(inner).Definitions.Select(d => d.Function.Name);
 
         Assert.Equal(["read_file"], names);
+    }
+    // ── The sentence a task announces when it ends ────────────────────────
+
+    private static BackgroundTaskSnapshot Snapshot(BackgroundTaskState state, string? error = null) =>
+        new("t1", "objective", state, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow, null, error, [], 0);
+
+    [Fact]
+    public void AFinishedTask_AnnouncesItsThreeOutcomesApart()
+    {
+        var done      = TaskCommandHandler.FinishedNotice(Snapshot(BackgroundTaskState.Succeeded));
+        var failed    = TaskCommandHandler.FinishedNotice(Snapshot(BackgroundTaskState.Failed, "connection refused"));
+        var cancelled = TaskCommandHandler.FinishedNotice(Snapshot(BackgroundTaskState.Cancelled));
+
+        // All three rendered THE SAME sentence: a broken task announced itself as work
+        // done, and the failure only existed for whoever went looking for it.
+        Assert.NotEqual(done, failed);
+        Assert.NotEqual(done, cancelled);
+        Assert.NotEqual(failed, cancelled);
+
+        // The cause is NAMED in the bubble, not deferred to /task.
+        Assert.Contains("connection refused", failed);
+
+        // Witness: all three do name the task they are about.
+        foreach (var notice in new[] { done, failed, cancelled })
+            Assert.Contains("t1", notice);
+    }
+
+    [Fact]
+    public void AFailureWithNoMessage_StillReadsAsAFailure()
+    {
+        // An exception with no message must not produce a sentence with a hole in it.
+        var notice = TaskCommandHandler.FinishedNotice(Snapshot(BackgroundTaskState.Failed, "   "));
+
+        Assert.Contains(Strings.TaskStateFailed, notice);
+        Assert.NotEqual(TaskCommandHandler.FinishedNotice(Snapshot(BackgroundTaskState.Succeeded)), notice);
+    }
+
+    [Fact]
+    public void ALongFailureMessage_IsBoundedForTheBubble()
+    {
+        var notice = TaskCommandHandler.FinishedNotice(
+            Snapshot(BackgroundTaskState.Failed, new string('x', 400) + "\n" + "second line"));
+
+        Assert.True(notice.Length < 400, "a bubble is not a log");
+        Assert.DoesNotContain("second line", notice);
     }
 }

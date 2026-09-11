@@ -859,6 +859,8 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="TaskStillRunning" xml:space="preserve"><value>_実行中です。完了するとここにレポートが表示されます。_</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>ステップ</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_所要時間: {0}_</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` が失敗しました — {1}。詳細は `/task {0}`。</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` はキャンセルされました — 何も生成されていません。</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` が完了しました — `/task {0}` でレポートを確認できます。</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>全般</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>コードアクション</value></data>

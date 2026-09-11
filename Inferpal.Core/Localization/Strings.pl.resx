@@ -859,6 +859,8 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="TaskStillRunning" xml:space="preserve"><value>_Nadal w toku — raport pojawi się tutaj po zakończeniu._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Kroki</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Czas trwania: {0}._</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>Zadanie w tle `{0}` nie powiodło się — {1}. `/task {0}`, aby poznać szczegóły.</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>Zadanie w tle `{0}` zostało anulowane — nic nie powstało.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Zadanie w tle `{0}` zakończone — `/task {0}`, aby przeczytać raport.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Ogólne</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Akcje na kodzie</value></data>

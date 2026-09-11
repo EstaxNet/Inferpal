@@ -859,6 +859,8 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="TaskStillRunning" xml:space="preserve"><value>_Läuft noch — der Bericht erscheint hier, sobald sie fertig ist._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Schritte</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Dauer: {0}._</value></data>
+  <data name="TaskFailedNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` fehlgeschlagen — {1}. `/task {0}` für die Details.</value></data>
+  <data name="TaskCancelledNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` wurde abgebrochen — es wurde nichts erzeugt.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` ist fertig — `/task {0}` zeigt den Bericht.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code-Aktionen</value></data>
