@@ -226,6 +226,7 @@ internal class FileHistoryService
         var restored = new List<string>();
         var deleted  = new List<string>();
         var failed   = new List<string>();
+        var savedFirst = 0;
 
         foreach (var change in run.Changes)
         {
@@ -241,10 +242,19 @@ internal class FileHistoryService
                 }
                 else if (change.SnapshotPath is null)
                 {
+                    // ⚠ The CURRENT state is captured first, and that is the half that was missing.
+                    // Undoing a run writes with no approval prompt — the only write path of the
+                    // product that does — and what the run wrote may have been edited since: by
+                    // hand, by a later run, by a merge. Without this line a file CREATED by the run
+                    // and then filled in by the user was deleted without a trace, and a modified
+                    // file was overwritten by a state older than the user's own corrections. The
+                    // refusal two branches above already said it, for the other case.
+                    if (await SnapshotAsync(change.OriginalPath, ct) is { Length: > 0 }) savedFirst++;
                     if (File.Exists(change.OriginalPath)) { File.Delete(change.OriginalPath); deleted.Add(change.OriginalPath); }
                 }
                 else if (File.Exists(change.SnapshotPath))
                 {
+                    if (await SnapshotAsync(change.OriginalPath, ct) is { Length: > 0 }) savedFirst++;
                     await RestoreAsync(change.SnapshotPath, change.OriginalPath, ct);
                     restored.Add(change.OriginalPath);
                 }
@@ -257,7 +267,7 @@ internal class FileHistoryService
             catch { failed.Add(change.OriginalPath); }
         }
 
-        return new RunUndoResult(restored, deleted, failed);
+        return new RunUndoResult(restored, deleted, failed, savedFirst);
     }
 
     internal static string GetHistoryDir(string filePath)
@@ -292,7 +302,9 @@ internal sealed record RunChange(string OriginalPath, string? SnapshotPath, bool
 internal sealed record ToolCallRecord(int Seq, string Tool, string? Subject, long DurationMs, bool Error);
 
 /// <summary>Outcome of <see cref="FileHistoryService.UndoRunAsync"/>.</summary>
-internal sealed record RunUndoResult(List<string> Restored, List<string> Deleted, List<string> Failed);
+/// <param name="SavedFirst">Files whose current state was snapshotted before being reverted.</param>
+internal sealed record RunUndoResult(List<string> Restored, List<string> Deleted, List<string> Failed,
+                                     int SavedFirst = 0);
 
 /// <summary>
 /// A change-tracking run: the set of files first touched between one <see cref="FileHistoryService.BeginRun"/>

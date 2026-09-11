@@ -710,6 +710,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Cofnij wszystkie zmiany plików z ostatniego uruchomienia agenta</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Brak uruchomienia agenta ze zmianami plików do cofnięcia w tej sesji.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Śledzone uruchomienia w tej sesji ({0}):</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ich poprzedni stan został wcześniej zapisany — `/history &lt;plik&gt;` go przywraca.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Cofnięto ostatnie uruchomienie — przywrócono {0} plik(ów), usunięto {1}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Oś czasu ostatniego przebiegu agenta (narzędzia, czasy, pliki)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>W tej sesji nie zarejestrowano przebiegu agenta z wywołaniami narzędzi.</value></data>

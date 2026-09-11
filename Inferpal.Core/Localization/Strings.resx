@@ -722,6 +722,7 @@ ollama serve
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Undo all file changes from the last agent run</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>No agent run with file changes to undo in this session.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Their previous state was saved first — `/history &lt;file&gt;` restores it.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} file(s) restored, {1} deleted.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Timeline of the last agent run (tools, durations, files)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>

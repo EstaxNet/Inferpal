@@ -710,6 +710,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Alle Dateiänderungen des letzten Agent-Laufs rückgängig machen</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Kein Agent-Lauf mit Dateiänderungen in dieser Sitzung zum Rückgängigmachen.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Verfolgte Läufe in dieser Sitzung ({0}):</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ihr vorheriger Zustand wurde vorher gesichert — `/history &lt;Datei&gt;` stellt ihn wieder her.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Letzter Lauf rückgängig gemacht — {0} Datei(en) wiederhergestellt, {1} gelöscht.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Zeitachse des letzten Agent-Laufs (Tools, Dauern, Dateien)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>In dieser Sitzung wurde kein Agent-Lauf mit Tool-Aufrufen aufgezeichnet.</value></data>

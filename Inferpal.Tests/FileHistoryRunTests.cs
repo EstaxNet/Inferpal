@@ -207,4 +207,78 @@ public class FileHistoryRunTests
             try { Directory.Delete(Path, recursive: true); } catch { }
         }
     }
+    // ── Undoing a run writes: the current state is captured first ─────────────
+
+    [Fact]
+    public async Task UndoRun_SnapshotsWhatItIsAboutToOverwrite()
+    {
+        using var tmp = new TempDir();
+        var file = tmp.File("a.txt", "original");
+
+        var svc = new FileHistoryService();
+        svc.BeginRun();
+        await svc.SnapshotAsync(file, CancellationToken.None);   // captures "original"
+        await File.WriteAllTextAsync(file, "written by the agent");
+
+        // The user picks the file back up AFTER the run: that is the work an undo used to
+        // overwrite without a trace, and with no approval prompt since /undo-run asks for none.
+        await File.WriteAllTextAsync(file, "fixed by hand");
+
+        var run    = svc.Runs.First(r => r.FileCount > 0);
+        var result = await svc.UndoRunAsync(run, CancellationToken.None);
+
+        Assert.Equal("original", await File.ReadAllTextAsync(file));   // witness: it does undo
+        Assert.Equal(1, result.SavedFirst);
+
+        // And what was overwritten is findable again: that is what "recoverable" means.
+        var saved = svc.FindMostRecentSnapshot(file);
+        Assert.NotNull(saved);
+        Assert.Equal("fixed by hand", await File.ReadAllTextAsync(saved!));
+    }
+
+    [Fact]
+    public async Task UndoRun_SnapshotsAFileItIsAboutToDelete()
+    {
+        using var tmp = new TempDir();
+        var created = Path.Combine(tmp.Path, "created.txt");
+
+        var svc = new FileHistoryService();
+        svc.BeginRun();
+        svc.NoteCreated(created);
+        await File.WriteAllTextAsync(created, "agent scaffolding");
+
+        // The file the run created has been filled in since. The delete branch removed it as is,
+        // while the neighbouring branch already refuses to delete "because that would destroy
+        // data".
+        await File.WriteAllTextAsync(created, "scaffolding + two hundred lines from the user");
+
+        var run    = svc.Runs.First(r => r.FileCount > 0);
+        var result = await svc.UndoRunAsync(run, CancellationToken.None);
+
+        Assert.False(File.Exists(created));       // witness: the delete did happen
+        Assert.Equal(1, result.SavedFirst);
+
+        var saved = svc.FindMostRecentSnapshot(created);
+        Assert.NotNull(saved);
+        Assert.Contains("two hundred lines", await File.ReadAllTextAsync(saved!));
+    }
+
+    [Fact]
+    public async Task UndoRun_CountsNothingSavedWhenThereWasNothingToSave()
+    {
+        // Reference arm: a missing snapshot is not a save, and the counter must not promise a
+        // recovery that does not exist.
+        using var tmp = new TempDir();
+        var absent = Path.Combine(tmp.Path, "never-written.txt");
+
+        var svc = new FileHistoryService();
+        svc.BeginRun();
+        svc.NoteCreated(absent);   // announced, then nothing is written
+
+        var run    = svc.Runs.First(r => r.FileCount > 0);
+        var result = await svc.UndoRunAsync(run, CancellationToken.None);
+
+        Assert.Equal(0, result.SavedFirst);
+        Assert.Empty(result.Deleted);
+    }
 }

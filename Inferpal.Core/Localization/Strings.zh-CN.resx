@@ -710,6 +710,7 @@ ollama serve
   <data name="SlashHintUndoRun" xml:space="preserve"><value>撤销上一次代理运行的所有文件更改</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>本会话中没有可撤销文件更改的代理运行。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>本会话跟踪的运行（{0}）：</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>它们之前的状态已先行保存 — 使用 `/history &lt;文件&gt;` 可恢复。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 已撤销上一次运行 — 恢复 {0} 个文件，删除 {1} 个。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>最近一次代理运行的时间线（工具、耗时、文件）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>本会话中没有记录包含工具调用的代理运行。</value></data>

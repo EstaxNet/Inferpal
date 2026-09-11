@@ -710,6 +710,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Deshacer todos los cambios de archivos del último run del agente</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>No hay ningún run del agente con cambios de archivos que deshacer en esta sesión.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Runs rastreados en esta sesión ({0}):</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Su estado anterior se guardó antes — `/history &lt;archivo&gt;` lo restaura.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Último run deshecho — {0} archivo(s) restaurado(s), {1} eliminado(s).</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Cronología del último run del agente (herramientas, duraciones, archivos)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No hay ningún run del agente con llamadas a herramientas registrado en esta sesión.</value></data>

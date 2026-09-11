@@ -903,6 +903,7 @@ internal static class Strings
     public static string UndoRunNone                         => Get(nameof(UndoRunNone));
     public static string UndoRunListHeader(int count)        => string.Format(Get(nameof(UndoRunListHeader)), count);
     public static string UndoRunResult(int restored, int deleted) => string.Format(Get(nameof(UndoRunResult)), restored, deleted);
+    public static string UndoRunSavedFirst                    => Get(nameof(UndoRunSavedFirst));
 
     // ── /replay command ─────────────────────────────────────────────────────────
     public static string SlashHintReplay                     => Get(nameof(SlashHintReplay));

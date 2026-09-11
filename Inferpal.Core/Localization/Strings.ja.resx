@@ -710,6 +710,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SlashHintUndoRun" xml:space="preserve"><value>直近のエージェント実行によるファイル変更をすべて元に戻す</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>このセッションには元に戻せるファイル変更を伴うエージェント実行がありません。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>このセッションで追跡された実行（{0}）：</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>直前の状態は先に保存されています — `/history &lt;ファイル&gt;` で復元できます。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 直近の実行を取り消しました — 復元 {0} 件、削除 {1} 件。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>直近のエージェント実行のタイムライン（ツール・所要時間・ファイル）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>このセッションにはツール呼び出しのあるエージェント実行が記録されていません。</value></data>

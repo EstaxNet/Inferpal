@@ -708,6 +708,7 @@ ollama serve
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Отменить все изменения файлов из последнего запуска агента</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>В этой сессии нет запуска агента с изменениями файлов для отмены.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Отслеживаемые запуски в этой сессии ({0}):</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Их предыдущее состояние сохранено заранее — `/history &lt;файл&gt;` восстановит его.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Последний запуск отменён — восстановлено файлов: {0}, удалено: {1}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Хронология последнего запуска агента (инструменты, длительность, файлы)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>В этой сессии не записано ни одного запуска агента с вызовами инструментов.</value></data>

@@ -42,6 +42,7 @@ internal static class UndoRunCommandHandler
 
         var sb = new StringBuilder();
         sb.AppendLine(Strings.UndoRunResult(result.Restored.Count, result.Deleted.Count));
+        if (result.SavedFirst > 0) sb.AppendLine(Strings.UndoRunSavedFirst);
         foreach (var f in result.Restored) sb.AppendLine($"  ↩ {Relativise(f, root)}");
         foreach (var f in result.Deleted)  sb.AppendLine($"  🗑 {Relativise(f, root)}");
         foreach (var f in result.Failed)   sb.AppendLine($"  ⚠ {Relativise(f, root)}");
