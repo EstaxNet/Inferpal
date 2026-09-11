@@ -115,6 +115,40 @@ public class PathSanitizerTests : IDisposable
     }
 
     [Fact]
+    public void ALinkRecordedTHROUGHAnotherLink_StillResolvesUnderTheRoot()
+    {
+        // The PORTABLE shape of the defect measured on the macOS leg (2026-09-11): there the first
+        // link is `/var` → `/private/var`, an ancestor nobody creates and that no Windows or Linux
+        // machine has above its temp folder — hence a red visible on one leg out of three, and
+        // invisible locally. Here the first link is BUILT, so the question is asked everywhere:
+        // ResolveLinkTarget hands back the target AS RECORDED, and when that target itself goes
+        // through a link, the path it returns is not comparable with the root.
+        var real = Path.Combine(_root, "real");
+        var sub  = Path.Combine(real, "sub");
+        Directory.CreateDirectory(sub);
+
+        var viaBase = Path.Combine(_root, "via");                       // link 1: via → real
+        if (!TryCreateDirectoryLink(viaBase, real)) return;
+
+        var alias = Path.Combine(real, "alias");                        // link 2, RECORDED via link 1
+        if (!TryCreateDirectoryLink(alias, Path.Combine(viaBase, "sub"))) return;
+
+        // WITNESS: the link exists, and its RECORDED target does go through the first link. Without
+        // this check the test would stay green while exercising nothing at all — the failure mode
+        // this repository repairs everywhere else, and the two silent `return`s above invite it.
+        var recorded = new DirectoryInfo(alias).LinkTarget;
+        Assert.NotNull(recorded);
+        Assert.DoesNotContain(Path.Combine("real", "sub"), recorded!);
+
+        PathSanitizer.AssertUnderRoot(Path.Combine(alias, "a.cs"), real);
+
+        // ⚠ On Windows this test CANNOT see the defect, measured 2026-09-11 by disabling the fix:
+        // there `ResolveLinkTarget(returnFinalTarget: true)` goes through GetFinalPathNameByHandle,
+        // which canonicalises the whole path. It bites on the POSIX legs, where .NET merely reads
+        // the link's value — and that is where the red was measured.
+    }
+
+    [Fact]
     public void ALinkedAncestorDoesNotOpenTheSandbox()
     {
         // WITNESS: resolving more links must not widen what the sandbox accepts. A path that

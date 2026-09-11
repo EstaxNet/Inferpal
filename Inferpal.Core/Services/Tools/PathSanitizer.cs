@@ -132,17 +132,42 @@ internal static class PathSanitizer
     /// </remarks>
     private static string ResolveChain(string existing)
     {
+        var hops = MaxLinkHops;
+        return ResolveChain(existing, ref hops);
+    }
+
+    /// <summary>Total link hops allowed for one resolution, shared by every level of the path.</summary>
+    private const int MaxLinkHops = 64;
+
+    private static string ResolveChain(string existing, ref int hops)
+    {
         var parent = Path.GetDirectoryName(existing);
         if (string.IsNullOrEmpty(parent) || parent == existing)
             return existing;                       // drive root / filesystem root
 
-        var combined = Path.Combine(ResolveChain(parent), Path.GetFileName(existing));
+        var combined = Path.Combine(ResolveChain(parent, ref hops), Path.GetFileName(existing));
+        if (hops <= 0) return combined;            // pathological nesting; stop rather than spin
         try
         {
             FileSystemInfo info = Directory.Exists(combined)
                 ? new DirectoryInfo(combined)
                 : new FileInfo(combined);
-            return info.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? combined;
+            var target = info.ResolveLinkTarget(returnFinalTarget: true);
+            if (target is null) return combined;
+
+            // ⚠ The target is resolved AGAIN, and that is not belt-and-braces: on Unix
+            // `ResolveLinkTarget` hands back the destination AS RECORDED in the link — .NET reads
+            // the link value and combines it with the link's directory, it never realpaths the
+            // ancestors. So an absolute recorded target keeps whatever links its own ancestors
+            // contain. Measured on the macOS CI leg (2026-09-11), where `/var` is a link to
+            // `/private/var`: resolving `<root>/alias` returned `/var/folders/…/real` while the
+            // root itself had already come out as `/private/var/folders/…`, the two stopped
+            // sharing a prefix, and a legitimate write was refused. ⚠ Windows cannot see this —
+            // there `ResolveLinkTarget(returnFinalTarget: true)` goes through
+            // GetFinalPathNameByHandle, which canonicalises the whole path — hence the portable
+            // test that records the target THROUGH a second link.
+            hops--;
+            return ResolveChain(target.FullName, ref hops);
         }
         catch (Exception ex)
         {
