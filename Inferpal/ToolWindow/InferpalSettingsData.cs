@@ -1321,21 +1321,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         var s       = int.TryParse(ts, out var sv) ? Math.Clamp(sv,  0, 59) : 0;
         var totalSec = h * 3600 + m * 60 + s;
 
-        // Resolve language code from display name (index 0 = auto = "").
-        var langCode = LanguageOptions.FirstOrDefault(l => l.Name == selectedLangName).Code ?? string.Empty;
-        // By INDEX, not by text. Now that these labels are translated, a string comparison fails as
-        // soon as the language has changed - and the old fallback then wrote "Default", i.e. a
-        // language change quietly restored the factory mode. Same class as the nine numeric fields
-        // repaired in 1.6.8: what cannot be read is kept, it is not replaced by the factory value.
-        var modes = InlineModeOptions;
-        var inlineModeCode = selectedInlineModeIndex >= 0 && selectedInlineModeIndex < modes.Length
-            ? modes[selectedInlineModeIndex].Code
-            : modes.FirstOrDefault(m => m.Name == selectedInlineModeName).Code
-              ?? _config.InlineCompletionMode;
-
-        var providerCode = ProviderOptions.FirstOrDefault(p => p.Name == selectedProviderName).Code
-                           ?? Services.Inference.InferenceProviderFactory.Ollama;
-
         // ⚠ What could not be read is NAMED to the user, never swallowed. The save itself goes
         // through: refusing the whole form would also cancel the other valid edits the user just
         // made. The label is captured lazily — the language can change in the SAME save, and the
@@ -1345,6 +1330,34 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         {
             if (SettingsFallback.WasIgnored(text, applied)) ignored.Add(label);
         }
+
+        // Resolve language code from display name (index 0 = auto = "").
+        // ⚠ Same class as the inline mode just below: what cannot be read is KEPT. The original
+        // fallback wrote "" -- that is, "follow Visual Studio" -- so an unrecognised label quietly
+        // reset the language to its factory setting. And it gets named.
+        var langCode = SettingsFallback.ResolveSelection(
+            LanguageOptions, index: -1, selectedLangName, _config.Language, out var langOk);
+        Note(selectedLangName, langOk, () => Strings.LabelLanguage);
+        // By INDEX, not by text. Now that these labels are translated, a string comparison fails as
+        // soon as the language has changed - and the old fallback then wrote "Default", i.e. a
+        // language change quietly restored the factory mode. Same class as the nine numeric fields
+        // repaired in 1.6.8: what cannot be read is kept, it is not replaced by the factory value.
+        var modes = InlineModeOptions;
+        // It already kept the value in place; it did not SAY so -- the only one of the three to
+        // stay silent.
+        var inlineModeCode = SettingsFallback.ResolveSelection(
+            modes, selectedInlineModeIndex, selectedInlineModeName, _config.InlineCompletionMode, out var inlineOk);
+        Note(selectedInlineModeName, inlineOk, () => Strings.LabelInlineCompletionMode);
+
+        // ⚠ Third field of the same class, and the costliest of the three: the fallback wrote
+        // `ollama`, so an unrecognised label CHANGED BACKEND in silence -- the user had LM Studio on
+        // screen and the product talked to Ollama, which is exactly what issue #8 describes (the
+        // active client there was the Ollama one while the selection said LM Studio). What cannot be
+        // read is kept, and it gets named, like the thirteen numeric boxes of 1.6.8 and like the
+        // inline mode above.
+        var providerCode = SettingsFallback.ResolveSelection(
+            ProviderOptions, index: -1, selectedProviderName, _config.Provider, out var providerOk);
+        Note(selectedProviderName, providerOk, () => Strings.LabelProvider);
 
         // A numeric box: the value if it parses, what the config already carries on a typo, the
         // default if the box was cleared on purpose — and the field named in the first two cases

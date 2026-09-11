@@ -69,4 +69,43 @@ internal static class SettingsFallback
     /// </remarks>
     public static string LabelForSentence(string label) =>
         label.TrimEnd(' ', '\u00A0', '\u202F', ':', '\uFF1A');   // space, NBSP, narrow NBSP, colon, fullwidth colon
+
+    /// <summary>
+    /// The code behind a <b>dropdown</b>: by index first (the only landmark a translation does not
+    /// move), by label next, and <paramref name="current"/> when neither answers.
+    /// <paramref name="matched"/> tells the two cases apart, for <see cref="WasIgnored"/>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Same rule as <see cref="For{T}"/>, and it cost more here than on the numeric boxes: the
+    /// three dropdowns of the Visual Studio form resolved <b>by label</b> with a fallback to the
+    /// <b>factory default</b>. An unrecognised label therefore reset the language to "follow Visual
+    /// Studio", the inline mode to "Default" -- and above all the <b>backend</b> to Ollama: the user
+    /// had LM Studio on screen and the product was talking to something else, without a word
+    /// (issue #8 describes exactly that state). The inline mode had been fixed on its own in 1.6.8;
+    /// the other two stayed three lines above and below it.
+    ///
+    /// ⚠ The index comes <b>before</b> the label because translated labels move under the
+    /// comparison when the language changes in the same save. Pass <c>-1</c> when the front-end
+    /// exposes no index.
+    /// </remarks>
+    public static string ResolveSelection(
+        IReadOnlyList<(string Code, string Name)> options, int index, string? name,
+        string current, out bool matched)
+    {
+        if (index >= 0 && index < options.Count)
+        {
+            matched = true;
+            return options[index].Code;
+        }
+
+        foreach (var option in options)
+            if (option.Name == name)
+            {
+                matched = true;
+                return option.Code;
+            }
+
+        matched = false;
+        return current;
+    }
 }

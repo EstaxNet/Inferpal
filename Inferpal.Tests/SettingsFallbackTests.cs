@@ -94,4 +94,54 @@ public class SettingsFallbackTests
         // And nothing else is trimmed: a label is not a sentence to punctuate.
         Assert.Equal("Unload after (minutes)", SettingsFallback.LabelForSentence("Unload after (minutes):"));
     }
+    // ── ResolveSelection: a dropdown does not fall back to the factory value ──
+
+    private static readonly (string Code, string Name)[] Backends =
+    [
+        ("ollama",            "Ollama"),
+        ("lmstudio",          "LM Studio"),
+        ("openai-compatible", "OpenAI-compatible (generic)"),
+    ];
+
+    [Fact]
+    public void AKnownLabel_ResolvesToItsCode()
+    {
+        var code = SettingsFallback.ResolveSelection(Backends, -1, "LM Studio", "ollama", out var ok);
+
+        Assert.Equal("lmstudio", code);
+        Assert.True(ok);
+    }
+
+    [Fact]
+    public void AnUnreadableLabel_KeepsTheConfiguredValue_NeverTheFactoryOne()
+    {
+        // The factory default is "ollama" -- the first of the list, and what the original fallback
+        // wrote. An unrecognised label therefore changed BACKEND in silence.
+        var code = SettingsFallback.ResolveSelection(Backends, -1, "LM Studio (remote)", "lmstudio", out var ok);
+
+        Assert.Equal("lmstudio", code);
+        Assert.False(ok);
+        Assert.True(SettingsFallback.WasIgnored("LM Studio (remote)", ok));
+    }
+
+    [Fact]
+    public void TheIndexWins_BecauseATranslationMovesTheLabelAndNotThePosition()
+    {
+        // Translated label (so not found) but a known position: the position decides.
+        var code = SettingsFallback.ResolveSelection(Backends, 1, "LM Studio, translated", "ollama", out var ok);
+
+        Assert.Equal("lmstudio", code);
+        Assert.True(ok);
+    }
+
+    [Fact]
+    public void AnOutOfRangeIndex_FallsBackToTheLabel_ThenToTheConfiguredValue()
+    {
+        Assert.Equal("lmstudio", SettingsFallback.ResolveSelection(Backends, 99, "LM Studio", "ollama", out var byName));
+        Assert.True(byName);
+
+        Assert.Equal("openai-compatible",
+                     SettingsFallback.ResolveSelection(Backends, 99, null, "openai-compatible", out var neither));
+        Assert.False(neither);
+    }
 }
