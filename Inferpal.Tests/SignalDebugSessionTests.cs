@@ -61,7 +61,7 @@ public class SignalDebugSessionTests : IDisposable
     private sealed class FakeDriver : IDisposable
     {
         private readonly CancellationTokenSource _cts = new();
-        private Task? _loop;
+        private Thread? _loop;
 
         internal readonly List<string> SeenOps = [];
         internal readonly List<DebugCommandRequest> Seen = [];
@@ -69,21 +69,27 @@ public class SignalDebugSessionTests : IDisposable
         /// <summary>Delay before answering, used to prove that calls do not interleave.</summary>
         internal TimeSpan Latency { get; set; } = TimeSpan.Zero;
 
+        // ⚠ A DEDICATED thread, not Task.Run: this fake driver has to answer inside the product's
+        // budget (30 s), and a pool loop only answers when the pool schedules it. The GitHub runner
+        // plays two test series in parallel, each with xunit's own parallelism: the pool is saturated
+        // there in bursts, and a 30 s budget was blown for that reason — not because the protocol was
+        // broken. A test that goes red one run in ten no longer guards anything.
         internal void Start(Func<DebugCommandRequest, DebugCommandResponse> handler)
         {
             DebugCommandSignal.MarkReady(Environment.ProcessId);
-            _loop = Task.Run(async () =>
+            _loop = new Thread(() =>
             {
                 while (!_cts.IsCancellationRequested)
                 {
                     var request = DebugCommandSignal.ClaimRequest();
-                    if (request is null) { await Task.Delay(15, _cts.Token); continue; }
+                    if (request is null) { Thread.Sleep(15); continue; }
 
                     lock (Seen) { Seen.Add(request); SeenOps.Add(request.Op); }
-                    if (Latency > TimeSpan.Zero) await Task.Delay(Latency, _cts.Token);
+                    if (Latency > TimeSpan.Zero) Thread.Sleep(Latency);
                     DebugCommandSignal.WriteResponse(handler(request));
                 }
-            }, _cts.Token);
+            }) { IsBackground = true, Name = "fake-debug-driver" };
+            _loop.Start();
         }
 
         /// <summary>Advertises a driver that never answers — the timeout path.</summary>
@@ -92,7 +98,7 @@ public class SignalDebugSessionTests : IDisposable
         public void Dispose()
         {
             _cts.Cancel();
-            try { _loop?.Wait(TimeSpan.FromSeconds(2)); } catch { }
+            try { _loop?.Join(TimeSpan.FromSeconds(2)); } catch { }
             _cts.Dispose();
             DebugCommandSignal.ClearReady();
         }
