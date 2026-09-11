@@ -35,7 +35,79 @@ internal static class Diagnostics
 
     /// <summary>Records a swallowed exception with a short context label. Never throws.</summary>
     internal static void Swallow(string context, Exception ex) =>
-        Record(context, $"{ex.GetType().Name}: {ex.Message}");
+        Record(context, $"{ex.GetType().Name}: {ex.Message}{Where(ex)}");
+
+    /// <summary>
+    /// Where it was thrown, compacted to the three innermost frames — <c>Type.Method ← caller ←
+    /// caller</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Without them an exception whose message says nothing cannot be diagnosed from a support
+    /// bundle: <c>NullReferenceException: Object reference not set to an instance of an object.</c>
+    /// names neither the file, nor the method, nor what was null. Method names come from metadata,
+    /// not from the PDB, so they survive a Release build with no symbols (line numbers do not).
+    ///
+    /// ⚠ Bounded: three frames, and the type name without its namespace. A ring of 200 entries ends
+    /// up pasted into a public issue.
+    /// </remarks>
+    private static string Where(Exception ex)
+    {
+        try
+        {
+            var stack = ex.StackTrace;
+            if (string.IsNullOrEmpty(stack)) return string.Empty;
+
+            var frames = new List<string>(3);
+            foreach (var raw in stack!.Split('\n'))
+            {
+                var frame = CompactFrame(raw);
+                if (frame.Length == 0) continue;
+                frames.Add(frame);
+                if (frames.Count == 3) break;
+            }
+            return frames.Count == 0 ? string.Empty : " @ " + string.Join(" ← ", frames);
+        }
+        catch { return string.Empty; }   // the diagnostics channel never breaks its caller
+    }
+
+    /// <summary>
+    /// <c>   at Inferpal.ToolWindow.SettingsData.&lt;SaveCoreAsync&gt;d__12.MoveNext() in …:line 42</c>
+    /// → <c>SettingsData.SaveCoreAsync</c>. The state machine of an <c>async</c> method is what the
+    /// stack carries most of the time here: rendering it as-is would be unreadable.
+    /// </summary>
+    internal static string CompactFrame(string rawFrame)
+    {
+        var line = rawFrame.Trim();
+        if (line.Length == 0) return string.Empty;
+        if (line.StartsWith("at ", StringComparison.Ordinal)) line = line.Substring(3);
+
+        var inKeyword = line.IndexOf(" in ", StringComparison.Ordinal);
+        if (inKeyword > 0) line = line.Substring(0, inKeyword);
+
+        var paren = line.IndexOf('(');
+        if (paren > 0) line = line.Substring(0, paren);
+
+        // Async state machine: the real name sits between the angle brackets.
+        var open = line.IndexOf('<');
+        var close = line.IndexOf('>', open + 1);
+        if (open >= 0 && close > open)
+        {
+            var method = line.Substring(open + 1, close - open - 1);
+            var owner = line.Substring(0, open).TrimEnd('.', '+');
+            line = owner.Length == 0 ? method : owner + "." + method;
+        }
+
+        // Namespace dropped: Type.Method is what is kept.
+        var lastDot = line.LastIndexOf('.');
+        if (lastDot > 0)
+        {
+            var owner = line.Substring(0, lastDot);
+            var ownerDot = owner.LastIndexOf('.');
+            if (ownerDot >= 0) line = line.Substring(ownerDot + 1);
+        }
+
+        return line.Length > 80 ? line.Substring(0, 80) : line;
+    }
 
     /// <summary>Records a free-form best-effort note. Never throws.</summary>
     internal static void Record(string context, string detail)

@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using Inferpal.Services;
+using System;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -133,4 +134,47 @@ public class DiagnosticsTests : IDisposable
             if (File.Exists(path)) File.Delete(path);
         }
     }
+    // ── Where the exception was thrown ────────────────────────────────────────────
+
+    [Fact]
+    public void ASwallowedException_NamesWhereItWasThrown()
+    {
+        Diagnostics.Clear();
+
+        try { ThrowsForTheTest(); }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.Save", ex); }
+
+        var entry = Assert.Single(Diagnostics.Snapshot());
+        // An NRE message names nothing: without the stack, a field report cannot be
+        // diagnosed. Method names come from metadata, not from the PDB.
+        Assert.Contains("NullReferenceException", entry.Detail);
+        Assert.Contains("ThrowsForTheTest", entry.Detail);
+    }
+
+    private static void ThrowsForTheTest()
+    {
+        string? nothing = null;
+        _ = nothing!.Length;
+    }
+
+    [Fact]
+    public void AnExceptionWithNoStack_StillRecordsItsMessage()
+    {
+        Diagnostics.Clear();
+
+        // Witness: an exception never thrown has no stack, and the line stays useful.
+        Diagnostics.Swallow("Ctx", new InvalidOperationException("boom"));
+
+        var entry = Assert.Single(Diagnostics.Snapshot());
+        Assert.Equal("InvalidOperationException: boom", entry.Detail);
+    }
+
+    [Theory]
+    // An async method carries its state machine: the most frequent shape here.
+    [InlineData("   at Inferpal.ToolWindow.SettingsData.<SaveCoreAsync>d__12.MoveNext()", "SettingsData.SaveCoreAsync")]
+    [InlineData("   at Inferpal.Services.Rag.ProjectIndexService.SaveAsync(CancellationToken ct)", "ProjectIndexService.SaveAsync")]
+    [InlineData("   at Foo.Bar.Baz.Qux() in C:\\dev\\x.cs:line 42", "Baz.Qux")]
+    [InlineData("", "")]
+    public void AFrameIsCompactedToTypeAndMethod(string raw, string expected) =>
+        Assert.Equal(expected, Diagnostics.CompactFrame(raw));
 }
