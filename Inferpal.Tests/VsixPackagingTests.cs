@@ -110,4 +110,71 @@ public class VsixPackagingTests
         Assert.NotNull(dir);
         return dir!.FullName;
     }
+    /// <summary>
+    /// The licence shipped inside the VSIX must carry the GPL v3 text <b>in full</b>.
+    ///
+    /// GPL v3 section 4 requires conveying a copy of the License with the program: a link to
+    /// gnu.org is not one. Until 2026-08-31 the files were a 33-line notice pointing at the text
+    /// by URL - a distribution that did not satisfy the licence it claims, and a GitHub repository
+    /// on which no licence was detected at all.
+    ///
+    /// The rule lives here rather than in a csproj comment because it spans <b>four</b> files that
+    /// must move together, and a rule written in a comment is a rule that drifts: <c>LICENSE</c>
+    /// stays verbatim (that is what GitHub can recognise), <c>NOTICE</c> carries the copyright and
+    /// the section 7 additional terms, and each embedded <c>LICENSE.txt</c> carries both - a VSIX
+    /// exposes a single licence file at install time.
+    /// </summary>
+    [Fact]
+    public void TheShippedLicence_CarriesTheFullGplText_NotJustANotice()
+    {
+        var root = RepoRoot();
+        var licence = File.ReadAllText(Path.Combine(root, "LICENSE"));
+        var notice = File.ReadAllText(Path.Combine(root, "NOTICE"));
+        var embedded = File.ReadAllText(Path.Combine(root, "Inferpal", "LICENSE.txt"));
+        // ⚠ The VS Code VSIX embeds one TOO, and this rule did not look at it: it carried only the
+        // notice and a link to gnu.org - published that way on three operating systems since
+        // 1.5.0. "A VSIX exposes a single licence file" holds for BOTH packages.
+        var embeddedCode = File.ReadAllText(Path.Combine(root, "vscode", "LICENSE.txt"));
+
+        // Three markers from the body of the licence, absent from the notice: if they are there it
+        // is the text and not a summary. A line count alone would prove nothing.
+        foreach (var marker in new[] { "TERMS AND CONDITIONS", "0. Definitions.", "17. Interpretation of Sections 15 and 16." })
+        {
+            Assert.Contains(marker, licence);
+            Assert.Contains(marker, embedded);
+            Assert.Contains(marker, embeddedCode);
+        }
+
+        // LICENSE must stay VERBATIM: adding the project copyright or the section 7 terms to it
+        // loses GitHub's "GPL-3.0" detection, which compares against the reference text.
+        Assert.DoesNotContain("ADDITIONAL TERMS", licence);
+        Assert.StartsWith("                    GNU GENERAL PUBLIC LICENSE", licence);
+
+        // The embedded file is the ONLY one the installing user sees: it must carry the additional
+        // terms AND the licence, in that order.
+        Assert.Contains("ADDITIONAL TERMS", embedded);
+        Assert.Contains("ADDITIONAL TERMS", embeddedCode);
+        Assert.Contains("ADDITIONAL TERMS", notice);
+        Assert.True(
+            embedded.IndexOf("ADDITIONAL TERMS", StringComparison.Ordinal)
+                < embedded.IndexOf("TERMS AND CONDITIONS", StringComparison.Ordinal),
+            "The additional terms must precede the GPL text in the embedded LICENSE.txt.");
+        Assert.True(
+            embeddedCode.IndexOf("ADDITIONAL TERMS", StringComparison.Ordinal)
+                < embeddedCode.IndexOf("TERMS AND CONDITIONS", StringComparison.Ordinal),
+            "Same order in the LICENSE.txt embedded by the VS Code package.");
+
+        // ⚠ And the two Marketplace listings: the one that used to live here (EstaxNet.Inferpal)
+        // was deleted on 2026-09-01, so every package published since embedded a licence whose
+        // attribution points at a 404. Measured on 2026-09-11: 404 for the old one, 200 for both
+        // current ones.
+        foreach (var text in new[] { notice, embedded, embeddedCode })
+        {
+            Assert.Contains("itemName=EstaxNet.inferpal-vs", text, StringComparison.Ordinal);
+            Assert.Contains("itemName=EstaxNet.inferpal-vscode", text, StringComparison.Ordinal);
+            // ORDINAL comparison: only the case tells the dead listing (".Inferpal") apart from
+            // the two live ones (".inferpal-vs", ".inferpal-vscode").
+            Assert.DoesNotContain("itemName=EstaxNet.Inferpal\"", text, StringComparison.Ordinal);
+        }
+    }
 }

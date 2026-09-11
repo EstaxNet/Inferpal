@@ -24,7 +24,8 @@ this one, and also at <https://www.gnu.org/licenses/>.
  portions of the software and in all associated documentation:
 
      "Inferpal - Copyright (C) 2026 EstaxNet (d.houssard@ik.me)
-      https://marketplace.visualstudio.com/items?itemName=EstaxNet.Inferpal"
+      https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs
+      https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"
 
 
 ==============================================================================
