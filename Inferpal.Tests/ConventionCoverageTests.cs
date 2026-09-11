@@ -999,4 +999,61 @@ public class ConventionCoverageTests
         }
         return null; // never closed - the call site reports file + snippet
     }
+    // ── 25. Replacing the conversation resets its counters ────────────────────
+
+    [Fact]
+    public void ReplacingTheConversation_ResetsTheTurnAccounting()
+    {
+        // The counters describe the conversation on screen: the session token total goes into the
+        // header AND into the exported conversation, and the previous turn's prompt size is what
+        // ContextManager decides compaction on. Kept from one conversation to the next, they
+        // describe the one just left - so either a short conversation just opened gets compacted
+        // (turns thrown away for nothing), or a long one is left unbounded and the backend cuts off
+        // its head in silence.
+        //
+        // Only /clear did it; restoring did not. The VS Code host holds the property since it
+        // existed (HostSession.History zeroes LastPromptTokens on assignment): it was the MAIN
+        // front-end that lacked it.
+        //
+        // The subject is not a list of names: it is the site that REPLACES the conversation
+        // (Messages.Clear()), the same structural signature as rule 6.
+        var offenders = new List<string>();
+        var seen      = 0;
+
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                // The CALLS, not the text: the comment documenting the rule mentions
+                // Messages.Clear() and ResetTurnAccounting (rule 6, verified by breaking the site).
+                var calls = method.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList();
+
+                var replaces = calls.Any(i =>
+                    i.Expression is MemberAccessExpressionSyntax
+                    {
+                        Name.Identifier.Text: "Clear",
+                        Expression: IdentifierNameSyntax { Identifier.Text: "Messages" },
+                    });
+                if (!replaces) continue;
+                seen++;
+
+                if (calls.Any(i => i.Expression is IdentifierNameSyntax { Identifier.Text: "ResetTurnAccounting" }))
+                    continue;
+
+                offenders.Add($"{Rel(file)} : {method.Identifier.Text}");
+            }
+        }
+
+        // Witness: with no site replacing the conversation the rule is green while measuring
+        // nothing - this repo's failure mode. There are two: /clear and restoring.
+        Assert.True(seen >= 2, $"Only {seen} replacement site(s) read -- the rule no longer measures anything.");
+
+        Assert.True(offenders.Count == 0,
+            "These methods replace the conversation without resetting its counters: the token total "
+            + "shown and exported, and the measurement the pre-send context check decides on, then "
+            + "describe the previous conversation. Call ResetTurnAccounting():"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
 }

@@ -173,12 +173,7 @@ internal partial class InferpalToolWindowData
             _oodaSummary           = string.Empty;
             _conversationTurnCount = 0;
             _currentSessionName    = string.Empty;   // the archived conversation keeps its own file
-            _sessionTokens         = 0;
-            _lastPromptTokens      = 0;
-            TokenInfo              = string.Empty;
-            HasContextBudget       = false;
-            ContextFillPercent     = 0;
-            ContextBudgetColor     = "#606060";
+            ResetTurnAccounting();
             HasBuildFailedBanner   = false;   // dismiss banner on /clear
         });
     }
@@ -252,6 +247,7 @@ internal partial class InferpalToolWindowData
         _oodaSummary              = string.Empty;
         _conversationTurnCount    = 0;
         _currentSessionName       = sessionName == "last_session" ? string.Empty : sessionName;
+        ResetTurnAccounting();
 
         foreach (var m in messages)
         {

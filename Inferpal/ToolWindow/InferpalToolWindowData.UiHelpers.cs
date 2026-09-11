@@ -48,6 +48,37 @@ internal partial class InferpalToolWindowData
         HasContextBudget     = true;
     }
 
+    /// <summary>
+    /// Resets what was counting the conversation being replaced: the session token total (shown
+    /// <b>and</b> exported), the previous turn's prompt size — the measurement the pre-send context
+    /// check decides on — and the gauge derived from it. Called by <b>both</b> paths that replace
+    /// the conversation, <c>/clear</c> and restoring a session or a branch. VM context.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Only <c>/clear</c> did it. Loading a session therefore kept the counters of the
+    /// conversation just left: the header and the <b>exported</b> conversation announced a token
+    /// total belonging to ANOTHER conversation, and above all <see cref="ContextManager"/> decided
+    /// on a foreign measurement — either compacting a short conversation just opened (a model call
+    /// for nothing, turns thrown away), or failing to bound a long one and letting the backend cut
+    /// off its head, system prompt included, without anything saying so. The VS Code host has held
+    /// this property since it existed (<c>HostSession.History</c> zeroes <c>LastPromptTokens</c> on
+    /// assignment, with that same justification word for word): it was the <b>main</b> front-end
+    /// that lacked it.
+    ///
+    /// ⚠ The build banner is not part of this: it describes the <b>solution</b>, not the
+    /// conversation. <c>/clear</c> dismisses it because that is a reset gesture; a reloaded session
+    /// keeps it because the build is still broken.
+    /// </remarks>
+    private void ResetTurnAccounting()
+    {
+        _sessionTokens     = 0;
+        _lastPromptTokens  = 0;
+        TokenInfo          = string.Empty;
+        ContextFillPercent = 0;
+        ContextBudgetColor = "#606060";
+        UpdateContextBudget();   // → HasContextBudget = false until a prompt has been measured
+    }
+
     // ── Scroll helpers ─────────────────────────────────────────────────────────
 
     // Alternates between two invisible anchor items so SelectedItem always changes.
