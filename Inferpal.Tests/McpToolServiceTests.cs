@@ -62,7 +62,12 @@ public class McpToolServiceTests
                                              IReadOnlyList<TimeSpan>? backoff = null)
         => new(config, new AutoApprove(), factory, backoff ?? FastBackoff);
 
-    private static async Task WaitUntil(Func<bool> cond, string because, int timeoutMs = 2000)
+    // Generous budget, not a tight one: this helper waits for something to HAPPEN, it does
+    // not measure how long it takes - that depends on the machine's load, not on the product.
+    // The GitHub runner plays two test series in parallel, so 2 s are not 2 s there: measured
+    // on 2026-09-11, the net8.0-windows leg went red here while the local suite passed twice.
+    // Lengthening hides nothing (what is broken still fails) and costs nothing.
+    private static async Task WaitUntil(Func<bool> cond, string because, int timeoutMs = 30_000)
     {
         var sw = Stopwatch.StartNew();
         while (!cond() && sw.ElapsedMilliseconds < timeoutMs)
