@@ -79,13 +79,19 @@ public class SignalDebugSessionTests : IDisposable
             DebugCommandSignal.MarkReady(Environment.ProcessId);
             _loop = new Thread(() =>
             {
-                while (!_cts.IsCancellationRequested)
+                var token = _cts.Token;
+                while (!token.IsCancellationRequested)
                 {
                     var request = DebugCommandSignal.ClaimRequest();
-                    if (request is null) { Thread.Sleep(15); continue; }
+                    // ⚠ WAIT ON THE TOKEN, do not sleep: a bare Thread.Sleep cannot be interrupted,
+                    // so a previous test's loop outlives its Dispose and claims the next test's
+                    // request - they share the signal redirection. Measured on 2026-09-12:
+                    // TwoConcurrentCalls saw ONE operation instead of two.
+                    if (request is null) { token.WaitHandle.WaitOne(15); continue; }
 
                     lock (Seen) { Seen.Add(request); SeenOps.Add(request.Op); }
-                    if (Latency > TimeSpan.Zero) Thread.Sleep(Latency);
+                    if (Latency > TimeSpan.Zero) token.WaitHandle.WaitOne(Latency);
+                    if (token.IsCancellationRequested) break;
                     DebugCommandSignal.WriteResponse(handler(request));
                 }
             }) { IsBackground = true, Name = "fake-debug-driver" };
@@ -98,7 +104,7 @@ public class SignalDebugSessionTests : IDisposable
         public void Dispose()
         {
             _cts.Cancel();
-            try { _loop?.Join(TimeSpan.FromSeconds(2)); } catch { }
+            try { _loop?.Join(TimeSpan.FromSeconds(5)); } catch { }
             _cts.Dispose();
             DebugCommandSignal.ClearReady();
         }
