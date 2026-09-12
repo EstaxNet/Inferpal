@@ -82,8 +82,8 @@ internal partial class InferpalToolWindowData
 
             while (!ct.IsCancellationRequested)
             {
-                // Re-point RAG indexing when the user switches to a different solution.
-                CheckSolutionSwitch();
+                // Pin the workspace root (RAG on or off) and follow solution switches.
+                PinWorkspaceRoot();
 
                 var url = _config.BaseUrl;
                 var ok  = await _client.CheckConnectionAsync(url, ct);

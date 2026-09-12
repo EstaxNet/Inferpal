@@ -87,6 +87,8 @@ internal partial class InferpalToolWindowData
             if (userText.StartsWith('/'))
             {
                 await RunOnVMContextAsync(() => Prompt = string.Empty);
+                // Slash commands reach the file tools too (/tdd, /test, /onboard…).
+                PinWorkspaceRoot();
                 await HandleSlashCommandAsync(userText, ct);
                 return;
             }
@@ -113,6 +115,9 @@ internal partial class InferpalToolWindowData
         CancellationToken    ct,
         bool                 clearPrompt = true)
     {
+        // Every turn can reach the file tools: never before the workspace root is pinned.
+        PinWorkspaceRoot();
+
         // ── Pre-flight: heartbeat says Ollama is offline → fail immediately ────────
         // This avoids the 30-minute HTTP timeout; the prompt stays in the input box
         // so the user can retry once Ollama is back up.

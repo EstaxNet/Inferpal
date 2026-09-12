@@ -71,27 +71,27 @@ internal partial class InferpalToolWindowData
     }
 
     /// <summary>
-    /// Detects when the active VS solution (reported by the in-process package via
-    /// <see cref="ActiveSolutionSignal"/>) differs from the directory RAG is currently indexing,
-    /// and re-points indexing at the new solution root. No-ops when RAG is disabled, when no
-    /// solution is reported yet, or when the root is unchanged. Called on each heartbeat tick.
+    /// Pins the workspace root the file tools confine to and the approval overlay is read from —
+    /// RAG on or off — and follows the solution the in-process package reports. Called on each
+    /// heartbeat tick and before each send. The decision lives in <c>WorkspaceRootPin</c>; the
+    /// initial indexing pass stays with <c>StartRagIndexingAsync</c>.
     /// </summary>
-    private void CheckSolutionSwitch()
+    private void PinWorkspaceRoot()
     {
-        if (!_config.RagEnabled) return;
+        try
+        {
+            var current = _indexService.RootDir;
+            var (action, root) = WorkspaceRootPin.Decide(
+                _config.RagEnabled,
+                current,
+                ActiveSolutionSignal.TryReadSolutionDir(),
+                // Walks the file system: only worth it while nothing is pinned.
+                string.IsNullOrEmpty(current) ? FindReliableProjectRoot() : null);
 
-        // Only handle genuine *switches*: the initial index is driven by StartRagIndexingAsync.
-        // RootDir is set synchronously by StartIndexing, so this is empty only before the first pass.
-        if (string.IsNullOrEmpty(_indexService.RootDir)) return;
-
-        var activeDir = ActiveSolutionSignal.TryReadSolutionDir();
-        if (string.IsNullOrEmpty(activeDir)) return;
-
-        if (string.Equals(activeDir, _indexService.RootDir, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        // A different solution is open than the one indexed — re-index the new root.
-        _indexService.StartIndexing(activeDir!);
+            if      (action == RootPinAction.Pin)   _indexService.SetRoot(root!);
+            else if (action == RootPinAction.Index) _indexService.StartIndexing(root!);
+        }
+        catch (Exception ex) { Diagnostics.Swallow("Rag.PinWorkspaceRoot", ex); }
     }
 
     // ── First-Run Auto-Discovery ───────────────────────────────────────────────
