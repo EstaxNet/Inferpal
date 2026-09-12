@@ -41,6 +41,7 @@ internal static class WorkspaceScan
         "obj", "bin", "build", "dist",           // build output
         ".git", ".vs", ".generated",             // VCS / IDE / codegen metadata
         "node_modules", "packages",              // dependency caches
+        ".venv", "venv",                         // Python virtual environments (a fresh one: ~400 .py of pip alone)
         ".inferpal",                             // Inferpal's own state, incl. history/ snapshots
     ];
 

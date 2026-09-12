@@ -22,6 +22,10 @@ public class WorkspaceScanTests
     [InlineData(@"C:\p\dist\a.js")]
     [InlineData(@"C:\p\build\a.o")]
     [InlineData(@"C:\p\.generated\a.cs")]
+    // A virtual environment is never the user's code: a fresh one already holds ~400 .py files of
+    // pip, and the VS Code host indexes the workspace when it opens.
+    [InlineData(@"C:\p\.venv\Lib\site-packages\pip\__init__.py")]
+    [InlineData("/home/p/venv/lib/python3.12/site-packages/pip/__init__.py")]
     [InlineData("/home/p/obj/a.cs")]
     [InlineData("/home/p/.git/config")]
     public void ExcludedDirectories_AreSkipped(string path) =>
