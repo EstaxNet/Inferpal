@@ -290,11 +290,12 @@ internal sealed class ProjectIndexService : IDisposable
 
             // ── Load existing index from disk ─────────────────────────────────
             var loaded = await db.LoadAsync(ct);
+            // Replaced even when this root has nothing on disk yet: the service outlives its root,
+            // and a first pass on a new workspace would otherwise serve the PREVIOUS workspace's
+            // chunks for as long as it runs — and forever when the new one has no source file.
+            await ApplyChunksAsync(loaded, replaceAll: true, ct);
             if (loaded.Count > 0)
-            {
-                await ApplyChunksAsync(loaded, replaceAll: true, ct);
                 Status = $"RAG: {ChunkCount} chunks loaded (verifying changes…)";
-            }
 
             // ── Enumerate source files ────────────────────────────────────────
             // ⚠ What the pass DISCARDED, and why. The per-file catch below said "skip unreadable
@@ -409,7 +410,7 @@ internal sealed class ProjectIndexService : IDisposable
             string[] backlog;
             lock (_pendingRebuild)
             {
-                backlog = [.. _pendingRebuild];
+                backlog = [.. _pendingRebuild.Where(p => BelongsTo(p, rootDir))];
                 _pendingRebuild.Clear();
             }
             if (backlog.Length > 0)
@@ -426,6 +427,30 @@ internal sealed class ProjectIndexService : IDisposable
         finally
         {
             IsIndexing = false;
+        }
+    }
+
+    /// <summary>
+    /// Whether a queued change belongs to <paramref name="root"/>.
+    /// </summary>
+    /// <remarks>
+    /// The service outlives its root: a change queued under the previous workspace, drained by the
+    /// next workspace's pass, was chunked and written into the NEXT workspace's store. The check is
+    /// the sandbox's own (<see cref="Inferpal.Services.Tools.PathSanitizer.AssertUnderRoot"/>): the watcher can report a
+    /// path through a different link than the root was given with (<c>/private/var</c> for
+    /// <c>/var</c> on macOS), and a plain prefix would drop legitimate changes there.
+    /// </remarks>
+    private static bool BelongsTo(string path, string root)
+    {
+        if (string.IsNullOrEmpty(root)) return false;
+        try
+        {
+            Inferpal.Services.Tools.PathSanitizer.AssertUnderRoot(path, root);
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            return false;
         }
     }
 
@@ -459,7 +484,7 @@ internal sealed class ProjectIndexService : IDisposable
 
     private void OnFileChanged(object _, FileSystemEventArgs e) => OnFileChangedCore(e.FullPath);
 
-    private void OnFileChangedCore(string path)
+    internal void OnFileChangedCore(string path)
     {
         // The C# semantic index is cached per workspace, so something has to keep it honest: a
         // saved file can add or remove a reference, and a cache nobody invalidates answers about
@@ -505,13 +530,14 @@ internal sealed class ProjectIndexService : IDisposable
             return;
         }
 
+        var root = RootDir;
         string[] pending;
         lock (_pendingRebuild)
         {
-            pending = [.. _pendingRebuild];
+            pending = [.. _pendingRebuild.Where(p => BelongsTo(p, root))];
             _pendingRebuild.Clear();
         }
-        if (pending.Length == 0 || string.IsNullOrEmpty(RootDir) || _disposed) return;
+        if (pending.Length == 0 || string.IsNullOrEmpty(root) || _disposed) return;
 
         // Capture the token here, while the CTS is guaranteed alive: reading _cts.Token inside the
         // detached task would throw ObjectDisposedException if shutdown won the race, and that
@@ -520,7 +546,6 @@ internal sealed class ProjectIndexService : IDisposable
         try { ct = _cts?.Token ?? CancellationToken.None; }
         catch (ObjectDisposedException) { return; }
 
-        var root = RootDir;
         _ = Task.Run(async () =>
         {
             try { await ReIndexFilesAsync(pending, root, ct); }
