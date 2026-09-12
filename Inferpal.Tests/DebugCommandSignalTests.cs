@@ -81,6 +81,33 @@ public class DebugCommandSignalTests : IDisposable
         Assert.Null(DebugCommandSignal.ClaimRequest());
     }
 
+    /// <summary>
+    /// A request that exists but cannot be read YET — an antivirus scanning a file just created in the
+    /// temp folder, a transient share lock — is left for the next poll. The claim deleted it anyway:
+    /// the call was dropped in silence and the caller waited out its whole budget (two minutes for a
+    /// step). Same rule as <c>ChatBusySignal</c>: never delete what could not be judged.
+    /// </summary>
+    /// <remarks>
+    /// POSIX does not enforce <see cref="FileShare"/>, so there the first claim simply succeeds and
+    /// this test cannot tell the two versions apart; the witness below keeps it honest on Windows.
+    /// </remarks>
+    [Fact]
+    public void ARequestThatCannotBeReadYet_IsClaimedOnTheNextPoll()
+    {
+        DebugCommandSignal.WriteRequest(Request("step_out"));
+
+        DebugCommandRequest? first;
+        using (new FileStream(DebugCommandSignal.RequestPath, FileMode.Open, FileAccess.Read, FileShare.Delete))
+            first = DebugCommandSignal.ClaimRequest();
+
+        // Witness: on Windows the lock really kept the claim from reading.
+        if (OperatingSystem.IsWindows()) Assert.Null(first);
+
+        var claimed = first ?? DebugCommandSignal.ClaimRequest();
+        Assert.NotNull(claimed);
+        Assert.Equal("step_out", claimed!.Op);
+    }
+
     [Fact]
     public void Request_FromDeadProcess_IsNotClaimed()
     {

@@ -196,8 +196,14 @@ internal static class DebugCommandSignal
         try
         {
             var request = SignalFile.TryRead<DebugCommandRequest>(RequestPath);
+            // Unreadable is not absent: a request that could not be read YET (an antivirus scan, a
+            // share lock) stays for the next poll. Deleting it dropped the call in silence while its
+            // caller waited out the whole budget. The writer stages and renames, so a file that is
+            // there is complete; one that is never readable is replaced by the next request or
+            // withdrawn by its caller's timeout.
+            if (request is null) return null;
             SignalFile.Delete(RequestPath);
-            if (request is null || !SignalFile.IsProcessAlive(request.Pid)) return null;
+            if (!SignalFile.IsProcessAlive(request.Pid)) return null;
 
             var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(request.Ts);
             return age >= TimeSpan.Zero && age < MaxAge ? request : null;
