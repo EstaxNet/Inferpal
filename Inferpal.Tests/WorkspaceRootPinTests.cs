@@ -173,6 +173,22 @@ public class WorkspaceRootPinTests
             "These calls can move the workspace root to the host's working directory:\n" + string.Join("\n", offenders));
     }
 
+    /// <summary>
+    /// <c>/permissions</c> reports the overlay from the root the rules are ENFORCED from. It used
+    /// <c>FindProjectRoot()</c>, which never comes back empty: with no solution found it fell back to an
+    /// open file's folder, so the listing could show deny rules that no write respected.
+    /// </summary>
+    [Fact]
+    public void Permissions_IsReportedFromTheEnforcedRoot()
+    {
+        var call = Method("InferpalToolWindowData.PromptHistory.cs", "HandlePermissionsCommandAsync")
+            .DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .FirstOrDefault(i => i.Expression is MemberAccessExpressionSyntax m && m.Name.Identifier.Text == "Permissions");
+        Assert.True(call is not null, "HandlePermissionsCommandAsync no longer calls PermissionsCommandHandler.Permissions.");
+
+        Assert.Equal("_indexService.RootDir", call!.ArgumentList.Arguments[0].Expression.ToString());
+    }
+
     [Theory]
     [InlineData("InferpalToolWindowData.Connection.cs", "StartHeartbeatAsync")]
     [InlineData("InferpalToolWindowData.ChatTurn.cs",   "SendCoreAsync")]

@@ -574,9 +574,12 @@ internal partial class InferpalToolWindowData
     /// <summary>/permissions — the ruleset actually in force, in evaluation order. No
     /// sub-verb: the command only READS, and there is nothing to scaffold (an empty overlay is
     /// written by hand, a per-machine rule is set in the settings).</summary>
+    /// <remarks>Read from the root the rules are ENFORCED from (the approval service's), never from
+    /// <c>FindProjectRoot()</c>: with no solution found that one falls back to an open file's folder,
+    /// and the command then listed an overlay nothing applied.</remarks>
     private async Task HandlePermissionsCommandAsync() =>
         await ShowInfoAsync(Services.Commands.PermissionsCommandHandler.Permissions(
-            FindProjectRoot(), _config.PermissionRules));
+            _indexService.RootDir, _config.PermissionRules));
 
     private async Task HandlePromptsCommandAsync(string[] parts, CancellationToken ct)
     {
