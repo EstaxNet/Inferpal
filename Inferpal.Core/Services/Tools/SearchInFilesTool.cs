@@ -50,7 +50,7 @@ internal class SearchInFilesTool : ITool
         try
         {
             files = Directory.EnumerateFiles(path, filePattern, SearchOption.AllDirectories)
-                             .Where(f => !WorkspaceScan.IsExcludedPath(f));
+                             .Where(f => !WorkspaceScan.IsExcludedPath(f, root ?? path));
         }
         catch (Exception ex)
         {

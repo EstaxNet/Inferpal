@@ -271,7 +271,7 @@ internal sealed class RenameSymbolTool : ITool
                 // User-specified glob: enumerate with that pattern, then filter by extension
                 foreach (var f in Directory.EnumerateFiles(rootDir, filePattern, SearchOption.AllDirectories))
                 {
-                    if (!IsExcluded(f) &&
+                    if (!IsExcluded(f, rootDir) &&
                         CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f)) &&
                         new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes)
                         result.Add(f);
@@ -283,7 +283,7 @@ internal sealed class RenameSymbolTool : ITool
                 {
                     foreach (var f in Directory.EnumerateFiles(rootDir, $"*{ext}", SearchOption.AllDirectories))
                     {
-                        if (!IsExcluded(f) && new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes)
+                        if (!IsExcluded(f, rootDir) && new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes)
                             result.Add(f);
                     }
                 }
@@ -297,7 +297,7 @@ internal sealed class RenameSymbolTool : ITool
     // ⚠ This tool WRITES. Its own copy compared with StringComparison.Ordinal, so `\Obj\` or
     // `\Node_Modules\` slipped through on a case-insensitive filesystem, and it did not exclude
     // `.inferpal` — it could rewrite symbols inside the undo snapshots of the user's own files.
-    private static bool IsExcluded(string path) => WorkspaceScan.IsExcludedPath(path);
+    private static bool IsExcluded(string path, string root) => WorkspaceScan.IsExcludedPath(path, root);
 
     private static bool IsValidIdentifier(string name) =>
         !string.IsNullOrEmpty(name) &&

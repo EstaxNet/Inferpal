@@ -46,22 +46,43 @@ internal static class WorkspaceScan
     ];
 
     /// <summary>
-    /// <c>true</c> when <paramref name="path"/> lies under one of
-    /// <see cref="ExcludedDirNames"/>.
+    /// <c>true</c> when <paramref name="path"/> lies under one of <see cref="ExcludedDirNames"/>
+    /// <b>below</b> <paramref name="root"/>.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// Only the part below the root is judged. The folders above it are where the user keeps the
+    /// workspace, not build output: judged on the absolute path, a workspace under <c>build/</c>,
+    /// <c>dist/</c>, <c>bin/</c> or <c>packages/</c> lost every file to every walker. A path that is
+    /// not under <paramref name="root"/>, or no root at all, is judged whole.
+    /// </para>
+    /// <para>
     /// Case-insensitive and separator-agnostic on purpose: both were forgotten by at least one of
     /// the copies this replaces, and on Windows a case-sensitive comparison is simply wrong.
+    /// </para>
     /// </remarks>
-    public static bool IsExcludedPath(string path)
+    public static bool IsExcludedPath(string path, string? root)
     {
+        var below = BelowRoot(path, root);
         foreach (var dir in ExcludedDirNames)
         {
-            if (path.Contains($@"\{dir}\", StringComparison.OrdinalIgnoreCase) ||
-                path.Contains($"/{dir}/",  StringComparison.OrdinalIgnoreCase))
+            if (below.Contains($@"\{dir}\", StringComparison.OrdinalIgnoreCase) ||
+                below.Contains($"/{dir}/",  StringComparison.OrdinalIgnoreCase))
                 return true;
         }
         return false;
+    }
+
+    // The part of path below root, keeping its leading separator; the whole path when it is not below.
+    private static string BelowRoot(string path, string? root)
+    {
+        if (string.IsNullOrEmpty(root)) return path;
+        var r = root.TrimEnd('\\', '/');
+        return path.Length > r.Length
+               && path.StartsWith(r, StringComparison.OrdinalIgnoreCase)
+               && path[r.Length] is '\\' or '/'
+            ? path[r.Length..]
+            : path;
     }
 
     /// <summary><c>true</c> when a directory should not be descended into, by its own name.</summary>
@@ -87,7 +108,7 @@ internal static class WorkspaceScan
         try
         {
             return Directory.EnumerateFiles(root, pattern, SearchOption.AllDirectories)
-                            .Where(f => !IsExcludedPath(f));
+                            .Where(f => !IsExcludedPath(f, root));
         }
         catch { return []; }
     }

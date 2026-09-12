@@ -35,7 +35,7 @@ internal static class IndexExclusions
     /// </param>
     public static bool IsExcluded(string path, string? root = null, IReadOnlyList<string>? extra = null)
     {
-        if (WorkspaceScan.IsExcludedPath(path)) return true;
+        if (WorkspaceScan.IsExcludedPath(path, root)) return true;
 
         if (extra is null || extra.Count == 0) return false;
 

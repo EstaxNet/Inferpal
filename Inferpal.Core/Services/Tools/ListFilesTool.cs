@@ -41,7 +41,7 @@ internal class ListFilesTool : ITool
         try
         {
             files = Directory.EnumerateFiles(path, pattern, SearchOption.AllDirectories)
-                             .Where(f => !WorkspaceScan.IsExcludedPath(f))
+                             .Where(f => !WorkspaceScan.IsExcludedPath(f, root ?? path))
                              .Take(limit + 1)
                              .Select(f => f[path.Length..].TrimStart('\\', '/'))
                              .ToList();
