@@ -118,8 +118,8 @@ internal sealed partial class HostServer : IDisposable
         var tools    = new ToolRegistry(editor, approval, config, index, client,
                                         new ProjectMapService(editor), mcp, docs, overlay, debug);
 
-        // Pin the file-tool confinement root even when RAG never indexes; the adapter
-        // opts into indexing explicitly via `index/start` (VS Code shows its own gate).
+        // Pin the file-tool confinement root even when RAG never indexes; indexing itself starts
+        // once the session exists (below).
         index.SetRoot(p.RootDir);
 
         // Slot-held: a re-entrant initialize used to dispose MCP/shells/tools under a running
@@ -144,6 +144,12 @@ internal sealed partial class HostServer : IDisposable
             Debug        = debug,
         };
         ResetHistory(_session);
+
+        // As in Visual Studio: with RAG on, the workspace is indexed without being asked. No adapter
+        // calls `index/start`, so without this `search_codebase` and the per-turn auto-context stayed
+        // empty for the whole session.
+        if (config.RagEnabled && !string.IsNullOrEmpty(p.RootDir))
+            index.StartIndexing(p.RootDir);
 
         var caps = client.Capabilities;
         return new InitializeResult(

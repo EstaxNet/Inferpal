@@ -144,7 +144,9 @@ public class HostServerTests
         var fake   = new FakeInferenceProvider();
         var server = new HostServer(_ => fake, () =>
         {
-            var cfg = new InferpalConfig();
+            // RAG off unless a test asks: initialize indexes the workspace when it is on, and the
+            // default root below is the whole temp directory.
+            var cfg = new InferpalConfig { RagEnabled = false };
             configure?.Invoke(cfg);
             return cfg;
         });
@@ -172,6 +174,46 @@ public class HostServerTests
         Assert.False(result.ModelManagement);
         Assert.False(result.Fim);
         Assert.NotEqual("0.0.0", result.HostVersion);
+    }
+
+    /// <summary>
+    /// With RAG on, the workspace is indexed without anyone calling <c>index/start</c> — which no
+    /// adapter does. Before, <c>search_codebase</c> and the per-turn auto-context stayed empty for the
+    /// whole VS Code session unless the user typed <c>/index rebuild</c>.
+    /// </summary>
+    [Fact]
+    public async Task Initialize_WithRagOn_IndexesTheWorkspaceWithoutBeingAsked()
+    {
+        var ragDb = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragdb-{Guid.NewGuid():N}");
+        Inferpal.Services.Rag.RagDatabase.BaseDir = () => ragDb;   // never the user's %AppData% index
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"host-rag-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        await File.WriteAllTextAsync(Path.Combine(root, "Fine.cs"), string.Join('\n',
+            "public class Fine", "{",
+            "    public int One()   => 1;", "    public int Two()   => 2;", "    public int Three() => 3;",
+            "    public int Four()  => 4;", "    public int Five()  => 5;", "    public int Six()   => 6;", "}"));
+        try
+        {
+            using var h = CreateHarness(cfg => cfg.RagEnabled = true);
+            h.Fake.OnEmbedding = _ => [0.1f, 0.2f, 0.3f];
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+            IndexStatusResult status;
+            do
+            {
+                status = await h.Client.InvokeAsync<IndexStatusResult>("index/status");
+                if (status.ChunkCount > 0) break;
+                await Task.Delay(50);
+            } while (DateTime.UtcNow < deadline);
+
+            Assert.True(status.ChunkCount > 0,
+                $"The workspace was never indexed (indexing: {status.IsIndexing}, root: {status.RootDir}).");
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
     }
 
     [Fact]
