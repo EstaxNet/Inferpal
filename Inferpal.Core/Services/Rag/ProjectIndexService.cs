@@ -131,31 +131,19 @@ internal sealed class ProjectIndexService : IDisposable
 
             var gitIgnorePath = Path.Combine(rootDir, ".gitignore");
 
-            // Entries we want to ensure are present
-            var entries = new[]
-            {
-                "# Inferpal AI assistant",
-                ".inferpal/",
-            };
+            // Only the snapshots: the rest of .inferpal/ is meant to be committed (see GitIgnorePatch).
+            // The file's BOM, if any, is kept: this is the user's file, not ours.
+            var bytes    = File.Exists(gitIgnorePath) ? File.ReadAllBytes(gitIgnorePath) : Array.Empty<byte>();
+            var hasBom   = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+            var skip     = hasBom ? 3 : 0;
+            var existing = new System.Text.UTF8Encoding(false).GetString(bytes, skip, bytes.Length - skip);
 
-            string existing = File.Exists(gitIgnorePath)
-                ? File.ReadAllText(gitIgnorePath)
-                : string.Empty;
+            var patched = GitIgnorePatch.Apply(existing);
+            if (patched is null) return;
 
-            // Check if any of our entries are already there
-            if (entries.All(e => e.StartsWith('#') || existing.Contains(e)))
-                return; // all data entries present, nothing to add
-
-            // Append a blank line separator + our block
-            var needsNewline = existing.Length > 0 && !existing.EndsWith('\n');
-            var toAppend = (needsNewline ? Environment.NewLine : string.Empty)
-                         + Environment.NewLine
-                         + string.Join(Environment.NewLine, entries)
-                         + Environment.NewLine;
-
-            File.AppendAllText(gitIgnorePath, toAppend, System.Text.Encoding.UTF8);
+            File.WriteAllText(gitIgnorePath, patched, new System.Text.UTF8Encoding(hasBom));
         }
-        catch { /* best-effort — never crash the indexer */ }
+        catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.PatchGitIgnore", ex); }
     }
 
     /// <summary>

@@ -137,6 +137,11 @@ They layer on top of the per-machine settings above.
 | `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. ⚠ This file is committed, so it arrives with any clone: a command defined here is **always shown for approval before it runs** (asked once per session, and no `allow` rule or *Disable security alerts* can auto-approve it). The built-in validators are unaffected. |
 | `.inferpal/project.json` | **Project profile** — how a repository likes to be worked on. `/onboard init` writes a commented example; `/onboard` shows what it asked for and what it got. |
 
+When it indexes a git repository, Inferpal adds only `.inferpal/history/` — its local snapshots of
+the files the agent overwrote — to `.gitignore`, so these overlays (and `rules/`, `checks/`,
+`prompts/`) stay committable. Earlier versions ignored the whole folder; that block is narrowed the
+next time the repository is indexed. A rule you wrote yourself is never changed.
+
 ### The project profile (`.inferpal/project.json`)
 
 ```jsonc
