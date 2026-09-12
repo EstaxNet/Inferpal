@@ -79,7 +79,12 @@ internal static class DebugCommandSignal
         try
         {
             var marker = SignalFile.TryRead<ReadyMarker>(ReadyPath);
-            return marker is not null && SignalFile.IsProcessAlive(marker.Pid);
+            if (marker is not null) return SignalFile.IsProcessAlive(marker.Pid);
+            // Unreadable is not absent: a marker that is there but could not be read this instant (a
+            // scan, a share lock) keeps the driver ready. Read as "gone", it failed the call at once or
+            // made the wait give up — withdrawing a request the driver may already be executing. The
+            // marker is staged and renamed, and scoped to one devenv, so "there" means a real one.
+            return File.Exists(ReadyPath);
         }
         catch { return false; }
     }

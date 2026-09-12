@@ -56,6 +56,30 @@ public class DebugCommandSignalTests : IDisposable
         Assert.False(DebugCommandSignal.IsDriverReady());
     }
 
+    /// <summary>
+    /// A ready marker that is there but cannot be read this instant still means ready. Read as "no
+    /// driver", it made a call fail at once with "no debugger is reachable" — or, mid-wait, give up
+    /// and withdraw a request the driver may already be executing, then report a failure.
+    /// </summary>
+    /// <remarks>POSIX does not enforce <see cref="FileShare"/>: there the marker simply reads, and the
+    /// witness below only holds on Windows.</remarks>
+    [Fact]
+    public void AReadyMarkerThatCannotBeReadThisInstant_StillMeansReady()
+    {
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+
+        bool ready;
+        using (new FileStream(DebugCommandSignal.ReadyPath, FileMode.Open, FileAccess.Read, FileShare.Delete))
+        {
+            // Witness: on Windows the lock really keeps the marker from being read.
+            if (OperatingSystem.IsWindows())
+                Assert.Null(SignalFile.TryRead<Dictionary<string, object>>(DebugCommandSignal.ReadyPath));
+            ready = DebugCommandSignal.IsDriverReady();
+        }
+
+        Assert.True(ready);
+    }
+
     [Fact]
     public void Driver_OfADeadProcess_IsNotReady()
     {
