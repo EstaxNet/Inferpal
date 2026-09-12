@@ -93,7 +93,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new GetActiveDocumentTool(editor));
         Register(new FetchUrlTool(approval));
         Register(new WebSearchTool(approval));
-        Register(new GetSolutionInfoTool(editor));
+        Register(new GetSolutionInfoTool(editor, () => indexService.RootDir));
         Register(new GetOpenEditorsTool(editor));
         Register(new GetGitStatusTool(editor, () => indexService.RootDir));
         Register(new RunTestsTool(() => indexService.RootDir));
