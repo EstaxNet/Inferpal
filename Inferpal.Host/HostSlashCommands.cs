@@ -451,10 +451,15 @@ internal sealed partial class HostServer
 
                     if (result.Write is { } write)
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(write.Path)!);
-                        await File.WriteAllTextAsync(write.Path, write.Content, System.Text.Encoding.UTF8, cts.Token);
+                        // Shared with the VS window: backup of the replaced version, encoding-preserving write.
+                        var outcome = await OnboardCommandHandler.WriteGeneratedAsync(write, s.Tools.History, cts.Token);
+                        if (!outcome.Written)
+                            return new SlashCommandResult(true, Strings.OnboardContextNotReplaced(write.Path));
                         if (result.RefreshSystemPrompt) RefreshSystemMessage(s);
-                        return new SlashCommandResult(true, result.Message,
+                        var message = outcome.Snapshot.Length > 0
+                            ? result.Message + "\n\n" + Strings.OnboardContextPreviousSaved(write.Path)
+                            : result.Message;
+                        return new SlashCommandResult(true, message,
                             [new SlashEffectDto("openFile", write.Path)]);
                     }
 

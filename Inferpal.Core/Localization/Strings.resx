@@ -722,7 +722,7 @@ ollama serve
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Undo all file changes from the last agent run</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>No agent run with file changes to undo in this session.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
-  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Their previous state was saved first — `/history &lt;file&gt;` restores it.</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Their previous state was saved first — `/restore &lt;full path&gt;` brings a file back.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} file(s) restored, {1} deleted.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Timeline of the last agent run (tools, durations, files)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>
@@ -900,6 +900,8 @@ ollama serve
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Drafting the project context…</value></data>
   <data name="OnboardContextEmpty" xml:space="preserve"><value>The model returned nothing — `.inferpal/context.md` was left untouched.</value></data>
   <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} written ({1} characters). Read it and correct it: it is injected into the system prompt of every turn.</value></data>
+  <data name="OnboardContextPreviousSaved" xml:space="preserve"><value>The previous version was saved first — `/restore {0}` brings it back.</value></data>
+  <data name="OnboardContextNotReplaced" xml:space="preserve"><value>{0} was not replaced: its current version could not be backed up first (see /diagnostics).</value></data>
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>You write the project context file that a local coding assistant reads before every turn. From the repository description below, write a short markdown document with `##` sections: what this project is, its stack and layout and how it is built and tested. Rules, in order of importance: copy every name — file, folder, project, command — exactly as it appears, and never invent one; do not say what a folder or project *does* unless the description shows it, name it and move on; state only what the description supports, with no guessing, no filler and no generic advice; leave out whatever is unknown, a short accurate document beats a long plausible one. 40 lines maximum, no title page, and no code fence around the whole answer. Write it in the language of this instruction.</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Write the project context file now.</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Project profile created at {0}. It ships with the repository: it may recommend, never grant.</value></data>

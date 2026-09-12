@@ -710,7 +710,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Annulla tutte le modifiche ai file dell'ultimo run dell'agente</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Nessun run dell'agente con modifiche ai file da annullare in questa sessione.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questa sessione ({0}):</value></data>
-  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Il loro stato precedente è stato salvato prima — `/history &lt;file&gt;` lo ripristina.</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Il loro stato precedente è stato salvato prima — `/restore &lt;percorso completo&gt;` ripristina un file.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Ultimo run annullato — {0} file ripristinato/i, {1} eliminato/i.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Cronologia dell'ultimo run dell'agente (strumenti, durate, file)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Nessun run dell'agente con chiamate a strumenti registrato in questa sessione.</value></data>
@@ -896,6 +896,8 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Redazione del contesto di progetto…</value></data>
   <data name="OnboardContextEmpty" xml:space="preserve"><value>Il modello non ha restituito nulla — `.inferpal/context.md` non è stato toccato.</value></data>
   <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} scritto ({1} caratteri). Leggilo e correggilo: viene iniettato nel prompt di sistema a ogni turno.</value></data>
+  <data name="OnboardContextPreviousSaved" xml:space="preserve"><value>La versione precedente è stata salvata prima — `/restore {0}` la ripristina.</value></data>
+  <data name="OnboardContextNotReplaced" xml:space="preserve"><value>{0} non è stato sostituito: la versione attuale non ha potuto essere salvata prima (vedi /diagnostics).</value></data>
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>Scrivi il file di contesto di progetto che un assistente di codice interamente locale legge prima di ogni turno. Dalla descrizione del repository qui sotto, redigi un breve documento markdown con sezioni `##`: che cos'è questo progetto, il suo stack e la sua organizzazione e come si compila e si testa. Regole, in ordine di importanza: copia ogni nome — file, cartella, progetto, comando — esattamente come appare, e non inventarne alcuno; non dire che cosa una cartella o un progetto *fa* se la descrizione non lo mostra, nominalo e prosegui; afferma solo ciò che la descrizione sostiene, senza supposizioni, riempitivi o consigli generici; ometti ciò che non sai, un documento breve e corretto vale più di uno lungo e plausibile. Massimo 40 righe, senza frontespizio e senza blocco di codice attorno all'intera risposta. Scrivilo nella lingua di questa istruzione.</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Scrivi ora il file di contesto di progetto.</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Profilo di progetto creato in {0}. Viaggia con il repository: può consigliare, mai concedere.</value></data>

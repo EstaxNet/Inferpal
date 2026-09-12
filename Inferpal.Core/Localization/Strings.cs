@@ -1107,6 +1107,10 @@ internal static class Strings
     public static string OnboardContextEmpty          => Get(nameof(OnboardContextEmpty));
     public static string OnboardContextGenerated(string path, int chars) =>
         string.Format(Get(nameof(OnboardContextGenerated)), path, chars);
+    public static string OnboardContextPreviousSaved(string path) =>
+        string.Format(Get(nameof(OnboardContextPreviousSaved)), path);
+    public static string OnboardContextNotReplaced(string path) =>
+        string.Format(Get(nameof(OnboardContextNotReplaced)), path);
     public static string OnboardContextSystemPrompt   => Get(nameof(OnboardContextSystemPrompt));
     public static string OnboardContextUserPrompt(string brief) =>
         string.Format(Get(nameof(OnboardContextUserPrompt)), brief);

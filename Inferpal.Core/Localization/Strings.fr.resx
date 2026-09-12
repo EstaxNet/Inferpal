@@ -718,7 +718,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Annule toutes les modifs de fichiers du dernier run agent</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Aucun run agent avec des modifications de fichiers à annuler dans cette session.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Runs suivis cette session ({0}) :</value></data>
-  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Leur état précédent a été sauvegardé avant — `/history &lt;fichier&gt;` le restaure.</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Leur état précédent a été sauvegardé avant — `/restore &lt;chemin complet&gt;` rend un fichier.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Dernier run annulé — {0} fichier(s) restauré(s), {1} supprimé(s).</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Chronologie du dernier run agent (outils, durées, fichiers)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Aucun run agent avec appels d'outils enregistré dans cette session.</value></data>
@@ -896,6 +896,8 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Rédaction du contexte de projet…</value></data>
   <data name="OnboardContextEmpty" xml:space="preserve"><value>Le modèle n'a rien renvoyé — `.inferpal/context.md` n'a pas été touché.</value></data>
   <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} écrit ({1} caractères). Lis-le et corrige-le : il est injecté dans le prompt système à chaque tour.</value></data>
+  <data name="OnboardContextPreviousSaved" xml:space="preserve"><value>La version précédente a été sauvegardée avant — `/restore {0}` la rend.</value></data>
+  <data name="OnboardContextNotReplaced" xml:space="preserve"><value>{0} n'a pas été remplacé : sa version actuelle n'a pas pu être sauvegardée avant (voir /diagnostics).</value></data>
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>Tu rédiges le fichier de contexte de projet qu'un assistant de code 100 % local lit avant chaque tour. À partir de la description de dépôt ci-dessous, écris un court document markdown avec des sections `##` : ce qu'est ce projet, sa stack et son organisation et comment il se construit et se teste. Règles, par ordre d'importance : recopie chaque nom — fichier, dossier, projet, commande — exactement tel qu'il apparaît, et n'en invente aucun ; ne dis pas ce qu'un dossier ou un projet *fait* si la description ne le montre pas, nomme-le et passe à la suite ; n'affirme que ce que la description soutient, sans supposition, sans remplissage et sans conseil générique ; laisse de côté ce que tu ignores, un document court et juste vaut mieux qu'un long document plausible. 40 lignes maximum, sans page de titre et sans bloc de code autour de toute la réponse. Rédige-le dans la langue de cette consigne.</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Rédige maintenant le fichier de contexte de projet.</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Profil de projet créé dans {0}. Il voyage avec le dépôt : il peut recommander, jamais accorder.</value></data>

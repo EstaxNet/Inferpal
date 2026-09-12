@@ -710,7 +710,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SlashHintUndoRun" xml:space="preserve"><value>直近のエージェント実行によるファイル変更をすべて元に戻す</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>このセッションには元に戻せるファイル変更を伴うエージェント実行がありません。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>このセッションで追跡された実行（{0}）：</value></data>
-  <data name="UndoRunSavedFirst" xml:space="preserve"><value>直前の状態は先に保存されています — `/history &lt;ファイル&gt;` で復元できます。</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>直前の状態は先に保存されています — `/restore &lt;フルパス&gt;` でファイルを復元できます。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 直近の実行を取り消しました — 復元 {0} 件、削除 {1} 件。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>直近のエージェント実行のタイムライン（ツール・所要時間・ファイル）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>このセッションにはツール呼び出しのあるエージェント実行が記録されていません。</value></data>
@@ -896,6 +896,8 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>プロジェクトコンテキストを作成中…</value></data>
   <data name="OnboardContextEmpty" xml:space="preserve"><value>モデルが何も返しませんでした — `.inferpal/context.md` は変更していません。</value></data>
   <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} を書き出しました ({1} 文字)。読んで直してください: 毎ターンのシステムプロンプトに挿入されます。</value></data>
+  <data name="OnboardContextPreviousSaved" xml:space="preserve"><value>以前の版は先に保存されています — `/restore {0}` で復元できます。</value></data>
+  <data name="OnboardContextNotReplaced" xml:space="preserve"><value>{0} は置き換えていません: 現在の版を先に保存できませんでした (/diagnostics を参照)。</value></data>
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>あなたは、完全ローカルのコーディングアシスタントが毎ターンの前に読むプロジェクトコンテキストファイルを書きます。以下のリポジトリ説明から、`##` 見出しを使った短い markdown 文書を書いてください: このプロジェクトが何か、スタックと構成、ビルドとテストの方法。重要な順のルール: ファイル・フォルダー・プロジェクト・コマンドの名前は表記どおりに写し、決して創作しないこと。説明が示していない限り、フォルダーやプロジェクトが何を*する*かは書かず、名前を挙げるにとどめること。説明が裏付けることだけを述べ、推測・水増し・一般論は書かないこと。分からないことは省くこと——短く正確な文書は、長くもっともらしい文書に勝ります。最大 40 行、表紙なし、回答全体をコードフェンスで囲まないこと。 この指示と同じ言語で書いてください。</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;ではプロジェクトコンテキストファイルを書いてください。</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>プロジェクトプロファイルを {0} に作成しました。リポジトリと共に配布されます: 推奨はできますが、権限は与えられません。</value></data>

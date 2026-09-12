@@ -526,13 +526,20 @@ internal partial class InferpalToolWindowData
         if (result.NewDefaultModel is { } model)
             await RunOnVMContextAsync(() => ActiveModelLabel = model);
 
+        var message = result.Message;
         if (result.Write is { } write)
         {
             try
             {
-                var dir = Path.GetDirectoryName(write.Path);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-                await File.WriteAllTextAsync(write.Path, write.Content, System.Text.Encoding.UTF8, ct);
+                // Shared with the host: backup of the replaced version, encoding-preserving write.
+                var outcome = await Services.Commands.OnboardCommandHandler.WriteGeneratedAsync(write, _tools.History, ct);
+                if (!outcome.Written)
+                {
+                    await ShowInfoAsync(Strings.OnboardContextNotReplaced(write.Path));
+                    return;
+                }
+                if (outcome.Snapshot.Length > 0)
+                    message += "\n\n" + Strings.OnboardContextPreviousSaved(write.Path);
                 await _vs.Documents().OpenTextDocumentAsync(new Uri(write.Path), ct);
             }
             catch (OperationCanceledException) { throw; }
@@ -552,7 +559,7 @@ internal partial class InferpalToolWindowData
                     _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
             });
 
-        if (result.Message is { } msg) await ShowInfoAsync(msg);
+        if (message is { } msg) await ShowInfoAsync(msg);
     }
 
     private async Task HandleRulesCommandAsync(string[] parts, CancellationToken ct)

@@ -708,7 +708,7 @@ ollama serve
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Отменить все изменения файлов из последнего запуска агента</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>В этой сессии нет запуска агента с изменениями файлов для отмены.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Отслеживаемые запуски в этой сессии ({0}):</value></data>
-  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Их предыдущее состояние сохранено заранее — `/history &lt;файл&gt;` восстановит его.</value></data>
+  <data name="UndoRunSavedFirst" xml:space="preserve"><value>Их предыдущее состояние сохранено заранее — `/restore &lt;полный путь&gt;` восстановит файл.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Последний запуск отменён — восстановлено файлов: {0}, удалено: {1}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Хронология последнего запуска агента (инструменты, длительность, файлы)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>В этой сессии не записано ни одного запуска агента с вызовами инструментов.</value></data>
@@ -896,6 +896,8 @@ ollama serve
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Составление контекста проекта…</value></data>
   <data name="OnboardContextEmpty" xml:space="preserve"><value>Модель ничего не вернула — `.inferpal/context.md` остался нетронутым.</value></data>
   <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ {0} записан ({1} символов). Прочитайте и поправьте его: он попадает в системный промпт каждого хода.</value></data>
+  <data name="OnboardContextPreviousSaved" xml:space="preserve"><value>Предыдущая версия сохранена заранее — `/restore {0}` восстановит её.</value></data>
+  <data name="OnboardContextNotReplaced" xml:space="preserve"><value>{0} не заменён: текущую версию не удалось сохранить заранее (см. /diagnostics).</value></data>
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>Вы пишете файл контекста проекта, который полностью локальный помощник по коду читает перед каждым ходом. По описанию репозитория ниже составьте короткий документ в markdown с разделами `##`: что это за проект, его стек и структура и как он собирается и тестируется. Правила по важности: переписывайте каждое имя — файла, папки, проекта, команды — ровно так, как оно указано, и не выдумывайте новых; не пишите, что папка или проект *делает*, если описание этого не показывает — назовите и идите дальше; утверждайте только то, что подтверждается описанием, без догадок, воды и общих советов; неизвестное опускайте — короткий точный документ лучше длинного правдоподобного. Не более 40 строк, без титульной страницы и без блока кода вокруг всего ответа. Пишите его на языке этой инструкции.</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;Теперь напишите файл контекста проекта.</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>Профиль проекта создан в {0}. Он путешествует вместе с репозиторием: может рекомендовать, но никогда — разрешать.</value></data>
