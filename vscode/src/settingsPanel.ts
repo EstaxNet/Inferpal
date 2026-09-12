@@ -58,7 +58,13 @@ export class SettingsPanel {
       'inferpal.settings',
       vscode.l10n.t('Inferpal Settings'),
       vscode.ViewColumn.Active,
-      { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')] },
+      {
+        enableScripts: true,
+        localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+        // The form writes only on Save: a hidden editor tab's webview is destroyed otherwise, and
+        // coming back reloads it from the config — unsaved edits gone, without a word.
+        retainContextWhenHidden: true,
+      },
     );
     SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, hasConversation, onSaved, log);
   }

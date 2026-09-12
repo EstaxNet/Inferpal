@@ -29,9 +29,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private models: string[] = [];
   private model = '';
   private busy = false;
+  /** Step-by-step pause in force: its banner holds the only Resume button, and the transcript does
+   *  not carry it, so hydrate posts it again. */
+  private stepPaused = false;
   private streamText = '';
   private approvalSeq = 0;
-  private readonly pendingApprovals = new Map<number, (answer: number) => void>();
+  /** The message is kept with the answer: a rehydration rebuilds the webview from the transcript,
+   *  which carries no card, so every card still waiting is posted again (see hydrate). */
+  private readonly pendingApprovals = new Map<number, { message: string; resolve: (answer: number) => void }>();
 
   // ── VS-parity state pushed to the webview ───────────────────────────────────
   private status: WvBackendStatus | null = null;
@@ -106,7 +111,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     }
     const id = ++this.approvalSeq;
-    const answer = new Promise<number>((resolve) => this.pendingApprovals.set(id, resolve));
+    const answer = new Promise<number>((resolve) => this.pendingApprovals.set(id, { message, resolve }));
     // §27.5 — turn cancelled while the card is up: deny, and retire the card in the webview so
     // it cannot be answered into a run that no longer exists (ghost card).
     const cancelSub = token?.onCancellationRequested(() => this.dismissApproval(id));
@@ -119,13 +124,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private dismissApproval(id: number): void {
-    const resolve = this.pendingApprovals.get(id);
-    if (!resolve) {
+    const pending = this.pendingApprovals.get(id);
+    if (!pending) {
       return; // already answered
     }
     this.pendingApprovals.delete(id);
     this.post({ type: 'approvalDismiss', id });
-    resolve(0);
+    pending.resolve(0);
   }
 
   /** New conversation: clears both the host history and the local transcript. */
@@ -208,8 +213,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.streamText = '';
         this.post({ type: 'streamReset' });
       },
-      onStepPaused: () => this.post({ type: 'stepPaused' }),
-      onStepResumed: () => this.post({ type: 'stepResumed' }),
+      onStepPaused: () => {
+        this.stepPaused = true;
+        this.post({ type: 'stepPaused' });
+      },
+      onStepResumed: () => {
+        this.stepPaused = false;
+        this.post({ type: 'stepResumed' });
+      },
       onTaskFinished: (text) => {
         // A persistent assistant bubble, like the VS front-end — not an ephemeral status line
         // wiped by the next setBusy (pre-1.6.0 architecture review, §3.6).
@@ -635,9 +646,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       case 'approvalAnswer': {
-        const resolve = this.pendingApprovals.get(msg.id);
+        const pending = this.pendingApprovals.get(msg.id);
         this.pendingApprovals.delete(msg.id);
-        resolve?.(msg.answer);
+        pending?.resolve(msg.answer);
         return;
       }
       case 'mentionQuery': {
@@ -892,10 +903,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private denyAllPending(): void {
-    for (const resolve of this.pendingApprovals.values()) {
-      resolve(0);
+    for (const pending of this.pendingApprovals.values()) {
+      pending.resolve(0);
     }
     this.pendingApprovals.clear();
+  }
+
+  /** Denies every card still waiting AND retires it in the webview, so none stays clickable. */
+  private dismissAllPending(): void {
+    for (const id of [...this.pendingApprovals.keys()]) {
+      this.dismissApproval(id);
+    }
   }
 
   private async send(text: string): Promise<void> {
@@ -1126,6 +1144,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       });
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {
+      // The request itself failed (host crashed or restarted): no one waits for these cards any more.
+      this.dismissAllPending();
       const message = err instanceof Error ? err.message : String(err);
       this.append({ role: 'error', text: message, timestamp: ChatViewProvider.now() });
       this.busy = false;
@@ -1140,6 +1160,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       });
     } finally {
       this.busy = false;
+      // The webview removes the pause banner on stepResumed only: a turn cancelled while paused
+      // (or whose host died) would otherwise keep a Resume button that resumes nothing.
+      if (this.stepPaused) {
+        this.stepPaused = false;
+        this.post({ type: 'stepResumed' });
+      }
       this.autoSaveLast();
     }
   }
@@ -1340,6 +1366,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       mentionCategories: this.mentionCats,
       chips: this.pendingAttachments.map((a) => ({ name: a.name })),
     });
+    // The transcript carries no card and the webview just rebuilt from it: a card still waiting
+    // would vanish while the host keeps waiting for its answer, with no timeout.
+    for (const [id, pending] of this.pendingApprovals) {
+      this.post({ type: 'approval', id, message: pending.message });
+    }
+    if (this.busy && this.stepPaused) {
+      this.post({ type: 'stepPaused' });
+    }
   }
 
   private post(message: unknown): void {
