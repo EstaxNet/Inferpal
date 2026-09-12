@@ -197,12 +197,9 @@ public class UpdateMemoryKeywordTests
         var mem  = Path.Combine(root, ".inferpal", "memory.md");
         Directory.CreateDirectory(Path.GetDirectoryName(mem)!);
 
-        var previous = Directory.GetCurrentDirectory();
-        Directory.SetCurrentDirectory(root);
         try { return await body(root, mem); }
         finally
         {
-            Directory.SetCurrentDirectory(previous);
             try { Directory.Delete(root, recursive: true); } catch { }
         }
     }

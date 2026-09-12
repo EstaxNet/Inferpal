@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services.Execution;
+using Inferpal.Services.Signals;
 
 namespace Inferpal.Services.Tools;
 
@@ -87,16 +88,15 @@ internal class UpdateMemoryTool : ITool
 
         var content = args.Str("content") ?? string.Empty;
 
-        var projectRoot = FindProjectRoot();
-        if (projectRoot is null)
+        var projectRoot = ResolveProjectRoot();
+        if (string.IsNullOrEmpty(projectRoot))
             return Strings.UpdateMemoryNoProject;
 
         var ollamaDir = Path.Combine(projectRoot, ".inferpal");
         var memPath   = Path.Combine(ollamaDir, "memory.md");
 
-        // The project root is found by walking up from the CWD and from open editor paths, so it
-        // is a guess — one that can land outside the workspace. Every other writing tool is
-        // confined; this one was not.
+        // Confined like every other writing tool: without a known workspace root the location comes
+        // from the locator's fallbacks, which are a best guess.
         PathSanitizer.AssertUnderRoot(memPath, _getWorkspaceRoot());
 
         // Asked on the path, like every other file tool, so a rule or a force-prompt written for
@@ -142,33 +142,24 @@ internal class UpdateMemoryTool : ITool
         return Strings.UpdateMemoryOk(memPath, newContent.Length);
     }
 
-    // Walks up from CWD and then from open editor files, looking for a .sln or .inferpal dir.
-    // CWD is often wrong in an out-of-process VS extension, hence the open-path fallback.
-    private string? FindProjectRoot()
-    {
-        // 1. Walk up from CWD
-        var dir = Directory.GetCurrentDirectory();
-        for (int i = 0; i < 8; i++)
-        {
-            if (SolutionFiles.DirectoryHasSolution(dir)) return dir;
-            if (Directory.Exists(Path.Combine(dir, ".inferpal")))                        return dir;
-            var parent = Directory.GetParent(dir)?.FullName;
-            if (parent is null || parent == dir) break;
-            dir = parent;
-        }
-
-        // 2. Walk up from any open editor file
-        foreach (var p in _editor.GetOpenDocumentPaths())
-        {
-            var d = Path.GetDirectoryName(p);
-            for (int i = 0; i < 8 && !string.IsNullOrEmpty(d); i++)
-            {
-                if (SolutionFiles.DirectoryHasSolution(d)) return d;
-                if (Directory.Exists(Path.Combine(d, ".inferpal")))                        return d;
-                d = Directory.GetParent(d)?.FullName;
-            }
-        }
-
-        return null;
-    }
+    /// <summary>
+    /// The root <c>memory.md</c> lives under — the SAME one the system prompt reads it from.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The prompt reads <c>&lt;projectRoot&gt;/.inferpal/memory.md</c> with the root each front-end
+    /// resolves: the workspace root in the host (which is also the index root), and
+    /// <see cref="ProjectRootLocator.Locate"/> in the Visual Studio window. A search of its own —
+    /// up from the working directory, then from open files — lets the writer and the reader
+    /// disagree: in a VS Code workspace with no <c>.sln</c> it climbed into the PARENT folders
+    /// (refused as outside the workspace, or "no project"), from an open file it could stop at a
+    /// sub-folder the prompt never reads, and in Visual Studio with no document open it found
+    /// nothing at all while a solution was open.
+    /// </remarks>
+    private string ResolveProjectRoot() =>
+        _getWorkspaceRoot() is { Length: > 0 } root
+            ? root
+            : new ProjectRootLocator().Locate(
+                _editor.GetOpenDocumentPaths(),
+                ActiveSolutionSignal.TryReadSolutionDir(),
+                Directory.GetCurrentDirectory());
 }
