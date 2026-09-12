@@ -205,7 +205,12 @@ internal partial class InferpalToolWindowData
                 return;
             }
 
-            if (session is null || session.Messages.Count == 0)
+            // The auto-save slot is one file for every project and both editors: another workspace's
+            // conversation is not this one's to restore. The applied root may not be pinned yet at
+            // start-up, hence the solution-anchored fallback.
+            var here = string.IsNullOrEmpty(_indexService.RootDir) ? FindReliableProjectRoot() : _indexService.RootDir;
+            if (session is null || session.Messages.Count == 0
+                || (name == "last_session" && !SessionManager.AutoSaveBelongsHere(session, here)))
             {
                 await RunOnVMContextAsync(() =>
                 {

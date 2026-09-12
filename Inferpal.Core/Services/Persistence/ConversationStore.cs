@@ -43,12 +43,14 @@ internal class ConversationStore
     /// Saves a named session (UI messages + API history).
     /// <param name="parent">Session this one was forked from (<c>/branch</c>); null for a root session.</param>
     /// <param name="forkTurn">Turn the fork happened at, meaningful only with <paramref name="parent"/>.</param>
+    /// <param name="workspaceRoot">Workspace the conversation belongs to; recorded for the auto-save slot.</param>
     public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct,
-                                string? parent = null, int? forkTurn = null)
+                                string? parent = null, int? forkTurn = null, string? workspaceRoot = null)
     {
         Directory.CreateDirectory(_dir);
         var file = Path.Combine(_dir, $"{Sanitize(sessionName)}.json");
-        var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn);
+        var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn,
+                                      string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot);
 
         // Write-then-rename: a crash (or a full disk) mid-write must not leave a truncated
         // session behind. It matters more since /branch rewrites the parent file on every fork —
@@ -60,8 +62,8 @@ internal class ConversationStore
     }
 
     /// Auto-saves the current session to "last_session.json".
-    public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct) =>
-        SaveAsync("last_session", messages, ct);
+    public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct, string? workspaceRoot = null) =>
+        SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot);
 
     /// Loads a session by file name (without extension).
     public async Task<SessionData?> LoadAsync(string sessionName, CancellationToken ct)
@@ -174,12 +176,15 @@ internal class ConversationStore
 }
 
 /// <summary>A session file. <c>Parent</c>/<c>ForkTurn</c> are set only on a branch
-/// (<c>/branch</c>); older files simply have neither, which keeps the format backward compatible.</summary>
+/// (<c>/branch</c>); older files simply have neither, which keeps the format backward compatible.
+/// <c>WorkspaceRoot</c> is recorded on the auto-save slot only — see
+/// <see cref="SessionManager.AutoSaveBelongsHere"/>.</summary>
 internal record SessionData(
-    [property: JsonPropertyName("saved_at")]  DateTime SavedAt,
-    [property: JsonPropertyName("messages")]  List<SavedMessage> Messages,
-    [property: JsonPropertyName("parent")]    string? Parent   = null,
-    [property: JsonPropertyName("fork_turn")] int?    ForkTurn = null);
+    [property: JsonPropertyName("saved_at")]       DateTime SavedAt,
+    [property: JsonPropertyName("messages")]       List<SavedMessage> Messages,
+    [property: JsonPropertyName("parent")]         string? Parent        = null,
+    [property: JsonPropertyName("fork_turn")]      int?    ForkTurn      = null,
+    [property: JsonPropertyName("workspace_root")] string? WorkspaceRoot = null);
 
 internal record SavedMessage(
     [property: JsonPropertyName("role")]      string  Role,

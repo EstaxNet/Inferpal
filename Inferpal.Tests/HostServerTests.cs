@@ -484,6 +484,51 @@ public class HostServerTests
 
     // ── sessions ───────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// The auto-save is one file for every project: VS Code reloads it at start-up, and it must come
+    /// back only in the workspace that wrote it.
+    /// </summary>
+    [Fact]
+    public async Task TheAutoSave_IsNotRestoredIntoAnotherWorkspace()
+    {
+        var rootA = Directory.CreateTempSubdirectory("inferpal-autosave-a-").FullName;
+        var rootB = Directory.CreateTempSubdirectory("inferpal-autosave-b-").FullName;
+        try
+        {
+            using (var a = CreateHarness())
+            {
+                await a.InitializeAsync(rootDir: rootA).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                await a.Client.InvokeWithParameterObjectAsync<object?>("session/save", new
+                {
+                    name     = "last_session",
+                    messages = new object[] { new { role = "user", content = "about project A" } },
+                }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            }
+
+            using (var b = CreateHarness())
+            {
+                await b.InitializeAsync(rootDir: rootB).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                var elsewhere = await b.Client.InvokeWithParameterObjectAsync<SessionLoadResult?>(
+                    "session/load", new { name = "last_session" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                Assert.Null(elsewhere);
+            }
+
+            // Witness: the same workspace gets its conversation back.
+            using var again = CreateHarness();
+            await again.InitializeAsync(rootDir: rootA).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            var home = await again.Client.InvokeWithParameterObjectAsync<SessionLoadResult?>(
+                "session/load", new { name = "last_session" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.NotNull(home);
+            Assert.Equal("about project A", home!.Messages[0].Content);
+        }
+        finally
+        {
+            new Inferpal.Services.Persistence.ConversationStore().Delete("last_session");
+            try { Directory.Delete(rootA, true); } catch { }
+            try { Directory.Delete(rootB, true); } catch { }
+        }
+    }
+
     [Fact]
     public async Task Session_SaveLoadDelete_RoundTripsAndRebuildsHistory()
     {

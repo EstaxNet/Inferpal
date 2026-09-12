@@ -593,7 +593,8 @@ internal sealed partial class HostServer : IDisposable
         var s = Session();
         // The auto-save slot is not "the file this conversation lives in" (see CurrentSessionName).
         if (p.Name != "last_session") s.CurrentSessionName = p.Name;
-        return s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct);
+        return s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
+                                 workspaceRoot: p.Name == "last_session" ? s.RootDir : null);
     }
 
     /// <summary>Wire message → stored message (empty optional fields stay out of the JSON).</summary>
@@ -624,6 +625,9 @@ internal sealed partial class HostServer : IDisposable
             var s    = Session();
             var data = await s.Store.LoadAsync(p.Name, token);
             if (data is null) return null;
+            // The auto-save slot is one file for every project: another workspace's conversation
+            // is not this one's to restore.
+            if (p.Name == "last_session" && !SessionManager.AutoSaveBelongsHere(data, s.RootDir)) return null;
 
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
             s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;

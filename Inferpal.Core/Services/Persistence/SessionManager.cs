@@ -103,6 +103,35 @@ internal static class SessionManager
         return history;
     }
 
+    /// <summary>
+    /// Whether the auto-save slot may be restored into the workspace open now.
+    /// </summary>
+    /// <remarks>
+    /// <c>last_session</c> is ONE file under <c>%AppData%</c>, shared by both editors and every
+    /// project: restored blindly, it brings another project's conversation — its transcript, and the
+    /// tool results rebuilt into the model's history — into this one. It is refused only when both
+    /// roots are known and differ: a file saved before the root was recorded, or a front-end that
+    /// does not know its root yet, keeps the continuity it had.
+    /// </remarks>
+    public static bool AutoSaveBelongsHere(SessionData saved, string? currentRoot)
+    {
+        if (string.IsNullOrWhiteSpace(saved.WorkspaceRoot) || string.IsNullOrWhiteSpace(currentRoot))
+            return true;
+
+        return string.Equals(NormalizeRoot(saved.WorkspaceRoot), NormalizeRoot(currentRoot),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    }
+
+    private static string NormalizeRoot(string root)
+    {
+        try { root = System.IO.Path.GetFullPath(root); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or System.IO.PathTooLongException)
+        {
+            // An unreadable path is compared as written: it can only differ from a real root.
+        }
+        return root.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+    }
+
     // ── Title & file naming ───────────────────────────────────────────────────
 
     /// <summary>System prompt for the LLM-generated session title (the call stays in the VM).</summary>
