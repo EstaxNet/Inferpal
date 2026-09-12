@@ -909,6 +909,7 @@ internal static class Strings
     public static string SlashHintReplay                     => Get(nameof(SlashHintReplay));
     public static string ReplayNone                          => Get(nameof(ReplayNone));
     public static string ReplayHeader(string time, int tools, int files) => string.Format(Get(nameof(ReplayHeader)), time, tools, files);
+    public static string ReplayFileUnprotected              => Get(nameof(ReplayFileUnprotected));
     public static string ReplayFilesHeader                   => Get(nameof(ReplayFilesHeader));
 
     // ── /xray command ───────────────────────────────────────────────────────────

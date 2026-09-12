@@ -715,6 +715,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SlashHintReplay" xml:space="preserve"><value>直近のエージェント実行のタイムライン（ツール・所要時間・ファイル）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>このセッションにはツール呼び出しのあるエージェント実行が記録されていません。</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 エージェント実行 {0} — ツール呼び出し {1} 件、変更ファイル {2} 件</value></data>
+  <data name="ReplayFileUnprotected" xml:space="preserve"><value>スナップショットなし — `/undo-run` では元に戻せません</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**変更されたファイル:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>モデルに送信されるコンテキストのトークン内訳</value></data>
   <data name="SlashHintBench" xml:space="preserve"><value>インストール済みモデルのローカルベンチマーク（速度・品質・VRAM）</value></data>

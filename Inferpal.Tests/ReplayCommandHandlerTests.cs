@@ -129,4 +129,30 @@ public class ReplayCommandHandlerTests
         Assert.Contains("old.cs", text);
         Assert.DoesNotContain("new.cs", text);
     }
+    // ── The three states of a touched file ────────────────────────────────────
+
+    [Fact]
+    public void AFileWhoseSnapshotFailed_IsNotShownAsCreated()
+    {
+        // The rule is written on RunChange: a null SnapshotPath means "created during the run"
+        // ONLY when the snapshot did not fail. UndoRunAsync honours it, /replay did not - and the
+        // user concluded that /undo-run would delete a file it does not know how to bring
+        // back.
+        var run = new HistoryRun("r1");
+        run.RecordToolCall("write_file", "a.cs", 5, error: false);
+        run.RecordFirst(@"C:\p\created.cs", snapshot: null);
+        run.RecordFirst(@"C:\p\modified.cs", snapshot: @"C:\snap\1");
+        run.RecordFirst(@"C:\p\no-net.cs", snapshot: null, snapshotFailed: true);
+
+        var text = ReplayCommandHandler.Handle([run], NoArgs, root: null);
+
+        // Witnesses: the two known states are still rendered as before.
+        Assert.Contains("🆕 C:\\p\\created.cs", text);
+        Assert.Contains("✏ C:\\p\\modified.cs", text);
+
+        // And the third no longer passes itself off as a creation.
+        Assert.DoesNotContain("🆕 C:\\p\\no-net.cs", text);
+        Assert.Contains("⚠ C:\\p\\no-net.cs", text);
+        Assert.Contains(Strings.ReplayFileUnprotected, text);
+    }
 }

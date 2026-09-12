@@ -715,6 +715,7 @@ ollama serve
   <data name="SlashHintReplay" xml:space="preserve"><value>最近一次代理运行的时间线（工具、耗时、文件）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>本会话中没有记录包含工具调用的代理运行。</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 代理运行 {0} — {1} 次工具调用，{2} 个文件被修改</value></data>
+  <data name="ReplayFileUnprotected" xml:space="preserve"><value>没有快照 — `/undo-run` 无法还原此文件</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**涉及的文件：**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>发送给模型的上下文的 token 明细</value></data>
   <data name="SlashHintBench" xml:space="preserve"><value>已安装模型的本地基准测试（速度、质量、VRAM）</value></data>

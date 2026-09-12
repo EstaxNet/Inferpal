@@ -45,8 +45,19 @@ internal static class ReplayCommandHandler
         {
             sb.Append("\n\n").Append(Strings.ReplayFilesHeader);
             foreach (var change in run.Changes)
-                sb.Append(change.SnapshotPath is null ? "\n  🆕 " : "\n  ✏ ")
+            {
+                // ⚠ THREE states, not two. `SnapshotPath is null` means "created during the run"
+                // ONLY when the snapshot did not fail - the rule is written on RunChange itself and
+                // UndoRunAsync honours it. Here an existing file whose snapshot failed was rendered
+                // as "🆕 created": the user concludes /undo-run will delete it, when it will report
+                // it as failed, and never learns that this file has no safety net at all.
+                sb.Append(change.SnapshotFailed   ? "\n  ⚠ "
+                        : change.SnapshotPath is null ? "\n  🆕 "
+                                                      : "\n  ✏ ")
                   .Append(Relativise(change.OriginalPath, root));
+                if (change.SnapshotFailed)
+                    sb.Append(" *(").Append(Strings.ReplayFileUnprotected).Append(")*");
+            }
         }
 
         return sb.ToString();

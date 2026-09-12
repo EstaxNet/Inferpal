@@ -727,6 +727,7 @@ ollama serve
   <data name="SlashHintReplay" xml:space="preserve"><value>Timeline of the last agent run (tools, durations, files)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Agent run {0} — {1} tool call(s), {2} file(s) changed</value></data>
+  <data name="ReplayFileUnprotected" xml:space="preserve"><value>no snapshot — `/undo-run` cannot revert this one</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Files touched:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>Token breakdown of the context sent to the model</value></data>
   <data name="SlashHintBench" xml:space="preserve"><value>Local benchmark of installed models (speed, quality, VRAM)</value></data>

@@ -715,6 +715,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="SlashHintReplay" xml:space="preserve"><value>Cronologia dell'ultimo run dell'agente (strumenti, durate, file)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Nessun run dell'agente con chiamate a strumenti registrato in questa sessione.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run dell'agente {0} — {1} chiamata/e a strumenti, {2} file modificato/i</value></data>
+  <data name="ReplayFileUnprotected" xml:space="preserve"><value>nessuno snapshot — `/undo-run` non può annullare questo file</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**File coinvolti:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>Ripartizione in token del contesto inviato al modello</value></data>
   <data name="SlashHintBench" xml:space="preserve"><value>Banco di prova locale dei modelli installati (velocità, qualità, VRAM)</value></data>

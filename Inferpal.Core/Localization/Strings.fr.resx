@@ -723,6 +723,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="SlashHintReplay" xml:space="preserve"><value>Chronologie du dernier run agent (outils, durées, fichiers)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Aucun run agent avec appels d'outils enregistré dans cette session.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run agent {0} — {1} appel(s) d'outil, {2} fichier(s) modifié(s)</value></data>
+  <data name="ReplayFileUnprotected" xml:space="preserve"><value>aucune sauvegarde — `/undo-run` ne peut pas revenir sur celui-ci</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Fichiers touchés :**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>Répartition en tokens du contexte envoyé au modèle</value></data>
   <data name="SlashHintBench" xml:space="preserve"><value>Banc d'essai local des modèles installés (vitesse, qualité, VRAM)</value></data>

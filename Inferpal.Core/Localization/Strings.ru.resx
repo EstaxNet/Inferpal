@@ -713,6 +713,7 @@ ollama serve
   <data name="SlashHintReplay" xml:space="preserve"><value>Хронология последнего запуска агента (инструменты, длительность, файлы)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>В этой сессии не записано ни одного запуска агента с вызовами инструментов.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Запуск агента {0} — вызовов инструментов: {1}, изменённых файлов: {2}</value></data>
+  <data name="ReplayFileUnprotected" xml:space="preserve"><value>нет снимка — `/undo-run` не сможет откатить этот файл</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Затронутые файлы:**</value></data>
   <data name="SlashHintXray" xml:space="preserve"><value>Распределение токенов контекста, отправляемого модели</value></data>
   <data name="SlashHintBench" xml:space="preserve"><value>Локальный бенчмарк установленных моделей (скорость, качество, VRAM)</value></data>
