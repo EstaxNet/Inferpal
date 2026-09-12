@@ -110,7 +110,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private bool _toolsEnabled = true;
 
     private string           _prompt                = string.Empty;
-    private string           _selectedSession       = string.Empty;
+    private string?          _selectedSession       = string.Empty;
 
     // Session file the conversation currently lives in ("" = never saved). Set when a session is
     // loaded or a branch is created; consumed by /branch to record the parent link.

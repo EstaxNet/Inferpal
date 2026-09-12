@@ -226,7 +226,7 @@ internal partial class InferpalToolWindowData
             UpdateHistoryCommandState();
         }
     }
-    [DataMember] public string SelectedSession
+    [DataMember] public string? SelectedSession
     {
         get => _selectedSession;
         set

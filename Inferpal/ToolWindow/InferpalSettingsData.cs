@@ -49,7 +49,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     ];
 
     private string _baseUrl;
-    private string _selectedProvider  = string.Empty;
+    private string? _selectedProvider = string.Empty;
     private bool   _showKeepAliveSettings = true;   // keep_alive auto-unload — Ollama only
     private bool   _showInlineCompletions = true;   // FIM ghost text — Ollama + LM Studio
     private string _apiKey            = string.Empty;
@@ -57,8 +57,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _hintProvider      = string.Empty;
     private string _labelApiKey       = string.Empty;
     private string _hintApiKey        = string.Empty;
-    private string _selectedModel;
-    private string _selectedLanguage  = string.Empty;
+    private string? _selectedModel;
+    private string? _selectedLanguage = string.Empty;
     private string _labelLanguage     = string.Empty;
     private string _hintLanguage      = string.Empty;
     private string _connectionStatus = string.Empty;
@@ -224,25 +224,25 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelSectionContext                 = string.Empty;
     private string _labelSectionPersona                 = string.Empty;
     private string _labelSectionInlineCompletions       = string.Empty;
-    private string _selectedInlineMode                  = string.Empty;
+    private string? _selectedInlineMode                 = string.Empty;
     private string _labelInlineCompletionMode           = string.Empty;
     private string _hintInlineCompletionMode            = string.Empty;
     private bool   _inlineCompletionEnabled;
-    private string _inlineCompletionModel               = string.Empty;
+    private string? _inlineCompletionModel              = string.Empty;
     private string _labelInlineCompletionEnabled        = string.Empty;
     private string _hintInlineCompletionEnabled         = string.Empty;
     private string _labelInlineCompletionModel          = string.Empty;
     private string _hintInlineCompletionModel           = string.Empty;
-    private string _codeActionsModel                    = string.Empty;
+    private string? _codeActionsModel                   = string.Empty;
     private string _labelCodeActionsModel               = string.Empty;
     private string _hintCodeActionsModel                = string.Empty;
-    private string _inlineEditModel                     = string.Empty;
+    private string? _inlineEditModel                    = string.Empty;
     private string _labelInlineEditModel                = string.Empty;
     private string _hintInlineEditModel                 = string.Empty;
-    private string _agentModel                          = string.Empty;
+    private string? _agentModel                         = string.Empty;
     private string _labelAgentModel                     = string.Empty;
     private string _hintAgentModel                      = string.Empty;
-    private string _utilityModel                        = string.Empty;
+    private string? _utilityModel                       = string.Empty;
     private string _labelUtilityModel                   = string.Empty;
     private string _hintUtilityModel                    = string.Empty;
     private bool   _modelRouterAuto;
@@ -259,7 +259,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelAdvancedBehavior               = string.Empty;
     private bool   _ragEnabled;
     private bool   _ragAutoContextEnabled;
-    private string _ragEmbeddingModel                   = string.Empty;
+    private string? _ragEmbeddingModel                  = string.Empty;
     private string _ragTopKText;
     private string _labelSectionRag                     = string.Empty;
     private string _labelRagEnabled                     = string.Empty;
@@ -995,25 +995,25 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string LabelSectionContext           { get => _labelSectionContext;           set => SetProperty(ref _labelSectionContext,           value); }
     [DataMember] public string LabelSectionPersona           { get => _labelSectionPersona;           set => SetProperty(ref _labelSectionPersona,           value); }
     [DataMember] public string LabelSectionInlineCompletions { get => _labelSectionInlineCompletions; set => SetProperty(ref _labelSectionInlineCompletions, value); }
-    [DataMember] public string SelectedInlineMode            { get => _selectedInlineMode;            set => SetProperty(ref _selectedInlineMode,            value); }
+    [DataMember] public string? SelectedInlineMode           { get => _selectedInlineMode;            set => SetProperty(ref _selectedInlineMode,            value); }
     [DataMember] public string LabelInlineCompletionMode     { get => _labelInlineCompletionMode;     set => SetProperty(ref _labelInlineCompletionMode,     value); }
     [DataMember] public string HintInlineCompletionMode      { get => _hintInlineCompletionMode;      set => SetProperty(ref _hintInlineCompletionMode,      value); }
     [DataMember] public bool   InlineCompletionEnabled       { get => _inlineCompletionEnabled;       set => SetProperty(ref _inlineCompletionEnabled,       value); }
-    [DataMember] public string InlineCompletionModel         { get => _inlineCompletionModel;         set => SetProperty(ref _inlineCompletionModel,         value); }
+    [DataMember] public string? InlineCompletionModel        { get => _inlineCompletionModel;         set => SetProperty(ref _inlineCompletionModel,         value); }
     [DataMember] public string LabelInlineCompletionEnabled  { get => _labelInlineCompletionEnabled;  set => SetProperty(ref _labelInlineCompletionEnabled,  value); }
     [DataMember] public string HintInlineCompletionEnabled   { get => _hintInlineCompletionEnabled;   set => SetProperty(ref _hintInlineCompletionEnabled,   value); }
     [DataMember] public string LabelInlineCompletionModel    { get => _labelInlineCompletionModel;    set => SetProperty(ref _labelInlineCompletionModel,    value); }
     [DataMember] public string HintInlineCompletionModel     { get => _hintInlineCompletionModel;     set => SetProperty(ref _hintInlineCompletionModel,     value); }
-    [DataMember] public string CodeActionsModel              { get => _codeActionsModel;              set => SetProperty(ref _codeActionsModel,              value); }
+    [DataMember] public string? CodeActionsModel             { get => _codeActionsModel;              set => SetProperty(ref _codeActionsModel,              value); }
     [DataMember] public string LabelCodeActionsModel         { get => _labelCodeActionsModel;         set => SetProperty(ref _labelCodeActionsModel,         value); }
     [DataMember] public string HintCodeActionsModel          { get => _hintCodeActionsModel;          set => SetProperty(ref _hintCodeActionsModel,          value); }
-    [DataMember] public string InlineEditModel               { get => _inlineEditModel;               set => SetProperty(ref _inlineEditModel,               value); }
+    [DataMember] public string? InlineEditModel              { get => _inlineEditModel;               set => SetProperty(ref _inlineEditModel,               value); }
     [DataMember] public string LabelInlineEditModel          { get => _labelInlineEditModel;          set => SetProperty(ref _labelInlineEditModel,          value); }
     [DataMember] public string HintInlineEditModel           { get => _hintInlineEditModel;           set => SetProperty(ref _hintInlineEditModel,           value); }
-    [DataMember] public string AgentModel                    { get => _agentModel;                    set => SetProperty(ref _agentModel,                    value); }
+    [DataMember] public string? AgentModel                   { get => _agentModel;                    set => SetProperty(ref _agentModel,                    value); }
     [DataMember] public string LabelAgentModel               { get => _labelAgentModel;               set => SetProperty(ref _labelAgentModel,               value); }
     [DataMember] public string HintAgentModel                { get => _hintAgentModel;                set => SetProperty(ref _hintAgentModel,                value); }
-    [DataMember] public string UtilityModel                  { get => _utilityModel;                  set => SetProperty(ref _utilityModel,                  value); }
+    [DataMember] public string? UtilityModel                 { get => _utilityModel;                  set => SetProperty(ref _utilityModel,                  value); }
     [DataMember] public string LabelUtilityModel             { get => _labelUtilityModel;             set => SetProperty(ref _labelUtilityModel,             value); }
     [DataMember] public string HintUtilityModel              { get => _hintUtilityModel;              set => SetProperty(ref _hintUtilityModel,              value); }
     [DataMember] public bool   ModelRouterAuto               { get => _modelRouterAuto;               set => SetProperty(ref _modelRouterAuto,               value); }
@@ -1035,7 +1035,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public bool   RagAutoContextEnabled         { get => _ragAutoContextEnabled;         set => SetProperty(ref _ragAutoContextEnabled,         value); }
     [DataMember] public string LabelRagAutoContext           { get => _labelRagAutoContext;           set => SetProperty(ref _labelRagAutoContext,           value); }
     [DataMember] public string HintRagAutoContext            { get => _hintRagAutoContext;            set => SetProperty(ref _hintRagAutoContext,            value); }
-    [DataMember] public string RagEmbeddingModel             { get => _ragEmbeddingModel;             set => SetProperty(ref _ragEmbeddingModel,             value); }
+    [DataMember] public string? RagEmbeddingModel            { get => _ragEmbeddingModel;             set => SetProperty(ref _ragEmbeddingModel,             value); }
     [DataMember] public string LabelRagEmbeddingModel        { get => _labelRagEmbeddingModel;        set => SetProperty(ref _labelRagEmbeddingModel,        value); }
     [DataMember] public string HintRagEmbeddingModel         { get => _hintRagEmbeddingModel;         set => SetProperty(ref _hintRagEmbeddingModel,         value); }
     [DataMember] public string RagTopKText                   { get => _ragTopKText;                   set => SetProperty(ref _ragTopKText,                   value); }
@@ -1052,15 +1052,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string TooltipRefreshModels     { get => _tooltipRefreshModels;     set => SetProperty(ref _tooltipRefreshModels,     value); }
 
     // ── Bound properties ───────────────────────────────────────────────────────
-    [DataMember] public string SelectedLanguage    { get => _selectedLanguage;    set => SetProperty(ref _selectedLanguage,    value); }
-    [DataMember] public string SelectedProvider     { get => _selectedProvider;     set { if (SetProperty(ref _selectedProvider, value)) ApplyProviderCapabilities(); } }
+    [DataMember] public string? SelectedLanguage   { get => _selectedLanguage;    set => SetProperty(ref _selectedLanguage,    value); }
+    [DataMember] public string? SelectedProvider    { get => _selectedProvider;     set { if (SetProperty(ref _selectedProvider, value)) ApplyProviderCapabilities(); } }
     /// <summary>Visibility of the keep_alive auto-unload settings — only Ollama honours a per-request keep_alive.</summary>
     [DataMember] public bool   ShowKeepAliveSettings { get => _showKeepAliveSettings; set => SetProperty(ref _showKeepAliveSettings, value); }
     /// <summary>Visibility of the Inline Completions (FIM) section — unsupported on generic OpenAI servers.</summary>
     [DataMember] public bool   ShowInlineCompletions { get => _showInlineCompletions; set => SetProperty(ref _showInlineCompletions, value); }
     [DataMember] public string ApiKey               { get => _apiKey;               set => SetProperty(ref _apiKey,               value); }
     [DataMember] public string BaseUrl              { get => _baseUrl;              set => SetProperty(ref _baseUrl,              value); }
-    [DataMember] public string SelectedModel        { get => _selectedModel;        set => SetProperty(ref _selectedModel,        value); }
+    [DataMember] public string? SelectedModel       { get => _selectedModel;        set => SetProperty(ref _selectedModel,        value); }
     // h/min/s composite: clamp each sub-field live (setters fire per-keystroke via
     // UpdateSourceTrigger=PropertyChanged) so minutes/seconds can't exceed 59 and hours 99 —
     // the binding pushes the corrected value straight back to the TextBox.
@@ -1247,14 +1247,17 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
     private async Task SaveCoreAsync(CancellationToken ct)
     {
-        string url = string.Empty, model = string.Empty, customPrompt = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
-        string selectedProviderName = string.Empty, apiKey = string.Empty;
+        string url = string.Empty, customPrompt = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
+        string apiKey = string.Empty;
+        // Dropdowns whose SelectedItem is bound: null when the selection left its list, never a
+        // choice (see SettingsFallback.KeepSelection).
+        string? model = null, selectedProviderName = null, selectedLangName = null, selectedInlineModeName = null;
+        string? inlineModel = null, codeActionsModel = null, inlineEditModel = null, agentModel = null, utilityModel = null, ragEmbeddingModel = null;
         string th = string.Empty, tm = string.Empty, ts = string.Empty;
         string ctxSizeText = string.Empty, ctxKeepText = string.Empty, oodaThreshText = string.Empty, vramBudgetText = string.Empty;
-        string kvAnchorText = string.Empty, selectedLangName = string.Empty;
+        string kvAnchorText = string.Empty;
         var selectedInlineModeIndex = -1;
-        string selectedInlineModeName = string.Empty, inlineModel = string.Empty, codeActionsModel = string.Empty, inlineEditModel = string.Empty, agentModel = string.Empty, utilityModel = string.Empty;
-        string ragEmbeddingModel = string.Empty, ragTopKText = string.Empty, ragSimilarityThresholdText = string.Empty;
+        string ragTopKText = string.Empty, ragSimilarityThresholdText = string.Empty;
         string agentMaxIterationsText = string.Empty;
         // h/min/s composites recombined into total seconds inside the VM-context capture below.
         int quickTimeoutSec = 0, normalTimeoutSec = 0, deepTimeoutSec = 0, compactTimeoutSec = 0;
@@ -1266,7 +1269,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             url                  = BaseUrl.Trim();
             selectedProviderName = SelectedProvider;
             apiKey               = ApiKey.Trim();
-            model                = SelectedModel.Trim();
+            model                = SelectedModel;
             th                   = TimeoutHoursText.Trim();
             tm                   = TimeoutMinutesText.Trim();
             ts                   = TimeoutSecondsText.Trim();
@@ -1296,7 +1299,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             kvAnchorText         = KvCacheAnchorMessagesText.Trim();
             selectedLangName     = SelectedLanguage;
             selectedInlineModeName  = SelectedInlineMode;
-            selectedInlineModeIndex = AvailableInlineModes.IndexOf(SelectedInlineMode);
+            selectedInlineModeIndex = SelectedInlineMode is null ? -1 : AvailableInlineModes.IndexOf(SelectedInlineMode);
             inlineEnabled          = InlineCompletionEnabled;
             inlineModel            = InlineCompletionModel;
             codeActionsModel       = CodeActionsModel;
@@ -1329,6 +1332,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         void Note(string? text, bool applied, Func<string> label)
         {
             if (SettingsFallback.WasIgnored(text, applied)) ignored.Add(label);
+        }
+
+        // A dropdown whose SelectedItem is bound: the selection, or what the config holds when the
+        // Selector wrote null -- and the field named if there was a model to keep.
+        string Kept(string? selected, string current, Func<string> label)
+        {
+            var value = SettingsFallback.KeepSelection(selected, current, out var lost);
+            if (lost) ignored.Add(label);
+            return value;
         }
 
         // Resolve language code from display name (index 0 = auto = "").
@@ -1373,7 +1385,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _config.Provider              = providerCode;
         _config.ApiKey                = apiKey;
         _config.BaseUrl               = url;
-        _config.DefaultModel          = model;
+        _config.DefaultModel          = Kept(model, _config.DefaultModel, () => Strings.LabelChatModel);
         _config.CommandTimeoutSeconds = totalSec < 1 ? 1 : totalSec;
         _config.ToolBubblesExpanded      = toolExpanded;
         _config.SecurityAlertsDisabled   = secAlertsDisabled;
@@ -1410,15 +1422,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                                                     _config.KvCacheAnchorMessages, 3, v => Math.Clamp(v, 0, 20));
         _config.InlineCompletionMode      = inlineModeCode;
         _config.InlineCompletionEnabled   = inlineEnabled;
-        _config.InlineCompletionModel     = inlineModel.Trim();
-        _config.CodeActionsModel          = codeActionsModel.Trim();
-        _config.InlineEditModel           = inlineEditModel.Trim();
-        _config.AgentModel                = agentModel.Trim();
-        _config.UtilityModel              = utilityModel.Trim();
+        _config.InlineCompletionModel     = Kept(inlineModel,      _config.InlineCompletionModel, () => Strings.LabelInlineCompletionModel);
+        _config.CodeActionsModel          = Kept(codeActionsModel, _config.CodeActionsModel,      () => Strings.LabelCodeActionsModel);
+        _config.InlineEditModel           = Kept(inlineEditModel,  _config.InlineEditModel,       () => Strings.LabelInlineEditModel);
+        _config.AgentModel                = Kept(agentModel,       _config.AgentModel,            () => Strings.LabelAgentModel);
+        _config.UtilityModel              = Kept(utilityModel,     _config.UtilityModel,          () => Strings.LabelUtilityModel);
         _config.ModelRouterAuto           = modelRouterAuto;
         _config.RagEnabled                = ragEnabled;
         _config.RagAutoContextEnabled     = ragAutoContextEnabled;
-        _config.RagEmbeddingModel         = ragEmbeddingModel.Trim();
+        _config.RagEmbeddingModel         = Kept(ragEmbeddingModel, _config.RagEmbeddingModel,    () => Strings.LabelRagEmbeddingModel);
         _config.RagTopK                   = ReadInt(ragTopKText, () => Strings.LabelRagTopK,
                                                     _config.RagTopK, 5, v => Math.Clamp(v, 1, 20));
         // ⚠ Inline, not ReadInt: invariant culture here (the threshold is written with a dot).
@@ -2123,66 +2135,33 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
             await RunOnVMContextAsync(() =>
             {
+                // A property the Selector already reset to null takes the configured value back:
+                // null is never a choice, and the value is about to be kept in the list.
+                SelectedModel         ??= _config.DefaultModel;
+                CodeActionsModel      ??= _config.CodeActionsModel;
+                InlineCompletionModel ??= _config.InlineCompletionModel;
+                InlineEditModel       ??= _config.InlineEditModel;
+                AgentModel            ??= _config.AgentModel;
+                UtilityModel          ??= _config.UtilityModel;
+                RagEmbeddingModel     ??= _config.RagEmbeddingModel;
+
+                // ⚠ Never "remove then add back" a selected value: the Selector writes null into the
+                // bound property as soon as it leaves the collection, and under Remote UI that null
+                // comes back AFTER the re-add -- it overwrites it. SelectionPreservingList never
+                // removes it.
                 var current = SelectedModel;
-
-                // Update in place to avoid Clear() which resets SelectedItem to null via TwoWay binding write-back.
-                for (int i = AvailableModels.Count - 1; i >= 0; i--)
-                    if (!models.Contains(AvailableModels[i]))
-                        AvailableModels.RemoveAt(i);
-                foreach (var m in models)
-                    if (!AvailableModels.Contains(m))
-                        AvailableModels.Add(m);
-
-                // ⚠ Avoiding Clear() only covers HALF of the mechanism the comment above names. A
-                // Selector nulls its SelectedItem when that item leaves the collection, and it does
-                // not care whether it left through Clear() or through the last RemoveAt: a backend
-                // that lists nothing (unreachable, or a fresh install with no model pulled) emptied
-                // this collection one item at a time and reached exactly the state the comment says
-                // it avoids — SelectedModel written back empty, and the next Save storing an empty
-                // DefaultModel. The five role models and the embedding model below have carried the
-                // remedy for this since they were written ("Resetting them here would silently wipe
-                // the config"); the chat model, the one that matters most, had none.
-                if (!string.IsNullOrEmpty(current) && !AvailableModels.Contains(current))
-                    AvailableModels.Add(current);
-
+                SelectionPreservingList.Sync(AvailableModels, models, [current]);
                 if (AvailableModels.Count > 0)
-                    SelectedModel = AvailableModels.Contains(current) ? current : AvailableModels[0];
+                    SelectedModel = current is not null && AvailableModels.Contains(current) ? current : AvailableModels[0];
 
-                // AvailableOptionalModels = [""] + AvailableModels (empty = use chat model)
-                if (AvailableOptionalModels.Count == 0 || AvailableOptionalModels[0] != string.Empty)
-                    AvailableOptionalModels.Insert(0, string.Empty);
-                for (int i = AvailableOptionalModels.Count - 1; i >= 1; i--)
-                    if (!models.Contains(AvailableOptionalModels[i]))
-                        AvailableOptionalModels.RemoveAt(i);
-                foreach (var m in models)
-                    if (!AvailableOptionalModels.Contains(m))
-                        AvailableOptionalModels.Add(m);
+                // [""] + models: the empty entry means "same as the chat model".
+                SelectionPreservingList.Sync(AvailableOptionalModels, models,
+                    [CodeActionsModel, InlineCompletionModel, InlineEditModel, AgentModel, UtilityModel],
+                    leadingEmpty: true);
 
-                // Keep configured models visible in the dropdown even when Ollama doesn't list them
-                // (e.g. model not currently loaded but still installed). Resetting them here would
-                // silently wipe the config the next time the user clicks Save.
-                if (!string.IsNullOrEmpty(CodeActionsModel) && !AvailableOptionalModels.Contains(CodeActionsModel))
-                    AvailableOptionalModels.Add(CodeActionsModel);
-                if (!string.IsNullOrEmpty(InlineCompletionModel) && !AvailableOptionalModels.Contains(InlineCompletionModel))
-                    AvailableOptionalModels.Add(InlineCompletionModel);
-                if (!string.IsNullOrEmpty(InlineEditModel) && !AvailableOptionalModels.Contains(InlineEditModel))
-                    AvailableOptionalModels.Add(InlineEditModel);
-                if (!string.IsNullOrEmpty(AgentModel) && !AvailableOptionalModels.Contains(AgentModel))
-                    AvailableOptionalModels.Add(AgentModel);
-                if (!string.IsNullOrEmpty(UtilityModel) && !AvailableOptionalModels.Contains(UtilityModel))
-                    AvailableOptionalModels.Add(UtilityModel);
-
-                // AvailableEmbeddingModels — only models matching embedding keywords
-                var embeddingModels = models.Where(IsEmbeddingModel).ToList();
-                for (int i = AvailableEmbeddingModels.Count - 1; i >= 0; i--)
-                    if (!embeddingModels.Contains(AvailableEmbeddingModels[i]) && AvailableEmbeddingModels[i] != RagEmbeddingModel)
-                        AvailableEmbeddingModels.RemoveAt(i);
-                foreach (var m in embeddingModels)
-                    if (!AvailableEmbeddingModels.Contains(m))
-                        AvailableEmbeddingModels.Add(m);
-                // Keep configured embedding model visible even if not recognized by keyword filter.
-                if (!string.IsNullOrEmpty(RagEmbeddingModel) && !AvailableEmbeddingModels.Contains(RagEmbeddingModel))
-                    AvailableEmbeddingModels.Add(RagEmbeddingModel);
+                // Only the models recognised as embedding models, plus the configured one.
+                SelectionPreservingList.Sync(AvailableEmbeddingModels, models.Where(IsEmbeddingModel).ToList(),
+                                             [RagEmbeddingModel]);
                 // Auto-select first available when nothing is configured yet.
                 if (string.IsNullOrEmpty(RagEmbeddingModel) && AvailableEmbeddingModels.Count > 0)
                     RagEmbeddingModel = AvailableEmbeddingModels[0];

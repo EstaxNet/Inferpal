@@ -1056,4 +1056,59 @@ public class ConventionCoverageTests
             + "describe the previous conversation. Call ResetTurnAccounting():"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
+
+    // ── 13. A property bound to SelectedItem is declared nullable ─────────────
+
+    [Fact]
+    public void SelectedItemBoundProperties_AreDeclaredNullable()
+    {
+        // The Selector writes null into the bound property as soon as the selected item leaves its
+        // collection. Declared `string`, the property promises the compiler what the binding does
+        // not keep: `agentModel.Trim()` compiled without a warning and threw a
+        // NullReferenceException on every Save. Declared `string?`, every unguarded read becomes an
+        // error of the Release build. The compiler holds the SITES; this rule only holds the
+        // DECLARATION, without which it sees nothing.
+        //
+        // ⚠ The list comes from the XAML: it is the binding that makes the property nullable, not
+        // its name.
+        var xamlDir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        var selected = new Regex(@"SelectedItem\s*=\s*""\{Binding\s+([A-Za-z0-9_]+)");
+        var bound = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var xaml in Directory.EnumerateFiles(xamlDir, "*.xaml", SearchOption.TopDirectoryOnly))
+            foreach (Match m in selected.Matches(File.ReadAllText(xaml)))
+                bound.Add(m.Groups[1].Value);
+
+        // Witness: the derivation must find at least the model lists.
+        Assert.True(bound.Count >= 8,
+            $"Only {bound.Count} SelectedItem-bound property(ies) derived from the XAML -- the derivation is broken.");
+
+        var declared = new HashSet<string>(StringComparer.Ordinal);
+        var offenders = new List<string>();
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            foreach (var property in root.DescendantNodes().OfType<PropertyDeclarationSyntax>())
+            {
+                var name = property.Identifier.ValueText;
+                if (!bound.Contains(name)) continue;
+                declared.Add(name);
+                if (property.Type is NullableTypeSyntax) continue;
+
+                var line = property.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Rel(file)}({line}) : {property.Type} {name}");
+            }
+        }
+
+        // Second witness: every binding finds its property. A property renamed on one side only
+        // would otherwise leave the rule without anything turning red.
+        var missing = bound.Except(declared).ToList();
+        Assert.True(missing.Count == 0,
+            "Bound to SelectedItem in the XAML, not found in the view models: " + string.Join(", ", missing));
+
+        Assert.True(offenders.Count == 0,
+            "A property bound to SelectedItem is declared non-nullable: the Selector writes null into it "
+            + "when the item leaves its list, and a read such as `.Trim()` then throws an exception the "
+            + "compiler could not report. Declare it nullable. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
 }

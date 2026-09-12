@@ -108,4 +108,29 @@ internal static class SettingsFallback
         matched = false;
         return current;
     }
+
+    /// <summary>
+    /// The value of a dropdown whose <c>SelectedItem</c> is bound, at save time: the selection,
+    /// otherwise <paramref name="current"/>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>null</c> is never a user choice. A <c>Selector</c> writes it into the bound property when
+    /// the selected item leaves its collection, and under Remote UI that write comes back after the
+    /// update that caused it. Unassigning a role goes through the list's empty entry ("same as the
+    /// chat model"), which arrives here as <c>""</c>. Writing <c>""</c> over a <c>null</c> would
+    /// therefore erase a configured model because a backend did not list it when the window opened.
+    /// <paramref name="lost"/> is true only when there was something to keep: a role never
+    /// configured that stays empty has nothing to report.
+    /// </remarks>
+    public static string KeepSelection(string? selected, string current, out bool lost)
+    {
+        if (selected is not null)
+        {
+            lost = false;
+            return selected.Trim();
+        }
+
+        lost = !string.IsNullOrEmpty(current);
+        return current;
+    }
 }

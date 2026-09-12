@@ -144,4 +144,36 @@ public class SettingsFallbackTests
                      SettingsFallback.ResolveSelection(Backends, 99, null, "openai-compatible", out var neither));
         Assert.False(neither);
     }
+
+    // ── KeepSelection: a dropdown whose SelectedItem is bound ─────────────────
+
+    [Fact]
+    public void ASelection_IsTrimmedAndApplied()
+    {
+        Assert.Equal("qwen/qwen3-coder-30b", SettingsFallback.KeepSelection(" qwen/qwen3-coder-30b ", "old", out var lost));
+        Assert.False(lost);
+    }
+
+    [Fact]
+    public void TheEmptyEntry_IsAChoice_NotALoss()
+    {
+        // The empty entry ("same as the chat model") is how a role is unassigned.
+        Assert.Equal(string.Empty, SettingsFallback.KeepSelection("", "qwen3-coder:latest", out var lost));
+        Assert.False(lost);
+    }
+
+    [Fact]
+    public void ANullSelection_KeepsTheConfiguredModel_AndNamesIt()
+    {
+        // null is never a choice: the Selector writes it when the value has left its list.
+        Assert.Equal("qwen3-coder:latest", SettingsFallback.KeepSelection(null, "qwen3-coder:latest", out var lost));
+        Assert.True(lost);
+    }
+
+    [Fact]
+    public void ANullSelection_OverNothingConfigured_SaysNothing()
+    {
+        Assert.Equal(string.Empty, SettingsFallback.KeepSelection(null, string.Empty, out var lost));
+        Assert.False(lost);
+    }
 }
