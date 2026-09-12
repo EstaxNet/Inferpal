@@ -241,10 +241,11 @@ internal partial class InferpalToolWindowData
     }
 
     /// <summary>Handles the <c>/index</c> slash command (show status or trigger a rebuild).</summary>
-    // /index [rebuild] — logique partagée avec le Host (IndexCommandHandler).
+    // A rebuild moves the workspace root (confinement, deny overlay), so it takes a solution-anchored
+    // root or none: FindProjectRoot() would fall back to the host's working directory, never the project.
     private async Task HandleRagIndexCommandAsync(string[] parts, CancellationToken ct) =>
         await ShowInfoAsync(Services.Commands.IndexCommandHandler.Handle(
-            _indexService, _config, parts, FindProjectRoot()));
+            _indexService, _config, parts, FindReliableProjectRoot()));
 
     // ── Project context ────────────────────────────────────────────────────────
 

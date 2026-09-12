@@ -140,6 +140,39 @@ public class WorkspaceRootPinTests
         Assert.Empty(pin.DescendantNodes().OfType<ReturnStatementSyntax>());
     }
 
+    /// <summary>
+    /// Whatever moves the root takes a solution-anchored one, never <c>FindProjectRoot()</c>: that one
+    /// always answers, falling back to the host's working directory — which under Visual Studio is
+    /// never the project. <c>/index rebuild</c> passed it, so its "cannot locate solution root" refusal
+    /// could not happen, and with no solution found it indexed that directory and moved the file tools'
+    /// confinement and the deny overlay there.
+    /// </summary>
+    [Fact]
+    public void NothingThatMovesTheRoot_TakesTheWorkingDirectoryFallback()
+    {
+        var dir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        Assert.True(Directory.Exists(dir), $"{dir} is gone — this rule checks nothing any more.");
+
+        var movers = Directory.EnumerateFiles(dir, "*.cs")
+            .SelectMany(f => CSharpSyntaxTree.ParseText(ConventionCoverageTests.CodeOnly(f)).GetRoot()
+                .DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Where(i => i.Expression is MemberAccessExpressionSyntax m
+                         && (m.Name.Identifier.Text is "StartIndexing" or "SetRoot"
+                             || m.Name.Identifier.Text == "Handle" && m.Expression.ToString().EndsWith("IndexCommandHandler")))
+                .Select(i => (File: Path.GetFileName(f), Call: i)))
+            .ToList();
+
+        // Witness: the startup pass, the pin (both actions) and /index.
+        Assert.True(movers.Count >= 4, $"Only {movers.Count} root-moving call(s) found — the scan no longer sees them.");
+
+        var offenders = movers
+            .Where(m => Calls(m.Call.ArgumentList, "FindProjectRoot"))
+            .Select(m => $"{m.File}: {m.Call}")
+            .ToList();
+        Assert.True(offenders.Count == 0,
+            "These calls can move the workspace root to the host's working directory:\n" + string.Join("\n", offenders));
+    }
+
     [Theory]
     [InlineData("InferpalToolWindowData.Connection.cs", "StartHeartbeatAsync")]
     [InlineData("InferpalToolWindowData.ChatTurn.cs",   "SendCoreAsync")]
