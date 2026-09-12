@@ -116,7 +116,7 @@ internal sealed partial class HostServer : IDisposable
         // on two tools that can only fail.
         var debug    = p.Debug ? new RpcDebugSession(rpc, declared: true) : null;
         var tools    = new ToolRegistry(editor, approval, config, index, client,
-                                        new ProjectMapService(editor), mcp, docs, overlay, debug);
+                                        new ProjectMapService(editor, index), mcp, docs, overlay, debug);
 
         // Pin the file-tool confinement root even when RAG never indexes; indexing itself starts
         // once the session exists (below).

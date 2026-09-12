@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using Inferpal.Services.Rag;
 
 namespace Inferpal.Services;
 
@@ -12,12 +13,17 @@ namespace Inferpal.Services;
 /// </summary>
 internal sealed class ProjectMapService
 {
-    private readonly IEditorSurface _editor;
+    private readonly IEditorSurface       _editor;
+    private readonly ProjectIndexService? _index;
 
     // key = root dir, value = cached map
     private readonly ConcurrentDictionary<string, string> _cache = new(StringComparer.OrdinalIgnoreCase);
 
-    public ProjectMapService(IEditorSurface editor) => _editor = editor;
+    public ProjectMapService(IEditorSurface editor, ProjectIndexService? index = null)
+    {
+        _editor = editor;
+        _index  = index;
+    }
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -270,6 +276,11 @@ internal sealed class ProjectMapService
         // 0. Authoritative: the in-process package reports the actually-open solution.
         var active = ActiveSolutionSignal.TryReadSolutionDir();
         if (active is not null) return active;
+
+        // Then the workspace root, as is: it IS the project, with or without a solution file.
+        // Climbing from it would stop at a PARENT folder's solution — another project's map — and
+        // the open files and the current directory below only stand in when no root is known.
+        if (_index?.RootDir is { Length: > 0 } root && Directory.Exists(root)) return root;
 
         // 1. Walk up from each open editor file — reflects the solution the user is actually in,
         //    so it is preferred over CWD (which never follows solution open/close in an OOP host).
