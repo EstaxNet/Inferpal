@@ -45,7 +45,7 @@ public class SelectionPreservingListTests
         // Witness: the pass does remove what is neither listed nor held. Without it, "nothing held
         // was removed" would also be true of a pass that removes nothing at all.
         Assert.Contains("old-model", removed);
-        Assert.Equal(["", "qwen3-coder:latest", "qwen/qwen3-coder-30b"], items);
+        Assert.Equal(["", "qwen/qwen3-coder-30b", "qwen3-coder:latest"], items);
     }
 
     [Fact]
@@ -77,5 +77,20 @@ public class SelectionPreservingListTests
         SelectionPreservingList.Sync(items, ["a"], held: ["x", "x"]);
 
         Assert.Equal(["a", "x"], items);
+    }
+
+    [Fact]
+    public void ANewEntry_IsInsertedAtItsListedPosition_NotAppended()
+    {
+        // Sessions: newest first. A session archived while another one is selected must arrive AT
+        // THE TOP, without the selected one leaving the list.
+        var items = new ObservableCollection<string> { "2026-09-11_1200_b", "2026-09-10_0900_a" };
+        var removed = Removed(items);
+
+        SelectionPreservingList.Sync(items, ["2026-09-12_1800_c", "2026-09-11_1200_b", "2026-09-10_0900_a"],
+                                     held: ["2026-09-10_0900_a"]);
+
+        Assert.Empty(removed);
+        Assert.Equal(["2026-09-12_1800_c", "2026-09-11_1200_b", "2026-09-10_0900_a"], items);
     }
 }

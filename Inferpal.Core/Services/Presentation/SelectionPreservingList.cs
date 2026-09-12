@@ -33,8 +33,18 @@ internal static class SelectionPreservingList
             if (!keep.Contains(items[i]))
                 items.RemoveAt(i);
 
-        foreach (var model in listed)
-            if (!items.Contains(model)) items.Add(model);
+        // What is missing is inserted AT ITS PLACE in the source's order, never at the end: sessions
+        // are sorted newest first. Nothing is moved — nothing guarantees a Selector handles its
+        // selection being moved any better than it being removed.
+        var position = first;
+        foreach (var value in listed)
+        {
+            var index = items.IndexOf(value);
+            if (index < 0) items.Insert(Math.Min(position, items.Count), value);
+            else if (index < position) continue;
+            else position = index;
+            position++;
+        }
 
         // A configured model the backend does not list (unloaded, backend unreachable, another
         // server) stays visible: otherwise the list has nothing to select and the next save no

@@ -149,17 +149,22 @@ internal partial class InferpalToolWindowData
         _store.Delete(name);
         await RunOnVMContextAsync(() =>
         {
-            RefreshSessionsList();
+            // BEFORE the refresh: a selected session is held, hence kept in the list — the deleted
+            // one would stay there.
             SelectedSession = string.Empty;
+            RefreshSessionsList();
         });
     }
 
-    private void RefreshSessionsList()
-    {
-        RecentSessions.Clear();
-        foreach (var s in _store.ListSessions().Where(s => s != "last_session"))
-            RecentSessions.Add(s);
-    }
+    /// <remarks>
+    /// ⚠ In place, never removing the selected session. This refresh also runs in the background
+    /// (after a <c>/clear</c> is archived, once its title is generated): clearing the list reset
+    /// <see cref="SelectedSession"/> to null under the user's eyes, and "Load" then opened
+    /// <c>last_session</c> instead of the chosen session — or nothing.
+    /// </remarks>
+    private void RefreshSessionsList() =>
+        SelectionPreservingList.Sync(RecentSessions,
+            _store.ListSessions().Where(s => s != "last_session").ToList(), [SelectedSession]);
 
     // ── 30-fps UI throttle ─────────────────────────────────────────────────────
 
