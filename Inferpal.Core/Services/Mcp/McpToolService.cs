@@ -152,42 +152,65 @@ internal sealed class McpToolService : IAsyncDisposable
             // are missing will eventually look.
             foreach (var r in _rejected)
                 Diagnostics.Record("Mcp", $"Server '{r.Name}' rejected by the configuration: {r.Error}");
-            var entries = new List<ServerEntry>();
-            var failed  = new List<McpServerStatus>();
+            // ⚠ In PARALLEL, keeping the configured order. Each start has its own handshake budget:
+            // serially, an unreachable server made every later one pay it, lock held — and so did
+            // the Save button, which waits for this refresh.
+            var started = await Task.WhenAll(servers.Where(s => s.Enabled).Select(StartServerAsync))
+                                    .ConfigureAwait(false);
 
-            foreach (var server in servers.Where(s => s.Enabled))
-            {
-                var client = _clientFactory(server);
-                var ok     = await client.StartAsync(CancellationToken.None).ConfigureAwait(false);
-                if (!ok)
-                {
-                    // Two distinct outcomes: "you need to authorize" is an action for the user,
-                    // "it did not start" is a fault. Conflating them sends people looking in the
-                    // wrong place.
-                    Diagnostics.Record("Mcp", client.NeedsAuthorization
-                        ? $"Server '{server.Name}' needs authorization: its tools are not available."
-                        : $"Server '{server.Name}' did not start: {client.LastError}");
-                    failed.Add(new McpServerStatus(server.Name, false, 0, client.LastError, client.NeedsAuthorization));
-                    await client.DisposeAsync().ConfigureAwait(false);
-                    continue;
-                }
-
-                // Wire lifecycle events before discovery so a death mid-listing still triggers reconnect.
-                var entry = new ServerEntry(server, client);
-                client.ToolsChanged += () => OnServerToolsChanged(entry);
-                client.Closed       += () => OnServerClosed(entry);
-
-                entry.Tools = BuildTools(client, await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false));
-                entries.Add(entry);
-            }
-
-            _servers = entries;
-            _failed  = failed;
+            _servers = [.. started.Where(r => r.Entry is not null).Select(r => r.Entry!)];
+            _failed  = [.. started.Where(r => r.Failure is not null).Select(r => r.Failure!)];
             RebuildSnapshot();
         }
         finally
         {
             _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Starts one server and discovers its tools. Never throws: a refused start, a missing
+    /// authorization or an exception during the handshake or the listing becomes that server's
+    /// status, and its client is disposed.
+    /// </summary>
+    private async Task<(ServerEntry? Entry, McpServerStatus? Failure)> StartServerAsync(McpServerConfig server)
+    {
+        IMcpClient? client = null;
+        try
+        {
+            client = _clientFactory(server);
+            if (!await client.StartAsync(CancellationToken.None).ConfigureAwait(false))
+            {
+                // Two distinct outcomes: "you need to authorize" is an action for the user,
+                // "it did not start" is a fault. Conflating them sends people looking in the
+                // wrong place.
+                Diagnostics.Record("Mcp", client.NeedsAuthorization
+                    ? $"Server '{server.Name}' needs authorization: its tools are not available."
+                    : $"Server '{server.Name}' did not start: {client.LastError}");
+                var failure = new McpServerStatus(server.Name, false, 0, client.LastError, client.NeedsAuthorization);
+                await client.DisposeAsync().ConfigureAwait(false);
+                return (null, failure);
+            }
+
+            // Wire lifecycle events before discovery so a death mid-listing still triggers reconnect.
+            var entry = new ServerEntry(server, client);
+            client.ToolsChanged += () => OnServerToolsChanged(entry);
+            client.Closed       += () => OnServerClosed(entry);
+
+            entry.Tools = BuildTools(client, await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false));
+            return (entry, null);
+        }
+        catch (Exception ex)
+        {
+            // A server that throws fails ON ITS OWN: without this catch, Task.WhenAll rethrows, no
+            // server is published, and the clients already started are attached to nothing.
+            Diagnostics.Record("Mcp", $"Server '{server.Name}' did not start: {ex.Message}");
+            if (client is not null)
+            {
+                try { await client.DisposeAsync().ConfigureAwait(false); }
+                catch (Exception disposeEx) { Diagnostics.Swallow($"McpToolService.StartServer({server.Name})", disposeEx); }
+            }
+            return (null, new McpServerStatus(server.Name, false, 0, ex.Message));
         }
     }
 

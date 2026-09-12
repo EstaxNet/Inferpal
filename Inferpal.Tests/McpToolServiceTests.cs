@@ -27,18 +27,27 @@ public class McpToolServiceTests
         public List<McpToolInfo> ToolList { get; set; } = [];
         public int StartCount;
         public bool Disposed { get; private set; }
+        /// <summary>Completes as soon as <see cref="StartAsync"/> is entered.</summary>
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        /// <summary>When set, <see cref="StartAsync"/> does not return before this task completes.</summary>
+        public Task? HoldStart { get; set; }
+        public Exception? ListToolsFailure { get; set; }
 
         public event Action? ToolsChanged;
         public event Action? Closed;
 
-        public Task<bool> StartAsync(CancellationToken ct)
+        public async Task<bool> StartAsync(CancellationToken ct)
         {
             Interlocked.Increment(ref StartCount);
-            return Task.FromResult(StartResult);
+            Entered.TrySetResult();
+            if (HoldStart is { } hold) await hold;
+            return StartResult;
         }
 
         public Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct)
-            => Task.FromResult<IReadOnlyList<McpToolInfo>>(ToolList.ToList());
+            => ListToolsFailure is { } failure
+                ? Task.FromException<IReadOnlyList<McpToolInfo>>(failure)
+                : Task.FromResult<IReadOnlyList<McpToolInfo>>(ToolList.ToList());
 
         public Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
             => Task.FromResult("ok");
@@ -295,5 +304,57 @@ public class McpToolServiceTests
         Assert.Empty(svc.Tools);
         Assert.Empty(svc.Status);
         Assert.True(client.Disposed);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_StartsServersInParallel_AndKeepsTheConfiguredOrder()
+    {
+        // Serially, a slow or unreachable server made every later one wait. The slow one only
+        // returns once the fast one has ENTERED StartAsync: serial code cannot satisfy that, so this
+        // test measures no duration.
+        var config = new InferpalConfig
+        {
+            McpServersJson = """{ "slow": { "command": "x" }, "fast": { "command": "y" } }""",
+        };
+        var fast    = new FakeMcpClient("fast") { ToolList = [Tool("b")] };
+        var slow    = new FakeMcpClient("slow") { ToolList = [Tool("a")] };
+        // Escape hatch: without it, serial code would stay blocked, and so would disposing the
+        // service (which waits for the same lock) — the test would hang instead of failing.
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        slow.HoldStart = Task.WhenAny(fast.Entered.Task, release.Task);
+        await using var svc = NewService(config, cfg => cfg.Name == "slow" ? slow : fast);
+
+        config.McpEnabled = true;
+        var refresh  = svc.RefreshAsync();
+        var parallel = await Task.WhenAny(refresh, Task.Delay(TimeSpan.FromSeconds(30))) == refresh;
+        release.TrySetResult();
+        await refresh;
+
+        Assert.True(parallel, "the fast server only started after the slow one: serial start");
+        // Tool order follows the configuration, not the order of arrival.
+        Assert.Equal(["mcp__slow__a", "mcp__fast__b"], svc.Tools.Select(t => t.Name));
+    }
+
+    [Fact]
+    public async Task RefreshAsync_AServerThatThrows_FailsAlone_AndIsDisposed()
+    {
+        // Started together, a server that throws during discovery takes down neither the refresh,
+        // nor the other servers' tools, nor leaves its own client behind.
+        var config = new InferpalConfig
+        {
+            McpServersJson = """{ "broken": { "command": "x" }, "ok": { "command": "y" } }""",
+        };
+        var broken = new FakeMcpClient("broken") { ListToolsFailure = new InvalidOperationException("listing exploded") };
+        var ok     = new FakeMcpClient("ok") { ToolList = [Tool("t")] };
+        await using var svc = NewService(config, cfg => cfg.Name == "broken" ? broken : ok);
+
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+
+        Assert.Equal(["mcp__ok__t"], svc.Tools.Select(t => t.Name));
+        var failure = Assert.Single(svc.Status, s => s.Name == "broken");
+        Assert.False(failure.Connected);
+        Assert.Equal("listing exploded", failure.Error);
+        Assert.True(broken.Disposed);
     }
 }
