@@ -531,13 +531,10 @@ internal class AnalyzeImpactTool : ITool
         };
         try
         {
-            return Directory.EnumerateFiles(rootDir, pattern, SearchOption.AllDirectories)
-                .Where(f => !IsExcluded(f, rootDir));
+            return WorkspaceScan.EnumerateFiles(rootDir, pattern);
         }
         catch { return []; }
     }
-
-    private static bool IsExcluded(string path, string root) => WorkspaceScan.IsExcludedPath(path, root);
 
     // ── Icons ─────────────────────────────────────────────────────────────────
 

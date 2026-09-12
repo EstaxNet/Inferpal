@@ -100,16 +100,34 @@ internal static class WorkspaceScan
     }
 
     /// <summary>
-    /// Files matching <paramref name="pattern"/> under <paramref name="root"/>, excluded
-    /// directories skipped. Returns empty rather than throwing on an unreadable tree.
+    /// Files matching <paramref name="pattern"/> under <paramref name="start"/>, excluded directories
+    /// skipped — judged below <paramref name="root"/> when one is given, below <paramref name="start"/>
+    /// otherwise. A start that cannot be opened yields nothing; a folder below it that cannot be read
+    /// is skipped instead of ending the walk.
     /// </summary>
-    public static IEnumerable<string> EnumerateFiles(string root, string pattern = "*.cs")
+    /// <remarks>
+    /// The enumeration is lazy, so a <c>try</c> around the call never saw what happened deeper: one
+    /// unreadable folder (a database volume owned by a container's user, a locked junction in a
+    /// Windows profile) threw inside every caller's loop. <see cref="EnumerationOptions.IgnoreInaccessible"/>
+    /// skips it at the source; the other options keep what <c>SearchOption.AllDirectories</c> did
+    /// (no attribute skipped, Win32 wildcards).
+    /// </remarks>
+    public static IEnumerable<string> EnumerateFiles(string start, string pattern = "*.cs", string? root = null)
     {
+        var judgedBelow = string.IsNullOrEmpty(root) ? start : root;
         try
         {
-            return Directory.EnumerateFiles(root, pattern, SearchOption.AllDirectories)
-                            .Where(f => !IsExcludedPath(f, root));
+            return Directory.EnumerateFiles(start, pattern, WalkOptions)
+                            .Where(f => !IsExcludedPath(f, judgedBelow));
         }
         catch { return []; }
     }
+
+    private static readonly EnumerationOptions WalkOptions = new()
+    {
+        RecurseSubdirectories = true,
+        IgnoreInaccessible    = true,
+        AttributesToSkip      = 0,
+        MatchType             = MatchType.Win32,
+    };
 }

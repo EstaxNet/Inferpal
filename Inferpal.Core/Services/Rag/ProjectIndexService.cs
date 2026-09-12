@@ -681,8 +681,7 @@ internal sealed class ProjectIndexService : IDisposable
         {
             foreach (var ext in CodeChunker.SupportedExtensions)
             {
-                foreach (var f in Directory.EnumerateFiles(
-                             rootDir, $"*{ext}", SearchOption.AllDirectories))
+                foreach (var f in WorkspaceScan.EnumerateFiles(rootDir, $"*{ext}"))
                 {
                     if (!IsExcluded(f) && new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes)
                         result.Add(f);

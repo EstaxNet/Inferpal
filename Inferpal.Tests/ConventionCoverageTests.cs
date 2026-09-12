@@ -134,17 +134,17 @@ public class ConventionCoverageTests
     [Fact]
     public void ToolRecursiveEnumerations_RouteThroughWorkspaceScan()
     {
-        // File granularity, like the router test: a tool that enumerates recursively must at
-        // least know about WorkspaceScan (EnumerateFiles, or an explicit IsExcludedPath filter).
+        // A tool that enumerates recursively goes THROUGH WorkspaceScan.EnumerateFiles: mentioning it
+        // is no longer enough. Filtering with IsExcludedPath left each site its own enumeration, hence
+        // its own failures — one unreadable folder (a Docker volume mounted in the repository, a
+        // locked junction in a Windows profile) stopped every walk, and each failed differently
+        // (a false "directory not found", an exception, a silently partial list). Read without
+        // comments.
         foreach (var file in ToolsSources())
         {
-            var source = File.ReadAllText(file);
-            if (!source.Contains("SearchOption.AllDirectories")) continue;
-
-            Assert.True(source.Contains("WorkspaceScan."),
-                $"{Rel(file)} enumerates recursively without referencing WorkspaceScan - it walks " +
-                "bin/obj/.git/node_modules and .inferpal/history (COPIES of sources). " +
-                "Use WorkspaceScan.EnumerateFiles, or filter with WorkspaceScan.IsExcludedPath.");
+            Assert.False(CodeOnly(file).Contains("SearchOption.AllDirectories"),
+                $"{Rel(file)} enumerates recursively on its own - it walks bin/obj/.git/node_modules " +
+                "and .inferpal/history, and one unreadable folder stops it. Use WorkspaceScan.EnumerateFiles.");
         }
     }
 

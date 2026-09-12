@@ -178,10 +178,9 @@ internal static class WorkspaceSymbolScanner
         var result = new List<string>();
         try
         {
-            foreach (var path in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+            foreach (var path in WorkspaceScan.EnumerateFiles(root, "*"))
             {
                 if (!CodeChunker.SupportedExtensions.Contains(Path.GetExtension(path))) continue;
-                if (IsExcluded(path, root)) continue;
                 try { if (new FileInfo(path).Length > CodeChunker.MaxFileSizeBytes) continue; }
                 catch (Exception ex) { Diagnostics.Swallow("WorkspaceSymbolScanner.FileInfo", ex); continue; }
                 result.Add(path);
@@ -193,8 +192,6 @@ internal static class WorkspaceSymbolScanner
         result.Sort(StringComparer.OrdinalIgnoreCase);
         return result;
     }
-
-    private static bool IsExcluded(string path, string root) => WorkspaceScan.IsExcludedPath(path, root);
 
     private static string Rel(string root, string path) =>
         Path.GetRelativePath(root, path).Replace('\\', '/');

@@ -269,10 +269,9 @@ internal sealed class RenameSymbolTool : ITool
             if (filePattern is not null)
             {
                 // User-specified glob: enumerate with that pattern, then filter by extension
-                foreach (var f in Directory.EnumerateFiles(rootDir, filePattern, SearchOption.AllDirectories))
+                foreach (var f in WorkspaceScan.EnumerateFiles(rootDir, filePattern))
                 {
-                    if (!IsExcluded(f, rootDir) &&
-                        CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f)) &&
+                    if (CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f)) &&
                         new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes)
                         result.Add(f);
                 }
@@ -281,9 +280,9 @@ internal sealed class RenameSymbolTool : ITool
             {
                 foreach (var ext in CodeChunker.SupportedExtensions)
                 {
-                    foreach (var f in Directory.EnumerateFiles(rootDir, $"*{ext}", SearchOption.AllDirectories))
+                    foreach (var f in WorkspaceScan.EnumerateFiles(rootDir, $"*{ext}"))
                     {
-                        if (!IsExcluded(f, rootDir) && new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes)
+                        if (new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes)
                             result.Add(f);
                     }
                 }
@@ -293,11 +292,6 @@ internal sealed class RenameSymbolTool : ITool
         catch (Exception ex) { Diagnostics.Swallow("RenameSymbolTool.ScanFile", ex); }
         return result;
     }
-
-    // ⚠ This tool WRITES. Its own copy compared with StringComparison.Ordinal, so `\Obj\` or
-    // `\Node_Modules\` slipped through on a case-insensitive filesystem, and it did not exclude
-    // `.inferpal` — it could rewrite symbols inside the undo snapshots of the user's own files.
-    private static bool IsExcluded(string path, string root) => WorkspaceScan.IsExcludedPath(path, root);
 
     private static bool IsValidIdentifier(string name) =>
         !string.IsNullOrEmpty(name) &&

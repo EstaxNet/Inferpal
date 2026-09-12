@@ -49,8 +49,7 @@ internal class SearchInFilesTool : ITool
         IEnumerable<string> files;
         try
         {
-            files = Directory.EnumerateFiles(path, filePattern, SearchOption.AllDirectories)
-                             .Where(f => !WorkspaceScan.IsExcludedPath(f, root ?? path));
+            files = WorkspaceScan.EnumerateFiles(path, filePattern, root);
         }
         catch (Exception ex)
         {
