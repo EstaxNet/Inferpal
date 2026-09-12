@@ -11,6 +11,14 @@ internal class RunTestsTool : ITool
     private const int DefaultTimeoutSeconds = 120;
     private const int MaxRawChars           = 6000;
 
+    private readonly Func<string?> _getRoot;
+
+    /// <param name="getRoot">The workspace root: where tests run when no path is given, and what a
+    /// relative path resolves against. ⚠ Never the process's working directory, which in Visual
+    /// Studio is the out-of-process host's folder — "No test runner detected" on a solution full of
+    /// tests, which the model reads as "there are no tests".</param>
+    public RunTestsTool(Func<string?>? getRoot = null) => _getRoot = getRoot ?? (() => null);
+
     public string Name => "run_tests";
 
     public string Description =>
@@ -28,7 +36,7 @@ internal class RunTestsTool : ITool
             path = new
             {
                 type        = "string",
-                description = "Path to a project file (.sln/.csproj), directory, or test file. Optional, defaults to cwd."
+                description = "Path to a project file (.sln/.csproj), directory, or test file. Optional, defaults to the workspace root."
             },
             filter = new
             {
@@ -51,13 +59,14 @@ internal class RunTestsTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
+        var root    = _getRoot();
         var rawPath = args.Trimmed("path");
-        var path    = string.IsNullOrWhiteSpace(rawPath) ? null : PathSanitizer.Sanitize(rawPath);
+        var path    = string.IsNullOrWhiteSpace(rawPath) ? null : PathSanitizer.Sanitize(rawPath, root);
         var filter  = args.Trimmed("filter");
         var forced  = args.Keyword("runner");
         var timeout = args.Int("timeout_seconds", DefaultTimeoutSeconds);
 
-        var workDir = ResolveWorkDir(path);
+        var workDir = ResolveWorkDir(path, root);
         var runner  = (forced is null or "auto") ? DetectRunner(workDir, path) : forced;
 
         return runner switch
@@ -515,12 +524,15 @@ internal class RunTestsTool : ITool
         return null;
     }
 
-    private static string ResolveWorkDir(string? path)
+    /// <summary>Where the runner starts: the path given, else the workspace root — the working
+    /// directory only when no workspace root is known.</summary>
+    internal static string ResolveWorkDir(string? path, string? root)
     {
-        if (path is null)                    return Directory.GetCurrentDirectory();
+        var fallback = string.IsNullOrEmpty(root) ? Directory.GetCurrentDirectory() : root;
+        if (path is null)                    return fallback;
         if (Directory.Exists(path))          return path;
-        if (File.Exists(path))               return Path.GetDirectoryName(path) ?? Directory.GetCurrentDirectory();
-        return Directory.GetCurrentDirectory();
+        if (File.Exists(path))               return Path.GetDirectoryName(path) ?? fallback;
+        return fallback;
     }
 
     private static string Truncate(string s, int max) =>

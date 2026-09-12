@@ -1119,38 +1119,39 @@ public class ConventionCoverageTests
     {
         // Sanitize(path) resolves a relative path against the PROCESS's working directory. In Visual
         // Studio that is not the project: the out-of-process host keeps the folder it started in.
-        // "src/Foo.cs" therefore pointed elsewhere, and AssertUnderRoot refused it as "outside the
-        // workspace root" — while the same call worked in VS Code, whose host starts in the
-        // workspace. A tool that checks a root resolves against THAT root.
-        var offenders    = new List<string>();
-        var checkedTools = 0;
+        // "src/Foo.cs" therefore pointed elsewhere — refused as "outside the workspace root" by the
+        // tools that check a root, and looked up in the wrong place, silently, by those that do not
+        // (run_tests: "No test runner detected" on a solution full of tests). The same call worked in
+        // VS Code, whose host starts in the workspace.
+        // ⚠ The rule therefore targets EVERY one-argument call, not only those followed by
+        // AssertUnderRoot: its first version only looked at those, and three tools were outside it.
+        var offenders   = new List<string>();
+        var rootedCalls = 0;
         foreach (var file in ToolsSources())
         {
-            var tree  = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
-            var calls = tree.DescendantNodes().OfType<InvocationExpressionSyntax>()
-                .Select(i => (Call: i, Member: i.Expression as MemberAccessExpressionSyntax))
-                .Where(c => c.Member?.Expression is IdentifierNameSyntax { Identifier.ValueText: "PathSanitizer" })
-                .ToList();
-
-            if (!calls.Any(c => c.Member!.Name.Identifier.ValueText == "AssertUnderRoot")) continue;
-            checkedTools++;
-
-            foreach (var (call, member) in calls)
+            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            foreach (var call in tree.DescendantNodes().OfType<InvocationExpressionSyntax>())
             {
-                if (member!.Name.Identifier.ValueText != "Sanitize" || call.ArgumentList.Arguments.Count != 1) continue;
+                if (call.Expression is not MemberAccessExpressionSyntax
+                    {
+                        Expression: IdentifierNameSyntax { Identifier.ValueText: "PathSanitizer" },
+                        Name.Identifier.ValueText: "Sanitize",
+                    }) continue;
+
+                if (call.ArgumentList.Arguments.Count == 2) { rootedCalls++; continue; }
+
                 var line = call.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
                 offenders.Add($"{Rel(file)}({line}) : {call}");
             }
         }
 
         // Witness: the file tools are actually read, otherwise "no site" means nothing.
-        Assert.True(checkedTools >= 10,
-            $"Only {checkedTools} root-checking tool(s) read -- the scan no longer measures anything.");
+        Assert.True(rootedCalls >= 14,
+            $"Only {rootedCalls} Sanitize(path, root) call(s) read -- the scan no longer measures anything.");
 
         Assert.True(offenders.Count == 0,
-            "These tools resolve a path against the process's working directory, then check it "
-            + "against the workspace root: a relative path is refused in Visual Studio. Pass the root "
-            + "to PathSanitizer.Sanitize(path, root). Sites:"
+            "These tools resolve a path against the process's working directory, which in Visual "
+            + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 }

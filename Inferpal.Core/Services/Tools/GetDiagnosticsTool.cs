@@ -13,16 +13,24 @@ internal class GetDiagnosticsTool : ITool
     public string Name => ToolName;
 
     private readonly Services.Editor.IEditorSurface? _editor;
+    private readonly Func<string?> _getRoot;
 
     /// <param name="editor">When the editor exposes live language-service diagnostics,
     /// they are returned instantly instead of building; null / no diagnostics falls
     /// back to the compile flow (VS today).</param>
-    public GetDiagnosticsTool(Services.Editor.IEditorSurface? editor = null) => _editor = editor;
+    /// <param name="getRoot">The workspace root: where the project file is looked for, and what a
+    /// relative path resolves against. ⚠ Never the process's working directory, which in Visual
+    /// Studio is the out-of-process host's folder, not the project.</param>
+    public GetDiagnosticsTool(Services.Editor.IEditorSurface? editor = null, Func<string?>? getRoot = null)
+    {
+        _editor  = editor;
+        _getRoot = getRoot ?? (() => null);
+    }
 
     public string Description =>
         "Returns current errors and warnings. Uses the editor's live diagnostics when " +
         "available (instant, open files); otherwise compiles the project or solution. " +
-        "If path is omitted, looks for the first .sln or .csproj in the current directory. " +
+        "If path is omitted, looks for the first .sln or .csproj in the workspace root. " +
         "Timeout: 90 seconds.";
 
     public object Parameters => new
@@ -68,10 +76,11 @@ internal class GetDiagnosticsTool : ITool
                 return live!.Trim();
         }
 
+        var root = _getRoot();
         string? path = null;
         if (!string.IsNullOrWhiteSpace(rawPath))
-            path = PathSanitizer.Sanitize(rawPath);
-        path ??= FindProjectFile();
+            path = PathSanitizer.Sanitize(rawPath, root);
+        path ??= FindProjectFile(root);
 
         if (path is null)
             return Strings.DiagNoProject;
@@ -117,14 +126,16 @@ internal class GetDiagnosticsTool : ITool
         return sb.ToString().Trim();
     }
 
-    private static string? FindProjectFile()
+    /// <summary>The first solution or project under <paramref name="root"/> — the working
+    /// directory only when no workspace root is known.</summary>
+    internal static string? FindProjectFile(string? root)
     {
-        var cwd = Directory.GetCurrentDirectory();
+        var start = string.IsNullOrEmpty(root) ? Directory.GetCurrentDirectory() : root;
         foreach (var ext in new[] { "*.sln", "*.slnx", "*.csproj" })
         {
             // WorkspaceScan: lazy + excluded dirs skipped — a stray .csproj under node_modules
             // or bin/ must not become "the" project file.
-            var found = WorkspaceScan.EnumerateFiles(cwd, ext).FirstOrDefault();
+            var found = WorkspaceScan.EnumerateFiles(start, ext).FirstOrDefault();
             if (found is not null) return found;
         }
         return null;

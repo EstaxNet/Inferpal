@@ -89,14 +89,14 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix));
         Register(new RestoreFileTool(approval, history, () => indexService.RootDir));
         Register(new DeleteFileTool(approval, history, () => indexService.RootDir));
-        Register(new GetDiagnosticsTool(editor));
+        Register(new GetDiagnosticsTool(editor, () => indexService.RootDir));
         Register(new GetActiveDocumentTool(editor));
         Register(new FetchUrlTool(approval));
         Register(new WebSearchTool(approval));
         Register(new GetSolutionInfoTool(editor));
         Register(new GetOpenEditorsTool(editor));
         Register(new GetGitStatusTool(editor, () => indexService.RootDir));
-        Register(new RunTestsTool());
+        Register(new RunTestsTool(() => indexService.RootDir));
         Register(new InsertAtCursorTool(editor, approval, _fileHistory));
         Register(new ReplaceSelectionTool(editor, approval, _fileHistory));
         Register(new UpdateMemoryTool(editor, approval, _fileHistory, () => indexService.RootDir));

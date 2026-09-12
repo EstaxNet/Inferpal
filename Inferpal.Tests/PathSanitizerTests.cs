@@ -81,6 +81,19 @@ public class PathSanitizerTests : IDisposable
     }
 
     [Fact]
+    public void AWindowsAbsolutePath_IsNeverResolvedInsideTheRoot()
+    {
+        // On Linux and macOS "C:\elsewhere\a.cs" is not fully qualified: without a guard it would
+        // resolve UNDER the root and be accepted, where it has always been refused. On Windows this
+        // test is green by construction; the POSIX CI legs are what make it bite.
+        var sanitized = PathSanitizer.Sanitize(@"C:\elsewhere\a.cs", _root);
+        Assert.False(sanitized.StartsWith(_root, StringComparison.OrdinalIgnoreCase), sanitized);
+
+        var unc = PathSanitizer.Sanitize(@"\\server\share\a.cs", _root);
+        Assert.False(unc.StartsWith(_root, StringComparison.OrdinalIgnoreCase), unc);
+    }
+
+    [Fact]
     public void AnAbsolutePath_IgnoresTheRoot()
     {
         var absolute = Path.Combine(_outside, "a.cs");

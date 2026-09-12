@@ -48,7 +48,7 @@ internal static class PathSanitizer
         {
             // GetFullPath normalises separators, resolves ./ and ../ segments, and
             // throws ArgumentException / PathTooLongException on illegal characters.
-            return !string.IsNullOrEmpty(workspaceRoot) && !Path.IsPathFullyQualified(cleaned)
+            return !string.IsNullOrEmpty(workspaceRoot) && !Path.IsPathFullyQualified(cleaned) && !IsForeignAbsolute(cleaned)
                 ? Path.GetFullPath(cleaned, Path.GetFullPath(workspaceRoot))
                 : Path.GetFullPath(cleaned);
         }
@@ -57,6 +57,19 @@ internal static class PathSanitizer
             throw new ArgumentException(Strings.ToolPathInvalid(cleaned, ex.Message), ex);
         }
     }
+
+    /// <summary>
+    /// A path that is absolute on ANOTHER platform: a drive (<c>C:\</c>, <c>C:/</c>) or a UNC share
+    /// (<c>\\server</c>).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ On Linux and macOS neither is fully qualified, so without this check a Windows path the
+    /// model wrote out of habit would resolve INSIDE the workspace — a file literally named
+    /// <c>C:\elsewhere\Other.cs</c> under the root, accepted where it has always been refused.
+    /// </remarks>
+    private static bool IsForeignAbsolute(string path) =>
+        (path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && path[2] is '\\' or '/')
+        || path.StartsWith(@"\\", StringComparison.Ordinal);
 
     /// <summary>
     /// Verifies that <paramref name="fullPath"/> (already sanitised) lives under

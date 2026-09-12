@@ -79,7 +79,9 @@ internal sealed class RunCommandTool : ITool, IDisposable
             return "Error: 'command' is required (or use action='poll'/'stop'/'list').";
 
         var rawWorkDir = args.Str("working_directory");
-        var workDir    = string.IsNullOrWhiteSpace(rawWorkDir) ? null : PathSanitizer.Sanitize(rawWorkDir);
+        // A relative working_directory is relative to the SESSION's directory, as the parameter
+        // says — never to the process's, which in Visual Studio is the extension host's folder.
+        var workDir    = string.IsNullOrWhiteSpace(rawWorkDir) ? null : PathSanitizer.Sanitize(rawWorkDir, _session.CurrentDirectory);
 
         // Surface a model-chosen working directory in the prompt: approving "git clean -fdx"
         // reads very differently when it runs outside the session cwd the user has in mind.
