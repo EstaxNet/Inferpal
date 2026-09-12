@@ -40,13 +40,13 @@ internal class RestoreFileTool : ITool
         // write_file — workspace confinement (target AND source snapshot, so the model can't
         // copy an arbitrary on-disk file into/over anything) + diff approval + pre-snapshot.
         var root = _getWorkspaceRoot();
-        var path = PathSanitizer.Sanitize(args.Str("path"));
+        var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
 
         string? snapPath = null;
         if (args.Str("snapshot") is { } snapRaw)
         {
-            snapPath = PathSanitizer.Sanitize(snapRaw);
+            snapPath = PathSanitizer.Sanitize(snapRaw, root);
             PathSanitizer.AssertUnderRoot(snapPath, root);
         }
 

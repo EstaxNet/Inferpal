@@ -147,8 +147,9 @@ internal class AnalyzeImpactTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var filePath = PathSanitizer.Sanitize(args.Str("path"));
-        PathSanitizer.AssertUnderRoot(filePath, _getRoot());
+        var workspaceRoot = _getRoot();
+        var filePath      = PathSanitizer.Sanitize(args.Str("path"), workspaceRoot);
+        PathSanitizer.AssertUnderRoot(filePath, workspaceRoot);
         if (!File.Exists(filePath))
             return Strings.ToolFileNotFound(filePath);
 
@@ -164,7 +165,7 @@ internal class AnalyzeImpactTool : ITool
         // "0 dependants · safe to refactor freely". A blast-radius tool that cannot leave the
         // directory it was pointed at answers the wrong question. Falls back to the folder when no
         // workspace is known, the only case the old behaviour was ever right for.
-        var rootDir  = _getRoot() is { Length: > 0 } workspace ? workspace : Path.GetDirectoryName(filePath)!;
+        var rootDir  = workspaceRoot is { Length: > 0 } ? workspaceRoot : Path.GetDirectoryName(filePath)!;
         var fileName = Path.GetFileName(filePath);
 
         // ── 1. Extract public API of the target file ──────────────────────────

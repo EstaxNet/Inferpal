@@ -31,8 +31,9 @@ internal class ReadFileTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path = PathSanitizer.Sanitize(args.Str("path"));
-        PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
+        var root = _getWorkspaceRoot();
+        var path = PathSanitizer.Sanitize(args.Str("path"), root);
+        PathSanitizer.AssertUnderRoot(path, root);
 
         // Dirty-buffer overlay first: an open (possibly unsaved, possibly not-yet-created)
         // document must be read as the user sees it, not as the disk last saved it.

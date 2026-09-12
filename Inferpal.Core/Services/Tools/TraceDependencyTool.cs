@@ -68,8 +68,9 @@ internal class TraceDependencyTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var filePath = PathSanitizer.Sanitize(args.Str("path"));
-        PathSanitizer.AssertUnderRoot(filePath, _getRoot());
+        var workspace = _getRoot();
+        var filePath  = PathSanitizer.Sanitize(args.Str("path"), workspace);
+        PathSanitizer.AssertUnderRoot(filePath, workspace);
         if (!File.Exists(filePath))
             return Strings.ToolFileNotFound(filePath);
 

@@ -32,8 +32,9 @@ internal class DeleteFileTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path = PathSanitizer.Sanitize(args.Str("path"));
-        PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
+        var root = _getWorkspaceRoot();
+        var path = PathSanitizer.Sanitize(args.Str("path"), root);
+        PathSanitizer.AssertUnderRoot(path, root);
 
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);

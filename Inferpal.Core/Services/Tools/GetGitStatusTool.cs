@@ -57,8 +57,9 @@ internal class GetGitStatusTool : ITool
         // machine (pre-1.6.0 architecture review, §1.10). Read-only, but outside the advertised boundary.
         if (startPath is not null)
         {
-            startPath = PathSanitizer.Sanitize(startPath);
-            PathSanitizer.AssertUnderRoot(startPath, _getRoot());
+            var workspace = _getRoot();
+            startPath = PathSanitizer.Sanitize(startPath, workspace);
+            PathSanitizer.AssertUnderRoot(startPath, workspace);
         }
 
         var root = (startPath is not null ? FindGitRoot(startPath) : null)

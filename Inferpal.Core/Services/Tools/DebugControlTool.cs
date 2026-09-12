@@ -91,8 +91,9 @@ internal sealed class DebugControlTool(
         if (!args.TryGetProperty("line", out var l) || !l.TryGetInt32(out var line) || line < 1)
             return (null, 0, "Error: 'line' is required for this action and must be a 1-based line number.");
 
-        var full = PathSanitizer.Sanitize(raw);
-        try { PathSanitizer.AssertUnderRoot(full, root()); }
+        var workspace = root();
+        var full = PathSanitizer.Sanitize(raw, workspace);
+        try { PathSanitizer.AssertUnderRoot(full, workspace); }
         catch (Exception ex) { return (null, 0, $"Error: {ex.Message}"); }
 
         return (full, line, null);

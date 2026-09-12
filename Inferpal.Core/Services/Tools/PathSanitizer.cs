@@ -15,7 +15,22 @@ internal static class PathSanitizer
     /// Returns a normalised, absolute path, or throws <see cref="ArgumentException"/>
     /// with a localised message the LLM can read and act upon.
     /// </summary>
-    internal static string Sanitize(string? raw)
+    internal static string Sanitize(string? raw) => Sanitize(raw, workspaceRoot: null);
+
+    /// <summary>
+    /// Like <see cref="Sanitize(string?)"/>, but a path that is not fully qualified resolves against
+    /// <paramref name="workspaceRoot"/>, never against the process's working directory.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ In Visual Studio the working directory is not the project: the out-of-process extension
+    /// host keeps the directory it started in for its whole lifetime (see
+    /// <c>ActiveSolutionSignal</c>). A relative path — <c>src/Foo.cs</c>, <c>.</c> — therefore
+    /// resolved outside the workspace and was refused as "outside the workspace root", while the
+    /// same call worked in VS Code, whose host is spawned in the workspace folder.
+    /// <see cref="AssertUnderRoot"/> is unchanged: a <c>..</c> that climbs out is still refused.
+    /// Without a root (no solution open yet) the working directory is the only base there is.
+    /// </remarks>
+    internal static string Sanitize(string? raw, string? workspaceRoot)
     {
         if (string.IsNullOrWhiteSpace(raw))
             throw new ArgumentException(Strings.ToolPathRequired);
@@ -33,7 +48,9 @@ internal static class PathSanitizer
         {
             // GetFullPath normalises separators, resolves ./ and ../ segments, and
             // throws ArgumentException / PathTooLongException on illegal characters.
-            return Path.GetFullPath(cleaned);
+            return !string.IsNullOrEmpty(workspaceRoot) && !Path.IsPathFullyQualified(cleaned)
+                ? Path.GetFullPath(cleaned, Path.GetFullPath(workspaceRoot))
+                : Path.GetFullPath(cleaned);
         }
         catch (Exception ex) when (ex is ArgumentException or PathTooLongException or NotSupportedException)
         {

@@ -25,8 +25,9 @@ internal class ListFilesTool : ITool
 
     public Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path    = PathSanitizer.Sanitize(args.Str("path"));
-        PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
+        var root    = _getWorkspaceRoot();
+        var path    = PathSanitizer.Sanitize(args.Str("path"), root);
+        PathSanitizer.AssertUnderRoot(path, root);
         var pattern = args.Str("pattern") ?? "*";
 
         if (!Directory.Exists(path))

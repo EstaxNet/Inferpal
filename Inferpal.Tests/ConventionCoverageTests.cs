@@ -1111,4 +1111,46 @@ public class ConventionCoverageTests
             + "compiler could not report. Declare it nullable. Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
+
+    // ── 14. A path resolves against the root it is checked against ────────────
+
+    [Fact]
+    public void ToolPaths_ResolveAgainstTheRootTheyAreCheckedAgainst()
+    {
+        // Sanitize(path) resolves a relative path against the PROCESS's working directory. In Visual
+        // Studio that is not the project: the out-of-process host keeps the folder it started in.
+        // "src/Foo.cs" therefore pointed elsewhere, and AssertUnderRoot refused it as "outside the
+        // workspace root" — while the same call worked in VS Code, whose host starts in the
+        // workspace. A tool that checks a root resolves against THAT root.
+        var offenders    = new List<string>();
+        var checkedTools = 0;
+        foreach (var file in ToolsSources())
+        {
+            var tree  = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            var calls = tree.DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Select(i => (Call: i, Member: i.Expression as MemberAccessExpressionSyntax))
+                .Where(c => c.Member?.Expression is IdentifierNameSyntax { Identifier.ValueText: "PathSanitizer" })
+                .ToList();
+
+            if (!calls.Any(c => c.Member!.Name.Identifier.ValueText == "AssertUnderRoot")) continue;
+            checkedTools++;
+
+            foreach (var (call, member) in calls)
+            {
+                if (member!.Name.Identifier.ValueText != "Sanitize" || call.ArgumentList.Arguments.Count != 1) continue;
+                var line = call.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Rel(file)}({line}) : {call}");
+            }
+        }
+
+        // Witness: the file tools are actually read, otherwise "no site" means nothing.
+        Assert.True(checkedTools >= 10,
+            $"Only {checkedTools} root-checking tool(s) read -- the scan no longer measures anything.");
+
+        Assert.True(offenders.Count == 0,
+            "These tools resolve a path against the process's working directory, then check it "
+            + "against the workspace root: a relative path is refused in Visual Studio. Pass the root "
+            + "to PathSanitizer.Sanitize(path, root). Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
 }

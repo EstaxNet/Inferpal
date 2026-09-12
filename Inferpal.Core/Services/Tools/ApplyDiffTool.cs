@@ -44,8 +44,9 @@ internal class ApplyDiffTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var path       = PathSanitizer.Sanitize(args.Str("path"));
-        PathSanitizer.AssertUnderRoot(path, _getWorkspaceRoot());
+        var root       = _getWorkspaceRoot();
+        var path       = PathSanitizer.Sanitize(args.Str("path"), root);
+        PathSanitizer.AssertUnderRoot(path, root);
         var oldContent = args.Str("old_content") ?? throw new ArgumentException("old_content is required.");
         // ⚠ Was `?? ""`, on an argument the schema declares REQUIRED: omitting it therefore
         // became a DELETION of the matched block, and the answer said "diff applied". The model

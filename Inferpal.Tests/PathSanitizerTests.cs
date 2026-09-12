@@ -60,6 +60,47 @@ public class PathSanitizerTests : IDisposable
     public void NoWorkspaceRoot_DisablesTheCheck()
         => PathSanitizer.AssertUnderRoot(Path.Combine(_outside, "a.cs"), null);
 
+    // ── Relative paths: against the root, never against the working directory ─
+
+    [Fact]
+    public void ARelativePath_ResolvesAgainstTheWorkspaceRoot_NotTheWorkingDirectory()
+    {
+        // Witness: if the process's working directory were the root, this test would tell nothing apart.
+        Assert.NotEqual(Path.GetFullPath(_root).TrimEnd(Path.DirectorySeparatorChar),
+                        Directory.GetCurrentDirectory().TrimEnd(Path.DirectorySeparatorChar));
+
+        Assert.Equal(Path.Combine(_root, "src", "a.cs"), PathSanitizer.Sanitize(Path.Combine("src", "a.cs"), _root));
+        Assert.Equal(Path.GetFullPath(_root), PathSanitizer.Sanitize(".", _root).TrimEnd(Path.DirectorySeparatorChar));
+    }
+
+    [Fact]
+    public void ARelativePathThatClimbsOut_IsStillRefused()
+    {
+        var escaping = PathSanitizer.Sanitize(Path.Combine("..", "elsewhere", "a.cs"), _root);
+        Assert.Throws<ArgumentException>(() => PathSanitizer.AssertUnderRoot(escaping, _root));
+    }
+
+    [Fact]
+    public void AnAbsolutePath_IgnoresTheRoot()
+    {
+        var absolute = Path.Combine(_outside, "a.cs");
+        Assert.Equal(PathSanitizer.Sanitize(absolute), PathSanitizer.Sanitize(absolute, _root));
+    }
+
+    [Fact]
+    public async Task ReadFile_AcceptsAPathRelativeToTheWorkspace()
+    {
+        // The defect as the model saw it in Visual Studio: read_file "src/a.cs" refused as
+        // "outside the workspace root", because it was resolved against the host's folder.
+        Directory.CreateDirectory(Path.Combine(_root, "src"));
+        await File.WriteAllTextAsync(Path.Combine(_root, "src", "a.cs"), "class A {}");
+
+        var tool = new ReadFileTool(() => _root);
+        var args = System.Text.Json.JsonDocument.Parse("""{ "path": "src/a.cs" }""").RootElement;
+
+        Assert.Equal("class A {}", await tool.ExecuteAsync(args, CancellationToken.None));
+    }
+
     // ── Link confinement ───────────────────────────────────────────────────────
 
     [Fact]

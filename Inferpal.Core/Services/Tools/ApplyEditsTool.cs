@@ -86,7 +86,7 @@ internal sealed class ApplyEditsTool : ITool
 
             // No null check on `path`: Sanitize already throws a readable, localised message when
             // it is missing (ToolPathRequired). The check that used to be here could never fire.
-            var path = PathSanitizer.Sanitize(e.Str("path"));
+            var path = PathSanitizer.Sanitize(e.Str("path"), root);
             PathSanitizer.AssertUnderRoot(path, root);
 
             var old = e.Str("old_content");
