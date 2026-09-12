@@ -452,12 +452,13 @@ internal sealed partial class HostServer
                     if (result.Write is { } write)
                     {
                         // Shared with the VS window: backup of the replaced version, encoding-preserving write.
-                        var outcome = await OnboardCommandHandler.WriteGeneratedAsync(write, s.Tools.History, cts.Token);
+                        var outcome = await Inferpal.Services.Execution.BackedUpFileWriter.WriteAsync(
+                            write.Path, write.Content, s.Tools.History, cts.Token);
                         if (!outcome.Written)
-                            return new SlashCommandResult(true, Strings.OnboardContextNotReplaced(write.Path));
+                            return new SlashCommandResult(true, Strings.FileNotReplacedNoBackup(write.Path));
                         if (result.RefreshSystemPrompt) RefreshSystemMessage(s);
                         var message = outcome.Snapshot.Length > 0
-                            ? result.Message + "\n\n" + Strings.OnboardContextPreviousSaved(write.Path)
+                            ? result.Message + "\n\n" + Strings.FilePreviousVersionSaved(write.Path)
                             : result.Message;
                         return new SlashCommandResult(true, message,
                             [new SlashEffectDto("openFile", write.Path)]);
@@ -630,9 +631,10 @@ internal sealed partial class HostServer
     /// <remarks>
     /// Two deliberate differences from VS, both consequences of the port rather than choices:
     /// <see cref="IEditorSurface"/> exposes no selection, so the whole file is the input; and an
-    /// existing test file is rewritten on disk rather than through an undoable editor edit — the
-    /// adapter opens it right after, so the change is visible and revertable by the editor's own
-    /// file history.
+    /// existing test file is rewritten on disk rather than through an undoable editor edit.
+    /// ⚠ The model returns the WHOLE file, so a test it drops is gone — and the editor's own history
+    /// does not cover a file written behind its back. The replaced version is backed up first, and
+    /// the reply names the <c>/restore</c> command that brings it back.
     /// </remarks>
     private async Task<SlashCommandResult> RunGenerateTestsAsync(HostSession s, CancellationToken ct)
     {
@@ -646,11 +648,11 @@ internal sealed partial class HostServer
         if (plan.NoChange) return new SlashCommandResult(true, Strings.TestsNoChange);
         if (!plan.Ok)      return new SlashCommandResult(true, Strings.TestsGenerateFailed);
 
+        Inferpal.Services.Execution.BackedUpFileWriter.Outcome outcome;
         try
         {
-            var dir = Path.GetDirectoryName(plan.TestPath);
-            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-            await File.WriteAllTextAsync(plan.TestPath, plan.Content, System.Text.Encoding.UTF8, ct);
+            outcome = await Inferpal.Services.Execution.BackedUpFileWriter.WriteAsync(
+                plan.TestPath, plan.Content, s.Tools.History, ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -659,9 +661,13 @@ internal sealed partial class HostServer
             return new SlashCommandResult(true, Strings.TestsGenerateFailed);
         }
 
-        return new SlashCommandResult(true,
-            plan.Extended ? Strings.TestsExtended(plan.TestFileName) : Strings.TestsGenerated(plan.TestFileName),
-            [new SlashEffectDto("openFile", plan.TestPath)]);
+        if (!outcome.Written)
+            return new SlashCommandResult(true, Strings.FileNotReplacedNoBackup(plan.TestPath));
+
+        var message = plan.Extended ? Strings.TestsExtended(plan.TestFileName) : Strings.TestsGenerated(plan.TestFileName);
+        if (outcome.Snapshot.Length > 0)
+            message += "\n\n" + Strings.FilePreviousVersionSaved(plan.TestPath);
+        return new SlashCommandResult(true, message, [new SlashEffectDto("openFile", plan.TestPath)]);
     }
 
     /// <summary>/rules /checks /prompts — list, or `init` scaffolds the example file

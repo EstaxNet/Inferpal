@@ -532,14 +532,14 @@ internal partial class InferpalToolWindowData
             try
             {
                 // Shared with the host: backup of the replaced version, encoding-preserving write.
-                var outcome = await Services.Commands.OnboardCommandHandler.WriteGeneratedAsync(write, _tools.History, ct);
+                var outcome = await Services.Execution.BackedUpFileWriter.WriteAsync(write.Path, write.Content, _tools.History, ct);
                 if (!outcome.Written)
                 {
-                    await ShowInfoAsync(Strings.OnboardContextNotReplaced(write.Path));
+                    await ShowInfoAsync(Strings.FileNotReplacedNoBackup(write.Path));
                     return;
                 }
                 if (outcome.Snapshot.Length > 0)
-                    message += "\n\n" + Strings.OnboardContextPreviousSaved(write.Path);
+                    message += "\n\n" + Strings.FilePreviousVersionSaved(write.Path);
                 await _vs.Documents().OpenTextDocumentAsync(new Uri(write.Path), ct);
             }
             catch (OperationCanceledException) { throw; }

@@ -1,22 +1,22 @@
 using System.IO;
-using Inferpal.Services.Commands;
 using Inferpal.Services.Execution;
 using Xunit;
 
 namespace Inferpal.Tests;
 
 /// <summary>
-/// <c>/onboard context force</c> does not destroy the <c>context.md</c> it replaces.
+/// A write no approval prompt covers (<c>/onboard context force</c>, <c>/test</c> on an existing
+/// test file) does not destroy the file it replaces.
 /// </summary>
 /// <remarks>
-/// Both front-ends wrote the model's draft over the existing file — often written or corrected by
-/// hand — with no backup. The writer is shared, so it is tested once.
+/// Both front-ends wrote the model's content over the existing file — written or corrected by hand,
+/// or tests the model may have dropped — with no backup. The writer is shared, so it is tested once.
 /// </remarks>
-public class OnboardGeneratedWriteTests
+public class BackedUpFileWriterTests
 {
     private static async Task InTempDir(Func<string, Task> body)
     {
-        var dir = Directory.CreateTempSubdirectory("inferpal-onboard-").FullName;
+        var dir = Directory.CreateTempSubdirectory("inferpal-backedup-").FullName;
         try { await body(dir); }
         finally { try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ } }
     }
@@ -26,8 +26,7 @@ public class OnboardGeneratedWriteTests
     {
         var path = Path.Combine(dir, ".inferpal", "context.md");
 
-        var outcome = await OnboardCommandHandler.WriteGeneratedAsync(
-            new(path, "# Context"), new FileHistoryService(), CancellationToken.None);
+        var outcome = await BackedUpFileWriter.WriteAsync(path, "# Context", new FileHistoryService(), CancellationToken.None);
 
         Assert.True(outcome.Written);
         Assert.Equal(string.Empty, outcome.Snapshot);
@@ -44,8 +43,7 @@ public class OnboardGeneratedWriteTests
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllTextAsync(path, "written by hand");
 
-        var outcome = await OnboardCommandHandler.WriteGeneratedAsync(
-            new(path, "# Model draft"), new FileHistoryService(), CancellationToken.None);
+        var outcome = await BackedUpFileWriter.WriteAsync(path, "# Model draft", new FileHistoryService(), CancellationToken.None);
 
         Assert.True(outcome.Written);
         Assert.NotEqual(string.Empty, outcome.Snapshot);
@@ -65,8 +63,7 @@ public class OnboardGeneratedWriteTests
         var historyRoot = Path.Combine(Path.GetDirectoryName(path)!, ".inferpal");
         await File.WriteAllTextAsync(historyRoot, "not a directory");
 
-        var outcome = await OnboardCommandHandler.WriteGeneratedAsync(
-            new(path, "# Model draft"), new FileHistoryService(), CancellationToken.None);
+        var outcome = await BackedUpFileWriter.WriteAsync(path, "# Model draft", new FileHistoryService(), CancellationToken.None);
 
         Assert.False(outcome.Written);
         Assert.Equal("written by hand", await File.ReadAllTextAsync(path));

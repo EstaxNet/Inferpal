@@ -896,8 +896,8 @@ ollama serve
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>正在撰写项目上下文…</value></data>
   <data name="OnboardContextEmpty" xml:space="preserve"><value>模型没有返回任何内容 — `.inferpal/context.md` 未被改动。</value></data>
   <data name="OnboardContextGenerated" xml:space="preserve"><value>✅ 已写入 {0}（{1} 个字符）。请阅读并修改：它会被注入每一轮的系统提示词。</value></data>
-  <data name="OnboardContextPreviousSaved" xml:space="preserve"><value>之前的版本已先行保存 — 使用 `/restore {0}` 可恢复。</value></data>
-  <data name="OnboardContextNotReplaced" xml:space="preserve"><value>未替换 {0}：无法先保存其当前版本（参见 /diagnostics）。</value></data>
+  <data name="FilePreviousVersionSaved" xml:space="preserve"><value>之前的版本已先行保存 — 使用 `/restore {0}` 可恢复。</value></data>
+  <data name="FileNotReplacedNoBackup" xml:space="preserve"><value>未替换 {0}：无法先保存其当前版本（参见 /diagnostics）。</value></data>
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>你要撰写一份项目上下文文件，供一个完全本地的编码助手在每一轮之前阅读。根据下面的仓库描述，写一份带 `##` 小节的简短 markdown 文档：这个项目是什么、技术栈与目录结构、以及如何构建和测试。规则（按重要性排序）：文件、文件夹、项目、命令的名称一律照抄原样，绝不臆造；描述没有显示的，就不要写某个文件夹或项目「做什么」，列出名称即可；只陈述描述所支持的内容，不要猜测、不要凑字数、不要给泛泛的建议；不知道的就略去——简短而准确胜过冗长而似是而非。最多 40 行，不要封面，也不要用代码块包裹整个回答。 请使用与本指令相同的语言撰写。</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;现在请撰写项目上下文文件。</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>项目配置已创建于 {0}。它随仓库一起分发：可以建议，但绝不授予权限。</value></data>

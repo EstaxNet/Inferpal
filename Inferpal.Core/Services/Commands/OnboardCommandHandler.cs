@@ -32,36 +32,11 @@ namespace Inferpal.Services.Commands;
 internal static class OnboardCommandHandler
 {
     /// <summary>A file the front-end must write, then open. Overwrites — the handler already decided.</summary>
-    internal sealed record GeneratedFile(string Path, string Content);
-
-    /// <param name="Written">False when an existing file was left in place because it could not be backed up.</param>
-    /// <param name="Snapshot">The backup of the replaced version, or <c>""</c> when there was nothing to replace.</param>
-    internal readonly record struct WriteOutcome(bool Written, string Snapshot);
-
-    /// <summary>
-    /// Writes a <see cref="GeneratedFile"/> for either front-end: the version it replaces is backed
-    /// up first, then the file is written keeping the encoding it already has.
-    /// </summary>
     /// <remarks>
-    /// ⚠ <c>/onboard context force</c> replaces a <c>context.md</c> that may have been written by
-    /// hand, and a model draft does not stand in for it. The replaced version goes to
-    /// <c>.inferpal/history/</c>, and the caller names the command that brings it back. An existing
-    /// file that cannot be backed up is not replaced at all — the same rule as <c>/undo-run</c>,
-    /// which refuses to delete what it could not save.
+    /// ⚠ <c>context.md</c> may have been written by hand: front-ends write it through
+    /// <see cref="Execution.BackedUpFileWriter"/>, never directly.
     /// </remarks>
-    internal static async Task<WriteOutcome> WriteGeneratedAsync(
-        GeneratedFile file, FileHistoryService history, CancellationToken ct)
-    {
-        var dir = Path.GetDirectoryName(file.Path);
-        if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-
-        var existed  = File.Exists(file.Path);
-        var snapshot = await history.SnapshotAsync(file.Path, ct);
-        if (existed && snapshot.Length == 0) return new(false, string.Empty);
-
-        await Inferpal.Services.Tools.SafeFileWriter.WritePreservingAsync(file.Path, file.Content, ct);
-        return new(true, snapshot);
-    }
+    internal sealed record GeneratedFile(string Path, string Content);
 
     /// <param name="Message">Markdown to display (null when a scaffold or write carries the answer).</param>
     /// <param name="Scaffold">Example <c>project.json</c> to create (<c>/onboard init</c>).</param>

@@ -54,7 +54,7 @@ public class RecoveryMessageTests
     public void OnboardPreviousSaved_NamesACommandThatRestoresTheFile() =>
         InEveryCulture(culture =>
         {
-            var message = Strings.OnboardContextPreviousSaved(@"C:\repo\.inferpal\context.md");
+            var message = Strings.FilePreviousVersionSaved(@"C:\repo\.inferpal\context.md");
             var tool    = Assert.IsType<SlashToolAction>(RouteQuotedCommand(message, culture));
             Assert.Equal("restore_file", tool.Tool);
         });

@@ -44,6 +44,12 @@ public class HostServerTests
         [JsonRpcMethod("editor/diagnostics")]
         public string? EditorDiagnostics() => Diagnostics;
 
+        /// <summary>The active document the adapter serves (<c>{ path, text }</c>), null = none.</summary>
+        public object? ActiveDocument;
+
+        [JsonRpcMethod("editor/activeDocument")]
+        public object? EditorActiveDocument() => ActiveDocument;
+
         [JsonRpcMethod("chat/token", UseSingleObjectParameterDeserialization = true)]
         public void ChatToken(TokenNote note)
         {
@@ -739,6 +745,40 @@ public class HostServerTests
 
         Assert.True(result.Handled);
         Assert.Equal(Strings.SlashNoActiveDocument, result.Markdown);
+    }
+
+    // /test on an EXISTING test file: the model returns the WHOLE file, and the host writes it to
+    // disk. A test dropped along the way was gone with no backup — VS Code's local history does not
+    // cover a file written behind its back.
+    [Fact]
+    public async Task CommandSlash_Test_OnAnExistingTestFile_BacksItUpBeforeRewritingIt()
+    {
+        var dir = Directory.CreateTempSubdirectory("inferpal-host-test-").FullName;
+        try
+        {
+            var source = Path.Combine(dir, "Calculator.cs");
+            File.WriteAllText(source, "public class Calculator { public int Add(int a, int b) => a + b; }");
+            var testPath = Inferpal.Services.CodeActions.TestFilePathResolver.Resolve(source);
+            Directory.CreateDirectory(Path.GetDirectoryName(testPath)!);
+            File.WriteAllText(testPath, "// existing tests the model may drop");
+
+            using var h = CreateHarness();
+            await h.InitializeAsync(rootDir: dir).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            h.Target.ActiveDocument = new { path = source, text = File.ReadAllText(source) };
+            h.Fake.ChatResult = new Inferpal.Models.ChatTurnResult("// rewritten test file", null, 0, 0);
+
+            var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+                "command/slash", new { text = "/test" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.True(result.Handled);
+            Assert.Equal("// rewritten test file", File.ReadAllText(testPath));
+            var historyDir = Inferpal.Services.Execution.FileHistoryService.GetHistoryDir(testPath);
+            Assert.True(Directory.Exists(historyDir), "no backup was taken before the rewrite");
+            Assert.Contains(Directory.EnumerateFiles(historyDir),
+                f => File.ReadAllText(f) == "// existing tests the model may drop");
+            Assert.Contains("/restore", result.Markdown, StringComparison.Ordinal);
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ } }
     }
 
     [Fact]
