@@ -105,6 +105,56 @@ public class WorkspaceScanTests
         }
     }
 
+    /// <summary>
+    /// <c>packages</c> is two different folders. A JS/TS monorepo (yarn, pnpm, lerna) keeps every
+    /// workspace package in it, so skipping it by name hid the project's own sources from every walker
+    /// and from <c>@folder</c>. Only NuGet's <c>packages.config</c> cache, recognised by its marks, is
+    /// third-party code.
+    /// </summary>
+    [Fact]
+    public void AMonorepoPackagesFolder_IsWalked()
+    {
+        var root = NewTree(("packages/app/package.json", "{}"), ("packages/app/src/index.ts", "export {}"));
+        try
+        {
+            Assert.Contains(WorkspaceScan.EnumerateFiles(root, "*.ts"), f => Path.GetFileName(f) == "index.ts");
+            Assert.False(WorkspaceScan.IsExcludedDirName(Path.Combine(root, "packages")));
+        }
+        finally { DeleteTree(root); }
+    }
+
+    /// <summary>Reference arm: a NuGet packages folder (one <c>.nupkg</c> per package) is still skipped —
+    /// in an older ASP.NET solution it holds jQuery's and Bootstrap's scripts.</summary>
+    [Fact]
+    public void ANuGetPackagesFolder_IsStillSkipped()
+    {
+        var root = NewTree(("packages/jQuery.3.7.1/jQuery.3.7.1.nupkg", ""),
+                           ("packages/jQuery.3.7.1/Content/Scripts/jquery.js", "var $;"));
+        try
+        {
+            Assert.Empty(WorkspaceScan.EnumerateFiles(root, "*.js"));
+            Assert.True(WorkspaceScan.IsExcludedDirName(Path.Combine(root, "packages")));
+        }
+        finally { DeleteTree(root); }
+    }
+
+    private static string NewTree(params (string Rel, string Content)[] files)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ws-{Guid.NewGuid():N}");
+        foreach (var (rel, content) in files)
+        {
+            var full = Path.Combine([root, .. rel.Split('/')]);
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+            File.WriteAllText(full, content);
+        }
+        return root;
+    }
+
+    private static void DeleteTree(string root)
+    {
+        try { Directory.Delete(root, recursive: true); } catch { }
+    }
+
     [Theory]
     [InlineData(@"C:\p\node_modules", true)]
     [InlineData(@"C:\p\node_modules\", true)]

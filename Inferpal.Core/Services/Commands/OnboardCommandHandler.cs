@@ -236,7 +236,7 @@ internal static class OnboardCommandHandler
             foreach (var dir in Directory.EnumerateDirectories(root))
             {
                 var name = Path.GetFileName(dir);
-                if (IndexExclusions.BuiltInDirs.Contains(name, StringComparer.OrdinalIgnoreCase)) continue;
+                if (WorkspaceScan.IsExcludedDirName(dir)) continue;
                 dirs.Add(name);
                 entries.Add(name + "/");
             }
@@ -290,7 +290,7 @@ internal static class OnboardCommandHandler
             foreach (var sub in Directory.EnumerateDirectories(dir))
             {
                 var name = Path.GetFileName(sub);
-                if (IndexExclusions.BuiltInDirs.Contains(name, StringComparer.OrdinalIgnoreCase)) continue;
+                if (WorkspaceScan.IsExcludedDirName(sub)) continue;
                 result.Add(name + "/");
                 if (result.Count >= Max) return result;
             }

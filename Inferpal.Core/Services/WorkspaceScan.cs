@@ -66,9 +66,53 @@ internal static class WorkspaceScan
         var below = BelowRoot(path, root);
         foreach (var dir in ExcludedDirNames)
         {
+            if (dir.Equals(PackagesDirName, StringComparison.OrdinalIgnoreCase)) continue;
             if (below.Contains($@"\{dir}\", StringComparison.OrdinalIgnoreCase) ||
                 below.Contains($"/{dir}/",  StringComparison.OrdinalIgnoreCase))
                 return true;
+        }
+        return UnderNuGetPackages(path, below);
+    }
+
+    // `packages` names two different folders: NuGet's packages.config cache (third-party code — the
+    // .js of jQuery and Bootstrap in an older ASP.NET solution) and the source tree of a JS/TS
+    // monorepo (yarn, pnpm and lerna keep every workspace package there). Skipped by name, a
+    // monorepo's own sources vanished from every walker, so it is skipped only when it carries NuGet's
+    // marks.
+    private const string PackagesDirName = "packages";
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> NuGetPackagesDirs =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// <c>true</c> when <paramref name="dir"/> is a NuGet packages folder: a <c>repositories.config</c>,
+    /// or a <c>.nupkg</c> in one of its package folders. A folder that cannot be judged (absent,
+    /// unreadable) keeps the historical exclusion. Cached per folder: the question is asked for every
+    /// file below it.
+    /// </summary>
+    internal static bool LooksLikeNuGetPackages(string dir) => NuGetPackagesDirs.GetOrAdd(dir, static d =>
+    {
+        try
+        {
+            if (File.Exists(Path.Combine(d, "repositories.config"))) return true;
+            foreach (var package in Directory.EnumerateDirectories(d).Take(50))
+                if (Directory.EnumerateFiles(package, "*.nupkg").Any()) return true;
+            return false;
+        }
+        catch { return true; }
+    });
+
+    // Every `packages` segment below the root, judged on the folder it names.
+    private static bool UnderNuGetPackages(string path, string below)
+    {
+        var offset = path.Length - below.Length;
+        foreach (var needle in new[] { @"\packages\", "/packages/" })
+        {
+            for (var i = below.IndexOf(needle, StringComparison.OrdinalIgnoreCase); i >= 0;
+                 i = below.IndexOf(needle, i + 1, StringComparison.OrdinalIgnoreCase))
+            {
+                if (LooksLikeNuGetPackages(path[..(offset + i + needle.Length - 1)])) return true;
+            }
         }
         return false;
     }
@@ -95,8 +139,10 @@ internal static class WorkspaceScan
     {
         var trimmed = directoryPath.TrimEnd('\\', '/');
         var cut     = trimmed.LastIndexOfAny(['\\', '/']);
-        return ExcludedDirNames.Contains(cut < 0 ? trimmed : trimmed[(cut + 1)..],
-                                         StringComparer.OrdinalIgnoreCase);
+        var leaf    = cut < 0 ? trimmed : trimmed[(cut + 1)..];
+        return leaf.Equals(PackagesDirName, StringComparison.OrdinalIgnoreCase)
+            ? LooksLikeNuGetPackages(trimmed)
+            : ExcludedDirNames.Contains(leaf, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
