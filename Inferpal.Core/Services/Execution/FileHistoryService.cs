@@ -47,6 +47,9 @@ internal class FileHistoryService
     // new snapshot so .inferpal/history/ cannot grow without bound.
     private const int MaxSnapshotsPerFile = 20;
 
+    /// <summary>Clock the snapshot names are stamped from; tests freeze it.</summary>
+    internal Func<DateTime> UtcNow { get; init; } = () => DateTime.UtcNow;
+
     internal async Task<string> SnapshotAsync(string filePath, CancellationToken ct)
     {
         try
@@ -59,13 +62,31 @@ internal class FileHistoryService
             // UTC + invariant. Local time repeats an hour every autumn, and the name is not just a
             // label: it is what the lookup below sorts on. A Buddhist or Umm al-Qura default calendar
             // (th-TH, ar-SA) would also rewrite the year outright.
-            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss-fff",
-                                                     System.Globalization.CultureInfo.InvariantCulture);
-            var suffix    = SnapshotSuffix(filePath);
-            var snapPath  = Path.Combine(historyDir, $"{timestamp}_{suffix}");
+            var stamp  = UtcNow();
+            var suffix = SnapshotSuffix(filePath);
+            var bytes  = await File.ReadAllBytesAsync(filePath, ct);
 
-            var bytes = await File.ReadAllBytesAsync(filePath, ct);
-            await File.WriteAllBytesAsync(snapPath, bytes, ct);
+            // The name is CLAIMED, never assumed free: two snapshots of one file in the same
+            // millisecond shared a name and the second silently replaced the first — and /undo-run
+            // snapshots the current state right before restoring, so it replaced the very content
+            // it was about to put back. CreateNew claims the name atomically (across processes too);
+            // a taken name moves one millisecond later, so the later snapshot still sorts as the
+            // more recent one and the name keeps the format MatchesSuffix reads. Only a failed
+            // claim is retried — a write that fails after the claim is a real error.
+            string snapPath;
+            for (var attempt = 0; ; attempt++)
+            {
+                var timestamp = stamp.AddMilliseconds(attempt).ToString("yyyy-MM-dd_HH-mm-ss-fff",
+                                                                         System.Globalization.CultureInfo.InvariantCulture);
+                snapPath = Path.Combine(historyDir, $"{timestamp}_{suffix}");
+
+                FileStream stream;
+                try { stream = new FileStream(snapPath, FileMode.CreateNew, FileAccess.Write, FileShare.None); }
+                catch (IOException) when (attempt < 1000 && File.Exists(snapPath)) { continue; }
+
+                await using (stream) await stream.WriteAsync(bytes, ct);
+                break;
+            }
 
             PruneOldSnapshots(historyDir, suffix);
             RecordInRun(filePath, snapPath);   // for /undo-run (no-op when no run is active)
