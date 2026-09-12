@@ -127,7 +127,12 @@ public class DiagnosticsTests : IDisposable
             Assert.Contains("[CtxA]", text);
             Assert.Contains("disk full", text);
             Assert.Contains("[CtxB]", text);
-            Assert.Equal(2, File.ReadAllLines(path).Length);
+
+            // ⚠ One line per entry for a NOTE; an exception also carries its whole stack - the
+            // file is turned on deliberately and has none of the ring's brevity constraint.
+            // Counting the file's lines would amount to forbidding that stack.
+            var noteLines = File.ReadAllLines(path).Count(l => l.Contains("[CtxB]"));
+            Assert.Equal(1, noteLines);
         }
         finally
         {
@@ -177,4 +182,73 @@ public class DiagnosticsTests : IDisposable
     [InlineData("", "")]
     public void AFrameIsCompactedToTypeAndMethod(string raw, string expected) =>
         Assert.Equal(expected, Diagnostics.CompactFrame(raw));
+    // ── What the trace renders when the stack is twisted ──────────────────────
+    //
+    // Field measurement (issue #8, 2026-09-12): the SAME failure produced two different
+    // lines, and one of them was "InferpalSettingsData. ← InferpalSettingsData. ←
+    // --- End of stack trace from previous location ---" - two EMPTY names and a marker taken
+    // for a frame. A thermometer that renders that is of no use.
+
+    [Theory]
+    // Closure class: the real name is the LAST bracketed group, not the first.
+    [InlineData("   at Inferpal.ToolWindow.SettingsData.<>c__DisplayClass89_0.<SaveCoreAsync>b__0()",
+                "SettingsData.SaveCoreAsync")]
+    // Rethrow marker: not a frame.
+    [InlineData("--- End of stack trace from previous location ---", "")]
+    [InlineData("   --- End of inner exception stack trace ---", "")]
+    public void ACompactedFrame_NeverRendersAnEmptyNameNorAMarker(string raw, string expected) =>
+        Assert.Equal(expected, Diagnostics.CompactFrame(raw));
+
+    [Fact]
+    public void ThrownInsideALambda_TheTraceStillNamesTheMethod()
+    {
+        Diagnostics.Clear();
+
+        try { RunLambdaThatThrows(); }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.Save", ex); }
+
+        var entry = Assert.Single(Diagnostics.Snapshot());
+        Assert.Contains("NullReferenceException", entry.Detail);
+        // The owning method name survives even when the throw comes from a lambda.
+        Assert.Contains("RunLambdaThatThrows", entry.Detail);
+        Assert.DoesNotContain("---", entry.Detail);
+    }
+
+    private static void RunLambdaThatThrows()
+    {
+        Action a = () => { string? nothing = null; _ = nothing!.Length; };
+        a();
+    }
+
+    [Fact]
+    public void TheFileLog_CarriesTheWholeStack_WhereTheRingCannot()
+    {
+        // The ring ends up pasted into an issue: it stays short. The file is turned on
+        // deliberately by the user - that is where a failure three frames cannot locate reads
+        // in full.
+        var path = Path.Combine(Path.GetTempPath(), "inferpal-diag-" + Guid.NewGuid().ToString("N") + ".log");
+        Diagnostics.Clear();
+        Diagnostics.LogPathOverride = path;
+        Diagnostics.FileLoggingEnabled = true;
+        try
+        {
+            try { RunLambdaThatThrows(); }
+            catch (Exception ex) { Diagnostics.Swallow("Settings.Save", ex); }
+
+            var log = File.ReadAllText(path);
+            Assert.Contains("RunLambdaThatThrows", log);
+            Assert.Contains("at ", log);   // the raw stack, not just the compacted line
+
+            // Witness: a note with no exception writes no stack.
+            Diagnostics.Record("Ctx", "just a note");
+            var after = File.ReadAllText(path);
+            Assert.Contains("just a note", after);
+        }
+        finally
+        {
+            Diagnostics.FileLoggingEnabled = false;
+            Diagnostics.LogPathOverride = null;
+            try { File.Delete(path); } catch { }
+        }
+    }
 }

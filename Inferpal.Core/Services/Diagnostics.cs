@@ -35,7 +35,7 @@ internal static class Diagnostics
 
     /// <summary>Records a swallowed exception with a short context label. Never throws.</summary>
     internal static void Swallow(string context, Exception ex) =>
-        Record(context, $"{ex.GetType().Name}: {ex.Message}{Where(ex)}");
+        Record(context, $"{ex.GetType().Name}: {ex.Message}{Where(ex)}", ex);
 
     /// <summary>
     /// Where it was thrown, compacted to the three innermost frames — <c>Type.Method ← caller ←
@@ -65,6 +65,14 @@ internal static class Diagnostics
                 frames.Add(frame);
                 if (frames.Count == 3) break;
             }
+            // ⚠ TargetSite both as a fallback AND at the front: the JIT inlines, and a Release
+            // stack may no longer carry the frame that threw. Measured in the field on 2026-09-12 -
+            // the SAME failure produced two different stacks, depending on tier-0 vs tier-1.
+            var thrower = Site(ex);
+            if (thrower.Length > 0 && (frames.Count == 0 || frames[0] != thrower))
+                frames.Insert(0, thrower);
+            if (frames.Count > 3) frames.RemoveRange(3, frames.Count - 3);
+
             return frames.Count == 0 ? string.Empty : " @ " + string.Join(" ← ", frames);
         }
         catch { return string.Empty; }   // the diagnostics channel never breaks its caller
@@ -79,6 +87,9 @@ internal static class Diagnostics
     {
         var line = rawFrame.Trim();
         if (line.Length == 0) return string.Empty;
+        // ⚠ A rethrown stack carries "--- End of stack trace from previous location ---": that is
+        // not a frame, and rendering it ate one of the three slots.
+        if (line.StartsWith("---", StringComparison.Ordinal)) return string.Empty;
         if (line.StartsWith("at ", StringComparison.Ordinal)) line = line.Substring(3);
 
         var inKeyword = line.IndexOf(" in ", StringComparison.Ordinal);
@@ -87,13 +98,18 @@ internal static class Diagnostics
         var paren = line.IndexOf('(');
         if (paren > 0) line = line.Substring(0, paren);
 
-        // Async state machine: the real name sits between the angle brackets.
-        var open = line.IndexOf('<');
-        var close = line.IndexOf('>', open + 1);
-        if (open >= 0 && close > open)
+        // Async state machine or lambda: the real name sits between angle brackets.
+        // ⚠ The LAST group, not the first: a closure class is written
+        // "<>c__DisplayClass89_0.<SaveCoreAsync>b__0", and taking the first "<>" produced an EMPTY
+        // name - measured in the field: "InferpalSettingsData. ← InferpalSettingsData.".
+        var open = line.LastIndexOf('<');
+        var close = open >= 0 ? line.IndexOf('>', open + 1) : -1;
+        if (open >= 0 && close > open + 1)
         {
             var method = line.Substring(open + 1, close - open - 1);
             var owner = line.Substring(0, open).TrimEnd('.', '+');
+            // The owner still carries "<>c__DisplayClass…" or "d__12": keep only the real type.
+            owner = StripClosure(owner);
             line = owner.Length == 0 ? method : owner + "." + method;
         }
 
@@ -110,7 +126,14 @@ internal static class Diagnostics
     }
 
     /// <summary>Records a free-form best-effort note. Never throws.</summary>
-    internal static void Record(string context, string detail)
+    internal static void Record(string context, string detail) => Record(context, detail, null);
+
+    /// <param name="full">
+    /// The original exception, when there is one. ⚠ It serves the FILE log only: the ring stays
+    /// short because it ends up pasted into an issue, but a file the user turned on deliberately can
+    /// carry the whole stack - that is where a failure three frames cannot locate reads in full.
+    /// </param>
+    private static void Record(string context, string detail, Exception? full)
     {
         try
         {
@@ -121,7 +144,7 @@ internal static class Diagnostics
                 while (_ring.Count > Capacity) _ring.RemoveFirst();
             }
             System.Diagnostics.Debug.WriteLine($"[Inferpal] {context}: {detail}");
-            if (FileLoggingEnabled) AppendToFile(entry);
+            if (FileLoggingEnabled) AppendToFile(entry, full);
         }
         catch { /* diagnostics must never throw — it runs inside catch blocks */ }
     }
@@ -180,7 +203,39 @@ internal static class Diagnostics
     /// silently dropping new lines — the RECENT entries are the ones a bug report needs.</summary>
     private const long MaxLogBytes = 5 * 1024 * 1024;
 
-    private static void AppendToFile(DiagnosticEntry e)
+    /// <summary>The method the runtime says threw, independent of how the stack is formatted.</summary>
+    private static string Site(Exception ex)
+    {
+        try
+        {
+            var site = ex.TargetSite;
+            if (site is null) return string.Empty;
+            var owner = site.DeclaringType?.Name;
+            var name  = Clean(site.Name);
+            if (name.Length == 0) return string.Empty;
+            return string.IsNullOrEmpty(owner) ? name : owner + "." + name;
+        }
+        catch { return string.Empty; }
+    }
+
+    /// <summary>"&lt;SaveCoreAsync&gt;b__0" → "SaveCoreAsync"; a bare "MoveNext" says nothing.</summary>
+    private static string Clean(string method)
+    {
+        var open = method.LastIndexOf('<');
+        var close = open >= 0 ? method.IndexOf('>', open + 1) : -1;
+        if (open >= 0 && close > open + 1) return method.Substring(open + 1, close - open - 1);
+        return method is "MoveNext" or ".ctor" ? string.Empty : method;
+    }
+
+    /// <summary>Drops the generated class from a frame owner: "X.&lt;&gt;c__DisplayClass1" → "X".</summary>
+    private static string StripClosure(string owner)
+    {
+        var generated = owner.IndexOf("<>", StringComparison.Ordinal);
+        if (generated > 0) owner = owner.Substring(0, generated).TrimEnd('.', '+');
+        return owner;
+    }
+
+    private static void AppendToFile(DiagnosticEntry e, Exception? full = null)
     {
         try
         {
@@ -189,6 +244,8 @@ internal static class Diagnostics
             if (new FileInfo(path) is { Exists: true, Length: > MaxLogBytes })
                 File.WriteAllText(path, $"[log truncated at {MaxLogBytes / (1024 * 1024)} MB — older entries dropped]{Environment.NewLine}");
             File.AppendAllText(path, e.ToLine() + Environment.NewLine);
+            if (full is not null)
+                File.AppendAllText(path, full.ToString() + Environment.NewLine + Environment.NewLine);
         }
         catch { /* file logging is best-effort too */ }
     }
