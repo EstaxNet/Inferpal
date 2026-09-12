@@ -36,7 +36,7 @@ internal class GetGitStatusTool : ITool
             path = new
             {
                 type        = "string",
-                description = "Path to any file or directory inside the repository (optional, defaults to cwd)."
+                description = "Path to any file or directory inside the repository (optional, defaults to the workspace)."
             },
             include_diff = new
             {
@@ -62,9 +62,15 @@ internal class GetGitStatusTool : ITool
             PathSanitizer.AssertUnderRoot(startPath, workspace);
         }
 
-        var root = (startPath is not null ? FindGitRoot(startPath) : null)
-                ?? FindGitRootFromOpenFiles()
-                ?? FindGitRoot(Directory.GetCurrentDirectory());
+        // Without a path, the workspace's repository: under VS the process's current directory is
+        // not the workspace, and an open file may belong to another repository. Those two only
+        // stand in when no root is known. A path outside any repository is simply not a repository.
+        var workspaceRoot = _getRoot();
+        var root = startPath is not null
+            ? FindGitRoot(startPath)
+            : !string.IsNullOrWhiteSpace(workspaceRoot)
+                ? FindGitRoot(workspaceRoot)
+                : FindGitRootFromOpenFiles() ?? FindGitRoot(Directory.GetCurrentDirectory());
 
         if (root is null)
             return Strings.GitNotRepo;
