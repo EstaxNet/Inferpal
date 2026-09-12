@@ -3,6 +3,47 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.13
+
+The codebase is now indexed when a workspace opens — it never was in VS Code — and the folders
+Inferpal walks were fixed so that it sees your code, and only your code.
+
+- **The codebase was never indexed.** With semantic indexing on, the default, nothing started it:
+  `search_codebase` reported no index and the per-turn auto-context added nothing unless you typed
+  `/index rebuild`. The workspace is now indexed when it opens.
+
+- **A JS or TS monorepo was nearly invisible.** Every folder named `packages` was skipped, which is
+  where yarn, pnpm and lerna keep a monorepo's code. It is now skipped only when it is a NuGet
+  package cache.
+
+- **A workspace under a folder named `build`, `dist`, `bin` or `packages` looked empty.** Those names
+  were matched anywhere in the path, including above your workspace. Only folders inside it count now.
+
+- **One unreadable folder hid the rest of the workspace.** A database volume mounted in the project
+  made `list_files` report a missing directory and other tools fail. Unreadable folders are now
+  skipped.
+
+- **Python virtual environments were walked like source code.** `.venv/` and `venv/` are now skipped.
+
+- **Indexing made `.inferpal/` uncommittable.** The whole folder was added to `.gitignore`, so shared
+  files such as `permissions.json` or rules never reached your team. Only `.inferpal/history/` is
+  ignored now, and the entry earlier versions wrote is narrowed.
+
+- **The agent's memory could be saved where it is never read back.** In a workspace without a `.sln`,
+  `update_memory` looked above the workspace and failed. It now writes where the prompt reads.
+
+- **`/test` could lose tests you already had.** Rewriting an existing test file now backs it up
+  first, and the reply names the `/restore` command. `/onboard context force` does the same for
+  `.inferpal/context.md`.
+
+- **`/undo-run` could destroy work done after the run.** It now saves each file's current version
+  before reverting it.
+
+- **One unreachable MCP server delayed all the others.** Servers now start together.
+
+- **`@Docs` on a site served locally reported it as empty**, where it is refused on purpose. The
+  refusal now says so, and the 50-page limit is stated when it is reached.
+
 ## 1.6.12
 
 Ten fixes of the same family: the product did something, said nothing, and what you saw was not
