@@ -469,6 +469,7 @@ internal class InferpalConfig
         }
 
         Strings.ApplyLanguage(cfg.Language);
+        cfg._baseline = Snapshot(cfg);
         return cfg;
     }
 
@@ -495,19 +496,66 @@ internal class InferpalConfig
         }
     }
 
+    // What this instance held when it was read from disk, or at its last save. Null for an instance
+    // built in code, which is then written whole.
+    private System.Text.Json.Nodes.JsonObject? _baseline;
+
     public void Save()
     {
         var path = EffectiveConfigPath;
         PreserveUnreadableFile(path);
 
+        // Visual Studio and VS Code each keep their own copy of this file in memory. Written whole, a
+        // save reverted every setting the other editor had changed since this copy was read — a
+        // model, a backend, a deny rule. Only what THIS copy changed is laid over the file.
+        var mine    = Snapshot(this);
+        var toWrite = _baseline is not null && TryReadSnapshot(path, out var onDisk)
+            ? MergeChanges(onDisk, mine, _baseline)
+            : mine;
+
         // Atomic: a torn write here leaves the user without a usable configuration, and this
         // runs on every /model, /hardware, /docs and settings save.
-        var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-        Services.Persistence.AtomicFile.WriteAllText(path, json);
+        Services.Persistence.AtomicFile.WriteAllText(path,
+            toWrite.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+
+        // The in-memory values are left alone: swapping BaseUrl or Provider under a client built for
+        // the previous backend would be worse than keeping them. The next save compares against what
+        // this copy holds now, so what it did not change keeps coming from the file.
+        _baseline = mine;
 
         // Drop the cached parse: a save within the same file-time tick would otherwise keep
         // serving the previous values to Load().
         lock (_loadLock) { _cached = null; _cachedPath = null; _cachedStamp = default; }
+    }
+
+    private static System.Text.Json.Nodes.JsonObject Snapshot(InferpalConfig cfg) =>
+        JsonSerializer.SerializeToNode(cfg)!.AsObject();
+
+    // The file in the shape this class writes it (same keys, defaults filled), so it compares key by
+    // key with a snapshot. False when absent or unreadable: this copy is then written whole.
+    private static bool TryReadSnapshot(string path, out System.Text.Json.Nodes.JsonObject snapshot)
+    {
+        snapshot = null!;
+        if (!File.Exists(path) || !TryRead(path, out var cfg, out _)) return false;
+        snapshot = Snapshot(cfg!);
+        return true;
+    }
+
+    /// <summary>
+    /// <paramref name="onDisk"/>, with every setting <paramref name="mine"/> changed since
+    /// <paramref name="baseline"/> laid over it. A setting both sides changed goes to
+    /// <paramref name="mine"/>.
+    /// </summary>
+    internal static System.Text.Json.Nodes.JsonObject MergeChanges(
+        System.Text.Json.Nodes.JsonObject onDisk,
+        System.Text.Json.Nodes.JsonObject mine,
+        System.Text.Json.Nodes.JsonObject baseline)
+    {
+        var merged = (System.Text.Json.Nodes.JsonObject)onDisk.DeepClone();
+        foreach (var (key, value) in mine)
+            if (!System.Text.Json.Nodes.JsonNode.DeepEquals(value, baseline[key]))
+                merged[key] = value?.DeepClone();
+        return merged;
     }
 
     /// <summary>
