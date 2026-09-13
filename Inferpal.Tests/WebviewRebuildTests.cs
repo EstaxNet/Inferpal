@@ -306,4 +306,27 @@ public class WebviewRebuildTests
         Assert.Contains("host.sessionSave(fileName, messages, true)", archive, StringComparison.Ordinal);
         Assert.Matches(@"'session/save',\s*\{\s*name,\s*messages,\s*archive\s*\}", TsCode("hostClient.ts"));
     }
+
+    /// <summary>
+    /// Typing /clear (or applying a /template) emptied the transcript without archiving it: the
+    /// new-conversation button archives first, like the Visual Studio window, and the conversation
+    /// vanished from the saved sessions.
+    /// </summary>
+    [Fact]
+    public void ClearingTheChatWithACommand_ArchivesTheConversationFirst()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+
+        var reset        = Body(provider, "async resetConversation(");
+        var resetArchive = reset.IndexOf("this.archiveConversation()", StringComparison.Ordinal);
+        Assert.True(resetArchive >= 0 && resetArchive < reset.IndexOf("this.transcript.length = 0", StringComparison.Ordinal),
+            "resetConversation no longer archives before clearing: the rule has no reference");
+
+        var effect = Regex.Match(provider, @"case 'clearTranscript':([\s\S]*?)break;");
+        Assert.True(effect.Success, "the clearTranscript effect is gone: the rule measures nothing");
+        var archive = effect.Groups[1].Value.IndexOf("this.archiveConversation()", StringComparison.Ordinal);
+        var clear   = effect.Groups[1].Value.IndexOf("this.transcript.length = 0", StringComparison.Ordinal);
+        Assert.True(archive >= 0 && archive < clear,
+            "/clear and /template empty the transcript without archiving it, unlike the reset button");
+    }
 }

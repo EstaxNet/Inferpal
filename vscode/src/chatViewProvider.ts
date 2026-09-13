@@ -1059,6 +1059,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           await vscode.env.clipboard.writeText(e.value ?? '');
           break;
         case 'clearTranscript':
+          // A new conversation archives the previous one first, like the reset button and the VS
+          // window; the command bubble that asked for it is not part of the archive (as in branchAtTurn).
+          const command = this.transcript[this.transcript.length - 1];
+          if (command?.role === 'user' && command.text.startsWith('/')) {
+            this.transcript.pop();
+          }
+          this.archiveConversation();
           this.transcript.length = 0;
           this.streamText = '';
           this.plan = null;
