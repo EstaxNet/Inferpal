@@ -173,9 +173,17 @@ public class DebugToolsTests
     public async Task SetBreakpoint_ALineSentAsAString_IsRead()
     {
         var session = new FakeDebugSession();
+        // Platform-neutral paths: off Windows a "C:\" path is a foreign absolute path, refused on purpose.
+        var tool = new DebugControlTool(session, new StubApproval(approve: true), new DebugStepBudget(),
+                                        () => TestPaths.P(@"C:\ws"));
+        var args = JsonSerializer.Serialize(new
+        {
+            action = "set_breakpoint",
+            file   = TestPaths.P(@"C:\ws\src\Program.cs"),
+            line   = "14",
+        });
 
-        await Control(session, new StubApproval(approve: true)).ExecuteAsync(
-            Args("""{"action":"set_breakpoint","file":"C:\\ws\\src\\Program.cs","line":"14"}"""), CancellationToken.None);
+        await tool.ExecuteAsync(Args(args), CancellationToken.None);
 
         Assert.Equal(14, Assert.Single(session.Breakpoints).Line);
     }

@@ -207,6 +207,11 @@ public class ShellExitRegressionTests
 {
     private static bool PowerShell => ShellLauncher.Resolve().Dialect == ShellDialect.PowerShell;
 
+    // ⚠ PowerShell is not Windows: every CI runner ships pwsh, so the Linux and macOS legs resolve the
+    // PowerShell dialect too — where `cmd` does not exist. The native helper is picked by OS.
+    private static string NativeExit(int code) =>
+        OperatingSystem.IsWindows() ? $"cmd /c exit {code}" : $"sh -c 'exit {code}'";
+
     /// <summary>
     /// A grandchild started in the background (<c>cmd &amp;</c>, <c>start /b</c>) inherits the output:
     /// the child had finished, and reading waited for the grandchild to end — past the timeout and
@@ -231,9 +236,9 @@ public class ShellExitRegressionTests
     public async Task RunCommand_ReturnsWhenTheShellExits_EvenIfABackgroundGrandchildHoldsItsOutput()
     {
         var session = new ShellSession(() => Path.GetTempPath(), new InferpalConfig());
-        var command = PowerShell
-            ? "cmd /c \"start /b ping -n 25 127.0.0.1 >nul\"; Write-Output started"
-            : "sleep 25 & echo started";
+        var command = !PowerShell               ? "sleep 25 & echo started"
+                    : OperatingSystem.IsWindows() ? "cmd /c \"start /b ping -n 25 127.0.0.1 >nul\"; Write-Output started"
+                    :                               "sh -c 'sleep 25 &'; Write-Output started";
 
         var sw     = Stopwatch.StartNew();
         var output = await session.RunAsync(command, null, CancellationToken.None);
@@ -253,7 +258,7 @@ public class ShellExitRegressionTests
     {
         var session = new ShellSession(() => Path.GetTempPath(), new InferpalConfig());
 
-        var output = await session.RunAsync(PowerShell ? "cmd /c exit 3" : "(exit 3)", null, CancellationToken.None);
+        var output = await session.RunAsync(PowerShell ? NativeExit(3) : "(exit 3)", null, CancellationToken.None);
 
         Assert.Contains("exit code 3", output, StringComparison.Ordinal);
     }
@@ -264,7 +269,7 @@ public class ShellExitRegressionTests
     {
         var session = new ShellSession(() => Path.GetTempPath(), new InferpalConfig());
 
-        var output = await session.RunAsync(PowerShell ? "cmd /c exit 0" : "true", null, CancellationToken.None);
+        var output = await session.RunAsync(PowerShell ? NativeExit(0) : "true", null, CancellationToken.None);
 
         Assert.DoesNotContain("exit code", output, StringComparison.Ordinal);
     }
