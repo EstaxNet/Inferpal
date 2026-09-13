@@ -415,24 +415,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  /** `/branch <name>`: switching to a branch is a plain session load. */
-  private async switchToSession(name: string): Promise<void> {
+  /**
+   * `/branch <name>`: switching to a branch is a plain session load. The host has already answered
+   * "Switched to branch X", so a failure returns its cause for the caller to show instead of that claim.
+   */
+  private async switchToSession(name: string): Promise<readonly [switched: boolean, failure: string]> {
     const host = this.getHost();
     if (!host?.isRunning) {
-      this.append({ role: 'error', text: hostUnavailableMessage(), timestamp: ChatViewProvider.now() });
-      this.hydrate();
-      return;
-    }
-    if (!name) {
-      return;
+      return [false, hostUnavailableMessage()];
     }
     try {
-      const loaded = await host.sessionLoad(name);
-      if (loaded) {
-        this.applySession(loaded.messages);
+      const loaded = name ? await host.sessionLoad(name) : null;
+      if (!loaded) {
+        return [false, vscode.l10n.t('Branch {0} could not be loaded — it may have been deleted.', name)];
       }
+      this.applySession(loaded.messages);
+      return [true, ''];
     } catch (err) {
       this.log(`[chat] branch switch failed: ${String(err)}`);
+      return [false, ChatViewProvider.errorText(err)];
     }
   }
 
@@ -982,7 +983,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             await this.chatTurn(outcome.chatPrompt, host);
             return;
           }
-          const text = [slash.markdown ?? '', ...outcome.notes].filter((s) => s.length > 0).join('\n\n');
+          // A failed effect means the host's answer (e.g. "Switched to branch X") did not come true.
+          const text = [outcome.dropHostMarkdown ? '' : slash.markdown ?? '', ...outcome.notes]
+            .filter((s) => s.length > 0)
+            .join('\n\n');
           this.finishTurn(text, null, false, 0);
           if (outcome.rehydrate) {
             this.hydrate();
@@ -1006,10 +1010,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Applies the editor-side effects of a handled slash command. */
   private async applySlashEffects(
     effects: SlashEffect[],
-  ): Promise<{ chatPrompt: string | null; notes: string[]; rehydrate: boolean }> {
+  ): Promise<{ chatPrompt: string | null; notes: string[]; rehydrate: boolean; dropHostMarkdown: boolean }> {
     let chatPrompt: string | null = null;
     const notes: string[] = [];
     let rehydrate = false;
+    let dropHostMarkdown = false;
     for (const e of effects) {
       switch (e.kind) {
         case 'sendAsPrompt':
@@ -1069,14 +1074,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         // /branch <name>: switching branches is a plain session load (the host already
         // returned the localized bubble as markdown).
-        case 'loadSession':
-          await this.switchToSession(e.value ?? '');
+        case 'loadSession': {
+          const [switched, failure] = await this.switchToSession(e.value ?? '');
+          if (!switched) {
+            notes.push(failure);
+            dropHostMarkdown = true;
+          }
           break;
+        }
         default:
           break; // unknown kinds are ignored (forward compatibility)
       }
     }
-    return { chatPrompt, notes, rehydrate };
+    return { chatPrompt, notes, rehydrate, dropHostMarkdown };
   }
 
   /** /explain and /review: active selection (or whole document) fenced into the prompt,

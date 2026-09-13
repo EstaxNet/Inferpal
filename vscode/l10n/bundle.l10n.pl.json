@@ -12,6 +12,7 @@
   "{0} msg · from {1} @ turn {2}": "{0} wiad. · z {1} @ tura {2}",
   "The command failed.": "Polecenie nie powiodło się.",
   "No turn {0} in this conversation — no branch was created.": "Brak tury {0} w tej rozmowie — nie utworzono gałęzi.",
+  "Branch {0} could not be loaded — it may have been deleted.": "Nie udało się wczytać gałęzi {0} — mogła zostać usunięta.",
   "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "Usunięto {0} starszych wiadomości, aby ograniczyć pamięć — pełna rozmowa jest w zapisanej sesji.",
   "Session name": "Nazwa sesji",
   "Session saved: {0}": "Sesja zapisana: {0}",

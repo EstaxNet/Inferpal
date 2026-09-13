@@ -132,6 +132,34 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// A /branch &lt;name&gt; that fails does not claim the switch. The host has already answered "Switched
+    /// to branch X" when the adapter loads the session: a load that returned nothing or threw (a reply still
+    /// running holds the host's turn slot) was only logged, and the bubble announced a switch that had not
+    /// happened.
+    /// </summary>
+    [Fact]
+    public void AFailedBranchSwitch_DropsTheHostsClaim_AndSaysWhy()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+        var sw       = Body(provider, "private async switchToSession(");
+
+        // Witness: the switch still goes through session/load.
+        Assert.Contains("host.sessionLoad(", sw, StringComparison.Ordinal);
+
+        Assert.Contains("hostUnavailableMessage()", sw, StringComparison.Ordinal);
+        Assert.Contains("ChatViewProvider.errorText(err)", sw, StringComparison.Ordinal);
+        Assert.Contains("vscode.l10n.t('Branch {0} could not be loaded", sw, StringComparison.Ordinal);
+
+        var effect = Regex.Match(provider, @"case 'loadSession':[\s\S]*?break;");
+        Assert.True(effect.Success, "the loadSession effect is gone — the rule measures nothing.");
+        Assert.Contains("notes.push(", effect.Value, StringComparison.Ordinal);
+        Assert.Contains("dropHostMarkdown = true", effect.Value, StringComparison.Ordinal);
+
+        // The bubble is built without the host's markdown once an effect failed.
+        Assert.Contains("outcome.dropHostMarkdown ? '' : slash.markdown", provider, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Same class, in the settings panel: it opens as an editor tab, and VS Code destroys a hidden
     /// tab's webview unless asked to keep it. On return the form reloads from the config and unsaved
     /// edits vanish without a word — clicking Save afterwards writes the old values.
