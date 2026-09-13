@@ -171,6 +171,13 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     /// <summary>Lines of each text list the editor could not turn into rows, written back as typed.</summary>
     private IReadOnlyList<string> _slashUnparsed = [];
     private IReadOnlyList<string> _toolUnparsed  = [];
+    /// <summary>
+    /// The configuration as this window's form was built from it, then as its last save left the form.
+    /// Save lays over the shared instance only what the form changed since: the chat writes the same
+    /// instance while the window is open (<c>/model</c>, pins), and writing back what the form merely
+    /// displayed would revert that.
+    /// </summary>
+    private System.Text.Json.Nodes.JsonObject _opened;
     private string _mcpStatusText                       = string.Empty;
     private string _labelSectionMcp                     = string.Empty;
     private string _labelMcpEnabled                     = string.Empty;
@@ -394,6 +401,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     public InferpalSettingsData(InferpalConfig config, IInferenceProvider client, VisualStudioExtensibility extensibility, Services.Mcp.McpToolService mcp)
     {
         _config               = config;
+        _opened               = config.SnapshotNow();
         _client               = client;
         _mcp                  = mcp;
         _baseUrl              = config.BaseUrl;
@@ -1413,71 +1421,74 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             return ok ? clamp(v) : SettingsFallback.For(text, current, whenCleared);
         }
 
-        _config.Language              = langCode;
-        _config.Provider              = providerCode;
-        _config.ApiKey                = apiKey;
-        _config.BaseUrl               = url;
-        _config.DefaultModel          = Kept(model, _config.DefaultModel, () => Strings.LabelChatModel);
-        _config.CommandTimeoutSeconds = totalSec < 1 ? 1 : totalSec;
-        _config.ToolBubblesExpanded      = toolExpanded;
-        _config.SecurityAlertsDisabled   = secAlertsDisabled;
-        _config.SmartFixEnabled          = smartFixEnabled;
-        _config.AgentModeEnabled         = agentModeEnabled;
-        _config.AgentMaxIterations       = ReadInt(agentMaxIterationsText, () => Strings.LabelAgentMaxIterations,
-                                                   _config.AgentMaxIterations, 20, v => Math.Max(0, v));
-        _config.QuickTimeoutSeconds      = quickTimeoutSec  > 0 ? Math.Clamp(quickTimeoutSec,  10, 3600) : 120;
-        _config.NormalTimeoutSeconds     = normalTimeoutSec > 0 ? Math.Clamp(normalTimeoutSec, 10, 3600) : 300;
-        _config.DeepTimeoutSeconds       = deepTimeoutSec   > 0 ? Math.Clamp(deepTimeoutSec,   10, 3600) : 600;
-        _config.ContextWindowSize        = ReadInt(ctxSizeText, () => Strings.LabelContextWindowSize,
-                                                   _config.ContextWindowSize, 0, v => Math.Max(0, v));
-        _config.ContextWindowKeepTurns   = ReadInt(ctxKeepText, () => Strings.LabelContextWindowKeepTurns,
-                                                   _config.ContextWindowKeepTurns, 4, v => Math.Max(1, v));
+        var edited = System.Text.Json.JsonSerializer.Deserialize<InferpalConfig>(_opened.ToJsonString())!;
+        edited.Language              = langCode;
+        edited.Provider              = providerCode;
+        edited.ApiKey                = apiKey;
+        edited.BaseUrl               = url;
+        edited.DefaultModel          = Kept(model, edited.DefaultModel, () => Strings.LabelChatModel);
+        edited.CommandTimeoutSeconds = totalSec < 1 ? 1 : totalSec;
+        edited.ToolBubblesExpanded      = toolExpanded;
+        edited.SecurityAlertsDisabled   = secAlertsDisabled;
+        edited.SmartFixEnabled          = smartFixEnabled;
+        edited.AgentModeEnabled         = agentModeEnabled;
+        edited.AgentMaxIterations       = ReadInt(agentMaxIterationsText, () => Strings.LabelAgentMaxIterations,
+                                                   edited.AgentMaxIterations, 20, v => Math.Max(0, v));
+        edited.QuickTimeoutSeconds      = quickTimeoutSec  > 0 ? Math.Clamp(quickTimeoutSec,  10, 3600) : 120;
+        edited.NormalTimeoutSeconds     = normalTimeoutSec > 0 ? Math.Clamp(normalTimeoutSec, 10, 3600) : 300;
+        edited.DeepTimeoutSeconds       = deepTimeoutSec   > 0 ? Math.Clamp(deepTimeoutSec,   10, 3600) : 600;
+        edited.ContextWindowSize        = ReadInt(ctxSizeText, () => Strings.LabelContextWindowSize,
+                                                   edited.ContextWindowSize, 0, v => Math.Max(0, v));
+        edited.ContextWindowKeepTurns   = ReadInt(ctxKeepText, () => Strings.LabelContextWindowKeepTurns,
+                                                   edited.ContextWindowKeepTurns, 4, v => Math.Max(1, v));
         // ⚠ Inline, not ReadInt: the culture here is the user's (decimal comma), and the guard is
         // not "it parses" but "it parses AND it is > 0" — a zero or negative budget is applied no
         // more than a typo is, so it is named the same way.
         var vbOk = double.TryParse(vramBudgetText, System.Globalization.NumberStyles.Float,
                                    System.Globalization.CultureInfo.CurrentCulture, out var vb) && vb > 0;
         Note(vramBudgetText, vbOk, () => Strings.LabelVramBudget);
-        _config.VramBudgetGb             = vbOk ? Math.Round(vb, 1)
-                                               : SettingsFallback.For(vramBudgetText, _config.VramBudgetGb, 0);
-        _config.CustomSystemPrompt        = customPrompt;
-        _config.PinnedContextFiles        = pinnedContextFiles;
-        _config.PromptTemplates           = promptTemplates;
-        _config.CustomTools               = customTools;
-        _config.PermissionRules           = permissionRules;
-        _config.PersonaAutoSwitch         = personaAutoSwitch;
-        _config.OodaTurnThreshold         = ReadInt(oodaThreshText, () => Strings.LabelOodaTurnThreshold,
-                                                    _config.OodaTurnThreshold, 10, v => Math.Max(0, v));
-        _config.CompactionEnabled         = compactionEnabled;
-        _config.CompactionTimeoutSeconds  = compactTimeoutSec > 0 ? Math.Clamp(compactTimeoutSec, 10, 300) : 45;
-        _config.KvCacheAnchorMessages     = ReadInt(kvAnchorText, () => Strings.LabelKvCacheAnchor,
-                                                    _config.KvCacheAnchorMessages, 3, v => Math.Clamp(v, 0, 20));
-        _config.InlineCompletionMode      = inlineModeCode;
-        _config.InlineCompletionEnabled   = inlineEnabled;
-        _config.InlineCompletionModel     = Kept(inlineModel,      _config.InlineCompletionModel, () => Strings.LabelInlineCompletionModel);
-        _config.CodeActionsModel          = Kept(codeActionsModel, _config.CodeActionsModel,      () => Strings.LabelCodeActionsModel);
-        _config.InlineEditModel           = Kept(inlineEditModel,  _config.InlineEditModel,       () => Strings.LabelInlineEditModel);
-        _config.AgentModel                = Kept(agentModel,       _config.AgentModel,            () => Strings.LabelAgentModel);
-        _config.UtilityModel              = Kept(utilityModel,     _config.UtilityModel,          () => Strings.LabelUtilityModel);
-        _config.ModelRouterAuto           = modelRouterAuto;
-        _config.RagEnabled                = ragEnabled;
-        _config.RagAutoContextEnabled     = ragAutoContextEnabled;
-        _config.RagEmbeddingModel         = Kept(ragEmbeddingModel, _config.RagEmbeddingModel,    () => Strings.LabelRagEmbeddingModel);
-        _config.RagTopK                   = ReadInt(ragTopKText, () => Strings.LabelRagTopK,
-                                                    _config.RagTopK, 5, v => Math.Clamp(v, 1, 20));
+        edited.VramBudgetGb             = vbOk ? Math.Round(vb, 1)
+                                               : SettingsFallback.For(vramBudgetText, edited.VramBudgetGb, 0);
+        edited.CustomSystemPrompt        = customPrompt;
+        edited.PinnedContextFiles        = pinnedContextFiles;
+        edited.PromptTemplates           = promptTemplates;
+        edited.CustomTools               = customTools;
+        edited.PermissionRules           = permissionRules;
+        edited.PersonaAutoSwitch         = personaAutoSwitch;
+        edited.OodaTurnThreshold         = ReadInt(oodaThreshText, () => Strings.LabelOodaTurnThreshold,
+                                                    edited.OodaTurnThreshold, 10, v => Math.Max(0, v));
+        edited.CompactionEnabled         = compactionEnabled;
+        edited.CompactionTimeoutSeconds  = compactTimeoutSec > 0 ? Math.Clamp(compactTimeoutSec, 10, 300) : 45;
+        edited.KvCacheAnchorMessages     = ReadInt(kvAnchorText, () => Strings.LabelKvCacheAnchor,
+                                                    edited.KvCacheAnchorMessages, 3, v => Math.Clamp(v, 0, 20));
+        edited.InlineCompletionMode      = inlineModeCode;
+        edited.InlineCompletionEnabled   = inlineEnabled;
+        edited.InlineCompletionModel     = Kept(inlineModel,      edited.InlineCompletionModel, () => Strings.LabelInlineCompletionModel);
+        edited.CodeActionsModel          = Kept(codeActionsModel, edited.CodeActionsModel,      () => Strings.LabelCodeActionsModel);
+        edited.InlineEditModel           = Kept(inlineEditModel,  edited.InlineEditModel,       () => Strings.LabelInlineEditModel);
+        edited.AgentModel                = Kept(agentModel,       edited.AgentModel,            () => Strings.LabelAgentModel);
+        edited.UtilityModel              = Kept(utilityModel,     edited.UtilityModel,          () => Strings.LabelUtilityModel);
+        edited.ModelRouterAuto           = modelRouterAuto;
+        edited.RagEnabled                = ragEnabled;
+        edited.RagAutoContextEnabled     = ragAutoContextEnabled;
+        edited.RagEmbeddingModel         = Kept(ragEmbeddingModel, edited.RagEmbeddingModel,    () => Strings.LabelRagEmbeddingModel);
+        edited.RagTopK                   = ReadInt(ragTopKText, () => Strings.LabelRagTopK,
+                                                    edited.RagTopK, 5, v => Math.Clamp(v, 1, 20));
         // ⚠ Inline, not ReadInt: invariant culture here (the threshold is written with a dot).
         var rstOk = float.TryParse(ragSimilarityThresholdText, System.Globalization.NumberStyles.Float,
                                    System.Globalization.CultureInfo.InvariantCulture, out var rst);
         Note(ragSimilarityThresholdText, rstOk, () => Strings.LabelRagSimilarityThreshold);
-        _config.RagSimilarityThreshold    = rstOk ? Math.Clamp(rst, 0f, 1f)
-                                    : SettingsFallback.For(ragSimilarityThresholdText, _config.RagSimilarityThreshold, 0.20f);
-        _config.LspEnabled                = lspEnabled;
-        _config.McpEnabled                = mcpEnabled;
-        _config.McpServersJson            = mcpServersJson;
-        _config.ModelAutoUnloadEnabled    = modelAutoUnload;
-        _config.ModelIdleTimeoutMinutes   = ReadInt(modelIdleTimeoutText, () => Strings.LabelModelIdleTimeout,
-                                                    _config.ModelIdleTimeoutMinutes, 10, v => Math.Max(1, v));
+        edited.RagSimilarityThreshold    = rstOk ? Math.Clamp(rst, 0f, 1f)
+                                    : SettingsFallback.For(ragSimilarityThresholdText, edited.RagSimilarityThreshold, 0.20f);
+        edited.LspEnabled                = lspEnabled;
+        edited.McpEnabled                = mcpEnabled;
+        edited.McpServersJson            = mcpServersJson;
+        edited.ModelAutoUnloadEnabled    = modelAutoUnload;
+        edited.ModelIdleTimeoutMinutes   = ReadInt(modelIdleTimeoutText, () => Strings.LabelModelIdleTimeout,
+                                                    edited.ModelIdleTimeoutMinutes, 10, v => Math.Max(1, v));
+        _config.ApplyChangesFrom(edited, _opened);
         _config.Save();
+        _opened = edited.SnapshotNow();
 
         // Reconnect MCP servers from the freshly-saved config and report status.
         //

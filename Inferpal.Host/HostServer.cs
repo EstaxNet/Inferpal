@@ -551,9 +551,12 @@ internal sealed partial class HostServer : IDisposable
         // mid-run (pre-1.6.0 architecture review, §2.6).
         WithTurnSlot("config/update", () =>
         {
-            foreach (var prop in typeof(InferpalConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                if (prop.CanRead && prop.CanWrite && (baseline is null || Changed(prop, baseline, incoming)))
-                    prop.SetValue(s.Config, prop.GetValue(incoming));
+            if (baseline is not null)
+                s.Config.ApplyChangesFrom(incoming, baseline.SnapshotNow());
+            else
+                foreach (var prop in typeof(InferpalConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                    if (prop.CanRead && prop.CanWrite)
+                        prop.SetValue(s.Config, prop.GetValue(incoming));
 
             s.Config.Save();
             // A language override takes effect immediately (settings/strings, slash hints, …), like the
@@ -569,10 +572,6 @@ internal sealed partial class HostServer : IDisposable
         Services.Execution.PermissionPolicy.ParseRules(s.Config.PermissionRules, out var dropped);
         return new ConfigUpdateResult(dropped.Count);
     }
-
-    /// <summary>Compared as JSON, so a collection with the same content counts as unchanged.</summary>
-    private static bool Changed(PropertyInfo prop, InferpalConfig before, InferpalConfig after) =>
-        JsonSerializer.Serialize(prop.GetValue(before)) != JsonSerializer.Serialize(prop.GetValue(after));
 
     // ── RAG index ──────────────────────────────────────────────────────────────
 

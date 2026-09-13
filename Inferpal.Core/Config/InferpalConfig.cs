@@ -558,6 +558,32 @@ internal class InferpalConfig
         return merged;
     }
 
+    /// <summary>What this instance holds now, in the shape it is written.</summary>
+    internal System.Text.Json.Nodes.JsonObject SnapshotNow() => Snapshot(this);
+
+    /// <summary>
+    /// Lays over this live instance every setting <paramref name="edited"/> changed since
+    /// <paramref name="baseline"/>; everything else keeps its current value.
+    /// </summary>
+    /// <remarks>
+    /// An editor that built its values from <paramref name="baseline"/> must not write back what it only
+    /// displayed: another part of the product may have changed that setting since — a model picked from
+    /// the chat, a pinned file. <see cref="Save"/> applies the same rule against the file.
+    /// </remarks>
+    internal void ApplyChangesFrom(InferpalConfig edited, System.Text.Json.Nodes.JsonObject baseline)
+    {
+        var merged = JsonSerializer.Deserialize<InferpalConfig>(
+            MergeChanges(Snapshot(this), Snapshot(edited), baseline))!;
+
+        // Only what differs is set: a setter can notify (AgentModeEnabledChanged), and re-setting an
+        // unchanged value would announce a change nobody made.
+        foreach (var prop in typeof(InferpalConfig).GetProperties(
+                     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+            if (prop.CanRead && prop.CanWrite
+                && JsonSerializer.Serialize(prop.GetValue(this)) != JsonSerializer.Serialize(prop.GetValue(merged)))
+                prop.SetValue(this, prop.GetValue(merged));
+    }
+
     /// <summary>
     /// Copies an unreadable <c>config.json</c> aside before overwriting it.
     /// </summary>
