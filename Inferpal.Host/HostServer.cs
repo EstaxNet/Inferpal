@@ -341,7 +341,7 @@ internal sealed partial class HostServer : IDisposable
     public void ChatReset()
     {
         var s = Session();
-        WithTurnSlot("chat/reset", () => ResetHistory(s));
+        WithTurnSlot("chat/reset", () => StartNewConversation(s));
     }
 
     /// <summary>Full slash-command list for the adapter's autocomplete popup: built-ins (hints
@@ -633,6 +633,7 @@ internal sealed partial class HostServer : IDisposable
             // is not this one's to restore.
             if (p.Name == "last_session" && !SessionManager.AutoSaveBelongsHere(data, s.RootDir)) return null;
 
+            s.TemplateSuffix     = null;
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
             s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;
             return new SessionLoadResult(
@@ -670,6 +671,7 @@ internal sealed partial class HostServer : IDisposable
             await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token,
                                     parent: plan.ParentName, forkTurn: plan.ForkTurn);
 
+            s.TemplateSuffix     = null;
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
             s.CurrentSessionName = plan.BranchName;
 
@@ -902,6 +904,14 @@ internal sealed partial class HostServer : IDisposable
     {
         s.History            = [new ChatMessageDto("system", BuildSystemPromptText(s))];
         s.CurrentSessionName = null;   // the archived conversation keeps its own file
+    }
+
+    /// <summary>A new conversation leaves the <c>/template</c> mode behind, as the VS view model does
+    /// on <c>/clear</c>, session load and <c>/branch</c>; prompt rebuilds (config, plan mode) keep it.</summary>
+    private static void StartNewConversation(HostSession s)
+    {
+        s.TemplateSuffix = null;
+        ResetHistory(s);
     }
 
     /// <summary>VS Code locale ids are lowercase (`zh-cn`); .NET wants `zh-CN`. GetCultureInfo

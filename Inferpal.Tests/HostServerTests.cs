@@ -1151,6 +1151,64 @@ public class HostServerTests
         Assert.Equal("system", history[0].Role);
     }
 
+    [Theory]
+    [InlineData("/clear")]
+    [InlineData("chat/reset")]
+    [InlineData("session/load")]
+    [InlineData("session/branch")]
+    public async Task ANewConversation_LeavesTheTemplateModeBehind(string how)
+    {
+        // VS leaves the /template mode on /clear, session load and /branch; the host kept it in the system prompt, with nothing on screen.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/template code-review" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Contains("## Mode: Code Review", h.Server.CurrentSession!.History[0].Content, StringComparison.Ordinal);
+
+        var name = $"test-template-{Guid.NewGuid():N}";
+        object[] messages =
+        [
+            new { role = "user",      content = "first" },
+            new { role = "assistant", content = "answer one" },
+            new { role = "user",      content = "second" },
+            new { role = "assistant", content = "answer two" },
+        ];
+        SessionBranchResult? branch = null;
+        try
+        {
+            switch (how)
+            {
+                case "/clear":
+                    await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+                        "command/slash", new { text = "/clear" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                    break;
+                case "chat/reset":
+                    await h.Client.InvokeAsync("chat/reset").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                    break;
+                case "session/load":
+                    await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name, messages })
+                        .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                    await h.Client.InvokeWithParameterObjectAsync<SessionLoadResult?>(
+                        "session/load", new { name }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                    break;
+                default:
+                    await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name, messages })
+                        .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                    branch = await h.Client.InvokeWithParameterObjectAsync<SessionBranchResult>(
+                        "session/branch", new { turn = 1, messages }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                    break;
+            }
+
+            Assert.DoesNotContain("## Mode: Code Review", h.Server.CurrentSession!.History[0].Content, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name });
+            if (branch is not null)
+                await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = branch.Name });
+        }
+    }
+
     [Fact]
     public async Task Slash_ToolsOff_ForcesPlainChatOnNextTurn()
     {

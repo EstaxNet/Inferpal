@@ -162,7 +162,7 @@ internal sealed partial class HostServer
             switch (delegated.Id)
             {
                 case SlashCommandId.Clear:
-                    ResetHistory(s);
+                    StartNewConversation(s);
                     return new SlashCommandResult(true, null, [new SlashEffectDto("clearTranscript")]);
 
                 case SlashCommandId.Model:
