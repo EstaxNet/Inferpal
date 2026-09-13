@@ -434,8 +434,8 @@ export class HostClient {
   /** Returns what the save could not use. The count is computed BY THE HOST: the permission DSL
    *  lives in the Core, and re-reading it here would be a second implementation of the same rule -
    *  hence a programmed divergence. */
-  configUpdate(json: string): Promise<ConfigUpdateResult> {
-    return this.connection().sendRequest<ConfigUpdateResult>('config/update', { json });
+  configUpdate(json: string, base?: string): Promise<ConfigUpdateResult> {
+    return this.connection().sendRequest<ConfigUpdateResult>('config/update', { json, base });
   }
 
   indexStart(): Promise<void> {

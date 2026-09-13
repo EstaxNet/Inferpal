@@ -45,6 +45,18 @@ public class WebviewRebuildTests
         return SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(path));
     }
 
+    // The settings panel sends back the WHOLE object it opened: without that starting JSON the host
+    // copies everything, and a change made elsewhere since then is reverted.
+    [Fact]
+    public void TheSettingsPanel_SavesAgainstTheJsonItOpenedWith()
+    {
+        var panel = TsCode("settingsPanel.ts");
+        Assert.Contains("host.configUpdate(", panel, StringComparison.Ordinal);
+        Assert.Matches(@"host\.configUpdate\(\s*msg\.json\s*,\s*this\.lastConfigJson\s*\)", panel);
+
+        Assert.Matches(@"'config/update',\s*\{\s*json,\s*base\s*\}", TsCode("hostClient.ts"));
+    }
+
     /// <summary>Body of a TypeScript function, by brace matching from its signature.</summary>
     private static string Body(string source, string signature)
     {

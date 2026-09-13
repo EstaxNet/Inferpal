@@ -238,7 +238,13 @@ internal sealed record SlashCommandResult(
     bool Handled, string? Markdown = null, List<SlashEffectDto>? Effects = null);
 
 /// <summary>`config/update` — full config JSON, as previously returned by `config/get`.</summary>
-internal sealed record ConfigUpdateParams(string Json);
+/// <param name="Base">
+/// The config JSON the editor started from. When present, only the properties that differ between it
+/// and <paramref name="Json"/> are applied: the editor sends back the whole object it opened, and a
+/// change made elsewhere since — a documentation source, a model picked from the chat — would otherwise
+/// be reverted by a save that never touched it.
+/// </param>
+internal sealed record ConfigUpdateParams(string Json, string? Base = null);
 
 /// <summary>What the save could not use. One thing today, and the type exists so the next one joins
 /// it instead of becoming a second round trip.</summary>

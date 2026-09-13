@@ -544,6 +544,7 @@ internal sealed partial class HostServer : IDisposable
         var s        = Session();
         var incoming = JsonSerializer.Deserialize<InferpalConfig>(p.Json)
                        ?? throw new ArgumentException("Invalid config JSON.");
+        var baseline = string.IsNullOrWhiteSpace(p.Base) ? null : JsonSerializer.Deserialize<InferpalConfig>(p.Base);
 
         // Slot-held, not merely idle-checked: a settings save (or onDidChangeConfiguration) used
         // to mutate the shared Config the agent loop reads and replace the History it appends to,
@@ -551,7 +552,7 @@ internal sealed partial class HostServer : IDisposable
         WithTurnSlot("config/update", () =>
         {
             foreach (var prop in typeof(InferpalConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                if (prop.CanRead && prop.CanWrite)
+                if (prop.CanRead && prop.CanWrite && (baseline is null || Changed(prop, baseline, incoming)))
                     prop.SetValue(s.Config, prop.GetValue(incoming));
 
             s.Config.Save();
@@ -568,6 +569,10 @@ internal sealed partial class HostServer : IDisposable
         Services.Execution.PermissionPolicy.ParseRules(s.Config.PermissionRules, out var dropped);
         return new ConfigUpdateResult(dropped.Count);
     }
+
+    /// <summary>Compared as JSON, so a collection with the same content counts as unchanged.</summary>
+    private static bool Changed(PropertyInfo prop, InferpalConfig before, InferpalConfig after) =>
+        JsonSerializer.Serialize(prop.GetValue(before)) != JsonSerializer.Serialize(prop.GetValue(after));
 
     // ── RAG index ──────────────────────────────────────────────────────────────
 

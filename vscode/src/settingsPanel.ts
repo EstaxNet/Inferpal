@@ -168,7 +168,9 @@ export class SettingsPanel {
         }
         try {
           const before = this.parseKeys(this.lastConfigJson);
-          const result = await host.configUpdate(msg.json);
+          // The panel sends back the whole object it opened with: the host applies only what differs
+          // from it, so a change made elsewhere since then is not reverted.
+          const result = await host.configUpdate(msg.json, this.lastConfigJson);
           this.lastConfigJson = msg.json;
           // The rules field IS saved: it is some of its lines that are inert. Said here, not only
           // in /diagnostics, which nobody opens after writing a rule they believe is in place.

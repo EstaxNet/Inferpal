@@ -1375,6 +1375,30 @@ public class HostServerTests
             Assert.Equal(kv.Value?.ToJsonString(), after[kv.Key]?.ToJsonString());
     }
 
+    /// <summary>The settings panel sends back the object it opened with. A change made elsewhere since —
+    /// here the default model picked from the chat — must survive a save that did not touch it.</summary>
+    [Fact]
+    public async Task ConfigUpdate_FromTheOpeningSnapshot_KeepsChangesMadeSince()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var opened = await h.Client.InvokeAsync<string>("config/get");
+
+        var elsewhere = System.Text.Json.Nodes.JsonNode.Parse(opened)!.AsObject();
+        elsewhere["defaultModel"] = "picked-from-chat";
+        await h.Client.InvokeWithParameterObjectAsync("config/update", new { json = elsewhere.ToJsonString() });
+
+        var panel = System.Text.Json.Nodes.JsonNode.Parse(opened)!.AsObject();
+        panel["customSystemPrompt"] = "edited-in-panel";
+        await h.Client.InvokeWithParameterObjectAsync("config/update",
+            new { json = panel.ToJsonString(), @base = opened });
+
+        var after = System.Text.Json.Nodes.JsonNode.Parse(
+            await h.Client.InvokeAsync<string>("config/get"))!.AsObject();
+        Assert.Equal("edited-in-panel", after["customSystemPrompt"]!.GetValue<string>());
+        Assert.Equal("picked-from-chat", after["defaultModel"]!.GetValue<string>());
+    }
+
     // ── command/list ───────────────────────────────────────────────────────────
 
     [Fact]
