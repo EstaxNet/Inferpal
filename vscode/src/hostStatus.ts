@@ -26,6 +26,15 @@ export function hostUnavailableMessage(): string {
 }
 
 /**
+ * Text of a failure shown to the user: the error's message, which for a JSON-RPC error is the host's
+ * (translated) text. Never `String(err)` — an Error's toString() prefixes an English "Error: ".
+ */
+export function hostErrorText(err: unknown): string {
+  const raw = (err instanceof Error ? err.message : String(err)).trim();
+  return raw.length > 0 ? raw : vscode.l10n.t('The command failed.');
+}
+
+/**
  * Toast carrying the one-click way out. No-op when a folder is already open, so a call site
  * can pair it with {@link hostUnavailableMessage} without re-testing the state itself.
  */

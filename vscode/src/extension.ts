@@ -8,7 +8,7 @@ import { SettingsPanel } from './settingsPanel';
 import { DebugBridge } from './debugBridge';
 import { EditorBridge } from './editorBridge';
 import { HostClient } from './hostClient';
-import { promptOpenFolder, workspaceRoot } from './hostStatus';
+import { hostErrorText, promptOpenFolder, workspaceRoot } from './hostStatus';
 import { FimProvider } from './inlineCompletions';
 
 let host: HostClient | undefined;
@@ -218,7 +218,7 @@ async function startHostCore(
     log(`[inferpal] host start failed: ${String(err)}`);
     await client.stop();
     if (interactive) {
-      void vscode.window.showErrorMessage(vscode.l10n.t('Inferpal host failed to start: {0}', String(err)));
+      void vscode.window.showErrorMessage(vscode.l10n.t('Inferpal host failed to start: {0}', hostErrorText(err)));
     }
   }
 }

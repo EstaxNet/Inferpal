@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import { HostClient } from './hostClient';
-import { hostUnavailableMessage, promptOpenFolder } from './hostStatus';
+import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
 import { SettingsSchema } from './protocol';
 
 interface SettingsInbound {
@@ -107,7 +107,7 @@ export class SettingsPanel {
           }
           this.post({ type: 'init', configJson: this.lastConfigJson, models, strings, schema });
         } catch (err) {
-          this.post({ type: 'error', message: String(err) });
+          this.post({ type: 'error', message: hostErrorText(err) });
         }
         return;
       }
@@ -188,7 +188,7 @@ export class SettingsPanel {
           }
         } catch (err) {
           this.log(`[settings] save failed: ${String(err)}`);
-          this.post({ type: 'error', message: String(err) });
+          this.post({ type: 'error', message: hostErrorText(err) });
         }
         return;
       }

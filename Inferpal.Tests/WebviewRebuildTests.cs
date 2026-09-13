@@ -218,6 +218,30 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// String() of an Error returns its toString() — "Error: &lt;message&gt;". Posted to the settings
+    /// panel's status or slipped into a translated message, it glued an English word in front of an
+    /// already translated refusal (saving during a reply). Log lines keep their String(err).
+    /// </summary>
+    [Fact]
+    public void AnErrorShownToTheUser_CarriesItsMessage_NotItsToString()
+    {
+        var logged    = 0;
+        var offenders = new List<string>();
+        foreach (var file in new[] { "settingsPanel.ts", "chatViewProvider.ts", "extension.ts" })
+        {
+            var code = TsCode(file);
+            // Witness: log lines keep String(err) — the scan does read these files.
+            logged += System.Text.RegularExpressions.Regex.Matches(code, @"log\(`[^`]*\$\{String\(err\)\}").Count;
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(
+                         code, @"message:\s*String\(err\)|show\w+Message\([^;]*String\(err\)"))
+                offenders.Add($"{file}: {m.Value}");
+        }
+
+        Assert.True(logged >= 5, $"only {logged} log line(s) with String(err) found: the scan reads nothing");
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>
     /// Same class, in the settings panel: it opens as an editor tab, and VS Code destroys a hidden
     /// tab's webview unless asked to keep it. On return the form reloads from the config and unsaved
     /// edits vanish without a word — clicking Save afterwards writes the old values.

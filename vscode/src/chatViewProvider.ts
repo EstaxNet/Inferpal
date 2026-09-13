@@ -4,7 +4,7 @@
 import * as vscode from 'vscode';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
-import { hostUnavailableMessage, promptOpenFolder } from './hostStatus';
+import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import { CodeActionResult, SavedMessage, SlashEffect } from './protocol';
@@ -609,7 +609,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       await vscode.workspace.fs.writeFile(target, Buffer.from(document, 'utf8'));
       void vscode.window.showInformationMessage(vscode.l10n.t('Conversation exported: {0}', target.fsPath));
     } catch (err) {
-      void vscode.window.showErrorMessage(vscode.l10n.t('Export failed: {0}', String(err)));
+      void vscode.window.showErrorMessage(vscode.l10n.t('Export failed: {0}', ChatViewProvider.errorText(err)));
     }
   }
 
@@ -1242,8 +1242,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /** Readable text for a failed RPC: JSON-RPC errors carry the host's message. */
   private static errorText(err: unknown): string {
-    const raw = (err instanceof Error ? err.message : String(err)).trim();
-    return raw.length > 0 ? raw : vscode.l10n.t('The command failed.');
+    return hostErrorText(err);
   }
 
   private finishTurn(text: string, error: string | null, cancelled: boolean, tokens: number): void {
