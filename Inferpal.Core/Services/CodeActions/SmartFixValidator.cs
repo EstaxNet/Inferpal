@@ -109,28 +109,7 @@ internal sealed class SmartFixValidator
         try
         {
             var (exitCode, output) = await RunAsync(command, projectDir, ct);
-
-            if (validator.UseDotnetErrorFilter)
-            {
-                // .NET: unchanged behaviour — errors only (warnings don't warrant a fix iteration).
-                if (!GetDiagnosticsTool.OutputHasBuildErrors(output))
-                    return Strings.SmartFixBuildOk;
-
-                var errors = output
-                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Where(l => GetDiagnosticsTool.ErrorLineRegex.IsMatch(l))
-                    .Select(l => l.Trim())
-                    .Distinct()
-                    .ToList();
-                return Strings.SmartFixBuildErrors(errors.Count, Listed(errors));
-            }
-
-            // Generic ecosystems: the exit code is the reliable failure signal across toolchains.
-            if (exitCode == 0) return Strings.SmartFixBuildOk;
-            if (ToolMissingRegex.IsMatch(output)) return null;   // toolchain absent → stay silent
-
-            var lines = ExtractErrorLines(output);
-            return Strings.SmartFixBuildErrors(lines.Count, Listed(lines));
+            return Interpret(exitCode, output, validator.UseDotnetErrorFilter);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -145,6 +124,34 @@ internal sealed class SmartFixValidator
             // Never crash the write tool — a failed build check is best-effort.
             return null;
         }
+    }
+
+    /// <summary>The note for a validator run that ended with <paramref name="exitCode"/>; null stays silent.</summary>
+    /// <remarks>
+    /// The .NET error lines only NAME the errors; whether the build passed is the exit code's to say, as for
+    /// every other toolchain. A build killed on timeout (-1) or dying without a <c>: error XX:</c> line prints
+    /// none, and "no error line" is not "built".
+    /// </remarks>
+    internal static string? Interpret(int exitCode, string output, bool dotnetFilter)
+    {
+        // .NET: errors only — warnings don't warrant a fix iteration.
+        if (dotnetFilter && GetDiagnosticsTool.OutputHasBuildErrors(output))
+        {
+            var errors = output
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Where(l => GetDiagnosticsTool.ErrorLineRegex.IsMatch(l))
+                .Select(l => l.Trim())
+                .Distinct()
+                .ToList();
+            return Strings.SmartFixBuildErrors(errors.Count, Listed(errors));
+        }
+
+        // The exit code is the reliable failure signal across toolchains.
+        if (exitCode == 0) return Strings.SmartFixBuildOk;
+        if (ToolMissingRegex.IsMatch(output)) return null;   // toolchain absent → stay silent
+
+        var lines = ExtractErrorLines(output);
+        return Strings.SmartFixBuildErrors(lines.Count, Listed(lines));
     }
 
     /// <summary>Error lines rendered into the note. The COUNT that goes with them is the count of
