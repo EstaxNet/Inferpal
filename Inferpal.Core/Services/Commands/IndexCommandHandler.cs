@@ -21,7 +21,13 @@ internal static class IndexCommandHandler
     /// <param name="root">Project root; empty means "no solution open yet".</param>
     public static string Handle(ProjectIndexService index, InferpalConfig config, string[] parts, string? root)
     {
-        if (parts.Length >= 2 && parts[1].Equals("rebuild", StringComparison.OrdinalIgnoreCase))
+        // Two shapes only: a mistyped argument that returned the report would suggest a re-index that
+        // never happened.
+        var rebuild = parts.Length == 2 && parts[1].Equals("rebuild", StringComparison.OrdinalIgnoreCase);
+        if (parts.Length >= 2 && !rebuild)
+            return Strings.SlashUsage("/index [rebuild]");
+
+        if (rebuild)
         {
             if (string.IsNullOrEmpty(root))
                 return Strings.IndexNoRoot;

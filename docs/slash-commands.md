@@ -76,7 +76,7 @@ editor with tools disabled).
 
 | Command | Description |
 |---|---|
-| `/index` | Start / restart background codebase indexing |
+| `/index` | Show the semantic index status (chunks, root, embedding model) |
 | `/index rebuild` | Force a full rebuild of the semantic index |
 | `/docs add <url> [title]` | Crawl & index an external documentation site for `search_docs` |
 | `/docs list \| remove <id> \| reindex [id]` | Manage indexed documentation sources |

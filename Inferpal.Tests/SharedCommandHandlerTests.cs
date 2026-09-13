@@ -147,6 +147,27 @@ public class SharedCommandHandlerTests
 
     private static InferpalConfig RagConfig(bool enabled) => new() { RagEnabled = enabled, RagTopK = 7 };
 
+    // A mistyped argument ("rebuld") returned the status report: the user believes they started a
+    // re-index that never happened. Only two shapes exist.
+    [Theory]
+    [InlineData("rebuld")]
+    [InlineData("status")]
+    [InlineData("2")]
+    public void Index_AnUnknownArgument_ShowsTheUsage(string argument)
+    {
+        var message = IndexCommandHandler.Handle(Index(), RagConfig(enabled: true), ["/index", argument], @"C:\proj");
+
+        Assert.Equal(Strings.SlashUsage("/index [rebuild]"), message);
+    }
+
+    [Fact]
+    public void IndexRebuild_WithATrailingToken_ShowsTheUsage()
+    {
+        var message = IndexCommandHandler.Handle(Index(), RagConfig(enabled: true), ["/index", "rebuild", "now"], root: "");
+
+        Assert.Equal(Strings.SlashUsage("/index [rebuild]"), message);
+    }
+
     [Fact]
     public void Index_RagDisabled_ExplainsHowToEnableIt()
     {

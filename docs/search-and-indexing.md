@@ -61,7 +61,7 @@ flowchart TD
 
 - Indexing runs in the background and **persists** across restarts.
 - A `FileSystemWatcher` re-indexes changed files with a 5 s debounce.
-- `/index` starts/restarts indexing; `/index rebuild` forces a full rebuild.
+- `/index` shows the index status; `/index rebuild` forces a full rebuild.
 - Indexing automatically **pauses while a chat/agent request runs** and resumes right after —
   the interactive model always gets the GPU first (see
   [Architecture → GPU scheduling](architecture.md#gpu-scheduling)).
