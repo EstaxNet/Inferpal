@@ -1450,7 +1450,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         edited.VramBudgetGb             = vbOk ? Math.Round(vb, 1)
                                                : SettingsFallback.For(vramBudgetText, edited.VramBudgetGb, 0);
         edited.CustomSystemPrompt        = customPrompt;
-        edited.PinnedContextFiles        = pinnedContextFiles;
+        edited.PinnedContextFiles        = PinnedFilesPolicy.MergeEdits(
+            _config.PinnedContextFiles, edited.PinnedContextFiles, pinnedContextFiles);
         edited.PromptTemplates           = promptTemplates;
         edited.CustomTools               = customTools;
         edited.PermissionRules           = permissionRules;
@@ -1881,8 +1882,12 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private void PersistPinned()
     {
         SyncPinnedTextFromRows();
-        _config.PinnedContextFiles = PinnedContextFiles;
+        // Line by line, not the whole field: the chat may have pinned a file since this window opened.
+        var opened = _opened["pinnedContextFiles"]?.GetValue<string>();
+        _config.PinnedContextFiles = PinnedFilesPolicy.MergeEdits(_config.PinnedContextFiles, opened, PinnedContextFiles);
         _config.Save();
+        _opened["pinnedContextFiles"] = _config.PinnedContextFiles;
+        BuildPinnedRowsFrom(_config.PinnedContextFiles);
     }
 
     private void BeginAddPinned()

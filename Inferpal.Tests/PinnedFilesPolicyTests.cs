@@ -130,4 +130,20 @@ public class PinnedFilesPolicyTests
         // Witness: a hidden file pinned again from the chat does not appear twice.
         Assert.Equal("b\nd\ne", PinnedFilesPolicy.Serialize(["b", "d"], "a\nb\nc\nd\ne"));
     }
+
+    // The settings window and the chat strip write the same setting. Rewritten from the window's rows, it
+    // lost a file pinned from the chat after the window opened.
+    [Fact]
+    public void MergeEdits_KeepsAPinMadeFromTheChat_AndAppliesTheWindowsEdits()
+    {
+        // Opened: a, b. The chat pins c. The window removes a and disables b.
+        Assert.Equal("c\n#b", PinnedFilesPolicy.MergeEdits(live: "a\nb\nc", opened: "a\nb", edited: "#b"));
+    }
+
+    [Fact]
+    public void MergeEdits_WithNothingChangedElsewhere_IsTheWindowsList()
+    {
+        // Witness: with no concurrent write, the merge returns what the window shows.
+        Assert.Equal("a\nd", PinnedFilesPolicy.MergeEdits(live: "a\nb", opened: "a\nb", edited: "a\nd"));
+    }
 }

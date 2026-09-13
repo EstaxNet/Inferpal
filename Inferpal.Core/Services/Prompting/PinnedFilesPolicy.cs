@@ -50,4 +50,29 @@ internal static class PinnedFilesPolicy
         var disabled = lines.Where(l => l.StartsWith('#'));
         return string.Join("\n", chips.Concat(hidden).Concat(disabled));
     }
+
+    /// <summary>
+    /// The pinned-files setting after an editor's change: <paramref name="live"/>, minus the lines the
+    /// editor removed since <paramref name="opened"/>, plus the lines it added.
+    /// </summary>
+    /// <remarks>
+    /// The settings window and the chat strip write the same setting. A window that rewrote it from its
+    /// rows erased a file pinned from the chat after it opened. Lines compare case-insensitively, like
+    /// the chips.
+    /// </remarks>
+    public static string MergeEdits(string? live, string? opened, string? edited)
+    {
+        static List<string> Lines(string? text) => (text ?? string.Empty)
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+        var before  = Lines(opened);
+        var after   = Lines(edited);
+        var removed = before.Where(l => !after.Contains(l, StringComparer.OrdinalIgnoreCase)).ToList();
+        var added   = after.Where(l => !before.Contains(l, StringComparer.OrdinalIgnoreCase));
+
+        var result = Lines(live).Where(l => !removed.Contains(l, StringComparer.OrdinalIgnoreCase)).ToList();
+        foreach (var line in added)
+            if (!result.Contains(line, StringComparer.OrdinalIgnoreCase)) result.Add(line);
+        return string.Join("\n", result);
+    }
 }

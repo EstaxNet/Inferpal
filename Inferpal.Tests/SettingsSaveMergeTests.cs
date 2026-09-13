@@ -51,4 +51,17 @@ public class SettingsSaveMergeTests
         Assert.Empty(Regex.Matches(save, @"_config\.\w+\s*=[^=]"));
         Assert.Contains("SnapshotNow()", Body(code, "public InferpalSettingsData("), StringComparison.Ordinal);
     }
+
+    // The chat strip writes the pinned files too: the window lays its edits over them line by line,
+    // on an immediate row change as on the global save.
+    [Theory]
+    [InlineData("void PersistPinned()")]
+    [InlineData("private async Task SaveCoreAsync(")]
+    public void PinnedFiles_AreMergedLineByLine(string method)
+    {
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
+
+        Assert.Contains("PinnedFilesPolicy.MergeEdits(", Body(code, method), StringComparison.Ordinal);
+    }
 }
