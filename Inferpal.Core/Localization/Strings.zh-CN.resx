@@ -457,6 +457,7 @@
   <data name="ChecksScaffolded" xml:space="preserve"><value>已在 {0} 创建示例检查项。请编辑它，然后运行 `/check` 评审你的差异。</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>没有提示文件。请创建 `.inferpal/prompts/*.md` 或运行 `/prompts init`。</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**提示文件** (`.inferpal/prompts`) — 每个文件都是一个斜杠命令，`{args}` 会被替换：</value></data>
+  <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ 永远不会运行：`{0}` 是内置命令</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>已在 {0} 创建示例提示。请编辑它，然后输入 `/review-security`（文件名 = 命令）。</value></data>
 
   <!-- analyze_impact tool -->

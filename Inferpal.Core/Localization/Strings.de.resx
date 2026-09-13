@@ -457,6 +457,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <data name="ChecksScaffolded" xml:space="preserve"><value>Beispiel-Check erstellt in {0}. Bearbeite ihn und führe dann `/check` aus, um dein Diff zu prüfen.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>Keine Prompt-Dateien. Erstelle `.inferpal/prompts/*.md` oder führe `/prompts init` aus.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Prompt-Dateien** (`.inferpal/prompts`) — jede Datei ist ein Slash-Befehl, `{args}` wird ersetzt:</value></data>
+  <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ wird nie ausgeführt: `{0}` ist ein integrierter Befehl</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Beispiel-Prompt erstellt in {0}. Bearbeite ihn und tippe dann `/review-security` (Dateiname = Befehl).</value></data>
 
   <!-- analyze_impact tool -->

@@ -124,4 +124,20 @@ public class RulesChecksPromptsCommandHandlerTests : IDisposable
 
         Assert.Equal(Strings.PromptsNone, result.Message);
     }
+
+    /// <summary>
+    /// A prompt file named like a built-in command is listed as one that never runs: the router answers the
+    /// built-in first, and the listing presented <c>undo-run.md</c> as a usable <c>/undo-run</c>.
+    /// </summary>
+    [Fact]
+    public void Prompts_AFileNamedLikeABuiltIn_IsFlaggedAsNeverRunning()
+    {
+        WriteFile("prompts", "undo-run.md", "Summarize the last run.\n");
+        WriteFile("prompts", "standup.md", "Summarize {args}\n");
+
+        var result = RulesChecksPromptsCommandHandler.Prompts(_root, List());
+
+        Assert.Contains("`/undo-run`" + Strings.PromptsShadowedByBuiltIn("/undo-run"), result.Message);
+        Assert.DoesNotContain(Strings.PromptsShadowedByBuiltIn("/standup"), result.Message);   // witness: a free name
+    }
 }

@@ -457,6 +457,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="ChecksScaffolded" xml:space="preserve"><value>Check d'exemple créé dans {0}. Modifie-le, puis lance `/check` pour relire ton diff.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>Aucun fichier de prompt. Crée `.inferpal/prompts/*.md` ou lance `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Fichiers de prompt** (`.inferpal/prompts`) — chaque fichier est une commande slash, `{args}` est remplacé :</value></data>
+  <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ ne s'exécute jamais : `{0}` est une commande intégrée</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Prompt d'exemple créé dans {0}. Modifie-le, puis tape `/review-security` (nom du fichier = commande).</value></data>
 
   <!-- analyze_impact tool -->

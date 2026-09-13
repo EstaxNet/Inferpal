@@ -457,6 +457,7 @@
   <data name="ChecksScaffolded" xml:space="preserve"><value>예시 체크를 {0}에 만들었습니다. 편집한 후 `/check`를 실행해 diff를 검토하세요.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>프롬프트 파일이 없습니다. `.inferpal/prompts/*.md`를 만들거나 `/prompts init`를 실행하세요.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**프롬프트 파일** (`.inferpal/prompts`) — 각 파일은 슬래시 명령이 되며 `{args}`가 치환됩니다:</value></data>
+  <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ 실행되지 않음: `{0}`은(는) 기본 제공 명령입니다</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>예시 프롬프트를 {0}에 만들었습니다. 편집한 후 `/review-security`를 입력하세요(파일 이름 = 명령).</value></data>
 
   <!-- analyze_impact tool -->

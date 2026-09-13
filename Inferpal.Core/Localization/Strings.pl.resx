@@ -457,6 +457,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="ChecksScaffolded" xml:space="preserve"><value>Przykładowe sprawdzenie utworzone w {0}. Edytuj je, następnie uruchom `/check`, aby zrecenzować diff.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>Brak plików promptów. Utwórz `.inferpal/prompts/*.md` lub uruchom `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Pliki promptów** (`.inferpal/prompts`) — każdy plik to polecenie slash, `{args}` jest podstawiane:</value></data>
+  <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ nigdy nie jest uruchamiany: `{0}` to wbudowane polecenie</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Przykładowy prompt utworzony w {0}. Edytuj go, następnie wpisz `/review-security` (nazwa pliku = polecenie).</value></data>
 
   <!-- analyze_impact tool -->

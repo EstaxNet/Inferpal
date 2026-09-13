@@ -457,6 +457,7 @@
   <data name="ChecksScaffolded" xml:space="preserve"><value>サンプルチェックを {0} に作成しました。編集してから `/check` を実行して差分をレビューしてください。</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>プロンプトファイルがありません。`.inferpal/prompts/*.md` を作成するか `/prompts init` を実行してください。</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**プロンプトファイル** (`.inferpal/prompts`) — 各ファイルはスラッシュコマンドになり、`{args}` が展開されます：</value></data>
+  <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ 実行されません: `{0}` は組み込みコマンドです</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>サンプルプロンプトを {0} に作成しました。編集してから `/review-security` と入力してください（ファイル名 = コマンド）。</value></data>
 
   <!-- analyze_impact tool -->

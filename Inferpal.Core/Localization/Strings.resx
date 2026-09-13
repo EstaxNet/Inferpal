@@ -458,6 +458,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="ChecksScaffolded" xml:space="preserve"><value>Example check ready at {0}. Edit it, then run `/check` to review your diff.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>No prompt files. Create `.inferpal/prompts/*.md` or run `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Prompt files** (`.inferpal/prompts`) — each file is a slash command, `{args}` expands:</value></data>
+  <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ never runs: `{0}` is a built-in command</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Example prompt ready at {0}. Edit it, then type `/review-security` (file name = command).</value></data>
 
   <!-- analyze_impact tool -->

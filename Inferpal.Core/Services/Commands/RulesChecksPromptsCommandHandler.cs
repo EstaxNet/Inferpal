@@ -114,6 +114,8 @@ internal static class RulesChecksPromptsCommandHandler
         foreach (var p in prompts)
         {
             sb.Append("\n- `").Append(p.Name).Append('`');
+            // The router answers a built-in first: a file with that name is listed, but it never runs.
+            if (SlashCommandRouter.IsBuiltIn(p.Name)) sb.Append(Strings.PromptsShadowedByBuiltIn(p.Name));
             if (p.Hint is not null) sb.Append(" — ").Append(p.Hint);
         }
         return new(Append(sb, unreadable));

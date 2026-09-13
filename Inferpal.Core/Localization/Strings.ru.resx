@@ -457,6 +457,7 @@
   <data name="ChecksScaffolded" xml:space="preserve"><value>Пример проверки создан в {0}. Отредактируйте его, затем выполните `/check`, чтобы проверить дифф.</value></data>
   <data name="PromptsNone" xml:space="preserve"><value>Нет файлов промптов. Создайте `.inferpal/prompts/*.md` или выполните `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Файлы промптов** (`.inferpal/prompts`) — каждый файл является slash-командой, `{args}` подставляется:</value></data>
+  <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ никогда не выполняется: `{0}` — встроенная команда</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Пример промпта создан в {0}. Отредактируйте его, затем введите `/review-security` (имя файла = команда).</value></data>
 
   <!-- analyze_impact tool -->
