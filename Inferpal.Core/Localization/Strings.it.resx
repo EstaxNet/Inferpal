@@ -660,6 +660,19 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="SlashHintContext" xml:space="preserve"><value>mostrare il contesto del progetto</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>visualizzare la memoria dell'agente</value></data>
   <data name="SlashHintIndex" xml:space="preserve"><value>mostrare o ricostruire l'indice RAG del codice</value></data>
+  <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Radice della soluzione non trovata: apri prima un file.</value></data>
+  <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 Reindicizzazione RAG avviata: `{0}`</value></data>
+  <data name="IndexTitle" xml:space="preserve"><value>**Indice RAG**</value></data>
+  <data name="IndexDisabled" xml:space="preserve"><value>Stato: **disattivato** (`ragEnabled = false` nelle impostazioni)</value></data>
+  <data name="IndexEnableHint" xml:space="preserve"><value>Attivalo per la ricerca semantica tra file tramite `search_codebase`.</value></data>
+  <data name="IndexStatusLine" xml:space="preserve"><value>Stato: {0}</value></data>
+  <data name="IndexNotStarted" xml:space="preserve"><value>non avviato</value></data>
+  <data name="IndexBuildHint" xml:space="preserve"><value>Usa `/index rebuild` per costruire l'indice manualmente.</value></data>
+  <data name="IndexChunksLine" xml:space="preserve"><value>Frammenti: {0}</value></data>
+  <data name="IndexRootLine" xml:space="preserve"><value>Radice: `{0}`</value></data>
+  <data name="IndexModelLine" xml:space="preserve"><value>Modello: `{0}`</value></data>
+  <data name="IndexTopKLine" xml:space="preserve"><value>Top-K: {0}</value></data>
+  <data name="IndexForceHint" xml:space="preserve"><value>Usa `/index rebuild` per forzare una reindicizzazione completa.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>elencare le sessioni salvate — /history &lt;termine&gt; per cercare</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>avviare una sessione da un modello predefinito — /template &lt;id&gt;</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>allegare il diff git completo come chip di contesto — /diff [percorso]</value></data>

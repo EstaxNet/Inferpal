@@ -660,6 +660,19 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="SlashHintContext" xml:space="preserve"><value>Projektkontext anzeigen</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>Agent-Speicher anzeigen</value></data>
   <data name="SlashHintIndex" xml:space="preserve"><value>RAG-Codebasis-Index anzeigen oder neu aufbauen</value></data>
+  <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Stammverzeichnis der Projektmappe nicht gefunden — öffnen Sie zuerst eine Datei.</value></data>
+  <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 RAG-Neuindizierung gestartet: `{0}`</value></data>
+  <data name="IndexTitle" xml:space="preserve"><value>**RAG-Index**</value></data>
+  <data name="IndexDisabled" xml:space="preserve"><value>Status: **deaktiviert** (`ragEnabled = false` in den Einstellungen)</value></data>
+  <data name="IndexEnableHint" xml:space="preserve"><value>Aktivieren Sie ihn für die semantische dateiübergreifende Suche über `search_codebase`.</value></data>
+  <data name="IndexStatusLine" xml:space="preserve"><value>Status: {0}</value></data>
+  <data name="IndexNotStarted" xml:space="preserve"><value>nicht gestartet</value></data>
+  <data name="IndexBuildHint" xml:space="preserve"><value>Verwenden Sie `/index rebuild`, um den Index manuell aufzubauen.</value></data>
+  <data name="IndexChunksLine" xml:space="preserve"><value>Abschnitte: {0}</value></data>
+  <data name="IndexRootLine" xml:space="preserve"><value>Stamm: `{0}`</value></data>
+  <data name="IndexModelLine" xml:space="preserve"><value>Modell: `{0}`</value></data>
+  <data name="IndexTopKLine" xml:space="preserve"><value>Top-K: {0}</value></data>
+  <data name="IndexForceHint" xml:space="preserve"><value>Verwenden Sie `/index rebuild`, um eine vollständige Neuindizierung zu erzwingen.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>gespeicherte Sitzungen auflisten — /history &lt;Begriff&gt; zum Suchen</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>Sitzung aus einer Vorlage starten — /template &lt;id&gt;</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>vollständigen git-Diff als Kontext-Chip anhängen — /diff [Pfad]</value></data>

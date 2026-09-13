@@ -1,5 +1,6 @@
 using System.Text;
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Services.Rag;
 
 namespace Inferpal.Services.Commands;
@@ -23,38 +24,39 @@ internal static class IndexCommandHandler
         if (parts.Length >= 2 && parts[1].Equals("rebuild", StringComparison.OrdinalIgnoreCase))
         {
             if (string.IsNullOrEmpty(root))
-                return "⚠ Cannot locate solution root — open a file first.";
+                return Strings.IndexNoRoot;
             index.StartIndexing(root);
-            return $"🔄 RAG re-indexing started: `{root}`";
+            return Strings.IndexRebuildStarted(root);
         }
 
         var model = string.IsNullOrEmpty(config.RagEmbeddingModel) ? DefaultEmbeddingModel : config.RagEmbeddingModel;
         var sb    = new StringBuilder();
 
-        sb.AppendLine("**RAG Index**");
+        sb.AppendLine(Strings.IndexTitle);
         sb.AppendLine();
 
         if (!config.RagEnabled)
         {
-            sb.AppendLine("Status: **disabled** (`ragEnabled = false` in settings)");
+            sb.AppendLine(Strings.IndexDisabled);
             sb.AppendLine();
-            sb.AppendLine("Enable it to get semantic cross-file search via `search_codebase`.");
+            sb.AppendLine(Strings.IndexEnableHint);
         }
         else if (index.ChunkCount == 0 && !index.IsIndexing)
         {
-            sb.AppendLine($"Status: {(index.Status is { Length: > 0 } s ? s : "not started")}");
+            sb.AppendLine(Strings.IndexStatusLine(index.Status is { Length: > 0 } s ? s : Strings.IndexNotStarted));
             sb.AppendLine();
-            sb.AppendLine("Use `/index rebuild` to build the index manually.");
+            sb.AppendLine(Strings.IndexBuildHint);
         }
         else
         {
-            sb.AppendLine($"Status : {index.Status}");
-            sb.AppendLine($"Chunks : {index.ChunkCount:N0}");
-            sb.AppendLine($"Root   : `{index.RootDir}`");
-            sb.AppendLine($"Model  : `{model}`");
-            sb.AppendLine($"Top-K  : {config.RagTopK}");
+            // The status value itself comes from the indexing service, whose state is English by convention.
+            sb.AppendLine(Strings.IndexStatusLine(index.Status));
+            sb.AppendLine(Strings.IndexChunksLine(index.ChunkCount.ToString("N0")));
+            sb.AppendLine(Strings.IndexRootLine(index.RootDir));
+            sb.AppendLine(Strings.IndexModelLine(model));
+            sb.AppendLine(Strings.IndexTopKLine(config.RagTopK));
             sb.AppendLine();
-            sb.AppendLine("Use `/index rebuild` to force a full re-index.");
+            sb.AppendLine(Strings.IndexForceHint);
         }
 
         return sb.ToString().TrimEnd();

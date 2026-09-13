@@ -152,8 +152,9 @@ public class SharedCommandHandlerTests
     {
         var message = IndexCommandHandler.Handle(Index(), RagConfig(enabled: false), ["/index"], root: @"C:\proj");
 
-        Assert.Contains("**disabled**", message);
-        Assert.Contains("ragEnabled", message);
+        // The report follows the language (IndexCommandLocalizationTests pins it): here, the setting
+        // to change, which has the same name in all ten.
+        Assert.Contains("`ragEnabled = false`", message);
     }
 
     [Fact]

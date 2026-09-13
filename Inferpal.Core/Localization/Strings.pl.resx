@@ -660,6 +660,19 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="SlashHintContext" xml:space="preserve"><value>pokaż kontekst projektu</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>wyświetl pamięć agenta</value></data>
   <data name="SlashHintIndex" xml:space="preserve"><value>pokaż lub przebuduj indeks RAG kodu</value></data>
+  <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Nie znaleziono katalogu głównego rozwiązania — najpierw otwórz plik.</value></data>
+  <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 Rozpoczęto ponowne indeksowanie RAG: `{0}`</value></data>
+  <data name="IndexTitle" xml:space="preserve"><value>**Indeks RAG**</value></data>
+  <data name="IndexDisabled" xml:space="preserve"><value>Status: **wyłączony** (`ragEnabled = false` w ustawieniach)</value></data>
+  <data name="IndexEnableHint" xml:space="preserve"><value>Włącz go, aby korzystać z wyszukiwania semantycznego między plikami przez `search_codebase`.</value></data>
+  <data name="IndexStatusLine" xml:space="preserve"><value>Status: {0}</value></data>
+  <data name="IndexNotStarted" xml:space="preserve"><value>nie uruchomiono</value></data>
+  <data name="IndexBuildHint" xml:space="preserve"><value>Użyj `/index rebuild`, aby ręcznie zbudować indeks.</value></data>
+  <data name="IndexChunksLine" xml:space="preserve"><value>Fragmenty: {0}</value></data>
+  <data name="IndexRootLine" xml:space="preserve"><value>Katalog główny: `{0}`</value></data>
+  <data name="IndexModelLine" xml:space="preserve"><value>Model: `{0}`</value></data>
+  <data name="IndexTopKLine" xml:space="preserve"><value>Top-K: {0}</value></data>
+  <data name="IndexForceHint" xml:space="preserve"><value>Użyj `/index rebuild`, aby wymusić pełne ponowne indeksowanie.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>wyświetl zapisane sesje — /history &lt;termin&gt; aby wyszukać</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>rozpocznij sesję z gotowego szablonu — /template &lt;id&gt;</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>dołącz pełny git diff jako chip kontekstu — /diff [ścieżka]</value></data>

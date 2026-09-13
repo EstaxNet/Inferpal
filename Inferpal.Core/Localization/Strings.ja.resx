@@ -660,6 +660,19 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SlashHintContext" xml:space="preserve"><value>プロジェクトのコンテキストを表示</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>エージェントのメモリを表示</value></data>
   <data name="SlashHintIndex" xml:space="preserve"><value>RAG コードベースインデックスを表示または再構築</value></data>
+  <data name="IndexNoRoot" xml:space="preserve"><value>⚠ ソリューションのルートが見つかりません。先にファイルを開いてください。</value></data>
+  <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 RAG の再インデックスを開始しました: `{0}`</value></data>
+  <data name="IndexTitle" xml:space="preserve"><value>**RAG インデックス**</value></data>
+  <data name="IndexDisabled" xml:space="preserve"><value>ステータス: **無効** (設定で `ragEnabled = false`)</value></data>
+  <data name="IndexEnableHint" xml:space="preserve"><value>有効にすると `search_codebase` でファイル横断のセマンティック検索が使えます。</value></data>
+  <data name="IndexStatusLine" xml:space="preserve"><value>ステータス: {0}</value></data>
+  <data name="IndexNotStarted" xml:space="preserve"><value>未開始</value></data>
+  <data name="IndexBuildHint" xml:space="preserve"><value>`/index rebuild` でインデックスを手動で構築します。</value></data>
+  <data name="IndexChunksLine" xml:space="preserve"><value>チャンク: {0}</value></data>
+  <data name="IndexRootLine" xml:space="preserve"><value>ルート: `{0}`</value></data>
+  <data name="IndexModelLine" xml:space="preserve"><value>モデル: `{0}`</value></data>
+  <data name="IndexTopKLine" xml:space="preserve"><value>トップ K: {0}</value></data>
+  <data name="IndexForceHint" xml:space="preserve"><value>`/index rebuild` で完全な再インデックスを強制します。</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>保存されたセッションを一覧表示 — /history &lt;語句&gt; で検索</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>プリセットテンプレートからセッションを開始 — /template &lt;id&gt;</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>git diff 全体をコンテキストチップとして添付 — /diff [パス]</value></data>

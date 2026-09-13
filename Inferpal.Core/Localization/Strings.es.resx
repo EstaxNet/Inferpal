@@ -660,6 +660,19 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="SlashHintContext" xml:space="preserve"><value>mostrar el contexto del proyecto</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>ver la memoria del agente</value></data>
   <data name="SlashHintIndex" xml:space="preserve"><value>mostrar o reconstruir el índice RAG del código</value></data>
+  <data name="IndexNoRoot" xml:space="preserve"><value>⚠ No se encuentra la raíz de la solución: abra primero un archivo.</value></data>
+  <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 Reindexación RAG iniciada: `{0}`</value></data>
+  <data name="IndexTitle" xml:space="preserve"><value>**Índice RAG**</value></data>
+  <data name="IndexDisabled" xml:space="preserve"><value>Estado: **desactivado** (`ragEnabled = false` en la configuración)</value></data>
+  <data name="IndexEnableHint" xml:space="preserve"><value>Actívelo para obtener búsqueda semántica entre archivos con `search_codebase`.</value></data>
+  <data name="IndexStatusLine" xml:space="preserve"><value>Estado: {0}</value></data>
+  <data name="IndexNotStarted" xml:space="preserve"><value>no iniciado</value></data>
+  <data name="IndexBuildHint" xml:space="preserve"><value>Use `/index rebuild` para construir el índice manualmente.</value></data>
+  <data name="IndexChunksLine" xml:space="preserve"><value>Fragmentos: {0}</value></data>
+  <data name="IndexRootLine" xml:space="preserve"><value>Raíz: `{0}`</value></data>
+  <data name="IndexModelLine" xml:space="preserve"><value>Modelo: `{0}`</value></data>
+  <data name="IndexTopKLine" xml:space="preserve"><value>Top-K: {0}</value></data>
+  <data name="IndexForceHint" xml:space="preserve"><value>Use `/index rebuild` para forzar una reindexación completa.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>listar las sesiones guardadas — /history &lt;término&gt; para buscar</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>iniciar una sesión desde una plantilla predefinida — /template &lt;id&gt;</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>adjuntar el diff git completo como chip de contexto — /diff [ruta]</value></data>

@@ -672,6 +672,19 @@ ollama serve
   <data name="SlashHintContext" xml:space="preserve"><value>show project context</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>view agent memory</value></data>
   <data name="SlashHintIndex" xml:space="preserve"><value>show or rebuild the RAG codebase index</value></data>
+  <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Cannot locate the solution root — open a file first.</value></data>
+  <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 RAG re-indexing started: `{0}`</value></data>
+  <data name="IndexTitle" xml:space="preserve"><value>**RAG Index**</value></data>
+  <data name="IndexDisabled" xml:space="preserve"><value>Status: **disabled** (`ragEnabled = false` in settings)</value></data>
+  <data name="IndexEnableHint" xml:space="preserve"><value>Enable it to get semantic cross-file search via `search_codebase`.</value></data>
+  <data name="IndexStatusLine" xml:space="preserve"><value>Status: {0}</value></data>
+  <data name="IndexNotStarted" xml:space="preserve"><value>not started</value></data>
+  <data name="IndexBuildHint" xml:space="preserve"><value>Use `/index rebuild` to build the index manually.</value></data>
+  <data name="IndexChunksLine" xml:space="preserve"><value>Chunks: {0}</value></data>
+  <data name="IndexRootLine" xml:space="preserve"><value>Root: `{0}`</value></data>
+  <data name="IndexModelLine" xml:space="preserve"><value>Model: `{0}`</value></data>
+  <data name="IndexTopKLine" xml:space="preserve"><value>Top-K: {0}</value></data>
+  <data name="IndexForceHint" xml:space="preserve"><value>Use `/index rebuild` to force a full re-index.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>list saved sessions — /history &lt;term&gt; to search</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>start a session from a preset template — /template &lt;id&gt;</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>attach full git diff as context chip — /diff [path]</value></data>

@@ -1089,6 +1089,33 @@ internal static class Strings
     public static string RagIndexNotReady(string status) =>
         string.Format(Get(nameof(RagIndexNotReady)), status);
 
+    /// <summary>The <c>/index</c> report, served to both front-ends.</summary>
+    public static string IndexTitle                      => Get(nameof(IndexTitle));
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexNoRoot                     => Get(nameof(IndexNoRoot));
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexRebuildStarted(string root) => string.Format(Get(nameof(IndexRebuildStarted)), root);
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexDisabled                   => Get(nameof(IndexDisabled));
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexEnableHint                 => Get(nameof(IndexEnableHint));
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexNotStarted                 => Get(nameof(IndexNotStarted));
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexBuildHint                  => Get(nameof(IndexBuildHint));
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexForceHint                  => Get(nameof(IndexForceHint));
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexStatusLine(string status)  => string.Format(Get(nameof(IndexStatusLine)), status);
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexChunksLine(string chunks)  => string.Format(Get(nameof(IndexChunksLine)), chunks);
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexRootLine(string root)      => string.Format(Get(nameof(IndexRootLine)), root);
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexModelLine(string model)    => string.Format(Get(nameof(IndexModelLine)), model);
+    /// <inheritdoc cref="IndexTitle"/>
+    public static string IndexTopKLine(int topK)         => string.Format(Get(nameof(IndexTopKLine)), topK);
+
     public static string RagNoResults(string query) =>
         string.Format(Get(nameof(RagNoResults)), query);
     // What is ADDED to a "nothing found" when the semantic half did not run. Without these two

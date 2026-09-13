@@ -668,6 +668,19 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="SlashHintContext" xml:space="preserve"><value>afficher le contexte du projet</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>consulter la mémoire de l'agent</value></data>
   <data name="SlashHintIndex" xml:space="preserve"><value>afficher ou reconstruire l'index RAG du code</value></data>
+  <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Racine de la solution introuvable — ouvrez d'abord un fichier.</value></data>
+  <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 Réindexation RAG lancée : `{0}`</value></data>
+  <data name="IndexTitle" xml:space="preserve"><value>**Index RAG**</value></data>
+  <data name="IndexDisabled" xml:space="preserve"><value>Statut : **désactivé** (`ragEnabled = false` dans les réglages)</value></data>
+  <data name="IndexEnableHint" xml:space="preserve"><value>Activez-le pour la recherche sémantique entre fichiers via `search_codebase`.</value></data>
+  <data name="IndexStatusLine" xml:space="preserve"><value>Statut : {0}</value></data>
+  <data name="IndexNotStarted" xml:space="preserve"><value>non démarré</value></data>
+  <data name="IndexBuildHint" xml:space="preserve"><value>Utilisez `/index rebuild` pour construire l'index manuellement.</value></data>
+  <data name="IndexChunksLine" xml:space="preserve"><value>Fragments : {0}</value></data>
+  <data name="IndexRootLine" xml:space="preserve"><value>Racine : `{0}`</value></data>
+  <data name="IndexModelLine" xml:space="preserve"><value>Modèle : `{0}`</value></data>
+  <data name="IndexTopKLine" xml:space="preserve"><value>Top-K : {0}</value></data>
+  <data name="IndexForceHint" xml:space="preserve"><value>Utilisez `/index rebuild` pour forcer une réindexation complète.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>lister les sessions enregistrées — /history &lt;terme&gt; pour rechercher</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>démarrer une session depuis un modèle prédéfini — /template &lt;id&gt;</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>joindre le diff git complet comme chip de contexte — /diff [chemin]</value></data>

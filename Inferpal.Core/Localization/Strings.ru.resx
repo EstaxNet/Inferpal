@@ -658,6 +658,19 @@ ollama serve
   <data name="SlashHintContext" xml:space="preserve"><value>показать контекст проекта</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>посмотреть память агента</value></data>
   <data name="SlashHintIndex" xml:space="preserve"><value>показать или пересобрать RAG-индекс кода</value></data>
+  <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Не удалось найти корень решения — сначала откройте файл.</value></data>
+  <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 Переиндексация RAG запущена: `{0}`</value></data>
+  <data name="IndexTitle" xml:space="preserve"><value>**Индекс RAG**</value></data>
+  <data name="IndexDisabled" xml:space="preserve"><value>Статус: **отключён** (`ragEnabled = false` в настройках)</value></data>
+  <data name="IndexEnableHint" xml:space="preserve"><value>Включите его для семантического поиска по файлам через `search_codebase`.</value></data>
+  <data name="IndexStatusLine" xml:space="preserve"><value>Статус: {0}</value></data>
+  <data name="IndexNotStarted" xml:space="preserve"><value>не запущен</value></data>
+  <data name="IndexBuildHint" xml:space="preserve"><value>Используйте `/index rebuild`, чтобы построить индекс вручную.</value></data>
+  <data name="IndexChunksLine" xml:space="preserve"><value>Фрагменты: {0}</value></data>
+  <data name="IndexRootLine" xml:space="preserve"><value>Корень: `{0}`</value></data>
+  <data name="IndexModelLine" xml:space="preserve"><value>Модель: `{0}`</value></data>
+  <data name="IndexTopKLine" xml:space="preserve"><value>Top-K: {0}</value></data>
+  <data name="IndexForceHint" xml:space="preserve"><value>Используйте `/index rebuild` для полной переиндексации.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>список сохранённых сессий — /history &lt;термин&gt; для поиска</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>начать сессию из готового шаблона — /template &lt;id&gt;</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>прикрепить полный git diff как чип контекста — /diff [путь]</value></data>
