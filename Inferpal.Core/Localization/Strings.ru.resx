@@ -1007,6 +1007,7 @@ ollama serve
   <data name="TaskProposalStale" xml:space="preserve"><value>Предложение не применено: **{0}** изменился с тех пор, как задача его прочитала, и записанный diff больше его не описывает. Запустите задачу заново, а не перезаписывайте сделанную за это время работу.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Делать нечего: **{0}** уже точно такой, каким его хотело предложение.</value></data>
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Предложение не применено: **{0}** не в том состоянии, которое предполагалось (отсутствует или существует там, где ожидался новый файл).</value></data>
+  <data name="TaskProposalUnreadable" xml:space="preserve"><value>Предложение не применено: не удалось прочитать **{0}**, поэтому его текущее состояние неизвестно.</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Предложение не применено: для **{0}** не записано ни одного просматриваемого изменения.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Предложение применено к **{0}**. `/undo-run` покрывает его, как любую другую запись.</value></data>
   <data name="SlashHintDebug" xml:space="preserve"><value>проверить гипотезу во время выполнения отладчиком (`/debug [гипотеза]`)</value></data>

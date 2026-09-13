@@ -1007,6 +1007,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="TaskProposalStale" xml:space="preserve"><value>提案は適用されませんでした: タスクが読んだ後に **{0}** が変更されたため、記録された差分はもう当てはまりません。その間の作業を上書きせず、タスクを再実行してください。</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>何もする必要はありません: **{0}** はすでに提案どおりの内容です。</value></data>
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>提案は適用されませんでした: **{0}** が前提の状態ではありません (存在しない、または新規作成を想定していた場所に存在する)。</value></data>
+  <data name="TaskProposalUnreadable" xml:space="preserve"><value>提案は適用されませんでした: **{0}** を読み取れなかったため、現在の状態が不明です。</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>提案は適用されませんでした: **{0}** について確認可能な変更が記録されていません。</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>**{0}** に提案を適用しました。他の書き込みと同様に `/undo-run` で戻せます。</value></data>
   <data name="SlashHintDebug" xml:space="preserve"><value>デバッガーで実行時の仮説を検証する (`/debug [仮説]`)</value></data>

@@ -1007,6 +1007,7 @@ ollama serve
   <data name="TaskProposalStale" xml:space="preserve"><value>提议未应用：自任务读取以来 **{0}** 已发生变化，记录的差异不再适用。请重新运行任务，而不要覆盖期间完成的工作。</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>无需操作：**{0}** 已经正是提议想要的样子。</value></data>
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>提议未应用：**{0}** 不处于它假设的状态（缺失，或在预期新建文件的位置已存在）。</value></data>
+  <data name="TaskProposalUnreadable" xml:space="preserve"><value>提议未应用：无法读取 **{0}**，因此其当前状态未知。</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>提议未应用：没有为 **{0}** 记录可供审阅的更改。</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>提议已应用到 **{0}**。`/undo-run` 会像其他写入一样覆盖它。</value></data>
   <data name="SlashHintDebug" xml:space="preserve"><value>用调试器验证运行时假设 (`/debug [假设]`)</value></data>

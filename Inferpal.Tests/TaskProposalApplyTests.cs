@@ -219,4 +219,74 @@ public class TaskProposalApplyTests
 
         Assert.Contains("<n>", Run(queue, $"/task apply {id}").Message);
     }
+
+    // ── A state that cannot be read is not an absent file ──────────────────────
+
+    [Fact]
+    public async Task AFileThatCannotBeRead_IsNotTreatedAsMissing_AndNothingIsWritten()
+    {
+        // A creation proposal on a file that exists but cannot be read: taken as absent, it would be
+        // written over.
+        var registry = new RecordingRegistry(succeed: true);
+
+        var message = await TaskProposalApplication.ApplyAsync(
+            Write("a.cs", "", "body\n"), registry,
+            readFile: _ => throw new System.IO.IOException("locked"), ct: default);
+
+        Assert.Empty(registry.Calls);
+        Assert.Contains("a.cs", message);
+        Assert.DoesNotContain(Strings.TaskProposalApplied("a.cs"), message);
+    }
+
+    [Fact]
+    public async Task ADeletionWhoseResultCannotBeRead_IsNotClaimedAsApplied()
+    {
+        // The deletion was refused (file locked) and the re-read fails for the same reason: an
+        // unreadable state proves nothing, least of all that the file is gone.
+        var registry = new RecordingRegistry(succeed: false);
+        var reads    = 0;
+
+        var message = await TaskProposalApplication.ApplyAsync(
+            new TaskProposal("delete_file", "a.cs", "delete a.cs", null), registry,
+            readFile: _ => ++reads == 1 ? "content\n" : throw new System.IO.IOException("locked"),
+            ct: default);
+
+        Assert.Single(registry.Calls);
+        Assert.DoesNotContain(Strings.TaskProposalApplied("a.cs"), message);
+    }
+
+    private static string RepoRoot()
+    {
+        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "README.md")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        return dir!.FullName;
+    }
+
+    private static string Body(string code, string signature)
+    {
+        var start = code.IndexOf(signature, StringComparison.Ordinal);
+        Assert.True(start >= 0, $"Method not found: {signature}");
+        var open  = code.IndexOf('{', start);
+        var depth = 0;
+        for (var i = open; i < code.Length; i++)
+        {
+            if (code[i] == '{') depth++;
+            else if (code[i] == '}' && --depth == 0) return code[open..(i + 1)];
+        }
+        return string.Empty;
+    }
+
+    [Theory]
+    [InlineData("Inferpal/ToolWindow/InferpalToolWindowData.SlashCommands.cs")]
+    [InlineData("Inferpal.Host/HostSlashCommands.cs")]
+    public void TheProposalReader_DoesNotTurnAReadFailureIntoAMissingFile(string relative)
+    {
+        var code = ConventionCoverageTests.CodeOnly(System.IO.Path.Combine([RepoRoot(), .. relative.Split('/')]));
+        var body = Body(code, "private static string? ReadFileForProposal(");
+
+        Assert.Contains("File.Exists(path)", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("catch", body, StringComparison.Ordinal);
+    }
 }

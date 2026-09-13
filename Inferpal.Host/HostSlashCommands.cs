@@ -104,11 +104,11 @@ internal sealed partial class HostServer
         // persistent bubble (VS parity) instead of a status wiped by the next setBusy (revue §3.6).
         onFinished: snapshot => Notify("task/finished", new { text = TaskCommandHandler.FinishedNotice(snapshot) }));
 
-    /// <summary>Current content of a proposed file, or null when it is not there.</summary>
+    /// <summary>Current content of a proposed file, or null when it is not there. A read failure
+    /// throws: a file that cannot be read is not an absent one.</summary>
     private static string? ReadFileForProposal(string path)
     {
-        try   { return File.Exists(path) ? File.ReadAllText(path) : null; }
-        catch (Exception ex) { Diagnostics.Swallow($"ReadFileForProposal({path})", ex); return null; }
+        return File.Exists(path) ? File.ReadAllText(path) : null;
     }
 
     /// <summary>Direct tool invocation (/read /ls /grep /run /git /map …): executed by the

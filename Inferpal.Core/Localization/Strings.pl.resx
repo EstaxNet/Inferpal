@@ -1007,6 +1007,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="TaskProposalStale" xml:space="preserve"><value>Propozycja nie została zastosowana: **{0}** zmienił się od czasu, gdy zadanie go przeczytało, więc zapisany diff już go nie opisuje. Uruchom zadanie ponownie, zamiast nadpisywać pracę wykonaną w międzyczasie.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nie ma nic do zrobienia: **{0}** jest już dokładnie taki, jak chciała propozycja.</value></data>
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Propozycja nie została zastosowana: **{0}** nie jest w założonym stanie (brak, albo istnieje tam, gdzie oczekiwano nowego pliku).</value></data>
+  <data name="TaskProposalUnreadable" xml:space="preserve"><value>Propozycja nie została zastosowana: nie udało się odczytać **{0}**, więc jego obecny stan jest nieznany.</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Propozycja nie została zastosowana: dla **{0}** nie zapisano żadnej możliwej do przejrzenia zmiany.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Propozycja zastosowana do **{0}**. `/undo-run` obejmuje ją jak każdy inny zapis.</value></data>
   <data name="SlashHintDebug" xml:space="preserve"><value>zbadaj hipotezę w czasie wykonania debugerem (`/debug [hipoteza]`)</value></data>

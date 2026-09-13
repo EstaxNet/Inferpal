@@ -1007,6 +1007,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="TaskProposalStale" xml:space="preserve"><value>Proposition non appliquée : **{0}** a changé depuis que la tâche l'a lu, donc le diff enregistré ne le décrit plus. Relancez la tâche plutôt que d'écraser le travail fait entre-temps.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Rien à faire : **{0}** est déjà exactement ce que la proposition voulait.</value></data>
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Proposition non appliquée : **{0}** n'est pas dans l'état qu'elle supposait (absent, ou présent là où elle attendait un fichier neuf).</value></data>
+  <data name="TaskProposalUnreadable" xml:space="preserve"><value>Proposition non appliquée : **{0}** n'a pas pu être lu, son état actuel est donc inconnu.</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Proposition non appliquée : aucun changement relisible n'a été enregistré pour **{0}**.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Proposition appliquée à **{0}**. `/undo-run` la couvre comme n'importe quelle autre écriture.</value></data>
   <data name="SlashHintDebug" xml:space="preserve"><value>enquêter à l'exécution avec le débogueur (`/debug [hypothèse]`)</value></data>

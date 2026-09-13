@@ -1007,6 +1007,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="TaskProposalStale" xml:space="preserve"><value>Proposta non applicata: **{0}** è cambiato da quando l'attività l'ha letto, quindi il diff registrato non lo descrive più. Rilancia l'attività invece di sovrascrivere il lavoro fatto nel frattempo.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nulla da fare: **{0}** è già esattamente ciò che la proposta voleva.</value></data>
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Proposta non applicata: **{0}** non è nello stato che presupponeva (assente, o presente dove si attendeva un file nuovo).</value></data>
+  <data name="TaskProposalUnreadable" xml:space="preserve"><value>Proposta non applicata: impossibile leggere **{0}**, quindi il suo stato attuale è sconosciuto.</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Proposta non applicata: per **{0}** non è stata registrata alcuna modifica rileggibile.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Proposta applicata a **{0}**. `/undo-run` la copre come qualsiasi altra scrittura.</value></data>
   <data name="SlashHintDebug" xml:space="preserve"><value>indagare un'ipotesi a runtime con il debugger (`/debug [ipotesi]`)</value></data>

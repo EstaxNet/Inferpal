@@ -415,11 +415,11 @@ internal partial class InferpalToolWindowData
         if (result.Message is { } message) await ShowInfoAsync(message);
     }
 
-    /// <summary>Current content of a proposed file, or null when it is not there.</summary>
+    /// <summary>Current content of a proposed file, or null when it is not there. A read failure
+    /// throws: a file that cannot be read is not an absent one.</summary>
     private static string? ReadFileForProposal(string path)
     {
-        try   { return File.Exists(path) ? File.ReadAllText(path) : null; }
-        catch (Exception ex) { Diagnostics.Swallow($"ReadFileForProposal({path})", ex); return null; }
+        return File.Exists(path) ? File.ReadAllText(path) : null;
     }
 
     /// <summary>

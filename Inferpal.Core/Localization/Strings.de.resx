@@ -1007,6 +1007,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="TaskProposalStale" xml:space="preserve"><value>Vorschlag nicht angewendet: **{0}** hat sich geändert, seit die Aufgabe die Datei gelesen hat; der aufgezeichnete Diff beschreibt sie nicht mehr. Führen Sie die Aufgabe erneut aus, statt zwischenzeitliche Arbeit zu überschreiben.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nichts zu tun: **{0}** ist bereits genau das, was der Vorschlag wollte.</value></data>
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Vorschlag nicht angewendet: **{0}** ist nicht im angenommenen Zustand (fehlt, oder existiert, wo eine neue Datei erwartet wurde).</value></data>
+  <data name="TaskProposalUnreadable" xml:space="preserve"><value>Vorschlag nicht angewendet: **{0}** konnte nicht gelesen werden, sein aktueller Zustand ist daher unbekannt.</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Vorschlag nicht angewendet: für **{0}** wurde keine prüfbare Änderung aufgezeichnet.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Vorschlag auf **{0}** angewendet. `/undo-run` deckt ihn ab wie jede andere Schreiboperation.</value></data>
   <data name="SlashHintDebug" xml:space="preserve"><value>eine Laufzeit-Hypothese mit dem Debugger prüfen (`/debug [Hypothese]`)</value></data>

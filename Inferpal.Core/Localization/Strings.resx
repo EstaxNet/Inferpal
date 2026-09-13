@@ -1011,6 +1011,7 @@ ollama serve
   <data name="TaskProposalStale" xml:space="preserve"><value>Proposal not applied: **{0}** changed since the task looked at it, so the recorded diff no longer describes it. Re-run the task rather than overwrite work done in between.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nothing to do: **{0}** is already exactly what the proposal wanted.</value></data>
   <data name="TaskProposalFileMissing" xml:space="preserve"><value>Proposal not applied: **{0}** is not in the state it assumed (missing, or present where it expected a new file).</value></data>
+  <data name="TaskProposalUnreadable" xml:space="preserve"><value>Proposal not applied: **{0}** could not be read, so its current state is unknown.</value></data>
   <data name="TaskProposalUnusable" xml:space="preserve"><value>Proposal not applied: no reviewable change was recorded for **{0}**.</value></data>
   <data name="TaskProposalApplied" xml:space="preserve"><value>Proposal applied to **{0}**. `/undo-run` covers it like any other write.</value></data>
   <data name="SlashHintDebug" xml:space="preserve"><value>investigate a runtime hypothesis with the debugger (`/debug [hypothesis]`)</value></data>

@@ -1288,6 +1288,9 @@ internal static class Strings
         string.Format(Get(nameof(TaskProposalAlreadyApplied)), path);
     public static string TaskProposalFileMissing(string path) =>
         string.Format(Get(nameof(TaskProposalFileMissing)), path);
+
+    public static string TaskProposalUnreadable(string path) =>
+        string.Format(Get(nameof(TaskProposalUnreadable)), path);
     public static string TaskProposalUnusable(string path) =>
         string.Format(Get(nameof(TaskProposalUnusable)), path);
     public static string TaskProposalApplied(string path) =>

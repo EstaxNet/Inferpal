@@ -186,7 +186,7 @@ internal static class TaskProposalApplication
     /// Applies one proposal through the <b>real</b> tools, and reports what happened.
     /// </summary>
     /// <param name="tools">The session's own registry — the one whose approval service prompts.</param>
-    /// <param name="readFile">Current content of a path, or null when it does not exist.</param>
+    /// <param name="readFile">Current content of a path, or null when it does not exist; throws when it exists but cannot be read.</param>
     /// <param name="beginRun">
     /// Opens a change-tracking run around the write, exactly as a chat turn does. Without it the
     /// snapshot is taken but attaches to no run, so <c>/undo-run</c> answers "nothing to undo" while
@@ -204,7 +204,16 @@ internal static class TaskProposalApplication
         TaskProposal proposal, IToolRegistry tools, Func<string, string?> readFile,
         CancellationToken ct, Action? beginRun = null)
     {
-        var plan = Decide(proposal, readFile(proposal.Subject));
+        string? current;
+        try { current = readFile(proposal.Subject); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Unreadable is not absent: a creation would be written over the file, a deletion called missing.
+            Diagnostics.Swallow($"TaskProposal.Read({proposal.Subject})", ex);
+            return Strings.TaskProposalUnreadable(proposal.Subject);
+        }
+
+        var plan = Decide(proposal, current);
 
         if (!plan.Ready)
             return plan.Verdict switch
@@ -230,9 +239,19 @@ internal static class TaskProposalApplication
         // truth. Re-checking the file is the only language-independent answer: matching the tool's
         // message would break in ten locales, and that is precisely the mistake this code base has
         // already made once.
-        var after   = readFile(plan.Path);
-        var applied = plan.Delete ? after is null
-                                  : string.Equals(after, plan.Content, StringComparison.Ordinal);
+        bool applied;
+        try
+        {
+            var after = readFile(plan.Path);
+            applied   = plan.Delete ? after is null
+                                    : string.Equals(after, plan.Content, StringComparison.Ordinal);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // A state that cannot be re-read proves nothing, least of all that the change landed.
+            Diagnostics.Swallow($"TaskProposal.Verify({plan.Path})", ex);
+            applied = false;
+        }
 
         return applied ? output + "\n\n" + Strings.TaskProposalApplied(plan.Path) : output;
     }
