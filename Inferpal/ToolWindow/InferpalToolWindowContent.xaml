@@ -616,7 +616,7 @@
                                                                 Margin="0,4,6,0">
                                                         <!-- Save snippet ⭐ -->
                                                         <Button Command="{Binding SaveSnippetCommand}"
-                                                                Content="&#xE734;" FontFamily="Segoe MDL2 Assets"
+                                                                Content="{Binding SaveSnippetGlyph}" FontFamily="Segoe MDL2 Assets"
                                                                 Margin="0,0,4,0" Padding="5,2" FontSize="11"
                                                                 Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}" Cursor="Hand"
                                                                 ToolTip="{Binding DataContext.TooltipSaveSnippet, ElementName=root}">

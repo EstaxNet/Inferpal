@@ -66,9 +66,19 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
         return Task.CompletedTask;
     }
 
+    // The store returns false when nothing was written: the button shows the outcome instead of staying
+    // silent (MarkdownBlock has no link to the conversation). Segoe MDL2 glyphs: star, check, error.
+    private const string GlyphSaveSnippet = "";
+    private const string GlyphSaved       = "";
+    private const string GlyphNotSaved    = "";
+
+    private string _saveSnippetGlyph = GlyphSaveSnippet;
+    [DataMember] public string SaveSnippetGlyph { get => _saveSnippetGlyph; set => SetProperty(ref _saveSnippetGlyph, value); }
+
     private async Task SaveSnippetAsync(object? _, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(Text)) return;
-        await Inferpal.Services.Persistence.SnippetStore.SaveAsync(Language, Text, ct);
+        var saved = await Inferpal.Services.Persistence.SnippetStore.SaveAsync(Language, Text, ct);
+        SaveSnippetGlyph = saved ? GlyphSaved : GlyphNotSaved;
     }
 }
