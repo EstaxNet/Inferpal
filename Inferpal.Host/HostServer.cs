@@ -690,7 +690,9 @@ internal sealed partial class HostServer : IDisposable
             : s.History.FirstOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
 
         var title = await SessionTitleGenerator.GenerateAsync(s.Client, s.Config, text, ct);
-        return new SessionTitleResult(title, SessionManager.SessionFileName(DateTime.Now, title));
+        // VS Code archives under this name without asking: it must not be a session that exists.
+        return new SessionTitleResult(title, SessionManager.UniqueSessionName(
+            SessionManager.SessionFileName(DateTime.Now, title), s.Store.ListSessions()));
     }
 
     // ── Context X-Ray panel (interactive /xray V2) ─────────────────────────────

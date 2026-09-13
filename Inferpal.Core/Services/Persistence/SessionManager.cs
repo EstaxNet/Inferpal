@@ -165,6 +165,30 @@ internal static class SessionManager
     public static string SessionFileName(DateTime localNow, string title) =>
         $"{localNow:yyyy-MM-dd_HHmm}_{title}";
 
+    /// <summary>
+    /// <paramref name="baseName"/> when no existing session carries it, otherwise the first free
+    /// <c>_2</c>, <c>_3</c>… suffix.
+    /// </summary>
+    /// <remarks>
+    /// For names the product CREATES — an archive on <c>/clear</c>, the parent <c>/branch</c> writes,
+    /// the name <c>session/title</c> suggests. <see cref="SessionFileName"/> is minute-precise and the
+    /// title comes from the first message, so the same question cleared and asked again within the
+    /// minute produced the same name, and the save overwrote the first conversation. Re-saving an
+    /// existing session is not a creation and keeps its name. Case-insensitive, like the file systems
+    /// the names land on.
+    /// </remarks>
+    public static string UniqueSessionName(string baseName, IEnumerable<string> existingNames)
+    {
+        var taken = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
+        if (!taken.Contains(baseName)) return baseName;
+
+        for (var n = 2; ; n++)
+        {
+            var candidate = $"{baseName}_{n}";
+            if (!taken.Contains(candidate)) return candidate;
+        }
+    }
+
     // ── /history rendering ────────────────────────────────────────────────────
 
     /// <summary>Compact relative age for session listings (<c>5m ago</c> … <c>2026-06-12</c>).</summary>

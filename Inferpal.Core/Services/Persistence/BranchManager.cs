@@ -144,7 +144,9 @@ internal static class BranchManager
 
         var names       = sessions.Select(s => s.Name).ToList();
         var parentIsNew = string.IsNullOrWhiteSpace(currentName) || currentName == "last_session";
-        var parentName  = parentIsNew ? MakeParentName(messages, localNow) : currentName!;
+        var parentName  = parentIsNew
+            ? SessionManager.UniqueSessionName(MakeParentName(messages, localNow), names)
+            : currentName!;
 
         if (parentIsNew) names.Add(parentName);
 
