@@ -13,6 +13,7 @@
   "The command failed.": "コマンドが失敗しました。",
   "No turn {0} in this conversation — no branch was created.": "この会話にターン {0} はありません。ブランチは作成されませんでした。",
   "Branch {0} could not be loaded — it may have been deleted.": "ブランチ {0} を読み込めませんでした。削除された可能性があります。",
+  "Session {0} could not be loaded — it may have been deleted.": "セッション {0} を読み込めませんでした。削除された可能性があります。",
   "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "メモリを抑えるため古いメッセージ {0} 件を削除しました。会話全体は保存済みセッションにあります。",
   "Session name": "セッション名",
   "Session saved: {0}": "セッションを保存しました: {0}",

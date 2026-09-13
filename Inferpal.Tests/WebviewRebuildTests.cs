@@ -160,6 +160,23 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// Loading a session from the palette that fails says so. A session deleted between the pick and the
+    /// load came back null and the command did nothing at all; a reply still running (the host's turn slot)
+    /// surfaced as a raw command error.
+    /// </summary>
+    [Fact]
+    public void AFailedSessionLoad_FromThePalette_SaysWhy()
+    {
+        var load = Body(TsCode("chatViewProvider.ts"), "async loadSessionCommand(");
+
+        // Witness: the command still goes through session/load.
+        Assert.Contains("host.sessionLoad(", load, StringComparison.Ordinal);
+
+        Assert.Contains("vscode.l10n.t('Session {0} could not be loaded", load, StringComparison.Ordinal);
+        Assert.Contains("ChatViewProvider.errorText(err)", load, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Same class, in the settings panel: it opens as an editor tab, and VS Code destroys a hidden
     /// tab's webview unless asked to keep it. On return the form reloads from the config and unsaved
     /// edits vanish without a word — clicking Save afterwards writes the old values.

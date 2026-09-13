@@ -512,9 +512,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!pick) {
       return;
     }
-    const loaded = await host.sessionLoad(pick);
-    if (loaded) {
+    // A palette command that does nothing cannot be told apart from a broken one: both failures say so.
+    try {
+      const loaded = await host.sessionLoad(pick);
+      if (!loaded) {
+        void vscode.window.showWarningMessage(
+          vscode.l10n.t('Session {0} could not be loaded — it may have been deleted.', pick),
+        );
+        return;
+      }
       this.applySession(loaded.messages);
+    } catch (err) {
+      void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
     }
   }
 

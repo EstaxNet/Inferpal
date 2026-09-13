@@ -13,6 +13,7 @@
   "The command failed.": "El comando ha fallado.",
   "No turn {0} in this conversation — no branch was created.": "No hay turno {0} en esta conversación: no se creó ninguna rama.",
   "Branch {0} could not be loaded — it may have been deleted.": "No se pudo cargar la rama {0}; es posible que se haya eliminado.",
+  "Session {0} could not be loaded — it may have been deleted.": "No se pudo cargar la sesión {0}; es posible que se haya eliminado.",
   "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "Se descartaron {0} mensajes antiguos para limitar la memoria: la conversación completa está en la sesión guardada.",
   "Session name": "Nombre de la sesión",
   "Session saved: {0}": "Sesión guardada: {0}",

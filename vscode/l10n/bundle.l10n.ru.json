@@ -13,6 +13,7 @@
   "The command failed.": "Команда завершилась ошибкой.",
   "No turn {0} in this conversation — no branch was created.": "В этом разговоре нет хода {0} — ветка не создана.",
   "Branch {0} could not be loaded — it may have been deleted.": "Не удалось загрузить ветку {0} — возможно, она была удалена.",
+  "Session {0} could not be loaded — it may have been deleted.": "Не удалось загрузить сеанс {0} — возможно, он был удалён.",
   "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "Удалено старых сообщений: {0} — чтобы ограничить память; полный разговор есть в сохранённом сеансе.",
   "Session name": "Имя сеанса",
   "Session saved: {0}": "Сеанс сохранён: {0}",
