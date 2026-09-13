@@ -29,12 +29,14 @@ internal static class HardwareCommandHandler
         InferpalConfig config, IInferenceProvider client, string[] parts, CancellationToken ct)
     {
         // /hardware <gb> — set the VRAM budget manually (Ollama can't report it; may be remote).
-        if (parts.Length >= 2 &&
-            double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var gb))
+        // Any argument is a budget request: one that does not read as a finite positive number gets the
+        // usage — never the report, which set nothing in silence, and never NaN or ∞ as the saved budget.
+        if (parts.Length >= 2)
         {
-            return gb <= 0
-                ? new(Strings.HardwareUsage)
-                : new(Strings.HardwareBudgetSet($"{gb:0.#}"), SetBudgetGb: gb);
+            return double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var gb)
+                   && double.IsFinite(gb) && gb > 0
+                ? new(Strings.HardwareBudgetSet($"{gb:0.#}"), SetBudgetGb: gb)
+                : new(Strings.HardwareUsage);
         }
 
         // /hardware — auto-seed the budget when local, then show the profile.

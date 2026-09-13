@@ -47,6 +47,27 @@ public class HardwareCommandHandlerTests
         Assert.Null(neg.SetBudgetGb);
     }
 
+    /// <summary>
+    /// A value that is not a finite positive number gets the usage, never the report: <c>/hardware 7,5</c>
+    /// (decimal comma) silently showed the profile and set nothing, and <c>NaN</c> or <c>Infinity</c>
+    /// passed the <c>&lt;= 0</c> check and became the saved budget.
+    /// </summary>
+    [Theory]
+    [InlineData("7,5")]
+    [InlineData("twelve")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    public async Task SetBudget_AValueThatIsNotAFinitePositiveNumber_ReturnsUsageNoSet(string value)
+    {
+        var client = new FakeInferenceProvider { Capabilities = ProviderCapabilities.OpenAiCompatible };
+
+        var result = await HardwareCommandHandler.HandleAsync(
+            ConfigWithBudget(8), client, Cmd(value), CancellationToken.None);
+
+        Assert.Equal(Strings.HardwareUsage, result.Message);
+        Assert.Null(result.SetBudgetGb);
+    }
+
     [Fact]
     public async Task Report_BackendWithoutVramMonitoring_ReturnsNoVramNotice()
     {
