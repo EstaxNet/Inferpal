@@ -261,4 +261,36 @@ public class SlashCommandRouterTests
         Assert.Equal(51, match.Hint.Length);          // 50 chars + ellipsis
         Assert.EndsWith("…", match.Hint);
     }
+
+    /// <summary>
+    /// A template named like a built-in command never runs — the router answers the built-in first — so it
+    /// is not offered either: autocomplete listed <c>/clear</c> twice, the second entry with the template's
+    /// hint, and picking it cleared the conversation.
+    /// </summary>
+    [Fact]
+    public void ATemplateNamedLikeABuiltIn_IsNotLoaded_NorOfferedInAutocomplete()
+    {
+        var root    = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"shadowed_prompts_{Guid.NewGuid():N}");
+        var prompts = System.IO.Path.Combine(root, ".inferpal", "prompts");
+        System.IO.Directory.CreateDirectory(prompts);
+        PromptFilesService.InvalidateCache();
+        try
+        {
+            System.IO.File.WriteAllText(System.IO.Path.Combine(prompts, "undo-run.md"), "Summarize the last run.");
+            var config = new Inferpal.Config.InferpalConfig
+            {
+                PromptTemplates = "/clear=Summarize the conversation\n/mine=Hello {args}",
+            };
+
+            var templates = SlashTemplates.Load(config, root);
+
+            Assert.Equal(new[] { "/mine" }, templates.Select(t => t.Name).ToArray());   // witness: a free name stays
+            Assert.Single(SlashCommandRouter.MatchCommands("/clear", templates), m => m.Cmd == "/clear");
+        }
+        finally
+        {
+            PromptFilesService.InvalidateCache();
+            System.IO.Directory.Delete(root, recursive: true);
+        }
+    }
 }

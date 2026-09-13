@@ -7,7 +7,7 @@ namespace Inferpal.Services;
 /// <summary>
 /// Single loader for user-defined slash templates: config <c>PromptTemplates</c> lines first,
 /// then <c>.inferpal/prompts/*.md</c> files. Config entries shadow a prompt file with the same
-/// command name (the router resolves with FirstOrDefault; built-ins always win over both).
+/// command name, and a template named like a built-in command is dropped (see <see cref="Load"/>).
 /// Shared by the VS view-model and the Host (`command/list`, template expansion).
 /// </summary>
 internal static class SlashTemplates
@@ -15,13 +15,21 @@ internal static class SlashTemplates
     public static IReadOnlyList<UserSlashTemplate> Load(InferpalConfig config, string? rootDir)
     {
         var fromConfig = SlashCommandRouter.ParseUserTemplates(config.PromptTemplates);
-        if (string.IsNullOrEmpty(rootDir))
-            return fromConfig;
+        IReadOnlyList<UserSlashTemplate> fromFiles = string.IsNullOrEmpty(rootDir)
+            ? []
+            : PromptFilesService.Load(Path.Combine(rootDir, ".inferpal", "prompts"));
 
-        var fromFiles = PromptFilesService.Load(Path.Combine(rootDir, ".inferpal", "prompts"));
-        return fromFiles.Count == 0
-            ? fromConfig
-            : fromConfig.Concat(fromFiles).DistinctBy(t => t.Name).ToList();
+        // A template named like a built-in never runs — the router answers the built-in first — so it is
+        // not offered either: in autocomplete, picking it ran the built-in under the template's hint.
+        var usable = new List<UserSlashTemplate>();
+        foreach (var t in fromConfig.Concat(fromFiles).DistinctBy(t => t.Name))
+        {
+            if (SlashCommandRouter.IsBuiltIn(t.Name))
+                Diagnostics.DroppedLine("UserTemplates", "Command template shadowed by a built-in command, never run", t.Name);
+            else
+                usable.Add(t);
+        }
+        return usable;
     }
 
     /// <summary>Autocomplete hint of a template: explicit hint, else its text truncated for display.</summary>

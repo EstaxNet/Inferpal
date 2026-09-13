@@ -183,6 +183,13 @@ internal static class SlashCommandRouter
     internal static string UnknownCommandMessage(string cmd) =>
         Strings.SlashUnknownCommand(cmd) + "\n\n" + BuildHelp();
 
+    /// <summary>
+    /// True when the router answers <paramref name="cmd"/> itself — a catalog command or a legacy alias. A
+    /// user template with that name can never run: templates are only consulted for unknown commands.
+    /// </summary>
+    internal static bool IsBuiltIn(string cmd) =>
+        Route(cmd, []) is not SlashInfoAction info || info.Message != UnknownCommandMessage(cmd);
+
     internal static string BuildHelp()
     {
         var sb = new System.Text.StringBuilder();
