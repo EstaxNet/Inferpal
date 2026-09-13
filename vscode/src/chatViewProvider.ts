@@ -447,7 +447,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     void (async () => {
       try {
         const { fileName } = await host.sessionTitle(first);
-        await host.sessionSave(fileName, messages);
+        await host.sessionSave(fileName, messages, true);
       } catch (err) {
         this.log(`[chat] archive failed: ${String(err)}`);
       }

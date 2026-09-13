@@ -1231,6 +1231,34 @@ public class HostServerTests
     }
 
     [Fact]
+    public async Task ArchivingTheConversationJustLeft_DoesNotBindTheNewOne()
+    {
+        // The new-conversation button archives AFTER chat/reset: binding the new conversation to the archive file made the next /branch rewrite the archive.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var named   = $"test-named-{Guid.NewGuid():N}";
+        var archive = $"test-archive-{Guid.NewGuid():N}";
+        object[] messages = [new { role = "user", content = "first" }, new { role = "assistant", content = "answer" }];
+        try
+        {
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name = named, messages })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.Equal(named, h.Server.CurrentSession!.CurrentSessionName);
+
+            await h.Client.InvokeAsync("chat/reset").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name = archive, messages, archive = true })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.Null(h.Server.CurrentSession!.CurrentSessionName);
+        }
+        finally
+        {
+            await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = named });
+            await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = archive });
+        }
+    }
+
+    [Fact]
     public async Task Slash_ToolsOff_ForcesPlainChatOnNextTurn()
     {
         using var h = CreateHarness(cfg => cfg.AgentModeEnabled = true);

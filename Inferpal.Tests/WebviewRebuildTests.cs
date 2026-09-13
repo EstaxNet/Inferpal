@@ -289,4 +289,21 @@ public class WebviewRebuildTests
             "A turn whose request failed (host crashed or restarted) leaves its approval cards "
             + "clickable, while nobody waits for their answer any more.");
     }
+
+    /// <summary>
+    /// The archive of the conversation being left does not become the file of the next one: the host
+    /// binds every named save to the current conversation, and /branch rewrites that file.
+    /// </summary>
+    [Fact]
+    public void TheArchiveOfALeftConversation_IsSavedAsAnArchive()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+
+        var saveCommand = Body(provider, "async saveSessionCommand(");
+        Assert.Contains("host.sessionSave(safeName, this.snapshot())", saveCommand, StringComparison.Ordinal);
+
+        var archive = Body(provider, "private archiveConversation(");
+        Assert.Contains("host.sessionSave(fileName, messages, true)", archive, StringComparison.Ordinal);
+        Assert.Matches(@"'session/save',\s*\{\s*name,\s*messages,\s*archive\s*\}", TsCode("hostClient.ts"));
+    }
 }

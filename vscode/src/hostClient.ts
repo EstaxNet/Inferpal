@@ -448,8 +448,9 @@ export class HostClient {
 
   // ── Sessions (persisted host-side, same store as the VS extension) ─────────
 
-  sessionSave(name: string, messages: SavedMessage[]): Promise<void> {
-    return this.connection().sendRequest('session/save', { name, messages });
+  /** `archive`: the conversation being left — saved, but not the file the next one lives in. */
+  sessionSave(name: string, messages: SavedMessage[], archive = false): Promise<void> {
+    return this.connection().sendRequest('session/save', { name, messages, archive });
   }
 
   sessionList(): Promise<SessionSummary[]> {

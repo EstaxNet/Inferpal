@@ -304,7 +304,7 @@ internal sealed record XRayToggleParams(string Id, bool Enabled);
 internal sealed record SavedMessageDto(string Role, string Content, string? ToolName = null, string? Timestamp = null);
 
 /// <summary>`session/save` — persists the adapter's transcript under <paramref name="Name"/>.</summary>
-internal sealed record SessionSaveParams(string Name, List<SavedMessageDto> Messages);
+internal sealed record SessionSaveParams(string Name, List<SavedMessageDto> Messages, bool Archive = false);
 
 /// <summary>`session/load` / `session/delete` argument.</summary>
 internal sealed record SessionRefParams(string Name);

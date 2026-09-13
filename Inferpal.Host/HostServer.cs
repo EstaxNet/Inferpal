@@ -595,8 +595,9 @@ internal sealed partial class HostServer : IDisposable
     public Task SessionSaveAsync(SessionSaveParams p, CancellationToken ct)
     {
         var s = Session();
-        // The auto-save slot is not "the file this conversation lives in" (see CurrentSessionName).
-        if (p.Name != "last_session") s.CurrentSessionName = p.Name;
+        // The auto-save slot is not "the file this conversation lives in" (see CurrentSessionName), and
+        // neither is the archive of the conversation just left: /branch rewrites the current file.
+        if (p.Name != "last_session" && !p.Archive) s.CurrentSessionName = p.Name;
         return s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
                                  workspaceRoot: p.Name == "last_session" ? s.RootDir : null);
     }
