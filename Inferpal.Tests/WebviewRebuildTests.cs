@@ -177,6 +177,31 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// Deleting a session from the palette cannot be undone: the Visual Studio window confirms before
+    /// the same File.Delete, VS Code deleted as soon as an item was picked. And the boolean session/delete
+    /// returns was ignored — success and an already-gone session both answered with silence.
+    /// </summary>
+    [Fact]
+    public void ASessionDelete_FromThePalette_ConfirmsThenSaysWhatHappened()
+    {
+        var delete = Body(TsCode("chatViewProvider.ts"), "async deleteSessionCommand(");
+
+        // Witness: the command still goes through session/delete.
+        var call = delete.IndexOf("host.sessionDelete(", StringComparison.Ordinal);
+        Assert.True(call >= 0, "deleteSessionCommand no longer calls host.sessionDelete");
+
+        // A modal confirmation BEFORE the call.
+        var confirm = delete.IndexOf("vscode.l10n.t('Delete session {0}? This cannot be undone.'", StringComparison.Ordinal);
+        Assert.True(confirm >= 0 && confirm < call, "the deletion is not confirmed before session/delete");
+        Assert.Contains("modal: true", delete, StringComparison.Ordinal);
+
+        // Both outcomes are stated, and a failure names its cause.
+        Assert.Contains("vscode.l10n.t('Session deleted: {0}'", delete, StringComparison.Ordinal);
+        Assert.Contains("vscode.l10n.t('Session {0} was not found", delete, StringComparison.Ordinal);
+        Assert.Contains("ChatViewProvider.errorText(err)", delete, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Same class, in the settings panel: it opens as an editor tab, and VS Code destroys a hidden
     /// tab's webview unless asked to keep it. On return the form reloads from the config and unsaved
     /// edits vanish without a word — clicking Save afterwards writes the old values.

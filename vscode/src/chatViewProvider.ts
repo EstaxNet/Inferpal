@@ -536,8 +536,29 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     const pick = await this.pickSession(vscode.l10n.t('Pick a session to delete'));
-    if (pick) {
-      await host.sessionDelete(pick);
+    if (!pick) {
+      return;
+    }
+    // Irreversible, on the same sessions folder the Visual Studio window lists — which confirms first too.
+    const deleteLabel = vscode.l10n.t('Delete');
+    const answer = await vscode.window.showWarningMessage(
+      vscode.l10n.t('Delete session {0}? This cannot be undone.', pick),
+      { modal: true },
+      deleteLabel,
+    );
+    if (answer !== deleteLabel) {
+      return;
+    }
+    try {
+      if (await host.sessionDelete(pick)) {
+        void vscode.window.showInformationMessage(vscode.l10n.t('Session deleted: {0}', pick));
+      } else {
+        void vscode.window.showWarningMessage(
+          vscode.l10n.t('Session {0} was not found — it may already have been deleted.', pick),
+        );
+      }
+    } catch (err) {
+      void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
     }
   }
 
