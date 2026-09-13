@@ -143,7 +143,10 @@ internal static class BranchManager
         if (branchMessages is null) return null;
 
         var names       = sessions.Select(s => s.Name).ToList();
-        var parentIsNew = string.IsNullOrWhiteSpace(currentName) || currentName == "last_session";
+        // A current name the store no longer lists was deleted since: writing the parent back under it
+        // would bring that file back, so the conversation counts as unsaved.
+        var parentIsNew = string.IsNullOrWhiteSpace(currentName) || currentName == "last_session"
+                          || !sessions.Any(s => s.Name.Equals(currentName, StringComparison.OrdinalIgnoreCase));
         var parentName  = parentIsNew
             ? SessionManager.UniqueSessionName(MakeParentName(messages, localNow), names)
             : currentName!;

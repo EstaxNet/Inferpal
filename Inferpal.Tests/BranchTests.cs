@@ -154,6 +154,17 @@ public class BranchTests
     }
 
     [Fact]
+    public void Plan_ASessionDeletedMeanwhile_IsNotWrittenBack()
+    {
+        // The conversation's file was deleted since it was loaded: re-saving the parent under that
+        // name would bring back a session the user chose to delete.
+        var plan = BranchManager.Plan(Conversation(), 1, "deleted_session", [S("other")], new DateTime(2026, 7, 30, 10, 12, 0));
+
+        Assert.True(plan!.ParentIsNew);
+        Assert.Equal("2026-07-30_1012_first_question", plan.ParentName);
+    }
+
+    [Fact]
     public void Plan_UnknownTurn_ReturnsNull()
         => Assert.Null(BranchManager.Plan(Conversation(), 9, "s", [], DateTime.Now));
 
