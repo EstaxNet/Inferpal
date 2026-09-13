@@ -55,9 +55,19 @@ internal static class DocsCommandHandler
 
                 var id      = parts[2].ToLowerInvariant();
                 var updated = DocSite.Remove(sites, id);
-                // "No documentation indexed yet" is only true when there is none: with sources present, a
-                // mistyped id read as every documentation being gone.
-                if (updated is null) return sites.Count == 0 ? Strings.DocsNoSites : Strings.DocsUnknownId(id);
+                if (updated is null)
+                {
+                    // A source the index still serves but the settings no longer list — written by an
+                    // indexing pass that outlived its removal — leaves the index here, or nothing ever could.
+                    if ((await docs.SitesAsync(ct)).Any(x => x.Site.Id == id))
+                    {
+                        await docs.RemoveAsync(id, ct);
+                        return Strings.DocsRemoved(id);
+                    }
+                    // "No documentation indexed yet" is only true when there is none: with sources present, a
+                    // mistyped id read as every documentation being gone.
+                    return sites.Count == 0 ? Strings.DocsNoSites : Strings.DocsUnknownId(id);
+                }
 
                 config.DocSitesJson = DocSite.Serialize(updated);
                 config.Save();
@@ -90,10 +100,13 @@ internal static class DocsCommandHandler
 
             default:
             {
-                if (sites.Count == 0) return Strings.DocsNoSites;
+                // The index can hold a source the settings no longer list; it is still served, so it is shown.
+                var indexed = await docs.SitesAsync(ct);
+                var shown   = sites.Concat(indexed.Select(x => x.Site).Where(s => sites.All(c => c.Id != s.Id))).ToList();
+                if (shown.Count == 0) return Strings.DocsNoSites;
 
-                var stats = (await docs.SitesAsync(ct)).ToDictionary(x => x.Site.Id, x => (x.PageCount, x.ChunkCount));
-                return DocSite.FormatList(sites, stats);
+                var stats = indexed.ToDictionary(x => x.Site.Id, x => (x.PageCount, x.ChunkCount));
+                return DocSite.FormatList(shown, stats);
             }
         }
     }

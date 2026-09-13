@@ -1,5 +1,6 @@
 using System.IO;
 using Inferpal.Config;
+using Inferpal.Services.Commands;
 using Inferpal.Services.Docs;
 using Xunit;
 
@@ -72,5 +73,28 @@ public class DocsRemoveDuringIndexTests : IDisposable
         await pass.WaitAsync(TimeSpan.FromSeconds(30));
 
         Assert.Contains(await docs.SitesAsync(), s => s.Site.Id == site.Id);
+    }
+
+    /// <summary>
+    /// An orphan left by that race before the fix — served by the index, absent from the settings — is
+    /// shown by <c>/docs</c> and removed by <c>/docs remove</c>: both only read the settings.
+    /// </summary>
+    [Fact]
+    public async Task AnOrphanLeftInTheIndex_IsListedAndCanBeRemoved()
+    {
+        var orphan = DocSite.Create("https://docs.example.com/", "Example");
+        await new DocsDatabase().SaveSiteAsync(orphan, 1, [], CancellationToken.None);
+        var docs = new DocsIndexService(new FakeInferenceProvider(), new InferpalConfig());
+        await docs.LoadAsync(CancellationToken.None);
+        var config = new InferpalConfig { DocSitesJson = "" };
+
+        var listing = await DocsCommandHandler.HandleAsync(
+            config, docs, ["/docs"], new Progress<string>(), CancellationToken.None);
+        Assert.Contains(orphan.Id, listing);
+
+        await DocsCommandHandler.HandleAsync(
+            config, docs, ["/docs", "remove", orphan.Id], new Progress<string>(), CancellationToken.None);
+        Assert.Empty(await docs.SitesAsync());
+        Assert.Empty(await new DocsDatabase().LoadSitesAsync(CancellationToken.None));
     }
 }
