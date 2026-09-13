@@ -3,6 +3,48 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.14
+
+Conversations, sessions and settings no longer get lost or silently reverted, and commands no longer
+report changes that did not happen.
+
+- **`/clear` and `/template` lost the conversation.** They cleared it without saving it among your
+  sessions, as the new-conversation button does. Both now save it first.
+
+- **Picking a model in the chat made the assistant forget the conversation.** The messages stayed on
+  screen but the next answer ignored them. The conversation now stays, and saving the settings keeps
+  it too.
+
+- **Saved sessions could be overwritten or brought back.** Saving under an existing name replaced that
+  session without asking, a new conversation could overwrite the previous one's archive, and `/branch`
+  recreated a session you had deleted.
+
+- **Deleting a saved session happened without confirmation.** VS Code now asks first, then says whether
+  it worked.
+
+- **MCP server changes applied only after a restart.** Turning MCP off left the servers running, and
+  adding or editing a server did nothing. Saved MCP settings now take effect at once.
+
+- **Turning on RAG did not index the project until a restart.** It is now indexed as soon as the
+  setting is saved.
+
+- **Saving the settings panel undid changes made while it was open.** A documentation source added with
+  `/docs add` or a model picked in the chat was reverted. Only the settings you changed are saved now,
+  and unsaved edits survive switching away from the tab.
+
+- **An approval card could vanish and leave the agent waiting.** Waiting cards and the step-by-step
+  Resume banner now come back when the chat view is rebuilt.
+
+- **Mistyped commands acted anyway.** `/undo-run lsit` undid the last run and `/notes clear …` erased
+  every note; these and `/index`, `/diagnostics`, `/docs` and `/hardware` now show their usage instead.
+
+- **Commands reported things that did not happen.** `/fix-build` announced builds that never ran,
+  `/task apply` reported refused changes as applied, `/model` accepted models the backend does not
+  serve, and `/branch` could announce a switch that failed.
+
+- **Interface text left in English.** `/history`, `/template`, `/index`, exported conversation headers,
+  settings units and error messages now follow the interface language.
+
 ## 1.6.13
 
 The codebase is now indexed when a workspace opens — it never was in VS Code — and the folders
