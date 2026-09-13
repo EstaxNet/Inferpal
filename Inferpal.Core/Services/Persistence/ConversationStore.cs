@@ -70,9 +70,21 @@ internal class ConversationStore
     {
         var file = Path.Combine(_dir, $"{Sanitize(sessionName)}.json");
         if (!File.Exists(file)) return null;
-        var json = await File.ReadAllTextAsync(file, ct);
+        await using var stream = OpenSessionForRead(file);
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync(ct);
         return JsonSerializer.Deserialize<SessionData>(json, _opts);
     }
+
+    /// <summary>The only way a session file is opened for reading.</summary>
+    /// <remarks>
+    /// ⚠ ReadWrite | Delete sharing: both front-ends share this folder, and both the list and the search read
+    /// all of its files. On Windows, a file opened without FileShare.Delete cannot be deleted — a read made
+    /// deleting a session fail. Replacement by rename stays refused while the handle is open: AtomicFile
+    /// retries.
+    /// </remarks>
+    internal static FileStream OpenSessionForRead(string path) =>
+        new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, useAsync: true);
 
     /// Loads the last auto-saved session.
     public Task<SessionData?> LoadLastAsync(CancellationToken ct) =>
