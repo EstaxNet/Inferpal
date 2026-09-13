@@ -744,6 +744,16 @@ internal static class Strings
     public static string AgeHoursAgo(int n) => string.Format(Get(nameof(AgeHoursAgo)), n);
     public static string AgeDaysAgo(int n) => string.Format(Get(nameof(AgeDaysAgo)), n);
     public static string TemplateListHeader => Get(nameof(TemplateListHeader));
+    public static string TemplateLabelCodeReview => Get(nameof(TemplateLabelCodeReview));
+    public static string TemplateLabelBugHunt => Get(nameof(TemplateLabelBugHunt));
+    public static string TemplateLabelArchitecture => Get(nameof(TemplateLabelArchitecture));
+    public static string TemplateLabelRefactoring => Get(nameof(TemplateLabelRefactoring));
+    public static string TemplateLabelTests => Get(nameof(TemplateLabelTests));
+    public static string TemplateGreetingCodeReview => Get(nameof(TemplateGreetingCodeReview));
+    public static string TemplateGreetingBugHunt => Get(nameof(TemplateGreetingBugHunt));
+    public static string TemplateGreetingArchitecture => Get(nameof(TemplateGreetingArchitecture));
+    public static string TemplateGreetingRefactoring => Get(nameof(TemplateGreetingRefactoring));
+    public static string TemplateGreetingTests => Get(nameof(TemplateGreetingTests));
 
     // ── Project context ────────────────────────────────────────────────────────
     public static string SlashContextNoSln                              => Get(nameof(SlashContextNoSln));

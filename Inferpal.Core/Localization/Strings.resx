@@ -407,6 +407,16 @@ Backup: {0}</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0}h ago</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0}d ago</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## Available templates</value></data>
+  <data name="TemplateLabelCodeReview" xml:space="preserve"><value>Code Review</value></data>
+  <data name="TemplateLabelBugHunt" xml:space="preserve"><value>Bug Hunt</value></data>
+  <data name="TemplateLabelArchitecture" xml:space="preserve"><value>Architecture</value></data>
+  <data name="TemplateLabelRefactoring" xml:space="preserve"><value>Refactoring</value></data>
+  <data name="TemplateLabelTests" xml:space="preserve"><value>Test Coverage</value></data>
+  <data name="TemplateGreetingCodeReview" xml:space="preserve"><value>**Code Review mode** active. Share a file or selection and I'll analyse it for quality, security, and design issues.</value></data>
+  <data name="TemplateGreetingBugHunt" xml:space="preserve"><value>**Bug Hunt mode** active. Describe the issue or share the code — I'll trace the execution and identify the root cause.</value></data>
+  <data name="TemplateGreetingArchitecture" xml:space="preserve"><value>**Architecture mode** active. Describe the system or share the project map — I'll analyse the design and propose improvements.</value></data>
+  <data name="TemplateGreetingRefactoring" xml:space="preserve"><value>**Refactoring mode** active. Share the code and I'll suggest safe, incremental improvements.</value></data>
+  <data name="TemplateGreetingTests" xml:space="preserve"><value>**Test Coverage mode** active. Share the code under test and I'll design a comprehensive test suite.</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ No .sln file found — cannot locate `.inferpal/context.md`.</value></data>

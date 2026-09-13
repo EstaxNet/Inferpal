@@ -406,6 +406,16 @@ Kopia zapasowa: {0}</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0} godz. temu</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0} dni temu</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## Dostępne szablony</value></data>
+  <data name="TemplateLabelCodeReview" xml:space="preserve"><value>Przegląd kodu</value></data>
+  <data name="TemplateLabelBugHunt" xml:space="preserve"><value>Polowanie na błędy</value></data>
+  <data name="TemplateLabelArchitecture" xml:space="preserve"><value>Architektura</value></data>
+  <data name="TemplateLabelRefactoring" xml:space="preserve"><value>Refaktoryzacja</value></data>
+  <data name="TemplateLabelTests" xml:space="preserve"><value>Pokrycie testami</value></data>
+  <data name="TemplateGreetingCodeReview" xml:space="preserve"><value>Tryb **Przegląd kodu** włączony. Udostępnij plik lub zaznaczenie, a przeanalizuję jakość, bezpieczeństwo i projekt.</value></data>
+  <data name="TemplateGreetingBugHunt" xml:space="preserve"><value>Tryb **Polowanie na błędy** włączony. Opisz problem lub udostępnij kod — prześledzę wykonanie i wskażę główną przyczynę.</value></data>
+  <data name="TemplateGreetingArchitecture" xml:space="preserve"><value>Tryb **Architektura** włączony. Opisz system lub udostępnij mapę projektu — przeanalizuję projekt i zaproponuję ulepszenia.</value></data>
+  <data name="TemplateGreetingRefactoring" xml:space="preserve"><value>Tryb **Refaktoryzacja** włączony. Udostępnij kod, a zaproponuję bezpieczne, stopniowe ulepszenia.</value></data>
+  <data name="TemplateGreetingTests" xml:space="preserve"><value>Tryb **Pokrycie testami** włączony. Udostępnij testowany kod, a zaprojektuję kompletny zestaw testów.</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Nie znaleziono pliku .sln — nie można znaleźć `.inferpal/context.md`.</value></data>

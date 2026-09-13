@@ -406,6 +406,16 @@
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0} 小时前</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0} 天前</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## 可用模板</value></data>
+  <data name="TemplateLabelCodeReview" xml:space="preserve"><value>代码审查</value></data>
+  <data name="TemplateLabelBugHunt" xml:space="preserve"><value>缺陷排查</value></data>
+  <data name="TemplateLabelArchitecture" xml:space="preserve"><value>架构</value></data>
+  <data name="TemplateLabelRefactoring" xml:space="preserve"><value>重构</value></data>
+  <data name="TemplateLabelTests" xml:space="preserve"><value>测试覆盖</value></data>
+  <data name="TemplateGreetingCodeReview" xml:space="preserve"><value>**代码审查**模式已启用。请分享文件或选中内容，我将从质量、安全和设计方面进行分析。</value></data>
+  <data name="TemplateGreetingBugHunt" xml:space="preserve"><value>**缺陷排查**模式已启用。请描述问题或分享代码，我将追踪执行过程并找出根本原因。</value></data>
+  <data name="TemplateGreetingArchitecture" xml:space="preserve"><value>**架构**模式已启用。请描述系统或分享项目地图，我将分析设计并提出改进建议。</value></data>
+  <data name="TemplateGreetingRefactoring" xml:space="preserve"><value>**重构**模式已启用。请分享代码，我将建议安全、渐进的改进。</value></data>
+  <data name="TemplateGreetingTests" xml:space="preserve"><value>**测试覆盖**模式已启用。请分享待测代码，我将设计一套完整的测试。</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ 未找到 .sln 文件 — 无法定位 `.inferpal/context.md`。</value></data>

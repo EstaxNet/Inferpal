@@ -406,6 +406,16 @@
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0} 時間前</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0} 日前</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## 利用可能なテンプレート</value></data>
+  <data name="TemplateLabelCodeReview" xml:space="preserve"><value>コードレビュー</value></data>
+  <data name="TemplateLabelBugHunt" xml:space="preserve"><value>バグハント</value></data>
+  <data name="TemplateLabelArchitecture" xml:space="preserve"><value>アーキテクチャ</value></data>
+  <data name="TemplateLabelRefactoring" xml:space="preserve"><value>リファクタリング</value></data>
+  <data name="TemplateLabelTests" xml:space="preserve"><value>テストカバレッジ</value></data>
+  <data name="TemplateGreetingCodeReview" xml:space="preserve"><value>**コードレビュー** モードが有効です。ファイルまたは選択範囲を共有してください。品質・セキュリティ・設計の観点から分析します。</value></data>
+  <data name="TemplateGreetingBugHunt" xml:space="preserve"><value>**バグハント** モードが有効です。問題を説明するかコードを共有してください。実行を追跡して根本原因を特定します。</value></data>
+  <data name="TemplateGreetingArchitecture" xml:space="preserve"><value>**アーキテクチャ** モードが有効です。システムを説明するかプロジェクトマップを共有してください。設計を分析し改善を提案します。</value></data>
+  <data name="TemplateGreetingRefactoring" xml:space="preserve"><value>**リファクタリング** モードが有効です。コードを共有してください。安全で段階的な改善を提案します。</value></data>
+  <data name="TemplateGreetingTests" xml:space="preserve"><value>**テストカバレッジ** モードが有効です。テスト対象のコードを共有してください。包括的なテストスイートを設計します。</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ .sln ファイルが見つかりません — `.inferpal/context.md` を見つけられません。</value></data>

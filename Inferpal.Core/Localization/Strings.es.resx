@@ -406,6 +406,16 @@ Copia de seguridad: {0}</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>hace {0} h</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>hace {0} d</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## Plantillas disponibles</value></data>
+  <data name="TemplateLabelCodeReview" xml:space="preserve"><value>Revisión de código</value></data>
+  <data name="TemplateLabelBugHunt" xml:space="preserve"><value>Caza de errores</value></data>
+  <data name="TemplateLabelArchitecture" xml:space="preserve"><value>Arquitectura</value></data>
+  <data name="TemplateLabelRefactoring" xml:space="preserve"><value>Refactorización</value></data>
+  <data name="TemplateLabelTests" xml:space="preserve"><value>Cobertura de pruebas</value></data>
+  <data name="TemplateGreetingCodeReview" xml:space="preserve"><value>Modo **Revisión de código** activo. Comparte un archivo o una selección y analizaré su calidad, seguridad y diseño.</value></data>
+  <data name="TemplateGreetingBugHunt" xml:space="preserve"><value>Modo **Caza de errores** activo. Describe el problema o comparte el código: seguiré la ejecución e identificaré la causa raíz.</value></data>
+  <data name="TemplateGreetingArchitecture" xml:space="preserve"><value>Modo **Arquitectura** activo. Describe el sistema o comparte el mapa del proyecto: analizaré el diseño y propondré mejoras.</value></data>
+  <data name="TemplateGreetingRefactoring" xml:space="preserve"><value>Modo **Refactorización** activo. Comparte el código y sugeriré mejoras seguras e incrementales.</value></data>
+  <data name="TemplateGreetingTests" xml:space="preserve"><value>Modo **Cobertura de pruebas** activo. Comparte el código a probar y diseñaré un conjunto de pruebas completo.</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ No se encontró ningún archivo .sln — no se puede localizar `.inferpal/context.md`.</value></data>

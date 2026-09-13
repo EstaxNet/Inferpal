@@ -406,6 +406,16 @@
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0} ч назад</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0} дн. назад</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## Доступные шаблоны</value></data>
+  <data name="TemplateLabelCodeReview" xml:space="preserve"><value>Ревью кода</value></data>
+  <data name="TemplateLabelBugHunt" xml:space="preserve"><value>Поиск ошибок</value></data>
+  <data name="TemplateLabelArchitecture" xml:space="preserve"><value>Архитектура</value></data>
+  <data name="TemplateLabelRefactoring" xml:space="preserve"><value>Рефакторинг</value></data>
+  <data name="TemplateLabelTests" xml:space="preserve"><value>Покрытие тестами</value></data>
+  <data name="TemplateGreetingCodeReview" xml:space="preserve"><value>Режим **Ревью кода** включён. Поделитесь файлом или выделенным фрагментом — я проанализирую качество, безопасность и дизайн.</value></data>
+  <data name="TemplateGreetingBugHunt" xml:space="preserve"><value>Режим **Поиск ошибок** включён. Опишите проблему или поделитесь кодом — я прослежу выполнение и найду первопричину.</value></data>
+  <data name="TemplateGreetingArchitecture" xml:space="preserve"><value>Режим **Архитектура** включён. Опишите систему или поделитесь картой проекта — я проанализирую дизайн и предложу улучшения.</value></data>
+  <data name="TemplateGreetingRefactoring" xml:space="preserve"><value>Режим **Рефакторинг** включён. Поделитесь кодом — я предложу безопасные пошаговые улучшения.</value></data>
+  <data name="TemplateGreetingTests" xml:space="preserve"><value>Режим **Покрытие тестами** включён. Поделитесь тестируемым кодом — я спроектирую полный набор тестов.</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Файл .sln не найден — невозможно найти `.inferpal/context.md`.</value></data>

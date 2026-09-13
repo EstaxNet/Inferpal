@@ -406,6 +406,16 @@ Sauvegarde : {0}</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>il y a {0} h</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>il y a {0} j</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## Modèles disponibles</value></data>
+  <data name="TemplateLabelCodeReview" xml:space="preserve"><value>Revue de code</value></data>
+  <data name="TemplateLabelBugHunt" xml:space="preserve"><value>Chasse aux bugs</value></data>
+  <data name="TemplateLabelArchitecture" xml:space="preserve"><value>Architecture</value></data>
+  <data name="TemplateLabelRefactoring" xml:space="preserve"><value>Refactorisation</value></data>
+  <data name="TemplateLabelTests" xml:space="preserve"><value>Couverture de tests</value></data>
+  <data name="TemplateGreetingCodeReview" xml:space="preserve"><value>Mode **Revue de code** activé. Partagez un fichier ou une sélection et j'en analyserai la qualité, la sécurité et la conception.</value></data>
+  <data name="TemplateGreetingBugHunt" xml:space="preserve"><value>Mode **Chasse aux bugs** activé. Décrivez le problème ou partagez le code — je suivrai l'exécution et identifierai la cause racine.</value></data>
+  <data name="TemplateGreetingArchitecture" xml:space="preserve"><value>Mode **Architecture** activé. Décrivez le système ou partagez la carte du projet — j'analyserai la conception et proposerai des améliorations.</value></data>
+  <data name="TemplateGreetingRefactoring" xml:space="preserve"><value>Mode **Refactorisation** activé. Partagez le code et je proposerai des améliorations sûres et progressives.</value></data>
+  <data name="TemplateGreetingTests" xml:space="preserve"><value>Mode **Couverture de tests** activé. Partagez le code à tester et je concevrai une suite de tests complète.</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Aucun fichier .sln trouvé — impossible de localiser `.inferpal/context.md`.</value></data>

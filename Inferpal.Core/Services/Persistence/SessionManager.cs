@@ -18,32 +18,33 @@ internal static class SessionManager
 {
     // ── /template presets ─────────────────────────────────────────────────────
 
-    internal static readonly SessionTemplate[] Templates =
+    // A property, not a field: labels and greetings are read in the interface language of the moment.
+    internal static SessionTemplate[] Templates =>
     [
         new("code-review",
-            "Code Review",
+            Strings.TemplateLabelCodeReview,
             "\n\n## Mode: Code Review\nFocus on code quality, readability, edge cases, security vulnerabilities, and SOLID violations. Always cite line numbers. Prefer concrete suggestions over abstract advice.",
-            "**Code Review mode** active. Share a file or selection and I'll analyse it for quality, security, and design issues."),
+            Strings.TemplateGreetingCodeReview),
 
         new("bug-hunt",
-            "Bug Hunt",
+            Strings.TemplateLabelBugHunt,
             "\n\n## Mode: Bug Hunt\nYour goal is to find bugs, regressions, and subtle logic errors. Think like a QA engineer: trace execution paths, challenge assumptions, look for off-by-ones and null-deref risks.",
-            "**Bug Hunt mode** active. Describe the issue or share the code — I'll trace the execution and identify the root cause."),
+            Strings.TemplateGreetingBugHunt),
 
         new("architecture",
-            "Architecture",
+            Strings.TemplateLabelArchitecture,
             "\n\n## Mode: Architecture\nThink at the system level: dependencies, coupling, cohesion, scalability, and evolutionary design. Use diagrams (text-based) where helpful. Reference well-known architectural patterns.",
-            "**Architecture mode** active. Describe the system or share the project map — I'll analyse the design and propose improvements."),
+            Strings.TemplateGreetingArchitecture),
 
         new("refactoring",
-            "Refactoring",
+            Strings.TemplateLabelRefactoring,
             "\n\n## Mode: Refactoring\nApply clean-code principles (DRY, SRP, YAGNI). Prefer small, safe, incremental steps. Show before/after diffs. Avoid speculative generality.",
-            "**Refactoring mode** active. Share the code and I'll suggest safe, incremental improvements."),
+            Strings.TemplateGreetingRefactoring),
 
         new("tests",
-            "Test Coverage",
+            Strings.TemplateLabelTests,
             "\n\n## Mode: Test Coverage\nFocus exclusively on test design: coverage gaps, boundary values, happy path and failure modes, mocking strategy, and assertion quality.",
-            "**Test Coverage mode** active. Share the code under test and I'll design a comprehensive test suite."),
+            Strings.TemplateGreetingTests),
     ];
 
     /// <summary>Template lookup by id (caller lower-cases the user input).</summary>

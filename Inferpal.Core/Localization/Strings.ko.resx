@@ -406,6 +406,16 @@
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0}시간 전</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0}일 전</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## 사용 가능한 템플릿</value></data>
+  <data name="TemplateLabelCodeReview" xml:space="preserve"><value>코드 리뷰</value></data>
+  <data name="TemplateLabelBugHunt" xml:space="preserve"><value>버그 헌트</value></data>
+  <data name="TemplateLabelArchitecture" xml:space="preserve"><value>아키텍처</value></data>
+  <data name="TemplateLabelRefactoring" xml:space="preserve"><value>리팩터링</value></data>
+  <data name="TemplateLabelTests" xml:space="preserve"><value>테스트 커버리지</value></data>
+  <data name="TemplateGreetingCodeReview" xml:space="preserve"><value>**코드 리뷰** 모드가 활성화되었습니다. 파일이나 선택 영역을 공유하면 품질, 보안, 설계 문제를 분석합니다.</value></data>
+  <data name="TemplateGreetingBugHunt" xml:space="preserve"><value>**버그 헌트** 모드가 활성화되었습니다. 문제를 설명하거나 코드를 공유하면 실행 흐름을 추적해 근본 원인을 찾습니다.</value></data>
+  <data name="TemplateGreetingArchitecture" xml:space="preserve"><value>**아키텍처** 모드가 활성화되었습니다. 시스템을 설명하거나 프로젝트 맵을 공유하면 설계를 분석하고 개선안을 제안합니다.</value></data>
+  <data name="TemplateGreetingRefactoring" xml:space="preserve"><value>**리팩터링** 모드가 활성화되었습니다. 코드를 공유하면 안전하고 점진적인 개선을 제안합니다.</value></data>
+  <data name="TemplateGreetingTests" xml:space="preserve"><value>**테스트 커버리지** 모드가 활성화되었습니다. 테스트할 코드를 공유하면 포괄적인 테스트 스위트를 설계합니다.</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ .sln 파일을 찾을 수 없습니다 — `.inferpal/context.md`를 찾을 수 없습니다.</value></data>
