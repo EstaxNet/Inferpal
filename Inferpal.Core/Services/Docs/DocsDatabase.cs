@@ -30,10 +30,14 @@ internal sealed class DocsDatabase
     // (the ALC plugin VS does not read deps.json). See SqliteBootstrapper / RagDatabase.
     static DocsDatabase() => SqliteBootstrapper.EnsureInitialized();
 
+    /// <summary>Tests point this at a temp directory so they never touch the real %AppData% database.</summary>
+    internal static string? OverrideDirForTests { get; set; }
+
     public DocsDatabase()
     {
-        _dbPath = Path.Combine(BaseDir, "docs.db");
-        Directory.CreateDirectory(BaseDir);
+        var dir = OverrideDirForTests ?? BaseDir;
+        _dbPath = Path.Combine(dir, "docs.db");
+        Directory.CreateDirectory(dir);
         EnsureSchema();
     }
 

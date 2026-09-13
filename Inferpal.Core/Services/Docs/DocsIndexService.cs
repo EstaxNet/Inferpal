@@ -21,6 +21,10 @@ internal sealed class DocsIndexService
     private readonly SemaphoreSlim _chunkLock = new(1, 1);
     private readonly SemaphoreSlim _indexLock = new(1, 1);
 
+    // The source the running pass indexes, and how to stop it. Guarded by _passGate.
+    private readonly object _passGate = new();
+    private (string SiteId, CancellationTokenSource Cts)? _pass;
+
     private List<DocChunk> _chunks = [];
     private List<(DocSite Site, int PageCount, int ChunkCount)> _sites = [];
 
@@ -29,6 +33,9 @@ internal sealed class DocsIndexService
         _client = client;
         _config = config;
     }
+
+    /// <summary>Tests replace the network crawl (and its SSRF guard) with pages they control.</summary>
+    internal Func<string, CancellationToken, Task<List<DocCrawler.Page>>>? CrawlForTests { get; init; }
 
     // ── Public state ──────────────────────────────────────────────────────────
 
@@ -131,6 +138,9 @@ internal sealed class DocsIndexService
         }
 
         IsIndexing = true;
+        using var passCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        lock (_passGate) _pass = (site.Id, passCts);
+        ct = passCts.Token;
         try
         {
             // ── Crawl ──────────────────────────────────────────────────────────
@@ -139,8 +149,10 @@ internal sealed class DocsIndexService
             var crawlProgress = new Progress<(int fetched, int total)>(p =>
                 Status = $"Docs: crawling {site.Title} — {p.fetched}/{Math.Max(p.fetched, p.total)} pages");
 
-            var refused = Tools.FetchUrlTool.IsPrivateOrLoopback(site.StartUrl);
-            var pages   = refused ? [] : await crawler.CrawlAsync(site.StartUrl, crawlProgress, ct);
+            var refused = CrawlForTests is null && Tools.FetchUrlTool.IsPrivateOrLoopback(site.StartUrl);
+            var pages   = refused ? []
+                        : CrawlForTests is { } crawl ? await crawl(site.StartUrl, ct)
+                        : await crawler.CrawlAsync(site.StartUrl, crawlProgress, ct);
             if (pages.Count == 0)
             {
                 Status = DescribeCrawlOutcome(site.StartUrl, 0, refused);
@@ -199,6 +211,7 @@ internal sealed class DocsIndexService
         }
         finally
         {
+            lock (_passGate) _pass = null;
             IsIndexing = false;
             _indexLock.Release();
         }
@@ -207,10 +220,31 @@ internal sealed class DocsIndexService
     /// <summary>Removes a documentation source and all of its chunks.</summary>
     public async Task RemoveAsync(string docId, CancellationToken ct)
     {
-        var db = new DocsDatabase();
-        await db.DeleteSiteAsync(docId, ct);
-        await ReloadFromDbAsync(db, ct);
-        Status = $"Docs: {ChunkCount} chunks from {_sites.Count} source(s)";
+        // A pass still indexing this source writes it only when it ends — after this removal — and the
+        // source would come back where search serves it and no command can remove it. Stop that pass and
+        // let it end before deleting.
+        CancellationTokenSource? toStop = null;
+        lock (_passGate)
+            if (_pass is { } running && string.Equals(running.SiteId, docId, StringComparison.OrdinalIgnoreCase))
+                toStop = running.Cts;
+
+        var stopped = toStop is not null;
+        if (stopped)
+        {
+            try { toStop!.Cancel(); } catch (ObjectDisposedException) { /* the pass already ended */ }
+            await _indexLock.WaitAsync(ct);
+        }
+        try
+        {
+            var db = new DocsDatabase();
+            await db.DeleteSiteAsync(docId, ct);
+            await ReloadFromDbAsync(db, ct);
+            Status = $"Docs: {ChunkCount} chunks from {_sites.Count} source(s)";
+        }
+        finally
+        {
+            if (stopped) _indexLock.Release();
+        }
     }
 
     private async Task ReloadFromDbAsync(DocsDatabase db, CancellationToken ct)
