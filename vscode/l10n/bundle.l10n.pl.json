@@ -102,5 +102,7 @@
   "No match": "Brak dopasowań",
   "Export failed: {0}": "Eksport nie powiódł się: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Tura jest nadal w toku — zatrzymaj ją przed rozpoczęciem nowej rozmowy.",
-  "Save": "Zapisz"
+  "Save": "Zapisz",
+  "A session named {0} already exists. Replace it?": "Sesja o nazwie {0} już istnieje. Zastąpić ją?",
+  "Replace": "Zastąp"
 }

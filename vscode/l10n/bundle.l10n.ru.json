@@ -102,5 +102,7 @@
   "No match": "Нет совпадений",
   "Export failed: {0}": "Не удалось экспортировать: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Ход ещё выполняется — остановите его, прежде чем начинать новый разговор.",
-  "Save": "Сохранить"
+  "Save": "Сохранить",
+  "A session named {0} already exists. Replace it?": "Сеанс с именем {0} уже существует. Заменить его?",
+  "Replace": "Заменить"
 }

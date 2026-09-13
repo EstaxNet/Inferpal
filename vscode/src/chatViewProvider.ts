@@ -491,6 +491,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // that name would silently vanish. Same pattern as /plan's reserved set: suffix it.
     const safeName =
       name.trim().toLowerCase() === 'last_session' ? `${name.trim()}-session` : name.trim();
+    // Saving under a name another session already uses replaces that session: ask first, like a delete.
+    const existing = await host.sessionList();
+    if (existing.some((s) => s.name.toLowerCase() === safeName.toLowerCase())) {
+      const replaceLabel = vscode.l10n.t('Replace');
+      const answer = await vscode.window.showWarningMessage(
+        vscode.l10n.t('A session named {0} already exists. Replace it?', safeName),
+        { modal: true },
+        replaceLabel,
+      );
+      if (answer !== replaceLabel) {
+        return;
+      }
+    }
     await host.sessionSave(safeName, this.snapshot());
     void vscode.window.showInformationMessage(vscode.l10n.t('Session saved: {0}', safeName));
   }

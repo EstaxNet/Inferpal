@@ -102,5 +102,7 @@
   "No match": "일치 항목 없음",
   "Export failed: {0}": "내보내기 실패: {0}",
   "A turn is still running — stop it before starting a new conversation.": "아직 진행 중인 턴이 있습니다. 새 대화를 시작하기 전에 중지하세요.",
-  "Save": "저장"
+  "Save": "저장",
+  "A session named {0} already exists. Replace it?": "{0}(이)라는 세션이 이미 있습니다. 바꾸시겠습니까?",
+  "Replace": "바꾸기"
 }

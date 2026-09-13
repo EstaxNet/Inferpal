@@ -102,5 +102,7 @@
   "No match": "一致なし",
   "Export failed: {0}": "エクスポートに失敗しました: {0}",
   "A turn is still running — stop it before starting a new conversation.": "ターンがまだ実行中です。新しい会話を開始する前に停止してください。",
-  "Save": "保存"
+  "Save": "保存",
+  "A session named {0} already exists. Replace it?": "{0} という名前のセッションは既に存在します。置き換えますか？",
+  "Replace": "置き換える"
 }

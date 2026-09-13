@@ -102,5 +102,7 @@
   "No match": "无匹配项",
   "Export failed: {0}": "导出失败：{0}",
   "A turn is still running — stop it before starting a new conversation.": "仍有一个回合正在运行——请先停止，再开始新对话。",
-  "Save": "保存"
+  "Save": "保存",
+  "A session named {0} already exists. Replace it?": "已存在名为 {0} 的会话。要替换它吗？",
+  "Replace": "替换"
 }

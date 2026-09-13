@@ -102,5 +102,7 @@
   "No match": "Nessuna corrispondenza",
   "Export failed: {0}": "Esportazione non riuscita: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Un turno è ancora in corso: interrompilo prima di iniziare una nuova conversazione.",
-  "Save": "Salva"
+  "Save": "Salva",
+  "A session named {0} already exists. Replace it?": "Esiste già una sessione chiamata {0}. Sostituirla?",
+  "Replace": "Sostituisci"
 }

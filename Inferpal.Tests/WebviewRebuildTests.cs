@@ -329,4 +329,25 @@ public class WebviewRebuildTests
         Assert.True(archive >= 0 && archive < clear,
             "/clear and /template empty the transcript without archiving it, unlike the reset button");
     }
+
+    /// <summary>
+    /// Saving a session under a name already taken replaced the other conversation without a word:
+    /// deleting one asks for confirmation first — and it is the same loss.
+    /// </summary>
+    [Fact]
+    public void SavingUnderANameAlreadyTaken_AsksBeforeReplacing()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+
+        Assert.Contains("vscode.l10n.t('Delete session {0}? This cannot be undone.'",
+            Body(provider, "async deleteSessionCommand("), StringComparison.Ordinal);
+
+        var save    = Body(provider, "async saveSessionCommand(");
+        var list    = save.IndexOf("host.sessionList()", StringComparison.Ordinal);
+        var confirm = save.IndexOf("vscode.l10n.t('A session named {0} already exists. Replace it?'", StringComparison.Ordinal);
+        var write   = save.IndexOf("host.sessionSave(", StringComparison.Ordinal);
+        Assert.True(list >= 0 && confirm > list && write > confirm,
+            "saving under an existing name replaces that session without asking");
+        Assert.Contains("modal: true", save, StringComparison.Ordinal);
+    }
 }

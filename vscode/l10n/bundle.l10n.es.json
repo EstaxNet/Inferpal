@@ -102,5 +102,7 @@
   "No match": "Sin coincidencias",
   "Export failed: {0}": "Error al exportar: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Todavía hay un turno en curso: detenlo antes de iniciar una nueva conversación.",
-  "Save": "Guardar"
+  "Save": "Guardar",
+  "A session named {0} already exists. Replace it?": "Ya existe una sesión llamada {0}. ¿Reemplazarla?",
+  "Replace": "Reemplazar"
 }

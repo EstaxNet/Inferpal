@@ -102,5 +102,7 @@
   "No match": "Keine Übereinstimmung",
   "Export failed: {0}": "Export fehlgeschlagen: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Ein Durchlauf läuft noch — beenden Sie ihn, bevor Sie eine neue Unterhaltung beginnen.",
-  "Save": "Speichern"
+  "Save": "Speichern",
+  "A session named {0} already exists. Replace it?": "Eine Sitzung namens {0} existiert bereits. Ersetzen?",
+  "Replace": "Ersetzen"
 }
