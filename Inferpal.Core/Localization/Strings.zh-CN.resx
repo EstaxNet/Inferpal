@@ -352,6 +352,14 @@
   <data name="ContextGaugeTooltip" xml:space="preserve"><value>上下文：{0} / {1} 个令牌（{2}%）— 点击打开 X-Ray 面板</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>你</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>助手</value></data>
+  <data name="ExportTitle" xml:space="preserve"><value>Inferpal — 对话导出</value></data>
+  <data name="ExportStatColumn" xml:space="preserve"><value>统计</value></data>
+  <data name="ExportValueColumn" xml:space="preserve"><value>值</value></data>
+  <data name="ExportModel" xml:space="preserve"><value>模型</value></data>
+  <data name="ExportTurns" xml:space="preserve"><value>轮次</value></data>
+  <data name="ExportToolCalls" xml:space="preserve"><value>工具调用</value></data>
+  <data name="ExportTokens" xml:space="preserve"><value>令牌</value></data>
+  <data name="ExportDuration" xml:space="preserve"><value>时长</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ 没有可导出的消息。</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>已导出至 `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ 导出失败：{0}</value></data>

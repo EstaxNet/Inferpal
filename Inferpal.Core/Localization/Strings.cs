@@ -653,6 +653,22 @@ internal static class Strings
     public static string ExportNoMessages        => Get(nameof(ExportNoMessages));
     public static string ExportSuccess(string f) => string.Format(Get(nameof(ExportSuccess)), f);
     public static string ExportFailed(string e)  => string.Format(Get(nameof(ExportFailed)),  e);
+    /// <summary>Header of the exported document: same reader as the turn labels.</summary>
+    public static string ExportTitle             => Get(nameof(ExportTitle));
+    /// <inheritdoc cref="ExportTitle"/>
+    public static string ExportStatColumn        => Get(nameof(ExportStatColumn));
+    /// <inheritdoc cref="ExportTitle"/>
+    public static string ExportValueColumn       => Get(nameof(ExportValueColumn));
+    /// <inheritdoc cref="ExportTitle"/>
+    public static string ExportModel             => Get(nameof(ExportModel));
+    /// <inheritdoc cref="ExportTitle"/>
+    public static string ExportTurns             => Get(nameof(ExportTurns));
+    /// <inheritdoc cref="ExportTitle"/>
+    public static string ExportToolCalls         => Get(nameof(ExportToolCalls));
+    /// <inheritdoc cref="ExportTitle"/>
+    public static string ExportTokens            => Get(nameof(ExportTokens));
+    /// <inheritdoc cref="ExportTitle"/>
+    public static string ExportDuration          => Get(nameof(ExportDuration));
 
     // ── Slash commands ─────────────────────────────────────────────────────────
     public static string SlashModelCurrent(string model) => string.Format(Get(nameof(SlashModelCurrent)), model);

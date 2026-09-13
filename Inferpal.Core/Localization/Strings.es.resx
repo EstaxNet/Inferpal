@@ -352,6 +352,14 @@ Copia de seguridad: {0}</value></data>
   <data name="ContextGaugeTooltip" xml:space="preserve"><value>Contexto: {0} / {1} tokens ({2} %) — haga clic para el panel X-Ray</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>Tú</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>Asistente</value></data>
+  <data name="ExportTitle" xml:space="preserve"><value>Inferpal — Exportación de la conversación</value></data>
+  <data name="ExportStatColumn" xml:space="preserve"><value>Estadística</value></data>
+  <data name="ExportValueColumn" xml:space="preserve"><value>Valor</value></data>
+  <data name="ExportModel" xml:space="preserve"><value>Modelo</value></data>
+  <data name="ExportTurns" xml:space="preserve"><value>Turnos</value></data>
+  <data name="ExportToolCalls" xml:space="preserve"><value>Llamadas a herramientas</value></data>
+  <data name="ExportTokens" xml:space="preserve"><value>Tokens</value></data>
+  <data name="ExportDuration" xml:space="preserve"><value>Duración</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ No hay mensajes para exportar.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Exportado a `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Error al exportar: {0}</value></data>

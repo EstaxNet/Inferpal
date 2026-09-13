@@ -352,6 +352,14 @@
   <data name="ContextGaugeTooltip" xml:space="preserve"><value>Контекст: {0} / {1} токенов ({2} %) — щёлкните для панели X-Ray</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>Вы</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>Ассистент</value></data>
+  <data name="ExportTitle" xml:space="preserve"><value>Inferpal — Экспорт разговора</value></data>
+  <data name="ExportStatColumn" xml:space="preserve"><value>Показатель</value></data>
+  <data name="ExportValueColumn" xml:space="preserve"><value>Значение</value></data>
+  <data name="ExportModel" xml:space="preserve"><value>Модель</value></data>
+  <data name="ExportTurns" xml:space="preserve"><value>Ходы</value></data>
+  <data name="ExportToolCalls" xml:space="preserve"><value>Вызовы инструментов</value></data>
+  <data name="ExportTokens" xml:space="preserve"><value>Токены</value></data>
+  <data name="ExportDuration" xml:space="preserve"><value>Длительность</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Нет сообщений для экспорта.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Экспортировано в `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Ошибка экспорта: {0}</value></data>

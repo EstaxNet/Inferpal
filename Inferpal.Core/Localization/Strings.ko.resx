@@ -352,6 +352,14 @@
   <data name="ContextGaugeTooltip" xml:space="preserve"><value>컨텍스트: {0} / {1} 토큰 ({2}%) — 클릭하여 X-Ray 패널 열기</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>나</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>어시스턴트</value></data>
+  <data name="ExportTitle" xml:space="preserve"><value>Inferpal — 대화 내보내기</value></data>
+  <data name="ExportStatColumn" xml:space="preserve"><value>통계</value></data>
+  <data name="ExportValueColumn" xml:space="preserve"><value>값</value></data>
+  <data name="ExportModel" xml:space="preserve"><value>모델</value></data>
+  <data name="ExportTurns" xml:space="preserve"><value>턴</value></data>
+  <data name="ExportToolCalls" xml:space="preserve"><value>도구 호출</value></data>
+  <data name="ExportTokens" xml:space="preserve"><value>토큰</value></data>
+  <data name="ExportDuration" xml:space="preserve"><value>소요 시간</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ 내보낼 메시지가 없습니다.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>`{0}`으로 내보냈습니다</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ 내보내기 실패: {0}</value></data>

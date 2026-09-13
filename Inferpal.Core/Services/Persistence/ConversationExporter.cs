@@ -64,9 +64,9 @@ internal static class ConversationExporter
 
         if (asPlainText)
         {
-            sb.AppendLine("Inferpal — Conversation Export");
+            sb.AppendLine(Strings.ExportTitle);
             sb.AppendLine(date);
-            sb.AppendLine($"Model: {modelName}  |  Turns: {turns}  |  Tool calls: {toolCalls}  |  Tokens: {sessionTokens:N0}  |  Duration: {durationStr}");
+            sb.AppendLine($"{Strings.ExportModel}: {modelName}  |  {Strings.ExportTurns}: {turns}  |  {Strings.ExportToolCalls}: {toolCalls}  |  {Strings.ExportTokens}: {sessionTokens:N0}  |  {Strings.ExportDuration}: {durationStr}");
             sb.AppendLine();
 
             foreach (var msg in messages)
@@ -80,16 +80,16 @@ internal static class ConversationExporter
         }
         else
         {
-            sb.AppendLine("# Inferpal — Conversation Export");
+            sb.AppendLine($"# {Strings.ExportTitle}");
             sb.AppendLine($"*{date}*");
             sb.AppendLine();
-            sb.AppendLine("| Stat | Value |");
+            sb.AppendLine($"| {Strings.ExportStatColumn} | {Strings.ExportValueColumn} |");
             sb.AppendLine("|---|---|");
-            sb.AppendLine($"| Model | `{modelName}` |");
-            sb.AppendLine($"| Turns | {turns} |");
-            sb.AppendLine($"| Tool calls | {toolCalls} |");
-            sb.AppendLine($"| Tokens | {sessionTokens:N0} |");
-            sb.AppendLine($"| Duration | {durationStr} |");
+            sb.AppendLine($"| {Strings.ExportModel} | `{modelName}` |");
+            sb.AppendLine($"| {Strings.ExportTurns} | {turns} |");
+            sb.AppendLine($"| {Strings.ExportToolCalls} | {toolCalls} |");
+            sb.AppendLine($"| {Strings.ExportTokens} | {sessionTokens:N0} |");
+            sb.AppendLine($"| {Strings.ExportDuration} | {durationStr} |");
             sb.AppendLine();
             sb.AppendLine("---");
             sb.AppendLine();

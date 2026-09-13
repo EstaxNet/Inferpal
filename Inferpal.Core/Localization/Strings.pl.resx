@@ -352,6 +352,14 @@ Kopia zapasowa: {0}</value></data>
   <data name="ContextGaugeTooltip" xml:space="preserve"><value>Kontekst: {0} / {1} tokenów ({2}%) — kliknij, aby otworzyć panel X-Ray</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>Ty</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>Asystent</value></data>
+  <data name="ExportTitle" xml:space="preserve"><value>Inferpal — Eksport rozmowy</value></data>
+  <data name="ExportStatColumn" xml:space="preserve"><value>Statystyka</value></data>
+  <data name="ExportValueColumn" xml:space="preserve"><value>Wartość</value></data>
+  <data name="ExportModel" xml:space="preserve"><value>Model</value></data>
+  <data name="ExportTurns" xml:space="preserve"><value>Tury</value></data>
+  <data name="ExportToolCalls" xml:space="preserve"><value>Wywołania narzędzi</value></data>
+  <data name="ExportTokens" xml:space="preserve"><value>Tokeny</value></data>
+  <data name="ExportDuration" xml:space="preserve"><value>Czas trwania</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Brak wiadomości do wyeksportowania.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Wyeksportowano do `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Eksport nie powiódł się: {0}</value></data>

@@ -352,6 +352,14 @@ Sicherung: {0}</value></data>
   <data name="ContextGaugeTooltip" xml:space="preserve"><value>Kontext: {0} / {1} Token ({2} %) — Klick für das X-Ray-Panel</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>Sie</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>Assistent</value></data>
+  <data name="ExportTitle" xml:space="preserve"><value>Inferpal — Unterhaltungsexport</value></data>
+  <data name="ExportStatColumn" xml:space="preserve"><value>Statistik</value></data>
+  <data name="ExportValueColumn" xml:space="preserve"><value>Wert</value></data>
+  <data name="ExportModel" xml:space="preserve"><value>Modell</value></data>
+  <data name="ExportTurns" xml:space="preserve"><value>Durchgänge</value></data>
+  <data name="ExportToolCalls" xml:space="preserve"><value>Werkzeugaufrufe</value></data>
+  <data name="ExportTokens" xml:space="preserve"><value>Tokens</value></data>
+  <data name="ExportDuration" xml:space="preserve"><value>Dauer</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Keine Nachrichten zum Exportieren.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Nach `{0}` exportiert</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Export fehlgeschlagen: {0}</value></data>
