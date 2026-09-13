@@ -255,12 +255,11 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             ToolName   = toolName,
             Timestamp  = timestamp,
             IsExpanded = role != "tool" || toolBubblesExpanded,
+            // The same labels as live bubbles: the export heads every turn with them.
             Label      = role switch
             {
-                "user"      => "Vous",
-                "assistant" => "Assistant",
-                "tool"      => $"🔧 {toolName}",
-                _           => role,
+                "plan" => Strings.AgentPlanLabel,
+                _      => ConversationExporter.RoleLabel(role, toolName),
             },
         };
         if (role == "assistant")
