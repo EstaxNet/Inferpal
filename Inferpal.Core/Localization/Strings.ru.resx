@@ -398,6 +398,14 @@
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Нет сохранённых сессий. Сессии архивируются автоматически при `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Сессий, соответствующих «{0}», не найдено.</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## Сохранённые сеансы ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>сообщений: {0}</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;запрос&gt;` — поиск по содержимому сеансов</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## История: «{0}» — сеансов: {1}</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} мин назад</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>{0} ч назад</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>{0} дн. назад</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## Доступные шаблоны</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Файл .sln не найден — невозможно найти `.inferpal/context.md`.</value></data>

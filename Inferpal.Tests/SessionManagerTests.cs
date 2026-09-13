@@ -12,8 +12,14 @@ namespace Inferpal.Tests;
 // Covers the pure session logic extracted from the tool-window VM: snapshot building,
 // restored-history rebuilding, title/file naming, /history markdown rendering, and the
 // /template presets. Persistence (ConversationStore) and the LLM title call are not tested here.
-public class SessionManagerTests
+// The rendering is localized and these expectations are the English texts, so the class pins English.
+[Collection(CultureSerialCollection.Name)]
+public class SessionManagerTests : IDisposable
 {
+    public SessionManagerTests() => Localization.Strings.ApplyLanguage("en");
+
+    public void Dispose() => Localization.Strings.ApplyLanguage(null);
+
     // ── BuildSnapshot ──────────────────────────────────────────────────────────
 
     [Fact]

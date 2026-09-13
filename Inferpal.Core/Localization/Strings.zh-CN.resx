@@ -398,6 +398,14 @@
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>没有保存的会话。会话在 `/clear` 时自动归档。</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>没有与"{0}"匹配的会话。</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## 已保存的会话 ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} 条消息</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;关键词&gt;` 在会话内容中搜索</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## 历史：“{0}” — {1} 个会话</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} 分钟前</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>{0} 小时前</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>{0} 天前</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## 可用模板</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ 未找到 .sln 文件 — 无法定位 `.inferpal/context.md`。</value></data>

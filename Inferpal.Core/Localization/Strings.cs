@@ -736,6 +736,14 @@ internal static class Strings
     public static string SlashHeadlessUnavailable         => Get(nameof(SlashHeadlessUnavailable));
     public static string HistoryNoSessions                => Get(nameof(HistoryNoSessions));
     public static string HistoryNoResults(string term)    => string.Format(Get(nameof(HistoryNoResults)),   term);
+    public static string HistoryListHeader(int count) => string.Format(Get(nameof(HistoryListHeader)), count);
+    public static string HistoryMessageCount(int count) => string.Format(Get(nameof(HistoryMessageCount)), count);
+    public static string HistorySearchHint => Get(nameof(HistorySearchHint));
+    public static string HistorySearchHeader(string term, int count) => string.Format(Get(nameof(HistorySearchHeader)), term, count);
+    public static string AgeMinutesAgo(int n) => string.Format(Get(nameof(AgeMinutesAgo)), n);
+    public static string AgeHoursAgo(int n) => string.Format(Get(nameof(AgeHoursAgo)), n);
+    public static string AgeDaysAgo(int n) => string.Format(Get(nameof(AgeDaysAgo)), n);
+    public static string TemplateListHeader => Get(nameof(TemplateListHeader));
 
     // ── Project context ────────────────────────────────────────────────────────
     public static string SlashContextNoSln                              => Get(nameof(SlashContextNoSln));

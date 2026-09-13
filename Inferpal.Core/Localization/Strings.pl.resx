@@ -398,6 +398,14 @@ Kopia zapasowa: {0}</value></data>
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Brak zapisanych sesji. Sesje są archiwizowane automatycznie przy `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Brak sesji pasujących do „{0}".</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## Zapisane sesje ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>wiadomości: {0}</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;fraza&gt;`, aby przeszukać treść sesji</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## Historia: „{0}” — sesje: {1}</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} min temu</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>{0} godz. temu</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>{0} dni temu</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## Dostępne szablony</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Nie znaleziono pliku .sln — nie można znaleźć `.inferpal/context.md`.</value></data>

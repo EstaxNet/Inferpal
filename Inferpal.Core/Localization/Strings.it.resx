@@ -398,6 +398,14 @@ Backup: {0}</value></data>
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Nessuna sessione salvata. Le sessioni vengono archiviate automaticamente con `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Nessuna sessione corrisponde a "{0}".</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## Sessioni salvate ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} messaggi</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;termine&gt;` per cercare nel contenuto delle sessioni</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## Cronologia: «{0}» — {1} sessione/i</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} min fa</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>{0} h fa</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>{0} g fa</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## Modelli disponibili</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Nessun file .sln trovato — impossibile localizzare `.inferpal/context.md`.</value></data>

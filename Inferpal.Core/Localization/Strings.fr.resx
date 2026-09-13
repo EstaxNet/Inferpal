@@ -398,6 +398,14 @@ Sauvegarde : {0}</value></data>
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Aucune session sauvegardée. Les sessions sont archivées automatiquement via `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Aucune session ne correspond à « {0} ».</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## Sessions enregistrées ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} messages</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;terme&gt;` pour chercher dans le contenu des sessions</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## Historique : « {0} » — {1} session(s)</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>il y a {0} min</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>il y a {0} h</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>il y a {0} j</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## Modèles disponibles</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Aucun fichier .sln trouvé — impossible de localiser `.inferpal/context.md`.</value></data>

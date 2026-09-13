@@ -398,6 +398,14 @@ Sicherung: {0}</value></data>
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>Keine gespeicherten Sitzungen. Sitzungen werden automatisch beim `/clear` archiviert.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Keine Sitzungen entsprechen „{0}".</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## Gespeicherte Sitzungen ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} Nachrichten</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;Begriff&gt;`, um im Inhalt der Sitzungen zu suchen</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## Verlauf: „{0}“ — {1} Sitzung(en)</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>vor {0} Min.</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>vor {0} Std.</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>vor {0} T.</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## Verfügbare Vorlagen</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ Keine .sln-Datei gefunden – `.inferpal/context.md` kann nicht gefunden werden.</value></data>

@@ -54,7 +54,7 @@ internal static class SessionManager
     public static string FormatTemplateList()
     {
         var list = string.Join("\n", Templates.Select(t => $"- **{t.Id}** — {t.Label}"));
-        return $"## Available templates\n\n{list}\n\nUsage: `/template <id>`";
+        return $"{Strings.TemplateListHeader}\n\n{list}\n\n{Strings.SlashUsage("/template <id>")}";
     }
 
     // ── Snapshots & restore ───────────────────────────────────────────────────
@@ -202,9 +202,9 @@ internal static class SessionManager
 
         var elapsed = nowUtc - savedAtUtc;
         if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero; // clock/time zone - never negative
-        if (elapsed.TotalMinutes < 60)  return $"{(int)elapsed.TotalMinutes}m ago";
-        if (elapsed.TotalHours   < 24)  return $"{(int)elapsed.TotalHours}h ago";
-        if (elapsed.TotalDays    < 30)  return $"{(int)elapsed.TotalDays}d ago";
+        if (elapsed.TotalMinutes < 60)  return Strings.AgeMinutesAgo((int)elapsed.TotalMinutes);
+        if (elapsed.TotalHours   < 24)  return Strings.AgeHoursAgo((int)elapsed.TotalHours);
+        if (elapsed.TotalDays    < 30)  return Strings.AgeDaysAgo((int)elapsed.TotalDays);
         return savedAtUtc.ToString("yyyy-MM-dd");
     }
 
@@ -212,7 +212,7 @@ internal static class SessionManager
     public static string FormatHistorySearch(string term, IReadOnlyList<SessionMatch> matches, DateTime nowUtc)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"## History: \"{term}\" — {matches.Count} session(s)");
+        sb.AppendLine(Strings.HistorySearchHeader(term, matches.Count));
         sb.AppendLine();
 
         foreach (var m in matches)
@@ -230,19 +230,19 @@ internal static class SessionManager
     public static string FormatHistoryList(IReadOnlyList<SessionSummary> sessions, DateTime nowUtc)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"## Saved sessions ({sessions.Count})");
+        sb.AppendLine(Strings.HistoryListHeader(sessions.Count));
         sb.AppendLine();
 
         foreach (var s in sessions)
         {
-            sb.AppendLine($"**{s.Name}**  ·  {FormatAge(s.SavedAt, nowUtc)}  ·  {s.MessageCount} messages");
+            sb.AppendLine($"**{s.Name}**  ·  {FormatAge(s.SavedAt, nowUtc)}  ·  {Strings.HistoryMessageCount(s.MessageCount)}");
             if (!string.IsNullOrWhiteSpace(s.FirstUserPreview))
                 sb.AppendLine($"  *\"{s.FirstUserPreview}\"*");
             sb.AppendLine();
         }
 
         sb.AppendLine("---");
-        sb.AppendLine("→ `/history <term>` to search in session content");
+        sb.AppendLine(Strings.HistorySearchHint);
 
         return sb.ToString().TrimEnd();
     }

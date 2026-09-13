@@ -398,6 +398,14 @@ Copia de seguridad: {0}</value></data>
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>No hay sesiones guardadas. Las sesiones se archivan automáticamente con `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>No hay sesiones que coincidan con "{0}".</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## Sesiones guardadas ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} mensajes</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;término&gt;` para buscar en el contenido de las sesiones</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## Historial: «{0}» — {1} sesión(es)</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>hace {0} min</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>hace {0} h</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>hace {0} d</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## Plantillas disponibles</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ No se encontró ningún archivo .sln — no se puede localizar `.inferpal/context.md`.</value></data>

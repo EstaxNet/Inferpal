@@ -398,6 +398,14 @@
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>저장된 세션이 없습니다. 세션은 `/clear` 시 자동으로 아카이브됩니다.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>"{0}"에 일치하는 세션이 없습니다.</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## 저장된 세션 ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>메시지 {0}개</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;검색어&gt;`로 세션 내용 검색</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## 기록: "{0}" — 세션 {1}개</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>{0}분 전</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>{0}시간 전</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>{0}일 전</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## 사용 가능한 템플릿</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ .sln 파일을 찾을 수 없습니다 — `.inferpal/context.md`를 찾을 수 없습니다.</value></data>

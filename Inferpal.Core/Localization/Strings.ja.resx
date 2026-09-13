@@ -398,6 +398,14 @@
     <!-- History search -->
   <data name="HistoryNoSessions" xml:space="preserve"><value>保存されたセッションはありません。セッションは `/clear` で自動的にアーカイブされます。</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>「{0}」に一致するセッションはありません。</value></data>
+  <data name="HistoryListHeader" xml:space="preserve"><value>## 保存されたセッション ({0})</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} 件のメッセージ</value></data>
+  <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;語句&gt;` でセッションの内容を検索</value></data>
+  <data name="HistorySearchHeader" xml:space="preserve"><value>## 履歴: 「{0}」 — {1} 件のセッション</value></data>
+  <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} 分前</value></data>
+  <data name="AgeHoursAgo" xml:space="preserve"><value>{0} 時間前</value></data>
+  <data name="AgeDaysAgo" xml:space="preserve"><value>{0} 日前</value></data>
+  <data name="TemplateListHeader" xml:space="preserve"><value>## 利用可能なテンプレート</value></data>
 
   <!-- Project context -->
   <data name="SlashContextNoSln" xml:space="preserve"><value>⚠ .sln ファイルが見つかりません — `.inferpal/context.md` を見つけられません。</value></data>
