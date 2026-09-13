@@ -302,6 +302,60 @@ public class CheckReviewAnchorTests
         finally { Directory.Delete(root, true); }
     }
 
+    /// <summary>
+    /// A check file that cannot be read is named, never dropped: /check loaded the checks through the
+    /// overload that discards unreadable files, so a locked <c>secrets.md</c> answered "no checks".
+    /// </summary>
+    [Fact]
+    public async Task Handle_AnUnreadableOnlyCheck_IsNamed_NotReportedAsNoChecks()
+    {
+        var root = NewRootWithCheck();
+        try
+        {
+            var locked = Path.Combine(root, ".inferpal", "checks", "secrets.md");
+            string? message;
+            using (new FileStream(locked, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                message = (await CheckCommandHandler.HandleAsync(
+                    Answering(""), new InferpalConfig(), root, ["/check"],
+                    git: (_, _) => Task.FromResult(("", 0)), onProgress: null, CancellationToken.None)).Message;
+            }
+
+            Assert.Equal(
+                Inferpal.Localization.Strings.ChecksNone + "\n\n"
+                + Inferpal.Localization.Strings.GovernanceFilesUnreadable(1, "secrets.md"),
+                message);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    /// <summary>
+    /// Beside a readable check, an unreadable one is named in the review: the diff used to be reviewed
+    /// against fewer checks than the user wrote — a secrets check silently skipped.
+    /// </summary>
+    [Fact]
+    public async Task Handle_AnUnreadableCheckBesideAReadableOne_IsNamedInTheReview()
+    {
+        var root = NewRootWithCheck();
+        try
+        {
+            File.WriteAllText(Path.Combine(root, ".inferpal", "checks", "style.md"),
+                "---\ndescription: style\n---\nKeep names consistent.");
+            var locked = Path.Combine(root, ".inferpal", "checks", "secrets.md");
+            string? message;
+            using (new FileStream(locked, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                message = (await CheckCommandHandler.HandleAsync(
+                    Answering("- [minor] src/Alpha.cs:11 — naming"), new InferpalConfig(), root, ["/check"],
+                    git: (args, _) => Task.FromResult((args == "diff --staged" ? RawDiff : "", 0)),
+                    onProgress: null, CancellationToken.None)).Message;
+            }
+
+            Assert.Contains(Inferpal.Localization.Strings.GovernanceFilesUnreadable(1, "secrets.md"), message);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     private const string RawDiff = """
         diff --git a/src/Alpha.cs b/src/Alpha.cs
         --- a/src/Alpha.cs

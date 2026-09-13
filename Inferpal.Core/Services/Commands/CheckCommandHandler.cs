@@ -47,13 +47,18 @@ internal static class CheckCommandHandler
         if (string.Equals(arg, "init", StringComparison.OrdinalIgnoreCase))
             return new(null, RulesChecksPromptsCommandHandler.Checks(projectRoot, parts).Scaffold);
 
-        var checks = ChecksService.Load(Path.Combine(projectRoot, ".inferpal", "checks"));
-        if (checks.Count == 0) return new(Strings.ChecksNone);
+        // Checks that cannot be read are named on every answer that depends on them: dropped silently, the
+        // diff would be reviewed against fewer checks than the user wrote.
+        var checks = ChecksService.Load(Path.Combine(projectRoot, ".inferpal", "checks"), out var unreadable);
+        string Named(string message) =>
+            RulesChecksPromptsCommandHandler.Unreadable(unreadable) is { } note ? message + "\n\n" + note : message;
+
+        if (checks.Count == 0) return new(Named(Strings.ChecksNone));
 
         if (!string.IsNullOrEmpty(arg))
         {
             var one = checks.FirstOrDefault(c => c.Name.Equals(arg, StringComparison.OrdinalIgnoreCase));
-            if (one is null) return new(Strings.CheckUnknownName(arg));
+            if (one is null) return new(Named(Strings.CheckUnknownName(arg)));
             checks = [one];
         }
 
@@ -96,6 +101,6 @@ internal static class CheckCommandHandler
 
         // Anchors come from the very text the model was shown, so a location is checked against
         // what the model could actually see — not against the working tree, which may have moved.
-        return new(CheckReviewParser.Render(CheckReviewParser.Parse(answer, DiffAnchors.Parse(diff))));
+        return new(Named(CheckReviewParser.Render(CheckReviewParser.Parse(answer, DiffAnchors.Parse(diff)))));
     }
 }

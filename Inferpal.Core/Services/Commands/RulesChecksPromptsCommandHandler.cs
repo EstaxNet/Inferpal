@@ -130,7 +130,7 @@ internal static class RulesChecksPromptsCommandHandler
     // shorter list."
 
     /// <summary>The warning line, or <c>null</c> when everything was read (nothing to say).</summary>
-    private static string? Unreadable(IReadOnlyList<string> unreadable) =>
+    internal static string? Unreadable(IReadOnlyList<string> unreadable) =>
         unreadable.Count == 0
             ? null
             : Strings.GovernanceFilesUnreadable(unreadable.Count, string.Join(", ", unreadable));
