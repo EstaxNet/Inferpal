@@ -202,6 +202,22 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// The session list describes each entry by its message count: a branch's row went through l10n, a
+    /// root session's wrote "msg" hard-coded — "12 件" and "12 msg" one under the other.
+    /// </summary>
+    [Fact]
+    public void ASessionPicker_DescribesEveryRow_InTheSameLanguage()
+    {
+        var picker = Body(TsCode("chatSessions.ts"), "export async function pickSession(");
+
+        // Witness: a branch's description goes through l10n.
+        Assert.Contains("vscode.l10n.t('{0} msg · from {1} @ turn {2}'", picker, StringComparison.Ordinal);
+
+        Assert.Contains("vscode.l10n.t('{0} msg', s.messageCount)", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("} msg`", picker, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Same class, in the settings panel: it opens as an editor tab, and VS Code destroys a hidden
     /// tab's webview unless asked to keep it. On return the form reloads from the config and unsaved
     /// edits vanish without a word — clicking Save afterwards writes the old values.

@@ -9,6 +9,7 @@
   "Inferpal host is not running — use \"Inferpal: Restart Host\".": "L’host Inferpal non è in esecuzione — usare «Inferpal: Riavvia host».",
   "Inferpal needs an open folder to start — open one and it starts on its own.": "Inferpal richiede una cartella aperta per avviarsi — aprine una e si avvia da solo.",
   "Naming the session…": "Assegnazione del nome alla sessione…",
+  "{0} msg": "{0} msg",
   "{0} msg · from {1} @ turn {2}": "{0} msg · da {1} @ turno {2}",
   "The command failed.": "Il comando non è riuscito.",
   "No turn {0} in this conversation — no branch was created.": "Nessun turno {0} in questa conversazione: nessun ramo è stato creato.",

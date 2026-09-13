@@ -48,7 +48,7 @@ export async function pickSession(host: HostClient, placeholder: string): Promis
       label: s.parent ? `$(git-branch) ${s.name}` : s.name,
       description: s.parent
         ? vscode.l10n.t('{0} msg · from {1} @ turn {2}', s.messageCount, s.parent, s.forkTurn ?? 0)
-        : `${s.messageCount} msg`,
+        : vscode.l10n.t('{0} msg', s.messageCount),
       detail: s.preview,
       name: s.name,
     })),
