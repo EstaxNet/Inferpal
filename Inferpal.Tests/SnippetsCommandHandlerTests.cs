@@ -94,4 +94,36 @@ public class SnippetsCommandHandlerTests : IDisposable
         Assert.Equal(Strings.SnippetsCleared, result.Message);
         Assert.Empty(await SnippetStore.LoadAllAsync(CancellationToken.None));
     }
+
+    /// <summary>
+    /// <c>clear</c> only binds alone: <c>/snippets clear all but the first</c> emptied the whole library.
+    /// </summary>
+    [Fact]
+    public async Task Clear_FollowedByText_ShowsTheUsage_AndKeepsTheLibrary()
+    {
+        await SnippetStore.SaveAsync("csharp", "x", CancellationToken.None);
+
+        var result = await SnippetsCommandHandler.HandleAsync(Cmd("clear", "all", "but", "the", "first"), CancellationToken.None);
+
+        Assert.Equal(Strings.SlashUsage("/snippets [list | copy <n> | delete <n> | clear]"), result.Message);
+        Assert.Single(await SnippetStore.LoadAllAsync(CancellationToken.None));
+    }
+
+    /// <summary>
+    /// A form the command does not know is named as such — <c>/snippets remove 2</c> used to list, which
+    /// reads as the deletion having been done.
+    /// </summary>
+    [Theory]
+    [InlineData("remove", "2")]
+    [InlineData("delete", "two")]
+    [InlineData("delete")]
+    public async Task AnUnknownForm_ShowsTheUsage_AndDeletesNothing(params string[] args)
+    {
+        await SnippetStore.SaveAsync("csharp", "x", CancellationToken.None);
+
+        var result = await SnippetsCommandHandler.HandleAsync(Cmd(args), CancellationToken.None);
+
+        Assert.Equal(Strings.SlashUsage("/snippets [list | copy <n> | delete <n> | clear]"), result.Message);
+        Assert.Single(await SnippetStore.LoadAllAsync(CancellationToken.None));
+    }
 }

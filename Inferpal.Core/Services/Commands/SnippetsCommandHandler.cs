@@ -26,13 +26,15 @@ internal static class SnippetsCommandHandler
     {
         var sub = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
 
-        if (sub == "clear")
+        // Every form binds in its exact shape only: `clear` followed by text emptied the whole library,
+        // and an unknown form fell back to the listing, which reads as the deletion having been done.
+        if (sub == "clear" && parts.Length == 2)
         {
             await SnippetStore.ClearAsync(ct);
             return new(Strings.SnippetsCleared);
         }
 
-        if ((sub == "copy" || sub == "delete") && parts.Length >= 3 && int.TryParse(parts[2], out var idx))
+        if ((sub == "copy" || sub == "delete") && parts.Length == 3 && int.TryParse(parts[2], out var idx))
         {
             var snippets = await SnippetStore.LoadAllAsync(ct);
             var i = idx - 1; // 1-based display
@@ -46,7 +48,9 @@ internal static class SnippetsCommandHandler
             return new(Strings.SnippetsDeleted(idx));
         }
 
-        // Default: list all snippets.
+        if (sub != "list" || parts.Length > 2)
+            return new(Strings.SlashUsage("/snippets [list | copy <n> | delete <n> | clear]"));
+
         var all = await SnippetStore.LoadAllAsync(ct);
         return all.Count == 0
             ? new(Strings.SnippetsNone)

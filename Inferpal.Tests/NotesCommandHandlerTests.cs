@@ -75,4 +75,33 @@ public class NotesCommandHandlerTests : IDisposable
         Assert.Equal(Strings.NotesCleared, result.Message);
         Assert.False(File.Exists(NotesStore.NotesPath(_root)));
     }
+
+    /// <summary>
+    /// <c>clear</c> only binds alone: <c>/notes clear the cache before running tests</c> — a note typed
+    /// after <c>/notes</c> instead of <c>/note</c> — erased every note instead of saving one.
+    /// </summary>
+    [Fact]
+    public async Task Notes_ClearFollowedByText_ShowsTheUsage_AndKeepsTheNotes()
+    {
+        await NotesCommandHandler.HandleNoteAsync(_root, Cmd("/note", "keep me"), DateTime.Now, CancellationToken.None);
+
+        var result = await NotesCommandHandler.HandleNotesAsync(
+            _root, Cmd("/notes", "clear", "the", "cache", "before", "running", "tests"), CancellationToken.None);
+
+        Assert.Equal(Strings.SlashUsage("/notes [clear]"), result.Message);
+        Assert.Contains("keep me", await File.ReadAllTextAsync(NotesStore.NotesPath(_root)));
+    }
+
+    /// <summary>
+    /// Text after <c>/notes</c> is not silently dropped: the listing it used to show said nothing about
+    /// the note the user believed saved.
+    /// </summary>
+    [Fact]
+    public async Task Notes_WithText_ShowsTheUsage_InsteadOfListing()
+    {
+        var result = await NotesCommandHandler.HandleNotesAsync(
+            _root, Cmd("/notes", "bump", "the", "version"), CancellationToken.None);
+
+        Assert.Equal(Strings.SlashUsage("/notes [clear]"), result.Message);
+    }
 }

@@ -44,8 +44,13 @@ internal static class NotesCommandHandler
     public static async Task<NotesCommandResult> HandleNotesAsync(
         string projectRoot, string[] parts, CancellationToken ct)
     {
-        if (parts.Length >= 2 && parts[1].Equals("clear", StringComparison.OrdinalIgnoreCase))
+        if (parts.Length >= 2)
         {
+            // `clear` binds alone. Followed by text it is a note typed after `/notes` instead of `/note`,
+            // which erased every note; any other text would be dropped silently behind the listing.
+            if (parts.Length > 2 || !parts[1].Equals("clear", StringComparison.OrdinalIgnoreCase))
+                return new(Strings.SlashUsage("/notes [clear]"));
+
             NotesStore.Clear(projectRoot);
             return new(Strings.NotesCleared);
         }
