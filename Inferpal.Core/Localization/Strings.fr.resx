@@ -706,6 +706,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="SnippetsNoSuch" xml:space="preserve"><value>Aucun snippet n°{0}.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>Snippet n°{0} copié dans le presse-papier.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet n°{0} supprimé.</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>La bibliothèque de snippets n'a pas pu être enregistrée — rien n'a été modifié. `/diagnostics` en donne la cause.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Aucun snippet enregistré. Utilisez le bouton ⭐ sur un bloc de code pour en enregistrer un.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Utilisation : `/note &lt;texte&gt;` — ajoute une note horodatée à `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Note enregistrée : *{0}*</value></data>
@@ -780,6 +781,8 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="ArenaReveal" xml:space="preserve"><value>La réponse A était `{0}`, la réponse B était `{1}`.</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Vote enregistré — vainqueur : `{0}`.</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Vote enregistré — égalité.</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>Le vote n'a pas pu être enregistré — il n'est pas pris en compte. `/diagnostics` en donne la cause.</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ Ce duel n'a pas pu être enregistré : un vote sur lui ne sera pas pris en compte. `/diagnostics` en donne la cause.</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>Classement de l'arène</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>Modèle</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>Duels</value></data>

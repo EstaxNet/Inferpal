@@ -698,6 +698,7 @@ ollama serve
   <data name="SnippetsNoSuch" xml:space="preserve"><value>没有第 {0} 个代码片段。</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>已将第 {0} 个代码片段复制到剪贴板。</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>已删除第 {0} 个代码片段。</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>无法保存代码片段库——未做任何更改。原因见 `/diagnostics`。</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>尚未保存任何代码片段。点击代码块上的 ⭐ 按钮即可保存。</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>用法：`/note &lt;文本&gt;` — 向 `.inferpal/notes.md` 追加一条带时间戳的笔记。</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>已保存笔记：*{0}*</value></data>
@@ -772,6 +773,8 @@ ollama serve
   <data name="ArenaReveal" xml:space="preserve"><value>答案 A 是 `{0}`，答案 B 是 `{1}`。</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>投票已记录 — 获胜者：`{0}`。</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>投票已记录 — 平局。</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>无法保存投票——未记录。原因见 `/diagnostics`。</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ 无法保存此对决：对其投票将不会被记录。原因见 `/diagnostics`。</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>竞技场排行榜</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>模型</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>对决</value></data>

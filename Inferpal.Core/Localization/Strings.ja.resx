@@ -698,6 +698,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SnippetsNoSuch" xml:space="preserve"><value>スニペット #{0} はありません。</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>スニペット #{0} をクリップボードにコピーしました。</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>スニペット #{0} を削除しました。</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>スニペットライブラリを保存できませんでした。何も変更されていません。原因は `/diagnostics` にあります。</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>保存されたスニペットはまだありません。コードブロックの ⭐ ボタンで保存できます。</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>使い方: `/note &lt;テキスト&gt;` — タイムスタンプ付きのメモを `.inferpal/notes.md` に追加します。</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>メモを保存しました: *{0}*</value></data>
@@ -772,6 +773,8 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ArenaReveal" xml:space="preserve"><value>回答 A は `{0}`、回答 B は `{1}` でした。</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>投票を記録しました — 勝者: `{0}`。</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>投票を記録しました — 引き分け。</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>投票を保存できませんでした。記録されていません。原因は `/diagnostics` にあります。</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ この対戦を保存できませんでした。投票しても記録されません。原因は `/diagnostics` にあります。</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>アリーナ順位表</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>モデル</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>対戦数</value></data>

@@ -58,7 +58,7 @@ internal static class ArenaCommandHandler
             }
 
             var state = await ArenaStore.LoadAsync();
-            await ArenaStore.SaveAsync(state with
+            var pendingSaved = await ArenaStore.SaveAsync(state with
             {
                 Pending = new ArenaPending(DateTime.UtcNow, prompt, modelA, modelB),
             });
@@ -69,6 +69,8 @@ internal static class ArenaCommandHandler
             AppendAnswer(sb, "A", textA, secondsA);
             AppendAnswer(sb, "B", textB, secondsB);
             sb.Append(Strings.ArenaVotePrompt);
+            // Without the pending state on disk, the next vote would answer "no pending battle".
+            if (!pendingSaved) sb.Append("\n\n").Append(Strings.ArenaPendingNotSaved);
             return new(sb.ToString());
         }
         catch (OperationCanceledException) { throw; }
@@ -89,7 +91,10 @@ internal static class ArenaCommandHandler
         {
             new(pending.TimestampUtc, pending.Prompt, pending.ModelA, pending.ModelB, vote),
         };
-        await ArenaStore.SaveAsync(new ArenaSavedState(battles, Pending: null));
+        // A vote not written is not a vote: no reveal (the battle stays blind for a retry), no standings
+        // that would count it.
+        if (!await ArenaStore.SaveAsync(new ArenaSavedState(battles, Pending: null)))
+            return Strings.ArenaVoteNotSaved;
 
         var verdict = vote switch
         {

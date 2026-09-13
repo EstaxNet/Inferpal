@@ -698,6 +698,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="SnippetsNoSuch" xml:space="preserve"><value>{0}번 스니펫이 없습니다.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>{0}번 스니펫을 클립보드에 복사했습니다.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>{0}번 스니펫을 삭제했습니다.</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>스니펫 라이브러리를 저장하지 못했습니다. 아무것도 변경되지 않았습니다. 원인은 `/diagnostics`에 있습니다.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>저장된 스니펫이 아직 없습니다. 코드 블록의 ⭐ 버튼으로 저장하세요.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>사용법: `/note &lt;텍스트&gt;` — 타임스탬프가 있는 메모를 `.inferpal/notes.md`에 추가합니다.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>메모를 저장했습니다: *{0}*</value></data>
@@ -772,6 +773,8 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="ArenaReveal" xml:space="preserve"><value>답변 A는 `{0}`, 답변 B는 `{1}`였습니다.</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>투표 기록됨 — 승자: `{0}`.</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>투표 기록됨 — 무승부.</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>투표를 저장하지 못했습니다. 기록되지 않았습니다. 원인은 `/diagnostics`에 있습니다.</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ 이 대결을 저장하지 못했습니다. 투표해도 기록되지 않습니다. 원인은 `/diagnostics`에 있습니다.</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>아레나 순위</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>모델</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>대결</value></data>

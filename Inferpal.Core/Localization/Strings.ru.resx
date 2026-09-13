@@ -696,6 +696,7 @@ ollama serve
   <data name="SnippetsNoSuch" xml:space="preserve"><value>Нет сниппета №{0}.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>Сниппет №{0} скопирован в буфер обмена.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Сниппет №{0} удалён.</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>Не удалось сохранить библиотеку фрагментов — ничего не изменено. Причина — в `/diagnostics`.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Сниппеты ещё не сохранены. Нажмите кнопку ⭐ на любом блоке кода, чтобы сохранить.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Использование: `/note &lt;текст&gt;` — добавляет заметку с отметкой времени в `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Заметка сохранена: *{0}*</value></data>
@@ -770,6 +771,8 @@ ollama serve
   <data name="ArenaReveal" xml:space="preserve"><value>Ответ A — `{0}`, ответ B — `{1}`.</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Голос учтён — победитель: `{0}`.</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Голос учтён — ничья.</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>Не удалось сохранить голос — он не учтён. Причина — в `/diagnostics`.</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ Не удалось сохранить этот поединок: голос за него не будет учтён. Причина — в `/diagnostics`.</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>Турнирная таблица арены</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>Модель</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>Дуэли</value></data>

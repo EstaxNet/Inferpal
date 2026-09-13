@@ -698,6 +698,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="SnippetsNoSuch" xml:space="preserve"><value>No existe el fragmento n.º {0}.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>Fragmento n.º {0} copiado al portapapeles.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Fragmento n.º {0} eliminado.</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>No se pudo guardar la biblioteca de fragmentos: no se ha cambiado nada. `/diagnostics` indica la causa.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Aún no hay fragmentos guardados. Usa el botón ⭐ en cualquier bloque de código para guardar uno.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Uso: `/note &lt;texto&gt;` — añade una nota con marca de tiempo a `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Nota guardada: *{0}*</value></data>
@@ -772,6 +773,8 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="ArenaReveal" xml:space="preserve"><value>La respuesta A era `{0}`, la respuesta B era `{1}`.</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Voto registrado — ganador: `{0}`.</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Voto registrado — empate.</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>No se pudo guardar el voto: no se ha registrado. `/diagnostics` indica la causa.</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ No se pudo guardar este duelo: un voto sobre él no se registrará. `/diagnostics` indica la causa.</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>Clasificación de la arena</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>Modelo</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>Duelos</value></data>

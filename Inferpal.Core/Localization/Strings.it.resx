@@ -698,6 +698,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="SnippetsNoSuch" xml:space="preserve"><value>Nessuno snippet n. {0}.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>Snippet n. {0} copiato negli appunti.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet n. {0} eliminato.</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>Impossibile salvare la libreria di snippet: non è stato modificato nulla. `/diagnostics` ne riporta la causa.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Nessuno snippet salvato. Usa il pulsante ⭐ su un blocco di codice per salvarne uno.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Uso: `/note &lt;testo&gt;` — aggiunge una nota con data e ora a `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Nota salvata: *{0}*</value></data>
@@ -772,6 +773,8 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="ArenaReveal" xml:space="preserve"><value>La risposta A era `{0}`, la risposta B era `{1}`.</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Voto registrato — vincitore: `{0}`.</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Voto registrato — pareggio.</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>Impossibile salvare il voto: non è stato registrato. `/diagnostics` ne riporta la causa.</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ Impossibile salvare questa sfida: un voto su di essa non verrà registrato. `/diagnostics` ne riporta la causa.</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>Classifica dell'arena</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>Modello</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>Duelli</value></data>

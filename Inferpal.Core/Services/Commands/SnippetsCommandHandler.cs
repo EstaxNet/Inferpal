@@ -28,10 +28,10 @@ internal static class SnippetsCommandHandler
 
         // Every form binds in its exact shape only: `clear` followed by text emptied the whole library,
         // and an unknown form fell back to the listing, which reads as the deletion having been done.
+        // The change is announced only once written: the store swallows the failure and returns false.
         if (sub == "clear" && parts.Length == 2)
         {
-            await SnippetStore.ClearAsync(ct);
-            return new(Strings.SnippetsCleared);
+            return new(await SnippetStore.ClearAsync(ct) ? Strings.SnippetsCleared : Strings.SnippetsWriteFailed);
         }
 
         if ((sub == "copy" || sub == "delete") && parts.Length == 3 && int.TryParse(parts[2], out var idx))
@@ -44,8 +44,7 @@ internal static class SnippetsCommandHandler
             if (sub == "copy")
                 return new(Strings.SnippetsCopied(idx), snippets[i].Code);
 
-            await SnippetStore.DeleteAsync(i, ct);
-            return new(Strings.SnippetsDeleted(idx));
+            return new(await SnippetStore.DeleteAsync(i, ct) ? Strings.SnippetsDeleted(idx) : Strings.SnippetsWriteFailed);
         }
 
         if (sub != "list" || parts.Length > 2)

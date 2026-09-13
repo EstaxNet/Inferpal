@@ -33,7 +33,8 @@ internal static class ArenaStore
         set => _file.PathOverride = value;
     }
 
-    public static Task SaveAsync(ArenaSavedState state) => _file.SaveAsync(state);
+    /// <returns><c>false</c> when nothing was written.</returns>
+    public static Task<bool> SaveAsync(ArenaSavedState state) => _file.SaveAsync(state);
 
     // `Battles: not null` is the shape check, not a formality: a hand-edited or truncated file can
     // deserialise into a state whose list is null, and every caller enumerates it.

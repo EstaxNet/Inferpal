@@ -698,6 +698,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="SnippetsNoSuch" xml:space="preserve"><value>Brak fragmentu nr {0}.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>Fragment nr {0} skopiowano do schowka.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Usunięto fragment nr {0}.</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>Nie udało się zapisać biblioteki fragmentów — nic nie zostało zmienione. Przyczynę znajdziesz w `/diagnostics`.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Nie zapisano jeszcze żadnych fragmentów. Użyj przycisku ⭐ na bloku kodu, aby zapisać.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Użycie: `/note &lt;tekst&gt;` — dodaje notatkę ze znacznikiem czasu do `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Zapisano notatkę: *{0}*</value></data>
@@ -772,6 +773,8 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="ArenaReveal" xml:space="preserve"><value>Odpowiedź A to `{0}`, odpowiedź B to `{1}`.</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Głos zapisany — zwycięzca: `{0}`.</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Głos zapisany — remis.</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>Nie udało się zapisać głosu — nie został uwzględniony. Przyczynę znajdziesz w `/diagnostics`.</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ Nie udało się zapisać tego pojedynku: głos na niego nie zostanie uwzględniony. Przyczynę znajdziesz w `/diagnostics`.</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>Ranking areny</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>Model</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>Pojedynki</value></data>

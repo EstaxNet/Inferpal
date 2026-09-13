@@ -253,6 +253,72 @@ public class ArenaTests : IDisposable
         Assert.Equal(Strings.ArenaNoPending, result.Message);
     }
 
+    // The same failure as snippets: the vote answered "vote recorded" without writing anything.
+    [Fact]
+    public async Task Vote_WhenTheStateCannotBeWritten_SaysSo_AndKeepsTheBattlePending()
+    {
+        var dir  = Directory.CreateTempSubdirectory("arena-locked-").FullName;
+        var path = Path.Combine(dir, "arena.json");
+        ArenaStore._fileOverride = path;
+        try
+        {
+            var fake = EchoProvider();
+            await ArenaCommandHandler.HandleAsync(
+                fake, Config(), ["/arena", "hello"], onProgress: null, CancellationToken.None, swapOrder: () => false);
+
+            string message;
+            if (OperatingSystem.IsWindows())
+            {
+                using var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                message = (await ArenaCommandHandler.HandleAsync(
+                    fake, Config(), ["/arena", "b"], onProgress: null, CancellationToken.None)).Message;
+            }
+            else
+            {
+                File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                try
+                {
+                    message = (await ArenaCommandHandler.HandleAsync(
+                        fake, Config(), ["/arena", "b"], onProgress: null, CancellationToken.None)).Message;
+                }
+                finally { File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+            }
+
+            Assert.Equal(Strings.ArenaVoteNotSaved, message);
+            Assert.NotNull((await ArenaStore.LoadAsync()).Pending);
+
+            // Witness: file released, the same vote is recorded.
+            Assert.Contains(Strings.ArenaVoteRecordedWin("small"), (await ArenaCommandHandler.HandleAsync(
+                fake, Config(), ["/arena", "b"], onProgress: null, CancellationToken.None)).Message);
+        }
+        finally
+        {
+            ArenaStore._fileOverride = _tempFile;
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    // A battle whose pending state could not be written made the next vote answer "no pending
+    // battle": say so under the battle itself.
+    [Fact]
+    public async Task ABattleWhosePendingStateCannotBeWritten_WarnsThatAVoteWillNotCount()
+    {
+        var blocker = Path.Combine(Path.GetTempPath(), $"arena_blocker_{Guid.NewGuid():N}");
+        File.WriteAllText(blocker, "not a directory");
+        ArenaStore._fileOverride = Path.Combine(blocker, "arena.json");
+        try
+        {
+            var result = await ArenaCommandHandler.HandleAsync(
+                EchoProvider(), Config(), ["/arena", "hello"], onProgress: null, CancellationToken.None, swapOrder: () => false);
+            Assert.Contains(Strings.ArenaPendingNotSaved, result.Message);
+        }
+        finally
+        {
+            ArenaStore._fileOverride = _tempFile;
+            File.Delete(blocker);
+        }
+    }
+
     // ── Standings ──────────────────────────────────────────────────────────────
 
     [Fact]

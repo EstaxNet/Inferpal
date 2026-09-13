@@ -101,16 +101,18 @@ internal sealed class AppDataJsonFile<T>
     }
 
     /// <summary>Writes the document atomically. Best effort: a failure is traced, never thrown.</summary>
-    public async Task SaveAsync(T value, CancellationToken ct = default)
+    /// <returns><c>false</c> when nothing was written — a caller that announces the save must check it.</returns>
+    public async Task<bool> SaveAsync(T value, CancellationToken ct = default)
     {
         try
         {
             PreserveIfUnreadable();
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
             await AtomicFile.WriteAllTextAsync(Path, JsonSerializer.Serialize(value, _opts), ct);
+            return true;
         }
         catch (OperationCanceledException) { throw; }
-        catch (Exception ex) { Diagnostics.Swallow($"{_diagnosticName}.Save", ex); }
+        catch (Exception ex) { Diagnostics.Swallow($"{_diagnosticName}.Save", ex); return false; }
     }
 
     /// <summary>

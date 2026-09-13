@@ -698,6 +698,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="SnippetsNoSuch" xml:space="preserve"><value>Kein Snippet #{0}.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>Snippet #{0} in die Zwischenablage kopiert.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet #{0} gelöscht.</value></data>
+  <data name="SnippetsWriteFailed" xml:space="preserve"><value>Die Snippet-Bibliothek konnte nicht gespeichert werden — nichts wurde geändert. Die Ursache steht in `/diagnostics`.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Noch keine Snippets gespeichert. Nutzen Sie die ⭐-Schaltfläche an einem Codeblock, um eines zu speichern.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Verwendung: `/note &lt;Text&gt;` — fügt eine Notiz mit Zeitstempel zu `.inferpal/notes.md` hinzu.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Notiz gespeichert: *{0}*</value></data>
@@ -772,6 +773,8 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="ArenaReveal" xml:space="preserve"><value>Antwort A war `{0}`, Antwort B war `{1}`.</value></data>
   <data name="ArenaVoteRecordedWin" xml:space="preserve"><value>Stimme erfasst — Sieger: `{0}`.</value></data>
   <data name="ArenaVoteRecordedTie" xml:space="preserve"><value>Stimme erfasst — unentschieden.</value></data>
+  <data name="ArenaVoteNotSaved" xml:space="preserve"><value>Die Stimme konnte nicht gespeichert werden — sie wurde nicht gezählt. Die Ursache steht in `/diagnostics`.</value></data>
+  <data name="ArenaPendingNotSaved" xml:space="preserve"><value>⚠ Dieses Duell konnte nicht gespeichert werden: Eine Stimme dafür wird nicht gezählt. Die Ursache steht in `/diagnostics`.</value></data>
   <data name="ArenaStatsTitle" xml:space="preserve"><value>Arena-Rangliste</value></data>
   <data name="ArenaColModel" xml:space="preserve"><value>Modell</value></data>
   <data name="ArenaColBattles" xml:space="preserve"><value>Duelle</value></data>

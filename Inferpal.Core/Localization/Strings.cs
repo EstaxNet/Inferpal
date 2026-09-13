@@ -878,6 +878,12 @@ internal static class Strings
     public static string SnippetsNoSuch(int idx)             => string.Format(Get(nameof(SnippetsNoSuch)), idx);
     public static string SnippetsCopied(int idx)             => string.Format(Get(nameof(SnippetsCopied)), idx);
     public static string SnippetsDeleted(int idx)            => string.Format(Get(nameof(SnippetsDeleted)), idx);
+    /// <summary>A snippets or arena save failed: nothing changed on disk.</summary>
+    public static string SnippetsWriteFailed                 => Get(nameof(SnippetsWriteFailed));
+    /// <inheritdoc cref="SnippetsWriteFailed"/>
+    public static string ArenaVoteNotSaved                   => Get(nameof(ArenaVoteNotSaved));
+    /// <inheritdoc cref="SnippetsWriteFailed"/>
+    public static string ArenaPendingNotSaved                => Get(nameof(ArenaPendingNotSaved));
     public static string SnippetsNone                        => Get(nameof(SnippetsNone));
 
     public static string NoteUsage                           => Get(nameof(NoteUsage));

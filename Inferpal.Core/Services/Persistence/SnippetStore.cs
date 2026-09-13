@@ -24,7 +24,9 @@ internal static class SnippetStore
         set => _file.PathOverride = value;
     }
 
-    public static async Task SaveAsync(string language, string code, CancellationToken ct)
+    // Save, Delete and Clear return false when nothing was written: a caller that announces the change
+    // must check it.
+    public static async Task<bool> SaveAsync(string language, string code, CancellationToken ct)
     {
         var snippets = await LoadAllAsync(ct);
         snippets.Add(new Snippet(
@@ -36,21 +38,22 @@ internal static class SnippetStore
         if (snippets.Count > MaxSnippets)
             snippets.RemoveAt(0);
 
-        await _file.SaveAsync(snippets, ct);
+        return await _file.SaveAsync(snippets, ct);
     }
 
     public static Task<List<Snippet>> LoadAllAsync(CancellationToken ct) =>
         _file.LoadAsync([], ct: ct);
 
-    public static async Task DeleteAsync(int index, CancellationToken ct)
+    /// <returns><c>true</c> when written, or when the index names no snippet (nothing to write).</returns>
+    public static async Task<bool> DeleteAsync(int index, CancellationToken ct)
     {
         var snippets = await LoadAllAsync(ct);
-        if (index < 0 || index >= snippets.Count) return;
+        if (index < 0 || index >= snippets.Count) return true;
         snippets.RemoveAt(index);
-        await _file.SaveAsync(snippets, ct);
+        return await _file.SaveAsync(snippets, ct);
     }
 
-    public static Task ClearAsync(CancellationToken ct) => _file.SaveAsync([], ct);
+    public static Task<bool> ClearAsync(CancellationToken ct) => _file.SaveAsync([], ct);
 
     /// <summary>
     /// The <c>/snippets</c> listing: 1-based index, language, one-line code preview,

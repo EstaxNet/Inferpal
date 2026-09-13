@@ -95,6 +95,66 @@ public class SnippetsCommandHandlerTests : IDisposable
         Assert.Empty(await SnippetStore.LoadAllAsync(CancellationToken.None));
     }
 
+    // AppDataJsonFile.SaveAsync swallowed the write failure: `/snippets clear` answered "library
+    // cleared" on an untouched file. A regular file as the parent directory makes the write
+    // impossible on every OS.
+    [Fact]
+    public async Task Clear_WhenTheLibraryCannotBeWritten_SaysSo()
+    {
+        var blocker = Path.Combine(Path.GetTempPath(), $"snippets_blocker_{Guid.NewGuid():N}");
+        File.WriteAllText(blocker, "not a directory");
+        try
+        {
+            SnippetStore._fileOverride = Path.Combine(blocker, "snippets.json");
+            var result = await SnippetsCommandHandler.HandleAsync(Cmd("clear"), CancellationToken.None);
+            Assert.Equal(Strings.SnippetsWriteFailed, result.Message);
+        }
+        finally
+        {
+            SnippetStore._fileOverride = _tempFile;
+            File.Delete(blocker);
+        }
+    }
+
+    [Fact]
+    public async Task Delete_WhenTheLibraryCannotBeWritten_SaysSo_AndKeepsTheSnippet()
+    {
+        var dir  = Directory.CreateTempSubdirectory("snippets-locked-").FullName;
+        var path = Path.Combine(dir, "snippets.json");
+        SnippetStore._fileOverride = path;
+        try
+        {
+            await SnippetStore.SaveAsync("csharp", "first",  CancellationToken.None);
+            await SnippetStore.SaveAsync("python", "second", CancellationToken.None);
+
+            SnippetsCommandHandler.SnippetsCommandResult result;
+            if (OperatingSystem.IsWindows())
+            {
+                // Held open without FileShare.Delete: readable, not replaceable.
+                using var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                result = await SnippetsCommandHandler.HandleAsync(Cmd("delete", "1"), CancellationToken.None);
+            }
+            else
+            {
+                File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                try { result = await SnippetsCommandHandler.HandleAsync(Cmd("delete", "1"), CancellationToken.None); }
+                finally { File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+            }
+
+            Assert.Equal(Strings.SnippetsWriteFailed, result.Message);
+            Assert.Equal(2, (await SnippetStore.LoadAllAsync(CancellationToken.None)).Count);
+
+            // Witness: file released, the same deletion goes through.
+            Assert.Equal(Strings.SnippetsDeleted(1),
+                (await SnippetsCommandHandler.HandleAsync(Cmd("delete", "1"), CancellationToken.None)).Message);
+        }
+        finally
+        {
+            SnippetStore._fileOverride = _tempFile;
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
     /// <summary>
     /// <c>clear</c> only binds alone: <c>/snippets clear all but the first</c> emptied the whole library.
     /// </summary>
