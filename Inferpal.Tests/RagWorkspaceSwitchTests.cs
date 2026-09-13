@@ -127,6 +127,38 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
         finally { gate.Set(); }
     }
 
+    /// <summary>
+    /// Third in-memory store: the auto-context's shadow cache, precomputed while typing. A prompt
+    /// typed in A then sent in B received A's chunks.
+    /// </summary>
+    [Fact]
+    public async Task ThePrecomputedSearch_DoesNotCarryThePreviousWorkspacesResults()
+    {
+        await File.WriteAllTextAsync(Path.Combine(_rootA, "Alpha.cs"), SampleClass("AlphaProbe"));
+        await File.WriteAllTextAsync(Path.Combine(_rootB, "Beta.cs"),  SampleClass("BetaProbe"));
+
+        var provider = new FakeInferenceProvider { OnEmbedding = _ => [0.1f, 0.2f, 0.3f] };
+        var svc = NewService(provider);
+        svc.StartIndexing(_rootA);
+        await WaitUntilAsync(async () => await Mentions(svc, "AlphaProbe") && !svc.IsIndexing,
+            "end of the pass over A", () => svc.Status);
+
+        await svc.ShadowPreWarmAsync("AlphaProbe", "embed-model", CancellationToken.None);
+
+        // Witness: the precomputed search does carry A's chunks.
+        var before = svc.TryGetShadow("AlphaProbe").Results;
+        Assert.NotNull(before);
+        Assert.Contains(before!, r => r.Chunk.Content.Contains("AlphaProbe", StringComparison.Ordinal));
+
+        svc.StartIndexing(_rootB);
+        await WaitUntilAsync(async () => await Mentions(svc, "BetaProbe") && !svc.IsIndexing,
+            "end of the pass over B", () => svc.Status);
+
+        var after = svc.TryGetShadow("AlphaProbe").Results;
+        Assert.True(after is null || !after.Any(r => r.Chunk.Content.Contains("AlphaProbe", StringComparison.Ordinal)),
+            "The auto-context's precomputed search still returns the previous workspace's chunks.");
+    }
+
     [Fact]
     public async Task ChangesQueuedInThePreviousWorkspace_AreNotIndexedIntoTheNewOne()
     {

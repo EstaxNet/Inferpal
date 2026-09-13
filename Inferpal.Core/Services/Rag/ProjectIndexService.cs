@@ -52,6 +52,11 @@ internal sealed class ProjectIndexService : IDisposable
     private volatile ShadowCache? _shadow      = null;
     private readonly SemaphoreSlim _shadowLock = new(1, 1);
 
+    // Bumped under _chunkLock whenever the whole index is replaced. The shadow holds chunks of the
+    // index it was computed against: after a workspace switch they are another project's code, so a
+    // replacement clears it, and a pre-warm started before the replacement does not publish after it.
+    private int _indexGeneration;
+
     // ── Interactive priority gate ──────────────────────────────────────────────
     // Inferpal talks to a single Ollama backend on one GPU. While an interactive chat/agent
     // request is in flight, background indexing MUST yield, or the continuous embedding workload
@@ -241,13 +246,21 @@ internal sealed class ProjectIndexService : IDisposable
         if (!await _shadowLock.WaitAsync(0, ct)) return;
         try
         {
+            var generation = Volatile.Read(ref _indexGeneration);
             var embedding = await _client.GetEmbeddingAsync(query, model, ct);
             if (embedding is null) return;
 
             var results = await SearchAsync(embedding, query, Math.Max(1, _config.RagTopK), ct);
 
-            // Publish all three values atomically via a single reference assignment.
-            _shadow = new ShadowCache(query, embedding, results);
+            // Publish all three values atomically via a single reference assignment — under the
+            // lock that replaces the index, and only if no replacement happened meanwhile.
+            await _chunkLock.WaitAsync(ct);
+            try
+            {
+                if (generation == _indexGeneration)
+                    _shadow = new ShadowCache(query, embedding, results);
+            }
+            finally { _chunkLock.Release(); }
         }
         catch (OperationCanceledException) { /* user kept typing — expected */ }
         catch { /* best-effort, never propagate */ }
@@ -658,7 +671,12 @@ internal sealed class ProjectIndexService : IDisposable
         await _chunkLock.WaitAsync(ct);
         try
         {
-            if (replaceAll) _chunksByFile.Clear();
+            if (replaceAll)
+            {
+                _chunksByFile.Clear();
+                _indexGeneration++;
+                _shadow = null;
+            }
             foreach (var group in chunks.GroupBy(c => c.FilePath, StringComparer.OrdinalIgnoreCase))
                 _chunksByFile[group.Key] = [.. group];
             ChunkCount = _chunksByFile.Values.Sum(l => l.Count);
