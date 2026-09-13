@@ -66,7 +66,7 @@ internal static class ModelRouter
         if (!config.ModelRouterAuto)                          return configured;
         if (!string.IsNullOrWhiteSpace(config.UtilityModel))  return configured;
         if (string.IsNullOrWhiteSpace(benchRecommended))      return configured;
-        return warmModels.Any(m => SameModel(m, benchRecommended!)) ? benchRecommended! : configured;
+        return warmModels.Any(m => ModelCatalog.SameModelName(m, benchRecommended!)) ? benchRecommended! : configured;
     }
 
     /// <summary>
@@ -99,12 +99,6 @@ internal static class ModelRouter
 
         return ResolveUtility(config, recommended, warm);
     }
-
-    /// <summary>Tag-tolerant model name comparison (<c>llama3.1</c> vs <c>llama3.1:latest</c>),
-    /// same rule as the bench runner and the arena.</summary>
-    internal static bool SameModel(string x, string y) =>
-        string.Equals(x, y, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(x.Split(':')[0], y.Split(':')[0], StringComparison.OrdinalIgnoreCase);
 
     private static string FirstNonEmpty(params string?[] candidates)
     {

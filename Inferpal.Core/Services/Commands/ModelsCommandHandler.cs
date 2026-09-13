@@ -85,18 +85,8 @@ internal static class ModelsCommandHandler
             return changed;
         }
 
-        return listed.Count == 0 || listed.Any(name => IsSameInstalledModel(name, model))
+        return listed.Count == 0 || listed.Any(name => ModelCatalog.SameModelName(name, model))
             ? changed
             : changed + "\n\n" + Strings.SlashModelNotListed(model);
     }
-
-    /// <summary>
-    /// Same name, case aside, allowing Ollama's implicit <c>:latest</c> tag. Unlike the tag-blind
-    /// comparison of the arena and the bench, another tag of a model is a different model here: the
-    /// backend refuses <c>qwen3:32b</c> when only <c>qwen3:8b</c> is installed.
-    /// </summary>
-    internal static bool IsSameInstalledModel(string listed, string requested) =>
-        string.Equals(listed, requested, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(listed, requested + ":latest", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(listed + ":latest", requested, StringComparison.OrdinalIgnoreCase);
 }

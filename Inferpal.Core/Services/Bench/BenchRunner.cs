@@ -89,7 +89,7 @@ internal static class BenchRunner
             if (client.Capabilities.VramMonitoring)
             {
                 foreach (var running in await client.GetRunningModelsAsync(ct))
-                    if (SameModel(running.Name, model)) { vram = running.SizeVram; break; }
+                    if (ModelCatalog.SameModelName(running.Name, model)) { vram = running.SizeVram; break; }
             }
 
             return new BenchModelResult(
@@ -138,10 +138,4 @@ internal static class BenchRunner
         var seconds = Math.Max((sw.Elapsed.TotalMilliseconds - ttftMs) / 1000.0, 0);
         return (result, ttftMs, tokens, seconds);
     }
-
-    /// <summary>Matches <c>/api/ps</c> names against the benched name, tolerant of a missing tag
-    /// (<c>llama3.1</c> vs <c>llama3.1:latest</c>).</summary>
-    private static bool SameModel(string running, string benched) =>
-        string.Equals(running, benched, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(running.Split(':')[0], benched.Split(':')[0], StringComparison.OrdinalIgnoreCase);
 }

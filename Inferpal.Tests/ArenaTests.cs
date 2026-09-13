@@ -96,6 +96,29 @@ public class ArenaTests : IDisposable
         Assert.Equal("some prompt", (await ArenaStore.LoadAsync()).Pending!.Prompt);
     }
 
+    /// <summary>
+    /// Two sizes of one family are two models: <c>/arena qwen3:8b qwen3:32b …</c> resolved both names to
+    /// one installed model, and the whole line — model names included — became the prompt of a
+    /// chat-vs-utility battle.
+    /// </summary>
+    [Fact]
+    public async Task Battle_ExplicitPair_OfTwoSizesOfOneFamily_ComparesThem()
+    {
+        var fake = new FakeInferenceProvider
+        {
+            Installed     = [new InstalledModelInfo("qwen3:32b", 1), new InstalledModelInfo("qwen3:8b", 1)],
+            OnChatRequest = (model, messages, tools, onToken) =>
+                Task.FromResult(new ChatTurnResult("answer", null, 10, 5)),
+        };
+
+        await ArenaCommandHandler.HandleAsync(
+            fake, Config(), ["/arena", "qwen3:8b", "qwen3:32b", "some", "prompt"],
+            onProgress: null, CancellationToken.None, swapOrder: () => false);
+
+        Assert.Equal(new List<string> { "qwen3:8b", "qwen3:32b" }, fake.ChatModels);
+        Assert.Equal("some prompt", (await ArenaStore.LoadAsync()).Pending!.Prompt);
+    }
+
     [Fact]
     public async Task Battle_NoUtilityModel_FallsBackToAnotherInstalledModel()
     {

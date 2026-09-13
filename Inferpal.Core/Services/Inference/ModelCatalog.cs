@@ -14,6 +14,16 @@ namespace Inferpal.Services.Inference;
 /// </summary>
 internal static class ModelCatalog
 {
+    /// <summary>
+    /// Same model name, case aside, allowing Ollama's implicit <c>:latest</c> tag (<c>llama3.1</c> is
+    /// <c>llama3.1:latest</c>). Any other tag names another model: <c>qwen3:8b</c> and <c>qwen3:32b</c> are
+    /// two downloads, two sizes, two VRAM footprints.
+    /// </summary>
+    internal static bool SameModelName(string a, string b) =>
+        string.Equals(a, b, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(a, b + ":latest", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(a + ":latest", b, StringComparison.OrdinalIgnoreCase);
+
     // Priority: specialized code models first, then popular general models.
     private static readonly string[] ChatPriority =
     [

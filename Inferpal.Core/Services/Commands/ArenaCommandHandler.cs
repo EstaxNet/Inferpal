@@ -117,7 +117,7 @@ internal static class ArenaCommandHandler
         if (parts.Length >= 4
             && FindInstalled(installed, parts[1]) is { } m1
             && FindInstalled(installed, parts[2]) is { } m2
-            && !SameModel(m1, m2))
+            && !ModelCatalog.SameModelName(m1, m2))
             return (m1, m2, string.Join(" ", parts[3..]));
 
         var prompt = string.Join(" ", parts[1..]);
@@ -125,9 +125,9 @@ internal static class ArenaCommandHandler
         if (chat.Length == 0) return (null, null, prompt);
 
         var utility = ModelRouter.Resolve(config, ModelRole.Utility);
-        if (!SameModel(chat, utility)) return (chat, utility, prompt);
+        if (!ModelCatalog.SameModelName(chat, utility)) return (chat, utility, prompt);
 
-        var other = installed.FirstOrDefault(m => !SameModel(m.Name, chat))?.Name;
+        var other = installed.FirstOrDefault(m => !ModelCatalog.SameModelName(m.Name, chat))?.Name;
         return (other is null ? null : chat, other, prompt);
     }
 
@@ -191,11 +191,5 @@ internal static class ArenaCommandHandler
     }
 
     private static string? FindInstalled(IReadOnlyList<InstalledModelInfo> installed, string token) =>
-        installed.FirstOrDefault(m => SameModel(m.Name, token))?.Name;
-
-    /// <summary>Tag-tolerant model name comparison (<c>llama3.1</c> vs <c>llama3.1:latest</c>),
-    /// same rule as the bench runner.</summary>
-    private static bool SameModel(string x, string y) =>
-        string.Equals(x, y, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(x.Split(':')[0], y.Split(':')[0], StringComparison.OrdinalIgnoreCase);
+        installed.FirstOrDefault(m => ModelCatalog.SameModelName(m.Name, token))?.Name;
 }
