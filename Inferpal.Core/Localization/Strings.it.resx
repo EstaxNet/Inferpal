@@ -637,6 +637,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Documentazione indicizzata</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>Nessuna documentazione indicizzata. Aggiungi una fonte con `/docs add &lt;url&gt; [titolo]`.</value></data>
+  <data name="DocsSourcesUnreadable" xml:space="preserve"><value>⚠ Le fonti di documentazione salvate (`docSitesJson` nel file delle impostazioni) non sono leggibili, quindi `/docs` non modifica nulla finché non vengono corrette: aggiungere ora una fonte cancellerebbe le altre. {0}</value></data>
   <data name="DocsUnknownId" xml:space="preserve"><value>Nessuna fonte di documentazione **{0}**. `/docs list` mostra gli identificativi.</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**Uso:** `/docs add &lt;url&gt; [titolo]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 Aggiunto **{0}** — scansione e indicizzazione in background…</value></data>

@@ -24,8 +24,12 @@ internal static class DocsCommandHandler
         IProgress<string> progress,
         CancellationToken ct)
     {
-        var sub   = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
-        var sites = DocSite.Parse(config.DocSitesJson);
+        var sub = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
+
+        // Every sub-command stops here: `add` and `remove` would write a new list over the one that
+        // could not be read, erasing the sources it still holds.
+        if (!DocSite.TryParse(config.DocSitesJson, out var sites, out var problem))
+            return Strings.DocsSourcesUnreadable(problem ?? string.Empty);
 
         switch (sub)
         {

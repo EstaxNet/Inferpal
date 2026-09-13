@@ -637,6 +637,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 インデックス済みドキュメント</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>まだドキュメントがインデックスされていません。`/docs add &lt;url&gt; [タイトル]` で追加してください。</value></data>
+  <data name="DocsSourcesUnreadable" xml:space="preserve"><value>⚠ 保存されたドキュメント ソース (設定ファイルの `docSitesJson`) を読み取れません。修正されるまで `/docs` は何も変更しません。いまソースを追加すると他のソースが消えてしまいます: {0}</value></data>
   <data name="DocsUnknownId" xml:space="preserve"><value>ドキュメントソース **{0}** はありません。`/docs list` で ID を確認できます。</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**使い方:** `/docs add &lt;url&gt; [タイトル]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 **{0}** を追加 — バックグラウンドでクロール＆インデックス中…</value></data>

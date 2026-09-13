@@ -637,6 +637,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Documentación indexada</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>Aún no hay documentación indexada. Agregue una fuente con `/docs add &lt;url&gt; [título]`.</value></data>
+  <data name="DocsSourcesUnreadable" xml:space="preserve"><value>⚠ Las fuentes de documentación guardadas (`docSitesJson` en el archivo de configuración) no se pueden leer, así que `/docs` no cambia nada hasta que se corrijan; añadir una fuente ahora borraría las demás: {0}</value></data>
   <data name="DocsUnknownId" xml:space="preserve"><value>No hay ninguna fuente de documentación **{0}**. `/docs list` muestra los identificadores.</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**Uso:** `/docs add &lt;url&gt; [título]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 Agregado **{0}** — rastreando e indexando en segundo plano…</value></data>

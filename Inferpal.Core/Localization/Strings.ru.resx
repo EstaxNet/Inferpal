@@ -635,6 +635,7 @@ ollama serve
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Проиндексированная документация</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>Документация ещё не проиндексирована. Добавьте источник: `/docs add &lt;url&gt; [название]`.</value></data>
+  <data name="DocsSourcesUnreadable" xml:space="preserve"><value>⚠ Сохранённые источники документации (`docSitesJson` в файле настроек) не удаётся прочитать, поэтому `/docs` ничего не меняет, пока они не исправлены — добавление источника сейчас стёрло бы остальные: {0}</value></data>
   <data name="DocsUnknownId" xml:space="preserve"><value>Источник документации **{0}** не найден. `/docs list` показывает идентификаторы.</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**Использование:** `/docs add &lt;url&gt; [название]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 Добавлено **{0}** — обход и индексация в фоне…</value></data>

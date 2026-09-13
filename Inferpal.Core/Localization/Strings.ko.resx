@@ -637,6 +637,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 인덱싱된 문서</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>아직 인덱싱된 문서가 없습니다. `/docs add &lt;url&gt; [제목]`(으)로 소스를 추가하세요.</value></data>
+  <data name="DocsSourcesUnreadable" xml:space="preserve"><value>⚠ 저장된 문서 소스(설정 파일의 `docSitesJson`)를 읽을 수 없어, 고쳐질 때까지 `/docs`는 아무것도 변경하지 않습니다. 지금 소스를 추가하면 다른 소스가 지워집니다: {0}</value></data>
   <data name="DocsUnknownId" xml:space="preserve"><value>문서 소스 **{0}**이(가) 없습니다. `/docs list`에서 ID를 확인하세요.</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**사용법:** `/docs add &lt;url&gt; [제목]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 **{0}** 추가됨 — 백그라운드에서 크롤링 및 인덱싱 중…</value></data>

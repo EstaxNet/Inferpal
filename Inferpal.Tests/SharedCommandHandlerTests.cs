@@ -282,7 +282,28 @@ public class SharedCommandHandlerTests
         Assert.Equal(Strings.DocsUnknownId("tokyo"), message);
     }
 
-    // ── /template ──────────────────────────────────────────────────────────────
+    // An unreadable source list is not an empty one: `/docs add` rewrote the configuration with the
+    // new source alone, and every other one vanished without a word.
+    [Theory]
+    [InlineData("add", "https://localhost/other")]
+    [InlineData("remove", "tokio")]
+    [InlineData("reindex", "")]
+    [InlineData("list", "")]
+    public async Task Docs_OnAnUnreadableSourceList_ChangesNothingAndSaysWhy(string sub, string arg)
+    {
+        // Closing bracket lost while editing the settings file by hand.
+        const string broken = """[{ "id": "tokio", "title": "Tokio", "startUrl": "https://localhost/docs" }""";
+        var config = new InferpalConfig { DocSitesJson = broken };
+        string[] parts = arg.Length == 0 ? ["/docs", sub] : ["/docs", sub, arg];
+
+        var message = await DocsCommandHandler.HandleAsync(
+            config, Docs(config), parts, new Progress<string>(), CancellationToken.None);
+
+        Assert.Equal(broken, config.DocSitesJson);
+        Assert.Contains("docSitesJson", message);
+    }
+
+    // ── /template──────────────────────────────────────────────────────────────
 
     [Fact]
     public void Template_NoArgument_ListsThePresets()

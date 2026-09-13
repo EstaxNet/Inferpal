@@ -67,16 +67,35 @@ internal sealed record DocSite(
         string.Equals(a.Trim().TrimEnd('/'), b.Trim().TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Parses the persisted JSON array; tolerant of malformed input (returns empty list).</summary>
-    public static List<DocSite> Parse(string? json)
+    public static List<DocSite> Parse(string? json) => TryParse(json, out var sites, out _) ? sites : [];
+
+    /// <summary>
+    /// Parses the persisted JSON array. <c>false</c> when it cannot be read, with the reason in
+    /// <paramref name="problem"/>: an unreadable list is not an empty one, and writing a new list over
+    /// it would erase every source it still holds.
+    /// </summary>
+    public static bool TryParse(string? json, out List<DocSite> sites, out string? problem)
     {
-        if (string.IsNullOrWhiteSpace(json)) return [];
+        sites   = [];
+        problem = null;
+        if (string.IsNullOrWhiteSpace(json)) return true;
         try
         {
-            return JsonSerializer.Deserialize<List<DocSite>>(json) ?? [];
+            var parsed = JsonSerializer.Deserialize<List<DocSite?>>(json) ?? [];
+            var broken = parsed.FindIndex(s =>
+                s is null || string.IsNullOrWhiteSpace(s.Id) || string.IsNullOrWhiteSpace(s.StartUrl));
+            if (broken >= 0)
+            {
+                problem = $"entry {broken + 1} has no \"id\" or \"startUrl\"";
+                return false;
+            }
+            sites = [.. parsed.Select(s => s!)];
+            return true;
         }
-        catch
+        catch (Exception ex)
         {
-            return [];
+            problem = ex.Message;
+            return false;
         }
     }
 

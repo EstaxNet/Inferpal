@@ -649,6 +649,7 @@ ollama serve
   <!-- @Docs (external documentation indexing) -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Indexed documentation</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>No documentation indexed yet. Add a source with `/docs add &lt;url&gt; [title]`.</value></data>
+  <data name="DocsSourcesUnreadable" xml:space="preserve"><value>⚠ The saved documentation sources (`docSitesJson` in the settings file) cannot be read, so `/docs` changes nothing until they are fixed — adding a source now would erase the others: {0}</value></data>
   <data name="DocsUnknownId" xml:space="preserve"><value>No documentation source **{0}**. `/docs list` shows the ids.</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**Usage:** `/docs add &lt;url&gt; [title]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 Added **{0}** — crawling and indexing in the background…</value></data>

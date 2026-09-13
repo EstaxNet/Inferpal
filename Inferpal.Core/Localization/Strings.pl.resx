@@ -637,6 +637,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Zindeksowana dokumentacja</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>Brak zindeksowanej dokumentacji. Dodaj źródło: `/docs add &lt;url&gt; [tytuł]`.</value></data>
+  <data name="DocsSourcesUnreadable" xml:space="preserve"><value>⚠ Zapisanych źródeł dokumentacji (`docSitesJson` w pliku ustawień) nie można odczytać, więc `/docs` niczego nie zmienia, dopóki nie zostaną poprawione — dodanie źródła teraz usunęłoby pozostałe: {0}</value></data>
   <data name="DocsUnknownId" xml:space="preserve"><value>Brak źródła dokumentacji **{0}**. `/docs list` pokazuje identyfikatory.</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**Użycie:** `/docs add &lt;url&gt; [tytuł]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 Dodano **{0}** — indeksowanie w tle…</value></data>
