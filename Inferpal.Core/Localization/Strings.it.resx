@@ -614,6 +614,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Documentazione indicizzata</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>Nessuna documentazione indicizzata. Aggiungi una fonte con `/docs add &lt;url&gt; [titolo]`.</value></data>
+  <data name="DocsUnknownId" xml:space="preserve"><value>Nessuna fonte di documentazione **{0}**. `/docs list` mostra gli identificativi.</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**Uso:** `/docs add &lt;url&gt; [titolo]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 Aggiunto **{0}** — scansione e indicizzazione in background…</value></data>
   <data name="DocsRemoved" xml:space="preserve"><value>🗑 Fonte di documentazione **{0}** rimossa.</value></data>

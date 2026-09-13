@@ -193,6 +193,43 @@ public class SharedCommandHandlerTests
         Assert.Equal(Strings.DocsNoSites, message);
     }
 
+    /// <summary>A source registered on loopback: the crawler refuses it, so no test ever reaches the network.</summary>
+    private static InferpalConfig WithOneSource() => new()
+    {
+        DocSitesJson = Inferpal.Services.Docs.DocSite.Serialize(
+            [Inferpal.Services.Docs.DocSite.Create("https://localhost/docs", "Tokio")]),
+    };
+
+    /// <summary>
+    /// A mistyped id is named — "no documentation indexed yet" was false while sources exist, and read
+    /// as every documentation being gone.
+    /// </summary>
+    [Fact]
+    public async Task Docs_RemoveAMistypedId_NamesIt_WhenSourcesExist()
+    {
+        var config = WithOneSource();
+
+        var message = await DocsCommandHandler.HandleAsync(
+            config, Docs(config), ["/docs", "remove", "tokyo"], new Progress<string>(), CancellationToken.None);
+
+        Assert.Equal(Strings.DocsUnknownId("tokyo"), message);
+    }
+
+    /// <summary>
+    /// A mistyped id never becomes "reindex everything": the unknown id fell back to every source —
+    /// long crawls and embeddings — announced as a success.
+    /// </summary>
+    [Fact]
+    public async Task Docs_ReindexAMistypedId_NamesIt_InsteadOfReindexingEverything()
+    {
+        var config = WithOneSource();
+
+        var message = await DocsCommandHandler.HandleAsync(
+            config, Docs(config), ["/docs", "reindex", "tokyo"], new Progress<string>(), CancellationToken.None);
+
+        Assert.Equal(Strings.DocsUnknownId("tokyo"), message);
+    }
+
     // ── /template ──────────────────────────────────────────────────────────────
 
     [Fact]

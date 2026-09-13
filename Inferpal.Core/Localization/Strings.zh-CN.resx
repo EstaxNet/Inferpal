@@ -614,6 +614,7 @@ ollama serve
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 已索引的文档</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>尚未索引任何文档。使用 `/docs add &lt;url&gt; [标题]` 添加来源。</value></data>
+  <data name="DocsUnknownId" xml:space="preserve"><value>没有文档来源 **{0}**。`/docs list` 会列出所有 ID。</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**用法：** `/docs add &lt;url&gt; [标题]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 已添加 **{0}** — 正在后台抓取并索引…</value></data>
   <data name="DocsRemoved" xml:space="preserve"><value>🗑 已移除文档来源 **{0}**。</value></data>

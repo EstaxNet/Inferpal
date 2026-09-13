@@ -303,6 +303,7 @@ internal static class Strings
     public static string SectionCommandsTools        => Get(nameof(SectionCommandsTools));
     public static string DocsListHeader              => Get(nameof(DocsListHeader));
     public static string DocsNoSites                 => Get(nameof(DocsNoSites));
+    public static string DocsUnknownId(string id)    => string.Format(Get(nameof(DocsUnknownId)), id);
     public static string DocsUsage                   => Get(nameof(DocsUsage));
     public static string DocsAdded(string title)     => string.Format(Get(nameof(DocsAdded)), title);
     public static string DocsRemoved(string id)      => string.Format(Get(nameof(DocsRemoved)), id);

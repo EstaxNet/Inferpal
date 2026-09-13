@@ -614,6 +614,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <!-- @Docs -->
   <data name="DocsListHeader" xml:space="preserve"><value>### 📚 Indexierte Dokumentation</value></data>
   <data name="DocsNoSites" xml:space="preserve"><value>Noch keine Dokumentation indexiert. Quelle hinzufügen mit `/docs add &lt;url&gt; [Titel]`.</value></data>
+  <data name="DocsUnknownId" xml:space="preserve"><value>Keine Dokumentationsquelle **{0}**. `/docs list` zeigt die IDs.</value></data>
   <data name="DocsUsage" xml:space="preserve"><value>**Verwendung:** `/docs add &lt;url&gt; [Titel]` · `/docs list` · `/docs remove &lt;id&gt;` · `/docs reindex [id]`</value></data>
   <data name="DocsAdded" xml:space="preserve"><value>📚 **{0}** hinzugefügt — Crawlen und Indexieren im Hintergrund…</value></data>
   <data name="DocsRemoved" xml:space="preserve"><value>🗑 Dokumentationsquelle **{0}** entfernt.</value></data>

@@ -51,7 +51,9 @@ internal static class DocsCommandHandler
 
                 var id      = parts[2].ToLowerInvariant();
                 var updated = DocSite.Remove(sites, id);
-                if (updated is null) return Strings.DocsNoSites;
+                // "No documentation indexed yet" is only true when there is none: with sources present, a
+                // mistyped id read as every documentation being gone.
+                if (updated is null) return sites.Count == 0 ? Strings.DocsNoSites : Strings.DocsUnknownId(id);
 
                 config.DocSitesJson = DocSite.Serialize(updated);
                 config.Save();
@@ -61,11 +63,18 @@ internal static class DocsCommandHandler
 
             case "reindex":
             {
-                var target = parts.Length >= 3
-                    ? sites.FirstOrDefault(x => x.Id == parts[2].ToLowerInvariant())
-                    : null;
+                if (sites.Count == 0) return Strings.DocsNoSites;
+
+                // A mistyped id must not become "reindex everything": the fallback crawled and embedded
+                // every source, announced as a success. Only a bare `/docs reindex` means all of them.
+                DocSite? target = null;
+                if (parts.Length >= 3)
+                {
+                    var id = parts[2].ToLowerInvariant();
+                    target = sites.FirstOrDefault(x => x.Id == id);
+                    if (target is null) return Strings.DocsUnknownId(id);
+                }
                 var toIndex = target is not null ? [target] : sites.ToArray();
-                if (toIndex.Length == 0) return Strings.DocsNoSites;
 
                 _ = Task.Run(async () =>
                 {
