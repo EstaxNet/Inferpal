@@ -603,6 +603,7 @@ ollama serve
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>Cancel</value></data>
   <data name="McpAdvancedJson" xml:space="preserve"><value>Advanced (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ Import JSON into list</value></data>
+  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>⚠ The MCP server JSON could not be read in full, so the list is read-only — rewriting it would drop what could not be read. Fix the JSON, then import it into the list.</value></data>
   <data name="McpServerDisabled" xml:space="preserve"><value>— disabled</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>Name and Command are required.</value></data>
   <data name="McpValidationNameUrl" xml:space="preserve"><value>Name and URL are required.</value></data>

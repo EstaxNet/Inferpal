@@ -601,6 +601,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>Anuluj</value></data>
   <data name="McpAdvancedJson" xml:space="preserve"><value>Zaawansowane (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ Importuj JSON do listy</value></data>
+  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>⚠ Nie udało się w pełni odczytać JSON serwerów MCP, więc lista jest tylko do odczytu — jej ponowny zapis usunąłby to, czego nie odczytano. Popraw JSON, a następnie zaimportuj go do listy.</value></data>
   <data name="McpServerDisabled" xml:space="preserve"><value>— wyłączony</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>Nazwa i polecenie są wymagane.</value></data>
   <data name="McpValidationNameUrl" xml:space="preserve"><value>Nazwa i adres URL są wymagane.</value></data>

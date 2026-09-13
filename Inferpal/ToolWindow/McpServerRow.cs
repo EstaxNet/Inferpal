@@ -83,6 +83,12 @@ internal sealed class McpServerRow : NotifyPropertyChangedObject
     /// <summary>True when this (HTTP) server awaits OAuth authorization — shows the Authorize button.</summary>
     [DataMember] public bool AuthRequired { get => _authRequired; set => SetProperty(ref _authRequired, value); }
 
+    /// <summary>
+    /// The definition this row was read from. Not a data member: it carries what the row does not show
+    /// (the OAuth block), so rewriting the list from the rows keeps it.
+    /// </summary>
+    internal Services.Mcp.McpServerConfig? Source { get; set; }
+
     [DataMember] public AsyncCommand EditCommand      { get; }
     [DataMember] public AsyncCommand DeleteCommand    { get; }
     [DataMember] public AsyncCommand AuthorizeCommand { get; }

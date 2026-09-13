@@ -601,6 +601,7 @@ ollama serve
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>取消</value></data>
   <data name="McpAdvancedJson" xml:space="preserve"><value>高级 (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ 将 JSON 导入列表</value></data>
+  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>⚠ 无法完整读取 MCP 服务器 JSON，因此列表为只读——重写它会丢失未能读取的内容。请修正 JSON，然后将其导入列表。</value></data>
   <data name="McpServerDisabled" xml:space="preserve"><value>— 已禁用</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>名称和命令为必填项。</value></data>
   <data name="McpValidationNameUrl" xml:space="preserve"><value>名称和 URL 为必填项。</value></data>

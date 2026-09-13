@@ -305,6 +305,7 @@ internal static class Strings
     public static string BtnMcpCancelServer          => Get(nameof(BtnMcpCancelServer));
     public static string McpAdvancedJson             => Get(nameof(McpAdvancedJson));
     public static string McpImportJson               => Get(nameof(McpImportJson));
+    public static string McpJsonNotEditableAsList    => Get(nameof(McpJsonNotEditableAsList));
     public static string McpServerDisabled           => Get(nameof(McpServerDisabled));
     public static string McpValidationNameCommand    => Get(nameof(McpValidationNameCommand));
     public static string McpValidationNameUrl        => Get(nameof(McpValidationNameUrl));

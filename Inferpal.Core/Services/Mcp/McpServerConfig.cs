@@ -57,6 +57,31 @@ internal sealed record McpServerConfig(
     public static IReadOnlyList<McpServerConfig> Parse(string? json) => Parse(json, out _);
 
     /// <summary>
+    /// A server rebuilt from the fields the settings editor shows. What the editor does not show — the
+    /// OAuth block — is carried over from <paramref name="source"/>.
+    /// </summary>
+    public static McpServerConfig FromEditor(
+        McpServerConfig? source, string name, string? command, IReadOnlyList<string> args,
+        IReadOnlyDictionary<string, string> env, string? url, IReadOnlyDictionary<string, string>? headers,
+        bool enabled) =>
+        string.IsNullOrWhiteSpace(url)
+            ? new(name, command, args, env, Enabled: enabled)
+            : new(name, null, [], new Dictionary<string, string>(), Url: url, Headers: headers,
+                  OAuth: source?.OAuth, Enabled: enabled);
+
+    /// <summary>
+    /// <see cref="Parse(string?)"/> for the settings editor, which rewrites the whole list from what it
+    /// read. <paramref name="rebuildable"/> is <c>true</c> only when every entry became a server: otherwise
+    /// that rewrite would drop what could not be read.
+    /// </summary>
+    public static IReadOnlyList<McpServerConfig> ParseForEditor(string? json, out bool rebuildable)
+    {
+        var servers = Parse(json, out var rejected);
+        rebuildable = rejected.Count == 0;
+        return servers;
+    }
+
+    /// <summary>
     /// Same, returning the <b>rejected</b> entries and why.
     /// </summary>
     /// <remarks>

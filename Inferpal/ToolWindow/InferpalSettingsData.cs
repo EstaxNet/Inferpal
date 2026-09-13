@@ -166,6 +166,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelTabTools      = string.Empty;
     private bool   _mcpEnabled;
     private string _mcpServersJson                      = string.Empty;
+    /// <summary>False when the saved server JSON did not read in full: the list is then read-only.</summary>
+    private bool   _mcpListRebuildable                  = true;
     private string _mcpStatusText                       = string.Empty;
     private string _labelSectionMcp                     = string.Empty;
     private string _labelMcpEnabled                     = string.Empty;
@@ -454,8 +456,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _lspEnabled              = config.LspEnabled;
         _mcpEnabled              = config.McpEnabled;
         _mcpServersJson          = config.McpServersJson;
-        _mcpStatusText           = BuildMcpStatus();
         BuildRowsFromConfig();
+        _mcpStatusText           = BuildMcpStatus();
         BuildPinnedRows();
         BuildSlashRows();
         BuildToolRows();
@@ -471,7 +473,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         AddServerCommand             = new AsyncCommand((_, _) => { BeginAddServer();   return Task.CompletedTask; });
         SaveServerCommand            = new AsyncCommand((_, _) => { CommitServer();     return Task.CompletedTask; });
         CancelEditServerCommand      = new AsyncCommand((_, _) => { IsEditingServer = false; return Task.CompletedTask; });
-        ImportJsonCommand            = new AsyncCommand((_, _) => { BuildRowsFromConfigJson(McpServersJson); return Task.CompletedTask; });
+        ImportJsonCommand            = new AsyncCommand((_, _) => { BuildRowsFromConfigJson(McpServersJson); McpStatusText = BuildMcpStatus(); return Task.CompletedTask; });
         ToggleSectionContextCommand  = new AsyncCommand((_, _) => { SectionContextExpanded  = !SectionContextExpanded;  return Task.CompletedTask; });
         ToggleSectionPersonaCommand  = new AsyncCommand((_, _) => { SectionPersonaExpanded  = !SectionPersonaExpanded;  return Task.CompletedTask; });
 
@@ -1519,10 +1521,11 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private void BuildRowsFromConfigJson(string json)
     {
         McpServers.Clear();
-        foreach (var s in Services.Mcp.McpServerConfig.Parse(json))
+        foreach (var s in Services.Mcp.McpServerConfig.ParseForEditor(json, out _mcpListRebuildable))
         {
             var row = new McpServerRow
             {
+                Source   = s,
                 ServerName = s.Name,
                 Command  = s.Command ?? string.Empty,
                 ArgsText = string.Join(" ", s.Args),
@@ -1680,6 +1683,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
     private void DeleteServer(McpServerRow row)
     {
+        if (!_mcpListRebuildable) { McpStatusText = BuildMcpStatus(); return; }
         McpServers.Remove(row);
         if (_editingOriginalName == row.ServerName) IsEditingServer = false;
         PersistMcpServers();
@@ -1688,6 +1692,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     /// <summary>Validates the editor form and upserts the row into <see cref="McpServers"/>.</summary>
     private void CommitServer()
     {
+        if (!_mcpListRebuildable) { EditServerError = Strings.McpJsonNotEditableAsList; return; }
         var name = (EditServerName ?? string.Empty).Trim();
         var cmd  = (EditServerCommand ?? string.Empty).Trim();
         var url  = (EditServerUrl ?? string.Empty).Trim();
@@ -1707,10 +1712,14 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         var defs = McpServers.Select(ToConfig).ToList();
         var enabled = _editingOriginalName is null
             || (McpServers.FirstOrDefault(r => r.ServerName == _editingOriginalName)?.Enabled ?? true);
+        var source = _editingOriginalName is null
+            ? null
+            : McpServers.FirstOrDefault(r => r.ServerName == _editingOriginalName)?.Source;
         var newDef = EditServerIsHttp
-            ? new Services.Mcp.McpServerConfig(name, null, [], new Dictionary<string, string>(),
-                                               Url: url, Headers: ParseEnv(EditServerHeaders), Enabled: enabled)
-            : new Services.Mcp.McpServerConfig(name, cmd, ParseArgs(EditServerArgs), ParseEnv(EditServerEnv), Enabled: enabled);
+            ? Services.Mcp.McpServerConfig.FromEditor(source, name, null, [], new Dictionary<string, string>(),
+                                                      url, ParseEnv(EditServerHeaders), enabled)
+            : Services.Mcp.McpServerConfig.FromEditor(source, name, cmd, ParseArgs(EditServerArgs), ParseEnv(EditServerEnv),
+                                                      null, null, enabled);
 
         var idx = _editingOriginalName is null ? -1 : defs.FindIndex(d => d.Name == _editingOriginalName);
         if (idx >= 0) defs[idx] = newDef; else defs.Add(newDef);
@@ -1723,14 +1732,16 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     /// <summary>Snapshots a row's editable fields into a serialisable server definition. An HTTP row
     /// (non-empty <see cref="McpServerRow.Url"/>) round-trips its url/headers; otherwise it's stdio.</summary>
     private static Services.Mcp.McpServerConfig ToConfig(McpServerRow r) =>
-        string.IsNullOrWhiteSpace(r.Url)
-            ? new(r.ServerName.Trim(), r.Command.Trim(), ParseArgs(r.ArgsText), ParseEnv(r.EnvText), Enabled: r.Enabled)
-            : new(r.ServerName.Trim(), null, [], new Dictionary<string, string>(), Url: r.Url.Trim(), Headers: ParseEnv(r.HeadersText), Enabled: r.Enabled);
+        Services.Mcp.McpServerConfig.FromEditor(
+            r.Source, r.ServerName.Trim(), r.Command.Trim(), ParseArgs(r.ArgsText), ParseEnv(r.EnvText),
+            r.Url.Trim(), ParseEnv(r.HeadersText), r.Enabled);
 
     /// <summary>Serialises the current rows back into <see cref="McpServersJson"/> (the persisted form).</summary>
     private void SyncJsonFromRows()
     {
-        McpServersJson = Services.Mcp.McpServerConfig.Serialize(McpServers.Select(ToConfig).ToList());
+        // A list that did not read in full stays as the user wrote it: the rows lack what was dropped.
+        if (_mcpListRebuildable)
+            McpServersJson = Services.Mcp.McpServerConfig.Serialize(McpServers.Select(ToConfig).ToList());
         RefreshListMeta();
     }
 
@@ -1742,6 +1753,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     /// </summary>
     private void PersistMcpServers()
     {
+        if (!_mcpListRebuildable) { McpStatusText = BuildMcpStatus(); return; }
         SyncJsonFromRows();
         _config.McpServersJson = McpServersJson;
         _config.Save();
@@ -1794,11 +1806,14 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     /// <summary>Renders the MCP connection result (per-server tool count or error) for the settings UI.</summary>
     private string BuildMcpStatus()
     {
-        if (!_config.McpEnabled) return string.Empty;
+        var notice = _mcpListRebuildable ? null : Strings.McpJsonNotEditableAsList;
+        if (!_config.McpEnabled) return notice ?? string.Empty;
         var status = _mcp.Status;
-        if (status.Count == 0) return Strings.McpNoServers;
-        return string.Join("\n", status.Select(s =>
-            s.Connected ? $"✓ {s.Name} — {s.ToolCount}" : $"✗ {s.Name} — {s.Error}"));
+        var lines = status.Count == 0
+            ? Strings.McpNoServers
+            : string.Join("\n", status.Select(s =>
+                s.Connected ? $"✓ {s.Name} — {s.ToolCount}" : $"✗ {s.Name} — {s.Error}"));
+        return notice is null ? lines : notice + "\n" + lines;
     }
 
     // ── Editable list management (pinned files / slash commands / custom tools) ──

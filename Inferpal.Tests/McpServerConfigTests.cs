@@ -120,6 +120,37 @@ public class McpServerConfigTests
         Assert.False(reparsed.Single(s => s.Name == "disabled-one").Enabled);
     }
 
+    // The Visual Studio settings editor rebuilds the list from its rows on every save: what it does not
+    // show — the oauth block — vanished from the file.
+    [Fact]
+    public void FromEditor_KeepsTheOAuthBlockTheEditorDoesNotShow()
+    {
+        var source = new McpServerConfig("remote", null, [], new Dictionary<string, string>(),
+            Url: "https://mcp.example.com/mcp", OAuth: new McpOAuthConfig(ClientId: "cid", Scopes: ["s1"]));
+
+        var rebuilt = McpServerConfig.FromEditor(source, "remote", null, [], new Dictionary<string, string>(),
+            "https://mcp.example.com/v2", new Dictionary<string, string>(), enabled: true);
+
+        Assert.Equal("cid", rebuilt.OAuth?.ClientId);
+        Assert.Equal("https://mcp.example.com/v2", rebuilt.Url);
+
+        // Witness: a new entry, without a source, invents no block.
+        Assert.Null(McpServerConfig.FromEditor(
+            null, "new", "npx", [], new Dictionary<string, string>(), null, null, enabled: true).OAuth);
+    }
+
+    // Rewriting the list from the servers that were read loses everything that did not become one.
+    [Theory]
+    [InlineData("""{ "a": { "command": "npx" }""", false)]   // invalid JSON: lost brace
+    [InlineData("""{ "a": { "args": ["x"] } }""", false)]    // entry without a transport
+    [InlineData("""{ "a": { "command": "npx" } }""", true)]
+    [InlineData("", true)]
+    public void ParseForEditor_IsRebuildable_OnlyWhenEveryEntryIsAServer(string json, bool expected)
+    {
+        McpServerConfig.ParseForEditor(json, out var rebuildable);
+        Assert.Equal(expected, rebuildable);
+    }
+
     [Fact]
     public void Serialize_OmitsEmptyArgsEnv_AndDisabledWhenEnabled()
     {

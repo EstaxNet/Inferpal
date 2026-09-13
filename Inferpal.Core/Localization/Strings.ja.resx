@@ -601,6 +601,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>キャンセル</value></data>
   <data name="McpAdvancedJson" xml:space="preserve"><value>詳細 (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ JSON をリストにインポート</value></data>
+  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>⚠ MCP サーバーの JSON を完全には読み取れなかったため、一覧は読み取り専用です。書き直すと読み取れなかった部分が失われます。JSON を修正してから一覧にインポートしてください。</value></data>
   <data name="McpServerDisabled" xml:space="preserve"><value>— 無効</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>名前とコマンドは必須です。</value></data>
   <data name="McpValidationNameUrl" xml:space="preserve"><value>名前と URL は必須です。</value></data>

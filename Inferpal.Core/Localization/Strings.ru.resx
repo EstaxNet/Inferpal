@@ -599,6 +599,7 @@ ollama serve
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>Отмена</value></data>
   <data name="McpAdvancedJson" xml:space="preserve"><value>Дополнительно (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ Импортировать JSON в список</value></data>
+  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>⚠ JSON серверов MCP не удалось прочитать полностью, поэтому список доступен только для чтения — его перезапись удалила бы непрочитанное. Исправьте JSON, затем импортируйте его в список.</value></data>
   <data name="McpServerDisabled" xml:space="preserve"><value>— отключён</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>Имя и команда обязательны.</value></data>
   <data name="McpValidationNameUrl" xml:space="preserve"><value>Имя и URL обязательны.</value></data>
