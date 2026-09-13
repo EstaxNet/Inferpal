@@ -26,14 +26,17 @@ internal static class PHistoryCommandHandler
     /// command line (<c>parts[0]</c> is <c>/phistory</c>).</summary>
     public static PHistoryCommandResult Handle(IReadOnlyList<string> history, string[] parts)
     {
-        // /phistory use <n> — re-fill the prompt with entry #n (1-based).
-        if (parts.Length >= 3 && parts[1].Equals("use", StringComparison.OrdinalIgnoreCase)
-            && int.TryParse(parts[2], out var useIdx))
+        // /phistory use <key|n> — re-fill the prompt with an entry: by the content key the listing
+        // prints, else by 1-based position (typed by hand; it shifts once the capped list evicts).
+        if (parts.Length >= 3 && parts[1].Equals("use", StringComparison.OrdinalIgnoreCase))
         {
-            var i = useIdx - 1;
-            return i < 0 || i >= history.Count
-                ? new(Strings.PHistoryNoEntry(useIdx), null)
-                : new(null, history[i]);
+            var target = parts[2];
+            var byKey  = history.LastOrDefault(p =>
+                ChatTurnPolicy.PromptKey(p).Equals(target, StringComparison.OrdinalIgnoreCase));
+            if (byKey is not null) return new(null, byKey);
+            return int.TryParse(target, out var useIdx) && useIdx >= 1 && useIdx <= history.Count
+                ? new(null, history[useIdx - 1])
+                : new(Strings.PHistoryNoEntry(target), null);
         }
 
         if (history.Count == 0)

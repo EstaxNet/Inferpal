@@ -25,7 +25,7 @@ public class PHistoryCommandHandlerTests
     {
         var result = PHistoryCommandHandler.Handle(Sample, Cmd("use", "9"));
 
-        Assert.Equal(Strings.PHistoryNoEntry(9), result.Message);
+        Assert.Equal(Strings.PHistoryNoEntry("9"), result.Message);
         Assert.Null(result.FillPrompt);
     }
 
@@ -68,5 +68,29 @@ public class PHistoryCommandHandlerTests
 
         Assert.Equal(Strings.PHistoryNoMatch("zzz"), result.Message);
         Assert.Null(result.FillPrompt);
+    }
+
+    [Fact]
+    public void Use_TheCommandCopiedFromAFullListing_StillFillsThatEntry_AfterTheTypedCommandIsRecorded()
+    {
+        // VS Code records the typed command before routing it: on a full history, the append evicts the oldest entry and shifts every position.
+        var history = Enumerable.Range(1, 50).Select(n => $"p{n}").ToList();
+        var listing = PHistoryCommandHandler.Handle(history, Cmd()).Message!;
+        var line    = listing.Split('\n').Single(l => l.Contains(" p12  ", StringComparison.Ordinal));
+        var typed   = line[(line.IndexOf("`/phistory use ", StringComparison.Ordinal) + 1)..line.LastIndexOf('`')];
+        Assert.Equal("p12", PHistoryCommandHandler.Handle(history, typed.Split(' ')).FillPrompt);
+
+        Inferpal.Services.Agent.ChatTurnPolicy.AppendPromptHistory(history, typed, 50);
+
+        Assert.Equal("p12", PHistoryCommandHandler.Handle(history, typed.Split(' ')).FillPrompt);
+    }
+
+    [Fact]
+    public void Use_AKeyThatNoLongerExists_SaysSo()
+    {
+        var result = PHistoryCommandHandler.Handle(Sample, Cmd("use", "0badc0de"));
+
+        Assert.Null(result.FillPrompt);
+        Assert.Contains("0badc0de", result.Message);
     }
 }

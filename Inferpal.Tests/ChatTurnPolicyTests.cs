@@ -34,8 +34,8 @@ public class ChatTurnPolicyTests
         var listing = ChatTurnPolicy.FormatPromptHistory(["first", "second"], term: null);
         Assert.NotNull(listing);
         Assert.StartsWith(Strings.PHistoryListHeader, listing);
-        var idxSecond = listing!.IndexOf("**#2** second  `/phistory use 2`", StringComparison.Ordinal);
-        var idxFirst  = listing.IndexOf("**#1** first  `/phistory use 1`", StringComparison.Ordinal);
+        var idxSecond = listing!.IndexOf("**#2** second  `/phistory use abf8d4dd`", StringComparison.Ordinal);
+        var idxFirst  = listing.IndexOf("**#1** first  `/phistory use 4881d841`", StringComparison.Ordinal);
         Assert.True(idxSecond >= 0 && idxFirst > idxSecond); // reversed order
     }
 

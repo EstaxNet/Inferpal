@@ -162,6 +162,18 @@ internal static class ChatTurnPolicy
     }
 
     /// <summary>
+    /// Stable key of a prompt-history entry for <c>/phistory use</c>: FNV-1a over the text, 8 hex
+    /// digits. Identical prompts share a key, which is harmless: they fill the same text.
+    /// </summary>
+    public static string PromptKey(string prompt)
+    {
+        var hash = 2166136261u;
+        foreach (var c in prompt)
+            hash = unchecked((hash ^ c) * 16777619u);
+        return hash.ToString("x8");
+    }
+
+    /// <summary>
     /// The <c>/phistory</c> listing: entries matching <paramref name="term"/> (all when
     /// <c>null</c>), most recent first, each with its 1-based index and a ready-to-type
     /// <c>/phistory use n</c>. Returns <c>null</c> when nothing matches (the VM shows
@@ -178,7 +190,9 @@ internal static class ChatTurnPolicy
 
         var sb = new StringBuilder((term is null ? Strings.PHistoryListHeader : Strings.PHistoryListHeaderTerm(term)) + "\n\n");
         foreach (var (idx, text) in matches)
-            sb.AppendLine($"**#{idx}** {OneLinePreview(text, 80)}  `/phistory use {idx}`");
+            // By content key, not position: the list is capped, so each new prompt evicts the oldest
+            // entry and shifts every number.
+            sb.AppendLine($"**#{idx}** {OneLinePreview(text, 80)}  `/phistory use {PromptKey(text)}`");
         return sb.ToString().TrimEnd();
     }
 }

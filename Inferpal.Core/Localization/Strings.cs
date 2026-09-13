@@ -925,7 +925,7 @@ internal static class Strings
     public static string NotesEmpty                          => Get(nameof(NotesEmpty));
     public static string NotesHeading                        => Get(nameof(NotesHeading));
 
-    public static string PHistoryNoEntry(int idx)            => string.Format(Get(nameof(PHistoryNoEntry)), idx);
+    public static string PHistoryNoEntry(string target)      => string.Format(Get(nameof(PHistoryNoEntry)), target);
     public static string PHistoryEmpty                       => Get(nameof(PHistoryEmpty));
     public static string PHistoryNoMatch(string? term)       => string.Format(Get(nameof(PHistoryNoMatch)), term);
 
