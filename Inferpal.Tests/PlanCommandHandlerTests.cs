@@ -193,6 +193,45 @@ public class PlanCommandHandlerTests : IDisposable
         Assert.True(PlanStore.Load(_root, "alpha")!.Steps[0].Done);
     }
 
+    // A plan that cannot be READ (locked by another process, permissions removed) is not a missing
+    // plan: `/plan list` shows it, and `/plan open|next|done` answered "not found" — which sends the
+    // user to check the spelling of a correct name. The cause must surface, as it does for writes.
+    [Fact]
+    public void APlanThatCannotBeRead_FailsInsteadOfBeingReportedMissing()
+    {
+        Run("/plan save alpha", Proposal);
+        var path = PlanStore.PathFor(_root, "alpha");
+        string[] commands = ["/plan open alpha", "/plan next alpha", "/plan done 1 alpha"];
+
+        void AssertEachFailsWithTheReadError()
+        {
+            Assert.Contains("`alpha`", Run("/plan list").Message);
+            foreach (var command in commands)
+            {
+                var ex = Record.Exception(() => Run(command));
+                Assert.True(ex is IOException or UnauthorizedAccessException,
+                            $"{command}: {ex?.GetType().Name ?? "no exception"}");
+            }
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            using var held = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            AssertEachFailsWithTheReadError();
+        }
+        else
+        {
+            File.SetUnixFileMode(path, UnixFileMode.None);
+            try { AssertEachFailsWithTheReadError(); }
+            finally { File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+        }
+
+        // Witness: once the file is released the same commands succeed — and a name that really is
+        // absent is still "not found", without an exception.
+        Assert.Equal("alpha", Run("/plan open alpha").SetActivePlan);
+        Assert.Equal(Strings.PlanNotFound("ghost"), Run("/plan open ghost").Message);
+    }
+
     [Fact]
     public void AnUnknownWord_IsTreatedAsAPlanName()
     {

@@ -106,21 +106,17 @@ internal static class PlanStore
         return result;
     }
 
-    /// <summary>Loads one plan, or <c>null</c> when it does not exist or cannot be read.</summary>
+    /// <summary>Loads one plan, or <c>null</c> when it does not exist.</summary>
+    /// <remarks>
+    /// A plan that exists but cannot be read throws. Returning <c>null</c> for it would read as "no
+    /// such plan" to every caller, while <see cref="List"/> still shows the file.
+    /// </remarks>
     public static PlanDocument? Load(string workspaceRoot, string name)
     {
         var path = PathFor(workspaceRoot, name);
-        try
-        {
-            return File.Exists(path)
-                ? PlanDocument.Parse(File.ReadAllText(path, Encoding.UTF8), SanitizeName(name))
-                : null;
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow($"PlanStore.Load({path})", ex);
-            return null;
-        }
+        return File.Exists(path)
+            ? PlanDocument.Parse(File.ReadAllText(path, Encoding.UTF8), SanitizeName(name))
+            : null;
     }
 
     /// <summary>Writes a plan. Returns its path.</summary>
