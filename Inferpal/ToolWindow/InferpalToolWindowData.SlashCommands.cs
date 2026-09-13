@@ -434,8 +434,9 @@ internal partial class InferpalToolWindowData
             // approval service records instead of granting — so the run still cannot write anything.
             var recorder = task.ProposeWrites ? new Services.Tasks.ProposalRecorder() : null;
             var registry = recorder is null
-                ? new BackgroundTaskToolRegistry(_tools)
-                : new BackgroundTaskToolRegistry(_tools.WithApprovalService(recorder), recorder);
+                ? new BackgroundTaskToolRegistry(_tools, currentRoot: () => _indexService.RootDir)
+                : new BackgroundTaskToolRegistry(_tools.WithApprovalService(recorder), recorder,
+                                                 currentRoot: () => _indexService.RootDir);
 
             var suffix = recorder is null
                 ? BackgroundTaskToolRegistry.SystemPromptSuffix

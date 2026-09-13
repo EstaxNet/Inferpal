@@ -73,8 +73,9 @@ internal sealed partial class HostServer
             // construction as the VS view-model, because the mode must not differ between editors.
             var recorder = task.ProposeWrites ? new ProposalRecorder() : null;
             var registry = recorder is null
-                ? new BackgroundTaskToolRegistry(s.Tools)
-                : new BackgroundTaskToolRegistry(s.Tools.WithApprovalService(recorder), recorder);
+                ? new BackgroundTaskToolRegistry(s.Tools, currentRoot: () => s.RootDir)
+                : new BackgroundTaskToolRegistry(s.Tools.WithApprovalService(recorder), recorder,
+                                                 currentRoot: () => s.RootDir);
 
             var suffix = recorder is null
                 ? BackgroundTaskToolRegistry.SystemPromptSuffix

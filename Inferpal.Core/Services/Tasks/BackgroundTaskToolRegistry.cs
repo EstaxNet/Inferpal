@@ -18,8 +18,24 @@ namespace Inferpal.Services.Tasks;
 /// inline-parsed calls that never went through the definition list.</para>
 /// </remarks>
 internal sealed class BackgroundTaskToolRegistry(
-    IToolRegistry inner, ProposalRecorder? proposals = null) : IToolRegistry
+    IToolRegistry inner, ProposalRecorder? proposals = null, Func<string?>? currentRoot = null) : IToolRegistry
 {
+    // The workspace the task started in. Tools read the root LIVE, so under Visual Studio a solution
+    // opened while the task runs made its next calls answer about another project: a report that
+    // describes two projects as one, and proposals recorded on the other project's files.
+    private readonly Func<string?>? _currentRoot = currentRoot;
+    private readonly string?        _startRoot   = currentRoot?.Invoke();
+
+    private bool WorkspaceChanged()
+    {
+        if (_currentRoot is null || string.IsNullOrWhiteSpace(_startRoot)) return false;
+        return !string.Equals(Trim(_startRoot), Trim(_currentRoot() ?? string.Empty),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+        static string Trim(string path) =>
+            path.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+    }
+
     private static readonly HashSet<string> AllowedTools = new(StringComparer.OrdinalIgnoreCase)
     {
         "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
@@ -92,6 +108,11 @@ internal sealed class BackgroundTaskToolRegistry(
                         ? "(it can propose file changes, but cannot run commands or reach the network). "
                         : "(read-only, no approval prompts). ")
                  + "Do not retry it; describe what you would do instead, and the user will run it.";
+
+        if (WorkspaceChanged())
+            return "The workspace changed since this background task started (another solution was opened): "
+                 + "its tools would now answer about a different project. Do not call more tools; finish your "
+                 + "report with what you found so far, and say that the workspace changed.";
 
         // Proposal mode: the tool asks for approval, the recorder answers no and keeps the diff, so
         // the tool returns its own "cancelled" message. That wording would read to the model as a
