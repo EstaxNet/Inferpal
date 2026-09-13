@@ -965,6 +965,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>あなたは、完全ローカルのコーディングアシスタントが毎ターンの前に読むプロジェクトコンテキストファイルを書きます。以下のリポジトリ説明から、`##` 見出しを使った短い markdown 文書を書いてください: このプロジェクトが何か、スタックと構成、ビルドとテストの方法。重要な順のルール: ファイル・フォルダー・プロジェクト・コマンドの名前は表記どおりに写し、決して創作しないこと。説明が示していない限り、フォルダーやプロジェクトが何を*する*かは書かず、名前を挙げるにとどめること。説明が裏付けることだけを述べ、推測・水増し・一般論は書かないこと。分からないことは省くこと——短く正確な文書は、長くもっともらしい文書に勝ります。最大 40 行、表紙なし、回答全体をコードフェンスで囲まないこと。 この指示と同じ言語で書いてください。</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;ではプロジェクトコンテキストファイルを書いてください。</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>プロジェクトプロファイルを {0} に作成しました。リポジトリと共に配布されます: 推奨はできますが、権限は与えられません。</value></data>
+  <data name="OnboardProfileExists" xml:space="preserve"><value>{0} は既に存在し、変更していません。編集するか、削除してから例をもう一度作成してください。</value></data>
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — プランモードと永続的なプラン。&#10;&#10;- `/plan` — プランモード (読み取り専用) を切り替え&#10;- `/plan list` — このリポジトリのプラン一覧&#10;- `/plan save [名前]` — 直前の回答のプランを `.inferpal/plans/` に保存&#10;- `/plan &lt;名前&gt;` — プランを開く&#10;- `/plan next` — 次の未完了ステップを表示&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — ステップのチェックを付け外し</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **プランモード ON** — 読み取り専用: エージェントは調査してプランを提案しますが、ファイルの編集もコマンドの実行もできません。もう一度切り替える (または `/plan`) と変更を適用できます。`/plan save` で保存すれば `/clear` でも消えません。</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>プランモード **OFF**。</value></data>

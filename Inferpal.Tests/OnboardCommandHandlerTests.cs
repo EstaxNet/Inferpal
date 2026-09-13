@@ -134,6 +134,20 @@ public class OnboardCommandHandlerTests : IDisposable
         Assert.Null(result.Message);
     }
 
+    [Fact]
+    public async Task Init_WhenAProfileAlreadyExists_LeavesItAndSaysSo()
+    {
+        // The front-ends only write a missing file: scaffolding over an existing profile announced a
+        // creation that did not happen.
+        WriteProfile("""{ "indexExclude": ["mine/**"] }""");
+
+        var result = await Run(new InferpalConfig(), "init");
+
+        Assert.Null(result.Scaffold);
+        Assert.Contains("project.json", result.Message!);
+        Assert.Contains("mine/**", File.ReadAllText(Path.Combine(_root, ".inferpal", "project.json")));
+    }
+
     // ── apply ─────────────────────────────────────────────────────────────────
 
     [Fact]

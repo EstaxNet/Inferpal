@@ -1218,6 +1218,8 @@ internal static class Strings
         string.Format(Get(nameof(OnboardContextUserPrompt)), brief);
     public static string OnboardProfileScaffolded(string path) =>
         string.Format(Get(nameof(OnboardProfileScaffolded)), path);
+    public static string OnboardProfileExists(string path) =>
+        string.Format(Get(nameof(OnboardProfileExists)), path);
 
     // ── /plan — plan mode and persistent plans ────────────────────
     public static string PlanUsage           => Get(nameof(PlanUsage));

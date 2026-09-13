@@ -56,6 +56,19 @@ internal static class OnboardCommandHandler
         bool                                              RefreshSystemPrompt = false,
         string?                                           NewDefaultModel     = null);
 
+    /// <summary>
+    /// <c>/onboard init</c>: the example profile, unless the repository already has one. The front-ends
+    /// only write a missing file, and would otherwise announce a creation that did not happen.
+    /// </summary>
+    private static OnboardCommandResult Init(string root)
+    {
+        var dir  = Path.Combine(root, ".inferpal");
+        var path = Path.Combine(dir, "project.json");
+        return File.Exists(path)
+            ? new(Strings.OnboardProfileExists(path))
+            : new(null, new RulesChecksPromptsCommandHandler.ScaffoldRequest(dir, "project.json", ProfileExampleContent));
+    }
+
     internal const string ProfileExampleContent =
         "{\n" +
         "  // Committed with the repository, and non-privileged by design: it describes\n" +
@@ -99,8 +112,7 @@ internal static class OnboardCommandHandler
         return sub switch
         {
             ""        => new(Report(root, config)),
-            "init"    => new(null, new RulesChecksPromptsCommandHandler.ScaffoldRequest(
-                             Path.Combine(root, ".inferpal"), "project.json", ProfileExampleContent)),
+            "init"    => Init(root),
             "apply"   => Apply(root, config),
             "context" => await GenerateContextAsync(client, config, root, force, git, onProgress, ct),
             _         => new(Strings.OnboardUsage),

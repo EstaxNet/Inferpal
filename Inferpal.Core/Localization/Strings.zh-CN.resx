@@ -965,6 +965,7 @@ ollama serve
   <data name="OnboardContextSystemPrompt" xml:space="preserve"><value>你要撰写一份项目上下文文件，供一个完全本地的编码助手在每一轮之前阅读。根据下面的仓库描述，写一份带 `##` 小节的简短 markdown 文档：这个项目是什么、技术栈与目录结构、以及如何构建和测试。规则（按重要性排序）：文件、文件夹、项目、命令的名称一律照抄原样，绝不臆造；描述没有显示的，就不要写某个文件夹或项目「做什么」，列出名称即可；只陈述描述所支持的内容，不要猜测、不要凑字数、不要给泛泛的建议；不知道的就略去——简短而准确胜过冗长而似是而非。最多 40 行，不要封面，也不要用代码块包裹整个回答。 请使用与本指令相同的语言撰写。</value></data>
   <data name="OnboardContextUserPrompt" xml:space="preserve"><value>{0}&#10;&#10;现在请撰写项目上下文文件。</value></data>
   <data name="OnboardProfileScaffolded" xml:space="preserve"><value>项目配置已创建于 {0}。它随仓库一起分发：可以建议，但绝不授予权限。</value></data>
+  <data name="OnboardProfileExists" xml:space="preserve"><value>{0} 已存在且未被改动。请编辑它，或删除后重新从示例开始。</value></data>
   <data name="PlanUsage" xml:space="preserve"><value>**/plan** — 计划模式与持久计划。&#10;&#10;- `/plan` — 切换计划模式（只读）&#10;- `/plan list` — 列出本仓库的计划&#10;- `/plan save [名称]` — 把上一条回答中的计划保存到 `.inferpal/plans/`&#10;- `/plan &lt;名称&gt;` — 打开一个计划&#10;- `/plan next` — 显示下一个未完成的步骤&#10;- `/plan done &lt;n&gt;` / `/plan undone &lt;n&gt;` — 勾选或取消勾选某个步骤</value></data>
   <data name="PlanModeOn" xml:space="preserve"><value>📋 **计划模式已开启** — 只读：智能体可以探索并提出计划，但不能修改文件或执行命令。再次切换（或 `/plan`）即可应用改动。用 `/plan save` 保存计划，它就能在 `/clear` 之后依然存在。</value></data>
   <data name="PlanModeOff" xml:space="preserve"><value>计划模式**已关闭**。</value></data>
