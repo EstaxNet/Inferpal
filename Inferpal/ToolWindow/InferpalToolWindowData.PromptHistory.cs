@@ -36,25 +36,12 @@ internal partial class InferpalToolWindowData
 
     private void LoadPromptHistory()
     {
-        try
-        {
-            if (!File.Exists(_promptHistoryFile)) return;
-            var json = File.ReadAllText(_promptHistoryFile, System.Text.Encoding.UTF8);
-            _promptHistory.Load(JsonSerializer.Deserialize<List<string>>(json) ?? []);
-        }
-        catch (Exception ex) { Diagnostics.Swallow("PromptHistory.Load", ex); }
+        _promptHistory.Load(_promptHistoryStore.Load([]));
     }
 
     private void SavePromptHistory()
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_promptHistoryFile)!);
-            File.WriteAllText(_promptHistoryFile,
-                JsonSerializer.Serialize(_promptHistory.Entries),
-                System.Text.Encoding.UTF8);
-        }
-        catch (Exception ex) { Diagnostics.Swallow("PromptHistory.Save", ex); }
+        _promptHistoryStore.Save([.. _promptHistory.Entries]);
     }
 
     private Task HistoryUpAsync(object? _, CancellationToken ct)

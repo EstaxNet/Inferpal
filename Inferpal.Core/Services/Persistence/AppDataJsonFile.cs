@@ -100,6 +100,33 @@ internal sealed class AppDataJsonFile<T>
         }
     }
 
+    /// <summary>Synchronous <see cref="LoadAsync"/>, for a caller that reads once while it is constructed.</summary>
+    public T Load(T fallback)
+    {
+        try
+        {
+            if (!File.Exists(Path)) return fallback;
+            return JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts) ?? fallback;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow($"{_diagnosticName}.Load", ex);
+            return fallback;
+        }
+    }
+
+    /// <summary>Synchronous <see cref="SaveAsync"/>: same set-aside of an unreadable file, same atomic write.</summary>
+    public bool Save(T value)
+    {
+        try
+        {
+            PreserveIfUnreadable();
+            AtomicFile.WriteAllText(Path, JsonSerializer.Serialize(value, _opts));
+            return true;
+        }
+        catch (Exception ex) { Diagnostics.Swallow($"{_diagnosticName}.Save", ex); return false; }
+    }
+
     /// <summary>Writes the document atomically. Best effort: a failure is traced, never thrown.</summary>
     /// <returns><c>false</c> when nothing was written — a caller that announces the save must check it.</returns>
     public async Task<bool> SaveAsync(T value, CancellationToken ct = default)

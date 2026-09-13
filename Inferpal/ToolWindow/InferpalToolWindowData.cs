@@ -124,9 +124,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private const  int            PromptHistoryMax  = 50;
     private readonly PromptHistoryNavigator _promptHistory = new(PromptHistoryMax);
 
-    private static readonly string _promptHistoryFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Inferpal", "prompt_history.json");
+    private readonly AppDataJsonFile<List<string>> _promptHistoryStore = PromptHistoryFile.Create();
     private bool   _navigatingHistory = false;
     private string           _currentStep           = string.Empty;
     private string           _tokenInfo             = string.Empty;
