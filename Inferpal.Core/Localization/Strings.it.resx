@@ -718,6 +718,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Ultimo run annullato — {0} file ripristinato/i, {1} eliminato/i.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Cronologia dell'ultimo run dell'agente (strumenti, durate, file)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Nessun run dell'agente con chiamate a strumenti registrato in questa sessione.</value></data>
+  <data name="ReplayRunOutOfRange" xml:space="preserve"><value>Nessuna esecuzione n. {0}: questa sessione ne ha {1} con chiamate a strumenti.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run dell'agente {0} — {1} chiamata/e a strumenti, {2} file modificato/i</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>nessuno snapshot — `/undo-run` non può annullare questo file</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**File coinvolti:**</value></data>

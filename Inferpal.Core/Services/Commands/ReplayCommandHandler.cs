@@ -24,7 +24,9 @@ internal static class ReplayCommandHandler
             return Strings.SlashUsage("/replay [n]");
 
         var replayable = runs.Where(r => r.ToolCallCount > 0).ToList();
-        if (index > replayable.Count) return Strings.ReplayNone;
+        if (replayable.Count == 0) return Strings.ReplayNone;
+        // Past the last run is a wrong number, not an empty session: "no run recorded" read as lost history.
+        if (index > replayable.Count) return Strings.ReplayRunOutOfRange(index, replayable.Count);
 
         var run   = replayable[index - 1];
         var calls = run.ToolCalls;

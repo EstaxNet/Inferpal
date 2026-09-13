@@ -718,6 +718,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Letzter Lauf rückgängig gemacht — {0} Datei(en) wiederhergestellt, {1} gelöscht.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Zeitachse des letzten Agent-Laufs (Tools, Dauern, Dateien)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>In dieser Sitzung wurde kein Agent-Lauf mit Tool-Aufrufen aufgezeichnet.</value></data>
+  <data name="ReplayRunOutOfRange" xml:space="preserve"><value>Kein Lauf Nr. {0} — diese Sitzung hat {1} Lauf/Läufe mit Werkzeugaufrufen.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Agent-Lauf {0} — {1} Tool-Aufruf(e), {2} geänderte Datei(en)</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>keine Sicherung — `/undo-run` kann diese Datei nicht zurücksetzen</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Betroffene Dateien:**</value></data>

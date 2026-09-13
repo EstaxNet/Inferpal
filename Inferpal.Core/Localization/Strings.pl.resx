@@ -718,6 +718,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Cofnięto ostatnie uruchomienie — przywrócono {0} plik(ów), usunięto {1}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Oś czasu ostatniego przebiegu agenta (narzędzia, czasy, pliki)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>W tej sesji nie zarejestrowano przebiegu agenta z wywołaniami narzędzi.</value></data>
+  <data name="ReplayRunOutOfRange" xml:space="preserve"><value>Brak uruchomienia nr {0} — ta sesja ma {1} z wywołaniami narzędzi.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Przebieg agenta {0} — wywołań narzędzi: {1}, zmienionych plików: {2}</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>brak kopii — `/undo-run` nie cofnie tego pliku</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Zmienione pliki:**</value></data>

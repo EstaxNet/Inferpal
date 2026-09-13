@@ -730,6 +730,7 @@ ollama serve
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} file(s) restored, {1} deleted.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Timeline of the last agent run (tools, durations, files)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>
+  <data name="ReplayRunOutOfRange" xml:space="preserve"><value>No run #{0} — this session has {1} run(s) with tool calls.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Agent run {0} — {1} tool call(s), {2} file(s) changed</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>no snapshot — `/undo-run` cannot revert this one</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Files touched:**</value></data>

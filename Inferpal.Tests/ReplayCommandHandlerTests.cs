@@ -101,12 +101,14 @@ public class ReplayCommandHandlerTests
     }
 
     [Fact]
-    public void Handle_IndexOutOfRange_ReturnsNone()
+    public void Handle_IndexOutOfRange_NamesTheCount_InsteadOfClaimingNoRun()
     {
+        // Past the replayable runs is not "no run": with one run recorded, /replay 2 said none had been
+        // recorded at all. Handle_NoRuns_ReturnsNone keeps the genuine absence.
         var run = new HistoryRun("r1");
         run.RecordToolCall("read_file", "a.cs", 5, error: false);
 
-        Assert.Equal(Strings.ReplayNone, ReplayCommandHandler.Handle([run], ["/replay", "2"], root: null));
+        Assert.Equal(Strings.ReplayRunOutOfRange(2, 1), ReplayCommandHandler.Handle([run], ["/replay", "2"], root: null));
     }
 
     [Fact]
