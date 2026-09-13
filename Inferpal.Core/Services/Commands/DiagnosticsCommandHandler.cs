@@ -66,6 +66,11 @@ internal static class DiagnosticsCommandHandler
     {
         var sub = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
 
+        // Exact shapes: a mistyped argument that fell back to the list left "of" with no effect on file
+        // logging, without a word.
+        if (parts.Length > 2 || sub is not ("list" or "clear" or "on" or "off" or "export"))
+            return new(Strings.SlashUsage("/diagnostics [list | clear | on | off | export]"));
+
         switch (sub)
         {
             case "clear":

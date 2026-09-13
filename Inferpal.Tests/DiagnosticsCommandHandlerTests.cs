@@ -73,6 +73,27 @@ public class DiagnosticsCommandHandlerTests : IDisposable
         Assert.False(Diagnostics.FileLoggingEnabled);
     }
 
+    // A mistyped argument returned the list: "of" left file logging on without a word, "off now"
+    // switched off and ignored the rest. Only the documented shapes act.
+    [Theory]
+    [InlineData("of")]
+    [InlineData("clr")]
+    [InlineData("off now")]
+    public void AnUnknownArgument_ShowsTheUsage_AndChangesNothing(string argument)
+    {
+        Diagnostics.FileLoggingEnabled = true;
+
+        var msg = DiagnosticsCommandHandler.Handle(Cmd(argument.Split(' '))).Message;
+
+        Assert.Equal(Strings.SlashUsage("/diagnostics [list | clear | on | off | export]"), msg);
+        Assert.True(Diagnostics.FileLoggingEnabled);
+    }
+
+    // Witness: `list`, which worked through the fallback, stays an accepted shape.
+    [Fact]
+    public void List_IsAcceptedExplicitly() =>
+        Assert.Equal(Strings.DiagnosticsEmpty, DiagnosticsCommandHandler.Handle(Cmd("list")).Message);
+
     // ── §24: /diagnostics export — the support bundle ───────────────────────────
 
     private static DiagnosticsExportContext Ctx(
