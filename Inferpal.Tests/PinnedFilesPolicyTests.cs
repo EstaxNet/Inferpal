@@ -116,4 +116,18 @@ public class PinnedFilesPolicyTests
     {
         Assert.Equal("#x", PinnedFilesPolicy.Serialize([], "a\n#x"));
     }
+
+    // The settings window sets no cap: a 4th or 5th active file is legitimate there. The chat strip shows
+    // only three, so a chip pinned or unpinned cannot decide anything about the ones it never shows — they
+    // vanished silently.
+    [Fact]
+    public void Serialize_KeepsActiveEntriesTheChipStripNeverShowed()
+    {
+        const string config = "a\nb\nc\nd\n#off\ne";
+
+        Assert.Equal("b\nc\nd\ne\n#off", PinnedFilesPolicy.Serialize(["b", "c"], config));   // "a" unpinned
+
+        // Witness: a hidden file pinned again from the chat does not appear twice.
+        Assert.Equal("b\nd\ne", PinnedFilesPolicy.Serialize(["b", "d"], "a\nb\nc\nd\ne"));
+    }
 }

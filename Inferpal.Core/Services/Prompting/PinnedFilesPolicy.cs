@@ -34,11 +34,20 @@ internal static class PinnedFilesPolicy
     /// Serializes the chip paths back to config, re-appending the disabled ('#') entries
     /// from the previous value so a chip edit never wipes them.
     /// </summary>
+    /// <remarks>
+    /// Active entries past <see cref="MaxPinned"/> are kept too: the settings window sets no cap, the chip
+    /// strip never showed them, and it cannot decide anything about files it does not display.
+    /// </remarks>
     public static string Serialize(IEnumerable<string> activePaths, string? previousConfig)
     {
-        var disabled = (previousConfig ?? string.Empty)
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(l => l.StartsWith('#'));
-        return string.Join("\n", activePaths.Concat(disabled));
+        var chips = activePaths.ToList();
+        var lines = (previousConfig ?? string.Empty)
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var hidden = lines
+            .Where(l => !l.StartsWith('#'))
+            .Skip(MaxPinned)
+            .Where(l => !chips.Contains(l, StringComparer.OrdinalIgnoreCase));
+        var disabled = lines.Where(l => l.StartsWith('#'));
+        return string.Join("\n", chips.Concat(hidden).Concat(disabled));
     }
 }
