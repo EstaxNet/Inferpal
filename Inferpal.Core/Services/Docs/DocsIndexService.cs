@@ -247,6 +247,22 @@ internal sealed class DocsIndexService
         }
     }
 
+    /// <summary>
+    /// Indexes <paramref name="sites"/> one after the other, skipping any source
+    /// <paramref name="stillWanted"/> no longer accepts when its turn comes.
+    /// </summary>
+    /// <remarks>
+    /// The list is taken when the command runs, and each pass takes minutes: a source removed before the
+    /// loop reaches it would otherwise be indexed and written back, since removal only stops the pass
+    /// that is already running.
+    /// </remarks>
+    public async Task ReindexAsync(IReadOnlyList<DocSite> sites, Func<DocSite, bool> stillWanted, IProgress<string>? progress)
+    {
+        foreach (var site in sites)
+            if (stillWanted(site))
+                await AddOrReindexAsync(site, progress, CancellationToken.None);
+    }
+
     private async Task ReloadFromDbAsync(DocsDatabase db, CancellationToken ct)
     {
         var sites  = await db.LoadSitesAsync(ct);

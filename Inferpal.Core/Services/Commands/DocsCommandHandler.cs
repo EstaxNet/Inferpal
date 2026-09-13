@@ -90,11 +90,10 @@ internal static class DocsCommandHandler
                 }
                 var toIndex = target is not null ? [target] : sites.ToArray();
 
-                _ = Task.Run(async () =>
-                {
-                    foreach (var site in toIndex)
-                        await docs.AddOrReindexAsync(site, progress, CancellationToken.None);
-                }, CancellationToken.None);
+                // The settings are read again on each source's turn: one removed meanwhile is skipped.
+                bool StillConfigured(DocSite s) =>
+                    DocSite.TryParse(config.DocSitesJson, out var now, out _) && now.Any(x => x.Id == s.Id);
+                _ = Task.Run(() => docs.ReindexAsync(toIndex, StillConfigured, progress), CancellationToken.None);
                 return Strings.DocsReindexing(target?.Title ?? $"{toIndex.Length}");
             }
 

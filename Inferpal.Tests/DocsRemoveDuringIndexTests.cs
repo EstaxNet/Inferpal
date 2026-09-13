@@ -97,4 +97,35 @@ public class DocsRemoveDuringIndexTests : IDisposable
         Assert.Empty(await docs.SitesAsync());
         Assert.Empty(await new DocsDatabase().LoadSitesAsync(CancellationToken.None));
     }
+
+    /// <summary>
+    /// A bare <c>/docs reindex</c> indexes a list taken when it starts: a source removed before the loop
+    /// reached it was indexed and written back — removal only stops the pass that is running.
+    /// </summary>
+    [Fact]
+    public async Task ASourceRemovedBeforeAReindexReachesIt_IsSkipped()
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var docs = new DocsIndexService(new FakeInferenceProvider(), new InferpalConfig())
+        {
+            CrawlForTests = async (url, ct) =>
+            {
+                if (url.Contains("first", StringComparison.Ordinal)) await gate.Task.WaitAsync(ct);
+                return [new DocCrawler.Page(url + "a", "A", "Some documentation text.")];
+            },
+        };
+        var first   = DocSite.Create("https://first.example.com/", "First");
+        var second  = DocSite.Create("https://second.example.com/", "Second");
+        var removed = new HashSet<string>();
+
+        var reindex = docs.ReindexAsync([first, second], s => !removed.Contains(s.Id), progress: null);
+        removed.Add(second.Id);   // removed while the first one is being indexed
+        await docs.RemoveAsync(second.Id, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(30));
+        gate.TrySetResult();
+        await reindex.WaitAsync(TimeSpan.FromSeconds(30));
+
+        var ids = (await docs.SitesAsync()).Select(s => s.Site.Id).ToList();
+        Assert.Contains(first.Id, ids);   // witness: the loop did index
+        Assert.DoesNotContain(second.Id, ids);
+    }
 }
