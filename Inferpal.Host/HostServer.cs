@@ -539,7 +539,7 @@ internal sealed partial class HostServer : IDisposable
     /// switching <c>Provider</c>/<c>BaseUrl</c> still requires a new `initialize`.
     /// </summary>
     [JsonRpcMethod("config/update", UseSingleObjectParameterDeserialization = true)]
-    public ConfigUpdateResult ConfigUpdate(ConfigUpdateParams p)
+    public async Task<ConfigUpdateResult> ConfigUpdate(ConfigUpdateParams p, CancellationToken ct)
     {
         var s        = Session();
         var incoming = JsonSerializer.Deserialize<InferpalConfig>(p.Json)
@@ -549,8 +549,10 @@ internal sealed partial class HostServer : IDisposable
         // Slot-held, not merely idle-checked: a settings save (or onDidChangeConfiguration) used
         // to mutate the shared Config the agent loop reads and replace the History it appends to,
         // mid-run (pre-1.6.0 architecture review, §2.6).
-        WithTurnSlot("config/update", () =>
+        await WithTurnSlotAsync("config/update", ct, async _ =>
         {
+            var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
+
             if (baseline is not null)
                 s.Config.ApplyChangesFrom(incoming, baseline.SnapshotNow());
             else
@@ -564,6 +566,13 @@ internal sealed partial class HostServer : IDisposable
             // leaving whatever was last applied.
             ApplyLanguage(s.Config);
             RefreshSystemPrompt(s);
+
+            // MCP servers follow the saved settings, as the VS window does on save — only when those
+            // settings changed: the chat's model picker saves through here too, and a refresh respawns
+            // every server. Inside the slot, so no tool call is torn down mid-turn.
+            if ((s.Config.McpEnabled, s.Config.McpServersJson) != mcpBefore)
+                await s.Mcp.RefreshAsync();
+            return true;
         });
 
         // After the save, on the configuration that was kept: a rule the product could not read is

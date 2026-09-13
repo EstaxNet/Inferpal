@@ -1259,6 +1259,30 @@ public class HostServerTests
     }
 
     [Fact]
+    public async Task SavingTheSettings_AppliesTheMcpServers_WithoutARestart()
+    {
+        // The VS window reconnects MCP servers on save; the host never did: an added server did not start, and disabling MCP left the servers running.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var mcp = h.Server.CurrentSession!.Mcp;
+        Assert.Empty(mcp.Status);
+
+        var cfg = System.Text.Json.Nodes.JsonNode.Parse(await h.Client.InvokeAsync<string>("config/get"))!.AsObject();
+        cfg["mcpEnabled"]     = true;
+        cfg["mcpServersJson"] = """{ "ghost": { "command": "inferpal-no-such-mcp-server" } }""";
+        await h.Client.InvokeWithParameterObjectAsync("config/update", new { json = cfg.ToJsonString() })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Contains(mcp.Status, st => st.Name == "ghost" && !st.Connected);
+
+        cfg["mcpEnabled"] = false;
+        await h.Client.InvokeWithParameterObjectAsync("config/update", new { json = cfg.ToJsonString() })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Empty(mcp.Status);
+    }
+
+    [Fact]
     public async Task Slash_ToolsOff_ForcesPlainChatOnNextTurn()
     {
         using var h = CreateHarness(cfg => cfg.AgentModeEnabled = true);
