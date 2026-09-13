@@ -168,6 +168,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _mcpServersJson                      = string.Empty;
     /// <summary>False when the saved server JSON did not read in full: the list is then read-only.</summary>
     private bool   _mcpListRebuildable                  = true;
+    /// <summary>Lines of each text list the editor could not turn into rows, written back as typed.</summary>
+    private IReadOnlyList<string> _slashUnparsed = [];
+    private IReadOnlyList<string> _toolUnparsed  = [];
     private string _mcpStatusText                       = string.Empty;
     private string _labelSectionMcp                     = string.Empty;
     private string _labelMcpEnabled                     = string.Empty;
@@ -1974,14 +1977,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private void BuildSlashRowsFrom(string text)
     {
         SlashCommandRows.Clear();
-        foreach (var line in SplitListLines(text))
+        foreach (var (enabled, name, tmpl) in EditableListText.Parse(text, out _slashUnparsed))
         {
-            var (enabled, body) = SplitEntry(line);
-            var eq = body.IndexOf('=');
-            if (eq <= 0) continue;
-            var name = body[..eq].Trim();
-            var tmpl = body[(eq + 1)..].Trim();
-            if (name.Length == 0 || tmpl.Length == 0) continue;
             var row = new EditableListRow { Enabled = enabled, Field1 = name, Field2 = tmpl, Label = name, Summary = tmpl };
             WireListRow(row, EditSlash, DeleteSlash, PersistSlash);
             SlashCommandRows.Add(row);
@@ -1991,7 +1988,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
     private void SyncSlashTextFromRows()
     {
-        PromptTemplates = string.Join("\n", SlashCommandRows.Select(r => (r.Enabled ? "" : "#") + r.Field1 + "=" + r.Field2));
+        PromptTemplates = EditableListText.Render(
+            SlashCommandRows.Select(r => new EditableListText.Entry(r.Enabled, r.Field1, r.Field2)), _slashUnparsed);
         RefreshListMeta();
     }
 
@@ -2041,7 +2039,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         if (idx >= 0) entries[idx] = (enabled, name, tmpl); else entries.Add((true, name, tmpl));
 
         IsEditingSlash = false;
-        BuildSlashRowsFrom(string.Join("\n", entries.Select(e => (e.Enabled ? "" : "#") + e.Field1 + "=" + e.Field2)));
+        BuildSlashRowsFrom(EditableListText.Render(
+            entries.Select(e => new EditableListText.Entry(e.Enabled, e.Field1, e.Field2)), _slashUnparsed));
         PersistSlash();
     }
 
@@ -2051,14 +2050,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private void BuildToolRowsFrom(string text)
     {
         CustomToolRows.Clear();
-        foreach (var line in SplitListLines(text))
+        foreach (var (enabled, name, cmd) in EditableListText.Parse(text, out _toolUnparsed))
         {
-            var (enabled, body) = SplitEntry(line);
-            var eq = body.IndexOf('=');
-            if (eq <= 0) continue;
-            var name = body[..eq].Trim();
-            var cmd  = body[(eq + 1)..].Trim();
-            if (name.Length == 0 || cmd.Length == 0) continue;
             var row = new EditableListRow { Enabled = enabled, Field1 = name, Field2 = cmd, Label = name, Summary = cmd };
             WireListRow(row, EditTool, DeleteTool, PersistTool);
             CustomToolRows.Add(row);
@@ -2068,7 +2061,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
     private void SyncToolTextFromRows()
     {
-        CustomTools = string.Join("\n", CustomToolRows.Select(r => (r.Enabled ? "" : "#") + r.Field1 + "=" + r.Field2));
+        CustomTools = EditableListText.Render(
+            CustomToolRows.Select(r => new EditableListText.Entry(r.Enabled, r.Field1, r.Field2)), _toolUnparsed);
         RefreshListMeta();
     }
 
@@ -2117,7 +2111,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         if (idx >= 0) entries[idx] = (enabled, name, cmd); else entries.Add((true, name, cmd));
 
         IsEditingTool = false;
-        BuildToolRowsFrom(string.Join("\n", entries.Select(e => (e.Enabled ? "" : "#") + e.Field1 + "=" + e.Field2)));
+        BuildToolRowsFrom(EditableListText.Render(
+            entries.Select(e => new EditableListText.Entry(e.Enabled, e.Field1, e.Field2)), _toolUnparsed));
         PersistTool();
     }
 
