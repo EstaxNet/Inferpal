@@ -406,6 +406,7 @@ Usa `/clear` dopo aver modificato il file per ricaricarlo.</value></data>
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ Build riuscita dopo {0} ciclo/i — nessun errore.</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ Build ancora fallita dopo {0} tentativo/i — intervento manuale necessario.</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ Non è stato possibile eseguire la build: l'output qui sopra spiega il motivo. Non è stato corretto nulla.</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **Build fallita** — rilevato/i {0} errore/i di compilazione.
 
 Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digita `/fix-build`.</value></data>

@@ -407,6 +407,7 @@ Use `/clear` after editing the file to reload it.</value></data>
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ Build succeeded after {0} round(s) — no more errors.</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ Build still failing after {0} attempt(s) — manual intervention required.</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ The build could not be run — the output above says why. Nothing was fixed.</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **Build failed** — {0} compilation error(s) detected.
 
 Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</value></data>

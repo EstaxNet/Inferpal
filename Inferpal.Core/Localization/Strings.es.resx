@@ -406,6 +406,7 @@ Usa `/clear` después de editar el archivo para recargarlo.</value></data>
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ Build exitoso después de {0} ronda(s) — sin más errores.</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ Build sigue fallando después de {0} intento(s) — se requiere intervención manual.</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ No se pudo ejecutar la compilación; la salida de arriba indica el motivo. No se corrigió nada.</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **Build fallido** — {0} error(es) de compilación detectado(s).
 
 Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o escriba `/fix-build`.</value></data>

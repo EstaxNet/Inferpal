@@ -711,6 +711,7 @@ internal static class Strings
     // ── Fix-build loop ─────────────────────────────────────────────────────────
     public static string FixBuildSuccess(int rounds)        => string.Format(Get(nameof(FixBuildSuccess)),    rounds);
     public static string FixBuildGiveUp(int maxRounds)      => string.Format(Get(nameof(FixBuildGiveUp)),     maxRounds);
+    public static string FixBuildCouldNotBuild              => Get(nameof(FixBuildCouldNotBuild));
     // ⚠ The two progress labels of the SAME loop, left as literals while its two end messages
     // were localized.
     public static string FixBuildBuildingRound(int round, int total) => string.Format(Get(nameof(FixBuildBuildingRound)), round, total);

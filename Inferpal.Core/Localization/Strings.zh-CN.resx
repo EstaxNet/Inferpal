@@ -406,6 +406,7 @@
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ 编译成功，共 {0} 轮 — 已无错误。</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ 经过 {0} 次尝试仍编译失败 — 需要手动干预。</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ 无法运行构建——原因见上方输出。未进行任何修复。</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **编译失败** — 检测到 {0} 个编译错误。
 
 点击**用 AI 修复**以循环自动修复，或输入 `/fix-build`。</value></data>

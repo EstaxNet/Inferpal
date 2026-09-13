@@ -220,11 +220,17 @@ internal partial class InferpalToolWindowData
                 }
                 catch (Exception ex) { buildOutput = Strings.MsgError(ex.Message); }
 
-                bool hasErrors = GetDiagnosticsTool.OutputHasBuildErrors(buildOutput);
+                var  verdict   = GetDiagnosticsTool.ReadVerdict(buildOutput);
+                bool hasErrors = verdict == GetDiagnosticsTool.BuildVerdict.Errors;
 
                 await RunOnVMContextAsync(() =>
                 {
-                    var label    = hasErrors ? "❌ get_diagnostics" : "✅ get_diagnostics";
+                    var label    = verdict switch
+                    {
+                        GetDiagnosticsTool.BuildVerdict.Clean  => "✅ get_diagnostics",
+                        GetDiagnosticsTool.BuildVerdict.Errors => "❌ get_diagnostics",
+                        _                                      => "⚠ get_diagnostics",
+                    };
                     var diagItem = ChatMessageItem.ToolMsg(label, buildOutput, expanded: true);
                     ApplyItemTheme(diagItem);
                     if (hasErrors)
@@ -235,9 +241,16 @@ internal partial class InferpalToolWindowData
                 });
 
                 // ── Success ────────────────────────────────────────────────────
-                if (!hasErrors)
+                if (verdict == GetDiagnosticsTool.BuildVerdict.Clean)
                 {
                     await ShowInfoAsync(Strings.FixBuildSuccess(round));
+                    return;
+                }
+
+                // Nothing was built — the output above says why — so there is nothing to fix either.
+                if (verdict == GetDiagnosticsTool.BuildVerdict.NotBuilt)
+                {
+                    await ShowInfoAsync(Strings.FixBuildCouldNotBuild);
                     return;
                 }
 

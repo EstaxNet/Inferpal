@@ -406,6 +406,7 @@
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ Сборка успешна после {0} раунда(ов) — ошибок нет.</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ Сборка всё ещё не удаётся после {0} попытки(ок) — требуется ручное вмешательство.</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ Не удалось выполнить сборку — причина указана в выводе выше. Ничего не исправлено.</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **Сборка не удалась** — обнаружено {0} ошибок(а) компиляции.
 
 Нажмите **Исправить с ИИ**, чтобы запустить автоматическое исправление в цикле, или введите `/fix-build`.</value></data>

@@ -406,6 +406,7 @@ Użyj `/clear` po edytowaniu pliku, aby go przeładować.</value></data>
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ Kompilacja zakończona sukcesem po {0} rundzie/rundach — brak błędów.</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ Kompilacja nadal nie powiodła się po {0} próbach — wymagana ręczna interwencja.</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ Nie udało się uruchomić kompilacji — przyczynę podaje powyższe wyjście. Nic nie zostało poprawione.</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **Kompilacja nie powiodła się** — wykryto {0} błąd/błędy kompilacji.
 
 Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-build`.</value></data>

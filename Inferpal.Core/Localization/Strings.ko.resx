@@ -406,6 +406,7 @@
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ {0}번의 라운드 후 빌드 성공 — 더 이상 오류 없음.</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ {0}번 시도 후에도 빌드 실패 — 수동 개입이 필요합니다.</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ 빌드를 실행할 수 없습니다. 이유는 위 출력을 확인하세요. 아무것도 수정되지 않았습니다.</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **빌드 실패** — {0}개의 컴파일 오류가 감지되었습니다.
 
 **AI로 수정**을 클릭하여 루프로 자동 수정하거나 `/fix-build`를 입력하세요.</value></data>

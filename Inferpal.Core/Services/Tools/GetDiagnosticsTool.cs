@@ -61,6 +61,39 @@ internal class GetDiagnosticsTool : ITool
     internal static bool OutputHasBuildErrors(string output) =>
         !string.IsNullOrEmpty(output) && ErrorLineRegex.IsMatch(output);
 
+    /// <summary>What an answer of this tool says about the build.</summary>
+    internal enum BuildVerdict { Clean, Errors, NotBuilt }
+
+    /// <summary>
+    /// Clean only when the answer is one this tool writes after a build that ran —
+    /// <see cref="Strings.DiagBuildOk"/>, or <see cref="Strings.DiagSummary"/> with zero errors. The absence
+    /// of an error line proves nothing: a path not found, no project, a build that died without parseable
+    /// diagnostics or a refused path carry none either.
+    /// </summary>
+    internal static BuildVerdict ReadVerdict(string output)
+    {
+        if (OutputHasBuildErrors(output)) return BuildVerdict.Errors;
+        if (string.IsNullOrEmpty(output)) return BuildVerdict.NotBuilt;
+
+        const string NameSentinel  = "";
+        const int    CountSentinel = 918273645;
+        var firstLine = output.Split('\n')[0].TrimEnd('\r');
+
+        foreach (var shape in new[] { Strings.DiagBuildOk(NameSentinel), Strings.DiagSummary(0, CountSentinel, NameSentinel) })
+        {
+            var pattern = "^" + Regex.Escape(shape)
+                .Replace(NameSentinel, ".+?")
+                .Replace(CountSentinel.ToString(), @"\d+") + "$";
+            try
+            {
+                if (Regex.IsMatch(firstLine, pattern, RegexOptions.None, RegexBudget.Default))
+                    return BuildVerdict.Clean;
+            }
+            catch (RegexMatchTimeoutException) { return BuildVerdict.NotBuilt; }
+        }
+        return BuildVerdict.NotBuilt;
+    }
+
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var rawPath = args.Str("path");

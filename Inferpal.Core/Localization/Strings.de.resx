@@ -406,6 +406,7 @@ Verwenden Sie `/clear` nach dem Bearbeiten der Datei, um sie neu zu laden.</valu
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ Build nach {0} Runde(n) erfolgreich – keine Fehler mehr.</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ Build nach {0} Versuch(en) immer noch fehlgeschlagen – manueller Eingriff erforderlich.</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ Der Build konnte nicht ausgeführt werden – die Ausgabe oben nennt den Grund. Es wurde nichts korrigiert.</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **Build fehlgeschlagen** — {0} Kompilierfehler erkannt.
 
 Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Schleife zu starten, oder geben Sie `/fix-build` ein.</value></data>

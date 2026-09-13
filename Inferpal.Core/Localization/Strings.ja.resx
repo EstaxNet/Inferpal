@@ -406,6 +406,7 @@
   <!-- Fix-build loop -->
   <data name="FixBuildSuccess" xml:space="preserve"><value>✅ {0} ラウンド後にビルド成功 — エラーなし。</value></data>
   <data name="FixBuildGiveUp" xml:space="preserve"><value>❌ {0} 回試みてもビルドが失敗しています — 手動での対応が必要です。</value></data>
+  <data name="FixBuildCouldNotBuild" xml:space="preserve"><value>⚠ ビルドを実行できませんでした。理由は上の出力を参照してください。何も修正されていません。</value></data>
   <data name="BuildFailedProposal" xml:space="preserve"><value>❌ **ビルド失敗** — {0} 件のコンパイルエラーを検出しました。
 
 **AIで修正**をクリックしてループで自動修正するか、`/fix-build` と入力してください。</value></data>
