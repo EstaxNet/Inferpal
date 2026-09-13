@@ -572,6 +572,13 @@ internal sealed partial class HostServer : IDisposable
             // every server. Inside the slot, so no tool call is torn down mid-turn.
             if ((s.Config.McpEnabled, s.Config.McpServersJson) != mcpBefore)
                 await s.Mcp.RefreshAsync();
+
+            // RAG turned on indexes the workspace now, as the VS window's heartbeat does — the same decision
+            // on both sides, which leaves a root already indexed alone.
+            var (pin, pinRoot) = Services.Signals.WorkspaceRootPin.Decide(
+                s.Config.RagEnabled, s.Index.RootDir, activeSolutionDir: null, reliableRoot: null,
+                indexedRoot: s.Index.IndexedRoot);
+            if (pin == Services.Signals.RootPinAction.Index) s.Index.StartIndexing(pinRoot!);
             return true;
         });
 

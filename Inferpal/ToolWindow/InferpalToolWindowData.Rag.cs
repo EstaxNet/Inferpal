@@ -62,7 +62,9 @@ internal partial class InferpalToolWindowData
                 var root = FindReliableProjectRoot();
                 if (root is not null)
                 {
-                    _indexService.StartIndexing(root);
+                    // The heartbeat may already have indexed it (RAG on, root pinned): a second pass would restart it.
+                    if (!string.Equals(_indexService.IndexedRoot, root, StringComparison.OrdinalIgnoreCase))
+                        _indexService.StartIndexing(root);
                     return;
                 }
             }
@@ -86,7 +88,8 @@ internal partial class InferpalToolWindowData
                 current,
                 ActiveSolutionSignal.TryReadSolutionDir(),
                 // Walks the file system: only worth it while nothing is pinned.
-                string.IsNullOrEmpty(current) ? FindReliableProjectRoot() : null);
+                string.IsNullOrEmpty(current) ? FindReliableProjectRoot() : null,
+                _indexService.IndexedRoot);
 
             if      (action == RootPinAction.Pin)   _indexService.SetRoot(root!);
             else if (action == RootPinAction.Index) _indexService.StartIndexing(root!);

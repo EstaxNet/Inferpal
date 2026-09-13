@@ -28,29 +28,29 @@ public class WorkspaceRootPinTests
     [Fact]
     public void WithRagOff_TheRootIsStillPinned() =>
         Assert.Equal((RootPinAction.Pin, "/src/app"),
-            WorkspaceRootPin.Decide(ragEnabled: false, currentRoot: "", activeSolutionDir: null, reliableRoot: "/src/app"));
+            WorkspaceRootPin.Decide(ragEnabled: false, currentRoot: "", activeSolutionDir: null, reliableRoot: "/src/app", indexedRoot: ""));
 
     /// <summary>Pinned at once even with RAG on: the startup pass indexes seconds later, and the
     /// tools must not run unconfined in between.</summary>
     [Fact]
     public void WithRagOn_AnEmptyRootIsPinnedWithoutWaitingForTheIndex() =>
         Assert.Equal((RootPinAction.Pin, "/src/app"),
-            WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: "", activeSolutionDir: "/src/app", reliableRoot: "/src/app"));
+            WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: "", activeSolutionDir: "/src/app", reliableRoot: "/src/app", indexedRoot: ""));
 
     [Fact]
     public void NoSolutionAnchoredRoot_PinsNothing() =>
         Assert.Equal((RootPinAction.None, (string?)null),
-            WorkspaceRootPin.Decide(ragEnabled: false, currentRoot: null, activeSolutionDir: null, reliableRoot: null));
+            WorkspaceRootPin.Decide(ragEnabled: false, currentRoot: null, activeSolutionDir: null, reliableRoot: null, indexedRoot: null));
 
     [Fact]
     public void ASolutionSwitch_WithRagOff_RepointsTheRoot() =>
         Assert.Equal((RootPinAction.Pin, "/src/other"),
-            WorkspaceRootPin.Decide(ragEnabled: false, currentRoot: "/src/app", activeSolutionDir: "/src/other", reliableRoot: null));
+            WorkspaceRootPin.Decide(ragEnabled: false, currentRoot: "/src/app", activeSolutionDir: "/src/other", reliableRoot: null, indexedRoot: ""));
 
     [Fact]
     public void ASolutionSwitch_WithRagOn_Reindexes() =>
         Assert.Equal((RootPinAction.Index, "/src/other"),
-            WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: "/src/app", activeSolutionDir: "/src/other", reliableRoot: null));
+            WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: "/src/app", activeSolutionDir: "/src/other", reliableRoot: null, indexedRoot: "/src/app"));
 
     /// <summary>Reference arm: the same solution, whatever its casing, is not a switch — otherwise
     /// every heartbeat tick would restart indexing.</summary>
@@ -59,7 +59,21 @@ public class WorkspaceRootPinTests
     [InlineData(@"C:\SRC\App")]
     public void NoSwitch_DoesNothing(string? active) =>
         Assert.Equal((RootPinAction.None, (string?)null),
-            WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: @"C:\src\app", activeSolutionDir: active, reliableRoot: @"C:\src\app"));
+            WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: @"C:\src\app", activeSolutionDir: active, reliableRoot: @"C:\src\app", indexedRoot: @"C:\src\app"));
+
+    /// <summary>RAG turned on after the root was pinned: that root was never indexed, and indexing it only
+    /// at the next restart (or solution switch) left the saved setting without effect.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData(@"C:\SRC\App")]
+    public void RagOn_OnAPinnedRootNeverIndexed_IndexesIt(string? active) =>
+        Assert.Equal((RootPinAction.Index, @"C:\src\app"),
+            WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: @"C:\src\app", activeSolutionDir: active, reliableRoot: null, indexedRoot: ""));
+
+    [Fact]
+    public void RagOff_OnAPinnedRootNeverIndexed_DoesNothing() =>
+        Assert.Equal((RootPinAction.None, (string?)null),
+            WorkspaceRootPin.Decide(ragEnabled: false, currentRoot: @"C:\src\app", activeSolutionDir: null, reliableRoot: null, indexedRoot: ""));
 
     // ── What the pin turns on ─────────────────────────────────────────────────
 

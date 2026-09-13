@@ -12,19 +12,20 @@ internal enum RootPinAction { None, Pin, Index }
 /// That root is not a RAG setting. An empty one switches all three off at once:
 /// <c>PathSanitizer.AssertUnderRoot</c> accepts any path and the deny overlay is never read, while
 /// <c>/permissions</c> still lists it. So it is pinned whether or not indexing runs; RAG only decides
-/// whether a solution switch also starts an indexing pass.
+/// whether the root is also indexed — on a solution switch, and as soon as RAG is turned on.
 /// A pinned root follows the authoritative solution signal only, never open files: a file opened
 /// from another folder must not re-point the confinement.
 /// </remarks>
 internal static class WorkspaceRootPin
 {
-    /// <param name="ragEnabled">Whether a solution switch also re-indexes.</param>
+    /// <param name="ragEnabled">Whether the root is indexed: on a solution switch, and when it is pinned but was never indexed.</param>
     /// <param name="currentRoot">The root pinned so far (empty = none).</param>
     /// <param name="activeSolutionDir">The solution the in-process package reports open, if any.</param>
     /// <param name="reliableRoot">A solution-anchored root (<c>ProjectRootLocator.LocateReliable</c>),
     /// consulted only while nothing is pinned.</param>
+    /// <param name="indexedRoot">The root the last indexing pass was started on (empty = never).</param>
     internal static (RootPinAction Action, string? Root) Decide(
-        bool ragEnabled, string? currentRoot, string? activeSolutionDir, string? reliableRoot)
+        bool ragEnabled, string? currentRoot, string? activeSolutionDir, string? reliableRoot, string? indexedRoot)
     {
         if (string.IsNullOrEmpty(currentRoot))
             return string.IsNullOrEmpty(reliableRoot)
@@ -35,7 +36,10 @@ internal static class WorkspaceRootPin
 
         if (string.IsNullOrEmpty(activeSolutionDir)
             || string.Equals(activeSolutionDir, currentRoot, StringComparison.OrdinalIgnoreCase))
-            return (RootPinAction.None, null);
+            // Same root. RAG turned on after it was pinned never indexed it: now, not at the next restart.
+            return ragEnabled && !string.Equals(indexedRoot, currentRoot, StringComparison.OrdinalIgnoreCase)
+                ? (RootPinAction.Index, currentRoot)
+                : (RootPinAction.None, null);
 
         return (ragEnabled ? RootPinAction.Index : RootPinAction.Pin, activeSolutionDir);
     }

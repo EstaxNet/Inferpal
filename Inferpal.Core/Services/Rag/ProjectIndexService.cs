@@ -79,6 +79,10 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
 
+    /// <summary>The root the last indexing pass was started on (empty = never). <see cref="RootDir"/> can be
+    /// pinned without indexing, so it does not say whether a pass ever ran.</summary>
+    public string IndexedRoot { get; private set; } = string.Empty;
+
     // Extra exclusion patterns contributed by .inferpal/project.json. Read when the
     // root is pinned rather than per file: this sits in the enumeration loop. Additive only — the
     // profile can lengthen the built-in list, never shorten it (see IndexExclusions).
@@ -117,6 +121,7 @@ internal sealed class ProjectIndexService : IDisposable
         _cts?.Dispose();
         _cts    = new CancellationTokenSource();
         RootDir = rootDir;
+        IndexedRoot = rootDir;
         _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
         PatchGitIgnore(rootDir);
         _ = Task.Run(() => RunIndexingAsync(rootDir, _cts.Token));

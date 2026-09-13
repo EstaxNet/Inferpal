@@ -1283,6 +1283,46 @@ public class HostServerTests
     }
 
     [Fact]
+    public async Task EnablingRag_InTheSettings_IndexesTheWorkspaceWithoutARestart()
+    {
+        // The host indexed only at initialize: RAG ticked in the settings stayed without an index until restart.
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"host-rag-on-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        await File.WriteAllTextAsync(Path.Combine(root, "Fine.cs"), string.Join('\n',
+            "public class Fine", "{",
+            "    public int One()   => 1;", "    public int Two()   => 2;", "    public int Three() => 3;",
+            "    public int Four()  => 4;", "    public int Five()  => 5;", "    public int Six()   => 6;", "}"));
+        try
+        {
+            using var h = CreateHarness();
+            h.Fake.OnEmbedding = _ => [0.1f, 0.2f, 0.3f];
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.Equal(string.Empty, h.Server.CurrentSession!.Index.IndexedRoot);
+
+            var cfg = System.Text.Json.Nodes.JsonNode.Parse(await h.Client.InvokeAsync<string>("config/get"))!.AsObject();
+            cfg["ragEnabled"] = true;
+            await h.Client.InvokeWithParameterObjectAsync("config/update", new { json = cfg.ToJsonString() })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+            IndexStatusResult status;
+            do
+            {
+                status = await h.Client.InvokeAsync<IndexStatusResult>("index/status");
+                if (status.ChunkCount > 0) break;
+                await Task.Delay(50);
+            } while (DateTime.UtcNow < deadline);
+
+            Assert.True(status.ChunkCount > 0,
+                $"Turning RAG on did not index the workspace (indexing: {status.IsIndexing}, root: {status.RootDir}).");
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    [Fact]
     public async Task Slash_ToolsOff_ForcesPlainChatOnNextTurn()
     {
         using var h = CreateHarness(cfg => cfg.AgentModeEnabled = true);
