@@ -80,6 +80,7 @@
 
 Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Nachricht kopieren</value></data>
+  <data name="LabelCopyCode" xml:space="preserve"><value>Kopieren</value></data>
   <data name="BtnDismiss" xml:space="preserve"><value>Schließen</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Mit KI reparieren</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Alle wiederherstellen</value></data>

@@ -80,6 +80,7 @@
 
 Это действие необратимо.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Копировать сообщение</value></data>
+  <data name="LabelCopyCode" xml:space="preserve"><value>Копировать</value></data>
   <data name="BtnDismiss" xml:space="preserve"><value>Закрыть</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Исправить с ИИ</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Восстановить всё</value></data>

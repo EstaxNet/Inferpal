@@ -127,6 +127,7 @@ internal partial class InferpalToolWindowData
         TooltipSearchConversation = Strings.TooltipSearchConversation;
         TooltipCloseSearch        = Strings.TooltipCloseSearch;
         TooltipSaveSnippet        = Strings.TooltipSaveSnippet;
+        LabelCopyCode             = Strings.LabelCopyCode;
         TooltipStepMode           = Strings.TooltipStepMode;
         TooltipPlanMode           = Strings.TooltipPlanMode;
         TooltipAgentMode          = Strings.TooltipAgentMode;
@@ -198,6 +199,7 @@ internal partial class InferpalToolWindowData
     [DataMember] public string TooltipSearchConversation { get => _tooltipSearchConversation; set => SetProperty(ref _tooltipSearchConversation, value); }
     [DataMember] public string TooltipCloseSearch        { get => _tooltipCloseSearch;        set => SetProperty(ref _tooltipCloseSearch,        value); }
     [DataMember] public string TooltipSaveSnippet        { get => _tooltipSaveSnippet;        set => SetProperty(ref _tooltipSaveSnippet,        value); }
+    [DataMember] public string LabelCopyCode             { get => _labelCopyCode;             set => SetProperty(ref _labelCopyCode,             value); }
     [DataMember] public string TooltipStepMode           { get => _tooltipStepMode;           set => SetProperty(ref _tooltipStepMode,           value); }
     [DataMember] public string TooltipPlanMode           { get => _tooltipPlanMode;           set => SetProperty(ref _tooltipPlanMode,           value); }
     [DataMember] public string TooltipAgentMode          { get => _tooltipAgentMode;          set => SetProperty(ref _tooltipAgentMode,          value); }

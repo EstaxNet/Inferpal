@@ -80,6 +80,7 @@
 
 이 작업은 되돌릴 수 없습니다.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>메시지 복사</value></data>
+  <data name="LabelCopyCode" xml:space="preserve"><value>복사</value></data>
   <data name="BtnDismiss" xml:space="preserve"><value>닫기</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>AI로 수정</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ 모두 복원</value></data>

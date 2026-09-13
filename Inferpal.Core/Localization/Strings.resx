@@ -84,6 +84,7 @@
 
 This cannot be undone.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Copy message</value></data>
+  <data name="LabelCopyCode" xml:space="preserve"><value>Copy</value></data>
   <data name="BtnDismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Fix with AI</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Restore All</value></data>

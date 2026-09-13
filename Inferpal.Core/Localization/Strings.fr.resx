@@ -83,6 +83,7 @@
 
 Cette action est irréversible.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Copier le message</value></data>
+  <data name="LabelCopyCode" xml:space="preserve"><value>Copier</value></data>
   <data name="BtnDismiss" xml:space="preserve"><value>Ignorer</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Corriger avec l'IA</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Tout restaurer</value></data>

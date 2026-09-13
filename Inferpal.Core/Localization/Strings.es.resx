@@ -83,6 +83,7 @@
 
 Esta acción no se puede deshacer.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Copiar mensaje</value></data>
+  <data name="LabelCopyCode" xml:space="preserve"><value>Copiar</value></data>
   <data name="BtnDismiss" xml:space="preserve"><value>Descartar</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Corregir con IA</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Restaurar todo</value></data>

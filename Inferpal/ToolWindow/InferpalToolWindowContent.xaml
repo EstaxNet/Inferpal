@@ -638,7 +638,7 @@
                                                         </Button>
                                                         <!-- Copy -->
                                                         <Button Command="{Binding CopyCodeCommand}"
-                                                                Content="Copy"
+                                                                Content="{Binding DataContext.LabelCopyCode, ElementName=root}"
                                                                 Padding="6,2" FontSize="10"
                                                                 Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}" Cursor="Hand">
                                                             <Button.Template>

@@ -80,6 +80,7 @@
 
 Tej operacji nie można cofnąć.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Kopiuj wiadomość</value></data>
+  <data name="LabelCopyCode" xml:space="preserve"><value>Kopiuj</value></data>
   <data name="BtnDismiss" xml:space="preserve"><value>Zamknij</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Napraw z AI</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Przywróć wszystko</value></data>

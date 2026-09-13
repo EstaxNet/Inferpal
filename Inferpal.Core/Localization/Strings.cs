@@ -72,6 +72,7 @@ internal static class Strings
     public static string TooltipExport        => Get(nameof(TooltipExport));
     public static string TooltipClear         => Get(nameof(TooltipClear));
     public static string TooltipCopy              => Get(nameof(TooltipCopy));
+    public static string LabelCopyCode            => Get(nameof(LabelCopyCode));
     public static string BtnFixWithAi             => Get(nameof(BtnFixWithAi));
     public static string BtnRestoreAll            => Get(nameof(BtnRestoreAll));
     public static string BtnRegenerate            => Get(nameof(BtnRegenerate));

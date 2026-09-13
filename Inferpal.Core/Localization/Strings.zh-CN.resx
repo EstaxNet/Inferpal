@@ -83,6 +83,7 @@
 
 此操作无法撤销。</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>复制消息</value></data>
+  <data name="LabelCopyCode" xml:space="preserve"><value>复制</value></data>
   <data name="BtnDismiss" xml:space="preserve"><value>关闭</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>用 AI 修复</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ 全部还原</value></data>

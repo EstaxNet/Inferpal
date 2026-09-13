@@ -230,6 +230,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _tooltipSearchConversation = string.Empty;
     private string _tooltipCloseSearch        = string.Empty;
     private string _tooltipSaveSnippet        = string.Empty;
+    private string _labelCopyCode             = string.Empty;
     private string _tooltipStepMode           = string.Empty;
     private string _tooltipPlanMode           = string.Empty;
     private string _tooltipAgentMode          = string.Empty;
