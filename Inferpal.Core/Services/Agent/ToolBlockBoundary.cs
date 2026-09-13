@@ -57,6 +57,16 @@ internal static class ToolBlockBoundary
     public static int SnapStart(IReadOnlyList<ChatMessageDto> history, int start, int floor = 1)
     {
         var s = Math.Clamp(start, floor, history.Count);
+
+        // A start ON a tool result lands inside a block: its call (and the answers before it) would
+        // stay on the kept side while this answer goes. Back up to the assistant that owns it.
+        if (s < history.Count && history[s].Role == "tool")
+        {
+            var owner = s - 1;
+            while (owner >= floor && history[owner].Role == "tool") owner--;
+            if (owner >= floor && history[owner] is { Role: "assistant", ToolCalls.Count: > 0 }) s = owner;
+        }
+
         while (s > floor && history[s - 1] is { Role: "assistant", ToolCalls.Count: > 0 }) s--;
         return s;
     }

@@ -128,14 +128,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     /// request over a modestly-sized loaded context, so they must be included.</summary>
     internal static int EstimateRequestTokens(List<ChatMessageDto> messages, List<ToolDefinition>? defs)
     {
-        var chars = 0;
-        foreach (var m in messages)
-        {
-            chars += m.Content?.Length ?? 0;
-            if (m.ToolCalls is { Count: > 0 } calls)
-                foreach (var c in calls)
-                    chars += c.Function.Name.Length + c.Function.Arguments.GetRawText().Length;
-        }
+        var chars = AgentOrchestrator.EstimateChars(messages);
         if (defs is { Count: > 0 })
         {
             try   { chars += JsonSerializer.Serialize(defs).Length; }
@@ -171,6 +164,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (IsInCooldown())
             throw new AgentHttpException(Strings.MsgCircuitOpen, isTimeout: false);
 
+        // Direct callers (code actions, inline edit, /check…) hold the GPU exactly like an agent run:
+        // indexing pauses and ghost-text yields. Re-entrant inside RunAgentAsync's own lease.
+        using var gpuLease = GpuScheduler.AcquireChatLease();
+
         var defs    = tools.Definitions.Count > 0 ? tools.Definitions.ToList() : null;
 
         // Proactive context-fit guard. A model loaded with a smaller context than the request needs
@@ -182,7 +179,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // null), and only fires when the prompt estimate alone already overflows, so it can't
         // false-positive a request that would have fit. Ollama is a separate class, unaffected.
         var loadedCtx = await GetLoadedContextLengthAsync(model, ct);
-        if (CheckContextFit(EstimateRequestTokens(messages, defs), loadedCtx) is { } overflowMsg)
+        // The estimate serializes every tool schema: only pay for it when there is a window to check.
+        if (loadedCtx is > 0 && CheckContextFit(EstimateRequestTokens(messages, defs), loadedCtx) is { } overflowMsg)
             throw new AgentHttpException(overflowMsg, isTimeout: false);
 
         var request = new OpenAiChatRequest(
@@ -229,8 +227,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // Reasoning text is normally only previewed live, but a forced reasoning model can emit its
         // whole tool call into this channel (see the recovery fallback below) — so keep a copy.
         var reasoningBuilder = new System.Text.StringBuilder();
-        // Accumulate streamed tool-call fragments by index (name + arguments arrive piecewise).
-        var toolAcc        = new SortedDictionary<int, (string Name, System.Text.StringBuilder Args)>();
+        // Accumulate streamed tool-call fragments (name + arguments arrive piecewise).
+        var toolAcc        = new ToolCallAccumulator();
         int tokensUsed = 0, promptTokens = 0;
         // What the stream contained: the one thing missing to diagnose an empty turn.
         var chunkCount   = 0;
@@ -309,18 +307,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 }
 
                 if (delta.ToolCalls is { Count: > 0 } tcs)
-                {
                     foreach (var tc in tcs)
-                    {
-                        if (!toolAcc.TryGetValue(tc.Index, out var slot))
-                            slot = (string.Empty, new System.Text.StringBuilder());
-                        if (!string.IsNullOrEmpty(tc.Function?.Name))
-                            slot.Name = tc.Function!.Name!;
-                        if (!string.IsNullOrEmpty(tc.Function?.Arguments))
-                            slot.Args.Append(tc.Function!.Arguments);
-                        toolAcc[tc.Index] = slot;
-                    }
-                }
+                        toolAcc.Add(tc.Index, tc.Id, tc.Function?.Name, tc.Function?.Arguments);
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
@@ -344,7 +332,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             throw new AgentHttpException(Strings.MsgUnreachable(base_) + "\n" + ex.Message, isTimeout: false);
         }
 
-        var toolCalls   = BuildToolCalls(toolAcc);
+        var toolCalls   = toolAcc.Build();
         var contentText = contentBuilder.ToString();
         // A reasoning model routes its real turn (tool call or final answer) into the reasoning
         // channel and can leak only stray, non-printable bytes into the content channel — qwen3.6 on
@@ -428,61 +416,71 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         foreach (var (_, slot) in acc)
         {
             if (string.IsNullOrEmpty(slot.Name)) continue;
-            JsonElement args;
-            var raw = slot.Args.Length > 0 ? slot.Args.ToString() : "{}";
-            try   { args = JsonDocument.Parse(raw).RootElement.Clone(); }
-            catch (JsonException) { args = JsonDocument.Parse("{}").RootElement.Clone(); }
-            calls.Add(new ToolCallDto(new ToolCallFunction(slot.Name, args)));
+            calls.Add(new ToolCallDto(ParseArguments(slot.Name, slot.Args.ToString())));
         }
         return calls.Count > 0 ? calls : null;
     }
 
-    // ── Server-error surfacing ─────────────────────────────────────────────────
-
-    /// <summary>
-    /// Extracts a human message from an SSE <c>error</c> element. Servers disagree on the shape:
-    /// a bare string (<c>"error":"…"</c>) or an object (<c>"error":{"message":"…"}</c>); returns
-    /// <c>null</c> when no error is present so the normal streaming path continues.
-    /// </summary>
-    /// <summary>Parses a raw JSON line and returns its <c>error</c> element, or <c>default</c>
-    /// (Undefined) when the line isn't a JSON object or has no <c>error</c> member.</summary>
-    internal static JsonElement ParseErrorElement(string jsonLine)
+    /// <summary>Parses a call's streamed arguments text.</summary>
+    /// <remarks>Empty or <c>null</c> is a call without arguments (<c>{}</c>); an object nested in a JSON
+    /// string (double-encoded) is unwrapped. ⚠ Anything else — typically a turn cut off mid-call — is
+    /// kept in <see cref="ToolCallFunction.UnparsedArguments"/> and must not run: defaulting it to
+    /// <c>{}</c> turned <c>run_tests {"filter":"Foo…</c> into the whole test suite.</remarks>
+    internal static ToolCallFunction ParseArguments(string name, string raw)
     {
+        var trimmed = raw.Trim();
+        if (trimmed.Length == 0 || trimmed == "null") return new ToolCallFunction(name, EmptyArguments());
         try
         {
-            using var doc = JsonDocument.Parse(jsonLine);
-            return doc.RootElement.ValueKind == JsonValueKind.Object
-                   && doc.RootElement.TryGetProperty("error", out var err)
-                ? err.Clone()
-                : default;
+            using var doc = JsonDocument.Parse(trimmed);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object)
+                return new ToolCallFunction(name, root.Clone());
+            if (root.ValueKind == JsonValueKind.String && root.GetString() is { } inner
+                && inner.TrimStart().StartsWith('{'))
+                return ParseArguments(name, inner);
         }
-        catch (JsonException) { return default; }
+        catch (JsonException) { /* falls through to the unparsed call */ }
+        return new ToolCallFunction(name, EmptyArguments()) { UnparsedArguments = raw };
     }
 
-    internal static string? TryExtractError(JsonElement error)
+    private static JsonElement EmptyArguments()
     {
-        if (error.ValueKind == JsonValueKind.String) return error.GetString();
-        if (error.ValueKind == JsonValueKind.Object)
-            return error.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
-                ? m.GetString()
-                : error.ToString();
-        return null;
+        using var doc = JsonDocument.Parse("{}");
+        return doc.RootElement.Clone();
     }
 
-    /// <summary>
-    /// Turns a raw server error into a user-facing message. A context-overflow error (the request,
-    /// inflated by the agent's tool definitions, no longer fits the model's loaded context window) is
-    /// the common LM Studio failure, so it gets an actionable hint; everything else is surfaced verbatim.
-    /// </summary>
-    internal static string MapServerError(string serverError, string url)
+    /// <summary>Assembles streamed tool-call fragments into calls.</summary>
+    /// <remarks>Fragments are keyed by <c>index</c>, but ⚠ a server that sends several COMPLETE calls
+    /// on one index with distinct ids (a gateway that omits <c>index</c>, which then reads 0) must not
+    /// merge them — the names overwrote each other and the arguments concatenated into
+    /// <c>{…}{…}</c>. A fragment whose id differs from the one already held on its index opens a new
+    /// call; a fragment without an id continues the current one.</remarks>
+    internal sealed class ToolCallAccumulator
     {
-        var lower = serverError.ToLowerInvariant();
-        var isContextOverflow =
-            lower.Contains("context size") || lower.Contains("context length") ||
-            lower.Contains("n_ctx") || lower.Contains("exceeds the available context");
-        return isContextOverflow
-            ? Strings.MsgContextOverflow(serverError)
-            : Strings.MsgServerError(url, serverError);
+        private readonly SortedDictionary<int, (string Name, System.Text.StringBuilder Args)> _slots = new();
+        private readonly Dictionary<int, int>    _slotByIndex = new();
+        private readonly Dictionary<int, string> _idBySlot    = new();
+
+        public void Add(int index, string? id, string? name, string? arguments)
+        {
+            var opensNewCall = !_slotByIndex.TryGetValue(index, out var key)
+                || (!string.IsNullOrEmpty(id) && _idBySlot.TryGetValue(key, out var held) && held != id);
+            if (opensNewCall)
+            {
+                key = _slots.Count;
+                _slotByIndex[index] = key;
+                _slots[key] = (string.Empty, new System.Text.StringBuilder());
+            }
+            if (!string.IsNullOrEmpty(id)) _idBySlot.TryAdd(key, id);
+
+            var slot = _slots[key];
+            if (!string.IsNullOrEmpty(name)) slot.Name = name;
+            if (!string.IsNullOrEmpty(arguments)) slot.Args.Append(arguments);
+            _slots[key] = slot;
+        }
+
+        public List<ToolCallDto>? Build() => BuildToolCalls(_slots);
     }
 
     // ── Embeddings ─────────────────────────────────────────────────────────────
@@ -558,6 +556,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             RecordFailure();
             return false;
         }
+        // The caller gave up — not a server failure, so it must not push the breaker toward open.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { return false; }
         catch { RecordFailure(); return false; }
     }
 
@@ -569,7 +569,11 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var result = await GetModelsAsync(V1(url ?? _config.BaseUrl), ct);
             return result?.Data?.Select(m => m.Id).ToList() ?? [];
         }
-        catch { return []; }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            Diagnostics.Swallow("OpenAiCompatible.ListModels", ex);
+            return [];
+        }
     }
 
     /// <inheritdoc/>
@@ -581,7 +585,11 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var result = await GetModelsAsync(V1(url ?? _config.BaseUrl), ct);
             return result?.Data?.Select(m => new InstalledModelInfo(m.Id, 0)).ToList() ?? [];
         }
-        catch { return []; }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            Diagnostics.Swallow("OpenAiCompatible.ListInstalledModels", ex);
+            return [];
+        }
     }
 
     private async Task<OpenAiModelsResponse?> GetModelsAsync(string v1Base, CancellationToken ct)

@@ -60,8 +60,23 @@ internal static class FimSidecar
     private static readonly ConcurrentDictionary<int, TaskCompletionSource<string?>> _pending =
         new ConcurrentDictionary<int, TaskCompletionSource<string?>>();
 
+    // What a request receives when the pipe closes under it: the sidecar went away without answering.
+    // A distinct instance compared by reference — never an answer, never a cancellation (null).
+    private static readonly string DeadPipe = new string('\0', 1);
+
+    // First stderr line of the current sidecar: a .NET start-up crash puts its cause there ("Could
+    // not load file or assembly…"), and that is the reason a user needs to read.
+    private static string? _firstStderr;
+
+    // 1 once the heartbeat says the sidecar answers, back to 0 when it dies. The heartbeat is a file:
+    // rewriting it on every completion cost a read and a write per pause in typing.
+    private static int _answered;
+
     /// <summary>Test seam: the directory to look for the sidecar executable in.</summary>
     internal static string? DirectoryOverride;
+
+    /// <summary>Test seam: how many sidecar processes this devenv has launched.</summary>
+    internal static int LaunchCount;
 
     /// <summary>
     /// Requests a completion. Returns <c>null</c> when there is nothing to show — sidecar
@@ -100,20 +115,35 @@ internal static class FimSidecar
 
             Send(stdin, payload);
 
-            string? answer;
+            string? raw;
             using (ct.Register(() => Cancel(id)))
-                answer = NullIfEmpty(await tcs.Task.ConfigureAwait(false));
+                raw = await tcs.Task.ConfigureAwait(false);
+
+            // Cancelled (null), or the pipe closed under the request (DeadPipe — ReadLoop has said
+            // why): neither is an answer, and neither may be recorded as one.
+            if (raw is null || ReferenceEquals(raw, DeadPipe)) return null;
 
             // ⚠ The door is recorded on an ANSWER, not on a start: a process that starts and then
             // dies on the first request is not a working sidecar. Recording it clears the reason,
-            // so a failure that has been repaired stops being announced.
-            Services.Signals.InProcAliveSignal.Record(Services.Signals.InProcAliveSignal.ComponentFim);
-            return answer;
+            // so a failure that has been repaired stops being announced. Once per sidecar life:
+            // the heartbeat is a file.
+            if (Interlocked.Exchange(ref _answered, 1) == 0)
+                Services.Signals.InProcAliveSignal.Record(Services.Signals.InProcAliveSignal.ComponentFim);
+            return NullIfEmpty(raw);
         }
         catch (Exception ex)
         {
             Diagnostics.Swallow("FimSidecar.Complete", ex);
-            Recycle();
+            lock (_gate)
+            {
+                // Writing to a sidecar that has already died is the other way its death shows. Only
+                // while it is still the current one: a newer, healthy sidecar must not pay for it.
+                if (ReferenceEquals(_stdin, stdin))
+                {
+                    NoteDeathLocked(_process);
+                    RecycleLocked();
+                }
+            }
             return null;
         }
         finally { _pending.TryRemove(id, out _); }
@@ -141,7 +171,14 @@ internal static class FimSidecar
         // The configuration moved (backend, model, key): the sidecar read the old one at startup.
         if (_process != null && configStamp != _configStamp) RecycleLocked();
         if (_process != null && !_process.HasExited) return true;
-        if (_process != null) RecycleLocked();            // died on its own: start again
+        if (_process != null)
+        {
+            // Died on its own since the last request: a failure to hold the door for, not a cue to
+            // start again at once — a sidecar that dies at start-up was relaunched on every pause in
+            // typing, and nothing said why.
+            NoteDeathLocked(_process);
+            RecycleLocked();
+        }
         if (!_startGate.MayTry()) return false;
 
         var dir = DirectoryOverride
@@ -181,18 +218,23 @@ internal static class FimSidecar
                 return false;
             }
 
+            LaunchCount++;
             _process     = proc;
             _stdin       = proc.StandardInput.BaseStream;
             _configStamp = configStamp;
+            _firstStderr = null;
+            Interlocked.Exchange(ref _answered, 0);
 
             var stdout = proc.StandardOutput.BaseStream;
             // Detached read loop: it lives as long as the pipe does (VSTHRD110: _ =).
-            _ = Task.Run(() => ReadLoop(stdout));
+            _ = Task.Run(() => ReadLoop(proc, stdout));
 
             // The sidecar's stderr: its diagnostic traces, never the protocol.
             proc.ErrorDataReceived += (_, e) =>
             {
-                if (!string.IsNullOrWhiteSpace(e.Data)) Diagnostics.Record("Fim.stderr", e.Data!);
+                if (string.IsNullOrWhiteSpace(e.Data)) return;
+                Diagnostics.Record("Fim.stderr", e.Data!);
+                Interlocked.CompareExchange(ref _firstStderr, e.Data, null);
             };
             proc.BeginErrorReadLine();
             return true;
@@ -210,7 +252,7 @@ internal static class FimSidecar
 
     private static void RecycleLocked()
     {
-        ReleasePending();
+        ReleasePending(null);
 
         var proc = _process;
         _process = null;
@@ -222,10 +264,36 @@ internal static class FimSidecar
     }
 
     /// <summary>Releases pending waits: nobody must stay hanging on a dead pipe.</summary>
-    private static void ReleasePending()
+    /// <param name="outcome"><c>null</c> for a deliberate recycle (nothing to report),
+    /// <see cref="DeadPipe"/> when the sidecar went away under the requests.</param>
+    private static void ReleasePending(string? outcome)
     {
-        foreach (var kv in _pending) kv.Value.TrySetResult(null);
+        foreach (var kv in _pending) kv.Value.TrySetResult(outcome);
         _pending.Clear();
+    }
+
+    /// <summary>
+    /// The sidecar went away without answering: hold the door for one cooldown, and say why in the
+    /// channel <c>/diagnostics</c> reads — this process's own ring is one nobody can.
+    /// </summary>
+    private static void NoteDeathLocked(Process? proc)
+    {
+        _startGate.Backoff();
+        Interlocked.Exchange(ref _answered, 0);
+        Services.Signals.InProcAliveSignal.RecordFimUnavailable(DescribeDeath(proc));
+    }
+
+    private static string DescribeDeath(Process? proc)
+    {
+        string? code = null;
+        try { if (proc is { HasExited: true }) code = proc.ExitCode.ToString(CultureInfo.InvariantCulture); }
+        catch (InvalidOperationException) { /* disposed by a concurrent recycle */ }
+        catch (System.ComponentModel.Win32Exception) { /* exit state unreadable */ }
+
+        var reason = code is null ? "sidecar stopped without answering" : "sidecar exited with code " + code;
+        var first  = _firstStderr?.Trim();
+        if (string.IsNullOrEmpty(first)) return reason;
+        return reason + ": " + (first!.Length <= 200 ? first : first.Substring(0, 200) + "…");
     }
 
     private static void Cancel(int id)
@@ -254,7 +322,7 @@ internal static class FimSidecar
         }
     }
 
-    private static void ReadLoop(Stream stdout)
+    private static void ReadLoop(Process proc, Stream stdout)
     {
         try
         {
@@ -275,7 +343,26 @@ internal static class FimSidecar
             }
         }
         catch (Exception ex) { Diagnostics.Swallow("FimSidecar.Read", ex); }
-        finally { ReleasePending(); }
+        finally
+        {
+            // A closed output usually means the process is exiting: give it a moment, so the reason
+            // can carry its exit code. Outside the lock — completions must not wait on it.
+            try { proc.WaitForExit(500); }
+            catch (InvalidOperationException) { /* disposed by a recycle */ }
+            catch (System.ComponentModel.Win32Exception) { /* exit state unreadable */ }
+
+            lock (_gate)
+            {
+                // Only this sidecar's requests. A recycle has already released them and may have
+                // started the next sidecar, whose requests this reader must not fail.
+                if (ReferenceEquals(_process, proc))
+                {
+                    NoteDeathLocked(proc);
+                    ReleasePending(DeadPipe);
+                    RecycleLocked();
+                }
+            }
+        }
     }
 
     /// <summary>Reads headers up to the blank line. Returns the body size, or -1 if closed.</summary>
@@ -330,7 +417,9 @@ internal static class FimSidecar
             }
 
             if (root.TryGetProperty("error", out var error)) Diagnostics.Record("Fim.error", error.ToString());
-            tcs.TrySetResult(null);
+            // An error response is still an answer — the sidecar is alive, there is just nothing to
+            // show. null is what a cancellation receives, and would not say so.
+            tcs.TrySetResult(string.Empty);
         }
         catch (Exception ex) { Diagnostics.Swallow("FimSidecar.Dispatch", ex); }
     }

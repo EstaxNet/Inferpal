@@ -1,5 +1,7 @@
 ﻿using Inferpal.Config;
 
+using Inferpal.Services.Rag;
+
 namespace Inferpal.Services.Docs;
 
 /// <summary>
@@ -295,57 +297,44 @@ internal sealed class DocsIndexService
         }
         finally { _chunkLock.Release(); }
 
+        var pool = Math.Max(topK * 5, 50);
+
+        List<(int Idx, float Cos)> vector = [];
         if (queryEmbedding is { Length: > 0 })
         {
-            var ranked = all
-                .Where(c => c.Embedding is { Length: > 0 })
-                .Select(c => (c, CosineSimilarity(queryEmbedding, c.Embedding!)))
-                .Where(x => x.Item2 >= _config.RagSimilarityThreshold)
-                .OrderByDescending(x => x.Item2)
-                .Take(topK)
-                .ToList();
-            if (ranked.Count > 0) return ranked;
-        }
-
-        if (!string.IsNullOrWhiteSpace(keywordFallback))
-        {
-            var kw = keywordFallback.ToLowerInvariant();
-            return all
-                .Select(c => (c, (float)CountMatches(c.Content, kw)))
-                .Where(x => x.Item2 > 0)
-                .OrderByDescending(x => x.Item2)
-                .Take(topK)
+            vector = all
+                .Select((c, i) => (Idx: i, Cos: c.Embedding is { Length: > 0 } ? VectorMath.Cosine(queryEmbedding, c.Embedding!) : 0f))
+                .Where(x => x.Cos >= _config.RagSimilarityThreshold)
+                .OrderByDescending(x => x.Cos)
+                .Take(pool)
                 .ToList();
         }
 
-        return [];
-    }
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private static float CosineSimilarity(float[] a, float[] b)
-    {
-        if (a.Length != b.Length) return 0f;
-        float dot = 0f, normA = 0f, normB = 0f;
-        for (int i = 0; i < a.Length; i++)
+        // ⚠ The lexical side is BM25 over the query's words, like the code index. The old keyword
+        // fallback searched the WHOLE query as one substring, and search_docs passes the model's
+        // sentence — "how to configure retries" never matched. It is also what reaches the chunks left
+        // without a vector (circuit opened mid-crawl), which the vector side can never return.
+        List<(int Idx, double Score)> lexical = [];
+        if (!string.IsNullOrWhiteSpace(keywordFallback) && CodeTokenizer.Tokenize(keywordFallback) is { Count: > 0 } terms)
         {
-            dot   += a[i] * b[i];
-            normA += a[i] * a[i];
-            normB += b[i] * b[i];
+            var docs = all.Select(c => (IReadOnlyList<string>)CodeTokenizer.Tokenize(c.Content)).ToList();
+            lexical = new Bm25Index(docs).Rank(terms, pool);
         }
-        return (normA > 0f && normB > 0f)
-            ? dot / (MathF.Sqrt(normA) * MathF.Sqrt(normB))
-            : 0f;
-    }
 
-    private static int CountMatches(string text, string keyword)
-    {
-        int count = 0, idx = 0;
-        while ((idx = text.IndexOf(keyword, idx, StringComparison.OrdinalIgnoreCase)) >= 0)
+        if (vector.Count > 0 && lexical.Count > 0)
         {
-            count++;
-            idx += keyword.Length;
+            var cosByIdx = vector.ToDictionary(x => x.Idx, x => x.Cos);
+            return ReciprocalRankFusion.Fuse(new[]
+                {
+                    vector.Select(x => x.Idx).ToList(),
+                    lexical.Select(x => x.Idx).ToList(),
+                })
+                .Take(topK)
+                .Select(i => (all[i], cosByIdx.GetValueOrDefault(i, 0f)))
+                .ToList();
         }
-        return count;
+        if (vector.Count > 0)
+            return vector.Take(topK).Select(x => (all[x.Idx], x.Cos)).ToList();
+        return lexical.Take(topK).Select(x => (all[x.Idx], (float)x.Score)).ToList();
     }
 }

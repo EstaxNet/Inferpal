@@ -104,11 +104,16 @@ internal sealed class ProjectMapService
         }
 
         // ── 2. Cross-file ref counts (over the pass-1 contents, no second disk walk) ──
-        foreach (var (_, src) in contents)
+        // Each file is tokenised ONCE into its identifiers: a substring search per (file, stem) pair was
+        // O(files² × size) on every regeneration, and every file counted its own name as a reference.
+        var stems = refCounts.Keys.ToList();
+        foreach (var (path, src) in contents)
         {
             ct.ThrowIfCancellationRequested();
-            foreach (var stem in refCounts.Keys.ToList())
-                if (src.Contains(stem, StringComparison.OrdinalIgnoreCase))
+            var words = IdentifiersOf(src);
+            var own   = Path.GetFileNameWithoutExtension(path);
+            foreach (var stem in stems)
+                if (!stem.Equals(own, StringComparison.OrdinalIgnoreCase) && words.Contains(stem))
                     refCounts[stem]++;
         }
 
@@ -265,6 +270,24 @@ internal sealed class ProjectMapService
     }
 
     // ── File enumeration ──────────────────────────────────────────────────────
+
+    /// <summary>The identifiers spelled in <paramref name="src"/> (letters, digits, underscore), case-insensitive.</summary>
+    private static HashSet<string> IdentifiersOf(string src)
+    {
+        var words = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var start = -1;
+        for (var i = 0; i <= src.Length; i++)
+        {
+            var inWord = i < src.Length && (char.IsLetterOrDigit(src[i]) || src[i] == '_');
+            if (inWord && start < 0) start = i;
+            else if (!inWord && start >= 0)
+            {
+                words.Add(src[start..i]);
+                start = -1;
+            }
+        }
+        return words;
+    }
 
     private static IEnumerable<string> EnumerateSourceFiles(string root) =>
         WorkspaceScan.EnumerateFiles(root, "*.cs");

@@ -39,6 +39,15 @@ internal static class RoslynChunker
                 EmitTypeChunks(typeDecl, lines, filePath, relPath, chunks);
             }
 
+            // ⚠ Top-level statements next to a type: the type made `chunks` non-empty, so the CodeChunker
+            // fallback below never ran and the statements were indexed nowhere — a minimal-API Program.cs
+            // indexed its model, not one endpoint. They precede every type declaration, so one span covers them.
+            var globals = root.ChildNodes().OfType<GlobalStatementSyntax>().ToList();
+            if (globals.Count > 0 && chunks.Count > 0)
+                TryAddChunk("<top-level statements>",
+                    NodeStartLine(globals[0]), NodeEndLine(globals[^1], lines),
+                    lines, filePath, relPath, chunks);
+
             return chunks.Count > 0 ? chunks : CodeChunker.Chunk(filePath, content, rootDir);
         }
         catch
@@ -114,15 +123,25 @@ internal static class RoslynChunker
         int lineCount = end0 - start0 + 1;
         if (lineCount < MinChunkLines) return;
 
-        // Hard cap: shrink by 25% steps until under budget
-        while (lineCount > MinChunkLines && EstimateTokens(lines, start0, end0) > MaxChunkTokens)
+        // Hard cap: past the budget the member is SPLIT into consecutive pieces. ⚠ It used to be shrunk
+        // until it fit, and its tail was indexed nowhere — search could never reach the end of a long method.
+        var pieceStart = start0;
+        while (pieceStart <= end0)
         {
-            int cut = Math.Max(1, lineCount / 4);
-            end0      -= cut;
-            lineCount  = end0 - start0 + 1;
-        }
+            var pieceEnd = pieceStart;
+            var tokens   = EstimateTokens(lines, pieceStart, pieceStart);
+            while (pieceEnd < end0 && tokens + EstimateTokens(lines, pieceEnd + 1, pieceEnd + 1) <= MaxChunkTokens)
+                tokens += EstimateTokens(lines, ++pieceEnd, pieceEnd);
 
-        var text = string.Join('\n', lines, start0, lineCount).Trim();
+            AddPiece(symbolName, pieceStart, pieceEnd, lines, filePath, relPath, chunks);
+            pieceStart = pieceEnd + 1;
+        }
+    }
+
+    private static void AddPiece(
+        string symbolName, int start0, int end0, string[] lines, string filePath, string relPath, List<RagChunk> chunks)
+    {
+        var text = string.Join('\n', lines, start0, end0 - start0 + 1).Trim();
         if (string.IsNullOrWhiteSpace(text)) return;
 
         chunks.Add(new RagChunk

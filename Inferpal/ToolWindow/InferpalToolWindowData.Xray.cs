@@ -45,7 +45,7 @@ internal partial class InferpalToolWindowData
     {
         var root     = FindProjectRoot();
         var sections = new SystemPromptBuilder(_config, EditorName).BuildSections(
-            Strings.SystemPrompt, null, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
+            Strings.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateTokens(_history), _config.ContextWindowSize);
@@ -68,9 +68,7 @@ internal partial class InferpalToolWindowData
         if (item.Enabled) _xrayDisabledSections.Remove(item.Id);
         else              _xrayDisabledSections.Add(item.Id);
 
-        _baseSystemPrompt = BuildSystemPrompt();
-        if (_history.Count > 0 && _history[0].Role == "system")
-            _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
+        RefreshSystemPrompt();
 
         RefreshXrayTotals();
     }
@@ -80,7 +78,7 @@ internal partial class InferpalToolWindowData
     {
         var root     = FindProjectRoot();
         var sections = new SystemPromptBuilder(_config, EditorName).BuildSections(
-            Strings.SystemPrompt, null, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
+            Strings.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateTokens(_history), _config.ContextWindowSize);

@@ -97,7 +97,7 @@ export type ExtToWebview =
   | { type: 'plan'; plan: WvPlan }
   | { type: 'approval'; id: number; message: string }
   | { type: 'approvalDismiss'; id: number }
-  | { type: 'mentionSuggestions'; items: string[] }
+  | { type: 'mentionSuggestions'; items: string[]; query: string }
   | { type: 'xrayPanel'; panel: XRayPanel }
   | { type: 'streamReset' }
   | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null }

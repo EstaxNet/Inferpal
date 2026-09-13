@@ -103,15 +103,13 @@ internal static class ContextManager
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(Math.Max(10, config.CompactionTimeoutSeconds)));
 
-            var result = await client.RunAgentAsync(
-                model:   await ModelRouter.ResolveUtilityAsync(config, client, cts.Token).ConfigureAwait(false),
-                history: request,
-                tools:   EmptyToolRegistry.Instance,
-                onStep:  _ => { },
-                onToken: null,
-                ct:      cts.Token).ConfigureAwait(false);
+            // ⚠ SendChatAsync, never RunAgentAsync: the agent loop reports a network failure as its
+            // FinalResponse, and the error text would become the "summary" that replaces the turns.
+            var turn = await client.SendChatAsync(
+                await ModelRouter.ResolveUtilityAsync(config, client, cts.Token).ConfigureAwait(false),
+                request, EmptyToolRegistry.Instance, onToken: null, cts.Token).ConfigureAwait(false);
 
-            return result.FinalResponse?.Trim();
+            return MarkdownParser.StripThinkTags(turn.TextContent).Trim();
         }
         // A cancellation by the USER propagates; the fuse's own is a fallback, not an error.
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }

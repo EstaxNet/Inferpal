@@ -267,6 +267,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.startStatusPolling();
     await this.pollBackendStatus();
 
+    // ⚠ A host that restarted (settings change, crash → Restart) starts with an EMPTY history while
+    // the thread still shows the conversation: the next question went out with no context, and the
+    // model "forgot" what is on screen. Save what is shown, then load it back so the host rebuilds
+    // its history from it.
+    if (this.transcript.length > 0) {
+      try {
+        await host.sessionSave('last_session', this.snapshot());
+        const back = await host.sessionLoad('last_session');
+        if (back && back.messages.length > 0) {
+          this.applySession(back.messages);
+          return; // applySession hydrates
+        }
+      } catch (err) {
+        this.log(`[chat] history rebuild after host restart failed: ${String(err)}`);
+      }
+    }
+
     // Continuity across restarts: bring back the auto-saved conversation, like the VS VM.
     if (this.transcript.length === 0) {
       try {
@@ -671,18 +688,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // kept answering the OLD model and every Model Router role that falls back to
         // DefaultModel (session titles, code actions) silently stayed on it (revue §3.5).
         // Read-modify-write of the full JSON — config/update replaces the whole object.
-        const host = this.getHost();
-        if (host?.isRunning) {
-          try {
-            const cfg = JSON.parse(await host.configGet()) as { defaultModel?: string };
-            if (cfg.defaultModel !== msg.model) {
-              cfg.defaultModel = msg.model;
-              await host.configUpdate(JSON.stringify(cfg));
-            }
-          } catch (err) {
-            this.log(`[chat] model pick → host config failed: ${String(err)}`);
-          }
-        }
+        await this.pushModelToHost(msg.model);
         return;
       }
       case 'approvalAnswer': {
@@ -693,7 +699,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       case 'mentionQuery': {
         const items = await this.mentionSuggestions(msg.query);
-        this.post({ type: 'mentionSuggestions', items });
+        this.post({ type: 'mentionSuggestions', items, query: msg.query });
         return;
       }
       case 'openApprovalDiff': {
@@ -921,12 +927,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const MAX_FILES = 5;
     const MAX_CHARS = 40_000;
+    // ⚠ The cap counts files ATTACHED, not tokens seen: five `@property` in pasted code used up the
+    // budget before a real `@src/app.py` was even tried — and the file was silently left out.
+    // The attempts themselves stay bounded.
+    const MAX_ATTEMPTS = 25;
     const tokens = [...new Set([...prompt.matchAll(/@([^\s@]+)/g)].map((m) => m[1].replace(/[),.;:!?]+$/, '')))]
-      .slice(0, MAX_FILES);
+      .slice(0, MAX_ATTEMPTS);
 
     let attachments = '';
     const paths: string[] = [];
     for (const token of tokens) {
+      if (paths.length >= MAX_FILES) {
+        break;
+      }
       try {
         const doc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(root, token));
         let text = doc.getText();
@@ -947,6 +960,50 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       pending.resolve(0);
     }
     this.pendingApprovals.clear();
+  }
+
+  /** The host stopped or crashed: the approval cards it opened can no longer be answered. */
+  onHostStopped(): void {
+    this.dismissAllPending();
+  }
+
+  /** A model picked while a turn ran, still to be pushed into the host's config. */
+  private pendingModelPush: string | undefined;
+
+  /**
+   * Pushes the picked model into the host's shared config: without it `/model` kept answering the
+   * OLD model, and every Model Router role that falls back to DefaultModel (session titles, code
+   * actions) silently stayed on it (revue §3.5). Read-modify-write of the full JSON — config/update
+   * replaces the whole object.
+   * ⚠ config/update holds the turn slot: a pick made DURING a turn was refused and only logged, and
+   * the host kept the old model with nothing saying so. Such a pick is replayed when the turn ends.
+   */
+  private async pushModelToHost(model: string): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      return;
+    }
+    if (this.busy) {
+      this.pendingModelPush = model;
+      return;
+    }
+    this.pendingModelPush = undefined;
+    try {
+      const cfg = JSON.parse(await host.configGet()) as { defaultModel?: string };
+      if (cfg.defaultModel !== model) {
+        cfg.defaultModel = model;
+        await host.configUpdate(JSON.stringify(cfg));
+      }
+    } catch (err) {
+      this.log(`[chat] model pick → host config failed: ${String(err)}`);
+    }
+  }
+
+  /** Called wherever a turn ends: pushes a model picked while it ran. */
+  private flushPendingModelPush(): void {
+    if (this.pendingModelPush !== undefined && !this.busy) {
+      void this.pushModelToHost(this.pendingModelPush);
+    }
   }
 
   /** Denies every card still waiting AND retires it in the webview, so none stays clickable. */
@@ -1037,6 +1094,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // "a chat turn is already running". Falling through would send the raw `/branch 2`
         // to the model as a prompt, which is both useless and confusing.
         this.log(`[chat] command/slash failed: ${String(err)}`);
+        // The host may be gone: no one waits for an approval card this command opened any more.
+        this.dismissAllPending();
         this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
         return;
       }
@@ -1223,6 +1282,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.post({ type: 'stepResumed' });
       }
       this.autoSaveLast();
+      this.flushPendingModelPush();
     }
   }
 
@@ -1268,6 +1328,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.append({ role: 'assistant', text, timestamp });
     }
     this.busy = false;
+    this.flushPendingModelPush();
     this.post({
       type: 'turnEnded',
       text: error ? '' : text,

@@ -35,16 +35,28 @@ internal static class AgentLoopPolicy
     internal static string Signature(IReadOnlyList<ToolCallDto> calls) =>
         string.Join("|", calls.Select(c => $"{c.Function.Name}:{c.Function.Arguments}"));
 
+    /// <summary>Key prefix of read-only batches in the counts — a character no tool name contains.</summary>
+    private const string ReadOnlyKey = "ro";
+
     /// <summary>
     /// Records <paramref name="calls"/> in <paramref name="counts"/> and returns <c>true</c> when
     /// the batch has repeated often enough to be treated as a loop. Mutating batches abort on the
     /// first verbatim repeat (2nd occurrence); read-only-only batches tolerate one extra (3rd).
     /// </summary>
+    /// <remarks>⚠ A new (non-repeated) mutation resets the read-only counts: what a verification
+    /// observes has changed, so re-running it is not a repeat. Counted over the whole run, the third
+    /// identical <c>run_tests</c> of an edit → verify cycle stopped the run as a loop.</remarks>
     internal static bool IsLoop(Dictionary<string, int> counts, IReadOnlyList<ToolCallDto> calls)
     {
-        var sig  = Signature(calls);
-        int seen = counts[sig] = counts.GetValueOrDefault(sig) + 1;
         bool readOnlyBatch = calls.All(c => ReadOnlyTools.Contains(c.Function.Name));
-        return seen >= (readOnlyBatch ? 3 : 2);
+        var sig  = (readOnlyBatch ? ReadOnlyKey : string.Empty) + Signature(calls);
+        int seen = counts[sig] = counts.GetValueOrDefault(sig) + 1;
+
+        if (readOnlyBatch) return seen >= 3;
+        if (seen >= 2)     return true;
+
+        foreach (var key in counts.Keys.Where(k => k.StartsWith(ReadOnlyKey, StringComparison.Ordinal)).ToList())
+            counts.Remove(key);
+        return false;
     }
 }

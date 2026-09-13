@@ -118,7 +118,7 @@ export class SettingsPanel {
           // Probe the URL the user is LOOKING AT - the one in the form - and name the backend that
           // answered, exactly like the Visual Studio Test button (which reads BaseUrl from its own
           // form, auto-selects the detected provider, then refreshes models from that URL).
-          const result = await host.connectionCheck(msg.baseUrl);
+          const result = await host.connectionCheck(msg.baseUrl, msg.apiKey);
           this.post({ type: 'testResult', ok: result.ok, provider: result.provider });
         } catch {
           this.post({ type: 'testResult', ok: false, provider: null });

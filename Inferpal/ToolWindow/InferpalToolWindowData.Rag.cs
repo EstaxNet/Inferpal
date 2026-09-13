@@ -279,8 +279,7 @@ internal partial class InferpalToolWindowData
                 await RunOnVMContextAsync(() =>
                 {
                     _oodaSummary  = summary;
-                    _history[0]   = new ChatMessageDto("system",
-                        _baseSystemPrompt + "\n\n## Session Summary\n\n" + _oodaSummary);
+                    ApplySystemPrompt();
 
                     var recapItem = ChatMessageItem.ToolMsg(
                         "ooda_recap",
@@ -335,17 +334,40 @@ internal partial class InferpalToolWindowData
 
     // Prompt layering itself lives in SystemPromptBuilder (unit-tested); the VM only
     // gathers its inputs: project root, active-file relative path, template suffix.
-    private string BuildSystemPrompt(string? language = null)
+    private string BuildSystemPrompt()
     {
         var dir = FindProjectRoot();
         var prompt = new SystemPromptBuilder(_config, EditorName).Build(
             Strings.SystemPrompt,
-            language,
+            PersonaLanguage,
             _activeTemplateSuffix,
             dir,
             ActiveFileRelativeTo(dir),
             _xrayDisabledSections);   // sections switched off from the Context X-Ray panel
         return _planMode ? prompt + PlanModeToolRegistry.SystemPromptSuffix : prompt;
+    }
+
+    /// <summary>Language of the persona the next prompt carries — none when auto-switching is off.</summary>
+    private string? PersonaLanguage => _config.PersonaAutoSwitch ? _personaLanguage : null;
+
+    /// <summary>Rebuilds the base prompt and writes the system message. VM context only.</summary>
+    private void RefreshSystemPrompt()
+    {
+        _baseSystemPrompt = BuildSystemPrompt();
+        ApplySystemPrompt();
+    }
+
+    /// <summary>
+    /// The only writer of the system message: the base prompt plus the OODA session summary, which
+    /// every other rewrite used to drop. VM context only.
+    /// </summary>
+    private void ApplySystemPrompt()
+    {
+        if (_history.Count == 0 || _history[0].Role != "system") return;
+        var content = string.IsNullOrEmpty(_oodaSummary)
+            ? _baseSystemPrompt
+            : _baseSystemPrompt + "\n\n## Session Summary\n\n" + _oodaSummary;
+        _history[0] = new ChatMessageDto("system", content);
     }
 
     // Active editor file path relative to the project root (forward slashes), or null when no file

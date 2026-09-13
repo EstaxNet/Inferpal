@@ -134,7 +134,7 @@ internal sealed class GhostTextController
                 if (token.IsCancellationRequested) return;
                 // Discard if the buffer changed since we triggered.
                 if (!ReferenceEquals(_view.TextBuffer.CurrentSnapshot, snapshot)) return;
-                _adornment.Append(completion, anchor);
+                _adornment.Show(completion, anchor);
             });
         }
         catch (OperationCanceledException) { }

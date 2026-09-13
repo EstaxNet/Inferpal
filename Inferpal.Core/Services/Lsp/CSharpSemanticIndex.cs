@@ -145,7 +145,14 @@ internal sealed class CSharpSemanticIndex
 
         foreach (var index in indexes)
         {
-            if (!path.StartsWith(index._root, StringComparison.OrdinalIgnoreCase)) continue;
+            // BELOW the root, not merely spelled like it: "C:\dev\App2\x.cs" starts with "C:\dev\App".
+            var root = index._root.TrimEnd('\\', '/');
+            if (path.Length <= root.Length
+                || !path.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+                || path[root.Length] is not ('\\' or '/')) continue;
+            // The full build's exclusions: a history snapshot (.inferpal/history/…_Foo.cs) or an obj/ file
+            // added here became a second `class Foo`, and queries answered on the stale copy.
+            if (WorkspaceScan.IsExcludedPath(path, root)) continue;
             try { index.Update(path); }
             catch (Exception ex) { Diagnostics.Swallow("CSharpSemanticIndex.NotifyFileChanged", ex); }
         }
@@ -316,12 +323,15 @@ internal sealed class CSharpSemanticIndex
         var target = declarations[0].Symbol;
 
         var byFile = new Dictionary<string, IReadOnlyList<TextSpan>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (path, tree) in _treesByPath)
+        // ⚠ The snapshot, never the live fields: a save during a rename (the watcher calls Update) made
+        // this loop throw "collection modified" — falling back to the text rename, homonyms included —
+        // or bind symbols of the new compilation against a target from the old one.
+        foreach (var (path, tree) in snap.Trees)
         {
             ct.ThrowIfCancellationRequested();
             if (!tree.ToString().Contains(symbolName, StringComparison.Ordinal)) continue;
 
-            var model = _compilation!.GetSemanticModel(tree);
+            var model = snap.Compilation.GetSemanticModel(tree);
             var spans = new List<TextSpan>();
 
             foreach (var token in tree.GetRoot(ct).DescendantTokens())

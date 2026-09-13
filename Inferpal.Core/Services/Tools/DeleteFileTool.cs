@@ -52,7 +52,8 @@ internal class DeleteFileTool : ITool
         if (!await _approval.RequestApprovalAsync("delete_file", details, ct, subject: path))
             return Strings.DeleteCancelled;
 
-        var snapPath = await _history.SnapshotAsync(path, ct);
+        var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
+        if (!saved) return FileHistoryService.BackupFailedMessage(path);
         var snapNote = string.IsNullOrEmpty(snapPath) ? string.Empty : Strings.HistoryNote(snapPath);
 
         File.Delete(path);

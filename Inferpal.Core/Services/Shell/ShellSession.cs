@@ -76,8 +76,8 @@ internal sealed class ShellSession
         // by themselves, and a command killed on timeout can still hand back what it printed.
         // Cancelling the reads instead threw that output away, which is exactly what a timeout
         // most needs to show (the build's last lines before it hung).
-        var stdoutTask = ChildProcess.ReadCappedAsync(process.StandardOutput);
-        var stderrTask = ChildProcess.ReadCappedAsync(process.StandardError);
+        var stdout = new ChildProcess.PipeCapture(process.StandardOutput);
+        var stderr = new ChildProcess.PipeCapture(process.StandardError);
         try
         {
             await process.WaitForExitAsync(cts.Token);
@@ -92,31 +92,35 @@ internal sealed class ShellSession
             // A bounded wait for the pipes the kill just closed, then report the partial output:
             // the previous version returned the one-line timeout message alone, so a command that
             // ran for its whole budget and printed a thousand useful lines told the model nothing.
-            await Task.WhenAny(Task.WhenAll(stdoutTask, stderrTask),
-                               Task.Delay(TimeSpan.FromSeconds(2), CancellationToken.None));
+            await Task.WhenAny(Task.WhenAll(stdout.Completion, stderr.Completion),
+                               Task.Delay(ChildProcess.PipeGraceAfterExit, CancellationToken.None));
 
-            var salvaged = ShellStateProtocol.ParseForeground(Salvage(stdoutTask), marker).Output;
+            var salvaged = ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker).Output;
             var timedOut = $"Error: command timed out after {_config.CommandTimeoutSeconds}s.";
             return string.IsNullOrWhiteSpace(salvaged)
                 ? timedOut
                 : $"{timedOut}\n[output before the timeout]\n{salvaged.TrimEnd()}";
         }
 
-        var rawStdout = await stdoutTask;
-        var stderr    = await stderrTask;
+        // The shell exited; a background process it started may still hold the pipes (see
+        // ChildProcess.DrainAfterExitAsync). The state lines were written before the exit.
+        var drained = await ChildProcess.DrainAfterExitAsync(stdout, stderr, ct);
 
-        var state = ShellStateProtocol.ParseForeground(rawStdout, marker);
+        var state = ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker);
         ApplyState(state);
 
-        var output = state.Output;
-        if (!string.IsNullOrWhiteSpace(stderr))
-            output += $"\n[stderr]\n{stderr.Trim()}";
+        var output     = state.Output;
+        var stderrText = stderr.Snapshot();
+        if (!string.IsNullOrWhiteSpace(stderrText))
+            output += $"\n[stderr]\n{stderrText.Trim()}";
+        // The wrapper's own shell always exits 0 (a finally, a trailing printf): the command's code
+        // travels in the state block, and a silent failure (`git diff --quiet`) must not read as success.
+        if (state.ExitCode is { } rc and not 0)
+            output += $"\n[exit code {rc}]";
+        if (!drained)
+            output += ChildProcess.OutputHeldOpenNote;
         return output;
     }
-
-    /// <summary>What a read produced, or nothing if it has not finished — never a throw.</summary>
-    private static string Salvage(Task<string> read) =>
-        read.IsCompletedSuccessfully ? read.Result : string.Empty;
 
     private void ApplyState(ShellRunState state)
     {

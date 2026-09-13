@@ -24,8 +24,9 @@ internal static class TestGenerationEdit
     /// <paramref name="Extended"/> is true when an existing test file was augmented rather than created.
     /// <paramref name="NoChange"/> is true when the model judged there were no useful tests to add
     /// (trivial code, or an existing file that already covers every meaningful case) — nothing was written.
+    /// <paramref name="Cancelled"/> is true when the user closed the spinner — nothing was written either.
     /// </summary>
-    public sealed record Result(bool Ok, string TestFileName, bool Extended, bool NoChange = false);
+    public sealed record Result(bool Ok, string TestFileName, bool Extended, bool NoChange = false, bool Cancelled = false);
 
     public static async Task<Result> RunAsync(
         VisualStudioExtensibility vs,
@@ -51,18 +52,28 @@ internal static class TestGenerationEdit
         }
 
         TestGenerationPlan plan;
-        try
+        // Closing the spinner cancels the generation: the test file used to be written anyway.
+        using (var generation = CancellationTokenSource.CreateLinkedTokenSource(ct, dlg.CancelledByUser))
         {
-            plan = await Services.CodeActions.TestGenerationPlanner.PlanAsync(
-                client, model, sourcePath, sourceCode, ct);
+            try
+            {
+                plan = await Services.CodeActions.TestGenerationPlanner.PlanAsync(
+                    client, model, sourcePath, sourceCode, generation.Token);
+            }
+            catch (OperationCanceledException) when (dlg.CancelledByUser.IsCancellationRequested)
+            {
+                return new Result(false, string.Empty, false, Cancelled: true);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                Diagnostics.Swallow("TestGenerationEdit.Plan", ex);
+                return new Result(false, string.Empty, false);
+            }
+            finally { dlg.CloseFromThread(); }
         }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow("TestGenerationEdit.Plan", ex);
-            return new Result(false, string.Empty, false);
-        }
-        finally { dlg.CloseFromThread(); }
+        if (dlg.CancelledByUser.IsCancellationRequested)
+            return new Result(false, plan.TestFileName, plan.Extended, Cancelled: true);
 
         if (plan.NoChange) return new Result(false, plan.TestFileName, plan.Extended, NoChange: true);
         if (!plan.Ok)      return new Result(false, plan.TestFileName, plan.Extended);

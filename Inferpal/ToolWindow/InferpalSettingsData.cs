@@ -67,8 +67,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private bool   _isDarkTheme;
     private string _textForeground   = "#F1F1F1";
     private IDisposable? _themeSubscription;
+    private volatile bool _detached;   // set by Detach, read by InitThemeAsync once its subscription resolves
 
-    private string _labelUrl                     = string.Empty;
+    private string _labelUrl                    = string.Empty;
     private string _hintUrl                      = string.Empty;
     private string _labelChatModel               = string.Empty;
     private string _hintChatModel                = string.Empty;
@@ -454,11 +455,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _modelRouterAuto         = config.ModelRouterAuto;
         // Start expanded only when a power user has already assigned a per-role model — otherwise the
         // simple view (chat + embeddings) is the default and the 4 role pickers stay folded.
-        _showModelRoles          = !string.IsNullOrEmpty(config.AgentModel)
-                                   || !string.IsNullOrEmpty(config.CodeActionsModel)
-                                   || !string.IsNullOrEmpty(config.InlineCompletionModel)
-                                   || !string.IsNullOrEmpty(config.InlineEditModel)
-                                   || !string.IsNullOrEmpty(config.UtilityModel);
+        _showModelRoles          = ModelRoleSettings.HasRoleOverride(config);
         _ragEnabled              = config.RagEnabled;
         _ragAutoContextEnabled   = config.RagAutoContextEnabled;
         _ragEmbeddingModel       = config.RagEmbeddingModel;
@@ -527,6 +524,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                 ColorThemeId,
                 CancellationToken.None,
                 value => Post(() => ApplyTheme(VsThemeDetector.IsDark(value.ValueOrDefault(string.Empty)))));
+            // Closed while the subscription was resolving: Detach found nothing to release. Whichever
+            // of the two exchanges gets it disposes it, exactly once.
+            if (_detached) Interlocked.Exchange(ref _themeSubscription, null)?.Dispose();
         }
         catch (Exception ex) { Diagnostics.Swallow("Settings.ThemeSubscription", ex); }
     }
@@ -781,7 +781,14 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private void OnAgentModeConfigChanged(bool enabled) => Post(() => AgentModeEnabled = enabled);
 
     /// <summary>Detaches config event handlers; called when the settings control is disposed.</summary>
-    internal void Detach() => _config.AgentModeEnabledChanged -= OnAgentModeConfigChanged;
+    internal void Detach()
+    {
+        _config.AgentModeEnabledChanged -= OnAgentModeConfigChanged;
+        // The window is opened and closed repeatedly: each instance's theme subscription outlived it.
+        // Exchanged, because InitThemeAsync may assign it concurrently (see there).
+        _detached = true;
+        Interlocked.Exchange(ref _themeSubscription, null)?.Dispose();
+    }
 
     // ── VM context helpers ─────────────────────────────────────────────────────
 
@@ -1303,7 +1310,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         int quickTimeoutSec = 0, normalTimeoutSec = 0, deepTimeoutSec = 0, compactTimeoutSec = 0;
         string modelIdleTimeoutText = string.Empty;
         string mcpServersJson = string.Empty;
-        bool toolExpanded = false, secAlertsDisabled = false, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, mcpEnabled = false, modelRouterAuto = false;
+        bool toolExpanded = false, secAlertsDisabled = false, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, mcpEnabled = false, modelRouterAuto = false, separateRoleModels = false;
         await RunOnVMContextAsync(() =>
         {
             url                  = BaseUrl.Trim();
@@ -1347,6 +1354,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             agentModel             = AgentModel;
             utilityModel           = UtilityModel;
             modelRouterAuto        = ModelRouterAuto;
+            separateRoleModels     = ShowModelRoles;
             ragEnabled             = RagEnabled;
             ragAutoContextEnabled  = RagAutoContextEnabled;
             ragEmbeddingModel      = RagEmbeddingModel;
@@ -1359,10 +1367,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             modelAutoUnload        = ModelAutoUnloadEnabled;
             modelIdleTimeoutText   = ModelIdleTimeoutText.Trim();
         });
-        var h       = int.TryParse(th, out var hv) ? Math.Clamp(hv,  0, 99) : 0;
-        var m       = int.TryParse(tm, out var mv) ? Math.Clamp(mv,  0, 59) : 30;
-        var s       = int.TryParse(ts, out var sv) ? Math.Clamp(sv,  0, 59) : 0;
-        var totalSec = h * 3600 + m * 60 + s;
+        // Same resolution as the other duration boxes: an emptied sub-field counts 0, and only all
+        // three emptied means "back to the default" — the minutes box alone used to resolve to 30.
+        var totalSec = DurationFields.CombineOr(th, tm, ts, whenCleared: 120);
 
         // ⚠ What could not be read is NAMED to the user, never swallowed. The save itself goes
         // through: refusing the whole form would also cancel the other valid edits the user just
@@ -1434,9 +1441,11 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         edited.AgentModeEnabled         = agentModeEnabled;
         edited.AgentMaxIterations       = ReadInt(agentMaxIterationsText, () => Strings.LabelAgentMaxIterations,
                                                    edited.AgentMaxIterations, 20, v => Math.Max(0, v));
-        edited.QuickTimeoutSeconds      = quickTimeoutSec  > 0 ? Math.Clamp(quickTimeoutSec,  10, 3600) : 120;
-        edited.NormalTimeoutSeconds     = normalTimeoutSec > 0 ? Math.Clamp(normalTimeoutSec, 10, 3600) : 300;
-        edited.DeepTimeoutSeconds       = deepTimeoutSec   > 0 ? Math.Clamp(deepTimeoutSec,   10, 3600) : 600;
+        // No upper cap: the boxes accept 99 h and nothing downstream caps a task deadline — the 3600 s
+        // written here turned a two-hour setting into one hour without a word.
+        edited.QuickTimeoutSeconds      = DurationFields.TaskTimeout(quickTimeoutSec,  whenCleared: 120);
+        edited.NormalTimeoutSeconds     = DurationFields.TaskTimeout(normalTimeoutSec, whenCleared: 300);
+        edited.DeepTimeoutSeconds       = DurationFields.TaskTimeout(deepTimeoutSec,   whenCleared: 600);
         edited.ContextWindowSize        = ReadInt(ctxSizeText, () => Strings.LabelContextWindowSize,
                                                    edited.ContextWindowSize, 0, v => Math.Max(0, v));
         edited.ContextWindowKeepTurns   = ReadInt(ctxKeepText, () => Strings.LabelContextWindowKeepTurns,
@@ -1464,12 +1473,22 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                                                     edited.KvCacheAnchorMessages, 3, v => Math.Clamp(v, 0, 20));
         edited.InlineCompletionMode      = inlineModeCode;
         edited.InlineCompletionEnabled   = inlineEnabled;
-        edited.InlineCompletionModel     = Kept(inlineModel,      edited.InlineCompletionModel, () => Strings.LabelInlineCompletionModel);
-        edited.CodeActionsModel          = Kept(codeActionsModel, edited.CodeActionsModel,      () => Strings.LabelCodeActionsModel);
-        edited.InlineEditModel           = Kept(inlineEditModel,  edited.InlineEditModel,       () => Strings.LabelInlineEditModel);
-        edited.AgentModel                = Kept(agentModel,       edited.AgentModel,            () => Strings.LabelAgentModel);
-        edited.UtilityModel              = Kept(utilityModel,     edited.UtilityModel,          () => Strings.LabelUtilityModel);
-        edited.ModelRouterAuto           = modelRouterAuto;
+        if (separateRoleModels)
+        {
+            edited.InlineCompletionModel = Kept(inlineModel,      edited.InlineCompletionModel, () => Strings.LabelInlineCompletionModel);
+            edited.CodeActionsModel      = Kept(codeActionsModel, edited.CodeActionsModel,      () => Strings.LabelCodeActionsModel);
+            edited.InlineEditModel       = Kept(inlineEditModel,  edited.InlineEditModel,       () => Strings.LabelInlineEditModel);
+            edited.AgentModel            = Kept(agentModel,       edited.AgentModel,            () => Strings.LabelAgentModel);
+            edited.UtilityModel          = Kept(utilityModel,     edited.UtilityModel,          () => Strings.LabelUtilityModel);
+            edited.ModelRouterAuto       = modelRouterAuto;
+        }
+        else
+        {
+            // Unchecked, the switch promises the chat model everywhere (its hint says so): the
+            // overrides are cleared, not kept behind the fold, where the router went on using them
+            // and from which the switch came back checked at the next opening (issue #8).
+            ModelRoleSettings.UseChatModelEverywhere(edited);
+        }
         edited.RagEnabled                = ragEnabled;
         edited.RagAutoContextEnabled     = ragAutoContextEnabled;
         edited.RagEmbeddingModel         = Kept(ragEmbeddingModel, edited.RagEmbeddingModel,    () => Strings.LabelRagEmbeddingModel);

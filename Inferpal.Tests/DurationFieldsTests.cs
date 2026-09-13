@@ -60,6 +60,40 @@ public class DurationFieldsTests
         Assert.Equal(0, DurationFields.Combine("", "", ""));
     }
 
+    // ── CombineOr ───────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void CombineOr_AnEmptiedSubField_CountsZero()
+    {
+        // The command-timeout boxes resolved an empty minutes field to 30: "1 h" was saved as 1 h 30.
+        Assert.Equal(3600, DurationFields.CombineOr("1", "", "", whenCleared: 120));
+        Assert.Equal(45,   DurationFields.CombineOr("", "", "45", whenCleared: 120));
+    }
+
+    [Fact]
+    public void CombineOr_AllSubFieldsEmptied_FallsBackToTheDefault()
+    {
+        Assert.Equal(120, DurationFields.CombineOr("", " ", "", whenCleared: 120));
+        // An explicit zero is not an emptied box.
+        Assert.Equal(0, DurationFields.CombineOr("0", "00", "00", whenCleared: 120));
+    }
+
+    // ── TaskTimeout ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void TaskTimeout_HasNoUpperCap()
+    {
+        // The settings window clamped every task deadline to 3600 s: two hours became one, silently.
+        Assert.Equal(7200, DurationFields.TaskTimeout(7200, whenCleared: 300));
+    }
+
+    [Fact]
+    public void TaskTimeout_FloorsAtTenSeconds_AndFallsBackWhenEmpty()
+    {
+        Assert.Equal(10,  DurationFields.TaskTimeout(3, whenCleared: 300));
+        Assert.Equal(300, DurationFields.TaskTimeout(0, whenCleared: 300));
+    }
+
     // ── Round-trip ───────────────────────────────────────────────────────────────
 
     [Theory]

@@ -368,13 +368,26 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <summary>Cancels everything in flight. Detached runs must not outlive the editor.</summary>
     public void Dispose()
     {
+        var dropped = new List<BackgroundTaskSnapshot>();
         lock (_lock)
         {
             if (_disposed) return;
             _disposed = true;
+
+            // The worker retires on _disposed: a task still waiting would stay "queued" forever.
+            while (_pending.Count > 0)
+            {
+                var job = _pending.Dequeue();
+                FinishLocked(job, BackgroundTaskState.Cancelled, null, null);
+                dropped.Add(SnapshotLocked(job));
+            }
         }
 
+        // ⚠ Cancelled, never disposed: a worker that dequeued its job just before this still reads
+        // _shutdown.Token, and a disposed source throws there — outside its try, faulting the loop
+        // with the job stuck in _current. A source without a timer holds nothing to release.
         try { _shutdown.Cancel(); } catch { }
-        try { _shutdown.Dispose(); } catch { }
+
+        foreach (var snapshot in dropped) RaiseFinished(snapshot);
     }
 }

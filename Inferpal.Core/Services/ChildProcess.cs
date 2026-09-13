@@ -106,8 +106,8 @@ internal static class ChildProcess
         using var proc = Start(psi);
 
         // No token on the reads: the pipes end when the child does, including when we kill it.
-        var stdoutTask = ReadCappedAsync(proc.StandardOutput);
-        var stderrTask = ReadCappedAsync(proc.StandardError);
+        var stdout = new PipeCapture(proc.StandardOutput);
+        var stderr = new PipeCapture(proc.StandardError);
 
         try
         {
@@ -122,14 +122,38 @@ internal static class ChildProcess
             // The caller's cancellation is theirs to see; an expired budget is a result.
             ct.ThrowIfCancellationRequested();
 
-            await Task.WhenAny(Task.WhenAll(stdoutTask, stderrTask), Task.Delay(TimeSpan.FromSeconds(2), CancellationToken.None));
-            return new ChildProcessResult(-1, Salvage(stdoutTask), Salvage(stderrTask), TimedOut: true);
+            await Task.WhenAny(Task.WhenAll(stdout.Completion, stderr.Completion), Task.Delay(PipeGraceAfterExit, CancellationToken.None));
+            return new ChildProcessResult(-1, stdout.Snapshot(), stderr.Snapshot(), TimedOut: true);
         }
 
-        return new ChildProcessResult(proc.ExitCode, await stdoutTask, await stderrTask, TimedOut: false);
+        var drained = await DrainAfterExitAsync(stdout, stderr, ct);
+        return new ChildProcessResult(
+            proc.ExitCode, drained ? stdout.Snapshot() : stdout.Snapshot() + OutputHeldOpenNote, stderr.Snapshot(), TimedOut: false);
+    }
 
-        static string Salvage(Task<string> read) =>
-            read.IsCompletedSuccessfully ? read.Result : string.Empty;
+    /// <summary>How long the pipes of an exited child may stay open before the capture stops waiting.</summary>
+    internal static readonly TimeSpan PipeGraceAfterExit = TimeSpan.FromSeconds(2);
+
+    /// <summary>Appended to the output when <see cref="DrainAfterExitAsync"/> gave up.</summary>
+    internal const string OutputHeldOpenNote =
+        "\n[the command exited, but a process it started in the background still holds its output open — later output was not captured]";
+
+    /// <summary>
+    /// Waits for both pipes to end once the child exited — at most <see cref="PipeGraceAfterExit"/>.
+    /// <c>false</c> when a pipe is still held open.
+    /// </summary>
+    /// <remarks>⚠ An exited child is not a closed pipe: a grandchild started in the background
+    /// (<c>cmd &amp;</c>, <c>start /b</c>) inherits the pipes and holds them for as long as it lives.
+    /// Awaiting the end of the stream waited for the grandchild — past the timeout and past Stop,
+    /// neither of which reached the reads.</remarks>
+    internal static async Task<bool> DrainAfterExitAsync(PipeCapture stdout, PipeCapture stderr, CancellationToken ct)
+    {
+        var both = Task.WhenAll(stdout.Completion, stderr.Completion);
+        var done = await Task.WhenAny(both, Task.Delay(PipeGraceAfterExit, ct)).ConfigureAwait(false);
+        ct.ThrowIfCancellationRequested();
+        if (done != both) return false;
+        await both.ConfigureAwait(false);   // a read that failed still surfaces, as the plain await did
+        return true;
     }
 
     /// <summary>
@@ -166,40 +190,72 @@ internal static class ChildProcess
     /// </summary>
     internal static async Task<string> ReadCappedAsync(StreamReader reader)
     {
-        const int HeadChars  = MaxCapturedChars / 4;
-        var       tailChars  = MaxCapturedChars - HeadChars;
+        var capture = new PipeCapture(reader);
+        await capture.Completion.ConfigureAwait(false);
+        return capture.Snapshot();
+    }
 
-        var head    = new System.Text.StringBuilder();
-        var tail    = new System.Text.StringBuilder();
-        var dropped = 0L;
-        var buffer  = new char[16 * 1024];
+    /// <summary>
+    /// Drains a pipe into a head + tail buffer capped at <see cref="MaxCapturedChars"/> that can be
+    /// read at any moment — including while the pipe is still open (see <see cref="DrainAfterExitAsync"/>).
+    /// </summary>
+    internal sealed class PipeCapture
+    {
+        private const int HeadChars = MaxCapturedChars / 4;
+        private const int TailChars = MaxCapturedChars - HeadChars;
 
-        while (true)
+        private readonly object _gate = new();
+        private readonly System.Text.StringBuilder _head = new();
+        private readonly System.Text.StringBuilder _tail = new();
+        private long _dropped;
+
+        public PipeCapture(StreamReader reader) => Completion = DrainAsync(reader);
+
+        /// <summary>Completes at the end of the stream — which a background grandchild can delay indefinitely.</summary>
+        public Task Completion { get; }
+
+        /// <summary>What was captured so far: the head, a marker where the middle was dropped, the tail.</summary>
+        public string Snapshot()
         {
-            var n = await reader.ReadAsync(buffer, 0, buffer.Length);
-            if (n == 0) break;
-
-            var offset = 0;
-            if (head.Length < HeadChars)
+            lock (_gate)
             {
-                var take = Math.Min(HeadChars - head.Length, n);
-                head.Append(buffer, 0, take);
-                offset = take;
+                return _dropped == 0
+                    ? string.Concat(_head.ToString(), _tail.ToString())
+                    : string.Concat(_head.ToString(),
+                                    DropMarker.Replace("dropped", $"({_dropped:N0} chars) dropped"),
+                                    _tail.ToString());
             }
-            if (offset >= n) continue;
-
-            tail.Append(buffer, offset, n - offset);
-            if (tail.Length <= tailChars) continue;
-
-            var excess = tail.Length - tailChars;
-            tail.Remove(0, excess);
-            dropped += excess;
         }
 
-        return dropped == 0
-            ? head.Append(tail).ToString()
-            : head.Append(DropMarker.Replace("dropped", $"({dropped:N0} chars) dropped"))
-                  .Append(tail).ToString();
+        private async Task DrainAsync(StreamReader reader)
+        {
+            var buffer = new char[16 * 1024];
+            while (true)
+            {
+                var n = await reader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                if (n == 0) return;
+                lock (_gate) Append(buffer, n);
+            }
+        }
+
+        private void Append(char[] buffer, int n)
+        {
+            var offset = 0;
+            if (_head.Length < HeadChars)
+            {
+                var take = Math.Min(HeadChars - _head.Length, n);
+                _head.Append(buffer, 0, take);
+                offset = take;
+            }
+            if (offset >= n) return;
+
+            _tail.Append(buffer, offset, n - offset);
+            if (_tail.Length <= TailChars) return;
+
+            var excess = _tail.Length - TailChars;
+            _tail.Remove(0, excess);
+            _dropped += excess;
+        }
     }
 
     /// <summary>

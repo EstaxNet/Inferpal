@@ -169,11 +169,13 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     }
 
     // LM Studio model keys can carry a quantization/variant suffix (e.g. "qwen/qwen3-27b" vs the
-    // wire id "qwen/qwen3-27b@q4"); match exactly, then tolerate one being a prefix of the other.
+    // wire id "qwen/qwen3-27b@q4"): match exactly, or one being the other plus an "@variant".
+    // ⚠ Never a bare prefix: "qwen/qwen3-4b" would read the n_ctx of a loaded
+    // "qwen/qwen3-4b-thinking-2507" and the context guard would refuse a request that fits.
     private static bool IdMatches(string entryId, string requested)
         => string.Equals(entryId, requested, StringComparison.OrdinalIgnoreCase)
-           || entryId.StartsWith(requested, StringComparison.OrdinalIgnoreCase)
-           || requested.StartsWith(entryId, StringComparison.OrdinalIgnoreCase);
+           || entryId.StartsWith(requested + "@", StringComparison.OrdinalIgnoreCase)
+           || requested.StartsWith(entryId + "@", StringComparison.OrdinalIgnoreCase);
 
     // ── Model listing / loaded state (native /api/v1 or /api/v0 /models) ───────
 
@@ -263,7 +265,11 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
                 Content = JsonContent.Create(new { instance_id = model }, options: _jsonOpts),
             };
             AddAuth(req);
-            await _http.SendAsync(req, cts.Token);
+            using var resp = await _http.SendAsync(req, cts.Token);
+            // A refused unload leaves the model in VRAM: say so instead of assuming it worked.
+            if (!resp.IsSuccessStatusCode)
+                Diagnostics.Record("LmStudioClient.UnloadModel",
+                    $"Unloading \"{model}\" was refused: HTTP {(int)resp.StatusCode}.");
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("LmStudioClient.UnloadModel", ex); }

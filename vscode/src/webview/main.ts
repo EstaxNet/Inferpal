@@ -373,6 +373,30 @@ function ensureStreamBubble(): HTMLElement {
   return streamEl;
 }
 
+let streamRenderPending = false;
+/** The mention query the popup is currently waiting on — older answers are dropped. */
+let latestMentionQuery = '';
+let mentionQueryTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * Renders the streaming bubble at most once per frame. Re-parsing the whole Markdown for every token
+ * made a long answer cost quadratic work — thousands of full renders for a single reply.
+ */
+function scheduleStreamRender(): void {
+  if (streamRenderPending) {
+    return;
+  }
+  streamRenderPending = true;
+  requestAnimationFrame(() => {
+    streamRenderPending = false;
+    if (!streamEl) {
+      return; // the turn ended (final text rendered) or the stream was reset meanwhile
+    }
+    renderMarkdownInto(streamEl.querySelector('.bubble-body') as HTMLElement, streamRaw);
+    scrollToBottom();
+  });
+}
+
 function finishStream(): void {
   if (streamEl) {
     streamEl.classList.remove('streaming');
@@ -629,8 +653,13 @@ function detectMention(): void {
   }
   mentionStart = caret - typing[0].length;
   renderMentionCategories(typing[1].toLowerCase());
-  // Free file suggestions under the categories, like the VS popup's open-file list.
-  post({ type: 'mentionQuery', query: typing[1] });
+  // Free file suggestions under the categories, like the VS popup's open-file list. Debounced (each
+  // query runs a workspace file search), and only the answer to the LATEST query is shown: a slow,
+  // older search used to land last and overwrite the right suggestions.
+  const query = typing[1];
+  latestMentionQuery = query;
+  clearTimeout(mentionQueryTimer);
+  mentionQueryTimer = setTimeout(() => post({ type: 'mentionQuery', query }), 120);
 }
 
 function renderMentionCategories(partial: string): void {
@@ -1038,10 +1067,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       refreshRegenerate();
       break;
     case 'token': {
-      const el = ensureStreamBubble();
+      ensureStreamBubble();
       streamRaw += msg.text;
-      renderMarkdownInto(el.querySelector('.bubble-body') as HTMLElement, streamRaw);
-      scrollToBottom();
+      scheduleStreamRender();
       break;
     }
     case 'thinking':
@@ -1080,7 +1108,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       dismissApprovalCard(msg.id);
       break;
     case 'mentionSuggestions':
-      renderMentions(msg.items);
+      if (msg.query === latestMentionQuery) {
+        renderMentions(msg.items);
+      }
       break;
     case 'xrayPanel':
       renderXray(msg.panel);

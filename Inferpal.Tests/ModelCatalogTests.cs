@@ -173,6 +173,30 @@ public class ModelCatalogTests
         Assert.Equal(12, arch!.BlockCount);
     }
 
+    /// <summary>
+    /// Gemma 2 declares a head size of 256 while <c>embedding_length / head_count</c> is 224:
+    /// deriving the head underestimated the KV cache by ~12%, and /hardware recommended a num_ctx
+    /// that spilled onto the CPU. The explicit metadata wins when it exists.
+    /// </summary>
+    [Fact]
+    public void KvCacheBytesPerToken_UsesTheDeclaredKeyAndValueLengths()
+    {
+        var arch = ModelCatalog.ParseArch(Info("""
+            {
+              "general.architecture": "gemma2",
+              "gemma2.block_count": 42,
+              "gemma2.attention.head_count": 16,
+              "gemma2.attention.head_count_kv": 8,
+              "gemma2.attention.key_length": 256,
+              "gemma2.attention.value_length": 256,
+              "gemma2.embedding_length": 3584,
+              "gemma2.context_length": 8192
+            }
+            """))!;
+        // 42 layers × 8 KV heads × (256 + 256) × 2 bytes.
+        Assert.Equal(42L * 8 * (256 + 256) * 2, ModelCatalog.KvCacheBytesPerToken(arch));
+    }
+
     [Fact]
     public void KvCacheBytesPerToken_Llama8B_Is128KiB()
     {

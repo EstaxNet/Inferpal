@@ -352,6 +352,26 @@ public class BackgroundTaskQueueTests
         Assert.NotNull(queue.Get(second));
     }
 
+    /// <summary>
+    /// A task still QUEUED at shutdown never reached a terminal state: the worker saw
+    /// <c>_disposed</c> and left, and the task stayed "waiting" forever.
+    /// </summary>
+    [Fact]
+    public async Task Dispose_FinishesQueuedTasks_TheyNeverStayQueued()
+    {
+        var runner = new GatedRunner();
+        var queue  = new BackgroundTaskQueue(runner.RunAsync);
+
+        var first  = queue.Submit("in flight")!;
+        var second = queue.Submit("waiting")!;
+        await WaitUntil(() => queue.Get(first)!.State == BackgroundTaskState.Running, "first task to start");
+
+        queue.Dispose();
+
+        await WaitUntil(() => queue.Get(first)!.IsFinished, "first task to unwind on shutdown");
+        Assert.Equal(BackgroundTaskState.Cancelled, queue.Get(second)!.State);
+    }
+
     [Fact]
     public async Task Dispose_CancelsWhatIsInFlight()
     {

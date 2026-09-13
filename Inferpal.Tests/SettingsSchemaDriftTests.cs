@@ -217,6 +217,36 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
+    /// Issue #8. "Use a separate model per role" unchecked promises the chat model everywhere — its
+    /// tooltip says so. The panel only folded the fields away: the per-role models stayed in the
+    /// configuration, the router kept using them, and the box came back checked at the next opening
+    /// (it is derived from the filled-in fields).
+    /// </summary>
+    [Fact]
+    public void VsCodePanel_SavingWithSeparateRoleModelsOff_ClearsTheRoleFields()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+
+        var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
+        Assert.True(File.Exists(webview), "vscode/src/webview/settings.ts has disappeared.");
+        var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
+
+        var start = source.IndexOf("function onSave(", StringComparison.Ordinal);
+        Assert.True(start >= 0, "webview/settings.ts has no onSave any more — the rule guards nothing.");
+        var end  = source.IndexOf("\nfunction ", start + 1, StringComparison.Ordinal);
+        var body = end < 0 ? source[start..] : source[start..end];
+
+        // The fold is read from the schema (the "roles" gate), not from a list of keys copied here: a
+        // role added to the schema must be covered without anyone thinking of it.
+        Assert.True(body.Contains("gateOn.roles", StringComparison.Ordinal)
+                    && body.Contains("'roles'", StringComparison.Ordinal),
+            "onSave saves the per-role models even when \"Use a separate model per role\" is unchecked.");
+    }
+
+    /// <summary>
     /// A TypeScript source with its <b>comments neutralized</b> - replaced by spaces, length for
     /// length, newlines preserved, so offsets and line numbers stay exact.
     /// </summary>

@@ -149,7 +149,7 @@ public class LmStudioClientTests
     [Fact]
     public async Task ListModels_FallsBackToTheOpenAiSurface_WhenTheNativeApiServesNothing()
     {
-        using var server = new LoopbackServer(path => path == "/v1/models" ? OpenAiPayload : null);
+        using var server = new LoopbackHttpServer(path => path == "/v1/models" ? OpenAiPayload : null);
         var client = new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = server.BaseUrl });
 
         // The badge says "connected" — that half was never the problem.
@@ -219,13 +219,13 @@ public class LmStudioClientTests
     [Fact]
     public async Task ListModels_HonoursTheUrlOverride_OnTheNativeSurfaceToo()
     {
-        using var configured = new LoopbackServer(path => path switch
+        using var configured = new LoopbackHttpServer(path => path switch
         {
             "/api/v1/models" => """{"models":[{"key":"the-one-from-config"}]}""",
             "/v1/models"     => OpenAiPayload,
             _                => null,
         });
-        using var typed = new LoopbackServer(path => path switch
+        using var typed = new LoopbackHttpServer(path => path switch
         {
             "/api/v1/models" => NativePayload,
             "/v1/models"     => OpenAiPayload,

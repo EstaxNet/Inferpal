@@ -182,7 +182,17 @@ internal sealed class McpOAuthFlow
         if (string.IsNullOrEmpty(access))
             throw new InvalidOperationException("Token response contained no access_token.");
 
-        int? expiresIn = root.TryGetProperty("expires_in", out var e) && e.TryGetInt32(out var ei) ? ei : null;
+        // A number or a numeric string, as authorization servers send either: TryGetInt32 alone threw on
+        // "3600", and the token exchange (or refresh) failed.
+        int? expiresIn = root.TryGetProperty("expires_in", out var e)
+            ? e.ValueKind switch
+            {
+                JsonValueKind.Number when e.TryGetInt32(out var ei) => ei,
+                JsonValueKind.String when int.TryParse(e.GetString(), System.Globalization.NumberStyles.Integer,
+                                                       System.Globalization.CultureInfo.InvariantCulture, out var es) => es,
+                _ => (int?)null,
+            }
+            : null;
         var refresh = root.TryGetProperty("refresh_token", out var r) && r.ValueKind == JsonValueKind.String
             ? r.GetString() : null;
         return new TokenResponse(access!, refresh, expiresIn);

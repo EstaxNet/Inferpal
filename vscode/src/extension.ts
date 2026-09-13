@@ -71,8 +71,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         void pushModelRouterSettings(log);
       }
     }),
-    // A folder opened (or changed) after startup: (re)start the host against the new root.
-    vscode.workspace.onDidChangeWorkspaceFolders(() => void startHost(context, chatView, log, false)),
+    // A folder opened (or changed) after startup: (re)start the host against the new root — only when
+    // that root changed. Adding a second folder restarted it anyway, killing the turn in flight, its
+    // shells and MCP servers.
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      if (host?.isRunning && host.rootDir === workspaceRoot()) {
+        return;
+      }
+      void startHost(context, chatView, log, false);
+    }),
   );
 
   await startHost(context, chatView, log, false);
@@ -148,6 +155,7 @@ async function startHostCore(
   if (host) {
     await host.stop();
     host = undefined;
+    chatView.onHostStopped();
   }
 
   const rootDir = workspaceRoot();
@@ -193,6 +201,9 @@ async function startHostCore(
       log,
       onCrash: () => {
         host = undefined;
+        // vscode-jsonrpc does not cancel the host's pending requests to us: without this, an
+        // approval card of the dead host stays clickable, and hydrate re-posts it on every reveal.
+        chatView.onHostStopped();
         void vscode.window
           .showErrorMessage(vscode.l10n.t('Inferpal host stopped unexpectedly.'), vscode.l10n.t('Restart'))
           .then((choice) => {

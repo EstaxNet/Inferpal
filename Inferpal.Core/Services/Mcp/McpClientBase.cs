@@ -71,7 +71,16 @@ internal abstract class McpClientBase
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(CallTimeout);
-        var result = await SendRequestAsync("tools/call", callParams, cts.Token).ConfigureAwait(false);
-        return McpJsonRpc.ExtractCallResult(result, toolName);
+        try
+        {
+            var result = await SendRequestAsync("tools/call", callParams, cts.Token).ConfigureAwait(false);
+            return McpJsonRpc.ExtractCallResult(result, toolName);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // The call's own budget, not the user's Stop: an error the model reads. As an
+            // OperationCanceledException it stopped the whole agent run like a Stop.
+            throw new TimeoutException($"MCP tool '{toolName}' did not answer within {CallTimeout.TotalSeconds:0} s.");
+        }
     }
 }

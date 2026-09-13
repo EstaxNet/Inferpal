@@ -117,6 +117,21 @@ internal sealed class AgentOrchestrator
     /// strings tools already return for the cases they validate by hand.
     /// </para>
     /// </remarks>
+    /// <summary>Runs one model-requested call — or refuses it, unexecuted, when its arguments never
+    /// parsed (<see cref="ToolCallFunction.UnparsedArguments"/>): running it with default arguments
+    /// turns a truncated <c>run_tests {"filter":"Foo…</c> into the whole suite.</summary>
+    internal static Task<string> ExecuteToolSafeAsync(IToolRegistry tools, ToolCallFunction call, CancellationToken ct)
+    {
+        if (call.UnparsedArguments is not { } raw)
+            return ExecuteToolSafeAsync(tools, call.Name, call.Arguments, ct);
+
+        Diagnostics.Record("Agent", $"Refused a '{call.Name}' call: its arguments were not a JSON object.");
+        return Task.FromResult(
+            $"Error: the arguments of this '{call.Name}' call are not a valid JSON object, so it was NOT executed "
+            + $"(received: {SafeTruncate.Truncate(raw, 300)}). The output may have been cut off — resend the "
+            + "call with complete JSON arguments matching the tool's schema.");
+    }
+
     internal static async Task<string> ExecuteToolSafeAsync(
         IToolRegistry tools, string name, System.Text.Json.JsonElement args, CancellationToken ct)
     {
@@ -124,7 +139,15 @@ internal sealed class AgentOrchestrator
         {
             return await tools.ExecuteAsync(name, args, ct);
         }
-        catch (OperationCanceledException) { throw; }   // cancellation is the caller's business
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }   // the user's Stop
+        catch (OperationCanceledException ex)
+        {
+            // A cancellation nobody asked for is the tool's own deadline (an HttpClient timeout, an
+            // MCP call budget): an error for the model — rethrown, it stopped the whole run.
+            Diagnostics.Swallow($"Agent.Tool({name})", ex);
+            return $"Error: the '{name}' call timed out before it finished. "
+                 + "Retry with a narrower request, or continue without it.";
+        }
         catch (Exception ex)
         {
             Diagnostics.Swallow($"Agent.Tool({name})", ex);
@@ -164,7 +187,11 @@ internal sealed class AgentOrchestrator
     // files never crossed the compaction threshold and the backend silently truncated the head
     // (system prompt + plan), the exact failure compaction exists to prevent (pre-1.6.0 architecture review,
     // §2.10; same formula as OpenAiCompatibleClient.EstimateRequestTokens).
-    internal static int EstimateTokens(IEnumerable<ChatMessageDto> messages)
+    internal static int EstimateTokens(IEnumerable<ChatMessageDto> messages) => EstimateChars(messages) / 4;
+
+    /// <summary>The characters <see cref="EstimateTokens"/> counts — content plus tool-call payloads.
+    /// Shared with <c>OpenAiCompatibleClient.EstimateRequestTokens</c>.</summary>
+    internal static int EstimateChars(IEnumerable<ChatMessageDto> messages)
     {
         var chars = 0;
         foreach (var m in messages)
@@ -174,7 +201,7 @@ internal sealed class AgentOrchestrator
                 foreach (var c in calls)
                     chars += c.Function.Name.Length + c.Function.Arguments.GetRawText().Length;
         }
-        return chars / 4;
+        return chars;
     }
 
     /// <summary>
@@ -189,16 +216,20 @@ internal sealed class AgentOrchestrator
     internal static void CompactRunContext(List<ChatMessageDto> messages, int anchorCount, int budget)
     {
         if (budget <= 0) return;
-        if (EstimateTokens(messages) <= budget * 8 / 10) return;   // under 80% — nothing to do
+        // Counted once, then kept current as results are elided: re-estimating the whole list for
+        // every message examined was quadratic on a long run.
+        var chars = EstimateChars(messages);
+        if (chars / 4 <= budget * 8 / 10) return;                  // under 80% — nothing to do
 
         var target          = budget * 7 / 10;                     // compact down to ~70%
         var lastCompactable = messages.Count - KeepRecentMessages; // keep the recent tail verbatim
 
         for (int i = anchorCount; i < lastCompactable; i++)
         {
-            if (EstimateTokens(messages) <= target) break;
+            if (chars / 4 <= target) break;
             var m = messages[i];
             if (m.Role != "tool" || m.Content == ElidedToolResult) continue;
+            chars -= (m.Content?.Length ?? 0) - ElidedToolResult.Length;
             messages[i] = m with { Content = ElidedToolResult };
         }
     }
@@ -221,24 +252,34 @@ internal sealed class AgentOrchestrator
 
         if (!alreadySummarized && _config.CompactionEnabled)
         {
-            onStep(Strings.StatusCompacting);
-            if (await TrySummarizeOldTurnsAsync(messages, anchorCount, model, ct))
-                return true;   // summary replaced the old range — done for this overflow
+            switch (await TrySummarizeOldTurnsAsync(messages, anchorCount, model, onStep, ct))
+            {
+                case RunSummaryOutcome.Summarized:
+                    // A summary can still leave the run over budget (a large recent tail): elide on top.
+                    CompactRunContext(messages, anchorCount, budget);
+                    return true;
+                case RunSummaryOutcome.NothingToSummarize:
+                    // ⚠ Not spent: a later overflow, with more old turns, is worth the one summary.
+                    CompactRunContext(messages, anchorCount, budget);
+                    return false;
+            }
         }
 
-        // No summary (disabled, too little to summarize, or it failed/timed out) → elide.
+        // No summary (disabled, already spent, or it failed/timed out) → elide.
         CompactRunContext(messages, anchorCount, budget);
         return true;
     }
 
+    private enum RunSummaryOutcome { Summarized, NothingToSummarize, Failed }
+
     /// <summary>
     /// Summarises the old middle turns (between the anchored head and the recent tail) with one LLM
-    /// call and replaces them in place with a single summary message pair. Returns <c>false</c> —
-    /// leaving <paramref name="messages"/> untouched — when there is too little to summarise or the
-    /// call fails/times out, so the caller can fall back to elision. Re-throws on user cancellation.
+    /// call and replaces them in place with a single summary message pair. Leaves
+    /// <paramref name="messages"/> untouched when there is too little to summarise or the call
+    /// fails/times out, so the caller can fall back to elision. Re-throws on user cancellation.
     /// </summary>
-    private async Task<bool> TrySummarizeOldTurnsAsync(
-        List<ChatMessageDto> messages, int anchorCount, string model, CancellationToken ct)
+    private async Task<RunSummaryOutcome> TrySummarizeOldTurnsAsync(
+        List<ChatMessageDto> messages, int anchorCount, string model, Action<string> onStep, CancellationToken ct)
     {
         // Snap both ends to a tool-block boundary: removing half of an assistant(tool_calls)+tool
         // group leaves a structurally invalid history that OpenAI-compatible backends reject
@@ -247,30 +288,13 @@ internal sealed class AgentOrchestrator
         var end   = ToolBlockBoundary.SnapEnd(messages, start, messages.Count - KeepRecentMessages);
 
         var rangeLen = end - start;
-        if (rangeLen < 2) return false;   // not enough old turns to be worth a round-trip
+        var range    = messages.Skip(start).Take(Math.Max(0, rangeLen)).ToList();
+        // Not enough old turns to be worth a round-trip.
+        if (rangeLen < 2 || range.All(m => string.IsNullOrEmpty(m.Content)))
+            return RunSummaryOutcome.NothingToSummarize;
 
-        var sb = new System.Text.StringBuilder();
-        for (int i = start; i < end; i++)
-        {
-            var m = messages[i];
-            if (string.IsNullOrEmpty(m.Content)) continue;
-            var label = m.Role switch
-            {
-                "user"      => "User",
-                "assistant" => "Assistant",
-                "tool"      => "Tool",
-                _           => m.Role,
-            };
-            sb.Append(label).Append(": ").AppendLine(m.Content);
-            sb.AppendLine();
-        }
-        if (sb.Length == 0) return false;
-
-        var summarizeMessages = new List<ChatMessageDto>
-        {
-            messages[0],   // system prompt anchor
-            new("user", Strings.CompactionSummarizePrompt(sb.ToString())),
-        };
+        onStep(Strings.StatusCompacting);
+        var summarizeMessages = HistoryCompaction.BuildSummarizeRequest(messages, range);
 
         string summary;
         try
@@ -288,16 +312,20 @@ internal sealed class AgentOrchestrator
             summary = MarkdownParser.StripThinkTags(turn.TextContent);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } // user cancelled
-        catch (OperationCanceledException) { return false; }                            // summary timed out
-        catch { return false; }                                                         // network/other → elide
+        catch (OperationCanceledException) { return RunSummaryOutcome.Failed; }         // summary timed out
+        catch (Exception ex)                                                            // network/other → elide
+        {
+            Diagnostics.Swallow("Agent.RunSummary", ex);
+            return RunSummaryOutcome.Failed;
+        }
 
-        if (string.IsNullOrWhiteSpace(summary)) return false;
+        if (string.IsNullOrWhiteSpace(summary)) return RunSummaryOutcome.Failed;
 
         // Replace the summarised range with a single [summary] pair.
         messages.RemoveRange(start, rangeLen);
         messages.Insert(start, new ChatMessageDto("assistant", summary));
-        messages.Insert(start, new ChatMessageDto("user", "[Summary of this run's earlier context]"));
-        return true;
+        messages.Insert(start, new ChatMessageDto("user", "[Summary of this run's earlier context]") { IsScaffolding = true });
+        return RunSummaryOutcome.Summarized;
     }
 
     /// <summary>
@@ -326,6 +354,27 @@ internal sealed class AgentOrchestrator
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
         Action<string>? onToken, Action? onStreamReset, Action<string> onStep, CancellationToken ct,
         Action<string>? onThinking = null)
+    {
+        var (answer, synthesized) = await TrySynthesizeAsync(
+            model, messages, anchorCount, executions, userTask, fallback, onToken, onStreamReset, onStep, ct, onThinking);
+
+        // The synthesized answer is what the user read: it must also be what the model reads next
+        // turn (the host keeps this history), not the empty or refused turn it replaced.
+        if (synthesized)
+        {
+            if (messages.Count > 0 && messages[^1] is { Role: "assistant" } last && last.ToolCalls is not { Count: > 0 })
+                messages[^1] = last with { Content = answer };
+            else
+                messages.Add(new ChatMessageDto("assistant", answer));
+        }
+        return answer;
+    }
+
+    private async Task<(string Answer, bool Synthesized)> TrySynthesizeAsync(
+        string model, List<ChatMessageDto> messages, int anchorCount,
+        IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
+        Action<string>? onToken, Action? onStreamReset, Action<string> onStep, CancellationToken ct,
+        Action<string>? onThinking)
     {
         // Clear any think-only / partial tokens from the stalled final ACT so they don't pollute
         // the synthesised answer that streams next.
@@ -360,11 +409,15 @@ internal sealed class AgentOrchestrator
                 model, synth, EmptyToolRegistry.Instance, onToken, ct, TaskComplexity.Normal, onThinking: onThinking);
             var answer = MarkdownParser.StripThinkTags(turn.TextContent);
             return MarkdownParser.HasPrintableText(answer) && !LooksLikeToolRefusal(answer)
-                ? turn.TextContent
-                : fallback;
+                ? (turn.TextContent, true)
+                : (fallback, false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch { return fallback; }   // synthesis failed/timed out → keep the existing fallback
+        catch (Exception ex)   // synthesis failed/timed out → keep the existing fallback
+        {
+            Diagnostics.Swallow("Agent.Synthesis", ex);
+            return (fallback, false);
+        }
     }
 
     /// <summary>
@@ -495,6 +548,10 @@ internal sealed class AgentOrchestrator
         // Counts bounded ACT retries after an empty / think-only stall (see below).
         int actRetries = 0;
         const int MaxActRetries = 2;
+        // Set by a stall-retry: forces a tool call on the RETRIED act only. ⚠ Deriving it from
+        // actRetries > 0 kept every later act forced for the rest of the run once one stall happened,
+        // and the model could no longer finish in prose.
+        bool retryForcesTool = false;
 
         // NOTE: we deliberately do NOT re-inject the tool catalogue as prose into the system prompt.
         // The full tools:[] JSON schema is already sent on every ACT turn, and the orchestrator
@@ -543,9 +600,9 @@ internal sealed class AgentOrchestrator
         // We also add the AgentPlanPrompt as the user message that triggered the plan —
         // without it the model sees its own JSON with no visible context, which confuses
         // small models into narrating instead of calling tools in the ACT phase.
-        messages.Add(new ChatMessageDto("user",      Strings.AgentPlanPrompt));
+        messages.Add(new ChatMessageDto("user",      Strings.AgentPlanPrompt) { IsScaffolding = true });
         messages.Add(new ChatMessageDto("assistant", planTurn.TextContent));
-        messages.Add(new ChatMessageDto("user",      Strings.AgentExecutePlan));
+        messages.Add(new ChatMessageDto("user",      Strings.AgentExecutePlan) { IsScaffolding = true });
 
         // Everything added so far — system prompt (+ tool descriptions), the original conversation
         // history, and the plan trio — is the anchored head. Intra-run compaction (CompactRunContext)
@@ -585,7 +642,8 @@ internal sealed class AgentOrchestrator
                 // structured tool_calls. tool_choice:"required" asks Ollama to commit to a call.
                 // (Older Ollama builds ignore the field harmlessly; the bounded retry below is the
                 // real mitigation.) Other iterations stay on "auto" so the model can still finish.
-                var toolChoice = (iteration == 0 || actRetries > 0) ? "required" : null;
+                var toolChoice = (iteration == 0 || retryForcesTool) ? "required" : null;
+                retryForcesTool = false;
                 turn = await _client.SendChatAsync(model, messages, tools, onToken, ct, TaskComplexity.Normal, toolChoice, onThinking);
             }
             catch (OperationCanceledException) { throw; }
@@ -609,6 +667,11 @@ internal sealed class AgentOrchestrator
                 // Read-only batches tolerate more repeats than mutating ones (AgentLoopPolicy).
                 if (AgentLoopPolicy.IsLoop(sigCounts, calls))
                 {
+                    // The repeated batch is never executed: drop the assistant turn that asked for
+                    // it, or the history ends on calls nobody answered — the host keeps this history,
+                    // and OpenAI-compatible servers refuse every later request.
+                    messages.RemoveAt(messages.Count - 1);
+
                     // If real work was already done, treat the repeat as a graceful finish rather
                     // than an alarming error: mark remaining steps done and synthesise the final
                     // answer from the gathered tool results (the model looped instead of writing it).
@@ -641,7 +704,7 @@ internal sealed class AgentOrchestrator
                 {
                     onStep(Strings.StatusCallingTool(string.Join(", ", calls.Select(c => c.Function.Name).Distinct())));
                     var results = await Task.WhenAll(
-                        calls.Select(c => ExecuteToolSafeAsync(tools, c.Function.Name, c.Function.Arguments, ct)));
+                        calls.Select(c => ExecuteToolSafeAsync(tools, c.Function, ct)));
                     for (int i = 0; i < calls.Count; i++)
                     {
                         var toolName  = calls[i].Function.Name;
@@ -667,8 +730,10 @@ internal sealed class AgentOrchestrator
                     // re-executing. DiffInfo is intentionally null for a reuse: no new mutation
                     // happened, so we must not re-trigger restore/diff UI for it.
                     var cacheKey  = ToolCallKey(toolName, call.Function.Arguments);
+                    // A call whose arguments never parsed is refused, never cached nor served from cache.
+                    var cacheable = IsCacheable(toolName) && call.Function.UnparsedArguments is null;
                     string? cached = null;
-                    var fromCache = IsCacheable(toolName) && toolCache.TryGetValue(cacheKey, out cached);
+                    var fromCache = cacheable && toolCache.TryGetValue(cacheKey, out cached);
 
                     string    result;
                     DiffInfo? diff;
@@ -679,9 +744,9 @@ internal sealed class AgentOrchestrator
                     }
                     else
                     {
-                        result = await ExecuteToolSafeAsync(tools, toolName, call.Function.Arguments, ct);
+                        result = await ExecuteToolSafeAsync(tools, call.Function, ct);
                         diff   = tools.ConsumeDiff();
-                        if (IsCacheable(toolName))
+                        if (cacheable)
                             toolCache[cacheKey] = result;
                     }
 
@@ -724,7 +789,7 @@ internal sealed class AgentOrchestrator
                 var observeMsg = answerRequested
                     ? Strings.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, TaskSnippet(userTask))
                     : Strings.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);
-                messages.Add(new ChatMessageDto("user", observeMsg));
+                messages.Add(new ChatMessageDto("user", observeMsg) { IsScaffolding = true });
 
                 // Signal the UI to clear the streaming bubble so that think-only tokens
                 // from this tool-calling act do not pollute the final response bubble.
@@ -745,6 +810,7 @@ internal sealed class AgentOrchestrator
                     && actRetries < MaxActRetries)
                 {
                     actRetries++;
+                    retryForcesTool = true;
                     // RemoveAt, NOT Remove(assistantMsg): ChatMessageDto is a record, so Remove
                     // uses VALUE equality and strips the FIRST equal occurrence — after a plan
                     // fallback also produced an empty assistant, a double stall corrupted the plan
@@ -763,7 +829,7 @@ internal sealed class AgentOrchestrator
                 {
                     nudgedOnce = true;
                     // assistantMsg is already appended to messages above.
-                    messages.Add(new ChatMessageDto("user", Strings.AgentNudgeToolCall));
+                    messages.Add(new ChatMessageDto("user", Strings.AgentNudgeToolCall) { IsScaffolding = true });
                     // Clear the streaming bubble — the nudge response will start fresh.
                     onStreamReset?.Invoke();
                     continue;

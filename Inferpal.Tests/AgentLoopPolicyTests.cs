@@ -50,6 +50,24 @@ public class AgentLoopPolicyTests
         Assert.False(AgentLoopPolicy.IsLoop(counts, Batch(("write_file", """{"path":"C.cs"}"""))));
     }
 
+    /// <summary>
+    /// The edit → verify cycle the policy says it tolerates: the count was cumulative over the whole
+    /// run, so the THIRD identical <c>run_tests</c> stopped the run as a loop — right at verification
+    /// time, between three different edits.
+    /// </summary>
+    [Fact]
+    public void ReadOnlyVerify_BetweenDistinctEdits_IsNotALoop()
+    {
+        var counts = new Dictionary<string, int>();
+        var verify = Batch(("run_tests", """{"filter":"Foo"}"""));
+
+        for (var i = 0; i < 4; i++)
+        {
+            Assert.False(AgentLoopPolicy.IsLoop(counts, Batch(("apply_diff", "{\"path\":\"A.cs\",\"n\":" + i + "}"))));
+            Assert.False(AgentLoopPolicy.IsLoop(counts, verify));
+        }
+    }
+
     [Fact]
     public void MixedBatchWithMutatingTool_UsesMutatingThreshold()
     {

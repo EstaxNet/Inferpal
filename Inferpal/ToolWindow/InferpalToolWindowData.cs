@@ -208,6 +208,9 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // (see RulesService) in BuildSystemPrompt. Updated by OnActiveFileChanged.
     private string?          _activeFilePath;
     private string           _oodaSummary      = string.Empty;
+    // Language of the last code file that selected a persona (PersonaAutoSwitch). A field, not an
+    // argument: the system prompt is rebuilt from many places, and the persona must survive them all.
+    private string?          _personaLanguage;
 
     // Label backing fields
     private string _btnLoadSession          = string.Empty;

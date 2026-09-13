@@ -24,11 +24,16 @@ internal sealed class GhostTextAdornment
     private readonly IWpfTextView    _view;
     private readonly IAdornmentLayer _layer;
 
-    // Accumulated completion text and the caret position at trigger time.
+    // The completion shown and the caret position it was computed for.
     private string?        _pending;
     private SnapshotPoint  _anchor;
 
-    internal string? PendingCompletion => _pending;
+    /// <summary>
+    /// The completion Tab would insert — none once the buffer has moved past the snapshot it was
+    /// computed for (an edit made from another view of the same buffer moves no caret here).
+    /// </summary>
+    internal string? PendingCompletion =>
+        _pending is not null && ReferenceEquals(_anchor.Snapshot, _view.TextBuffer.CurrentSnapshot) ? _pending : null;
 
     internal GhostTextAdornment(IWpfTextView view)
     {
@@ -36,11 +41,15 @@ internal sealed class GhostTextAdornment
         _layer = view.GetAdornmentLayer(LayerName);
     }
 
-    /// <summary>Appends <paramref name="chunk"/> to the pending completion and repaints.</summary>
-    internal void Append(string chunk, SnapshotPoint anchor)
+    /// <summary>Shows <paramref name="completion"/> at <paramref name="anchor"/>, replacing any previous one.</summary>
+    /// <remarks>
+    /// Replaced, never appended: the sidecar returns whole completions, and appending to one left over
+    /// from an older snapshot produced a doubled text that Tab then inserted.
+    /// </remarks>
+    internal void Show(string completion, SnapshotPoint anchor)
     {
-        if (_pending is null) _anchor = anchor;
-        _pending = (_pending ?? string.Empty) + chunk;
+        _anchor  = anchor;
+        _pending = completion;
         Repaint();
     }
 

@@ -47,10 +47,14 @@ internal class RestoreFileTool : ITool
         if (args.Str("snapshot") is { } snapRaw)
         {
             snapPath = PathSanitizer.Sanitize(snapRaw, root);
-            PathSanitizer.AssertUnderRoot(snapPath, root);
+            // A snapshot of THIS file in its history folder is acceptable even above the root (the
+            // history lives at the git root, and every write hands the model that path); any other
+            // source file must be inside the workspace.
+            if (!FileHistoryService.IsSnapshotOf(snapPath, path))
+                PathSanitizer.AssertUnderRoot(snapPath, root);
         }
 
-        snapPath ??= _history.FindMostRecentSnapshot(path);
+        snapPath ??= await _history.FindRestoreCandidateAsync(path, ct);
 
         if (snapPath is null || !File.Exists(snapPath))
             return Strings.RestoreNotFound(path);
@@ -71,8 +75,10 @@ internal class RestoreFileTool : ITool
             return Strings.DiffCancelled;
 
         // Snapshot the current content first so the restore itself is undoable.
-        if (File.Exists(path))
-            await _history.SnapshotAsync(path, ct);
+        var (saved, preRestore) = await _history.BackUpBeforeChangeAsync(path, ct);
+        if (!saved) return FileHistoryService.BackupFailedMessage(path);
+        // The next restore without an explicit snapshot must step back past this one, not undo this restore.
+        if (preRestore.Length > 0) _history.MarkTakenByRestore(preRestore);
 
         await _history.RestoreAsync(snapPath, path, ct);
         return Strings.RestoreOk(path, snapPath);

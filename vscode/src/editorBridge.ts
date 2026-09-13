@@ -103,6 +103,16 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
 
   /** Called once the host is running; seeds the overlay with already-open documents. */
   attach(host: HostClient): void {
+    // Called again on every host restart: the previous listeners must go, or each open/change event
+    // reaches the new host once per restart. The new host's overlay starts empty, so the mirror does too.
+    for (const d of this.disposables.splice(0)) {
+      d.dispose();
+    }
+    for (const timer of this.changeTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.changeTimers.clear();
+    this.mirrored.clear();
     this.host = host;
 
     for (const doc of vscode.workspace.textDocuments) {

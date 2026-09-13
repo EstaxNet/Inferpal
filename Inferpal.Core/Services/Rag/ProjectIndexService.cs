@@ -117,15 +117,36 @@ internal sealed class ProjectIndexService : IDisposable
     /// </summary>
     public void StartIndexing(string rootDir)
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts    = new CancellationTokenSource();
+        var previousCts  = _cts;
+        var previousPass = _indexingPass;
+        try { previousCts?.Cancel(); } catch (ObjectDisposedException) { }
+
+        var cts   = new CancellationTokenSource();
+        var token = cts.Token;   // captured now: the task must not read a field a later call replaces
+        _cts    = cts;
         RootDir = rootDir;
         IndexedRoot = rootDir;
         _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
         PatchGitIgnore(rootDir);
-        _ = Task.Run(() => RunIndexingAsync(rootDir, _cts.Token));
+        // Language servers started for another workspace would otherwise run until the editor closes.
+        _lsp.ReleaseSessionsExcept(rootDir);
+
+        _indexingPass = Task.Run(async () =>
+        {
+            // ⚠ The cancelled pass must END first: its finally resets IsIndexing (the watcher then stops
+            // deferring to the new pass) and its final replaceAll would publish content read earlier.
+            if (previousPass is not null)
+            {
+                try { await previousPass.ConfigureAwait(false); }
+                catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.PreviousPass", ex); }
+            }
+            previousCts?.Dispose();
+            await RunIndexingAsync(rootDir, token).ConfigureAwait(false);
+        });
     }
+
+    /// <summary>The indexing pass in flight (or last run); a new pass waits for it to end.</summary>
+    private Task? _indexingPass;
 
     /// <summary>
     /// Ensures <c>.gitignore</c> in <paramref name="rootDir"/> contains entries for
@@ -156,6 +177,16 @@ internal sealed class ProjectIndexService : IDisposable
         catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.PatchGitIgnore", ex); }
     }
 
+    /// <summary>The flattened corpus and its BM25 index, for one <see cref="_contentVersion"/>.</summary>
+    private sealed record SearchSnapshot(int Version, List<RagChunk> Chunks, Bm25Index Lexical);
+
+    /// <summary>
+    /// Reused while the index does not change: rebuilding the BM25 index over the whole corpus on
+    /// every query — the pre-search while typing, the auto-context of every turn — was hundreds of
+    /// thousands of dictionary inserts each time.
+    /// </summary>
+    private volatile SearchSnapshot? _searchSnapshot;
+
     /// <summary>
     /// Searches the index for the most relevant chunks.
     /// </summary>
@@ -170,12 +201,16 @@ internal sealed class ProjectIndexService : IDisposable
     {
         // Snapshot the chunk list under the lock, then run the (potentially O(N)) similarity
         // computation OUTSIDE the lock so a large search never blocks concurrent re-indexing.
-        List<RagChunk> allChunks;
+        List<RagChunk>  allChunks;
+        SearchSnapshot? cached;
+        int             version;
         await _chunkLock.WaitAsync(ct);
         try
         {
             if (_chunksByFile.Count == 0) return [];
-            allChunks = _chunksByFile.Values.SelectMany(v => v).ToList();
+            version   = _contentVersion;
+            cached    = _searchSnapshot is { } s && s.Version == version ? s : null;
+            allChunks = cached?.Chunks ?? _chunksByFile.Values.SelectMany(v => v).ToList();
         }
         finally
         {
@@ -209,8 +244,15 @@ internal sealed class ProjectIndexService : IDisposable
             var queryTokens = CodeTokenizer.Tokenize(keywordFallback);
             if (queryTokens.Count > 0)
             {
-                var docs = allChunks.Select(c => c.Bm25Tokens).ToList();
-                lexical = new Bm25Index(docs).Rank(queryTokens, pool);
+                // Built once per index version (the index is read-only once built, so concurrent
+                // queries share it); a version published meanwhile simply gets its own on the next query.
+                var bm25 = cached?.Lexical;
+                if (bm25 is null)
+                {
+                    bm25 = new Bm25Index(allChunks.Select(c => c.Bm25Tokens).ToList());
+                    _searchSnapshot = new SearchSnapshot(version, allChunks, bm25);
+                }
+                lexical = bm25.Rank(queryTokens, pool);
             }
         }
 
@@ -308,6 +350,14 @@ internal sealed class ProjectIndexService : IDisposable
 
             // ── Load existing index from disk ─────────────────────────────────
             var loaded = await db.LoadAsync(ct);
+            // ⚠ Vectors from ANOTHER embedding model are not reusable: other dimensions give a cosine of
+            // 0 everywhere, the same dimensions give noise — under a "✅". The model the stored vectors
+            // came from is recorded with them (after SaveAsync below); a different model re-embeds.
+            var embModel    = EmbeddingModel;
+            var storedModel = await db.GetMetaAsync(EmbeddingModelMetaKey, ct);
+            if (storedModel is not null && !string.Equals(storedModel, embModel, StringComparison.Ordinal))
+                foreach (var c in loaded) c.Embedding = null;
+            _indexedEmbeddingModel = embModel;
             // Replaced even when this root has nothing on disk yet: the service outlives its root,
             // and a first pass on a new workspace would otherwise serve the PREVIOUS workspace's
             // chunks for as long as it runs — and forever when the new one has no source file.
@@ -326,7 +376,13 @@ internal sealed class ProjectIndexService : IDisposable
             var skipped      = 0;
             var firstSkipped = string.Empty;
 
-            var files = EnumerateSourceFiles(rootDir).ToList();
+            // ⚠ A walk that failed part-way is not a smaller project: the final replaceAll would drop every
+            // file not listed yet, under a "✅". The index stays as loaded instead.
+            if (EnumerateSourceFiles(rootDir) is not { } files)
+            {
+                Status = "RAG: could not list the project files — the index was left as it was (see /diagnostics).";
+                return;
+            }
             if (files.Count == 0)
             {
                 Status    = "RAG: no source files found.";
@@ -343,7 +399,6 @@ internal sealed class ProjectIndexService : IDisposable
                 list.Add(c);
             }
 
-            var embModel   = EmbeddingModel;
             var newChunks  = new List<RagChunk>(loaded.Count + 64);
 
             for (int fi = 0; fi < files.Count; fi++)
@@ -411,6 +466,7 @@ internal sealed class ProjectIndexService : IDisposable
             // ── Persist final index ───────────────────────────────────────────
             await ApplyChunksAsync(newChunks, replaceAll: true, ct);
             await db.SaveAsync(newChunks, ct);
+            await db.SetMetaAsync(EmbeddingModelMetaKey, embModel, ct);
             // ⚠ Reported even when the pass "succeeds": a full index built on zero files read is
             // exactly the state that used to read as normal.
             if (skipped > 0)
@@ -519,11 +575,11 @@ internal sealed class ProjectIndexService : IDisposable
         // saved file can add or remove a reference, and a cache nobody invalidates answers about
         // code that no longer exists. 4 ms per file, unlike the RAG re-embedding below.
         // ⚠ No watcher exists when RAG is disabled — see CSharpSemanticIndex.ForWorkspace.
-        Lsp.CSharpSemanticIndex.NotifyFileChanged(path);
-
-        // Same exclusions as the full pass — without this, every agent write triggers a
-        // re-index of the .inferpal/history snapshot it just created.
+        // Same exclusions as the full pass, and BEFORE the semantic index hears of the change: every
+        // agent write creates a .inferpal/history snapshot, which became a second copy of the class.
         if (IsExcluded(path)) return;
+
+        Lsp.CSharpSemanticIndex.NotifyFileChanged(path);
 
         lock (_pendingRebuild) _pendingRebuild.Add(path);
 
@@ -583,10 +639,35 @@ internal sealed class ProjectIndexService : IDisposable
         });
     }
 
+    /// <summary>The <c>meta</c> key recording which model produced the stored vectors.</summary>
+    private const string EmbeddingModelMetaKey = "embedding_model";
+
+    /// <summary>The embedding model the in-memory vectors came from (set by the last pass).</summary>
+    private volatile string _indexedEmbeddingModel = string.Empty;
+
+    /// <summary>Bumped under <see cref="_chunkLock"/> whenever the published chunks change.</summary>
+    private int _contentVersion;
+
+    /// <summary>
+    /// Serialises the watcher's re-index tasks. Each one reads a file, waits for the chat to go
+    /// idle, then publishes: two tasks for the same file both waited, and the one holding the OLDER
+    /// content could publish last — the index then kept a version of the file that no longer existed.
+    /// </summary>
+    private readonly SemaphoreSlim _reindexGate = new(1, 1);
+
     private async Task ReIndexFilesAsync(string[] changedFiles, string rootDir, CancellationToken ct)
+    {
+        await _reindexGate.WaitAsync(ct);
+        try { await ReIndexFilesCoreAsync(changedFiles, rootDir, ct); }
+        finally { _reindexGate.Release(); }
+    }
+
+    private async Task ReIndexFilesCoreAsync(string[] changedFiles, string rootDir, CancellationToken ct)
     {
         var db       = new RagDatabase(rootDir);
         var embModel = EmbeddingModel;
+        // The vectors in memory came from the last pass's model: a model changed since cannot reuse them.
+        var canReuse = string.Equals(embModel, _indexedEmbeddingModel, StringComparison.Ordinal);
 
         foreach (var file in changedFiles)
         {
@@ -598,6 +679,7 @@ internal sealed class ProjectIndexService : IDisposable
                 {
                     _chunksByFile.Remove(file);
                     ChunkCount = _chunksByFile.Values.Sum(l => l.Count);
+                    _contentVersion++;
                 }
                 finally { _chunkLock.Release(); }
 
@@ -615,13 +697,13 @@ internal sealed class ProjectIndexService : IDisposable
                 var content    = await File.ReadAllTextAsync(file, ct);
                 var fileChunks = await ChunkFileAsync(file, content, rootDir, ct);
 
-                if (_config.RagEnabled)
+                // Reuse embeddings for unchanged chunks (same start line + content hash),
+                // mirroring the initial pass: a save without content change — and the
+                // post-pass backlog drain, which re-reads files the pass just embedded —
+                // would otherwise re-embed the whole file for nothing.
+                List<RagChunk>? previous = null;
+                if (canReuse)
                 {
-                    // Reuse embeddings for unchanged chunks (same start line + content hash),
-                    // mirroring the initial pass: a save without content change — and the
-                    // post-pass backlog drain, which re-reads files the pass just embedded —
-                    // would otherwise re-embed the whole file for nothing.
-                    List<RagChunk>? previous = null;
                     await _chunkLock.WaitAsync(ct);
                     try
                     {
@@ -629,24 +711,26 @@ internal sealed class ProjectIndexService : IDisposable
                             previous = [.. current];
                     }
                     finally { _chunkLock.Release(); }
+                }
 
-                    foreach (var chunk in fileChunks)
+                foreach (var chunk in fileChunks)
+                {
+                    var existing = previous?.FirstOrDefault(c =>
+                        c.StartLine == chunk.StartLine &&
+                        c.ContentHash == chunk.ContentHash);
+                    if (existing?.Embedding is { Length: > 0 })
                     {
-                        var existing = previous?.FirstOrDefault(c =>
-                            c.StartLine == chunk.StartLine &&
-                            c.ContentHash == chunk.ContentHash);
-                        if (existing?.Embedding is { Length: > 0 })
-                        {
-                            chunk.Embedding = existing.Embedding;
-                            continue;
-                        }
-
-                        if (_client.IsEmbeddingCircuitOpen) break;
-                        // Yield the shared Ollama backend to any in-flight interactive request.
-                        await GpuScheduler.WaitForChatIdleAsync(ct);
-                        var emb = await _client.GetEmbeddingAsync(chunk.Content, embModel, ct);
-                        chunk.Embedding = emb;
+                        chunk.Embedding = existing.Embedding;
+                        continue;
                     }
+
+                    // ⚠ Skip only the network call. A `break` here also skipped the REUSE of every later
+                    // chunk: with the circuit open (or RAG turned off, the watcher still armed) the
+                    // unchanged chunks of a saved file lost their vector, in memory and in SQLite.
+                    if (!_config.RagEnabled || _client.IsEmbeddingCircuitOpen) continue;
+                    // Yield the shared Ollama backend to any in-flight interactive request.
+                    await GpuScheduler.WaitForChatIdleAsync(ct);
+                    chunk.Embedding = await _client.GetEmbeddingAsync(chunk.Content, embModel, ct);
                 }
 
                 // Update memory — O(1) dict assignment replaces old chunks for this file
@@ -655,6 +739,7 @@ internal sealed class ProjectIndexService : IDisposable
                 {
                     _chunksByFile[file] = fileChunks;
                     ChunkCount = _chunksByFile.Values.Sum(l => l.Count);
+                    _contentVersion++;
                 }
                 finally { _chunkLock.Release(); }
 
@@ -696,6 +781,7 @@ internal sealed class ProjectIndexService : IDisposable
             foreach (var group in chunks.GroupBy(c => c.FilePath, StringComparer.OrdinalIgnoreCase))
                 _chunksByFile[group.Key] = [.. group];
             ChunkCount = _chunksByFile.Values.Sum(l => l.Count);
+            _contentVersion++;   // the search snapshot is stale from here
         }
         finally
         {
@@ -733,22 +819,38 @@ internal sealed class ProjectIndexService : IDisposable
     /// artifacts (bin, obj, .git, node_modules, .vs, .inferpal), whatever the project profile
     /// adds (<c>.inferpal/project.json</c>), and oversized files.
     /// </summary>
-    private List<string> EnumerateSourceFiles(string rootDir)
+    /// <returns>The files, or <c>null</c> when the walk itself failed part-way — a partial list must
+    /// not reach the pass's final replaceAll.</returns>
+    private List<string>? EnumerateSourceFiles(string rootDir)
     {
         var result = new List<string>();
         try
         {
-            foreach (var ext in CodeChunker.SupportedExtensions)
+            // ONE walk filtered by extension: the per-extension loop walked the whole tree once for
+            // every supported language.
+            foreach (var f in WorkspaceScan.EnumerateFiles(rootDir, "*"))
             {
-                foreach (var f in WorkspaceScan.EnumerateFiles(rootDir, $"*{ext}"))
+                if (!CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase)
+                    || IsExcluded(f))
+                    continue;
+                try
                 {
-                    if (!IsExcluded(f) && new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes)
-                        result.Add(f);
+                    if (new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes) result.Add(f);
+                }
+                // ⚠ Per file: a file deleted between the walk and the stat (a git pull, a generator) threw
+                // out of the WHOLE enumeration, and the pass replaced the index with what had been listed.
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Diagnostics.Swallow("ProjectIndexService.CollectFile", ex);
                 }
             }
         }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.CollectFiles", ex); }
+        catch (OperationCanceledException) { return null; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ProjectIndexService.CollectFiles", ex);
+            return null;
+        }
         return result;
     }
 

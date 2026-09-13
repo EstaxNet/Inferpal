@@ -114,10 +114,11 @@ internal sealed class BackgroundShellRegistry : IDisposable
         var exited = job.Exited;
 
         // The Exited event can fire before the async stdout/stderr callbacks have delivered the
-        // last lines. Parameterless WaitForExit() on an already-exited process blocks only until
-        // those redirected streams are drained — without it the tail of the output is lost.
+        // last lines: wait for those redirected streams to drain, or the tail of the output is lost.
+        // ⚠ Bounded: a background process the job started holds the pipes open for as long as it
+        // lives, and the parameterless WaitForExit() blocked this poll — synchronously — until then.
         if (exited)
-            try { job.Process.WaitForExit(); } catch { }
+            try { job.Process.WaitForExit(2000); } catch { }
 
         string chunk;
         int? exit;

@@ -90,22 +90,29 @@ internal static class ModelCatalog
         var headCountKv = GetInt(info, prefix + "attention.head_count_kv");
         var embedding   = GetInt(info, prefix + "embedding_length");
         var contextLen  = GetInt(info, prefix + "context_length");
+        var keyLength   = GetInt(info, prefix + "attention.key_length");
+        var valueLength = GetInt(info, prefix + "attention.value_length");
 
         if (blockCount <= 0 || headCount <= 0 || embedding <= 0) return null;
         if (headCountKv <= 0) headCountKv = headCount; // no GQA → MHA
 
-        return new ModelArchInfo(blockCount, headCount, headCountKv, embedding, contextLen);
+        return new ModelArchInfo(blockCount, headCount, headCountKv, embedding, contextLen, keyLength, valueLength);
     }
 
     /// <summary>
     /// KV-cache bytes consumed per token. Assumes an fp16 cache (2 bytes/element, Ollama's
-    /// default): <c>2 (K+V) × block_count × head_count_kv × head_dim</c>, where
-    /// <c>head_dim = embedding_length / head_count</c>.
+    /// default): <c>block_count × head_count_kv × (key_length + value_length)</c>.
     /// </summary>
+    /// <remarks>⚠ The head sizes come from <c>attention.key_length</c>/<c>value_length</c> when the
+    /// model declares them, and only fall back to <c>embedding_length / head_count</c>: the two
+    /// differ on real models (Gemma 2 9B: 256 declared, 224 derived), and the derived figure
+    /// under-sizes the cache, so the recommended num_ctx spills onto the CPU.</remarks>
     public static long KvCacheBytesPerToken(ModelArchInfo arch, int bytesPerElement = 2)
     {
-        var headDim = arch.EmbeddingLength / arch.HeadCount;
-        return 2L * arch.BlockCount * arch.HeadCountKv * headDim * bytesPerElement;
+        var derived = arch.EmbeddingLength / arch.HeadCount;
+        var key     = arch.KeyLength   > 0 ? arch.KeyLength   : derived;
+        var value   = arch.ValueLength > 0 ? arch.ValueLength : derived;
+        return (long)arch.BlockCount * arch.HeadCountKv * (key + value) * bytesPerElement;
     }
 
     /// <summary>

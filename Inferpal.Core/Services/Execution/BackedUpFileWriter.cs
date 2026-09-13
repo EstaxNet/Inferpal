@@ -25,9 +25,8 @@ internal static class BackedUpFileWriter
         var dir = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
-        var existed  = File.Exists(path);
-        var snapshot = await history.SnapshotAsync(path, ct);
-        if (existed && snapshot.Length == 0) return new(false, string.Empty);
+        var (saved, snapshot) = await history.BackUpBeforeChangeAsync(path, ct);
+        if (!saved) return new(false, string.Empty);
 
         await Inferpal.Services.Tools.SafeFileWriter.WritePreservingAsync(path, content, ct);
         return new(true, snapshot);

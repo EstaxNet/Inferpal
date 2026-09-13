@@ -107,6 +107,26 @@ internal class FileHistoryService
     }
 
     /// <summary>
+    /// Backs up a file about to be replaced or deleted. <c>Saved</c> is false only when the file
+    /// exists and no backup could be written.
+    /// </summary>
+    /// <remarks>⚠ The change must then NOT happen: every editing tool promises that <c>restore_file</c>
+    /// and <c>/undo-run</c> bring the previous version back, and a failed snapshot leaves nothing to
+    /// bring back — a deletion is then permanent. Same rule as <c>/undo-run</c>, which refuses to
+    /// delete what it could not save.</remarks>
+    internal async Task<(bool Saved, string Snapshot)> BackUpBeforeChangeAsync(string filePath, CancellationToken ct)
+    {
+        if (!File.Exists(filePath)) return (true, string.Empty);
+        var snapshot = await SnapshotAsync(filePath, ct);
+        return (snapshot.Length > 0, snapshot);
+    }
+
+    /// <summary>The model-facing refusal when <see cref="BackUpBeforeChangeAsync"/> could not save a backup.</summary>
+    internal static string BackupFailedMessage(string filePath) =>
+        $"Error: no backup of {filePath} could be saved (details in /diagnostics), so it was NOT changed — "
+        + "restore_file could not have undone it. Check that the .inferpal/history folder is writable, then retry.";
+
+    /// <summary>
     /// Deletes the oldest snapshots carrying <paramref name="suffix"/> (path hash + file name)
     /// beyond <see cref="MaxSnapshotsPerFile"/>. Best-effort — never throws.
     /// </summary>
@@ -147,6 +167,71 @@ internal class FileHistoryService
             .OrderByDescending(File.GetLastWriteTimeUtc)
             .ThenByDescending(f => f)
             .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// <c>true</c> when <paramref name="snapshotPath"/> is a snapshot of <paramref name="originalPath"/>
+    /// kept in that file's own history folder.
+    /// </summary>
+    /// <remarks>The history lives at the git root, which can sit above the solution root the workspace
+    /// is confined to — and every write hands the model that very snapshot path. A snapshot of THIS
+    /// file (its path hash is in the name) is safe to restore wherever that root is.</remarks>
+    internal static bool IsSnapshotOf(string snapshotPath, string originalPath)
+    {
+        try
+        {
+            var full = Path.GetFullPath(snapshotPath);
+            return string.Equals(Path.GetDirectoryName(full), Path.GetFullPath(GetHistoryDir(originalPath)),
+                                 StringComparison.OrdinalIgnoreCase)
+                   && MatchesSuffix(full, SnapshotSuffix(originalPath));
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
+
+    // Snapshots a restore took of the state it was about to replace (in memory, per session).
+    private readonly HashSet<string> _restoreSnapshots = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _restoreLock = new();
+
+    /// <summary>Records that <paramref name="snapshotPath"/> was taken by a restore, right before it.</summary>
+    internal void MarkTakenByRestore(string snapshotPath)
+    {
+        lock (_restoreLock) _restoreSnapshots.Add(snapshotPath);
+    }
+
+    /// <summary>
+    /// The snapshot a restore without an explicit snapshot puts back: the most recent one that is
+    /// neither a snapshot a restore took of itself nor identical to the current content.
+    /// </summary>
+    /// <remarks>⚠ Plain "most recent" made a second <c>restore_file</c> put back the state the first one
+    /// had just undone — the snapshot the first restore took before overwriting — instead of stepping
+    /// back once more.</remarks>
+    internal async Task<string?> FindRestoreCandidateAsync(string originalPath, CancellationToken ct)
+    {
+        var historyDir = GetHistoryDir(originalPath);
+        if (!Directory.Exists(historyDir)) return null;
+
+        var current = File.Exists(originalPath) ? await File.ReadAllBytesAsync(originalPath, ct) : null;
+        var suffix  = SnapshotSuffix(originalPath);
+        var ordered = Directory.EnumerateFiles(historyDir)
+            .Where(f => MatchesSuffix(f, suffix))
+            .OrderByDescending(File.GetLastWriteTimeUtc)
+            .ThenByDescending(f => f)
+            .ToList();
+
+        foreach (var candidate in ordered)
+        {
+            lock (_restoreLock)
+                if (_restoreSnapshots.Contains(candidate)) continue;
+            if (current is not null
+                && new FileInfo(candidate).Length == current.Length
+                && (await File.ReadAllBytesAsync(candidate, ct)).AsSpan().SequenceEqual(current))
+                continue;   // restoring identical content changes nothing
+            return candidate;
+        }
+        return null;
     }
 
     internal async Task RestoreAsync(string snapPath, string targetPath, CancellationToken ct)

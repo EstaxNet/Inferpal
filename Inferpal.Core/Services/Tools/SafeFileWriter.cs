@@ -50,9 +50,13 @@ internal static class SafeFileWriter
     /// Writes <paramref name="content"/> to <paramref name="path"/>, keeping the encoding (and BOM)
     /// the existing file carries; a new file is written UTF-8 without BOM.
     /// </summary>
+    /// <remarks>⚠ Cancellation is honoured BEFORE the write, never during it:
+    /// <c>File.WriteAllTextAsync</c> truncates the file first, so a Stop landing mid-write left a
+    /// truncated file behind an approved change.</remarks>
     internal static Task WritePreservingAsync(string path, string content, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         var encoding = File.Exists(path) ? DetectEncoding(path) : Utf8NoBom;
-        return File.WriteAllTextAsync(path, content, encoding, ct);
+        return File.WriteAllTextAsync(path, content, encoding, CancellationToken.None);
     }
 }

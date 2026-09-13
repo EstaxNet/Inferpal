@@ -28,7 +28,9 @@ internal class ListFilesTool : ITool
         var root    = _getWorkspaceRoot();
         var path    = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
-        var pattern = args.Str("pattern") ?? "*";
+        var rawPattern = args.Str("pattern");
+        if (WorkspaceScan.NormalizeFilePattern(rawPattern) is not { } pattern)
+            return Task.FromResult(WorkspaceScan.InvalidPatternMessage("pattern", rawPattern));
 
         if (!Directory.Exists(path))
             return Task.FromResult(Strings.DirNotFound(path));

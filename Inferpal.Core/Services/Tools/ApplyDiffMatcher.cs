@@ -20,7 +20,25 @@ internal static class ApplyDiffMatcher
     {
         var mode = (occurrence ?? "unique").Trim().ToLowerInvariant();
 
+        // A blank old_content anchors nothing — the tolerant pass matched the file's first empty line
+        // and replaced it.
+        if (string.IsNullOrWhiteSpace(oldContent)) return new Result(null, 0, false);
+
+        // ⚠ The replacement is written in the file's own line endings: a CRLF file (Visual Studio's
+        // default) received the model's LF text as is — mixed endings on disk.
+        var eol = LineEndings.Dominant(file);
+        newContent = LineEndings.ToEol(newContent, eol);
+
         var exact = CountOccurrences(file, oldContent);
+        // The same text in the file's endings: an LF old_content spanning lines still matches a CRLF
+        // file exactly, instead of falling to the tolerant pass.
+        if (exact == 0 && eol == "\r\n")
+        {
+            var inFileEndings = LineEndings.ToEol(oldContent, eol);
+            if (inFileEndings != oldContent && (exact = CountOccurrences(file, inFileEndings)) > 0)
+                oldContent = inFileEndings;
+        }
+
         if (exact > 0)
         {
             switch (mode)
@@ -41,11 +59,17 @@ internal static class ApplyDiffMatcher
     }
 
     // Matches old_content against the file line-by-line, comparing each line trimmed (handles
-    // leading/trailing whitespace and \r). Applies only when exactly one contiguous block matches.
+    // leading/trailing whitespace and \r). Applies only when exactly one contiguous block matches;
+    // several matches come back as ambiguous (Count > 1) — reporting them as "not found" sent the
+    // model looking for a whitespace mistake that did not exist.
     private static Result? TryFuzzy(string file, string oldContent, string newContent)
     {
         var fileLines = file.Split('\n');
         var target    = oldContent.Replace("\r", "").Split('\n');
+        // A trailing newline ends old_content's last line; it is not an extra empty line to match
+        // (which made an old_content ending in "\n" require a blank line after the block).
+        var endsWithNewline = target.Length > 1 && target[^1].Length == 0;
+        if (endsWithNewline) target = target[..^1];
         int k = target.Length;
         if (k == 0 || k > fileLines.Length) return null;
 
@@ -58,17 +82,25 @@ internal static class ApplyDiffMatcher
             for (int j = 0; j < k; j++)
                 if (!fileLines[s + j].Trim().Equals(targetTrim[j], StringComparison.Ordinal)) { ok = false; break; }
             if (!ok) continue;
-            if (++matches > 1) return null;   // not unique → too risky to fuzzy-apply
-            matchStart = s;
+            if (matches++ == 0) matchStart = s;
         }
-        if (matches != 1) return null;
+        if (matches > 1) return new Result(null, matches, true);   // ambiguous → too risky to fuzzy-apply
+        if (matches == 0) return null;
 
-        var before = string.Join("\n", fileLines[..matchStart]);
-        var after  = string.Join("\n", fileLines[(matchStart + k)..]);
-        var modified =
-            (before.Length > 0 ? before + "\n" : string.Empty) +
-            newContent +
-            (after.Length > 0 ? "\n" + after : string.Empty);
+        // The line structure already provides the break after the block: drop the one new_content ends with.
+        if (endsWithNewline)
+        {
+            if (newContent.EndsWith("\r\n", StringComparison.Ordinal)) newContent = newContent[..^2];
+            else if (newContent.EndsWith('\n'))                        newContent = newContent[..^1];
+        }
+        // Split on '\n', a CRLF line keeps its "\r": the last replaced line must end the same way.
+        if (fileLines[matchStart + k - 1].EndsWith('\r') && !newContent.EndsWith('\r'))
+            newContent += "\r";
+
+        // Replace the matched lines in place: joining the untouched lines back with "\n" restores the
+        // file exactly, including a final newline (an empty last element).
+        var modified = string.Join("\n",
+            fileLines[..matchStart].Append(newContent).Concat(fileLines[(matchStart + k)..]));
 
         return new Result(modified, 1, true);
     }

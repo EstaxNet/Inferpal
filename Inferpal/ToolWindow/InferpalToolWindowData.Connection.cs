@@ -146,13 +146,15 @@ internal partial class InferpalToolWindowData
 
         await RunOnVMContextAsync(() =>
         {
-            hasMessages = Messages.Count > 0;
+            // Decided on the snapshot, never on Messages: the two scroll anchors are always there,
+            // so counting them archived an empty, titled session on every /clear and /template.
+            snapshot    = SessionManager.BuildSnapshot(
+                Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
+            hasMessages = snapshot.Count > 0;
             if (!hasMessages) return;
 
             var firstUser    = Messages.FirstOrDefault(m => m.Role == "user");
             firstUserContent = firstUser?.Content ?? string.Empty;
-            snapshot         = SessionManager.BuildSnapshot(
-                Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
         });
 
         // Fire save+title generation in background so the UI clears immediately.
@@ -284,10 +286,8 @@ internal partial class InferpalToolWindowData
     {
         await RunOnVMContextAsync(() =>
         {
-            IsPlanMode = !IsPlanMode;   // marshalled like the history it drives (revue §2.5)
-            _baseSystemPrompt = BuildSystemPrompt();
-            if (_history.Count > 0 && _history[0].Role == "system")
-                _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
+            IsPlanMode = !IsPlanMode;   // marshalled like the history it drives
+            RefreshSystemPrompt();
         });
         // Localised since §17: these two lines were hard-coded English while every other command
         // message went through Strings — the toolbar button shows them too, in all ten languages.

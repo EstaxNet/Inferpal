@@ -234,18 +234,24 @@ internal static class Diagnostics
         if (generated > 0) owner = owner.Substring(0, generated).TrimEnd('.', '+');
         return owner;
     }
+    // Serialises the file writes: two entries recorded at once collided on the open file (the second
+    // was lost) or both truncated it, erasing an entry just written.
+    private static readonly object _fileGate = new();
 
     private static void AppendToFile(DiagnosticEntry e, Exception? full = null)
     {
         try
         {
-            var path = LogPath;
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            if (new FileInfo(path) is { Exists: true, Length: > MaxLogBytes })
-                File.WriteAllText(path, $"[log truncated at {MaxLogBytes / (1024 * 1024)} MB — older entries dropped]{Environment.NewLine}");
-            File.AppendAllText(path, e.ToLine() + Environment.NewLine);
-            if (full is not null)
-                File.AppendAllText(path, full.ToString() + Environment.NewLine + Environment.NewLine);
+            lock (_fileGate)
+            {
+                var path = LogPath;
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                if (new FileInfo(path) is { Exists: true, Length: > MaxLogBytes })
+                    File.WriteAllText(path, $"[log truncated at {MaxLogBytes / (1024 * 1024)} MB — older entries dropped]{Environment.NewLine}");
+                File.AppendAllText(path, e.ToLine() + Environment.NewLine);
+                if (full is not null)
+                    File.AppendAllText(path, full.ToString() + Environment.NewLine + Environment.NewLine);
+            }
         }
         catch { /* file logging is best-effort too */ }
     }

@@ -113,6 +113,10 @@ internal static class CodeActionPipeline
         var editedCode = hasSelection
             ? InlineEditReindenter.Reindent(originalCode, cleaned)
             : cleaned;
+        // ⚠ Model output (and Reindent's) is LF: a CRLF document gets its own endings back — both to
+        // write consistent endings and to recognise an unchanged LF echo as "nothing to change".
+        var eol = LineEndings.Dominant(docText);
+        editedCode = LineEndings.ToEol(editedCode, eol);
         // An empty reply is a model-side condition (wrong model kind, aborted stream) — name it,
         // so the failure prompt carries a cause instead of the bare generic verdict.
         if (string.IsNullOrWhiteSpace(editedCode))
@@ -122,7 +126,7 @@ internal static class CodeActionPipeline
         // Small models often skip the sentinel and echo the code unchanged instead: applying it
         // would be an invisible no-op edit ("nothing happened"). Detect the identity here so every
         // front-end reports "nothing to change" like a sentinel reply.
-        if (editedCode == originalCode)
+        if (editedCode == LineEndings.ToEol(originalCode, eol))
             return new CodeActionRun(CodeActionOutcome.NoChangeNeeded);
 
         return new CodeActionRun(

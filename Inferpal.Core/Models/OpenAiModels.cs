@@ -47,7 +47,7 @@ record OpenAiFnCall(
 /// <summary>One SSE chunk from the <c>/v1/chat/completions</c> stream. <see cref="Error"/> is set
 /// when the server injects a failure mid-stream after the 200 headers (LM Studio / llama.cpp do this
 /// for context overflow); it is a raw element because servers disagree on whether it is a string or
-/// an object — see <c>OpenAiCompatibleClient.TryExtractError</c>.</summary>
+/// an object — see <c>InferenceProviderBase.TryExtractError</c>.</summary>
 record OpenAiStreamChunk(
     [property: JsonPropertyName("choices")] List<OpenAiChoice>? Choices = null,
     [property: JsonPropertyName("usage")]   OpenAiUsage? Usage = null,

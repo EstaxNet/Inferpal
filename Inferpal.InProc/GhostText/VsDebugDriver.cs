@@ -153,17 +153,20 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 // the UI thread until a human answers. Every later request would then block on its
                 // hop to that thread: the whole driver stops, not just this call. Building through
                 // the automation instead reports the same failure in 0,34 s with no dialog at all.
+                // The host's start budget covers the build too: measured from here, not after it.
+                var launchDeadline = NowMs() + (long)DebugOps.StartBudget.TotalMilliseconds;
                 var failure = await BuildBeforeLaunchAsync(ct);
                 if (failure is not null) return new(request.Id, Ok: false, Error: failure);
 
-                return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(request.Op, ct));
+                return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(request.Op, launchDeadline, ct));
             }
 
             case DebugOps.Continue:
             case DebugOps.StepOver:
             case DebugOps.StepInto:
             case DebugOps.StepOut:
-                return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(request.Op, ct));
+                return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(
+                    request.Op, NowMs() + (long)DebugOps.ResumeBudget.TotalMilliseconds, ct));
 
             case DebugOps.State:
             {
@@ -288,7 +291,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
     /// Each hop back to <see cref="TaskScheduler.Default"/> is load-bearing, not tidiness: the wait
     /// below must not hold the UI thread, or the program it is waiting for would never get to run.
     /// </remarks>
-    private async Task<DebugStopState?> ResumeAndWaitAsync(string op, CancellationToken ct)
+    private async Task<DebugStopState?> ResumeAndWaitAsync(string op, long deadlineMs, CancellationToken ct)
     {
         var generation       = Volatile.Read(ref _modeGen);
         var resumingFromBreak = IsPaused;
@@ -308,7 +311,10 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         await TaskScheduler.Default.SwitchTo();
 
         var idleMs = 0;
-        while (!ct.IsCancellationRequested)
+        // Bounded by the host's own budget (DebugOps): past it the host has given up, and this driver —
+        // which serves one request at a time — must be free for its next request, stop included. The
+        // program keeps running under the debugger; "no stop" is what the host reports, and it is true.
+        while (!ct.IsCancellationRequested && NowMs() < deadlineMs)
         {
             // Only a transition counts. Being in break mode proves nothing: the resume may not have
             // taken effect yet, and the state would be the one the caller already had.
@@ -374,11 +380,13 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
 
         using var runner = System.Diagnostics.Process.Start(psi);
         if (runner is null) return null;
+        // Outside the try: the cleanup stops the debugger only if WE attached — a failed attach must
+        // leave whatever session is running by then (the user's own F5) alone.
+        var attached = false;
         try
         {
             var generation = Volatile.Read(ref _modeGen);
 
-            var attached = false;
             var deadline = NowMs() + 30_000;
             while (!attached && NowMs() < deadline && !runner.HasExited)
             {
@@ -424,13 +432,16 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         finally
         {
             // The capture session and its runner never outlive the call, whatever happened above.
-            try
+            if (attached)
             {
-                await Jtf.SwitchToMainThreadAsync(CancellationToken.None);
-                try { _dte.Debugger.Stop(false); } catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.CaptureStop", ex); }
-                await TaskScheduler.Default.SwitchTo();
+                try
+                {
+                    await Jtf.SwitchToMainThreadAsync(CancellationToken.None);
+                    try { _dte.Debugger.Stop(false); } catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.CaptureStop", ex); }
+                    await TaskScheduler.Default.SwitchTo();
+                }
+                catch { }
             }
-            catch { }
             try { if (!runner.HasExited) KillTree(runner); } catch { }
         }
     }

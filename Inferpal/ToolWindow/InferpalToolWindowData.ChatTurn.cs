@@ -160,9 +160,10 @@ internal partial class InferpalToolWindowData
                     Attachments.Clear();
                     HasAttachments = false;
                 }
-                IsLoading     = true;
+                // The turn is taken HERE, before the context build below: Stop cancels _currentCts
+                // only, and that build can take seconds on a busy backend.
+                localCts      = BeginOwnedTurn(ct);
                 _sendStarting = false;
-                _turnDone     = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 // The bubble names what goes WITH the question. The chips were cleared just above:
                 // without this line nothing — on screen, in the export, or in the session file —
                 // said that a file, a selection or a @diff went with this turn, and a reloaded
@@ -192,7 +193,7 @@ internal partial class InferpalToolWindowData
                 // timeout therefore consumed the flag, and the model NEVER AGAIN got the session's
                 // workspace context, with nothing saying so. "No solution open" is not that case:
                 // get_solution_info then returns text, hence non-empty.
-                var workspaceCtx = await BuildWorkspaceContextAsync(ct);
+                var workspaceCtx = await BuildWorkspaceContextAsync(localCts!.Token);
                 if (!string.IsNullOrEmpty(workspaceCtx))
                 {
                     _workspaceContextInjected = true;
@@ -203,37 +204,41 @@ internal partial class InferpalToolWindowData
             // Auto-context: retrieve and inject the most relevant indexed chunks for this turn,
             // skipping anything already attached. Guarantees per-turn RAG context even when the
             // debounced auto-attach chips did not fire (e.g. the user typed fast and sent).
-            var autoCtx = await BuildAutoContextAsync(userText, attachments, ct);
+            var autoCtx = await BuildAutoContextAsync(userText, attachments, localCts!.Token);
             if (!string.IsNullOrEmpty(autoCtx))
                 historyText = autoCtx + "\n\n" + historyText;
 
             await RunOnVMContextAsync(() =>
             {
+                // Stopped during the build: the question stays on screen and never reaches the history.
+                localCts!.Token.ThrowIfCancellationRequested();
                 _history.Add(new ChatMessageDto("user", historyText));
-                localCts    = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                _currentCts = localCts;
                 // Shadow search is no longer needed — agent is running
                 _shadowSearchCts?.Cancel();
                 _shadowSearchCts?.Dispose();
                 _shadowSearchCts = null;
             });
-
-            if (localCts is null) return;
+        }
+        catch (OperationCanceledException) when (localCts is { IsCancellationRequested: true })
+        {
+            await RunOnVMContextAsync(() =>
+            {
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgCancelled));
+                ScrollToBottom();
+                EndOwnedTurn(localCts);
+            });
+            return;
         }
         catch (Exception ex)
         {
-            // IsLoading may already be true (set in the instant-feedback block above), so it
-            // must be reset here — this catch is outside the main finally that normally clears it.
+            // The turn may already be taken (instant-feedback block above): release it here — this
+            // catch is outside the main finally that normally does.
             var msg = ex.Message;
             await RunOnVMContextAsync(() =>
             {
-                IsLoading     = false;
                 _sendStarting = false;
-                _turnDone?.TrySetResult();
-                _turnDone     = null;
-                var errItem = ChatMessageItem.AssistantMsg(Strings.MsgError(msg));
-                ApplyItemTheme(errItem);   // every other insertion themes; these four didn't (revue lot 4)
-                Messages.Insert(Messages.Count - 2, errItem);
+                EndOwnedTurn(localCts);
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
             });
             return;
         }
@@ -682,23 +687,12 @@ internal partial class InferpalToolWindowData
                 // Safety-net: remove any leftover status bubble in case the main path
                 // or the catch handlers didn't reach the removal code.
                 RemoveStatusBubble();
-                localCts?.Dispose();
                 // The tracking run opened above closes HERE: without this, everything written
                 // after the turn (a /restore, a tool launched by a slash command) still attached to
                 // it, and /undo-run reverted that along with the run we had just watched.
                 _tools.History.EndRun();
-                // Conditional finalisation: a code action can cancel THIS turn and start the next
-                // one before this finally runs — _currentCts then belongs to the NEW turn, and
-                // stomping IsLoading here killed its stop button and let a third send through
-                // (pre-1.6.0 architecture review, §2.1). Only the turn that still owns the state releases it.
-                if (ReferenceEquals(_currentCts, localCts))
-                {
-                    _currentCts = null;
-                    IsLoading   = false;
-                    CurrentStep = string.Empty;
-                    _turnDone?.TrySetResult();
-                    _turnDone   = null;
-                }
+                // Only the turn that still owns the state releases it (see EndOwnedTurn).
+                EndOwnedTurn(localCts);
             });
 
             // Beep when a long agent run completes, so the user can work elsewhere

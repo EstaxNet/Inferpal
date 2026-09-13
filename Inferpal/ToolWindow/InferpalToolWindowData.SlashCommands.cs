@@ -118,7 +118,8 @@ internal partial class InferpalToolWindowData
         var result = await TestGenerationEdit.RunAsync(_vs, view, _client, model, ct);
 
         await ShowInfoAsync(
-            result.NoChange ? Strings.TestsNoChange
+            result.Cancelled ? Strings.MsgCancelled
+            : result.NoChange ? Strings.TestsNoChange
             : result.Ok     ? (result.Extended ? Strings.TestsExtended(result.TestFileName) : Strings.TestsGenerated(result.TestFileName))
             :                 Strings.TestsGenerateFailed);
     }
@@ -211,7 +212,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Branch:     await HandleBranchCommandAsync(parts, ct);                    break;
             case SlashCommandId.UndoRun:    await HandleUndoRunCommandAsync(parts, ct);                   break;
             case SlashCommandId.PHistory:   await HandlePHistoryCommandAsync(parts, ct);                  break;
-            case SlashCommandId.Models:     await HandleModelsCommandAsync(parts, ct);                    break;
+            case SlashCommandId.Models:     await RunOwnedCommandAsync(tok => HandleModelsCommandAsync(parts, tok), ct); break;
             case SlashCommandId.Hardware:   await HandleHardwareCommandAsync(parts, ct);                  break;
             case SlashCommandId.Setup:      await HandleSetupCommandAsync(parts, ct);                    break;
             case SlashCommandId.AgentStep:  await ToggleStepModeAsync();                                  break;
@@ -229,15 +230,17 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Snippets:   await HandleSnippetsCommandAsync(parts, ct); break;
             case SlashCommandId.Template:   await HandleTemplateCommandAsync(parts, ct); break;
             case SlashCommandId.Docs:       await HandleDocsCommandAsync(parts, ct);     break;
-            case SlashCommandId.Check:      await HandleCheckCommandAsync(parts, ct);    break;
+            // /check, /onboard, /bench, /arena and /models call the model for a long time: they take
+            // the turn, so Stop cancels them and no chat turn starts underneath them.
+            case SlashCommandId.Check:      await RunOwnedCommandAsync(tok => HandleCheckCommandAsync(parts, tok), ct);   break;
             case SlashCommandId.Plan:       await HandlePlanCommandAsync(parts, ct);     break;
-            case SlashCommandId.Onboard:    await HandleOnboardCommandAsync(parts, ct);  break;
+            case SlashCommandId.Onboard:    await RunOwnedCommandAsync(tok => HandleOnboardCommandAsync(parts, tok), ct); break;
             case SlashCommandId.Rules:      await HandleRulesCommandAsync(parts, ct);    break;
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
             case SlashCommandId.Permissions: await HandlePermissionsCommandAsync();      break;
             case SlashCommandId.Diagnostics: await HandleDiagnosticsCommandAsync(parts); break;
-            case SlashCommandId.Bench:       await HandleBenchCommandAsync(parts, ct);    break;
-            case SlashCommandId.Arena:       await HandleArenaCommandAsync(parts, ct);    break;
+            case SlashCommandId.Bench:       await RunOwnedCommandAsync(tok => HandleBenchCommandAsync(parts, tok), ct);   break;
+            case SlashCommandId.Arena:       await RunOwnedCommandAsync(tok => HandleArenaCommandAsync(parts, tok), ct);   break;
             case SlashCommandId.Tdd:         await HandleTddCommandAsync(parts, ct);      break;
             case SlashCommandId.Task:        await HandleTaskCommandAsync(parts);         break;
             case SlashCommandId.Debug:       await HandleDebugCommandAsync(parts, ct);    break;
@@ -481,14 +484,8 @@ internal partial class InferpalToolWindowData
     private async Task HandleTddCommandAsync(string[] parts, CancellationToken ct)
     {
         CancellationTokenSource? localCts = null;
-        await RunOnVMContextAsync(() =>
-        {
-            localCts    = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            _currentCts = localCts;
-            IsLoading   = true;
-        });
-        if (localCts is null) return;
-        var tok = localCts.Token;
+        await RunOnVMContextAsync(() => localCts = BeginOwnedTurn(ct));
+        var tok = localCts!.Token;
 
         try
         {
@@ -528,13 +525,7 @@ internal partial class InferpalToolWindowData
         }
         finally
         {
-            await RunOnVMContextAsync(() =>
-            {
-                localCts?.Dispose();
-                _currentCts = null;
-                IsLoading   = false;
-                CurrentStep = string.Empty;
-            });
+            await RunOnVMContextAsync(() => EndOwnedTurn(localCts));
         }
     }
 
@@ -574,12 +565,7 @@ internal partial class InferpalToolWindowData
 
         if (result.RefreshSystemPrompt)
             // Refresh system prompt so the new note is visible in the current session.
-            await RunOnVMContextAsync(() =>
-            {
-                _baseSystemPrompt = BuildSystemPrompt();
-                if (_history.Count > 0 && _history[0].Role == "system")
-                    _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
-            });
+            await RunOnVMContextAsync(() => RefreshSystemPrompt());
 
         await ShowInfoAsync(result.Message);
     }
@@ -637,8 +623,7 @@ internal partial class InferpalToolWindowData
         await RunOnVMContextAsync(() =>
         {
             _activeTemplateSuffix = tmpl.SystemSuffix;
-            _baseSystemPrompt     = BuildSystemPrompt();
-            _history[0]           = new ChatMessageDto("system", _baseSystemPrompt);
+            RefreshSystemPrompt();
         });
         await ShowInfoAsync(tmpl.Greeting);
     }

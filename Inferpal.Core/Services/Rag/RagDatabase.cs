@@ -70,6 +70,30 @@ internal sealed class RagDatabase
     public Task<List<RagChunk>> LoadAsync(CancellationToken ct) =>
         QueryChunksAsync("root_hash = $rh", "file_path, start_line", ct);
 
+    /// <summary>A value recorded for this root in the <c>meta</c> table, or <c>null</c>.</summary>
+    public async Task<string?> GetMetaAsync(string key, CancellationToken ct)
+    {
+        await using var conn = OpenConnection();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText = "SELECT value FROM meta WHERE key = $k";
+        cmd.Parameters.AddWithValue("$k", RootMetaKey(key));
+        return await cmd.ExecuteScalarAsync(ct) as string;
+    }
+
+    /// <summary>Records <paramref name="value"/> for this root in the <c>meta</c> table.</summary>
+    public async Task SetMetaAsync(string key, string value, CancellationToken ct)
+    {
+        await using var conn = OpenConnection();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText = "INSERT OR REPLACE INTO meta (key, value) VALUES ($k, $v)";
+        cmd.Parameters.AddWithValue("$k", RootMetaKey(key));
+        cmd.Parameters.AddWithValue("$v", value);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    // The meta table also holds the schema version, shared by every root: per-root keys carry the root hash.
+    private string RootMetaKey(string key) => $"{key}:{_rootHash}";
+
     /// <summary>
     /// The single chunk-reading query: the two public loaders differed only by their WHERE and
     /// ORDER BY, yet each carried its own copy of the eight-column projection and the row mapping —

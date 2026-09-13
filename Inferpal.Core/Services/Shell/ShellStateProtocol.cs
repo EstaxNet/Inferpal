@@ -10,11 +10,14 @@ namespace Inferpal.Services.Shell;
 /// <param name="Cwd">The working directory after the command ran, or <c>null</c> if not captured.</param>
 /// <param name="EnvFull">The full environment snapshot after the command ran.</param>
 /// <param name="StateCaptured">True if the sentinel marker was found (state lines are trustworthy).</param>
+/// <param name="ExitCode">The command's exit code as the wrapper reported it (the last native
+/// program's under PowerShell), or <c>null</c> when none was reported.</param>
 internal readonly record struct ShellRunState(
     string Output,
     string? Cwd,
     IReadOnlyDictionary<string, string> EnvFull,
-    bool StateCaptured);
+    bool StateCaptured,
+    int? ExitCode = null);
 
 /// <summary>
 /// Pure (process-free, testable) protocol for the persistent shell. Inferpal does NOT keep a
@@ -68,6 +71,8 @@ internal static class ShellStateProtocol
         // trailing newline) so the marker always starts a line of its own.
         sb.Append("  Write-Output ''\n");
         sb.Append("  Write-Output '").Append(marker).Append("'\n");
+        // The command's exit code (the last native program's): this wrapper itself always exits 0.
+        sb.Append("  Write-Output ('RC=' + $global:LASTEXITCODE)\n");
         sb.Append("  Write-Output ('CWD=' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-Location).Path)))\n");
         sb.Append("  Get-ChildItem env: | ForEach-Object { 'ENV=' + ([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($_.Name))) + '").Append(EnvSep).Append("' + ([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes([string]$_.Value))) }\n");
         sb.Append("}\n");
@@ -103,10 +108,13 @@ internal static class ShellStateProtocol
         AppendRestorePosix(sb, cwd, env);
         sb.Append("__c=$(printf '%s' '").Append(B64Utf8(command)).Append("' | base64 -d)\n");
         sb.Append("eval \"$__c\"\n");
+        // Captured at once: every printf below overwrites $?.
+        sb.Append("__rc=$?\n");
         // Leading \n terminates any unterminated output line (printf/base64 -d without a
         // trailing newline) so the marker always starts a line of its own; a doubled newline
         // on well-behaved output is folded away by the parser's TrimEnd.
         sb.Append("printf '\\n%s\\n' '").Append(marker).Append("'\n");
+        sb.Append("printf 'RC=%s\\n' \"$__rc\"\n");
         // base64 wraps at 76 columns on GNU and BSD alike — `tr -d '\n'` keeps each state line whole.
         sb.Append("printf 'CWD=%s\\n' \"$(printf '%s' \"$PWD\" | base64 | tr -d '\\n')\"\n");
         // awk's ENVIRON iteration is POSIX and, unlike parsing `env` output, immune to values
@@ -185,6 +193,7 @@ internal static class ShellStateProtocol
 
         var output = string.Join("\n", lines.Take(idx).Concat(glued is null ? [] : [glued])).TrimEnd();
         string? cwd = null;
+        int? exitCode = null;
         var env = new Dictionary<string, string>(EnvNameComparer);
         for (var i = idx + 1; i < lines.Length; i++)
         {
@@ -192,6 +201,13 @@ internal static class ShellStateProtocol
             if (line.StartsWith("CWD=", StringComparison.Ordinal))
             {
                 cwd = TryDecode(line[4..]);
+            }
+            else if (line.StartsWith("RC=", StringComparison.Ordinal))
+            {
+                // Empty when no native program ran (PowerShell's $LASTEXITCODE is then null).
+                if (int.TryParse(line[3..].Trim(), System.Globalization.NumberStyles.Integer,
+                                 System.Globalization.CultureInfo.InvariantCulture, out var rc))
+                    exitCode = rc;
             }
             else if (line.StartsWith("ENV=", StringComparison.Ordinal))
             {
@@ -203,7 +219,7 @@ internal static class ShellStateProtocol
                 if (name is not null && val is not null) env[name] = val;
             }
         }
-        return new ShellRunState(output, cwd, env, true);
+        return new ShellRunState(output, cwd, env, true, exitCode);
     }
 
     /// <summary>

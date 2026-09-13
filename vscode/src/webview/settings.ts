@@ -419,7 +419,13 @@ function renderField(field: Field): HTMLElement {
       btn.textContent = res('BtnTest');
       btn.addEventListener('click', () => {
         setTestStatus('…');
-        vscode.postMessage({ type: 'testConnection', baseUrl: (inputs.get('baseUrl') as HTMLInputElement).value });
+        // The key in the form travels with the URL: probing a new server with the SAVED key read
+        // "unreachable" on a server that only refused the old (or missing) key.
+        vscode.postMessage({
+          type: 'testConnection',
+          baseUrl: (inputs.get('baseUrl') as HTMLInputElement).value,
+          apiKey:  (inputs.get('apiKey')  as HTMLInputElement | undefined)?.value,
+        });
       });
       line.append(btn);
       testStatusEl = document.createElement('span');
@@ -517,6 +523,17 @@ function onSave(): void {
       default:
         config[field.key] = input.value;
         break;
+    }
+  }
+  // "Use a separate model per role" unchecked promises the chat model everywhere (its tooltip says
+  // so): the fields behind that gate are reset to "same as chat" instead of being kept behind the
+  // fold, where the router went on using them and from which the box came back checked (issue #8).
+  // The fields come from the schema, not from a list copied here — same rule as ModelRoleSettings.
+  if (!gateOn.roles) {
+    for (const field of allFields) {
+      if (field.gate === 'roles') {
+        config[field.key] = field.kind === 'bool' ? false : '';
+      }
     }
   }
   lastIgnored = ignored;

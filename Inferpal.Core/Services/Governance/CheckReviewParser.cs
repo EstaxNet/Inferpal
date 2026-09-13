@@ -98,7 +98,14 @@ internal static class CheckReviewParser
             if (message.Length == 0) { prose.AppendLine(line); continue; }
 
             var file = m.Groups["file"].Value.Replace('\\', '/');
-            int reported = int.Parse(m.Groups["line"].Value);
+            // A line number the model wrote can overflow an int (a minified bundle): prose, never an
+            // exception outside every try that loses the review already generated.
+            if (!int.TryParse(m.Groups["line"].Value, System.Globalization.NumberStyles.Integer,
+                              System.Globalization.CultureInfo.InvariantCulture, out var reported))
+            {
+                prose.AppendLine(line);
+                continue;
+            }
 
             var (anchor, resolved) =
                 anchors.Covers(file, reported)         ? (AnchorKind.Exact, reported)

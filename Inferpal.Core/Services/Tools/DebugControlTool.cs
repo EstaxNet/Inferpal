@@ -88,7 +88,9 @@ internal sealed class DebugControlTool(
         if (args.Str("file") is not { Length: > 0 } raw)
             return (null, 0, "Error: 'file' is required for this action.");
 
-        if (!args.TryGetProperty("line", out var l) || !l.TryGetInt32(out var line) || line < 1)
+        // ToolArgs: "line": "14" is a common model form, and TryGetInt32 threw on it.
+        var line = args.Int("line", 0);
+        if (line < 1)
             return (null, 0, "Error: 'line' is required for this action and must be a 1-based line number.");
 
         var workspace = root();

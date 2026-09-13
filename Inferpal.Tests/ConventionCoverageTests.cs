@@ -1095,8 +1095,9 @@ public class ConventionCoverageTests
             }
         }
 
-        // Witness: the chat turn, /fix-build and /tdd raise the flag.
-        Assert.True(seen >= 3, $"Only {seen} site(s) raising IsLoading read -- the rule no longer measures anything.");
+        // Witness: since rule 29 a single site raises the flag — BeginOwnedTurn — and it is the
+        // one that must set _currentCts.
+        Assert.True(seen >= 1, $"Only {seen} site(s) raising IsLoading read -- the rule no longer measures anything.");
 
         Assert.True(offenders.Count == 0,
             "These methods show the Stop button (IsLoading = true) without giving it anything to "
@@ -1201,5 +1202,118 @@ public class ConventionCoverageTests
             "These tools resolve a path against the process's working directory, which in Visual "
             + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 29. A turn is taken and released through one funnel ───────────────────
+
+    [Fact]
+    public void ATurnIsTakenAndReleased_ThroughOneFunnel()
+    {
+        // Taking the turn is three pieces of state that go together: IsLoading (the Stop button),
+        // _currentCts (what Stop cancels) and _turnDone (what a session load and code actions await
+        // before replacing the conversation). Releasing them must happen only while this turn still
+        // owns them: a code action can cancel it and start the next one before its finally runs.
+        // Every site that copied the gesture forgot part of it — /tdd and /fix-build had no _turnDone
+        // and released unconditionally.
+        var raisers    = new List<string>();
+        var unreleased = new List<string>();
+        var callers    = 0;
+        var declared   = 0;
+
+        static bool Invokes(SyntaxNode node, string name) =>
+            node.DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Any(i => i.Expression is IdentifierNameSyntax id && id.Identifier.Text == name);
+
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                var name = method.Identifier.Text;
+                if (name == "BeginOwnedTurn") { declared++; continue; }
+
+                var raisesLoading = method.DescendantNodes().OfType<AssignmentExpressionSyntax>().Any(a =>
+                    a.Left is IdentifierNameSyntax { Identifier.Text: "IsLoading" }
+                    && a.Right.IsKind(SyntaxKind.TrueLiteralExpression));
+                if (raisesLoading) raisers.Add($"{Rel(file)} : {name}");
+
+                if (!Invokes(method, "BeginOwnedTurn")) continue;
+                callers++;
+
+                var releasedInFinally = method.DescendantNodes().OfType<FinallyClauseSyntax>()
+                    .Any(f => Invokes(f, "EndOwnedTurn"));
+                if (!releasedInFinally) unreleased.Add($"{Rel(file)} : {name}");
+            }
+        }
+
+        Assert.True(declared == 1, $"BeginOwnedTurn is declared {declared} time(s) -- the funnel no longer exists.");
+        // Witness: the chat turn, /fix-build, /tdd, /commit and the long commands.
+        Assert.True(callers >= 5, $"Only {callers} site(s) taking the turn read -- the rule no longer measures anything.");
+
+        Assert.True(raisers.Count == 0,
+            "These methods raise IsLoading themselves instead of going through BeginOwnedTurn — "
+            + "a turn taken that way has no _turnDone, or is released without checking it is still owned:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", raisers));
+        Assert.True(unreleased.Count == 0,
+            "These methods take the turn without releasing it in a finally (EndOwnedTurn): an "
+            + "exception leaves the window loading, with a Stop button that has nothing left to cancel:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", unreleased));
+    }
+
+    // ── 30. The system message is written in one place ────────────────────────
+
+    [Fact]
+    public void TheSystemMessage_IsWrittenInOnePlace()
+    {
+        // _history[0] was rewritten in seven places, each with its own recipe: the OODA summary
+        // vanished at the first active-file change or the first /note, and the language persona at
+        // the first plan-mode toggle. The composition lives in ApplySystemPrompt, and the persona's
+        // language in a field BuildSystemPrompt reads itself.
+        var writers  = new List<string>();
+        var withArgs = new List<string>();
+        var declared = 0;
+        var refreshes = 0;
+
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                var name = method.Identifier.Text;
+                if (name == "ApplySystemPrompt") declared++;
+
+                var writesSlot = method.DescendantNodes().OfType<AssignmentExpressionSyntax>().Any(a =>
+                    a.Left is ElementAccessExpressionSyntax
+                    {
+                        Expression: IdentifierNameSyntax { Identifier.Text: "_history" },
+                    } slot
+                    && slot.ArgumentList.Arguments.Count == 1
+                    && slot.ArgumentList.Arguments[0].Expression.ToString() == "0");
+                if (writesSlot && name != "ApplySystemPrompt") writers.Add($"{Rel(file)} : {name}");
+
+                foreach (var call in method.DescendantNodes().OfType<InvocationExpressionSyntax>())
+                {
+                    if (call.Expression is not IdentifierNameSyntax id) continue;
+                    if (id.Identifier.Text == "RefreshSystemPrompt") refreshes++;
+                    if (id.Identifier.Text == "BuildSystemPrompt" && call.ArgumentList.Arguments.Count > 0)
+                        withArgs.Add($"{Rel(file)} : {name}");
+                }
+            }
+        }
+
+        Assert.True(declared == 1, $"ApplySystemPrompt is declared {declared} time(s) -- the funnel no longer exists.");
+        // Witness: plan mode, active file, /note, /rules, X-Ray, /template.
+        Assert.True(refreshes >= 5, $"Only {refreshes} call(s) to RefreshSystemPrompt read -- the rule no longer measures anything.");
+
+        Assert.True(writers.Count == 0,
+            "These methods write _history[0] themselves: the OODA session summary and the persona are "
+            + "lost there. Go through RefreshSystemPrompt / ApplySystemPrompt:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", writers));
+        Assert.True(withArgs.Count == 0,
+            "These methods pass a language to BuildSystemPrompt: the persona only lives for that call, "
+            + "and the next rebuild erases it. Set _personaLanguage instead:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", withArgs));
     }
 }

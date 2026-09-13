@@ -27,6 +27,17 @@ internal static class DebugOps
     internal const string Evaluate         = "evaluate";
     internal const string Stop             = "stop";
 
+    /// <summary>How long a launch may take to reach its first stop, pre-launch build included.</summary>
+    /// <remarks>
+    /// Shared by both ends because the driver serves one request at a time: a driver that waited
+    /// longer than the host would still be busy when the host's next request arrived — stop,
+    /// typically — and every debugger tool stayed dead until the program ended.
+    /// </remarks>
+    internal static readonly TimeSpan StartBudget  = TimeSpan.FromMinutes(5);
+
+    /// <summary>How long a resume or a step waits for the next stop. See <see cref="StartBudget"/>.</summary>
+    internal static readonly TimeSpan ResumeBudget = TimeSpan.FromMinutes(2);
+
     /// <summary>§25: attach to a waiting repro runner and capture the unhandled-exception stop.</summary>
     internal const string CaptureTest      = "capture_test";
 }

@@ -40,11 +40,12 @@ internal partial class InferpalToolWindowData
         var language = _config.PersonaAutoSwitch ? DetectLanguage(filePath) : null;
         if (string.IsNullOrEmpty(language) && !HasGlobScopedRules()) return;
 
-        _baseSystemPrompt = BuildSystemPrompt(language);
+        // The persona lives in a field that BuildSystemPrompt reads: passed as an argument, it lasted
+        // until the next rebuild (plan toggle, /note, X-Ray…), which dropped it without a word.
         Post(() =>
         {
-            if (_history.Count > 0 && _history[0].Role == "system")
-                _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
+            if (!string.IsNullOrEmpty(language)) _personaLanguage = language;
+            RefreshSystemPrompt();
         });
     }
 
@@ -99,8 +100,16 @@ internal partial class InferpalToolWindowData
             if (previousTurn is not null)
                 await Task.WhenAny(previousTurn, Task.Delay(TimeSpan.FromSeconds(15)));
 #pragma warning restore VSTHRD003
-            await SendCoreAsync(p, m, atts, CancellationToken.None, clearPrompt: false);
+            // Alt+M posts "/map": a slash command goes to the router, never to the model as chat text.
+            if (p.StartsWith('/'))
+            {
+                PinWorkspaceRoot();
+                await HandleSlashCommandAsync(p, CancellationToken.None);
+            }
+            else
+                await SendCoreAsync(p, m, atts, CancellationToken.None, clearPrompt: false);
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("PendingPrompt.Run", ex); }
     }
 

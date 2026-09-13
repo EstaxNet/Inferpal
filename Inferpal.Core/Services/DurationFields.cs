@@ -37,4 +37,20 @@ internal static class DurationFields
           (int.TryParse(h, out var hv) ? hv : 0) * 3600
         + (int.TryParse(m, out var mv) ? mv : 0) * 60
         + (int.TryParse(s, out var sv) ? sv : 0);
+
+    /// <summary>
+    /// <see cref="Combine"/>, except that a duration whose three sub-fields were all emptied resolves
+    /// to <paramref name="whenCleared"/>. A single emptied sub-field still counts 0.
+    /// </summary>
+    public static int CombineOr(string h, string m, string s, int whenCleared) =>
+        string.IsNullOrWhiteSpace(h) && string.IsNullOrWhiteSpace(m) && string.IsNullOrWhiteSpace(s)
+            ? whenCleared
+            : Combine(h, m, s);
+
+    /// <summary>
+    /// A task deadline from its recombined boxes: at least 10 s, <paramref name="whenCleared"/> when
+    /// nothing was entered, and no upper cap — nothing downstream has one.
+    /// </summary>
+    public static int TaskTimeout(int combinedSeconds, int whenCleared) =>
+        combinedSeconds > 0 ? Math.Max(combinedSeconds, 10) : whenCleared;
 }

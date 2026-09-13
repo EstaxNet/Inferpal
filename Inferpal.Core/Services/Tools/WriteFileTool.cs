@@ -57,7 +57,8 @@ internal class WriteFileTool : ITool
         var snapNote = string.Empty;
         if (exists)
         {
-            var snapPath = await _history.SnapshotAsync(path, ct);
+            var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
+            if (!saved) return FileHistoryService.BackupFailedMessage(path);
             if (!string.IsNullOrEmpty(snapPath))
                 snapNote = Strings.HistoryNote(snapPath);
         }

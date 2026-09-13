@@ -139,11 +139,42 @@ internal sealed class ApplyEditsTool : ITool
         if (!await _approval.RequestApprovalAsync("apply_edits", details, ct, subject: subject))
             return Strings.DiffCancelled;
 
-        // ── Phase 2: snapshot + write (all edits already validated) ────────────
+        // ── Phase 2: back up EVERY file, then write (all edits already validated) ─
+        // A backup that cannot be saved stops the batch before anything is written.
         foreach (var path in changed)
         {
-            await _history.SnapshotAsync(path, ct);   // recorded in the active run → /undo-run
-            await SafeFileWriter.WritePreservingAsync(path, current[path], ct);
+            var (saved, _) = await _history.BackUpBeforeChangeAsync(path, ct);   // recorded in the active run → /undo-run
+            if (!saved) return FileHistoryService.BackupFailedMessage(path);
+        }
+
+        // Approved and backed up: the writes no longer observe cancellation, so a Stop cannot leave
+        // half the batch applied. ⚠ A write that FAILS puts back the files already written — the
+        // description promises the model "if ANY edit cannot be applied, NO file is changed".
+        var written = new List<string>();
+        foreach (var path in changed)
+        {
+            try
+            {
+                await SafeFileWriter.WritePreservingAsync(path, current[path], CancellationToken.None);
+                written.Add(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                var stuck = new List<string>();
+                foreach (var done in written)
+                {
+                    try { await SafeFileWriter.WritePreservingAsync(done, original[done], CancellationToken.None); }
+                    catch (Exception rollback) when (rollback is IOException or UnauthorizedAccessException)
+                    {
+                        Diagnostics.Swallow("ApplyEditsTool.Rollback", rollback);
+                        stuck.Add(RelPath(root, done));
+                    }
+                }
+                var reason = $"writing {RelPath(root, path)} failed ({ex.Message})";
+                return stuck.Count == 0
+                    ? Strings.ApplyEditsAborted(reason)
+                    : $"Error: {reason}, and {string.Join(", ", stuck)} could not be put back — restore it with restore_file.";
+            }
         }
 
         // Smart Fix once: building any edited file validates its project (covers same-project edits).

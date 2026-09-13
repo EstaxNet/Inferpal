@@ -51,6 +51,14 @@ internal sealed class InlineEditInputWindow : Window
     /// </summary>
     public Task<string?> InstructionTask => _instructionTcs.Task;
 
+    // Cancelled when the USER closes the window (X, Alt+F4, Cancel), never by CloseFromThread. While
+    // the spinner shows, closing it is the only way to say "stop".
+    private readonly CancellationTokenSource _closedByUser = new();
+    private volatile bool _closingFromCode;
+
+    /// <summary>Cancelled when the user closes the dialog: link it into the generation's token.</summary>
+    public CancellationToken CancelledByUser => _closedByUser.Token;
+
     // When true the window opens straight into spinner mode (no instruction input):
     // used by the fixed-instruction code actions (Refactor / Fix / Add docs).
     private readonly bool _spinnerOnly;
@@ -202,7 +210,11 @@ internal sealed class InlineEditInputWindow : Window
         };
 
         // Handle X-button / Alt+F4 while in input mode
-        Closing += (_, _) => _instructionTcs.TrySetResult(null);
+        Closing += (_, _) =>
+        {
+            _instructionTcs.TrySetResult(null);
+            if (!_closingFromCode) _closedByUser.Cancel();
+        };
 
         Loaded += (_, _) =>
         {
@@ -232,6 +244,7 @@ internal sealed class InlineEditInputWindow : Window
     /// </summary>
     public void CloseFromThread()
     {
+        _closingFromCode = true;   // not the user: this close must not cancel the generation
 #pragma warning disable VSTHRD001, VSTHRD110 // Intentional: marshalling to WPF Dispatcher (STA), not VS JoinableTaskFactory
         _ = Dispatcher.InvokeAsync(() =>
         {

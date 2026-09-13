@@ -32,15 +32,19 @@ internal sealed class McpTool : ITool
         Parameters       = info.InputSchema;
     }
 
-    private McpTool(McpTool source, IApprovalService approval)
+    private McpTool(McpTool source, IApprovalService approval, string? name = null)
     {
         _client          = source._client;
         _approval        = approval;
         _serverLocalName = source._serverLocalName;
-        Name             = source.Name;
+        Name             = name ?? source.Name;
         Description      = source.Description;
         Parameters       = source.Parameters;
     }
+
+    /// <summary>The same tool exposed under another name — used when two servers' names normalise to
+    /// the same tool name (<c>my-server</c> and <c>my.server</c>). Calls still go to this tool's server.</summary>
+    internal McpTool WithName(string name) => new(this, _approval, name);
 
     /// <summary>
     /// The same tool gated by a different approval pipeline. The service is captured at

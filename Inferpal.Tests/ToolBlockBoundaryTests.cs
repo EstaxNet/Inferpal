@@ -19,6 +19,28 @@ public class ToolBlockBoundaryTests
     private static ChatMessageDto Asst(string t = "a") => new("assistant", t);
     private static ChatMessageDto Tool(string t = "r") => new("tool", t);
 
+    /// <summary>
+    /// A start placed ON the second result of a block kept the call and one answer on the anchors'
+    /// side, and removed the other answer: two orphans at once, refused by every OpenAI-compatible
+    /// server (reached with a KV-cache anchor set to 6 messages).
+    /// </summary>
+    [Fact]
+    public void SnapStart_InsideAToolBlock_BacksUpToItsAssistant()
+    {
+        List<ChatMessageDto> history = [Sys(), User(), Calls(2), Tool(), Tool(), User("q2")];
+
+        Assert.Equal(2, ToolBlockBoundary.SnapStart(history, 4));
+    }
+
+    /// <summary>Witness: right after a COMPLETE block nothing moves — widening would be gratuitous.</summary>
+    [Fact]
+    public void SnapStart_RightAfterACompleteBlock_StaysPut()
+    {
+        List<ChatMessageDto> history = [Sys(), User(), Calls(2), Tool(), Tool(), User("q2")];
+
+        Assert.Equal(5, ToolBlockBoundary.SnapStart(history, 5));
+    }
+
     /// <summary>An assistant message that requests <paramref name="count"/> tool calls.</summary>
     private static ChatMessageDto Calls(int count = 1)
     {

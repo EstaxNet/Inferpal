@@ -146,6 +146,32 @@ internal static class WorkspaceScan
     }
 
     /// <summary>
+    /// The file-name pattern a model-supplied argument may enumerate with, or <c>null</c> when it
+    /// carries a directory part.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ .NET appends the directory part of a search pattern to the start folder WITHOUT refusing
+    /// <c>..</c>: <c>EnumerateFiles(root, "..\*.md")</c> lists the files above the root, while only the
+    /// start path goes through <c>PathSanitizer.AssertUnderRoot</c> — <c>search_in_files</c> read, and
+    /// <c>rename_symbol</c> rewrote, files outside the workspace. A leading <c>**/</c> is the glob
+    /// habit of a recursive walk, which this already is, and is dropped.
+    /// </remarks>
+    public static string? NormalizeFilePattern(string? pattern)
+    {
+        var p = string.IsNullOrWhiteSpace(pattern) ? "*" : pattern.Trim();
+        while (p.StartsWith("**/", StringComparison.Ordinal) || p.StartsWith("**\\", StringComparison.Ordinal))
+            p = p[3..];
+        return p.Length == 0 || p.IndexOfAny(['\\', '/']) >= 0 || p.Contains("..", StringComparison.Ordinal)
+            ? null
+            : p;
+    }
+
+    /// <summary>The model-facing refusal for a pattern <see cref="NormalizeFilePattern"/> rejected.</summary>
+    public static string InvalidPatternMessage(string argument, string? pattern) =>
+        $"Error: '{argument}' must be a file-name pattern such as *.cs, without a folder or '..' "
+        + $"(received: {pattern}). Put the folder in 'path' instead.";
+
+    /// <summary>
     /// Files matching <paramref name="pattern"/> under <paramref name="start"/>, excluded directories
     /// skipped — judged below <paramref name="root"/> when one is given, below <paramref name="start"/>
     /// otherwise. A start that cannot be opened yields nothing; a folder below it that cannot be read
@@ -161,9 +187,11 @@ internal static class WorkspaceScan
     public static IEnumerable<string> EnumerateFiles(string start, string pattern = "*.cs", string? root = null)
     {
         var judgedBelow = string.IsNullOrEmpty(root) ? start : root;
+        // Defence in depth: a pattern with a directory part never reaches the walk (see NormalizeFilePattern).
+        if (NormalizeFilePattern(pattern) is not { } safePattern) return [];
         try
         {
-            return Directory.EnumerateFiles(start, pattern, WalkOptions)
+            return Directory.EnumerateFiles(start, safePattern, WalkOptions)
                             .Where(f => !IsExcludedPath(f, judgedBelow));
         }
         catch { return []; }

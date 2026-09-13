@@ -44,23 +44,22 @@ internal partial class InferpalToolWindowData
         _promptHistoryStore.Save([.. _promptHistory.Entries]);
     }
 
-    private Task HistoryUpAsync(object? _, CancellationToken ct)
+    // AsyncCommand handlers run off the VM context; the navigator and the prompt box are VM state.
+    private Task HistoryUpAsync(object? _, CancellationToken ct) => RunOnVMContextAsync(() =>
     {
-        if (!_promptHistory.CanUp) return Task.CompletedTask;
+        if (!_promptHistory.CanUp) return;
         _navigatingHistory = true;
-        Prompt = _promptHistory.Up(_prompt); // stashes the live draft on the first step
-        _navigatingHistory = false;
-        return Task.CompletedTask;
-    }
+        try     { Prompt = _promptHistory.Up(_prompt); } // stashes the live draft on the first step
+        finally { _navigatingHistory = false; }
+    });
 
-    private Task HistoryDownAsync(object? _, CancellationToken ct)
+    private Task HistoryDownAsync(object? _, CancellationToken ct) => RunOnVMContextAsync(() =>
     {
-        if (!_promptHistory.CanDown) return Task.CompletedTask;
+        if (!_promptHistory.CanDown) return;
         _navigatingHistory = true;
-        Prompt = _promptHistory.Down(_prompt); // restores the draft when stepping past the newest entry
-        _navigatingHistory = false;
-        return Task.CompletedTask;
-    }
+        try     { Prompt = _promptHistory.Down(_prompt); } // restores the draft when stepping past the newest entry
+        finally { _navigatingHistory = false; }
+    });
 
     private async Task HandleContextCommandAsync(CancellationToken ct)
     {
@@ -165,14 +164,10 @@ internal partial class InferpalToolWindowData
         const int MaxRounds = 5;
 
         CancellationTokenSource? localCts = null;
-        await RunOnVMContextAsync(() =>
-        {
-            localCts    = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            _currentCts = localCts;
-            IsLoading   = true;
-        });
-        if (localCts is null) return;
-        var tok = localCts.Token;
+        await RunOnVMContextAsync(() => localCts = BeginOwnedTurn(ct));
+        var tok = localCts!.Token;
+        // The fixes go through the real registry: in a run of their own, /undo-run can revert them.
+        _tools.History.BeginRun();
 
         try
         {
@@ -274,10 +269,8 @@ internal partial class InferpalToolWindowData
         {
             await RunOnVMContextAsync(() =>
             {
-                localCts?.Dispose();
-                _currentCts = null;
-                IsLoading   = false;
-                CurrentStep = string.Empty;
+                _tools.History.EndRun();
+                EndOwnedTurn(localCts);
             });
         }
     }
@@ -379,14 +372,11 @@ internal partial class InferpalToolWindowData
             ApplyItemTheme(streamItem);
             Messages.Insert(Messages.Count - 2, streamItem);
             // IsLoading turns the send button into Stop, and Stop only cancels _currentCts.
-            localCts    = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            _currentCts = localCts;
-            IsLoading   = true;
+            localCts    = BeginOwnedTurn(ct);
             CurrentStep = Strings.StatusThinking;
             ScrollToBottom();
         });
-        if (localCts is null) return;
-        var tok = localCts.Token;
+        var tok = localCts!.Token;
 
         using var sink = new ThrottledTokenSink(
             chunk => Post(() => { if (streamItem is not null) streamItem.Content += chunk; }));
@@ -409,13 +399,7 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 streamItem = FinalizeStreamingBubble(streamItem);
-                localCts?.Dispose();
-                if (ReferenceEquals(_currentCts, localCts))
-                {
-                    _currentCts = null;
-                    IsLoading   = false;
-                    CurrentStep = string.Empty;
-                }
+                EndOwnedTurn(localCts);
             });
         }
 
@@ -570,12 +554,7 @@ internal partial class InferpalToolWindowData
 
         if (result.RefreshSystemPrompt)
             // context.md is part of the system prompt: pick it up without waiting for a /clear.
-            await RunOnVMContextAsync(() =>
-            {
-                _baseSystemPrompt = BuildSystemPrompt();
-                if (_history.Count > 0 && _history[0].Role == "system")
-                    _history[0] = new ChatMessageDto("system", _baseSystemPrompt);
-            });
+            await RunOnVMContextAsync(() => RefreshSystemPrompt());
 
         if (message is { } msg) await ShowInfoAsync(msg);
     }

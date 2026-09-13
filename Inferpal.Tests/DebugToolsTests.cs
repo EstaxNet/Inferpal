@@ -164,6 +164,22 @@ public class DebugToolsTests
         Assert.DoesNotContain("did not start", result);
     }
 
+    /// <summary>
+    /// <c>"line": "14"</c> — a common shape from a model — made <c>TryGetInt32</c> throw: the model
+    /// read "requires an element of type 'Number'", naming neither the tool nor the argument. The
+    /// last raw JSON access under <c>Tools</c>.
+    /// </summary>
+    [Fact]
+    public async Task SetBreakpoint_ALineSentAsAString_IsRead()
+    {
+        var session = new FakeDebugSession();
+
+        await Control(session, new StubApproval(approve: true)).ExecuteAsync(
+            Args("""{"action":"set_breakpoint","file":"C:\\ws\\src\\Program.cs","line":"14"}"""), CancellationToken.None);
+
+        Assert.Equal(14, Assert.Single(session.Breakpoints).Line);
+    }
+
     [Fact]
     public async Task Stepping_And_Breakpoints_NeverPrompt()
     {

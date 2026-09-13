@@ -215,8 +215,13 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         string detail;
         try
         {
-            detail = (await response.Content.ReadAsStringAsync(ct)).Trim();
-            if (detail.Length > 600) detail = detail[..600] + "…";
+            // Read at most the slice we keep: a proxy's 502 can be a large HTML page.
+            using var errorBody = await response.Content.ReadAsStreamAsync(ct);
+            using var reader    = new System.IO.StreamReader(errorBody);
+            var buffer = new char[ErrorDetailChars + 1];
+            var read   = await reader.ReadBlockAsync(buffer.AsMemory(), ct);
+            detail = new string(buffer, 0, Math.Min(read, ErrorDetailChars)).Trim();
+            if (read > ErrorDetailChars) detail += "…";
         }
         catch { detail = string.Empty; } // best-effort: the status line alone still surfaces
         var status = $"{(int)response.StatusCode} ({response.ReasonPhrase})";
@@ -224,6 +229,56 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         throw new HttpRequestException(detail.Length > 0
             ? $"HTTP {status}: {detail}"
             : $"HTTP {status}.");
+    }
+
+    private const int ErrorDetailChars = 600;
+
+    // ── Server-error surfacing (shared by every wire format) ────────────────────
+
+    /// <summary>Parses a raw JSON line and returns its <c>error</c> element, or <c>default</c>
+    /// (Undefined) when the line isn't a JSON object or has no <c>error</c> member.</summary>
+    internal static JsonElement ParseErrorElement(string jsonLine)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonLine);
+            return doc.RootElement.ValueKind == JsonValueKind.Object
+                   && doc.RootElement.TryGetProperty("error", out var err)
+                ? err.Clone()
+                : default;
+        }
+        catch (JsonException) { return default; }
+    }
+
+    /// <summary>
+    /// Extracts a human message from an in-stream <c>error</c> element. Servers disagree on the shape:
+    /// a bare string (<c>"error":"…"</c>) or an object (<c>"error":{"message":"…"}</c>); returns
+    /// <c>null</c> when no error is present so the normal streaming path continues.
+    /// </summary>
+    internal static string? TryExtractError(JsonElement error)
+    {
+        if (error.ValueKind == JsonValueKind.String) return error.GetString();
+        if (error.ValueKind == JsonValueKind.Object)
+            return error.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
+                ? m.GetString()
+                : error.ToString();
+        return null;
+    }
+
+    /// <summary>
+    /// Turns a raw server error into a user-facing message. A context-overflow error (the request,
+    /// inflated by the agent's tool definitions, no longer fits the model's loaded context window) is
+    /// the common failure, so it gets an actionable hint; everything else is surfaced verbatim.
+    /// </summary>
+    internal static string MapServerError(string serverError, string url)
+    {
+        var lower = serverError.ToLowerInvariant();
+        var isContextOverflow =
+            lower.Contains("context size") || lower.Contains("context length") ||
+            lower.Contains("n_ctx") || lower.Contains("exceeds the available context");
+        return isContextOverflow
+            ? Strings.MsgContextOverflow(serverError)
+            : Strings.MsgServerError(url, serverError);
     }
 
     // ── Wire-format-specific operations (each backend implements these) ─────────
@@ -360,9 +415,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             return new AgentResult(Strings.MsgCircuitOpen, [], history);
 
         // Claim the shared GPU for the whole run: background indexing pauses (GpuScheduler) and the
-        // in-devenv ghost-text yields (ChatBusySignal) for the duration, across every agent turn and
-        // tool call. Disposed on every exit path. Covers ALL callers (chat, commit, title, synthesis,
-        // plan, code actions) — replacing the chat VM's manual BeginInteractive/EndInteractive bracket.
+        // in-devenv ghost-text yields (ChatBusySignal) for the duration, across every agent turn AND
+        // the tool calls between them. Disposed on every exit path. Each SendChatAsync also holds its
+        // own (re-entrant) lease, which is what covers the callers that never enter this loop.
         using var gpuLease = GpuScheduler.AcquireChatLease();
 
         var messages          = new List<ChatMessageDto>(history);
@@ -419,6 +474,10 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                 // rather than an alarming "loop detected" message.
                 if (AgentLoopPolicy.IsLoop(sigCounts, calls))
                 {
+                    // The repeat is never executed: drop the assistant turn that asked for it, or
+                    // the history ends on calls nobody answered and OpenAI-compatible servers
+                    // refuse the next request.
+                    messages.RemoveAt(messages.Count - 1);
                     var loopMsg = executions.Count > 0 ? string.Empty : Strings.MsgLoopDetected;
                     return new AgentResult(loopMsg, executions, messages, totalTokens, lastPromptEval,
                                            WasLoopDetected: true);
@@ -431,7 +490,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                 {
                     onStep(Strings.StatusCallingTool(string.Join(", ", calls.Select(c => c.Function.Name).Distinct())));
                     var results = await Task.WhenAll(
-                        calls.Select(c => AgentOrchestrator.ExecuteToolSafeAsync(tools, c.Function.Name, c.Function.Arguments, ct)));
+                        calls.Select(c => AgentOrchestrator.ExecuteToolSafeAsync(tools, c.Function, ct)));
                     for (int idx = 0; idx < calls.Count; idx++)
                     {
                         var toolName  = calls[idx].Function.Name;
@@ -449,7 +508,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                     var toolName = call.Function.Name;
                     onStep(Strings.StatusCallingTool(toolName));
 
-                    var result    = await AgentOrchestrator.ExecuteToolSafeAsync(tools, toolName, call.Function.Arguments, ct);
+                    var result    = await AgentOrchestrator.ExecuteToolSafeAsync(tools, call.Function, ct);
                     var diff      = tools.ConsumeDiff();
                     var hasErrors = toolName == GetDiagnosticsTool.ToolName && GetDiagnosticsTool.OutputHasErrors(result);
                     var exec      = new ToolExecution(toolName, call.Function.Arguments.ToString(), result, hasErrors, diff);

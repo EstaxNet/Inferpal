@@ -78,6 +78,10 @@ internal class OllamaClient : InferenceProviderBase
         if (IsInCooldown())
             throw new AgentHttpException(Strings.MsgCircuitOpen, isTimeout: false);
 
+        // Direct callers (code actions, inline edit, /check…) hold the GPU exactly like an agent run:
+        // indexing pauses and ghost-text yields. Re-entrant inside RunAgentAsync's own lease.
+        using var gpuLease = GpuScheduler.AcquireChatLease();
+
         var defs    = tools.Definitions.Count > 0 ? tools.Definitions.ToList() : null;
         // tool_choice is only meaningful when tools are exposed; drop it otherwise.
         var effectiveToolChoice = defs is not null ? toolChoice : null;
@@ -143,10 +147,17 @@ internal class OllamaClient : InferenceProviderBase
                 catch (JsonException) { continue; } // skip malformed lines (partial TCP, model crash)
                 if (chunk is null) continue;
 
+                if (TryExtractError(chunk.Error) is { } serverError)
+                {
+                    RecordFailure();
+                    throw new AgentHttpException(MapServerError(serverError, base_), isTimeout: false);
+                }
+
                 if (chunk.Message is not null)
                 {
+                    // Accumulate: Ollama streams each parsed call in its own chunk.
                     if (chunk.Message.ToolCalls is { Count: > 0 } tc)
-                        toolCalls = tc;
+                        (toolCalls ??= []).AddRange(tc);
                     // Reasoning models (magistral, deepseek-r1…) stream their chain-of-thought in a
                     // separate `thinking` field and only start emitting `content` once reasoning is done.
                     // Surface it live so the UI shows the model is working instead of a blank bubble.
@@ -176,6 +187,7 @@ internal class OllamaClient : InferenceProviderBase
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
+        catch (AgentHttpException) { throw; } // an in-stream server error already mapped — keep its message
         catch (Exception ex)
         {
             // Mid-stream network failure (connection reset, Ollama crash…).
@@ -222,6 +234,8 @@ internal class OllamaClient : InferenceProviderBase
             RecordFailure();
             return false;
         }
+        // The caller gave up — not a server failure, so it must not push the breaker toward open.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { return false; }
         catch { RecordFailure(); return false; }
     }
 
@@ -314,7 +328,11 @@ internal class OllamaClient : InferenceProviderBase
             cts.CancelAfter(TimeSpan.FromSeconds(10));
             // keep_alive=0 tells Ollama to evict the model immediately after this no-op request.
             var body = new { model, keep_alive = 0 };
-            await _http.PostAsJsonAsync($"{base_}/api/generate", body, _jsonOpts, cts.Token);
+            using var resp = await _http.PostAsJsonAsync($"{base_}/api/generate", body, _jsonOpts, cts.Token);
+            // A refused unload leaves the model in VRAM: say so instead of assuming it worked.
+            if (!resp.IsSuccessStatusCode)
+                Diagnostics.Record("OllamaClient.UnloadModel",
+                    $"Unloading \"{model}\" was refused: HTTP {(int)resp.StatusCode}.");
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("OllamaClient.UnloadModel", ex); }
@@ -391,6 +409,8 @@ internal class OllamaClient : InferenceProviderBase
 
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader       = new System.IO.StreamReader(stream);
+            // Ollama ends a completed pull on {"status":"success"}; only that line is a success.
+            var succeeded = false;
 
             while (true)
             {
@@ -413,7 +433,15 @@ internal class OllamaClient : InferenceProviderBase
                 try
                 {
                     using var doc    = System.Text.Json.JsonDocument.Parse(line);
+                    // A failed pull (mistyped name, registry refusal) still streams in HTTP 200 and
+                    // ends on {"error":"…"} — the loop used to finish normally and report a success.
+                    if (TryExtractError(doc.RootElement.TryGetProperty("error", out var e) ? e : default) is { } error)
+                    {
+                        onStatus(error);
+                        return false;
+                    }
                     var status       = doc.RootElement.TryGetProperty("status", out var s) ? s.GetString() : null;
+                    if (status == "success") succeeded = true;
                     var completed    = doc.RootElement.TryGetProperty("completed", out var c) ? (long?)c.GetInt64() : null;
                     var total        = doc.RootElement.TryGetProperty("total",     out var t) ? (long?)t.GetInt64() : null;
                     var msg = status ?? string.Empty;
@@ -424,7 +452,7 @@ internal class OllamaClient : InferenceProviderBase
                 catch (OperationCanceledException) { }
                 catch (Exception ex) { Diagnostics.Swallow("OllamaClient.PullStatusParse", ex); }
             }
-            return true;
+            return succeeded;
         }
         catch (OperationCanceledException) { throw; }
         catch { return false; }

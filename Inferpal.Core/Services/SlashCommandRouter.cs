@@ -190,6 +190,14 @@ internal static class SlashCommandRouter
     internal static bool IsBuiltIn(string cmd) =>
         Route(cmd, []) is not SlashInfoAction info || info.Message != UnknownCommandMessage(cmd);
 
+    /// <summary>The prompt after its command word, exactly as typed: inner spacing kept, ends trimmed.</summary>
+    private static string RestOf(string prompt)
+    {
+        var text = prompt.Trim();
+        var cut  = text.IndexOfAny([' ', '\t']);
+        return cut < 0 ? string.Empty : text[(cut + 1)..].Trim();
+    }
+
     internal static string BuildHelp()
     {
         var sb = new System.Text.StringBuilder();
@@ -265,14 +273,16 @@ internal static class SlashCommandRouter
             case "/doc":               return new SlashCodeAction(SlashCodeActionKind.Doc);
 
             // ── Direct tool invocations — usage checks + argument building ────
+            // ⚠ A single free-text argument is the rest of the line AS TYPED (RestOf): recollected from the
+            // space split, `/run echo a  b` ran `echo a b`, and `/build C:\My Project\App.sln` kept `C:\My`.
             case "/restore":
                 if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsageRestore);
-                return new SlashToolAction("restore_file", new { path = string.Join(" ", parts[1..]) });
+                return new SlashToolAction("restore_file", new { path = RestOf(prompt) });
 
             case "/read":
             {
                 if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsage("/read <path>"));
-                var p = string.Join(" ", parts[1..]);
+                var p = RestOf(prompt);
                 return new SlashToolAction("read_file", new { path = p }, AttachAs: Path.GetFileName(p));
             }
 
@@ -291,7 +301,7 @@ internal static class SlashCommandRouter
             case "/run":
                 // No dialect named: this router also serves hosts where run_command speaks bash.
                 if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsage("/run <command>"));
-                return new SlashToolAction("run_command", new { command = string.Join(" ", parts[1..]) });
+                return new SlashToolAction("run_command", new { command = RestOf(prompt) });
 
             case "/fetch":
                 if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsage("/fetch <url>"));
@@ -301,21 +311,21 @@ internal static class SlashCommandRouter
             case "/search":        // legacy alias
             case "/web_search":    // legacy alias
                 if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsage("/search-web <query>"));
-                return new SlashToolAction("web_search", new { query = string.Join(" ", parts[1..]) });
+                return new SlashToolAction("web_search", new { query = RestOf(prompt) });
 
             case "/search-code":
             case "/codebase":
                 if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsage("/search-code <query>"));
-                return new SlashToolAction("search_codebase", new { query = string.Join(" ", parts[1..]) });
+                return new SlashToolAction("search_codebase", new { query = RestOf(prompt) });
 
             case "/git":
                 return new SlashToolAction("get_git_status",
-                    parts.Length >= 2 ? (object)new { path = parts[1] } : new { });
+                    parts.Length >= 2 ? (object)new { path = RestOf(prompt) } : new { });
 
             case "/diff":
             {
                 // /diff [path] — attaches full diff as a context chip
-                var diffPath = parts.Length >= 2 ? string.Join(" ", parts[1..]) : null;
+                var diffPath = parts.Length >= 2 ? RestOf(prompt) : null;
                 var diffArgs = diffPath is not null
                     ? (object)new { path = diffPath, include_diff = true }
                     : new { include_diff = true };
@@ -326,16 +336,16 @@ internal static class SlashCommandRouter
                 // /map           → project-wide architecture map (namespaces, types, hotspots)
                 // /map <path>    → call-graph for that specific file (analyze_code mode=callgraph)
                 return parts.Length >= 2
-                    ? new SlashToolAction("analyze_code", new { mode = "callgraph", path = string.Join(" ", parts[1..]) })
+                    ? new SlashToolAction("analyze_code", new { mode = "callgraph", path = RestOf(prompt) })
                     : new SlashToolAction("generate_project_map", new { });
 
             case "/solution":
                 return new SlashToolAction("get_solution_info",
-                    parts.Length >= 2 ? (object)new { path = parts[1] } : new { });
+                    parts.Length >= 2 ? (object)new { path = RestOf(prompt) } : new { });
 
             case "/build":
                 return new SlashToolAction("get_diagnostics",
-                    parts.Length >= 2 ? (object)new { path = parts[1] } : new { });
+                    parts.Length >= 2 ? (object)new { path = RestOf(prompt) } : new { });
 
             // ── Meta ──────────────────────────────────────────────────────────
             case "/help":

@@ -54,7 +54,14 @@ record ChatMessageDto(
     /// <see cref="Content"/>. Declared last so existing positional <c>new ChatMessageDto(role, content,
     /// toolCalls)</c> call sites keep compiling; <c>WhenWritingNull</c> keeps it out of request bodies.
     /// </summary>
-    [property: JsonPropertyName("thinking")]   string? Thinking = null);
+    [property: JsonPropertyName("thinking")]   string? Thinking = null)
+{
+    /// <summary>A user message the agent loop injected itself (plan request, execute order, observe
+    /// prompt, nudge, summary label) — not a question the user asked. Kept out of every request body;
+    /// <c>HistoryCompaction</c> must not count it as a turn, or a single run's scaffolding would push
+    /// the user's real previous questions out of the kept turns.</summary>
+    [JsonIgnore] public bool IsScaffolding { get; init; }
+}
 
 /// <summary>
 /// One NDJSON chunk from the <c>/api/chat</c> stream.
@@ -64,7 +71,10 @@ record ChatResponse(
     [property: JsonPropertyName("done")]               bool Done,
     [property: JsonPropertyName("message")]            ChatMessageDto? Message          = null,
     [property: JsonPropertyName("eval_count")]         int?            EvalCount        = null,
-    [property: JsonPropertyName("prompt_eval_count")]  int?            PromptEvalCount  = null);
+    [property: JsonPropertyName("prompt_eval_count")]  int?            PromptEvalCount  = null,
+    /// <summary>Set when the runner fails after the 200 headers (crash, out of memory…): the stream
+    /// then carries a bare <c>{"error":"…"}</c> line instead of a chunk.</summary>
+    [property: JsonPropertyName("error")]              JsonElement     Error            = default);
 
 /// <summary>A single tool invocation requested by the model.</summary>
 record ToolCallDto(
@@ -73,7 +83,13 @@ record ToolCallDto(
 /// <summary>Name and JSON arguments of a tool call.</summary>
 record ToolCallFunction(
     [property: JsonPropertyName("name")]      string Name,
-    [property: JsonPropertyName("arguments")] JsonElement Arguments);
+    [property: JsonPropertyName("arguments")] JsonElement Arguments)
+{
+    /// <summary>The raw arguments text when the model's arguments did not parse into a JSON object
+    /// (turn cut off mid-call, malformed output). <see cref="Arguments"/> is then an empty object and
+    /// the call must not run with it — see <c>AgentOrchestrator.ExecuteToolSafeAsync</c>.</summary>
+    [JsonIgnore] public string? UnparsedArguments { get; init; }
+}
 
 // ── Tool schema DTOs ─────────────────────────────────────────────────────────
 
@@ -112,7 +128,8 @@ record ShowModelResponse(
 
 /// <summary>The architecture fields needed to size the KV-cache, parsed from <c>/api/show</c>'s
 /// <c>model_info</c>. All counts are per the GGUF metadata.</summary>
-record ModelArchInfo(int BlockCount, int HeadCount, int HeadCountKv, int EmbeddingLength, int ContextLength);
+record ModelArchInfo(int BlockCount, int HeadCount, int HeadCountKv, int EmbeddingLength, int ContextLength,
+    int KeyLength = 0, int ValueLength = 0);
 
 // ── Ollama /api/generate DTOs (FIM inline completions) ───────────────────────
 

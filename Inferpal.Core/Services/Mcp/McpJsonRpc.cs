@@ -9,6 +9,32 @@ namespace Inferpal.Services.Mcp;
 /// </summary>
 internal static class McpJsonRpc
 {
+    /// <summary>
+    /// Reads a message's JSON-RPC id as this client issues them (numbers), tolerating a server that
+    /// echoes it as a numeric string.
+    /// </summary>
+    /// <remarks>⚠ ValueKind first: <c>TryGetInt64</c> THROWS on a non-number — a string or null id killed
+    /// the stdio read loop (every pending call failed, reconnect) and failed the HTTP call.</remarks>
+    internal static bool TryReadId(JsonElement message, out long id)
+    {
+        id = 0;
+        if (message.ValueKind != JsonValueKind.Object || !message.TryGetProperty("id", out var el)) return false;
+        return el.ValueKind switch
+        {
+            JsonValueKind.Number => el.TryGetInt64(out id),
+            JsonValueKind.String => long.TryParse(el.GetString(), System.Globalization.NumberStyles.Integer,
+                                                  System.Globalization.CultureInfo.InvariantCulture, out id),
+            _                    => false,
+        };
+    }
+
+    /// <summary>
+    /// <c>true</c> for a message the SERVER initiated — a notification or a request (it carries
+    /// <c>method</c>): never the response to one of our calls, even when its id matches one.
+    /// </summary>
+    internal static bool IsServerMessage(JsonElement message) =>
+        message.ValueKind == JsonValueKind.Object && message.TryGetProperty("method", out _);
+
     /// <summary>Parses a <c>tools/list</c> result into tool infos. Entries without a name are skipped;
     /// a missing/!object schema falls back to <c>{}</c>. Schemas are cloned to outlive the source document.</summary>
     public static IReadOnlyList<McpToolInfo> ParseTools(JsonElement result)

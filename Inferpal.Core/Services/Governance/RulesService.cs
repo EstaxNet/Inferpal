@@ -82,7 +82,9 @@ internal static class RulesService
         var end = normalized.IndexOf("\n---", 3, StringComparison.Ordinal);
         if (end < 0) return (fm, normalized);
 
-        var block = normalized.Substring(4, end - 4);
+        // An EMPTY front matter ("---" then "---") puts the closing fence at index 3: Substring(4, -1)
+        // threw, and every reader lost all its rules, checks and templates at once.
+        var block = end > 4 ? normalized.Substring(4, end - 4) : string.Empty;
         // Body starts after the closing fence line ("\n---" + optional trailing chars up to newline).
         var afterFence = normalized.IndexOf('\n', end + 1);
         var body = afterFence >= 0 ? normalized[(afterFence + 1)..] : string.Empty;

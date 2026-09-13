@@ -101,6 +101,8 @@ export class HostClient {
   private starting = false;
   /** Set when stderr carries the .NET "Couldn't find a valid ICU package" FailFast. */
   private icuCrash = false;
+  /** Why the process could not be run at all (EACCES, ENOENT) — reported instead of a dead pipe. */
+  private spawnError: Error | undefined;
   /** Resolves when the current process closed (stdio flushed) — the ICU message can
    * land on stderr after the RPC pipe already broke, so `start()` waits on this
    * before deciding whether the crash was the libicu case. */
@@ -126,6 +128,11 @@ export class HostClient {
 
   get isRunning(): boolean {
     return this.conn !== undefined;
+  }
+
+  /** The workspace root this host was started against. */
+  get rootDir(): string {
+    return this.options.rootDir;
   }
 
   /** Replaces the streamed-chat event sinks (the chat view re-registers on resolve). */
@@ -173,6 +180,7 @@ export class HostClient {
     this.stopping = false;
     this.starting = true;
     this.icuCrash = false;
+    this.spawnError = undefined;
 
     const proc = cp.spawn(this.options.hostPath, [], {
       cwd: this.options.rootDir,
@@ -207,6 +215,15 @@ export class HostClient {
           this.options.onCrash?.(code);
         }
       }
+    });
+
+    // ⚠ A spawn failure (EACCES on a host without its exec bit, ENOENT) emits 'error' and never
+    // 'exit': unlistened, it was thrown into the extension host as an uncaught exception, and the
+    // handshake below waited on a pipe nobody would ever answer.
+    proc.on('error', (err) => {
+      this.spawnError = err;
+      this.options.log?.(`[host] could not run ${this.options.hostPath}: ${err.message}`);
+      this.teardown();
     });
 
     const conn = rpc.createMessageConnection(
@@ -269,7 +286,12 @@ export class HostClient {
       clientName: this.options.clientName ?? 'vscode',
       debug: this.debugDelegate !== undefined,
     };
-    this.info = await conn.sendRequest<InitializeResult>('initialize', params);
+    try {
+      this.info = await conn.sendRequest<InitializeResult>('initialize', params);
+    } catch (err) {
+      // A process that never ran kills the connection: its spawn error names the real cause.
+      throw this.spawnError ?? err;
+    }
     this.starting = false;
     this.options.log?.(
       `[host] initialized v${this.info.hostVersion} (provider ${this.info.provider}, model ${this.info.defaultModel})`,
@@ -389,10 +411,10 @@ export class HostClient {
     return this.connection().sendRequest<string>('chat/export', params);
   }
 
-  /** Probes `baseUrl` - the value in the form, not the saved one - and names the backend that
-   *  answered. Omitting it falls back to the saved configuration. */
-  connectionCheck(baseUrl?: string): Promise<ConnectionCheckResult> {
-    return this.connection().sendRequest<ConnectionCheckResult>('connection/check', { baseUrl });
+  /** Probes `baseUrl` with `apiKey` — the values in the form, not the saved ones — and names the
+   *  backend that answered. Omitting either falls back to the saved configuration. */
+  connectionCheck(baseUrl?: string, apiKey?: string): Promise<ConnectionCheckResult> {
+    return this.connection().sendRequest<ConnectionCheckResult>('connection/check', { baseUrl, apiKey });
   }
 
   /** Connection badge for the header (reachability + VRAM line). Polled — never throws

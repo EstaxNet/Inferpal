@@ -148,8 +148,8 @@ internal sealed record BackendStatusResult(bool Connected, string VramBadge, str
 /// </remarks>
 internal sealed record ConnectionCheckResult(bool Ok, string? Provider);
 
-/// <summary>`connection/check` — the url to probe. Empty = the configured one.</summary>
-internal sealed record ConnectionCheckParams(string? BaseUrl = null);
+/// <summary>`connection/check` — the url and API key to probe. Empty = the configured ones.</summary>
+internal sealed record ConnectionCheckParams(string? BaseUrl = null, string? ApiKey = null);
 
 /// <summary>
 /// `models/list` — the settings FORM's values when it has any. Each empty one falls back to the

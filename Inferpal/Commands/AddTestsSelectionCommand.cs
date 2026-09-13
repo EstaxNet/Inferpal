@@ -47,6 +47,8 @@ internal class AddTestsSelectionCommand : Command
 
         // No chat here: both outcomes that open nothing are said in a dismissable prompt, like the
         // other context-menu code actions — a click that does nothing reads as a broken command.
+        // Closing the spinner is the user saying "stop": nothing to report.
+        if (result.Cancelled) return;
         if (result.NoChange)
             await Extensibility.Shell().ShowPromptAsync(Strings.TestsNoChange, PromptOptions.OK, ct);
         else if (!result.Ok)

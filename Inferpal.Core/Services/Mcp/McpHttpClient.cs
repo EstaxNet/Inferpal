@@ -64,6 +64,9 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         // body is written by the server, and "the user configured it" is not "the user vouches
         // for every byte it will ever send".
         _http.MaxResponseContentBufferSize = 32 * 1024 * 1024;
+        // ⚠ No client-wide timeout: every call carries its own budget (20 s handshake, 120 s tool call),
+        // and HttpClient's default 100 s cut a legitimate tool call short before its budget ran out.
+        _http.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
     }
 
     public string ServerName => _config.Name;
@@ -258,7 +261,9 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     private static bool TryExtract(JsonElement msg, long id, out JsonElement result)
     {
         result = default;
-        if (!msg.TryGetProperty("id", out var idEl) || !idEl.TryGetInt64(out var mid) || mid != id)
+        // A server request (ping) can carry the same id as our call: it is not the response. And an id
+        // sent as a string is still ours (McpJsonRpc.TryReadId — TryGetInt64 threw on it).
+        if (McpJsonRpc.IsServerMessage(msg) || !McpJsonRpc.TryReadId(msg, out var mid) || mid != id)
             return false;
 
         if (msg.TryGetProperty("error", out var error))
@@ -355,16 +360,29 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     {
         using var reader = new StreamReader(stream, Encoding.UTF8);
         var data = new StringBuilder();
+        // ⚠ The cap was declared and never applied: data lines without a blank separator grew this buffer
+        // without limit in the host process. Past it the event is dropped, up to its end.
+        var dropping = false;
         string? line;
         while ((line = await reader.ReadLineAsync(ct).ConfigureAwait(false)) is not null)
         {
             if (line.Length == 0)
             {
-                if (data.Length > 0) { yield return data.ToString(); data.Clear(); }
+                if (data.Length > 0 && !dropping) yield return data.ToString();
+                data.Clear();
+                dropping = false;
                 continue;
             }
+            if (dropping) continue;
             if (line.StartsWith("data:", StringComparison.Ordinal))
             {
+                if (data.Length + line.Length > MaxSseEventChars)
+                {
+                    Diagnostics.Record("Mcp", $"An event stream message over {MaxSseEventChars / (1024 * 1024)} MB was dropped.");
+                    data.Clear();
+                    dropping = true;
+                    continue;
+                }
                 if (data.Length > 0) data.Append('\n');
                 data.Append(line.AsSpan(5).Trim());
             }

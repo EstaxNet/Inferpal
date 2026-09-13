@@ -4,6 +4,7 @@ using Inferpal.Services;
 using Microsoft.VisualStudio.Extensibility;
 using Microsoft.VisualStudio.Extensibility.Commands;
 using Microsoft.VisualStudio.Extensibility.Editor;
+using Microsoft.VisualStudio.Extensibility.Shell;
 
 namespace Inferpal.Commands;
 
@@ -103,24 +104,16 @@ internal class InlineEditSelectionCommand : Command
         {
             dlg = await InlineEditInputWindow.CreateAndShowAsync();
         }
-        catch { return; }
-
-        string? instruction;
-        try
+        catch (Exception ex)
         {
-            instruction = await dlg.InstructionTask;
-        }
-        catch
-        {
-            dlg.CloseFromThread();
+            Diagnostics.Swallow("InlineEdit.Dialog", ex);
+            await ShowFailureAsync(ex.Message, ct);
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(instruction))
-        {
-            // User cancelled — dialog already closed itself.
-            return;
-        }
+        // Completed with null when the user cancels or closes the dialog — it has closed itself.
+        var instruction = await dlg.InstructionTask;
+        if (string.IsNullOrWhiteSpace(instruction)) return;
 
         // Instruction received → switch dialog to spinner mode.
         dlg.SwitchToLoading();
@@ -130,24 +123,40 @@ internal class InlineEditSelectionCommand : Command
         var messages = BuildMessages(originalCode, instruction);
 
         ChatTurnResult result;
-        try
+        // Closing the spinner cancels the generation: the edit used to land anyway once the model answered.
+        using (var generation = CancellationTokenSource.CreateLinkedTokenSource(ct, dlg.CancelledByUser))
         {
-            result = await _client.SendChatAsync(
-                model, messages, EmptyToolRegistry.Instance, onToken: null, ct, TaskComplexity.Quick);
+            try
+            {
+                result = await _client.SendChatAsync(
+                    model, messages, EmptyToolRegistry.Instance, onToken: null, generation.Token, TaskComplexity.Quick);
+            }
+            catch (OperationCanceledException)
+            {
+                // Closed by the user, or VS cancelled the command: nothing to apply, nothing to say.
+                return;
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Swallow("InlineEdit.Generate", ex);
+                await ShowFailureAsync(ex.Message, ct);
+                return;
+            }
+            finally
+            {
+                // Always close the spinner, even on error/cancel.
+                dlg.CloseFromThread();
+            }
         }
-        catch
-        {
-            dlg.CloseFromThread();
-            return;
-        }
-        finally
-        {
-            // Always close the spinner, even on error/cancel.
-            dlg.CloseFromThread();
-        }
+        if (dlg.CancelledByUser.IsCancellationRequested) return;
 
         var editedCode = InlineEditReindenter.Reindent(originalCode, InlineEditResponse.Clean(result.TextContent));
-        if (string.IsNullOrWhiteSpace(editedCode)) return;
+        if (string.IsNullOrWhiteSpace(editedCode))
+        {
+            // The spinner vanished and nothing changed: say that the model gave nothing to apply.
+            await ShowFailureAsync(null, ct);
+            return;
+        }
 
         // ── 5. Apply the edit ─────────────────────────────────────────────────
         try
@@ -160,14 +169,28 @@ internal class InlineEditSelectionCommand : Command
                 },
                 ct);
         }
-        catch
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
         {
-            // EditAsync may fail if the document was modified between the initial
-            // snapshot and the apply call.  Silently discard — the user can retry.
+            // EditAsync may fail if the document was modified between the initial snapshot and the
+            // apply call. The user can retry — once told that nothing was applied.
+            Diagnostics.Swallow("InlineEdit.Apply", ex);
+            await ShowFailureAsync(ex.Message, ct);
         }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /// <summary>Tells the user the edit was not applied, in the same words as the other code actions.</summary>
+    private async Task ShowFailureAsync(string? detail, CancellationToken ct)
+    {
+        try
+        {
+            await Extensibility.Shell().ShowPromptAsync(InPlaceCodeEdit.FailureMessage(detail), PromptOptions.OK, ct);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Diagnostics.Swallow("InlineEdit.Notify", ex); }
+    }
 
     /// <summary>True if <c>text[start..end]</c> contains only whitespace (or is empty).</summary>
     private static bool IsAllWhitespace(string text, int start, int end)

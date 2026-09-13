@@ -66,6 +66,18 @@ internal sealed class LspSemanticProvider : IDisposable
         _sessions.Clear();
     }
 
+    /// <summary>Stops the language servers started for any workspace other than <paramref name="rootDir"/>.</summary>
+    /// <remarks>The provider lives as long as the editor: without this every solution switch left its
+    /// servers running (tsserver, pyright — hundreds of MB each) until the editor closed.</remarks>
+    public void ReleaseSessionsExcept(string rootDir)
+    {
+        foreach (var key in _sessions.Keys)
+        {
+            if (key.StartsWith(rootDir + "|", StringComparison.OrdinalIgnoreCase)) continue;
+            if (_sessions.TryRemove(key, out var session)) session.Dispose();
+        }
+    }
+
     // ── Inner class: one language server instance ──────────────────────────────
 
     private sealed class LspServerSession : IDisposable
@@ -392,7 +404,8 @@ internal sealed class LspSemanticProvider : IDisposable
             _rpc?.Dispose();
             _rpc = null;
 
-            try { _process?.Kill(); } catch { }
+            // The whole tree: on Windows the server runs under `cmd /c`, and killing cmd alone left node behind.
+            try { _process?.Kill(entireProcessTree: true); } catch { }
             _process?.Dispose();
             _process     = null;
             _initialized = false;

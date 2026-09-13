@@ -50,10 +50,10 @@ internal sealed class SignalDebugSession : IDebugSession
     /// the one place where the probe's numbers do not apply: it measured 1,5 s to the first break
     /// on an <i>already built</i> throwaway solution, and said so.
     /// </summary>
-    internal static TimeSpan StartTimeout { get; set; } = TimeSpan.FromMinutes(5);
+    internal static TimeSpan StartTimeout { get; set; } = DebugOps.StartBudget;
 
     /// <summary>Resuming or stepping waits for the next stop, which is user code running.</summary>
-    internal static TimeSpan ResumeTimeout { get; set; } = TimeSpan.FromMinutes(2);
+    internal static TimeSpan ResumeTimeout { get; set; } = DebugOps.ResumeBudget;
 
     /// <summary>Everything else is a question asked of a debugger that is already paused.</summary>
     internal static TimeSpan QueryTimeout { get; set; } = TimeSpan.FromSeconds(20);

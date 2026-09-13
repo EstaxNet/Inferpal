@@ -92,9 +92,21 @@ internal sealed class McpTokenStore
         lock (_lock) { var map = Load(); if (map.Remove(serverName)) Persist(map); }
     }
 
+    // ⚠ The file is shared by Visual Studio and the VS Code host: the cache is only valid while the file
+    // is still the one it was read from. Rewritten whole from a stale cache, a save erased the token the
+    // other editor had just stored — or put back a refresh token the server had already rotated.
+    private (DateTime WriteUtc, long Length) _cacheStamp;
+
+    private (DateTime WriteUtc, long Length) CurrentStamp()
+    {
+        var info = new FileInfo(_path);
+        return info.Exists ? (info.LastWriteTimeUtc, info.Length) : default;
+    }
+
     private Dictionary<string, McpOAuthState> Load()
     {
-        if (_cache is not null) return _cache;
+        var stamp = CurrentStamp();
+        if (_cache is not null && stamp == _cacheStamp) return _cache;
         try
         {
             if (File.Exists(_path))
@@ -111,6 +123,7 @@ internal sealed class McpTokenStore
             Diagnostics.Swallow("McpTokenStoreLoad", ex);
             _cache = [];
         }
+        _cacheStamp = stamp;
         return _cache;
     }
 
@@ -120,5 +133,6 @@ internal sealed class McpTokenStore
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         var bytes = _protect(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(map, JsonOpts)));
         Services.Persistence.AtomicFile.WriteAllBytes(_path, bytes);
+        _cacheStamp = CurrentStamp();
     }
 }

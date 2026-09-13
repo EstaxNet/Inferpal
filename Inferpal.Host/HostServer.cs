@@ -477,7 +477,9 @@ internal sealed partial class HostServer : IDisposable
         var s   = Session();
         var url = string.IsNullOrWhiteSpace(p.BaseUrl) ? s.Config.BaseUrl : p.BaseUrl.Trim();
 
-        var detected = await ProviderProbe.DetectAsync(url, s.Config.ApiKey, ct);
+        // The key in the FORM, like the URL: probing a new server with the saved key answered
+        // "unreachable" for a server that only refused that key. Null (not sent) keeps the saved one.
+        var detected = await ProviderProbe.DetectAsync(url, p.ApiKey ?? s.Config.ApiKey, ct);
         return new ConnectionCheckResult(detected is not null, detected);
     }
 

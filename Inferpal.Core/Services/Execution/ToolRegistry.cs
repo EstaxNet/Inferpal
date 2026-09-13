@@ -234,9 +234,16 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);
             return result;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
+        }
+        catch (OperationCanceledException ex)
+        {
+            // Not the caller's cancellation: the tool's own deadline (an HttpClient timeout, an MCP
+            // call budget). An error for whoever asked — never a Stop of the run that called it.
+            _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: true);
+            return $"Tool '{name}' timed out before it finished ({ex.Message}).";
         }
         catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
         {

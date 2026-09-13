@@ -532,12 +532,25 @@ internal class InferpalConfig
         JsonSerializer.SerializeToNode(cfg)!.AsObject();
 
     // The file in the shape this class writes it (same keys, defaults filled), so it compares key by
-    // key with a snapshot. False when absent or unreadable: this copy is then written whole.
+    // key with a snapshot — PLUS every key this version does not know. ⚠ Read only through the typed
+    // class, a setting written by a newer version (the other editor updated first) vanished at the next
+    // save. False when absent or unreadable: this copy is then written whole.
     private static bool TryReadSnapshot(string path, out System.Text.Json.Nodes.JsonObject snapshot)
     {
         snapshot = null!;
         if (!File.Exists(path) || !TryRead(path, out var cfg, out _)) return false;
         snapshot = Snapshot(cfg!);
+        try
+        {
+            if (System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is System.Text.Json.Nodes.JsonObject raw)
+                foreach (var (key, value) in raw)
+                    if (!snapshot.ContainsKey(key))
+                        snapshot[key] = value?.DeepClone();
+        }
+        catch (Exception ex) when (ex is JsonException or IOException)
+        {
+            Inferpal.Services.Diagnostics.Swallow("InferpalConfig.UnknownKeys", ex);
+        }
         return true;
     }
 

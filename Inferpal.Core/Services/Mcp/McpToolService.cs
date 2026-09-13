@@ -350,7 +350,21 @@ internal sealed class McpToolService : IAsyncDisposable
     /// current server entries. Must be called under <see cref="_gate"/>.</summary>
     private void RebuildSnapshot()
     {
-        _tools  = _servers.SelectMany(e => e.Tools).ToList();
+        // ⚠ Server names are normalised into tool names: "my-server" and "my.server" both give
+        // mcp__my_server__*. The backend received duplicate definitions and every call went to the first
+        // server. A clash is exposed under a suffixed name, and said.
+        var seen  = new HashSet<string>(StringComparer.Ordinal);
+        var tools = new List<ITool>();
+        foreach (var tool in _servers.SelectMany(e => e.Tools))
+        {
+            if (seen.Add(tool.Name)) { tools.Add(tool); continue; }
+            var n = 2;
+            string renamed;
+            do renamed = $"{tool.Name}_{n++}"; while (!seen.Add(renamed));
+            Diagnostics.Record("Mcp", $"Tool name '{tool.Name}' is used by two servers; the second is exposed as '{renamed}'.");
+            tools.Add(tool is McpTool mcp ? mcp.WithName(renamed) : tool);
+        }
+        _tools  = tools;
         _status =
         [
             .. _rejected,

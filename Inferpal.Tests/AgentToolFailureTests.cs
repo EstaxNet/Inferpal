@@ -53,11 +53,16 @@ public class AgentToolFailureTests
     [Fact]
     public async Task Cancellation_StillPropagates()
     {
-        // The contract is "never throws EXCEPT on cancellation" — swallowing it here would leave
-        // the loop running after the user pressed stop.
-        var registry = new ThrowingRegistry(new OperationCanceledException());
+        // The contract is "never throws EXCEPT on the caller's cancellation" — swallowing it here
+        // would leave the loop running after the user pressed stop. ⚠ The CALLER's: this test used
+        // to pass CancellationToken.None, which pinned the defect it meant to guard against — a
+        // tool's own timeout (TaskCanceledException from an HttpClient) stopped the whole run like a
+        // Stop. That half is now AgentLoopRegressionTests.AToolsOwnTimeout_….
+        using var stop = new CancellationTokenSource();
+        stop.Cancel();
+        var registry = new ThrowingRegistry(new OperationCanceledException(stop.Token));
 
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
-            AgentOrchestrator.ExecuteToolSafeAsync(registry, "read_file", NoArgs, CancellationToken.None));
+            AgentOrchestrator.ExecuteToolSafeAsync(registry, "read_file", NoArgs, stop.Token));
     }
 }

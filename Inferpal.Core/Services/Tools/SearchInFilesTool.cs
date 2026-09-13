@@ -31,7 +31,9 @@ internal class SearchInFilesTool : ITool
         var path        = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
         var search      = args.Str("pattern") ?? throw new ArgumentException("pattern is required.");
-        var filePattern = args.Str("file_pattern") ?? "*";
+        var rawPattern  = args.Str("file_pattern");
+        if (WorkspaceScan.NormalizeFilePattern(rawPattern) is not { } filePattern)
+            return Task.FromResult(WorkspaceScan.InvalidPatternMessage("file_pattern", rawPattern));
 
         if (!Directory.Exists(path))
             return Task.FromResult(Strings.DirNotFound(path));
@@ -57,6 +59,7 @@ internal class SearchInFilesTool : ITool
             return Task.FromResult(Strings.NoResults);
         }
 
+        var skippedLarge = 0;
         foreach (var file in files)
         {
             if (ct.IsCancellationRequested) break;
@@ -64,6 +67,9 @@ internal class SearchInFilesTool : ITool
 
             try
             {
+                // A multi-megabyte file (a dump, a bundle) was loaded whole for a few truncated matches
+                // at best. Skipped — and said, since a silent skip reads as "not in the code".
+                if (new FileInfo(file).Length > MaxSearchFileBytes) { skippedLarge++; continue; }
                 var lines = File.ReadAllLines(file);
                 var relPath = file[path.Length..].TrimStart('\\', '/');
                 for (int i = 0; i < lines.Length && results.Count < 100; i++)
@@ -78,8 +84,12 @@ internal class SearchInFilesTool : ITool
             catch (Exception ex) { Diagnostics.Swallow("SearchInFilesTool.ReadFile", ex); }
         }
 
-        return Task.FromResult(results.Count == 0
-            ? Strings.NoResults
-            : string.Join("\n", results));
+        var skippedNote = skippedLarge > 0
+            ? $"\n({skippedLarge} file(s) larger than {MaxSearchFileBytes / (1024 * 1024)} MB were not searched.)"
+            : string.Empty;
+        return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results)) + skippedNote);
     }
+
+    /// <summary>Largest file read line by line — past it the file is skipped and counted.</summary>
+    private const long MaxSearchFileBytes = 8 * 1024 * 1024;
 }

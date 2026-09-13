@@ -83,7 +83,7 @@ internal sealed class DocCrawler
     /// re-validating every hop against the SSRF guard (literal private ranges + DNS resolution of
     /// host names). Returns null when the response is not HTML or the hop budget is spent.
     /// </summary>
-    private async Task<string?> FetchPageAsync(Uri url, CancellationToken ct)
+    private async Task<(string Html, Uri FinalUrl)?> FetchPageAsync(Uri url, CancellationToken ct)
     {
         var current = url;
         for (var hop = 0; hop <= MaxRedirects; hop++)
@@ -110,7 +110,7 @@ internal sealed class DocCrawler
             if (mediaType.Length > 0 && !mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            return await resp.Content.ReadAsStringAsync(ct);
+            return (await resp.Content.ReadAsStringAsync(ct), current);
         }
         return null;   // redirect budget exhausted
     }
@@ -142,25 +142,36 @@ internal sealed class DocCrawler
             ct.ThrowIfCancellationRequested();
             var (url, depth) = queue.Dequeue();
 
-            string? html;
+            (string Html, Uri FinalUrl)? fetched;
             try
             {
-                html = await FetchPageAsync(url, ct);
-                if (html is null) continue;
+                fetched = await FetchPageAsync(url, ct);
+                if (fetched is null) continue;
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { Diagnostics.Swallow($"DocCrawler.Fetch({url})", ex); continue; }
 
+            var (html, pageUrl) = fetched.Value;
+            // ⚠ Links resolve against where the page actually CAME FROM. After a redirect of the start
+            // page (example.com → www.example.com, readthedocs / → /en/latest/), resolving against the
+            // requested URL sent every link off-host or to a 404: one page crawled, announced as success.
+            if (depth == 0 && pageUrl != url)
+            {
+                host       = pageUrl.Host;
+                pathPrefix = PathPrefix(pageUrl);
+                visited.Add(Normalize(pageUrl));
+            }
+
             var text = FetchUrlTool.HtmlToText(html);
             if (!string.IsNullOrWhiteSpace(text))
-                pages.Add(new Page(url.ToString(), ExtractTitle(html, url), text));
+                pages.Add(new Page(pageUrl.ToString(), ExtractTitle(html, pageUrl), text));
 
             progress?.Report((pages.Count, pages.Count + queue.Count));
 
             // Enqueue child links (until the page cap is reached).
             if (depth < MaxDepth)
             {
-                foreach (var link in ExtractLinks(html, url, host, pathPrefix))
+                foreach (var link in ExtractLinks(html, pageUrl, host, pathPrefix))
                 {
                     if (visited.Count + queue.Count >= MaxPages * 4) break; // bound the frontier
                     if (visited.Add(link.normalized))

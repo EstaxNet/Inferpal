@@ -75,7 +75,8 @@ internal class ApplyDiffTool : ITool
                 diff: new DiffInfo(fileContent, modified, path)))
             return Strings.DiffCancelled;
 
-        var snapPath = await _history.SnapshotAsync(path, ct);
+        var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
+        if (!saved) return FileHistoryService.BackupFailedMessage(path);
         var snapNote = string.IsNullOrEmpty(snapPath) ? string.Empty : Strings.HistoryNote(snapPath);
 
         await SafeFileWriter.WritePreservingAsync(path, modified, ct);

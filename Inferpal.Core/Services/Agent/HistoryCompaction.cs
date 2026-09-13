@@ -65,7 +65,7 @@ internal static class HistoryCompaction
         var userIndices = history
             .Select((m, i) => (m, i))
             .Skip(1)                       // system[0] never counts as a turn
-            .Where(x => x.m.Role == "user")
+            .Where(x => x.m.Role == "user" && !x.m.IsScaffolding)   // the loop's own prompts are not turns
             .Select(x => x.i)
             .ToList();
 
@@ -141,6 +141,6 @@ internal static class HistoryCompaction
     {
         history.RemoveRange(plan.Start, plan.Count);
         history.Insert(plan.Start, new ChatMessageDto("assistant", summary));
-        history.Insert(plan.Start, new ChatMessageDto("user", "[Context Summary]"));
+        history.Insert(plan.Start, new ChatMessageDto("user", "[Context Summary]") { IsScaffolding = true });
     }
 }

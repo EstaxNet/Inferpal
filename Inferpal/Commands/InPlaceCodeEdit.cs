@@ -66,22 +66,28 @@ internal static class InPlaceCodeEdit
         }
 
         CodeActionRun run;
-        try
+        // Closing the spinner cancels the generation: the edit used to land anyway once the model answered.
+        using (var generation = CancellationTokenSource.CreateLinkedTokenSource(ct, dlg.CancelledByUser))
         {
-            run = await CodeActionPipeline.RunAsync(
-                client, model, systemPrompt, instruction,
-                docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty, ct);
+            try
+            {
+                run = await CodeActionPipeline.RunAsync(
+                    client, model, systemPrompt, instruction,
+                    docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty, generation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancelled mid-generation (user or VS command deadline) — nothing applied. Carry the
+                // cause: an unexplained cancellation otherwise surfaces as the bare generic failure.
+                return new(InPlaceEditOutcome.Failed, Strings.MsgCancelled);
+            }
+            finally
+            {
+                dlg.CloseFromThread();
+            }
         }
-        catch (OperationCanceledException)
-        {
-            // Cancelled mid-generation (user or VS command deadline) — nothing applied. Carry the
-            // cause: an unexplained cancellation otherwise surfaces as the bare generic failure.
-            return new(InPlaceEditOutcome.Failed, Strings.MsgCancelled);
-        }
-        finally
-        {
-            dlg.CloseFromThread();
-        }
+        // The pipeline may turn a cancellation into a failed run rather than throw.
+        if (dlg.CancelledByUser.IsCancellationRequested) return new(InPlaceEditOutcome.Failed, Strings.MsgCancelled);
 
         if (run.Outcome == CodeActionOutcome.NoChangeNeeded) return new(InPlaceEditOutcome.NoChangeNeeded);
         if (run.Outcome != CodeActionOutcome.Edited)         return new(InPlaceEditOutcome.Failed, run.FailureDetail);

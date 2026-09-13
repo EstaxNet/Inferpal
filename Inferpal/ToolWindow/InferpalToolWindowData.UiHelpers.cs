@@ -150,6 +150,59 @@ internal partial class InferpalToolWindowData
 #pragma warning restore VSTHRD003
     }
 
+    /// <summary>
+    /// Takes the turn: the Stop button (<see cref="IsLoading"/>), what it cancels
+    /// (<c>_currentCts</c>) and what a session load or a code action awaits before replacing the
+    /// conversation (<c>_turnDone</c>). VM context only; release with <see cref="EndOwnedTurn"/> in a
+    /// <c>finally</c>.
+    /// </summary>
+    private CancellationTokenSource BeginOwnedTurn(CancellationToken ct)
+    {
+        var cts     = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        _currentCts = cts;
+        IsLoading   = true;
+        _turnDone   = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        return cts;
+    }
+
+    /// <summary>
+    /// Releases a turn taken by <see cref="BeginOwnedTurn"/>, and only if it is still the current
+    /// one: a code action can cancel this turn and start the next before this runs, and releasing
+    /// then would kill the new turn's Stop button and let a third send through. VM context only.
+    /// </summary>
+    private void EndOwnedTurn(CancellationTokenSource? cts)
+    {
+        if (cts is null) return;
+        cts.Dispose();
+        if (!ReferenceEquals(_currentCts, cts)) return;
+        _currentCts = null;
+        IsLoading   = false;
+        CurrentStep = string.Empty;
+        _turnDone?.TrySetResult();
+        _turnDone   = null;
+    }
+
+    /// <summary>
+    /// Runs a long command as a turn: Stop cancels it, and no chat turn can start underneath it.
+    /// </summary>
+    private async Task RunOwnedCommandAsync(Func<CancellationToken, Task> body, CancellationToken ct)
+    {
+        CancellationTokenSource? cts = null;
+        await RunOnVMContextAsync(() => cts = BeginOwnedTurn(ct));
+        try
+        {
+            await body(cts!.Token);
+        }
+        catch (OperationCanceledException) when (cts!.IsCancellationRequested)
+        {
+            await ShowInfoAsync(Strings.MsgCancelled);
+        }
+        finally
+        {
+            await RunOnVMContextAsync(() => EndOwnedTurn(cts));
+        }
+    }
+
     private Task RunOnVMContextAsync(Action action)
     {
         // RunContinuationsAsynchronously is load-bearing: without it, SetResult runs the awaiting

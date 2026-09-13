@@ -201,23 +201,23 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
             using var doc = JsonDocument.Parse(line);
             var root = doc.RootElement;
 
-            // Responses carry an "id"; server-initiated notifications do not. We act on the one
-            // notification we care about (tool list changed) and ignore the rest. Some servers
-            // echo the numeric id back as a STRING ("42") — treating those as notifications made
-            // every call wait out its full 120 s timeout (pre-1.6.0 architecture review).
-            long id = 0;
-            var hasId = root.TryGetProperty("id", out var idEl)
-                && (idEl.TryGetInt64(out id)
-                    || (idEl.ValueKind == JsonValueKind.String && long.TryParse(idEl.GetString(), out id)));
-            if (!hasId)
+            // What the server initiated carries a "method": a notification (we act on the tool list
+            // changing) or a REQUEST, which carries an id too. ⚠ A request (ping, elicitation…) was
+            // matched against our pending calls and resolved one with an empty result — and, never
+            // answered, could make the server drop the connection.
+            if (McpJsonRpc.IsServerMessage(root))
             {
-                if (root.TryGetProperty("method", out var methodEl)
-                    && methodEl.ValueKind == JsonValueKind.String
-                    && methodEl.GetString() == "notifications/tools/list_changed")
+                var method = root.TryGetProperty("method", out var methodEl) && methodEl.ValueKind == JsonValueKind.String
+                    ? methodEl.GetString()
+                    : null;
+                if (method == "notifications/tools/list_changed")
                     ToolsChanged?.Invoke();
+                if (root.TryGetProperty("id", out var requestId))
+                    _ = AnswerServerRequestAsync(requestId.Clone(), method);
                 return;
             }
-            if (!_pending.TryGetValue(id, out var tcs))
+            // Some servers echo the numeric id back as a STRING ("42"); McpJsonRpc.TryReadId reads both.
+            if (!McpJsonRpc.TryReadId(root, out var id) || !_pending.TryGetValue(id, out var tcs))
                 return;
 
             if (root.TryGetProperty("error", out var error))
@@ -235,6 +235,19 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
             }
         }
         catch (JsonException) { /* skip non-JSON noise on stdout */ }
+    }
+
+    /// <summary>Answers a request the server sent us: <c>ping</c> gets its empty result, anything else a
+    /// "method not found" error — never silence, which a server may read as a dead client.</summary>
+    private async Task AnswerServerRequestAsync(JsonElement id, string? method)
+    {
+        var response = new JsonObject { ["jsonrpc"] = "2.0", ["id"] = JsonNode.Parse(id.GetRawText()) };
+        if (method == "ping")
+            response["result"] = new JsonObject();
+        else
+            response["error"] = new JsonObject { ["code"] = -32601, ["message"] = $"Method not supported by this client: {method}" };
+        try { await WriteLineAsync(response.ToJsonString(), CancellationToken.None).ConfigureAwait(false); }
+        catch (Exception ex) { Diagnostics.Swallow($"McpStdioClient.AnswerServerRequest({_config.Name})", ex); }
     }
 
     private void FailAllPending(Exception ex)

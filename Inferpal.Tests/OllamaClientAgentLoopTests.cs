@@ -127,6 +127,25 @@ public class OllamaClientAgentLoopTests
         Assert.Equal(1, registry.ExecuteCount);   // the repeat was never executed
     }
 
+    /// <summary>The basic loop returns the same history as the orchestrated one: no unanswered call
+    /// after a detected loop (otherwise the next turn is refused by an OpenAI-compatible server).</summary>
+    [Fact]
+    public async Task RepeatedMutatingBatch_LeavesNoUnansweredCallInTheHistory()
+    {
+        var registry = new StubToolRegistry("write_file", () => "written");
+        var client   = new ScriptedOllamaClient(Config(),
+        [
+            ToolCallReply("write_file", """{"path":"a.cs","content":"x"}"""),
+            ToolCallReply("write_file", """{"path":"a.cs","content":"x"}"""),
+        ]);
+
+        var result = await RunAsync(client, registry);
+
+        Assert.True(result.WasLoopDetected);
+        var next = result.UpdatedHistory.Append(new ChatMessageDto("user", "next")).ToList();
+        Assert.False(ToolBlockBoundary.HasOrphanedToolMessage(next));
+    }
+
     [Fact]
     public async Task HttpError_ReturnsErrorMessage_InsteadOfThrowing()
     {

@@ -161,6 +161,9 @@ internal sealed class GhostTextPackage : AsyncPackage
             }
             catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.PackageDispose", ex); }
         }
+        // The sidecar dies with devenv anyway (its stdin closes), but a package disposed while devenv
+        // lives on must not leave it running.
+        if (disposing) FimSidecar.Shutdown();
         base.Dispose(disposing);
     }
 }
