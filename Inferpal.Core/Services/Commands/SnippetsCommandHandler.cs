@@ -34,10 +34,16 @@ internal static class SnippetsCommandHandler
             return new(await SnippetStore.ClearAsync(ct) ? Strings.SnippetsCleared : Strings.SnippetsWriteFailed);
         }
 
-        if ((sub == "copy" || sub == "delete") && parts.Length == 3 && int.TryParse(parts[2], out var idx))
+        if ((sub == "copy" || sub == "delete") && parts.Length == 3)
         {
             var snippets = await SnippetStore.LoadAllAsync(ct);
-            var i = idx - 1; // 1-based display
+            // The listing names each snippet by its id; a number typed by hand is its 1-based position.
+            var byId = snippets.FindIndex(s => string.Equals(s.Id, parts[2], StringComparison.OrdinalIgnoreCase));
+            int i;
+            if (byId >= 0) i = byId;
+            else if (int.TryParse(parts[2], out var n)) i = n - 1;
+            else return new(Strings.SlashUsage("/snippets [list | copy <n> | delete <n> | clear]"));
+            var idx = i + 1;
             if (i < 0 || i >= snippets.Count)
                 return new(Strings.SnippetsNoSuch(idx));
 

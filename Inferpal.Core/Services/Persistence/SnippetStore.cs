@@ -67,7 +67,10 @@ internal static class SnippetStore
             var s    = snippets[n];
             var lang = string.IsNullOrEmpty(s.Language) ? "" : $" ({s.Language})";
             sb.AppendLine($"**#{n + 1}**{lang} — `{ChatTurnPolicy.OneLinePreview(s.Code, 60)}`  ");
-            sb.AppendLine($"  {Strings.SnippetsSavedAt(s.CreatedAt)} — `/snippets copy {n + 1}` • `/snippets delete {n + 1}`");
+            // By id, not position: a position shifts after the first delete, and the next command copied
+            // from this same listing would target another snippet.
+            var target = string.IsNullOrWhiteSpace(s.Id) ? (n + 1).ToString() : s.Id;
+            sb.AppendLine($"  {Strings.SnippetsSavedAt(s.CreatedAt)} — `/snippets copy {target}` • `/snippets delete {target}`");
             sb.AppendLine();
         }
         return sb.ToString().TrimEnd();

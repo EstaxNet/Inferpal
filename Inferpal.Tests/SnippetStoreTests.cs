@@ -152,7 +152,9 @@ public class SnippetStoreTests : IDisposable
 
         Assert.StartsWith(Strings.SnippetsListHeader, listing);
         Assert.Contains("**#1** (csharp) — `var x = 1; var y = 2;`", listing); // newline flattened
-        Assert.Contains("`/snippets copy 1` • `/snippets delete 1`", listing);
+        Assert.Contains("`/snippets copy id1` • `/snippets delete id1`", listing);   // the id: a position shifts after a delete
+        Assert.Contains("`/snippets copy 1` • `/snippets delete 1`",                 // an entry without an id falls back to it
+            SnippetStore.FormatList([new Snippet("", "go", "x", "2026-06-12T12:00:00")]));
         Assert.Contains($"`{new string('z', 60)}…`", listing);                 // 60-char cap
         Assert.DoesNotContain("#2 (", listing);                                // no empty language parens
     }

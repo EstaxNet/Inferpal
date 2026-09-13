@@ -84,6 +84,28 @@ public class SnippetsCommandHandlerTests : IDisposable
         Assert.Equal("second", Assert.Single(remaining).Code);
     }
 
+    /// <summary>
+    /// The listing's ready-to-type commands must target the snippet on their row: by position, the second
+    /// delete made from the same listing erased the next snippet.
+    /// </summary>
+    [Fact]
+    public async Task TwoDeletesFromTheSameListing_RemoveTheSnippetsOnTheirRows()
+    {
+        await SnippetStore.SaveAsync("csharp", "first",  CancellationToken.None);
+        await SnippetStore.SaveAsync("python", "second", CancellationToken.None);
+        await SnippetStore.SaveAsync("go",     "third",  CancellationToken.None);
+
+        var listing = (await SnippetsCommandHandler.HandleAsync(Cmd(), CancellationToken.None)).Message;
+        var deletes = System.Text.RegularExpressions.Regex.Matches(listing, @"`/snippets delete (\S+)`")
+                          .Select(m => m.Groups[1].Value).ToList();
+        Assert.Equal(3, deletes.Count);   // witness: one command per row
+
+        await SnippetsCommandHandler.HandleAsync(Cmd("delete", deletes[0]), CancellationToken.None);
+        await SnippetsCommandHandler.HandleAsync(Cmd("delete", deletes[1]), CancellationToken.None);
+
+        Assert.Equal("third", Assert.Single(await SnippetStore.LoadAllAsync(CancellationToken.None)).Code);
+    }
+
     [Fact]
     public async Task Clear_EmptiesTheLibrary()
     {
