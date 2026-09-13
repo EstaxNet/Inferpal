@@ -104,6 +104,51 @@ public class PlanCommandHandlerTests : IDisposable
         Assert.Empty(PlanStore.List(_root));
     }
 
+    /// <summary>
+    /// A GENERATED name never overwrites an existing plan. Without a name the plan takes the answer's
+    /// heading — and models often open their plans with the same one: the second overwrote the first,
+    /// ticked steps included, without a word.
+    /// </summary>
+    [Fact]
+    public void Save_WithoutAName_DoesNotOverwriteAPlanWithTheSameHeading()
+    {
+        Run("/plan save", Proposal);
+        Run("/plan done 1", active: "port-the-semantic-index");
+
+        var second = Run("/plan save", Proposal);
+
+        Assert.Equal(1, PlanStore.Load(_root, "port-the-semantic-index")!.DoneCount);
+        Assert.Equal("port-the-semantic-index-2", second.SetActivePlan);
+    }
+
+    /// <summary>Boundary witness: a name the user typed is still a deliberate choice.</summary>
+    [Fact]
+    public void Save_WithAnExplicitName_KeepsThatName()
+    {
+        Run("/plan save alpha", Proposal);
+
+        Assert.Equal("alpha", Run("/plan save alpha", Proposal).SetActivePlan);
+    }
+
+    /// <summary>
+    /// The suffix survives truncation: a plan name is cut to 60 characters when the file is written, so
+    /// a <c>-2</c> stuck onto a long heading would be dropped — and the second plan would land exactly on
+    /// the first.
+    /// </summary>
+    [Fact]
+    public void Save_WithoutAName_KeepsTheSuffix_WhenTheHeadingIsLong()
+    {
+        var longTitle = string.Join(' ', Enumerable.Repeat("refactor", 10));
+        var answer    = new System.Text.RegularExpressions.Regex(@"^#+ .*$", System.Text.RegularExpressions.RegexOptions.Multiline)
+                            .Replace(Proposal, "# " + longTitle, 1);
+
+        var first  = Run("/plan save", answer).SetActivePlan;
+        var second = Run("/plan save", answer).SetActivePlan;
+
+        Assert.NotEqual(first, second);
+        Assert.Equal(2, PlanStore.List(_root).Count);
+    }
+
     // ── list / open ────────────────────────────────────────────────────────────
 
     [Fact]

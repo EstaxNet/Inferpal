@@ -37,6 +37,9 @@ internal sealed record PlanSummary(string Name, string Path, string Title, int D
 /// </remarks>
 internal static class PlanStore
 {
+    /// <summary>Longest file stem a plan name is cut to.</summary>
+    internal const int MaxNameLength = 60;
+
     /// <summary>Directory holding the plans of a workspace.</summary>
     public static string DirectoryFor(string workspaceRoot) =>
         Path.Combine(workspaceRoot, ".inferpal", "plans");
@@ -68,7 +71,7 @@ internal static class PlanStore
         while (name.Contains("--", StringComparison.Ordinal))
             name = name.Replace("--", "-", StringComparison.Ordinal);
 
-        return name.Length == 0 ? "plan" : Truncate(name, 60);
+        return name.Length == 0 ? "plan" : Truncate(name, MaxNameLength);
     }
 
     /// <summary>Absolute path of a plan, from a name that has already been sanitised here.</summary>

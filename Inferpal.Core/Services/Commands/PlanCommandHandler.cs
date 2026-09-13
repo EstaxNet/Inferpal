@@ -120,6 +120,24 @@ internal static class PlanCommandHandler
         // the save the user asked for still happens, under a name every route can reach.
         if (Reserved.Contains(name)) name += "-plan";
 
+        // A GENERATED name must not replace a plan that exists: models open their plans with the same
+        // heading, and the second save overwrote the first — ticked steps included. The suffix is
+        // fitted inside the cut PathFor applies, or it would be dropped and land back on the existing
+        // file. A name the user typed is a deliberate choice and is used as given.
+        if (rawName.Length == 0)
+        {
+            var taken = PlanStore.List(root).Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var stem  = name;
+            for (var n = 2; taken.Contains(name); n++)
+            {
+                var suffix = $"-{n}";
+                var head   = stem.Length + suffix.Length <= PlanStore.MaxNameLength
+                    ? stem
+                    : stem[..(PlanStore.MaxNameLength - suffix.Length)];
+                name = PlanStore.SanitizeName(head.TrimEnd('-') + suffix);
+            }
+        }
+
         var path = PlanStore.Save(root, name, PlanDocument.Render(title, steps));
 
         return new(Strings.PlanSaved(name, steps.Count, path),
