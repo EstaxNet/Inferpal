@@ -142,6 +142,40 @@ public class ArenaTests : IDisposable
         Assert.Contains("| 2 | 2 | 0 | 100 % |", table);
     }
 
+    /// <summary>
+    /// Two installed model names and nothing else is the explicit form with its prompt missing, not a
+    /// prompt: <c>/arena small big</c> sent the text "small big" to the chat and utility models as a battle.
+    /// </summary>
+    [Fact]
+    public async Task Battle_ExplicitPairWithoutPrompt_ShowsTheUsage()
+    {
+        var fake = EchoProvider();
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            fake, Config(chat: "other"), ["/arena", "small", "big"],
+            onProgress: null, CancellationToken.None, swapOrder: () => false);
+
+        Assert.Equal(Strings.ArenaUsage, result.Message);
+        Assert.Empty(fake.ChatModels);
+    }
+
+    /// <summary>
+    /// One model named twice is not a pair: <c>/arena big big:latest hello</c> fell back to the automatic
+    /// battle, with both model names pasted into the prompt.
+    /// </summary>
+    [Fact]
+    public async Task Battle_ExplicitPairOfOneModel_SaysTwoModelsAreNeeded()
+    {
+        var fake = EchoProvider();
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            fake, Config(), ["/arena", "big", "big:latest", "hello"],
+            onProgress: null, CancellationToken.None, swapOrder: () => false);
+
+        Assert.Equal(Strings.ArenaNeedTwoModels, result.Message);
+        Assert.Empty(fake.ChatModels);
+    }
+
     [Fact]
     public async Task Battle_NoUtilityModel_FallsBackToAnotherInstalledModel()
     {

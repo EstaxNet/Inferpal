@@ -114,11 +114,17 @@ internal static class ArenaCommandHandler
         try { installed = await client.ListInstalledModelsAsync(ct); }
         catch (Exception ex) { Diagnostics.Swallow("ArenaCommandHandler.ListInstalled", ex); }
 
-        if (parts.Length >= 4
+        // Two installed model names up front ARE the explicit form, whatever follows: without a prompt it is
+        // incomplete, and one model named twice is not a pair — neither may fall back to the automatic
+        // battle with the model names pasted into its prompt.
+        if (parts.Length >= 3
             && FindInstalled(installed, parts[1]) is { } m1
-            && FindInstalled(installed, parts[2]) is { } m2
-            && !ModelCatalog.SameModelName(m1, m2))
-            return (m1, m2, string.Join(" ", parts[3..]));
+            && FindInstalled(installed, parts[2]) is { } m2)
+        {
+            return ModelCatalog.SameModelName(m1, m2)
+                ? (null, null, string.Empty)
+                : (m1, m2, string.Join(" ", parts[3..]));
+        }
 
         var prompt = string.Join(" ", parts[1..]);
         var chat   = ModelRouter.Resolve(config, ModelRole.Chat);
