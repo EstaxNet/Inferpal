@@ -363,6 +363,7 @@
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ エクスポートするメッセージがありません。</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>`{0}` にエクスポートしました</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ エクスポート失敗：{0}</value></data>
+  <data name="HostTurnBusy" xml:space="preserve"><value>まだ応答を生成中です。停止してから、もう一度お試しください。</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>使用法：`/model &lt;名前&gt;`  —  現在：**{0}**</value></data>

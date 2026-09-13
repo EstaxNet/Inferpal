@@ -364,6 +364,7 @@ Backup: {0}</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ No messages to export.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Exported to `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Export failed: {0}</value></data>
+  <data name="HostTurnBusy" xml:space="preserve"><value>A reply is still being generated — stop it, then try again.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Usage: `/model &lt;name&gt;`  —  current: **{0}**</value></data>

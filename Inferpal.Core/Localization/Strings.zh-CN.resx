@@ -363,6 +363,7 @@
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ 没有可导出的消息。</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>已导出至 `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ 导出失败：{0}</value></data>
+  <data name="HostTurnBusy" xml:space="preserve"><value>仍在生成回复——请先停止，然后重试。</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>用法：`/model &lt;名称&gt;` — 当前：**{0}**</value></data>

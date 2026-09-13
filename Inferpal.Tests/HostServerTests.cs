@@ -364,9 +364,18 @@ public class HostServerTests
                                   "session/branch", new { turn = 1, messages = Array.Empty<object>() }),
         };
 
-        var refused = await Assert.ThrowsAsync<RemoteInvocationException>(
-            () => Invoke().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
-        Assert.Contains("chat turn", refused.Message);
+        // VS Code shows this refusal verbatim (the "load session" palette command, a command's error
+        // bubble): it follows the language and does not name the RPC method. Literal expectation.
+        RemoteInvocationException refused;
+        try
+        {
+            Strings.ApplyLanguage("fr");
+            refused = await Assert.ThrowsAsync<RemoteInvocationException>(
+                () => Invoke().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
+        }
+        finally { Strings.ApplyLanguage(null); }
+        Assert.Contains("Une réponse est encore en cours — arrêtez-la, puis réessayez.", refused.Message);
+        Assert.DoesNotContain(method, refused.Message);
 
         await h.Client.InvokeAsync("chat/cancel");
         await sendTask.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));

@@ -669,6 +669,8 @@ internal static class Strings
     public static string ExportTokens            => Get(nameof(ExportTokens));
     /// <inheritdoc cref="ExportTitle"/>
     public static string ExportDuration          => Get(nameof(ExportDuration));
+    /// <summary>The host's refusal while a turn holds the slot: VS Code shows it verbatim.</summary>
+    public static string HostTurnBusy            => Get(nameof(HostTurnBusy));
 
     // ── Slash commands ─────────────────────────────────────────────────────────
     public static string SlashModelCurrent(string model) => string.Format(Get(nameof(SlashModelCurrent)), model);

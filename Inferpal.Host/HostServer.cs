@@ -755,7 +755,7 @@ internal sealed partial class HostServer : IDisposable
         lock (_gate)
         {
             if (_chatCts is not null)
-                throw new InvalidOperationException("A chat turn is already running.");
+                throw new InvalidOperationException(Strings.HostTurnBusy);
             return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         }
     }
@@ -793,8 +793,11 @@ internal sealed partial class HostServer : IDisposable
         lock (_gate)
         {
             if (_chatCts is not null)
-                throw new InvalidOperationException(
-                    $"'{operation}' cannot run while a chat turn is in flight — cancel it first.");
+            {
+                // The message reaches the user verbatim; the method name only speaks to diagnostics.
+                Diagnostics.Record("HostServer", $"'{operation}' refused: a chat turn is in flight");
+                throw new InvalidOperationException(Strings.HostTurnBusy);
+            }
             return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         }
     }

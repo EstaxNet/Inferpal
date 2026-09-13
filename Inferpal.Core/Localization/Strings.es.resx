@@ -363,6 +363,7 @@ Copia de seguridad: {0}</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ No hay mensajes para exportar.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Exportado a `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Error al exportar: {0}</value></data>
+  <data name="HostTurnBusy" xml:space="preserve"><value>Todavía se está generando una respuesta: deténgala y vuelva a intentarlo.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Uso: `/model &lt;nombre&gt;`  —  actual: **{0}**</value></data>

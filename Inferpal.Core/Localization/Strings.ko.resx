@@ -363,6 +363,7 @@
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ 내보낼 메시지가 없습니다.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>`{0}`으로 내보냈습니다</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ 내보내기 실패: {0}</value></data>
+  <data name="HostTurnBusy" xml:space="preserve"><value>아직 응답을 생성하는 중입니다. 중지한 다음 다시 시도하세요.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>사용법: `/model &lt;이름&gt;`  —  현재: **{0}**</value></data>

@@ -363,6 +363,7 @@
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Нет сообщений для экспорта.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Экспортировано в `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Ошибка экспорта: {0}</value></data>
+  <data name="HostTurnBusy" xml:space="preserve"><value>Ответ ещё генерируется — остановите его и повторите попытку.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Использование: `/model &lt;имя&gt;`  —  текущая: **{0}**</value></data>

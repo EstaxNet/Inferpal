@@ -363,6 +363,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="ExportNoMessages" xml:space="preserve"><value>⚠ Brak wiadomości do wyeksportowania.</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Wyeksportowano do `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Eksport nie powiódł się: {0}</value></data>
+  <data name="HostTurnBusy" xml:space="preserve"><value>Odpowiedź jest nadal generowana — zatrzymaj ją i spróbuj ponownie.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Użycie: `/model &lt;nazwa&gt;`  —  aktualny: **{0}**</value></data>
