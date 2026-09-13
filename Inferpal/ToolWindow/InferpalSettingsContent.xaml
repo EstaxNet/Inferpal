@@ -310,15 +310,15 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding TimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitHours}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding TimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitMinutes}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding TimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitSeconds}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -380,7 +380,7 @@
                 <TextBox Text="{Binding AgentMaxIterationsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="46" Foreground="{Binding TextForeground}"
                          Padding="4,2" VerticalContentAlignment="Center" TextAlignment="Right"/>
-                <TextBlock Text="iter" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitIterations}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -397,15 +397,15 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding QuickTimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitHours}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding QuickTimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitMinutes}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding QuickTimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitSeconds}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -422,15 +422,15 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding NormalTimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitHours}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding NormalTimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitMinutes}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding NormalTimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitSeconds}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -447,15 +447,15 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding DeepTimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitHours}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding DeepTimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitMinutes}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding DeepTimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitSeconds}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -482,7 +482,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding ModelIdleTimeoutText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="46" MaxLength="3" TextAlignment="Center"/>
-                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitMinutes}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -616,7 +616,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding RagTopKText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="40" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="chunks" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitChunks}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -1004,7 +1004,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding VramBudgetText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="68" MaxLength="6" TextAlignment="Center"/>
-                <TextBlock Text="GB" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitGigabytes}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -1023,7 +1023,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding ContextWindowSizeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="68" MaxLength="6" TextAlignment="Center"/>
-                <TextBlock Text="tokens" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitTokens}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -1042,7 +1042,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding ContextWindowKeepTurnsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="40" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="turns" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitTurns}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -1069,15 +1069,15 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding CompactionTimeoutHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="h" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitHours}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding CompactionTimeoutMinutesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="min" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitMinutes}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,7,0" FontSize="11" Opacity="0.65"/>
                 <TextBox Text="{Binding CompactionTimeoutSecondsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="36" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="s" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitSeconds}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="3,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -1096,7 +1096,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding KvCacheAnchorMessagesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="40" MaxLength="2" TextAlignment="Center"/>
-                <TextBlock Text="msg" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitMessages}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>
@@ -1115,7 +1115,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBox Text="{Binding OodaTurnThresholdText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Width="40" MaxLength="3" TextAlignment="Center"/>
-                <TextBlock Text="turns" Foreground="{Binding TextForeground}"
+                <TextBlock Text="{Binding UnitTurns}" Foreground="{Binding TextForeground}"
                            VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11" Opacity="0.65"/>
             </StackPanel>
         </Grid>

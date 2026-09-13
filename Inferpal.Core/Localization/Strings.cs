@@ -259,6 +259,26 @@ internal static class Strings
     public static string LabelRagEmbeddingModel => Get(nameof(LabelRagEmbeddingModel));
     public static string HintRagEmbeddingModel  => Get(nameof(HintRagEmbeddingModel));
     public static string LabelRagTopK                  => Get(nameof(LabelRagTopK));
+    /// <summary>Units of the numeric settings fields: resource names of the schema, served to both front-ends.</summary>
+    public static string UnitSeconds                   => Get(nameof(UnitSeconds));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitMinutes                   => Get(nameof(UnitMinutes));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitHours                     => Get(nameof(UnitHours));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitGigabytes                 => Get(nameof(UnitGigabytes));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitTokens                    => Get(nameof(UnitTokens));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitTurns                     => Get(nameof(UnitTurns));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitMessages                  => Get(nameof(UnitMessages));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitChunks                    => Get(nameof(UnitChunks));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitIterations                => Get(nameof(UnitIterations));
+    /// <inheritdoc cref="UnitSeconds"/>
+    public static string UnitRangeZeroToOne            => Get(nameof(UnitRangeZeroToOne));
     public static string HintRagTopK                   => Get(nameof(HintRagTopK));
     public static string LabelRagSimilarityThreshold   => Get(nameof(LabelRagSimilarityThreshold));
     public static string HintRagSimilarityThreshold    => Get(nameof(HintRagSimilarityThreshold));

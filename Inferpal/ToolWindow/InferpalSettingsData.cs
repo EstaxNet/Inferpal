@@ -112,6 +112,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _hintContextWindowSize        = string.Empty;
     private string _labelContextWindowKeepTurns  = string.Empty;
     private string _hintContextWindowKeepTurns   = string.Empty;
+    private string _unitSeconds = string.Empty;
+    private string _unitMinutes = string.Empty;
+    private string _unitHours = string.Empty;
+    private string _unitGigabytes = string.Empty;
+    private string _unitTokens = string.Empty;
+    private string _unitTurns = string.Empty;
+    private string _unitMessages = string.Empty;
+    private string _unitChunks = string.Empty;
+    private string _unitIterations = string.Empty;
     private string _labelVramBudget              = string.Empty;
     private string _hintVramBudget               = string.Empty;
     private string _hintCustomSystemPrompt       = string.Empty;
@@ -581,6 +590,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         HintContextWindowSize        = Strings.HintContextWindowSize;
         LabelContextWindowKeepTurns  = Strings.LabelContextWindowKeepTurns;
         HintContextWindowKeepTurns   = Strings.HintContextWindowKeepTurns;
+        UnitSeconds = Strings.UnitSeconds;
+        UnitMinutes = Strings.UnitMinutes;
+        UnitHours = Strings.UnitHours;
+        UnitGigabytes = Strings.UnitGigabytes;
+        UnitTokens = Strings.UnitTokens;
+        UnitTurns = Strings.UnitTurns;
+        UnitMessages = Strings.UnitMessages;
+        UnitChunks = Strings.UnitChunks;
+        UnitIterations = Strings.UnitIterations;
         LabelVramBudget              = Strings.LabelVramBudget;
         HintVramBudget               = Strings.HintVramBudget;
         LabelCustomSystemPrompt      = Strings.LabelCustomSystemPrompt;
@@ -842,6 +860,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintContextWindowSize        { get => _hintContextWindowSize;       set => SetProperty(ref _hintContextWindowSize,       value); }
     [DataMember] public string LabelContextWindowKeepTurns  { get => _labelContextWindowKeepTurns; set => SetProperty(ref _labelContextWindowKeepTurns, value); }
     [DataMember] public string HintContextWindowKeepTurns   { get => _hintContextWindowKeepTurns;  set => SetProperty(ref _hintContextWindowKeepTurns,  value); }
+    [DataMember] public string UnitSeconds { get => _unitSeconds; set => SetProperty(ref _unitSeconds, value); }
+    [DataMember] public string UnitMinutes { get => _unitMinutes; set => SetProperty(ref _unitMinutes, value); }
+    [DataMember] public string UnitHours { get => _unitHours; set => SetProperty(ref _unitHours, value); }
+    [DataMember] public string UnitGigabytes { get => _unitGigabytes; set => SetProperty(ref _unitGigabytes, value); }
+    [DataMember] public string UnitTokens { get => _unitTokens; set => SetProperty(ref _unitTokens, value); }
+    [DataMember] public string UnitTurns { get => _unitTurns; set => SetProperty(ref _unitTurns, value); }
+    [DataMember] public string UnitMessages { get => _unitMessages; set => SetProperty(ref _unitMessages, value); }
+    [DataMember] public string UnitChunks { get => _unitChunks; set => SetProperty(ref _unitChunks, value); }
+    [DataMember] public string UnitIterations { get => _unitIterations; set => SetProperty(ref _unitIterations, value); }
     [DataMember] public string LabelVramBudget              { get => _labelVramBudget;             set => SetProperty(ref _labelVramBudget,             value); }
     [DataMember] public string HintVramBudget               { get => _hintVramBudget;              set => SetProperty(ref _hintVramBudget,              value); }
     [DataMember] public string LabelCustomSystemPrompt  { get => _labelCustomSystemPrompt;  set => SetProperty(ref _labelCustomSystemPrompt,  value); }

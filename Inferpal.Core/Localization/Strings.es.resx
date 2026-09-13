@@ -39,6 +39,16 @@
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Modelo de embeddings:</value></data>
   <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Modelo Ollama utilizado para generar embeddings para la búsqueda semántica. Solo se listan modelos de embedding dedicados (nomic-embed-text, mxbai-embed-large, bge-m3, …). Recurre a nomic-embed-text si no se selecciona ninguno.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Resultados por consulta (top-K):</value></data>
+  <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
+  <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
+  <data name="UnitHours" xml:space="preserve"><value>h</value></data>
+  <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
+  <data name="UnitTokens" xml:space="preserve"><value>tokens</value></data>
+  <data name="UnitTurns" xml:space="preserve"><value>turnos</value></data>
+  <data name="UnitMessages" xml:space="preserve"><value>msj</value></data>
+  <data name="UnitChunks" xml:space="preserve"><value>fragmentos</value></data>
+  <data name="UnitIterations" xml:space="preserve"><value>iter.</value></data>
+  <data name="UnitRangeZeroToOne" xml:space="preserve"><value>0–1</value></data>
   <data name="HintRagTopK" xml:space="preserve"><value>Número máximo de fragmentos de código devueltos por la herramienta de búsqueda semántica. Los valores más altos proporcionan más contexto pero aumentan el uso de tokens. Recomendado: 3–10.</value></data>
   <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>Umbral de similitud (0–1):</value></data>
   <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>Puntuación mínima de similitud coseno para que un fragmento sea incluido en los resultados. Los fragmentos por debajo del umbral se descartan como coincidencias de baja calidad. Recomendado: 0,20.</value></data>

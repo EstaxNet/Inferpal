@@ -39,6 +39,16 @@
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Модель встраивания:</value></data>
   <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Модель Ollama для генерации векторных представлений семантического поиска. Отображаются только специализированные модели (nomic-embed-text, mxbai-embed-large, bge-m3, …). При отсутствии выбора используется nomic-embed-text.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Результатов на запрос (top-K):</value></data>
+  <data name="UnitSeconds" xml:space="preserve"><value>с</value></data>
+  <data name="UnitMinutes" xml:space="preserve"><value>мин</value></data>
+  <data name="UnitHours" xml:space="preserve"><value>ч</value></data>
+  <data name="UnitGigabytes" xml:space="preserve"><value>ГБ</value></data>
+  <data name="UnitTokens" xml:space="preserve"><value>токенов</value></data>
+  <data name="UnitTurns" xml:space="preserve"><value>ходов</value></data>
+  <data name="UnitMessages" xml:space="preserve"><value>сообщ.</value></data>
+  <data name="UnitChunks" xml:space="preserve"><value>фрагментов</value></data>
+  <data name="UnitIterations" xml:space="preserve"><value>итер.</value></data>
+  <data name="UnitRangeZeroToOne" xml:space="preserve"><value>0–1</value></data>
   <data name="HintRagTopK" xml:space="preserve"><value>Максимальное количество фрагментов кода, возвращаемых инструментом семантического поиска. Более высокие значения дают больше контекста, но увеличивают использование токенов. Рекомендуется: 3–10.</value></data>
   <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>Порог схожести (0–1):</value></data>
   <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>Минимальная косинусная схожесть для включения фрагмента в результаты поиска. Фрагменты ниже порога отбрасываются как низкокачественные совпадения. Рекомендуется: 0,20.</value></data>

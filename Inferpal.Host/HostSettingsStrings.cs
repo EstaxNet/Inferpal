@@ -190,5 +190,17 @@ internal sealed partial class HostServer
         [nameof(Strings.HintPromptTemplates)]      = Strings.HintPromptTemplates,
         [nameof(Strings.LabelCustomTools)]         = Strings.LabelCustomTools,
         [nameof(Strings.HintCustomTools)]          = Strings.HintCustomTools,
+
+        // ── Units of the numeric fields (resource names from the schema) ────────
+        [nameof(Strings.UnitSeconds)]              = Strings.UnitSeconds,
+        [nameof(Strings.UnitMinutes)]              = Strings.UnitMinutes,
+        [nameof(Strings.UnitHours)]                = Strings.UnitHours,
+        [nameof(Strings.UnitGigabytes)]            = Strings.UnitGigabytes,
+        [nameof(Strings.UnitTokens)]               = Strings.UnitTokens,
+        [nameof(Strings.UnitTurns)]                = Strings.UnitTurns,
+        [nameof(Strings.UnitMessages)]             = Strings.UnitMessages,
+        [nameof(Strings.UnitChunks)]               = Strings.UnitChunks,
+        [nameof(Strings.UnitIterations)]           = Strings.UnitIterations,
+        [nameof(Strings.UnitRangeZeroToOne)]       = Strings.UnitRangeZeroToOne,
     };
 }

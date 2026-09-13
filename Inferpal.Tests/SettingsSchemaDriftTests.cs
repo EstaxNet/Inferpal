@@ -102,6 +102,25 @@ public class SettingsSchemaDriftTests
             + "key, and the .resx completeness test would never see them):\n  " + string.Join("\n  ", missing));
     }
 
+    /// <summary>
+    /// A numeric field's unit ("tokens", "turns", "msg"…) was an English literal, rendered as is by the VS Code
+    /// panel in all ten languages. It now resolves like Label and Hint.
+    /// </summary>
+    [Fact]
+    public void EveryUnitIsAResourceName()
+    {
+        var resources = ResourceNames();
+        var units = SettingsSchema.AllFields.Select(f => f.Unit).Where(u => !string.IsNullOrEmpty(u)).ToList();
+
+        // Witness: the form does carry units, otherwise the rule judges nothing.
+        Assert.True(units.Count >= 10, $"only {units.Count} unit(s) read from the schema");
+
+        var notResources = units.Where(u => !resources.Contains(u!)).Distinct().Order().ToList();
+        Assert.True(notResources.Count == 0,
+            "Settings units that are not resource names (the panel renders them verbatim, untranslated):\n  "
+            + string.Join("\n  ", notResources));
+    }
+
     [Fact]
     public void FimModeOptionTexts_MatchTheActualPresets()
     {

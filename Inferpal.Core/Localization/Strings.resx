@@ -39,6 +39,16 @@
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Embedding model:</value></data>
   <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Ollama model used to generate embeddings for semantic search. Only dedicated embedding models are listed (nomic-embed-text, mxbai-embed-large, bge-m3, …). Falls back to nomic-embed-text if none is selected.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Results per query (top-K):</value></data>
+  <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
+  <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
+  <data name="UnitHours" xml:space="preserve"><value>h</value></data>
+  <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
+  <data name="UnitTokens" xml:space="preserve"><value>tokens</value></data>
+  <data name="UnitTurns" xml:space="preserve"><value>turns</value></data>
+  <data name="UnitMessages" xml:space="preserve"><value>msg</value></data>
+  <data name="UnitChunks" xml:space="preserve"><value>chunks</value></data>
+  <data name="UnitIterations" xml:space="preserve"><value>iter</value></data>
+  <data name="UnitRangeZeroToOne" xml:space="preserve"><value>0–1</value></data>
   <data name="HintRagTopK" xml:space="preserve"><value>Maximum number of code chunks returned by the semantic search tool. Higher values provide more context but increase token usage. Recommended: 3–10.</value></data>
   <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>Similarity threshold (0–1):</value></data>
   <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>Minimum cosine similarity score for a chunk to be included in search results. Chunks below this threshold are discarded as low-quality matches. Recommended: 0.20.</value></data>

@@ -39,6 +39,16 @@
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>埋め込みモデル：</value></data>
   <data name="HintRagEmbeddingModel" xml:space="preserve"><value>セマンティック検索の埋め込み生成に使用する Ollama モデル。専用の埋め込みモデルのみ表示されます（nomic-embed-text、mxbai-embed-large、bge-m3 など）。未選択の場合は nomic-embed-text にフォールバックします。</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>クエリごとの結果数 (トップ K)：</value></data>
+  <data name="UnitSeconds" xml:space="preserve"><value>秒</value></data>
+  <data name="UnitMinutes" xml:space="preserve"><value>分</value></data>
+  <data name="UnitHours" xml:space="preserve"><value>時間</value></data>
+  <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
+  <data name="UnitTokens" xml:space="preserve"><value>トークン</value></data>
+  <data name="UnitTurns" xml:space="preserve"><value>ターン</value></data>
+  <data name="UnitMessages" xml:space="preserve"><value>件</value></data>
+  <data name="UnitChunks" xml:space="preserve"><value>チャンク</value></data>
+  <data name="UnitIterations" xml:space="preserve"><value>回</value></data>
+  <data name="UnitRangeZeroToOne" xml:space="preserve"><value>0–1</value></data>
   <data name="HintRagTopK" xml:space="preserve"><value>セマンティック検索ツールが返すコード チャンクの最大数。値が高いほどコンテキストが増えますが、トークン使用量が増加します。推奨: 3～10。</value></data>
   <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>類似度しきい値 (0–1)：</value></data>
   <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>チャンクが検索結果に含まれるための最小コサイン類似度スコアです。このしきい値を下回るチャンクは低品質な一致として除外されます。推奨値：0.20。</value></data>

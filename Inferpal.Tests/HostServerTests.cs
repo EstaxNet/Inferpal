@@ -1308,6 +1308,37 @@ public class HostServerTests
         Assert.All(strings.Values, v => Assert.False(string.IsNullOrWhiteSpace(v)));
     }
 
+    /// <summary>
+    /// `settings/strings` is a hand-written list: a name the schema references but the list does not serve is
+    /// shown as a raw key in the VS Code panel ("UnitTurns"). No test held the inclusion.
+    /// </summary>
+    [Fact]
+    public async Task SettingsStrings_ServeEveryNameTheSchemaReferences()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var strings = await h.Client.InvokeAsync<Dictionary<string, string>>("settings/strings");
+
+        var local = new[] { Services.Presentation.SettingsSchema.LocalLabelInlineDiff,
+                            Services.Presentation.SettingsSchema.LocalLabelTabTools };
+        var names = Services.Presentation.SettingsSchema.AllFields
+            .SelectMany(f => new[] { f.Label, f.Hint, f.Unit })
+            .Concat(Services.Presentation.SettingsSchema.Tabs.SelectMany(t => t.Sections)
+                .SelectMany(s => new[] { s.Title, s.ToggleLabel, s.ToggleHint }))
+            .Where(n => !string.IsNullOrEmpty(n) && !local.Contains(n))
+            .Distinct()
+            .ToList();
+
+        // Witness: the schema does reference dozens of names.
+        Assert.True(names.Count > 50, $"only {names.Count} name(s) read from the schema");
+
+        var missing = names.Where(n => !strings.ContainsKey(n!)).Order().ToList();
+        Assert.True(missing.Count == 0,
+            "Names the settings schema references but settings/strings does not serve (rendered as raw keys):\n  "
+            + string.Join("\n  ", missing));
+    }
+
     // ── config round trip (settings panel contract) ────────────────────────────
 
     /// <summary>The VS Code settings webview round-trips the FULL config JSON through

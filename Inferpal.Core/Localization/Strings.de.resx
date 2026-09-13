@@ -39,6 +39,16 @@
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Embedding-Modell:</value></data>
   <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Ollama-Modell zur Erzeugung von Einbettungen für die semantische Suche. Nur dedizierte Embedding-Modelle werden aufgelistet (nomic-embed-text, mxbai-embed-large, bge-m3, …). Fallback auf nomic-embed-text, wenn keines ausgewählt ist.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Ergebnisse pro Abfrage (Top-K):</value></data>
+  <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
+  <data name="UnitMinutes" xml:space="preserve"><value>Min.</value></data>
+  <data name="UnitHours" xml:space="preserve"><value>Std.</value></data>
+  <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
+  <data name="UnitTokens" xml:space="preserve"><value>Tokens</value></data>
+  <data name="UnitTurns" xml:space="preserve"><value>Durchgänge</value></data>
+  <data name="UnitMessages" xml:space="preserve"><value>Nachr.</value></data>
+  <data name="UnitChunks" xml:space="preserve"><value>Abschnitte</value></data>
+  <data name="UnitIterations" xml:space="preserve"><value>Iter.</value></data>
+  <data name="UnitRangeZeroToOne" xml:space="preserve"><value>0–1</value></data>
   <data name="HintRagTopK" xml:space="preserve"><value>Maximale Anzahl von Codefragmenten, die das semantische Suchwerkzeug zurückgibt. Höhere Werte liefern mehr Kontext, erhöhen aber den Token-Verbrauch. Empfohlen: 3–10.</value></data>
   <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>Ähnlichkeitsschwellenwert (0–1):</value></data>
   <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>Minimale Kosinus-Ähnlichkeit, damit ein Fragment in die Suchergebnisse aufgenommen wird. Fragmente unterhalb dieses Schwellenwerts werden als minderwertige Treffer verworfen. Empfehlung: 0,20.</value></data>

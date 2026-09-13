@@ -39,6 +39,16 @@
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>임베딩 모델:</value></data>
   <data name="HintRagEmbeddingModel" xml:space="preserve"><value>의미 검색을 위한 임베딩 생성에 사용되는 Ollama 모델입니다. 전용 임베딩 모델만 표시됩니다(nomic-embed-text, mxbai-embed-large, bge-m3 등). 선택하지 않으면 nomic-embed-text로 대체됩니다.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>쿼리당 결과 수 (top-K):</value></data>
+  <data name="UnitSeconds" xml:space="preserve"><value>초</value></data>
+  <data name="UnitMinutes" xml:space="preserve"><value>분</value></data>
+  <data name="UnitHours" xml:space="preserve"><value>시간</value></data>
+  <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
+  <data name="UnitTokens" xml:space="preserve"><value>토큰</value></data>
+  <data name="UnitTurns" xml:space="preserve"><value>턴</value></data>
+  <data name="UnitMessages" xml:space="preserve"><value>개</value></data>
+  <data name="UnitChunks" xml:space="preserve"><value>청크</value></data>
+  <data name="UnitIterations" xml:space="preserve"><value>회</value></data>
+  <data name="UnitRangeZeroToOne" xml:space="preserve"><value>0–1</value></data>
   <data name="HintRagTopK" xml:space="preserve"><value>의미 검색 도구가 반환하는 최대 코드 청크 수입니다. 값이 높을수록 더 많은 컨텍스트를 제공하지만 토큰 사용량이 증가합니다. 권장: 3–10.</value></data>
   <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>유사도 임계값 (0–1):</value></data>
   <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>청크가 검색 결과에 포함되기 위한 최소 코사인 유사도 점수입니다. 이 임계값 미만의 청크는 저품질 일치로 제외됩니다. 권장값: 0.20.</value></data>

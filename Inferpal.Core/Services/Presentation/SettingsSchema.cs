@@ -32,7 +32,7 @@ internal sealed record SettingOption(string Value, string Text, Func<string>? Lo
 /// <paramref name="Label"/>/<paramref name="Hint"/> are <b>resource names</b> resolved against the
 /// shared .resx (so both editors show the same wording in all 10 languages).
 /// </summary>
-/// <param name="Unit">Literal suffix after a compact numeric field (<c>s</c>, <c>GB</c>, …).</param>
+/// <param name="Unit">Resource name of the suffix after a compact numeric field (<c>UnitSeconds</c>, <c>UnitGigabytes</c>, …) — resolved like Label and Hint.</param>
 /// <param name="Gate">Reveal group: <c>roles</c> (distinct model per role) or <c>advanced</c>.</param>
 /// <param name="Button">Companion button: <c>test</c> or <c>refreshModels</c>.</param>
 internal sealed record SettingField(
@@ -124,13 +124,13 @@ internal static class SettingsSchema
         [
             new("SectionBehavior",
             [
-                new("commandTimeoutSeconds",   SettingKind.Int,      "LabelCommandTimeout",         "HintCommandTimeout",         Unit: "s",   Gate: "advanced"),
-                new("quickTimeoutSeconds",     SettingKind.Int,      "LabelTaskTimeoutQuick",       "HintTaskTimeoutQuick",       Unit: "s",   Gate: "advanced"),
-                new("normalTimeoutSeconds",    SettingKind.Int,      "LabelTaskTimeoutNormal",      "HintTaskTimeoutNormal",      Unit: "s",   Gate: "advanced"),
-                new("deepTimeoutSeconds",      SettingKind.Int,      "LabelTaskTimeoutDeep",        "HintTaskTimeoutDeep",        Unit: "s",   Gate: "advanced"),
+                new("commandTimeoutSeconds",   SettingKind.Int,      "LabelCommandTimeout",         "HintCommandTimeout",         Unit: "UnitSeconds",   Gate: "advanced"),
+                new("quickTimeoutSeconds",     SettingKind.Int,      "LabelTaskTimeoutQuick",       "HintTaskTimeoutQuick",       Unit: "UnitSeconds",   Gate: "advanced"),
+                new("normalTimeoutSeconds",    SettingKind.Int,      "LabelTaskTimeoutNormal",      "HintTaskTimeoutNormal",      Unit: "UnitSeconds",   Gate: "advanced"),
+                new("deepTimeoutSeconds",      SettingKind.Int,      "LabelTaskTimeoutDeep",        "HintTaskTimeoutDeep",        Unit: "UnitSeconds",   Gate: "advanced"),
                 new("agentMaxIterations",      SettingKind.Int,      "LabelAgentMaxIterations",     "HintAgentMaxIterations",     Gate: "advanced"),
                 new("modelAutoUnloadEnabled",  SettingKind.Bool,     "LabelModelAutoUnload",        "HintModelAutoUnload",        Gate: "advanced"),
-                new("modelIdleTimeoutMinutes", SettingKind.Int,      "LabelModelIdleTimeout",       "HintModelIdleTimeout",       Unit: "min", Gate: "advanced"),
+                new("modelIdleTimeoutMinutes", SettingKind.Int,      "LabelModelIdleTimeout",       "HintModelIdleTimeout",       Unit: "UnitMinutes", Gate: "advanced"),
                 new("toolBubblesExpanded",     SettingKind.Bool,     "LabelToolBubblesExpanded",    "HintToolBubblesExpanded"),
                 new("securityAlertsDisabled",  SettingKind.Bool,     "LabelSecurityAlertsDisabled", "HintSecurityAlertsDisabled"),
                 new("permissionRules",         SettingKind.TextArea, "LabelPermissionRules",        "HintPermissionRules"),
@@ -158,20 +158,20 @@ internal static class SettingsSchema
             [
                 new("ragEnabled",             SettingKind.Bool,  "LabelRagEnabled",             "HintRagEnabled"),
                 new("ragAutoContextEnabled",  SettingKind.Bool,  "LabelRagAutoContext",         "HintRagAutoContext"),
-                new("ragTopK",                SettingKind.Int,   "LabelRagTopK",                "HintRagTopK",                Unit: "chunks"),
-                new("ragSimilarityThreshold", SettingKind.Float, "LabelRagSimilarityThreshold", "HintRagSimilarityThreshold", Unit: "0–1"),
+                new("ragTopK",                SettingKind.Int,   "LabelRagTopK",                "HintRagTopK",                Unit: "UnitChunks"),
+                new("ragSimilarityThreshold", SettingKind.Float, "LabelRagSimilarityThreshold", "HintRagSimilarityThreshold", Unit: "UnitRangeZeroToOne"),
                 new("lspEnabled",             SettingKind.Bool,  "LabelLspEnabled",             "HintLspEnabled"),
             ]),
 
             new("SectionContext",
             [
-                new("vramBudgetGb",             SettingKind.Float,    "LabelVramBudget",            "HintVramBudget",            Unit: "GB"),
-                new("contextWindowSize",        SettingKind.Int,      "LabelContextWindowSize",     "HintContextWindowSize",     Unit: "tokens"),
-                new("contextWindowKeepTurns",   SettingKind.Int,      "LabelContextWindowKeepTurns","HintContextWindowKeepTurns",Unit: "turns"),
+                new("vramBudgetGb",             SettingKind.Float,    "LabelVramBudget",            "HintVramBudget",            Unit: "UnitGigabytes"),
+                new("contextWindowSize",        SettingKind.Int,      "LabelContextWindowSize",     "HintContextWindowSize",     Unit: "UnitTokens"),
+                new("contextWindowKeepTurns",   SettingKind.Int,      "LabelContextWindowKeepTurns","HintContextWindowKeepTurns",Unit: "UnitTurns"),
                 new("compactionEnabled",        SettingKind.Bool,     "LabelCompactionEnabled",     "HintCompactionEnabled"),
-                new("compactionTimeoutSeconds", SettingKind.Int,      "LabelCompactionTimeout",     "HintCompactionTimeout",     Unit: "s"),
-                new("kvCacheAnchorMessages",    SettingKind.Int,      "LabelKvCacheAnchor",         "HintKvCacheAnchor",         Unit: "msg"),
-                new("oodaTurnThreshold",        SettingKind.Int,      "LabelOodaTurnThreshold",     "HintOodaTurnThreshold",     Unit: "turns"),
+                new("compactionTimeoutSeconds", SettingKind.Int,      "LabelCompactionTimeout",     "HintCompactionTimeout",     Unit: "UnitSeconds"),
+                new("kvCacheAnchorMessages",    SettingKind.Int,      "LabelKvCacheAnchor",         "HintKvCacheAnchor",         Unit: "UnitMessages"),
+                new("oodaTurnThreshold",        SettingKind.Int,      "LabelOodaTurnThreshold",     "HintOodaTurnThreshold",     Unit: "UnitTurns"),
                 new("inlineDiffPreviewEnabled", SettingKind.Bool,     LocalLabelInlineDiff),
                 new("pinnedContextFiles",       SettingKind.TextArea, "LabelPinnedContextFiles",    "HintPinnedContextFiles"),
             ]),

@@ -392,7 +392,7 @@ function renderField(field: Field): HTMLElement {
     if (field.unit) {
       const unit = document.createElement('span');
       unit.className = 'unit';
-      unit.textContent = field.unit;
+      unit.textContent = res(field.unit);
       row.append(unit);
     }
     return row;
