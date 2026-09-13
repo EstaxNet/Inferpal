@@ -359,6 +359,7 @@ Sauvegarde : {0}</value></data>
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Utilisation : `/model &lt;nom&gt;`  —  actuel : **{0}**</value></data>
   <data name="SlashModelChanged" xml:space="preserve"><value>Modèle → **{0}**</value></data>
+  <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ Le backend ne liste pas **{0}** — le prochain message risque d'échouer. `/models` affiche ce qu'il sert.</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>Utilisation : `/tools on|off`  —  actuel : **{0}**</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Outils → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ Aucun document actif. Ouvrez un fichier dans l'éditeur.</value></data>

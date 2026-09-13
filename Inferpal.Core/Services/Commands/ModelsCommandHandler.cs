@@ -54,4 +54,49 @@ internal static class ModelsCommandHandler
             ? Strings.ModelsNoneInstalled
             : ModelCatalog.FormatInstalledModels(models, running2));
     }
+
+    private static readonly TimeSpan SwitchListBudget = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// What <c>/model &lt;name&gt;</c> answers once the name is set: the confirmation, plus a warning when
+    /// the backend lists its models and this name is not among them.
+    /// </summary>
+    /// <remarks>
+    /// A warning, never a refusal: some OpenAI-compatible servers (llama.cpp) list a single id and serve
+    /// any name. An empty list — backend unreachable, or nothing installed — cannot judge, so it adds
+    /// nothing. The listing is bounded so an unreachable backend does not hold the command for the
+    /// client's own timeout.
+    /// </remarks>
+    public static async Task<string> SwitchMessageAsync(IInferenceProvider client, string model, CancellationToken ct)
+    {
+        var changed = Strings.SlashModelChanged(model);
+
+        IReadOnlyList<string> listed;
+        try
+        {
+            using var bounded = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            bounded.CancelAfter(SwitchListBudget);
+            listed = await client.ListModelsAsync(bounded.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return changed; }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("ModelsCommandHandler.SwitchMessage", ex);
+            return changed;
+        }
+
+        return listed.Count == 0 || listed.Any(name => IsSameInstalledModel(name, model))
+            ? changed
+            : changed + "\n\n" + Strings.SlashModelNotListed(model);
+    }
+
+    /// <summary>
+    /// Same name, case aside, allowing Ollama's implicit <c>:latest</c> tag. Unlike the tag-blind
+    /// comparison of the arena and the bench, another tag of a model is a different model here: the
+    /// backend refuses <c>qwen3:32b</c> when only <c>qwen3:8b</c> is installed.
+    /// </summary>
+    internal static bool IsSameInstalledModel(string listed, string requested) =>
+        string.Equals(listed, requested, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(listed, requested + ":latest", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(listed + ":latest", requested, StringComparison.OrdinalIgnoreCase);
 }

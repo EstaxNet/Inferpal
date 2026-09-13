@@ -170,7 +170,7 @@ internal sealed partial class HostServer
                         return new SlashCommandResult(true, Strings.SlashModelCurrent(s.Config.DefaultModel));
                     s.Config.DefaultModel = parts[1];
                     s.Config.Save();
-                    return new SlashCommandResult(true, Strings.SlashModelChanged(parts[1]),
+                    return new SlashCommandResult(true, await ModelsCommandHandler.SwitchMessageAsync(s.Client, parts[1], cts.Token),
                         [new SlashEffectDto("stateChange", parts[1], "model")]);
 
                 case SlashCommandId.Tools:

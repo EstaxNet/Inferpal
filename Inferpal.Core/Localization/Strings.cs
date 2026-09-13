@@ -657,6 +657,7 @@ internal static class Strings
     // ── Slash commands ─────────────────────────────────────────────────────────
     public static string SlashModelCurrent(string model) => string.Format(Get(nameof(SlashModelCurrent)), model);
     public static string SlashModelChanged(string model) => string.Format(Get(nameof(SlashModelChanged)), model);
+    public static string SlashModelNotListed(string model) => string.Format(Get(nameof(SlashModelNotListed)), model);
     public static string SlashToolsCurrent(string state) => string.Format(Get(nameof(SlashToolsCurrent)), state);
     public static string SlashToolsChanged(string state) => string.Format(Get(nameof(SlashToolsChanged)), state);
     public static string SlashNoActiveDocument            => Get(nameof(SlashNoActiveDocument));

@@ -180,7 +180,7 @@ internal partial class InferpalToolWindowData
                 _config.DefaultModel = parts[1];
                 _config.Save();
                 await RunOnVMContextAsync(() => ActiveModelLabel = parts[1]);
-                await ShowInfoAsync(Strings.SlashModelChanged(parts[1]));
+                await ShowInfoAsync(await Services.Commands.ModelsCommandHandler.SwitchMessageAsync(_client, parts[1], ct));
                 break;
 
             case SlashCommandId.Tools:
