@@ -119,6 +119,29 @@ public class ArenaTests : IDisposable
         Assert.Equal("some prompt", (await ArenaStore.LoadAsync()).Pending!.Prompt);
     }
 
+    /// <summary>
+    /// One model is one row: the automatic pair records the configured name (<c>big</c>), the explicit form
+    /// the installed one (<c>big:latest</c>), and the standings split the same model across two rows —
+    /// halving its record and ranking it against itself.
+    /// </summary>
+    [Fact]
+    public void Stats_CountTheImplicitLatestTagAsTheSameModel()
+    {
+        var battles = new List<ArenaBattle>
+        {
+            new(DateTime.UtcNow, "p1", "big",        "small", "a"),
+            new(DateTime.UtcNow, "p2", "big:latest", "small", "a"),
+        };
+
+        var table = ArenaCommandHandler.FormatStats(battles);
+
+        var bigRows = 0;
+        foreach (var line in table.Split('\n'))
+            if (line.StartsWith("| `big", StringComparison.Ordinal)) bigRows++;
+        Assert.Equal(1, bigRows);
+        Assert.Contains("| 2 | 2 | 0 | 100 % |", table);
+    }
+
     [Fact]
     public async Task Battle_NoUtilityModel_FallsBackToAnotherInstalledModel()
     {

@@ -161,10 +161,13 @@ internal static class ArenaCommandHandler
         {
             Bump(b.ModelA, b.Vote == "a", b.Vote == "tie");
             Bump(b.ModelB, b.Vote == "b", b.Vote == "tie");
+            // One model is one row: automatic battles record the configured name, explicit ones the
+            // installed name, and the two can differ by Ollama's implicit tag.
             void Bump(string model, bool won, bool tied)
             {
-                var s = stats.TryGetValue(model, out var cur) ? cur : (0, 0, 0);
-                stats[model] = (s.Item1 + 1, s.Item2 + (won ? 1 : 0), s.Item3 + (tied ? 1 : 0));
+                var key = ModelCatalog.ModelKey(model);
+                var s = stats.TryGetValue(key, out var cur) ? cur : (0, 0, 0);
+                stats[key] = (s.Item1 + 1, s.Item2 + (won ? 1 : 0), s.Item3 + (tied ? 1 : 0));
             }
         }
 

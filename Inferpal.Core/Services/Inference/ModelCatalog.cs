@@ -20,9 +20,11 @@ internal static class ModelCatalog
     /// two downloads, two sizes, two VRAM footprints.
     /// </summary>
     internal static bool SameModelName(string a, string b) =>
-        string.Equals(a, b, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(a, b + ":latest", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(a + ":latest", b, StringComparison.OrdinalIgnoreCase);
+        string.Equals(ModelKey(a), ModelKey(b), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The name without Ollama's implicit <c>:latest</c> tag: the key under which a model counts once.</summary>
+    internal static string ModelKey(string name) =>
+        name.EndsWith(":latest", StringComparison.OrdinalIgnoreCase) ? name[..^":latest".Length] : name;
 
     // Priority: specialized code models first, then popular general models.
     private static readonly string[] ChatPriority =
