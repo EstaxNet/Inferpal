@@ -194,6 +194,9 @@ internal sealed class SmartFixValidator
         catch { return null; }
     }
 
+    /// <summary>Overlay text whose rejections were last recorded.</summary>
+    private string? _reportedOverlay;
+
     private IReadOnlyList<BuildValidator> LoadOverlay()
     {
         var root = _getWorkspaceRoot();
@@ -201,7 +204,14 @@ internal sealed class SmartFixValidator
         var path = Path.Combine(root, ".inferpal", "validators.json");
         try
         {
-            return File.Exists(path) ? BuildValidators.ParseConfig(File.ReadAllText(path)) : [];
+            if (!File.Exists(path)) return [];
+            var text = File.ReadAllText(path);
+
+            // The overlay is re-read after every write; its rejections are recorded once per content,
+            // or the same message would fill the diagnostics ring.
+            var report = !string.Equals(text, _reportedOverlay, StringComparison.Ordinal);
+            _reportedOverlay = text;
+            return BuildValidators.ParseConfig(text, report ? r => Diagnostics.Record("ValidatorsOverlay", r) : null);
         }
         catch (Exception ex)
         {

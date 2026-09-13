@@ -51,29 +51,42 @@ internal static class BuildValidators
     /// <code>{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }</code>
     /// Returns an empty list on missing/invalid JSON (never throws).
     /// </summary>
-    public static IReadOnlyList<BuildValidator> ParseConfig(string? json)
+    /// <param name="reject">
+    /// Told, in English, about the file or each entry that cannot be used. A dropped entry is a
+    /// command the user wrote for Smart Fix that never runs, and nothing else says so.
+    /// </param>
+    public static IReadOnlyList<BuildValidator> ParseConfig(string? json, Action<string>? reject = null)
     {
         if (string.IsNullOrWhiteSpace(json)) return [];
         try
         {
             using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.ValueKind != JsonValueKind.Object) return [];
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                reject?.Invoke("validators.json ignored: the file must contain a JSON object");
+                return [];
+            }
 
             var list = new List<BuildValidator>();
             foreach (var prop in doc.RootElement.EnumerateObject())
             {
-                if (prop.Value.ValueKind != JsonValueKind.Object) continue;
+                void Skip(string why) => reject?.Invoke($"validators.json entry '{prop.Name}' ignored: {why}");
+
+                if (prop.Value.ValueKind != JsonValueKind.Object) { Skip("its value must be an object"); continue; }
 
                 var exts = prop.Name
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .Select(e => e.StartsWith('.') ? e.ToLowerInvariant() : "." + e.ToLowerInvariant())
                     .ToList();
-                if (exts.Count == 0) continue;
+                if (exts.Count == 0) { Skip("it names no extension"); continue; }
 
-                if (!prop.Value.TryGetProperty("command", out var cmdEl) || cmdEl.ValueKind != JsonValueKind.String)
+                if (!prop.Value.TryGetProperty("command", out var cmdEl) || cmdEl.ValueKind != JsonValueKind.String
+                    || string.IsNullOrWhiteSpace(cmdEl.GetString()))
+                {
+                    Skip("no \"command\"");
                     continue;
+                }
                 var command = cmdEl.GetString();
-                if (string.IsNullOrWhiteSpace(command)) continue;
 
                 var markers = new List<string>();
                 if (prop.Value.TryGetProperty("marker", out var mk))
@@ -85,14 +98,15 @@ internal static class BuildValidators
                             .Where(x => x.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(x.GetString()))
                             .Select(x => x.GetString()!));
                 }
-                if (markers.Count == 0) continue;   // a marker is required to locate the project root
+                if (markers.Count == 0) { Skip("no \"marker\" to locate the project root"); continue; }
 
                 list.Add(new BuildValidator(exts[0], exts, markers, command!, FromWorkspace: true));
             }
             return list;
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            reject?.Invoke($"validators.json ignored: {ex.Message}");
             return [];
         }
     }

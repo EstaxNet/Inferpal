@@ -207,4 +207,60 @@ public class ConfigLineSilenceTests
         }
         finally { File.Delete(path); }
     }
+
+    // ── .inferpal/validators.json ─────────────────────────────────────────────
+
+    // A stray comma or an entry without "marker": the command the user wrote for Smart Fix never
+    // ran, and nothing — not even this ring — said why.
+    [Theory]
+    [InlineData("not json", "validators.json ignored")]
+    [InlineData("[1, 2]", "JSON object")]
+    [InlineData("""{ ".ts": "tsc" }""", "must be an object")]
+    [InlineData("""{ ".ts": { "command": "tsc" } }""", "'.ts'")]
+    [InlineData("""{ ".ts": { "marker": "tsconfig.json" } }""", "\"command\"")]
+    public async Task AnUnusableValidatorsFile_IsRecordedOnce(string json, string expected)
+    {
+        Diagnostics.Clear();
+        var root = WorkspaceWithValidators(json);
+        try
+        {
+            var validator = new Inferpal.Services.CodeActions.SmartFixValidator(
+                new InferpalConfig { SmartFixEnabled = true }, () => root);
+            var written = Path.Combine(root, "notes.txt");   // no validated extension: nothing runs
+
+            // The file is re-read after every write: two passes, one entry.
+            await validator.ValidateAsync(written, CancellationToken.None);
+            await validator.ValidateAsync(written, CancellationToken.None);
+
+            Assert.Contains(expected, Assert.Single(Notes("ValidatorsOverlay")));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    /// <summary>Reference arm: a usable validators.json reports nothing.</summary>
+    [Fact]
+    public async Task AUsableValidatorsFile_ReportsNothing()
+    {
+        Diagnostics.Clear();
+        const string json = """{ ".ts": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }""";
+        var root = WorkspaceWithValidators(json);
+        try
+        {
+            await new Inferpal.Services.CodeActions.SmartFixValidator(
+                    new InferpalConfig { SmartFixEnabled = true }, () => root)
+                .ValidateAsync(Path.Combine(root, "notes.txt"), CancellationToken.None);
+
+            Assert.Single(Inferpal.Services.CodeActions.BuildValidators.ParseConfig(json));   // witness: the entry is valid
+            Assert.Empty(Notes("ValidatorsOverlay"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static string WorkspaceWithValidators(string json)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-validators-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".inferpal"));
+        File.WriteAllText(Path.Combine(root, ".inferpal", "validators.json"), json);
+        return root;
+    }
 }
