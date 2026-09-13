@@ -72,7 +72,9 @@ internal static class HardwareCommandHandler
         var arch = await client.ShowModelAsync(model, ct);
         if (arch is null) return null;
 
-        var weights     = installed.FirstOrDefault(m => m.Name == model)?.SizeBytes ?? 0;
+        // The configured name may omit Ollama's implicit `:latest` tag; missing weights would size the
+        // KV cache over the whole budget and recommend a context that does not fit.
+        var weights     = installed.FirstOrDefault(m => ModelsCommandHandler.IsSameInstalledModel(m.Name, model))?.SizeBytes ?? 0;
         var recommended = ModelCatalog.MaxSafeNumCtx(config.VramBudgetGb, weights, arch);
 
         return new ContextWindowAdvice(model, config.ContextWindowSize, recommended, arch.ContextLength);

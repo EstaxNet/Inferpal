@@ -77,4 +77,31 @@ public class HardwareCommandHandlerTests
         Assert.Null(result.SetBudgetGb);
         Assert.Contains(Strings.HardwareReportHeading, result.Message);
     }
+
+    /// <summary>
+    /// The configured name and the installed one differ only by Ollama's implicit tag (<c>qwen3</c> vs
+    /// <c>qwen3:latest</c>): the weights still count, or the recommended <c>num_ctx</c> is computed over
+    /// the whole budget and advises a context whose KV cache does not fit.
+    /// </summary>
+    [Fact]
+    public async Task Report_CountsTheWeights_WhenTheConfiguredNameOmitsTheLatestTag()
+    {
+        const long gb = 1024L * 1024 * 1024;
+        var arch   = new ModelArchInfo(32, 32, 8, 4096, 1_000_000);
+        var client = new FakeInferenceProvider
+        {
+            Capabilities = ProviderCapabilities.Ollama,
+            Installed    = [new InstalledModelInfo("qwen3:latest", 6 * gb)],
+            OnShow       = _ => arch,
+        };
+        var config = new InferpalConfig { VramBudgetGb = 8, DefaultModel = "qwen3" };
+
+        var result = await HardwareCommandHandler.HandleAsync(config, client, Cmd(), CancellationToken.None);
+
+        var withWeights    = Inferpal.Services.Inference.ModelCatalog.MaxSafeNumCtx(8, 6 * gb, arch);
+        var withoutWeights = Inferpal.Services.Inference.ModelCatalog.MaxSafeNumCtx(8, 0, arch);
+        Assert.NotEqual(withWeights, withoutWeights);   // witness: the case discriminates
+        Assert.Contains(Strings.HardwareRecommendedCtx("qwen3", withWeights, ""), result.Message);
+        Assert.DoesNotContain(Strings.HardwareRecommendedCtx("qwen3", withoutWeights, ""), result.Message);
+    }
 }
