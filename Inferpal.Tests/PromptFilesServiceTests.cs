@@ -4,6 +4,18 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
+/// <summary>
+/// <see cref="PromptFilesService"/>'s cache is a single static slot: any <c>Load</c> of another folder, or
+/// an invalidation, from a class running in parallel replaces it — and every slash command the host routes
+/// loads the templates. Tests that assert on that cache run alone.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class PromptFilesCacheCollection
+{
+    public const string Name = "PromptFilesCache";
+}
+
+[Collection(PromptFilesCacheCollection.Name)]
 public class PromptFilesServiceTests : IDisposable
 {
     private readonly string _dir;
@@ -114,6 +126,40 @@ public class PromptFilesServiceTests : IDisposable
     }
 
     // ── Router integration ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// A template named like a built-in command never runs — the router answers the built-in first — so it
+    /// is not offered either: autocomplete listed <c>/clear</c> twice, the second entry with the template's
+    /// hint, and picking it cleared the conversation.
+    /// </summary>
+    /// <remarks>
+    /// Lives in this class, not with the router tests: it goes through the cached loader and invalidates the
+    /// cache, and a parallel class doing that broke <see cref="Load_CachesWithinTtl"/>'s <c>Assert.Same</c>.
+    /// </remarks>
+    [Fact]
+    public void ATemplateNamedLikeABuiltIn_IsNotLoaded_NorOfferedInAutocomplete()
+    {
+        var root    = Path.Combine(Path.GetTempPath(), $"shadowed_prompts_{Guid.NewGuid():N}");
+        var prompts = Path.Combine(root, ".inferpal", "prompts");
+        Directory.CreateDirectory(prompts);
+        try
+        {
+            File.WriteAllText(Path.Combine(prompts, "undo-run.md"), "Summarize the last run.");
+            var config = new Inferpal.Config.InferpalConfig
+            {
+                PromptTemplates = "/clear=Summarize the conversation\n/mine=Hello {args}",
+            };
+
+            var templates = SlashTemplates.Load(config, root);
+
+            Assert.Equal("/mine", Assert.Single(templates).Name);   // witness: a free name stays
+            Assert.Single(SlashCommandRouter.MatchCommands("/clear", templates), m => m.Cmd == "/clear");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
 
     [Fact]
     public void Route_UnknownCommand_FallsBackToPromptFile_WithArgsExpansion()
