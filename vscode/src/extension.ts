@@ -59,7 +59,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       SettingsPanel.open(
         context.extensionUri,
         () => host,
-        () => chatView.hasConversation(),
         () => void chatView.configSaved(),
         log,
       )),

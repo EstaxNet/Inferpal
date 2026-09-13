@@ -77,7 +77,6 @@
   "Explain the following code from {0} — what it does, how, and any pitfalls.": "{0} の次のコードを説明してください — 何を、どのように行うか、注意点も含めて。",
   "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "{0} の次のコードをレビューしてください。バグ、リスク、具体的な改善点を指摘してください。",
   "Inferpal Settings": "Inferpal 設定",
-  "Saving the settings resets the conversation context. Continue?": "設定を保存すると会話コンテキストがリセットされます。続行しますか？",
   "Provider or server URL changed — restart the Inferpal host to apply it.": "エンジンまたはサーバー URL が変更されました — 適用するには Inferpal ホストを再起動してください。",
   "Tools": "ツール",
   "Settings saved.": "設定を保存しました。",

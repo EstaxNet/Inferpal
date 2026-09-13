@@ -77,7 +77,6 @@
   "Explain the following code from {0} — what it does, how, and any pitfalls.": "{0}의 다음 코드를 설명하세요 — 무엇을, 어떻게 하는지, 주의할 점을 포함해서.",
   "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "{0}의 다음 코드를 리뷰하세요: 버그, 위험 요소, 구체적인 개선점을 지적하세요.",
   "Inferpal Settings": "Inferpal 설정",
-  "Saving the settings resets the conversation context. Continue?": "설정을 저장하면 대화 컨텍스트가 초기화됩니다. 계속하시겠습니까?",
   "Provider or server URL changed — restart the Inferpal host to apply it.": "엔진 또는 서버 URL이 변경되었습니다 — 적용하려면 Inferpal 호스트를 다시 시작하세요.",
   "Tools": "도구",
   "Settings saved.": "설정이 저장되었습니다.",

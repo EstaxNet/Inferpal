@@ -77,7 +77,6 @@
   "Explain the following code from {0} — what it does, how, and any pitfalls.": "Explica el siguiente código de {0}: qué hace, cómo y sus posibles trampas.",
   "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "Revisa el siguiente código de {0}: señala errores, riesgos y mejoras concretas.",
   "Inferpal Settings": "Configuración de Inferpal",
-  "Saving the settings resets the conversation context. Continue?": "Guardar la configuración restablece el contexto de la conversación. ¿Continuar?",
   "Provider or server URL changed — restart the Inferpal host to apply it.": "El motor o la URL del servidor cambió — reinicie el host de Inferpal para aplicarlo.",
   "Tools": "Herramientas",
   "Settings saved.": "Configuración guardada.",

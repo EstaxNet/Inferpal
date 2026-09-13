@@ -30,7 +30,6 @@ export class SettingsPanel {
     private readonly panel: vscode.WebviewPanel,
     private readonly extensionUri: vscode.Uri,
     private readonly getHost: () => HostClient | undefined,
-    private readonly hasConversation: () => boolean,
     private readonly onSaved: () => void,
     private readonly log: (line: string) => void,
   ) {
@@ -46,7 +45,6 @@ export class SettingsPanel {
   static open(
     extensionUri: vscode.Uri,
     getHost: () => HostClient | undefined,
-    hasConversation: () => boolean,
     onSaved: () => void,
     log: (line: string) => void,
   ): void {
@@ -66,7 +64,7 @@ export class SettingsPanel {
         retainContextWhenHidden: true,
       },
     );
-    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, hasConversation, onSaved, log);
+    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, onSaved, log);
   }
 
   private async onMessage(msg: SettingsInbound): Promise<void> {
@@ -153,18 +151,6 @@ export class SettingsPanel {
           // its previous status — so "Settings saved." if you had saved once before.
           this.post({ type: 'error', message: hostUnavailableMessage() });
           return;
-        }
-        // config/update resets the host conversation context — confirm when one is running.
-        if (this.hasConversation()) {
-          const proceed = await vscode.window.showWarningMessage(
-            vscode.l10n.t('Saving the settings resets the conversation context. Continue?'),
-            { modal: true },
-            vscode.l10n.t('Save'),
-          );
-          if (!proceed) {
-            this.post({ type: 'saveDone', ok: false });
-            return;
-          }
         }
         try {
           const before = this.parseKeys(this.lastConfigJson);

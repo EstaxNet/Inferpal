@@ -1210,6 +1210,27 @@ public class HostServerTests
     }
 
     [Fact]
+    public async Task SavingTheSettings_KeepsTheConversation_AndRefreshesTheSystemPrompt()
+    {
+        // Picking a model in the VS Code chat goes through config/update: the host reset the conversation while the transcript stayed on screen.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var s = h.Server.CurrentSession!;
+        s.History.Add(new ChatMessageDto("user", "remember the vulkan crash"));
+        s.CurrentSessionName = "ongoing";
+
+        var cfg = System.Text.Json.Nodes.JsonNode.Parse(await h.Client.InvokeAsync<string>("config/get"))!.AsObject();
+        cfg["customSystemPrompt"] = "refreshed-by-save";
+        await h.Client.InvokeWithParameterObjectAsync("config/update", new { json = cfg.ToJsonString() })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var history = h.Server.CurrentSession!.History;
+        Assert.Contains("refreshed-by-save", history[0].Content, StringComparison.Ordinal);
+        Assert.Contains(history, m => m.Role == "user" && m.Content == "remember the vulkan crash");
+        Assert.Equal("ongoing", h.Server.CurrentSession!.CurrentSessionName);
+    }
+
+    [Fact]
     public async Task Slash_ToolsOff_ForcesPlainChatOnNextTurn()
     {
         using var h = CreateHarness(cfg => cfg.AgentModeEnabled = true);

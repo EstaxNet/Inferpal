@@ -563,7 +563,7 @@ internal sealed partial class HostServer : IDisposable
             // VS settings window; going back to "Auto" returns to the editor's locale rather than
             // leaving whatever was last applied.
             ApplyLanguage(s.Config);
-            ResetHistory(s);   // custom prompt / pinned files may have changed
+            RefreshSystemPrompt(s);
         });
 
         // After the save, on the configuration that was kept: a rule the product could not read is
@@ -912,6 +912,15 @@ internal sealed partial class HostServer : IDisposable
     {
         s.TemplateSuffix = null;
         ResetHistory(s);
+    }
+
+    /// <summary>Rebuilds the system prompt of the SAME conversation (settings saved, model picked):
+    /// the turns stay, as in the VS view model. Only a new conversation starts from nothing.</summary>
+    private static void RefreshSystemPrompt(HostSession s)
+    {
+        var prompt = new ChatMessageDto("system", BuildSystemPromptText(s));
+        if (s.History.Count > 0 && s.History[0].Role == "system") s.History[0] = prompt;
+        else s.History.Insert(0, prompt);
     }
 
     /// <summary>VS Code locale ids are lowercase (`zh-cn`); .NET wants `zh-CN`. GetCultureInfo

@@ -77,7 +77,6 @@
   "Explain the following code from {0} — what it does, how, and any pitfalls.": "解释来自 {0} 的以下代码——它做什么、如何做，以及可能的陷阱。",
   "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "审查来自 {0} 的以下代码：指出错误、风险和具体改进。",
   "Inferpal Settings": "Inferpal 设置",
-  "Saving the settings resets the conversation context. Continue?": "保存设置将重置对话上下文。是否继续？",
   "Provider or server URL changed — restart the Inferpal host to apply it.": "引擎或服务器 URL 已更改——请重启 Inferpal 主机以应用。",
   "Tools": "工具",
   "Settings saved.": "设置已保存。",

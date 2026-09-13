@@ -282,11 +282,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hydrate();
   }
 
-  /** True when there is something in the transcript (settings panel warns before reset). */
-  hasConversation(): boolean {
-    return this.transcript.length > 0;
-  }
-
   /** Called after the settings panel saved: re-reads the UI-relevant config bits. */
   async configSaved(): Promise<void> {
     const host = this.getHost();

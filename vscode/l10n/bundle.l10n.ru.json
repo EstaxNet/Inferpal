@@ -77,7 +77,6 @@
   "Explain the following code from {0} — what it does, how, and any pitfalls.": "Объясни следующий код из {0} — что он делает, как, и возможные подводные камни.",
   "Review the following code from {0}: point out bugs, risks, and concrete improvements.": "Проведи ревью следующего кода из {0}: укажи баги, риски и конкретные улучшения.",
   "Inferpal Settings": "Настройки Inferpal",
-  "Saving the settings resets the conversation context. Continue?": "Сохранение настроек сбрасывает контекст беседы. Продолжить?",
   "Provider or server URL changed — restart the Inferpal host to apply it.": "Движок или URL сервера изменились — перезапустите хост Inferpal, чтобы применить.",
   "Tools": "Инструменты",
   "Settings saved.": "Настройки сохранены.",
