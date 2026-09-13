@@ -289,7 +289,8 @@ internal static class SlashCommandRouter
                                       : new { path = parts[1], pattern = parts[2] });
 
             case "/run":
-                if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsage("/run <PowerShell command>"));
+                // No dialect named: this router also serves hosts where run_command speaks bash.
+                if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsage("/run <command>"));
                 return new SlashToolAction("run_command", new { command = string.Join(" ", parts[1..]) });
 
             case "/fetch":

@@ -133,7 +133,8 @@ public class SlashCommandRouterTests
     [InlineData("/ls",    "/ls <path> [pattern]")]
     [InlineData("/grep",  "/grep <dir> <pattern> [file_pattern]")]
     [InlineData("/grep x","/grep <dir> <pattern> [file_pattern]")]
-    [InlineData("/run",   "/run <PowerShell command>")]
+    // Served to both front-ends, so to hosts where run_command speaks bash: the usage names no dialect.
+    [InlineData("/run",   "/run <command>")]
     [InlineData("/fetch", "/fetch <url>")]
     [InlineData("/search-web","/search-web <query>")]
     public void MissingArguments_ReturnUsageInfo(string prompt, string usage)
