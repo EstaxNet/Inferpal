@@ -136,7 +136,7 @@ internal static class PlanStore
     /// </summary>
     /// <returns>
     /// The reloaded plan on success; <c>null</c> when the plan is missing, the step does not exist,
-    /// or it already had that state — in which case nothing was written.
+    /// or it already had that state — in which case nothing was written. A failed write throws.
     /// </returns>
     public static PlanDocument? SetStepDone(string workspaceRoot, string name, int step, bool done)
     {
@@ -144,15 +144,9 @@ internal static class PlanStore
         var updated = doc?.WithStepDone(step, done);
         if (updated is null) return null;
 
-        try
-        {
-            AtomicFile.WriteAllText(PathFor(workspaceRoot, name), updated);
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow($"PlanStore.SetStepDone({name})", ex);
-            return null;
-        }
+        // No fallback: a write failure returned as null read as "already in that state", and `/plan done`
+        // announced a step done that nothing had ticked. It surfaces, as it does for `/plan save`.
+        AtomicFile.WriteAllText(PathFor(workspaceRoot, name), updated);
 
         return PlanDocument.Parse(updated, SanitizeName(name));
     }

@@ -163,6 +163,36 @@ public class PlanCommandHandlerTests : IDisposable
         Assert.Contains("1/3", message);
     }
 
+    // A write failure returned the same null as "step already in that state": `/plan done 1` on a
+    // read-only plan (a file checked out of Perforce/TFVC) answered "step 1 is already done" while
+    // nothing was ticked. The failure must surface, as it does for `/plan save`.
+    [Fact]
+    public void DoneOnAPlanThatCannotBeWritten_FailsInsteadOfClaimingTheStepIsAlreadyDone()
+    {
+        Run("/plan save alpha", Proposal);
+        var path = PlanStore.PathFor(_root, "alpha");
+        var dir  = PlanStore.DirectoryFor(_root);
+
+        if (OperatingSystem.IsWindows())
+        {
+            // A file held open without FileShare.Delete cannot be replaced: the plan can still be read,
+            // the atomic write fails.
+            using var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Assert.ThrowsAny<Exception>(() => Run("/plan done 1", active: "alpha"));
+        }
+        else
+        {
+            File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            try { Assert.ThrowsAny<Exception>(() => Run("/plan done 1", active: "alpha")); }
+            finally { File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+        }
+        Assert.False(PlanStore.Load(_root, "alpha")!.Steps[0].Done);
+
+        // Witness: the same command, file released, does tick the step — the path under test writes.
+        Run("/plan done 1", active: "alpha");
+        Assert.True(PlanStore.Load(_root, "alpha")!.Steps[0].Done);
+    }
+
     [Fact]
     public void AnUnknownWord_IsTreatedAsAPlanName()
     {

@@ -32,27 +32,38 @@ internal partial class InferpalToolWindowData
 
     private async Task HandleSlashCommandAsync(string prompt, CancellationToken ct)
     {
-        switch (SlashCommandRouter.Route(prompt, GetUserTemplates()))
+        // The only catch on this path: SendAsync has just a finally. Without it, a command that throws
+        // went silent here while the host renders the same exception through MsgError.
+        try
         {
-            case SlashInfoAction info:
-                await ShowInfoAsync(info.Message);
-                break;
+            switch (SlashCommandRouter.Route(prompt, GetUserTemplates()))
+            {
+                case SlashInfoAction info:
+                    await ShowInfoAsync(info.Message);
+                    break;
 
-            case SlashToolAction tool:
-                await InvokeToolAsync(tool.Tool, tool.Args, ct, attachAs: tool.AttachAs);
-                break;
+                case SlashToolAction tool:
+                    await InvokeToolAsync(tool.Tool, tool.Args, ct, attachAs: tool.AttachAs);
+                    break;
 
-            case SlashPromptAction expanded:
-                await SendCoreAsync(expanded.Prompt, oneTimeModel: null, attachments: [], ct: ct, clearPrompt: true);
-                break;
+                case SlashPromptAction expanded:
+                    await SendCoreAsync(expanded.Prompt, oneTimeModel: null, attachments: [], ct: ct, clearPrompt: true);
+                    break;
 
-            case SlashCodeAction code:
-                await RunCodeActionCommandAsync(code.Kind, ct);
-                break;
+                case SlashCodeAction code:
+                    await RunCodeActionCommandAsync(code.Kind, ct);
+                    break;
 
-            case SlashDelegatedAction delegated:
-                await RunDelegatedCommandAsync(delegated.Id, delegated.Parts, ct);
-                break;
+                case SlashDelegatedAction delegated:
+                    await RunDelegatedCommandAsync(delegated.Id, delegated.Parts, ct);
+                    break;
+            }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("SlashCommand", ex);
+            await ShowInfoAsync(Strings.MsgError(ex.Message));
         }
     }
 
