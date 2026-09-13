@@ -107,6 +107,31 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// A /branch that fails says why. For <c>/branch &lt;n&gt;</c> the host sends no bubble of its own,
+    /// only the <c>branchRequest</c> effect: a fork refused (turn not found, a turn already running) or
+    /// failing pushed no note, and the turn closed empty — nothing happened, the cause only in the log.
+    /// </summary>
+    [Fact]
+    public void AFailedBranch_SaysWhy_InsteadOfAnEmptyBubble()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+        var branch   = Body(provider, "private async branchAtTurn(");
+
+        // Witness: the fork still goes through session/branch.
+        Assert.Contains("host.sessionBranch(", branch, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("return null", branch, StringComparison.Ordinal);
+        Assert.Contains("hostUnavailableMessage()", branch, StringComparison.Ordinal);
+        Assert.Contains("ChatViewProvider.errorText(err)", branch, StringComparison.Ordinal);
+        Assert.Contains("vscode.l10n.t('No turn {0} in this conversation", branch, StringComparison.Ordinal);
+
+        var effect = Regex.Match(provider, @"case 'branchRequest':[\s\S]*?break;");
+        Assert.True(effect.Success, "the branchRequest effect is gone — the rule measures nothing.");
+        Assert.Contains("notes.push(", effect.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("if (note)", effect.Value, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Same class, in the settings panel: it opens as an editor tab, and VS Code destroys a hidden
     /// tab's webview unless asked to keep it. On return the form reloads from the config and unsaved
     /// edits vanish without a word — clicking Save afterwards writes the old values.

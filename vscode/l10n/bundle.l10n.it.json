@@ -11,6 +11,7 @@
   "Naming the session…": "Assegnazione del nome alla sessione…",
   "{0} msg · from {1} @ turn {2}": "{0} msg · da {1} @ turno {2}",
   "The command failed.": "Il comando non è riuscito.",
+  "No turn {0} in this conversation — no branch was created.": "Nessun turno {0} in questa conversazione: nessun ramo è stato creato.",
   "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "{0} messaggi meno recenti sono stati rimossi per limitare la memoria: la conversazione completa è nella sessione salvata.",
   "Session name": "Nome della sessione",
   "Session saved: {0}": "Sessione salvata: {0}",

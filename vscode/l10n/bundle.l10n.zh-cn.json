@@ -11,6 +11,7 @@
   "Naming the session…": "正在命名会话…",
   "{0} msg · from {1} @ turn {2}": "{0} 条 · 来自 {1} 第 {2} 轮",
   "The command failed.": "命令执行失败。",
+  "No turn {0} in this conversation — no branch was created.": "此对话中没有第 {0} 轮——未创建分支。",
   "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "已删除 {0} 条较早的消息以限制内存占用——完整对话保存在会话文件中。",
   "Session name": "会话名称",
   "Session saved: {0}": "会话已保存：{0}",

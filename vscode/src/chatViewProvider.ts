@@ -389,12 +389,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * `/branch <n>`: forks the conversation host-side and continues in the branch. The transcript
    * sent over is the display one (tool names and timestamps only exist here), minus the trailing
    * `/branch …` bubble — the command itself is not part of the conversation being forked.
-   * Returns the confirmation bubble, or null when the fork was refused.
+   * Always returns a note to show: the host sends no bubble of its own for this command, so a fork
+   * that failed without one closed the turn empty.
    */
-  private async branchAtTurn(turn: number): Promise<string | null> {
+  private async branchAtTurn(turn: number): Promise<readonly [note: string, branched: boolean]> {
     const host = this.getHost();
-    if (!host?.isRunning || !Number.isFinite(turn)) {
-      return null;
+    if (!host?.isRunning) {
+      return [hostUnavailableMessage(), false];
     }
     const messages = this.snapshot();
     const last = messages[messages.length - 1];
@@ -402,15 +403,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       messages.pop();
     }
     try {
-      const branch = await host.sessionBranch(turn, messages);
+      const branch = Number.isFinite(turn) ? await host.sessionBranch(turn, messages) : null;
       if (!branch) {
-        return null;
+        return [vscode.l10n.t('No turn {0} in this conversation — no branch was created.', String(turn)), false];
       }
       this.applySession(branch.messages);
-      return branch.message;
+      return [branch.message, true];
     } catch (err) {
       this.log(`[chat] branch failed: ${String(err)}`);
-      return null;
+      return [ChatViewProvider.errorText(err), false];
     }
   }
 
@@ -1059,9 +1060,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // /branch <n>: the host owns the fork but needs the full transcript (tool names and
         // timestamps live here, not in its API history).
         case 'branchRequest': {
-          const note = await this.branchAtTurn(Number(e.value));
-          if (note) {
-            notes.push(note);
+          const [note, branched] = await this.branchAtTurn(Number(e.value));
+          notes.push(note);
+          if (branched) {
             rehydrate = true;
           }
           break;
