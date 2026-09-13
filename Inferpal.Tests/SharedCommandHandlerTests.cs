@@ -86,6 +86,36 @@ public class SharedCommandHandlerTests
         finally { dir.Delete(recursive: true); }
     }
 
+    /// <summary>
+    /// An argument that is not <c>list</c> never becomes "undo the last run": <c>/undo-run lsit</c>
+    /// or <c>/undo-run 2</c> (read as picking a run from the list) reverted every file of the most
+    /// recent run.
+    /// </summary>
+    [Theory]
+    [InlineData("lsit")]
+    [InlineData("2")]
+    public async Task UndoRun_AnUnknownArgument_ShowsTheUsage_AndUndoesNothing(string argument)
+    {
+        var history = new FileHistoryService();
+        var dir     = Directory.CreateTempSubdirectory("inferpal-undo-");
+        try
+        {
+            var file = Path.Combine(dir.FullName, "a.txt");
+            await File.WriteAllTextAsync(file, "before");
+
+            history.BeginRun();
+            await history.SnapshotAsync(file, CancellationToken.None);
+            await File.WriteAllTextAsync(file, "after");
+
+            var message = await UndoRunCommandHandler.HandleAsync(
+                history, ["/undo-run", argument], dir.FullName, CancellationToken.None);
+
+            Assert.Equal(Strings.SlashUsage("/undo-run [list]"), message);
+            Assert.Equal("after", await File.ReadAllTextAsync(file));
+        }
+        finally { dir.Delete(recursive: true); }
+    }
+
     // ── /history ───────────────────────────────────────────────────────────────
 
     [Fact]

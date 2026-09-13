@@ -35,6 +35,10 @@ internal static class UndoRunCommandHandler
             return list.ToString().TrimEnd();
         }
 
+        // Only a bare `/undo-run` reverts. An argument it does not know — a typo of `list`, or a number
+        // read as picking a run from the listing — must not revert the most recent run instead.
+        if (parts.Length >= 2) return Strings.SlashUsage("/undo-run [list]");
+
         var run = runs.FirstOrDefault(r => r.FileCount > 0);
         if (run is null) return Strings.UndoRunNone;
 
