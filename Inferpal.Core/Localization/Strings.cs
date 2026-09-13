@@ -852,6 +852,7 @@ internal static class Strings
     public static string SlashHintIndex     => Get(nameof(SlashHintIndex));
     public static string SlashHintHistory   => Get(nameof(SlashHintHistory));
     public static string SlashHintTemplate  => Get(nameof(SlashHintTemplate));
+    public static string TemplateUnknown(string id) => string.Format(Get(nameof(TemplateUnknown)), id);
     public static string SlashHintDiff      => Get(nameof(SlashHintDiff));
     public static string SlashHintCheck     => Get(nameof(SlashHintCheck));
     public static string SlashHintRules     => Get(nameof(SlashHintRules));

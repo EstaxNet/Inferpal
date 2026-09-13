@@ -676,6 +676,7 @@ ollama serve
   <data name="IndexForceHint" xml:space="preserve"><value>使用 `/index rebuild` 强制完全重新索引。</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>列出已保存的会话 — /history &lt;关键词&gt; 进行搜索</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>从预设模板开始会话 — /template &lt;id&gt;</value></data>
+  <data name="TemplateUnknown" xml:space="preserve"><value>未知模板 `{0}`。输入 `/template` 查看列表。</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>将完整 git diff 作为上下文标签附加 — /diff [路径]</value></data>
   <data name="SlashHintCheck" xml:space="preserve"><value>依据 .inferpal/checks 对当前 git diff 进行 AI 审查 — /check [名称|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>列出 .inferpal/rules 中的项目规则 — /rules [init]</value></data>

@@ -674,6 +674,7 @@ ollama serve
   <data name="IndexForceHint" xml:space="preserve"><value>Используйте `/index rebuild` для полной переиндексации.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>список сохранённых сессий — /history &lt;термин&gt; для поиска</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>начать сессию из готового шаблона — /template &lt;id&gt;</value></data>
+  <data name="TemplateUnknown" xml:space="preserve"><value>Неизвестный шаблон `{0}`. Введите `/template`, чтобы увидеть список.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>прикрепить полный git diff как чип контекста — /diff [путь]</value></data>
   <data name="SlashHintCheck" xml:space="preserve"><value>проверка текущего git diff через ИИ по .inferpal/checks — /check [имя|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>список правил проекта в .inferpal/rules — /rules [init]</value></data>

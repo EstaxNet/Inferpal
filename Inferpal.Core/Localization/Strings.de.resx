@@ -676,6 +676,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="IndexForceHint" xml:space="preserve"><value>Verwenden Sie `/index rebuild`, um eine vollständige Neuindizierung zu erzwingen.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>gespeicherte Sitzungen auflisten — /history &lt;Begriff&gt; zum Suchen</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>Sitzung aus einer Vorlage starten — /template &lt;id&gt;</value></data>
+  <data name="TemplateUnknown" xml:space="preserve"><value>Unbekannte Vorlage `{0}`. Geben Sie `/template` ein, um die Liste zu sehen.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>vollständigen git-Diff als Kontext-Chip anhängen — /diff [Pfad]</value></data>
   <data name="SlashHintCheck" xml:space="preserve"><value>aktuellen git-Diff per KI gegen .inferpal/checks prüfen — /check [Name|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>Projektregeln in .inferpal/rules auflisten — /rules [init]</value></data>

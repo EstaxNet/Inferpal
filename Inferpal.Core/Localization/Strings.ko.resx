@@ -676,6 +676,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="IndexForceHint" xml:space="preserve"><value>`/index rebuild`로 전체 재인덱싱을 강제하세요.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>저장된 세션 나열 — 검색하려면 /history &lt;검색어&gt;</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>사전 설정 템플릿에서 세션 시작 — /template &lt;id&gt;</value></data>
+  <data name="TemplateUnknown" xml:space="preserve"><value>알 수 없는 템플릿 `{0}`입니다. 목록을 보려면 `/template`을 입력하세요.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>전체 git diff를 컨텍스트 칩으로 첨부 — /diff [경로]</value></data>
   <data name="SlashHintCheck" xml:space="preserve"><value>현재 git diff를 .inferpal/checks 기준으로 AI 검토 — /check [이름|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>.inferpal/rules의 프로젝트 규칙 나열 — /rules [init]</value></data>

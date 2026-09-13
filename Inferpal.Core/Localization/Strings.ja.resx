@@ -676,6 +676,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="IndexForceHint" xml:space="preserve"><value>`/index rebuild` で完全な再インデックスを強制します。</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>保存されたセッションを一覧表示 — /history &lt;語句&gt; で検索</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>プリセットテンプレートからセッションを開始 — /template &lt;id&gt;</value></data>
+  <data name="TemplateUnknown" xml:space="preserve"><value>不明なテンプレート `{0}` です。`/template` と入力すると一覧を表示します。</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>git diff 全体をコンテキストチップとして添付 — /diff [パス]</value></data>
   <data name="SlashHintCheck" xml:space="preserve"><value>現在の git diff を .inferpal/checks に照らして AI レビュー — /check [名前|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>.inferpal/rules 内のプロジェクトルールを一覧表示 — /rules [init]</value></data>

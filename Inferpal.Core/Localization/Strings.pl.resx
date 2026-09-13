@@ -676,6 +676,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="IndexForceHint" xml:space="preserve"><value>Użyj `/index rebuild`, aby wymusić pełne ponowne indeksowanie.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>wyświetl zapisane sesje — /history &lt;termin&gt; aby wyszukać</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>rozpocznij sesję z gotowego szablonu — /template &lt;id&gt;</value></data>
+  <data name="TemplateUnknown" xml:space="preserve"><value>Nieznany szablon `{0}`. Wpisz `/template`, aby zobaczyć listę.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>dołącz pełny git diff jako chip kontekstu — /diff [ścieżka]</value></data>
   <data name="SlashHintCheck" xml:space="preserve"><value>przegląd AI bieżącego git diff względem .inferpal/checks — /check [nazwa|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>wyświetl reguły projektu w .inferpal/rules — /rules [init]</value></data>

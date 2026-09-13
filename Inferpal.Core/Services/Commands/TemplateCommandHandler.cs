@@ -1,3 +1,4 @@
+using Inferpal.Localization;
 using Inferpal.Services.Persistence;
 
 namespace Inferpal.Services.Commands;
@@ -26,7 +27,7 @@ internal static class TemplateCommandHandler
         var tmpl = SessionManager.FindTemplate(id);
 
         return tmpl is null
-            ? new TemplateCommandResult($"Unknown template `{id}`. Type `/template` to see the list.")
+            ? new TemplateCommandResult(Strings.TemplateUnknown(id))
             : new TemplateCommandResult(Apply: tmpl);
     }
 }

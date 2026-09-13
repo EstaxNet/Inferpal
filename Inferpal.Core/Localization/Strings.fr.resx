@@ -684,6 +684,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="IndexForceHint" xml:space="preserve"><value>Utilisez `/index rebuild` pour forcer une réindexation complète.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>lister les sessions enregistrées — /history &lt;terme&gt; pour rechercher</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>démarrer une session depuis un modèle prédéfini — /template &lt;id&gt;</value></data>
+  <data name="TemplateUnknown" xml:space="preserve"><value>Modèle inconnu : `{0}`. Tapez `/template` pour voir la liste.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>joindre le diff git complet comme chip de contexte — /diff [chemin]</value></data>
   <data name="SlashHintCheck" xml:space="preserve"><value>faire relire le diff git actuel par l'IA selon .inferpal/checks — /check [nom|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>lister les règles du projet dans .inferpal/rules — /rules [init]</value></data>

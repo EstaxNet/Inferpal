@@ -688,6 +688,7 @@ ollama serve
   <data name="IndexForceHint" xml:space="preserve"><value>Use `/index rebuild` to force a full re-index.</value></data>
   <data name="SlashHintHistory" xml:space="preserve"><value>list saved sessions — /history &lt;term&gt; to search</value></data>
   <data name="SlashHintTemplate" xml:space="preserve"><value>start a session from a preset template — /template &lt;id&gt;</value></data>
+  <data name="TemplateUnknown" xml:space="preserve"><value>Unknown template `{0}`. Type `/template` to see the list.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>attach full git diff as context chip — /diff [path]</value></data>
   <data name="SlashHintCheck" xml:space="preserve"><value>AI-review the current git diff against .inferpal/checks — /check [name|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>list project rules in .inferpal/rules — /rules [init]</value></data>
