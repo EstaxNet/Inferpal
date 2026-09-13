@@ -53,12 +53,17 @@ internal sealed record ProfileIgnoredKey(string Key, bool Sensitive);
 internal sealed record ProjectProfile(
     IReadOnlyList<string>                 IndexExcludes,
     IReadOnlyList<ProfileRecommendation>  Recommendations,
-    IReadOnlyList<ProfileIgnoredKey>      Ignored)
+    IReadOnlyList<ProfileIgnoredKey>      Ignored,
+    string?                               Problem = null)
 {
     /// <summary>An empty profile — what a repository without the file gets.</summary>
     public static readonly ProjectProfile Empty = new([], [], []);
 
     /// <summary><c>true</c> when the file carried nothing at all we could act on or report.</summary>
+    /// <remarks>
+    /// Also true of a file that exists but could not be used: check <see cref="Problem"/> first, or
+    /// an unreadable profile is reported as a missing one.
+    /// </remarks>
     public bool IsEmpty =>
         IndexExcludes.Count == 0 && Recommendations.Count == 0 && Ignored.Count == 0;
 
@@ -90,25 +95,37 @@ internal sealed record ProjectProfile(
     ];
 
     /// <summary>Reads and parses <c>.inferpal/project.json</c>; never throws, never returns null.</summary>
-    public static ProjectProfile Load(string? root)
+    public static ProjectProfile Load(string? root) =>
+        string.IsNullOrEmpty(root) ? Empty : Read(root!, config: null);
+
+    /// <summary>
+    /// Reads and parses the profile of <paramref name="root"/>; never throws. A file that exists but
+    /// cannot be opened comes back empty with <see cref="Problem"/> set, never as <see cref="Empty"/>.
+    /// </summary>
+    /// <param name="config">
+    /// Current values shown next to each recommendation. <c>null</c> loads the machine configuration,
+    /// and only when the file exists: loading it re-applies the configured interface language, which
+    /// would erase the one an editor set for a repository that has no profile at all.
+    /// </param>
+    public static ProjectProfile Read(string root, InferpalConfig? config)
     {
-        if (string.IsNullOrEmpty(root)) return Empty;
         try
         {
-            var path = PathIn(root!);
-            return File.Exists(path) ? Parse(File.ReadAllText(path), InferpalConfig.Load()) : Empty;
+            var path = PathIn(root);
+            return File.Exists(path) ? Parse(File.ReadAllText(path), config ?? InferpalConfig.Load()) : Empty;
         }
         catch (Exception ex)
         {
-            Diagnostics.Swallow("ProjectProfile.Load", ex);
-            return Empty;
+            Diagnostics.Swallow("ProjectProfile.Read", ex);
+            return Empty with { Problem = ex.Message };
         }
     }
 
     /// <summary>
     /// Parses the profile JSON. <paramref name="config"/> is read only to fill in
     /// <see cref="ProfileRecommendation.Current"/>, so a recommendation can be shown next to what
-    /// it would replace. Malformed JSON yields <see cref="Empty"/> (recorded in <c>/diagnostics</c>).
+    /// it would replace. Malformed JSON, or a root that is not an object, yields an empty profile whose
+    /// <see cref="Problem"/> says why.
     /// </summary>
     public static ProjectProfile Parse(string? json, InferpalConfig? config = null)
     {
@@ -127,7 +144,8 @@ internal sealed record ProjectProfile(
                 CommentHandling     = JsonCommentHandling.Skip,
                 AllowTrailingCommas = true,
             });
-            if (doc.RootElement.ValueKind != JsonValueKind.Object) return Empty;
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                return Empty with { Problem = Inferpal.Localization.Strings.OnboardProfileNotAnObject };
 
             foreach (var prop in doc.RootElement.EnumerateObject())
             {
@@ -150,7 +168,7 @@ internal sealed record ProjectProfile(
         catch (JsonException ex)
         {
             Diagnostics.Swallow("ProjectProfile.Parse", ex);
-            return Empty;
+            return Empty with { Problem = ex.Message };
         }
 
         return new ProjectProfile(excludes, recs, ignored);

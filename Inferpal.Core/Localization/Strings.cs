@@ -1169,6 +1169,9 @@ internal static class Strings
     public static string OnboardUsage                 => Get(nameof(OnboardUsage));
     public static string OnboardHeading               => Get(nameof(OnboardHeading));
     public static string OnboardNoProfile(string path) => string.Format(Get(nameof(OnboardNoProfile)), path);
+    public static string OnboardProfileUnusable(string path, string detail) =>
+        string.Format(Get(nameof(OnboardProfileUnusable)), path, detail);
+    public static string OnboardProfileNotAnObject    => Get(nameof(OnboardProfileNotAnObject));
     public static string OnboardAppliedHeading        => Get(nameof(OnboardAppliedHeading));
     public static string OnboardRecommendedHeading    => Get(nameof(OnboardRecommendedHeading));
     public static string OnboardRecommendLine(string key, string proposed, string current) =>

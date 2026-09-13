@@ -924,6 +924,8 @@ ollama serve
   <data name="OnboardUsage" xml:space="preserve"><value>Использование: `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
   <data name="OnboardHeading" xml:space="preserve"><value>**Профиль проекта** — `.inferpal/project.json`</value></data>
   <data name="OnboardNoProfile" xml:space="preserve"><value>Профиля здесь нет ({0}). `/onboard init` создаёт пример с комментариями.</value></data>
+  <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` существует, но его не удалось прочитать, поэтому ничего из него не применяется, включая исключения индекса: {1}</value></data>
+  <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>файл должен содержать объект JSON.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Применено** — исключения индекса. Только дополняющие: они убирают файлы из семантического индекса и ничего не скрывают от `read_file` и `search_in_files`.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Рекомендовано** — выбор машины, сам по себе никогда не применяется:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (сейчас: {2})</value></data>

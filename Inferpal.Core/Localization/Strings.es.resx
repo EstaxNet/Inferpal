@@ -924,6 +924,8 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="OnboardUsage" xml:space="preserve"><value>Uso: `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
   <data name="OnboardHeading" xml:space="preserve"><value>**Perfil de proyecto** — `.inferpal/project.json`</value></data>
   <data name="OnboardNoProfile" xml:space="preserve"><value>No hay perfil aquí ({0}). `/onboard init` escribe un ejemplo comentado.</value></data>
+  <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` existe pero no se pudo leer, así que no se aplica nada de él, tampoco las exclusiones del índice: {1}</value></data>
+  <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>el archivo debe contener un objeto JSON.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Aplicado** — exclusiones de índice. Solo aditivas: sacan archivos del índice semántico y no ocultan nada a `read_file` ni a `search_in_files`.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Recomendado** — decisiones de la máquina, nunca aplicadas por sí solas:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (actual: {2})</value></data>

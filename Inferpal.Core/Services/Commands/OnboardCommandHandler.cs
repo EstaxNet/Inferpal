@@ -112,12 +112,16 @@ internal static class OnboardCommandHandler
     /// <summary>The three categories, printed. A refusal nobody sees is indistinguishable from a bug.</summary>
     private static string Report(string root, InferpalConfig config)
     {
-        var profile = ProjectProfile.Parse(ReadProfile(root), config);
+        var profile = ProjectProfile.Read(root, config);
         var sb      = new StringBuilder();
 
         sb.Append(Strings.OnboardHeading).Append("\n\n");
 
-        if (profile.IsEmpty)
+        if (profile.Problem is { } problem)
+        {
+            sb.Append(Strings.OnboardProfileUnusable(ProjectProfile.PathIn(root), problem));
+        }
+        else if (profile.IsEmpty)
         {
             sb.Append(Strings.OnboardNoProfile(ProjectProfile.PathIn(root)));
         }
@@ -163,7 +167,10 @@ internal static class OnboardCommandHandler
 
     private static OnboardCommandResult Apply(string root, InferpalConfig config)
     {
-        var profile = ProjectProfile.Parse(ReadProfile(root), config);
+        var profile = ProjectProfile.Read(root, config);
+        if (profile.Problem is { } problem)
+            return new(Strings.OnboardProfileUnusable(ProjectProfile.PathIn(root), problem));
+
         var changed = profile.Apply(config);
 
         if (changed.Count == 0) return new(Strings.OnboardNothingToApply);
@@ -327,19 +334,5 @@ internal static class OnboardCommandHandler
         if (lastFence <= firstBreak) return text;
 
         return trimmed[(firstBreak + 1)..lastFence];
-    }
-
-    private static string? ReadProfile(string root)
-    {
-        try
-        {
-            var path = ProjectProfile.PathIn(root);
-            return File.Exists(path) ? File.ReadAllText(path) : null;
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow("Onboard.ReadProfile", ex);
-            return null;
-        }
     }
 }

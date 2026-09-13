@@ -158,7 +158,9 @@ next time the repository is indexed. A rule you wrote yourself is never changed.
 }
 ```
 
-Comments and trailing commas are accepted. The file is **non-privileged** — it ships with
+Comments and trailing commas are accepted. A file that cannot be parsed or opened applies nothing,
+and `/onboard` says so — naming the file and the parser's error — rather than reporting no profile.
+The file is **non-privileged** — it ships with
 whatever you clone, so it may describe preferences and may never grant anything. Exactly three
 categories, and the classification is an allow-list: **an unknown key is ignored, not
 interpreted.**

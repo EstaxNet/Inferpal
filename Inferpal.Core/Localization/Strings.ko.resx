@@ -924,6 +924,8 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="OnboardUsage" xml:space="preserve"><value>사용법: `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
   <data name="OnboardHeading" xml:space="preserve"><value>**프로젝트 프로필** — `.inferpal/project.json`</value></data>
   <data name="OnboardNoProfile" xml:space="preserve"><value>여기에는 프로필이 없습니다 ({0}). `/onboard init` 이 주석이 달린 예제를 작성합니다.</value></data>
+  <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` 파일이 있지만 읽을 수 없어 인덱스 제외를 포함해 아무것도 적용되지 않습니다: {1}</value></data>
+  <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>파일에는 JSON 개체가 있어야 합니다.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**적용됨** — 인덱스 제외. 추가만 가능: 시맨틱 인덱스에서 파일을 빼낼 뿐, `read_file` 이나 `search_in_files` 로부터 아무것도 숨기지 않습니다.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**권장** — 머신의 선택이며 저절로 적용되지 않습니다:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (현재: {2})</value></data>

@@ -1,4 +1,6 @@
+using System.IO;
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Services.Governance;
 using Xunit;
 
@@ -8,8 +10,30 @@ namespace Inferpal.Tests;
 /// The committable project profile (roadmap §19). These tests are about one property above all:
 /// a file that ships with a clone can restrict and suggest, and can grant nothing.
 /// </summary>
+[Collection(CultureSerialCollection.Name)]
 public class ProjectProfileTests
 {
+    // `Load` serves indexing, which runs every time a root is set. Loading the machine configuration
+    // for a repository WITHOUT a profile re-applied its language and erased the one the editor had
+    // just set during the host handshake.
+    [Fact]
+    public void LoadingARootWithoutAProfile_LeavesTheInterfaceLanguageAlone()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-profile-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        Strings.ApplyLanguage("ja");
+        try
+        {
+            Assert.Same(ProjectProfile.Empty, ProjectProfile.Load(root));
+            Assert.Equal("ja", Strings.OverrideCulture?.Name);
+        }
+        finally
+        {
+            Strings.ApplyLanguage(null);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static InferpalConfig Config() => new()
     {
         AgentModel        = "installed-agent",
@@ -150,6 +174,26 @@ public class ProjectProfileTests
 
         Assert.Empty(profile.IndexExcludes);
         Assert.Empty(profile.Recommendations);
+    }
+
+    // Empty does not mean absent: `/onboard` reads Problem so it does not report "no profile" for a
+    // file the user wrote and nothing applies.
+    [Theory]
+    [InlineData("not json at all")]
+    [InlineData("""{ "indexExclude": ["vendor" }""")]
+    [InlineData("[1, 2, 3]")]
+    public void AFileThatCannotBeUsed_SaysWhy(string json)
+    {
+        Assert.False(string.IsNullOrWhiteSpace(ProjectProfile.Parse(json).Problem));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("""{ "indexExclude": "vendor" }""")]          // wrong type: ignored, the file is sound
+    [InlineData("""{ "somethingNewNobodyThoughtOf": true }""")]
+    public void AUsableFile_CarriesNoProblem(string json)
+    {
+        Assert.Null(ProjectProfile.Parse(json).Problem);
     }
 
     [Fact]

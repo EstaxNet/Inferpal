@@ -924,6 +924,8 @@ ollama serve
   <data name="OnboardUsage" xml:space="preserve"><value>用法： `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
   <data name="OnboardHeading" xml:space="preserve"><value>**项目配置** — `.inferpal/project.json`</value></data>
   <data name="OnboardNoProfile" xml:space="preserve"><value>此处没有配置文件（{0}）。`/onboard init` 会写入一个带注释的示例。</value></data>
+  <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` 存在但无法读取，因此其中的内容（包括索引排除项）均未生效：{1}</value></data>
+  <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>文件必须包含一个 JSON 对象。</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**已应用** — 索引排除项。只增不减：它们把文件排除在语义索引之外，不会对 `read_file` 或 `search_in_files` 隐藏任何内容。</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**建议** — 属于本机的选择，绝不会自行应用：</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}**（当前：{2}）</value></data>

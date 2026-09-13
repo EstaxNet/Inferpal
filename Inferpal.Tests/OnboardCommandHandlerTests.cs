@@ -1,5 +1,6 @@
 using System.IO;
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services;
 using Inferpal.Services.Commands;
@@ -11,6 +12,7 @@ namespace Inferpal.Tests;
 /// <c>/onboard</c> — the visible half of the project profile (roadmap §19): it reports the three
 /// categories, applies only what the user asks for, and drafts <c>.inferpal/context.md</c>.
 /// </summary>
+[Collection(CultureSerialCollection.Name)]
 public class OnboardCommandHandlerTests : IDisposable
 {
     private readonly string               _root;
@@ -70,6 +72,52 @@ public class OnboardCommandHandlerTests : IDisposable
         Assert.Contains("repo-agent", result.Message!);   // recommended
         Assert.Contains("mine",       result.Message!);   // …next to what it would replace
         Assert.Contains("validators", result.Message!);   // refused, and named
+    }
+
+    // A profile that cannot be READ is not a missing profile: the user wrote that file, its index
+    // exclusions do not apply, and the only report that exists to say so answered "no profile
+    // here".
+    [Fact]
+    public async Task AMalformedProfile_IsReportedAsUnusable_NotAsMissing()
+    {
+        WriteProfile("""{ "indexExclude": ["vendor" }""");
+        var path = Path.Combine(_root, ".inferpal", "project.json");
+
+        var report = (await Run(new InferpalConfig())).Message!;
+        var apply  = (await Run(new InferpalConfig(), "apply")).Message!;
+
+        foreach (var message in new[] { report, apply })
+        {
+            Assert.Contains(Strings.OnboardProfileUnusable(path, string.Empty).TrimEnd(), message);
+            Assert.Contains("LineNumber", message);   // the parser's position, so the typo can be found
+        }
+    }
+
+    [Fact]
+    public async Task AProfileThatCannotBeRead_IsReportedAsUnusable_NotAsMissing()
+    {
+        WriteProfile("""{ "indexExclude": ["vendor"] }""");
+        var path = Path.Combine(_root, ".inferpal", "project.json");
+
+        string report;
+        if (OperatingSystem.IsWindows())
+        {
+            using var held = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            report = (await Run(new InferpalConfig())).Message!;
+        }
+        else
+        {
+            File.SetUnixFileMode(path, UnixFileMode.None);
+            try { report = (await Run(new InferpalConfig())).Message!; }
+            finally { File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+        }
+
+        Assert.Contains(Strings.OnboardProfileUnusable(path, string.Empty).TrimEnd(), report);
+
+        // Witnesses: once released the same profile is read; with no file, "no profile" still holds.
+        Assert.Contains("vendor", (await Run(new InferpalConfig())).Message!);
+        File.Delete(path);
+        Assert.Contains(Strings.OnboardNoProfile(path), (await Run(new InferpalConfig())).Message!);
     }
 
     // ── init ──────────────────────────────────────────────────────────────────

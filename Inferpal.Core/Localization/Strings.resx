@@ -928,6 +928,8 @@ ollama serve
   <data name="OnboardUsage" xml:space="preserve"><value>Usage: `/onboard` · `/onboard init` · `/onboard apply` · `/onboard context [force]`</value></data>
   <data name="OnboardHeading" xml:space="preserve"><value>**Project profile** — `.inferpal/project.json`</value></data>
   <data name="OnboardNoProfile" xml:space="preserve"><value>No profile here ({0}). `/onboard init` writes a commented example.</value></data>
+  <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` exists but could not be read, so none of it applies — index exclusions included: {1}</value></data>
+  <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>the file must contain a JSON object.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Applied** — index exclusions. Additive only: they keep files out of the semantic index and hide nothing from `read_file` or `search_in_files`.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Recommended** — machine choices, never applied on their own:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (current: {2})</value></data>
