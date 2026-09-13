@@ -1057,6 +1057,54 @@ public class ConventionCoverageTests
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
+    // ── 28. A Stop button that is shown has something to cancel ───────────────
+
+    [Fact]
+    public void ShowingTheStopButton_GivesItSomethingToCancel()
+    {
+        // IsLoading = true turns the send button into Stop, and SendAsync then does one thing:
+        // cancel _currentCts. A method that raises IsLoading without wiring _currentCts shows a Stop
+        // that does nothing - and SettleCurrentTurnAsync, which cancels the same token before a
+        // session is loaded, cannot stop it either.
+        //
+        // The subject is the ASSIGNMENT, read from the syntax tree (lambdas included: the flag is
+        // raised on the VM context), not a list of commands.
+        var offenders = new List<string>();
+        var seen      = 0;
+
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                var assignments = method.DescendantNodes().OfType<AssignmentExpressionSyntax>().ToList();
+
+                var showsStop = assignments.Any(a =>
+                    a.Left is IdentifierNameSyntax { Identifier.Text: "IsLoading" }
+                    && a.Right.IsKind(SyntaxKind.TrueLiteralExpression));
+                if (!showsStop) continue;
+                seen++;
+
+                var wiresCancel = assignments.Any(a =>
+                    a.Left is IdentifierNameSyntax { Identifier.Text: "_currentCts" }
+                    && !a.Right.IsKind(SyntaxKind.NullLiteralExpression));
+                if (wiresCancel) continue;
+
+                offenders.Add($"{Rel(file)} : {method.Identifier.Text}");
+            }
+        }
+
+        // Witness: the chat turn, /fix-build and /tdd raise the flag.
+        Assert.True(seen >= 3, $"Only {seen} site(s) raising IsLoading read -- the rule no longer measures anything.");
+
+        Assert.True(offenders.Count == 0,
+            "These methods show the Stop button (IsLoading = true) without giving it anything to "
+            + "cancel: SendAsync and SettleCurrentTurnAsync only cancel _currentCts. Wire a linked "
+            + "CancellationTokenSource to _currentCts and pass its token:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
     // ── 13. A property bound to SelectedItem is declared nullable ─────────────
 
     [Fact]

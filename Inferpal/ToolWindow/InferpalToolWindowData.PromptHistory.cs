@@ -370,45 +370,63 @@ internal partial class InferpalToolWindowData
     /// </remarks>
     private async Task HandleCommitCommandAsync(CancellationToken ct)
     {
-        ChatMessageItem? streamItem = null;
+        ChatMessageItem?         streamItem = null;
+        CancellationTokenSource? localCts   = null;
         await RunOnVMContextAsync(() =>
         {
             streamItem       = ChatMessageItem.StreamingMsg();
             streamItem.Label = Strings.CommitProposingLabel;
             ApplyItemTheme(streamItem);
             Messages.Insert(Messages.Count - 2, streamItem);
+            // IsLoading turns the send button into Stop, and Stop only cancels _currentCts.
+            localCts    = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _currentCts = localCts;
             IsLoading   = true;
             CurrentStep = Strings.StatusThinking;
             ScrollToBottom();
         });
+        if (localCts is null) return;
+        var tok = localCts.Token;
 
         using var sink = new ThrottledTokenSink(
             chunk => Post(() => { if (streamItem is not null) streamItem.Content += chunk; }));
 
-        Services.Commands.CommitCommandHandler.CommitProposal proposal;
+        Services.Commands.CommitCommandHandler.CommitProposal proposal = default;
+        var gotProposal = false;
         try
         {
             proposal = await Services.Commands.CommitCommandHandler.ProposeAsync(
                 _client, _config, Services.GitProcess.For(FindProjectRoot()),
-                onToken: token => sink.Append(token), ct);
+                onToken: token => sink.Append(token), tok);
+            gotProposal = true;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) { /* stopped: nothing is offered */ }
+        finally
         {
+            sink.Stop();
+            // In a finally: an exception thrown here would otherwise leave the window loading, with
+            // a Stop button that has nothing left to cancel.
             await RunOnVMContextAsync(() =>
             {
-                streamItem  = FinalizeStreamingBubble(streamItem);
-                IsLoading   = false;
-                CurrentStep = string.Empty;
+                streamItem = FinalizeStreamingBubble(streamItem);
+                localCts?.Dispose();
+                if (ReferenceEquals(_currentCts, localCts))
+                {
+                    _currentCts = null;
+                    IsLoading   = false;
+                    CurrentStep = string.Empty;
+                }
             });
-            return;
         }
-        finally { sink.Stop(); }
 
         await RunOnVMContextAsync(() =>
         {
-            streamItem  = FinalizeStreamingBubble(streamItem);
-            IsLoading   = false;
-            CurrentStep = string.Empty;
+            if (!gotProposal)
+            {
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgCancelled));
+                ScrollToBottom();
+                return;
+            }
 
             if (proposal.Notice is { } notice)
                 InsertThemed(ChatMessageItem.AssistantMsg(notice));
@@ -619,59 +637,6 @@ internal partial class InferpalToolWindowData
             return;
         }
         await ShowInfoAsync(confirm(path));
-    }
-
-    // Streams a one-shot assistant reply (no tools) into a fresh chat bubble, reusing the
-    // empty-bubble guards and cancel/error handling from the /commit flow.
-    private async Task StreamAssistantReplyAsync(List<ChatMessageDto> history, string label, CancellationToken ct)
-    {
-        ChatMessageItem? streamItem = null;
-        await RunOnVMContextAsync(() =>
-        {
-            streamItem       = ChatMessageItem.StreamingMsg();
-            streamItem.Label = label;
-            ApplyItemTheme(streamItem);
-            Messages.Insert(Messages.Count - 2, streamItem);
-            IsLoading   = true;
-            CurrentStep = Strings.StatusThinking;
-            ScrollToBottom();
-        });
-
-        void Finalize()
-        {
-            streamItem  = FinalizeStreamingBubble(streamItem);
-            IsLoading   = false;
-            CurrentStep = string.Empty;
-            ScrollToBottom();
-        }
-
-        try
-        {
-            using var sink = new ThrottledTokenSink(chunk => Post(() => { if (streamItem is not null) streamItem.Content += chunk; }));
-            await _client.RunAgentAsync(
-                model:   _config.DefaultModel,
-                history: history,
-                tools:   EmptyToolRegistry.Instance,
-                onStep:  _ => { },
-                onToken: token => sink.Append(token),
-                ct:      ct);
-            sink.Stop();
-            await RunOnVMContextAsync(Finalize);
-        }
-        catch (OperationCanceledException)
-        {
-            await RunOnVMContextAsync(Finalize);
-        }
-        catch (Exception ex)
-        {
-            var msg = ex.Message;
-            await RunOnVMContextAsync(() =>
-            {
-                Finalize();
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
-                ScrollToBottom();
-            });
-        }
     }
 
     /// <summary><c>/commit-exec &lt;message&gt;</c> — stage if needed, then commit (shared handler).</summary>
