@@ -417,8 +417,19 @@ internal sealed class ProjectIndexService : IDisposable
                 Diagnostics.Record("ProjectIndexService",
                     $"{skipped} of {files.Count} file(s) skipped while indexing; first: {firstSkipped}");
 
+            // A chunk without a vector escapes the semantic half of the search until the next pass
+            // (nothing computes it in between): the status that /index and search_codebase show
+            // counts them, with the remedy.
+            var unembedded = newChunks.Count(c => c.Embedding is not { Length: > 0 });
+            if (unembedded > 0)
+                Diagnostics.Record("ProjectIndexService",
+                    $"{unembedded} of {newChunks.Count} chunk(s) without embedding; semantic search misses them until /index rebuild");
+            var holeStatus = unembedded > 0
+                ? $" ({unembedded} of {ChunkCount} chunks without embedding — semantic search misses them; run /index rebuild)"
+                : string.Empty;
+
             var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
-            Status = $"RAG: ✅ {ChunkCount} chunks from {files.Count} files{embStatus}";
+            Status = $"RAG: ✅ {ChunkCount} chunks from {files.Count} files{holeStatus}{embStatus}";
 
             // ── Drain the backlog accumulated during the pass ─────────────────
             // A file modified after the pass read it entered the authoritative replaceAll above

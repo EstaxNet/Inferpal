@@ -170,6 +170,51 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
     }
 
     [Fact]
+    public async Task IndexingPass_SaysHowManyChunksHaveNoEmbedding()
+    {
+        // A chunk without a vector is invisible to the semantic half of the search, and nothing
+        // computes it again before the next pass. A passing outage of the embedding model (the
+        // breaker opens, then closes before the end) left a "✅" pass over an index with holes: neither
+        // /index nor search_codebase - which both show this status - said so.
+        Diagnostics.Clear();
+        var hole = Path.Combine(_root, "Hole.cs");
+        await File.WriteAllTextAsync(Path.Combine(_root, "Good.cs"), SampleClass("Good"));
+        await File.WriteAllTextAsync(hole, SampleClass("Hole"));
+
+        var provider = new FakeInferenceProvider();
+        provider.OnEmbedding = text => text.Contains("Hole", StringComparison.Ordinal) ? null : [0.1f, 0.2f];
+
+        var svc = NewService(provider);
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "end of the pass", () => svc.Status);
+
+        var missing = (await svc.GetFileChunksAsync(hole, _root, CancellationToken.None)).Count;
+        Assert.True(missing > 0, "witness: Hole.cs should have produced at least one chunk");
+
+        Assert.Contains($"{missing} of {svc.ChunkCount} chunks without embedding", svc.Status, StringComparison.Ordinal);
+        Assert.Contains("/index rebuild", svc.Status, StringComparison.Ordinal);
+        Assert.Contains(Diagnostics.Snapshot(),
+            e => e.Context == "ProjectIndexService" && e.Detail.Contains("without embedding", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task IndexingPass_SaysNothingAboutEmbeddings_WhenEveryChunkHasOne()
+    {
+        // Reference arm: the fake provider returns null by default, so without an explicit vector
+        // this test would measure the opposite of what it claims.
+        Diagnostics.Clear();
+        await File.WriteAllTextAsync(Path.Combine(_root, "Fine.cs"), SampleClass("Fine"));
+
+        var svc = NewService(new FakeInferenceProvider { Embedding = [0.1f, 0.2f] });
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "end of the pass", () => svc.Status);
+
+        Assert.DoesNotContain("without embedding", svc.Status, StringComparison.Ordinal);
+        Assert.DoesNotContain(Diagnostics.Snapshot(),
+            e => e.Context == "ProjectIndexService" && e.Detail.Contains("without embedding", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task WatcherReindex_ReusesEmbeddings_ForUnchangedChunks()
     {
         var file   = Path.Combine(_root, "Beta.cs");
