@@ -45,8 +45,11 @@ internal class AddTestsSelectionCommand : Command
         var model  = ModelRouter.Resolve(_config, ModelRole.CodeActions);
         var result = await TestGenerationEdit.RunAsync(Extensibility, view, _client, model, ct);
 
-        // No chat here — if the model found nothing worth testing, say so via a dismissable prompt.
+        // No chat here: both outcomes that open nothing are said in a dismissable prompt, like the
+        // other context-menu code actions — a click that does nothing reads as a broken command.
         if (result.NoChange)
             await Extensibility.Shell().ShowPromptAsync(Strings.TestsNoChange, PromptOptions.OK, ct);
+        else if (!result.Ok)
+            await Extensibility.Shell().ShowPromptAsync(Strings.TestsGenerateFailed, PromptOptions.OK, ct);
     }
 }

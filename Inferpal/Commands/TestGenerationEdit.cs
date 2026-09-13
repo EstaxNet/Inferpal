@@ -44,7 +44,11 @@ internal static class TestGenerationEdit
         // Spinner overlay while the model generates.
         InlineEditInputWindow dlg;
         try { dlg = await InlineEditInputWindow.CreateAndShowSpinnerAsync(); }
-        catch { return new Result(false, string.Empty, false); }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("TestGenerationEdit.Spinner", ex);
+            return new Result(false, string.Empty, false);
+        }
 
         TestGenerationPlan plan;
         try
@@ -53,7 +57,11 @@ internal static class TestGenerationEdit
                 client, model, sourcePath, sourceCode, ct);
         }
         catch (OperationCanceledException) { throw; }
-        catch { return new Result(false, string.Empty, false); }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("TestGenerationEdit.Plan", ex);
+            return new Result(false, string.Empty, false);
+        }
         finally { dlg.CloseFromThread(); }
 
         if (plan.NoChange) return new Result(false, plan.TestFileName, plan.Extended, NoChange: true);
@@ -87,8 +95,10 @@ internal static class TestGenerationEdit
 
             return new Result(true, plan.TestFileName, plan.Extended);
         }
-        catch
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
         {
+            Diagnostics.Swallow($"TestGenerationEdit.Write({plan.TestFileName})", ex);
             return new Result(false, plan.TestFileName, plan.Extended);
         }
     }
