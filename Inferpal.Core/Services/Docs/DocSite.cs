@@ -34,6 +34,38 @@ internal sealed record DocSite(
         return new DocSite(Slugify(label), label, startUrl.Trim());
     }
 
+    /// <summary>
+    /// <see cref="Create"/>, with an id that does not silently take over another source.
+    /// </summary>
+    /// <remarks>
+    /// The id is derived, not typed: from the host when there is no title, and <see cref="FallbackId"/>
+    /// when a title has no Latin letter to slug (Russian, Japanese, Korean, Chinese — languages the
+    /// product ships). <see cref="Upsert"/> replaces the source carrying the same id and indexing
+    /// rewrites its chunks, so a second documentation on the same host, or a second non-Latin title,
+    /// deleted the first — configuration and index. A derived id is therefore made free (-2, -3…)
+    /// unless the source already under it is this very URL, which re-adding refreshes. An explicit
+    /// Latin title still names the source to update.
+    /// </remarks>
+    public static DocSite CreateAmong(string startUrl, string? title, IReadOnlyList<DocSite> existing)
+    {
+        var site = Create(startUrl, title);
+        if (!string.IsNullOrWhiteSpace(title) && site.Id != FallbackId) return site;
+
+        for (var n = 1; ; n++)
+        {
+            var candidate = n == 1 ? site.Id : $"{site.Id}-{n}";
+            var holder    = existing.FirstOrDefault(s => s.Id == candidate);
+            if (holder is null || SameUrl(holder.StartUrl, site.StartUrl))
+                return site with { Id = candidate };
+        }
+    }
+
+    /// <summary>Id a label with nothing sluggable gets.</summary>
+    private const string FallbackId = "doc";
+
+    private static bool SameUrl(string a, string b) =>
+        string.Equals(a.Trim().TrimEnd('/'), b.Trim().TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Parses the persisted JSON array; tolerant of malformed input (returns empty list).</summary>
     public static List<DocSite> Parse(string? json)
     {
@@ -89,6 +121,6 @@ internal sealed record DocSite(
                                  RegexOptions.None, RegexBudget.Default)
                         .Trim('-');
         if (slug.Length > 32) slug = slug[..32].TrimEnd('-');
-        return string.IsNullOrEmpty(slug) ? "doc" : slug;
+        return string.IsNullOrEmpty(slug) ? FallbackId : slug;
     }
 }

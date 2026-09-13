@@ -34,7 +34,7 @@ internal static class DocsCommandHandler
                 if (parts.Length < 3 || !DocSite.IsValidHttpUrl(parts[2])) return Strings.DocsUsage;
 
                 var title = parts.Length > 3 ? string.Join(" ", parts[3..]) : null;
-                var site  = DocSite.Create(parts[2], title);
+                var site  = DocSite.CreateAmong(parts[2], title, sites);
 
                 config.DocSitesJson = DocSite.Serialize(DocSite.Upsert(sites, site));
                 config.Save();
