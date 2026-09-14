@@ -21,4 +21,21 @@ internal static class VectorMath
             ? dot / (MathF.Sqrt(normA) * MathF.Sqrt(normB))
             : 0f;
     }
+
+    /// <summary>A vector as its stored BLOB: raw float32 in platform (little-endian) order, no header.</summary>
+    public static byte[] ToBlob(float[] values)
+    {
+        var bytes = new byte[values.Length * sizeof(float)];
+        Buffer.BlockCopy(values, 0, bytes, 0, bytes.Length);
+        return bytes;
+    }
+
+    /// <summary>The inverse of <see cref="ToBlob"/>; empty when the BLOB is not a whole number of float32.</summary>
+    public static float[] FromBlob(byte[] blob)
+    {
+        if (blob.Length % sizeof(float) != 0) return [];
+        var floats = new float[blob.Length / sizeof(float)];
+        Buffer.BlockCopy(blob, 0, floats, 0, blob.Length);
+        return floats;
+    }
 }

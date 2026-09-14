@@ -19,7 +19,7 @@
   "Delete": "削除",
   "Session deleted: {0}": "セッションを削除しました: {0}",
   "Session {0} was not found — it may already have been deleted.": "セッション {0} が見つかりません。すでに削除された可能性があります。",
-  "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "メモリを抑えるため古いメッセージ {0} 件を削除しました。会話全体は保存済みセッションにあります。",
+  "{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.": "メモリを抑えるため、この画面から古いメッセージ {0} 件を削除しました。保存済みセッションにも残りません。",
   "Session name": "セッション名",
   "Session saved: {0}": "セッションを保存しました: {0}",
   "Pick a session to load": "読み込むセッションを選択",

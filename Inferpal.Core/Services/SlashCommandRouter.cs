@@ -188,7 +188,14 @@ internal static class SlashCommandRouter
     /// user template with that name can never run: templates are only consulted for unknown commands.
     /// </summary>
     internal static bool IsBuiltIn(string cmd) =>
-        Route(cmd, []) is not SlashInfoAction info || info.Message != UnknownCommandMessage(cmd);
+        _builtIn.GetOrAdd(cmd, static c =>
+            Route(c, []) is not SlashInfoAction info || info.Message != UnknownCommandMessage(c));
+
+    // Asked for every template on every keystroke of the slash autocomplete, and each answer routed the
+    // name and built the whole help text twice. The catalog is fixed for the life of the process, and the
+    // answer does not depend on the UI language.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _builtIn =
+        new(StringComparer.Ordinal);
 
     /// <summary>The prompt after its command word, exactly as typed: inner spacing kept, ends trimmed.</summary>
     private static string RestOf(string prompt)

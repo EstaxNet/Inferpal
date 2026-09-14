@@ -83,16 +83,18 @@ internal partial class InferpalToolWindowData
         LoadPinnedFilesFromConfig();
         _ = InitThemeAsync(extensibility);
 
-        _contextHolder.PendingPromptAvailable += OnPendingPromptAvailable;
         _contextHolder.ActiveFileChanged      += OnActiveFileChanged;
-        ConsumePendingPrompt();
 
         Messages.Add(_anchor0);
         Messages.Add(_anchor1);
         // Welcome screen shows whenever the conversation holds nothing but the two scroll anchors.
         Messages.CollectionChanged += (_, _) => ShowWelcome = Messages.Count <= 2;
-        _ = LoadSessionAsync(null, CancellationToken.None);
+        _startupSessionLoad = LoadSessionAsync(null, CancellationToken.None);
         // RefreshSessionsList is called from LoadSessionAsync on the context
+
+        // After the load is known: a pending prompt's turn waits for it (RunPendingTurnAsync).
+        _contextHolder.PendingPromptAvailable += OnPendingPromptAvailable;
+        ConsumePendingPrompt();
 
         _ = StartHeartbeatAsync();
         _ = StartRagIndexingAsync();

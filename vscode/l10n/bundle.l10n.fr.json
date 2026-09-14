@@ -19,7 +19,7 @@
   "Delete": "Supprimer",
   "Session deleted: {0}": "Session supprimée : {0}",
   "Session {0} was not found — it may already have been deleted.": "La session {0} est introuvable — elle a peut-être déjà été supprimée.",
-  "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "{0} messages anciens ont été retirés pour borner la mémoire — la conversation complète est dans la session enregistrée.",
+  "{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.": "{0} messages anciens ont été retirés de cette vue pour borner la mémoire — la session enregistrée ne les conserve pas non plus.",
   "Session name": "Nom de la session",
   "Session saved: {0}": "Session enregistrée : {0}",
   "Pick a session to load": "Choisissez une session à charger",

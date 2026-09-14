@@ -19,7 +19,7 @@
   "Delete": "Löschen",
   "Session deleted: {0}": "Sitzung gelöscht: {0}",
   "Session {0} was not found — it may already have been deleted.": "Die Sitzung {0} wurde nicht gefunden — sie wurde möglicherweise bereits gelöscht.",
-  "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "{0} ältere Nachrichten wurden verworfen, um den Speicher zu begrenzen — die vollständige Unterhaltung liegt in der gespeicherten Sitzung.",
+  "{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.": "{0} ältere Nachrichten wurden aus dieser Ansicht entfernt, um den Speicher zu begrenzen — auch die gespeicherte Sitzung enthält sie nicht.",
   "Session name": "Sitzungsname",
   "Session saved: {0}": "Sitzung gespeichert: {0}",
   "Pick a session to load": "Zu ladende Sitzung auswählen",

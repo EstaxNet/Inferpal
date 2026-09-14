@@ -284,7 +284,7 @@ internal static class DocContextExtractor
                     foreach (var ifaceName in interfaceNames)
                     {
                         if (result.ContainsKey(ifaceName)) continue;
-                        if (!src.Contains($"interface {ifaceName}", StringComparison.Ordinal)) continue;
+                        if (FindInterfaceDeclaration(src, ifaceName) < 0) continue;
 
                         var members = ParseInterfaceMembers(src, ifaceName);
                         if (members.Count > 0)
@@ -300,6 +300,18 @@ internal static class DocContextExtractor
 
     // ── Interface body parser ──────────────────────────────────────────────────
 
+    /// <summary>
+    /// Index of the declaration of exactly <paramref name="ifaceName"/>, or -1. ⚠ A plain search for
+    /// "interface IFoo" also matches "interface IFooBar": the members of the longer name were handed
+    /// to the shorter one, and <c>/doc</c> documented members the class does not have.
+    /// </summary>
+    private static int FindInterfaceDeclaration(string src, string ifaceName)
+    {
+        var match = Regex.Match(src, @"\binterface\s+" + Regex.Escape(ifaceName) + @"\b",
+                                RegexOptions.None, RegexBudget.Default);
+        return match.Success ? match.Index : -1;
+    }
+
     private static readonly Regex _xmlSummaryInlineRx = new(
         @"<summary>\s*(.*?)\s*</summary>",
         RegexOptions.Compiled | RegexOptions.Singleline, RegexBudget.Default);
@@ -311,7 +323,7 @@ internal static class DocContextExtractor
     private static List<InterfaceMember> ParseInterfaceMembers(string src, string ifaceName)
     {
         // Locate the interface declaration
-        var ifaceIdx = src.IndexOf($"interface {ifaceName}", StringComparison.Ordinal);
+        var ifaceIdx = FindInterfaceDeclaration(src, ifaceName);
         if (ifaceIdx < 0) return [];
 
         // Find opening brace (accounts for base-interface list)

@@ -24,16 +24,6 @@ namespace Inferpal.Tests;
 /// </remarks>
 public sealed class RagWorkspaceSwitchTests : IDisposable
 {
-    // Same hook as ProjectIndexServiceWatcherTests: never the user's real index.
-    private static readonly string DbBase = InitDbBase();
-
-    private static string InitDbBase()
-    {
-        var dir = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragdb-{Guid.NewGuid():N}");
-        RagDatabase.BaseDir = () => dir;
-        return dir;
-    }
-
     private readonly string _base;
     private readonly string _rootA;
     private readonly string _rootB;
@@ -41,7 +31,7 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
 
     public RagWorkspaceSwitchTests()
     {
-        _ = DbBase;
+        TestRagStore.Redirect();
         _base  = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragswitch-{Guid.NewGuid():N}");
         _rootA = Directory.CreateDirectory(Path.Combine(_base, "a")).FullName;
         _rootB = Directory.CreateDirectory(Path.Combine(_base, "b")).FullName;

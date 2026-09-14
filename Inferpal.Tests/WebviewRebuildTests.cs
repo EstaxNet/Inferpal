@@ -350,4 +350,33 @@ public class WebviewRebuildTests
             "saving under an existing name replaces that session without asking");
         Assert.Contains("modal: true", save, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// The bounded transcript says how much it dropped, and nothing more. Past the cap every append
+    /// spliced the previous marker out with the oldest entries, so the count restarted at 1; and the
+    /// marker promised the full conversation was in the saved session, which saves this same trimmed
+    /// transcript.
+    /// </summary>
+    [Fact]
+    public void TheTranscriptCap_CountsEverythingItDropped_AndPromisesNoFullCopy()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+        var trim     = Body(provider, "private trimTranscript(): void");
+
+        // Witness: the saved session really is the live (trimmed) transcript.
+        Assert.Contains("toSavedMessages(this.transcript)", Body(provider, "private snapshot("),
+                        StringComparison.Ordinal);
+
+        Assert.Matches(@"this\.droppedEntries\s*\+=", trim);
+        Assert.Contains("this.transcript[0] =", trim, StringComparison.Ordinal);
+        Assert.DoesNotContain("the full conversation is in the saved session", provider, StringComparison.Ordinal);
+
+        // A new conversation starts a new count.
+        var resets = Regex.Matches(provider, @"this\.transcript\.length = 0;");
+        Assert.True(resets.Count >= 3, "transcript reset sites not found: the rule measures nothing");
+        foreach (Match reset in resets)
+            Assert.True(Regex.IsMatch(provider[reset.Index..Math.Min(provider.Length, reset.Index + 300)],
+                                      @"this\.droppedEntries = 0;"),
+                "a transcript reset keeps the previous conversation's dropped count");
+    }
 }

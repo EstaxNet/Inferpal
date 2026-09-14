@@ -80,6 +80,32 @@ public class OpenDocumentOverlayTests
         finally { dir.Delete(recursive: true); }
     }
 
+    /// <summary>
+    /// A saved open document is read from disk. Right after a tool wrote the file, the mirrored buffer
+    /// still holds the text from before the write until the editor reloads it — and a read in the same
+    /// turn saw the edit as not made.
+    /// </summary>
+    [Fact]
+    public async Task ReadFileTool_ReadsDisk_ForAnOpenDocumentWithoutUnsavedChanges()
+    {
+        var dir = Directory.CreateTempSubdirectory("inferpal-overlay-");
+        try
+        {
+            var file = Path.Combine(dir.FullName, "a.txt");
+            await File.WriteAllTextAsync(file, "written by the tool");
+
+            var overlay = new OpenDocumentOverlay();
+            overlay.Set(file, "before the write", unsaved: false);
+
+            var tool = new ReadFileTool(() => dir.FullName, overlay);
+            var args = JsonDocument.Parse(JsonSerializer.Serialize(new { path = file })).RootElement;
+
+            Assert.Equal("written by the tool", await tool.ExecuteAsync(args, CancellationToken.None));
+            Assert.Single(overlay.Paths);   // still an open editor
+        }
+        finally { dir.Delete(recursive: true); }
+    }
+
     [Fact]
     public async Task ReadFileTool_ServesOverlayForNotYetSavedFile()
     {

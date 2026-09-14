@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace Inferpal.Services.Docs;
 
 /// <summary>
@@ -35,7 +33,7 @@ internal static class DocChunker
             int j      = start;
 
             while (j < lines.Length && tokens < TargetChunkTokens)
-                tokens += EstimateLineTokens(lines[j++]);
+                tokens += Rag.ChunkText.EstimateLineTokens(lines[j++]);
 
             int end = Math.Min(j - 1, lines.Length - 1);
 
@@ -51,7 +49,7 @@ internal static class DocChunker
                     PageTitle   = pageTitle,
                     Heading     = FirstNonEmptyLine(slice),
                     Content     = content,
-                    ContentHash = ComputeMd5(content),
+                    ContentHash = Rag.ChunkText.Hash(content),
                 });
             }
 
@@ -61,15 +59,13 @@ internal static class DocChunker
             int backTokens = 0;
             int next       = end;
             while (next > start + 1 && backTokens < OverlapTokens)
-                backTokens += EstimateLineTokens(lines[next--]);
+                backTokens += Rag.ChunkText.EstimateLineTokens(lines[next--]);
 
             i = Math.Max(start + 1, next + 1); // always advance
         }
 
         return chunks;
     }
-
-    private static int EstimateLineTokens(string line) => Math.Max(1, (line.Length + 1) / 4);
 
     private static string? FirstNonEmptyLine(string[] lines)
     {
@@ -79,11 +75,5 @@ internal static class DocChunker
             if (t.Length > 0) return t.Length > 120 ? t[..120] : t;
         }
         return null;
-    }
-
-    private static string ComputeMd5(string text)
-    {
-        var bytes = MD5.HashData(System.Text.Encoding.UTF8.GetBytes(text));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }

@@ -129,6 +129,22 @@ internal static class SignalFile
         catch { return false; }
     }
 
+    /// <summary>
+    /// Whether a signal stamped <paramref name="unixMs"/> was written before process
+    /// <paramref name="pid"/> started, i.e. by an earlier process that held the same PID. A missing
+    /// stamp or an unreadable start time is never "older": liveness alone then decides.
+    /// </summary>
+    internal static bool PredatesProcess(int pid, long unixMs)
+    {
+        if (unixMs <= 0) return false;
+        try
+        {
+            var started = System.Diagnostics.Process.GetProcessById(pid).StartTime.ToUniversalTime();
+            return DateTimeOffset.FromUnixTimeMilliseconds(unixMs).UtcDateTime < started;
+        }
+        catch { return false; }
+    }
+
     /// <summary>Serialises <paramref name="payload"/> to <paramref name="path"/>. Never throws.</summary>
     /// <remarks>
     /// <para>

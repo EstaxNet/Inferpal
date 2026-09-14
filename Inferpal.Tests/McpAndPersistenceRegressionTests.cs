@@ -254,6 +254,71 @@ public class McpAndPersistenceRegressionTests
         Assert.Equal(2, names.Count);
         Assert.Equal(names.Count, names.Distinct(StringComparer.Ordinal).Count());
     }
+
+    // ── MCP reconnection ───────────────────────────────────────────────────────
+
+    private sealed class ScriptedClient(string name, bool dieWhileListing) : IMcpClient
+    {
+        public string ServerName => name;
+        public string? LastError { get; set; }
+        public bool NeedsAuthorization { get; set; }
+        public event Action? ToolsChanged;
+        public event Action? Closed;
+        public Task<bool> StartAsync(CancellationToken ct) => Task.FromResult(true);
+
+        public Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct)
+        {
+            if (dieWhileListing)
+            {
+                // The process exits while its tools are being listed: Closed fires, the listing is empty.
+                Closed?.Invoke();
+                return Task.FromResult<IReadOnlyList<McpToolInfo>>([]);
+            }
+            return Task.FromResult<IReadOnlyList<McpToolInfo>>(
+                [new McpToolInfo("t", "desc", JsonDocument.Parse("{}").RootElement.Clone())]);
+        }
+
+        public Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct) => Task.FromResult("ok");
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public void Die() => Closed?.Invoke();
+        public void Touch() => ToolsChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// A server that died again while its reconnect was listing tools: that <c>Closed</c> arrived while
+    /// the reconnect still held its slot and was ignored, so the server was published "connected" with
+    /// zero tools, and nothing ever reconnected it.
+    /// </summary>
+    [Fact]
+    public async Task AServerThatDiesDuringItsReconnect_IsReconnectedAgain_NotLeftConnectedWithNoTools()
+    {
+        var clients = new List<ScriptedClient>();
+        var config  = new InferpalConfig { McpServersJson = """{ "flaky": { "command": "x" } }""" };
+        var svc = new McpToolService(config, new Approve(), c =>
+        {
+            lock (clients)
+            {
+                // #1 healthy, #2 dies while its tools are listed, #3 onwards healthy.
+                var client = new ScriptedClient(c.Name, dieWhileListing: clients.Count == 1);
+                clients.Add(client);
+                return client;
+            }
+        }, [TimeSpan.FromMilliseconds(5), TimeSpan.FromMilliseconds(5), TimeSpan.FromMilliseconds(5)]);
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+        Assert.Single(svc.Tools);
+
+        clients[0].Die();
+
+        int Created() { lock (clients) return clients.Count; }
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (DateTime.UtcNow < deadline && !(Created() >= 3 && svc.Tools.Count == 1 && svc.Status.Single().Connected))
+            await Task.Delay(20);
+
+        Assert.True(Created() >= 3, $"only {Created()} client(s) created: the death during the reconnect was ignored");
+        Assert.Single(svc.Tools);
+        Assert.True(svc.Status.Single().Connected);
+    }
 }
 
 /// <summary>The config written by a newer version, read back and saved by this one.</summary>

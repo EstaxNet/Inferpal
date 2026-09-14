@@ -61,8 +61,7 @@ public class GitIgnorePatchTests
     [Fact]
     public void IndexingARepository_WritesTheNarrowEntry()
     {
-        var ragDb = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragdb-{Guid.NewGuid():N}");
-        RagDatabase.BaseDir = () => ragDb;   // never the user's %AppData% index
+        TestRagStore.Redirect();
         var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"gitignore-{Guid.NewGuid():N}");
         Directory.CreateDirectory(Path.Combine(root, ".git"));
         try

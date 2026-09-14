@@ -117,7 +117,7 @@ internal partial class InferpalToolWindowData
             if (!_config.IsFirstRun) return; // guard against re-entry
 
             // First-run posts its bubbles directly (no user turn exists yet to attach a reply to).
-            await RunSetupDiscoveryAsync(FirstRunPresentAsync).ConfigureAwait(false);
+            await RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception ex) { Diagnostics.Swallow("Rag.FirstRun", ex); }
     }
@@ -137,7 +137,7 @@ internal partial class InferpalToolWindowData
     /// models, seeds the VRAM budget, and reports the result via <paramref name="present"/>. Always
     /// clears <see cref="InferpalConfig.IsFirstRun"/>. Re-runnable on demand (no IsFirstRun guard here).
     /// </summary>
-    private async Task RunSetupDiscoveryAsync(Func<string, Task> present)
+    private async Task RunSetupDiscoveryAsync(Func<string, Task> present, CancellationToken ct)
     {
         var url = _config.BaseUrl;
 
@@ -145,7 +145,7 @@ internal partial class InferpalToolWindowData
         // Probe the URL to pick the right backend (Ollama / LM Studio / OpenAI-compatible) without
         // the user choosing manually. When it differs from the configured one, persist it and use a
         // matching client for discovery; the active singleton is rebuilt on the next VS reload.
-        var detected = await Services.Inference.ProviderProbe.DetectAsync(url, _config.ApiKey, CancellationToken.None)
+        var detected = await Services.Inference.ProviderProbe.DetectAsync(url, _config.ApiKey, ct)
             .ConfigureAwait(false);
         if (detected is not null && !string.Equals(detected, _config.Provider, StringComparison.OrdinalIgnoreCase))
         {
@@ -157,7 +157,7 @@ internal partial class InferpalToolWindowData
         // ── 1. Connectivity check ─────────────────────────────────────────────
         // A successful probe already proves reachability; otherwise fall back to the client's own check.
         var reachable = detected is not null
-            || await client.CheckConnectionAsync(url, CancellationToken.None).ConfigureAwait(false);
+            || await client.CheckConnectionAsync(url, ct).ConfigureAwait(false);
 
         if (!reachable)
         {
@@ -168,7 +168,7 @@ internal partial class InferpalToolWindowData
         }
 
         // ── 2. Model discovery ────────────────────────────────────────────────
-        var allModels  = await client.ListModelsAsync(CancellationToken.None)
+        var allModels  = await client.ListModelsAsync(ct)
             .ConfigureAwait(false);
 
         var chatModels = allModels.Where(m => !Services.Inference.ModelCatalog.IsEmbeddingModel(m)).ToList();
@@ -198,10 +198,10 @@ internal partial class InferpalToolWindowData
         // Auto-seed the VRAM budget if Ollama is local, then warn when the auto-picked
         // chat + embedding set is estimated to overflow it. Silent when the budget is
         // unknown (remote host) or the models comfortably fit.
-        await Services.Hardware.HardwareProfile.EnsureBudgetAsync(_config, CancellationToken.None)
+        await Services.Hardware.HardwareProfile.EnsureBudgetAsync(_config, ct)
             .ConfigureAwait(false);
 
-        var vramWarning = await BuildFirstRunVramWarningAsync(best).ConfigureAwait(false);
+        var vramWarning = await BuildFirstRunVramWarningAsync(best, ct).ConfigureAwait(false);
 
         var countLabel = chatModels.Count == 1 ? "1 model" : $"{chatModels.Count} models";
         var text = Strings.MsgFirstRunWelcome(countLabel, best);
@@ -211,18 +211,18 @@ internal partial class InferpalToolWindowData
 
     /// <summary>Handles <c>/setup</c>: re-runs the first-run discovery on demand (re-detect backend, re-pick models).</summary>
     private async Task HandleSetupCommandAsync(string[] parts, CancellationToken ct)
-        => await RunSetupDiscoveryAsync(ShowInfoAsync).ConfigureAwait(false);
+        => await RunSetupDiscoveryAsync(ShowInfoAsync, ct).ConfigureAwait(false);
 
     /// <summary>
     /// Builds the first-run VRAM overflow warning, or <c>null</c> when the budget is unknown or
     /// the auto-picked chat + embedding models comfortably fit. Estimates footprint from the
     /// models' on-disk size (<c>/api/tags</c>).
     /// </summary>
-    private async Task<string?> BuildFirstRunVramWarningAsync(string chatModel)
+    private async Task<string?> BuildFirstRunVramWarningAsync(string chatModel, CancellationToken ct)
     {
         if (_config.VramBudgetGb <= 0) return null;
 
-        var installed = await _client.ListInstalledModelsAsync(CancellationToken.None).ConfigureAwait(false);
+        var installed = await _client.ListInstalledModelsAsync(ct).ConfigureAwait(false);
         if (installed.Count == 0) return null;
 
         var sizeByName = installed.ToDictionary(m => m.Name, m => m.SizeBytes);

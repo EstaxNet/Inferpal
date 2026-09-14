@@ -99,6 +99,9 @@ internal partial class InferpalToolWindowData
 #pragma warning disable VSTHRD003
             if (previousTurn is not null)
                 await Task.WhenAny(previousTurn, Task.Delay(TimeSpan.FromSeconds(15)));
+            // The session restored at window opening replaces the conversation: a code action that
+            // opened the window must not start its turn underneath it. LoadSessionAsync never throws.
+            await _startupSessionLoad;
 #pragma warning restore VSTHRD003
             // Alt+M posts "/map": a slash command goes to the router, never to the model as chat text.
             if (p.StartsWith('/'))

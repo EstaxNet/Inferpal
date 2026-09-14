@@ -49,9 +49,19 @@ internal sealed class McpToolService : IAsyncDisposable
         public string? Error { get; set; }
 
         private int _reconnecting;
+        private IMcpClient? _closedDuringReconnect;
+
         /// <summary>Claims the single in-flight reconnect slot; returns false if one is already running.</summary>
         public bool TryBeginReconnect() => Interlocked.CompareExchange(ref _reconnecting, 1, 0) == 0;
         public void EndReconnect() => Interlocked.Exchange(ref _reconnecting, 0);
+
+        /// <summary>
+        /// A client closed while a reconnect held the slot. ⚠ Dropping that signal published the server
+        /// "connected" with no tools when the client being reconnected died during its own listing —
+        /// and nothing ever reconnected it. The reconnect re-checks it when it releases the slot.
+        /// </summary>
+        public void NoteClosedDuringReconnect(IMcpClient client) => Volatile.Write(ref _closedDuringReconnect, client);
+        public IMcpClient? TakeClosedDuringReconnect() => Interlocked.Exchange(ref _closedDuringReconnect, null);
     }
 
     private List<ServerEntry> _servers = [];
@@ -193,9 +203,10 @@ internal sealed class McpToolService : IAsyncDisposable
             }
 
             // Wire lifecycle events before discovery so a death mid-listing still triggers reconnect.
-            var entry = new ServerEntry(server, client);
+            var entry  = new ServerEntry(server, client);
+            var events = client;
             client.ToolsChanged += () => OnServerToolsChanged(entry);
-            client.Closed       += () => OnServerClosed(entry);
+            client.Closed       += () => OnServerClosed(entry, events);
 
             entry.Tools = BuildTools(client, await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false));
             return (entry, null);
@@ -268,11 +279,15 @@ internal sealed class McpToolService : IAsyncDisposable
     /// attempts to respawn it with backoff. Fired on the read-loop thread; the lock-free guard
     /// ensures only one reconnect runs per server even if <c>Closed</c> races.
     /// </summary>
-    private void OnServerClosed(ServerEntry entry)
+    /// <param name="client">The client that closed — a close during a reconnect is kept, and acted on
+    /// when that reconnect ends if it was the client the reconnect published.</param>
+    private void OnServerClosed(ServerEntry entry, IMcpClient client)
     {
         if (_disposed) return;
         if (entry.TryBeginReconnect())
             _ = ReconnectAsync(entry);
+        else
+            entry.NoteClosedDuringReconnect(client);
     }
 
     private async Task ReconnectAsync(ServerEntry entry)
@@ -305,7 +320,7 @@ internal sealed class McpToolService : IAsyncDisposable
                     continue;
                 }
                 client.ToolsChanged += () => OnServerToolsChanged(entry);
-                client.Closed       += () => OnServerClosed(entry);
+                client.Closed       += () => OnServerClosed(entry, client);
                 var discovered = await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false);
 
                 await _gate.WaitAsync().ConfigureAwait(false);
@@ -340,6 +355,10 @@ internal sealed class McpToolService : IAsyncDisposable
         finally
         {
             entry.EndReconnect();
+            // The client just published died while this reconnect still held the slot: reconnect again
+            // rather than leave it "connected" on a dead process. A close of an older client is stale.
+            if (entry.TakeClosedDuringReconnect() is { } closed && ReferenceEquals(closed, entry.Client))
+                OnServerClosed(entry, closed);
         }
     }
 

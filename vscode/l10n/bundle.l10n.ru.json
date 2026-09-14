@@ -19,7 +19,7 @@
   "Delete": "Удалить",
   "Session deleted: {0}": "Сеанс удалён: {0}",
   "Session {0} was not found — it may already have been deleted.": "Сеанс {0} не найден — возможно, он уже удалён.",
-  "{0} older messages were dropped to bound memory — the full conversation is in the saved session.": "Удалено старых сообщений: {0} — чтобы ограничить память; полный разговор есть в сохранённом сеансе.",
+  "{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.": "Из этого окна удалено старых сообщений: {0} — чтобы ограничить память; в сохранённом сеансе их тоже нет.",
   "Session name": "Имя сеанса",
   "Session saved: {0}": "Сеанс сохранён: {0}",
   "Pick a session to load": "Выберите сеанс для загрузки",

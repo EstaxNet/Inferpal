@@ -22,16 +22,40 @@ internal sealed class OpenDocumentOverlay
     private static readonly StringComparer PathComparer =
         OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
 
-    private readonly ConcurrentDictionary<string, string> _docs = new(PathComparer);
+    private readonly ConcurrentDictionary<string, Entry> _docs = new(PathComparer);
+
+    private readonly record struct Entry(string Text, bool Unsaved);
 
     /// <summary>Mirrors an opened/edited document (full-text sync).</summary>
-    public void Set(string path, string text) => _docs[Normalize(path)] = text;
+    /// <param name="unsaved">Whether the buffer holds changes the disk does not. An adapter that does not
+    /// say is taken to mean it does: the buffer then wins over the disk, as it always did.</param>
+    public void Set(string path, string text, bool unsaved = true) =>
+        _docs[Normalize(path)] = new Entry(text, unsaved);
 
     /// <summary>Drops a closed document; subsequent reads fall back to disk.</summary>
     public void Remove(string path) => _docs.TryRemove(Normalize(path), out _);
 
     /// <summary>Buffered content of <paramref name="path"/>, when the document is open.</summary>
-    public bool TryGet(string path, out string text) => _docs.TryGetValue(Normalize(path), out text!);
+    public bool TryGet(string path, out string text)
+    {
+        var found = _docs.TryGetValue(Normalize(path), out var entry);
+        text = found ? entry.Text : string.Empty;
+        return found;
+    }
+
+    /// <summary>
+    /// Buffered content of <paramref name="path"/>, only when it holds changes the disk does not.
+    /// </summary>
+    /// <remarks>
+    /// A saved open document is read from disk: a tool that just wrote the file is newer than the
+    /// buffer, which the editor reloads only later — or never, for a file its watcher excludes.
+    /// </remarks>
+    public bool TryGetUnsaved(string path, out string text)
+    {
+        var found = _docs.TryGetValue(Normalize(path), out var entry) && entry.Unsaved;
+        text = found ? entry.Text : string.Empty;
+        return found;
+    }
 
     /// <summary>Paths of the documents currently mirrored (i.e. open in the editor).</summary>
     public IReadOnlyList<string> Paths => [.. _docs.Keys];

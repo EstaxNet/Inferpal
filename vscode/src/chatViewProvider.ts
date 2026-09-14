@@ -153,6 +153,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // immediately while the utility model names the session in the background.
     this.archiveConversation();
     this.transcript.length = 0;
+    this.droppedEntries = 0;
     this.streamText = '';
     this.plan = null;
     this.promptTokens = 0;
@@ -380,6 +381,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Replaces the transcript with a restored session (host history already rebuilt). */
   private applySession(messages: SavedMessage[]): void {
     this.transcript.length = 0;
+    this.droppedEntries = 0;
     this.transcript.push(...toTranscript(messages));
     this.trimTranscript();
     this.streamText = '';
@@ -1139,6 +1141,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           }
           this.archiveConversation();
           this.transcript.length = 0;
+          this.droppedEntries = 0;
           this.streamText = '';
           this.plan = null;
           this.promptTokens = 0;
@@ -1301,18 +1304,32 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.trimTranscript();
   }
 
-  /** Drops the oldest entries past the cap, leaving a marker in their place. */
+  /** Entries dropped from this conversation so far; while non-zero, `transcript[0]` is the marker. */
+  private droppedEntries = 0;
+
+  /**
+   * Drops the oldest entries past the cap, behind a single marker that carries the running count.
+   * The marker is replaced in place, never trimmed with the entries: dropping it restarted the count
+   * at 1 on every append. It promises no copy elsewhere — the saved session is this same transcript.
+   */
   private trimTranscript(): void {
-    if (this.transcript.length <= ChatViewProvider.MAX_TRANSCRIPT) {
+    if (this.transcript.length <= ChatViewProvider.MAX_TRANSCRIPT + 1) {
       return;
     }
-    const dropped = this.transcript.length - ChatViewProvider.MAX_TRANSCRIPT;
-    this.transcript.splice(0, dropped);
-    this.transcript.unshift({
+    const markerSlot = this.droppedEntries > 0 ? 1 : 0;
+    const excess = this.transcript.length - ChatViewProvider.MAX_TRANSCRIPT - markerSlot;
+    this.transcript.splice(markerSlot, excess);
+    this.droppedEntries += excess;
+    const marker: WvTranscriptItem = {
       role: 'error',
-      text: vscode.l10n.t('{0} older messages were dropped to bound memory — the full conversation is in the saved session.', dropped),
+      text: vscode.l10n.t('{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.', this.droppedEntries),
       timestamp: ChatViewProvider.now(),
-    });
+    };
+    if (markerSlot) {
+      this.transcript[0] = marker;
+    } else {
+      this.transcript.unshift(marker);
+    }
   }
 
   /** Readable text for a failed RPC: JSON-RPC errors carry the host's message. */

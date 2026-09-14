@@ -134,4 +134,18 @@ public class InProcRegressionTests
         var read = Method("Inferpal.InProc/Fim/FimSidecar.cs", "ReadLoop").ToString().Replace(" ", string.Empty);
         Assert.Contains("ReferenceEquals(_process", read);
     }
+
+    /// <summary>
+    /// A split window shows one buffer in two views, and each view's controller reacted to every edit:
+    /// two completion requests per pause in typing, and a suggestion drawn at the caret of the view
+    /// nobody was typing in. Only the view that has the focus asks.
+    /// </summary>
+    [Fact]
+    public void GhostText_AsksOnlyFromTheFocusedView()
+    {
+        var read = Method("Inferpal.InProc/GhostText/GhostTextController.cs", "ReadContext");
+        Assert.True(read.DescendantNodes().OfType<MemberAccessExpressionSyntax>()
+                        .Any(m => m.Name.Identifier.Text == "HasAggregateFocus"),
+            "ReadContext requests a completion from every view of the buffer, focused or not.");
+    }
 }

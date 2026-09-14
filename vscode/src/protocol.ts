@@ -73,6 +73,8 @@ export interface ThinkingNote {
 export interface DocumentParams {
   path: string;
   text?: string;
+  /** Whether the buffer has unsaved changes: only then does the host prefer it over the disk. */
+  dirty?: boolean;
 }
 
 export interface ActiveDocumentDto {

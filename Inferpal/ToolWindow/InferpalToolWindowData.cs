@@ -99,6 +99,10 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // pending-prompt path awaits after cancelling a turn, so it never starts the next one while
     // the previous is still unwinding (pre-1.6.0 architecture review, §2.1). Touched on the VM context only.
     private TaskCompletionSource?    _turnDone;
+    // The last session restored when the window opens. A pending prompt (a code action that opened
+    // the window) waits for it: the restore replaces the conversation, and it could not wait for a
+    // turn that had not started yet.
+    private Task                     _startupSessionLoad = Task.CompletedTask;
     // Atomic send claim, touched only on the (FIFO, single-threaded) VM context. Guards the
     // startup window between a send being claimed and IsLoading taking over as the re-entrancy
     // guard — without it, a burst of Enter presses while the backend is slow to start

@@ -16,24 +16,12 @@ namespace Inferpal.Tests;
 [Collection("Diagnostics")]
 public sealed class ProjectIndexServiceWatcherTests : IDisposable
 {
-    // Redirects the SQLite database out of the real %AppData% for the whole test process (same
-    // precedent as TestReproScaffold.BaseDir). Never restored: no test may write the user's real
-    // index.
-    private static readonly string DbBase = InitDbBase();
-
-    private static string InitDbBase()
-    {
-        var dir = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragdb-{Guid.NewGuid():N}");
-        RagDatabase.BaseDir = () => dir;
-        return dir;
-    }
-
     private readonly string _root;
     private readonly List<ProjectIndexService> _services = [];
 
     public ProjectIndexServiceWatcherTests()
     {
-        _ = DbBase; // forces static init before the first RagDatabase
+        TestRagStore.Redirect();
         _root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"rag-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_root);
     }

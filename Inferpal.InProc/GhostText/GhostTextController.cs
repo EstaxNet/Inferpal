@@ -151,6 +151,11 @@ internal sealed class GhostTextController
     {
         if (token.IsCancellationRequested) return null;
 
+        // A split window shows the buffer in several views, and every one of them sees each edit:
+        // only the view being typed in asks, or each keystroke cost one request per view and the
+        // suggestion appeared at the caret of a view nobody was typing in.
+        if (!_view.HasAggregateFocus) return null;
+
         var snapshot = _view.TextBuffer.CurrentSnapshot;
         var caretPos = _view.Caret.Position.BufferPosition;
         var cursor   = caretPos.Position;

@@ -69,7 +69,8 @@ internal static class DebugCommandSignal
     /// <summary>A request older than this is ignored (host died between write and read).</summary>
     internal static TimeSpan MaxAge { get; set; } = TimeSpan.FromMinutes(10);
 
-    private sealed record ReadyMarker([property: JsonPropertyName("pid")] int Pid);
+    private sealed record ReadyMarker([property: JsonPropertyName("pid")] int Pid,
+                                      [property: JsonPropertyName("ts")] long Ts = 0);
 
     // ── Host side (tools) ───────────────────────────────────────────────────────────
 
@@ -79,7 +80,11 @@ internal static class DebugCommandSignal
         try
         {
             var marker = SignalFile.TryRead<ReadyMarker>(ReadyPath);
-            if (marker is not null) return SignalFile.IsProcessAlive(marker.Pid);
+            // Alive is not enough: the marker is keyed by devenv PID, so a devenv that crashed and a
+            // new one holding the same PID without a driver share the file. Only the stamp against
+            // the process start time separates them.
+            if (marker is not null)
+                return SignalFile.IsProcessAlive(marker.Pid) && !SignalFile.PredatesProcess(marker.Pid, marker.Ts);
             // Unreadable is not absent: a marker that is there but could not be read this instant (a
             // scan, a share lock) keeps the driver ready. Read as "gone", it failed the call at once or
             // made the wait give up — withdrawing a request the driver may already be executing. The
@@ -181,7 +186,8 @@ internal static class DebugCommandSignal
     {
         try
         {
-            SignalFile.Write(ReadyPath, new ReadyMarker(pid), "DebugCommandSignal.MarkReady");
+            SignalFile.Write(ReadyPath, new ReadyMarker(pid, SignalFile.Now.ToUnixTimeMilliseconds()),
+                             "DebugCommandSignal.MarkReady");
         }
         catch (Exception ex) { Diagnostics.Swallow("DebugCommandSignal.MarkReady", ex); }
     }

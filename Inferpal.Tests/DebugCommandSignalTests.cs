@@ -90,6 +90,26 @@ public class DebugCommandSignalTests : IDisposable
         Assert.False(DebugCommandSignal.IsDriverReady());
     }
 
+    /// <summary>
+    /// Recycled PID: a devenv that died left its marker, and a new process now holds the same PID
+    /// without a driver. The file is there and its process is alive; only the process start time
+    /// tells them apart. Read as ready, /tdd waited two minutes for an answer nobody would send
+    /// instead of saying the debugger capture is unavailable.
+    /// </summary>
+    [Fact]
+    public void AReadyMarkerOlderThanItsProcess_IsNotReady()
+    {
+        SignalFile._nowOverride = () => DateTimeOffset.UtcNow.AddHours(-4);
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+        SignalFile._nowOverride = null;
+
+        // Witness: the test process started within the last four hours, or this case measures nothing.
+        Assert.True(System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime()
+                    > DateTime.UtcNow.AddHours(-4),
+                    "test process too old: this case would measure nothing");
+        Assert.False(DebugCommandSignal.IsDriverReady());
+    }
+
     // ── Request leg ─────────────────────────────────────────────────────────────────
 
     [Fact]

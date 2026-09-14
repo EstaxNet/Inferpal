@@ -83,7 +83,7 @@ internal sealed class DocsDatabase
                 Heading     = await reader.IsDBNullAsync(3, ct) ? null : reader.GetString(3),
                 Content     = reader.GetString(4),
                 ContentHash = reader.GetString(5),
-                Embedding   = await reader.IsDBNullAsync(6, ct) ? null : BlobToFloats((byte[])reader[6]),
+                Embedding   = await reader.IsDBNullAsync(6, ct) ? null : VectorMath.FromBlob((byte[])reader[6]),
             });
         }
         return result;
@@ -259,7 +259,7 @@ internal sealed class DocsDatabase
             pCt.Value  = c.Content;
             pCh.Value  = c.ContentHash;
             pEmb.Value = c.Embedding is { Length: > 0 }
-                ? (object)FloatsToBlob(c.Embedding)
+                ? (object)VectorMath.ToBlob(c.Embedding)
                 : DBNull.Value;
             await insert.ExecuteNonQueryAsync(ct);
         }
@@ -275,22 +275,5 @@ internal sealed class DocsDatabase
         pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
         pragma.ExecuteNonQuery();
         return conn;
-    }
-
-    // ── Embedding serialisation ───────────────────────────────────────────────
-
-    private static byte[] FloatsToBlob(float[] values)
-    {
-        var bytes = new byte[values.Length * sizeof(float)];
-        Buffer.BlockCopy(values, 0, bytes, 0, bytes.Length);
-        return bytes;
-    }
-
-    private static float[] BlobToFloats(byte[] blob)
-    {
-        if (blob.Length % sizeof(float) != 0) return [];
-        var floats = new float[blob.Length / sizeof(float)];
-        Buffer.BlockCopy(blob, 0, floats, 0, blob.Length);
-        return floats;
     }
 }

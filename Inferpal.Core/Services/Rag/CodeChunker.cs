@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace Inferpal.Services.Rag;
@@ -116,7 +115,7 @@ internal static class CodeChunker
             int end      = i + 1 < typeStarts.Count ? typeStarts[i + 1].line - 1 : lines.Length - 1;
             var typeName = typeStarts[i].name;
 
-            if (EstimateTokens(lines, start, end) > TargetChunkTokens)
+            if (ChunkText.EstimateTokens(lines, start, end) > TargetChunkTokens)
             {
                 // Type is too large — split by methods
                 result.AddRange(SplitByMethods(lines, start, end, typeName));
@@ -150,12 +149,12 @@ internal static class CodeChunker
             int mEnd   = i + 1 < methodStarts.Count ? methodStarts[i + 1] - 1 : end;
 
             // Hard cap: if method still exceeds budget, truncate line-by-line
-            if (EstimateTokens(lines, mStart, mEnd) > MaxChunkTokens)
+            if (ChunkText.EstimateTokens(lines, mStart, mEnd) > MaxChunkTokens)
             {
                 int tok = 0;
                 int cut = mStart;
                 while (cut <= mEnd && tok < MaxChunkTokens)
-                    tok += EstimateLineTokens(lines[cut++]);
+                    tok += ChunkText.EstimateLineTokens(lines[cut++]);
                 mEnd = Math.Max(mStart + MinChunkLines, cut - 2);
             }
 
@@ -180,7 +179,7 @@ internal static class CodeChunker
 
             // Accumulate lines until we hit the token target
             while (j < lines.Length && tokens < TargetChunkTokens)
-                tokens += EstimateLineTokens(lines[j++]);
+                tokens += ChunkText.EstimateLineTokens(lines[j++]);
 
             int end = Math.Min(j - 1, lines.Length - 1);
             result.Add((start, end, null));
@@ -191,25 +190,12 @@ internal static class CodeChunker
             int backTokens = 0;
             int next       = end;
             while (next > start + 1 && backTokens < OverlapTokens)
-                backTokens += EstimateLineTokens(lines[next--]);
+                backTokens += ChunkText.EstimateLineTokens(lines[next--]);
 
             i = Math.Max(start + 1, next + 1); // always advance
         }
 
         return result;
-    }
-
-    // ── Token estimation (chars / 4 — standard BPE approximation) ────────────
-
-    private static int EstimateLineTokens(string line) =>
-        Math.Max(1, (line.Length + 1) / 4);
-
-    private static int EstimateTokens(string[] lines, int start, int end)
-    {
-        int total = 0;
-        for (int i = start; i <= end && i < lines.Length; i++)
-            total += EstimateLineTokens(lines[i]);
-        return total;
     }
 
     // ── Chunk assembly ────────────────────────────────────────────────────────
@@ -237,19 +223,11 @@ internal static class CodeChunker
                 StartLine   = start + 1, // 1-based
                 EndLine     = end   + 1,
                 Content     = text,
-                ContentHash = ComputeMd5(text),
+                ContentHash = ChunkText.Hash(text),
                 TypeName    = typeName,
             });
         }
 
         return chunks;
-    }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
-    private static string ComputeMd5(string text)
-    {
-        var bytes = MD5.HashData(System.Text.Encoding.UTF8.GetBytes(text));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }

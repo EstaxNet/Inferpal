@@ -465,8 +465,15 @@ internal sealed class ProjectIndexService : IDisposable
 
             // ── Persist final index ───────────────────────────────────────────
             await ApplyChunksAsync(newChunks, replaceAll: true, ct);
-            await db.SaveAsync(newChunks, ct);
-            await db.SetMetaAsync(EmbeddingModelMetaKey, embModel, ct);
+            // A pass that found nothing to change writes nothing: every start of the editor runs this
+            // pass, and rewriting every row and vector for the same content cost the whole index in
+            // disk writes. A changed embedding model is always saved — with the embedding circuit
+            // open, its cleared vectors would compare equal to vectors that were never recomputed.
+            var modelChanged = !string.Equals(storedModel, embModel, StringComparison.Ordinal);
+            if (modelChanged || !SameAsStored(loaded, newChunks))
+                await db.SaveAsync(newChunks, ct);
+            if (modelChanged)
+                await db.SetMetaAsync(EmbeddingModelMetaKey, embModel, ct);
             // ⚠ Reported even when the pass "succeeds": a full index built on zero files read is
             // exactly the state that used to read as normal.
             if (skipped > 0)
@@ -513,6 +520,33 @@ internal sealed class ProjectIndexService : IDisposable
         {
             IsIndexing = false;
         }
+    }
+
+    /// <summary>
+    /// Whether a pass produced exactly the chunks it loaded: same files, lines, content and type name,
+    /// and the very same embedding arrays — a reused vector is the loaded instance, a recomputed one
+    /// never is. Compared as a multiset: a file can repeat a chunk verbatim.
+    /// </summary>
+    internal static bool SameAsStored(IReadOnlyList<RagChunk> stored, IReadOnlyList<RagChunk> pass)
+    {
+        if (stored.Count != pass.Count) return false;
+
+        var remaining = new Dictionary<(string, string, int, int, string, string?, float[]?), int>();
+        foreach (var chunk in stored)
+        {
+            var key = Key(chunk);
+            remaining[key] = remaining.TryGetValue(key, out var n) ? n + 1 : 1;
+        }
+        foreach (var chunk in pass)
+        {
+            var key = Key(chunk);
+            if (!remaining.TryGetValue(key, out var n) || n == 0) return false;
+            remaining[key] = n - 1;
+        }
+        return true;
+
+        static (string, string, int, int, string, string?, float[]?) Key(RagChunk c) =>
+            (c.FilePath, c.RelPath, c.StartLine, c.EndLine, c.ContentHash, c.TypeName, c.Embedding);
     }
 
     /// <summary>

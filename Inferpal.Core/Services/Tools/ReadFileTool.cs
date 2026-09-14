@@ -35,9 +35,9 @@ internal class ReadFileTool : ITool
         var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
 
-        // Dirty-buffer overlay first: an open (possibly unsaved, possibly not-yet-created)
-        // document must be read as the user sees it, not as the disk last saved it.
-        if (_overlay is not null && _overlay.TryGet(path, out var buffered))
+        // An unsaved (possibly not-yet-created) buffer must be read as the user sees it, not as the
+        // disk last saved it. A saved one is read from disk: the file may have just been written.
+        if (_overlay is not null && _overlay.TryGetUnsaved(path, out var buffered))
             return buffered;
 
         if (!File.Exists(path))

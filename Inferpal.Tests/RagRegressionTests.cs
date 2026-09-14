@@ -25,8 +25,7 @@ public sealed class RagRegressionTests : IDisposable
 
     public RagRegressionTests()
     {
-        var db = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragdb-{Guid.NewGuid():N}");
-        RagDatabase.BaseDir = () => db;   // never the user's %AppData% index
+        TestRagStore.Redirect();
         _root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragreg-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_root);
     }

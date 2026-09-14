@@ -1,6 +1,4 @@
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 using Inferpal.Services.Rag;
 
 namespace Inferpal.Services.Lsp;
@@ -135,7 +133,7 @@ internal static class LspChunker
         if (lineCount < 2) return; // skip trivial single-line entries
 
         // Hard cap: shrink by 25% steps until under token budget
-        while (lineCount > 2 && EstimateTokens(lines, startLine0, endLine0) > MaxChunkTokens)
+        while (lineCount > 2 && ChunkText.EstimateTokens(lines, startLine0, endLine0) > MaxChunkTokens)
         {
             int cut = Math.Max(1, lineCount / 4);
             endLine0  -= cut;
@@ -152,22 +150,8 @@ internal static class LspChunker
             StartLine   = startLine0 + 1,   // convert to 1-based
             EndLine     = endLine0   + 1,
             Content     = text,
-            ContentHash = Md5Hex(text),
+            ContentHash = ChunkText.Hash(text),
             TypeName    = symbolName,
         });
-    }
-
-    private static int EstimateTokens(string[] lines, int start, int end)
-    {
-        int total = 0;
-        for (int i = start; i <= end && i < lines.Length; i++)
-            total += Math.Max(1, (lines[i].Length + 1) / 4);
-        return total;
-    }
-
-    private static string Md5Hex(string text)
-    {
-        var bytes = MD5.HashData(Encoding.UTF8.GetBytes(text));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }

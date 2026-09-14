@@ -1,6 +1,4 @@
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -129,9 +127,9 @@ internal static class RoslynChunker
         while (pieceStart <= end0)
         {
             var pieceEnd = pieceStart;
-            var tokens   = EstimateTokens(lines, pieceStart, pieceStart);
-            while (pieceEnd < end0 && tokens + EstimateTokens(lines, pieceEnd + 1, pieceEnd + 1) <= MaxChunkTokens)
-                tokens += EstimateTokens(lines, ++pieceEnd, pieceEnd);
+            var tokens   = ChunkText.EstimateTokens(lines, pieceStart, pieceStart);
+            while (pieceEnd < end0 && tokens + ChunkText.EstimateTokens(lines, pieceEnd + 1, pieceEnd + 1) <= MaxChunkTokens)
+                tokens += ChunkText.EstimateTokens(lines, ++pieceEnd, pieceEnd);
 
             AddPiece(symbolName, pieceStart, pieceEnd, lines, filePath, relPath, chunks);
             pieceStart = pieceEnd + 1;
@@ -151,7 +149,7 @@ internal static class RoslynChunker
             StartLine   = start0 + 1,   // 1-based
             EndLine     = end0   + 1,
             Content     = text,
-            ContentHash = Md5Hex(text),
+            ContentHash = ChunkText.Hash(text),
             TypeName    = symbolName,
         });
     }
@@ -195,20 +193,4 @@ internal static class RoslynChunker
         BaseTypeDeclarationSyntax bt    => bt.Identifier.Text,
         _                               => "member"
     };
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
-    private static int EstimateTokens(string[] lines, int start, int end)
-    {
-        int total = 0;
-        for (int i = start; i <= end && i < lines.Length; i++)
-            total += Math.Max(1, (lines[i].Length + 1) / 4);
-        return total;
-    }
-
-    private static string Md5Hex(string text)
-    {
-        var bytes = MD5.HashData(Encoding.UTF8.GetBytes(text));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
-    }
 }

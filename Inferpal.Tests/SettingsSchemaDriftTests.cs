@@ -217,6 +217,41 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
+    /// The adapter tells the host whether a mirrored buffer has unsaved changes, and a save says it no
+    /// longer does.
+    /// </summary>
+    /// <remarks>
+    /// <c>read_file</c> served the mirrored buffer of every open document. After a tool wrote a file
+    /// that was open and saved, the buffer still held the old text until the editor reloaded it from
+    /// disk and the debounced change arrived — so an edit followed by a read in the same turn read the
+    /// file as it was before the edit, and a document that is never reloaded (a watcher-excluded
+    /// folder) stayed stale for as long as it was open. Only an unsaved buffer must win over the disk.
+    /// </remarks>
+    [Fact]
+    public void EditorBridge_TellsTheHostWhetherABufferIsUnsaved()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+
+        string Ts(string relative)
+        {
+            var path = Path.Combine(dir!, "vscode", "src", relative);
+            Assert.True(File.Exists(path), $"vscode/src/{relative} has disappeared.");
+            return NeutralizeTypeScriptComments(File.ReadAllText(path));
+        }
+
+        var source = Ts("editorBridge.ts");
+        Assert.Matches(new Regex(@"didOpen\(\{[^}]*dirty: doc\.isDirty"), source);
+        Assert.Matches(new Regex(@"didChange\(\{[^}]*dirty: e\.document\.isDirty"), source);
+        Assert.Matches(
+            new Regex(@"onDidSaveTextDocument\([\s\S]{0,400}?didChange\(\{[^}]*dirty: false"),
+            source);
+        Assert.Matches(new Regex(@"interface DocumentParams \{[^}]*dirty\?: boolean"), Ts("protocol.ts"));
+    }
+
+    /// <summary>
     /// Issue #8. "Use a separate model per role" unchecked promises the chat model everywhere — its
     /// tooltip says so. The panel only folded the fields away: the per-role models stayed in the
     /// configuration, the router kept using them, and the box came back checked at the next opening

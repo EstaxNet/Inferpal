@@ -36,6 +36,9 @@ internal sealed class RagDatabase
     private readonly string _dbPath;
     private readonly string _rootHash;
 
+    /// <summary>The database file this instance reads and writes.</summary>
+    internal string DbPath => _dbPath;
+
     private const int SchemaVersion = 1;
 
     // ── Construction ──────────────────────────────────────────────────────────
@@ -130,7 +133,7 @@ internal sealed class RagDatabase
                 Content     = reader.GetString(4),
                 ContentHash = reader.GetString(5),
                 TypeName    = await reader.IsDBNullAsync(6, ct) ? null : reader.GetString(6),
-                Embedding   = await reader.IsDBNullAsync(7, ct) ? null : BlobToFloats((byte[])reader[7]),
+                Embedding   = await reader.IsDBNullAsync(7, ct) ? null : VectorMath.FromBlob((byte[])reader[7]),
             });
         }
 
@@ -304,7 +307,7 @@ internal sealed class RagDatabase
             pCh.Value  = c.ContentHash;
             pTn.Value  = (object?)c.TypeName ?? DBNull.Value;
             pEmb.Value = c.Embedding is { Length: > 0 }
-                ? (object)FloatsToBlob(c.Embedding)
+                ? (object)VectorMath.ToBlob(c.Embedding)
                 : DBNull.Value;
             await insert.ExecuteNonQueryAsync(ct);
         }
@@ -319,25 +322,6 @@ internal sealed class RagDatabase
         // WAL for concurrent read/write; NORMAL sync = no fsync on every commit
         conn.Execute("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;");
         return conn;
-    }
-
-    // ── Embedding serialisation ───────────────────────────────────────────────
-
-    /// <summary>Serialises a float[] to a raw BLOB (no header, little-endian).</summary>
-    private static byte[] FloatsToBlob(float[] values)
-    {
-        var bytes = new byte[values.Length * sizeof(float)];
-        Buffer.BlockCopy(values, 0, bytes, 0, bytes.Length);
-        return bytes;
-    }
-
-    /// <summary>Deserialises a raw BLOB back to float[].</summary>
-    private static float[] BlobToFloats(byte[] blob)
-    {
-        if (blob.Length % sizeof(float) != 0) return [];
-        var floats = new float[blob.Length / sizeof(float)];
-        Buffer.BlockCopy(blob, 0, floats, 0, blob.Length);
-        return floats;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

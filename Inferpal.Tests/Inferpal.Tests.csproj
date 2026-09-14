@@ -58,4 +58,21 @@
     <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 
+  <!-- The VSIX project ships the in-process assembly's net472 build as copied content, and content
+       flows to referencing projects: it landed in this folder under the same name as the
+       net8.0-windows build these tests compile against, and whichever copy was newer won. With the
+       net472 one the in-process code ran its own copy of the signal bus, untouched by the test seams
+       (InProcTestAssemblyTests). Only the direct reference's build belongs here. -->
+  <Target Name="DropTheVsixNet472InProcCopy" AfterTargets="GetCopyToOutputDirectoryItems"
+          Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <ItemGroup>
+      <_SourceItemsToCopyToOutputDirectory Remove="@(_SourceItemsToCopyToOutputDirectory)"
+          Condition="$([System.String]::Copy('%(_SourceItemsToCopyToOutputDirectory.FullPath)').Contains('\net472\Inferpal.InProc.'))" />
+      <_SourceItemsToCopyToOutputDirectoryAlways Remove="@(_SourceItemsToCopyToOutputDirectoryAlways)"
+          Condition="$([System.String]::Copy('%(_SourceItemsToCopyToOutputDirectoryAlways.FullPath)').Contains('\net472\Inferpal.InProc.'))" />
+      <AllItemsFullPathWithTargetPath Remove="@(AllItemsFullPathWithTargetPath)"
+          Condition="$([System.String]::Copy('%(AllItemsFullPathWithTargetPath.FullPath)').Contains('\net472\Inferpal.InProc.'))" />
+    </ItemGroup>
+  </Target>
+
 </Project>

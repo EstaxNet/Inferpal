@@ -62,7 +62,8 @@ internal sealed record FimParams(
     string? Model       = null);
 
 /// <summary>`textDocument/didOpen|didChange|didClose` + `editor/didChangeActiveDocument`.</summary>
-internal sealed record DocumentParams(string Path, string? Text = null);
+/// <param name="Dirty">Whether the buffer has unsaved changes; absent means it does.</param>
+internal sealed record DocumentParams(string Path, string? Text = null, bool? Dirty = null);
 
 /// <summary>Reverse `editor/activeDocument` answer from the adapter.</summary>
 internal sealed record ActiveDocumentDto(string? Path, string? Text);

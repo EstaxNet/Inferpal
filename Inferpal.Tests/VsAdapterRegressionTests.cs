@@ -103,6 +103,7 @@ public class VsAdapterRegressionTests
     [InlineData("Bench")]
     [InlineData("Arena")]
     [InlineData("Models")]
+    [InlineData("Setup")]
     public void ALongCommand_TakesTheTurn(string command)
     {
         var dispatch = Method(Vm + "InferpalToolWindowData.SlashCommands.cs", "RunDelegatedCommandAsync");
@@ -113,6 +114,19 @@ public class VsAdapterRegressionTests
         Assert.True(section is not null, $"No dispatch case for SlashCommandId.{command} — this guard checks nothing.");
         Assert.True(Calls(section!, "RunOwnedCommandAsync"),
             $"/{command.ToLowerInvariant()} runs without taking the turn: Stop cannot cancel it and a chat turn can start underneath it.");
+    }
+
+    /// <summary>
+    /// /setup can only take the turn if Stop reaches it: its discovery made every backend call with
+    /// <c>CancellationToken.None</c>, so a Stop button would have shown and done nothing.
+    /// </summary>
+    [Fact]
+    public void SetupDiscovery_HonoursTheTurnsCancellation()
+    {
+        var discovery = Method(Vm + "InferpalToolWindowData.Rag.cs", "RunSetupDiscoveryAsync");
+
+        Assert.Contains(discovery.ParameterList.Parameters, p => p.Type?.ToString() == "CancellationToken");
+        Assert.DoesNotContain("CancellationToken.None", discovery.ToString(), StringComparison.Ordinal);
     }
 
     /// <summary>AsyncCommand handlers run off the view-model context; the prompt box and the history
@@ -205,5 +219,24 @@ public class VsAdapterRegressionTests
         var save = Method(Vm + "InferpalSettingsData.cs", "SaveCoreAsync");
         Assert.True(Calls(save, "UseChatModelEverywhere"),
             "SaveCoreAsync keeps the per-role models when \"Use a separate model per role\" is unchecked.");
+    }
+
+    /// <summary>
+    /// A code action that opens the chat window (Explain, Alt+M…) queued its turn before the last
+    /// session was restored. The restore had already waited for the current turn — there was none yet
+    /// — so RestoreConversation then replaced the conversation under the running action: its question
+    /// and history gone while the answer streamed in. The pending turn waits for that startup load.
+    /// </summary>
+    [Fact]
+    public void APendingPrompt_WaitsForTheStartupSessionLoad()
+    {
+        var run = Method(Vm + "InferpalToolWindowData.PendingPrompt.cs", "RunPendingTurnAsync");
+        Assert.True(run.DescendantNodes().OfType<AwaitExpressionSyntax>()
+                       .Any(a => a.Expression.ToString().Contains("_startupSessionLoad", StringComparison.Ordinal)),
+            "RunPendingTurnAsync starts its turn while the startup session load can still replace the conversation.");
+
+        var construction = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), Vm + "InferpalToolWindowData.Construction.cs"));
+        Assert.Matches(@"_startupSessionLoad\s*=\s*LoadSessionAsync\(", construction);
     }
 }

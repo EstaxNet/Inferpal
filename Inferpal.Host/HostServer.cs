@@ -756,10 +756,10 @@ internal sealed partial class HostServer : IDisposable
     // ── Open-document overlay & active editor (notifications from the adapter) ─
 
     [JsonRpcMethod("textDocument/didOpen", UseSingleObjectParameterDeserialization = true)]
-    public void DidOpen(DocumentParams p) => Session().Overlay.Set(p.Path, p.Text ?? string.Empty);
+    public void DidOpen(DocumentParams p) => Session().Overlay.Set(p.Path, p.Text ?? string.Empty, p.Dirty ?? true);
 
     [JsonRpcMethod("textDocument/didChange", UseSingleObjectParameterDeserialization = true)]
-    public void DidChange(DocumentParams p) => Session().Overlay.Set(p.Path, p.Text ?? string.Empty);
+    public void DidChange(DocumentParams p) => Session().Overlay.Set(p.Path, p.Text ?? string.Empty, p.Dirty ?? true);
 
     [JsonRpcMethod("textDocument/didClose", UseSingleObjectParameterDeserialization = true)]
     public void DidClose(DocumentParams p) => Session().Overlay.Remove(p.Path);

@@ -117,7 +117,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
 
     for (const doc of vscode.workspace.textDocuments) {
       if (isMirrorable(doc)) {
-        host.didOpen({ path: doc.uri.fsPath, text: doc.getText() });
+        host.didOpen({ path: doc.uri.fsPath, text: doc.getText(), dirty: doc.isDirty });
         this.mirrored.add(doc.uri.fsPath);
       }
     }
@@ -137,9 +137,20 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
       }),
       vscode.workspace.onDidOpenTextDocument((doc) => {
         if (isMirrorable(doc)) {
-          this.host?.didOpen({ path: doc.uri.fsPath, text: doc.getText() });
+          this.host?.didOpen({ path: doc.uri.fsPath, text: doc.getText(), dirty: doc.isDirty });
           this.mirrored.add(doc.uri.fsPath);
         }
+      }),
+      // A save changes no text, so no change event says the buffer now matches the disk. Without this
+      // the host kept preferring it, and read a file a tool had written since as it was before.
+      vscode.workspace.onDidSaveTextDocument((doc) => {
+        const key = doc.uri.fsPath;
+        if (doc.uri.scheme !== 'file' || !this.mirrored.has(key)) {
+          return;
+        }
+        clearTimeout(this.changeTimers.get(key));
+        this.changeTimers.delete(key);
+        this.host?.didChange({ path: key, text: doc.getText(), dirty: false });
       }),
       vscode.workspace.onDidChangeTextDocument((e) => {
         if (e.document.uri.scheme !== 'file') {
@@ -161,7 +172,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
               this.dropMirror(key);
               return;
             }
-            this.host?.didChange({ path: key, text });
+            this.host?.didChange({ path: key, text, dirty: e.document.isDirty });
             this.mirrored.add(key);
           }, CHANGE_DEBOUNCE_MS),
         );

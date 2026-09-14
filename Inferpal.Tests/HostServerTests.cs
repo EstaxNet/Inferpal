@@ -184,8 +184,7 @@ public class HostServerTests
     [Fact]
     public async Task Initialize_WithRagOn_IndexesTheWorkspaceWithoutBeingAsked()
     {
-        var ragDb = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragdb-{Guid.NewGuid():N}");
-        Inferpal.Services.Rag.RagDatabase.BaseDir = () => ragDb;   // never the user's %AppData% index
+        TestRagStore.Redirect();
         var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"host-rag-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
         await File.WriteAllTextAsync(Path.Combine(root, "Fine.cs"), string.Join('\n',
@@ -807,6 +806,28 @@ public class HostServerTests
         Assert.Equal("class B;", text);
         Assert.False(overlay.TryGet(@"C:\proj\a.cs", out _));
         Assert.Single(overlay.Paths);
+    }
+
+    [Fact]
+    public async Task DidOpenDidChange_CarryWhetherTheBufferIsUnsaved()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        await h.Client.NotifyWithParameterObjectAsync(
+            "textDocument/didOpen", new { path = @"C:\proj\a.cs", text = "class A;", dirty = true });
+        await h.Client.NotifyWithParameterObjectAsync(
+            "textDocument/didOpen", new { path = @"C:\proj\b.cs", text = "class B;" });
+        await h.Client.NotifyWithParameterObjectAsync(
+            "textDocument/didChange", new { path = @"C:\proj\a.cs", text = "class A2;", dirty = false });
+
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var overlay = h.Server.CurrentSession!.Overlay;
+        Assert.False(overlay.TryGetUnsaved(@"C:\proj\a.cs", out _));   // saved: read from disk
+        Assert.True(overlay.TryGet(@"C:\proj\a.cs", out var text));    // still open and mirrored
+        Assert.Equal("class A2;", text);
+        Assert.True(overlay.TryGetUnsaved(@"C:\proj\b.cs", out _));    // an adapter that does not say keeps the buffer
     }
 
     // ── command/slash ──────────────────────────────────────────────────────────
