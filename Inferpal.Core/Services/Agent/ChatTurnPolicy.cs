@@ -106,9 +106,9 @@ internal static class ChatTurnPolicy
     /// snapshot of a moment that has passed, and an attached file can be read again. The
     /// <b>label</b> is enough to stop lying.
     ///
-    /// ⚠ Nothing to do on the VS Code side: there the mention stays written <c>@path</c> in the
-    /// text of the question itself, so the transcript already carries it. That is not a parity gap,
-    /// it is the same information carried differently.
+    /// ⚠ On the VS Code side, an <c>@mention</c> stays written in the question's text, but a chip
+    /// ("+" menu, selection, clipboard, problems) is not: the adapter names it under the question
+    /// with the same sentence (<c>chatViewProvider.nameAttachmentsInQuestion</c>).
     /// </remarks>
     public static string BuildBubbleText(string userText, IReadOnlyList<string> attachmentLabels)
     {

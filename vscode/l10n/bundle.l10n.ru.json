@@ -43,6 +43,7 @@
   "Search in the conversation…": "Поиск по беседе…",
   "Connected": "Подключено",
   "Backend unreachable": "Бэкенд недоступен",
+  "The backend is unreachable — your message was not sent and is back in the input box.": "Бэкенд недоступен — сообщение не отправлено и возвращено в поле ввода.",
   "Agent": "Агент",
   "Chat": "Чат",
   "Toggle between agent mode (tools) and plain chat": "Переключение между режимом агента (инструменты) и обычным чатом",
@@ -104,5 +105,7 @@
   "A turn is still running — stop it before starting a new conversation.": "Ход ещё выполняется — остановите его, прежде чем начинать новый разговор.",
   "Save": "Сохранить",
   "A session named {0} already exists. Replace it?": "Сеанс с именем {0} уже существует. Заменить его?",
-  "Replace": "Заменить"
+  "Replace": "Заменить",
+  "📎 Attached: {0}": "📎 Вложено: {0}",
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "Бэкенд недоступен — последний ответ сохранён, ничего не отправлено."
 }

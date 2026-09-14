@@ -55,6 +55,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private statusTimer: NodeJS.Timeout | undefined;
   /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
   private pendingAttachments: { name: string; content: string }[] = [];
+  /** The question the last model turn carried: the one slash-prefixed entry known to be in the host's history. */
+  private lastModelQuestion: WvTranscriptItem | null = null;
   private mentionCats: WvMentionCategory[] = [];
 
   constructor(
@@ -386,6 +388,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.trimTranscript();
     this.streamText = '';
     this.plan = null;
+    // Another conversation: its counters start over, as for a new one (and as the VS window restores).
+    // Kept, the gauge showed the previous fill and the export counted the previous tokens and duration.
+    this.promptTokens = 0;
+    this.lastTokens = 0;
+    this.sessionTokens = 0;
+    this.sessionStart = null;
     this.hydrate();
   }
 
@@ -757,14 +765,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'copyText':
         await vscode.env.clipboard.writeText(msg.text);
         return;
-      case 'regenerate': {
-        // v1: re-send the last user prompt as a fresh turn.
-        const lastUser = [...this.transcript].reverse().find((m) => m.role === 'user');
-        if (lastUser && !this.busy) {
-          await this.send(lastUser.text);
-        }
+      case 'regenerate':
+        await this.regenerate();
         return;
-      }
       case 'toggleAgentMode': {
         const config = vscode.workspace.getConfiguration('inferpal');
         const enabled = !config.get<boolean>('agentMode', true);
@@ -1067,6 +1070,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    // Like the Visual Studio window: a chat message is refused before anything is consumed when the
+    // backend is known to be down — no user bubble, nothing in the host's history, the text back in the
+    // input box. Checked again first, so a backend that just came back is not refused on a stale badge.
+    // Slash commands are served by the host and still run.
+    if (!prompt.startsWith('/') && this.status?.connected === false) {
+      await this.pollBackendStatus();
+      if (this.status?.connected === false) {
+        this.append({
+          role: 'error',
+          text: vscode.l10n.t('The backend is unreachable — your message was not sent and is back in the input box.'),
+          timestamp: ChatViewProvider.now(),
+        });
+        this.hydrate();
+        this.post({ type: 'setPrompt', text });
+        return;
+      }
+    }
+
     this.busy = true;
     this.streamText = '';
     this.plan = null;
@@ -1257,6 +1278,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private async chatTurn(prompt: string, host: HostClient): Promise<void> {
     try {
       const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', true);
+      this.lastModelQuestion = [...this.transcript].reverse().find((m) => m.role === 'user') ?? null;
       const mentions = await this.expandMentions(prompt);
       let expanded = mentions.text;
       const attachedPaths = [...mentions.paths];
@@ -1265,6 +1287,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           expanded += `\n\n## Attached: ${a.name}\n\`\`\`\n${a.content}\n\`\`\``;
           attachedPaths.push(a.name);
         }
+        this.nameAttachmentsInQuestion(this.pendingAttachments.map((a) => a.name));
         this.pendingAttachments = [];
         this.postChips();
       }
@@ -1278,6 +1301,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.promptTokens = result.promptTokens || this.promptTokens;
       if (result.error) {
         this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now() });
+      } else if (result.cancelled) {
+        // Like the VS window: a visible partial answer stays, an empty one is not saved, and the stop
+        // is a lasting line — the webview's own note is gone after a reload.
+        if (finalText.trim().length > 0) {
+          this.append({ role: 'assistant', text: finalText, timestamp: ChatViewProvider.now() });
+        }
+        this.append({ role: 'error', text: vscode.l10n.t('Cancelled.'), timestamp: ChatViewProvider.now() });
       } else {
         this.append({ role: 'assistant', text: finalText, timestamp: ChatViewProvider.now() });
       }
@@ -1339,6 +1369,65 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * and in the auto-saved session file. Trimming drops the oldest entries and leaves a marker —
    * never a silent disappearance.
    */
+  /**
+   * Answers the last question again, like the VS window: the previous exchange leaves the view and the
+   * host's history before the question is resent. Resent on top, the old answer stayed in the
+   * conversation and the model read it and the question twice. Reachability is checked before anything
+   * is removed. A slash command that never reached the model has no exchange in the host to take back.
+   */
+  private async regenerate(): Promise<void> {
+    const host = this.getHost();
+    const question = [...this.transcript].reverse().find((m) => m.role === 'user');
+    if (this.busy || !host?.isRunning || !question) {
+      return;
+    }
+    if (this.status?.connected === false) {
+      await this.pollBackendStatus();
+      if (this.status?.connected === false) {
+        this.append({
+          role: 'error',
+          text: vscode.l10n.t('The backend is unreachable — the last answer was kept and nothing was sent.'),
+          timestamp: ChatViewProvider.now(),
+        });
+        this.hydrate();
+        return;
+      }
+    }
+    if (question === this.lastModelQuestion || !question.text.startsWith('/')) {
+      try {
+        await host.chatRollbackLastTurn();
+      } catch (err) {
+        // Refused (a turn is in flight): resending now would stack the question on the old exchange.
+        this.log(`[chat] regenerate refused: ${String(err)}`);
+        return;
+      }
+    }
+    const at = this.transcript.indexOf(question);
+    if (this.busy || at < 0) {
+      return;
+    }
+    this.transcript.splice(at);
+    this.hydrate();
+    await this.send(question.text);
+  }
+
+  /**
+   * Names the chips a turn consumed under its question, like the VS window's bubble. Their content
+   * goes to the model only (an @-mention, by contrast, stays written in the question), so without the
+   * names a reloaded session or an export shows "explain this" with nothing it refers to. The label,
+   * never the content: a clipboard or problems snapshot describes a past state, and a file is re-read.
+   */
+  private nameAttachmentsInQuestion(names: readonly string[]): void {
+    const question = [...this.transcript].reverse().find((m) => m.role === 'user');
+    if (!question || names.length === 0) {
+      return;
+    }
+    const recap = vscode.l10n.t('📎 Attached: {0}', names.join(' · '));
+    question.text = question.text.length > 0 ? `${question.text}\n\n${recap}` : recap;
+    // The bubble was drawn by turnStarted; nothing streams yet, so a rebuild costs no partial answer.
+    this.hydrate();
+  }
+
   private append(item: WvTranscriptItem): void {
     this.transcript.push(item);
     this.trimTranscript();

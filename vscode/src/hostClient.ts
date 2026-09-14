@@ -353,6 +353,11 @@ export class HostClient {
     return this.connection().sendRequest('chat/reset');
   }
 
+  /** Takes the last question and everything after it out of the host history (regenerate). */
+  chatRollbackLastTurn(): Promise<boolean> {
+    return this.connection().sendRequest<boolean>('chat/rollbackLastTurn');
+  }
+
   /** Releases a step-mode pause (the agent proceeds to its next action). */
   chatResumeStep(): Promise<void> {
     return this.connection().sendRequest('chat/resumeStep');

@@ -234,11 +234,15 @@ internal sealed partial class HostServer : IDisposable
             var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
             // The reasoning tail is step progress only on the orchestrated path.
             showReasoningTail = agentMode;
-            // An explicit per-request model always wins; otherwise the Model Router applies the
-            // same role chains as the VS adapter (agent loop → AgentModel, plain chat → DefaultModel).
-            var model     = !string.IsNullOrWhiteSpace(p.Model)
+            // The model picked in the chat is the CHAT model: the agent loop still routes to the
+            // configured AgentModel first, as in Visual Studio. Letting the per-request model win made
+            // agentModel unreachable — the adapter always sends one.
+            var chatModel = !string.IsNullOrWhiteSpace(p.Model)
                 ? p.Model!
-                : ModelRouter.Resolve(s.Config, agentMode ? ModelRole.Agent : ModelRole.Chat);
+                : ModelRouter.Resolve(s.Config, ModelRole.Chat);
+            var model     = agentMode && !string.IsNullOrWhiteSpace(s.Config.AgentModel)
+                ? s.Config.AgentModel
+                : chatModel;
 
             if (agentMode)
             {
@@ -246,6 +250,12 @@ internal sealed partial class HostServer : IDisposable
                 IToolRegistry effectiveTools = s.Tools;
                 if (s.PlanMode) effectiveTools = new PlanModeToolRegistry(effectiveTools);
                 if (s.StepMode) effectiveTools = new StepModeToolRegistry(effectiveTools, tok => PauseForStepAsync(s, tok));
+
+                // Only the question and one answer outlive the run, as in Visual Studio: its internal
+                // transcript (plan prompt, plan JSON, step instructions, tool calls and results) bloats
+                // every following prompt and teaches the model to replay its previous answer. Copied
+                // now, so a loop that appends to the list it is given cannot reach it.
+                var durable = new List<ChatMessageDto>(s.History);
 
                 // Group this run's file snapshots so the adapter can offer /undo-run semantics.
                 s.Tools.History.BeginRun();
@@ -264,14 +274,23 @@ internal sealed partial class HostServer : IDisposable
                     ct:             cts.Token,
                     onThinking:     OnThinking);
 
-                s.History          = result.UpdatedHistory;
-                s.LastPromptTokens = result.PromptTokens;
+                // The answer the user saw — the streamed bubble when there was one, the final response otherwise.
+                var persisted = ChatTurnPolicy.ChoosePersistedAnswer(
+                    MarkdownParser.HasPrintableText(streamed.ToString()) ? streamed.ToString() : null,
+                    result.FinalResponse);
+                if (persisted.Length > 0)
+                    durable.Add(new ChatMessageDto("assistant", persisted));
+                s.History          = durable;
+                // The run's last call measured the discarded transcript, not what the next turn sends:
+                // compaction decides on the durable history instead.
+                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
                 // Both facts lived in OrchestratorResult and were read by nobody: a run cut short at
                 // its iteration limit returned a fluent answer, indistinguishable from a task
                 // carried to its end. Symmetric with the Visual Studio window.
                 var endNotice = result.ReachedIterationLimit ? Strings.AgentEndedAtIterationLimit
                               : result.WasLoopDetected       ? Strings.AgentEndedOnRepeat
                               : null;
+                await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
                     false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice);
@@ -281,6 +300,7 @@ internal sealed partial class HostServer : IDisposable
                 model, s.History, EmptyToolRegistry.Instance, OnToken, cts.Token, onThinking: OnThinking);
             s.History.Add(new ChatMessageDto("assistant", turn.TextContent));
             s.LastPromptTokens = turn.PromptTokens;
+            await CountTurnAsync(s, cts.Token);
             return new ChatSendResult(
                 FinalAnswer(turn.TextContent, streamed.ToString(), [], model, s),
                 false, turn.TokensUsed, turn.PromptTokens);
@@ -337,11 +357,69 @@ internal sealed partial class HostServer : IDisposable
         }
     }
 
+    /// <summary>
+    /// End of a finished turn: every <c>OodaTurnThreshold</c> turns, a session summary written by the
+    /// utility model joins the system prompt and is shown, as in the VS view model. The setting is in the
+    /// shared settings panel and did nothing here.
+    /// </summary>
+    private async Task CountTurnAsync(HostSession s, CancellationToken ct)
+    {
+        s.ConversationTurnCount++;
+        var every = s.Config.OodaTurnThreshold;
+        if (every <= 0 || s.ConversationTurnCount % every != 0) return;
+
+        Notify("chat/step", new { text = Strings.StatusOodaSummarizing });
+        try
+        {
+            var summarize = new List<ChatMessageDto>(s.History) { new("user", Strings.OodaSummarizePrompt) };
+            var result    = await s.Client.RunAgentAsync(
+                model:   await ModelRouter.ResolveUtilityAsync(s.Config, s.Client, ct),
+                history: summarize,
+                tools:   EmptyToolRegistry.Instance,
+                onStep:  _ => { },
+                onToken: null,
+                ct:      ct);
+
+            var summary = result.FinalResponse?.Trim();
+            if (string.IsNullOrEmpty(summary)) return;
+
+            s.OodaSummary = summary;
+            RefreshSystemPrompt(s);
+            Notify("chat/tool", new ToolNotice(
+                "ooda_recap", string.Empty, Strings.MsgOodaRecap(s.ConversationTurnCount, summary), false));
+        }
+        // The answer is already complete: a stop during the summary must not turn it into a cancelled turn.
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Diagnostics.Swallow("Ooda.Summary", ex); }
+    }
+
     [JsonRpcMethod("chat/reset")]
     public void ChatReset()
     {
         var s = Session();
         WithTurnSlot("chat/reset", () => StartNewConversation(s));
+    }
+
+    /// <summary>
+    /// Takes the last exchange back — the last question and everything after it — so the adapter can ask
+    /// it again, like the VS window's regenerate. Resent on top, the model read its own previous answer
+    /// and the question twice. The system prompt is never a question: false when none is left.
+    /// </summary>
+    [JsonRpcMethod("chat/rollbackLastTurn")]
+    public bool ChatRollbackLastTurn()
+    {
+        var s       = Session();
+        var removed = false;
+        WithTurnSlot("chat/rollbackLastTurn", () =>
+        {
+            var at = s.History.FindLastIndex(m => m.Role == "user");
+            if (at < 0) return;
+            s.History.RemoveRange(at, s.History.Count - at);
+            // The last call measured the exchange that is gone.
+            s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
+            removed = true;
+        });
+        return removed;
     }
 
     /// <summary>Full slash-command list for the adapter's autocomplete popup: built-ins (hints
@@ -653,6 +731,7 @@ internal sealed partial class HostServer : IDisposable
             if (p.Name == "last_session" && !SessionManager.AutoSaveBelongsHere(data, s.RootDir)) return null;
 
             s.TemplateSuffix     = null;
+            LeaveSessionSummaryBehind(s);
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
             s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;
             return new SessionLoadResult(
@@ -691,6 +770,7 @@ internal sealed partial class HostServer : IDisposable
                                     parent: plan.ParentName, forkTurn: plan.ForkTurn);
 
             s.TemplateSuffix     = null;
+            LeaveSessionSummaryBehind(s);
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
             s.CurrentSessionName = plan.BranchName;
 
@@ -903,6 +983,7 @@ internal sealed partial class HostServer : IDisposable
             disabledSectionIds: s.XrayDisabledSections);
         if (!string.IsNullOrEmpty(s.TemplateSuffix)) prompt += "\n\n" + s.TemplateSuffix;
         if (s.PlanMode)                              prompt += PlanModeToolRegistry.SystemPromptSuffix;
+        if (!string.IsNullOrEmpty(s.OodaSummary))    prompt += "\n\n## Session Summary\n\n" + s.OodaSummary;
         return prompt;
     }
 
@@ -939,8 +1020,17 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>Reseeds the history with the layered system prompt.</summary>
+    /// <summary>A conversation being replaced leaves its session summary and turn count behind, as in the
+    /// VS view model. Called before the new system prompt is built, which would otherwise carry it.</summary>
+    private static void LeaveSessionSummaryBehind(HostSession s)
+    {
+        s.OodaSummary           = null;
+        s.ConversationTurnCount = 0;
+    }
+
     private static void ResetHistory(HostSession s)
     {
+        LeaveSessionSummaryBehind(s);
         s.History            = [new ChatMessageDto("system", BuildSystemPromptText(s))];
         s.CurrentSessionName = null;   // the archived conversation keeps its own file
     }

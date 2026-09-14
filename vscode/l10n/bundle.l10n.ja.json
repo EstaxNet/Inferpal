@@ -43,6 +43,7 @@
   "Search in the conversation…": "会話内を検索…",
   "Connected": "接続済み",
   "Backend unreachable": "バックエンドに到達できません",
+  "The backend is unreachable — your message was not sent and is back in the input box.": "バックエンドに接続できません。メッセージは送信されず、入力欄に戻されました。",
   "Agent": "エージェント",
   "Chat": "チャット",
   "Toggle between agent mode (tools) and plain chat": "エージェントモード（ツール）とプレーンチャットを切り替え",
@@ -104,5 +105,7 @@
   "A turn is still running — stop it before starting a new conversation.": "ターンがまだ実行中です。新しい会話を開始する前に停止してください。",
   "Save": "保存",
   "A session named {0} already exists. Replace it?": "{0} という名前のセッションは既に存在します。置き換えますか？",
-  "Replace": "置き換える"
+  "Replace": "置き換える",
+  "📎 Attached: {0}": "📎 添付: {0}",
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "バックエンドに接続できません。最後の回答はそのまま残し、何も送信していません。"
 }

@@ -81,6 +81,16 @@ internal sealed class HostSession : IDisposable
     /// </remarks>
     public int LastPromptTokens { get; set; }
 
+    /// <summary>
+    /// Session summary written every <c>OodaTurnThreshold</c> turns (mirror of the VS VM's
+    /// <c>_oodaSummary</c>). The system-prompt builder appends it, so a prompt rebuild keeps it; a new
+    /// conversation leaves it behind.
+    /// </summary>
+    public string? OodaSummary { get; set; }
+
+    /// <summary>Finished turns of this conversation (mirror of the VS VM's <c>_conversationTurnCount</c>).</summary>
+    public int ConversationTurnCount { get; set; }
+
     /// <summary>Session file the conversation currently lives in (null = never saved, or reset).
     /// Mirror of the VS VM's <c>_currentSessionName</c>; <c>/branch</c> records it as the parent
     /// of a new branch. The <c>last_session</c> auto-save slot deliberately doesn't count.</summary>

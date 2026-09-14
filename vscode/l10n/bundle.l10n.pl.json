@@ -43,6 +43,7 @@
   "Search in the conversation…": "Szukaj w rozmowie…",
   "Connected": "Połączono",
   "Backend unreachable": "Backend niedostępny",
+  "The backend is unreachable — your message was not sent and is back in the input box.": "Backend jest nieosiągalny — wiadomość nie została wysłana i wróciła do pola wprowadzania.",
   "Agent": "Agent",
   "Chat": "Czat",
   "Toggle between agent mode (tools) and plain chat": "Przełącz między trybem agenta (narzędzia) a zwykłym czatem",
@@ -104,5 +105,7 @@
   "A turn is still running — stop it before starting a new conversation.": "Tura jest nadal w toku — zatrzymaj ją przed rozpoczęciem nowej rozmowy.",
   "Save": "Zapisz",
   "A session named {0} already exists. Replace it?": "Sesja o nazwie {0} już istnieje. Zastąpić ją?",
-  "Replace": "Zastąp"
+  "Replace": "Zastąp",
+  "📎 Attached: {0}": "📎 Załączono: {0}",
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "Backend jest nieosiągalny — ostatnia odpowiedź została zachowana i nic nie zostało wysłane."
 }

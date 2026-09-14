@@ -43,6 +43,7 @@
   "Search in the conversation…": "在对话中搜索…",
   "Connected": "已连接",
   "Backend unreachable": "后端不可达",
+  "The backend is unreachable — your message was not sent and is back in the input box.": "无法连接后端——消息未发送，已放回输入框。",
   "Agent": "代理",
   "Chat": "聊天",
   "Toggle between agent mode (tools) and plain chat": "在代理模式（工具）与普通聊天之间切换",
@@ -104,5 +105,7 @@
   "A turn is still running — stop it before starting a new conversation.": "仍有一个回合正在运行——请先停止，再开始新对话。",
   "Save": "保存",
   "A session named {0} already exists. Replace it?": "已存在名为 {0} 的会话。要替换它吗？",
-  "Replace": "替换"
+  "Replace": "替换",
+  "📎 Attached: {0}": "📎 已附加：{0}",
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "无法连接后端——已保留上一条回答，未发送任何内容。"
 }

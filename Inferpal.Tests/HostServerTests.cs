@@ -28,6 +28,7 @@ public class HostServerTests
     // ── In-test editor adapter (client side of the connection) ────────────────
 
     private sealed record TokenNote(string Text);
+    private sealed record ToolNote(string Name, string Input, string Output, bool HasErrors);
     private sealed record ApprovalNote(string Message);
 
     private sealed class ClientTarget
@@ -56,6 +57,12 @@ public class HostServerTests
             Tokens.Add(note.Text);
             FirstToken.TrySetResult(note.Text);
         }
+
+        /// <summary>Every <c>chat/tool</c> notice received, in order (filled by the RPC dispatch thread).</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<ToolNote> ToolNotes = new();
+
+        [JsonRpcMethod("chat/tool", UseSingleObjectParameterDeserialization = true)]
+        public void ChatTool(ToolNote note) => ToolNotes.Enqueue(note);
 
         // §27.5 — opt-in: stand in for a card the user never answers, so only the host's
         // $/cancelRequest can end the wait. Off by default; the other approval tests answer
@@ -305,6 +312,117 @@ public class HostServerTests
         // Token notifications reached the adapter.
         var first = await h.Target.FirstToken.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         Assert.Equal("Hel", first);
+    }
+
+    /// <summary>
+    /// The agent loop runs on the configured agent model, as in Visual Studio. The adapter always sends
+    /// the model picked in the chat (its setting, or the default model), and the host let that explicit
+    /// model win over the router: <c>agentModel</c> was never used under VS Code.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_TheAgentLoop_RunsOnTheAgentModel_EvenWithAModelPickedInTheChat()
+    {
+        using var h = CreateHarness(cfg => { cfg.DefaultModel = "chat-default"; cfg.AgentModel = "agent-model"; });
+        await h.InitializeAsync();
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "fix it", model = "picked-in-chat", agentMode = true })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.NotEmpty(h.Fake.ChatModels);
+        Assert.All(h.Fake.ChatModels, m => Assert.Equal("agent-model", m));
+
+        var agentCalls = h.Fake.ChatModels.Count;
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hello", model = "picked-in-chat", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal("picked-in-chat", h.Fake.ChatModels[agentCalls]);   // plain chat keeps the picked model
+    }
+
+    /// <summary>
+    /// An agent turn leaves the question and one answer in the history, as in Visual Studio — not the
+    /// run's internal transcript (plan prompts, plan JSON, tool calls and results), which bloats every
+    /// following prompt and teaches the model to replay its previous answer.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_AnAgentTurn_KeepsOnlyTheQuestionAndTheAnswer()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 3, 5));
+        var before = h.Server.CurrentSession!.History.Count;
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "first question", agentMode = true })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var added = h.Server.CurrentSession!.History.Skip(before).ToList();
+        Assert.Equal(new[] { "user", "assistant" }, added.Select(m => m.Role).ToArray());
+        Assert.Equal("first question", added[0].Content);
+    }
+
+    /// <summary>
+    /// Regenerate takes the last exchange out of the history before the question is resent, as in Visual
+    /// Studio. Resent on top, the model read its own previous answer and the question twice. The system
+    /// prompt is never taken back: with no question left, nothing is removed.
+    /// </summary>
+    [Fact]
+    public async Task ChatRollbackLastTurn_TakesTheLastExchangeBack_AndNeverTheSystemPrompt()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 3, 5));
+        var before = h.Server.CurrentSession!.History.Count;
+
+        foreach (var prompt in new[] { "first question", "second question" })
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+                "chat/send", new { prompt, agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Task<bool> Rollback() =>
+            h.Client.InvokeAsync<bool>("chat/rollbackLastTurn").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.True(await Rollback());
+        var kept = h.Server.CurrentSession!.History.Skip(before).ToList();
+        Assert.Equal(new[] { "user", "assistant" }, kept.Select(m => m.Role).ToArray());
+        Assert.Equal("first question", kept[0].Content);
+
+        Assert.True(await Rollback());
+        Assert.False(await Rollback());
+        Assert.Equal(before, h.Server.CurrentSession!.History.Count);
+    }
+
+    /// <summary>
+    /// Every <c>oodaTurnThreshold</c> turns the host folds a session summary into the system prompt and
+    /// shows it, as in Visual Studio. The setting was offered in the VS Code panel and did nothing there.
+    /// A new conversation leaves the summary behind.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_AtTheOodaThreshold_FoldsASessionSummaryIntoTheSystemPrompt()
+    {
+        using var h = CreateHarness(cfg => cfg.OodaTurnThreshold = 2);
+        await h.InitializeAsync();
+        h.Fake.OnChat     = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 3, 5));
+        h.Fake.ChatResult = new ChatTurnResult("the session so far", null, 0, 0);   // the utility model's summary
+
+        async Task Send(string prompt) =>
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+                "chat/send", new { prompt, agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        string SystemPrompt() => h.Server.CurrentSession!.History[0].Content;
+
+        await Send("first question");
+        Assert.DoesNotContain("the session so far", SystemPrompt(), StringComparison.Ordinal);
+
+        await Send("second question");
+        Assert.Contains("## Session Summary\n\nthe session so far", SystemPrompt(), StringComparison.Ordinal);
+        // Notifications are one-way: a round-trip request guarantees they were dispatched.
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Contains(h.Target.ToolNotes,
+            n => n.Name == "ooda_recap" && n.Output.Contains("the session so far", StringComparison.Ordinal));
+
+        await h.Client.InvokeAsync("chat/reset").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.DoesNotContain("the session so far", SystemPrompt(), StringComparison.Ordinal);
     }
 
     [Fact]

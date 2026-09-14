@@ -403,4 +403,108 @@ public class WebviewRebuildTests
 
         Assert.Matches(@"sessionBranchCommand\([\s\S]{0,200}?'session/branchCommand'", TsCode("hostClient.ts"));
     }
+
+    /// <summary>
+    /// Loading a session resets the turn counters, as a new conversation does and as the Visual Studio
+    /// window does on restore. <c>applySession</c> kept the previous conversation's prompt size, session
+    /// tokens and start time: the context gauge showed the old fill, and the export header reported the
+    /// old conversation's tokens and a duration counted from its start.
+    /// </summary>
+    [Fact]
+    public void LoadingASession_ResetsTheTurnCounters()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+        var reset    = Body(provider, "async resetConversation(");
+        var apply    = Body(provider, "private applySession(");
+
+        foreach (var counter in new[] { "this.promptTokens = 0", "this.lastTokens = 0", "this.sessionTokens = 0", "this.sessionStart = null" })
+        {
+            Assert.Contains(counter, reset, StringComparison.Ordinal);   // witness: a new conversation resets it
+            Assert.True(apply.Contains(counter, StringComparison.Ordinal),
+                $"applySession keeps \"{counter}\" from the previous conversation.");
+        }
+    }
+
+    /// <summary>
+    /// A chat message sent while the backend is known to be down is refused before anything is consumed,
+    /// as in the Visual Studio window: no user bubble, nothing in the host's history, the text back in
+    /// the input box. VS Code sent it anyway — the box was cleared, the question entered the host's
+    /// history, and a long prompt was lost. Slash commands, served by the host, still run.
+    /// </summary>
+    [Fact]
+    public void AMessageSentWhileTheBackendIsDown_IsRefused_AndGoesBackToTheInputBox()
+    {
+        var send  = Body(TsCode("chatViewProvider.ts"), "private async send(");
+        var guard = send.IndexOf("this.status?.connected === false", StringComparison.Ordinal);
+        var busy  = send.IndexOf("this.busy = true", StringComparison.Ordinal);
+
+        Assert.True(busy >= 0, "send() no longer marks the turn busy: the rule measures nothing.");
+        Assert.True(guard >= 0 && guard < busy, "send() consumes the message before checking the backend.");
+
+        var check = send[guard..busy];
+        Assert.Contains("await this.pollBackendStatus()", check, StringComparison.Ordinal);
+        Assert.Contains("type: 'setPrompt'", check, StringComparison.Ordinal);
+        Assert.Contains("startsWith('/')", send[..busy], StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A turn stopped before any text keeps a lasting cancellation and no empty answer, as in the Visual
+    /// Studio window. The adapter saved an empty assistant entry, and "Cancelled" existed only in the
+    /// webview: after a reload the session showed a blank answer and nothing about the stop.
+    /// </summary>
+    [Fact]
+    public void ACancelledTurn_KeepsALastingCancellation_AndNoEmptyAnswer()
+    {
+        var chatTurn = Body(TsCode("chatViewProvider.ts"), "private async chatTurn(");
+
+        var at = chatTurn.IndexOf("else if (result.cancelled)", StringComparison.Ordinal);
+        Assert.True(at >= 0, "a cancelled turn is saved like a finished one: an empty answer, no lasting cancellation.");
+        var end    = chatTurn.IndexOf("} else {", at, StringComparison.Ordinal);
+        var branch = chatTurn[at..(end < 0 ? chatTurn.Length : end)];
+
+        Assert.Contains("vscode.l10n.t('Cancelled.')", branch, StringComparison.Ordinal);
+        Assert.Contains("finalText.trim().length > 0", branch, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The chips a turn consumed are named under its saved question, as in the Visual Studio window
+    /// (ChatTurnPolicy.BuildBubbleText). Only @-mentions stay written in the question; a chip's content
+    /// goes to the model alone, so the saved session and the export showed "explain this" with nothing
+    /// it referred to.
+    /// </summary>
+    [Fact]
+    public void TheChipsATurnConsumed_AreNamedUnderTheSavedQuestion()
+    {
+        var source   = TsCode("chatViewProvider.ts");
+        var chatTurn = Body(source, "private async chatTurn(");
+        Assert.True(chatTurn.Contains("this.nameAttachmentsInQuestion(", StringComparison.Ordinal),
+            "the chips are sent to the model and named nowhere the conversation keeps.");
+
+        var naming = Body(source, "private nameAttachmentsInQuestion(");
+        Assert.Contains("vscode.l10n.t('📎 Attached: {0}'", naming, StringComparison.Ordinal);
+        Assert.Contains("m.role === 'user'", naming, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Regenerate takes the previous exchange back — from the view and from the host's history — before
+    /// resending the question, as in the Visual Studio window. Resent on top, the old answer stayed in the
+    /// conversation and the model read it and the question twice. Reachability is checked before anything
+    /// is removed.
+    /// </summary>
+    [Fact]
+    public void Regenerate_TakesTheLastExchangeBack_BeforeResending()
+    {
+        var source = TsCode("chatViewProvider.ts");
+        Assert.Contains("await this.regenerate();", source, StringComparison.Ordinal);
+
+        var regenerate = Body(source, "private async regenerate(");
+        var guard    = regenerate.IndexOf("connected === false", StringComparison.Ordinal);
+        var rollback = regenerate.IndexOf("host.chatRollbackLastTurn()", StringComparison.Ordinal);
+        var splice   = regenerate.IndexOf("this.transcript.splice(", StringComparison.Ordinal);
+        var resend   = regenerate.IndexOf("this.send(", StringComparison.Ordinal);
+
+        Assert.True(rollback >= 0 && splice >= 0, "regenerate resends the question on top of the previous exchange.");
+        Assert.True(guard >= 0 && guard < rollback, "with the backend down, the exchange is gone before the resend is refused.");
+        Assert.True(rollback < resend && splice < resend, "the question is resent before its previous exchange is taken back.");
+    }
 }

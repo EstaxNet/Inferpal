@@ -43,6 +43,7 @@
   "Search in the conversation…": "대화에서 검색…",
   "Connected": "연결됨",
   "Backend unreachable": "백엔드에 연결할 수 없음",
+  "The backend is unreachable — your message was not sent and is back in the input box.": "백엔드에 연결할 수 없습니다. 메시지가 전송되지 않았으며 입력란으로 되돌아갔습니다.",
   "Agent": "에이전트",
   "Chat": "채팅",
   "Toggle between agent mode (tools) and plain chat": "에이전트 모드(도구)와 일반 채팅 간 전환",
@@ -104,5 +105,7 @@
   "A turn is still running — stop it before starting a new conversation.": "아직 진행 중인 턴이 있습니다. 새 대화를 시작하기 전에 중지하세요.",
   "Save": "저장",
   "A session named {0} already exists. Replace it?": "{0}(이)라는 세션이 이미 있습니다. 바꾸시겠습니까?",
-  "Replace": "바꾸기"
+  "Replace": "바꾸기",
+  "📎 Attached: {0}": "📎 첨부: {0}",
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "백엔드에 연결할 수 없습니다. 마지막 답변은 그대로 유지되었으며 아무것도 전송되지 않았습니다."
 }
