@@ -610,10 +610,15 @@ button:hover {
 }
 
 /* ── Context chips + attach menu ────────────────────────────────────────────── */
-#chips {
+#chips,
+#pins {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.chip.pinned {
+  border-color: var(--vscode-charts-yellow, var(--vscode-editorWidget-border));
 }
 
 .chip {

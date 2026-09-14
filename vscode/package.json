@@ -186,7 +186,7 @@
         },
         "inferpal.agentMode": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "%inferpal.config.agentMode%"
         },
         "inferpal.fim.enabled": {

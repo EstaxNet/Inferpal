@@ -148,7 +148,8 @@ public class HostServerTests
     {
         var (clientStream, serverStream) = FullDuplexStream.CreatePair();
 
-        var fake   = new FakeInferenceProvider();
+        // The host's chat mode runs the basic tool loop: the fake answers it through OnChat, like the real loop.
+        var fake   = new FakeInferenceProvider { RunAgentThroughChat = true };
         var server = new HostServer(_ => fake, () =>
         {
             // RAG off unless a test asks: initialize indexes the workspace when it is on, and the
@@ -360,6 +361,146 @@ public class HostServerTests
         Assert.Equal("first question", added[0].Content);
     }
 
+    private sealed record PinsNote(List<string> Pins, string? Notice);
+
+    /// <summary>
+    /// Pins from the chat go through the host, which owns the setting and the system prompt, as the Visual Studio
+    /// window does: a pinned file is in the very next prompt, a fourth one is refused with the reason, and
+    /// unpinning takes it out again.
+    /// </summary>
+    [Fact]
+    public async Task Pins_AddListRemove_FollowTheSettingAndTheSystemPrompt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"pins-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var files = new[] { "a.cs", "b.cs", "c.cs", "d.cs" }.Select(n => Path.Combine(root, n)).ToArray();
+            foreach (var f in files) File.WriteAllText(f, $"// marker-{Path.GetFileNameWithoutExtension(f)}");
+            using var h = CreateHarness(cfg => cfg.PinnedContextFiles = "");
+            await h.InitializeAsync(rootDir: root);
+
+            Task<PinsNote> Call(string method, object args) =>
+                h.Client.InvokeWithParameterObjectAsync<PinsNote>(method, args).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            string SystemPrompt() => h.Server.CurrentSession!.History[0].Content;
+
+            var added = await Call("pins/add", new { path = files[0] });
+            Assert.Equal([files[0]], added.Pins);
+            Assert.Null(added.Notice);
+            Assert.Contains("marker-a", SystemPrompt(), StringComparison.Ordinal);
+
+            await Call("pins/add", new { path = files[1] });
+            await Call("pins/add", new { path = files[2] });
+            var refused = await Call("pins/add", new { path = files[3] });
+            Assert.Equal(3, refused.Pins.Count);
+            Assert.False(string.IsNullOrEmpty(refused.Notice));   // the cap is said, not silent
+
+            Assert.Equal(3, (await Call("pins/list", new { })).Pins.Count);
+
+            var removed = await Call("pins/remove", new { path = files[0] });
+            Assert.DoesNotContain(files[0], removed.Pins);
+            Assert.DoesNotContain("marker-a", SystemPrompt(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// The first question of a conversation carries the workspace context, as in Visual Studio: the solution and
+    /// the open editors, once per conversation. VS Code sent none — the model knew neither the solution nor what
+    /// was open. Here the solution is the one in the workspace, never the machine-wide state of a running Visual
+    /// Studio.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_TheFirstTurn_CarriesTheWorkspaceContext_OncePerConversation()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ws-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "App.sln"), "Microsoft Visual Studio Solution File, Format Version 12.00\n");
+            using var h = CreateHarness();
+            await h.InitializeAsync(rootDir: root);
+            h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 3, 5));
+            await h.Client.NotifyWithParameterObjectAsync(
+                "textDocument/didOpen", new { path = Path.Combine(root, "Program.cs"), text = "class P;" });
+            // Notifications are one-way: a round-trip request guarantees they were dispatched.
+            await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            async Task<string> Ask(string prompt)
+            {
+                await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt, agentMode = false })
+                    .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                return h.Server.CurrentSession!.History.Last(m => m.Role == "user").Content;
+            }
+
+            var first = await Ask("first question");
+            Assert.Contains("## Workspace context", first, StringComparison.Ordinal);
+            Assert.Contains("App.sln", first, StringComparison.Ordinal);
+            Assert.Contains("Program.cs", first, StringComparison.Ordinal);
+
+            Assert.DoesNotContain("## Workspace context", await Ask("second question"), StringComparison.Ordinal);
+
+            await h.Client.InvokeAsync("chat/reset").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.Contains("## Workspace context", await Ask("a new conversation"), StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>Witness: a workspace with no solution and nothing open adds no empty context block.</summary>
+    [Fact]
+    public async Task ChatSend_AWorkspaceWithNothingToSay_AddsNoContextBlock()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ws-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var h = CreateHarness();
+            await h.InitializeAsync(rootDir: root);
+            h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 3, 5));
+
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hello", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var question = h.Server.CurrentSession!.History.Last(m => m.Role == "user").Content;
+            Assert.Equal("hello", question);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Chat mode keeps its tools, as in Visual Studio: the basic tool loop, without the orchestrator's plan.
+    /// Only <c>/tools off</c> is chat without tools. The VS Code Chat switch took every tool away — the model
+    /// could not even read a file.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_ChatMode_KeepsTheTools_UnlessToolsAreOff()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 3, 5));
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "read Foo.cs", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Single(h.Fake.AgentRuns);   // the tool loop ran, not a bare chat call
+
+        h.Server.CurrentSession!.ToolsEnabled = false;   // witness: /tools off is chat without tools
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hello", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Single(h.Fake.AgentRuns);
+    }
+
     /// <summary>
     /// Regenerate takes the last exchange out of the history before the question is resent, as in Visual
     /// Studio. Resent on top, the model read its own previous answer and the question twice. The system
@@ -401,8 +542,10 @@ public class HostServerTests
     {
         using var h = CreateHarness(cfg => cfg.OodaTurnThreshold = 2);
         await h.InitializeAsync();
-        h.Fake.OnChat     = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 3, 5));
-        h.Fake.ChatResult = new ChatTurnResult("the session so far", null, 0, 0);   // the utility model's summary
+        // Turns answer "done"; the utility model, asked for the session summary, answers with the summary.
+        h.Fake.OnChatRequest = (_, messages, _, _) => Task.FromResult(new ChatTurnResult(
+            messages[^1].Content == Inferpal.Localization.Strings.OodaSummarizePrompt ? "the session so far" : "done",
+            null, 3, 5));
 
         async Task Send(string prompt) =>
             await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(

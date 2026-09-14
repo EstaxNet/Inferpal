@@ -203,7 +203,20 @@ internal sealed partial class HostServer : IDisposable
             // Auto-context: inject the most relevant indexed chunks for this turn (same
             // per-turn RAG block as the VS VM). Runs before the agent takes the GPU lease.
             var promptText = p.Prompt;
-            var autoCtx    = await BuildRagAutoContextAsync(s, promptText, p.AttachedPaths, cts.Token);
+
+            // The first question of a conversation carries the workspace block, as in Visual Studio (which puts
+            // the per-turn RAG block ahead of it).
+            if (!s.WorkspaceContextSent)
+            {
+                var workspace = await BuildWorkspaceContextAsync(s, cts.Token);
+                if (workspace.Length > 0)
+                {
+                    s.WorkspaceContextSent = true;
+                    promptText = workspace + "\n\n" + promptText;
+                }
+            }
+
+            var autoCtx    = await BuildRagAutoContextAsync(s, p.Prompt, p.AttachedPaths, cts.Token);
             if (!string.IsNullOrEmpty(autoCtx))
                 promptText = autoCtx + "\n\n" + promptText;
 
@@ -294,6 +307,39 @@ internal sealed partial class HostServer : IDisposable
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
                     false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice);
+            }
+
+            if (s.ToolsEnabled)
+            {
+                // Chat mode keeps its tools, as in Visual Studio: the basic tool loop, without the plan. Only
+                // `/tools off` is chat without tools — the Chat switch used to take every tool away.
+                IToolRegistry chatTools = s.Tools;
+                if (s.PlanMode) chatTools = new PlanModeToolRegistry(chatTools);
+                if (s.StepMode) chatTools = new StepModeToolRegistry(chatTools, tok => PauseForStepAsync(s, tok));
+
+                // Same durable history as the agent path: the question and the answer the user saw.
+                var durable = new List<ChatMessageDto>(s.History);
+                s.Tools.History.BeginRun();
+                var run = await s.Client.RunAgentAsync(
+                    model, s.History, chatTools,
+                    onStep:         step => Notify("chat/step", new { text = step }),
+                    onToken:        OnToken,
+                    ct:             cts.Token,
+                    onToolExecuted: te => Notify("chat/tool", new ToolNotice(te.Name, te.Input, te.Output, te.HasErrors)),
+                    onThinking:     OnThinking);
+
+                var answer = ChatTurnPolicy.ChoosePersistedAnswer(
+                    MarkdownParser.HasPrintableText(streamed.ToString()) ? streamed.ToString() : null,
+                    run.FinalResponse);
+                if (answer.Length > 0)
+                    durable.Add(new ChatMessageDto("assistant", answer));
+                s.History          = durable;
+                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
+                await CountTurnAsync(s, cts.Token);
+                return new ChatSendResult(
+                    FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, model, s),
+                    false, run.TokensUsed, run.PromptTokens,
+                    EndNotice: run.WasLoopDetected ? Strings.AgentEndedOnRepeat : null);
             }
 
             var turn = await s.Client.SendChatAsync(
@@ -391,6 +437,94 @@ internal sealed partial class HostServer : IDisposable
         // The answer is already complete: a stop during the summary must not turn it into a cancelled turn.
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("Ooda.Summary", ex); }
+    }
+
+    /// <summary>
+    /// The workspace block of a conversation's first question. The solution is read only when the workspace holds
+    /// one, by its exact path: without a path, get_solution_info falls back on the solution a running Visual
+    /// Studio reports and on the machine-wide last-solution cache — another editor's state. The open editors are
+    /// listed only when there are some. Best-effort, each read bounded like the VS view model's.
+    /// </summary>
+    private static async Task<string> BuildWorkspaceContextAsync(HostSession s, CancellationToken ct)
+    {
+        string? solution = null, editors = null;
+        if (Services.SolutionFiles.FirstIn(s.RootDir) is { } sln)
+            solution = await RunContextToolAsync(s, "get_solution_info", new { path = sln }, ct);
+        if (s.Editor.GetOpenDocumentPaths().Count > 0)
+            editors = await RunContextToolAsync(s, "get_open_editors", new { }, ct);
+        return Services.Prompting.WorkspaceContext.Compose(solution, editors);
+    }
+
+    private static async Task<string?> RunContextToolAsync(HostSession s, string tool, object args, CancellationToken ct)
+    {
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        budget.CancelAfter(TimeSpan.FromSeconds(5));
+        try
+        {
+            return await s.Tools.ExecuteAsync(tool, System.Text.Json.JsonSerializer.SerializeToElement(args), budget.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return null; }   // over budget: left out
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow($"HostServer.WorkspaceContext({tool})", ex);
+            return null;
+        }
+    }
+
+    /// <summary>`pins/list` — the files pinned into every request (the active entries of the setting).</summary>
+    [JsonRpcMethod("pins/list")]
+    public PinsResult PinsList() =>
+        new(Services.Prompting.PinnedFilesPolicy.ParseActive(Session().Config.PinnedContextFiles));
+
+    /// <summary>
+    /// `pins/add` — pins a file from the chat, as the Visual Studio window does: the same decision and cap, the
+    /// setting saved and the system prompt rebuilt, so the file is in the next request. Under the turn slot: the
+    /// rebuild replaces the system message a running loop reads.
+    /// </summary>
+    [JsonRpcMethod("pins/add", UseSingleObjectParameterDeserialization = true)]
+    public Task<PinsResult> PinsAddAsync(PinParams p, CancellationToken ct) =>
+        WithTurnSlotAsync("pins/add", ct, _ =>
+        {
+            var s       = Session();
+            var current = Services.Prompting.PinnedFilesPolicy.ParseActive(s.Config.PinnedContextFiles);
+            var path    = p.Path.Trim();
+            return Task.FromResult(Services.Prompting.PinnedFilesPolicy.Decide(current, path) switch
+            {
+                Services.Prompting.PinDecision.CapReached =>
+                    new PinsResult(current, Strings.PinLimitReached(Services.Prompting.PinnedFilesPolicy.MaxPinned)),
+                Services.Prompting.PinDecision.Duplicate or Services.Prompting.PinDecision.Invalid =>
+                    new PinsResult(current),
+                _ => SavePins(s, [.. current, path]),
+            });
+        });
+
+    /// <summary>`pins/remove` — takes a pinned file out of every request (settings and system prompt).</summary>
+    [JsonRpcMethod("pins/remove", UseSingleObjectParameterDeserialization = true)]
+    public Task<PinsResult> PinsRemoveAsync(PinParams p, CancellationToken ct) =>
+        WithTurnSlotAsync("pins/remove", ct, _ =>
+        {
+            var s       = Session();
+            var current = Services.Prompting.PinnedFilesPolicy.ParseActive(s.Config.PinnedContextFiles);
+            var kept    = current.Where(x => !string.Equals(x, p.Path.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+            return Task.FromResult(kept.Count == current.Count ? new PinsResult(current) : SavePins(s, kept));
+        });
+
+    private static PinsResult SavePins(HostSession s, List<string> active)
+    {
+        s.Config.PinnedContextFiles = Services.Prompting.PinnedFilesPolicy.Serialize(active, s.Config.PinnedContextFiles);
+        string? notice = null;
+        try
+        {
+            s.Config.Save();
+        }
+        catch (Exception ex)
+        {
+            // The pin applies to this session; unsaved, it is gone at the next start — said, not silent.
+            Diagnostics.Swallow("HostServer.SavePins", ex);
+            notice = Strings.SettingsSaveFailed(ex.Message);
+        }
+        RefreshSystemPrompt(s);
+        return new PinsResult(Services.Prompting.PinnedFilesPolicy.ParseActive(s.Config.PinnedContextFiles), notice);
     }
 
     [JsonRpcMethod("chat/reset")]
@@ -731,7 +865,7 @@ internal sealed partial class HostServer : IDisposable
             if (p.Name == "last_session" && !SessionManager.AutoSaveBelongsHere(data, s.RootDir)) return null;
 
             s.TemplateSuffix     = null;
-            LeaveSessionSummaryBehind(s);
+            ForgetConversationState(s);
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
             s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;
             return new SessionLoadResult(
@@ -770,7 +904,7 @@ internal sealed partial class HostServer : IDisposable
                                     parent: plan.ParentName, forkTurn: plan.ForkTurn);
 
             s.TemplateSuffix     = null;
-            LeaveSessionSummaryBehind(s);
+            ForgetConversationState(s);
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
             s.CurrentSessionName = plan.BranchName;
 
@@ -1020,17 +1154,18 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>Reseeds the history with the layered system prompt.</summary>
-    /// <summary>A conversation being replaced leaves its session summary and turn count behind, as in the
-    /// VS view model. Called before the new system prompt is built, which would otherwise carry it.</summary>
-    private static void LeaveSessionSummaryBehind(HostSession s)
+    /// <summary>A conversation being replaced leaves behind its session summary, turn count and workspace block, as
+    /// in the VS view model. Called before the new system prompt is built, which would otherwise carry the summary.</summary>
+    private static void ForgetConversationState(HostSession s)
     {
         s.OodaSummary           = null;
         s.ConversationTurnCount = 0;
+        s.WorkspaceContextSent  = false;
     }
 
     private static void ResetHistory(HostSession s)
     {
-        LeaveSessionSummaryBehind(s);
+        ForgetConversationState(s);
         s.History            = [new ChatMessageDto("system", BuildSystemPromptText(s))];
         s.CurrentSessionName = null;   // the archived conversation keeps its own file
     }

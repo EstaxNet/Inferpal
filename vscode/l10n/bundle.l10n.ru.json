@@ -108,5 +108,7 @@
   "Replace": "Заменить",
   "📎 Attached: {0}": "📎 Вложено: {0}",
   "The backend is unreachable — the last answer was kept and nothing was sent.": "Бэкенд недоступен — последний ответ сохранён, ничего не отправлено.",
-  "Inferpal could not save this setting: {0}": "Inferpal не удалось сохранить этот параметр: {0}"
+  "Inferpal could not save this setting: {0}": "Inferpal не удалось сохранить этот параметр: {0}",
+  "Pin the active file": "Закрепить активный файл",
+  "Unpin": "Открепить"
 }

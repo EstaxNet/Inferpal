@@ -108,5 +108,7 @@
   "Replace": "Sostituisci",
   "📎 Attached: {0}": "📎 Allegato: {0}",
   "The backend is unreachable — the last answer was kept and nothing was sent.": "Il backend non è raggiungibile: l'ultima risposta è stata mantenuta e non è stato inviato nulla.",
-  "Inferpal could not save this setting: {0}": "Inferpal non è riuscito a salvare questa impostazione: {0}"
+  "Inferpal could not save this setting: {0}": "Inferpal non è riuscito a salvare questa impostazione: {0}",
+  "Pin the active file": "Aggiungi il file attivo ai fissati",
+  "Unpin": "Rimuovi dai fissati"
 }

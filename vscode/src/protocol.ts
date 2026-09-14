@@ -387,6 +387,12 @@ export interface DebugCaptureTestParams {
 }
 
 /** `config/update` answer: what the save could not use. */
+/** `pins/list|add|remove` — the pinned files after the call, and what the host had to say. */
+export interface PinsResult {
+  pins: string[];
+  notice?: string | null;
+}
+
 export interface ConfigUpdateResult {
   /** Permission rules the product could not read — the field is saved, these lines are inert. */
   permissionRulesIgnored: number;

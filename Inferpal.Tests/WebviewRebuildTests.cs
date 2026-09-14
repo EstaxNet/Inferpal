@@ -527,6 +527,75 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// Copying a message's text and opening an approval's diff reach VS Code APIs that can refuse (a clipboard a
+    /// remote session denies, a document that cannot be opened). Unguarded, the click did nothing and nothing said
+    /// why — for the diff, at the very moment the user wants to read what they are about to allow.
+    /// </summary>
+    [Theory]
+    [InlineData("copyText")]
+    [InlineData("openApprovalDiff")]
+    public void AGestureThatReachesVsCodeApis_SaysWhenItFails(string message)
+    {
+        // The whole source, not Body(): the signature of onMessage carries a `{` in its parameter type.
+        var source = TsCode("chatViewProvider.ts");
+        var at     = source.IndexOf($"case '{message}':", StringComparison.Ordinal);
+        Assert.True(at >= 0, $"case '{message}' moved — the rule measures nothing.");
+
+        var next  = source.IndexOf("case '", at + 6, StringComparison.Ordinal);
+        var block = source[at..(next < 0 ? source.Length : next)];
+        Assert.True(block.Contains("catch", StringComparison.Ordinal)
+                    && block.Contains("showWarningMessage(", StringComparison.Ordinal),
+            $"'{message}' fails in silence when the VS Code API refuses.");
+    }
+
+    /// <summary>
+    /// A file can be pinned from the chat, as in the Visual Studio window: the "+" menu pins the active file, the
+    /// pinned files show above the composer and each can be removed there. VS Code could only pin through the
+    /// settings panel, a pin nobody saw from the chat.
+    /// </summary>
+    [Fact]
+    public void AFile_CanBePinnedFromTheChat_AndUnpinnedThere()
+    {
+        var webview = TsCode("webview/main.ts");
+        Assert.Contains("type: 'pinActive'", webview, StringComparison.Ordinal);
+        Assert.Contains("type: 'unpin'", webview, StringComparison.Ordinal);
+
+        var provider = TsCode("chatViewProvider.ts");
+        var pin      = provider.IndexOf("case 'pinActive':", StringComparison.Ordinal);
+        var unpin    = provider.IndexOf("case 'unpin':", StringComparison.Ordinal);
+        Assert.True(pin >= 0 && unpin >= 0, "the chat has no pin or unpin gesture.");
+        Assert.Contains("pinsAdd(", provider[pin..(provider.IndexOf("case '", pin + 6, StringComparison.Ordinal))], StringComparison.Ordinal);
+        Assert.Contains("pinsRemove(", provider[unpin..(provider.IndexOf("case '", unpin + 6, StringComparison.Ordinal))], StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The agent mode starts the same in both editors. Visual Studio starts in Chat (with tools), VS Code started
+    /// in Agent: the same question ran the orchestrator in one and the chat loop in the other. The extension's
+    /// code fallbacks follow the declared default.
+    /// </summary>
+    [Fact]
+    public void TheAgentModeDefault_IsTheSameInBothEditors()
+    {
+        var manifest = System.Text.Json.JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(RepoRoot(), "vscode", "package.json"))).RootElement;
+        var configuration = manifest.GetProperty("contributes").GetProperty("configuration");
+        var sections = configuration.ValueKind == System.Text.Json.JsonValueKind.Array
+            ? configuration.EnumerateArray().ToList()
+            : [configuration];
+        var declared = sections
+            .Select(s => s.TryGetProperty("properties", out var p) && p.TryGetProperty("inferpal.agentMode", out var m) ? m : (System.Text.Json.JsonElement?)null)
+            .First(m => m is not null)!.Value.GetProperty("default").GetBoolean();
+
+        var visualStudio = new Inferpal.Config.InferpalConfig().AgentModeEnabled;
+        Assert.Equal(visualStudio, declared);
+
+        var fallbacks = System.Text.RegularExpressions.Regex.Matches(
+            TsCode("chatViewProvider.ts"), @"get<boolean>\('agentMode', (true|false)\)");
+        Assert.NotEmpty(fallbacks);   // witness: the extension still reads the setting with a fallback
+        Assert.All(fallbacks, f => Assert.Equal(visualStudio ? "true" : "false", f.Groups[1].Value));
+    }
+
+    /// <summary>
     /// /explain and /review read the editor after the turn has started: a throw there left the provider busy
     /// for good — every later message and regenerate was dropped by the busy guard, with the Stop button up.
     /// </summary>

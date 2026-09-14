@@ -91,6 +91,10 @@ internal sealed class HostSession : IDisposable
     /// <summary>Finished turns of this conversation (mirror of the VS VM's <c>_conversationTurnCount</c>).</summary>
     public int ConversationTurnCount { get; set; }
 
+    /// <summary>The workspace block was sent with this conversation's first question (mirror of the VS VM's
+    /// <c>_workspaceContextInjected</c>): set only once a non-empty block went out.</summary>
+    public bool WorkspaceContextSent { get; set; }
+
     /// <summary>Session file the conversation currently lives in (null = never saved, or reset).
     /// Mirror of the VS VM's <c>_currentSessionName</c>; <c>/branch</c> records it as the parent
     /// of a new branch. The <c>last_session</c> auto-save slot deliberately doesn't count.</summary>

@@ -57,6 +57,8 @@ export function webviewStrings(): Record<string, string> {
     attachActiveFile: t('Attach the active file'),
     attachSelection: t('Attach the selection'),
     attachBrowse: t('Attach a file from disk'),
+    pinActiveFile: t('Pin the active file'),
+    unpin: t('Unpin'),
   };
 }
 

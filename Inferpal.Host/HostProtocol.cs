@@ -256,6 +256,12 @@ internal sealed record ConfigUpdateParams(string Json, string? Base = null);
 /// </remarks>
 internal sealed record ConfigUpdateResult(int PermissionRulesIgnored);
 
+/// <summary>`pins/add` / `pins/remove` — a file to pin into, or take out of, every request.</summary>
+internal sealed record PinParams(string Path);
+
+/// <summary>The pinned files after the call, and what the host had to say (the cap reached, a failed save).</summary>
+internal sealed record PinsResult(List<string> Pins, string? Notice = null);
+
 /// <summary>`codeAction/run` — headless in-place code action (<paramref name="Kind"/> =
 /// <c>fix</c> | <c>refactor</c> | <c>doc</c>) over the adapter's document text and selection
 /// offsets. The host only runs the model step; applying (and previewing) stays editor-side.</summary>

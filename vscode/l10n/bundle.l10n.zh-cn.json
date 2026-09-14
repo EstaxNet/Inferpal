@@ -108,5 +108,7 @@
   "Replace": "替换",
   "📎 Attached: {0}": "📎 已附加：{0}",
   "The backend is unreachable — the last answer was kept and nothing was sent.": "无法连接后端——已保留上一条回答，未发送任何内容。",
-  "Inferpal could not save this setting: {0}": "Inferpal 无法保存此设置：{0}"
+  "Inferpal could not save this setting: {0}": "Inferpal 无法保存此设置：{0}",
+  "Pin the active file": "固定当前文件",
+  "Unpin": "取消固定"
 }

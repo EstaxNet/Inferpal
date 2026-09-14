@@ -71,13 +71,30 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     }
 
     // ── IInferenceProvider ──────────────────────────────────────────────────────
+    /// <summary>
+    /// When true, <see cref="RunAgentAsync"/> answers through <see cref="SendChatAsync"/> — one model turn, like the
+    /// real basic loop, so <see cref="OnChat"/>/<see cref="OnChatRequest"/> script it (streaming, cancellation,
+    /// failures, the model name). Off, it returns the constant <see cref="ChatResult"/>.
+    /// </summary>
+    public bool RunAgentThroughChat { get; set; }
+
     public Task<AgentResult> RunAgentAsync(
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string> onStep,
         Action<string>? onToken, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
         Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null)
     {
         AgentRuns.Add((model, history));
+        if (RunAgentThroughChat)
+            return RunOneChatTurnAsync(model, history, tools, onToken, ct, complexity, onThinking);
         return Task.FromResult(new AgentResult(ChatResult.TextContent, [], history));
+    }
+
+    private async Task<AgentResult> RunOneChatTurnAsync(
+        string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string>? onToken,
+        CancellationToken ct, TaskComplexity complexity, Action<string>? onThinking)
+    {
+        var turn = await SendChatAsync(model, history, tools, onToken, ct, complexity, null, onThinking);
+        return new AgentResult(turn.TextContent, [], history, turn.TokensUsed, turn.PromptTokens);
     }
 
     public Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct) =>

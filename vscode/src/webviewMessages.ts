@@ -82,6 +82,8 @@ export interface WvHydrate {
   toolBubblesExpanded: boolean;
   mentionCategories: WvMentionCategory[];
   chips: WvChip[];
+  /** Files pinned into every request (full paths). */
+  pins: string[];
 }
 
 export type ExtToWebview =
@@ -106,6 +108,7 @@ export type ExtToWebview =
   | { type: 'setPrompt'; text: string }
   | { type: 'mentionResults'; category: string; items: WvMentionItem[] }
   | { type: 'chips'; chips: WvChip[] }
+  | { type: 'pins'; pins: string[] }
   | { type: 'stepPaused' }
   | { type: 'stepResumed' };
 
@@ -127,6 +130,8 @@ export type WebviewToExt =
   | { type: 'mentionSearch'; category: string; query: string }
   | { type: 'resolveMention'; category: string; value?: string }
   | { type: 'removeChip'; index: number }
+  | { type: 'pinActive' }
+  | { type: 'unpin'; path: string }
   | { type: 'attachActive' }
   | { type: 'attachSelection' }
   | { type: 'attachBrowse' }

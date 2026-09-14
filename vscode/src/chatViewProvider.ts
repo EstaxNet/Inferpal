@@ -55,6 +55,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private statusTimer: NodeJS.Timeout | undefined;
   /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
   private pendingAttachments: { name: string; content: string }[] = [];
+  /** Files pinned into every request, as the host reports them. */
+  private pins: string[] = [];
   /** The question the last model turn carried: the one slash-prefixed entry known to be in the host's history. */
   private lastModelQuestion: WvTranscriptItem | null = null;
   private mentionCats: WvMentionCategory[] = [];
@@ -258,6 +260,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     } catch (err) {
       this.log(`[chat] mention/categories failed: ${String(err)}`);
       this.mentionCats = [];
+    }
+    try {
+      this.pins = (await host.pinsList()).pins;
+    } catch (err) {
+      this.log(`[chat] pins/list failed: ${String(err)}`);
+      this.pins = [];
     }
     try {
       const cfg = JSON.parse(await host.configGet()) as { contextWindowSize?: number; toolBubblesExpanded?: boolean };
@@ -751,8 +759,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       case 'openApprovalDiff': {
-        const doc = await vscode.workspace.openTextDocument({ language: 'diff', content: msg.text });
-        await vscode.window.showTextDocument(doc, { preview: true });
+        try {
+          const doc = await vscode.workspace.openTextDocument({ language: 'diff', content: msg.text });
+          await vscode.window.showTextDocument(doc, { preview: true });
+        } catch (err) {
+          // The user wants to read what they are about to allow: a diff that cannot open is said, not silent.
+          this.log(`[chat] approval diff failed: ${String(err)}`);
+          void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+        }
         return;
       }
       case 'xrayToggle': {
@@ -770,14 +784,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       case 'copyText':
-        await vscode.env.clipboard.writeText(msg.text);
+        try {
+          await vscode.env.clipboard.writeText(msg.text);
+        } catch (err) {
+          // A clipboard the session refuses: nothing was copied, and the copy button gives no feedback of its own.
+          this.log(`[chat] copy failed: ${String(err)}`);
+          void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+        }
         return;
       case 'regenerate':
         await this.regenerate();
         return;
       case 'toggleAgentMode': {
         const config = vscode.workspace.getConfiguration('inferpal');
-        const enabled = !config.get<boolean>('agentMode', true);
+        const enabled = !config.get<boolean>('agentMode', false);
         try {
           await config.update('agentMode', enabled, vscode.ConfigurationTarget.Workspace);
         } catch (err) {
@@ -824,6 +844,42 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.postChips();
         }
         return;
+      case 'pinActive': {
+        // Pins the active file (or one picked from disk) into every request, as the Visual Studio window does.
+        const host = this.getHost();
+        if (!host?.isRunning) {
+          return;
+        }
+        try {
+          const active = this.getActiveEditor();
+          let path = active?.document.uri.scheme === 'file' ? active.document.uri.fsPath : undefined;
+          if (!path) {
+            const picked = await vscode.window.showOpenDialog({ canSelectMany: false });
+            path = picked?.[0]?.fsPath;
+          }
+          if (!path) {
+            return;
+          }
+          this.applyPins(await host.pinsAdd(path));
+        } catch (err) {
+          this.log(`[chat] pin failed: ${String(err)}`);
+          void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+        }
+        return;
+      }
+      case 'unpin': {
+        const host = this.getHost();
+        if (!host?.isRunning) {
+          return;
+        }
+        try {
+          this.applyPins(await host.pinsRemove(msg.path));
+        } catch (err) {
+          this.log(`[chat] unpin failed: ${String(err)}`);
+          void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+        }
+        return;
+      }
       case 'attachActive': {
         const editor = this.getActiveEditor();
         if (!editor || editor.document.uri.scheme !== 'file') {
@@ -860,6 +916,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   // ── Typed mentions: chip resolution ─────────────────────────────────────────
+
+  /** Shows the host's pinned files, and what it had to say (the cap reached, a failed save). */
+  private applyPins(result: { pins: string[]; notice?: string | null }): void {
+    this.pins = result.pins;
+    this.post({ type: 'pins', pins: this.pins });
+    if (result.notice) {
+      void vscode.window.showInformationMessage(result.notice);
+    }
+  }
 
   private addChip(name: string, content: string): void {
     const MAX_CHARS = 60_000;
@@ -1303,7 +1368,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** One model turn (agent or plain chat) with @-mention and pending-chip expansion. */
   private async chatTurn(prompt: string, host: HostClient): Promise<void> {
     try {
-      const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', true);
+      const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false);
       this.lastModelQuestion = [...this.transcript].reverse().find((m) => m.role === 'user') ?? null;
       const mentions = await this.expandMentions(prompt);
       let expanded = mentions.text;
@@ -1644,7 +1709,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       stream: this.streamText,
       status,
       commands: this.commands,
-      agentMode: vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', true),
+      agentMode: vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false),
       contextWindow: this.contextWindow,
       promptTokens: this.promptTokens,
       lastTokens: this.lastTokens,
@@ -1653,6 +1718,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       toolBubblesExpanded: this.toolBubblesExpanded,
       mentionCategories: this.mentionCats,
       chips: this.pendingAttachments.map((a) => ({ name: a.name })),
+      pins: this.pins,
     });
     // The transcript carries no card and the webview just rebuilt from it: a card still waiting
     // would vanish while the host keeps waiting for its answer, with no timeout.

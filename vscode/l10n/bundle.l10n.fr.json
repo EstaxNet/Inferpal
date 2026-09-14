@@ -108,5 +108,7 @@
   "Replace": "Remplacer",
   "📎 Attached: {0}": "📎 Joint : {0}",
   "The backend is unreachable — the last answer was kept and nothing was sent.": "Le backend est injoignable — la dernière réponse a été conservée et rien n'a été envoyé.",
-  "Inferpal could not save this setting: {0}": "Inferpal n'a pas pu enregistrer ce réglage : {0}"
+  "Inferpal could not save this setting: {0}": "Inferpal n'a pas pu enregistrer ce réglage : {0}",
+  "Pin the active file": "Épingler le fichier actif",
+  "Unpin": "Désépingler"
 }

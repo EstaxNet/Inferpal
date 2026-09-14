@@ -128,6 +128,7 @@ function buildPlusMenu(): void {
     { label: t('attachActiveFile'), msg: { type: 'attachActive' } },
     { label: t('attachSelection'), msg: { type: 'attachSelection' } },
     { label: t('attachBrowse'), msg: { type: 'attachBrowse' } },
+    { label: t('pinActiveFile'), msg: { type: 'pinActive' } },
   ];
   for (const entry of entries) {
     const item = document.createElement('div');
@@ -788,6 +789,30 @@ chipsEl.id = 'chips';
 chipsEl.hidden = true;
 composerEl.insertBefore(chipsEl, promptEl);
 
+/** Files pinned into every request, above the pending attachments — each can be unpinned here. */
+const pinsEl = document.createElement('div');
+pinsEl.id = 'pins';
+pinsEl.hidden = true;
+composerEl.insertBefore(pinsEl, chipsEl);
+
+function renderPins(pins: string[]): void {
+  pinsEl.textContent = '';
+  pinsEl.hidden = pins.length === 0;
+  for (const path of pins) {
+    const el = document.createElement('span');
+    el.className = 'chip pinned';
+    el.title = path;
+    const name = document.createElement('span');
+    name.textContent = '📌 ' + (path.split(/[\\/]/).pop() ?? path);
+    const close = document.createElement('button');
+    close.textContent = '✕';
+    close.title = t('unpin');
+    close.addEventListener('click', () => post({ type: 'unpin', path }));
+    el.append(name, close);
+    pinsEl.appendChild(el);
+  }
+}
+
 function renderChips(chips: WvChip[]): void {
   chipsEl.textContent = '';
   chipsEl.hidden = chips.length === 0;
@@ -1015,6 +1040,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       currentModel = msg.model ?? '';
       mentionCategories = msg.mentionCategories ?? [];
       renderChips(msg.chips ?? []);
+      renderPins(msg.pins ?? []);
       renderTranscript(msg.transcript ?? []);
 
       // ⚠ The one field in this block without its defensive default, while the comment above
@@ -1138,6 +1164,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'chips':
       renderChips(msg.chips);
+      break;
+    case 'pins':
+      renderPins(msg.pins);
       break;
     case 'stepPaused': {
       finishStream();

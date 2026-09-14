@@ -7,7 +7,7 @@
   "inferpal.config.model": "Model używany na czacie. Pozostaw puste, aby użyć domyślnego modelu skonfigurowanego w hoście.",
   "inferpal.config.utilityModel": "Mały, szybki model do zadań w tle (tytuły sesji, komunikaty commitów, podsumowania kompaktowania). Pozostaw puste, aby użyć modelu czatu.",
   "inferpal.config.modelRouterAuto": "Tryb automatyczny Model Routera: bez ustawionego modelu pomocniczego zadania w tle używają modelu rekomendowanego przez /bench dla roli pomocniczej — tylko jeśli jest już załadowany w VRAM (zimny model nigdy nie jest ładowany dla tytułu czy komunikatu commita).",
-  "inferpal.config.agentMode": "Wykonuj tury w pętli agentowej (narzędzia włączone). Wyłącz, aby uzyskać zwykły czat.",
+  "inferpal.config.agentMode": "Wykonuj tury przez orkestrator Plan→Act→Observe. Po wyłączeniu czat nadal używa narzędzi; /tools off je wyłącza.",
   "inferpal.config.fimEnabled": "Uzupełnienia ghost-text w linii (Fill-in-the-Middle). Aktywne tylko, gdy backend obsługuje FIM.",
   "inferpal.untrustedWorkspaces": "Inferpal uruchamia agenta, który czyta/zapisuje pliki obszaru roboczego i wykonuje polecenia; pozostaje wyłączony, dopóki folder nie zostanie zaufany.",
   "inferpal.command.saveSession": "Inferpal: Zapisz sesję",

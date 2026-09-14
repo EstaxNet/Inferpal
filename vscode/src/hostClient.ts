@@ -466,6 +466,21 @@ export class HostClient {
     return this.connection().sendRequest<ConfigUpdateResult>('config/update', { json, base });
   }
 
+  /** The files pinned into every request. */
+  pinsList(): Promise<{ pins: string[]; notice?: string | null }> {
+    return this.connection().sendRequest('pins/list');
+  }
+
+  /** Pins a file (same cap and decision as the Visual Studio window); the system prompt follows. */
+  pinsAdd(path: string): Promise<{ pins: string[]; notice?: string | null }> {
+    return this.connection().sendRequest('pins/add', { path });
+  }
+
+  /** Takes a pinned file out of every request. */
+  pinsRemove(path: string): Promise<{ pins: string[]; notice?: string | null }> {
+    return this.connection().sendRequest('pins/remove', { path });
+  }
+
   indexStart(): Promise<void> {
     return this.connection().sendRequest('index/start');
   }

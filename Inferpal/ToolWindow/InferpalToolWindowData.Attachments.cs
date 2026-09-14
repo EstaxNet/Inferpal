@@ -29,7 +29,7 @@ internal partial class InferpalToolWindowData
     private async Task<string> BuildWorkspaceContextAsync(CancellationToken ct)
     {
         const int TimeoutMs = 5000;
-        var sb = new StringBuilder("## Workspace context (auto-injected on session start)\n\n");
+        string? solutionInfo = null, openEditors = null;
 
         try
         {
@@ -37,9 +37,7 @@ internal partial class InferpalToolWindowData
             cts1.CancelAfter(TimeoutMs);
             var solutionJson = JsonSerializer.Serialize(new { });
             var solutionArgs = JsonDocument.Parse(solutionJson).RootElement.Clone();
-            var solutionInfo = await _tools.ExecuteAsync("get_solution_info", solutionArgs, cts1.Token);
-            if (!string.IsNullOrWhiteSpace(solutionInfo))
-                sb.AppendLine("### Solution\n").AppendLine(solutionInfo).AppendLine();
+            solutionInfo     = await _tools.ExecuteAsync("get_solution_info", solutionArgs, cts1.Token);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { } // timeout — skip silently
         catch (Exception ex) { Diagnostics.Swallow("WorkspaceContext.SolutionInfo", ex); }
@@ -50,17 +48,13 @@ internal partial class InferpalToolWindowData
             cts2.CancelAfter(TimeoutMs);
             var editorsJson  = JsonSerializer.Serialize(new { });
             var editorsArgs  = JsonDocument.Parse(editorsJson).RootElement.Clone();
-            var openEditors  = await _tools.ExecuteAsync("get_open_editors", editorsArgs, cts2.Token);
-            if (!string.IsNullOrWhiteSpace(openEditors))
-                sb.AppendLine("### Open editors\n").AppendLine(openEditors);
+            openEditors      = await _tools.ExecuteAsync("get_open_editors", editorsArgs, cts2.Token);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { } // timeout — skip silently
         catch (Exception ex) { Diagnostics.Swallow("WorkspaceContext.OpenEditors", ex); }
 
-        var result = sb.ToString().TrimEnd();
-        return result.Length > "## Workspace context (auto-injected on session start)".Length + 5
-            ? result
-            : string.Empty;
+        // Same composer as the VS Code host.
+        return Services.Prompting.WorkspaceContext.Compose(solutionInfo, openEditors);
     }
 
     /// <summary>
