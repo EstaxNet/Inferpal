@@ -55,6 +55,21 @@ public class VsAdapterRegressionTests
     }
 
     /// <summary>
+    /// A failed MCP reconnect from the settings window is recorded. A bare catch swallowed it: the server list
+    /// kept its last status and nothing said why the servers just saved were not there.
+    /// </summary>
+    [Fact]
+    public void AFailedMcpReconnectFromTheSettings_IsRecorded()
+    {
+        var reconnect = Method(Vm + "InferpalSettingsData.cs", "ReconnectMcpAsync");
+        var catches   = reconnect.DescendantNodes().OfType<CatchClauseSyntax>().ToList();
+
+        Assert.NotEmpty(catches);   // witness: the detached reconnect is still guarded
+        Assert.All(catches, c => Assert.True(Calls(c, "Swallow") || Calls(c, "Record"),
+            "ReconnectMcpAsync swallows a failed reconnect in silence: the MCP status stays stale with no trace."));
+    }
+
+    /// <summary>
     /// /fix-build writes through the real registry: without a run of its own, its edits belong to no
     /// run and /undo-run cannot revert them.
     /// </summary>

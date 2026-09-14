@@ -20,6 +20,13 @@ internal sealed class LspJsonRpc : IDisposable
     private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement?>> _pending = new();
     private int _nextId;
     private readonly byte[] _oneByte = new byte[1];   // read loop only
+    private volatile bool _closed;
+
+    /// <summary>
+    /// True once the read loop has ended — refused frame, closed stream, broken pipe or disposal. The server
+    /// process can still be alive: nothing will ever answer a request on this channel again.
+    /// </summary>
+    public bool IsClosed => _closed;
 
     private static readonly JsonSerializerOptions SerOpts = new()
     {
@@ -45,6 +52,9 @@ internal sealed class LspJsonRpc : IDisposable
         int id  = Interlocked.Increment(ref _nextId);
         var tcs = new TaskCompletionSource<JsonElement?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending[id] = tcs;
+        // Nobody reads this channel any more: the request would wait out its whole timeout. Checked after the
+        // registration, so a loop ending right now either sees this request or is seen by it.
+        if (_closed) tcs.TrySetCanceled();
 
         try
         {
@@ -131,9 +141,14 @@ internal sealed class LspJsonRpc : IDisposable
             }
         }
         catch (OperationCanceledException) { /* normal shutdown */ }
-        catch { /* server crashed or pipe broken */ }
+        catch (Exception ex)
+        {
+            Diagnostics.Record("Lsp",
+                $"The language server's output could not be read ({ex.GetType().Name}: {ex.Message}); it is restarted on the next request.");
+        }
         finally
         {
+            _closed = true;
             // Fail all pending requests so callers don't hang
             foreach (var tcs in _pending.Values)
                 tcs.TrySetCanceled();

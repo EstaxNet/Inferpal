@@ -34,7 +34,6 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     public string ServerName => _config.Name;
 
     /// <summary>Last connection error, if <see cref="StartAsync"/> returned <c>false</c>.</summary>
-    public string? LastError { get; private set; }
 
     /// <summary>stdio servers never use OAuth (credentials come from the environment).</summary>
     public bool NeedsAuthorization => false;
@@ -114,7 +113,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         }
     }
 
-    /// <summary>Lists the tools the server advertises. Returns an empty list on failure.</summary>
+    /// <summary>Lists the tools the server advertises; <c>null</c> when the listing failed.</summary>
 
     /// <summary>
     /// Calls a tool by its server-local name and returns the concatenated text content.

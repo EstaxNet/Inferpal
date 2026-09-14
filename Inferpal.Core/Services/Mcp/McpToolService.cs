@@ -128,7 +128,9 @@ internal sealed class McpToolService : IAsyncDisposable
     /// </remarks>
     public IReadOnlyList<string> DescribeForBundle() =>
         [.. _status.Select(s => s.Connected
-            ? $"{s.Name} — connected, {s.ToolCount} tool(s)"
+            ? s.Error is { Length: > 0 } problem
+                ? $"{s.Name} — connected, {s.ToolCount} tool(s): {problem}"
+                : $"{s.Name} — connected, {s.ToolCount} tool(s)"
             : s.AuthRequired
                 ? $"{s.Name} — NOT connected: authorization required"
                 : $"{s.Name} — NOT connected: {s.Error ?? "no reason reported"}")];
@@ -208,7 +210,14 @@ internal sealed class McpToolService : IAsyncDisposable
             client.ToolsChanged += () => OnServerToolsChanged(entry);
             client.Closed       += () => OnServerClosed(entry, events);
 
-            entry.Tools = BuildTools(client, await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false));
+            var listed = await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false);
+            if (listed is null)
+            {
+                // Started but not listed: "connected, 0 tools" alone reads as a server with nothing to offer.
+                entry.Error = $"its tool list could not be read: {client.LastError}";
+                Diagnostics.Record("Mcp", $"Server '{server.Name}' started, but {entry.Error}");
+            }
+            entry.Tools = BuildTools(client, listed ?? []);
             return (entry, null);
         }
         catch (Exception ex)
@@ -265,7 +274,16 @@ internal sealed class McpToolService : IAsyncDisposable
         {
             if (_disposed || !_servers.Contains(entry)) return;
             var client = entry.Client;
-            entry.Tools = BuildTools(client, await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false));
+            var listed = await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false);
+            if (listed is null)
+            {
+                // A failed or slow re-listing is not "the server has no tools any more": the tools it had stay.
+                Diagnostics.Record("Mcp",
+                    $"Server '{entry.Config.Name}': its tool list could not be refreshed ({client.LastError}); the previous tools are kept.");
+                return;
+            }
+            entry.Tools = BuildTools(client, listed);
+            if (entry.Connected) entry.Error = null;
             RebuildSnapshot();
         }
         finally
@@ -322,8 +340,31 @@ internal sealed class McpToolService : IAsyncDisposable
                 client.ToolsChanged += () => OnServerToolsChanged(entry);
                 client.Closed       += () => OnServerClosed(entry, client);
                 var discovered = await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false);
+                if (discovered is null)
+                {
+                    // Restarted but not listed: publishing it "connected" with no tools would end the retries.
+                    Diagnostics.Record("Mcp",
+                        $"Server '{entry.Config.Name}' restarted, but its tool list could not be read: {client.LastError}");
+                    await client.DisposeAsync().ConfigureAwait(false);
+                    continue;
+                }
 
-                await _gate.WaitAsync().ConfigureAwait(false);
+                // Disposed while this server was starting: the gate is gone, and a client nobody holds would leave
+                // its process running after the editor — neither the teardown nor KillAllServers knows it.
+                if (_disposed)
+                {
+                    await client.DisposeAsync().ConfigureAwait(false);
+                    return;
+                }
+                try
+                {
+                    await _gate.WaitAsync().ConfigureAwait(false);
+                }
+                catch (ObjectDisposedException)
+                {
+                    await client.DisposeAsync().ConfigureAwait(false);
+                    return;
+                }
                 try
                 {
                     // The entry may have been torn down (settings save) while we were reconnecting.

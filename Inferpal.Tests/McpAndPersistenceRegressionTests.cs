@@ -221,8 +221,8 @@ public class McpAndPersistenceRegressionTests
         public event Action? ToolsChanged;
         public event Action? Closed;
         public Task<bool> StartAsync(CancellationToken ct) => Task.FromResult(true);
-        public Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct) =>
-            Task.FromResult<IReadOnlyList<McpToolInfo>>([new McpToolInfo("t", "desc", JsonDocument.Parse("{}").RootElement.Clone())]);
+        public Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<McpToolInfo>?>([new McpToolInfo("t", "desc", JsonDocument.Parse("{}").RootElement.Clone())]);
         public Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct) => Task.FromResult(name);
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
         public void Touch() { ToolsChanged?.Invoke(); Closed?.Invoke(); }
@@ -266,15 +266,15 @@ public class McpAndPersistenceRegressionTests
         public event Action? Closed;
         public Task<bool> StartAsync(CancellationToken ct) => Task.FromResult(true);
 
-        public Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct)
+        public Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct)
         {
             if (dieWhileListing)
             {
                 // The process exits while its tools are being listed: Closed fires, the listing is empty.
                 Closed?.Invoke();
-                return Task.FromResult<IReadOnlyList<McpToolInfo>>([]);
+                return Task.FromResult<IReadOnlyList<McpToolInfo>?>([]);
             }
-            return Task.FromResult<IReadOnlyList<McpToolInfo>>(
+            return Task.FromResult<IReadOnlyList<McpToolInfo>?>(
                 [new McpToolInfo("t", "desc", JsonDocument.Parse("{}").RootElement.Clone())]);
         }
 

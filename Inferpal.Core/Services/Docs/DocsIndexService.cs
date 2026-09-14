@@ -131,11 +131,29 @@ internal sealed class DocsIndexService
             : $"Docs: {pageCount} pages";
     }
 
-    public async Task AddOrReindexAsync(DocSite site, IProgress<string>? progress, CancellationToken ct)
+    /// <param name="stillWanted">Asked again once it is this source's turn: a source removed while it waited is
+    /// not written back, since a removal stops only the pass that is already running.</param>
+    public async Task AddOrReindexAsync(
+        DocSite site, IProgress<string>? progress, CancellationToken ct, Func<DocSite, bool>? stillWanted = null)
     {
+        // One pass at a time: a source asked for meanwhile waits its turn. Dropped, it stayed at 0 pages after
+        // /docs add had announced it and saved it to the settings.
         if (!await _indexLock.WaitAsync(0, ct))
         {
-            progress?.Report("Docs: another indexing pass is already running — try again shortly.");
+            progress?.Report($"Docs: {site.Title} is queued behind the indexing pass already running.");
+            try
+            {
+                await _indexLock.WaitAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                progress?.Report("Docs: indexing cancelled.");
+                return;
+            }
+        }
+        if (stillWanted is not null && !stillWanted(site))
+        {
+            _indexLock.Release();
             return;
         }
 
@@ -256,13 +274,12 @@ internal sealed class DocsIndexService
     /// <remarks>
     /// The list is taken when the command runs, and each pass takes minutes: a source removed before the
     /// loop reaches it would otherwise be indexed and written back, since removal only stops the pass
-    /// that is already running.
+    /// that is already running. The check is made once the source holds the indexing slot.
     /// </remarks>
     public async Task ReindexAsync(IReadOnlyList<DocSite> sites, Func<DocSite, bool> stillWanted, IProgress<string>? progress)
     {
         foreach (var site in sites)
-            if (stillWanted(site))
-                await AddOrReindexAsync(site, progress, CancellationToken.None);
+            await AddOrReindexAsync(site, progress, CancellationToken.None, stillWanted);
     }
 
     private async Task ReloadFromDbAsync(DocsDatabase db, CancellationToken ct)

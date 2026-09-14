@@ -32,6 +32,9 @@ public class McpToolServiceTests
         /// <summary>When set, <see cref="StartAsync"/> does not return before this task completes.</summary>
         public Task? HoldStart { get; set; }
         public Exception? ListToolsFailure { get; set; }
+        /// <summary>When true, <see cref="ListToolsAsync"/> reports a failed listing (null), like a real client.</summary>
+        public bool ListFails { get; set; }
+        public int ListCalls;
 
         public event Action? ToolsChanged;
         public event Action? Closed;
@@ -44,10 +47,13 @@ public class McpToolServiceTests
             return StartResult;
         }
 
-        public Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct)
-            => ListToolsFailure is { } failure
-                ? Task.FromException<IReadOnlyList<McpToolInfo>>(failure)
-                : Task.FromResult<IReadOnlyList<McpToolInfo>>(ToolList.ToList());
+        public Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct)
+        {
+            Interlocked.Increment(ref ListCalls);
+            return ListToolsFailure is { } failure
+                ? Task.FromException<IReadOnlyList<McpToolInfo>?>(failure)
+                : Task.FromResult<IReadOnlyList<McpToolInfo>?>(ListFails ? null : ToolList.ToList());
+        }
 
         public Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
             => Task.FromResult("ok");
@@ -106,6 +112,73 @@ public class McpToolServiceTests
     }
 
     // ── Tests ─────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// A server whose tool listing fails is not reported as "connected, 0 tools" and nothing else: its status
+    /// carries the reason, in the settings and in the support bundle.
+    /// </summary>
+    [Fact]
+    public async Task AServerThatDoesNotListItsTools_SaysWhy()
+    {
+        var config = new InferpalConfig { McpServersJson = OneServer("srv") };
+        var client = new FakeMcpClient("srv") { ListFails = true, LastError = "tools/list timed out" };
+        await using var svc = NewService(config, _ => client);
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+
+        var status = Assert.Single(svc.Status);
+        Assert.Contains("tools/list timed out", status.Error ?? "", StringComparison.Ordinal);
+        Assert.Contains(svc.DescribeForBundle(), line => line.Contains("tools/list timed out", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// A failed re-listing after a list-changed notice keeps the tools the server had. Read as an empty list,
+    /// a slow reply removed every tool of that server mid-session, in silence.
+    /// </summary>
+    [Fact]
+    public async Task AFailedRelisting_KeepsThePreviousTools()
+    {
+        var config = new InferpalConfig { McpServersJson = OneServer("srv") };
+        var client = new FakeMcpClient("srv") { ToolList = [Tool("a")] };
+        await using var svc = NewService(config, _ => client);
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+        Assert.Single(svc.Tools);   // witness: the first listing published the tool
+
+        client.ListFails = true;
+        client.RaiseToolsChanged();
+        client.RaiseToolsChanged();
+        // Re-listings run one at a time under the service gate: the third listing starts only once the first
+        // failed re-listing has fully ended.
+        await WaitUntil(() => Volatile.Read(ref client.ListCalls) >= 3, "the list-changed notices were never handled");
+
+        Assert.Single(svc.Tools);
+    }
+
+    /// <summary>
+    /// A service disposed while a reconnect is starting its server does not leave that server running: the
+    /// reconnect found the service's gate gone and threw, and the client it had just started was held by no
+    /// one — neither the teardown nor KillAllServers could reach its process.
+    /// </summary>
+    [Fact]
+    public async Task ADisposeDuringAReconnect_ClosesTheClientItWasStarting()
+    {
+        var config    = new InferpalConfig { McpServersJson = OneServer("srv") };
+        var first     = new FakeMcpClient("srv") { ToolList = [Tool("a")] };
+        var hold      = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var restarted = new FakeMcpClient("srv") { ToolList = [Tool("a")], HoldStart = hold.Task };
+        var clients   = new Queue<FakeMcpClient>([first, restarted]);
+        var svc       = NewService(config, _ => clients.Dequeue());
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+
+        first.RaiseClosed();
+        await restarted.Entered.Task.WaitAsync(TimeSpan.FromSeconds(30));   // the reconnect is starting the server
+        await svc.DisposeAsync();
+        hold.SetResult();
+
+        await WaitUntil(() => restarted.Disposed, "the client a reconnect was starting during disposal was never closed");
+    }
 
     [Fact]
     public async Task ASiblingRegistry_GatesMcpTools_ThroughItsOwnApproval()

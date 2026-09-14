@@ -128,4 +128,86 @@ public class DocsRemoveDuringIndexTests : IDisposable
         Assert.Contains(first.Id, ids);   // witness: the loop did index
         Assert.DoesNotContain(second.Id, ids);
     }
+
+    /// <summary>
+    /// A source added while another pass runs is indexed once that pass ends. It was dropped with a
+    /// progress line, after <c>/docs add</c> had announced it and saved it to the settings: it stayed at
+    /// 0 pages until a manual reindex — and a <c>/docs reindex</c> started during an add skipped every source.
+    /// </summary>
+    [Fact]
+    public async Task ASourceAddedDuringAnotherPass_IsIndexedOnceThatPassEnds()
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var docs = GatedOnFirst(gate);
+
+        var running = docs.AddOrReindexAsync(First, progress: null, CancellationToken.None);   // blocked in the crawl
+        var queued  = docs.AddOrReindexAsync(Second, progress: null, CancellationToken.None);
+        gate.TrySetResult();
+        await Task.WhenAll(running, queued).WaitAsync(TimeSpan.FromSeconds(30));
+
+        var ids = (await docs.SitesAsync()).Select(s => s.Site.Id).ToList();
+        Assert.Contains(First.Id, ids);   // witness: the blocked pass did index
+        Assert.Contains(Second.Id, ids);
+    }
+
+    /// <summary>
+    /// A source waiting for its turn and removed meanwhile is not written when its turn comes: the removal
+    /// stops only the pass that is running, so the waiting one asks again whether it is still wanted.
+    /// </summary>
+    [Fact]
+    public async Task AQueuedSourceRemovedBeforeItsTurn_IsNotWritten()
+    {
+        var gate    = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var docs    = GatedOnFirst(gate);
+        var removed = new System.Collections.Concurrent.ConcurrentDictionary<string, bool>();
+
+        var running = docs.AddOrReindexAsync(First, progress: null, CancellationToken.None);
+        var queued  = docs.AddOrReindexAsync(Second, progress: null, CancellationToken.None, s => !removed.ContainsKey(s.Id));
+        removed[Second.Id] = true;
+        await docs.RemoveAsync(Second.Id, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(30));
+        gate.TrySetResult();
+        await Task.WhenAll(running, queued).WaitAsync(TimeSpan.FromSeconds(30));
+
+        var ids = (await docs.SitesAsync()).Select(s => s.Site.Id).ToList();
+        Assert.Contains(First.Id, ids);   // witness: the blocked pass did index
+        Assert.DoesNotContain(Second.Id, ids);
+    }
+
+    /// <summary>
+    /// <c>/docs add</c> hands its pass the "is this source still configured?" check: the pass may wait behind
+    /// another one, and a source removed meanwhile would otherwise be written back.
+    /// </summary>
+    [Fact]
+    public void DocsAdd_GivesItsPassTheStillConfiguredCheck()
+    {
+        var handler = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "Commands", "DocsCommandHandler.cs"));
+        var at = handler.IndexOf("docs.AddOrReindexAsync(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the /docs add call moved — the rule measures nothing.");
+
+        var call = handler[at..handler.IndexOf(';', at)];
+        Assert.Contains("StillConfigured(", call, StringComparison.Ordinal);
+    }
+
+    private static readonly DocSite First  = DocSite.Create("https://first.example.com/", "First");
+    private static readonly DocSite Second = DocSite.Create("https://second.example.com/", "Second");
+
+    /// <summary>A service whose crawl of <see cref="First"/> waits for <paramref name="gate"/>.</summary>
+    private static DocsIndexService GatedOnFirst(TaskCompletionSource gate) =>
+        new(new FakeInferenceProvider(), new InferpalConfig())
+        {
+            CrawlForTests = async (url, ct) =>
+            {
+                if (url.Contains("first", StringComparison.Ordinal)) await gate.Task.WaitAsync(ct);
+                return [new DocCrawler.Page(url + "a", "A", "Some documentation text.")];
+            },
+        };
+
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md")))
+            dir = dir.Parent;
+        return dir?.FullName ?? throw new InvalidOperationException("repository root not found");
+    }
 }

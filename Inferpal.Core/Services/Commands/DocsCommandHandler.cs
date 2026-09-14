@@ -45,7 +45,9 @@ internal static class DocsCommandHandler
 
                 // Crawling is long: it runs detached, reporting through `progress`. Deliberately
                 // not tied to `ct` — cancelling the command must not kill an ongoing crawl.
-                _ = Task.Run(() => docs.AddOrReindexAsync(site, progress, CancellationToken.None), CancellationToken.None);
+                // It may wait behind a pass already running: removed meanwhile, the source is not written.
+                _ = Task.Run(() => docs.AddOrReindexAsync(
+                        site, progress, CancellationToken.None, s => StillConfigured(config, s)), CancellationToken.None);
                 return Strings.DocsAdded(site.Title);
             }
 
@@ -91,9 +93,7 @@ internal static class DocsCommandHandler
                 var toIndex = target is not null ? [target] : sites.ToArray();
 
                 // The settings are read again on each source's turn: one removed meanwhile is skipped.
-                bool StillConfigured(DocSite s) =>
-                    DocSite.TryParse(config.DocSitesJson, out var now, out _) && now.Any(x => x.Id == s.Id);
-                _ = Task.Run(() => docs.ReindexAsync(toIndex, StillConfigured, progress), CancellationToken.None);
+                _ = Task.Run(() => docs.ReindexAsync(toIndex, s => StillConfigured(config, s), progress), CancellationToken.None);
                 return Strings.DocsReindexing(target?.Title ?? $"{toIndex.Length}");
             }
 
@@ -109,4 +109,8 @@ internal static class DocsCommandHandler
             }
         }
     }
+
+    /// <summary>Whether the settings still list <paramref name="site"/>, read when its indexing turn comes.</summary>
+    private static bool StillConfigured(InferpalConfig config, DocSite site) =>
+        DocSite.TryParse(config.DocSitesJson, out var now, out _) && now.Any(x => x.Id == site.Id);
 }

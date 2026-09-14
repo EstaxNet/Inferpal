@@ -70,7 +70,6 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     }
 
     public string ServerName => _config.Name;
-    public string? LastError { get; private set; }
 
     /// <summary>Set when the server rejected the request with 401 and OAuth is configured — the user
     /// must (re-)authorize via the settings UI. Surfaced as a distinct connection status.</summary>

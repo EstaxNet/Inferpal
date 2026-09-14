@@ -35,8 +35,9 @@ internal interface IMcpClient : IAsyncDisposable
     /// <summary>Connects and performs the handshake. Returns <c>false</c> (never throws) on failure.</summary>
     Task<bool> StartAsync(CancellationToken ct);
 
-    /// <summary>Lists the tools the server advertises. Returns an empty list on failure.</summary>
-    Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct);
+    /// <summary>Lists the tools the server advertises; <c>null</c> (never an exception) when the listing
+    /// failed, with the reason in <see cref="LastError"/>. A failure is not an empty list.</summary>
+    Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct);
 
     /// <summary>Calls a tool by its server-local name and returns the concatenated text content.</summary>
     Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct);

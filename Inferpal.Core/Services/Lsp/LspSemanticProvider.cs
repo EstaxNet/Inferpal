@@ -90,6 +90,7 @@ internal sealed class LspSemanticProvider : IDisposable
         private bool         _initialized;
         private bool         _failed;           // permanently unavailable
         private int          _initFailures;     // consecutive init attempts that failed transiently
+        private int          _channelBreaks;    // sessions whose output channel broke while the server lived
 
         private static readonly TimeSpan InitTimeout    = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
@@ -164,13 +165,22 @@ internal sealed class LspSemanticProvider : IDisposable
         private async Task<bool> EnsureInitializedAsync(CancellationToken ct)
         {
             // Fast path — already running
-            if (_initialized && _process?.HasExited == false) return true;
+            if (_initialized && _process?.HasExited == false && _rpc?.IsClosed == false) return true;
 
             await _initLock.WaitAsync(ct);
             try
             {
-                if (_initialized && _process?.HasExited == false) return true;
+                if (_initialized && _process?.HasExited == false && _rpc?.IsClosed == false) return true;
                 if (_failed) return false;
+
+                // A server whose output channel broke is alive but deaf: it is restarted below, a bounded number
+                // of times — one that always breaks its channel would otherwise be respawned on every request.
+                if (_initialized && _rpc?.IsClosed == true && ++_channelBreaks >= 3)
+                {
+                    MarkFailed($"the {_languageId} language server's output channel broke three times");
+                    CleanupProcess();
+                    return false;
+                }
 
                 // Discover and launch the server
                 var cmd = FindServerCommand(_languageId);

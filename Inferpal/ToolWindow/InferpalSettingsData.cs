@@ -1816,7 +1816,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             await _mcp.RefreshAsync();
             await RunOnVMContextAsync(() => { McpStatusText = BuildMcpStatus(); RefreshRowStatuses(); });
         }
-        catch { /* status stays as last known; never break the editor on a reconnect error */ }
+        // The status stays as last known and the editor never breaks on a reconnect error — but the cause is
+        // recorded: silenced, nothing said why the servers just saved were not there.
+        catch (Exception ex) { Diagnostics.Swallow("Settings.ReconnectMcp", ex); }
     }
 
     private static IReadOnlyList<string> ParseArgs(string? text) =>

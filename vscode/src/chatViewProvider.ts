@@ -1105,6 +1105,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (codeAction) {
       try {
         await this.runCodeAction(codeAction, host);
+      } catch (err) {
+        // runCodeAction ends the turn itself on every path it returns from; a throw (workspace edit
+        // rejected, document closed under it) would otherwise leave the webview busy with no error.
+        this.log(`[chat] code action failed: ${String(err)}`);
+        this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
       } finally {
         this.busy = false;
         this.autoSaveLast();

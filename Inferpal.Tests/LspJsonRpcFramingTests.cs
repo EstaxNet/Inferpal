@@ -44,6 +44,31 @@ public class LspJsonRpcFramingTests
         Assert.Equal(42, (await pending)?.GetInt32());
     }
 
+    /// <summary>
+    /// Once the channel has closed (here on a frame it cannot read), a new request does not wait out its
+    /// timeout. The server process can outlive its output channel, and every request after that — one per
+    /// file the index reads — sat there for its whole timeout, with nothing saying the server was gone.
+    /// </summary>
+    [Fact]
+    public async Task ARequestAfterTheChannelClosed_DoesNotWaitItsTimeout()
+    {
+        var (client, server) = FullDuplexStream.CreatePair();
+        using var rpc = new LspJsonRpc(server, server);
+
+        // A frame without a length ends the read loop: the request it was answering is cancelled.
+        var first = rpc.SendRequestAsync("initialize", new { }, CancellationToken.None, TimeSpan.FromSeconds(30));
+        await ReadFrameAsync(client).WaitAsync(TimeSpan.FromSeconds(10));
+        await client.WriteAsync(Encoding.ASCII.GetBytes("X-Unknown: 1\r\n\r\n"));
+        await client.FlushAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first.WaitAsync(TimeSpan.FromSeconds(10)));
+
+        var second = rpc.SendRequestAsync("textDocument/documentSymbol", new { }, CancellationToken.None, TimeSpan.FromSeconds(30));
+        var ended  = await Task.WhenAny(second, Task.Delay(TimeSpan.FromSeconds(5)));
+
+        Assert.Same(second, ended);
+        Assert.True(rpc.IsClosed);
+    }
+
     /// <summary>Reads the request the transport wrote, and answers it with <c>42</c>.</summary>
     private static async Task AnswerAsync(Stream client, bool bom)
     {

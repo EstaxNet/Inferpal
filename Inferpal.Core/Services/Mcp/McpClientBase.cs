@@ -37,12 +37,17 @@ internal abstract class McpClientBase
     private protected abstract Task<JsonElement> SendRequestAsync(
         string method, JsonNode @params, CancellationToken ct);
 
-    /// <summary>Lists the tools the server advertises. Returns an empty list on failure.</summary>
+    /// <summary>Why the last handshake or tool listing failed.</summary>
+    public string? LastError { get; private protected set; }
+
+    /// <summary>Lists the tools the server advertises; <c>null</c> when the listing failed, with the reason in
+    /// <see cref="LastError"/>.</summary>
     /// <remarks>
-    /// Failure is empty, never an exception: an MCP server that is down must cost the user a
-    /// missing tool, not a broken turn.
+    /// Never an exception: an MCP server that is down must cost the user a missing tool, not a broken turn.
+    /// But never an empty list either: read as one, a slow reply to a list-changed notice removed every tool
+    /// of the server, and a server that did not answer showed as connected with nothing to offer.
     /// </remarks>
-    public async Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct)
     {
         try
         {
@@ -51,9 +56,15 @@ internal abstract class McpClientBase
             var result = await SendRequestAsync("tools/list", new JsonObject(), cts.Token).ConfigureAwait(false);
             return McpJsonRpc.ParseTools(result);
         }
-        catch
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            return [];
+            LastError = $"tools/list got no answer within {HandshakeTimeout.TotalSeconds:0} s";
+            return null;
+        }
+        catch (Exception ex)
+        {
+            LastError = $"tools/list failed: {ex.Message}";
+            return null;
         }
     }
 

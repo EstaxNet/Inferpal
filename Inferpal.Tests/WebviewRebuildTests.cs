@@ -507,4 +507,22 @@ public class WebviewRebuildTests
         Assert.True(guard >= 0 && guard < rollback, "with the backend down, the exchange is gone before the resend is refused.");
         Assert.True(rollback < resend && splice < resend, "the question is resent before its previous exchange is taken back.");
     }
+
+    /// <summary>
+    /// An in-place code action (/fix /refactor /doc) that throws — the workspace edit rejected, the document
+    /// closed under it — ends the turn with the error. Released only by the finally, the adapter was idle
+    /// while the webview never got turnEnded: the Stop button stayed and the failure was said nowhere.
+    /// </summary>
+    [Fact]
+    public void AThrowingCodeAction_StillEndsTheTurn()
+    {
+        var send = Body(TsCode("chatViewProvider.ts"), "private async send(");
+        var at   = send.IndexOf("await this.runCodeAction(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the code-action branch of send() moved — the rule measures nothing.");
+
+        var end   = send.IndexOf("finally", at, StringComparison.Ordinal);
+        var block = send[at..(end < 0 ? send.Length : end)];
+        Assert.True(block.Contains("catch", StringComparison.Ordinal) && block.Contains("this.finishTurn(", StringComparison.Ordinal),
+            "a code action that throws leaves the webview busy: no turnEnded, no error shown.");
+    }
 }

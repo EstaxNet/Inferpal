@@ -97,7 +97,7 @@ public class McpHttpClientTests
         Assert.True(await client.StartAsync(CancellationToken.None));
         var tools = await client.ListToolsAsync(CancellationToken.None);
 
-        Assert.Equal("mcp__remote__do_it", McpTool.BuildName(client.ServerName, tools.Single().Name));
+        Assert.Equal("mcp__remote__do_it", McpTool.BuildName(client.ServerName, tools!.Single().Name));
         // initialize carries no session yet; it's echoed on every later request.
         Assert.Equal([null, "sess-1", "sess-1"], handler.SessionHeaders);
         Assert.All(handler.AuthHeaders, h => Assert.Equal("Bearer abc", h));
@@ -115,7 +115,31 @@ public class McpHttpClientTests
 
         var tools = await client.ListToolsAsync(CancellationToken.None);
 
-        Assert.Equal("streamed", tools.Single().Name);
+        Assert.Equal("streamed", tools!.Single().Name);
+    }
+
+    /// <summary>
+    /// A tools/list the server fails is not "this server has no tools": the listing comes back null with the
+    /// reason, so the owner can keep the tools it had and say why. Read as an empty list, a slow reply to a
+    /// list-changed notice removed every tool of the server, in silence.
+    /// </summary>
+    [Fact]
+    public async Task ListTools_AFailedListing_IsNotAnEmptyList()
+    {
+        var failing = new StubHandler
+        {
+            Respond = Responder(toolsList: _ => new HttpResponseMessage(HttpStatusCode.InternalServerError)),
+        };
+        await using var client = Client(failing);
+        Assert.True(await client.StartAsync(CancellationToken.None));
+
+        Assert.Null(await client.ListToolsAsync(CancellationToken.None));
+        Assert.False(string.IsNullOrEmpty(client.LastError));
+
+        // Witness: a server that really advertises nothing gives an empty list, not a failure.
+        await using var empty = Client(new StubHandler { Respond = Responder() });
+        await empty.StartAsync(CancellationToken.None);
+        Assert.Empty(Assert.IsAssignableFrom<IReadOnlyList<McpToolInfo>>(await empty.ListToolsAsync(CancellationToken.None)));
     }
 
     [Fact]
@@ -198,7 +222,7 @@ public class McpHttpClientTests
 
         var tools = await client.ListToolsAsync(CancellationToken.None);
 
-        Assert.Equal("back", tools.Single().Name);
+        Assert.Equal("back", tools!.Single().Name);
         Assert.Equal(2, inits);   // initial handshake + one re-initialize after the 404
         // The retried tools/list rides the new session id.
         Assert.Equal("s2", handler.SessionHeaders.Last());
