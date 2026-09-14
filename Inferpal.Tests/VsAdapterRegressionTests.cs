@@ -239,4 +239,33 @@ public class VsAdapterRegressionTests
             Path.Combine(RepoRoot(), Vm + "InferpalToolWindowData.Construction.cs"));
         Assert.Matches(@"_startupSessionLoad\s*=\s*LoadSessionAsync\(", construction);
     }
+
+    /// <summary>
+    /// <c>/rules init</c>, <c>/checks init</c>, <c>/prompts init</c> and <c>/onboard init</c> create a file
+    /// meant to be edited: VS Code opens it, Visual Studio only printed its path.
+    /// </summary>
+    [Fact]
+    public void AScaffoldedFile_IsOpenedInTheEditor()
+    {
+        var scaffold = Method(Vm + "InferpalToolWindowData.PromptHistory.cs", "ScaffoldFileAsync");
+        Assert.True(Calls(scaffold, "OpenTextDocumentAsync"),
+            "ScaffoldFileAsync writes the file and never opens it, unlike VS Code.");
+    }
+
+    /// <summary>
+    /// <c>/onboard context</c> writes <c>context.md</c>, then opens it. The open shared the write's
+    /// <c>try</c>: an editor that refused to open the path showed an error for a file already replaced,
+    /// and skipped the system-prompt refresh — the new context stayed out of the prompt until /clear.
+    /// </summary>
+    [Fact]
+    public void OpeningTheOnboardContext_CannotHideItsWrite()
+    {
+        var onboard  = Method(Vm + "InferpalToolWindowData.PromptHistory.cs", "HandleOnboardCommandAsync");
+        var writeTry = Assert.Single(onboard.DescendantNodes().OfType<TryStatementSyntax>(),
+                                     t => Calls(t.Block, "WriteAsync"));
+
+        Assert.False(Calls(writeTry.Block, "OpenTextDocumentAsync"),
+            "Opening context.md shares the write's try: a refused open hides the write and skips the refresh.");
+        Assert.True(Calls(onboard, "OpenTextDocumentAsync"), "witness: the written file is still opened");
+    }
 }

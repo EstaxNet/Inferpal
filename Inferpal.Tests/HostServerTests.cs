@@ -651,30 +651,59 @@ public class HostServerTests
         Assert.Null(branch);
     }
 
+    /// <summary>
+    /// <c>/branch</c> decides on the conversation the user sees. The host listed and checked turns
+    /// against its own history — where a user message carries the RAG auto-context in front of the
+    /// question, and compaction renumbers turns — while the fork ran on the adapter's transcript: the
+    /// listing previewed context blocks, and <c>/branch 3</c> could fork a different turn than the one
+    /// it listed. The command now asks the adapter for its transcript.
+    /// </summary>
     [Fact]
-    public async Task SlashBranch_ListsTurnsFromTheHostHistoryAndAsksTheAdapterToFork()
+    public async Task SlashBranch_AsksTheAdapterToDecideOnItsTranscript()
     {
         using var h = CreateHarness();
         await h.InitializeAsync();
+
+        var slash = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/branch 2" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.True(slash.Handled);
+        var effect = Assert.Single(slash.Effects!);
+        Assert.Equal("branchCommand", effect.Kind);
+        Assert.Equal("2", effect.Value);
+    }
+
+    private sealed record BranchCommandAnswer(string? Message, int? ForkTurn, string? SwitchTo);
+
+    [Fact]
+    public async Task BranchCommand_ListsAndChecksTheDisplayedTranscript_NotTheModelHistory()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        // The model's history: a compaction summary, and auto-context in front of the question.
         h.Server.CurrentSession!.History.AddRange(
         [
-            new ChatMessageDto("user", "how do I parse this?"),
+            new ChatMessageDto("user", "[Context Summary] earlier turns"),
+            new ChatMessageDto("user", "### src/Foo.cs:12-40\n```\nclass Foo {}\n```\n\nhow do I parse this?"),
             new ChatMessageDto("assistant", "like so"),
         ]);
+        var shown = new object[]
+        {
+            new { role = "user",      content = "first question" },
+            new { role = "assistant", content = "first answer" },
+            new { role = "user",      content = "how do I parse this?" },
+            new { role = "assistant", content = "like so" },
+        };
 
-        var listing = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
-            "command/slash", new { text = "/branch" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var listing = await h.Client.InvokeWithParameterObjectAsync<BranchCommandAnswer>(
+            "session/branchCommand", new { args = "", messages = shown }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Contains("**2.** how do I parse this?", listing.Message);
+        Assert.DoesNotContain("src/Foo.cs", listing.Message);
 
-        Assert.True(listing.Handled);
-        Assert.Contains("**1.** how do I parse this?", listing.Markdown);
-
-        var fork = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
-            "command/slash", new { text = "/branch 1" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
-
-        // Stateful part is an effect: the adapter owns the display transcript.
-        var effect = Assert.Single(fork.Effects!);
-        Assert.Equal("branchRequest", effect.Kind);
-        Assert.Equal("1", effect.Value);
+        var fork = await h.Client.InvokeWithParameterObjectAsync<BranchCommandAnswer>(
+            "session/branchCommand", new { args = "2", messages = shown }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal(2, fork.ForkTurn);
+        Assert.Null(fork.Message);
     }
 
     [Fact]
@@ -831,6 +860,25 @@ public class HostServerTests
     }
 
     // ── command/slash ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// The VS Code support bundle names the backend state, as the Visual Studio one does (its status
+    /// line). Without it, a bundle sent for "nothing answers" said nothing about the connection.
+    /// </summary>
+    [Fact]
+    public async Task DiagnosticsExport_NamesTheBackendState()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Fake.ConnectionOk = false;
+
+        var export = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/diagnostics export" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var bundle = Assert.Single(export.Effects!, e => e.Kind == "copyToClipboard").Value;
+        Assert.Contains("**Backend**", bundle);
+        Assert.Contains("unreachable", bundle);
+    }
 
     [Fact]
     public async Task CommandSlash_UnknownCommand_ReturnsHelpBubble()

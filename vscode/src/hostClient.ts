@@ -29,6 +29,7 @@ import {
   MentionResolveResult,
   PlanNotice,
   SavedMessage,
+  SessionBranchCommandResult,
   SessionBranchResult,
   SettingsSchema,
   SessionLoadResult,
@@ -495,6 +496,14 @@ export class HostClient {
    */
   sessionBranch(turn: number, messages: SavedMessage[]): Promise<SessionBranchResult | null> {
     return this.connection().sendRequest<SessionBranchResult | null>('session/branch', { turn, messages });
+  }
+
+  /**
+   * `/branch [args]` decided on `messages` — the displayed transcript the fork runs on, not the host's
+   * history: a message to show, a turn to fork at, or a session to switch to.
+   */
+  sessionBranchCommand(args: string, messages: SavedMessage[]): Promise<SessionBranchCommandResult> {
+    return this.connection().sendRequest<SessionBranchCommandResult>('session/branchCommand', { args, messages });
   }
 
   /**

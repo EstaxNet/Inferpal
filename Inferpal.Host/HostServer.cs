@@ -701,6 +701,26 @@ internal sealed partial class HostServer : IDisposable
         });
 
     /// <summary>
+    /// <c>/branch [args]</c> decided on the adapter's displayed transcript — the list the fork itself
+    /// runs on. The host's own history is not that list: a user message there carries the RAG
+    /// auto-context in front of the question, and compaction renumbers the turns.
+    /// </summary>
+    [JsonRpcMethod("session/branchCommand", UseSingleObjectParameterDeserialization = true)]
+    public async Task<SessionBranchCommandResult> SessionBranchCommandAsync(SessionBranchCommandParams p, CancellationToken ct)
+    {
+        var s        = Session();
+        var parts    = ("/branch " + (p.Args ?? string.Empty)).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var messages = (p.Messages ?? []).Select(ToSaved).ToList();
+        var sessions = await s.Store.ListWithPreviewAsync(ct);
+
+        var result = Inferpal.Services.Commands.BranchCommandHandler.Handle(parts, messages, s.CurrentSessionName, sessions);
+        return new SessionBranchCommandResult(
+            result.SwitchTo is { } target ? Strings.BranchSwitched(target) : result.Message,
+            result.ForkTurn,
+            result.SwitchTo);
+    }
+
+    /// <summary>
     /// LLM-generated name for a conversation (utility model via the Model Router) — the VS Code
     /// counterpart of what the VS VM does when <c>/clear</c> archives a session. Falls back to a
     /// snippet of the message when the backend can't answer, so it always returns something usable.

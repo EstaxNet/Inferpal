@@ -430,6 +430,37 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * `/branch [args]`: decided host-side on THIS transcript — the list the fork runs on — never on the
+   * host's history, where a question carries the RAG auto-context and compaction renumbers turns. The
+   * decision is then carried out here: a fork, a switch, or a message.
+   */
+  private async decideBranch(args: string): Promise<readonly [note: string, rehydrate: boolean]> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      return [hostUnavailableMessage(), false];
+    }
+    const messages = this.snapshot();
+    const last = messages[messages.length - 1];
+    if (last?.role === 'user' && last.content.startsWith('/')) {
+      messages.pop();
+    }
+    try {
+      const decision = await host.sessionBranchCommand(args, messages);
+      if (typeof decision.forkTurn === 'number') {
+        return await this.branchAtTurn(decision.forkTurn);
+      }
+      if (decision.switchTo) {
+        const [switched, failure] = await this.switchToSession(decision.switchTo);
+        return [switched ? decision.message ?? '' : failure, false];
+      }
+      return [decision.message ?? '', false];
+    } catch (err) {
+      this.log(`[chat] branch command failed: ${String(err)}`);
+      return [ChatViewProvider.errorText(err), false];
+    }
+  }
+
+  /**
    * `/branch <name>`: switching to a branch is a plain session load. The host has already answered
    * "Switched to branch X", so a failure returns its cause for the caller to show instead of that claim.
    */
@@ -1169,6 +1200,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         case 'exportRequest':
           void this.exportCommand();
           break;
+        // /branch [args]: listed, checked and carried out on this transcript (see decideBranch).
+        case 'branchCommand': {
+          const [note, changed] = await this.decideBranch(e.value ?? '');
+          notes.push(note);
+          if (changed) {
+            rehydrate = true;
+          }
+          break;
+        }
         // /branch <n>: the host owns the fork but needs the full transcript (tool names and
         // timestamps live here, not in its API history).
         case 'branchRequest': {

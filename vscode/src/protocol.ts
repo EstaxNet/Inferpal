@@ -260,6 +260,16 @@ export interface SessionBranchResult {
   message: string;
 }
 
+/**
+ * session/branchCommand answer: `/branch [args]` decided on the adapter's transcript. Exactly one
+ * outcome; for a switch, `message` is the confirmation to show once the load succeeded.
+ */
+export interface SessionBranchCommandResult {
+  message?: string | null;
+  forkTurn?: number | null;
+  switchTo?: string | null;
+}
+
 /** session/title answer: the bare LLM title plus the timestamped save file name. */
 export interface SessionTitleResult {
   title: string;

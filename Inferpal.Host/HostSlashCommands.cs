@@ -278,8 +278,22 @@ internal sealed partial class HostServer
                     // On the VS Code side there is no in-process peer: both calls return "n/a"
                     // and null, so nothing is shown. That is intended - staying quiet beats
                     // reporting the state of the Visual Studio open next door.
+                    // The bundle names the backend state, as the Visual Studio one does with its status
+                    // line: a report sent for "nothing answers" must say whether anything answers.
+                    string? backend = null;
+                    if (parts.Any(p => p.Equals("export", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var reachable = false;
+                        try { reachable = await s.Client.CheckConnectionAsync(s.Config.BaseUrl, cts.Token); }
+                        catch (OperationCanceledException) { throw; }
+                        catch (Exception ex) { Diagnostics.Swallow("HostSlashCommands.DiagnosticsBackend", ex); }
+                        backend = (reachable ? "reachable" : "unreachable")
+                                  + " (" + InferenceProviderFactory.DisplayName(s.Config.Provider) + ")";
+                    }
+
                     var result = DiagnosticsCommandHandler.Handle(parts, new DiagnosticsExportContext(
                         s.Config, "VS Code host",
+                        BackendStatus: backend,
                         WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
                         InProcHalf: InProcAliveSignal.DescribeForBundle(),
                         McpServers: s.Mcp.DescribeForBundle()),
@@ -328,20 +342,31 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Tdd:
                 {
-                    // "Fix until green" loop; test reports, agent steps and per-round fix summaries
-                    // all flow through the same chat/step notifications as the agent loop.
+                    // "Fix until green" loop. What Visual Studio keeps, this keeps: each test run as a
+                    // run_tests bubble (a status line is overwritten by the next step), and each fix
+                    // explanation — gathered ahead of the verdict, there being no assistant bubble to
+                    // stream into while a command runs.
+                    var fixes  = new List<string>();
                     var result = await TddCommandHandler.HandleAsync(
                         s.Client, s.Config, s.Tools,
                         BuildSystemPromptText(s), parts,
                         string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
                         onProgress:   msg => Notify("chat/step", new { text = msg }),
-                        onTestReport: (output, _) => Notify("chat/step", new { text = output }),
+                        onTestReport: (output, green) => Notify("chat/tool", new ToolNotice("run_tests", string.Empty, output, !green)),
                         onStep:       st => Notify("chat/step", new { text = st }),
                         onToken:      null,
-                        onFixResult:  null,
+                        onFixResult:  text =>
+                        {
+                            var visible = Inferpal.Services.Presentation.MarkdownParser.StripThinkTags(text);
+                            if (Inferpal.Services.Presentation.MarkdownParser.HasPrintableText(visible))
+                                lock (fixes) fixes.Add(visible);
+                        },
                         cts.Token,
                         s.TestCapture, s.Approval);
-                    return new SlashCommandResult(true, result.Message);
+                    lock (fixes)
+                        return new SlashCommandResult(true, fixes.Count == 0
+                            ? result.Message
+                            : string.Join("\n\n---\n\n", fixes.Append(result.Message)));
                 }
 
                 case SlashCommandId.Task:
@@ -549,33 +574,16 @@ internal sealed partial class HostServer
 
 
     /// <summary>
-    /// <c>/branch</c> — listing is answered from the host's own history (turn numbering only needs
-    /// the user messages, which both sides agree on); the two stateful outcomes come back as
-    /// effects the adapter applies with its full transcript: <c>branchRequest</c> (→
-    /// <c>session/branch</c>) and <c>loadSession</c> (→ <c>session/load</c>).
+    /// <c>/branch</c> — decided on the adapter's displayed transcript, never on the host's history,
+    /// where a question carries the RAG auto-context and compaction renumbers turns: the listing
+    /// previewed context blocks and <c>/branch 3</c> could fork another turn than the one listed. The
+    /// command hands its arguments back as a <c>branchCommand</c> effect; the adapter answers through
+    /// <c>session/branchCommand</c> with its transcript, then forks or switches as decided.
     /// </summary>
-    private static async Task<SlashCommandResult> HandleBranchSlashAsync(
-        HostSession s, string[] parts, CancellationToken ct)
-    {
-        var transcript = s.History
-            .Where(m => m.Role is "user" or "assistant" or "tool")
-            .Select(m => new SavedMessage(m.Role, m.Content ?? string.Empty))
-            .ToList();
-
-        var sessions = await s.Store.ListWithPreviewAsync(ct);
-        var result   = BranchCommandHandler.Handle(parts, transcript, s.CurrentSessionName, sessions);
-
-        if (result.Message is { } message)
-            return new SlashCommandResult(true, message);
-
-        // The bubble is localized here; the adapter only has to load the session.
-        if (result.SwitchTo is { } target)
-            return new SlashCommandResult(true, Strings.BranchSwitched(target),
-                [new SlashEffectDto("loadSession", target)]);
-
-        return new SlashCommandResult(true, null,
-            [new SlashEffectDto("branchRequest", result.ForkTurn!.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))]);
-    }
+    private static Task<SlashCommandResult> HandleBranchSlashAsync(
+        HostSession s, string[] parts, CancellationToken ct) =>
+        Task.FromResult(new SlashCommandResult(true, null,
+            [new SlashEffectDto("branchCommand", string.Join(" ", parts.Skip(1)))]));
 
 
     /// <summary>/models … — pull streams its progress through chat/step (the adapter's status

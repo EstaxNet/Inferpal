@@ -326,6 +326,13 @@ internal sealed record SessionBranchParams(int Turn, List<SavedMessageDto> Messa
 internal sealed record SessionBranchResult(
     string Name, string Parent, int ForkTurn, List<SavedMessageDto> Messages, string Message);
 
+/// <summary>`session/branchCommand` — <c>/branch [args]</c> decided on the adapter's displayed transcript.</summary>
+internal sealed record SessionBranchCommandParams(string? Args, List<SavedMessageDto>? Messages);
+
+/// <summary>`session/branchCommand` answer: exactly one outcome. <paramref name="Message"/> is the bubble
+/// to show — for a switch, the confirmation to show once the load succeeded.</summary>
+internal sealed record SessionBranchCommandResult(string? Message = null, int? ForkTurn = null, string? SwitchTo = null);
+
 /// <summary>`session/title` — text to summarise; empty = the session's first user message.</summary>
 internal sealed record SessionTitleParams(string? Text = null);
 

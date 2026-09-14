@@ -379,4 +379,28 @@ public class WebviewRebuildTests
                                       @"this\.droppedEntries = 0;"),
                 "a transcript reset keeps the previous conversation's dropped count");
     }
+
+    /// <summary>
+    /// <c>/branch</c> is decided on this transcript — the one the fork runs on — through
+    /// <c>session/branchCommand</c>, never on the host's history, where questions carry the RAG
+    /// auto-context and compaction renumbers turns.
+    /// </summary>
+    [Fact]
+    public void Branch_IsDecidedOnTheDisplayedTranscript()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+
+        var effect = Regex.Match(provider, @"case 'branchCommand':[\s\S]*?break;");
+        Assert.True(effect.Success, "no branchCommand effect: /branch is not decided on the displayed transcript.");
+        Assert.Contains("notes.push(", effect.Value, StringComparison.Ordinal);
+
+        var decide = Body(provider, "private async decideBranch(");
+        Assert.Contains("this.snapshot()", decide, StringComparison.Ordinal);
+        Assert.Contains("host.sessionBranchCommand(", decide, StringComparison.Ordinal);
+        Assert.Contains("this.branchAtTurn(", decide, StringComparison.Ordinal);
+        Assert.Contains("this.switchToSession(", decide, StringComparison.Ordinal);
+        Assert.Contains("ChatViewProvider.errorText(err)", decide, StringComparison.Ordinal);
+
+        Assert.Matches(@"sessionBranchCommand\([\s\S]{0,200}?'session/branchCommand'", TsCode("hostClient.ts"));
+    }
 }

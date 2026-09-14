@@ -542,7 +542,6 @@ internal partial class InferpalToolWindowData
                 }
                 if (outcome.Snapshot.Length > 0)
                     message += "\n\n" + Strings.FilePreviousVersionSaved(write.Path);
-                await _vs.Documents().OpenTextDocumentAsync(new Uri(write.Path), ct);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
@@ -550,6 +549,12 @@ internal partial class InferpalToolWindowData
                 await ShowInfoAsync(Strings.MsgError(ex.Message));
                 return;
             }
+
+            // Opening is a convenience: an editor that refuses the path must not hide a write that
+            // happened, nor skip the system-prompt refresh below.
+            try { await _vs.Documents().OpenTextDocumentAsync(new Uri(write.Path), ct); }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { Diagnostics.Swallow("Onboard.OpenContext", ex); }
         }
 
         if (result.RefreshSystemPrompt)
@@ -616,6 +621,11 @@ internal partial class InferpalToolWindowData
             return;
         }
         await ShowInfoAsync(confirm(path));
+
+        // The file is created to be edited: opened, as VS Code does. A refused open loses a
+        // convenience, not the file.
+        try { await _vs.Documents().OpenTextDocumentAsync(new Uri(path), CancellationToken.None); }
+        catch (Exception ex) { Diagnostics.Swallow("Scaffold.Open", ex); }
     }
 
     /// <summary><c>/commit-exec &lt;message&gt;</c> — stage if needed, then commit (shared handler).</summary>
