@@ -247,7 +247,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     // ── Model management (native load / unload / download) ─────────────────────
     // Request-body shapes confirmed by runtime probe against LM Studio:
     //   load     POST /api/v1/models/load     { "model": "<id>" }        → { instance_id, status, … }
-    //   download POST /api/v1/models/download  { "model": "<id>" }        → JSON (no streamed progress)
+    //   download POST /api/v1/models/download  { "model": "<id>" }        → { job_id, status, … } (asynchronous job)
     //   unload   POST /api/v1/models/unload    { "instance_id": "<id>" }  → { instance_id }   (NOT "model"!)
     // For a single loaded instance the instance_id equals the model key (loaded_instances[].id).
 
@@ -276,6 +276,13 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// <c>POST /api/v1/models/download</c> answers at once with a job; the download itself is followed on
+    /// <c>GET /api/v1/models/download/status/{job_id}</c> until it completes or fails (LM Studio REST API
+    /// reference). Taking the POST answer as the outcome announced a model as downloaded while it was
+    /// still downloading — or after the download had failed. A server that answers without a job keeps
+    /// its 2xx as the signal.
+    /// </remarks>
     public override async Task<bool> PullModelAsync(string model, Action<string> onStatus, CancellationToken ct)
     {
         try
@@ -288,58 +295,76 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             using var resp = await _http.SendAsync(req, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
 
-            // The native download is request/response JSON, and v1 exposes no confirmed progress-polling
-            // endpoint (runtime probe 2026-06-14: /models/download/status → 404), so we rely on the POST
-            // response alone: an error object means failure; otherwise surface any status it carries and
-            // report success. No phantom poll loop that would falsely claim instant completion.
             if (!resp.IsSuccessStatusCode)
             {
                 onStatus(TryExtractError(ParseErrorElement(body)) ?? $"HTTP {(int)resp.StatusCode}");
                 return false;
             }
 
-            try
+            var job = ReadDownloadJob(body);
+            if (job.Status is null) return true;   // no job in the answer: the 2xx is all there is
+
+            while (true)
             {
-                using var doc = JsonDocument.Parse(body);
-                if (TryReadDownloadStatus(doc.RootElement, model, out var message, out _)
-                    && !string.IsNullOrEmpty(message))
-                    onStatus(message);
+                if (!string.IsNullOrEmpty(job.Message)) onStatus(job.Message);
+                if (job.Status is "completed" or "already_downloaded") return true;
+                if (job.Status is "failed") return false;
+                if (job.JobId is null) return true;   // a job that cannot be followed: nothing better than the 2xx
+
+                // "downloading" or "paused": the user's Stop is the way out of a paused job.
+                await Task.Delay(DownloadPollInterval, ct);
+                using var poll = new HttpRequestMessage(HttpMethod.Get,
+                    $"{NativeBase}/models/download/status/{Uri.EscapeDataString(job.JobId)}");
+                AddAuth(poll);
+                using var pollResp = await _http.SendAsync(poll, ct);
+                var pollBody = await pollResp.Content.ReadAsStringAsync(ct);
+                if (!pollResp.IsSuccessStatusCode)
+                {
+                    onStatus(TryExtractError(ParseErrorElement(pollBody)) ?? $"HTTP {(int)pollResp.StatusCode}");
+                    return false;
+                }
+
+                var next = ReadDownloadJob(pollBody);
+                job = next with { JobId = next.JobId ?? job.JobId };
             }
-            catch (JsonException) { /* opaque body — the 2xx is the signal */ }
-            return true;
         }
         catch (OperationCanceledException) { throw; }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("LmStudioClient.PullModel", ex);
+            return false;
+        }
     }
 
-    // Defensive parse of the (under-documented) download status shape: surfaces a human status string
-    // and whether the download has finished. Tolerates several plausible field layouts (top-level
-    // object or a { "downloads": [ … ] } list).
-    private static bool TryReadDownloadStatus(JsonElement root, string model, out string message, out bool finished)
+    /// <summary>How often a download job is polled.</summary>
+    private static readonly TimeSpan DownloadPollInterval = TimeSpan.FromSeconds(1);
+
+    /// <summary>A download job as the native API reports it; <see cref="Status"/> is null when the
+    /// answer carries no job.</summary>
+    private readonly record struct DownloadJob(string? JobId, string? Status, string? Message);
+
+    private static DownloadJob ReadDownloadJob(string body)
     {
-        message  = string.Empty;
-        finished = false;
-
-        // Accept either a top-level object or a { "downloads": [ … ] } list.
-        var entry = root;
-        if (root.ValueKind == JsonValueKind.Object &&
-            root.TryGetProperty("downloads", out var arr) && arr.ValueKind == JsonValueKind.Array)
+        try
         {
-            entry = arr.EnumerateArray().FirstOrDefault(
-                e => e.TryGetProperty("model", out var mm) && mm.GetString() == model);
-            if (entry.ValueKind == JsonValueKind.Undefined) return false;
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return default;
+
+            string? Str(string name) =>
+                root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+            long? Num(string name) =>
+                root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt64(out var n)
+                    ? n : null;
+
+            var status  = Str("status");
+            var message = status;
+            if (status == "downloading" && Num("downloaded_bytes") is { } done && Num("total_size_bytes") is { } total
+                && total > 0)
+                message += $" ({done * 100 / total}%)";
+            return new DownloadJob(Str("job_id"), status, message);
         }
-
-        if (entry.ValueKind != JsonValueKind.Object) return false;
-
-        var status = entry.TryGetProperty("status", out var s) ? s.GetString() : null;
-        double? progress = entry.TryGetProperty("progress", out var p) && p.ValueKind == JsonValueKind.Number
-            ? p.GetDouble() : null;
-
-        message = status ?? string.Empty;
-        if (progress is { } pr) message += $" ({pr * 100:0}%)";
-        finished = (status is "completed" or "done" or "finished") || progress >= 1.0;
-        return true;
+        catch (JsonException) { return default; }
     }
 
     // ── Ghost text (client-side FIM via /v1/completions) ───────────────────────
