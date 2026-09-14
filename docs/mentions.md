@@ -24,7 +24,7 @@ replaced with the corresponding attachment.
 > **VS Code:** typed mentions work there too (since 1.2.0) — the eight categories from
 > `@file` to `@tree` are offered in a two-level popup, and resolved mentions appear as
 > context chips in the composer, alongside a "+" attach menu (active file, selection, file
-> from disk).
+> from disk, and **pin the active file** — pinned files show above the input box, ✕ unpins one).
 
 ## Related
 

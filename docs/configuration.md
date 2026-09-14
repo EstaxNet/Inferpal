@@ -85,7 +85,7 @@ Every persisted setting, its type, and default value.
 | `kvCacheAnchorMessages` | int | `3` | First N messages kept verbatim so the backend can reuse its KV cache |
 | `oodaTurnThreshold` | int | `10` | Turns before an OODA recap (0 = off) |
 | `customSystemPrompt` | string | `""` | Appended to the base system prompt |
-| `pinnedContextFiles` | string | `""` | Up to 3 paths (`\n`-separated) always injected |
+| `pinnedContextFiles` | string | `""` | Up to 3 paths (`\n`-separated) always injected; also pinned and unpinned from the chat in both editors |
 
 ### Hardware & model lifetime
 

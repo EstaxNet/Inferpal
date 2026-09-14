@@ -30,7 +30,10 @@ exists.
   **[Tools](tools.md)**.
 - **Agent Step Mode** — pause between tool calls to inspect or override each action. Toggle
   with the 🦶 button (or `/agent-step`); continue with **▶ Resume** (or `/resume`).
-- **Agent Orchestrator** — an optional Plan→Act→Observe loop (`agentModeEnabled`).
+- **Agent Orchestrator** — an optional Plan→Act→Observe loop: the **Agent** mode of the Chat/Agent
+  switch (`agentModeEnabled`, `inferpal.agentMode` in VS Code). **Chat** mode still uses tools — the
+  simple tool loop, without a plan — and `/tools off` gives a chat without tools. Both editors start in
+  Chat mode.
 - **Plan mode** (`/plan`) — read-only: the agent explores and proposes a plan without editing
   any files.
 - **Persistent plans** (`/plan save`) — a plan proposed in the chat used to die at the next
