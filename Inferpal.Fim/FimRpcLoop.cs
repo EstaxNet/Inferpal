@@ -32,7 +32,7 @@ internal sealed record FimRequest(
 internal sealed class FimRpcLoop
 {
     /// <summary>Framing guard rail: a body larger than this is not a completion request.</summary>
-    internal const int MaxBodyBytes = 8 * 1024 * 1024;
+    internal const int MaxBodyBytes = FrameHeaderReader.MaxBodyBytes;
 
     private readonly Stream _input;
     private readonly Stream _output;
@@ -159,33 +159,15 @@ internal sealed class FimRpcLoop
         return Encoding.UTF8.GetString(body);
     }
 
-    /// <summary>A UTF-8 BOM at the head of the stream, read byte by byte, arrives as these three chars.</summary>
+    /// <summary>Reads one header block: the body length, or -1 when the stream closed or made no sense.</summary>
     /// <remarks>
-    /// Measured on 2026-09-03, and it cost an evening of diagnosis aimed at the wrong culprit. Any
-    /// client whose stdin writer emits its preamble puts <c>EF BB BF</c> ahead of
-    /// <c>Content-Length:</c> — <c>Process.StandardInput</c> under Windows PowerShell does exactly
-    /// that, and merely touching the property to take its <c>BaseStream</c> is enough. The first
-    /// header then no longer starts with the marker, <c>length</c> stays at -1, the following blank
-    /// line returns -1, and the loop ends <b>cleanly</b>: exit code 0, empty stderr, no answer at
-    /// all. A perfectly healthy sidecar that looks dead.
-    ///
-    /// Two fixes, and the second matters as much: the BOM is tolerated, and the case where headers
-    /// were read without any usable length is now TRACED. "The stream is closed" and "I did not
-    /// understand what you sent me" are not repaired in the same place, and a reader that returns
-    /// -1 for both conflates them in silence.
+    /// "The stream is closed" and "I did not understand what I was sent" are not repaired in the same
+    /// place: the second is traced, never folded into the first in silence — a client whose stdin
+    /// writer emits a BOM once made a healthy sidecar exit cleanly with no answer and no trace.
     /// </remarks>
-    private const string Utf8BomAsChars = "\u00EF\u00BB\u00BF";
-
-    private static string StripLeadingBom(string text) =>
-        text.StartsWith(Utf8BomAsChars, StringComparison.Ordinal) ? text[Utf8BomAsChars.Length..]
-        : text.Length > 0 && text[0] == '\uFEFF'                  ? text[1..]
-        : text;
-
     private async Task<int> ReadHeadersAsync(CancellationToken ct)
     {
-        var line   = new StringBuilder();
-        var length = -1;
-        var any    = false;
+        var reader = new FrameHeaderReader();
         var one    = new byte[1];
 
         while (true)
@@ -193,27 +175,15 @@ internal sealed class FimRpcLoop
             var n = await _input.ReadAsync(one.AsMemory(0, 1), ct).ConfigureAwait(false);
             if (n <= 0) return -1;
 
-            var b = one[0];
-            if (b != (byte)'\n') { if (b != (byte)'\r') line.Append((char)b); continue; }
+            var outcome = reader.Feed(one[0]);
+            if (outcome == FrameHeaderReader.Outcome.Pending) continue;
+            if (outcome == FrameHeaderReader.Outcome.Complete) return reader.Length;
 
-            var text = line.ToString();
-            line.Clear();
-            if (!any) text = StripLeadingBom(text);
-            if (text.Length == 0)
-            {
-                if (any && length < 0)
-                    Diagnostics.Record("FimRpcLoop",
-                        "Headers read with no usable Content-Length: the sender and this reader " +
-                        "no longer agree on where messages begin. Ending the session.");
-                return any ? length : -1;
-            }
-
-            any = true;
-            const string marker = "Content-Length:";
-            if (text.StartsWith(marker, StringComparison.OrdinalIgnoreCase) &&
-                int.TryParse(text[marker.Length..].Trim(), out var parsed) &&
-                parsed >= 0 && parsed <= MaxBodyBytes)
-                length = parsed;
+            if (outcome == FrameHeaderReader.Outcome.LineTooLong || reader.SawHeader)
+                Diagnostics.Record("FimRpcLoop",
+                    "Headers read with no usable Content-Length: the sender and this reader " +
+                    "no longer agree on where messages begin. Ending the session.");
+            return -1;
         }
     }
 

@@ -374,7 +374,6 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             sendCts.CancelAfter(deadline);
             http = await PostForStreamingAsync($"{base_}/completions", request, sendCts.Token, AuthHeaders());
-            RecordSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { RecordFailure(); return; }
@@ -394,10 +393,24 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             {
                 bodyCts.CancelAfter(deadline);
                 if (string.IsNullOrWhiteSpace(line)) continue;
-                if (!line.StartsWith("data:", StringComparison.Ordinal)) continue;
 
-                var payload = line.AsSpan(5).Trim().ToString();
+                // Other non-data lines are SSE comments or keep-alives, but a server that aborts after
+                // the 200 headers can also send a bare JSON error — as the chat loop already knows.
+                var payload = line.StartsWith("data:", StringComparison.Ordinal) ? line.AsSpan(5).Trim().ToString()
+                            : line.TrimStart().StartsWith('{')                   ? line
+                            : null;
+                if (payload is null) continue;
                 if (payload == "[DONE]") break;
+
+                // A failure inside the 200 response (a model that does not do completions) is a
+                // failure: counted as a success, the breaker never opened and every pause in typing
+                // sent the same failing request again.
+                if (TryExtractError(ParseErrorElement(payload)) is { } serverError)
+                {
+                    RecordFailure();
+                    Diagnostics.Record("Fim", "The server reported an error inside the stream: " + serverError);
+                    return;
+                }
 
                 OpenAiCompletionChunk? chunk;
                 try   { chunk = JsonSerializer.Deserialize<OpenAiCompletionChunk>(payload); }
@@ -406,6 +419,8 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
                 var text = chunk?.Choices is { Count: > 0 } ch ? ch[0].Text : null;
                 if (!string.IsNullOrEmpty(text)) onToken(text);
             }
+            // Success is a stream that ended cleanly, not headers that arrived.
+            RecordSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { return; }

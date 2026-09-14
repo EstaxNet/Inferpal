@@ -19,6 +19,7 @@ internal sealed class LspJsonRpc : IDisposable
     private readonly CancellationTokenSource _cts = new();
     private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement?>> _pending = new();
     private int _nextId;
+    private readonly byte[] _oneByte = new byte[1];   // read loop only
 
     private static readonly JsonSerializerOptions SerOpts = new()
     {
@@ -94,42 +95,26 @@ internal sealed class LspJsonRpc : IDisposable
             while (!_cts.IsCancellationRequested)
             {
                 // ── Parse headers ─────────────────────────────────────────────
-                int contentLength = 0;
-                string? line;
-                var sawHeader = false;
-
-                while ((line = await ReadHeaderLineAsync(_input, _cts.Token)) is not null)
+                var headers = new FrameHeaderReader();
+                var outcome = FrameHeaderReader.Outcome.Pending;
+                while (outcome == FrameHeaderReader.Outcome.Pending)
                 {
-                    // ⚠ Third reader of this same framing, third time the same gap: a UTF-8
-                    // BOM ahead of the first header makes the line stop matching the marker,
-                    // the length stays unknown, and the channel is torn down as "out of sync".
-                    // Any client whose stdin writer emits its preamble does this -- measured on
-                    // 2026-09-03 against the FIM sidecar, where it cost an evening of blaming
-                    // the product for a defect that lived in the probe's own client.
-                    if (sawHeader is false && line.Length > 0 && line[0] == '\uFEFF') line = line.Substring(1);
-                    sawHeader = true;
-
-                    if (line.Length == 0) break; // blank line = end of headers
-
-                    if (line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase) &&
-                        int.TryParse(line["Content-Length:".Length..].Trim(), out var cl))
-                    {
-                        contentLength = cl;
-                    }
+                    if (await _input.ReadAsync(_oneByte.AsMemory(0, 1), _cts.Token) == 0)
+                        return; // stream closed
+                    outcome = headers.Feed(_oneByte[0]);
                 }
 
                 // A frame we refuse is a frame we cannot skip: the body is still sitting in the
-                // pipe, and `continue` used to go read it as if it were headers — every message
-                // after it parsed as garbage, in silence, for the life of the server. The two
-                // sibling readers of this same framing (FimSidecar, FimRpcLoop) end the loop
-                // instead, and that is the right answer: an unreadable length means the sender and
-                // this reader no longer agree on where messages begin.
-                if (contentLength <= 0 || contentLength > MaxBodyBytes)
+                // pipe, and reading on would take it for headers — every message after it parsed as
+                // garbage, in silence, for the life of the server. An unreadable length means the
+                // sender and this reader no longer agree on where messages begin: end the channel.
+                if (outcome != FrameHeaderReader.Outcome.Complete || headers.Length <= 0)
                 {
                     Diagnostics.Record("Lsp",
-                        $"Refusing a frame declaring {contentLength} bytes; the channel is out of sync and is being closed.");
+                        $"Refusing a frame ({outcome}, length {headers.Length}); the channel is out of sync and is being closed.");
                     return;
                 }
+                var contentLength = headers.Length;
 
                 // ── Read body as raw bytes (Content-Length is a byte count) ───
                 var body  = new byte[contentLength];
@@ -153,44 +138,6 @@ internal sealed class LspJsonRpc : IDisposable
             foreach (var tcs in _pending.Values)
                 tcs.TrySetCanceled();
             _pending.Clear();
-        }
-    }
-
-    /// <summary>Reads one text line from <paramref name="stream"/> byte-by-byte.</summary>
-    /// <summary>
-    /// Ceiling on a single message body. The two sibling readers of this framing cap at 8 MB;
-    /// this one allowed 100 MB and allocated the array before reading a byte, so a bogus header
-    /// bought a 100 MB allocation. A language server's largest real message — a full workspace
-    /// symbol dump — is orders of magnitude below this.
-    /// </summary>
-    private const int MaxBodyBytes = 8 * 1024 * 1024;
-
-    /// <summary>A header line longer than this is not a header line.</summary>
-    private const int MaxHeaderLineChars = 4 * 1024;
-
-    private static async Task<string?> ReadHeaderLineAsync(Stream stream, CancellationToken ct)
-    {
-        var buf = new byte[1];
-        var sb  = new StringBuilder(64);
-
-        while (true)
-        {
-            if (await stream.ReadAsync(buf.AsMemory(0, 1), ct) == 0)
-                return null; // EOF
-
-            // Binary on the wire (a desynced stream, a server printing to stdout) contains no
-            // newline for as long as it lasts, and this builder grew for all of it.
-            if (sb.Length > MaxHeaderLineChars) return null;
-
-            byte b = buf[0];
-            if (b == '\n')
-            {
-                if (sb.Length > 0 && sb[^1] == '\r')
-                    sb.Remove(sb.Length - 1, 1);
-                return sb.ToString();
-            }
-
-            sb.Append((char)b);
         }
     }
 

@@ -516,7 +516,6 @@ internal class OllamaClient : InferenceProviderBase
             using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             sendCts.CancelAfter(deadline);
             http = await PostForStreamingAsync($"{base_}/api/generate", request, sendCts.Token);
-            RecordSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { RecordFailure(); return; } // internal 60-s timeout expired
@@ -537,11 +536,23 @@ internal class OllamaClient : InferenceProviderBase
                 bodyCts.CancelAfter(deadline); // re-arm: a chunk arrived, push the deadline back
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
+                // A failure can arrive inside the 200 response (a model runner that stopped). It is a
+                // failure: counted as a success, the breaker never opened and every pause in typing
+                // sent the same failing request again.
+                if (TryExtractError(ParseErrorElement(line)) is { } serverError)
+                {
+                    RecordFailure();
+                    Diagnostics.Record("Fim", "The server reported an error inside the stream: " + serverError);
+                    return;
+                }
+
                 var chunk = JsonSerializer.Deserialize<GenerateResponse>(line, _jsonOpts);
                 if (chunk is null) continue;
                 if (!string.IsNullOrEmpty(chunk.Response)) onToken(chunk.Response);
                 if (chunk.Done) break;
             }
+            // Success is a stream that ended cleanly, not headers that arrived.
+            RecordSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { return; } // stream hung — ghost text simply stops

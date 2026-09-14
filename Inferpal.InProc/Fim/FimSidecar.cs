@@ -368,34 +368,15 @@ internal static class FimSidecar
     /// <summary>Reads headers up to the blank line. Returns the body size, or -1 if closed.</summary>
     private static int ReadHeaders(Stream stdout)
     {
-        var line   = new StringBuilder();
-        var length = -1;
-        var any    = false;
-
+        var reader = new Services.FrameHeaderReader();
         while (true)
         {
             var b = stdout.ReadByte();
             if (b < 0) return -1;
-            if (b != '\n') { if (b != '\r') line.Append((char)b); continue; }
 
-            var text = line.ToString();
-            line.Length = 0;
-            // WARNING: a UTF-8 BOM ahead of the stream arrives here as these three chars (bytes
-            // are cast one by one). Without this line the first header no longer starts with the
-            // marker, the length stays unknown, and the session ends CLEANLY: no error, no trace,
-            // no answer. The same gap was in all three readers of this framing; measured on
-            // 2026-09-03 against the sidecar, where it had the product blamed for an evening while
-            // the BOM came from the probe's own client.
-            if (!any && text.StartsWith("\u00EF\u00BB\u00BF", StringComparison.Ordinal))
-                text = text.Substring(3);
-            if (text.Length == 0) return any ? length : -1;   // end of headers
-
-            any = true;
-            const string marker = "Content-Length:";
-            if (text.StartsWith(marker, StringComparison.OrdinalIgnoreCase) &&
-                int.TryParse(text.Substring(marker.Length).Trim(), out var parsed) &&
-                parsed >= 0 && parsed <= 8 * 1024 * 1024)
-                length = parsed;
+            var outcome = reader.Feed((byte)b);
+            if (outcome == Services.FrameHeaderReader.Outcome.Pending) continue;
+            return outcome == Services.FrameHeaderReader.Outcome.Complete ? reader.Length : -1;
         }
     }
 
