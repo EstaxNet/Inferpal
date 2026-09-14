@@ -14,7 +14,7 @@ import type {
   WvTranscriptItem,
 } from '../webviewMessages';
 import { t } from './l10n';
-import { renderMarkdownInto, setCopySink } from './markdown';
+import { renderMarkdownInto, setCopySink, stripThinkTags } from './markdown';
 import { renderXray, setXraySink } from './xray';
 
 const vscode = window.__vsapi ?? acquireVsCodeApi();
@@ -285,7 +285,8 @@ function addBubble(role: string, item: WvTranscriptItem): HTMLElement {
   body.className = 'bubble-body';
   renderMarkdownInto(body, item.text);
   el.appendChild(body);
-  el.appendChild(metaRow(item));
+  // Copy what the bubble shows: an answer keeps the model's inline reasoning in its text. A question is copied whole.
+  el.appendChild(metaRow(item, role === 'assistant' ? stripThinkTags(item.text) : undefined));
   messagesEl.appendChild(el);
   scrollToBottom();
   return el;
@@ -1195,7 +1196,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
         // Replace the stream bubble content with the authoritative final text.
         streamRaw = msg.text || streamRaw;
         renderMarkdownInto(streamEl.querySelector('.bubble-body') as HTMLElement, streamRaw);
-        streamEl.appendChild(metaRow({ text: streamRaw, timestamp: msg.timestamp }));
+        streamEl.appendChild(metaRow({ text: streamRaw, timestamp: msg.timestamp }, stripThinkTags(streamRaw)));
         finishStream();
       } else if (msg.text) {
         addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp });

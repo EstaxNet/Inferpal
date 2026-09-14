@@ -11,9 +11,11 @@ const md = new MarkdownIt({
 });
 
 /** Reasoning tags (Qwen3/DeepSeek) are stripped before rendering, like the VS
- * MarkdownParser. An unclosed trailing tag (mid-stream) is stripped too. */
+ * MarkdownParser — whatever their case, since models are not consistent about it (html is
+ * disabled, so a tag left in place shows the chain of thought as text). An unclosed trailing tag
+ * (mid-stream) is stripped too. */
 export function stripThinkTags(text: string): string {
-  return text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>[\s\S]*$/, '');
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<think>[\s\S]*$/i, '');
 }
 
 /** Renders markdown into `target` and decorates code blocks with a copy button. */

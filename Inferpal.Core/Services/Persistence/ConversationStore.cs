@@ -154,9 +154,11 @@ internal class ConversationStore
                 if (data is null) continue;
 
                 var snippets = data.Messages
-                    .Where(m => m.Content.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    // What the chat shows: a word found only in the model's hidden reasoning is not a hit.
+                    .Select(m => MarkdownParser.ShownText(m.Role, m.Content))
+                    .Where(text => text.Contains(term, StringComparison.OrdinalIgnoreCase))
                     .Take(3)
-                    .Select(m => ExtractSnippet(m.Content, term, 90))
+                    .Select(text => ExtractSnippet(text, term, 90))
                     .ToList();
 
                 if (snippets.Count > 0)

@@ -262,8 +262,10 @@ internal partial class InferpalToolWindowData
             {
                 if (msg.Role is "anchor" or "status")
                     continue;
+                // What the bubble shows: a word found only in the model's hidden reasoning must not keep it lit.
                 msg.IsSearchDimmed = q.Length > 0 &&
-                    !msg.Content.Contains(q, StringComparison.OrdinalIgnoreCase);
+                    !Services.Presentation.MarkdownParser.ShownText(msg.Role, msg.Content)
+                        .Contains(q, StringComparison.OrdinalIgnoreCase);
             }
         }
     }

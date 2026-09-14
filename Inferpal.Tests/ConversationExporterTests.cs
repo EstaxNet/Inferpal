@@ -33,6 +33,29 @@ public class ConversationExporterTests
         finally { Strings.ApplyLanguage(null); }
     }
 
+    /// <summary>
+    /// A streamed answer keeps the model's inline reasoning in the bubble's content — the chat strips it when it
+    /// renders — and the export wrote that content as is, in both editors. The document says what the chat showed.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AnAssistantTurnsReasoning_IsNotExported(bool asPlainText)
+    {
+        List<ExportMessage> messages =
+        [
+            new("user",      "You",    "what does <think>x</think> mean?",                    ""),
+            new("assistant", "Ollama", "<Think>private chain of thought</Think>the answer", ""),
+        ];
+
+        var document = ConversationExporter.Build(messages, asPlainText, "m", 0, "d", "-");
+
+        Assert.DoesNotContain("private chain of thought", document);
+        Assert.Contains("the answer", document);
+        // Reference arm: only the model's reasoning goes — a question that mentions the tag is kept whole.
+        Assert.Contains("what does <think>x</think> mean?", document);
+    }
+
     // ── FormatDuration ─────────────────────────────────────────────────────────
 
     [Fact]

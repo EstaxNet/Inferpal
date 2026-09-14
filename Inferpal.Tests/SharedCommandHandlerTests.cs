@@ -143,6 +143,39 @@ public class SharedCommandHandlerTests
         Assert.Equal(Strings.HistoryNoResults($"{a} {b}"), message);
     }
 
+    /// <summary>
+    /// A streamed answer is saved with the model's inline reasoning — the chat strips it when it renders. /history
+    /// matched words that exist only in that hidden reasoning, and quoted it in the snippet. The search reads what
+    /// the chat shows.
+    /// </summary>
+    [Fact]
+    public async Task History_Search_DoesNotMatchOrQuoteTheModelsHiddenReasoning()
+    {
+        var store  = new ConversationStore();
+        var name   = $"test-history-think-{Guid.NewGuid():N}";
+        var hidden = "zz-" + Guid.NewGuid().ToString("N");
+        var shown  = "yy-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            await store.SaveAsync(name,
+            [
+                new SavedMessage("user",      "question"),
+                new SavedMessage("assistant", $"<Think>{hidden} private chain of thought</Think>{shown} is the answer"),
+            ], CancellationToken.None);
+
+            var onReasoning = await HistoryCommandHandler.HandleAsync(
+                store, ["/history", hidden], DateTime.UtcNow, CancellationToken.None);
+            Assert.Equal(Strings.HistoryNoResults(hidden), onReasoning);
+
+            // Reference arm: a word of the answer is still found — and its snippet quotes none of the reasoning.
+            var onAnswer = await HistoryCommandHandler.HandleAsync(
+                store, ["/history", shown], DateTime.UtcNow, CancellationToken.None);
+            Assert.Contains(name, onAnswer);
+            Assert.DoesNotContain("chain of thought", onAnswer);
+        }
+        finally { store.Delete(name); }
+    }
+
     // ── /index ─────────────────────────────────────────────────────────────────
 
     private static InferpalConfig RagConfig(bool enabled) => new() { RagEnabled = enabled, RagTopK = 7 };

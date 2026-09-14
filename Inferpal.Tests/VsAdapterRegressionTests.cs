@@ -45,6 +45,35 @@ public class VsAdapterRegressionTests
             _                               => false,
         });
 
+    /// <summary>
+    /// A streamed answer keeps the model's inline reasoning in its content — the bubble strips it when it renders. The
+    /// Copy button put that hidden reasoning on the clipboard. It copies what the bubble shows.
+    /// </summary>
+    [Fact]
+    public void CopyingAMessage_LeavesTheModelsHiddenReasoningOut()
+    {
+        var copy = Method("Inferpal/ToolWindow/ChatMessageItem.cs", "CopyContentAsync");
+        Assert.True(Calls(copy, "ShownText"),
+            "The Copy button copies the raw content, the model's hidden reasoning included.");
+    }
+
+    /// <summary>
+    /// The search box dims the bubbles that do not contain the query. It read the raw content: a word found only in the
+    /// model's hidden reasoning kept lit a bubble whose visible text does not contain it. It reads what the bubble shows.
+    /// </summary>
+    [Fact]
+    public void TheConversationSearch_MatchesWhatTheBubbleShows()
+    {
+        var path = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Construction.cs");
+        Assert.True(File.Exists(path), $"{path} is gone — this guard checks nothing any more.");
+        var search = CSharpSyntaxTree.ParseText(ConventionCoverageTests.CodeOnly(path)).GetRoot()
+            .DescendantNodes().OfType<PropertyDeclarationSyntax>()
+            .FirstOrDefault(p => p.Identifier.Text == "SearchQuery");
+        Assert.True(search is not null, "SearchQuery not found — this guard checks nothing any more.");
+        Assert.True(Calls(search!, "ShownText"),
+            "The conversation search matches the raw content, the model's hidden reasoning included.");
+    }
+
     /// <summary>Alt+M posts "/map" as a pending prompt: it must reach the slash router, not the model.</summary>
     [Fact]
     public void APendingSlashCommand_IsRouted_NotSentToTheModel()

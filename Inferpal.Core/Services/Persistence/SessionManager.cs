@@ -96,8 +96,16 @@ internal static class SessionManager
         var history = new List<ChatMessageDto> { new("system", systemPrompt) };
         foreach (var m in messages)
         {
-            if (m.Role is "user" or "assistant")
+            if (m.Role == "user")
                 history.Add(new ChatMessageDto(m.Role, m.Content));
+            else if (m.Role == "assistant")
+            {
+                // The rule of the live history: a streamed bubble is saved with the model's inline reasoning, and
+                // restored as is it handed the model its old chain of thought back.
+                var answer = ChatTurnPolicy.ChoosePersistedAnswer(m.Content, null);
+                if (answer.Length > 0)
+                    history.Add(new ChatMessageDto("assistant", answer));
+            }
             else if (m.Role == "tool")
                 ToolTranscript.Append(history, m.ToolName, m.Content);
         }

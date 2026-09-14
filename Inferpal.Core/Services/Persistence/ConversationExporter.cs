@@ -74,7 +74,7 @@ internal static class ConversationExporter
                 var header = Header(msg);
                 sb.AppendLine(header);
                 sb.AppendLine(new string('-', header.Length));
-                sb.AppendLine(msg.Content);
+                sb.AppendLine(Body(msg));
                 sb.AppendLine();
             }
         }
@@ -98,7 +98,7 @@ internal static class ConversationExporter
             {
                 sb.AppendLine($"## {Header(msg)}");
                 sb.AppendLine();
-                sb.AppendLine(msg.Content);
+                sb.AppendLine(Body(msg));
                 sb.AppendLine();
                 sb.AppendLine("---");
                 sb.AppendLine();
@@ -110,4 +110,7 @@ internal static class ConversationExporter
 
     private static string Header(ExportMessage msg) =>
         string.IsNullOrEmpty(msg.Timestamp) ? msg.Label : $"{msg.Label} ({msg.Timestamp})";
+
+    // The document says what the chat showed: a streamed answer keeps the model's inline reasoning in its content.
+    private static string Body(ExportMessage msg) => MarkdownParser.ShownText(msg.Role, msg.Content);
 }

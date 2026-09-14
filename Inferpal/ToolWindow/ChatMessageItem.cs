@@ -157,7 +157,9 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
 
     private Task CopyContentAsync(object? _, CancellationToken ct)
     {
-        ClipboardHelper.TrySet(Content, "Clipboard.CopyMessage");
+        // Copy what the bubble shows: a streamed answer keeps the model's inline reasoning in its content.
+        var text = Services.Presentation.MarkdownParser.ShownText(Role, Content);
+        ClipboardHelper.TrySet(text, "Clipboard.CopyMessage");
         return Task.CompletedTask;
     }
 

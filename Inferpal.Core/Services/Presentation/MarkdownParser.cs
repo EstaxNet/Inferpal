@@ -30,6 +30,14 @@ internal static class MarkdownParser
     }
 
     /// <summary>
+    /// The text a chat message shows: an assistant turn without the model's inline reasoning, any other turn whole — a
+    /// question may quote the tag. The one reader for what shows, copies, searches or exports a message: a streamed
+    /// answer is kept with its reasoning, and every reader that took the raw content leaked it.
+    /// </summary>
+    public static string ShownText(string? role, string? content) =>
+        role == "assistant" ? StripThinkTags(content) : content ?? string.Empty;
+
+    /// <summary>
     /// Returns <c>true</c> when <paramref name="s"/> contains at least one printable character
     /// (letter, digit, punctuation, or symbol).
     /// <para>

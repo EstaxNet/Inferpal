@@ -89,6 +89,28 @@ public class SessionManagerTests : IDisposable
         Assert.Equal("user", history[1].Role);
     }
 
+    /// <summary>
+    /// The live history keeps an answer without its reasoning (ChoosePersistedAnswer), but a streamed bubble saved to
+    /// the session keeps it inline. Restored as is, a reloaded session handed the model its old chain of thought.
+    /// </summary>
+    [Fact]
+    public void BuildRestoredHistory_StripsTheReasoningOfAssistantTurns_LikeTheLiveHistory()
+    {
+        var history = SessionManager.BuildRestoredHistory("SYS",
+        [
+            new("user",      "what does <think> mean?"),
+            new("assistant", "<THINK>private chain of thought</THINK>the answer"),
+            new("user",      "next"),
+            new("assistant", "<think>only reasoning</think>"),
+        ]);
+
+        Assert.Equal("the answer", history[2].Content);
+        // Reference arm: the user's own text is never touched.
+        Assert.Equal("what does <think> mean?", history[1].Content);
+        // A turn that was nothing but reasoning does not come back as an empty assistant message.
+        Assert.DoesNotContain(history, m => m.Role == "assistant" && string.IsNullOrWhiteSpace(m.Content));
+    }
+
     // ── Restore × backend: what the server actually receives ───────────────────
 
     // The saved transcript carries the tool bubbles (role "tool") WITHOUT the assistant that called
