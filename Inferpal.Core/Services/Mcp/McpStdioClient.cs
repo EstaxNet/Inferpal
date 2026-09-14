@@ -221,7 +221,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
 
             if (root.TryGetProperty("error", out var error))
             {
-                var msg = error.TryGetProperty("message", out var m) ? m.GetString() : "unknown error";
+                var msg = McpJsonRpc.ErrorMessage(error);
                 tcs.TrySetException(new InvalidOperationException($"MCP error: {msg}"));
             }
             else if (root.TryGetProperty("result", out var result))

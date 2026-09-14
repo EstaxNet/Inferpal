@@ -80,6 +80,49 @@ public class ConfigUnreadableFileTests : IDisposable
         Assert.DoesNotContain(Diagnostics.Snapshot(), e => e.Context.Contains("InferpalConfig"));
     }
 
+    /// <summary>
+    /// A READABLE file can hold <c>null</c> for a text setting (a hand edit): System.Text.Json writes it as is
+    /// into a non-nullable <c>string</c> property, and the failure surfaces far from its cause — every backend
+    /// call does <c>BaseUrl.TrimEnd('/')</c>.
+    /// </summary>
+    [Fact]
+    public void ANullTextSetting_FallsBackToItsDefault_AndSaysWhichOne()
+    {
+        var json = System.Text.Json.Nodes.JsonNode.Parse(
+            System.Text.Json.JsonSerializer.Serialize(new InferpalConfig { DefaultModel = "the-users-own-model" }))!.AsObject();
+
+        var nullability = new System.Reflection.NullabilityInfoContext();
+        var nulled = 0;
+        foreach (var prop in typeof(InferpalConfig).GetProperties())
+        {
+            if (prop.PropertyType != typeof(string) || !prop.CanWrite
+                || nullability.Create(prop).WriteState != System.Reflection.NullabilityState.NotNull) continue;
+            var key = prop.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonPropertyNameAttribute), false)
+                          .Cast<System.Text.Json.Serialization.JsonPropertyNameAttribute>().FirstOrDefault()?.Name ?? prop.Name;
+            if (key == "defaultModel" || !json.ContainsKey(key)) continue;
+            json[key] = null;
+            nulled++;
+        }
+        Assert.True(nulled >= 10, $"only {nulled} text settings nulled — the rule measures nothing.");
+        File.WriteAllText(_path, json.ToJsonString());
+        Diagnostics.Clear();
+
+        var loaded   = InferpalConfig.Load();
+        var defaults = new InferpalConfig();
+
+        Assert.Equal(defaults.BaseUrl, loaded.BaseUrl);
+        foreach (var prop in typeof(InferpalConfig).GetProperties())
+            if (prop.PropertyType == typeof(string) && prop.CanWrite
+                && nullability.Create(prop).WriteState == System.Reflection.NullabilityState.NotNull
+                && prop.Name != nameof(InferpalConfig.DefaultModel))
+                Assert.True(prop.GetValue(loaded) is not null, $"{prop.Name} came out null.");
+
+        // Reference arm: what was not null is kept — the file is not rejected as a whole.
+        Assert.Equal("the-users-own-model", loaded.DefaultModel);
+        var entry = Assert.Single(Diagnostics.Snapshot(), e => e.Context.Contains("InferpalConfig"));
+        Assert.Contains("baseUrl", entry.Detail);
+    }
+
     [Fact]
     public void TheNextSave_PreservesTheUnreadableFile_InsteadOfOverwritingIt()
     {

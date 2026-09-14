@@ -84,7 +84,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     };
     view.webview.html = renderChatHtml(view.webview, this.context.extensionUri);
     this.log('[chat] webview html set');
-    view.webview.onDidReceiveMessage((msg: WebviewToExt) => this.onMessage(msg));
+    // Nobody awaits this promise: a handler that throws past its own guards would be an unhandled
+    // rejection, absent from the output channel and invisible to the user.
+    view.webview.onDidReceiveMessage((msg: WebviewToExt) =>
+      this.onMessage(msg).catch((err) => {
+        this.log(`[chat] ${msg.type} failed: ${String(err)}`);
+        void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+      }),
+    );
     view.onDidDispose(() => {
       if (this.view === view) {
         this.view = undefined;
@@ -908,7 +915,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           const doc = await vscode.workspace.openTextDocument(picked[0]);
           this.addChip('📄 ' + (picked[0].path.split('/').pop() ?? picked[0].fsPath), doc.getText());
         } catch (err) {
+          // A binary or unreadable file: the user picked it, and no chip appearing reads as a broken menu.
           this.log(`[chat] attachBrowse failed: ${String(err)}`);
+          void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
         }
         return;
       }
@@ -947,29 +956,31 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * promise the break state for both editors. It reads the same port as `debug_inspect`, through
    * the host, so the two editors now answer the same question the same way. */
   private async resolveMention(category: string, value?: string): Promise<void> {
-    switch (category) {
-      case 'clipboard': {
-        const text = await vscode.env.clipboard.readText();
-        if (text.trim().length > 0) {
-          this.addChip('📋 clipboard', text);
-        }
-        return;
-      }
-      case 'problems': {
-        const report = await this.getDiagnostics();
-        if (report && report.trim().length > 0) {
-          this.addChip('⚠ problems', report);
-        } else {
-          void vscode.window.showInformationMessage(vscode.l10n.t('No problems in the Problems panel.'));
-        }
-        return;
-      }
-      default: {
-        const host = this.getHost();
-        if (!host?.isRunning) {
+    // Each source can refuse (a clipboard a remote session denies, a host call that fails): the chip
+    // that never appears reads as a broken mention, so the failure is said, not only logged.
+    try {
+      switch (category) {
+        case 'clipboard': {
+          const text = await vscode.env.clipboard.readText();
+          if (text.trim().length > 0) {
+            this.addChip('📋 clipboard', text);
+          }
           return;
         }
-        try {
+        case 'problems': {
+          const report = await this.getDiagnostics();
+          if (report && report.trim().length > 0) {
+            this.addChip('⚠ problems', report);
+          } else {
+            void vscode.window.showInformationMessage(vscode.l10n.t('No problems in the Problems panel.'));
+          }
+          return;
+        }
+        default: {
+          const host = this.getHost();
+          if (!host?.isRunning) {
+            return;
+          }
           const result = await host.mentionResolve(category, value);
           if (result.name && result.content) {
             this.addChip(result.name, result.content);
@@ -977,11 +988,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             // Nothing to attach, and a reason for it: a message, never silence.
             void vscode.window.showInformationMessage(result.notice);
           }
-        } catch (err) {
-          this.log(`[chat] mention/resolve failed: ${String(err)}`);
+          return;
         }
-        return;
       }
+    } catch (err) {
+      this.log(`[chat] mention ${category} failed: ${String(err)}`);
+      void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
     }
   }
 

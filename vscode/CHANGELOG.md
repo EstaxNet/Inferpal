@@ -3,6 +3,43 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.15
+
+Chat mode now behaves as in Visual Studio, and many failures that went unnoticed are fixed.
+
+- **VS Code starts in Chat mode, and Chat mode keeps its tools.** Chat runs the simple tool loop and
+  Agent the plan-act-observe orchestrator, as in Visual Studio. Set `inferpal.agentMode` to `true` to
+  start in Agent, or use `/tools off` for a chat without tools.
+
+- **Pin files from the chat.** "Pin the active file" in the "+" menu adds a file to every request, and
+  the pinned files show above the input box.
+
+- **The first question of a conversation tells the model about the workspace**: the solution, when
+  there is one, and the open editors.
+
+- **Regenerate asked the question again on top of the previous answer.** The previous exchange is now
+  replaced, and nothing is removed while the backend is unreachable.
+
+- **The agent ignored the configured agent model and kept its internal steps in the conversation**,
+  which made the following prompts grow fast. Agent turns now run on `agentModel` and keep only the
+  question and the answer.
+
+- **After a host restart the model forgot the conversation still on screen.** It is now given back to
+  the host, and adding a folder to the workspace no longer restarts it.
+
+- **Several actions failed without a word.** A message sent while the backend was unreachable was lost,
+  `/explain`, `/review`, `/fix`, `/refactor` and `/doc` could leave the chat stuck, and attaching a
+  file, resolving a mention, copying a message or saving a setting could fail silently. Each now says
+  what happened.
+
+- **Saving the settings panel could unpin a file pinned from the chat.** The two lists are now merged.
+
+- **Agent runs stopped or went wrong on ordinary events**: a tool's own timeout, a tool call cut off
+  mid-answer, parallel Ollama tool calls, or a malformed plan or MCP reply.
+
+- **The "turns before an OODA recap" setting did nothing.** VS Code now summarizes the session every N
+  turns, as Visual Studio does.
+
 ## 1.6.14
 
 Conversations, sessions and settings no longer get lost or silently reverted, and commands no longer

@@ -267,7 +267,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
 
         if (msg.TryGetProperty("error", out var error))
         {
-            var m = error.TryGetProperty("message", out var mm) ? mm.GetString() : "unknown error";
+            var m = McpJsonRpc.ErrorMessage(error);
             throw new InvalidOperationException($"MCP error: {m}");
         }
 

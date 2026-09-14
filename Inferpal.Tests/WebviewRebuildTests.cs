@@ -534,6 +534,7 @@ public class WebviewRebuildTests
     [Theory]
     [InlineData("copyText")]
     [InlineData("openApprovalDiff")]
+    [InlineData("attachBrowse")]
     public void AGestureThatReachesVsCodeApis_SaysWhenItFails(string message)
     {
         // The whole source, not Body(): the signature of onMessage carries a `{` in its parameter type.
@@ -546,6 +547,36 @@ public class WebviewRebuildTests
         Assert.True(block.Contains("catch", StringComparison.Ordinal)
                     && block.Contains("showWarningMessage(", StringComparison.Ordinal),
             $"'{message}' fails in silence when the VS Code API refuses.");
+    }
+
+    /// <summary>
+    /// An @-mention the user picked reads the clipboard, the Problems panel or asks the host: each can refuse, and
+    /// the chip that never appears reads as a broken feature. The failure is said, not only logged.
+    /// </summary>
+    [Fact]
+    public void AMentionThatCannotBeResolved_SaysSo()
+    {
+        var source = TsCode("chatViewProvider.ts");
+        var at     = source.IndexOf("private async resolveMention(", StringComparison.Ordinal);
+        var end    = source.IndexOf("private async openXray(", StringComparison.Ordinal);
+        Assert.True(at >= 0 && end > at, "resolveMention or its neighbour moved — the rule measures nothing.");
+
+        var body = source[at..end];
+        Assert.Contains("clipboard.readText()", body);
+        Assert.True(body.Contains("showWarningMessage(", StringComparison.Ordinal),
+            "A mention that fails to resolve leaves no chip and no word.");
+    }
+
+    /// <summary>
+    /// The webview's messages are dispatched by a promise nobody awaited: a handler that throws past its own guards
+    /// became an unhandled rejection, invisible in the Inferpal output channel. The dispatch owns a last catch.
+    /// </summary>
+    [Fact]
+    public void TheWebviewDispatch_CatchesWhatAHandlerLetsThrough()
+    {
+        var source = TsCode("chatViewProvider.ts");
+        Assert.Contains("onDidReceiveMessage(", source);
+        Assert.Matches(@"onDidReceiveMessage\(\s*\(msg: WebviewToExt\)\s*=>\s*[\s\S]{0,40}this\.onMessage\(msg\)\s*\.catch\(", source);
     }
 
     /// <summary>

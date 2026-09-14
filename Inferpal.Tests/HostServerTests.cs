@@ -364,6 +364,42 @@ public class HostServerTests
     private sealed record PinsNote(List<string> Pins, string? Notice);
 
     /// <summary>
+    /// A file pinned from the chat while the settings panel is open survives the panel's save of its own pin
+    /// edit: pinned files merge line by line, as in the Visual Studio window. Field by field, the panel's list
+    /// replaced the whole setting and the chat's pin was gone.
+    /// </summary>
+    [Fact]
+    public async Task SavingThePanel_KeepsAFilePinnedFromTheChatMeanwhile()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"pinmerge-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var (a, b, c) = (Path.Combine(root, "a.cs"), Path.Combine(root, "b.cs"), Path.Combine(root, "c.cs"));
+            foreach (var f in new[] { a, b, c }) File.WriteAllText(f, "// pinned");
+            using var h = CreateHarness(cfg => cfg.PinnedContextFiles = a);
+            await h.InitializeAsync(rootDir: root);
+
+            var opened = await h.Client.InvokeAsync<string>("config/get").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            await h.Client.InvokeWithParameterObjectAsync<PinsNote>("pins/add", new { path = b })   // the chat pins B
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var edited = System.Text.Json.Nodes.JsonNode.Parse(opened)!.AsObject();
+            edited["pinnedContextFiles"] = a + "\n" + c;                                           // the panel adds C
+            await h.Client.InvokeWithParameterObjectAsync("config/update", new { json = edited.ToJsonString(), @base = opened })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var pins = h.Server.CurrentSession!.Config.PinnedContextFiles.Split('\n');
+            Assert.Contains(c, pins);   // witness: the panel's own edit applied
+            Assert.Contains(b, pins);   // the chat's pin survived
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
     /// Pins from the chat go through the host, which owns the setting and the system prompt, as the Visual Studio
     /// window does: a pinned file is in the very next prompt, a fourth one is refused with the reason, and
     /// unpinning takes it out again.

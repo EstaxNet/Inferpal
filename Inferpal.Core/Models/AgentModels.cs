@@ -86,7 +86,16 @@ public class AgentPlan
         {
             var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var plan = JsonSerializer.Deserialize<AgentPlan>(json, opts);
-            if (plan?.Steps is { Count: > 0 }) return plan;
+            if (plan is null) return null;
+            // Valid JSON can still carry the nulls a model wrote: a null step passed the "at least one step"
+            // check and the first iteration dereferenced it — an exception the run does not catch, where an
+            // unreadable plan falls back.
+            plan.Steps ??= [];
+            plan.Steps.RemoveAll(step => step is null);
+            if (plan.Steps.Count == 0) return null;
+            plan.Goal ??= string.Empty;
+            foreach (var step in plan.Steps) step.Description ??= string.Empty;
+            return plan;
         }
         catch { /* malformed JSON — fall through */ }
         return null;

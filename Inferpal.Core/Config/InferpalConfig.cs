@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Inferpal.Localization;
@@ -451,9 +452,13 @@ internal class InferpalConfig
             // ordinary path stops being read.
             cfg = new InferpalConfig();
         }
-        else if (TryRead(path, out var parsed, out var error))
+        else if (TryRead(path, out var parsed, out var error, out var repaired))
         {
             cfg = parsed!;
+            if (repaired.Count > 0)
+                Services.Diagnostics.Record("InferpalConfig.Load",
+                    $"{path} holds null for {string.Join(", ", repaired)} — factory defaults are used for "
+                    + "these settings, and the next save writes them back.");
         }
         else
         {
@@ -478,14 +483,19 @@ internal class InferpalConfig
     /// configuration - a write torn by a hard shutdown, a disk error, one comma too many after a
     /// hand edit, a file held by another process, or <c>null</c> content.
     /// </summary>
-    private static bool TryRead(string path, out InferpalConfig? cfg, out Exception? error)
+    private static bool TryRead(string path, out InferpalConfig? cfg, out Exception? error, out List<string> repaired)
     {
         cfg = null;
         error = null;
+        repaired = [];
         try
         {
             cfg = JsonSerializer.Deserialize<InferpalConfig>(File.ReadAllText(path));
-            if (cfg is not null) return true;
+            if (cfg is not null)
+            {
+                repaired = RepairNullText(cfg);
+                return true;
+            }
             error = new JsonException("the file is valid JSON but holds no object");
             return false;
         }
@@ -494,6 +504,38 @@ internal class InferpalConfig
             error = ex;
             return false;
         }
+    }
+
+    // The non-nullable text settings and their JSON keys. A hand-edited file can hold `null` there, and
+    // System.Text.Json writes it as is into the property: the failure then surfaced far from its cause
+    // (every backend call trims BaseUrl).
+    private static readonly (System.Reflection.PropertyInfo Prop, string Key)[] NonNullableText = BuildNonNullableText();
+
+    private static (System.Reflection.PropertyInfo, string)[] BuildNonNullableText()
+    {
+        var nullability = new System.Reflection.NullabilityInfoContext();
+        return typeof(InferpalConfig)
+            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Where(p => p.PropertyType == typeof(string) && p.CanRead && p.CanWrite
+                        && nullability.Create(p).WriteState == System.Reflection.NullabilityState.NotNull)
+            .Select(p => (p, p.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
+                               .Cast<JsonPropertyNameAttribute>().FirstOrDefault()?.Name ?? p.Name))
+            .ToArray();
+    }
+
+    /// <summary>Puts each null non-nullable text setting back to its factory value; returns their keys.</summary>
+    private static List<string> RepairNullText(InferpalConfig cfg)
+    {
+        var repaired = new List<string>();
+        InferpalConfig? defaults = null;
+        foreach (var (prop, key) in NonNullableText)
+        {
+            if (prop.GetValue(cfg) is not null) continue;
+            defaults ??= new InferpalConfig();
+            prop.SetValue(cfg, prop.GetValue(defaults));
+            repaired.Add(key);
+        }
+        return repaired;
     }
 
     // What this instance held when it was read from disk, or at its last save. Null for an instance
@@ -538,7 +580,7 @@ internal class InferpalConfig
     private static bool TryReadSnapshot(string path, out System.Text.Json.Nodes.JsonObject snapshot)
     {
         snapshot = null!;
-        if (!File.Exists(path) || !TryRead(path, out var cfg, out _)) return false;
+        if (!File.Exists(path) || !TryRead(path, out var cfg, out _, out _)) return false;
         snapshot = Snapshot(cfg!);
         try
         {
@@ -615,7 +657,7 @@ internal class InferpalConfig
     {
         try
         {
-            if (!File.Exists(path) || TryRead(path, out _, out _)) return;
+            if (!File.Exists(path) || TryRead(path, out _, out _, out _)) return;
 
             var aside = Services.Persistence.AtomicFile.PreserveAside(path);
             if (aside is not null)

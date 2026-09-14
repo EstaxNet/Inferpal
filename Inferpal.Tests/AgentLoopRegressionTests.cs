@@ -92,6 +92,43 @@ public class AgentLoopRegressionTests
             () => AgentOrchestrator.ExecuteToolSafeAsync(tools, "fetch_url", Args("{}"), cts.Token));
     }
 
+    // ── A plan the model got half right ────────────────────────────────────────
+
+    /// <summary>
+    /// <c>{"steps":[null]}</c> is valid JSON: it passed the "at least one step" check, and the first iteration
+    /// dereferenced the null step — an exception the run does not catch, where an unreadable plan falls back.
+    /// </summary>
+    [Fact]
+    public async Task APlanWithANullStep_FallsBackInsteadOfFailingTheRun()
+    {
+        var client = new RecordingClient(
+        [
+            new ChatTurnResult("{\"goal\":\"g\",\"steps\":[null]}", null, 0, 0),
+            Text("the answer"),
+        ]);
+
+        var result = await RunAsync(client, new StubRegistry("read_file"),
+                                    [new("system", "sys"), new("user", "question")]);
+
+        Assert.Contains("the answer", result.FinalResponse, StringComparison.Ordinal);
+        Assert.NotNull(result.Plan);
+        Assert.All(result.Plan!.Steps, step => Assert.NotNull(step));
+    }
+
+    [Fact]
+    public void ANullStepAmongRealOnes_IsDropped_AndAWellFormedPlanIsUntouched()
+    {
+        // Witness: a well-formed plan keeps every step.
+        Assert.Equal(2, AgentPlan.TryParse(Plan(2).TextContent)!.Steps.Count);
+
+        var mixed = AgentPlan.TryParse("{\"goal\":null,\"steps\":[{\"i\":1,\"desc\":\"a\"},null,{\"i\":2,\"desc\":null}]}");
+
+        Assert.NotNull(mixed);
+        Assert.Equal(2, mixed!.Steps.Count);
+        Assert.All(mixed.Steps, step => Assert.NotNull(step.Description));
+        Assert.NotNull(mixed.Goal);
+    }
+
     // ── tool_choice ────────────────────────────────────────────────────────────
 
     /// <summary>

@@ -765,10 +765,18 @@ internal sealed partial class HostServer : IDisposable
         // mid-run (pre-1.6.0 architecture review, §2.6).
         await WithTurnSlotAsync("config/update", ct, async _ =>
         {
-            var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
+            var mcpBefore  = (s.Config.McpEnabled, s.Config.McpServersJson);
+            var pinsBefore = s.Config.PinnedContextFiles;
 
             if (baseline is not null)
+            {
                 s.Config.ApplyChangesFrom(incoming, baseline.SnapshotNow());
+                // Line by line, like the Visual Studio window: the chat may have pinned a file since the panel
+                // opened, and a panel that edited its own list would otherwise replace the whole setting.
+                if (!string.Equals(incoming.PinnedContextFiles, baseline.PinnedContextFiles, StringComparison.Ordinal))
+                    s.Config.PinnedContextFiles = Services.Prompting.PinnedFilesPolicy.MergeEdits(
+                        pinsBefore, baseline.PinnedContextFiles, incoming.PinnedContextFiles);
+            }
             else
                 foreach (var prop in typeof(InferpalConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
                     if (prop.CanRead && prop.CanWrite)

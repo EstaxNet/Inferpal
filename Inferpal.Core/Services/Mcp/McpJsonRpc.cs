@@ -40,16 +40,17 @@ internal static class McpJsonRpc
     public static IReadOnlyList<McpToolInfo> ParseTools(JsonElement result)
     {
         var tools = new List<McpToolInfo>();
-        if (result.TryGetProperty("tools", out var arr) && arr.ValueKind == JsonValueKind.Array)
+        // Kinds first: a server can send anything, and TryGetProperty throws on a non-object, GetString on a
+        // non-string — one bad entry failed the whole listing, and every tool of the server was lost.
+        if (result.ValueKind == JsonValueKind.Object
+            && result.TryGetProperty("tools", out var arr) && arr.ValueKind == JsonValueKind.Array)
         {
             foreach (var t in arr.EnumerateArray())
             {
-                var name = t.TryGetProperty("name", out var n) ? n.GetString() : null;
+                var name = StringProperty(t, "name");
                 if (string.IsNullOrEmpty(name)) continue;
 
-                var desc = t.TryGetProperty("description", out var d) && d.ValueKind == JsonValueKind.String
-                    ? d.GetString() ?? string.Empty
-                    : string.Empty;
+                var desc = StringProperty(t, "description") ?? string.Empty;
 
                 var schema = t.TryGetProperty("inputSchema", out var s) && s.ValueKind == JsonValueKind.Object
                     ? s.Clone()
@@ -66,26 +67,47 @@ internal static class McpJsonRpc
     public static string ExtractCallResult(JsonElement result, string toolName)
     {
         var sb = new StringBuilder();
-        if (result.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
+        if (result.ValueKind == JsonValueKind.Object
+            && result.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
         {
             foreach (var block in content.EnumerateArray())
             {
-                var type = block.TryGetProperty("type", out var ty) ? ty.GetString() : null;
-                if (type == "text" && block.TryGetProperty("text", out var txt))
-                    sb.AppendLine(txt.GetString());
+                // A malformed block is skipped: it failed the whole call, and the text of the others was lost.
+                var type = StringProperty(block, "type");
+                if (type == "text" && StringProperty(block, "text") is { } txt)
+                    sb.AppendLine(txt);
                 else if (type == "resource" && block.TryGetProperty("resource", out var res)
-                         && res.TryGetProperty("text", out var rtxt))
-                    sb.AppendLine(rtxt.GetString());
+                         && StringProperty(res, "text") is { } rtxt)
+                    sb.AppendLine(rtxt);
             }
         }
 
         var text = sb.ToString().TrimEnd();
-        var isError = result.TryGetProperty("isError", out var err) && err.ValueKind == JsonValueKind.True;
+        var isError = result.ValueKind == JsonValueKind.Object
+                      && result.TryGetProperty("isError", out var err) && err.ValueKind == JsonValueKind.True;
         if (isError)
             return $"MCP tool '{toolName}' reported an error: {text}";
 
         return text.Length == 0 ? "(no output)" : text;
     }
+
+    /// <summary>
+    /// The text of a JSON-RPC <c>error</c> member. Not every server sends the <c>{ "message": … }</c> object: a bare
+    /// string threw on <c>TryGetProperty</c>, replacing the server's own words with a .NET message — on stdio, inside
+    /// the read loop that serves every pending call.
+    /// </summary>
+    internal static string ErrorMessage(JsonElement error)
+    {
+        var text = error.ValueKind == JsonValueKind.String ? error.GetString() : StringProperty(error, "message");
+        return string.IsNullOrEmpty(text) ? "unknown error" : text;
+    }
+
+    /// <summary>A string member of an object; null when the element is not an object or the member not a string.</summary>
+    private static string? StringProperty(JsonElement element, string name) =>
+        element.ValueKind == JsonValueKind.Object
+        && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
 
     /// <summary>A standalone, detached empty JSON object (<c>{}</c>).</summary>
     public static JsonElement EmptyObject()
