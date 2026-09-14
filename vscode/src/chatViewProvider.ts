@@ -724,7 +724,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       case 'pickModel': {
         this.model = msg.model;
-        await vscode.workspace.getConfiguration('inferpal').update('model', msg.model, vscode.ConfigurationTarget.Workspace);
+        try {
+          await vscode.workspace.getConfiguration('inferpal').update('model', msg.model, vscode.ConfigurationTarget.Workspace);
+        } catch (err) {
+          // A settings.json with a syntax error, a read-only file: the pick still applies to this window and
+          // the host below, but it will not survive a reload — say so instead of stopping half-way.
+          this.log(`[chat] model setting not saved: ${String(err)}`);
+          void vscode.window.showWarningMessage(vscode.l10n.t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
+        }
         // Also push the pick into the host's shared config: without it, `/model` (no argument)
         // kept answering the OLD model and every Model Router role that falls back to
         // DefaultModel (session titles, code actions) silently stayed on it (revue §3.5).
@@ -771,7 +778,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'toggleAgentMode': {
         const config = vscode.workspace.getConfiguration('inferpal');
         const enabled = !config.get<boolean>('agentMode', true);
-        await config.update('agentMode', enabled, vscode.ConfigurationTarget.Workspace);
+        try {
+          await config.update('agentMode', enabled, vscode.ConfigurationTarget.Workspace);
+        } catch (err) {
+          // The mode is read from the settings on every turn: unsaved, it did not change — the switch stays.
+          this.log(`[chat] agent mode not saved: ${String(err)}`);
+          void vscode.window.showWarningMessage(vscode.l10n.t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
+          return;
+        }
         this.post({ type: 'agentMode', enabled });
         return;
       }
@@ -1121,7 +1135,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // document (or selection) is attached and the answer streams into the chat.
     const first = prompt.split(/\s+/, 1)[0].toLowerCase();
     if (first === '/explain' || first === '/review') {
-      await this.runExplainReview(first === '/explain' ? 'explain' : 'review', host);
+      try {
+        await this.runExplainReview(first === '/explain' ? 'explain' : 'review', host);
+      } catch (err) {
+        // The editor is read after the turn started: a throw there would leave the provider busy for good,
+        // every later message dropped by the busy guard. The chat turn itself never throws.
+        this.log(`[chat] ${first} failed: ${String(err)}`);
+        this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
+      }
       return;
     }
 

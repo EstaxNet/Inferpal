@@ -160,7 +160,18 @@ internal partial class InferpalToolWindowData
             Strings.DeleteSessionConfirm(name), PromptOptions.OKCancel, ct);
         if (!confirmed) return;
 
-        _store.Delete(name);
+        try
+        {
+            _store.Delete(name);
+        }
+        catch (Exception ex)
+        {
+            // A locked or read-only session file: confirmed, and nothing happened, with nothing said.
+            Diagnostics.Swallow("Session.Delete", ex);
+            var message = ex.Message;
+            await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgError(message))));
+            return;
+        }
         await RunOnVMContextAsync(() =>
         {
             // BEFORE the refresh: a selected session is held, hence kept in the list — the deleted

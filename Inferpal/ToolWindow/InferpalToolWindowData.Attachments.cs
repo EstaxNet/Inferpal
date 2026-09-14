@@ -362,7 +362,17 @@ internal partial class InferpalToolWindowData
     {
         _config.PinnedContextFiles = PinnedFilesPolicy.Serialize(
             PinnedFiles.Select(p => p.Path), _config.PinnedContextFiles);
-        _config.Save();
+        try
+        {
+            _config.Save();
+        }
+        catch (Exception ex)
+        {
+            // A locked or read-only config: the chip changed, the file did not — after a reload the pin would be
+            // back, or gone, with nothing saying why.
+            Diagnostics.Swallow("Chat.SavePinnedFiles", ex);
+            InsertThemed(ChatMessageItem.AssistantMsg(Strings.SettingsSaveFailed(ex.Message)));
+        }
     }
 
     #endregion

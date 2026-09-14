@@ -107,5 +107,6 @@
   "A session named {0} already exists. Replace it?": "{0} という名前のセッションは既に存在します。置き換えますか？",
   "Replace": "置き換える",
   "📎 Attached: {0}": "📎 添付: {0}",
-  "The backend is unreachable — the last answer was kept and nothing was sent.": "バックエンドに接続できません。最後の回答はそのまま残し、何も送信していません。"
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "バックエンドに接続できません。最後の回答はそのまま残し、何も送信していません。",
+  "Inferpal could not save this setting: {0}": "Inferpal はこの設定を保存できませんでした: {0}"
 }

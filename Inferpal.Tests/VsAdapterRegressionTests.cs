@@ -55,6 +55,52 @@ public class VsAdapterRegressionTests
     }
 
     /// <summary>
+    /// The settings window's row editors (MCP servers, pinned files, slash templates, custom tools) write the
+    /// config file themselves. The file can refuse the write — locked by the other editor or a sync client,
+    /// read-only: unguarded, the editor closed as if saved and the change was gone after a restart, in silence.
+    /// </summary>
+    [Fact]
+    public void TheSettingsRowEditors_SayWhenTheConfigCannotBeWritten()
+    {
+        var path = Path.Combine(RepoRoot(), Vm + "InferpalSettingsData.cs");
+        var root = CSharpSyntaxTree.ParseText(ConventionCoverageTests.CodeOnly(path)).GetRoot();
+        var saves = root.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Where(i => i.Expression is MemberAccessExpressionSyntax
+            {
+                Name.Identifier.Text: "Save",
+                Expression: IdentifierNameSyntax { Identifier.Text: "_config" },
+            })
+            .ToList();
+        Assert.True(saves.Count >= 2, "the config saves of the settings window moved — the rule measures nothing.");
+
+        var unguarded = saves
+            // SaveCoreAsync runs under SaveAsync, whose catch shows SettingsSaveFailed.
+            .Where(s => s.Ancestors().OfType<MethodDeclarationSyntax>().First().Identifier.Text != "SaveCoreAsync")
+            .Where(s => !s.Ancestors().OfType<TryStatementSyntax>().Any(t => t.Catches.Count > 0 && t.Block.Span.Contains(s.Span)))
+            .Select(s => s.Ancestors().OfType<MethodDeclarationSyntax>().First().Identifier.Text)
+            .ToList();
+        Assert.True(unguarded.Count == 0,
+            $"config saves without a catch in {string.Join(", ", unguarded)}: a locked config file closes the editor "
+            + "as if saved, and the change is gone after a restart.");
+    }
+
+    /// <summary>
+    /// Chat window gestures that write a file — pinning or unpinning a file, switching the agent mode, deleting a
+    /// saved session — say when the write fails. They threw into the command: the click did nothing, in silence.
+    /// </summary>
+    [Theory]
+    [InlineData("InferpalToolWindowData.Attachments.cs", "SavePinnedFiles")]
+    [InlineData("InferpalToolWindowData.Connection.cs", "ToggleAgentModeAsync")]
+    [InlineData("InferpalToolWindowData.PendingPrompt.cs", "DeleteSessionAsync")]
+    public void AChatWindowGestureThatWritesAFile_SaysWhenItCannot(string file, string method)
+    {
+        var body = Method(Vm + file, method);
+        Assert.True(body.DescendantNodes().OfType<CatchClauseSyntax>()
+                        .Any(c => Calls(c, "Swallow") && (Calls(c, "InsertThemed") || Calls(c, "ShowInfoAsync"))),
+            $"{method} writes a file with no catch that says so: a locked file makes the click do nothing, in silence.");
+    }
+
+    /// <summary>
     /// A failed MCP reconnect from the settings window is recorded. A bare catch swallowed it: the server list
     /// kept its last status and nothing said why the servers just saved were not there.
     /// </summary>

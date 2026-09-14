@@ -525,4 +525,44 @@ public class WebviewRebuildTests
         Assert.True(block.Contains("catch", StringComparison.Ordinal) && block.Contains("this.finishTurn(", StringComparison.Ordinal),
             "a code action that throws leaves the webview busy: no turnEnded, no error shown.");
     }
+
+    /// <summary>
+    /// /explain and /review read the editor after the turn has started: a throw there left the provider busy
+    /// for good — every later message and regenerate was dropped by the busy guard, with the Stop button up.
+    /// </summary>
+    [Fact]
+    public void AThrowingExplainOrReview_StillEndsTheTurn()
+    {
+        var send = Body(TsCode("chatViewProvider.ts"), "private async send(");
+        var at   = send.IndexOf("await this.runExplainReview(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the /explain and /review branch of send() moved — the rule measures nothing.");
+
+        var end   = send.IndexOf("return;", at, StringComparison.Ordinal);
+        var block = send[at..(end < 0 ? send.Length : end)];
+        Assert.True(block.Contains("catch", StringComparison.Ordinal) && block.Contains("this.finishTurn(", StringComparison.Ordinal),
+            "an /explain or /review that throws leaves the provider busy: every later message is dropped.");
+    }
+
+    /// <summary>
+    /// Picking a model or switching the agent mode writes the workspace settings, which can refuse (a
+    /// settings.json with a syntax error, a read-only file). The refusal stopped the gesture half-way in
+    /// silence: the host kept the previous model, the agent switch did not move.
+    /// </summary>
+    [Theory]
+    [InlineData("pickModel")]
+    [InlineData("toggleAgentMode")]
+    public void ASettingTheWorkspaceRefuses_IsSaid(string message)
+    {
+        // The whole source, not Body(): the signature of onMessage carries a `{` in its parameter type.
+        var onMessage = TsCode("chatViewProvider.ts");
+        var at        = onMessage.IndexOf($"case '{message}':", StringComparison.Ordinal);
+        Assert.True(at >= 0, $"case '{message}' moved — the rule measures nothing.");
+
+        var next  = onMessage.IndexOf("case '", at + 6, StringComparison.Ordinal);
+        var block = onMessage[at..(next < 0 ? onMessage.Length : next)];
+        Assert.Contains(".update(", block, StringComparison.Ordinal);   // witness: the case still writes the setting
+        Assert.True(block.Contains("catch", StringComparison.Ordinal)
+                    && block.Contains("vscode.l10n.t('Inferpal could not save this setting: {0}'", StringComparison.Ordinal),
+            $"'{message}' stops in silence when the workspace settings refuse the write.");
+    }
 }

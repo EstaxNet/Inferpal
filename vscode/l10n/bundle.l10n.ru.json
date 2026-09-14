@@ -107,5 +107,6 @@
   "A session named {0} already exists. Replace it?": "Сеанс с именем {0} уже существует. Заменить его?",
   "Replace": "Заменить",
   "📎 Attached: {0}": "📎 Вложено: {0}",
-  "The backend is unreachable — the last answer was kept and nothing was sent.": "Бэкенд недоступен — последний ответ сохранён, ничего не отправлено."
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "Бэкенд недоступен — последний ответ сохранён, ничего не отправлено.",
+  "Inferpal could not save this setting: {0}": "Inferpal не удалось сохранить этот параметр: {0}"
 }

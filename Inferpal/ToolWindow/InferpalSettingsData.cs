@@ -1790,8 +1790,30 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         if (!_mcpListRebuildable) { McpStatusText = BuildMcpStatus(); return; }
         SyncJsonFromRows();
         _config.McpServersJson = McpServersJson;
-        _config.Save();
+        // Saved or not, the servers are reconnected from the in-memory config: the change applies to this
+        // session, and a failed save is said.
+        TrySaveConfig("PersistMcpServers");
         _ = ReconnectMcpAsync();
+    }
+
+    /// <summary>
+    /// Writes the config for the row editors, which save on their own. The file can refuse the write (locked by
+    /// the other editor or a sync client, read-only): unguarded, the editor closed as if saved and the change was
+    /// gone after a restart, in silence. The failure goes where the Save button reports its own.
+    /// </summary>
+    private bool TrySaveConfig(string context)
+    {
+        try
+        {
+            _config.Save();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow($"Settings.{context}", ex);
+            SaveStatus = Strings.SettingsSaveFailed(ex.Message);
+            return false;
+        }
     }
 
     /// <summary>Reconnects the MCP servers from the freshly-saved config and refreshes row statuses.</summary>
@@ -1906,8 +1928,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         // Line by line, not the whole field: the chat may have pinned a file since this window opened.
         var opened = _opened["pinnedContextFiles"]?.GetValue<string>();
         _config.PinnedContextFiles = PinnedFilesPolicy.MergeEdits(_config.PinnedContextFiles, opened, PinnedContextFiles);
-        _config.Save();
-        _opened["pinnedContextFiles"] = _config.PinnedContextFiles;
+        // Unsaved, the edit must still count as a change for the next Save: the reference moves only on success.
+        if (TrySaveConfig("PersistPinned"))
+            _opened["pinnedContextFiles"] = _config.PinnedContextFiles;
         BuildPinnedRowsFrom(_config.PinnedContextFiles);
     }
 
@@ -2034,7 +2057,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     {
         SyncSlashTextFromRows();
         _config.PromptTemplates = PromptTemplates;
-        _config.Save();
+        TrySaveConfig("PersistSlash");
     }
 
     private void BeginAddSlash()
@@ -2107,7 +2130,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     {
         SyncToolTextFromRows();
         _config.CustomTools = CustomTools;
-        _config.Save();
+        TrySaveConfig("PersistTool");
     }
 
     private void BeginAddTool()

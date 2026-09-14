@@ -107,5 +107,6 @@
   "A session named {0} already exists. Replace it?": "{0}(이)라는 세션이 이미 있습니다. 바꾸시겠습니까?",
   "Replace": "바꾸기",
   "📎 Attached: {0}": "📎 첨부: {0}",
-  "The backend is unreachable — the last answer was kept and nothing was sent.": "백엔드에 연결할 수 없습니다. 마지막 답변은 그대로 유지되었으며 아무것도 전송되지 않았습니다."
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "백엔드에 연결할 수 없습니다. 마지막 답변은 그대로 유지되었으며 아무것도 전송되지 않았습니다.",
+  "Inferpal could not save this setting: {0}": "Inferpal에서 이 설정을 저장하지 못했습니다: {0}"
 }

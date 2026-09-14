@@ -307,7 +307,17 @@ internal partial class InferpalToolWindowData
             AgentModeLabel = IsAgentMode ? Strings.LabelModeAgent : Strings.LabelModeChat;
         });
         _config.AgentModeEnabled = IsAgentMode;
-        _config.Save();
+        try
+        {
+            _config.Save();
+        }
+        catch (Exception ex)
+        {
+            // The switch applies to this session; unsaved, it reverts at the next start — said, not silent.
+            Diagnostics.Swallow("Chat.ToggleAgentMode", ex);
+            await ShowInfoAsync(Strings.SettingsSaveFailed(ex.Message));
+            return;
+        }
         await ShowInfoAsync(IsAgentMode
             ? Strings.AgentModeOn(Strings.LabelModeAgent)
             : $"**{Strings.LabelModeChat}**");

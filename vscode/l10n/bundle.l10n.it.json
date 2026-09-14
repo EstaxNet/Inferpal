@@ -107,5 +107,6 @@
   "A session named {0} already exists. Replace it?": "Esiste già una sessione chiamata {0}. Sostituirla?",
   "Replace": "Sostituisci",
   "📎 Attached: {0}": "📎 Allegato: {0}",
-  "The backend is unreachable — the last answer was kept and nothing was sent.": "Il backend non è raggiungibile: l'ultima risposta è stata mantenuta e non è stato inviato nulla."
+  "The backend is unreachable — the last answer was kept and nothing was sent.": "Il backend non è raggiungibile: l'ultima risposta è stata mantenuta e non è stato inviato nulla.",
+  "Inferpal could not save this setting: {0}": "Inferpal non è riuscito a salvare questa impostazione: {0}"
 }
