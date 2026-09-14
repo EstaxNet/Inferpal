@@ -19,6 +19,10 @@ internal static class MarkdownParser
     private static readonly Regex _thinkTagRegex =
         new(@"<think>[\s\S]*?</think>", RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
+    // A reply stopped while the model was still reasoning ends inside an unclosed tag: that tail is reasoning too.
+    private static readonly Regex _unclosedThinkTagRegex =
+        new(@"<think>[\s\S]*$", RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
+
     /// <summary>
     /// Removes all <c>&lt;think&gt;...&lt;/think&gt;</c> blocks from <paramref name="content"/>
     /// and trims the result. Returns an empty string when the input is null or whitespace.
@@ -26,7 +30,7 @@ internal static class MarkdownParser
     public static string StripThinkTags(string? content)
     {
         if (string.IsNullOrEmpty(content)) return string.Empty;
-        return _thinkTagRegex.Replace(content, "").Trim();
+        return _unclosedThinkTagRegex.Replace(_thinkTagRegex.Replace(content, ""), "").Trim();
     }
 
     /// <summary>
@@ -61,7 +65,8 @@ internal static class MarkdownParser
         if (string.IsNullOrWhiteSpace(content))
             return [];
 
-        content = _thinkTagRegex.Replace(content, "").Trim();
+        // The one rule, closed blocks and an unclosed tail alike: a pattern of its own saw only the closed ones.
+        content = StripThinkTags(content);
         if (string.IsNullOrWhiteSpace(content))
             return [];
 

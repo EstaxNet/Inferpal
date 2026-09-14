@@ -3,10 +3,10 @@
 // were 150 lines of the class.
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
+import { t } from '../i18n';
 
 /** Localized strings injected into the chat webview as `window.__l10n`. */
 export function webviewStrings(): Record<string, string> {
-  const t = vscode.l10n.t;
   return {
     promptPlaceholder: t('Ask Inferpal…'),
     modelTitle: t('Model'),

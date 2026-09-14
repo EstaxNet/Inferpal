@@ -2,6 +2,7 @@
 // (this class) is the source of truth for the transcript — the webview can be destroyed
 // on hide and is re-hydrated on every resolveWebviewView.
 import * as vscode from 'vscode';
+import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
@@ -102,6 +103,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Re-renders the chat in the language just applied (i18n.setLanguage). The strings are baked into the page when it
+   * is built, so a new language needs a new page — whose 'ready' hydrates the conversation back into it.
+   */
+  relocalize(): void {
+    if (this.view) {
+      this.view.webview.html = renderChatHtml(this.view.webview, this.context.extensionUri);
+    }
+  }
+
+  /**
    * Shows an approval card in the chat and resolves with the user's answer
    * (0 deny / 1 once / 2 always). Returns undefined when the card cannot be
    * shown (no resolved view) — the caller then falls back to a modal dialog.
@@ -156,7 +167,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // landed alone in a "new" conversation carrying the old context (pre-1.6.0 architecture review, §2.7).
         this.log(`[chat] reset refused: ${String(err)}`);
         void vscode.window.showWarningMessage(
-          vscode.l10n.t('A turn is still running — stop it before starting a new conversation.'));
+          t('A turn is still running — stop it before starting a new conversation.'));
         return;
       }
     }
@@ -442,7 +453,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const branch = Number.isFinite(turn) ? await host.sessionBranch(turn, messages) : null;
       if (!branch) {
-        return [vscode.l10n.t('No turn {0} in this conversation — no branch was created.', String(turn)), false];
+        return [t('No turn {0} in this conversation — no branch was created.', String(turn)), false];
       }
       this.applySession(branch.messages);
       return [branch.message, true];
@@ -495,7 +506,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const loaded = name ? await host.sessionLoad(name) : null;
       if (!loaded) {
-        return [false, vscode.l10n.t('Branch {0} could not be loaded — it may have been deleted.', name)];
+        return [false, t('Branch {0} could not be loaded — it may have been deleted.', name)];
       }
       this.applySession(loaded.messages);
       return [true, ''];
@@ -543,7 +554,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const first = this.transcript.find((m) => m.role === 'user')?.text ?? '';
     const suggested = await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Naming the session…') },
+      { location: vscode.ProgressLocation.Window, title: t('Naming the session…') },
       async () => {
         try {
           return (await host.sessionTitle(first)).title;
@@ -554,7 +565,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       },
     );
     const name = await vscode.window.showInputBox({
-      prompt: vscode.l10n.t('Session name'),
+      prompt: t('Session name'),
       value: suggested.replace(/[\\/:*?"<>|\n]+/g, ' ').trim(),
     });
     if (!name) {
@@ -567,9 +578,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Saving under a name another session already uses replaces that session: ask first, like a delete.
     const existing = await host.sessionList();
     if (existing.some((s) => s.name.toLowerCase() === safeName.toLowerCase())) {
-      const replaceLabel = vscode.l10n.t('Replace');
+      const replaceLabel = t('Replace');
       const answer = await vscode.window.showWarningMessage(
-        vscode.l10n.t('A session named {0} already exists. Replace it?', safeName),
+        t('A session named {0} already exists. Replace it?', safeName),
         { modal: true },
         replaceLabel,
       );
@@ -578,7 +589,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     }
     await host.sessionSave(safeName, this.snapshot());
-    void vscode.window.showInformationMessage(vscode.l10n.t('Session saved: {0}', safeName));
+    void vscode.window.showInformationMessage(t('Session saved: {0}', safeName));
   }
 
   /** Command: pick a saved session and restore it (host history + transcript). */
@@ -589,7 +600,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       promptOpenFolder();
       return;
     }
-    const pick = await this.pickSession(vscode.l10n.t('Pick a session to load'));
+    const pick = await this.pickSession(t('Pick a session to load'));
     if (!pick) {
       return;
     }
@@ -598,7 +609,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       const loaded = await host.sessionLoad(pick);
       if (!loaded) {
         void vscode.window.showWarningMessage(
-          vscode.l10n.t('Session {0} could not be loaded — it may have been deleted.', pick),
+          t('Session {0} could not be loaded — it may have been deleted.', pick),
         );
         return;
       }
@@ -616,14 +627,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       promptOpenFolder();
       return;
     }
-    const pick = await this.pickSession(vscode.l10n.t('Pick a session to delete'));
+    const pick = await this.pickSession(t('Pick a session to delete'));
     if (!pick) {
       return;
     }
     // Irreversible, on the same sessions folder the Visual Studio window lists — which confirms first too.
-    const deleteLabel = vscode.l10n.t('Delete');
+    const deleteLabel = t('Delete');
     const answer = await vscode.window.showWarningMessage(
-      vscode.l10n.t('Delete session {0}? This cannot be undone.', pick),
+      t('Delete session {0}? This cannot be undone.', pick),
       { modal: true },
       deleteLabel,
     );
@@ -632,10 +643,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     try {
       if (await host.sessionDelete(pick)) {
-        void vscode.window.showInformationMessage(vscode.l10n.t('Session deleted: {0}', pick));
+        void vscode.window.showInformationMessage(t('Session deleted: {0}', pick));
       } else {
         void vscode.window.showWarningMessage(
-          vscode.l10n.t('Session {0} was not found — it may already have been deleted.', pick),
+          t('Session {0} was not found — it may already have been deleted.', pick),
         );
       }
     } catch (err) {
@@ -658,7 +669,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    */
   async exportCommand(): Promise<void> {
     if (this.transcript.length === 0) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('Nothing to export — the conversation is empty.'));
+      void vscode.window.showInformationMessage(t('Nothing to export — the conversation is empty.'));
       return;
     }
     const host = this.getHost();
@@ -688,9 +699,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           ? undefined : Math.round((Date.now() - this.sessionStart) / 1000),
       });
       await vscode.workspace.fs.writeFile(target, Buffer.from(document, 'utf8'));
-      void vscode.window.showInformationMessage(vscode.l10n.t('Conversation exported: {0}', target.fsPath));
+      void vscode.window.showInformationMessage(t('Conversation exported: {0}', target.fsPath));
     } catch (err) {
-      void vscode.window.showErrorMessage(vscode.l10n.t('Export failed: {0}', ChatViewProvider.errorText(err)));
+      void vscode.window.showErrorMessage(t('Export failed: {0}', ChatViewProvider.errorText(err)));
     }
   }
 
@@ -745,7 +756,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           // A settings.json with a syntax error, a read-only file: the pick still applies to this window and
           // the host below, but it will not survive a reload — say so instead of stopping half-way.
           this.log(`[chat] model setting not saved: ${String(err)}`);
-          void vscode.window.showWarningMessage(vscode.l10n.t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
+          void vscode.window.showWarningMessage(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
         }
         // Also push the pick into the host's shared config: without it, `/model` (no argument)
         // kept answering the OLD model and every Model Router role that falls back to
@@ -810,7 +821,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         } catch (err) {
           // The mode is read from the settings on every turn: unsaved, it did not change — the switch stays.
           this.log(`[chat] agent mode not saved: ${String(err)}`);
-          void vscode.window.showWarningMessage(vscode.l10n.t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
+          void vscode.window.showWarningMessage(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
           return;
         }
         this.post({ type: 'agentMode', enabled });
@@ -890,7 +901,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'attachActive': {
         const editor = this.getActiveEditor();
         if (!editor || editor.document.uri.scheme !== 'file') {
-          void vscode.window.showInformationMessage(vscode.l10n.t('No file is open in the editor.'));
+          void vscode.window.showInformationMessage(t('No file is open in the editor.'));
           return;
         }
         this.addChip('📄 ' + vscode.workspace.asRelativePath(editor.document.uri, false), editor.document.getText());
@@ -900,7 +911,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         const editor = this.getActiveEditor();
         const text = editor && !editor.selection.isEmpty ? editor.document.getText(editor.selection) : '';
         if (!editor || text.length === 0) {
-          void vscode.window.showInformationMessage(vscode.l10n.t('The selection is empty.'));
+          void vscode.window.showInformationMessage(t('The selection is empty.'));
           return;
         }
         this.addChip('✂ ' + vscode.workspace.asRelativePath(editor.document.uri, false), text);
@@ -972,7 +983,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           if (report && report.trim().length > 0) {
             this.addChip('⚠ problems', report);
           } else {
-            void vscode.window.showInformationMessage(vscode.l10n.t('No problems in the Problems panel.'));
+            void vscode.window.showInformationMessage(t('No problems in the Problems panel.'));
           }
           return;
         }
@@ -1170,7 +1181,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (this.status?.connected === false) {
         this.append({
           role: 'error',
-          text: vscode.l10n.t('The backend is unreachable — your message was not sent and is back in the input box.'),
+          text: t('The backend is unreachable — your message was not sent and is back in the input box.'),
           timestamp: ChatViewProvider.now(),
         });
         this.hydrate();
@@ -1281,7 +1292,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           if (e.value) {
             const name = e.name ?? 'attachment';
             this.addChip(name, e.value);
-            notes.push(vscode.l10n.t('📎 {0} attached to the next message.', name));
+            notes.push(t('📎 {0} attached to the next message.', name));
           }
           break;
         case 'copyToClipboard':
@@ -1365,15 +1376,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private async runExplainReview(kind: 'explain' | 'review', host: HostClient): Promise<void> {
     const editor = this.getActiveEditor();
     if (!editor || editor.document.uri.scheme !== 'file') {
-      this.finishTurn('', vscode.l10n.t('Open a file in the editor to use /{0}.', kind), false, 0);
+      this.finishTurn('', t('Open a file in the editor to use /{0}.', kind), false, 0);
       return;
     }
     const doc = editor.document;
     const code = editor.selection.isEmpty ? doc.getText() : doc.getText(editor.selection);
     const file = vscode.workspace.asRelativePath(doc.uri, false);
     const instruction = kind === 'explain'
-      ? vscode.l10n.t('Explain the following code from {0} — what it does, how, and any pitfalls.', file)
-      : vscode.l10n.t('Review the following code from {0}: point out bugs, risks, and concrete improvements.', file);
+      ? t('Explain the following code from {0} — what it does, how, and any pitfalls.', file)
+      : t('Review the following code from {0}: point out bugs, risks, and concrete improvements.', file);
     await this.chatTurn(`${instruction}\n\n\`\`\`\n${code}\n\`\`\``, host);
   }
 
@@ -1400,7 +1411,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         agentMode,
         attachedPaths: attachedPaths.length > 0 ? attachedPaths : undefined,
       });
-      const finalText = result.text || this.streamText;
+      // A stopped turn's partial answer is the host's: empty when nothing visible had come (reasoning only).
+      const finalText = result.cancelled ? result.text : result.text || this.streamText;
       this.promptTokens = result.promptTokens || this.promptTokens;
       if (result.error) {
         this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now() });
@@ -1410,7 +1422,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         if (finalText.trim().length > 0) {
           this.append({ role: 'assistant', text: finalText, timestamp: ChatViewProvider.now() });
         }
-        this.append({ role: 'error', text: vscode.l10n.t('Cancelled.'), timestamp: ChatViewProvider.now() });
+        this.append({ role: 'error', text: t('Cancelled.'), timestamp: ChatViewProvider.now() });
       } else {
         this.append({ role: 'assistant', text: finalText, timestamp: ChatViewProvider.now() });
       }
@@ -1489,7 +1501,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (this.status?.connected === false) {
         this.append({
           role: 'error',
-          text: vscode.l10n.t('The backend is unreachable — the last answer was kept and nothing was sent.'),
+          text: t('The backend is unreachable — the last answer was kept and nothing was sent.'),
           timestamp: ChatViewProvider.now(),
         });
         this.hydrate();
@@ -1525,7 +1537,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!question || names.length === 0) {
       return;
     }
-    const recap = vscode.l10n.t('📎 Attached: {0}', names.join(' · '));
+    const recap = t('📎 Attached: {0}', names.join(' · '));
     question.text = question.text.length > 0 ? `${question.text}\n\n${recap}` : recap;
     // The bubble was drawn by turnStarted; nothing streams yet, so a rebuild costs no partial answer.
     this.hydrate();
@@ -1554,7 +1566,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.droppedEntries += excess;
     const marker: WvTranscriptItem = {
       role: 'error',
-      text: vscode.l10n.t('{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.', this.droppedEntries),
+      text: t('{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.', this.droppedEntries),
       timestamp: ChatViewProvider.now(),
     };
     if (markerSlot) {
@@ -1632,13 +1644,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     const editor = this.getActiveEditor();
     if (!editor || editor.document.uri.scheme !== 'file') {
-      finish('error', vscode.l10n.t('Open a file in the editor to use /{0}.', kind));
+      finish('error', t('Open a file in the editor to use /{0}.', kind));
       return;
     }
 
     const document = editor.document;
     const before = document.getText();
-    this.post({ type: 'status', text: vscode.l10n.t('Running /{0} on {1}…', kind, vscode.workspace.asRelativePath(document.uri, false)) });
+    this.post({ type: 'status', text: t('Running /{0} on {1}…', kind, vscode.workspace.asRelativePath(document.uri, false)) });
 
     let result: CodeActionResult;
     try {
@@ -1655,18 +1667,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
 
     if (result.outcome === 'noChange') {
-      finish('assistant', vscode.l10n.t('Nothing to change — the code already looks good.'));
+      finish('assistant', t('Nothing to change — the code already looks good.'));
       return;
     }
     if (result.outcome !== 'edited' || result.edits.length === 0) {
-      const base = vscode.l10n.t('The code action failed — check the backend connection and the model.');
+      const base = t('The code action failed — check the backend connection and the model.');
       finish('error', result.failureDetail ? `${base}\n\n${result.failureDetail}` : base);
       return;
     }
     // The offsets were computed against the text we sent; a buffer that moved meanwhile
     // would misplace every hunk (same freshness guard as the VS renderer).
     if (document.getText() !== before) {
-      finish('error', vscode.l10n.t('The document changed while the model was working — run /{0} again.', kind));
+      finish('error', t('The document changed while the model was working — run /{0} again.', kind));
       return;
     }
 
@@ -1677,7 +1689,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (preview) {
         edit.replace(document.uri, range, e.newText, {
           needsConfirmation: true,
-          label: vscode.l10n.t('Inferpal /{0} — change {1}', kind, e.index),
+          label: t('Inferpal /{0} — change {1}', kind, e.index),
         });
       } else {
         edit.replace(document.uri, range, e.newText);
@@ -1688,11 +1700,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // decision; false = discarded (or nothing left checked).
     const applied = await vscode.workspace.applyEdit(edit, { isRefactoring: true });
     if (!applied) {
-      finish('assistant', vscode.l10n.t('Rewrite discarded — no changes were applied.'));
+      finish('assistant', t('Rewrite discarded — no changes were applied.'));
     } else if (preview) {
-      finish('assistant', vscode.l10n.t('Rewrite applied from the preview — undo with Ctrl+Z if needed.'));
+      finish('assistant', t('Rewrite applied from the preview — undo with Ctrl+Z if needed.'));
     } else {
-      finish('assistant', vscode.l10n.t('Rewrite applied — undo with Ctrl+Z if needed.'));
+      finish('assistant', t('Rewrite applied — undo with Ctrl+Z if needed.'));
     }
   }
 

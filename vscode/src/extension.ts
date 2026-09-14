@@ -10,6 +10,7 @@ import { EditorBridge } from './editorBridge';
 import { HostClient } from './hostClient';
 import { hostErrorText, promptOpenFolder, workspaceRoot } from './hostStatus';
 import { FimProvider } from './inlineCompletions';
+import { setLanguage, t } from './i18n';
 
 let host: HostClient | undefined;
 let bridge: EditorBridge | undefined;
@@ -60,6 +61,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         context.extensionUri,
         () => host,
         () => void chatView.configSaved(),
+        () => chatView.relocalize(),
         log,
       )),
     // Editor context menu → same pipeline as typing the slash command in the chat.
@@ -175,7 +177,7 @@ async function startHostCore(
     log('[inferpal] Inferpal.Host binary not found — set "inferpal.hostPath"');
     if (interactive) {
       void vscode.window.showErrorMessage(
-        vscode.l10n.t('Inferpal.Host binary not found. Set "inferpal.hostPath" in settings.'),
+        t('Inferpal.Host binary not found. Set "inferpal.hostPath" in settings.'),
       );
     }
     return;
@@ -205,7 +207,7 @@ async function startHostCore(
         // approval card of the dead host stays clickable, and hydrate re-posts it on every reveal.
         chatView.onHostStopped();
         void vscode.window
-          .showErrorMessage(vscode.l10n.t('Inferpal host stopped unexpectedly.'), vscode.l10n.t('Restart'))
+          .showErrorMessage(t('Inferpal host stopped unexpectedly.'), t('Restart'))
           .then((choice) => {
             if (choice) {
               void vscode.commands.executeCommand('inferpal.restartHost');
@@ -221,6 +223,15 @@ async function startHostCore(
     await client.start();
     host = client;
     bridge!.attach(client);
+    // The language picked in Inferpal's settings, not VS Code's alone — applied before the chat hydrates.
+    try {
+      const saved = JSON.parse(await client.configGet()) as { language?: string };
+      if (setLanguage(saved.language, context.extensionUri)) {
+        chatView.relocalize();
+      }
+    } catch (err) {
+      log(`[inferpal] language sync failed: ${String(err)}`);
+    }
     await chatView.onHostReady();
     await pushModelRouterSettings(log);
     log(`[inferpal] host ready (${hostPath})`);
@@ -228,7 +239,7 @@ async function startHostCore(
     log(`[inferpal] host start failed: ${String(err)}`);
     await client.stop();
     if (interactive) {
-      void vscode.window.showErrorMessage(vscode.l10n.t('Inferpal host failed to start: {0}', hostErrorText(err)));
+      void vscode.window.showErrorMessage(t('Inferpal host failed to start: {0}', hostErrorText(err)));
     }
   }
 }

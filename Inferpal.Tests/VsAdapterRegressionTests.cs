@@ -58,6 +58,18 @@ public class VsAdapterRegressionTests
     }
 
     /// <summary>
+    /// The session summary comes from the utility model through the provider's basic loop, which returns the reply
+    /// whole: its reasoning was folded into the system prompt of every following turn, and shown in the recap.
+    /// </summary>
+    [Fact]
+    public void TheSessionSummary_LeavesTheUtilityModelsReasoningOut()
+    {
+        var run = Method("Inferpal/ToolWindow/InferpalToolWindowData.Rag.cs", "RunOodaSummaryAsync");
+        Assert.True(Calls(run, "StripThinkTags"),
+            "The session summary keeps the utility model's reasoning, folded into every following system prompt.");
+    }
+
+    /// <summary>
     /// The search box dims the bubbles that do not contain the query. It read the raw content: a word found only in the
     /// model's hidden reasoning kept lit a bubble whose visible text does not contain it. It reads what the bubble shows.
     /// </summary>

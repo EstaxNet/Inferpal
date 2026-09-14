@@ -62,6 +62,7 @@ public class ChatTurnPolicyTests
     [InlineData("​﻿‌")]                       // invisible Unicode only
     [InlineData("<think>long reasoning</think>")]            // think-only output
     [InlineData("<think>reasoning</think>---")]              // the Qwen final-agent-answer artefact
+    [InlineData("<think>unfinished reasoning")]              // a turn stopped mid-reasoning
     [InlineData("---")]                                      // separator renders as 1-px line
     [InlineData("---\n\n---")]                               // separators only
     public void IsVisiblyEmpty_True_ForInvisibleContent(string? content) =>

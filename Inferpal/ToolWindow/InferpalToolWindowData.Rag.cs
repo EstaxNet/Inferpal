@@ -273,7 +273,8 @@ internal partial class InferpalToolWindowData
                 onToken: null,
                 ct:      ct);
 
-            var summary = result.FinalResponse?.Trim();
+            // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
+            var summary = Services.Presentation.MarkdownParser.StripThinkTags(result.FinalResponse);
             if (!string.IsNullOrEmpty(summary))
             {
                 await RunOnVMContextAsync(() =>

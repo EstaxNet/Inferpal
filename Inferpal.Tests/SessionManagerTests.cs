@@ -90,6 +90,25 @@ public class SessionManagerTests : IDisposable
     }
 
     /// <summary>
+    /// A reasoning utility model answers the title request with its reasoning first. The provider's basic loop returns
+    /// that reply whole, and sanitising kept its words: the session was named after the model's chain of thought.
+    /// </summary>
+    [Fact]
+    public async Task SessionTitle_IsNotMadeOfTheUtilityModelsReasoning()
+    {
+        var fake = new FakeInferenceProvider
+        {
+            ChatResult = new Inferpal.Models.ChatTurnResult(
+                "<think>the user wants a title about the login page</think>Fix login bug", null, 0, 0),
+        };
+
+        var title = await SessionTitleGenerator.GenerateAsync(
+            fake, new Inferpal.Config.InferpalConfig(), "the login button does nothing", CancellationToken.None);
+
+        Assert.Equal("Fix_login_bug", title);
+    }
+
+    /// <summary>
     /// The live history keeps an answer without its reasoning (ChoosePersistedAnswer), but a streamed bubble saved to
     /// the session keeps it inline. Restored as is, a reloaded session handed the model its old chain of thought.
     /// </summary>

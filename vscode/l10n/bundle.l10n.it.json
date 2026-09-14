@@ -100,7 +100,6 @@
   "Refresh models": "Aggiorna modelli",
   "Show all models": "Mostra tutti i modelli",
   "No model listed — is the backend reachable?": "Nessun modello elencato: il backend è raggiungibile?",
-  "No match": "Nessuna corrispondenza",
   "Export failed: {0}": "Esportazione non riuscita: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Un turno è ancora in corso: interrompilo prima di iniziare una nuova conversazione.",
   "Save": "Salva",

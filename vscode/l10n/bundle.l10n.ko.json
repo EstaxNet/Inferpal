@@ -100,7 +100,6 @@
   "Refresh models": "모델 새로 고침",
   "Show all models": "모든 모델 표시",
   "No model listed — is the backend reachable?": "나열된 모델이 없습니다 — 백엔드에 연결할 수 있나요?",
-  "No match": "일치 항목 없음",
   "Export failed: {0}": "내보내기 실패: {0}",
   "A turn is still running — stop it before starting a new conversation.": "아직 진행 중인 턴이 있습니다. 새 대화를 시작하기 전에 중지하세요.",
   "Save": "저장",

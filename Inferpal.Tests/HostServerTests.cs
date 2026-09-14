@@ -316,6 +316,59 @@ public class HostServerTests
     }
 
     /// <summary>
+    /// A model can end a turn with its reasoning and a separator only (<c>&lt;think&gt;…&lt;/think&gt;---</c>). Visual Studio
+    /// drops that visually empty bubble and falls back to the final answer, the tool summary or the empty-response notice.
+    /// The host judged the stream on its printable characters — the reasoning counts — and handed VS Code the separator:
+    /// a bubble the user cannot see, saved to the conversation.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_AVisuallyEmptyStream_FallsBackLikeVisualStudio()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        h.Fake.OnChat = (onToken, _) =>
+        {
+            onToken?.Invoke("<think>reasoning</think>");
+            onToken?.Invoke("---");
+            return Task.FromResult(new ChatTurnResult("<think>reasoning</think>---", null, 5, 7));
+        };
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.False(Inferpal.Services.Agent.ChatTurnPolicy.IsVisiblyEmpty(result.Text),
+            $"The turn ended on a bubble the user cannot see: \"{result.Text}\".");
+    }
+
+    /// <summary>
+    /// With tools off, the answer went into the model's history as the backend returned it — its reasoning included.
+    /// The other two paths, and Visual Studio, keep the answer the user saw (ChoosePersistedAnswer).
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_ToolsOff_KeepsTheAnswerTheUserSaw_InTheHistory()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Server.CurrentSession!.ToolsEnabled = false;
+
+        h.Fake.OnChat = (onToken, _) =>
+        {
+            onToken?.Invoke("<think>private chain of thought</think>the answer");
+            return Task.FromResult(new ChatTurnResult("<think>private chain of thought</think>the answer", null, 3, 5));
+        };
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var last = h.Server.CurrentSession!.History[^1];
+        Assert.Equal("assistant", last.Role);
+        Assert.Equal("the answer", last.Content);
+    }
+
+    /// <summary>
     /// The agent loop runs on the configured agent model, as in Visual Studio. The adapter always sends
     /// the model picked in the chat (its setting, or the default model), and the host let that explicit
     /// model win over the router: <c>agentModel</c> was never used under VS Code.
@@ -604,6 +657,38 @@ public class HostServerTests
         Assert.DoesNotContain("the session so far", SystemPrompt(), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// The summary comes from the utility model through the provider's basic loop, which returns the reply whole. A
+    /// reasoning model's chain of thought was folded into the system prompt of every following turn, and shown.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_TheSessionSummary_LeavesTheUtilityModelsReasoningOut()
+    {
+        using var h = CreateHarness(cfg => cfg.OodaTurnThreshold = 2);
+        await h.InitializeAsync();
+        h.Fake.OnChatRequest = (_, messages, _, _) => Task.FromResult(new ChatTurnResult(
+            messages[^1].Content == Inferpal.Localization.Strings.OodaSummarizePrompt
+                ? "<think>private reasoning</think>the session so far"
+                : "done",
+            null, 3, 5));
+
+        async Task Send(string prompt) =>
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+                "chat/send", new { prompt, agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        await Send("first question");
+        await Send("second question");
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var systemPrompt = h.Server.CurrentSession!.History[0].Content;
+        Assert.Contains("## Session Summary\n\nthe session so far", systemPrompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("private reasoning", systemPrompt, StringComparison.Ordinal);
+        Assert.DoesNotContain(h.Target.ToolNotes,
+            n => n.Name == "ooda_recap" && n.Output.Contains("private reasoning", StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task ChatCancel_ReturnsPartialTextWithCancelledFlag()
     {
@@ -626,6 +711,35 @@ public class HostServerTests
         var result = await sendTask.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         Assert.True(result.Cancelled);
         Assert.Equal("par", result.Text);
+    }
+
+    /// <summary>
+    /// Stopped while the model was still reasoning, the partial answer is an unclosed <c>&lt;think&gt;</c> and nothing
+    /// else. Visual Studio drops that bubble; the host handed it over as the answer, and VS Code saved a turn of pure
+    /// reasoning. The witness above keeps a visible partial answer.
+    /// </summary>
+    [Fact]
+    public async Task ChatCancel_DuringTheReasoning_LeavesNoPartialAnswer()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        h.Fake.OnChat = async (onToken, ct) =>
+        {
+            onToken?.Invoke("<think>still thinking");
+            await Task.Delay(Timeout.Infinite, ct);   // hangs until chat/cancel
+            return new ChatTurnResult(string.Empty, null, 0, 0);
+        };
+
+        var sendTask = h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false });
+
+        await h.Target.FirstToken.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await h.Client.InvokeAsync("chat/cancel");
+
+        var result = await sendTask.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.True(result.Cancelled);
+        Assert.Equal(string.Empty, result.Text);
     }
 
     [Theory]

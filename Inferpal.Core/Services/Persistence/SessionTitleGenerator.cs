@@ -54,7 +54,8 @@ internal static class SessionTitleGenerator
                 onToken: null,
                 ct:      cts.Token);
 
-            return SessionManager.SanitizeTitle(result.FinalResponse, fallback);
+            // The basic loop returns the reply whole: a reasoning model's chain of thought is not the title.
+            return SessionManager.SanitizeTitle(MarkdownParser.StripThinkTags(result.FinalResponse), fallback);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

@@ -213,7 +213,42 @@ public class SettingsSchemaDriftTests
         Assert.Contains("buildModelCaret", source, StringComparison.Ordinal);
 
         // And opening shows EVERYTHING: that is the property, the rest is presentation.
-        Assert.Matches(new Regex(@"function openModelPopup[\s\S]{0,600}?renderModelPopup\(''\)"), source);
+        Assert.Matches(new Regex(@"function openModelPopup[\s\S]{0,600}?renderModelPopup\(\)"), source);
+    }
+
+    /// <summary>
+    /// The model lists of the Visual Studio window are all non-editable (<c>IsEditable="False"</c>): a model is
+    /// picked, never typed. VS Code's model fields accepted any text — a typo saved a model the backend does not
+    /// serve. They are read-only now; the optional roles keep their empty entry ("same as the chat model"), the
+    /// leading <c>""</c> of Visual Studio.
+    /// </summary>
+    [Fact]
+    public void VsCodeModelFields_AreReadOnly_LikeVisualStudio()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+
+        // Witness: the parity anchor — the Visual Studio window's lists are all non-editable.
+        var xaml = File.ReadAllText(Path.Combine(dir!, "Inferpal", "ToolWindow", "InferpalSettingsContent.xaml"));
+        Assert.True(Regex.Matches(xaml, "IsEditable=\"False\"").Count >= 7,
+            "The Visual Studio window's non-editable lists are no longer counted — the rule has lost its anchor.");
+        Assert.DoesNotContain("IsEditable=\"True\"", xaml, StringComparison.Ordinal);
+
+        var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
+        Assert.True(File.Exists(webview), "vscode/src/webview/settings.ts has disappeared.");
+        var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
+        Assert.Matches(new Regex(@"field\.kind === 'model'[\s\S]{0,400}?\.readOnly = true"), source);
+        Assert.False(source.Contains("addEventListener('input'", StringComparison.Ordinal),
+            "A model field still filters as it is typed in: it accepts free text.");
+        // The optional roles keep their empty entry, like the leading "" of AvailableOptionalModels.
+        Assert.Contains("field.gate === 'roles'", source, StringComparison.Ordinal);
+
+        // Read-only, the keyboard has nothing but the list to pick from: the arrow keys move through it and
+        // Enter picks the highlighted row. Without that, the list opens from the keyboard and nothing can be picked.
+        Assert.Matches(new Regex(@"addEventListener\('keydown'[\s\S]{0,900}?'ArrowUp'[\s\S]{0,400}?moveModelHighlight\(-1\)"), source);
+        Assert.Matches(new Regex(@"addEventListener\('keydown'[\s\S]{0,1200}?pickModel\(modelChoices\[modelHighlight\]\)"), source);
     }
 
     /// <summary>

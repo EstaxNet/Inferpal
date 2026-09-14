@@ -122,6 +122,18 @@ public class MarkdownParserTests
         Assert.Contains("after", text);
     }
 
+    [Fact]
+    public void Parse_RemovesAnUnclosedThinkTail_AndKeepsTheAnswerBeforeIt()
+    {
+        // Same rule as StripThinkTags: a turn stopped during the reasoning ends inside an unclosed
+        // tag. Parse applied a pattern of its own, which only sees closed blocks.
+        var blocks = MarkdownParser.Parse("the answer\n<think>unfinished reasoning");
+        var text   = string.Join("\n", blocks.Select(b => b.Text));
+
+        Assert.DoesNotContain("unfinished", text);
+        Assert.Contains("the answer", text);
+    }
+
     [Theory]
     // Several blocks: the pattern is non-greedy, it must not swallow what sits between them.
     [InlineData("<think>a</think>keep<think>b</think>", "keep")]
@@ -130,6 +142,10 @@ public class MarkdownParserTests
     // Case: the pattern is IgnoreCase, and models are not consistent about it.
     [InlineData("<THINK>noise</THINK>visible", "visible")]
     [InlineData("<Think>noise</Think>visible", "visible")]
+    // Unclosed tag: a turn stopped during the reasoning has no </think>. The webview already
+    // stripped that tail; here it stayed, and the bubble showed the raw tag.
+    [InlineData("visible<think>still streaming", "visible")]
+    [InlineData("<Think>still\nstreaming", "")]
     public void StripThinkTags_HandlesTheFormsModelsActuallyEmit(string content, string expected)
     {
         var stripped = MarkdownParser.StripThinkTags(content);

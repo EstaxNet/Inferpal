@@ -2,6 +2,7 @@
 // QuickPick (which doubles as the branch navigator) and the export rendering. All of it is either
 // pure or depends only on the host client — none of it needs the provider's mutable state.
 import * as vscode from 'vscode';
+import { t } from './i18n';
 import { HostClient } from './hostClient';
 import { SavedMessage } from './protocol';
 import { WvTranscriptItem } from './webviewMessages';
@@ -40,15 +41,15 @@ export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptIte
 export async function pickSession(host: HostClient, placeholder: string): Promise<string | undefined> {
   const sessions = await host.sessionList();
   if (sessions.length === 0) {
-    void vscode.window.showInformationMessage(vscode.l10n.t('No saved sessions.'));
+    void vscode.window.showInformationMessage(t('No saved sessions.'));
     return undefined;
   }
   const picked = await vscode.window.showQuickPick(
     sessions.map((s) => ({
       label: s.parent ? `$(git-branch) ${s.name}` : s.name,
       description: s.parent
-        ? vscode.l10n.t('{0} msg · from {1} @ turn {2}', s.messageCount, s.parent, s.forkTurn ?? 0)
-        : vscode.l10n.t('{0} msg', s.messageCount),
+        ? t('{0} msg · from {1} @ turn {2}', s.messageCount, s.parent, s.forkTurn ?? 0)
+        : t('{0} msg', s.messageCount),
       detail: s.preview,
       name: s.name,
     })),

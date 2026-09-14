@@ -1192,7 +1192,11 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       }
       break;
     case 'turnEnded': {
-      if (streamEl) {
+      if (streamEl && msg.cancelled && !msg.text) {
+        // Stopped before anything visible (reasoning only): no empty bubble, as in Visual Studio.
+        streamEl.remove();
+        finishStream();
+      } else if (streamEl) {
         // Replace the stream bubble content with the authoritative final text.
         streamRaw = msg.text || streamRaw;
         renderMarkdownInto(streamEl.querySelector('.bubble-body') as HTMLElement, streamRaw);

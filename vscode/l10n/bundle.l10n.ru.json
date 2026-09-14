@@ -100,7 +100,6 @@
   "Refresh models": "Обновить модели",
   "Show all models": "Показать все модели",
   "No model listed — is the backend reachable?": "Модели не перечислены — доступен ли бэкенд?",
-  "No match": "Нет совпадений",
   "Export failed: {0}": "Не удалось экспортировать: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Ход ещё выполняется — остановите его, прежде чем начинать новый разговор.",
   "Save": "Сохранить",

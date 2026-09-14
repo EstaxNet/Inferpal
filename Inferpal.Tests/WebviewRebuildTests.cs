@@ -135,7 +135,7 @@ public class WebviewRebuildTests
         Assert.DoesNotContain("return null", branch, StringComparison.Ordinal);
         Assert.Contains("hostUnavailableMessage()", branch, StringComparison.Ordinal);
         Assert.Contains("ChatViewProvider.errorText(err)", branch, StringComparison.Ordinal);
-        Assert.Contains("vscode.l10n.t('No turn {0} in this conversation", branch, StringComparison.Ordinal);
+        Assert.Contains("t('No turn {0} in this conversation", branch, StringComparison.Ordinal);
 
         var effect = Regex.Match(provider, @"case 'branchRequest':[\s\S]*?break;");
         Assert.True(effect.Success, "the branchRequest effect is gone — the rule measures nothing.");
@@ -160,7 +160,7 @@ public class WebviewRebuildTests
 
         Assert.Contains("hostUnavailableMessage()", sw, StringComparison.Ordinal);
         Assert.Contains("ChatViewProvider.errorText(err)", sw, StringComparison.Ordinal);
-        Assert.Contains("vscode.l10n.t('Branch {0} could not be loaded", sw, StringComparison.Ordinal);
+        Assert.Contains("t('Branch {0} could not be loaded", sw, StringComparison.Ordinal);
 
         var effect = Regex.Match(provider, @"case 'loadSession':[\s\S]*?break;");
         Assert.True(effect.Success, "the loadSession effect is gone — the rule measures nothing.");
@@ -184,7 +184,7 @@ public class WebviewRebuildTests
         // Witness: the command still goes through session/load.
         Assert.Contains("host.sessionLoad(", load, StringComparison.Ordinal);
 
-        Assert.Contains("vscode.l10n.t('Session {0} could not be loaded", load, StringComparison.Ordinal);
+        Assert.Contains("t('Session {0} could not be loaded", load, StringComparison.Ordinal);
         Assert.Contains("ChatViewProvider.errorText(err)", load, StringComparison.Ordinal);
     }
 
@@ -203,13 +203,13 @@ public class WebviewRebuildTests
         Assert.True(call >= 0, "deleteSessionCommand no longer calls host.sessionDelete");
 
         // A modal confirmation BEFORE the call.
-        var confirm = delete.IndexOf("vscode.l10n.t('Delete session {0}? This cannot be undone.'", StringComparison.Ordinal);
+        var confirm = delete.IndexOf("t('Delete session {0}? This cannot be undone.'", StringComparison.Ordinal);
         Assert.True(confirm >= 0 && confirm < call, "the deletion is not confirmed before session/delete");
         Assert.Contains("modal: true", delete, StringComparison.Ordinal);
 
         // Both outcomes are stated, and a failure names its cause.
-        Assert.Contains("vscode.l10n.t('Session deleted: {0}'", delete, StringComparison.Ordinal);
-        Assert.Contains("vscode.l10n.t('Session {0} was not found", delete, StringComparison.Ordinal);
+        Assert.Contains("t('Session deleted: {0}'", delete, StringComparison.Ordinal);
+        Assert.Contains("t('Session {0} was not found", delete, StringComparison.Ordinal);
         Assert.Contains("ChatViewProvider.errorText(err)", delete, StringComparison.Ordinal);
     }
 
@@ -223,9 +223,9 @@ public class WebviewRebuildTests
         var picker = Body(TsCode("chatSessions.ts"), "export async function pickSession(");
 
         // Witness: a branch's description goes through l10n.
-        Assert.Contains("vscode.l10n.t('{0} msg · from {1} @ turn {2}'", picker, StringComparison.Ordinal);
+        Assert.Contains("t('{0} msg · from {1} @ turn {2}'", picker, StringComparison.Ordinal);
 
-        Assert.Contains("vscode.l10n.t('{0} msg', s.messageCount)", picker, StringComparison.Ordinal);
+        Assert.Contains("t('{0} msg', s.messageCount)", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("} msg`", picker, StringComparison.Ordinal);
     }
 
@@ -339,12 +339,12 @@ public class WebviewRebuildTests
     {
         var provider = TsCode("chatViewProvider.ts");
 
-        Assert.Contains("vscode.l10n.t('Delete session {0}? This cannot be undone.'",
+        Assert.Contains("t('Delete session {0}? This cannot be undone.'",
             Body(provider, "async deleteSessionCommand("), StringComparison.Ordinal);
 
         var save    = Body(provider, "async saveSessionCommand(");
         var list    = save.IndexOf("host.sessionList()", StringComparison.Ordinal);
-        var confirm = save.IndexOf("vscode.l10n.t('A session named {0} already exists. Replace it?'", StringComparison.Ordinal);
+        var confirm = save.IndexOf("t('A session named {0} already exists. Replace it?'", StringComparison.Ordinal);
         var write   = save.IndexOf("host.sessionSave(", StringComparison.Ordinal);
         Assert.True(list >= 0 && confirm > list && write > confirm,
             "saving under an existing name replaces that session without asking");
@@ -462,7 +462,7 @@ public class WebviewRebuildTests
         var end    = chatTurn.IndexOf("} else {", at, StringComparison.Ordinal);
         var branch = chatTurn[at..(end < 0 ? chatTurn.Length : end)];
 
-        Assert.Contains("vscode.l10n.t('Cancelled.')", branch, StringComparison.Ordinal);
+        Assert.Contains("t('Cancelled.')", branch, StringComparison.Ordinal);
         Assert.Contains("finalText.trim().length > 0", branch, StringComparison.Ordinal);
     }
 
@@ -481,7 +481,7 @@ public class WebviewRebuildTests
             "the chips are sent to the model and named nowhere the conversation keeps.");
 
         var naming = Body(source, "private nameAttachmentsInQuestion(");
-        Assert.Contains("vscode.l10n.t('📎 Attached: {0}'", naming, StringComparison.Ordinal);
+        Assert.Contains("t('📎 Attached: {0}'", naming, StringComparison.Ordinal);
         Assert.Contains("m.role === 'user'", naming, StringComparison.Ordinal);
     }
 
@@ -592,6 +592,101 @@ public class WebviewRebuildTests
         foreach (System.Text.RegularExpressions.Match call in calls)
             Assert.True(call.Groups["args"].Value.Contains("stripThinkTags(", StringComparison.Ordinal),
                 $"metaRow({call.Groups["args"].Value}) copies the raw text, the model's hidden reasoning included.");
+    }
+
+    /// <summary>
+    /// A turn stopped while the model was still reasoning has no visible partial answer. The host says so (an empty
+    /// text); the adapter fell back to its own raw stream and saved a turn of pure reasoning.
+    /// </summary>
+    [Fact]
+    public void ACancelledTurn_SavesTheHostsPartialAnswer_NotTheRawStream()
+    {
+        Assert.Matches(@"const finalText\s*=\s*result\.cancelled\s*\?\s*result\.text\s*:", TsCode("chatViewProvider.ts"));
+    }
+
+    /// <summary>
+    /// The same stopped turn in the webview: its streamed bubble was re-rendered with the reasoning stripped, and stayed
+    /// as an empty bubble above "Cancelled." Visual Studio drops it.
+    /// </summary>
+    [Fact]
+    public void ACancelledTurnWithNothingShown_RemovesItsStreamBubble()
+    {
+        var main = TsCode("webview/main.ts");
+        var at   = main.IndexOf("case 'turnEnded':", StringComparison.Ordinal);
+        Assert.True(at >= 0, "case 'turnEnded' moved — the rule measures nothing.");
+        var next  = main.IndexOf("case '", at + 6, StringComparison.Ordinal);
+        var block = main[at..(next < 0 ? main.Length : next)];
+
+        Assert.Matches(@"msg\.cancelled\s*&&\s*!msg\.text", block);
+        Assert.Contains("streamEl.remove()", block);
+    }
+
+    /// <summary>
+    /// The extension's own texts went through vscode.l10n.t, which follows VS Code's display language: the language
+    /// picked in Inferpal's settings — "overrides the editor's" — reached the host's messages and nothing else, so the
+    /// chat stayed in one language while the host answered in another. One translator honours the Inferpal setting.
+    /// </summary>
+    [Fact]
+    public void TheExtensionTranslates_ThroughTheTranslatorThatHonoursInferpalsLanguage()
+    {
+        var src   = Path.Combine(RepoRoot(), "vscode", "src");
+        var files = Directory.EnumerateFiles(src, "*.ts", SearchOption.AllDirectories)
+            .Where(f => !string.Equals(Path.GetFileName(f), "i18n.ts", StringComparison.Ordinal))
+            .ToList();
+        Assert.True(files.Count > 10, $"Only {files.Count} TypeScript sources — the rule scans nothing.");
+
+        var offenders = files
+            .Where(f => SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(f))
+                            .Contains("l10n.t(", StringComparison.Ordinal)
+                     || SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(f))
+                            .Contains("= vscode.l10n.t", StringComparison.Ordinal))
+            .Select(f => Path.GetRelativePath(src, f))
+            .ToList();
+        Assert.True(offenders.Count == 0,
+            "Translated in VS Code's display language instead of Inferpal's: " + string.Join(", ", offenders));
+    }
+
+    /// <summary>
+    /// A language saved in the settings changed the host at once, and neither the open settings panel (its labels are
+    /// fetched when it loads) nor the chat followed until they were reopened. Visual Studio re-localizes live.
+    /// </summary>
+    [Fact]
+    public void ALanguageSavedInTheSettings_RelocalizesTheOpenPanelAndChat()
+    {
+        var panel = TsCode("settingsPanel.ts");
+        Assert.Contains("setLanguage(", panel);
+        Assert.True(System.Text.RegularExpressions.Regex.Matches(panel, @"webview\.html\s*=").Count >= 2,
+            "The settings panel keeps its old labels after a language change.");
+
+        var chat = TsCode("chatViewProvider.ts");
+        Assert.True(System.Text.RegularExpressions.Regex.Matches(chat, @"webview\.html\s*=\s*renderChatHtml\(").Count >= 2,
+            "The chat keeps its old language after a language change.");
+    }
+
+    /// <summary>The language saved in Inferpal's settings is applied to the extension as soon as the host answers.</summary>
+    [Fact]
+    public void TheHostStart_AppliesInferpalsSavedLanguageToTheExtension()
+    {
+        var ext   = TsCode("extension.ts");
+        var start = ext.IndexOf("await client.start();", StringComparison.Ordinal);
+        Assert.True(start >= 0, "client.start() moved — the rule measures nothing.");
+        Assert.True(ext.IndexOf("setLanguage(", start, StringComparison.Ordinal) > start,
+            "The extension never reads the language saved in Inferpal's settings.");
+    }
+
+    /// <summary>The translator loads bundle.l10n.&lt;code&gt;.json for the Inferpal language: every code offered has one.</summary>
+    [Fact]
+    public void EveryInferpalLanguage_HasTheBundleTheTranslatorLoads()
+    {
+        var codes = System.Text.RegularExpressions.Regex.Matches(TsCode("webview/settings.ts"), @"value: '([A-Za-z-]*)', text")
+            .Select(m => m.Groups[1].Value)
+            .Where(code => code.Length > 0 && code != "en")
+            .ToList();
+        Assert.True(codes.Count >= 9, $"{codes.Count} language codes read — the rule measures nothing.");
+
+        foreach (var code in codes)
+            Assert.True(File.Exists(Path.Combine(RepoRoot(), "vscode", "l10n", $"bundle.l10n.{code.ToLowerInvariant()}.json")),
+                $"No bundle for the Inferpal language '{code}'.");
     }
 
     /// <summary>
@@ -707,7 +802,7 @@ public class WebviewRebuildTests
         var block = onMessage[at..(next < 0 ? onMessage.Length : next)];
         Assert.Contains(".update(", block, StringComparison.Ordinal);   // witness: the case still writes the setting
         Assert.True(block.Contains("catch", StringComparison.Ordinal)
-                    && block.Contains("vscode.l10n.t('Inferpal could not save this setting: {0}'", StringComparison.Ordinal),
+                    && block.Contains("t('Inferpal could not save this setting: {0}'", StringComparison.Ordinal),
             $"'{message}' stops in silence when the workspace settings refuse the write.");
     }
 }

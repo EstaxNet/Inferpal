@@ -100,7 +100,6 @@
   "Refresh models": "刷新模型",
   "Show all models": "显示所有模型",
   "No model listed — is the backend reachable?": "未列出任何模型 — 后端可访问吗?",
-  "No match": "无匹配项",
   "Export failed: {0}": "导出失败：{0}",
   "A turn is still running — stop it before starting a new conversation.": "仍有一个回合正在运行——请先停止，再开始新对话。",
   "Save": "保存",

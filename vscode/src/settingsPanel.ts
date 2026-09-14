@@ -8,6 +8,7 @@ import * as crypto from 'crypto';
 import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
 import { SettingsSchema } from './protocol';
+import { setLanguage, t } from './i18n';
 
 interface SettingsInbound {
   type: 'ready' | 'save' | 'testConnection' | 'refreshModels';
@@ -31,6 +32,7 @@ export class SettingsPanel {
     private readonly extensionUri: vscode.Uri,
     private readonly getHost: () => HostClient | undefined,
     private readonly onSaved: () => void,
+    private readonly onLanguageChanged: () => void,
     private readonly log: (line: string) => void,
   ) {
     panel.webview.html = this.renderHtml(panel.webview);
@@ -46,6 +48,7 @@ export class SettingsPanel {
     extensionUri: vscode.Uri,
     getHost: () => HostClient | undefined,
     onSaved: () => void,
+    onLanguageChanged: () => void,
     log: (line: string) => void,
   ): void {
     if (SettingsPanel.current) {
@@ -54,7 +57,7 @@ export class SettingsPanel {
     }
     const panel = vscode.window.createWebviewPanel(
       'inferpal.settings',
-      vscode.l10n.t('Inferpal Settings'),
+      t('Inferpal Settings'),
       vscode.ViewColumn.Active,
       {
         enableScripts: true,
@@ -64,7 +67,7 @@ export class SettingsPanel {
         retainContextWhenHidden: true,
       },
     );
-    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, onSaved, log);
+    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, onSaved, onLanguageChanged, log);
   }
 
   private async onMessage(msg: SettingsInbound): Promise<void> {
@@ -163,12 +166,20 @@ export class SettingsPanel {
           this.post({ type: 'saveDone', ok: true, rulesIgnored: result?.permissionRulesIgnored ?? 0 });
           this.onSaved();
 
-          // Provider/BaseUrl changes only take effect after a new `initialize`.
           const after = this.parseKeys(msg.json);
+          // A new language takes effect at once, as in Visual Studio: this panel and the chat re-render with it (the
+          // host already switched). The labels fetched when the panel loaded would otherwise stay in the old one.
+          if (after && setLanguage(after.language, this.extensionUri)) {
+            this.panel.title = t('Inferpal Settings');
+            this.panel.webview.html = this.renderHtml(this.panel.webview);
+            this.onLanguageChanged();
+          }
+
+          // Provider/BaseUrl changes only take effect after a new `initialize`.
           if (before && after && (before.provider !== after.provider || before.baseUrl !== after.baseUrl)) {
             const restart = await vscode.window.showInformationMessage(
-              vscode.l10n.t('Provider or server URL changed — restart the Inferpal host to apply it.'),
-              vscode.l10n.t('Restart'),
+              t('Provider or server URL changed — restart the Inferpal host to apply it.'),
+              t('Restart'),
             );
             if (restart) {
               void vscode.commands.executeCommand('inferpal.restartHost');
@@ -183,9 +194,9 @@ export class SettingsPanel {
     }
   }
 
-  private parseKeys(json: string): { provider?: string; baseUrl?: string } | null {
+  private parseKeys(json: string): { provider?: string; baseUrl?: string; language?: string } | null {
     try {
-      return JSON.parse(json) as { provider?: string; baseUrl?: string };
+      return JSON.parse(json) as { provider?: string; baseUrl?: string; language?: string };
     } catch {
       return null;
     }
@@ -198,7 +209,6 @@ export class SettingsPanel {
   /** Adapter-side strings injected into the settings webview (window.__l10n). The field
    * labels/hints/sections come from the host instead (`settings/strings`, same .resx as VS). */
   private static strings(): Record<string, string> {
-    const t = vscode.l10n.t;
     return {
       'Tools': t('Tools'),
       'Save': t('Save'),
@@ -209,7 +219,6 @@ export class SettingsPanel {
       'Refresh models': t('Refresh models'),
       'Show all models': t('Show all models'),
       'No model listed — is the backend reachable?': t('No model listed — is the backend reachable?'),
-      'No match': t('No match'),
       'Inline diff preview for code actions': t('Inline diff preview for code actions'),
     };
   }

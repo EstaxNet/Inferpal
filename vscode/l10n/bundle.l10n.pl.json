@@ -100,7 +100,6 @@
   "Refresh models": "Odśwież modele",
   "Show all models": "Pokaż wszystkie modele",
   "No model listed — is the backend reachable?": "Brak modeli na liście — czy backend jest osiągalny?",
-  "No match": "Brak dopasowań",
   "Export failed: {0}": "Eksport nie powiódł się: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Tura jest nadal w toku — zatrzymaj ją przed rozpoczęciem nowej rozmowy.",
   "Save": "Zapisz",

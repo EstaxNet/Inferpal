@@ -8,6 +8,7 @@
 // a first contact whose only advice cannot work. The output channel named the state correctly
 // ("no workspace folder open — host not started"); the UI did not.
 import * as vscode from 'vscode';
+import { t } from './i18n';
 
 /**
  * The host's root directory, or undefined when no folder is open. Its absence *is* the
@@ -21,8 +22,8 @@ export function workspaceRoot(): string | undefined {
 /** Inline text (chat bubble, settings panel) naming the remedy that actually applies. */
 export function hostUnavailableMessage(): string {
   return workspaceRoot()
-    ? vscode.l10n.t('Inferpal host is not running — use "Inferpal: Restart Host".')
-    : vscode.l10n.t('Inferpal needs an open folder to start — open one and it starts on its own.');
+    ? t('Inferpal host is not running — use "Inferpal: Restart Host".')
+    : t('Inferpal needs an open folder to start — open one and it starts on its own.');
 }
 
 /**
@@ -31,7 +32,7 @@ export function hostUnavailableMessage(): string {
  */
 export function hostErrorText(err: unknown): string {
   const raw = (err instanceof Error ? err.message : String(err)).trim();
-  return raw.length > 0 ? raw : vscode.l10n.t('The command failed.');
+  return raw.length > 0 ? raw : t('The command failed.');
 }
 
 /**
@@ -43,7 +44,7 @@ export function promptOpenFolder(): void {
     return;
   }
   void vscode.window
-    .showWarningMessage(vscode.l10n.t('Inferpal needs an open folder to start.'), vscode.l10n.t('Open Folder'))
+    .showWarningMessage(t('Inferpal needs an open folder to start.'), t('Open Folder'))
     .then((choice) => {
       if (choice) {
         void vscode.commands.executeCommand('vscode.openFolder');

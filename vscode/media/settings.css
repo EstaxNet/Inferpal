@@ -237,6 +237,12 @@ details summary {
   background: var(--vscode-list-hoverBackground);
 }
 
+/* The row the keyboard's arrow keys point at. */
+.modelrow.active {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
 .modelrow.empty {
   cursor: default;
   opacity: 0.7;

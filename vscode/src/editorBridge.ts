@@ -1,6 +1,7 @@
 // Editor side of the reverse-RPC surface: answers the host's editor/* requests and
 // mirrors open documents into the host's dirty-buffer overlay (textDocument/did*).
 import * as vscode from 'vscode';
+import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient, EditorDelegate } from './hostClient';
 import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto } from './protocol';
@@ -227,8 +228,8 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     // Modal fallback so an agent mid-run can never be silently ignored; Esc/close = deny.
     // A native modal cannot be closed programmatically: on cancellation the wait ends (deny) —
     // the dialog lingers until the user closes it, cosmetic only, its answer is ignored.
-    const once = vscode.l10n.t('Allow once');
-    const always = vscode.l10n.t('Always allow (session)');
+    const once = t('Allow once');
+    const always = t('Always allow (session)');
     let cancelSub: { dispose(): void } | undefined;
     try {
       const cancelled = new Promise<undefined>((resolve) => {

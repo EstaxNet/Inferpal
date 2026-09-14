@@ -289,7 +289,7 @@ internal sealed partial class HostServer : IDisposable
 
                 // The answer the user saw — the streamed bubble when there was one, the final response otherwise.
                 var persisted = ChatTurnPolicy.ChoosePersistedAnswer(
-                    MarkdownParser.HasPrintableText(streamed.ToString()) ? streamed.ToString() : null,
+                    !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null,
                     result.FinalResponse);
                 if (persisted.Length > 0)
                     durable.Add(new ChatMessageDto("assistant", persisted));
@@ -329,7 +329,7 @@ internal sealed partial class HostServer : IDisposable
                     onThinking:     OnThinking);
 
                 var answer = ChatTurnPolicy.ChoosePersistedAnswer(
-                    MarkdownParser.HasPrintableText(streamed.ToString()) ? streamed.ToString() : null,
+                    !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null,
                     run.FinalResponse);
                 if (answer.Length > 0)
                     durable.Add(new ChatMessageDto("assistant", answer));
@@ -344,7 +344,11 @@ internal sealed partial class HostServer : IDisposable
 
             var turn = await s.Client.SendChatAsync(
                 model, s.History, EmptyToolRegistry.Instance, OnToken, cts.Token, onThinking: OnThinking);
-            s.History.Add(new ChatMessageDto("assistant", turn.TextContent));
+            // The answer the user saw, as on the two paths above and in Visual Studio: without the model's reasoning.
+            var said = ChatTurnPolicy.ChoosePersistedAnswer(
+                !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null, turn.TextContent);
+            if (said.Length > 0)
+                s.History.Add(new ChatMessageDto("assistant", said));
             s.LastPromptTokens = turn.PromptTokens;
             await CountTurnAsync(s, cts.Token);
             return new ChatSendResult(
@@ -353,7 +357,9 @@ internal sealed partial class HostServer : IDisposable
         }
         catch (OperationCanceledException)
         {
-            return new ChatSendResult(streamed.ToString(), true, 0, 0);
+            // Stopped before anything visible (reasoning only): no partial answer, as Visual Studio drops that bubble.
+            var partial = streamed.ToString();
+            return new ChatSendResult(ChatTurnPolicy.IsVisiblyEmpty(partial) ? string.Empty : partial, true, 0, 0);
         }
         catch (Exception ex)
         {
@@ -426,7 +432,8 @@ internal sealed partial class HostServer : IDisposable
                 onToken: null,
                 ct:      ct);
 
-            var summary = result.FinalResponse?.Trim();
+            // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
+            var summary = MarkdownParser.StripThinkTags(result.FinalResponse);
             if (string.IsNullOrEmpty(summary)) return;
 
             s.OodaSummary = summary;
@@ -1255,7 +1262,8 @@ internal sealed partial class HostServer : IDisposable
         string? finalResponse, string streamed, IReadOnlyList<ToolExecution> executions,
         string model, HostSession s) =>
         ChatTurnPolicy.DecideFinalAnswer(
-            streamingBubbleVisible: MarkdownParser.HasPrintableText(streamed),
+            // Visual Studio's rule: a stream that shows nothing (reasoning, separators) is no bubble.
+            streamingBubbleVisible: !ChatTurnPolicy.IsVisiblyEmpty(streamed),
             finalResponse:          finalResponse,
             executionCount:         executions.Count) switch
         {

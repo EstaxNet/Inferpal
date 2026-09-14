@@ -208,18 +208,23 @@ function renderToggle(toggle: { gate: 'roles' | 'advanced'; label: string; hint?
  * The model picker: one popup, anchored on the focused field.
  *
  * On open it shows the WHOLE list, like the Visual Studio combo box — that is the point of the
- * fix. Typing then narrows it, which is what the field keeps of its old datalist without keeping
- * its defect. The field stays free: a model the backend does not list (unreachable backend, an id
- * typed by hand) can still be typed, and empty still means "inherit the chat model".
+ * fix. The field is read-only, like Visual Studio's non-editable combo boxes: a model is picked,
+ * never typed (a typo saved a model the backend does not serve). The optional roles open the list
+ * on an empty entry, "same as the chat model" — the leading "" of the Visual Studio window.
  */
 let modelPopup: HTMLDivElement | null = null;
 let modelPopupTarget: HTMLInputElement | null = null;
+// The rows of the open popup and the one the keyboard points at: on a read-only field, the arrow
+// keys and Enter are the only way to pick without a mouse.
+let modelChoices: string[] = [];
+let modelHighlight = -1;
 
 function closeModelPopup(): void {
   if (modelPopup) {
     modelPopup.hidden = true;
   }
   modelPopupTarget = null;
+  modelHighlight = -1;
 }
 
 function openModelPopup(box: HTMLInputElement): void {
@@ -227,7 +232,8 @@ function openModelPopup(box: HTMLInputElement): void {
     return;
   }
   modelPopupTarget = box;
-  renderModelPopup('');
+  modelHighlight = -1;
+  renderModelPopup();
   modelPopup.hidden = false;
   const r = box.getBoundingClientRect();
   modelPopup.style.left = `${r.left + window.scrollX}px`;
@@ -235,42 +241,58 @@ function openModelPopup(box: HTMLInputElement): void {
   modelPopup.style.width = `${r.width}px`;
 }
 
-function renderModelPopup(filter: string): void {
+function renderModelPopup(): void {
   if (!modelPopup) {
     return;
   }
   modelPopup.textContent = '';
-  const needle = filter.trim().toLowerCase();
-  const shown = needle ? models.filter((m) => m.toLowerCase().includes(needle)) : models;
-
-  if (shown.length === 0) {
-    // The two reasons for having nothing to show are not repaired in the same place: no model
-    // at all (unreachable backend, or a refused token) is not "what you typed matches nothing".
-    // An empty, silent popup would conflate them.
-    const empty = document.createElement('div');
-    empty.className = 'modelrow empty';
-    empty.textContent = models.length === 0
-      ? t('No model listed — is the backend reachable?')
-      : t('No match');
-    modelPopup.appendChild(empty);
-    return;
+  // An optional role is cleared by picking the empty entry ("same as the chat model"): on a
+  // read-only field, that is the only gesture that can.
+  modelChoices = modelPopupTarget?.dataset.optional === 'true' ? ['', ...models] : models;
+  if (modelHighlight < 0 || modelHighlight >= modelChoices.length) {
+    // The starting row is the current value: Enter without an arrow key keeps it.
+    modelHighlight = modelChoices.indexOf(modelPopupTarget?.value ?? '');
   }
 
-  for (const name of shown) {
+  if (models.length === 0) {
+    // No model at all (unreachable backend, or a refused token): an empty, silent popup would read
+    // as a backend serving nothing. An optional role's empty entry is still offered.
+    const empty = document.createElement('div');
+    empty.className = 'modelrow empty';
+    empty.textContent = t('No model listed — is the backend reachable?');
+    modelPopup.appendChild(empty);
+  }
+
+  modelChoices.forEach((name, index) => {
     const row = document.createElement('div');
-    row.className = 'modelrow';
-    row.textContent = name;
+    row.className = 'modelrow' + (index === modelHighlight ? ' active' : '');
+    row.textContent = name === '' ? '—' : name;
     // mousedown, not click: it fires BEFORE the field's blur, and its preventDefault keeps the
     // field focused — otherwise the popup closes under the cursor before the pick lands.
     row.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      if (modelPopupTarget) {
-        modelPopupTarget.value = name;
-      }
-      closeModelPopup();
+      pickModel(name);
     });
-    modelPopup.appendChild(row);
+    modelPopup?.appendChild(row);
+  });
+}
+
+function pickModel(name: string | undefined): void {
+  if (modelPopupTarget && name !== undefined) {
+    modelPopupTarget.value = name;
   }
+  closeModelPopup();
+}
+
+function moveModelHighlight(delta: number): void {
+  if (!modelPopup || modelChoices.length === 0) {
+    return;
+  }
+  const count = modelChoices.length;
+  modelHighlight = modelHighlight < 0 ? (delta > 0 ? 0 : count - 1) : (modelHighlight + delta + count) % count;
+  const rows = modelPopup.querySelectorAll<HTMLElement>('.modelrow:not(.empty)');
+  rows.forEach((row, index) => row.classList.toggle('active', index === modelHighlight));
+  rows[modelHighlight]?.scrollIntoView({ block: 'nearest' });
 }
 
 /** The caret that opens the whole list — the one gesture that was missing. */
@@ -340,16 +362,39 @@ function renderField(field: Field): HTMLElement {
       box.type = field.kind === 'password' ? 'password' : 'text';
       if (field.kind === 'model') {
         box.autocomplete = 'off';
-        box.addEventListener('input', () => {
+        // Read-only, like Visual Studio's non-editable combo boxes: a model is picked, never typed.
+        box.readOnly = true;
+        box.style.cursor = 'pointer';
+        if (field.gate === 'roles') {
+          box.dataset.optional = 'true';
+        }
+        box.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          box.focus();
           if (modelPopupTarget === box) {
-            renderModelPopup(box.value);
+            closeModelPopup();
+          } else {
+            openModelPopup(box);
           }
         });
         box.addEventListener('keydown', (e) => {
-          if (e.key === 'ArrowDown' && modelPopupTarget !== box) {
+          if (modelPopupTarget !== box) {
+            if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openModelPopup(box);
+            }
+            return;
+          }
+          if (e.key === 'ArrowDown') {
             e.preventDefault();
-            openModelPopup(box);
-          } else if (e.key === 'Escape' && modelPopupTarget === box) {
+            moveModelHighlight(1);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            moveModelHighlight(-1);
+          } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            pickModel(modelChoices[modelHighlight]);
+          } else if (e.key === 'Escape') {
             e.preventDefault();
             closeModelPopup();
           }
@@ -595,7 +640,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       // An open popup must reflect the list just re-read: otherwise the ↻ button would have no
       // visible effect until the next time it is opened.
       if (modelPopupTarget) {
-        renderModelPopup(modelPopupTarget.value);
+        renderModelPopup();
       }
       break;
     }
