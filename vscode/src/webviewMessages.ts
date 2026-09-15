@@ -106,7 +106,8 @@ export type ExtToWebview =
   | { type: 'backendStatus'; status: WvBackendStatus }
   | { type: 'agentMode'; enabled: boolean }
   | { type: 'setPrompt'; text: string }
-  | { type: 'mentionResults'; category: string; items: WvMentionItem[] }
+  /** `category` and `query` name the request answered: only the latest one is shown. */
+  | { type: 'mentionResults'; category: string; query: string; items: WvMentionItem[] }
   | { type: 'chips'; chips: WvChip[] }
   | { type: 'pins'; pins: string[] }
   | { type: 'stepPaused' }

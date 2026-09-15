@@ -903,6 +903,31 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// Both @-mention popups show only the answer to the request typed last. Requests to the host run side by side, and a
+    /// short query — more matches — can answer after a longer one: the free suggestions under "@" already kept only the
+    /// latest answer, while the "@file / @folder" sub-search rendered whatever came back last — stale hits, or file results
+    /// carrying a file action once the popup had moved on to "@folder".
+    /// </summary>
+    [Theory]
+    [InlineData("case 'mentionSuggestions':")]
+    [InlineData("case 'mentionResults':")]
+    public void AMentionPopup_ShowsOnlyTheAnswerToTheLatestRequest(string label)
+    {
+        var main = TsCode("webview/main.ts");
+        var at = main.IndexOf(label, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"{label} moved — the rule measures nothing.");
+        var next  = main.IndexOf("case '", at + 6, StringComparison.Ordinal);
+        var block = main[at..(next < 0 ? main.Length : next)];
+        Assert.Contains("msg.query ===", block, StringComparison.Ordinal);
+
+        // The provider echoes the query each answer belongs to.
+        var provider = TsCode("chatViewProvider.ts");
+        var reply = provider.IndexOf("type: 'mentionResults'", StringComparison.Ordinal);
+        Assert.True(reply >= 0, "the provider no longer posts mentionResults — the rule measures nothing.");
+        Assert.Contains("query", provider.Substring(reply, 120), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// A utility model or auto mode changed in VS Code's settings while a turn runs is pushed with config/update, which
     /// the host refuses while the turn holds its slot. The refusal was only logged: the host kept the old value, and the
     /// next save of the settings panel wrote that old value back into the VS Code setting. The push waits for the turn

@@ -882,7 +882,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         try {
           const items = await host.mentionSearch(msg.category, msg.query);
-          this.post({ type: 'mentionResults', category: msg.category, items });
+          this.post({ type: 'mentionResults', category: msg.category, query: msg.query, items });
         } catch (err) {
           this.log(`[chat] mention/search failed: ${String(err)}`);
         }

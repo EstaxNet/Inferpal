@@ -379,6 +379,9 @@ let streamRenderPending = false;
 /** The mention query the popup is currently waiting on — older answers are dropped. */
 let latestMentionQuery = '';
 let mentionQueryTimer: ReturnType<typeof setTimeout> | undefined;
+// Same rule for the @file / @folder sub-search: requests run side by side, and an older, slower one
+// must not overwrite the answer to the query now typed — nor land in another category's popup.
+let latestMentionSearch = { category: '', query: '' };
 
 /**
  * Renders the streaming bubble at most once per frame. Re-parsing the whole Markdown for every token
@@ -644,6 +647,7 @@ function detectMention(): void {
     if (mentionDebounce) {
       clearTimeout(mentionDebounce);
     }
+    latestMentionSearch = { category, query };
     mentionDebounce = setTimeout(() => post({ type: 'mentionSearch', category, query }), 120);
     return;
   }
@@ -1161,7 +1165,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
       break;
     case 'mentionResults':
-      renderMentionResults(msg.category, msg.items);
+      if (msg.query === latestMentionSearch.query && msg.category === latestMentionSearch.category) {
+        renderMentionResults(msg.category, msg.items);
+      }
       break;
     case 'chips':
       renderChips(msg.chips);
