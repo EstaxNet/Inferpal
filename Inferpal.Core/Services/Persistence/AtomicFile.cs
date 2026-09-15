@@ -43,27 +43,79 @@ internal static class AtomicFile
     private static string StagingPathFor(string path) =>
         $"{path}.{Environment.ProcessId}-{Interlocked.Increment(ref _sequence)}.tmp";
 
+    private static readonly UTF8Encoding Utf8WithBom = new(encoderShouldEmitUTF8Identifier: true);
+    private static readonly UTF8Encoding Utf8NoBom   = new(encoderShouldEmitUTF8Identifier: false);
+
+    /// <summary>
+    /// The encoding a rewrite uses: the <b>destination's own</b> byte-order mark when it already
+    /// exists, UTF-8 with a mark for a new file — which is what every store this class was written
+    /// for has always had.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ It used to be <c>Encoding.UTF8</c> unconditionally, which <b>emits</b> a mark, while the
+    /// read side strips one: a rewrite therefore ADDED three bytes at the head of any file that had
+    /// none. Invisible for this class's own JSON stores — they are born here, so they all have the
+    /// mark — but a plan is markdown a team commits, and <c>PlanDocument.WithStepDone</c> promises
+    /// that "only the single checkbox character changes; every other byte of the file is preserved".
+    /// Ticking a step on a hand-written plan showed up as a diff at the head of the file.
+    /// Measured, then fixed: the byte was there.
+    /// </remarks>
+    private static Encoding EncodingFor(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return Utf8WithBom;
+            // ⚠ NOT File.OpenRead: its FileShare.Read denies a rename, so peeking at the
+            // destination made eight concurrent writers refuse each other — the very contention
+            // this class exists to absorb, broken by the read added to serve it.
+            // ConcurrentWriters_OfTheSameFile_NeitherThrowNorTear went red at once.
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
+                                              FileShare.ReadWrite | FileShare.Delete);
+            Span<byte> head = stackalloc byte[3];
+            return stream.Read(head) == 3 && head is [0xEF, 0xBB, 0xBF]
+                ? Utf8WithBom
+                : Utf8NoBom;
+        }
+        catch (Exception ex)
+        {
+            // An unreadable destination keeps the historical default rather than a guess: the
+            // replacement below is what will fail, and it will say so.
+            Diagnostics.Swallow("AtomicFile.EncodingFor", ex);
+            return Utf8WithBom;
+        }
+    }
+
     /// <summary>Atomically replaces <paramref name="path"/> with <paramref name="content"/>.</summary>
-    public static void WriteAllText(string path, string content)
+    /// <param name="preserveExistingMark">
+    /// Keep the destination's own byte-order mark instead of always writing one. Off by default,
+    /// and deliberately: reading the destination on <i>every</i> write widened the rename window
+    /// enough to make eight concurrent writers refuse each other — measured, this class's own
+    /// <c>ConcurrentWriters</c> test went red — and the JSON stores it was written for are all born
+    /// here with a mark, so they have nothing to preserve. Only a file the <b>user</b> may have
+    /// written needs it, and only one caller promises those bytes.
+    /// </param>
+    public static void WriteAllText(string path, string content, bool preserveExistingMark = false)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var temp = StagingPathFor(path);
         try
         {
-            File.WriteAllText(temp, content, Encoding.UTF8);
+            File.WriteAllText(temp, content, preserveExistingMark ? EncodingFor(path) : Utf8WithBom);
             Replace(temp, path);
         }
         finally { Discard(temp); }
     }
 
     /// <inheritdoc cref="WriteAllText(string,string)"/>
-    public static async Task WriteAllTextAsync(string path, string content, CancellationToken ct = default)
+    public static async Task WriteAllTextAsync(string path, string content, CancellationToken ct = default,
+                                               bool preserveExistingMark = false)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var temp = StagingPathFor(path);
         try
         {
-            await File.WriteAllTextAsync(temp, content, Encoding.UTF8, ct);
+            await File.WriteAllTextAsync(
+                temp, content, preserveExistingMark ? EncodingFor(path) : Utf8WithBom, ct);
             await ReplaceAsync(temp, path, ct);
         }
         finally { Discard(temp); }

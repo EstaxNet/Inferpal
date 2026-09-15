@@ -142,7 +142,10 @@ internal static class PlanStore
 
         // No fallback: a write failure returned as null read as "already in that state", and `/plan done`
         // announced a step done that nothing had ticked. It surfaces, as it does for `/plan save`.
-        AtomicFile.WriteAllText(PathFor(workspaceRoot, name), updated);
+        // A plan is markdown a team commits, and WithStepDone promises that "only the single
+        // checkbox character changes". The promise is about the FILE: the write must hand back the
+        // bytes at its head exactly as it found them.
+        AtomicFile.WriteAllText(PathFor(workspaceRoot, name), updated, preserveExistingMark: true);
 
         return PlanDocument.Parse(updated, SanitizeName(name));
     }
