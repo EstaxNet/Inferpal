@@ -829,4 +829,27 @@ public class WebviewRebuildTests
         var block = source[at..(next < 0 ? source.Length : next)];
         Assert.Contains("pushAgentModeToHost(", block, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// The Model Router's utility model and auto mode, when set explicitly in VS Code, are pushed back into
+    /// Inferpal's config at every host start. The settings panel did not touch those VS Code settings: what it
+    /// changed was silently undone at the next start.
+    /// </summary>
+    [Fact]
+    public void AModelRouterSettingSavedInThePanel_IsNotRevertedAtTheNextHostStart()
+    {
+        var source = TsCode("extension.ts");
+
+        // Witness: the push at startup still exists, otherwise the rule has nothing to guard.
+        Assert.Contains("await pushModelRouterSettings(log);", source, StringComparison.Ordinal);
+
+        var follow = Body(source, "async function followPanelModelRouterSettings(");
+        Assert.Contains("update('utilityModel'", follow, StringComparison.Ordinal);
+        Assert.Contains("update('modelRouterAuto'", follow, StringComparison.Ordinal);
+
+        var open = source.IndexOf("SettingsPanel.open(", StringComparison.Ordinal);
+        Assert.True(open >= 0, "SettingsPanel.open moved — the rule measures nothing.");
+        var call = source[open..source.IndexOf("log,", open, StringComparison.Ordinal)];
+        Assert.Contains("followPanelModelRouterSettings(", call, StringComparison.Ordinal);
+    }
 }
