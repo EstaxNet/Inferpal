@@ -286,9 +286,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.pins = [];
     }
     try {
-      const cfg = JSON.parse(await host.configGet()) as { contextWindowSize?: number; toolBubblesExpanded?: boolean };
+      const cfg = JSON.parse(await host.configGet()) as {
+        contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
+      };
       this.contextWindow = cfg.contextWindowSize ?? 0;
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
+      this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
     } catch (err) {
       this.log(`[chat] config/get failed: ${String(err)}`);
     }
@@ -335,9 +338,31 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     try {
-      const cfg = JSON.parse(await host.configGet()) as { contextWindowSize?: number; toolBubblesExpanded?: boolean };
+      const cfg = JSON.parse(await host.configGet()) as {
+        contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
+      };
       this.contextWindow = cfg.contextWindowSize ?? 0;
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
+      // The chat sends its own model and agent mode on every turn (workspace settings): what the settings panel
+      // CHANGED is adopted here, or it changed nothing. Only a change is adopted, so a model picked for this
+      // workspace survives a save that did not touch it.
+      const settings = vscode.workspace.getConfiguration('inferpal');
+      if (cfg.defaultModel && cfg.defaultModel !== this.sharedEcho.defaultModel) {
+        this.model = cfg.defaultModel;
+        try {
+          await settings.update('model', cfg.defaultModel, vscode.ConfigurationTarget.Workspace);
+        } catch (err) {
+          this.log(`[chat] model setting not saved: ${String(err)}`);
+        }
+      }
+      if (typeof cfg.agentModeEnabled === 'boolean' && cfg.agentModeEnabled !== this.sharedEcho.agentModeEnabled) {
+        try {
+          await settings.update('agentMode', cfg.agentModeEnabled, vscode.ConfigurationTarget.Workspace);
+        } catch (err) {
+          this.log(`[chat] agent mode not saved: ${String(err)}`);
+        }
+      }
+      this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
     } catch (err) {
       this.log(`[chat] config/get failed: ${String(err)}`);
     }
@@ -825,6 +850,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         this.post({ type: 'agentMode', enabled });
+        // Inferpal's own agent-mode switch, shown by the settings panel: without this it kept the old state.
+        await this.pushAgentModeToHost(enabled);
         return;
       }
       case 'retryConnection':
@@ -1107,6 +1134,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /** A model picked while a turn ran, still to be pushed into the host's config. */
   private pendingModelPush: string | undefined;
+  /** An agent mode switched while a turn ran, still to be pushed into the host's config. */
+  private pendingAgentModePush: boolean | undefined;
+  /** The shared config's chat model and agent mode as this view last knew them: what a settings save changed. */
+  private sharedEcho: { defaultModel?: string; agentModeEnabled?: boolean } = {};
 
   /**
    * Pushes the picked model into the host's shared config: without it `/model` kept answering the
@@ -1132,16 +1163,52 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         cfg.defaultModel = model;
         await host.configUpdate(JSON.stringify(cfg));
       }
+      this.sharedEcho.defaultModel = model;
     } catch (err) {
       this.log(`[chat] model pick → host config failed: ${String(err)}`);
     }
   }
 
-  /** Called wherever a turn ends: pushes a model picked while it ran. */
-  private flushPendingModelPush(): void {
-    if (this.pendingModelPush !== undefined && !this.busy) {
-      void this.pushModelToHost(this.pendingModelPush);
+  /**
+   * Pushes the chat's agent-mode switch into Inferpal's config, which the settings panel shows. Same slot
+   * rule as pushModelToHost: a switch made during a turn is replayed when it ends.
+   */
+  private async pushAgentModeToHost(enabled: boolean): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      return;
     }
+    if (this.busy) {
+      this.pendingAgentModePush = enabled;
+      return;
+    }
+    this.pendingAgentModePush = undefined;
+    try {
+      const cfg = JSON.parse(await host.configGet()) as { agentModeEnabled?: boolean };
+      if (cfg.agentModeEnabled !== enabled) {
+        cfg.agentModeEnabled = enabled;
+        await host.configUpdate(JSON.stringify(cfg));
+      }
+      this.sharedEcho.agentModeEnabled = enabled;
+    } catch (err) {
+      this.log(`[chat] agent mode → host config failed: ${String(err)}`);
+    }
+  }
+
+  /** Called wherever a turn ends: pushes a model picked or an agent mode switched while it ran — one after
+   * the other, since each is a read-modify-write of the whole config. */
+  private flushPendingModelPush(): void {
+    if (this.busy || (this.pendingModelPush === undefined && this.pendingAgentModePush === undefined)) {
+      return;
+    }
+    void (async () => {
+      if (this.pendingModelPush !== undefined) {
+        await this.pushModelToHost(this.pendingModelPush);
+      }
+      if (this.pendingAgentModePush !== undefined) {
+        await this.pushAgentModeToHost(this.pendingAgentModePush);
+      }
+    })();
   }
 
   /** Denies every card still waiting AND retires it in the webview, so none stays clickable. */

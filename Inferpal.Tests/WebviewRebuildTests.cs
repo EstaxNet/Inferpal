@@ -805,4 +805,28 @@ public class WebviewRebuildTests
                     && block.Contains("t('Inferpal could not save this setting: {0}'", StringComparison.Ordinal),
             $"'{message}' stops in silence when the workspace settings refuse the write.");
     }
+
+    /// <summary>
+    /// Under VS Code, the chat model and the agent mode live in two places: the workspace settings (the chat's
+    /// picker and switch, sent on every turn) and Inferpal's config (the settings panel). The picker already pushed
+    /// its model into the config; nothing made the reverse trip, and the mode switch pushed nothing. Changing
+    /// either in the panel therefore changed nothing in the chat.
+    /// </summary>
+    [Fact]
+    public void TheChatAdoptsTheModelAndAgentModeSavedInTheSettingsPanel()
+    {
+        var source = TsCode("chatViewProvider.ts");
+
+        var saved = Body(source, "async configSaved(");
+        Assert.Contains("defaultModel", saved, StringComparison.Ordinal);
+        Assert.Contains("agentModeEnabled", saved, StringComparison.Ordinal);
+        Assert.Contains("update('model'", saved, StringComparison.Ordinal);
+        Assert.Contains("update('agentMode'", saved, StringComparison.Ordinal);
+
+        var at = source.IndexOf("case 'toggleAgentMode':", StringComparison.Ordinal);
+        Assert.True(at >= 0, "case 'toggleAgentMode' moved — the rule measures nothing.");
+        var next  = source.IndexOf("case '", at + 6, StringComparison.Ordinal);
+        var block = source[at..(next < 0 ? source.Length : next)];
+        Assert.Contains("pushAgentModeToHost(", block, StringComparison.Ordinal);
+    }
 }
