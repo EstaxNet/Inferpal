@@ -903,6 +903,23 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// @clipboard with an empty clipboard says so. It attached nothing and showed nothing — a mention that reads as
+    /// broken — while the Visual Studio window says the clipboard is empty, @problems says when the panel is empty, and
+    /// the host returns a notice for every mention with nothing to attach.
+    /// </summary>
+    [Fact]
+    public void AnEmptyClipboardMention_SaysSo()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+        var at = provider.IndexOf("case 'clipboard':", StringComparison.Ordinal);
+        Assert.True(at >= 0, "case 'clipboard' moved — the rule measures nothing.");
+        var next  = provider.IndexOf("case '", at + 6, StringComparison.Ordinal);
+        var block = provider[at..(next < 0 ? provider.Length : next)];
+        Assert.Contains("clipboard.readText()", block, StringComparison.Ordinal);
+        Assert.Contains("t('The clipboard is empty.')", block, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The chat follows the stream only while the user is at the bottom. The webview scrolled to the bottom on every
     /// rendered frame and on every bubble: scrolling up to reread an earlier message during an answer snapped back on
     /// the next frame. The Visual Studio window follows until the user scrolls up (ChatAutoScroller, 50 px).

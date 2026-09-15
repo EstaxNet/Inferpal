@@ -92,6 +92,7 @@
   "No file is open in the editor.": "Brak otwartego pliku w edytorze.",
   "The selection is empty.": "Zaznaczenie jest puste.",
   "No problems in the Problems panel.": "Brak problemów w panelu Problemy.",
+  "The clipboard is empty.": "Schowek jest pusty.",
   "⏸ Agent paused after tool call. Resume to continue, or Cancel to abort.": "⏸ Agent wstrzymany po wywołaniu narzędzia. Wznów, aby kontynuować, lub Anuluj, aby przerwać.",
   "Resume": "Wznów",
   "Fix with AI": "Napraw z AI",

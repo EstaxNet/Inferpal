@@ -1017,6 +1017,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           const text = await vscode.env.clipboard.readText();
           if (text.trim().length > 0) {
             this.addChip('📋 clipboard', text);
+          } else {
+            void vscode.window.showInformationMessage(t('The clipboard is empty.'));
           }
           return;
         }
