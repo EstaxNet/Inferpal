@@ -121,10 +121,13 @@ internal interface IDebugSession
     /// </summary>
     Task<DebugStartResult> StartAsync(CancellationToken ct);
 
-    /// <summary>Resumes and waits for the next stop. <c>null</c> when the program ended.</summary>
+    /// <summary>
+    /// Resumes and waits for the next stop. <c>null</c> when no stop came: the program ended, is still running past
+    /// the resume budget, or no session was paused — the port cannot tell these apart.
+    /// </summary>
     Task<DebugStopState?> ContinueAsync(CancellationToken ct);
 
-    /// <summary>Advances one step and waits for the stop that follows.</summary>
+    /// <summary>Advances one step and waits for the stop that follows; <c>null</c> in the same cases as <see cref="ContinueAsync"/>.</summary>
     Task<DebugStopState?> StepAsync(DebugStepKind kind, CancellationToken ct);
 
     /// <summary>The current paused state, or <c>null</c> when execution is not paused.</summary>

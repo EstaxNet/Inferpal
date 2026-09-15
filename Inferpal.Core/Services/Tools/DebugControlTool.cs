@@ -164,8 +164,11 @@ internal sealed class DebugControlTool(
             ? await session.ContinueAsync(ct)
             : await session.StepAsync(step.Value, ct);
 
+        // No stop is all that is known: the program may have ended, may still be running without reaching a
+        // breakpoint within the resume budget, or no session was paused — the ports answer null for each.
         return state is null
-            ? "The program ended (no further stop). Start a new session if you need to observe it again."
+            ? "No stop was reached: the program ended, is still running without hitting a breakpoint, or no "
+            + "session was paused. Check with debug_inspect; stop the session before starting a new one."
             : DebugStateFormatter.Format(state, root()) + budget.Trailer;
     }
 

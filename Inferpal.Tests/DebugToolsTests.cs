@@ -208,6 +208,27 @@ public class DebugToolsTests
         Assert.Equal(1, session.Stops);
     }
 
+    /// <summary>
+    /// A resume that brings back no stop is not proof the program ended. Both ports answer null when the program is still
+    /// running past the resume budget, when the VS Code bridge failed, and when no session was paused. "The program
+    /// ended" had the model treat a live program as finished, and its advice — start a new session — met "a debugging
+    /// session is already running".
+    /// </summary>
+    [Theory]
+    [InlineData("continue")]
+    [InlineData("step_over")]
+    public async Task AResumeWithNoStop_DoesNotClaimTheProgramEnded(string action)
+    {
+        var session = new FakeDebugSession { State = null };
+        var tool    = Control(session, new StubApproval(approve: true));
+
+        var result = await tool.ExecuteAsync(Args($$"""{"action":"{{action}}"}"""), CancellationToken.None);
+
+        Assert.Contains("No stop", result);
+        Assert.Contains("still running", result);
+        Assert.DoesNotContain("The program ended", result);
+    }
+
     // ── Budget: exhaustion is reported, never silently ignored (lesson of §20) ───────
 
     [Fact]
