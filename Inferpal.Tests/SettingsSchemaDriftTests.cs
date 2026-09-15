@@ -1,5 +1,6 @@
 ﻿using System.Xml.Linq;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Inferpal.Config;
 using Inferpal.Services.Presentation;
@@ -649,5 +650,90 @@ public class SettingsSchemaDriftTests
 
             Assert.Contains("whileChatBusy", client[at..end], StringComparison.Ordinal);
         }
+    }
+    /// <summary>
+    /// The VS Code manifest and the code agree on commands: every declared command has a handler,
+    /// and every keybinding or menu entry points at a command that exists.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Nothing ties the two together at compile time: <c>package.json</c> is data, and
+    /// <c>registerCommand</c> takes a string. The two halves fail differently and both in front of
+    /// the user — a declared command with no handler shows up in the palette and answers
+    /// <i>"command 'x' not found"</i> when picked; a keybinding or menu entry pointing at an unknown
+    /// command does nothing at all.
+    /// </para>
+    /// <para>
+    /// ⚠ The exemption is <b>derived</b>, not listed: VS Code makes <c>&lt;viewId&gt;.focus</c> for
+    /// every contributed view, so a keybinding aimed at it is correct without appearing anywhere.
+    /// The first draft counted it missing — that was the probe ignoring the host's rule, not the
+    /// manifest lying.
+    /// </para>
+    /// <para>Measured at zero divergence on 2026-09-15: 10 declared, 10 registered, 8 menu entries.</para>
+    /// </remarks>
+    [Fact]
+    public void EveryVsCodeCommand_IsDeclaredAndHandled()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+
+        var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir!, "vscode", "package.json")))
+                                   .RootElement.GetProperty("contributes");
+
+        List<string> Strings(string section, string field) =>
+            manifest.TryGetProperty(section, out var node) && node.ValueKind == JsonValueKind.Array
+                ? [.. node.EnumerateArray()
+                          .Where(e => e.TryGetProperty(field, out _))
+                          .Select(e => e.GetProperty(field).GetString()!)]
+                : [];
+
+        var declared = Strings("commands", "command").ToHashSet(StringComparer.Ordinal);
+
+        // All of the extension's TypeScript, comments neutralized: a commented-out registerCommand
+        // is a handler that does not exist.
+        var sources = Directory.EnumerateFiles(Path.Combine(dir!, "vscode", "src"), "*.ts",
+                                               SearchOption.AllDirectories).ToList();
+        Assert.True(sources.Count >= 10, $"Only {sources.Count} TypeScript source(s) read.");
+        var code = string.Join("\n", sources.Select(f => NeutralizeTypeScriptComments(File.ReadAllText(f))));
+
+        var registered = Regex.Matches(code, @"register(?:TextEditor)?Command\(\s*['""`]([^'""`]+)['""`]")
+                              .Select(m => m.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
+
+        Assert.True(declared.Count >= 5, $"Only {declared.Count} declared command(s): the manifest changed shape.");
+        Assert.True(registered.Count >= 5, $"Only {registered.Count} registered command(s): the call shape changed.");
+
+        Assert.True(declared.SetEquals(registered),
+            "The manifest and the code disagree on commands — declared with no handler: "
+            + $"[{string.Join(", ", declared.Except(registered).Order())}]; registered but not "
+            + $"declared (invisible in the palette): [{string.Join(", ", registered.Except(declared).Order())}].");
+
+        // VS Code makes `<viewId>.focus` for every contributed view.
+        var viewFocus = manifest.TryGetProperty("views", out var views)
+            ? views.EnumerateObject()
+                   .SelectMany(c => c.Value.EnumerateArray())
+                   .Select(v => v.GetProperty("id").GetString() + ".focus")
+                   .ToHashSet(StringComparer.Ordinal)
+            : [];
+
+        var known = declared.Concat(registered).Concat(viewFocus).ToHashSet(StringComparer.Ordinal);
+
+        var pointedAt = Strings("keybindings", "command")
+            .Concat(manifest.TryGetProperty("menus", out var menus)
+                        ? menus.EnumerateObject()
+                               .SelectMany(g => g.Value.EnumerateArray())
+                               .Where(e => e.TryGetProperty("command", out _))
+                               .Select(e => e.GetProperty("command").GetString()!)
+                        : [])
+            .Where(c => !c.StartsWith('-'))     // a "-id" removes one of the host's keybindings
+            .ToList();
+
+        Assert.True(pointedAt.Count >= 5, $"Only {pointedAt.Count} entry point(s) read.");
+
+        var ghosts = pointedAt.Where(c => !known.Contains(c)).Distinct().Order().ToList();
+        Assert.True(ghosts.Count == 0,
+            "A keybinding or menu entry points at a command that does not exist — it will do nothing "
+            + "at all: " + string.Join(", ", ghosts));
     }
 }
