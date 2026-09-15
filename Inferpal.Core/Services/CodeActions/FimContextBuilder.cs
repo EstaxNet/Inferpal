@@ -19,7 +19,8 @@ internal static class FimContextBuilder
 
     public record InlineCompletionSettings(int MaxTokens, double Temperature, int DebounceMs);
 
-    private static readonly Dictionary<string, InlineCompletionSettings> Presets = new()
+    // Case-insensitive: "fast" written by hand names Fast, as both panels read it.
+    private static readonly Dictionary<string, InlineCompletionSettings> Presets = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Fast"]         = new(128,  0.4,  300),
         ["Default"]      = new(256,  0.2,  600),

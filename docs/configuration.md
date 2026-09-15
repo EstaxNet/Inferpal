@@ -33,8 +33,8 @@ Every persisted setting, its type, and default value.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `language` | string | `""` | UI language (BCP-47); empty = follow Visual Studio |
-| `provider` | string | `"ollama"` | Backend: `ollama` / `lmstudio` / `openai` |
+| `language` | string | `""` | UI language (BCP-47, e.g. `fr` or `fr-FR`); empty = follow the editor's language |
+| `provider` | string | `"ollama"` | Backend: `ollama` / `lmstudio` / `openai-compatible` |
 | `baseUrl` | string | `"http://localhost:11434"` | Model server URL |
 | `apiKey` | string | `""` | API key for OpenAI-compatible servers (Bearer) |
 | `defaultModel` | string | `"llama3.1"` | Main chat model |

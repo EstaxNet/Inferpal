@@ -16,9 +16,24 @@ internal static class InferenceProviderFactory
     /// <summary>Identifier persisted in <see cref="InferpalConfig.Provider"/>.</summary>
     public const string OpenAiCompatible = "openai-compatible";
 
+    /// <summary>
+    /// The code <paramref name="code"/> names: case and spaces ignored, and <c>openai</c> — the value the published
+    /// documentation long gave — read as <see cref="OpenAiCompatible"/>. An unknown code is returned as is.
+    /// </summary>
+    public static string Canonical(string? code)
+    {
+        var key = code?.Trim().ToLowerInvariant();
+        return key switch
+        {
+            Ollama or LmStudio or OpenAiCompatible => key,
+            "openai"                               => OpenAiCompatible,
+            _                                      => code ?? string.Empty,
+        };
+    }
+
     public static IInferenceProvider Create(InferpalConfig config)
     {
-        var code = config.Provider?.Trim().ToLowerInvariant();
+        var code = Canonical(config.Provider).Trim().ToLowerInvariant();
 
         // ⚠ Falling back to Ollama is the right behaviour — a config with no `provider` predates
         // multi-backend support — but it was COMPLETELY silent, including for a hand-written or
@@ -47,7 +62,7 @@ internal static class InferenceProviderFactory
     /// surfaces an option that backend can't honour.
     /// </summary>
     public static ProviderCapabilities CapabilitiesFor(string? code) =>
-        (code?.Trim().ToLowerInvariant()) switch
+        Canonical(code).Trim().ToLowerInvariant() switch
         {
             LmStudio         => ProviderCapabilities.LmStudio,
             OpenAiCompatible => ProviderCapabilities.OpenAiCompatible,
@@ -59,7 +74,7 @@ internal static class InferenceProviderFactory
     /// user "cannot reach Ollama, run ollama serve" sent them chasing the wrong process.
     /// </summary>
     public static string DisplayName(string? code) =>
-        (code?.Trim().ToLowerInvariant()) switch
+        Canonical(code).Trim().ToLowerInvariant() switch
         {
             LmStudio         => "LM Studio",
             OpenAiCompatible => "OpenAI-compatible", // same label as the settings dropdown

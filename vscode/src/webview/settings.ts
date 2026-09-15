@@ -96,13 +96,7 @@ function render(): void {
   langLabel.textContent = res('LabelLanguage');
   const langIcon = infoIcon('HintLanguage');
   const langSelect = document.createElement('select');
-  for (const lang of LANGUAGES) {
-    const opt = document.createElement('option');
-    opt.value = lang.value;
-    opt.textContent = lang.text;
-    opt.selected = String(config['language'] ?? '') === lang.value;
-    langSelect.appendChild(opt);
-  }
+  fillSelect(langSelect, LANGUAGES, config['language']);
   inputs.set('language', langSelect);
   langRow.append(langLabel);
   if (langIcon) {
@@ -295,6 +289,35 @@ function moveModelHighlight(delta: number): void {
   rows[modelHighlight]?.scrollIntoView({ block: 'nearest' });
 }
 
+/**
+ * Fills a drop-down list and selects the option of the saved value (case ignored). A value no option
+ * names stays in place, as an entry of its own: with no option selected the browser shows the first
+ * one, and Save wrote it instead of the value in effect.
+ */
+function fillSelect(
+  select: HTMLSelectElement,
+  options: ReadonlyArray<{ value: string; text: string }>,
+  value: unknown,
+): void {
+  const current = String(value ?? '');
+  const match = options.find((o) => o.value === current)
+    ?? options.find((o) => o.value.toLowerCase() === current.trim().toLowerCase());
+  for (const opt of options) {
+    const o = document.createElement('option');
+    o.value = opt.value;
+    o.textContent = opt.text;
+    o.selected = opt === match;
+    select.appendChild(o);
+  }
+  if (!match) {
+    const o = document.createElement('option');
+    o.value = current;
+    o.textContent = current === '' ? '—' : current;
+    o.selected = true;
+    select.appendChild(o);
+  }
+}
+
 /** The caret that opens the whole list — the one gesture that was missing. */
 function buildModelCaret(box: HTMLInputElement): HTMLButtonElement {
   const caret = document.createElement('button');
@@ -332,13 +355,7 @@ function renderField(field: Field): HTMLElement {
   switch (field.kind) {
     case 'select': {
       const select = document.createElement('select');
-      for (const opt of field.options ?? []) {
-        const o = document.createElement('option');
-        o.value = opt.value;
-        o.textContent = opt.text;
-        o.selected = String(value ?? '') === opt.value;
-        select.appendChild(o);
-      }
+      fillSelect(select, field.options ?? [], value);
       input = select;
       break;
     }

@@ -30,11 +30,11 @@ public class DiagnosticsTests : IDisposable
     /// <remarks>
     /// The fallback is the right behaviour (a config predating multi-backend support has no
     /// <c>provider</c>), but it was completely silent: the product then talked to a different
-    /// backend than the one you believed you had chosen. It cost a false measurement to the VS
-    /// Code front-end review, which had written "openai" instead of "openai-compatible".
+    /// backend than the one you believed you had chosen. "openai" is no longer in this list: it is
+    /// the value the published documentation gave, and the factory now reads it as "openai-compatible".
     /// </remarks>
     [Theory]
-    [InlineData("openai")]          // the exact typo that spoiled a measurement
+    [InlineData("llamacpp")]        // a server the user names, not a code
     [InlineData("lm-studio")]       // not a code: the real one is "lmstudio", no dash
     public void UnknownProviderCode_FallsBackToOllama_AndSaysSo(string code)
     {
@@ -46,11 +46,12 @@ public class DiagnosticsTests : IDisposable
         Assert.Contains(code.Trim().ToLowerInvariant(), entry.Context, StringComparison.Ordinal);
     }
 
-    /// <summary>The three valid codes — and the absence of a code — trace nothing.</summary>
+    /// <summary>The three valid codes, the documented alias — and the absence of a code — trace nothing.</summary>
     [Theory]
     [InlineData("ollama")]
     [InlineData("lmstudio")]
     [InlineData("openai-compatible")]
+    [InlineData("openai")]
     [InlineData("")]
     [InlineData(null)]
     public void KnownProviderCode_TracesNothing(string? code)

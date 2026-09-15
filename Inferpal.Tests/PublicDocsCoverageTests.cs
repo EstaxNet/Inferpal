@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Inferpal.Config;
 using Inferpal.Services;
 using Inferpal.Services.Docs;
+using Inferpal.Services.Inference;
 using Inferpal.Services.Lsp;
 using Inferpal.Services.Mcp;
 using Inferpal.Services.Rag;
@@ -109,6 +110,35 @@ public class PublicDocsCoverageTests
             "The key reference announces one the configuration never reads: the user writes it into "
             + "their file and it does nothing, with no message at all - "
             + string.Join(", ", invented));
+    }
+
+    /// <summary>
+    /// A documented <c>provider</c> value is the code the factory reads and the panels write.
+    /// </summary>
+    /// <remarks>
+    /// Both pages gave <c>openai</c>; the code is <c>openai-compatible</c>, and the factory falls back to Ollama on any
+    /// unknown code. Copying the documentation therefore made Inferpal talk to another backend than the one written,
+    /// and only <c>/diagnostics</c> said so.
+    /// </remarks>
+    [Fact]
+    public void EveryDocumentedProviderValue_IsTheCodeTheFactoryReads()
+    {
+        var codes = new[] { InferenceProviderFactory.Ollama, InferenceProviderFactory.LmStudio, InferenceProviderFactory.OpenAiCompatible };
+
+        // providers.md: the second column of the providers table (rows whose first cell is bold).
+        var documented = Regex.Matches(Doc("providers.md"), @"^\|\s*\*\*[^|]+\*\*\s*\|\s*`([^`]+)`\s*\|", RegexOptions.Multiline)
+            .Select(m => m.Groups[1].Value).ToList();
+
+        // configuration.md: the description of the `provider` key (| key | type | default | description |).
+        var line = Regex.Match(Doc("configuration.md"), @"^\|\s*`provider`\s*\|.*$", RegexOptions.Multiline);
+        Assert.True(line.Success, "configuration.md no longer has a row for `provider`.");
+        documented.AddRange(Regex.Matches(line.Value.Split('|')[4], "`([^`]+)`").Select(m => m.Groups[1].Value));
+
+        Assert.True(documented.Count >= 6, $"Only {documented.Count} provider value(s) read: the tables have changed shape.");
+        var unknown = documented.Where(v => !codes.Contains(v)).Distinct().ToList();
+        Assert.True(unknown.Count == 0,
+            "The documentation gives a `provider` value that is not the code the factory reads: "
+            + string.Join(", ", unknown));
     }
 
     [Fact]

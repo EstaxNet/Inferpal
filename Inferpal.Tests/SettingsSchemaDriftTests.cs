@@ -252,6 +252,29 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
+    /// A drop-down list of the VS Code panel whose saved value matches no option keeps it. With no option
+    /// selected the browser shows the first one, and Save wrote it: an unknown FIM mode became "Fast" (the
+    /// product applied "Default"), an unlisted language became "Auto".
+    /// </summary>
+    [Fact]
+    public void VsCodeSelects_KeepAValueNoOptionLists()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
+        Assert.True(File.Exists(webview), "vscode/src/webview/settings.ts has disappeared.");
+        var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
+
+        Assert.Matches(new Regex(@"function fillSelect\([\s\S]{0,1500}?if \(!match\)[\s\S]{0,400}?\.selected = true"), source);
+        // Both lists — the language at the top and the schema fields — go through this filling.
+        Assert.True(Regex.Matches(source, @"\bfillSelect\(").Count >= 3,
+            "A drop-down list is still filled without going through fillSelect.");
+        Assert.DoesNotContain(".selected = String(", source, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The adapter tells the host whether a mirrored buffer has unsaved changes, and a save says it no
     /// longer does.
     /// </summary>

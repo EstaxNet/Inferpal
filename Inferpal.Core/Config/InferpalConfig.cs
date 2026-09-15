@@ -494,6 +494,7 @@ internal class InferpalConfig
             if (cfg is not null)
             {
                 repaired = RepairNullText(cfg);
+                CanonicalizeChoices(cfg);
                 return true;
             }
             error = new JsonException("the file is valid JSON but holds no object");
@@ -537,6 +538,40 @@ internal class InferpalConfig
         }
         return repaired;
     }
+
+    /// <summary>
+    /// Brings the choice settings (<c>provider</c>, <c>language</c>, <c>inlineCompletionMode</c>) written in an
+    /// equivalent form — case, documented alias, region of an offered language — back to the code of the option they name.
+    /// </summary>
+    /// <remarks>
+    /// Both settings windows select the option whose code is EQUAL to the value read: <c>"LMStudio"</c>, which the
+    /// factory serves as LM Studio, showed there as "Ollama", and the first Save wrote <c>ollama</c>. A value no
+    /// option names stays as is: it is not for the reader to guess what it meant.
+    /// </remarks>
+    internal static void CanonicalizeChoices(InferpalConfig cfg)
+    {
+        cfg.Provider = Services.Inference.InferenceProviderFactory.Canonical(cfg.Provider);
+        cfg.InlineCompletionMode = OptionCode(Services.Presentation.SettingsSchema.FimModes, cfg.InlineCompletionMode)
+                                   ?? cfg.InlineCompletionMode;
+
+        // "fr-FR" names "fr": trailing subtags are dropped until an offered language matches.
+        var languages = Services.Presentation.SettingsSchema.HeaderFields.Single(f => f.Key == "language").Options!;
+        var code = cfg.Language.Trim();
+        while (code.Length > 0)
+        {
+            if (OptionCode(languages, code) is { } match)
+            {
+                cfg.Language = match;
+                break;
+            }
+            var dash = code.LastIndexOf('-');
+            code = dash > 0 ? code[..dash] : string.Empty;
+        }
+    }
+
+    private static string? OptionCode(IReadOnlyList<Services.Presentation.SettingOption> options, string value) =>
+        options.FirstOrDefault(o => o.Value.Length > 0
+                                    && string.Equals(o.Value, value.Trim(), StringComparison.OrdinalIgnoreCase))?.Value;
 
     // What this instance held when it was read from disk, or at its last save. Null for an instance
     // built in code, which is then written whole.
