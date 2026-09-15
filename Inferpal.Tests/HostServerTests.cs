@@ -131,16 +131,21 @@ public class HostServerTests
         public required FakeInferenceProvider Fake      { get; init; }
         public required ClientTarget          Target    { get; init; }
 
+        /// <summary>Empty folder of this harness alone, the default workspace root. The whole %TEMP% was: a solution
+        /// another test was writing there at that moment entered the first turn's workspace block.</summary>
+        public required string                RootDir   { get; init; }
+
         public Task<InitializeResult> InitializeAsync(string? locale = null, string? rootDir = null,
                                                       bool debug = false) =>
             Client.InvokeWithParameterObjectAsync<InitializeResult>(
-                "initialize", new { rootDir = rootDir ?? Path.GetTempPath(), locale, debug });
+                "initialize", new { rootDir = rootDir ?? RootDir, locale, debug });
 
         public void Dispose()
         {
             try { Client.Dispose(); }    catch { }
             try { ServerRpc.Dispose(); } catch { }
             Server.Dispose();
+            try { Directory.Delete(RootDir, recursive: true); } catch { }
         }
     }
 
@@ -152,8 +157,7 @@ public class HostServerTests
         var fake   = new FakeInferenceProvider { RunAgentThroughChat = true };
         var server = new HostServer(_ => fake, () =>
         {
-            // RAG off unless a test asks: initialize indexes the workspace when it is on, and the
-            // default root below is the whole temp directory.
+            // RAG off unless a test asks: initialize indexes the workspace when it is on.
             var cfg = new InferpalConfig { RagEnabled = false };
             configure?.Invoke(cfg);
             return cfg;
@@ -166,7 +170,35 @@ public class HostServerTests
         var client = HostRpc.Create(clientStream, clientStream, target);
         client.StartListening();
 
-        return new Harness { Client = client, ServerRpc = serverRpc, Server = server, Fake = fake, Target = target };
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"host-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+
+        return new Harness { Client = client, ServerRpc = serverRpc, Server = server, Fake = fake,
+                             Target = target, RootDir = root };
+    }
+
+    // ── harness ────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Each harness runs the host on an empty folder of its own.
+    /// </summary>
+    /// <remarks>
+    /// The default root was the whole %TEMP%. LastKnownSolutionFileTests and SignalScopeTests write
+    /// <c>Inferpal_*.sln</c> files there while they run in parallel: a host test's first turn then found a solution
+    /// and prefixed the question with a workspace block, and ChatSend_AnAgentTurn_KeepsOnlyTheQuestionAndTheAnswer
+    /// failed intermittently (seen in the full suite, never in isolation).
+    /// </remarks>
+    [Fact]
+    public void EachHarness_RunsTheHostOnItsOwnEmptyRoot()
+    {
+        using var a = CreateHarness();
+        using var b = CreateHarness();
+
+        static string Norm(string p) => Path.GetFullPath(p).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        Assert.NotEqual(Norm(Path.GetTempPath()), Norm(a.RootDir));
+        Assert.NotEqual(Norm(a.RootDir), Norm(b.RootDir));
+        Assert.True(Directory.Exists(a.RootDir), "the harness root was not created");
+        Assert.Empty(Directory.EnumerateFileSystemEntries(a.RootDir));
     }
 
     // ── fim/complete ───────────────────────────────────────────────────────────
