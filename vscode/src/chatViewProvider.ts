@@ -1386,8 +1386,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         case 'stateChange':
           if (e.name === 'model' && e.value) {
             this.model = e.value;
-            await vscode.workspace.getConfiguration('inferpal').update('model', e.value, vscode.ConfigurationTarget.Workspace);
+            this.sharedEcho.defaultModel = e.value;
             rehydrate = true;
+            // The host has already switched and saved the model: a workspace settings file that refuses the
+            // write only loses the per-workspace copy. Said next to the host's answer — thrown, it turned the
+            // whole command into an error bubble.
+            try {
+              await vscode.workspace.getConfiguration('inferpal').update('model', e.value, vscode.ConfigurationTarget.Workspace);
+            } catch (err) {
+              this.log(`[chat] model setting not saved: ${String(err)}`);
+              notes.push(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
+            }
           }
           break;
         case 'openFile':

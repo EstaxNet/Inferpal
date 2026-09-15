@@ -791,6 +791,8 @@ public class WebviewRebuildTests
     [Theory]
     [InlineData("pickModel")]
     [InlineData("toggleAgentMode")]
+    // The `/model <name>` effect: the host has already switched the model when the workspace write refuses.
+    [InlineData("stateChange")]
     public void ASettingTheWorkspaceRefuses_IsSaid(string message)
     {
         // The whole source, not Body(): the signature of onMessage carries a `{` in its parameter type.
