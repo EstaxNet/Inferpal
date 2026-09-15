@@ -40,12 +40,18 @@ internal class ListFilesTool : ITool
         // pre-1.6.0 architecture review). Take(limit + 1) detects truncation without walking everything.
         const int limit = 300;
         List<string> files;
+        // The walk is checked BEFORE it is consumed: "the directory does not exist" was answered
+        // for a directory that exists and could not be opened, which sends the reader to verify a
+        // path that is perfectly correct.
+        var walk = WorkspaceScan.EnumerateFiles(path, pattern, root, out var walkFailed);
+        if (walkFailed)
+            return Task.FromResult($"Could not list '{path}': the directory exists but could not be "
+                                 + "walked (permissions, or a path the file system refused).");
         try
         {
-            files = WorkspaceScan.EnumerateFiles(path, pattern, root)
-                             .Take(limit + 1)
-                             .Select(f => f[path.Length..].TrimStart('\\', '/'))
-                             .ToList();
+            files = walk.Take(limit + 1)
+                        .Select(f => f[path.Length..].TrimStart('\\', '/'))
+                        .ToList();
         }
         catch (Exception ex)
         {

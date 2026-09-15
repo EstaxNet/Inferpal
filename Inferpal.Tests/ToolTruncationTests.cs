@@ -80,4 +80,48 @@ public class ToolTruncationTests : IDisposable
 
         Assert.Contains("showing first", result);
     }
+
+    // ── "Nothing matched" and "I could not look" are not the same answer ─────────
+    //
+    // WorkspaceScan.EnumerateFiles used to end on `catch { return []; }` — muted, against this
+    // repository's own rule that a silent catch is for pure cleanup only. Every scanning tool
+    // inherited the confusion, and the two that turn an empty walk into a SENTENCE turned it into
+    // the wrong one: search_in_files said "no match" (a conclusion the model acts on: it stops
+    // looking) and list_files blamed a directory that exists.
+    //
+    // The walk is lazy, so the catch only fires while CONSTRUCTING it — an invalid pattern, a start
+    // directory the file system refuses. Both tools take their path from the MODEL, which is what
+    // makes this reachable.
+
+    [Fact]
+    public void WorkspaceScan_AWalkThatCannotStart_SaysSoInsteadOfAnsweringEmpty()
+    {
+        var files = Inferpal.Services.WorkspaceScan
+            .EnumerateFiles(Path.Combine(_ws, "no-such-directory"), "*.cs", _ws, out var failed)
+            .ToList();
+
+        Assert.True(failed, "a walk that cannot start must say so, not answer an empty list.");
+        Assert.Empty(files);
+    }
+
+    [Fact]
+    public void WorkspaceScan_AWalkThatSimplyMatchesNothing_IsNotAFailure()
+    {
+        // Witness: the flag must mean "could not look", not "found nothing". An existing directory
+        // with no match is an ordinary empty answer.
+        var files = Inferpal.Services.WorkspaceScan
+            .EnumerateFiles(_ws, "*.nothing-matches-this", _ws, out var failed)
+            .ToList();
+
+        Assert.False(failed);
+        Assert.Empty(files);
+    }
+
+    // ⚠ The two TOOL branches that read this flag are deliberately not tested here, and the reason
+    // is measured rather than assumed: both search_in_files and list_files pre-validate their
+    // pattern (WorkspaceScan.NormalizeFilePattern) and check Directory.Exists, so the only way left
+    // for their walk to fail is a file system refusing an existing, readable-looking directory — a
+    // dropped network share, a permission change mid-run. No portable test forces that. Those
+    // branches are defensive; what the two tests above hold is the funnel that feeds them, which is
+    // where the answer used to be invented.
 }

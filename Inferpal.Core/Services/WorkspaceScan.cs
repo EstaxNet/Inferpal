@@ -184,17 +184,47 @@ internal static class WorkspaceScan
     /// skips it at the source; the other options keep what <c>SearchOption.AllDirectories</c> did
     /// (no attribute skipped, Win32 wildcards).
     /// </remarks>
-    public static IEnumerable<string> EnumerateFiles(string start, string pattern = "*.cs", string? root = null)
+    public static IEnumerable<string> EnumerateFiles(string start, string pattern = "*.cs", string? root = null) =>
+        EnumerateFiles(start, pattern, root, out _);
+
+    /// <summary>
+    /// The same walk, plus whether it <b>could not even start</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ An empty result has two meanings and they are not the same answer: "nothing matched" and
+    /// "we could not look". This funnel collapsed them into <c>catch { return []; }</c> — muted,
+    /// against this repository's own rule that a silent <c>catch</c> is for pure cleanup only — and
+    /// every scanning tool inherited the confusion: <c>search_in_files</c> answered "no match",
+    /// <c>trace_dependency</c> built its index from nothing and reported "Direct dependants (0)"
+    /// with <b>no partial-scan warning</b> (<c>ScanCoverage(0, 0)</c> is not partial), and the
+    /// indexer indexed nothing. A start directory the process cannot open — a network share, a
+    /// protected folder — is all it takes.
+    /// </para>
+    /// <para>
+    /// The walk itself is lazy, so this <c>catch</c> only ever fires while <i>constructing</i> it:
+    /// the flag is therefore exact, and a failure during iteration still surfaces as an exception
+    /// the caller sees. Callers that turn an empty walk into a sentence for the model use this
+    /// overload; the others keep the short one.
+    /// </para>
+    /// </remarks>
+    public static IEnumerable<string> EnumerateFiles(string start, string pattern, string? root, out bool failed)
     {
+        failed = false;
         var judgedBelow = string.IsNullOrEmpty(root) ? start : root;
         // Defence in depth: a pattern with a directory part never reaches the walk (see NormalizeFilePattern).
-        if (NormalizeFilePattern(pattern) is not { } safePattern) return [];
+        if (NormalizeFilePattern(pattern) is not { } safePattern) { failed = true; return []; }
         try
         {
             return Directory.EnumerateFiles(start, safePattern, WalkOptions)
                             .Where(f => !IsExcludedPath(f, judgedBelow));
         }
-        catch { return []; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("WorkspaceScan.EnumerateFiles", ex);
+            failed = true;
+            return [];
+        }
     }
 
     private static readonly EnumerationOptions WalkOptions = new()

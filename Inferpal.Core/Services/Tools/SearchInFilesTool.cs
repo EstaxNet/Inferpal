@@ -48,16 +48,14 @@ internal class SearchInFilesTool : ITool
         // materialise the whole tree (long seconds on a node project) and happily searched .git/,
         // node_modules/, bin/, obj/ — and the 100-result cap was only checked per FILE, so a
         // single minified file could add tens of thousands of lines (pre-1.6.0 architecture review).
-        IEnumerable<string> files;
-        try
-        {
-            files = WorkspaceScan.EnumerateFiles(path, filePattern, root);
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow("SearchInFilesTool.Enumerate", ex);
-            return Task.FromResult(Strings.NoResults);
-        }
+        // ⚠ "No results" is a CONCLUSION the model acts on — it stops looking. A walk that could
+        // not start is not that answer, and this catch used to return it anyway.
+        var files = WorkspaceScan.EnumerateFiles(path, filePattern, root, out var walkFailed);
+        if (walkFailed)
+            return Task.FromResult(
+                $"Could not search '{path}': the directory could not be walked (permissions, or a "
+                + "path the file system refused). Nothing was searched — this is NOT \"the pattern "
+                + "is absent from the code\".");
 
         var skippedLarge = 0;
         var unreadable   = 0;
