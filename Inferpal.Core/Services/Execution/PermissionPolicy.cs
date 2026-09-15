@@ -44,18 +44,32 @@ internal sealed class PermissionRule
     /// <summary>
     /// True when this rule applies to <paramref name="toolName"/> and matches <paramref name="subject"/>.
     /// A pattern that blows past <see cref="PermissionPolicy.MatchTimeout"/> (catastrophic
-    /// backtracking) counts as "no match": a rule the engine cannot evaluate must never decide,
-    /// and it must never freeze the approval path either.
+    /// backtracking) counts as "no match" and raises <paramref name="unreadable"/>: a rule the
+    /// engine cannot evaluate must never decide, and it must never freeze the approval path either.
     /// </summary>
-    public bool Matches(string toolName, string subject)
+    /// <remarks>
+    /// ⚠ <b>"No match" is not the end of the story for a <c>deny</c>.</b> The documented arbitration
+    /// for user patterns — skip the rule, "on retombe sur le prompt, et personne ne le voit" — rests
+    /// on there being a prompt. There is not one when the user has clicked "Always" on that tool,
+    /// which this repository already identified as the realistic bypass when it closed the same hole
+    /// on the agent-instruction files. A <c>deny</c> the engine could not read would then let the
+    /// call through with no human at all, and the rule its author wrote would never have applied.
+    /// Hence the flag: the caller raises the force-prompt tier, exactly as it does for a built-in
+    /// pattern that times out. Still never a refusal — a guard that could not read its input has
+    /// established nothing.
+    /// </remarks>
+    public bool Matches(string toolName, string subject, out bool unreadable)
     {
+        unreadable = false;
         if (Tool != "*" && !string.Equals(Tool, toolName, StringComparison.OrdinalIgnoreCase))
             return false;
 
         try { return Pattern.IsMatch(subject); }
         catch (RegexMatchTimeoutException)
         {
-            Diagnostics.Record("Permission", $"Rule regex timed out, ignored: {Pattern}");
+            unreadable = true;
+            Diagnostics.Record("Permission",
+                $"Rule regex timed out on a {subject.Length}-char subject, so it did not decide: {Pattern}");
             return false;
         }
     }
@@ -273,9 +287,19 @@ internal sealed class PermissionPolicy
     /// §1.1). Multi-line subjects are therefore evaluated line by line: one denied path denies the
     /// whole call, and the call is only auto-approved when <em>every</em> path is allowed.
     /// </remarks>
-    public PermissionDecision Evaluate(string toolName, string? subject)
+    public PermissionDecision Evaluate(string toolName, string? subject) =>
+        Evaluate(toolName, subject, out _);
+
+    /// <param name="unreadableDeny">
+    /// True when a <c>deny</c> rule could not be evaluated within its budget. It did not decide —
+    /// see <see cref="PermissionRule.Matches"/> — so the caller must raise the force-prompt tier
+    /// rather than let an auto-approval path carry the call.
+    /// </param>
+    /// <inheritdoc cref="Evaluate(string, string?)"/>
+    public PermissionDecision Evaluate(string toolName, string? subject, out bool unreadableDeny)
     {
         subject ??= string.Empty;
+        unreadableDeny = false;
 
         if (subject.Contains('\n'))
         {
@@ -284,7 +308,7 @@ internal sealed class PermissionPolicy
             {
                 var line = raw.Trim('\r', ' ', '\t');
                 if (line.Length == 0) continue;
-                switch (EvaluateSingle(toolName, line))
+                switch (EvaluateSingle(toolName, line, ref unreadableDeny))
                 {
                     case PermissionDecision.Deny:   return PermissionDecision.Deny;
                     case PermissionDecision.Prompt: sawPrompt = true; break;
@@ -293,16 +317,22 @@ internal sealed class PermissionPolicy
             return sawPrompt ? PermissionDecision.Prompt : PermissionDecision.Allow;
         }
 
-        return EvaluateSingle(toolName, subject);
+        return EvaluateSingle(toolName, subject, ref unreadableDeny);
     }
 
-    private PermissionDecision EvaluateSingle(string toolName, string subject)
+    private PermissionDecision EvaluateSingle(string toolName, string subject, ref bool unreadableDeny)
     {
         if (IsHardDenied(subject)) return PermissionDecision.Deny;
 
         foreach (var rule in _rules)
-            if (rule.Matches(toolName, subject))
+        {
+            if (rule.Matches(toolName, subject, out var unreadable))
                 return rule.Decision;   // first match wins
+
+            // Only a DENY that could not be read matters here: an unreadable `allow` simply fails
+            // to grant, which is the safe direction and needs no human.
+            if (unreadable && rule.Decision == PermissionDecision.Deny) unreadableDeny = true;
+        }
 
         return PermissionDecision.Prompt;
     }

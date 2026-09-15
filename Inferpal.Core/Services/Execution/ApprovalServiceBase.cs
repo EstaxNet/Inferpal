@@ -53,7 +53,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // provided, otherwise the details (already the raw command/url/query for the other tools).
         var matchOn = subject ?? details;
 
-        var decision = GetPolicy().Evaluate(toolName, matchOn);
+        var decision = GetPolicy().Evaluate(toolName, matchOn, out var unreadableDeny);
         if (decision == PermissionDecision.Deny)
         {
             // Always enforced — even under SecurityAlertsDisabled. Recorded (visible via /diagnostics).
@@ -80,14 +80,21 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // write paths reached those files and not one asked for a prompt.
         // Here rather than in a decorator: a property held at the funnel cannot be forgotten by the
         // eighth write path. See AgentInstructionFiles for what it does and does not cover.
+        //
+        // And a DENY the engine could not read joins them from a fourth: the documented arbitration
+        // for a user pattern that times out is "the rule does not decide, we fall back to the
+        // prompt" — which is only true while there IS a prompt. A session grant on that tool
+        // removes it, and the deny its author wrote would never have applied, silently.
         var instructions = AgentInstructionFiles.Targets(matchOn);
-        var opaque = PermissionPolicy.IsOpaqueExecution(matchOn) || instructions || forcePrompt;
+        var opaque = PermissionPolicy.IsOpaqueExecution(matchOn) || instructions || forcePrompt
+                     || unreadableDeny;
         if (opaque && (decision == PermissionDecision.Allow
                        || _config.SecurityAlertsDisabled
                        || _sessionAllowed.ContainsKey(toolName)))
             Diagnostics.Record("Permission",
                 $"Force-prompt ({(forcePrompt ? "repository-authored"
                                  : instructions ? "agent instructions"
+                                 : unreadableDeny ? "a deny rule could not be evaluated"
                                  : "opaque execution")}) {toolName}: {matchOn}");
 
         if (!opaque)

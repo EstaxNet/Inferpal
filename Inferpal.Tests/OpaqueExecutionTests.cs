@@ -139,4 +139,65 @@ public class OpaqueExecutionTests
             service.RequestApprovalAsync("run_command", "rm -rf / --no-preserve-root", CancellationToken.None));
         Assert.Equal(0, service.Prompts);
     }
+    // ── A fourth way into the same tier: a DENY the engine could not read ───────
+    //
+    // The arbitration for a user pattern that times out is documented as "the rule does not decide,
+    // we fall back to the prompt, and nobody sees it". That rests on there BEING a prompt — and a
+    // session grant removes it, which is the bypass this repository already named as the realistic
+    // one. The deny its author wrote would then never have applied, with nothing said.
+
+    /// <summary>A catastrophic deny on run_command, written as a user rule.</summary>
+    private const string CatastrophicDeny = @"deny run_command ^(a+)+$";
+
+    private static readonly string Pathological = new string('a', 40) + "!";
+
+    [Fact]
+    public async Task ASessionGrant_DoesNotCarryACallWhoseDenyCouldNotBeRead()
+    {
+        var service = new RecordingApproval(
+            new InferpalConfig { PermissionRules = CatastrophicDeny }, ApprovalDecision.Always);
+
+        // An ordinary command takes the grant…
+        await service.RequestApprovalAsync("run_command", "dotnet build", CancellationToken.None,
+                                           subject: "dotnet build");
+        Assert.Equal(1, service.Prompts);
+
+        await service.RequestApprovalAsync("run_command", "dotnet test", CancellationToken.None,
+                                           subject: "dotnet test");
+        Assert.Equal(1, service.Prompts);                    // …and covers ordinary commands
+
+        // …but never a call whose deny rule the engine could not evaluate.
+        Assert.True(await service.RequestApprovalAsync("run_command", Pathological,
+                                                       CancellationToken.None, subject: Pathological));
+        Assert.Equal(2, service.Prompts);
+    }
+
+    [Fact]
+    public async Task ADenyThatCouldNotBeRead_PromptsRatherThanBlocks()
+    {
+        // The other half, and the documented one: a guard that could not read its input has
+        // established nothing, so it must not refuse either.
+        var service = new RecordingApproval(
+            new InferpalConfig { PermissionRules = CatastrophicDeny }, ApprovalDecision.Once);
+
+        Assert.True(await service.RequestApprovalAsync("run_command", Pathological,
+                                                       CancellationToken.None, subject: Pathological));
+        Assert.Equal(1, service.Prompts);
+    }
+
+    [Fact]
+    public async Task SecurityAlertsDisabled_DoesNotCarryItEither()
+    {
+        var service = new RecordingApproval(
+            new InferpalConfig { PermissionRules = CatastrophicDeny, SecurityAlertsDisabled = true },
+            ApprovalDecision.Once);
+
+        await service.RequestApprovalAsync("run_command", "dotnet build", CancellationToken.None,
+                                           subject: "dotnet build");
+        Assert.Equal(0, service.Prompts);                    // the switch covers ordinary commands
+
+        await service.RequestApprovalAsync("run_command", Pathological, CancellationToken.None,
+                                           subject: Pathological);
+        Assert.Equal(1, service.Prompts);                    // but not this one
+    }
 }

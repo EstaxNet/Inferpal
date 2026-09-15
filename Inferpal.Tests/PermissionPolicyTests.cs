@@ -239,4 +239,58 @@ public class PermissionPolicyTests
     {
         Assert.Empty(PermissionPolicy.ParseJsonOverlay(json));
     }
+    // ── A DENY the engine could not read still reaches the human ────────────────
+    //
+    // The documented arbitration for a USER pattern that times out is "the rule does not decide, we
+    // fall back to the prompt, and nobody sees it". That rests on there BEING a prompt. A session
+    // grant on the tool removes it — and that is the bypass this repository already named as the
+    // realistic one when it closed the same hole on the agent-instruction files. The deny its
+    // author wrote would then never have applied, silently.
+
+    /// <summary>A pattern that really does blow its budget, on a subject built to make it.</summary>
+    private static PermissionPolicy WithCatastrophicDeny() =>
+        new([new PermissionRule(PermissionDecision.Deny, "run_command",
+                                new System.Text.RegularExpressions.Regex(
+                                    @"^(a+)+$", System.Text.RegularExpressions.RegexOptions.None,
+                                    TimeSpan.FromMilliseconds(50)))]);
+
+    private static readonly string Pathological = new string('a', 40) + "!";
+
+    [Fact]
+    public void ADenyThatTimesOut_DoesNotDecide_ButSaysItCouldNot()
+    {
+        var decision = WithCatastrophicDeny().Evaluate("run_command", Pathological, out var unreadableDeny);
+
+        Assert.Equal(PermissionDecision.Prompt, decision);   // it never blocks — nothing was established
+        Assert.True(unreadableDeny);                          // …and the caller is told
+    }
+
+    [Fact]
+    public void AnAllowThatTimesOut_IsNotFlagged()
+    {
+        // Witness, and the reason the flag is about DENY only: an allow that cannot be read simply
+        // fails to grant, which is the safe direction and needs no human.
+        var policy = new PermissionPolicy(
+            [new PermissionRule(PermissionDecision.Allow, "run_command",
+                                new System.Text.RegularExpressions.Regex(
+                                    @"^(a+)+$", System.Text.RegularExpressions.RegexOptions.None,
+                                    TimeSpan.FromMilliseconds(50)))]);
+
+        var decision = policy.Evaluate("run_command", Pathological, out var unreadableDeny);
+
+        Assert.Equal(PermissionDecision.Prompt, decision);
+        Assert.False(unreadableDeny);
+    }
+
+    [Fact]
+    public void ARuleThatSimplyDoesNotMatch_IsNotFlaggedEither()
+    {
+        // Witness: the flag must mean "could not be read", not "did not match".
+        var policy = FromDsl("deny run_command rm -rf");
+
+        var decision = policy.Evaluate("run_command", "dotnet build", out var unreadableDeny);
+
+        Assert.Equal(PermissionDecision.Prompt, decision);
+        Assert.False(unreadableDeny);
+    }
 }
