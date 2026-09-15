@@ -903,6 +903,27 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// The chat follows the stream only while the user is at the bottom. The webview scrolled to the bottom on every
+    /// rendered frame and on every bubble: scrolling up to reread an earlier message during an answer snapped back on
+    /// the next frame. The Visual Studio window follows until the user scrolls up (ChatAutoScroller, 50 px).
+    /// </summary>
+    [Fact]
+    public void TheChat_FollowsTheStreamOnlyWhileTheUserIsAtTheBottom()
+    {
+        var main = TsCode("webview/main.ts");
+        Assert.Contains("following", Body(main, "function scrollToBottom("), StringComparison.Ordinal);
+        Assert.Contains("messagesEl.addEventListener('scroll'", main, StringComparison.Ordinal);
+
+        var at = main.IndexOf("case 'turnStarted':", StringComparison.Ordinal);
+        Assert.True(at >= 0, "case 'turnStarted' moved — the rule measures nothing.");
+        var next = main.IndexOf("case '", at + 6, StringComparison.Ordinal);
+        Assert.Contains("following = true", main[at..next], StringComparison.Ordinal);
+
+        // A rebuilt conversation (loaded session, branch) opens at its end, not where the previous one was scrolled.
+        Assert.Contains("following = true", Body(main, "function renderTranscript("), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Both @-mention popups show only the answer to the request typed last. Requests to the host run side by side, and a
     /// short query — more matches — can answer after a longer one: the free suggestions under "@" already kept only the
     /// latest answer, while the "@file / @folder" sub-search rendered whatever came back last — stale hits, or file results

@@ -255,8 +255,18 @@ function renderPlan(plan: WvPlan | null): void {
 }
 
 // ── Bubbles ──────────────────────────────────────────────────────────────────
+// Follows the stream only while the user is at the bottom, like the Visual Studio window
+// (ChatAutoScroller, same 50 px): scrolling up to reread stops the follow, coming back resumes it.
+const FOLLOW_THRESHOLD_PX = 50;
+let following = true;
+messagesEl.addEventListener('scroll', () => {
+  following = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight <= FOLLOW_THRESHOLD_PX;
+});
+
 function scrollToBottom(): void {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  if (following) {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
 }
 
 function metaRow(item: { text: string; timestamp?: string }, copyText?: string): HTMLElement {
@@ -1016,6 +1026,9 @@ promptEl.addEventListener('keydown', (e) => {
 
 // ── State ← extension ────────────────────────────────────────────────────────
 function renderTranscript(transcript: WvTranscriptItem[]): void {
+  // A rebuilt conversation (loaded session, branch, restored view) opens at its end, whatever the
+  // previous one was scrolled to.
+  following = true;
   messagesEl.textContent = '';
   messagesEl.appendChild(welcomeEl);
   streamEl = null;
@@ -1092,6 +1105,8 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
     }
     case 'turnStarted':
       historyEntries = msg.history;
+      // The question just sent must be visible, wherever the user had scrolled to.
+      following = true;
       addBubble('user', { role: 'user', text: msg.prompt, timestamp: msg.timestamp });
       renderPlan(null);
       setBusy(true);
