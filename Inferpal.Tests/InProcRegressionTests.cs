@@ -184,4 +184,26 @@ public class InProcRegressionTests
         Assert.True(guard >= 0 && guard < build,
             "DebugOps.Start does not check for design mode before launching: Debug.Start resumes a paused session.");
     }
+
+    /// <summary>
+    /// Continue and the steps only act on a paused session. They send <c>Debug.Start</c> or a step, which in design mode
+    /// BUILD AND LAUNCH the program: a model calling <c>continue</c> with no session ran the user's program without the
+    /// approval <c>start</c> requires, and without the pre-launch build that keeps the "build errors" modal away.
+    /// The VS Code bridge answers "no stop" unless it saw a stop.
+    /// </summary>
+    [Fact]
+    public void TheDebugDriver_ResumesOnlyAPausedSession()
+    {
+        var execute = Method("Inferpal.InProc/GhostText/VsDebugDriver.cs", "ExecuteAsync");
+        var resume = execute.DescendantNodes().OfType<SwitchSectionSyntax>()
+            .FirstOrDefault(s => s.Labels.Any(l => l.ToString().Contains("DebugOps.Continue", StringComparison.Ordinal)));
+        Assert.True(resume is not null, "ExecuteAsync no longer handles DebugOps.Continue — the rule measures nothing.");
+
+        var text = resume!.ToString();
+        var call = text.IndexOf("ResumeAndWaitAsync", StringComparison.Ordinal);
+        Assert.True(call >= 0, "the resume case no longer resumes — the rule measures nothing.");
+        var guard = text.IndexOf("IsPaused", StringComparison.Ordinal);
+        Assert.True(guard >= 0 && guard < call,
+            "Continue/step do not check for a paused session: in design mode they launch the program unapproved.");
+    }
 }

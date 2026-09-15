@@ -172,6 +172,10 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             case DebugOps.StepOver:
             case DebugOps.StepInto:
             case DebugOps.StepOut:
+                // Only a paused session: in design mode Debug.Start and the steps BUILD AND LAUNCH the
+                // program — without the approval `start` asks for, and without the pre-launch build that
+                // keeps the "build errors" modal away. Same answer as the VS Code bridge: no stop.
+                if (!IsPaused) return new(request.Id, Ok: true, State: null);
                 return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(
                     request.Op, NowMs() + (long)DebugOps.ResumeBudget.TotalMilliseconds, ct));
 
