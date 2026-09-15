@@ -809,6 +809,32 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// The palette's three session commands say why they fail, from their first call to the host. Load and delete
+    /// listed the sessions before their try, and save had no try at all: a store that refused (a full disk, a locked
+    /// file) surfaced as VS Code's generic "command failed", untranslated, while the same commands already named the
+    /// cause of every later failure.
+    /// </summary>
+    [Theory]
+    [InlineData("async saveSessionCommand(", "host.sessionList()")]
+    [InlineData("async loadSessionCommand(", "this.pickSession(")]
+    [InlineData("async deleteSessionCommand(", "this.pickSession(")]
+    public void ASessionCommand_SaysWhyItFails_FromItsFirstHostCall(string signature, string firstHostCall)
+    {
+        var body = Body(TsCode("chatViewProvider.ts"), signature);
+        var call = body.IndexOf(firstHostCall, StringComparison.Ordinal);
+        Assert.True(call >= 0, $"{firstHostCall} moved out of {signature} — the rule measures nothing.");
+
+        // ENCLOSED by a try, not merely preceded by one: saveSessionCommand has a try of its own around the title,
+        // closed before the session list is read.
+        var guard = body.LastIndexOf("try {", call, StringComparison.Ordinal);
+        var span  = guard >= 0 ? body[guard..call] : string.Empty;
+        var depth = span.Count(c => c == '{') - span.Count(c => c == '}');
+        Assert.True(guard >= 0 && depth > 0,
+            $"{signature} calls {firstHostCall} outside any try: a refused store surfaces as VS Code's generic error.");
+        Assert.Contains("ChatViewProvider.errorText(err)", body, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Under VS Code, the chat model and the agent mode live in two places: the workspace settings (the chat's
     /// picker and switch, sent on every turn) and Inferpal's config (the settings panel). The picker already pushed
     /// its model into the config; nothing made the reverse trip, and the mode switch pushed nothing. Changing

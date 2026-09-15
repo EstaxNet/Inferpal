@@ -600,21 +600,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // that name would silently vanish. Same pattern as /plan's reserved set: suffix it.
     const safeName =
       name.trim().toLowerCase() === 'last_session' ? `${name.trim()}-session` : name.trim();
-    // Saving under a name another session already uses replaces that session: ask first, like a delete.
-    const existing = await host.sessionList();
-    if (existing.some((s) => s.name.toLowerCase() === safeName.toLowerCase())) {
-      const replaceLabel = t('Replace');
-      const answer = await vscode.window.showWarningMessage(
-        t('A session named {0} already exists. Replace it?', safeName),
-        { modal: true },
-        replaceLabel,
-      );
-      if (answer !== replaceLabel) {
-        return;
+    // A palette command that fails in silence cannot be told apart from a broken one: a store that refuses says why.
+    try {
+      // Saving under a name another session already uses replaces that session: ask first, like a delete.
+      const existing = await host.sessionList();
+      if (existing.some((s) => s.name.toLowerCase() === safeName.toLowerCase())) {
+        const replaceLabel = t('Replace');
+        const answer = await vscode.window.showWarningMessage(
+          t('A session named {0} already exists. Replace it?', safeName),
+          { modal: true },
+          replaceLabel,
+        );
+        if (answer !== replaceLabel) {
+          return;
+        }
       }
+      await host.sessionSave(safeName, this.snapshot());
+      void vscode.window.showInformationMessage(t('Session saved: {0}', safeName));
+    } catch (err) {
+      void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
     }
-    await host.sessionSave(safeName, this.snapshot());
-    void vscode.window.showInformationMessage(t('Session saved: {0}', safeName));
   }
 
   /** Command: pick a saved session and restore it (host history + transcript). */
@@ -625,12 +630,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       promptOpenFolder();
       return;
     }
-    const pick = await this.pickSession(t('Pick a session to load'));
-    if (!pick) {
-      return;
-    }
-    // A palette command that does nothing cannot be told apart from a broken one: both failures say so.
+    // A palette command that does nothing cannot be told apart from a broken one: every failure says so — the
+    // session list included, which is a call to the host too.
     try {
+      const pick = await this.pickSession(t('Pick a session to load'));
+      if (!pick) {
+        return;
+      }
       const loaded = await host.sessionLoad(pick);
       if (!loaded) {
         void vscode.window.showWarningMessage(
@@ -652,21 +658,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       promptOpenFolder();
       return;
     }
-    const pick = await this.pickSession(t('Pick a session to delete'));
-    if (!pick) {
-      return;
-    }
-    // Irreversible, on the same sessions folder the Visual Studio window lists — which confirms first too.
-    const deleteLabel = t('Delete');
-    const answer = await vscode.window.showWarningMessage(
-      t('Delete session {0}? This cannot be undone.', pick),
-      { modal: true },
-      deleteLabel,
-    );
-    if (answer !== deleteLabel) {
-      return;
-    }
+    // The session list is a call to the host too: its failure says why, like the delete's.
     try {
+      const pick = await this.pickSession(t('Pick a session to delete'));
+      if (!pick) {
+        return;
+      }
+      // Irreversible, on the same sessions folder the Visual Studio window lists — which confirms first too.
+      const deleteLabel = t('Delete');
+      const answer = await vscode.window.showWarningMessage(
+        t('Delete session {0}? This cannot be undone.', pick),
+        { modal: true },
+        deleteLabel,
+      );
+      if (answer !== deleteLabel) {
+        return;
+      }
       if (await host.sessionDelete(pick)) {
         void vscode.window.showInformationMessage(t('Session deleted: {0}', pick));
       } else {
