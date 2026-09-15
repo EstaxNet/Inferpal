@@ -20,16 +20,31 @@ namespace Inferpal.Services.Agent;
 internal static class AgentLoopPolicy
 {
     /// <summary>
-    /// Tools that observe state without changing it. Repeating these is a normal part of
-    /// an edit → verify → edit cycle, so they get a higher loop-detection threshold.
+    /// Tools that observe state without changing it. Repeating these is a normal part of an
+    /// edit → verify → edit cycle, so they get a higher loop-detection threshold; everything else
+    /// aborts the run on its first verbatim repeat.
     /// </summary>
-    private static readonly HashSet<string> ReadOnlyTools = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "read_file", "get_diagnostics", "run_tests", "search_codebase", "search_in_files",
-        "list_files", "get_active_document", "get_open_editors", "get_solution_info",
-        "get_git_status", "get_debugger_state", "generate_project_map", "analyze_code",
-        "web_search", "fetch_url",
-    };
+    /// <remarks>
+    /// ⚠ <b>Derived, not listed.</b> This used to be a second hand-written set beside
+    /// <see cref="PlanModeToolRegistry"/>'s — the one that already answers "does this tool only
+    /// observe?" — and the two had drifted apart by two tools. Both misclassifications hurt in the
+    /// same direction, the dangerous one: a tool absent here is treated as a mutation, so its
+    /// <b>second identical call aborts the whole run as a loop</b>.
+    /// <list type="bullet">
+    /// <item><c>search_docs</c>: searching the same documentation twice stopped the run.</item>
+    /// <item><c>debug_inspect</c>: its own summary says it is "everything that observes", and
+    /// asking a paused debugger "where am I?" twice in one run stopped the run — in the middle of
+    /// the step/inspect cycle that is the whole point of the debug tools. Worse than the first:
+    /// a new mutation resets only the read-only counts, so a mutating key is never cleared and the
+    /// second call anywhere in the run is enough.</item>
+    /// </list>
+    /// The two exceptions below are named with their reason: plan mode refuses them because they
+    /// <i>execute</i> or need a live session, not because they change anything.
+    /// </remarks>
+    internal static bool IsObservation(string toolName) =>
+        PlanModeToolRegistry.IsAllowed(toolName)
+        || toolName.Equals("run_tests", StringComparison.OrdinalIgnoreCase)
+        || toolName.Equals(Tools.DebugInspectTool.ToolName, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Stable signature of a tool-call batch (each call's name + JSON arguments).</summary>
     internal static string Signature(IReadOnlyList<ToolCallDto> calls) =>
@@ -48,7 +63,7 @@ internal static class AgentLoopPolicy
     /// identical <c>run_tests</c> of an edit → verify cycle stopped the run as a loop.</remarks>
     internal static bool IsLoop(Dictionary<string, int> counts, IReadOnlyList<ToolCallDto> calls)
     {
-        bool readOnlyBatch = calls.All(c => ReadOnlyTools.Contains(c.Function.Name));
+        bool readOnlyBatch = calls.All(c => IsObservation(c.Function.Name));
         var sig  = (readOnlyBatch ? ReadOnlyKey : string.Empty) + Signature(calls);
         int seen = counts[sig] = counts.GetValueOrDefault(sig) + 1;
 
