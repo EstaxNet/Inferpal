@@ -165,4 +165,71 @@ public class XRayPanelPresenterTests
         Assert.True(warn.OverheadWarning);
         Assert.False(calm.OverheadWarning);
     }
+    // ── A section's id is an identity, not a description ────────────────────────
+    //
+    // The switch the panel offers is "off for the next turns", and it is keyed by SectionId. Two of
+    // those ids used to carry the section's CONTENTS: the persona's language and the number of
+    // rules that matched. Both change when the user opens another file — which is precisely when
+    // the prompt is rebuilt — so the disabled set stopped naming the section and it came back by
+    // itself, switched on, with nothing said.
+
+    [Fact]
+    public void SectionId_OfThePersona_DoesNotMoveWithTheActiveLanguage()
+    {
+        var csharp = Section(PromptSectionKind.Persona, "x", detail: "csharp");
+        var python = Section(PromptSectionKind.Persona, "x", detail: "python");
+
+        Assert.Equal(XRayPanelPresenter.SectionId(csharp), XRayPanelPresenter.SectionId(python));
+    }
+
+    [Fact]
+    public void SectionId_OfTheRules_DoesNotMoveWithHowManyMatched()
+    {
+        var three = Section(PromptSectionKind.Rules, "x", detail: "3");
+        var two   = Section(PromptSectionKind.Rules, "x", detail: "2");
+
+        Assert.Equal(XRayPanelPresenter.SectionId(three), XRayPanelPresenter.SectionId(two));
+    }
+
+    [Fact]
+    public void ASwitchedOffRulesLayer_StaysOff_WhenTheActiveFileChangesHowManyMatch()
+    {
+        // The harm itself, not just the id: the user switches the rules off, opens another file
+        // where a different number of rules match, and the layer must still be out.
+        var off = new HashSet<string> { XRayPanelPresenter.SectionId(Section(PromptSectionKind.Rules, "x", "3")) };
+
+        var rebuilt = Section(PromptSectionKind.Rules, "RULES-TEXT", detail: "1");
+
+        Assert.Contains(XRayPanelPresenter.SectionId(rebuilt), off);
+    }
+
+    [Fact]
+    public void SectionId_OfTwoPinnedFilesWithTheSameName_AreDifferent()
+    {
+        // The label is the file name — two pins can both be README.md, and one switch turned both
+        // off. The identity is the path.
+        var a = new PromptSection(PromptSectionKind.Pinned, "README.md", "x", Key: @"C:\ws\a\README.md");
+        var b = new PromptSection(PromptSectionKind.Pinned, "README.md", "x", Key: @"C:\ws\b\README.md");
+
+        Assert.NotEqual(XRayPanelPresenter.SectionId(a), XRayPanelPresenter.SectionId(b));
+    }
+
+    [Fact]
+    public void SectionId_OfTheFileBackedLayers_StillTellsThemApart()
+    {
+        // Witness: the four rules above must read as "the unstable ids were pinned down", not as
+        // "every section now shares one id".
+        var ids = new[]
+        {
+            Section(PromptSectionKind.Base,           "x"),
+            Section(PromptSectionKind.Custom,         "x"),
+            Section(PromptSectionKind.ProjectContext, "x", ".inferpal/context.md"),
+            Section(PromptSectionKind.Memory,         "x", ".inferpal/memory.md"),
+            Section(PromptSectionKind.Notes,          "x", ".inferpal/notes.md"),
+            Section(PromptSectionKind.Persona,        "x", "csharp"),
+            Section(PromptSectionKind.Rules,          "x", "3"),
+        }.Select(XRayPanelPresenter.SectionId).ToList();
+
+        Assert.Equal(ids.Count, ids.Distinct().Count());
+    }
 }

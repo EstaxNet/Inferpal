@@ -10,8 +10,14 @@ internal enum PromptSectionKind { Base, Persona, Custom, Template, Pinned, Proje
 
 /// <summary>One layer of the composed system prompt. <see cref="Content"/> includes the layer's own
 /// leading separator so concatenating all sections reproduces the exact prompt text.
-/// <see cref="Detail"/> carries the file name / rule count where relevant.</summary>
-internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, string Content);
+/// <see cref="Detail"/> carries the file name / rule count where relevant.
+/// <para>
+/// ⚠ <see cref="Detail"/> is a <b>label</b>, not an identity — two pinned files can share a name,
+/// and the persona's language and the rule count change with the active file. <see cref="Key"/>
+/// carries the identity when the label is not one; <c>XRayPanelPresenter.SectionId</c> is what
+/// reads it, and the user's on/off switch depends on that id not moving under it.
+/// </para></summary>
+internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, string Content, string? Key = null);
 
 /// <summary>
 /// Builds the layered system prompt sent with every chat/agent request:
@@ -184,8 +190,11 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                 var pinnedContent = CapSection(File.ReadAllText(pinnedPath, Encoding.UTF8).Trim(),
                                                Path.GetFileName(pinnedPath));
                 if (!string.IsNullOrEmpty(pinnedContent))
+                    // The label is the file name; the identity is the PATH — two pins can be called
+                    // README.md, and one switch used to turn both off.
                     sections.Add(new(PromptSectionKind.Pinned, Path.GetFileName(pinnedPath),
-                        "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n" + pinnedContent));
+                        "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n" + pinnedContent,
+                        Key: pinnedPath));
             }
             catch (Exception ex) { Diagnostics.Swallow($"SystemPromptBuilder.PinnedFile({Path.GetFileName(pinnedPath)})", ex); }
         }

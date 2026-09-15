@@ -51,9 +51,24 @@ internal static class XRayPanelPresenter
     private const double OverheadPromptSharePct = 50.0;
     private const int    OverheadMinTokens      = 500;
 
-    /// <summary>Stable identity of a section across rebuilds (kind + detail for file-backed layers).</summary>
-    public static string SectionId(PromptSection s)
-        => s.Detail is null ? s.Kind.ToString() : $"{s.Kind}|{s.Detail}";
+    /// <summary>Stable identity of a section across rebuilds.</summary>
+    /// <remarks>
+    /// ⚠ It used to be <c>kind + Detail</c> for every layer, and <c>Detail</c> is a <b>label</b>:
+    /// the persona carries the active language, the rules layer carries <i>how many</i> rules
+    /// matched. Both change when the user opens another file — which is exactly when the prompt is
+    /// rebuilt — so a section switched off "for the next turns" came back <b>by itself</b>: the
+    /// disabled set no longer named it. The identity of those layers is the layer.
+    /// <para>
+    /// The pinned layer keeps a per-file identity, but from its <see cref="PromptSection.Key"/>
+    /// (the path) rather than its label: two pins can both be called <c>README.md</c>, and one
+    /// switch turned both off.
+    /// </para>
+    /// </remarks>
+    public static string SectionId(PromptSection s) => s.Kind switch
+    {
+        PromptSectionKind.Persona or PromptSectionKind.Rules => s.Kind.ToString(),
+        _ => (s.Key ?? s.Detail) is { } identity ? $"{s.Kind}|{identity}" : s.Kind.ToString(),
+    };
 
     /// <summary>Localized display label of a section (shared with the <c>/xray</c> markdown rendering).</summary>
     public static string Label(PromptSection s) => s.Kind switch
