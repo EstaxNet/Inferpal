@@ -1164,13 +1164,15 @@ internal sealed partial class HostServer : IDisposable
     private static string BuildSystemPromptText(HostSession s)
     {
         var root   = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
+        // The /template suffix is a builder layer, as in the Visual Studio view model: appended after the build it
+        // had no X-Ray section, so the panel could neither show it nor switch it off.
         var prompt = new SystemPromptBuilder(s.Config, EditorName).Build(
             Strings.SystemPrompt,
             language:           s.PersonaLanguage,
+            templateSuffix:     s.TemplateSuffix,
             projectRoot:        root,
             activeFileRelPath:  SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath),
             disabledSectionIds: s.XrayDisabledSections);
-        if (!string.IsNullOrEmpty(s.TemplateSuffix)) prompt += "\n\n" + s.TemplateSuffix;
         if (s.PlanMode)                              prompt += PlanModeToolRegistry.SystemPromptSuffix;
         if (!string.IsNullOrEmpty(s.OodaSummary))    prompt += "\n\n## Session Summary\n\n" + s.OodaSummary;
         return prompt;
@@ -1183,6 +1185,7 @@ internal sealed partial class HostServer : IDisposable
         return new SystemPromptBuilder(s.Config, EditorName).BuildSections(
             Strings.SystemPrompt,
             language:          s.PersonaLanguage,
+            templateSuffix:    s.TemplateSuffix,
             projectRoot:       root,
             activeFileRelPath: SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath));
     }

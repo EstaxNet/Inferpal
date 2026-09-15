@@ -1622,6 +1622,29 @@ public class HostServerTests
         Assert.Contains("haiku", restored.RawPrompt);
     }
 
+    /// <summary>
+    /// A <c>/template</c> mode is a prompt layer like the others, under VS Code as in Visual Studio: it shows in the
+    /// X-Ray panel and can be switched off there. The host appended its suffix after the built prompt, outside the
+    /// builder: the section did not exist in the panel, and nothing could switch it off.
+    /// </summary>
+    [Fact]
+    public async Task XRay_ShowsTheTemplateLayer_AndItsToggleRemovesIt()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/template code-review" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var panel = await h.Client.InvokeAsync<Host.XRayPanelDto>("xray/panel");
+        Assert.Contains(panel.Sections, s => s.Id == "Template");
+        Assert.Contains("## Mode: Code Review", panel.RawPrompt, StringComparison.Ordinal);
+
+        var off = await h.Client.InvokeWithParameterObjectAsync<Host.XRayPanelDto>(
+            "xray/toggle", new { id = "Template", enabled = false });
+        Assert.DoesNotContain("## Mode: Code Review", off.RawPrompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("## Mode: Code Review", h.Server.CurrentSession!.History[0].Content, StringComparison.Ordinal);
+    }
+
     // ── codeAction/run ─────────────────────────────────────────────────────────
 
     [Fact]
