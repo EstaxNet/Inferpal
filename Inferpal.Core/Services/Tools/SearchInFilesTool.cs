@@ -60,10 +60,11 @@ internal class SearchInFilesTool : ITool
         }
 
         var skippedLarge = 0;
+        var unreadable   = 0;
         foreach (var file in files)
         {
             if (ct.IsCancellationRequested) break;
-            if (results.Count >= 100) break;
+            if (results.Count >= MaxResults) break;
 
             try
             {
@@ -72,7 +73,7 @@ internal class SearchInFilesTool : ITool
                 if (new FileInfo(file).Length > MaxSearchFileBytes) { skippedLarge++; continue; }
                 var lines = File.ReadAllLines(file);
                 var relPath = file[path.Length..].TrimStart('\\', '/');
-                for (int i = 0; i < lines.Length && results.Count < 100; i++)
+                for (int i = 0; i < lines.Length && results.Count < MaxResults; i++)
                 {
                     if (!regex.IsMatch(lines[i])) continue;
                     var line = lines[i].Trim();
@@ -81,15 +82,30 @@ internal class SearchInFilesTool : ITool
                 }
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { Diagnostics.Swallow("SearchInFilesTool.ReadFile", ex); }
+            catch (Exception ex) { unreadable++; Diagnostics.Swallow("SearchInFilesTool.ReadFile", ex); }
         }
 
-        var skippedNote = skippedLarge > 0
-            ? $"\n({skippedLarge} file(s) larger than {MaxSearchFileBytes / (1024 * 1024)} MB were not searched.)"
-            : string.Empty;
-        return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results)) + skippedNote);
+        // Every reason the answer may be incomplete, said. The size skip already was; the RESULT
+        // CAP was not, and it is the one that shapes a conclusion — a model asking "where is this
+        // used?" reads exactly a hundred lines as the whole list and refactors on it.
+        var notes = new System.Text.StringBuilder();
+        if (results.Count >= MaxResults)
+            notes.Append($"\n(stopped at the first {MaxResults} match(es) — narrow the path or the "
+                       + "pattern to see the rest; this is NOT the complete list)");
+        if (skippedLarge > 0)
+            notes.Append($"\n({skippedLarge} file(s) larger than {MaxSearchFileBytes / (1024 * 1024)} MB were not searched.)");
+        if (unreadable > 0)
+            notes.Append($"\n({unreadable} file(s) could not be read and were not searched.)");
+
+        return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results)) + notes);
     }
 
     /// <summary>Largest file read line by line — past it the file is skipped and counted.</summary>
     private const long MaxSearchFileBytes = 8 * 1024 * 1024;
+
+    /// <summary>
+    /// Matches returned at most. Reaching it is SAID: a truncated list read as a complete one is how
+    /// a model concludes a symbol is used in exactly a hundred places.
+    /// </summary>
+    internal const int MaxResults = 100;
 }
