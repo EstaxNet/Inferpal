@@ -93,7 +93,12 @@ internal sealed class RenameSymbolTool : ITool
             return WorkspaceScan.InvalidPatternMessage("file_pattern", filePattern);
 
         // ── Enumerate files ────────────────────────────────────────────────────
-        var files = EnumerateSourceFiles(root, filePattern);
+        // ⚠ The enumeration DROPS files, and this tool WRITES: a source past
+        // CodeChunker.MaxFileSizeBytes (200 kB — a generated Reference.cs, a bundled script) was
+        // skipped in silence, so a rename came back "Applied to 12 file(s)" while a thirteenth kept
+        // the old name, and "No occurrences found" read as "the symbol does not exist". What was
+        // NOT looked at travels with the result, like in every other scanning tool.
+        var (files, skippedBySize) = EnumerateSourceFiles(root, filePattern);
         if (files.Count == 0)
             return $"No source files found under '{root}'.";
 
@@ -107,6 +112,7 @@ internal sealed class RenameSymbolTool : ITool
         var hits            = new List<(string FilePath, int Count, string OldContent, string NewContent)>();
         var stale           = new List<string>();
         int totalOccurrences = 0;
+        int unreadable       = 0;
 
         foreach (var file in files)
         {
@@ -138,7 +144,9 @@ internal sealed class RenameSymbolTool : ITool
                 }
             }
             catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Diagnostics.Swallow("RenameSymbolTool.Read", ex); }   // skip unreadable files
+            // Unreadable here means NOT EXAMINED: counted, never folded into the total the report
+            // claims to have scanned.
+            catch (Exception ex) { unreadable++; Diagnostics.Swallow("RenameSymbolTool.Read", ex); }
         }
 
         // ⚠ The compiler's spans are offsets into each file as the index last parsed it. A file edited
@@ -149,8 +157,14 @@ internal sealed class RenameSymbolTool : ITool
                  + string.Join(", ", stale.Take(5).Select(f => Path.GetRelativePath(root, f)))
                  + "); nothing was renamed. Retry in a few seconds.";
 
+        // Coverage of the whole pass: what the walk found, minus what was too large to open and
+        // what refused to be read.
+        var coverage = new ScanCoverage(files.Count + skippedBySize, files.Count - unreadable);
+        var partial  = coverage.IsPartial ? "\n" + coverage.Warning() : string.Empty;
+
         if (hits.Count == 0)
-            return $"No occurrences of `{oldName}` found in {files.Count} scanned file(s).";
+            return $"No occurrences of `{oldName}` found in {files.Count - unreadable} scanned file(s)."
+                 + partial;
 
         // The compiler could not resolve the symbol: every identifier spelled like it gets renamed.
         var textBased = semanticSpans is null
@@ -162,7 +176,8 @@ internal sealed class RenameSymbolTool : ITool
         // ── Preview report ─────────────────────────────────────────────────────
         var sb = new StringBuilder();
         sb.AppendLine($"## rename_symbol: `{oldName}` → `{newName}`");
-        sb.AppendLine($"Found **{totalOccurrences}** occurrence(s) in **{hits.Count}** file(s) (scanned {files.Count}):");
+        sb.AppendLine($"Found **{totalOccurrences}** occurrence(s) in **{hits.Count}** file(s) (scanned {files.Count - unreadable}):");
+        if (coverage.IsPartial) sb.AppendLine(coverage.Warning());
         if (textBased) sb.AppendLine(textBasedWarning);
         sb.AppendLine();
 
@@ -220,6 +235,8 @@ internal sealed class RenameSymbolTool : ITool
 
         sb.AppendLine();
         if (errors.Count == 0)
+            // The coverage line is already in the header of this same report — saying it twice in
+            // the text the model reads is noise, and noise is how a warning stops being read.
             sb.AppendLine($"✅ Applied to {hits.Count} file(s). Use `restore_file` to undo individual files.");
         else
             sb.AppendLine($"⚠ Applied with {errors.Count} error(s):\n{string.Join('\n', errors)}");
@@ -322,9 +339,19 @@ internal sealed class RenameSymbolTool : ITool
 
     // ── File enumeration ───────────────────────────────────────────────────────
 
-    private static List<string> EnumerateSourceFiles(string rootDir, string? filePattern)
+    /// <summary>
+    /// The source files to scan, and how many were left out <b>because of their size</b>.
+    /// </summary>
+    /// <remarks>
+    /// The size filter is not a detail of the walk: this tool rewrites what it finds, so a file it
+    /// never opened keeps the old name while the report says the rename is done. The number comes
+    /// back so the caller can say it. Files skipped for an unsupported extension are not counted —
+    /// they were never candidates.
+    /// </remarks>
+    private static (List<string> Files, int SkippedBySize) EnumerateSourceFiles(string rootDir, string? filePattern)
     {
         var result = new List<string>();
+        var skipped = 0;
         try
         {
             // ONE walk filtered by extension — the per-extension loop walked the whole tree once for
@@ -336,17 +363,20 @@ internal sealed class RenameSymbolTool : ITool
                 try
                 {
                     if (new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes) result.Add(f);
+                    else skipped++;
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    // Gone or unreadable between the walk and the stat: this file, not the rest of the scan.
+                    // Gone or unreadable between the walk and the stat: this file, not the rest of the
+                    // scan — but it counts as not looked at, like an oversized one.
+                    skipped++;
                     Diagnostics.Swallow("RenameSymbolTool.ScanFile", ex);
                 }
             }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("RenameSymbolTool.Scan", ex); }
-        return result;
+        return (result, skipped);
     }
 
     private static bool IsValidIdentifier(string name) =>
