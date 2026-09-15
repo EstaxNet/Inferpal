@@ -835,6 +835,27 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
+    /// The X-Ray checkbox flips in the webview before the host answers, and the host refuses <c>xray/toggle</c> while a
+    /// turn runs (it rewrites the system prompt under the loop). The provider only logged that refusal: the section
+    /// stayed shown as switched off while the host kept sending it, and nothing said why.
+    /// </summary>
+    [Fact]
+    public void ARefusedXRayToggle_PutsTheHostsPanelBack_AndSaysWhy()
+    {
+        var source = TsCode("chatViewProvider.ts");
+        var at = source.IndexOf("case 'xrayToggle':", StringComparison.Ordinal);
+        Assert.True(at >= 0, "case 'xrayToggle' moved — the rule measures nothing.");
+        var next  = source.IndexOf("case '", at + 6, StringComparison.Ordinal);
+        var block = source[at..(next < 0 ? source.Length : next)];
+
+        var failure = block.IndexOf("catch (err)", StringComparison.Ordinal);
+        Assert.True(failure >= 0, "the xrayToggle call lost its catch — the rule measures nothing.");
+        var handler = block[failure..];
+        Assert.Contains("host.xrayPanel()", handler, StringComparison.Ordinal);
+        Assert.Contains("ChatViewProvider.errorText(err)", handler, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Under VS Code, the chat model and the agent mode live in two places: the workspace settings (the chat's
     /// picker and switch, sent on every turn) and Inferpal's config (the settings panel). The picker already pushed
     /// its model into the config; nothing made the reverse trip, and the mode switch pushed nothing. Changing

@@ -829,7 +829,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           const panel = await host.xrayToggle(msg.id, msg.enabled);
           this.post({ type: 'xrayPanel', panel });
         } catch (err) {
+          // The checkbox already flipped in the webview, and the host refuses while a turn runs: put its panel
+          // back so the section is shown as the host will send it, and say why.
           this.log(`[chat] xray/toggle failed: ${String(err)}`);
+          void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+          try {
+            this.post({ type: 'xrayPanel', panel: await host.xrayPanel() });
+          } catch (panelErr) {
+            this.log(`[chat] xray/panel failed: ${String(panelErr)}`);
+          }
         }
         return;
       }
