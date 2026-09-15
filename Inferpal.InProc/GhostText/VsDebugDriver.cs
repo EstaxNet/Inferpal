@@ -146,6 +146,13 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
 
             case DebugOps.Start:
             {
+                // Only from design mode: Debug.Start CONTINUES a paused session, so a session already
+                // running — the user's own included — would be resumed and its next stop reported as
+                // the first stop of a new run. Same refusal as the VS Code bridge.
+                if (Volatile.Read(ref _mode) != (int)DBGMODE.DBGMODE_Design)
+                    return new(request.Id, Ok: false,
+                        Error: "A debugging session is already running — continue or stop it first.");
+
                 // Built explicitly first, and the launch is abandoned when it fails. Measured
                 // before being written (probe 3, 2026-08-06): `Debug.Start` on a solution that does
                 // not compile opens a modal — "There were build errors. Would you like to continue

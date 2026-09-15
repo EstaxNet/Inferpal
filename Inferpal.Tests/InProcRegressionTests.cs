@@ -163,4 +163,25 @@ public class InProcRegressionTests
         Assert.False(Calls(add, "ListBreakpoints"),
             "AddBreakpoint reports every breakpoint of the file: the host announces the first, not the one just set.");
     }
+
+    /// <summary>
+    /// The model's <c>start</c> launches a new session only from design mode. It sends <c>Debug.Start</c>, which in break
+    /// mode CONTINUES: a session already paused — the user's own included — was resumed, and its next stop reported to
+    /// the model as the first stop of a fresh run, with the step budget reset. VS Code already refuses this case.
+    /// </summary>
+    [Fact]
+    public void TheDebugDriver_StartsOnlyFromDesignMode()
+    {
+        var execute = Method("Inferpal.InProc/GhostText/VsDebugDriver.cs", "ExecuteAsync");
+        var start = execute.DescendantNodes().OfType<SwitchSectionSyntax>()
+            .FirstOrDefault(s => s.Labels.Any(l => l.ToString().Contains("DebugOps.Start", StringComparison.Ordinal)));
+        Assert.True(start is not null, "ExecuteAsync no longer handles DebugOps.Start — the rule measures nothing.");
+
+        var text = start!.ToString();
+        var guard = text.IndexOf("DBGMODE_Design", StringComparison.Ordinal);
+        var build = text.IndexOf("BuildBeforeLaunchAsync", StringComparison.Ordinal);
+        Assert.True(build >= 0, "the start case no longer builds — the rule measures nothing.");
+        Assert.True(guard >= 0 && guard < build,
+            "DebugOps.Start does not check for design mode before launching: Debug.Start resumes a paused session.");
+    }
 }
