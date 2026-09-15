@@ -449,4 +449,87 @@ public class LocalizationCompletenessTests
             "VS Code manifest labels no token asks for any more (remove them):\n"
             + string.Join("\n", report));
     }
+    // ── An accessor supplies as many arguments as its resource expects ──────────
+
+    /// <summary>
+    /// Every accessor in <c>Strings.cs</c> passes <c>string.Format</c> at least as many arguments
+    /// as its resource has placeholder indices.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The neighbouring rule compares the <b>translations</b> to their source: an extra index in one
+    /// language makes <c>string.Format</c> throw <i>in that language only</i>. This is the other
+    /// axis, and its failure is worse — a <c>{1}</c> added to the <b>neutral</b> resource without
+    /// touching the accessor throws in <b>all ten</b> languages, on the first sentence that uses it.
+    /// </para>
+    /// <para>
+    /// ⚠ Both files are written <b>by hand</b> (<c>Strings.cs</c> is not generated, see the file's
+    /// own header), so nothing ties one to the other at compile time: exactly the shape of drift
+    /// this class exists to hold.
+    /// </para>
+    /// <para>
+    /// Measured at zero divergence on 2026-09-15 across the 828 accessors, with two
+    /// <b>nominative</b> exemptions: the <c>…Template</c> members return the format string itself,
+    /// for the caller to format. ⚠ The first measurement counted the method's <i>parameters</i> and
+    /// produced eight false positives — <c>PromptExplain(fileName)</c> passes
+    /// <c>fileName, string.Empty</c>: it is the <b>arguments</b> that count.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryAccessor_PassesAsManyArgumentsAsItsResourceExpects()
+    {
+        // These return the format string, not formatted text: the caller supplies the arguments.
+        string[] rawTemplates = ["SettingsFieldsIgnoredTemplate", "SettingsPermissionRulesIgnoredTemplate"];
+
+        var dir = LocalizationDir();
+        var needed = XDocument.Load(Path.Combine(dir, "Strings.resx")).Root!
+            .Elements("data")
+            .ToDictionary(d => (string)d.Attribute("name")!,
+                          d => Placeholders(d.Element("value")?.Value) is { Count: > 0 } p ? p.Max() + 1 : 0);
+
+        var source = File.ReadAllText(Path.Combine(dir, "Strings.cs"));
+        var root   = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(source).GetRoot();
+
+        var compared = 0;
+        var wrong    = new List<string>();
+
+        foreach (var member in root.DescendantNodes())
+        {
+            var (name, body) = member switch
+            {
+                Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax m
+                    => (m.Identifier.Text, (Microsoft.CodeAnalysis.SyntaxNode?)m.ExpressionBody?.Expression),
+                Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax p
+                    => (p.Identifier.Text, p.ExpressionBody?.Expression),
+                _ => (null, null),
+            };
+            if (name is null || body is null || rawTemplates.Contains(name)) continue;
+
+            // The resource this member reads: Get(nameof(X)) or Get("X").
+            var key = Regex.Match(body.ToString(), @"nameof\((\w+)\)|Get\(""(\w+)""");
+            if (!key.Success) continue;
+            var resource = key.Groups[1].Success ? key.Groups[1].Value : key.Groups[2].Value;
+            if (!needed.TryGetValue(resource, out var expects)) continue;
+
+            // The arguments actually passed to string.Format, minus the format string itself.
+            var format = body.DescendantNodesAndSelf()
+                .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax>()
+                .FirstOrDefault(i => i.Expression.ToString() is "string.Format" or "String.Format");
+            var supplied = format is null ? 0 : Math.Max(0, format.ArgumentList.Arguments.Count - 1);
+
+            compared++;
+            if (expects > supplied)
+                wrong.Add($"{name} -> {resource}: the resource expects {expects} argument(s), "
+                        + $"the accessor passes {supplied}");
+        }
+
+        // Witness: a reformatted Strings.cs (block bodies instead of expression bodies) would
+        // compare zero accessors and leave the rule green without having read anything.
+        Assert.True(compared >= 300,
+            $"Only {compared} accessor(s) compared: the reading is dead.");
+
+        Assert.True(wrong.Count == 0,
+            "A resource expects more arguments than its accessor passes — string.Format will throw "
+            + "in all ten languages:\n  " + string.Join("\n  ", wrong));
+    }
 }
