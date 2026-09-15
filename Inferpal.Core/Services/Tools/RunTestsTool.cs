@@ -304,6 +304,21 @@ internal class RunTestsTool : ITool
         return failures;
     }
 
+    /// <summary>Failing test names listed at most — beyond it the list says how many it left out.</summary>
+    /// <remarks>
+    /// The list is a sample; the COUNT above it never is. A truncated list read as a complete one
+    /// is how the `/tdd` loop concludes it has seen every failure — the same reasoning error the
+    /// build-error path already paid for (SmartFixValidator).
+    /// </remarks>
+    private const int MaxFailingListed = 30;
+
+    /// <summary>Says what the "Failing tests:" list left out, or nothing when it left out nothing.</summary>
+    private static void AppendMoreFailures(StringBuilder sb, int total, int listed)
+    {
+        if (total > listed)
+            sb.AppendLine($"  … +{total - listed} more failing test(s) not listed");
+    }
+
     internal static string ParsePytestOutput(string raw, int exitCode)
     {
         var sb = new StringBuilder();
@@ -316,11 +331,11 @@ internal class RunTestsTool : ITool
             sb.AppendLine(NothingProven);
 
         // FAILED lines: "FAILED tests/test_x.py::test_name - AssertionError: ..."
-        var failedLines = raw.Split('\n')
+        var allFailedLines = raw.Split('\n')
             .Where(l => l.TrimStart().StartsWith("FAILED ", StringComparison.Ordinal))
             .Select(l => l.Trim())
-            .Take(30)
             .ToList();
+        var failedLines = allFailedLines.Take(MaxFailingListed).ToList();
 
         if (failedLines.Count > 0)
         {
@@ -328,6 +343,7 @@ internal class RunTestsTool : ITool
             sb.AppendLine("Failing tests:");
             foreach (var l in failedLines)
                 sb.AppendLine("  " + l);
+            AppendMoreFailures(sb, allFailedLines.Count, failedLines.Count);
         }
 
         var result = sb.ToString().Trim();
@@ -360,13 +376,13 @@ internal class RunTestsTool : ITool
         else if (exitCode == 0)
             sb.AppendLine(NothingProven);
 
-        var failing = raw.Split('\n')
+        var allFailing = raw.Split('\n')
             .Select(l => l.Trim())
             .Where(l => l.StartsWith("test ", StringComparison.Ordinal) && l.EndsWith("... FAILED", StringComparison.Ordinal))
             .Select(l => l["test ".Length..^"... FAILED".Length].Trim())
             .Distinct()
-            .Take(30)
             .ToList();
+        var failing = allFailing.Take(MaxFailingListed).ToList();
 
         if (failing.Count > 0)
         {
@@ -374,6 +390,7 @@ internal class RunTestsTool : ITool
             sb.AppendLine("Failing tests:");
             foreach (var name in failing)
                 sb.AppendLine($"  ✗ {name}");
+            AppendMoreFailures(sb, allFailing.Count, failing.Count);
         }
 
         var result = sb.ToString().Trim();
@@ -386,11 +403,16 @@ internal class RunTestsTool : ITool
     {
         var sb = new StringBuilder();
 
-        var failing = Regex.Matches(raw, @"^\s*--- FAIL:\s+(\S+)", RegexOptions.Multiline, RegexBudget.Default)
+        // ⚠ Count BEFORE capping. `failing.Count` used to be read off the capped list, so a suite
+        // with eighty failures reported "30 failing test(s)": the loop fixes thirty, re-runs, finds
+        // fifty, and reads them as regressions it just introduced. Same mechanism as
+        // SmartFixValidator's build errors — and go is the one runner with no summary of its own,
+        // so this number is the only one the model gets.
+        var allFailing = Regex.Matches(raw, @"^\s*--- FAIL:\s+(\S+)", RegexOptions.Multiline, RegexBudget.Default)
             .Select(m => m.Groups[1].Value)
             .Distinct()
-            .Take(30)
             .ToList();
+        var failing = allFailing.Take(MaxFailingListed).ToList();
 
         if (exitCode == 0)
         {
@@ -406,7 +428,7 @@ internal class RunTestsTool : ITool
                   "was proven. Read the raw output below; do not treat this as a pass.");
         }
         else
-            sb.AppendLine($"✗ FAILED — {(failing.Count > 0 ? $"{failing.Count} failing test(s)" : "see output")}");
+            sb.AppendLine($"✗ FAILED — {(allFailing.Count > 0 ? $"{allFailing.Count} failing test(s)" : "see output")}");
 
         if (failing.Count > 0)
         {
@@ -414,6 +436,7 @@ internal class RunTestsTool : ITool
             sb.AppendLine("Failing tests:");
             foreach (var name in failing)
                 sb.AppendLine($"  ✗ {name}");
+            AppendMoreFailures(sb, allFailing.Count, failing.Count);
         }
 
         // Surface the diagnostic lines Go prints under each failure (file:line: message).

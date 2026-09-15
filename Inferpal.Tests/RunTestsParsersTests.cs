@@ -216,4 +216,62 @@ public class RunTestsParsersTests
         Assert.DoesNotContain("✓", result);
         Assert.False(Services.Commands.TddCommandHandler.TestsPassed(result));
     }
+    // ── The count above the list is never the length of the list ────────────────
+    //
+    // The "Failing tests:" list is a sample, capped at thirty. The COUNT is not, and go's parser
+    // read it off the capped list: eighty failures reported "30 failing test(s)". The /tdd loop
+    // then fixes thirty, re-runs, finds fifty, and reads them as regressions it just introduced —
+    // the exact reasoning error the build-error path paid for in SmartFixValidator. Go is also the
+    // one runner with no summary of its own, so that number is all the model gets.
+
+    [Fact]
+    public void Go_MoreFailuresThanItLists_CountsThemAll_AndSaysWhatItLeftOut()
+    {
+        var raw = string.Join("\n", Enumerable.Range(0, 80).Select(i => $"--- FAIL: TestCase{i:00} (0.00s)"));
+
+        var result = RunTestsTool.ParseGoOutput(raw, 1);
+
+        Assert.Contains("80 failing test(s)", result);          // the count is the real one…
+        Assert.Contains("+50 more failing test(s)", result);    // …and the list says what it dropped
+        Assert.Equal(30, result.Split('\n').Count(l => l.TrimStart().StartsWith("✗ TestCase")));
+    }
+
+    [Fact]
+    public void Go_FewerFailuresThanItsCap_SaysNothingExtra()
+    {
+        // Witness: the rule above must read as "the notice appeared", not as "some number
+        // appeared". A run that fits adds nothing.
+        var raw = "--- FAIL: TestOne (0.00s)\n--- FAIL: TestTwo (0.00s)";
+
+        var result = RunTestsTool.ParseGoOutput(raw, 1);
+
+        Assert.Contains("2 failing test(s)", result);
+        Assert.DoesNotContain("more failing test(s) not listed", result);
+    }
+
+    [Fact]
+    public void Pytest_MoreFailuresThanItLists_SaysWhatItLeftOut()
+    {
+        // pytest and cargo print their own summary, so the COUNT was always honest here — only the
+        // list was silently cut. Same discipline, lesser stakes.
+        var raw = "= 80 failed, 1 passed in 2.00s =\n"
+                + string.Join("\n", Enumerable.Range(0, 80).Select(i => $"FAILED tests/test_x.py::test_{i:00} - E"));
+
+        var result = RunTestsTool.ParsePytestOutput(raw, 1);
+
+        Assert.Contains("80 failed", result);
+        Assert.Contains("+50 more failing test(s)", result);
+    }
+
+    [Fact]
+    public void Cargo_MoreFailuresThanItLists_SaysWhatItLeftOut()
+    {
+        var raw = "test result: FAILED. 0 passed; 80 failed; 0 ignored; 0 measured; 0 filtered out\n"
+                + string.Join("\n", Enumerable.Range(0, 80).Select(i => $"test case_{i:00} ... FAILED"));
+
+        var result = RunTestsTool.ParseCargoOutput(raw, 1);
+
+        Assert.Contains("Failed: 80", result);
+        Assert.Contains("+50 more failing test(s)", result);
+    }
 }
