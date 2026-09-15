@@ -70,8 +70,10 @@ internal sealed class McpToolService : IAsyncDisposable
     // not carry them - and they appeared nowhere. They join the same snapshot, so both front-ends
     // render them without a line of extra code.
     private IReadOnlyList<McpServerStatus> _rejected = [];
-    private volatile IReadOnlyList<ITool> _tools = [];
-    private volatile IReadOnlyList<McpServerStatus> _status = [];
+    // Tools and status are published as ONE snapshot. Two separate writes let a reader see the tools of a
+    // reconnected server with the status from before the reconnect ("disconnected", zero tools).
+    private sealed record Snapshot(IReadOnlyList<ITool> Tools, IReadOnlyList<McpServerStatus> Status);
+    private volatile Snapshot _snapshot = new([], []);
     // volatile: re-checked after awaits on threads other than the disposing one.
     private volatile bool _disposed;
 
@@ -111,10 +113,10 @@ internal sealed class McpToolService : IAsyncDisposable
     }
 
     /// <summary>Live snapshot of all MCP tools currently available (empty until discovery completes).</summary>
-    public IReadOnlyList<ITool> Tools => _tools;
+    public IReadOnlyList<ITool> Tools => _snapshot.Tools;
 
     /// <summary>Per-server connection status, for display in the settings window.</summary>
-    public IReadOnlyList<McpServerStatus> Status => _status;
+    public IReadOnlyList<McpServerStatus> Status => _snapshot.Status;
 
     /// <summary>
     /// One line per configured server for the <c>/diagnostics export</c> bundle. English by
@@ -127,7 +129,7 @@ internal sealed class McpToolService : IAsyncDisposable
     /// handler because <c>DiagnosticsCommandHandler</c> is pure by doctrine: state is passed to it.
     /// </remarks>
     public IReadOnlyList<string> DescribeForBundle() =>
-        [.. _status.Select(s => s.Connected
+        [.. _snapshot.Status.Select(s => s.Connected
             ? s.Error is { Length: > 0 } problem
                 ? $"{s.Name} — connected, {s.ToolCount} tool(s): {problem}"
                 : $"{s.Name} — connected, {s.ToolCount} tool(s)"
@@ -148,8 +150,7 @@ internal sealed class McpToolService : IAsyncDisposable
 
             if (_disposed || !_config.McpEnabled)
             {
-                _tools  = [];
-                _status = [];
+                _snapshot = new Snapshot([], []);
                 return;
             }
 
@@ -424,13 +425,12 @@ internal sealed class McpToolService : IAsyncDisposable
             Diagnostics.Record("Mcp", $"Tool name '{tool.Name}' is used by two servers; the second is exposed as '{renamed}'.");
             tools.Add(tool is McpTool mcp ? mcp.WithName(renamed) : tool);
         }
-        _tools  = tools;
-        _status =
+        _snapshot = new Snapshot(tools,
         [
             .. _rejected,
             .. _failed,
             .. _servers.Select(e => new McpServerStatus(e.Config.Name, e.Connected, e.Tools.Count, e.Error)),
-        ];
+        ]);
     }
 
     private async Task TeardownAsync()
@@ -439,7 +439,7 @@ internal sealed class McpToolService : IAsyncDisposable
         _servers  = [];
         _failed   = [];
         _rejected = [];
-        _tools    = [];
+        _snapshot = _snapshot with { Tools = [] };
         foreach (var entry in old)
             await entry.Client.DisposeAsync().ConfigureAwait(false);
     }
