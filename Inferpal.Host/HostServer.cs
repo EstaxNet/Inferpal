@@ -741,11 +741,34 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("fim/complete", UseSingleObjectParameterDeserialization = true)]
     public async Task<string> FimCompleteAsync(FimParams p, CancellationToken ct)
     {
-        var s  = Session();
+        var s = Session();
+
+        // Inferpal's inline-completion settings, read here the way the Visual Studio leg reads them
+        // (GhostTextController): the VS Code provider sends none of them, so without this the switch,
+        // the mode and the FIM model shown in its settings panel changed nothing.
+        var config = s.Config;
+        if (!config.InlineCompletionEnabled) return string.Empty;
+        var preset = Services.CodeActions.FimContextBuilder.GetSettings(config.InlineCompletionMode);
+        var model  = !string.IsNullOrWhiteSpace(p.Model) ? p.Model
+                   : string.IsNullOrWhiteSpace(config.InlineCompletionModel) ? null : config.InlineCompletionModel;
+
         var sb = new StringBuilder();
-        await s.Client.StreamFimAsync(p.Prefix, p.Suffix, p.MaxTokens, p.Temperature,
-                                      t => sb.Append(t), ct, p.Model);
+        await s.Client.StreamFimAsync(p.Prefix, p.Suffix, p.MaxTokens ?? preset.MaxTokens,
+                                      p.Temperature ?? preset.Temperature, t => sb.Append(t), ct, model);
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Whether inline completion is on, and the debounce of its mode: what the VS Code provider needs
+    /// before it asks (the debounce runs on its side, where the keystrokes are).
+    /// </summary>
+    [JsonRpcMethod("fim/settings")]
+    public FimSettingsResult FimSettings()
+    {
+        var config = Session().Config;
+        return new FimSettingsResult(
+            config.InlineCompletionEnabled,
+            Services.CodeActions.FimContextBuilder.GetSettings(config.InlineCompletionMode).DebounceMs);
     }
 
     // ── Config ─────────────────────────────────────────────────────────────────

@@ -23,6 +23,12 @@ export interface InitializeResult {
   keepAlive: boolean;
 }
 
+/** `fim/settings` — Inferpal's inline-completion switch and the debounce of its mode. */
+export interface FimSettingsResult {
+  enabled: boolean;
+  debounceMs: number;
+}
+
 export interface ChatSendParams {
   prompt: string;
   model?: string;

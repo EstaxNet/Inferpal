@@ -54,12 +54,18 @@ internal sealed record ChatSendResult(
 internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors);
 
 /// <summary>`fim/complete` — ghost-text request; cancellation aborts the LLM call via the RPC token.</summary>
+/// <param name="MaxTokens">Absent: the tokens of the configured inline-completion mode.</param>
+/// <param name="Temperature">Absent: the temperature of the configured inline-completion mode.</param>
+/// <param name="Model">Absent: the configured FIM model, else the client's default.</param>
 internal sealed record FimParams(
     string  Prefix,
     string  Suffix,
-    int     MaxTokens   = 128,
-    double  Temperature = 0.2,
+    int?    MaxTokens   = null,
+    double? Temperature = null,
     string? Model       = null);
+
+/// <summary>`fim/settings` — whether inline completion is on, and the debounce of its mode.</summary>
+internal sealed record FimSettingsResult(bool Enabled, int DebounceMs);
 
 /// <summary>`textDocument/didOpen|didChange|didClose` + `editor/didChangeActiveDocument`.</summary>
 /// <param name="Dirty">Whether the buffer has unsaved changes; absent means it does.</param>

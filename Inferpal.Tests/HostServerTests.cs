@@ -169,6 +169,86 @@ public class HostServerTests
         return new Harness { Client = client, ServerRpc = serverRpc, Server = server, Fake = fake, Target = target };
     }
 
+    // ── fim/complete ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// VS Code's inline completion follows Inferpal's settings, like Visual Studio's: the FIM model, and the
+    /// tokens and temperature of the chosen mode.
+    /// </summary>
+    /// <remarks>
+    /// The VS Code panel shows these settings, and the inline provider sent none of them: the host completed
+    /// with 128 tokens, a temperature of 0.2 and the CHAT model, whatever the settings.
+    /// </remarks>
+    [Fact]
+    public async Task FimComplete_FollowsTheInlineCompletionSettings()
+    {
+        using var h = CreateHarness(cfg =>
+        {
+            cfg.InlineCompletionModel = "qwen2.5-coder:1.5b";
+            cfg.InlineCompletionMode  = "HighAccuracy";
+        });
+        h.Fake.OnFim = (_, _) => "completed";
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var text = await h.Client.InvokeWithParameterObjectAsync<string>("fim/complete", new { prefix = "a", suffix = "b" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal("completed", text);
+        var preset = FimContextBuilder.GetSettings("HighAccuracy");
+        Assert.Equal(("qwen2.5-coder:1.5b", preset.MaxTokens, preset.Temperature), h.Fake.LastFim);
+    }
+
+    /// <summary>Inline completion unchecked: the backend is not called, as in Visual Studio.</summary>
+    [Fact]
+    public async Task FimComplete_WhenInlineCompletionIsOff_DoesNotCallTheBackend()
+    {
+        using var h = CreateHarness(cfg => cfg.InlineCompletionEnabled = false);
+        h.Fake.OnFim = (_, _) => "should not appear";
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var text = await h.Client.InvokeWithParameterObjectAsync<string>("fim/complete", new { prefix = "a", suffix = "b" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(string.Empty, text);
+        Assert.Null(h.Fake.LastFim);
+    }
+
+    // Reference arm: with no FIM model configured, the choice is left to the client (the chat model), as for the
+    // Visual Studio leg.
+    [Fact]
+    public async Task FimComplete_WithoutAnInlineModel_LeavesTheModelToTheClient()
+    {
+        using var h = CreateHarness(cfg => cfg.InlineCompletionModel = string.Empty);
+        h.Fake.OnFim = (_, _) => "completed";
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        await h.Client.InvokeWithParameterObjectAsync<string>("fim/complete", new { prefix = "a", suffix = "b" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.NotNull(h.Fake.LastFim);
+        Assert.Null(h.Fake.LastFim!.Value.Model);
+    }
+
+    /// <summary>What VS Code's provider needs before it asks: the switch and the delay of the mode.</summary>
+    [Fact]
+    public async Task FimSettings_GiveWhetherInlineCompletionIsOn_AndTheDebounceOfItsMode()
+    {
+        using var h = CreateHarness(cfg =>
+        {
+            cfg.InlineCompletionEnabled = false;
+            cfg.InlineCompletionMode    = "Fast";
+        });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var settings = await h.Client.InvokeAsync<FimSettingsResult>("fim/settings")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.False(settings.Enabled);
+        Assert.Equal(FimContextBuilder.GetSettings("Fast").DebounceMs, settings.DebounceMs);
+        // Witness: the delay of the chosen mode is not the default mode's.
+        Assert.NotEqual(FimContextBuilder.GetSettings("Default").DebounceMs, settings.DebounceMs);
+    }
+
     // ── initialize ─────────────────────────────────────────────────────────────
 
     [Fact]

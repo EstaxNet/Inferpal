@@ -252,6 +252,29 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
+    /// VS Code's inline provider stays silent when inline completion is unchecked and waits for the delay of the
+    /// chosen mode, like the Visual Studio leg. Its delay was a constant, and the panel showed settings that
+    /// changed nothing.
+    /// </summary>
+    [Fact]
+    public void VsCodeInlineCompletions_FollowInferpalsSettings()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        var provider = Path.Combine(dir!, "vscode", "src", "inlineCompletions.ts");
+        Assert.True(File.Exists(provider), "vscode/src/inlineCompletions.ts has disappeared.");
+        var source = NeutralizeTypeScriptComments(File.ReadAllText(provider));
+        // Witness: this really is the inline provider.
+        Assert.Contains("provideInlineCompletionItems", source, StringComparison.Ordinal);
+
+        Assert.Matches(new Regex(@"fimSettings\(\)"), source);
+        Assert.Matches(new Regex(@"if \(!settings\?\.enabled\)[\s\S]{0,200}?delay\(settings\.debounceMs\)"), source);
+        Assert.DoesNotContain("DEBOUNCE_MS", source, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// A drop-down list of the VS Code panel whose saved value matches no option keeps it. With no option
     /// selected the browser shows the first one, and Save wrote it: an unknown FIM mode became "Fast" (the
     /// product applied "Default"), an unlisted language became "Auto".

@@ -108,9 +108,13 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<IReadOnlyList<InstalledModelInfo>> ListInstalledModelsAsync(CancellationToken ct, string? url = null) =>
         Task.FromResult<IReadOnlyList<InstalledModelInfo>>(Installed);
 
+    /// <summary>The last FIM call received (model, tokens, temperature); null until one arrives.</summary>
+    public (string? Model, int MaxTokens, double Temperature)? LastFim { get; private set; }
+
     public Task StreamFimAsync(string prefix, string suffix, int maxTokens, double temperature,
         Action<string> onToken, CancellationToken ct, string? model = null)
     {
+        LastFim = (model, maxTokens, temperature);
         if (OnFim?.Invoke(prefix, suffix) is { } completion) onToken(completion);
         return Task.CompletedTask;
     }

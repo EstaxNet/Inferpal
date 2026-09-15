@@ -21,6 +21,7 @@ import {
   ConnectionCheckResult,
   DocumentParams,
   EditResultDto,
+  FimSettingsResult,
   IndexStatusResult,
   InitializeParams,
   InitializeResult,
@@ -343,6 +344,11 @@ export class HostClient {
     token?: CancellationToken,
   ): Promise<string> {
     return this.connection().sendRequest<string>('fim/complete', params, token);
+  }
+
+  /** Inferpal's inline-completion switch and the debounce of its mode, as saved in its settings. */
+  fimSettings(): Promise<FimSettingsResult> {
+    return this.connection().sendRequest<FimSettingsResult>('fim/settings');
   }
 
   chatCancel(): Promise<void> {
