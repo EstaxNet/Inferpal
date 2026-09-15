@@ -101,10 +101,12 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     vscode.debug.addBreakpoints([new vscode.SourceBreakpoint(location, true)]);
 
     // Report it as the debugger holds it, not as it was asked for: a breakpoint may bind to
-    // another line, and one that was already there is not a failure.
+    // another line, and one that was already there is not a failure. The line asked for comes
+    // first — the list starts with the existing breakpoints, so a neighbour of the user's would
+    // otherwise be reported as this one.
     const bound = this.findBreakpoints(file, line);
     if (bound.length > 0) {
-      return bound[0];
+      return bound.find((d) => d.line === line) ?? bound[0];
     }
     return vscode.debug.breakpoints.length > before ? { file, line, enabled: true } : null;
   }

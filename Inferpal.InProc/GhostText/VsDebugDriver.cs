@@ -497,9 +497,16 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         // The debugger may bind the breakpoint somewhere else (next executable line), and it may
-        // bind it in several places (generics, multiple modules). Report what it actually did.
-        _dte.Debugger.Breakpoints.Add(string.Empty, file, line);
-        return ListBreakpoints().Where(b => SamePath(b.File, file)).ToList();
+        // bind it in several places (generics, multiple modules). Report what it actually did —
+        // from what Add created, never from the file's whole list: the host announces the first
+        // entry, which would otherwise be any breakpoint the user already had in that file.
+        var created = new List<DebugBreakpointInfo>();
+        foreach (EnvDTE.Breakpoint bp in _dte.Debugger.Breakpoints.Add(string.Empty, file, line))
+        {
+            try { created.Add(new DebugBreakpointInfo(bp.File ?? string.Empty, bp.FileLine, bp.Enabled)); }
+            catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.ReadBreakpoint", ex); }
+        }
+        return created;
     }
 
     private bool RemoveBreakpoint(string file, int line)

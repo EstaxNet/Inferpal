@@ -148,4 +148,19 @@ public class InProcRegressionTests
                         .Any(m => m.Name.Identifier.Text == "HasAggregateFocus"),
             "ReadContext requests a completion from every view of the buffer, focused or not.");
     }
+
+    /// <summary>
+    /// A breakpoint the model sets is reported from what the debugger created. The driver answered with every
+    /// breakpoint of the file and the host reports the first one: a breakpoint the user already had anywhere in that
+    /// file was announced instead — and a model that then clears what it set removes the user's.
+    /// </summary>
+    [Fact]
+    public void TheDebugDriver_ReportsTheBreakpointItCreated()
+    {
+        var add = Method("Inferpal.InProc/GhostText/VsDebugDriver.cs", "AddBreakpoint");
+        Assert.True(add.ToString().Contains("Breakpoints.Add(", StringComparison.Ordinal),
+            "AddBreakpoint no longer creates a breakpoint — the rule measures nothing.");
+        Assert.False(Calls(add, "ListBreakpoints"),
+            "AddBreakpoint reports every breakpoint of the file: the host announces the first, not the one just set.");
+    }
 }

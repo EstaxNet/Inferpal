@@ -531,4 +531,26 @@ public class SettingsSchemaDriftTests
         Assert.Equal(source.Length, code.Length);
         Assert.Equal(source.Count(ch => ch == '\n'), code.Count(ch => ch == '\n'));
     }
+
+    /// <summary>
+    /// A breakpoint the model sets is reported by the line it asked for first. The bridge took the first breakpoint
+    /// within one line of the request, and VS Code lists the existing ones before the new one: with the user's own
+    /// breakpoint on line 41, setting one on line 42 answered "Breakpoint set at …:41" — and a model that then clears
+    /// what it set removes the user's.
+    /// </summary>
+    [Fact]
+    public void VsCodeBreakpoint_IsReportedByTheLineAskedForFirst()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        var path = Path.Combine(dir!, "vscode", "src", "debugBridge.ts");
+        Assert.True(File.Exists(path), "vscode/src/debugBridge.ts has disappeared.");
+        var bridge = NeutralizeTypeScriptComments(File.ReadAllText(path));
+        var at = bridge.IndexOf("async addBreakpoint(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "addBreakpoint moved — the rule measures nothing.");
+        var body = bridge[at..bridge.IndexOf("async removeBreakpoint(", at, StringComparison.Ordinal)];
+        Assert.Contains("d.line === line", body, StringComparison.Ordinal);
+    }
 }
