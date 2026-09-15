@@ -88,6 +88,14 @@ internal sealed class HostSession : IDisposable
     /// </summary>
     public string? OodaSummary { get; set; }
 
+    /// <summary>File the adapter last reported active (`editor/didChangeActiveDocument`): the glob-scoped
+    /// project rules of the system prompt follow it (mirror of the VS VM's <c>_activeFilePath</c>).</summary>
+    public string? ActiveFilePath { get; set; }
+
+    /// <summary>Language of the last active CODE file (mirror of the VS VM's <c>_personaLanguage</c>): the
+    /// persona the system prompt carries when persona auto-switching is on.</summary>
+    public string? PersonaLanguage { get; set; }
+
     /// <summary>Finished turns of this conversation (mirror of the VS VM's <c>_conversationTurnCount</c>).</summary>
     public int ConversationTurnCount { get; set; }
 

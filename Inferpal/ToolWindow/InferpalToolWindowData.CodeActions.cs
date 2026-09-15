@@ -52,31 +52,9 @@ internal partial class InferpalToolWindowData
         return (rawCode, fileName, label);
     }
 
+    // One reader for both front-ends: the host picks the persona from the same table.
     private static string DetectLanguage(string fileName) =>
-        Path.GetExtension(fileName).ToLowerInvariant() switch
-        {
-            ".cs"     => "csharp",
-            ".ts"     => "typescript",
-            ".tsx"    => "typescript",
-            ".js"     => "javascript",
-            ".jsx"    => "javascript",
-            ".py"     => "python",
-            ".go"     => "go",
-            ".java"   => "java",
-            ".cpp"    => "cpp",
-            ".c"      => "c",
-            ".h"      => "cpp",
-            ".hpp"    => "cpp",
-            ".rs"     => "rust",
-            ".fs"     => "fsharp",
-            ".rb"     => "ruby",
-            ".php"    => "php",
-            ".swift"  => "swift",
-            ".kt"     => "kotlin",
-            ".razor"  => "razor",
-            ".vue"    => "vue",
-            _         => string.Empty,
-        };
+        SystemPromptBuilder.LanguageOf(fileName) ?? string.Empty;
 
     /// <summary>
     /// Sends a code-action prompt with tools disabled (read-only response).

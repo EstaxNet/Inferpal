@@ -50,6 +50,52 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
              + $"The run_command shell is {shell}.";
     }
 
+    /// <summary>
+    /// Persona language of a file, from its extension; null when it is not a code file the persona knows
+    /// (a Markdown file keeps the previous persona). Shared by both front-ends.
+    /// </summary>
+    public static string? LanguageOf(string path) =>
+        Path.GetExtension(path).ToLowerInvariant() switch
+        {
+            ".cs"     => "csharp",
+            ".ts"     => "typescript",
+            ".tsx"    => "typescript",
+            ".js"     => "javascript",
+            ".jsx"    => "javascript",
+            ".py"     => "python",
+            ".go"     => "go",
+            ".java"   => "java",
+            ".cpp"    => "cpp",
+            ".c"      => "c",
+            ".h"      => "cpp",
+            ".hpp"    => "cpp",
+            ".rs"     => "rust",
+            ".fs"     => "fsharp",
+            ".rb"     => "ruby",
+            ".php"    => "php",
+            ".swift"  => "swift",
+            ".kt"     => "kotlin",
+            ".razor"  => "razor",
+            ".vue"    => "vue",
+            _         => null,
+        };
+
+    /// <summary>
+    /// The active file relative to the project root, '/'-separated, as the glob-scoped rules match it; null
+    /// without a root or a file, or for a file outside the root. Shared by both front-ends.
+    /// </summary>
+    public static string? RelativeActivePath(string? root, string? path)
+    {
+        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(root)) return null;
+        try
+        {
+            var rel = Path.GetRelativePath(root, path);
+            if (rel.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(rel)) return null;
+            return rel.Replace('\\', '/');
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { return null; }
+    }
+
     /// <summary>Persona snippet appended when persona auto-switch is on, keyed by editor language.</summary>
     internal static string PersonaSnippetFor(string language) => language switch
     {

@@ -220,6 +220,9 @@ internal sealed partial class HostServer : IDisposable
             if (!string.IsNullOrEmpty(autoCtx))
                 promptText = autoCtx + "\n\n" + promptText;
 
+            // The system prompt follows the active file (glob-scoped rules, persona), which the adapter reports by
+            // notification; it is rebuilt here, inside the turn slot, never from the notification itself.
+            RefreshSystemPrompt(s);
             s.History.Add(new ChatMessageDto("user", promptText));
 
             // Pre-send context check.
@@ -1038,7 +1041,18 @@ internal sealed partial class HostServer : IDisposable
 
     [JsonRpcMethod("editor/didChangeActiveDocument", UseSingleObjectParameterDeserialization = true)]
     public void DidChangeActiveDocument(DocumentParams p)
-        => Session().Editor.SetActiveDocument(string.IsNullOrEmpty(p.Path) ? null : p.Path);
+    {
+        var s    = Session();
+        var path = string.IsNullOrEmpty(p.Path) ? null : p.Path;
+        s.Editor.SetActiveDocument(path);
+
+        // What the system prompt reads of the active file, as in the Visual Studio view model: the glob-scoped
+        // project rules follow it, and the persona keeps the language of the last CODE file (a Markdown file picks
+        // none). Only fields here — the prompt is rebuilt at the start of the next turn, inside the turn slot.
+        s.ActiveFilePath = path;
+        if (path is not null && SystemPromptBuilder.LanguageOf(path) is { } language)
+            s.PersonaLanguage = language;
+    }
 
     // ── Internals ──────────────────────────────────────────────────────────────
 
@@ -1149,9 +1163,12 @@ internal sealed partial class HostServer : IDisposable
     /// plan-mode instructions.</summary>
     private static string BuildSystemPromptText(HostSession s)
     {
+        var root   = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
         var prompt = new SystemPromptBuilder(s.Config, EditorName).Build(
             Strings.SystemPrompt,
-            projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
+            language:           s.PersonaLanguage,
+            projectRoot:        root,
+            activeFileRelPath:  SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath),
             disabledSectionIds: s.XrayDisabledSections);
         if (!string.IsNullOrEmpty(s.TemplateSuffix)) prompt += "\n\n" + s.TemplateSuffix;
         if (s.PlanMode)                              prompt += PlanModeToolRegistry.SystemPromptSuffix;
@@ -1160,10 +1177,15 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>Prompt layers for the X-Ray panel — same inputs as <see cref="BuildSystemPromptText"/>.</summary>
-    private static IReadOnlyList<PromptSection> BuildPromptSections(HostSession s) =>
-        new SystemPromptBuilder(s.Config, EditorName).BuildSections(
+    private static IReadOnlyList<PromptSection> BuildPromptSections(HostSession s)
+    {
+        var root = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
+        return new SystemPromptBuilder(s.Config, EditorName).BuildSections(
             Strings.SystemPrompt,
-            projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
+            language:          s.PersonaLanguage,
+            projectRoot:       root,
+            activeFileRelPath: SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath));
+    }
 
     private static XRayPanelDto ToXRayPanelDto(HostSession s)
     {

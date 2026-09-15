@@ -373,18 +373,8 @@ internal partial class InferpalToolWindowData
 
     // Active editor file path relative to the project root (forward slashes), or null when no file
     // is active or it lives outside the root. Used to scope project rules by glob.
-    private string? ActiveFileRelativeTo(string root)
-    {
-        var path = _activeFilePath;
-        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(root)) return null;
-        try
-        {
-            var rel = Path.GetRelativePath(root, path);
-            if (rel.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(rel)) return null;
-            return rel.Replace('\\', '/');
-        }
-        catch { return null; }
-    }
+    private string? ActiveFileRelativeTo(string root) =>
+        SystemPromptBuilder.RelativeActivePath(root, _activeFilePath);
 
     // Returns a .sln-anchored root, or null if none can be found yet.
     // Unlike FindProjectRoot(), never falls back to CWD — callers that need a reliable

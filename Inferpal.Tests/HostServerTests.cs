@@ -249,6 +249,112 @@ public class HostServerTests
         Assert.NotEqual(FimContextBuilder.GetSettings("Default").DebounceMs, settings.DebounceMs);
     }
 
+    // ── active file → system prompt ────────────────────────────────────────────
+
+    /// <summary>Waits until the X-Ray panel shows (or no longer shows) a section: the active-document notification
+    /// and the request after it are not dispatched in a guaranteed order.</summary>
+    private static async Task WaitForXraySectionAsync(Harness h, Func<string, bool> matches, bool present = true)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (DateTime.UtcNow < deadline)
+        {
+            var panel = await h.Client.InvokeAsync<XRayPanelDto>("xray/panel");
+            if (panel.Sections.Any(sec => matches(sec.Id)) == present) return;
+            await Task.Delay(20);
+        }
+    }
+
+    private static string NewRootWithCSharpRule()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"host-active-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, ".inferpal", "rules"));
+        File.WriteAllText(Path.Combine(root, ".inferpal", "rules", "csharp.md"),
+            "---\nglobs: *.cs\n---\nRULE-FOR-CSHARP-FILES");
+        return root;
+    }
+
+    /// <summary>
+    /// Under VS Code, the system prompt follows the active file as in Visual Studio: the glob-scoped project rules
+    /// and the persona of its language.
+    /// </summary>
+    /// <remarks>
+    /// The host received the active document (<c>editor/didChangeActiveDocument</c>) and never passed it to the
+    /// prompt: a <c>globs: *.cs</c> rule never applied, and the "persona auto-switch" box did nothing.
+    /// </remarks>
+    [Fact]
+    public async Task TheSystemPrompt_FollowsTheActiveFile_ScopedRulesAndPersona()
+    {
+        var root = NewRootWithCSharpRule();
+        try
+        {
+            using var h = CreateHarness();
+            string? system = null;
+            h.Fake.OnChatRequest = (_, history, _, _) =>
+            {
+                system = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
+            };
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
+                new { path = Path.Combine(root, "src", "Program.cs") });
+            await WaitForXraySectionAsync(h, id => id.StartsWith("Rules|", StringComparison.Ordinal));
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.NotNull(system);
+            Assert.Contains("RULE-FOR-CSHARP-FILES", system);
+            Assert.Contains(SystemPromptBuilder.PersonaSnippetFor("csharp"), system);
+
+            // Reference arm: a file the rule does not target removes it; the persona stays the one of the last code
+            // file, as in Visual Studio (a Markdown file picks none).
+            await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
+                new { path = Path.Combine(root, "README.md") });
+            await WaitForXraySectionAsync(h, id => id.StartsWith("Rules|", StringComparison.Ordinal), present: false);
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "again", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.DoesNotContain("RULE-FOR-CSHARP-FILES", system);
+            Assert.Contains(SystemPromptBuilder.PersonaSnippetFor("csharp"), system);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>Persona auto-switch unchecked: the active file adds no persona (the rule still applies).</summary>
+    [Fact]
+    public async Task WithPersonaAutoSwitchOff_TheActiveFileAddsNoPersona()
+    {
+        var root = NewRootWithCSharpRule();
+        try
+        {
+            using var h = CreateHarness(cfg => cfg.PersonaAutoSwitch = false);
+            string? system = null;
+            h.Fake.OnChatRequest = (_, history, _, _) =>
+            {
+                system = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
+            };
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
+                new { path = Path.Combine(root, "Program.cs") });
+            await WaitForXraySectionAsync(h, id => id.StartsWith("Rules|", StringComparison.Ordinal));
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.NotNull(system);
+            Assert.Contains("RULE-FOR-CSHARP-FILES", system);   // witness: the active file did arrive
+            Assert.DoesNotContain(SystemPromptBuilder.PersonaSnippetFor("csharp"), system);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
     // ── initialize ─────────────────────────────────────────────────────────────
 
     [Fact]
