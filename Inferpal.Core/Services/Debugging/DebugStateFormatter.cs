@@ -70,7 +70,7 @@ internal static class DebugStateFormatter
 
         if (state.Locals.Count > 0)
         {
-            sb.Append("\n### Locals (current frame)\n");
+            sb.Append("\n### Locals").Append(LocalsScope(state, frames)).Append('\n');
             foreach (var l in state.Locals.Take(MaxLocals))
                 sb.Append("- `").Append(l.Name).Append("` (").Append(l.Type).Append(") = ")
                   .Append(Cap(l.Value)).Append('\n');
@@ -79,6 +79,32 @@ internal static class DebugStateFormatter
         }
 
         return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>
+    /// The parenthetical that says which frame the locals belong to: "(current frame)" only when
+    /// that frame is the one printed first, the frame named otherwise, and nothing at all when the
+    /// producer did not say.
+    /// </summary>
+    /// <remarks>
+    /// The old label claimed "current frame" unconditionally, next to a stack whose first line is
+    /// the first frame <i>kept by <see cref="UserFrames"/></i>. On the measured Node stack — an
+    /// exception thrown inside a library, three user frames below — the model was handed the
+    /// runtime frame's variables as if they were the user frame's, which is the kind of wrong
+    /// answer it has no way to notice. Naming the frame costs one line and removes the claim.
+    /// </remarks>
+    internal static string LocalsScope(DebugStopState state, IReadOnlyList<DebugFrame> shown)
+    {
+        if (state.LocalsFrameId is not { } id) return string.Empty;
+        if (shown.Count > 0 && shown[0].Id == id) return " (current frame)";
+
+        var frame = state.Frames.FirstOrDefault(f => f.Id == id);
+        if (frame is null) return string.Empty;
+
+        var where = frame.File is null ? string.Empty
+                  : frame.Line is null ? $" at {frame.File}"
+                  : $" at {frame.File}:{frame.Line}";
+        return $" (frame: {frame.Function}{where} — not the frame listed first)";
     }
 
     /// <summary>Truncates an adapter-rendered value without pretending to understand it.</summary>

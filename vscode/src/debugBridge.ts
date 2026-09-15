@@ -339,6 +339,9 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
             frames: frames.slice(0, MAX_FRAMES),
             locals,
             exception: this.lastStop?.text ?? null,
+            // Not the top frame: the throw usually happens below the user's code, and `hit` is the
+            // first frame under the root. Saying so is the whole point of the field.
+            localsFrameId: hit.id,
           };
         }
       }
@@ -448,6 +451,7 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
       frames: frames.slice(0, MAX_FRAMES),
       locals: frames.length > 0 ? await this.locals(session, frames[0].id) : [],
       exception: this.lastStop?.reason === 'exception' ? this.lastStop.text : null,
+      localsFrameId: frames.length > 0 ? frames[0].id : null,
     };
   }
 

@@ -376,6 +376,12 @@ export interface DebugStopStateDto {
   frames: DebugFrameDto[];
   locals: DebugVariableDto[];
   exception?: string | null;
+  /**
+   * Id of the frame `locals` were read from. The ordinary capture reads the top frame, the `/tdd`
+   * capture reads the first frame under the workspace root, and the renderer hides frames outside
+   * it — so the frame printed first is often not this one, and the reader must be told which.
+   */
+  localsFrameId?: number | null;
 }
 
 /** `debug/start` answer — three outcomes: a stop, a completed run (both null), or a failure. */

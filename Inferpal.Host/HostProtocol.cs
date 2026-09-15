@@ -102,13 +102,18 @@ internal sealed record DebugFrameDto(int Id, string Function, string? File, int?
 /// <summary>One variable of the current frame; <paramref name="Value"/> is the adapter's rendering.</summary>
 internal sealed record DebugVariableDto(string Name, string Type, string Value);
 
-/// <summary>Where and why execution is paused.</summary>
+/// <summary>
+/// Where and why execution is paused. <paramref name="LocalsFrameId"/> is the frame the locals
+/// were read from — the bridge's ordinary capture reads the top frame, its `/tdd` capture reads
+/// the first frame under the workspace root, so it cannot be inferred here.
+/// </summary>
 internal sealed record DebugStopStateDto(
     string?                  Reason,
     int                      ThreadId,
     List<DebugFrameDto>?     Frames,
     List<DebugVariableDto>?  Locals,
-    string?                  Exception = null);
+    string?                  Exception = null,
+    int?                     LocalsFrameId = null);
 
 /// <summary>
 /// Answer to `debug/start`: the three outcomes of asking a debugger to run, kept apart on the

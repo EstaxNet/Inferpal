@@ -20,7 +20,7 @@ internal sealed class DebugInspectTool(IDebugSession session, Func<string> root)
 
     public string Description =>
         "Reads the state of a paused debugger: stop reason, call stack, and the local variables of "
-        + "the current frame; or evaluates an expression in the scope of the current frame "
+        + "the frame the state block names; or evaluates an expression in that same frame "
         + "(action='evaluate'). Values are rendered by the debugger itself — read them, do not "
         + "assume a format. Requires a session paused by debug_control.";
 
@@ -30,7 +30,7 @@ internal sealed class DebugInspectTool(IDebugSession session, Func<string> root)
         properties = new
         {
             action     = new { type = "string", description = "'state' (default) or 'evaluate'." },
-            expression = new { type = "string", description = "Expression to evaluate in the current frame. Required for action='evaluate'." },
+            expression = new { type = "string", description = "Expression to evaluate, in the frame the state block names. Required for action='evaluate'." },
         },
         required = Array.Empty<string>(),
     };
@@ -51,7 +51,13 @@ internal sealed class DebugInspectTool(IDebugSession session, Func<string> root)
             var state = await session.GetStateAsync(ct);
             if (state is null) return NotPaused;
 
-            var frameId = state.Frames.Count > 0 ? state.Frames[0].Id : (int?)null;
+            // ⚠ The frame the LOCALS came from, not the top of the stack. The two differ: Visual
+            // Studio reads the IDE's selected frame (Just My Code moves it off the top, so does a
+            // user click) and the /tdd capture reads the first frame under the workspace root. The
+            // model reads those locals and evaluates against them — answering from another scope
+            // turns `total * 2` into "unknown symbol" on a symbol it was just shown, and the tool's
+            // own description promised one frame for both.
+            var frameId = state.LocalsFrameId ?? (state.Frames.Count > 0 ? state.Frames[0].Id : (int?)null);
             var value   = await session.EvaluateAsync(expression, frameId, ct);
             return value is null
                 ? $"The debugger could not evaluate `{expression}` in this frame (unknown symbol, or not "

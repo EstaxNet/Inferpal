@@ -553,4 +553,101 @@ public class SettingsSchemaDriftTests
         var body = bridge[at..bridge.IndexOf("async removeBreakpoint(", at, StringComparison.Ordinal)];
         Assert.Contains("d.line === line", body, StringComparison.Ordinal);
     }
+
+    /// <summary>Reads a TypeScript source of the extension, comments neutralized.</summary>
+    private static string VsCodeSource(string relative)
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        var path = Path.Combine(dir!, "vscode", "src", relative);
+        Assert.True(File.Exists(path), $"vscode/src/{relative} has disappeared.");
+        return NeutralizeTypeScriptComments(File.ReadAllText(path));
+    }
+
+    /// <summary>
+    /// Both captures of the bridge say <b>which frame</b> the locals came from.
+    /// </summary>
+    /// <remarks>
+    /// They do not read the same one: <c>capture()</c> takes the top of the stack,
+    /// <c>captureTest()</c> the first frame under the workspace root. The renderer, in turn,
+    /// <b>hides</b> frames outside the workspace — so the frame printed first is often not the one
+    /// the locals came from, and the label "Locals (current frame)" attributed a runtime frame's
+    /// variables to the user's code. The field exists only to make that sentence true: a capture
+    /// that forgets it falls back to "we do not know", which is to say to silence.
+    ///
+    /// The rule reads the <b>body</b> of each capture, not the file: <c>localsFrameId</c> written
+    /// once somewhere would make both green.
+    /// </remarks>
+    [Fact]
+    public void VsCodeDebugCaptures_SayWhichFrameTheLocalsCameFrom()
+    {
+        var bridge = VsCodeSource("debugBridge.ts");
+
+        foreach (var (opening, closing) in new[]
+                 {
+                     ("private async capture(", "private async frames("),
+                     ("async captureTest(",     "private async localsExpanded("),
+                 })
+        {
+            var at = bridge.IndexOf(opening, StringComparison.Ordinal);
+            Assert.True(at >= 0, $"{opening} has disappeared from debugBridge.ts — the rule measures nothing.");
+            var end = bridge.IndexOf(closing, at, StringComparison.Ordinal);
+            Assert.True(end > at, $"{closing} no longer follows {opening} — the rule measures nothing.");
+
+            Assert.Contains("localsFrameId", bridge[at..end], StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// The "the chat is holding the GPU" state is taken and released through a <b>single funnel</b>,
+    /// and it is counted — the TypeScript twin of rule 29.
+    /// </summary>
+    /// <remarks>
+    /// It was a boolean, and <b>three</b> requests raised it: <c>chat/send</c>,
+    /// <c>command/slash</c> and <c>codeAction/run</c>. They overlap in ordinary use (a <c>/tdd</c>
+    /// typed while an answer streams, a code action launched from the editor): the first
+    /// <c>finally</c> cleared the flag while the other request still held the GPU lease, FIM stopped
+    /// yielding, and its requests queued behind the busy GPU only to be dropped. A silent failure:
+    /// nothing errors, completions are missing.
+    ///
+    /// The rule is about <b>shape</b>: the counter is only mutated inside the funnel, so a fourth
+    /// GPU-holding request goes through it by construction.
+    /// </remarks>
+    [Fact]
+    public void VsCodeHostClient_TakesAndReleasesTheChatBusyStateThroughOneFunnel()
+    {
+        var client = VsCodeSource("hostClient.ts");
+
+        var open = client.IndexOf("private async whileChatBusy<T>(", StringComparison.Ordinal);
+        Assert.True(open >= 0, "whileChatBusy has disappeared from hostClient.ts — the rule measures nothing.");
+        var close = client.IndexOf("\n  }", open, StringComparison.Ordinal);
+        Assert.True(close > open, "whileChatBusy has no readable end — the rule measures nothing.");
+
+        // `this.` on purpose: the field declaration (`private chatBusyDepth = 0;`) is an
+        // initialization, not a mutation — the first version of the rule went red on it.
+        var mutations = Regex.Matches(client, @"this\.chatBusyDepth\s*(\+\+|--|=[^=])");
+        Assert.True(mutations.Count >= 2,
+            $"Only {mutations.Count} mutation(s) of the counter found — the rule measures nothing.");
+
+        foreach (Match m in mutations)
+            Assert.True(m.Index > open && m.Index < close,
+                "hostClient.ts mutates the busy counter outside whileChatBusy (offset "
+                + $"{m.Index}) — that is how a shared boolean used to clear itself while another "
+                + "request still held the GPU lease. Go through the funnel.");
+
+        // And the old shape must not come back through the back door.
+        Assert.DoesNotMatch(new Regex(@"isChatBusy\s*=[^=]"), client);
+
+        foreach (var request in new[] { "chatSend(", "commandSlash(", "codeActionRun(" })
+        {
+            var at = client.IndexOf("  " + request, StringComparison.Ordinal);
+            Assert.True(at >= 0, $"{request} has disappeared from hostClient.ts — the rule measures nothing.");
+            var end = client.IndexOf("\n  }", at, StringComparison.Ordinal);
+            Assert.True(end > at, $"{request} has no readable end — the rule measures nothing.");
+
+            Assert.Contains("whileChatBusy", client[at..end], StringComparison.Ordinal);
+        }
+    }
 }

@@ -127,5 +127,6 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
         dto.ThreadId,
         dto.Frames?.Select(f => new DebugFrame(f.Id, f.Function, f.File, f.Line)).ToList() ?? [],
         dto.Locals?.Select(v => new DebugVariable(v.Name, v.Type, v.Value)).ToList() ?? [],
-        dto.Exception);
+        dto.Exception,
+        dto.LocalsFrameId);
 }

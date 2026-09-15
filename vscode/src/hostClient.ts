@@ -115,7 +115,32 @@ export class HostClient {
 
   /** True while a chat turn is in flight. FIM must skip then: the agent run holds
    * the host-side GPU lease for its whole duration and the request would just queue. */
-  public isChatBusy = false;
+  public get isChatBusy(): boolean {
+    return this.chatBusyDepth > 0;
+  }
+
+  /**
+   * How many GPU-holding requests are in flight.
+   *
+   * ⚠ A boolean was wrong, and silently: THREE entry points raise it (`chat/send`,
+   * `command/slash`, `codeAction/run`) and they overlap in ordinary use — a `/tdd` typed while a
+   * turn streams, a code action launched from the editor during either. The first `finally` then
+   * cleared the flag while the other request still held the lease, FIM stopped skipping, and its
+   * requests queued behind the busy GPU only to be dropped. Counting is the fix; taking and
+   * releasing through the single funnel below is what keeps it counted.
+   */
+  private chatBusyDepth = 0;
+
+  /** The one place the busy count is taken and released — see {@link chatBusyDepth}. */
+  private async whileChatBusy<T>(run: () => Promise<T>): Promise<T> {
+    this.chatBusyDepth++;
+    try {
+      return await run();
+    } finally {
+      // Never below zero: a stray release must not make a live turn look idle.
+      this.chatBusyDepth = Math.max(0, this.chatBusyDepth - 1);
+    }
+  }
 
   constructor(
     private readonly options: HostClientOptions,
@@ -328,13 +353,8 @@ export class HostClient {
 
   // ── Requests ───────────────────────────────────────────────────────────────
 
-  async chatSend(params: ChatSendParams): Promise<ChatSendResult> {
-    this.isChatBusy = true;
-    try {
-      return await this.connection().sendRequest<ChatSendResult>('chat/send', params);
-    } finally {
-      this.isChatBusy = false;
-    }
+  chatSend(params: ChatSendParams): Promise<ChatSendResult> {
+    return this.whileChatBusy(() => this.connection().sendRequest<ChatSendResult>('chat/send', params));
   }
 
   /** Fill-in-the-Middle completion. Cancelling `token` sends `$/cancelRequest`,
@@ -374,13 +394,10 @@ export class HostClient {
    * chat/send: /tdd, /bench and /arena are multi-minute inferences holding the GPU lease, and
    * FIM used to queue behind them on every keystroke (pre-1.6.0 architecture review — the cost on
    * instant slashes is a skipped FIM for a few milliseconds). */
-  async commandSlash(text: string, promptHistory?: string[]): Promise<SlashCommandResult> {
-    this.isChatBusy = true;
-    try {
-      return await this.connection().sendRequest<SlashCommandResult>('command/slash', { text, promptHistory });
-    } finally {
-      this.isChatBusy = false;
-    }
+  commandSlash(text: string, promptHistory?: string[]): Promise<SlashCommandResult> {
+    return this.whileChatBusy(() =>
+      this.connection().sendRequest<SlashCommandResult>('command/slash', { text, promptHistory }),
+    );
   }
 
   /** Declarative settings form (tabs → sections → fields) served from the Core. */
@@ -401,13 +418,8 @@ export class HostClient {
   /** In-place code action (fix / refactor / doc): the host runs the model step and returns
    * per-hunk offset edits; previewing and applying stay editor-side. Flagged as chat-busy
    * so FIM requests skip instead of queueing behind the rewrite on the shared GPU. */
-  async codeActionRun(params: CodeActionParams): Promise<CodeActionResult> {
-    this.isChatBusy = true;
-    try {
-      return await this.connection().sendRequest<CodeActionResult>('codeAction/run', params);
-    } finally {
-      this.isChatBusy = false;
-    }
+  codeActionRun(params: CodeActionParams): Promise<CodeActionResult> {
+    return this.whileChatBusy(() => this.connection().sendRequest<CodeActionResult>('codeAction/run', params));
   }
 
   /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved

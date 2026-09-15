@@ -56,6 +56,95 @@ public class LocalizationCompletenessTests
             .Select(p => p.Name)
             .ToHashSet(StringComparer.Ordinal);
 
+    // ── The SHAPE of the values, not just the presence of the keys ───────────────────────
+
+    /// <summary>The placeholder indices of a text: <c>{0}</c>, <c>{1:n0}</c>, <c>{0}</c> twice → {0}.</summary>
+    private static HashSet<int> Placeholders(string? text) =>
+        text is null ? []
+        : Regex.Matches(text, @"\{(\d+)[^}]*\}")
+               .Select(m => int.Parse(m.Groups[1].Value))
+               .ToHashSet();
+
+    /// <summary>
+    /// A translation carries the <b>same</b> placeholder indices as its source — in the ten
+    /// <c>.resx</c> as well as in the nine VS Code bundles.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The eleven rules above hold the <b>presence</b> of the keys; the shape of the value was held
+    /// by nobody, and its two failures look nothing alike:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>a <b>missing</b> index drops the value — the file name, the counter, the cause — and
+    /// the sentence still reads as a sentence, so nothing reports it;</item>
+    /// <item>an <b>extra</b> index makes <c>string.Format</c> throw: a <c>FormatException</c> at
+    /// runtime, <b>in that language only</b>, on a UI an English development machine never renders.</item>
+    /// </list>
+    /// <para>
+    /// On the VS Code side the source is the <b>key</b> itself: <c>vscode.l10n.t()</c> takes the
+    /// English string as its key, so the key carries the reference placeholders.
+    /// </para>
+    /// <para>
+    /// ⚠ Measured at zero violations on 2026-09-15 (244 resources with placeholders × 9
+    /// translations, 261 bundle entries × 9) — free, so now. Same arbitration as rules 15 and 19 of
+    /// <c>ConventionCoverageTests</c> and as the fourth channel above.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryTranslation_CarriesTheSamePlaceholdersAsItsSource()
+    {
+        var withPlaceholders = 0;
+
+        // 1. The .resx files, against the neutral one.
+        var dir = LocalizationDir();
+        var neutral = XDocument.Load(Path.Combine(dir, "Strings.resx")).Root!
+            .Elements("data")
+            .ToDictionary(d => (string)d.Attribute("name")!,
+                          d => Placeholders(d.Element("value")?.Value));
+
+        foreach (var locale in Locales)
+        {
+            var path = Path.Combine(dir, $"Strings.{locale}.resx");
+            foreach (var data in XDocument.Load(path).Root!.Elements("data"))
+            {
+                var key = (string)data.Attribute("name")!;
+                if (!neutral.TryGetValue(key, out var expected)) continue;   // absence: another rule
+                if (expected.Count > 0) withPlaceholders++;
+
+                var got = Placeholders(data.Element("value")?.Value);
+                Assert.True(got.SetEquals(expected),
+                    $"Strings.{locale}.resx / {key}: the neutral file carries "
+                    + $"[{string.Join(", ", expected.Order())}] and the translation "
+                    + $"[{string.Join(", ", got.Order())}]. An extra index makes string.Format throw "
+                    + "in that language only; a missing one silently drops the value.");
+            }
+        }
+
+        // 2. The VS Code bundles, against their key — which IS the source string.
+        foreach (var path in Directory.EnumerateFiles(VsCodeL10nDir(), "bundle.l10n.*.json"))
+        {
+            foreach (var entry in JsonDocument.Parse(File.ReadAllText(path)).RootElement.EnumerateObject())
+            {
+                var expected = Placeholders(entry.Name);
+                if (expected.Count > 0) withPlaceholders++;
+
+                var value = entry.Value.ValueKind == JsonValueKind.Object
+                    ? entry.Value.TryGetProperty("message", out var m) ? m.GetString() : null
+                    : entry.Value.GetString();
+
+                Assert.True(Placeholders(value).SetEquals(expected),
+                    $"{Path.GetFileName(path)}: the key carries "
+                    + $"[{string.Join(", ", expected.Order())}] and the translation "
+                    + $"[{string.Join(", ", Placeholders(value).Order())}] — key: {entry.Name}");
+            }
+        }
+
+        // Witness: a broken glob or a renamed `data` element would leave both loops above green
+        // while comparing nothing.
+        Assert.True(withPlaceholders >= 400,
+            $"Only {withPlaceholders} text(s) with placeholders compared — the reading is dead.");
+    }
+
     [Fact]
     public void EveryVsCodeBundle_CarriesTheSameKeys()
     {

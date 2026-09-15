@@ -136,4 +136,49 @@ public class DebuggerStateSignalTests : IDisposable
         Assert.Contains("more local(s)", text);
         Assert.DoesNotContain(new string('x', 300), text);
     }
+
+    /// <summary>
+    /// The pushed channel filters the stack like the on-demand one. It did not: the workspace root
+    /// stopped at <c>DebuggerStateReader</c>'s other branch, so Visual Studio — the front-end this
+    /// channel exists for — answered the full stack where VS Code answered the user's frames, for
+    /// one and the same question. The caps had been shared and the filtering left behind.
+    /// </summary>
+    [Fact]
+    public void Format_KeepsTheStackToTheUsersFrames_LikeTheOnDemandChannel()
+    {
+        var snap = new DebuggerSnapshot(
+            "Breakpoint", null,
+            Frames: [new DebuggerFrame("RuntimeHelpers.Throw", @"C:\runtime\lib.cs", 7),
+                     new DebuggerFrame("Program.Compute",      @"C:\ws\src\Program.cs", 14)],
+            Locals: [], Pid: 1, Ts: 0);
+
+        var text = DebuggerStateSignal.Format(snap, @"C:\ws");
+
+        Assert.Contains("Program.Compute", text);
+        Assert.DoesNotContain("RuntimeHelpers.Throw", text);
+        Assert.Contains("1 runtime frame(s) outside the workspace hidden", text);
+
+        // Witness: with no root, nothing is filtered -- the rule measures the argument, not luck.
+        Assert.Contains("RuntimeHelpers.Throw", DebuggerStateSignal.Format(snap));
+    }
+
+    /// <summary>
+    /// And the single reader passes that root on BOTH branches -- which is where it was dropped.
+    /// </summary>
+    [Fact]
+    public void Reader_PassesTheWorkspaceRoot_OnThePushedBranchToo()
+    {
+        DebuggerStateSignal.Write(new DebuggerSnapshot(
+            "Breakpoint", null,
+            Frames: [new DebuggerFrame("RuntimeHelpers.Throw", @"C:\runtime\lib.cs", 7),
+                     new DebuggerFrame("Program.Compute",      @"C:\ws\src\Program.cs", 14)],
+            Locals: [], Pid: 1, Ts: 0));
+
+        var text = Services.Debugging.DebuggerStateReader
+                           .TryReadAsync(session: null, @"C:\ws", CancellationToken.None)
+                                      .GetAwaiter().GetResult();
+
+        Assert.NotNull(text);                                   // witness: the pushed branch did answer
+        Assert.DoesNotContain("RuntimeHelpers.Throw", text);
+    }
 }

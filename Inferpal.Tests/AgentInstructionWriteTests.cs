@@ -1,7 +1,9 @@
+using System.Text.Json;
 using Inferpal.Config;
 using Inferpal.Services;
 using Inferpal.Services.CodeActions;
 using Inferpal.Services.Execution;
+using Inferpal.Services.Mcp;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -130,6 +132,137 @@ public class AgentInstructionWriteTests
         var service = new RecordingApproval(new InferpalConfig(), ApprovalDecision.Once);
 
         Assert.True(await service.RequestApprovalAsync("update_memory", Memory, CancellationToken.None, subject: Memory));
+        Assert.Equal(1, service.Prompts);
+    }
+
+    // ── And the source its own remarks name: an MCP server ────────────────────
+    //
+    // `AgentInstructionFiles` names MCP as a possible origin of the content, and `McpTool`
+    // passed only the raw argument JSON: in {"path":"…\\.inferpal\\memory.md"} the path is not
+    // a path token -- it carries a trailing quote -- so the guard answered false. One "Always"
+    // clicked on an MCP filesystem tool, and the write to every later session's instructions
+    // happened with no prompt at all.
+
+    private static JsonElement Args(string json) => JsonDocument.Parse(json).RootElement;
+
+    [Fact]
+    public void AnMcpSubject_ShowsTheGuardsTheBareValues()
+    {
+        var subject = McpApprovalSubject.From(Args("""
+            {"path":"C:\\repo\\.inferpal\\memory.md","content":"remember this"}
+            """));
+
+        Assert.True(AgentInstructionFiles.Targets(subject));
+
+        // Additive: the raw JSON stays first, so a rule already written against it still matches.
+        Assert.StartsWith("{", subject);
+        Assert.Contains("\\\\repo", subject);
+    }
+
+    [Fact]
+    public void AnMcpSubject_ReachesValuesNestedInObjectsAndArrays()
+    {
+        var subject = McpApprovalSubject.From(Args("""
+            {"edits":[{"file":"src/App.cs"},{"file":"/repo/.inferpal/rules/team.md"}]}
+            """));
+
+        Assert.True(AgentInstructionFiles.Targets(subject));
+    }
+
+    [Fact]
+    public void AnOrdinaryMcpCall_IsStillNotTargeted()
+    {
+        // Witness: without it, a guard answering "yes" to everything would be green above.
+        var subject = McpApprovalSubject.From(Args("""{"path":"C:\\repo\\src\\App.cs"}"""));
+
+        Assert.False(AgentInstructionFiles.Targets(subject));
+        Assert.Contains("App.cs", subject);          // and it did read something
+    }
+
+    [Fact]
+    public async Task AnMcpSessionGrant_DoesNotCoverTheSystemPrompt()
+    {
+        // The whole path, exactly as McpTool takes it.
+        var service = new RecordingApproval(new InferpalConfig(), ApprovalDecision.Always);
+        var ordinary = McpApprovalSubject.From(Args("""{"path":"C:\\repo\\src\\App.cs"}"""));
+        var memory   = McpApprovalSubject.From(Args("""{"path":"C:\\repo\\.inferpal\\memory.md"}"""));
+
+        await service.RequestApprovalAsync("mcp__fs__write", ordinary, CancellationToken.None, subject: ordinary);
+        Assert.Equal(1, service.Prompts);             // the grant is taken here
+
+        await service.RequestApprovalAsync("mcp__fs__write", ordinary, CancellationToken.None, subject: ordinary);
+        Assert.Equal(1, service.Prompts);             // and covers ordinary files
+
+        await service.RequestApprovalAsync("mcp__fs__write", memory, CancellationToken.None, subject: memory);
+        Assert.Equal(2, service.Prompts);             // but never the system prompt
+    }
+
+    /// <summary>
+    /// And the WIRING, without which the three tests above would describe a helper nobody
+    /// calls -- the failure mode of <c>Test-ArtifactProvenance</c>: written, documented, guarded
+    /// by a test, and never wired in.
+    /// </summary>
+    [Fact]
+    public async Task McpTool_HandsTheApprovalPipelineASubjectItsGuardsCanRead()
+    {
+        var approval = new SubjectSpy();
+        var tool = new McpTool(new SilentClient("fs"),
+                               new McpToolInfo("write", "desc", Args("{}")),
+                               approval);
+
+        await tool.ExecuteAsync(Args("""{"path":"C:\\repo\\.inferpal\\memory.md"}"""), CancellationToken.None);
+
+        Assert.NotNull(approval.LastSubject);
+        Assert.True(AgentInstructionFiles.Targets(approval.LastSubject),
+            "McpTool no longer hands over a subject its guards can read: subject = " + approval.LastSubject);
+
+        // Witness: the ordinary call goes through the same path and is NOT targeted.
+        await tool.ExecuteAsync(Args("""{"path":"C:\\repo\\src\\App.cs"}"""), CancellationToken.None);
+        Assert.False(AgentInstructionFiles.Targets(approval.LastSubject));
+        Assert.Contains("App.cs", approval.LastSubject!);
+    }
+
+    private sealed class SubjectSpy : IApprovalService
+    {
+        public string? LastSubject;
+
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct,
+                                               string? subject = null, DiffInfo? diff = null,
+                                               bool forcePrompt = false)
+        {
+            // Exactly what the real service does: the explicit subject, otherwise the details.
+            LastSubject = subject ?? details;
+            return Task.FromResult(true);
+        }
+    }
+
+    private sealed class SilentClient(string name) : Inferpal.Services.Mcp.IMcpClient
+    {
+        public string ServerName => name;
+        public string? LastError => null;
+        public bool NeedsAuthorization => false;
+        public Task<bool> StartAsync(CancellationToken ct) => Task.FromResult(true);
+        public Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<McpToolInfo>?>([]);
+        public Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct) =>
+            Task.FromResult("ok");
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public event Action? ToolsChanged { add { } remove { } }
+        public event Action? Closed { add { } remove { } }
+    }
+
+    [Fact]
+    public async Task AnMcpSessionGrant_StillHidTheSystemPrompt_WhenOnlyTheRawJsonWasMatched()
+    {
+        // Reference arm: the shape as it WAS, so that "it works" is not a coincidence.
+        // Raw JSON alone does not read as a path, and the grant then covers everything.
+        var service = new RecordingApproval(new InferpalConfig(), ApprovalDecision.Always);
+        var rawJson = """{"path":"C:\\repo\\.inferpal\\memory.md"}""";
+
+        Assert.False(AgentInstructionFiles.Targets(rawJson));
+
+        await service.RequestApprovalAsync("mcp__fs__write", rawJson, CancellationToken.None, subject: rawJson);
+        await service.RequestApprovalAsync("mcp__fs__write", rawJson, CancellationToken.None, subject: rawJson);
         Assert.Equal(1, service.Prompts);
     }
 

@@ -36,7 +36,9 @@ internal static class DebuggerStateReader
     internal static async Task<string?> TryReadAsync(
         IDebugSession? session, string? rootDir, CancellationToken ct)
     {
-        if (DebuggerStateSignal.TryRead() is { } pushed) return DebuggerStateSignal.Format(pushed);
+        // ⚠ rootDir on BOTH branches. It used to be passed only to the on-demand one, so the two
+        // channels answered the same question with two different stacks.
+        if (DebuggerStateSignal.TryRead() is { } pushed) return DebuggerStateSignal.Format(pushed, rootDir);
 
         if (session is { IsAvailable: true } live && await live.GetStateAsync(ct) is { } state)
             return DebugStateFormatter.Format(state, rootDir);

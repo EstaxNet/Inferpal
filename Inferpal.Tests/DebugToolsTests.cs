@@ -300,6 +300,69 @@ public class DebugToolsTests
         Assert.Contains("2 runtime frame(s) outside the workspace hidden", text);
     }
 
+    // ── Whose locals are these? ─────────────────────────────────────────────────────
+    //
+    // The two questions above collide: the renderer hides frames outside the workspace, and the
+    // locals come from a frame the producer chose (Visual Studio: the IDE's selected frame, which
+    // Just My Code and our own `debug_inspect` both move; VS Code: the top frame, or the first
+    // frame under the root on the /tdd path). "Locals (current frame)" printed under a stack whose
+    // first line is a DIFFERENT frame is a wrong answer the model cannot detect.
+
+    [Fact]
+    public void Formatter_NamesTheFrameTheLocalsCameFrom_WhenItIsNotTheOneListedFirst()
+    {
+        // The measured shape: an exception thrown inside a library, the user's code below it. The
+        // runtime frame is hidden from the stack, and its variables are what the producer captured.
+        var state = new DebugStopState("exception", 0,
+            [new DebugFrame(1, "parseChunk", @"C:\nodejs\internal\streams.js", 88),
+             new DebugFrame(2, "compute", @"C:\ws\src\app.js", 9)],
+            [new DebugVariable("buf", "Buffer", "<24 bytes>")],
+            Exception: null,
+            LocalsFrameId: 1);
+
+        var text = DebugStateFormatter.Format(state, @"C:\ws");
+
+        Assert.DoesNotContain("current frame", text);
+        Assert.Contains("parseChunk", text);                       // the frame is named…
+        Assert.Contains(@"C:\nodejs\internal\streams.js:88", text); // …and located
+        Assert.Contains("not the frame listed first", text);
+        Assert.Contains("buf", text);                               // the locals still get through
+    }
+
+    [Fact]
+    public void Formatter_SaysCurrentFrame_WhenTheLocalsBelongToTheFrameListedFirst()
+    {
+        // Witness: the ordinary case must keep reading exactly as it did, or the rule above would
+        // be "the label disappeared" rather than "the label became true".
+        var state = new DebugStopState("breakpoint", 0,
+            [new DebugFrame(1, "compute", @"C:\ws\src\app.js", 9),
+             new DebugFrame(2, "wrapModuleLoad", @"C:\nodejs\internal\modules.js", 255)],
+            [new DebugVariable("total", "int", "42")],
+            Exception: null,
+            LocalsFrameId: 1);
+
+        var text = DebugStateFormatter.Format(state, @"C:\ws");
+
+        Assert.Contains("### Locals (current frame)", text);
+        Assert.Contains("total", text);
+    }
+
+    [Fact]
+    public void Formatter_ClaimsNoFrame_WhenTheProducerCouldNotSayWhich()
+    {
+        // Visual Studio can fail to identify the selected frame (COM identity unavailable). Saying
+        // nothing is the honest answer; inventing "current frame" is what this whole rule is about.
+        var state = new DebugStopState("breakpoint", 0,
+            [new DebugFrame(1, "compute", @"C:\ws\src\app.js", 9)],
+            [new DebugVariable("total", "int", "42")]);
+
+        var text = DebugStateFormatter.Format(state, @"C:\ws");
+
+        Assert.Contains("### Locals\n", text);
+        Assert.DoesNotContain("current frame", text);
+        Assert.Contains("total", text);
+    }
+
     [Fact]
     public void Formatter_KeepsEverythingWhenNoFrameIsInTheWorkspace()
     {
@@ -326,6 +389,33 @@ public class DebugToolsTests
         Assert.Equal("total * 2", session.LastExpression);
         Assert.Equal(1, session.LastFrameId);        // frame id from the stack, never assumed
         Assert.Contains("42", result);
+    }
+
+    /// <summary>
+    /// The model reads the locals the state block gave it, then evaluates against them. Scoping the
+    /// evaluation anywhere else answers about a scope it never saw — `total * 2` comes back "unknown
+    /// symbol" on a symbol it was just shown — and the tool's description promises one frame for
+    /// both. Under Visual Studio the locals come from the IDE's selected frame, which Just My Code
+    /// and a user click both move off the top, so this is not a hypothetical.
+    /// </summary>
+    [Fact]
+    public async Task Inspect_Evaluate_ScopesToTheFrameTheLocalsCameFrom()
+    {
+        var session = new FakeDebugSession
+        {
+            State = new DebugStopState("breakpoint", 0,
+                [new DebugFrame(1, "parseChunk", @"C:\nodejs\streams.js", 88),
+                 new DebugFrame(2, "compute", @"C:\ws\src\app.js", 9)],
+                [new DebugVariable("total", "int", "21")],
+                Exception: null,
+                LocalsFrameId: 2),
+        };
+        var tool = new DebugInspectTool(session, () => @"C:\ws");
+
+        await tool.ExecuteAsync(
+            Args("""{"action":"evaluate","expression":"total * 2"}"""), CancellationToken.None);
+
+        Assert.Equal(2, session.LastFrameId);
     }
 
     [Fact]

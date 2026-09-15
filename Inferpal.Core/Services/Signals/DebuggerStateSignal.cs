@@ -17,14 +17,19 @@ internal sealed record DebuggerLocal(
     [property: JsonPropertyName("type")]  string Type,
     [property: JsonPropertyName("value")] string Value);
 
-/// <summary>Snapshot of the debugger at the moment it entered break mode.</summary>
+/// <summary>
+/// Snapshot of the debugger at the moment it entered break mode. <c>LocalsFrame</c> is the
+/// zero-based position, in <c>Frames</c>, of the frame the locals were read from — null when the
+/// writer could not tell, and absent from snapshots written before 1.6.16.
+/// </summary>
 internal sealed record DebuggerSnapshot(
     [property: JsonPropertyName("reason")]    string Reason,
     [property: JsonPropertyName("exception")] string? Exception,
     [property: JsonPropertyName("frames")]    IReadOnlyList<DebuggerFrame> Frames,
     [property: JsonPropertyName("locals")]    IReadOnlyList<DebuggerLocal> Locals,
     [property: JsonPropertyName("pid")]       int Pid,
-    [property: JsonPropertyName("ts")]        long Ts);
+    [property: JsonPropertyName("ts")]        long Ts,
+    [property: JsonPropertyName("localsFrame")] int? LocalsFrame = null);
 
 /// <summary>
 /// File-based IPC channel publishing the debugger break state from the in-process
@@ -96,8 +101,15 @@ internal static class DebuggerStateSignal
     /// the renderer gives it the budget the other path already had.
     /// </para>
     /// </remarks>
-    internal static string Format(DebuggerSnapshot snap) =>
-        DebugStateFormatter.Format(ToStopState(snap));
+    /// <param name="rootDir">
+    /// Workspace root, so the stack keeps to the user's own frames. ⚠ It was <b>not</b> passed:
+    /// this path took the caps and left the frame filtering behind, so Visual Studio — the
+    /// front-end this channel exists for — answered the full stack where VS Code answered the
+    /// filtered one, for the same question. The remark above sells the shared renderer as giving
+    /// this path "the budget the other path already had"; half of that budget is this argument.
+    /// </param>
+    internal static string Format(DebuggerSnapshot snap, string? rootDir = null) =>
+        DebugStateFormatter.Format(ToStopState(snap), rootDir);
 
     /// <summary>
     /// Maps the tracker's snapshot onto the port's shape. Frame ids are positional: EnvDTE
@@ -108,5 +120,7 @@ internal static class DebuggerStateSignal
             ThreadId: 0,
             Frames: [.. snap.Frames.Select((f, i) => new DebugFrame(i, f.Function, f.File, f.Line))],
             Locals: [.. snap.Locals.Select(l => new DebugVariable(l.Name, l.Type, l.Value))],
-            Exception: snap.Exception);
+            Exception: snap.Exception,
+            // The snapshot carries a POSITION; ids on this path are that same position.
+            LocalsFrameId: snap.LocalsFrame);
 }

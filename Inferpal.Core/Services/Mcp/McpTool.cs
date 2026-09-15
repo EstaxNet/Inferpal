@@ -64,7 +64,12 @@ internal sealed class McpTool : ITool
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var details = args.ValueKind == JsonValueKind.Undefined ? string.Empty : args.GetRawText();
-        if (!await _approval.RequestApprovalAsync(Name, details, ct))
+
+        // The human reads the raw JSON; the RULES read that plus the bare string values. Passing
+        // only the JSON hid a path inside its quotes from AgentInstructionFiles — a write to
+        // .inferpal/memory.md through an MCP filesystem server, which its remarks name as a source,
+        // was not force-prompted. See McpApprovalSubject.
+        if (!await _approval.RequestApprovalAsync(Name, details, ct, subject: McpApprovalSubject.From(args)))
             return Strings.McpCancelled;
 
         return await _client.CallToolAsync(_serverLocalName, args, ct);

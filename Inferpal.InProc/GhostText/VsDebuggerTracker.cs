@@ -72,6 +72,7 @@ internal sealed class VsDebuggerTracker : IVsDebuggerEvents, IDisposable
         catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.CurrentFrame", ex); }
 
         var frames = new List<DebuggerFrame>();
+        var captured = new List<object>();   // the same frames, unwrapped, to identify the selected one
         try
         {
             foreach (EnvDTE.StackFrame frame in dbg.CurrentThread.StackFrames)
@@ -91,14 +92,21 @@ internal sealed class VsDebuggerTracker : IVsDebuggerEvents, IDisposable
                 }
                 catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.CallStack", ex); }
                 frames.Add(new DebuggerFrame(frame.FunctionName, file, line));
+                captured.Add(frame);
             }
         }
         catch (Exception ex) { Services.Diagnostics.Swallow("Debugger.StackFrames", ex); }
 
+        // ⚠ Locals belong to the frame the IDE has SELECTED — Just My Code and a user click both
+        // move it off the top. Its position travels with the snapshot so the renderer can name the
+        // frame instead of calling it "the current frame".
         var locals = new List<DebuggerLocal>();
+        int? localsFrame = null;
         try
         {
             var current = dbg.CurrentStackFrame;
+            localsFrame = VsStackFrames.PositionOf(captured, current);
+
             if (current is not null)
             {
                 foreach (EnvDTE.Expression local in current.Locals)
@@ -114,7 +122,8 @@ internal sealed class VsDebuggerTracker : IVsDebuggerEvents, IDisposable
         DebuggerStateSignal.Write(new DebuggerSnapshot(
             reason, exception, frames, locals,
             Pid: System.Diagnostics.Process.GetCurrentProcess().Id,
-            Ts:  DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+            Ts:  DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            LocalsFrame: localsFrame));
     }
 
     private static string Cap(string? value) =>

@@ -183,6 +183,79 @@ public class SlashCommandCoverageTests
                 "invisible in both autocompletes and in /help.");
     }
 
+    /// <summary>
+    /// Every command <b>quoted</b> in a message shown to the user can actually be typed — and the
+    /// ten languages quote the same ones.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The repository has paid for both halves. A quoted command that does not exist: <c>/search</c>,
+    /// frozen by hand in the "unknown command" message of all ten languages. A quoted command that
+    /// exists but does not do what the sentence promises: <c>/history</c>, offered as a way to
+    /// recover a file when it searches saved conversations — <c>RecoveryMessageTests</c> holds that
+    /// half, by routing the message for real.
+    /// </para>
+    /// <para>
+    /// Here, the general property: a word quoted in backticks and starting with <c>/</c> must route.
+    /// ⚠ The second check aims at the most exposed channel — the <c>.resx</c> are translated <b>by
+    /// hand</b>, so a translator can perfectly well write the command in their own language: the
+    /// instruction stays correct in English and becomes impossible to follow elsewhere, without a
+    /// single build complaining. The quoted sets must be identical.
+    /// </para>
+    /// <para>
+    /// Measured at zero violations on 2026-09-15 (960 occurrences, 25 distinct commands, 96 per
+    /// language) — free to lock, so now rather than later.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryQuotedCommand_CanBeTyped_AndTheTenLanguagesQuoteTheSameOnes()
+    {
+        // Written by `/prompts init` as a prompt FILE, so it routes as a user template rather than
+        // through the router: the only exemption, and it is nominative.
+        string[] scaffoldedTemplates = ["/review-security"];
+
+        var localization = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
+        var quoted = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var occurrences = 0;
+
+        foreach (var resx in Directory.EnumerateFiles(localization, "Strings*.resx"))
+        {
+            var words = new HashSet<string>(StringComparer.Ordinal);
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex
+                         .Matches(File.ReadAllText(resx), @"`(/[A-Za-z][^`]*)`"))
+            {
+                // The argument placeholder (`<id>`, `<path>`) is not part of the command name.
+                var word = System.Text.RegularExpressions.Regex
+                    .Replace(m.Groups[1].Value, "<[^>]*>", "x").Trim().Split(' ')[0];
+                words.Add(word);
+                occurrences++;
+            }
+            quoted[Path.GetFileName(resx)] = words;
+        }
+
+        // Witnesses: ten files read, and hundreds of quotes found. A broken glob or a regex that no
+        // longer matches would make both checks below green without reading anything.
+        Assert.True(quoted.Count == 10, $"{quoted.Count} resource file(s) read instead of 10.");
+        Assert.True(occurrences >= 200,
+            $"Only {occurrences} quoted command(s) found — the reading is dead.");
+
+        foreach (var (file, words) in quoted)
+            foreach (var word in words.Except(scaffoldedTemplates))
+                Assert.True(SlashCommandRouter.IsBuiltIn(word),
+                    $"{file} quotes `{word}`, which the router does not know: the user is reading an "
+                    + "instruction they cannot follow.");
+
+        var neutral = quoted["Strings.resx"];
+        foreach (var (file, words) in quoted.Where(p => p.Key != "Strings.resx"))
+        {
+            Assert.True(words.SetEquals(neutral),
+                $"{file} does not quote the same commands as Strings.resx — extra: "
+                + $"[{string.Join(", ", words.Except(neutral))}], missing: "
+                + $"[{string.Join(", ", neutral.Except(words))}]. A command is translated the way an "
+                + "identifier is: not at all.");
+        }
+    }
+
     /// <summary>Repo root = first ancestor of the test bin folder containing README.md.</summary>
     private static string RepoRoot()
     {

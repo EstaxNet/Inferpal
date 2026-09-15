@@ -64,12 +64,29 @@ internal sealed record DebugStartResult(DebugStopState? State, string? Failure)
 /// Taken from the adapter's stop notification and echoed back on the next request. Never assumed:
 /// the probe's Node adapter reported thread <c>0</c>, not <c>1</c>.
 /// </param>
+/// <param name="LocalsFrameId">
+/// <see cref="DebugFrame.Id"/> of the frame <paramref name="Locals"/> were read from, or
+/// <c>null</c> when the producer cannot say.
+/// <para>
+/// ⚠ <b>It is not always the top frame, and it is not always a frame the model can see.</b> The
+/// four producers disagree by construction: Visual Studio reads the IDE's <i>selected</i> frame
+/// (which Just My Code moves off the top, and which <c>debug_inspect</c> moves itself when it
+/// scopes an evaluation), VS Code's ordinary capture reads the top frame, and its <c>/tdd</c>
+/// capture reads the first frame under the workspace root. On top of that the renderer hides
+/// frames outside the workspace, so the frame printed first is often not the one the locals came
+/// from. Labelling them "current frame" therefore attributed a runtime frame's variables to the
+/// user's code — a wrong answer the model cannot detect. Producers fill this in;
+/// <c>DebugStateFormatter</c> names the frame instead of claiming one, and claims nothing when
+/// this is <c>null</c>.
+/// </para>
+/// </param>
 internal sealed record DebugStopState(
     string Reason,
     int ThreadId,
     IReadOnlyList<DebugFrame> Frames,
     IReadOnlyList<DebugVariable> Locals,
-    string? Exception = null);
+    string? Exception = null,
+    int? LocalsFrameId = null);
 
 /// <summary>
 /// Port abstracting the host editor's debugger, so the agent tools never reference an editor SDK.

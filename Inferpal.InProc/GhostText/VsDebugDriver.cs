@@ -585,6 +585,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         // addresses a frame. They are meaningful only until execution resumes — which is fine,
         // because so is everything else in this snapshot.
         var frames = new List<DebugFrame>();
+        var captured = new List<object>();   // the same frames, unwrapped, to identify the selected one
         try
         {
             var index = 0;
@@ -605,14 +606,22 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 }
                 catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.FrameLocation", ex); }
                 frames.Add(new DebugFrame(index, frame.FunctionName, file, line));
+                captured.Add(frame);
             }
         }
         catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.StackFrames", ex); }
 
+        // ⚠ The locals are those of the frame the IDE has SELECTED, which is not the top of the
+        // stack (Just My Code, a user click, or our own Evaluate scoping an expression). Name it,
+        // or the renderer would attribute a runtime frame's variables to the user's code.
         var locals = new List<DebugVariable>();
+        int? localsFrameId = null;
         try
         {
             var current = dbg.CurrentStackFrame;
+            if (VsStackFrames.PositionOf(captured, current) is { } position)
+                localsFrameId = frames[position].Id;
+
             if (current is not null)
             {
                 foreach (EnvDTE.Expression local in current.Locals)
@@ -627,7 +636,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         }
         catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.Locals", ex); }
 
-        return new DebugStopState(reason, threadId, frames, locals, exception);
+        return new DebugStopState(reason, threadId, frames, locals, exception, localsFrameId);
     }
 
     private string? Evaluate(string expression, int? frameId)
