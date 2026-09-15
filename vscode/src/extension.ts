@@ -70,7 +70,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.docSelection', () => chatView.runSlashCommand('/doc')),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('inferpal.utilityModel') || e.affectsConfiguration('inferpal.modelRouterAuto')) {
-        void pushModelRouterSettings(log);
+        // config/update is refused while a turn runs: the push waits for it to end.
+        chatView.runWhenIdle('modelRouter', () => pushModelRouterSettings(log));
       }
     }),
     // A folder opened (or changed) after startup: (re)start the host against the new root — only when

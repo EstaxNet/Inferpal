@@ -1210,18 +1210,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  /** Called wherever a turn ends: pushes a model picked or an agent mode switched while it ran — one after
-   * the other, since each is a read-modify-write of the whole config. */
-  private flushPendingModelPush(): void {
-    if (this.busy || (this.pendingModelPush === undefined && this.pendingAgentModePush === undefined)) {
+  /** Other config/update pushes deferred while a turn runs, by key — a later change replaces an earlier one. */
+  private readonly idleWork = new Map<string, () => Promise<void>>();
+
+  /**
+   * Runs a push that calls config/update now, or when the running turn ends: the host refuses config/update while
+   * a turn holds its slot, and a refused push is lost.
+   */
+  runWhenIdle(key: string, work: () => Promise<void>): void {
+    if (!this.busy) {
+      void work();
       return;
     }
+    this.idleWork.set(key, work);
+  }
+
+  /** Called wherever a turn ends: pushes a model picked, an agent mode switched or any other deferred push made
+   * while it ran — one after the other, since each is a read-modify-write of the whole config. */
+  private flushPendingModelPush(): void {
+    if (this.busy
+        || (this.pendingModelPush === undefined && this.pendingAgentModePush === undefined && this.idleWork.size === 0)) {
+      return;
+    }
+    const deferred = [...this.idleWork.values()];
+    this.idleWork.clear();
     void (async () => {
       if (this.pendingModelPush !== undefined) {
         await this.pushModelToHost(this.pendingModelPush);
       }
       if (this.pendingAgentModePush !== undefined) {
         await this.pushAgentModeToHost(this.pendingAgentModePush);
+      }
+      for (const work of deferred) {
+        await work();
       }
     })();
   }

@@ -901,4 +901,24 @@ public class WebviewRebuildTests
         var call = source[open..source.IndexOf("log,", open, StringComparison.Ordinal)];
         Assert.Contains("followPanelModelRouterSettings(", call, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// A utility model or auto mode changed in VS Code's settings while a turn runs is pushed with config/update, which
+    /// the host refuses while the turn holds its slot. The refusal was only logged: the host kept the old value, and the
+    /// next save of the settings panel wrote that old value back into the VS Code setting. The push waits for the turn
+    /// to end, like the chat's model pick.
+    /// </summary>
+    [Fact]
+    public void AModelRouterSettingChangedDuringATurn_ReachesTheHostWhenItEnds()
+    {
+        var extension = TsCode("extension.ts");
+        var at = extension.IndexOf("onDidChangeConfiguration(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "onDidChangeConfiguration moved — the rule measures nothing.");
+        var listener = extension[at..extension.IndexOf("}),", at, StringComparison.Ordinal)];
+        Assert.Contains("pushModelRouterSettings(log)", listener, StringComparison.Ordinal);
+        Assert.Contains("chatView.runWhenIdle(", listener, StringComparison.Ordinal);
+
+        var flush = Body(TsCode("chatViewProvider.ts"), "private flushPendingModelPush(");
+        Assert.Contains("this.idleWork", flush, StringComparison.Ordinal);
+    }
 }
