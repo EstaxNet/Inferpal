@@ -60,11 +60,13 @@ internal partial class InferpalToolWindowData
 
     private void ConsumePendingPrompt()
     {
-        var p            = _contextHolder.ConsumePendingPrompt();
-        var m            = _contextHolder.ConsumePendingModel();
-        var attachLabel  = _contextHolder.ConsumePendingAttachLabel();
-        var attachCode   = _contextHolder.ConsumePendingAttachContent();
-        if (p is null) return;
+        // One step: the prompt and its model/attachment cannot come from two different context-menu actions.
+        var pending = _contextHolder.ConsumePending();
+        if (pending is null) return;
+        var p           = pending.Prompt;
+        var m           = pending.Model;
+        var attachLabel = pending.AttachLabel;
+        var attachCode  = pending.AttachContent;
 
         List<AttachmentItem> atts = [];
         if (!string.IsNullOrEmpty(attachLabel) && !string.IsNullOrEmpty(attachCode))

@@ -370,4 +370,29 @@ public class VsAdapterRegressionTests
             "Opening context.md shares the write's try: a refused open hides the write and skips the refresh.");
         Assert.True(Calls(onboard, "OpenTextDocumentAsync"), "witness: the written file is still opened");
     }
+
+    /// <summary>
+    /// A prompt sent from the editor context menu travels with its model and its attachment: they are published
+    /// and consumed as ONE value. Four fields written, then taken one by one, let two actions launched in quick
+    /// succession mix — the first one's prompt with the second one's model and attachment, and the second one then
+    /// sent with a null model, that is as a chat with tools instead of a code action without them.
+    /// </summary>
+    [Fact]
+    public void APendingPrompt_IsPublishedAndConsumedAsOneValue()
+    {
+        var consume = Method(Vm + "InferpalToolWindowData.PendingPrompt.cs", "ConsumePendingPrompt");
+        var takes   = consume.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Count(i => i.Expression is MemberAccessExpressionSyntax m
+                        && m.Name.Identifier.Text.StartsWith("ConsumePending", StringComparison.Ordinal));
+        Assert.True(takes == 1,
+            $"The view model takes the pending prompt in {takes} calls: two actions in quick succession mix.");
+
+        var holder = Path.Combine(RepoRoot(), "Inferpal", "Services", "VsIntegration", "VsContextHolder.cs");
+        Assert.True(File.Exists(holder), $"{holder} is gone — this guard checks nothing any more.");
+        var pendingFields = CSharpSyntaxTree.ParseText(ConventionCoverageTests.CodeOnly(holder)).GetRoot()
+            .DescendantNodes().OfType<FieldDeclarationSyntax>()
+            .SelectMany(f => f.Declaration.Variables)
+            .Count(v => v.Identifier.Text.StartsWith("_pending", StringComparison.Ordinal));
+        Assert.True(pendingFields == 1, $"VsContextHolder keeps the pending prompt in {pendingFields} separate fields.");
+    }
 }

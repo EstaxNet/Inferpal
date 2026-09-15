@@ -58,10 +58,15 @@ internal class VsContextHolder
     }
 
     // ── Pending prompt (editor context menu → chat window) ─────────────────
-    private volatile string? _pendingPrompt;
-    private volatile string? _pendingModel;
-    private volatile string? _pendingAttachLabel;
-    private volatile string? _pendingAttachContent;
+
+    /// <summary>
+    /// A prompt sent from the editor context menu, with the model and attachment that go with it. Published and
+    /// consumed as ONE value: four fields taken one by one let two actions launched in quick succession mix —
+    /// the first prompt with the second action's model, and the second action sent with a null model.
+    /// </summary>
+    internal sealed record PendingPrompt(string Prompt, string? Model, string? AttachLabel, string? AttachContent);
+
+    private PendingPrompt? _pending;
     public event EventHandler? PendingPromptAvailable;
 
     /// <summary>
@@ -83,25 +88,14 @@ internal class VsContextHolder
         string? attachLabel = null, string? attachContent = null)
     {
         // Keep empty string distinct from null: "" means "code action, use DefaultModel, no tools".
-        // Only convert null → null; do NOT collapse "" to null.
-        _pendingAttachLabel   = attachLabel;
-        _pendingAttachContent = attachContent;
-        _pendingModel         = modelOverride;
-        _pendingPrompt        = prompt;
+        System.Threading.Interlocked.Exchange(ref _pending,
+            new PendingPrompt(prompt, modelOverride, attachLabel, attachContent));
         PendingPromptAvailable?.Invoke(this, EventArgs.Empty);
     }
 
-    public string? ConsumePendingPrompt() =>
-        System.Threading.Interlocked.Exchange(ref _pendingPrompt, null);
-
-    public string? ConsumePendingModel() =>
-        System.Threading.Interlocked.Exchange(ref _pendingModel, null);
-
-    public string? ConsumePendingAttachLabel() =>
-        System.Threading.Interlocked.Exchange(ref _pendingAttachLabel, null);
-
-    public string? ConsumePendingAttachContent() =>
-        System.Threading.Interlocked.Exchange(ref _pendingAttachContent, null);
+    /// <summary>Takes the pending prompt and everything that goes with it in one step; null when there is none.</summary>
+    public PendingPrompt? ConsumePending() =>
+        System.Threading.Interlocked.Exchange(ref _pending, null);
 
     public void RegisterOpen(string path)
     {
