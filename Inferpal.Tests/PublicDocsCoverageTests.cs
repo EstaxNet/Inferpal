@@ -167,4 +167,92 @@ public class PublicDocsCoverageTests
             + "correct meanwhile - which is exactly why this rule exists: "
             + string.Join(", ", undocumented));
     }
+    /// <summary>
+    /// The <b>default</b> the key reference announces is the one the code puts there.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The neighbouring rule holds the <b>set</b> of keys in both directions; the "Default" column
+    /// was held by nobody. Yet that column is what someone reads to know what the product does
+    /// <i>without configuring anything</i>: change a default in <c>InferpalConfig</c> and the page
+    /// keeps announcing the old one, without a single build complaining.
+    /// </para>
+    /// <para>
+    /// ⚠ The correspondence is <b>derived</b>, not enumerated: the key comes from
+    /// <c>[JsonPropertyName]</c> — never from a guessed naming convention, as the neighbouring rule
+    /// already insists — and the value from the property initializer. A key added tomorrow inherits
+    /// the rule.
+    /// </para>
+    /// <para>
+    /// Measured at zero divergence on 2026-09-15 across the 47 comparable defaults (the only
+    /// "differences" the measurement reported were <c>""</c> against <c>string.Empty</c>, two
+    /// spellings of one value).
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryDocumentedDefault_IsTheOneTheCodePuts()
+    {
+        var doc    = Doc("configuration.md");
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal.Core", "Config", "InferpalConfig.cs"));
+
+        // JSON key -> property initializer (empty when it has none).
+        var defaults = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (Match m in Regex.Matches(
+                     source,
+                     @"\[JsonPropertyName\(""([^""]+)""\)\][\s\S]{0,600}?\bpublic\s+[\w<>?\[\]]+\s+\w+\s*\{\s*get;\s*set;\s*\}\s*(?:=\s*([^;]+))?;"))
+            defaults[m.Groups[1].Value] = m.Groups[2].Success ? m.Groups[2].Value : string.Empty;
+
+        Assert.True(defaults.Count > 30,
+            $"Only {defaults.Count} initializer(s) read from InferpalConfig: the shape of the "
+            + "properties changed and the rule compares nothing.");
+
+        var compared = 0;
+        var wrong    = new List<string>();
+
+        // | `key` | type | `default` | description |
+        foreach (Match row in Regex.Matches(
+                     doc, @"^\|\s*`([A-Za-z][A-Za-z0-9_.]*)`\s*\|[^|]*\|\s*([^|]*?)\s*\|", RegexOptions.Multiline))
+        {
+            if (!defaults.TryGetValue(row.Groups[1].Value, out var code)) continue;
+
+            var documented = Normalize(row.Groups[2].Value);
+            var actual     = Normalize(code);
+            if (documented.Length == 0 && actual.Length == 0) continue;   // "nothing" on both sides
+
+            compared++;
+            if (documented != actual)
+                wrong.Add($"{row.Groups[1].Value}: the page says {row.Groups[2].Value.Trim()}, the code puts {code.Trim()}");
+        }
+
+        // Witness: a reformatted table or a renamed attribute would leave the loop above comparing
+        // zero defaults, and green.
+        Assert.True(compared >= 30, $"Only {compared} default(s) compared: the reading is dead.");
+
+        Assert.True(wrong.Count == 0,
+            "The key reference announces a default the code does not put — that is the line someone "
+            + "reads to know what the product does without configuring anything:\n  "
+            + string.Join("\n  ", wrong));
+    }
+
+    /// <summary>
+    /// A default value reduced to what it is worth: backticks, spaces and digit separators removed,
+    /// and both spellings of emptiness (<c>""</c>, <c>string.Empty</c>, a dash) folded to the empty
+    /// string.
+    /// </summary>
+    private static string Normalize(string value)
+    {
+        var v = value.Trim().Trim('`').Trim().Replace("_", string.Empty);
+        if (v is "\"\"" or "''" or "string.Empty" or "null" or "—" or "-" or "(none)")
+            return string.Empty;
+
+        v = v.ToLowerInvariant();
+
+        // A numeric literal suffix (`0.20f`, `5L`) is C# notation, not a value: the page does not
+        // write it and should not. Removed, but only on an actual number — otherwise "auto" would
+        // lose its "o".
+        if (v.Length > 1 && v[^1] is 'f' or 'd' or 'm' or 'l' && char.IsDigit(v[^2]))
+            v = v[..^1];
+
+        return v;
+    }
 }
