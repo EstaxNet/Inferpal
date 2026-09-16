@@ -60,11 +60,21 @@ internal static class WorkspaceSymbolScanner
         new(StringComparer.OrdinalIgnoreCase) { ".ts", ".tsx", ".js", ".jsx", ".vue" };
 
     /// <summary>
-    /// Scans <paramref name="root"/>. Unreadable files are skipped; the scan never throws.
+    /// Scans <paramref name="root"/>. Unreadable files are skipped — and <b>counted</b>; the scan
+    /// never throws.
     /// </summary>
     /// <param name="root">Workspace root.</param>
     /// <param name="ct">Cancellation — the only exception this method lets through.</param>
-    /// <returns>Scanned files, plus how many the cap left out.</returns>
+    /// <returns>
+    /// Scanned files, plus how many the cap left out <b>and how many were taken but lost</b>.
+    /// </returns>
+    /// <remarks>
+    /// ⚠ This summary used to say "unreadable files are skipped" one line above a return value
+    /// documented as "how many the <b>cap</b> left out" — the skip was stated and never counted, so
+    /// a caller reading <see cref="ScanCoverage.IsPartial"/> saw a complete scan. Both losing
+    /// branches count: a file that cannot be read, and one whose parse hits its regex budget (that
+    /// one is dropped from the result too, which is the same silence one line down).
+    /// </remarks>
     public static async Task<(IReadOnlyList<ScannedFile> Files, ScanCoverage Coverage)> ScanAsync(
         string root, CancellationToken ct = default)
     {
@@ -72,20 +82,21 @@ internal static class WorkspaceSymbolScanner
         var (taken, coverage) = ScanCoverage.Take(all, MaxFiles);
 
         var result = new List<ScannedFile>(taken.Count);
+        var lost   = 0;
         foreach (var path in taken)
         {
             ct.ThrowIfCancellationRequested();
             string src;
             try { src = await File.ReadAllTextAsync(path, ct); }
             catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Diagnostics.Swallow($"WorkspaceSymbolScanner.Read({Path.GetFileName(path)})", ex); continue; }
+            catch (Exception ex) { lost++; Diagnostics.Swallow($"WorkspaceSymbolScanner.Read({Path.GetFileName(path)})", ex); continue; }
 
             var rel = Rel(root, path);
             try { result.Add(Parse(rel, Path.GetExtension(path), src)); }
-            catch (RegexMatchTimeoutException ex) { Diagnostics.Swallow($"WorkspaceSymbolScanner.Parse({rel})", ex); }
+            catch (RegexMatchTimeoutException ex) { lost++; Diagnostics.Swallow($"WorkspaceSymbolScanner.Parse({rel})", ex); }
         }
 
-        return (result, coverage);
+        return (result, coverage.WithUnreadable(lost));
     }
 
     /// <summary>Parses one file into its map entry. Pure — exposed for tests.</summary>

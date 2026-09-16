@@ -156,7 +156,7 @@ internal class TraceDependencyTool : ITool
                 ct.ThrowIfCancellationRequested();
                 sb.AppendLine($"▶ **{m.Name}**{m.Signature}  *(line {m.Line})*");
                 var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { m.Name };
-                AppendCalleeTree(sb, m, filePath, index, indexCoverage.IsPartial, depth, 1, visited, "  ");
+                AppendCalleeTree(sb, m, filePath, index, indexCoverage.IsIncomplete, depth, 1, visited, "  ");
                 sb.AppendLine();
             }
         }
@@ -177,7 +177,7 @@ internal class TraceDependencyTool : ITool
         // `direction: "callees"` the caller one does not run, coverage stayed `default` and the
         // capped index was announced nowhere. We warn about the worse of the two.
         var worst = ScanCoverage.Worst(coverage, indexCoverage);
-        if (worst.IsPartial) sb.AppendLine(worst.Warning());
+        if (worst.IsIncomplete) sb.AppendLine(worst.Warning());
 
         return sb.ToString().TrimEnd();
     }
@@ -264,6 +264,9 @@ internal class TraceDependencyTool : ITool
             StringComparer.OrdinalIgnoreCase);
 
         var (callerFiles, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
+        // ⚠ Counted, because a file taken by the cap and then unreadable is NOT a file scanned, and
+        // "no callers found" is a claim. See ScanCoverage's remarks.
+        var unreadable = 0;
         foreach (var file in callerFiles)
         {
             ct.ThrowIfCancellationRequested();
@@ -285,8 +288,9 @@ internal class TraceDependencyTool : ITool
                         }
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { Diagnostics.Swallow("TraceDependencyTool.BuildCallerMap", ex); }
+            catch (Exception ex) { unreadable++; Diagnostics.Swallow("TraceDependencyTool.BuildCallerMap", ex); }
         }
+        coverage = coverage.WithUnreadable(unreadable);
 
         foreach (var t in targets)
         {
@@ -311,6 +315,7 @@ internal class TraceDependencyTool : ITool
     {
         var index = new DefinitionIndex();
         var (indexed, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
+        var unreadable = 0;
         foreach (var file in indexed)
         {
             ct.ThrowIfCancellationRequested();
@@ -323,9 +328,9 @@ internal class TraceDependencyTool : ITool
                     index.TryAdd(m.Name, m);
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { Diagnostics.Swallow("TraceDependencyTool.IndexMethods", ex); }
+            catch (Exception ex) { unreadable++; Diagnostics.Swallow("TraceDependencyTool.IndexMethods", ex); }
         }
-        return (index, coverage);
+        return (index, coverage.WithUnreadable(unreadable));
     }
 
     // ── File enumeration ──────────────────────────────────────────────────────

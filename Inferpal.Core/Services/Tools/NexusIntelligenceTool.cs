@@ -94,6 +94,7 @@ internal sealed class NexusIntelligenceTool : ITool
         var tsBridges = new TsBridges();
 
         var (csScanned, csCoverage) = ScanCoverage.Take(csFiles, MaxFilesScanned);
+        var csUnreadable = 0;
         foreach (var f in csScanned)
         {
             ct.ThrowIfCancellationRequested();
@@ -105,10 +106,12 @@ internal sealed class NexusIntelligenceTool : ITool
                 if (doSignalR) ScanCsSignalR(src, f, root, csBridges);
             }
             catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Diagnostics.Swallow("NexusIntelligenceTool.ScanCs", ex); }
+            catch (Exception ex) { csUnreadable++; Diagnostics.Swallow("NexusIntelligenceTool.ScanCs", ex); }
         }
+        csCoverage = csCoverage.WithUnreadable(csUnreadable);
 
         var (tsScanned, tsCoverage) = ScanCoverage.Take(tsFiles, MaxFilesScanned);
+        var tsUnreadable = 0;
         foreach (var f in tsScanned)
         {
             ct.ThrowIfCancellationRequested();
@@ -120,8 +123,9 @@ internal sealed class NexusIntelligenceTool : ITool
                 if (doSignalR) ScanTsSignalR(src, f, root, tsBridges);
             }
             catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Diagnostics.Swallow("NexusIntelligenceTool.ScanTs", ex); }
+            catch (Exception ex) { tsUnreadable++; Diagnostics.Swallow("NexusIntelligenceTool.ScanTs", ex); }
         }
+        tsCoverage = tsCoverage.WithUnreadable(tsUnreadable);
 
         // ── Render ─────────────────────────────────────────────────────────────
         var sb = new StringBuilder();
@@ -146,9 +150,12 @@ internal sealed class NexusIntelligenceTool : ITool
             sb.AppendLine("*No cross-language bridges detected. This project may not use REST/interop/SignalR, or the patterns were not recognized.*");
 
         // "No bridges detected" on a capped scan means "none in the sample" — say which it is.
+        // ⚠ Here the two coverages SUM, unlike ScanCoverage.Worst: the C# and TypeScript scans walk
+        // disjoint file sets, so a file unreadable in one is not the same file as in the other.
         var combined = new ScanCoverage(csCoverage.Total + tsCoverage.Total,
-                                        csCoverage.Scanned + tsCoverage.Scanned);
-        if (combined.IsPartial)
+                                        csCoverage.Scanned + tsCoverage.Scanned,
+                                        csCoverage.Unreadable + tsCoverage.Unreadable);
+        if (combined.IsIncomplete)
         {
             sb.AppendLine();
             sb.AppendLine(combined.Warning());

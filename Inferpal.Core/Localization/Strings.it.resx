@@ -902,6 +902,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="ViewList" xml:space="preserve"><value>≡ Elenco</value></data>
   <data name="ViewText" xml:space="preserve"><value>✎ Testo</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Analisi parziale: sono stati esaminati solo {0} file sorgente su {1} (limite). I risultati possono essere incompleti.</value></data>
+  <data name="ScanUnreadable" xml:space="preserve"><value>⚠ {0} file sorgente non sono stati letti né analizzati (permessi, un blocco o scomparsi). I risultati possono essere incompleti.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>L'autorizzazione OAuth MCP è per ora disponibile solo su Windows: il refresh token può essere salvato solo cifrato (DPAPI) e salvarlo in chiaro non è un'opzione. Usa invece un server con token di intestazione statico.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>avviare un'attività dell'agente in background (`/task [obiettivo]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>Attività **{0}** avviata in background: {1}</value></data>

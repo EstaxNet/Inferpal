@@ -201,7 +201,8 @@ internal class AnalyzeImpactTool : ITool
         // ── 2. Scan for direct dependants (Layer 1) ───────────────────────────
         var (allFiles, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
         var contentCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var layer1    = await ScanDirectDependantsAsync(api, filePath, allFiles, contentCache, ct);
+        var (layer1, unreadable1) = await ScanDirectDependantsAsync(api, filePath, allFiles, contentCache, ct);
+        coverage = coverage.WithUnreadable(unreadable1);
 
         // ── 2b. Symbol grain for scripts: importing the file is not using the symbol ──
         // A C# dependant must mention the filtered type (CheckReference requires a match); the
@@ -224,7 +225,12 @@ internal class AnalyzeImpactTool : ITool
         if (depth >= 2 && layer1.Count > 0)
         {
             var layer1Paths = layer1.Select(d => d.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            transitive = await ScanTransitiveDependantsAsync(layer1, allFiles, layer1Paths, filePath, contentCache, ct);
+            var (transitiveList, unreadable2) =
+                await ScanTransitiveDependantsAsync(layer1, allFiles, layer1Paths, filePath, contentCache, ct);
+            transitive = transitiveList;
+            // Additive: the second pass re-reads the same tree, but a file unreadable only now
+            // (a build started meanwhile) is one more file this answer did not see.
+            coverage = coverage.WithUnreadable(unreadable2);
         }
 
         // ── 3b. Exact references, when the question allows an exact answer ────
@@ -366,7 +372,7 @@ internal class AnalyzeImpactTool : ITool
         sb.AppendLine(Strings.ImpactFooter(directCount, transitive.Count, tests.Count, entryPoints.Count));
         // Never let a capped scan read as an exhaustive one: "0 dependants" out of a sample is not
         // "nothing depends on this", and the agent cannot tell the difference on its own.
-        if (coverage.IsPartial) sb.AppendLine(coverage.Warning());
+        if (coverage.IsIncomplete) sb.AppendLine(coverage.Warning());
         sb.AppendLine($"**Risk: {riskLevel}**");
         foreach (var bullet in riskBullets)
             sb.AppendLine($"  ↳ {bullet}");
@@ -400,7 +406,13 @@ internal class AnalyzeImpactTool : ITool
 
     // ── Direct dependant scan ─────────────────────────────────────────────────
 
-    private static async Task<List<DependantFile>> ScanDirectDependantsAsync(
+    /// <returns>The dependants found, and how many of the taken files could not be read.</returns>
+    /// <remarks>
+    /// ⚠ The unreadable count comes back out because the caller owns the <see cref="ScanCoverage"/>:
+    /// swallowing a read failure here and keeping it here is what let "Direct dependants (0) ·
+    /// safe to refactor freely" be printed with no warning at all.
+    /// </remarks>
+    private static async Task<(List<DependantFile> Results, int Unreadable)> ScanDirectDependantsAsync(
         PublicApi api,
         string    targetFile,
         List<string> candidateFiles,
@@ -408,6 +420,7 @@ internal class AnalyzeImpactTool : ITool
         CancellationToken ct)
     {
         var results = new List<DependantFile>();
+        var unreadable = 0;
         var rootDir = Path.GetDirectoryName(targetFile)!;
         var isCSharp = Path.GetExtension(targetFile).Equals(".cs", StringComparison.OrdinalIgnoreCase);
 
@@ -438,15 +451,16 @@ internal class AnalyzeImpactTool : ITool
                 results.Add(new DependantFile(file, relPath, kind, referencedTypes, role, entryPointName, ViaFile: null));
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { Diagnostics.Swallow("AnalyzeImpactTool.ScanFile", ex); }
+            catch (Exception ex) { unreadable++; Diagnostics.Swallow("AnalyzeImpactTool.ScanFile", ex); }
         }
 
-        return results;
+        return (results, unreadable);
     }
 
     // ── Transitive dependant scan ─────────────────────────────────────────────
 
-    private static async Task<List<DependantFile>> ScanTransitiveDependantsAsync(
+    /// <returns>The dependants found, and how many of the taken files could not be read.</returns>
+    private static async Task<(List<DependantFile> Results, int Unreadable)> ScanTransitiveDependantsAsync(
         List<DependantFile> layer1,
         List<string>        allFiles,
         HashSet<string>     layer1Paths,
@@ -455,6 +469,7 @@ internal class AnalyzeImpactTool : ITool
         CancellationToken   ct)
     {
         var results    = new List<DependantFile>();
+        var unreadable = 0;
         var rootDir    = Path.GetDirectoryName(targetFile)!;
         var alreadySeen = new HashSet<string>(layer1Paths.Concat([targetFile]),
                           StringComparer.OrdinalIgnoreCase);
@@ -508,11 +523,11 @@ internal class AnalyzeImpactTool : ITool
                     if (results.Count >= MaxTransitiveFiles) goto Done;
                 }
                 catch (OperationCanceledException) { }
-                catch (Exception ex) { Diagnostics.Swallow("AnalyzeImpactTool.Transitive", ex); }
+                catch (Exception ex) { unreadable++; Diagnostics.Swallow("AnalyzeImpactTool.Transitive", ex); }
             }
         }
         Done:
-        return results;
+        return (results, unreadable);
     }
 
     // ── File enumeration ──────────────────────────────────────────────────────

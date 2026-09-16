@@ -1060,6 +1060,8 @@ internal static class Strings
     // ── Analysis-tool scan coverage ────────────────────────────────────────────
     public static string ScanPartial(int scanned, int total) =>
         string.Format(Get(nameof(ScanPartial)), scanned, total);
+    public static string ScanUnreadable(int count) =>
+        string.Format(Get(nameof(ScanUnreadable)), count);
 
     // ── /branch command (conversation branching) ───────────────────────────────
     public static string SlashHintBranch                     => Get(nameof(SlashHintBranch));

@@ -159,8 +159,11 @@ internal sealed class RenameSymbolTool : ITool
 
         // Coverage of the whole pass: what the walk found, minus what was too large to open and
         // what refused to be read.
-        var coverage = new ScanCoverage(files.Count + skippedBySize, files.Count - unreadable);
-        var partial  = coverage.IsPartial ? "\n" + coverage.Warning() : string.Empty;
+        // ⚠ The unreadable count is its own member, not a subtraction from Scanned: folded into
+        // Scanned it came out as the CAP sentence ("only N of M files were scanned (cap)"), which
+        // sends the reader to narrow a budget when the fix is a lock or a permission.
+        var coverage = new ScanCoverage(files.Count + skippedBySize, files.Count, unreadable);
+        var partial  = coverage.IsIncomplete ? "\n" + coverage.Warning() : string.Empty;
 
         if (hits.Count == 0)
             return $"No occurrences of `{oldName}` found in {files.Count - unreadable} scanned file(s)."
@@ -177,7 +180,7 @@ internal sealed class RenameSymbolTool : ITool
         var sb = new StringBuilder();
         sb.AppendLine($"## rename_symbol: `{oldName}` → `{newName}`");
         sb.AppendLine($"Found **{totalOccurrences}** occurrence(s) in **{hits.Count}** file(s) (scanned {files.Count - unreadable}):");
-        if (coverage.IsPartial) sb.AppendLine(coverage.Warning());
+        if (coverage.IsIncomplete) sb.AppendLine(coverage.Warning());
         if (textBased) sb.AppendLine(textBasedWarning);
         sb.AppendLine();
 
