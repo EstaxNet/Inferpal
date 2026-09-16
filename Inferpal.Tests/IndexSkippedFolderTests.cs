@@ -34,6 +34,19 @@ public sealed class IndexSkippedFolderTests : IDisposable
     private readonly List<ProjectIndexService> _services = [];
     private FileSystemAccessRule? _deny;
 
+    /// <summary>
+    /// ⚠ Recorded at CONSTRUCTION time, before the lock, and never asked again afterwards.
+    /// </summary>
+    /// <remarks>
+    /// A <c>chmod 000</c> on a directory also removes the right to TRAVERSE it, so on POSIX
+    /// <c>File.Exists</c> on a file inside it returns <c>false</c> — while on Windows the deny only
+    /// covers <c>ListDirectory</c> and the answer stays <c>true</c>. Asking afterwards therefore
+    /// failed this witness on both POSIX legs of CI, against a product that behaved correctly:
+    /// <b>a witness has to be checkable on every platform the test runs on</b>, otherwise it
+    /// measures the platform instead of the product.
+    /// </remarks>
+    private readonly bool _lockedFileWritten;
+
     public IndexSkippedFolderTests()
     {
         TestRagStore.Redirect();
@@ -44,6 +57,7 @@ public sealed class IndexSkippedFolderTests : IDisposable
         _lockedDir = Path.Combine(_root, "pgdata");
         Directory.CreateDirectory(_lockedDir);
         File.WriteAllText(Path.Combine(_lockedDir, "Beta.cs"), SampleClass("Beta"));
+        _lockedFileWritten = File.Exists(Path.Combine(_lockedDir, "Beta.cs"));
 
         if (OperatingSystem.IsWindows())
         {
@@ -128,7 +142,7 @@ public sealed class IndexSkippedFolderTests : IDisposable
         // Witness, both halves: the lock holds, and the locked file really is C# the indexer
         // would have indexed without it.
         Assert.ThrowsAny<UnauthorizedAccessException>(() => Directory.EnumerateFiles(_lockedDir).ToList());
-        Assert.True(File.Exists(Path.Combine(_lockedDir, "Beta.cs")));
+        Assert.True(_lockedFileWritten);
 
         var svc = NewService();
         svc.StartIndexing(_root);
