@@ -264,6 +264,7 @@ internal class TraceDependencyTool : ITool
             StringComparer.OrdinalIgnoreCase);
 
         var (callerFiles, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
+        coverage = coverage.WithUnlistableFolder(WorkspaceScan.FirstUnlistableFolder(rootDir, rootDir));
         // ⚠ Counted, because a file taken by the cap and then unreadable is NOT a file scanned, and
         // "no callers found" is a claim. See ScanCoverage's remarks.
         var unreadable = 0;
@@ -315,6 +316,7 @@ internal class TraceDependencyTool : ITool
     {
         var index = new DefinitionIndex();
         var (indexed, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
+        coverage = coverage.WithUnlistableFolder(WorkspaceScan.FirstUnlistableFolder(rootDir, rootDir));
         var unreadable = 0;
         foreach (var file in indexed)
         {

@@ -227,6 +227,64 @@ internal static class WorkspaceScan
         }
     }
 
+    /// <summary>
+    /// The first folder below <paramref name="start"/> that the process cannot <b>list</b>, relative
+    /// to <paramref name="root"/> — or <c>null</c> when the whole tree could be listed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <b><see cref="WalkOptions"/> carries <c>IgnoreInaccessible = true</c>, so the walk skips
+    /// such a folder in SILENCE and its files are never even enumerated.</b> That is one step worse
+    /// than a file it took and could not read: the files are absent from the total, so a scan
+    /// coverage built from the walk says "complete". Measured on a two-file workspace with the only
+    /// dependant inside an unlistable folder: <c>analyze_impact</c> answered
+    /// <c>Direct dependants (0) · Risk: LOW</c> while the funnel itself reported success
+    /// (<c>failed = false</c>, which only ever meant "the START directory could not be opened").
+    /// The real cases are named by <c>InaccessibleFolderTests</c>: a database volume mounted inside
+    /// the repository and owned by a container's user, a locked junction under a Windows profile.
+    /// </para>
+    /// <para>
+    /// Cheap on purpose, and this is what decided the shape: a <b>directory-only</b> enumeration
+    /// with <c>IgnoreInaccessible = false</c> throws and NAMES the path, so nothing here
+    /// re-implements Win32 name matching — the trap this repository already paid on
+    /// <c>*.sln</c>/<c>*.slnx</c>. It walks by hand rather than with
+    /// <c>RecurseSubdirectories</c> for one reason: <see cref="IsExcludedDirName"/> must be
+    /// honoured, or a <c>node_modules</c> with odd permissions would be reported although it is
+    /// excluded anyway — and a gate whose output is noise ends up disarmed. Skipping those subtrees
+    /// also makes it cheaper than the flat call.
+    /// </para>
+    /// <para>
+    /// ⚠ The <b>first</b> one, not all of them: naming one folder is what makes the message
+    /// actionable, and stopping there keeps the cost of a clean repository to a single
+    /// directory-only traversal.
+    /// </para>
+    /// </remarks>
+    public static string? FirstUnlistableFolder(string start, string? root = null)
+    {
+        try
+        {
+            foreach (var child in Directory.EnumerateDirectories(start))
+            {
+                if (IsExcludedDirName(child)) continue;
+                if (FirstUnlistableFolder(child, root) is { } deeper) return deeper;
+            }
+            return null;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            // ⚠ Nothing is traced here, and that is deliberate — this `catch` is not a swallowed
+            // error, it IS the measurement: the exception is the answer, and the folder is RETURNED
+            // to be named in the report. Tracing it would add one ring entry per tool call on a
+            // workspace that has such a folder, which is the very noise DroppedLineOnce and
+            // RecordOnce exist to prevent. `ex` is bound only to narrow the filter.
+            _ = ex;
+            // Reported relative to the root when there is one: an absolute path here would leak the
+            // user's folders into the model's context.
+            return string.IsNullOrEmpty(root) ? Path.GetFileName(start.TrimEnd('\\', '/'))
+                                              : Path.GetRelativePath(root, start);
+        }
+    }
+
     private static readonly EnumerationOptions WalkOptions = new()
     {
         RecurseSubdirectories = true,

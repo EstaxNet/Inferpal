@@ -31,7 +31,12 @@ namespace Inferpal.Services.Tools;
 /// refactor freely</c>, which is the exact sentence this tool's own comment records as the defect
 /// it once had for a different cause.
 /// </remarks>
-internal readonly record struct ScanCoverage(int Total, int Scanned, int Unreadable = 0)
+/// <param name="UnlistableFolder">
+/// A folder of the workspace the walk could not list, relative to the root — <c>null</c> when the
+/// whole tree could be listed. See <see cref="WithUnlistableFolder"/>.
+/// </param>
+internal readonly record struct ScanCoverage(
+    int Total, int Scanned, int Unreadable = 0, string? UnlistableFolder = null)
 {
     /// <summary>True when the <b>cap</b> left files out.</summary>
     public bool IsPartial => Total > Scanned;
@@ -46,12 +51,28 @@ internal readonly record struct ScanCoverage(int Total, int Scanned, int Unreada
     /// <see cref="Warning"/>, so a second cause of incompleteness had to be remembered five times.
     /// A property the callers cannot forget beats a rule they must apply.
     /// </remarks>
-    public bool IsIncomplete => IsPartial || Unreadable > 0;
+    public bool IsIncomplete => IsPartial || Unreadable > 0 || UnlistableFolder is not null;
 
     /// <summary>The same coverage, plus <paramref name="count"/> files that could not be read.</summary>
     /// <remarks>Additive, so a tool whose scan runs in several loops can call it per loop.</remarks>
     public ScanCoverage WithUnreadable(int count) =>
         count <= 0 ? this : this with { Unreadable = Unreadable + count };
+
+    /// <summary>
+    /// The same coverage, plus a folder the walk could not list.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>A folder that cannot be listed is one step worse than a file that cannot be read, and
+    /// <see cref="Unreadable"/> cannot express it</b>: the files under it were never enumerated, so
+    /// they are absent from <see cref="Total"/> as well — the arithmetic is self-consistent and
+    /// claims a complete scan. It therefore needs its own member and its own sentence, and it names
+    /// the folder rather than counting files, because the number of files inside is exactly what
+    /// nobody can know. The walk skips such folders in silence
+    /// (<c>EnumerationOptions.IgnoreInaccessible</c>), and the funnel's <c>failed</c> flag only ever
+    /// meant "the START directory could not be opened".
+    /// </remarks>
+    public ScanCoverage WithUnlistableFolder(string? folder) =>
+        folder is null ? this : this with { UnlistableFolder = folder };
 
     /// <summary>
     /// Takes at most <paramref name="cap"/> items and records how many there were in total.
@@ -76,10 +97,11 @@ internal readonly record struct ScanCoverage(int Total, int Scanned, int Unreada
     /// </remarks>
     public string Warning()
     {
-        var cap = IsPartial ? Strings.ScanPartial(Scanned, Total) : string.Empty;
-        if (Unreadable <= 0) return cap;
-        var unread = Strings.ScanUnreadable(Unreadable);
-        return cap.Length == 0 ? unread : cap + "\n" + unread;
+        var lines = new List<string>(3);
+        if (IsPartial) lines.Add(Strings.ScanPartial(Scanned, Total));
+        if (Unreadable > 0) lines.Add(Strings.ScanUnreadable(Unreadable));
+        if (UnlistableFolder is { Length: > 0 } folder) lines.Add(Strings.ScanFolderSkipped(folder));
+        return string.Join("\n", lines);
     }
 
     /// <summary>
@@ -105,7 +127,14 @@ internal readonly record struct ScanCoverage(int Total, int Scanned, int Unreada
     public static ScanCoverage Worst(ScanCoverage a, ScanCoverage b)
     {
         var worst = Pick(a, b);
-        return worst with { Unreadable = Math.Max(a.Unreadable, b.Unreadable) };
+        return worst with
+        {
+            Unreadable       = Math.Max(a.Unreadable, b.Unreadable),
+            // Either scan having seen it is enough: they walk the same tree, so the folder is the
+            // same folder, and losing the mention because the other scan happened to be "worse"
+            // would be the silence this member exists to end.
+            UnlistableFolder = a.UnlistableFolder ?? b.UnlistableFolder,
+        };
     }
 
     private static ScanCoverage Pick(ScanCoverage a, ScanCoverage b)

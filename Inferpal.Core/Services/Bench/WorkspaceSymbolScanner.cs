@@ -80,6 +80,7 @@ internal static class WorkspaceSymbolScanner
     {
         var all = EnumerateSourceFiles(root);
         var (taken, coverage) = ScanCoverage.Take(all, MaxFiles);
+        coverage = coverage.WithUnlistableFolder(WorkspaceScan.FirstUnlistableFolder(root, root));
 
         var result = new List<ScannedFile>(taken.Count);
         var lost   = 0;

@@ -903,6 +903,7 @@ ollama serve
   <data name="ViewText" xml:space="preserve"><value>✎ Текст</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Частичный анализ: просмотрено только {0} из {1} исходных файлов (предел). Результаты могут быть неполными.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать и проанализировать {0} исходных файлов (права доступа, блокировка или файл удалён). Результаты могут быть неполными.</value></data>
+  <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ Не удалось прочитать содержимое папки «{0}», поэтому ни один файл в ней не был проанализирован (права доступа). Результаты могут быть неполными.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>Авторизация OAuth для MCP пока доступна только в Windows: токен обновления можно хранить только в зашифрованном виде (DPAPI), а хранить его открытым текстом недопустимо. Используйте сервер со статическим токеном в заголовке.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>запустить задачу агента в фоне (`/task [цель]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>Задача **{0}** запущена в фоне: {1}</value></data>

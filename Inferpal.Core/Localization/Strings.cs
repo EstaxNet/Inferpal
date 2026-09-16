@@ -1062,6 +1062,8 @@ internal static class Strings
         string.Format(Get(nameof(ScanPartial)), scanned, total);
     public static string ScanUnreadable(int count) =>
         string.Format(Get(nameof(ScanUnreadable)), count);
+    public static string ScanFolderSkipped(string folder) =>
+        string.Format(Get(nameof(ScanFolderSkipped)), folder);
 
     // ── /branch command (conversation branching) ───────────────────────────────
     public static string SlashHintBranch                     => Get(nameof(SlashHintBranch));

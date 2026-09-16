@@ -94,6 +94,8 @@ internal sealed class NexusIntelligenceTool : ITool
         var tsBridges = new TsBridges();
 
         var (csScanned, csCoverage) = ScanCoverage.Take(csFiles, MaxFilesScanned);
+        // One detection only: both scans walk the same tree, and `combined` picks it up.
+        csCoverage = csCoverage.WithUnlistableFolder(WorkspaceScan.FirstUnlistableFolder(root, root));
         var csUnreadable = 0;
         foreach (var f in csScanned)
         {
@@ -154,7 +156,8 @@ internal sealed class NexusIntelligenceTool : ITool
         // disjoint file sets, so a file unreadable in one is not the same file as in the other.
         var combined = new ScanCoverage(csCoverage.Total + tsCoverage.Total,
                                         csCoverage.Scanned + tsCoverage.Scanned,
-                                        csCoverage.Unreadable + tsCoverage.Unreadable);
+                                        csCoverage.Unreadable + tsCoverage.Unreadable,
+                                        csCoverage.UnlistableFolder ?? tsCoverage.UnlistableFolder);
         if (combined.IsIncomplete)
         {
             sb.AppendLine();

@@ -162,7 +162,11 @@ internal sealed class RenameSymbolTool : ITool
         // ⚠ The unreadable count is its own member, not a subtraction from Scanned: folded into
         // Scanned it came out as the CAP sentence ("only N of M files were scanned (cap)"), which
         // sends the reader to narrow a budget when the fix is a lock or a permission.
-        var coverage = new ScanCoverage(files.Count + skippedBySize, files.Count, unreadable);
+        // ⚠ Et le dossier qu'on n'a pas pu LISTER, qui est la pire des trois causes ici : cet outil
+        // ÉCRIT. Un dossier invisible ne rend pas un rapport incomplet, il rend un renommage
+        // PARTIEL — les appels qu'il contient gardent l'ancien nom et le code ne compile plus.
+        var coverage = new ScanCoverage(files.Count + skippedBySize, files.Count, unreadable)
+            .WithUnlistableFolder(WorkspaceScan.FirstUnlistableFolder(root, root));
         var partial  = coverage.IsIncomplete ? "\n" + coverage.Warning() : string.Empty;
 
         if (hits.Count == 0)
