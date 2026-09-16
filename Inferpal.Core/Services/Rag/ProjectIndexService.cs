@@ -76,6 +76,21 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>Number of chunks currently in memory.</summary>
     public int    ChunkCount { get; private set; }
 
+    /// <summary>
+    /// A folder of the workspace the indexing walk could not <b>list</b>, relative to
+    /// <see cref="RootDir"/> — <c>null</c> when the whole tree could be listed.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>This is the most consequential place in the product for that silence, because the index
+    /// is PERSISTED.</b> A one-off tool report is wrong for one answer; an index built without a
+    /// folder makes <c>search_codebase</c> and the per-turn auto-context blind to it for as long as
+    /// the database lives, across restarts — while <c>/index</c>, the very screen one opens to check
+    /// the index, reported a chunk count that reads as complete. The walk skips such a folder in
+    /// silence (<c>EnumerationOptions.IgnoreInaccessible</c>), so it is absent from every count
+    /// rather than subtracted from one: no arithmetic here could have revealed it.
+    /// </remarks>
+    public string? SkippedFolder { get; private set; }
+
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
 
@@ -858,6 +873,12 @@ internal sealed class ProjectIndexService : IDisposable
     private List<string>? EnumerateSourceFiles(string rootDir)
     {
         var result = new List<string>();
+        // ⚠ Once per pass, BEFORE the walk: `IgnoreInaccessible` skips an unlistable folder without
+        // throwing, so the `catch` below never sees it and the `null` it returns — "partial list,
+        // do not replace the index" — does not fire either. The pass is legitimate (nothing better
+        // can be done), but it has to SAY so: this is the only trace that a whole folder is missing
+        // from the index, and that absence survives on disk.
+        SkippedFolder = WorkspaceScan.FirstUnlistableFolder(rootDir, rootDir);
         try
         {
             // ONE walk filtered by extension: the per-extension loop walked the whole tree once for
