@@ -148,17 +148,30 @@ internal static class CodeChunker
             int mStart = methodStarts[i];
             int mEnd   = i + 1 < methodStarts.Count ? methodStarts[i + 1] - 1 : end;
 
-            // Hard cap: if method still exceeds budget, truncate line-by-line
-            if (ChunkText.EstimateTokens(lines, mStart, mEnd) > MaxChunkTokens)
+            // ⚠ Past the budget, the member is SPLIT into consecutive pieces. It used to be
+            // TRUNCATED (`mEnd` pulled back to what fitted), and its tail was indexed nowhere. This
+            // is the THIRD instance of the same shape across the chunker's three tiers: the Roslyn
+            // tier had fixed it, the LSP tier had kept it, and so had this one. ⚠ Honest scope:
+            // this block only serves C# that reached the regex tier, so only when Roslyn failed —
+            // the sliding window of the other languages does cover the whole file.
+            //
+            // ⚠ A remainder shorter than MinChunkLines is absorbed by the current piece rather than
+            // left aside: `MakeChunks` drops pieces that are too short, so publishing it separately
+            // would have lost it — that is, redone the defect, smaller.
+            var pieceStart = mStart;
+            while (pieceStart <= mEnd)
             {
-                int tok = 0;
-                int cut = mStart;
-                while (cut <= mEnd && tok < MaxChunkTokens)
-                    tok += ChunkText.EstimateLineTokens(lines[cut++]);
-                mEnd = Math.Max(mStart + MinChunkLines, cut - 2);
-            }
+                var pieceEnd = pieceStart;
+                var tok      = ChunkText.EstimateLineTokens(lines[pieceStart]);
+                while (pieceEnd < mEnd &&
+                       tok + ChunkText.EstimateLineTokens(lines[pieceEnd + 1]) <= MaxChunkTokens)
+                    tok += ChunkText.EstimateLineTokens(lines[++pieceEnd]);
 
-            result.Add((mStart, mEnd, typeName));
+                if (mEnd - pieceEnd is > 0 and < MinChunkLines) pieceEnd = mEnd;
+
+                result.Add((pieceStart, pieceEnd, typeName));
+                pieceStart = pieceEnd + 1;
+            }
         }
 
         return result;

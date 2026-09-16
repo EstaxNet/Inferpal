@@ -63,6 +63,22 @@ internal static class CodeActionPipeline
     }
 
     /// <summary>
+    /// How many line breaks the replaced text carried at its end — the <c>\r</c> of a pair is not
+    /// one more, and a selection of several blank lines keeps as many.
+    /// </summary>
+    private static int TrailingLineBreaks(string text)
+    {
+        var count = 0;
+        for (var i = text.Length - 1; i >= 0; i--)
+        {
+            if (text[i] == '\n') { count++; continue; }
+            if (text[i] == '\r') continue;   // the CR of its pair
+            break;
+        }
+        return count;
+    }
+
+    /// <summary>
     /// Runs the model step of an in-place action and returns the rewrite without applying it.
     /// </summary>
     public static async Task<CodeActionRun> RunAsync(
@@ -122,6 +138,17 @@ internal static class CodeActionPipeline
         if (string.IsNullOrWhiteSpace(editedCode))
             return new CodeActionRun(CodeActionOutcome.Failed,
                                      FailureDetail: Strings.MsgEmptyResponseFrom(model, client.ServerAddress));
+
+        // ⚠ Visual Studio's most common selection — a click in the margin, Shift+Down — carries its
+        // LINE ENDING, and `InlineEditResponse.Clean` does a TrimEnd: the replacement never ended
+        // with a line break, so the next line moved up and stuck to the one just edited. Worse, the
+        // unchanged echo no longer recognised itself — it differed from the original by that single
+        // byte — so the "no change" edit was applied anyway, eating the line ending. The cleanup
+        // cannot decide this: it does not see the replaced range. Restored BEFORE the identity
+        // check, for the same reason, and AFTER the empty guard, which an added line break would
+        // disarm.
+        var breaks = TrailingLineBreaks(originalCode);
+        for (var i = 0; i < breaks; i++) editedCode += eol;
 
         // Small models often skip the sentinel and echo the code unchanged instead: applying it
         // would be an invisible no-op edit ("nothing happened"). Detect the identity here so every

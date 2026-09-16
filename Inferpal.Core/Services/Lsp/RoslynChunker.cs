@@ -48,8 +48,27 @@ internal static class RoslynChunker
 
             return chunks.Count > 0 ? chunks : CodeChunker.Chunk(filePath, content, rootDir);
         }
-        catch
+        catch (Exception ex)
         {
+            // ⚠ This fallback was MUTE, and it is the one product degradation that needed an
+            // EXTERNAL probe (`docs/probes/rag-coverage`) because nothing said it: Roslyn is
+            // shipped into the VSIX by a dedicated target (`RestoreRoslynToVsix`), so a package
+            // where it fails to load drops ALL C# onto the regex chunker — the index loses
+            // `type_name`, semantic search loses its symbol boundaries, and `/diagnostics` showed
+            // nothing. The product can say it itself.
+            //
+            // ⚠ Once per CAUSE, not per file: this chunker runs on every `.cs` of the pass, so
+            // speaking on every call would drown the ring (same class as the pathological patterns
+            // of `IndexExclusions`). The exception type is the key: a `TypeLoadException` says
+            // "Roslyn is not here", anything else says something else.
+            //
+            // ⚠ And this is NOT the `chunks.Count == 0` fallback above: that one is normal and
+            // per-file (a file declaring no type), it has nothing to report.
+            Diagnostics.RecordOnce(
+                "RoslynChunker",
+                $"C# chunking fell back to the regex tier ({ex.GetType().Name}: {ex.Message}). "
+                + "The semantic index loses type names and symbol boundaries for C# files.",
+                ex.GetType().Name);
             return CodeChunker.Chunk(filePath, content, rootDir);
         }
     }

@@ -3,6 +3,79 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.16
+
+Settings, inline completions and the interface language now follow what you set, and a lot of silent
+failures now say what happened.
+
+- **The inline completion settings changed nothing.** Ghost text ignored the enabled box, the
+  completion mode and the FIM model: it completed with the chat model, 128 tokens and a fixed 200 ms
+  delay, and kept completing when the box was unchecked. It now follows all three, and a change saved
+  in either settings window applies within two seconds.
+
+- **The interface did not follow the language chosen in Inferpal's settings.** The chat, its
+  notifications and part of the settings panel stayed in VS Code's language. They now switch as soon
+  as the language is saved. VS Code's own menus still follow VS Code's language.
+
+- **A change saved in the settings panel could be lost or come back.** The utility model and Model
+  Router auto mode were undone at the next host start or reverted a value in your VS Code settings;
+  the chat model and agent mode did not reach the chat at all. Saved values are now applied and kept,
+  and a model picked for one workspace survives a save that does not touch it.
+
+- **The model lists accepted free text**, so a mistyped name was saved as a model the backend does not
+  serve. They are read-only drop-down lists now, as in Visual Studio, with an empty entry ("—") on the
+  optional roles meaning "same as the chat model".
+
+- **A setting written in an equivalent form was shown, then saved, as another choice.**
+  `"provider": "LMStudio"`, `"language": "fr-FR"` or `"inlineCompletionMode": "fast"` appeared as
+  another option and the next save wrote that option — the backend could change without a word. And
+  `"provider": "openai"`, the value the documentation gave, silently used Ollama; the documentation now
+  gives the exact code, `openai-compatible`.
+
+- **Project rules scoped to some files, and the language persona, never applied.** A rule in
+  `.inferpal/rules/` limited to certain files (for example `globs: *.cs`) never reached the model, and
+  "Persona auto-switch" did nothing. Both now follow the active file, as in Visual Studio.
+
+- **A pattern starting with `**/` matched more than it should.** `**/` means "any number of folders",
+  but it matched any text at all: a rule scoped to `**/Program.cs` also applied to `src/MyProgram.cs`,
+  and an `indexExclude` of `**/bin/**` also kept `src/mybin/` out of the semantic index.
+
+- **The model's hidden reasoning could show up in the chat, in exports, in reloaded sessions, in
+  `/history` and on the clipboard.** It is removed in all of them now, whatever the case of its tags —
+  and a turn that finished with reasoning only no longer leaves an empty bubble.
+
+- **`@clipboard` did nothing when the clipboard was empty**, and you could not scroll back through the
+  conversation while an answer was being written. The chat now follows the answer only while you are
+  at the bottom, as in Visual Studio.
+
+- **The `@file` and `@folder` suggestions could show results for what you had typed before.** Only the
+  answer to the latest query is shown now.
+
+- **A Context X-Ray section switched while the model was answering looked applied but was not**, and a
+  `/template` mode was missing from the panel entirely. The template is now its own layer, and the
+  panel shows the real state.
+
+- **Saving, loading or deleting a session, and `/model`, could fail with a generic error** — or report
+  an error after a switch that had worked. Each now says what actually happened.
+
+- **The end of a long function could be missing from the semantic index.** A function past the size
+  budget was trimmed until it fit instead of being split, so `search_codebase` could never reach its
+  tail — for TypeScript, JavaScript, Python, Go and Rust with the language-server option on.
+
+- **"Who calls this?" only looked inside the file's own folder.** `trace_dependency` answered with an
+  empty caller list — which reads as "nothing calls this" — for any caller living elsewhere in the
+  project. It now scans from the project root.
+
+- **The model could be told your program had ended while it was still running**, and a breakpoint it
+  set could be reported on the wrong line. Debugger answers now name what really happened.
+
+- **`/diagnostics` could fill up with the same line and hide everything else**, and showed only the 30
+  most recent entries of up to 200 without saying so. Repeated reports are now made once, the list
+  says how many of how many it shows, and pinned files dropped past the third are named.
+
+- **The support bundle could carry your folder paths** from an MCP server that failed to start. Those
+  lines now go through the same scrub as the rest, credential masking included.
+
 ## 1.6.15
 
 Chat mode now behaves as in Visual Studio, and many failures that went unnoticed are fixed.

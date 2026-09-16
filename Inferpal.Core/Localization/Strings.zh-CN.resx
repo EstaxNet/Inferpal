@@ -762,6 +762,7 @@ ollama serve
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## 诊断</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ 进程内组件未加载：幽灵文本、内联编辑的差异预览和 /tdd 调试器驱动均不可用。聊天不受影响（它在进程外运行），所以看不出有什么坏了。</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>没有记录任何诊断。</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_共 {1} 条，显示最近 {0} 条。更早的条目已被丢弃。_</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>已清除诊断。</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>支持报告已复制到剪贴板 — 请粘贴到 GitHub issue 中。</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>已启用诊断文件日志。</value></data>

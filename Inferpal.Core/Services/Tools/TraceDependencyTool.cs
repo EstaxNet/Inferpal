@@ -109,7 +109,17 @@ internal class TraceDependencyTool : ITool
         // repository (652 .cs, cap 400) 252 files are out. And in `direction: "callees"` the
         // caller scan does not run, so coverage stayed `default` and NO warning was ever emitted
         // — while the rule is written ten lines below, about the other scan.
-        var rootDir = Path.GetDirectoryName(filePath)!;
+        // ⚠ The scan starts at the WORKSPACE root, not at the analysed file's own folder. It used
+        // to be the folder: asked about `Services/Commands/TaskCommandHandler.cs`, this tool only
+        // looked at `Services/Commands/**`, so every caller living in the host, the VS window or
+        // the tests was **structurally invisible** — and it returned an empty "Callers", which
+        // reads "nothing calls this method". A wrong answer, not a cap: the coverage warning does
+        // not fire either, a single folder never exceeding the cap. ⚠ The tell was the comment
+        // above, which quantifies the cap over "652 .cs" — the whole repository — while the code
+        // enumerated one folder. `AnalyzeImpactTool` had fixed exactly this, the lesson written in
+        // its own comment. Falling back to the folder when no workspace is known: the one case
+        // where the old behaviour was right.
+        var rootDir = workspace is { Length: > 0 } ? workspace : Path.GetDirectoryName(filePath)!;
         DefinitionIndex? index = null;
         var indexCoverage = default(ScanCoverage);
         if (depth > 0)

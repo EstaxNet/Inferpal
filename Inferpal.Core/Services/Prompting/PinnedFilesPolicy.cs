@@ -13,12 +13,30 @@ internal static class PinnedFilesPolicy
     public const int MaxPinned = 3;
 
     /// <summary>The active (chip-visible) paths: non-'#' entries, trimmed, capped.</summary>
-    public static List<string> ParseActive(string? config) =>
-        (config ?? string.Empty)
+    public static List<string> ParseActive(string? config) => ParseActiveWithOverflow(config).Active;
+
+    /// <summary>
+    /// The active paths <b>and those the cap left out</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The cap drops entries the user wrote, and that <see cref="Serialize"/> keeps on purpose:
+    /// they stay in the configuration, the settings window displays them (it caps nothing), and
+    /// they never reach the system prompt. This is word for word what the comment in
+    /// <c>SystemPromptBuilder</c> holds against a <b>missing</b> pinned file — "they pinned it so
+    /// it would go out with every request … and it is not there" — for the other cause, unsaid.
+    /// The overflow comes out of here so the prompt can name it.
+    /// </remarks>
+    public static (List<string> Active, List<string> Dropped) ParseActiveWithOverflow(string? config)
+    {
+        var all = (config ?? string.Empty)
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(p => !p.StartsWith('#'))
-            .Take(MaxPinned)
             .ToList();
+
+        return all.Count <= MaxPinned
+            ? (all, [])
+            : (all.Take(MaxPinned).ToList(), all.Skip(MaxPinned).ToList());
+    }
 
     /// <summary>Whether <paramref name="path"/> (pre-trimmed) can join <paramref name="current"/>.</summary>
     public static PinDecision Decide(IReadOnlyList<string> current, string path)

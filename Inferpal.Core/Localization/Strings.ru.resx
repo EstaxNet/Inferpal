@@ -760,6 +760,7 @@ ollama serve
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Диагностика</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Внутрипроцессный компонент не загружен: подсказки ghost text, предпросмотр diff встроенного редактирования и драйвер отладчика /tdd недоступны. Чат работает (он вне процесса) — поэтому поломка незаметна.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Диагностических записей нет.</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_Показаны {0} последних записей из {1}. Более старые отброшены._</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Диагностика очищена.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Отчёт для поддержки скопирован в буфер обмена — вставьте его в issue на GitHub.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Запись диагностики в файл включена.</value></data>

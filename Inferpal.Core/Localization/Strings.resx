@@ -774,6 +774,7 @@ ollama serve
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostics</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ The in-process component is not loaded: ghost text, the inline-edit diff preview and the /tdd debugger driver are unavailable. The chat is unaffected (it runs out-of-process), which is why nothing looks broken.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>No diagnostics recorded.</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_Showing the {0} most recent entries of {1}. Older ones have been dropped._</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnostics cleared.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Support bundle copied to clipboard — paste it into a GitHub issue.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Diagnostics file logging enabled.</value></data>

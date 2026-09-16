@@ -172,7 +172,19 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         if (!string.IsNullOrEmpty(templateSuffix))
             sections.Add(new(PromptSectionKind.Template, null, templateSuffix));
 
-        foreach (var pinnedPath in PinnedFilesPolicy.ParseActive(config.PinnedContextFiles))
+        var (pinned, overCap) = PinnedFilesPolicy.ParseActiveWithOverflow(config.PinnedContextFiles);
+
+        // ⚠ Same silence as just below, for the other cause. The cap drops paths the user wrote in
+        // the settings window — which caps nothing — and that the configuration keeps: they are
+        // neither in the prompt nor in the 📌 chips (which read the same capped list), and nothing
+        // said so. Once per path, like the missing one: this prompt is rebuilt on every
+        // active-file change.
+        foreach (var dropped in overCap)
+            Diagnostics.DroppedLineOnce(
+                "PinnedFiles", $"Pinned context file ignored (only the first {PinnedFilesPolicy.MaxPinned} are sent)",
+                PinKey(dropped), dropped);
+
+        foreach (var pinnedPath in pinned)
         {
             if (!File.Exists(pinnedPath))
             {
@@ -259,21 +271,21 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     // same message — and a noisy channel stops being read (that is what DroppedLine exists for: it
     // already keeps out what the parsers skip normally). A path that comes back leaves the set: if
     // the file disappears again, we say so again.
-    private static readonly HashSet<string> _missingPinsReported =
-        new(StringComparer.OrdinalIgnoreCase);
-
-    private static void ReportMissingPinOnce(string path)
-    {
-        bool first;
-        lock (_missingPinsReported) first = _missingPinsReported.Add(path);
-        if (first) Diagnostics.DroppedLine("PinnedFiles", "Pinned context file not found", path);
-    }
+    //
+    // ⚠ The set of already-reported paths lived HERE, privately, and two other repeated parsers
+    // (CustomTools, UserTemplates) did not inherit it — they drowned the ring exactly as described
+    // above. The gesture moved into Diagnostics.DroppedLineOnce; this site keeps only the casing of
+    // its keys, which is its own: a file path.
+    private static void ReportMissingPinOnce(string path) =>
+        Diagnostics.DroppedLineOnce("PinnedFiles", "Pinned context file not found", PinKey(path), path);
 
     /// <summary>The path is back: the next time it goes missing will be reported again.</summary>
-    private static void ForgetMissingPin(string path)
-    {
-        lock (_missingPinsReported) _missingPinsReported.Remove(path);
-    }
+    private static void ForgetMissingPin(string path) =>
+        Diagnostics.ForgetDroppedLine("PinnedFiles", PinKey(path));
+
+    /// <summary>Paths are compared case-insensitively — <c>C:\A.md</c> and <c>c:\a.md</c> are the
+    /// same pinned file, while the shared key itself is ordinal.</summary>
+    private static string PinKey(string path) => path.ToLowerInvariant();
 
     private static void AddFileSection(List<PromptSection> sections, PromptSectionKind kind, string path, string header, string detail)
     {

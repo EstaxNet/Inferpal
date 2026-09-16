@@ -770,6 +770,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostics</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Le composant in-process n'est pas chargé : le ghost-text, l'aperçu de diff de l'édition inline et le driver debugger de /tdd sont indisponibles. Le chat n'est pas affecté (il tourne hors process), c'est pourquoi rien n'a l'air cassé.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Aucun diagnostic enregistré.</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_Affichage des {0} entrées les plus récentes sur {1}. Les plus anciennes ont été écartées._</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnostics effacés.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Rapport de support copié dans le presse-papiers — collez-le dans une issue GitHub.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Journalisation des diagnostics dans un fichier activée.</value></data>

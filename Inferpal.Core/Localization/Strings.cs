@@ -964,6 +964,8 @@ internal static class Strings
     public static string SlashHintDiagnostics                => Get(nameof(SlashHintDiagnostics));
     public static string DiagnosticsHeader                   => Get(nameof(DiagnosticsHeader));
     public static string DiagnosticsEmpty                    => Get(nameof(DiagnosticsEmpty));
+    public static string DiagnosticsShowing(int shown, int total) =>
+        string.Format(Get(nameof(DiagnosticsShowing)), shown, total);
     public static string DiagnosticsInProcDead               => Get(nameof(DiagnosticsInProcDead));
     public static string DiagnosticsCleared                  => Get(nameof(DiagnosticsCleared));
     public static string DiagnosticsExported                 => Get(nameof(DiagnosticsExported));

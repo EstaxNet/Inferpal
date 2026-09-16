@@ -15,8 +15,11 @@ namespace Inferpal.Services.Lsp;
 ///   <item>Container symbols (class, module, …) with children are represented as one chunk
 ///     per child (function / method / property), prefixed with the parent name for
 ///     embedding context.</item>
-///   <item>On any failure (server not found, timeout, parse error) the call falls back
-///     silently to <see cref="CodeChunker.Chunk"/>.</item>
+///   <item>On any failure the call falls back to <see cref="CodeChunker.Chunk"/> — and the
+///     fallback is <b>said</b>, once: a server that is missing, dead or timed out is traced by
+///     <see cref="LspSemanticProvider"/> (once per session and per language, with the name of the
+///     executable to install), and the unexpected is traced here. The one mute fallback left is
+///     deliberate: "no symbols" on a file that legitimately has none.</item>
 /// </list>
 /// </remarks>
 internal static class LspChunker
@@ -47,14 +50,36 @@ internal static class LspChunker
             }
         }
         catch (OperationCanceledException) { throw; }
-        catch { /* fall through to regex chunker */ }
+        catch (Exception ex)
+        {
+            // ⚠ This catch is DEFENSIVE, and that has to be said precisely: the main case — a
+            // server missing, dead or timed out — is already traced by
+            // `LspSemanticProvider.MarkFailed`, once per session and per language, with the name of
+            // the executable to install; and a malformed symbol range does not throw, `TryAddChunk`
+            // clamps it and skips it. What is left is therefore the unexpected: something escaping
+            // a `GetSymbolsAsync` documented as returning `null` on error (a broken pipe, a JSON-RPC
+            // framing error). Rare, but it was MUTE, and it was the last mute fallback of the
+            // chunker's three tiers: the index loses its symbol boundaries for a whole language.
+            //
+            // Once per language AND per cause — this chunker is called per file.
+            var lang = LspSemanticProvider.GetLanguageId(Path.GetExtension(filePath)) ?? "?";
+            Diagnostics.RecordOnce(
+                "Lsp",
+                $"Unexpected failure while reading {lang} symbols "
+                + $"({ex.GetType().Name}: {ex.Message}); indexing falls back to the heuristic chunker.",
+                lang + "/" + ex.GetType().Name);
+        }
 
         return CodeChunker.Chunk(filePath, content, rootDir);
     }
 
     // ── Symbol → RagChunk conversion ──────────────────────────────────────────
 
-    private static List<RagChunk> ChunkFromSymbols(
+    /// <remarks><c>internal</c> rather than <c>private</c> for the same reason as
+    /// <c>GpuScheduler.RefreshBusyMarker</c>: <see cref="LspSemanticProvider"/> is <c>sealed</c>
+    /// and not virtual, so a test cannot reach this splitting through <see cref="ChunkAsync"/> —
+    /// and this is exactly the splitting that lost the tail of long symbols.</remarks>
+    internal static List<RagChunk> ChunkFromSymbols(
         LspDocumentSymbol[] symbols,
         string filePath,
         string content,
@@ -132,15 +157,37 @@ internal static class LspChunker
         int lineCount = endLine0 - startLine0 + 1;
         if (lineCount < 2) return; // skip trivial single-line entries
 
-        // Hard cap: shrink by 25% steps until under token budget
-        while (lineCount > 2 && ChunkText.EstimateTokens(lines, startLine0, endLine0) > MaxChunkTokens)
+        // ⚠ Past the budget, the symbol is SPLIT into consecutive pieces. It used to be SHRUNK
+        // until it fitted, and its tail was indexed nowhere: semantic search could never reach the
+        // end of a long TypeScript / Python / Go / Rust function, and nothing said so. ⚠ This is
+        // word for word the defect the Roslyn tier fixed, with the lesson written in its comment —
+        // and the LSP tier had kept it: a fix that closes the instance one saw leaves alive the
+        // class one did not look for. The consequence stings: turning `lspEnabled` on made the
+        // index WORSE than the regex tier, whose sliding window covers the whole file.
+        var pieceStart = startLine0;
+        while (pieceStart <= endLine0)
         {
-            int cut = Math.Max(1, lineCount / 4);
-            endLine0  -= cut;
-            lineCount  = endLine0 - startLine0 + 1;
-        }
+            var pieceEnd = pieceStart;
+            var tokens   = ChunkText.EstimateTokens(lines, pieceStart, pieceStart);
+            while (pieceEnd < endLine0 &&
+                   tokens + ChunkText.EstimateTokens(lines, pieceEnd + 1, pieceEnd + 1) <= MaxChunkTokens)
+                tokens += ChunkText.EstimateTokens(lines, ++pieceEnd, pieceEnd);
 
-        var text = string.Join('\n', lines, startLine0, lineCount).Trim();
+            AddPiece(symbolName, pieceStart, pieceEnd, lines, filePath, relPath, chunks);
+            pieceStart = pieceEnd + 1;
+        }
+    }
+
+    private static void AddPiece(
+        string   symbolName,
+        int      startLine0,
+        int      endLine0,
+        string[] lines,
+        string   filePath,
+        string   relPath,
+        List<RagChunk> chunks)
+    {
+        var text = string.Join('\n', lines, startLine0, endLine0 - startLine0 + 1).Trim();
         if (string.IsNullOrWhiteSpace(text)) return;
 
         chunks.Add(new RagChunk

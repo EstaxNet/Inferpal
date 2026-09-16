@@ -23,6 +23,10 @@ alwaysApply: false
 - **Scoping**: a rule is injected when its glob matches the **active editor file**, or when
   `alwaysApply: true` / no `globs`. Injected rules appear in the system prompt under a
   `## Rules` section.
+- **Glob dialect** (the same one `indexExclude` uses): `*` matches within one path segment, `?` one
+  character in a segment, `**/` any number of whole segments — including none, so `**/Program.cs`
+  matches `Program.cs` and `src/Program.cs` but **not** `src/MyProgram.cs` — and a trailing `**`
+  matches everything below. A pattern with no `/` is matched against the file name at any depth.
 - **Re-scoping**: when you switch the active file, the system prompt is rebuilt and rules are
   re-evaluated automatically.
 

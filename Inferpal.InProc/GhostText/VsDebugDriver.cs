@@ -111,6 +111,16 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 response = new(request.Id, Ok: false, Error: ex.Message);
             }
 
+            // ⚠ THE LOOP RETURNS TO THE POOL HERE, on every path. Each operation hops to the UI
+            // thread to talk to EnvDTE and comes back by itself — but only when it succeeded: a COM
+            // exception (a breakpoint on a file VS cannot bind, say — an ORDINARY condition that the
+            // catch above turns into an answer) skipped the return. The continuation then stayed on
+            // the UI thread, and with it the whole rest of the loop: `WriteResponse` wrote its file
+            // and `ClaimRequest` polled the disk at 10 Hz **on devenv's message pump**, until the
+            // end of the session. One return at the funnel beats thirteen returns an exception can
+            // skip.
+            await TaskScheduler.Default.SwitchTo();
+
             Services.Signals.DebugCommandSignal.WriteResponse(response);
         }
     }

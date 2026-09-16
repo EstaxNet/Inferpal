@@ -139,12 +139,19 @@ internal static class RulesService
         }
     }
 
-    private static bool SafeIsMatch(Regex rx, string input)
+    private static bool SafeIsMatch(Regex rx, string input, string glob)
     {
         try { return rx.IsMatch(input); }
         catch (RegexMatchTimeoutException)
         {
-            Diagnostics.Record("Rules", $"Glob regex timed out, treated as no-match: {rx}");
+            // ⚠ Once per GLOB, not per evaluation: `Matches()` runs on every rebuild of the system
+            // prompt, so on every change of active file, and for every glob of every rule.
+            // Repeated, the message drowned the ring's 200 entries. And it names the consequence:
+            // the rule this glob scopes is not applied.
+            Diagnostics.RecordOnce(
+                "Rules",
+                $"Glob '{glob}' timed out and was treated as no-match: the rule it scopes is not applied.",
+                glob);
             return false;   // a glob the engine cannot evaluate must never decide — nor freeze
         }
     }
@@ -157,13 +164,13 @@ internal static class RulesService
         var p = path.Replace('\\', '/').TrimStart('/');
 
         var rx = CompiledGlob(g);
-        if (SafeIsMatch(rx, p)) return true;
+        if (SafeIsMatch(rx, p, g)) return true;
 
         // Bare patterns (no path separator) match the file name at any depth.
         if (!g.Contains('/'))
         {
             var name = p[(p.LastIndexOf('/') + 1)..];
-            return SafeIsMatch(rx, name);
+            return SafeIsMatch(rx, name, g);
         }
         return false;
     }
@@ -184,9 +191,23 @@ internal static class RulesService
                 case '*':
                     if (i + 1 < glob.Length && glob[i + 1] == '*')
                     {
-                        sb.Append(".*");   // ** → any depth (including '/')
-                        i++;
-                        if (i + 1 < glob.Length && glob[i + 1] == '/') i++; // swallow trailing slash of **/
+                        i++;   // the second '*'
+                        if (i + 1 < glob.Length && glob[i + 1] == '/')
+                        {
+                            // ⚠ `**/` means "zero or more SEGMENTS", not "any characters".
+                            // Rendered `.*` with the '/' swallowed, `**/Program.cs` became
+                            // `^.*Program\.cs$` — which matches `src/MyProgram.cs`: a rule scoped
+                            // to Program.cs also fired on MyProgram.cs, and `**/bin/**` excluded
+                            // every `src/mybin/` from the index. The group stays OPTIONAL so that
+                            // `**/Foo.cs` still matches `Foo.cs` (zero segments), and it ends with
+                            // '/' so the next segment starts on a boundary.
+                            sb.Append("(?:.*/)?");
+                            i++;   // the '/'
+                        }
+                        else
+                        {
+                            sb.Append(".*");   // `**` at the end of a pattern: anything, '/' included
+                        }
                     }
                     else
                     {

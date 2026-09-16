@@ -387,8 +387,11 @@ internal static class SlashCommandRouter
             if (eq <= 1 || !name.StartsWith('/') || string.IsNullOrEmpty(text))
             {
                 // Without this, a "/mycommand" the user believes they defined simply does not
-                // exist, and nothing says why.
-                Diagnostics.DroppedLine("UserTemplates", "Command template ignored (expected /name=text)", line);
+                // exist, and nothing says why. ⚠ And once per line, not once per pass: this parser
+                // sits on the autocomplete path, so it is replayed on every keystroke (see
+                // Diagnostics.DroppedLineOnce).
+                Diagnostics.DroppedLineOnce(
+                    "UserTemplates", "Command template ignored (expected /name=text)", line, line);
                 continue;
             }
             result.Add(new UserSlashTemplate(name, text));

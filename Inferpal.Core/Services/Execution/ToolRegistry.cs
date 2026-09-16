@@ -163,24 +163,57 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     public ToolRegistry WithApprovalService(IApprovalService approval) =>
         new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null, fileHistory: _fileHistory);
 
-    private IEnumerable<ITool> UserTools =>
-        (_config.CustomTools ?? string.Empty)
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(line => !line.StartsWith('#'))   // '#' prefix = disabled entry
-            .Select(line =>
+    /// <summary>
+    /// The shell tools the user declared in <c>CustomTools</c>, one <c>name=command</c> per line.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <b>This property is recomputed on EVERY read of <see cref="Definitions"/></b>, that is at
+    /// least three times per request to the model (the client's <c>.Count</c> then its
+    /// <c>.ToList()</c>, the set of known names, the orchestrator's two guards). That is why its
+    /// rejections go through <see cref="Diagnostics.DroppedLineOnce"/>: said on every pass, they
+    /// wiped the diagnostics ring's 200 entries within a few agent turns.
+    /// </para>
+    /// <para>
+    /// ⚠ And two lines cannot claim the same name. This is not a hypothesis: the name is
+    /// <b>normalised</b> (lower-cased, spaces to underscores), so <c>My Tool=…</c> and
+    /// <c>my_tool=…</c> are two lines the user reads as distinct that yield one single name — the
+    /// exact shape of the trap <c>McpToolService</c> documents for <c>my-server</c> and
+    /// <c>my.server</c>. Without a guard, the backend received two function definitions with the
+    /// same name (malformed in the OpenAI tool schema) and <see cref="ExecuteAsync"/> always ran
+    /// the first: the second command never ran, silently.
+    /// </para>
+    /// <para>
+    /// The second one is <b>dropped</b>, not renamed: unlike an MCP tool, whose name is derived
+    /// from its server, here the name is the one the user wrote — exposing a <c>my_tool_2</c> would
+    /// put in the model's list a name that appears nowhere in their configuration. Same arbitration
+    /// as for the clash with a built-in tool.
+    /// </para>
+    /// </remarks>
+    private IEnumerable<ITool> UserTools
+    {
+        get
+        {
+            var tools = new List<ITool>();
+            var claimed = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var line in (_config.CustomTools ?? string.Empty)
+                         .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
+                if (line.StartsWith('#')) continue;   // '#' prefix = disabled entry
+
                 var eq = line.IndexOf('=');
                 if (eq <= 0)
                 {
-                    Diagnostics.DroppedLine("CustomTools", "Custom tool ignored (expected name=command)", line);
-                    return null;
+                    Diagnostics.DroppedLineOnce("CustomTools", "Custom tool ignored (expected name=command)", line, line);
+                    continue;
                 }
                 var name = line[..eq].Trim().ToLowerInvariant().Replace(' ', '_');
                 var cmd  = line[(eq + 1)..].Trim();
                 if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(cmd))
                 {
-                    Diagnostics.DroppedLine("CustomTools", "Custom tool ignored (empty name or command)", line);
-                    return null;
+                    Diagnostics.DroppedLineOnce("CustomTools", "Custom tool ignored (empty name or command)", line, line);
+                    continue;
                 }
                 // The most misleading of the three silences: the arbitration is right - a built-in
                 // keeps its name - but the user is left watching a tool they declared never being
@@ -188,12 +221,24 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                 // announces it anywhere else.
                 if (_tools.ContainsKey(name))
                 {
-                    Diagnostics.DroppedLine("CustomTools", $"Custom tool ignored ('{name}' is a built-in tool)", line);
-                    return null;
+                    Diagnostics.DroppedLineOnce(
+                        "CustomTools", $"Custom tool ignored ('{name}' is a built-in tool)", line, line);
+                    continue;
                 }
-                return (ITool)new UserShellTool(name, cmd, _approval, _config);
-            })
-            .Where(t => t is not null)!;
+                if (!claimed.Add(name))
+                {
+                    Diagnostics.DroppedLineOnce(
+                        "CustomTools",
+                        $"Custom tool ignored ('{name}' is already declared by an earlier line, "
+                        + "and two tools cannot share a name)", line, line);
+                    continue;
+                }
+                tools.Add(new UserShellTool(name, cmd, _approval, _config));
+            }
+
+            return tools;
+        }
+    }
 
     /// <summary>The MCP tools rebound to <b>this</b> registry's approval pipeline. The shared
     /// <see cref="McpToolService"/> built them with the original service; served raw, a sibling

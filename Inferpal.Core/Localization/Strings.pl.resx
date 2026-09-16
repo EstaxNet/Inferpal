@@ -762,6 +762,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostyka</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Komponent in-process nie został załadowany: ghost text, podgląd różnic edycji inline oraz sterownik debugera /tdd są niedostępne. Czat działa (jest poza procesem) — dlatego nic nie wygląda na zepsute.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Brak zarejestrowanych diagnostyk.</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_Wyświetlanie {0} najnowszych wpisów z {1}. Starsze zostały odrzucone._</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Wyczyszczono diagnostyki.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Raport pomocy skopiowany do schowka — wklej go do zgłoszenia na GitHubie.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Włączono zapis diagnostyki do pliku.</value></data>

@@ -762,6 +762,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnostica</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Il componente in-process non è caricato: il ghost text, l'anteprima diff della modifica inline e il driver del debugger di /tdd non sono disponibili. La chat non è interessata (gira fuori processo), per questo nulla sembra rotto.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Nessuna diagnostica registrata.</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_Vengono mostrate le {0} voci più recenti su {1}. Le più vecchie sono state scartate._</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnostica cancellata.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Report di supporto copiato negli appunti — incollalo in una issue GitHub.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Registrazione su file della diagnostica attivata.</value></data>

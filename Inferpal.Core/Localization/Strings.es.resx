@@ -762,6 +762,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnósticos</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ El componente in-process no está cargado: el texto fantasma, la vista previa de diferencias de la edición en línea y el controlador de depuración de /tdd no están disponibles. El chat no se ve afectado (se ejecuta fuera del proceso), por eso nada parece roto.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>No hay diagnósticos registrados.</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_Se muestran las {0} entradas más recientes de {1}. Las más antiguas se han descartado._</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnósticos borrados.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Informe de soporte copiado al portapapeles — pégalo en una issue de GitHub.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Registro de diagnósticos en archivo activado.</value></data>

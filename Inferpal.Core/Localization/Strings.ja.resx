@@ -762,6 +762,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## 診断</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ インプロセス コンポーネントが読み込まれていません。ゴーストテキスト、インライン編集の差分プレビュー、/tdd のデバッガー ドライバーは使用できません。チャットはプロセス外で動作するため影響を受けず、壊れているように見えません。</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>診断は記録されていません。</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_{1} 件中、最新の {0} 件を表示しています。それより古いものは破棄されました。_</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>診断をクリアしました。</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>サポートレポートをクリップボードにコピーしました — GitHub の Issue に貼り付けてください。</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>診断のファイル記録を有効にしました。</value></data>

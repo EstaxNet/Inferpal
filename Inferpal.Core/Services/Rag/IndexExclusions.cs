@@ -99,8 +99,14 @@ internal static class IndexExclusions
         }
         catch (RegexMatchTimeoutException)
         {
-            Diagnostics.Record("IndexExclusions",
-                $"Exclusion pattern '{glob}' from .inferpal/project.json timed out; the file was indexed.");
+            // ⚠ Once per PATTERN, not per file: this predicate is evaluated on every file of the
+            // indexing pass, so a pathological pattern — and it comes from
+            // `.inferpal/project.json`, that is, from a cloned repository — laid thousands of
+            // identical entries in a ring that holds 200. The message also states the right scope:
+            // what is indexed is not "this file" but every file the pattern was meant to exclude.
+            Diagnostics.RecordOnce("IndexExclusions",
+                $"Exclusion pattern '{glob}' from .inferpal/project.json timed out; "
+                + "the files it was meant to exclude are indexed.", glob);
             return false;
         }
     }

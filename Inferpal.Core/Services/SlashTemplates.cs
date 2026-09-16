@@ -21,13 +21,24 @@ internal static class SlashTemplates
 
         // A template named like a built-in never runs — the router answers the built-in first — so it is
         // not offered either: in autocomplete, picking it ran the built-in under the template's hint.
+        //
+        // ⚠ DroppedLineOnce, not DroppedLine: this loader is the AUTOCOMPLETE one
+        // (`MatchCommands`), so it runs on every keystroke while a slash command is being typed. A
+        // shadowed template laid one entry per key, and the diagnostics ring's 200 entries were
+        // gone within seconds of typing.
         var usable = new List<UserSlashTemplate>();
         foreach (var t in fromConfig.Concat(fromFiles).DistinctBy(t => t.Name))
         {
             if (SlashCommandRouter.IsBuiltIn(t.Name))
-                Diagnostics.DroppedLine("UserTemplates", "Command template shadowed by a built-in command, never run", t.Name);
+                Diagnostics.DroppedLineOnce(
+                    "UserTemplates", "Command template shadowed by a built-in command, never run", t.Name, t.Name);
             else
+            {
                 usable.Add(t);
+                // The name stopped being shadowed (template renamed, command removed): the next
+                // clash on that name will speak again.
+                Diagnostics.ForgetDroppedLine("UserTemplates", t.Name);
+            }
         }
         return usable;
     }

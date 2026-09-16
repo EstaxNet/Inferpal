@@ -115,16 +115,46 @@ public class StepModeToolRegistryTests
     [Fact]
     public async Task ExecuteAsync_CancellationDuringCallback_Propagates()
     {
+        // ⚠ Cancellation falls DURING the callback, as the name says. The previous version
+        // cancelled before the call, which the "one tool at a time" gate now intercepts upstream —
+        // a different scenario, covered by the next test.
         using var cts = new CancellationTokenSource();
         var fake = new FakeRegistry();
         var sut  = new StepModeToolRegistry(
             fake,
-            ct => { ct.ThrowIfCancellationRequested(); return Task.CompletedTask; });
-
-        cts.Cancel();
+            ct => { cts.Cancel(); ct.ThrowIfCancellationRequested(); return Task.CompletedTask; });
 
         await Assert.ThrowsAsync<OperationCanceledException>(
             () => sut.ExecuteAsync("t", default, cts.Token));
+
+        Assert.Equal(1, fake.ExecuteCallCount);   // witness: the tool did run before the pause
+    }
+
+    /// <summary>
+    /// An already-cancelled token is refused <b>before</b> the tool runs.
+    /// </summary>
+    /// <remarks>
+    /// A consequence of the "one tool at a time" gate: it waits on the token, so it sees the
+    /// cancellation first. That is the right behaviour — a cancelled turn must not run one more
+    /// tool — and the type thrown is still an <see cref="OperationCanceledException"/>, from which
+    /// <c>TaskCanceledException</c> derives: the contract "only cancellation crosses
+    /// <c>RunAsync</c>" is unchanged for every caller, all of which catch the base class.
+    /// </remarks>
+    [Fact]
+    public async Task ExecuteAsync_AlreadyCancelledToken_RefusesBeforeRunningTheTool()
+    {
+        using var cts = new CancellationTokenSource();
+        var fake      = new FakeRegistry();
+        var callbacks = 0;
+        var sut       = new StepModeToolRegistry(fake, _ => { callbacks++; return Task.CompletedTask; });
+
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => sut.ExecuteAsync("t", default, cts.Token));
+
+        Assert.Equal(0, fake.ExecuteCallCount);
+        Assert.Equal(0, callbacks);
     }
 
     [Fact]

@@ -106,6 +106,13 @@ internal static class DiagnosticsCommandHandler
                 var sb = new StringBuilder();
                 if (inproc is not null) sb.Append(inproc).Append("\n\n");
                 sb.Append(Strings.DiagnosticsHeader).Append('\n');
+                // ⚠ Say that what is shown is a FRAGMENT. The support bundle, ten lines below and
+                // in this very file, already announces it ("N of M"); the screen did not — and the
+                // screen is what the user reads to find their failure. The ring holds up to
+                // Diagnostics.Capacity: up to 170 entries vanished under a listing that read as
+                // complete.
+                if (entries.Count > MaxShown)
+                    sb.Append('\n').Append(Strings.DiagnosticsShowing(MaxShown, entries.Count)).Append('\n');
                 foreach (var e in entries.Reverse().Take(MaxShown))   // most recent first
                     sb.Append("\n- `").Append(e.Timestamp.ToString("HH:mm:ss")).Append("` **")
                       .Append(e.Context).Append("** — ").Append(e.Detail);
@@ -134,13 +141,21 @@ internal static class DiagnosticsCommandHandler
         // "ghost text does nothing" report used to arrive without the one piece of information
         // that settles it. It is also the only observation of the in-process half the project ever
         // gets from a machine other than the maintainer's - see InProcAliveSignal.
+        // ⚠ SanitizePaths, like the ring entries. Those three fields (in-process half, backend,
+        // MCP servers) carry text coming from OUTSIDE — an exception message, a probe, a remote
+        // server — and the bundle did not scrub them. Measured: when an stdio MCP server fails to
+        // start, .NET returns "An error occurred trying to start process '<full path>' with working
+        // directory '<root>'", which McpStdioClient puts verbatim into LastError. The home
+        // directory and the repository path therefore went into the file the user pastes into a
+        // public issue, while the same bundle carefully replaces them with ~ and <workspace> a few
+        // lines below.
         if (!string.IsNullOrEmpty(ctx.InProcHalf))
-            sb.Append("- **In-process half**: ").Append(ctx.InProcHalf).Append('\n');
+            sb.Append("- **In-process half**: ").Append(SanitizePaths(ctx.InProcHalf, ctx.WorkspaceRoot)).Append('\n');
         sb.Append("- **Provider**: ").Append(c.Provider)
           .Append(" — ").Append(RedactEndpoint(c.BaseUrl)).Append('\n');
         sb.Append("- **API key**: ").Append(string.IsNullOrEmpty(c.ApiKey) ? "not set" : "set (redacted)").Append('\n');
         if (!string.IsNullOrEmpty(ctx.BackendStatus))
-            sb.Append("- **Backend**: ").Append(ctx.BackendStatus).Append('\n');
+            sb.Append("- **Backend**: ").Append(SanitizePaths(ctx.BackendStatus, ctx.WorkspaceRoot)).Append('\n');
 
         sb.Append("- **Models**: default `").Append(c.DefaultModel).Append('`')
           .Append(Role("agent", c.AgentModel)).Append(Role("utility", c.UtilityModel))
@@ -167,7 +182,7 @@ internal static class DiagnosticsCommandHandler
         if (ctx.McpServers is { Count: > 0 } mcp)
         {
             sb.Append("- **MCP servers** (").Append(mcp.Count).Append("):");
-            foreach (var line in mcp) sb.Append("\n  - ").Append(line);
+            foreach (var line in mcp) sb.Append("\n  - ").Append(SanitizePaths(line, ctx.WorkspaceRoot));
             sb.Append('\n');
         }
 

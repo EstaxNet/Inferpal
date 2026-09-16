@@ -38,23 +38,26 @@ internal static class BuildSignalFile
     /// When non-empty the OOP monitor uses them directly and skips the second
     /// <c>dotnet build</c> pass.
     /// </param>
-    internal static void Write(string solutionPath, IReadOnlyList<string>? errorLines = null)
-    {
-        try
+    /// <remarks>
+    /// ⚠ Through <see cref="SignalFile.Write{T}"/> — stage then rename — and not for uniformity:
+    /// this is the channel where a torn read does not degrade the signal, it <b>destroys</b> it.
+    /// <see cref="VsBuildMonitor.OnSignalFileEvent"/> calls <see cref="Clear"/>
+    /// <b>unconditionally</b>, right after <see cref="TryRead"/>: a read that landed on the
+    /// truncated file returns <c>default</c> and then deletes the real payload. The failure is then
+    /// mute and total — no "build failed" banner, hence no "Fix with AI" entry into
+    /// <c>/fix-build</c>, on a compilation that did fail. This is exactly the distinction
+    /// <see cref="SignalFile.Write{T}"/> documents between a <i>hint</i> channel (re-read next
+    /// turn) and the debugger's <i>command</i> channel.
+    /// </remarks>
+    internal static void Write(string solutionPath, IReadOnlyList<string>? errorLines = null) =>
+        SignalFile.Write(FilePath, new
         {
-            Directory.CreateDirectory(SignalFile.Dir);
-            var json = JsonSerializer.Serialize(new
-            {
-                solutionPath,
-                ts     = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                errors = (errorLines != null && errorLines.Count > 0)
-                             ? errorLines
-                             : Array.Empty<string>(),
-            });
-            File.WriteAllText(FilePath, json);
-        }
-        catch { /* non-critical */ }
-    }
+            solutionPath,
+            ts     = SignalFile.Now.ToUnixTimeMilliseconds(),
+            errors = (errorLines != null && errorLines.Count > 0)
+                         ? errorLines
+                         : Array.Empty<string>(),
+        }, "BuildSignal.Write");
 
     // ── Out-of-process side (VsBuildMonitor) ──────────────────────────────────
 
@@ -75,7 +78,9 @@ internal static class BuildSignalFile
             if (!File.Exists(FilePath)) return default;
             var obj = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(FilePath));
             var ts  = obj.GetProperty("ts").GetInt64();
-            var age = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - ts;
+            // One clock shared by both sides: this channel held the only pair that read
+            // DateTimeOffset.UtcNow directly, so its 30 s rule was the only untestable one.
+            var age = SignalFile.Now.ToUnixTimeMilliseconds() - ts;
             if (age > 30_000) return default;   // stale — ignore (previous VS session)
 
             var path = obj.GetProperty("solutionPath").GetString();

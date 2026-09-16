@@ -762,6 +762,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="DiagnosticsHeader" xml:space="preserve"><value>## Diagnose</value></data>
   <data name="DiagnosticsInProcDead" xml:space="preserve"><value>⚠ Die In-Process-Komponente ist nicht geladen: Ghost-Text, die Diff-Vorschau der Inline-Bearbeitung und der /tdd-Debuggertreiber sind nicht verfügbar. Der Chat ist nicht betroffen (er läuft prozessextern) — deshalb wirkt nichts kaputt.</value></data>
   <data name="DiagnosticsEmpty" xml:space="preserve"><value>Keine Diagnosen aufgezeichnet.</value></data>
+  <data name="DiagnosticsShowing" xml:space="preserve"><value>_Es werden die {0} neuesten von {1} Einträgen angezeigt. Ältere wurden verworfen._</value></data>
   <data name="DiagnosticsCleared" xml:space="preserve"><value>Diagnosen gelöscht.</value></data>
   <data name="DiagnosticsExported" xml:space="preserve"><value>Support-Bericht in die Zwischenablage kopiert — fügen Sie ihn in ein GitHub-Issue ein.</value></data>
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Diagnose-Dateiprotokollierung aktiviert.</value></data>

@@ -186,16 +186,116 @@ internal static class Diagnostics
         return true;
     }
 
+    /// <summary>
+    /// <see cref="DroppedLine"/> for a parser that runs <b>again and again</b>: the same rejection
+    /// is reported once per distinct <paramref name="key"/>, not once per pass.
+    /// </summary>
+    /// <param name="key">
+    /// What identifies the rejection across passes — the offending line, or the name it claims.
+    /// Once it stops being rejected, <see cref="ForgetDroppedLine"/> makes the next occurrence
+    /// speak again.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <b>The "a noisy channel stops being read" caution is written in the remarks of
+    /// <see cref="DroppedLine"/>, and three of its four callers undo it by calling it in a
+    /// loop.</b> The ring only keeps <see cref="Capacity"/> entries:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><c>CustomTools</c> is reparsed on every read of <c>ToolRegistry.Definitions</c>,
+    ///         that is at least three times per request to the model — one bad line wiped the whole
+    ///         ring within a few agent turns, and with it the failure being looked for.</item>
+    ///   <item><c>UserTemplates</c> is reloaded by autocomplete, so <b>on every keystroke</b>
+    ///         while a slash command is being typed.</item>
+    ///   <item><c>PinnedFiles</c> had already understood this and carried its own set of
+    ///         already-reported paths, with the reason in a comment. The gesture lives here now, so
+    ///         that the next repeated parser inherits it instead of rediscovering it.</item>
+    /// </list>
+    /// <para>
+    /// The memory is emptied by <see cref="Clear"/>: without that, a <c>/diagnostics clear</c>
+    /// would hide those lines for good, just as the user asked for a clean ring.
+    /// </para>
+    /// <para>
+    /// ⚠ The de-duplication can NOT live in <see cref="DroppedLine"/>: its return value feeds the
+    /// list that <c>/permissions</c> and the settings window display, and a <c>false</c> on the
+    /// second call would empty that listing.
+    /// </para>
+    /// </remarks>
+    /// <returns><c>true</c> when this pass actually reported it.</returns>
+    internal static bool DroppedLineOnce(string context, string reason, string key, string? line)
+    {
+        var slot = context + "\u0001" + key;
+        lock (_saidGate)
+            if (!_said.Add(slot)) return false;
+
+        if (DroppedLine(context, reason, line)) return true;
+
+        // What the parsers normally skip (a blank line, a comment) is not a rejection: it must not
+        // occupy the memory, otherwise the real line taking that same key later would stay mute.
+        lock (_saidGate) _said.Remove(slot);
+        return false;
+    }
+
+    /// <summary>
+    /// The rejection identified by <paramref name="key"/> is over — the next one will be reported.
+    /// </summary>
+    /// <remarks>
+    /// Without this, "reported once" would become "reported once in the life of the process": a
+    /// pinned file that comes back then disappears again, a tool renamed then duplicated again,
+    /// would never say so.
+    /// </remarks>
+    internal static void ForgetDroppedLine(string context, string key)
+    {
+        lock (_saidGate) _said.Remove(context + "\u0001" + key);
+    }
+
+    /// <summary>
+    /// <see cref="Record"/> for a note that would otherwise repeat <b>per item</b> — once per
+    /// distinct <paramref name="key"/>, forgotten by <see cref="Clear"/> like
+    /// <see cref="DroppedLineOnce"/>, with which it shares its memory.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <b>This is the half of the class <see cref="DroppedLineOnce"/> had left open.</b> That one
+    /// covers a rejected configuration <i>line</i>; the ring drowns just as well under a note
+    /// emitted per file or per pattern — and the multiplier is worse there:
+    /// <c>IndexExclusions</c> traced a pathological pattern <b>once per indexed file</b>, that is
+    /// thousands of entries in a ring that keeps <see cref="Capacity"/>. The failure one came
+    /// looking for was long gone.
+    /// </para>
+    /// <para>
+    /// ⚠ Kept separate from <see cref="DroppedLineOnce"/> rather than reused: that one skips blank
+    /// lines and <c>#</c> comments, which is right for a list written line by line and wrong for a
+    /// pattern coming from a JSON array — a glob <c>#something</c> would be taken for a comment
+    /// there and **never** reported.
+    /// </para>
+    /// </remarks>
+    /// <returns><c>true</c> when this call actually recorded it.</returns>
+    internal static bool RecordOnce(string context, string detail, string key)
+    {
+        var slot = context + "\u0001" + key;
+        lock (_saidGate)
+            if (!_said.Add(slot)) return false;
+
+        Record(context, detail);
+        return true;
+    }
+
+    private static readonly HashSet<string> _said = new(StringComparer.Ordinal);
+    private static readonly object _saidGate = new();
+
     /// <summary>Snapshot of the in-memory ring, oldest first.</summary>
     internal static IReadOnlyList<DiagnosticEntry> Snapshot()
     {
         lock (_gate) return [.. _ring];
     }
 
-    /// <summary>Clears the in-memory ring.</summary>
+    /// <summary>Clears the in-memory ring, and with it what <see cref="DroppedLineOnce"/> remembers
+    /// having said — see its remarks.</summary>
     internal static void Clear()
     {
         lock (_gate) _ring.Clear();
+        lock (_saidGate) _said.Clear();
     }
 
     /// <summary>Cap on the opt-in log file. A forgotten `/diagnostics on` must not grow without
