@@ -887,7 +887,7 @@ public class ConventionCoverageTests
     /// The VS adapter view models (<c>Inferpal\ToolWindow</c>), WITH ITS WITNESS - the same guard
     /// as <see cref="ProjectSources"/>.
     /// </summary>
-    private static IReadOnlyList<string> ViewModelSources()
+    internal static IReadOnlyList<string> ViewModelSources()
     {
         var dir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
         Assert.True(Directory.Exists(dir), $"The convention scan targets {dir}, which does not exist - the rule checks nothing any more.");
@@ -923,7 +923,7 @@ public class ConventionCoverageTests
     private static IEnumerable<string> UntrustedInputSources() =>
         ToolsSources().Concat(CoreSources(Path.Combine("Services", "Docs")));
 
-    private static IEnumerable<string> CoreSources(string subdir) =>
+    internal static IEnumerable<string> CoreSources(string subdir) =>
         Directory.EnumerateFiles(
             Path.Combine(RepoRoot(), "Inferpal.Core", subdir), "*.cs", SearchOption.AllDirectories);
 

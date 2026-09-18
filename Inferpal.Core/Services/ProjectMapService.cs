@@ -18,7 +18,7 @@ internal sealed class ProjectMapService
     private readonly ProjectIndexService? _index;
 
     // key = root dir, value = cached map
-    private readonly ConcurrentDictionary<string, string> _cache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, string> _cache = new(PathComparer.Default);
 
     public ProjectMapService(IEditorSurface editor, ProjectIndexService? index = null)
     {
@@ -72,11 +72,11 @@ internal sealed class ProjectMapService
         var nsFiles      = new Dictionary<string, List<string>>(StringComparer.Ordinal);      // ns → file list
         var typeList     = new List<TypeEntry>();                                               // all types
         var usingsByNs   = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);   // ns → used ns
-        var refCounts    = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);      // file → ref count
+        var refCounts    = new Dictionary<string, int>(PathComparer.Default);                  // file → ref count
 
         // Pass-1 contents kept for pass 2: it used to re-read every file from disk a second time
-        // (pre-1.6.0 architecture review).
-        var contents = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        //.
+        var contents = new Dictionary<string, string>(PathComparer.Default);
 
         foreach (var file in files)
         {

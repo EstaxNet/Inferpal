@@ -434,7 +434,9 @@ internal sealed class HistoryRun
     public string Id { get; }
     public DateTime StartedAt { get; }
 
-    private readonly Dictionary<string, RunChange> _firstByPath = new(StringComparer.OrdinalIgnoreCase);
+    // ⚠ PathComparer: two files that differ only in case are two files under Linux, and folding
+    // them here meant the second never entered the run — so /undo-run could no longer give it back.
+    private readonly Dictionary<string, RunChange> _firstByPath = new(PathComparer.Default);
 
     // Tool-call journal (for /replay). Guarded by its own lock: read-only tool batches execute in
     // parallel (ShouldRunParallel), so records can arrive concurrently — and /replay may read while

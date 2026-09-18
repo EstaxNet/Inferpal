@@ -84,7 +84,7 @@ internal sealed class CSharpSemanticIndex
     private sealed record Snapshot(CSharpCompilation Compilation, KeyValuePair<string, SyntaxTree>[] Trees);
 
     private readonly object _gate = new();
-    private readonly Dictionary<string, SyntaxTree> _treesByPath = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, SyntaxTree> _treesByPath = new(Services.PathComparer.Default);
     private CSharpCompilation? _compilation;
 
     /// <summary>
@@ -322,7 +322,7 @@ internal sealed class CSharpSemanticIndex
         if (declarations.Count == 0) return new Dictionary<string, IReadOnlyList<TextSpan>>();
         var target = declarations[0].Symbol;
 
-        var byFile = new Dictionary<string, IReadOnlyList<TextSpan>>(StringComparer.OrdinalIgnoreCase);
+        var byFile = new Dictionary<string, IReadOnlyList<TextSpan>>(Services.PathComparer.Default);
         // ⚠ The snapshot, never the live fields: a save during a rename (the watcher calls Update) made
         // this loop throw "collection modified" — falling back to the text rename, homonyms included —
         // or bind symbols of the new compilation against a target from the old one.

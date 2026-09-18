@@ -112,8 +112,11 @@ internal sealed class ApplyEditsTool : ITool
         if (edits.Count == 0) return Strings.ApplyEditsEmpty;
 
         // ── Phase 1: resolve ALL edits in memory (nothing written yet) ─────────
-        var current  = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var original = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // ⚠ PathComparer, not OrdinalIgnoreCase: under Linux `A.cs` and `a.cs` are two files, and
+        // confusing them here applied the edit to one file's content and then wrote it under the
+        // other's name. This is the one site of that class which loses data.
+        var current  = new Dictionary<string, string>(PathComparer.Default);
+        var original = new Dictionary<string, string>(PathComparer.Default);
 
         for (int i = 0; i < edits.Count; i++)
         {

@@ -416,7 +416,7 @@ internal sealed class ProjectIndexService : IDisposable
             }
 
             // Build lookup of existing chunks by file path for incremental updates
-            var existingByPath = new Dictionary<string, List<RagChunk>>(StringComparer.OrdinalIgnoreCase);
+            var existingByPath = new Dictionary<string, List<RagChunk>>(PathComparer.Default);
             foreach (var c in loaded)
             {
                 if (!existingByPath.TryGetValue(c.FilePath, out var list))

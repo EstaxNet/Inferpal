@@ -101,8 +101,7 @@ internal sealed class ProposalRecorder : IApprovalService
         }
     }
 
-    private static StringComparison PathComparison =>
-        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+    private static StringComparison PathComparison => Services.PathComparer.Comparison;
 }
 
 /// <summary>Why a proposal cannot be applied, or that it can.</summary>

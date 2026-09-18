@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Inferpal.Models;
 
 namespace Inferpal.Services.Tasks;
@@ -30,7 +30,7 @@ internal sealed class BackgroundTaskToolRegistry(
     {
         if (_currentRoot is null || string.IsNullOrWhiteSpace(_startRoot)) return false;
         return !string.Equals(Trim(_startRoot), Trim(_currentRoot() ?? string.Empty),
-            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            PathComparer.Comparison);
 
         static string Trim(string path) =>
             path.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);

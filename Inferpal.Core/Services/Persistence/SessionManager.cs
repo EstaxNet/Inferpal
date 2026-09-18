@@ -128,7 +128,7 @@ internal static class SessionManager
             return true;
 
         return string.Equals(NormalizeRoot(saved.WorkspaceRoot), NormalizeRoot(currentRoot),
-            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            PathComparer.Comparison);
     }
 
     private static string NormalizeRoot(string root)

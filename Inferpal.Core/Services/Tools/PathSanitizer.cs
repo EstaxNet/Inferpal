@@ -100,8 +100,10 @@ internal static class PathSanitizer
 
     /// <summary>Windows paths are case-insensitive; Linux/macOS ones are not — and the host now
     /// ships for all three (VS Code publishes linux-* and darwin-* builds).</summary>
-    private static StringComparison PathComparison =>
-        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+    // ⚠ Read from the one place that answers this, never re-derived: this copy said macOS is
+    // case-SENSITIVE, so a root spelled with another case made the guard refuse a perfectly
+    // legitimate write — the shape of issue #9.
+    private static StringComparison PathComparison => Services.PathComparer.Comparison;
 
     private static string Trim(string path) =>
         path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);

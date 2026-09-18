@@ -201,7 +201,7 @@ internal class AnalyzeImpactTool : ITool
         // ── 2. Scan for direct dependants (Layer 1) ───────────────────────────
         var (allFiles, coverage) = ScanCoverage.Take(EnumerateSourceFiles(rootDir, ext), MaxFilesScanned);
         coverage = coverage.WithGap(WorkspaceScan.FirstWalkGap(rootDir, rootDir));
-        var contentCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var contentCache = new Dictionary<string, string>(PathComparer.Default);
         var (layer1, unreadable1) = await ScanDirectDependantsAsync(api, filePath, allFiles, contentCache, ct);
         coverage = coverage.WithUnreadable(unreadable1);
 
