@@ -124,7 +124,7 @@ public class VsixPackagingTests
             line => line.Contains("[$RootKey$\\MEFComponent]", StringComparison.Ordinal));
     }
 
-    [Fact]
+    [WindowsBuildOutputFact]
     public void InProcAssembly_IsLoadableByADotNetFrameworkHost()
     {
         var dll = InProcAssemblyPath();
@@ -188,7 +188,7 @@ public class VsixPackagingTests
         Assert.DoesNotContain(directives, line => line.Contains("AllowsBackgroundLoading"));
     }
 
-    [Fact]
+    [WindowsBuildOutputFact]
     public void PackagedExtensionJson_HostsEveryPartOutOfProcess()
     {
         // The other half of 2026-08-24. RequiresInProcessHosting=true (imposed by
