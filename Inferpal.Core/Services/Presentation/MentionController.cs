@@ -303,7 +303,14 @@ internal static class MentionController
 
         try
         {
-            foreach (var file in Directory.GetFiles(dir))
+            // ⚠ Sorted, ordinal: the enumeration order of GetFiles/GetDirectories is the file
+            // system's, so it is by name on NTFS and arbitrary on POSIX. The caps downstream keep
+            // the FIRST 200 files and attach the body of the FIRST 30 — so without a defined order,
+            // WHICH files the model gets is a property of the volume, and the same folder attached
+            // twice can yield two different contexts. Same reason RRF got its tie-break: context
+            // that wobbles between identical gestures churns the KV-cache prefix, and here it also
+            // made two tests measure the platform instead of the product (CI, both POSIX legs).
+            foreach (var file in Directory.GetFiles(dir).OrderBy(f => f, StringComparer.Ordinal))
             {
                 if (ct.IsCancellationRequested) return;
                 if (!IndexableExtensions.Contains(Path.GetExtension(file))) continue;
@@ -313,7 +320,7 @@ internal static class MentionController
                 if (results.Count >= MaxWalkFiles) { limits.FileCapHit = true; return; }
                 results.Add(file);
             }
-            foreach (var subDir in Directory.GetDirectories(dir))
+            foreach (var subDir in Directory.GetDirectories(dir).OrderBy(d => d, StringComparer.Ordinal))
                 CollectFolderFiles(subDir, results, depth + 1, ct, limits);
         }
         catch (OperationCanceledException) { }
