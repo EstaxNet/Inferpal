@@ -36,8 +36,8 @@ internal class ListFilesTool : ITool
             return Task.FromResult(Strings.DirNotFound(path));
 
         // Lazy + excluded like the semantic index: on a node project root, GetFiles materialised
-        // the whole tree and the 300 results shown were mostly node_modules/.git noise (the
-        // pre-1.6.0 architecture review). Take(limit + 1) detects truncation without walking everything.
+        // the whole tree and the 300 results shown were mostly node_modules/.git noise (pre-1.6.0
+        // review, batch 4). Take(limit + 1) detects truncation without walking everything.
         const int limit = 300;
         List<string> files;
         // The walk is checked BEFORE it is consumed: "the directory does not exist" was answered
@@ -49,7 +49,13 @@ internal class ListFilesTool : ITool
                                  + "walked (permissions, or a path the file system refused).");
         try
         {
-            files = walk.Take(limit + 1)
+            // ⚠ Sorted BEFORE the cap: the message below says "showing first {limit} files", and
+            // "first" has to mean something. The walk yields in file-system order — by name on
+            // NTFS, arbitrary on POSIX — so without this the listing shown to the model was a
+            // subset chosen by the volume, different between two identical calls. Ordinal, like
+            // ScanCoverage.Take, which owns the same decision for the capped analysis scans.
+            files = walk.OrderBy(f => f, StringComparer.Ordinal)
+                        .Take(limit + 1)
                         .Select(f => f[path.Length..].TrimStart('\\', '/'))
                         .ToList();
         }

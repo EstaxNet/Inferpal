@@ -31,9 +31,9 @@ namespace Inferpal.Services.Tools;
 /// refactor freely</c>, which is the exact sentence this tool's own comment records as the defect
 /// it once had for a different cause.
 /// </remarks>
-/// <param name="UnlistableFolder">
-/// A folder of the workspace the walk could not list, relative to the root — <c>null</c> when the
-/// whole tree could be listed. See <see cref="WithUnlistableFolder"/>.
+/// <param name="Gap">
+/// A folder of the workspace whose files the walk will not see, with the reason — <c>null</c> when
+/// the whole tree is readable and unlinked. See <see cref="WithGap"/>.
 /// </param>
 internal readonly record struct ScanCoverage(
     int Total, int Scanned, int Unreadable = 0, WorkspaceScan.WalkGap? Gap = null)
@@ -75,13 +75,24 @@ internal readonly record struct ScanCoverage(
         gap is null ? this : this with { Gap = gap };
 
     /// <summary>
-    /// Takes at most <paramref name="cap"/> items and records how many there were in total.
-    /// Enumerates <paramref name="files"/> once.
+    /// Takes at most <paramref name="cap"/> items, in a defined order, and records how many there
+    /// were in total. Enumerates <paramref name="files"/> once.
     /// </summary>
+    /// <remarks>
+    /// ⚠ <b>The cap declares itself; the SUBSET decided nowhere.</b> The report says "400 of 652",
+    /// and what it cannot say is that those 400 are the ones the volume happened to yield first:
+    /// <c>Directory.GetFiles</c> and <c>FileSystemEnumerable</c> return entries in file-system
+    /// order — by name on NTFS, <b>arbitrary</b> on POSIX. So on a repository larger than the cap,
+    /// <c>analyze_impact</c>, <c>trace_dependency</c> and the nexus could answer two different
+    /// things to two identical calls, neither of them reproducible. Sorted here, once, for every
+    /// site that caps: ordinal, so the machine's culture does not decide either (rule 19).
+    /// ⚠ The order must be fixed <b>before</b> the cap, not after — sorting what was already taken
+    /// tidies the report and changes nothing about which files were read.
+    /// </remarks>
     public static (List<string> Files, ScanCoverage Coverage) Take(IEnumerable<string> files, int cap)
     {
         var all     = files as IList<string> ?? files.ToList();
-        var scanned = all.Take(cap).ToList();
+        var scanned = all.OrderBy(f => f, StringComparer.Ordinal).Take(cap).ToList();
         return (scanned, new ScanCoverage(all.Count, scanned.Count));
     }
 
