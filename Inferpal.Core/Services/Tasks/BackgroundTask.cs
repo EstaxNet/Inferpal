@@ -1,6 +1,6 @@
 ﻿namespace Inferpal.Services.Tasks;
 
-/// <summary>Lifecycle of a background agent task (ROADMAP 1.5.0 §9, pulled forward to 1.4.0).</summary>
+/// <summary>Lifecycle of a background agent task.</summary>
 internal enum BackgroundTaskState
 {
     /// <summary>Submitted, waiting for the single GPU slot (and for the chat to go idle).</summary>

@@ -44,7 +44,7 @@ internal sealed partial class HostServer
             // string "/test" reached the model, which improvised. Served here instead.
             // Inside the turn slot like every other slash that infers: it used to run OUTSIDE it —
             // a second inference in parallel with a chat turn on the same GPU, and chat/cancel
-            // could not stop it (pre-1.6.0 architecture review, §2.6).
+            // could not stop it.
             case SlashCodeAction { Kind: SlashCodeActionKind.Test }:
             {
                 var cts = AcquireTurn(ct);
@@ -101,7 +101,7 @@ internal sealed partial class HostServer
                 run.FinalResponse, recorder?.Proposals ?? []);
         },
         // Dedicated notification, not a chat/step status line: the adapter renders it as a
-        // persistent bubble (VS parity) instead of a status wiped by the next setBusy (revue §3.6).
+        // persistent bubble (VS parity) instead of a status wiped by the next setBusy.
         onFinished: snapshot => Notify("task/finished", new { text = TaskCommandHandler.FinishedNotice(snapshot) }));
 
     /// <summary>Current content of a proposed file, or null when it is not there. A read failure

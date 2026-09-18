@@ -33,7 +33,7 @@ public class InlineToolCallParserTests
     {
         // Ask the model for "a JSON of a person" and it answers {"name":"Alice","age":30}:
         // promoted to a call of the tool "Alice", the legitimate answer was DESTROYED
-        // (pre-1.6.0 architecture review, §3.2). With the registry gate, only real tool names promote.
+        //. With the registry gate, only real tool names promote.
         var content = """{"name":"Alice","age":30}""";
         var isKnown = (string n) => n is "read_file" or "write_file";
 

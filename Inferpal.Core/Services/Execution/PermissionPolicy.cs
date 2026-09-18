@@ -48,15 +48,13 @@ internal sealed class PermissionRule
     /// engine cannot evaluate must never decide, and it must never freeze the approval path either.
     /// </summary>
     /// <remarks>
-    /// ⚠ <b>"No match" is not the end of the story for a <c>deny</c>.</b> The documented arbitration
-    /// for user patterns — skip the rule, "on retombe sur le prompt, et personne ne le voit" — rests
-    /// on there being a prompt. There is not one when the user has clicked "Always" on that tool,
-    /// which this repository already identified as the realistic bypass when it closed the same hole
-    /// on the agent-instruction files. A <c>deny</c> the engine could not read would then let the
-    /// call through with no human at all, and the rule its author wrote would never have applied.
-    /// Hence the flag: the caller raises the force-prompt tier, exactly as it does for a built-in
-    /// pattern that times out. Still never a refusal — a guard that could not read its input has
-    /// established nothing.
+    /// ⚠ <b>"No match" is not the end of the story for a <c>deny</c>.</b> Skipping the rule and
+    /// falling back to the prompt rests on there being a prompt. There is none once the user has
+    /// clicked "Always" on that tool — the realistic bypass — so a <c>deny</c> the engine could not
+    /// read would let the call through with no human at all, and the rule its author wrote would
+    /// never have applied. Hence the flag: the caller raises the force-prompt tier, exactly as it
+    /// does for a built-in pattern that times out. Still never a refusal — a guard that could not
+    /// read its input has established nothing.
     /// </remarks>
     public bool Matches(string toolName, string subject, out bool unreadable)
     {
@@ -112,24 +110,23 @@ internal sealed class PermissionPolicy
     public static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(100);
 
     /// <summary>
-    /// Budget des deux jeux <b>intégrés</b> — dix fois celui des règles utilisateur, et la
-    /// différence est voulue.
+    /// Budget for the two <b>built-in</b> sets — ten times the user rules', and the difference is
+    /// deliberate.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Les deux budgets n'ont pas la même conséquence. Un motif <em>utilisateur</em> qui expire est
-    /// <b>ignoré</b> : la règle ne décide pas, on retombe sur le prompt, et personne ne le voit.
-    /// Un motif <em>intégré</em> qui expire rend le sujet <see cref="IsOpaqueExecution">opaque</see>,
-    /// donc <b>force un prompt</b> — visible, sur une commande peut-être parfaitement ordinaire.
+    /// The two budgets do not have the same consequence. A <em>user</em> pattern that times out is
+    /// <b>ignored</b>: the rule does not decide, we fall back to the prompt, and nobody sees it. A
+    /// <em>built-in</em> pattern that times out makes the subject
+    /// <see cref="IsOpaqueExecution">opaque</see>, hence <b>forces a prompt</b> — visible, on a
+    /// command that may be perfectly ordinary.
     /// </para>
     /// <para>
-    /// ⚠ Payé le 2026-08-30, une heure après avoir introduit le budget : la suite a rougi sur
-    /// <c>powershell -ExecutionPolicy Bypass -File build.ps1</c>, en parallèle des deux jambes de
-    /// test, et sur cette jambe-là seulement — irreproductible en isolation. C'était la contention,
-    /// pas le motif. Le coût réel mesuré du pire cas est de 15 ms sur 64 Ko : une seconde est
-    /// soixante-dix fois cette marge, et borne toujours le cas pathologique. Un garde-fou dont le
-    /// mode d'échec est du bruit apprend aux gens à cliquer sans lire — ce qui coûte plus cher que
-    /// ce qu'il protège.
+    /// A tighter budget was tried and went off on <c>powershell -ExecutionPolicy Bypass -File
+    /// build.ps1</c> while two test legs ran in parallel: that was contention, not the pattern. The
+    /// worst case costs about 15 ms on 64 KB, so a second leaves a wide margin and still bounds the
+    /// pathological case. A guard whose failure mode is noise teaches people to click without
+    /// reading, which costs more than what it protects.
     /// </para>
     /// </remarks>
     public static readonly TimeSpan BuiltInMatchTimeout = TimeSpan.FromSeconds(1);
@@ -241,7 +238,7 @@ internal sealed class PermissionPolicy
         new(@"\beval\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Piping anything into an interpreter executes downloaded/generated text — the script
         // interpreters are the same family as the shells (curl … | python3 ≡ curl … | sh),
-        // not obfuscation (pre-1.6.0 architecture review).
+        // not obfuscation.
         new(@"\|\s*(sudo\s+)?(sh|bash|zsh|dash|ksh|python[0-9.]*|perl|ruby|node)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Invoke-Command / icm runs a script block, possibly remotely — same tier as iex
         new(@"\b(icm|Invoke-Command)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
@@ -343,7 +340,7 @@ internal sealed class PermissionPolicy
     /// (<see cref="ParseJsonOverlay"/>), so putting it ahead can only restrict — whereas the old
     /// config-first order let an ordinary machine <c>allow</c> (say, <c>allow write_file \.cs$</c>)
     /// shadow a repository's <c>deny</c> under first-match-wins, silently breaking the documented
-    /// promise that a project tightening its own restrictions is always safe (pre-1.6.0 architecture review, §1.2).
+    /// promise that a project tightening its own restrictions is always safe.
     /// </summary>
     public static IReadOnlyList<PermissionRule> Compose(
         IReadOnlyList<PermissionRule> configRules,

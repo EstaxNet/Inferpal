@@ -38,7 +38,7 @@ internal partial class InferpalToolWindowData
         if (IsLoading)
         {
             // Marshalled for the same reason as CancelAsync: the finally disposes _currentCts on
-            // the VM context, and cancelling from here raced it (pre-1.6.0 architecture review, §2.3).
+            // the VM context, and cancelling from here raced it.
             await RunOnVMContextAsync(() => _currentCts?.Cancel());
             return;
         }
@@ -305,24 +305,16 @@ internal partial class InferpalToolWindowData
             {
                 if (streamingMsg is null)
                 {
-                    // ⚠ Par l'entonnoir, comme toute autre bulle. Celle-ci s'inserait sans etre
-                    // thematisee, et FinalizeStreamingBubble ne la thematise qu'a la FIN du tour :
-                    // sous un theme clair, le texte gardait le defaut du champ (#D4D4D4, la
-                    // couleur du theme SOMBRE) sur le fond clair de la fenetre (#F5F5F5), soit un
-                    // contraste de 1,36:1 -- le minimum WCAG pour du texte courant est 4,5:1, et
-                    // la valeur thematisee donne 15,29:1. La reponse etait donc illisible pendant
-                    // toute sa generation, puis apparaissait d'un coup a la fin.
+                    // ⚠ Through the funnel, like every other bubble. This one was inserted without
+                    // being themed, and FinalizeStreamingBubble only themes it at the END of the
+                    // turn: under a light theme the text kept the field's default — the dark
+                    // theme's colour — on the window's light background, which is far below the
+                    // readable contrast ratio. The answer was unreadable while it was generated,
+                    // then appeared at once at the end.
                     //
-                    // La garde de convention ne pouvait pas le voir : elle ne cherchait que les
-                    // bulles construites DANS l'appel, c'est-a-dire la forme
-                    // Messages.Insert(Messages.Count - 2, ChatMessageItem.StreamingMsg(...)) ;
-                    // celle-ci etait construite une ligne au-dessus. C'est la bulle la plus
-                    // regardee du produit.
-                    //
-                    // ⚠ Cette phrase-la faisait rougir la garde tant qu'elle lisait le texte brut :
-                    // elle trouvait son propre motif interdit dans la prose qui l'explique. Elle
-                    // neutralise desormais les commentaires (CodeOnly, arbre Roslyn), et ce
-                    // commentaire est la preuve vivante que c'est repare.
+                    // The convention guard could not see it: it looked only for bubbles built
+                    // INSIDE the call to Messages.Insert(...), and this one is built a line above.
+                    // It is the most-watched bubble in the product.
                     streamingMsg = InsertThemed(ChatMessageItem.StreamingMsg(effectiveModel));
                     ScrollToBottom();
                 }
@@ -713,7 +705,7 @@ internal partial class InferpalToolWindowData
     private Task CancelAsync(object? _, CancellationToken ct) =>
         // Marshalled: the finally disposes _currentCts on the VM context, so cancelling from the
         // command thread raced it into an ObjectDisposedException when the click landed exactly
-        // as the response completed (pre-1.6.0 architecture review, §2.3). Same context ⇒ serialized.
+        // as the response completed. Same context ⇒ serialized.
         RunOnVMContextAsync(() => _currentCts?.Cancel());
 
     // ── Connection Guard / Heartbeat ───────────────────────────────────────────

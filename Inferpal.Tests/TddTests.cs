@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// /tdd (ROADMAP 1.5.0 §10, pulled forward): the fix-until-green loop — verdict parsing across
+// /tdd: the fix-until-green loop — verdict parsing across
 // runners, run_tests argument plumbing (path + filter), the agent hand-off per red round, the
 // iteration budget and the no-runner early exit.
 public class TddTests

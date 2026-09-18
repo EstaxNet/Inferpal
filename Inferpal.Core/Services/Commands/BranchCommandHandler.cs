@@ -17,7 +17,7 @@ internal sealed record BranchCommandResult(
     string? SwitchTo  = null);
 
 /// <summary>
-/// Execution logic for <c>/branch</c> (ROADMAP 1.4.0 §7) — pure and synchronous, same pattern as
+/// Execution logic for <c>/branch</c> — pure and synchronous, same pattern as
 /// <see cref="ReplayCommandHandler"/>:
 /// <list type="bullet">
 ///   <item><c>/branch</c> — list the branch points (turns) and the family tree.</item>

@@ -15,7 +15,7 @@ internal sealed record DebugCommandRequest(
     [property: JsonPropertyName("line")]  int Line = 0,
     [property: JsonPropertyName("expr")]  string? Expression = null,
     [property: JsonPropertyName("frame")] int? FrameId = null,
-    // §25 captureTest: the repro runner launch the driver attaches to.
+    // captureTest: the repro runner launch the driver attaches to.
     [property: JsonPropertyName("program")] string? Program = null,
     [property: JsonPropertyName("args")]    IReadOnlyList<string>? Args = null,
     [property: JsonPropertyName("cwd")]     string? Cwd = null,
@@ -38,10 +38,10 @@ internal sealed record DebugCommandResponse(
 /// <remarks>
 /// <para>
 /// The state direction already existed (<see cref="DebuggerStateSignal"/>: the in-process tracker
-/// publishes break snapshots). This is the reverse leg, and it is the one §21 needed. Same
-/// transport family as <see cref="InlineDiffPreviewSignal"/> — request file, answer file, PID guard,
-/// expiry — with correlation ids added because, unlike a preview, several operations follow one
-/// another and a stale answer must never be mistaken for the current one.
+/// publishes break snapshots). This is the reverse leg. Same transport family as
+/// <see cref="InlineDiffPreviewSignal"/> — request file, answer file, PID guard, expiry — with
+/// correlation ids added because, unlike a preview, several operations follow one another and a
+/// stale answer must never be mistaken for the current one.
 /// </para>
 /// <para>
 /// ⚠ Deliberately <b>not</b> a queue: one request at a time. A debugger is a single stateful
@@ -52,14 +52,14 @@ internal sealed record DebugCommandResponse(
 internal static class DebugCommandSignal
 {
     /// <summary>
-    /// One request in flight per channel — structural, not per caller: §25 added a second client
+    /// One request in flight per channel — structural, not per caller: there is a second client
     /// (<see cref="Debugging.SignalTestDebugCapture"/>) beside <see cref="Debugging.SignalDebugSession"/>,
     /// and two writers racing the same request/response files would cross their answers.
     /// </summary>
     internal static readonly SemaphoreSlim ChannelLock = new(1, 1);
 
-    // Scoped to the declared VS instance (§22, gate G2 — unlocked by the 1.6.0 human validation
-    // pass): a /debug emitted against one devenv must never be claimed by another.
+    // Scoped to the declared VS instance: a /debug emitted against one devenv must never be claimed
+    // by another.
     internal static string RequestPath  => SignalFile.ScopedPathFor("debug_request");
     internal static string ResponsePath => SignalFile.ScopedPathFor("debug_response");
 

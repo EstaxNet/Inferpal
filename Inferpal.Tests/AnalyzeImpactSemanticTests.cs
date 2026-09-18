@@ -91,7 +91,7 @@ public class AnalyzeImpactSemanticTests : IDisposable
         // layers above legitimately list Fake.cs (it contains the name), and their separator
         // is platform-native: asserting on the whole report was vacuously green on Windows
         // (`..\Aaa\Fake.cs`) and red on Linux (`../Aaa/Fake.cs`) for reasons that had nothing
-        // to do with the disambiguation being pinned here (§23).
+        // to do with the disambiguation being pinned here.
         var exactStart   = report.IndexOf("## Exact references", StringComparison.Ordinal);
         Assert.True(exactStart >= 0);
         var nextSection  = report.IndexOf("\n## ", exactStart + 1, StringComparison.Ordinal);

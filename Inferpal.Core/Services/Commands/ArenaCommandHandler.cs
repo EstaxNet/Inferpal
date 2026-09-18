@@ -8,7 +8,7 @@ using Inferpal.Services.Arena;
 namespace Inferpal.Services.Commands;
 
 /// <summary>
-/// Pure logic of the multi-model arena (ROADMAP 1.3.0 §6):
+/// Pure logic of the multi-model arena:
 /// <c>/arena &lt;prompt&gt;</c> sends the same prompt to two models (sequentially — one GPU, the
 /// scheduler imposes it anyway), shows both answers blind-labelled A/B, and stores the mapping;
 /// <c>/arena a|b|tie</c> records the vote, reveals the models and updates the local standings;

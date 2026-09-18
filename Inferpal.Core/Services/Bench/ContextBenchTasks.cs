@@ -7,17 +7,17 @@ namespace Inferpal.Services.Bench;
 internal sealed record ContextBenchQuestion(string Symbol, string ExpectedPath);
 
 /// <summary>
-/// The question set of the <b>context bench</b> (roadmap §12/§11): "where does X live?" asked of
-/// the agent, to measure what the repository map and sub-agents actually buy in tool calls and
-/// tokens — not just what they cost.
+/// The question set of the <b>context bench</b>: "where does X live?" asked of the agent, to
+/// measure what the repository map and sub-agents actually buy in tool calls and tokens — not just
+/// what they cost.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Questions are <b>generated from the workspace being benched</b> rather than frozen like
 /// <see cref="BenchTasks"/>: a fixed question set can only ever be about one repository, and the
 /// number that matters to a user is the one measured on their own code. Generation is pure and
-/// deterministic — same scan, same questions — so two arms of a comparison are always asked
-/// exactly the same thing.
+/// deterministic — same scan, same questions — so two arms of a comparison are always asked exactly
+/// the same thing.
 /// </para>
 /// <para>
 /// Ground truth is only taken from symbols declared in <b>exactly one</b> file. A name declared
@@ -44,7 +44,7 @@ internal static class ContextBenchTasks
     public static string Prompt(ContextBenchQuestion q) =>
         $"Which file of this repository declares `{q.Symbol}`? {AnswerInstruction}";
 
-    /// <summary>Symbols bundled into one compound question (roadmap §11 bench).</summary>
+    /// <summary>Symbols bundled into one compound question.</summary>
     public const int SymbolsPerCompoundQuestion = 3;
 
     /// <summary>
@@ -53,8 +53,7 @@ internal static class ContextBenchTasks
     /// </summary>
     /// <remarks>
     /// A single-hop question does not exercise delegation at all — one search answers it and there
-    /// is nothing worth handing to a sub-agent. This shape is what makes the §11 measurement
-    /// meaningful, and the gate says so in advance.
+    /// is nothing worth handing to a sub-agent.
     /// </remarks>
     public static string CompoundPrompt(IReadOnlyList<ContextBenchQuestion> parts) =>
         "Locate each of these declarations in this repository:\n"
@@ -150,10 +149,9 @@ internal static class ContextBenchTasks
     /// <remarks>
     /// <b>The bare file name is deliberately not accepted</b>, and this is the difference between a
     /// measurement and a placebo. In most C# repositories the type <c>Foo</c> lives in
-    /// <c>Foo.cs</c>, so a model can "answer" from the question alone without reading anything —
-    /// the first run of this bench scored 3/6 with <b>zero tool calls</b> for exactly that reason.
-    /// Requiring the folder forces the model either to navigate or to have read it in the
-    /// repository map, which is precisely the thing being measured.
+    /// <c>Foo.cs</c>, so a model can "answer" from the question alone, without reading anything and
+    /// without a single tool call. Requiring the folder forces it either to navigate or to have
+    /// read the repository map, which is what is being measured.
     /// </remarks>
     public static bool Score(ContextBenchQuestion question, string? answer)
     {

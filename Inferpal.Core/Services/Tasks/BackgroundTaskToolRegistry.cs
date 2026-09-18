@@ -129,7 +129,7 @@ internal sealed class BackgroundTaskToolRegistry(
 
         // LastOrDefault, not Last: a composite tool can request approval under a subject that
         // records no proposal carrying THIS registration name — Last then threw out of a loop
-        // whose contract is never-throw (pre-1.6.0 architecture review).
+        // whose contract is never-throw.
         var recorded = proposals.Proposals.LastOrDefault(p =>
             string.Equals(p.Tool, name, StringComparison.OrdinalIgnoreCase));
         if (recorded is null) return result;

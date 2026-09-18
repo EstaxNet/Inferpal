@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// Conversation branching (ROADMAP 1.4.0 §7): turn splitting, truncation, branch naming, the
+// Conversation branching: turn splitting, truncation, branch naming, the
 // fork plan and the /branch command routing. All pure — no store, no editor.
 public class BranchTests
 {

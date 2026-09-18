@@ -50,7 +50,7 @@ internal sealed record InlineDiffAck(
 /// </summary>
 internal static class InlineDiffPreviewSignal
 {
-    // Scoped to the declared VS instance (§22 tranche 2): a preview requested in one devenv
+    // Scoped to the declared VS instance: a preview requested in one devenv
     // must never be rendered — and consumed — by another.
     internal static string RequestPath => SignalFile.ScopedPathFor("inline_diff_request");
     internal static string AckPath     => SignalFile.ScopedPathFor("inline_diff_ack");

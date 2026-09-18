@@ -11,10 +11,9 @@ namespace Inferpal.Services.Tools;
 /// These tools answer questions like "what breaks if I change this file?". Truncating the scan is
 /// fine — reading a 10 000-file repository on every call is not an option — but truncating it
 /// <b>silently</b> is not: "Direct dependants (0)" then reads as "nothing depends on this" when it
-/// really means "nothing among the arbitrary first 500 files the filesystem happened to enumerate".
-/// The agent has no way to tell the two apart, and neither has the user. This is the same
-/// discipline the agent loop already applies to oversized tool results
-/// (<c>[... truncated to N characters out of M]</c>).
+/// really means "nothing among the first 500 files the filesystem happened to enumerate". The agent
+/// has no way to tell the two apart, and neither has the user. Same discipline as the agent loop's
+/// oversized tool results (<c>[... truncated to N characters out of M]</c>).
 /// </remarks>
 /// <param name="Total">How many files the scan could have looked at.</param>
 /// <param name="Scanned">How many the cap let through — <b>taken</b>, not necessarily read.</param>
@@ -22,14 +21,11 @@ namespace Inferpal.Services.Tools;
 /// How many of those <paramref name="Scanned"/> files could not be read after all.
 /// </param>
 /// <remarks>
-/// ⚠ <b>A file that was taken and then failed to READ is the same silence as the cap, and this
-/// struct had no room for it.</b> Its own summary said <i>"how many were actually read"</i> while
-/// <see cref="Take"/> can only report how many were taken — so a locked, permission-denied or
-/// just-deleted file was counted as scanned, <see cref="IsPartial"/> stayed <c>false</c>, and the
-/// report read as complete. Measured on <c>analyze_impact</c>: with the one dependant of a file
-/// unreadable, it answered <c>Direct dependants (0) · Risk: LOW · No dependants detected — safe to
-/// refactor freely</c>, which is the exact sentence this tool's own comment records as the defect
-/// it once had for a different cause.
+/// ⚠ <b>A file that was taken and then failed to read is the same silence as the cap.</b> A locked,
+/// permission-denied or just-deleted file used to be counted as scanned, <see cref="IsPartial"/>
+/// stayed <c>false</c>, and the report read as complete — so <c>analyze_impact</c> could answer
+/// <c>Direct dependants (0) · Risk: LOW · No dependants detected — safe to refactor freely</c> with
+/// the one dependant simply unreadable.
 /// </remarks>
 /// <param name="Gap">
 /// A folder of the workspace whose files the walk will not see, with the reason — <c>null</c> when
@@ -102,9 +98,8 @@ internal readonly record struct ScanCoverage(
     /// <remarks>
     /// ⚠ <b>Two causes, two sentences.</b> "Only 400 of 652 files were scanned (cap)" and "3 files
     /// could not be read" send the reader to two different places — one is a budget to narrow, the
-    /// other is a lock or a permission to fix — and folding the second into the first (which
-    /// <c>rename_symbol</c> did, by subtracting its unreadable count from <c>Scanned</c>) names the
-    /// wrong cause. Both are emitted when both happened.
+    /// other a lock or a permission to fix — and folding the second into the first names the wrong
+    /// cause. Both are emitted when both happened.
     /// </remarks>
     public string Warning()
     {

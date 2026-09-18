@@ -282,7 +282,7 @@ public class DebugToolsTests
         Assert.Contains(value, text);
     }
 
-    // ── Frame filtering: measured need, not a preference (§21 probe: 9 frames for 3 calls) ──
+    // ── Frame filtering: measured need, not a preference ──
 
     [Fact]
     public void Formatter_HidesRuntimeFramesOutsideTheWorkspace()

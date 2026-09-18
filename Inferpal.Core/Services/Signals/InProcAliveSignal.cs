@@ -58,7 +58,7 @@ internal static class InProcAliveSignal
     /// </remarks>
     internal const string ComponentFim = "fim";
 
-    /// <summary>Path of the heartbeat, scoped to the declared IDE instance (§22 slice 2).</summary>
+    /// <summary>Path of the heartbeat, scoped to the declared IDE instance.</summary>
     internal static string FilePath => SignalFile.ScopedPathFor("inproc_alive");
 
     /// <summary>

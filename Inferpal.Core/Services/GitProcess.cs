@@ -58,7 +58,7 @@ internal static class GitProcess
 
             // ⚠ ChildProcess, not Process.Start: without it git inherits the host's stdin — the
             // JSON-RPC pipe in VS Code — allocates a console and hangs at 0 % CPU forever. Measured
-            // on 2026-08-03; the same call takes 31 ms from an ordinary process, which is why only
+            //; the same call takes 31 ms from an ordinary process, which is why only
             // the VS Code front-end was affected. It also drains both pipes concurrently, which is
             // the other half of that day's lesson. See ChildProcess for the full account.
             return await ChildProcess.RunAsync(psi, Timeout, ct);

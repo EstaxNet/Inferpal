@@ -501,7 +501,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // The probe TRAVERSES the cooldown instead of short-circuiting on it: returning false
         // while the breaker was open meant the one call able to notice the server coming back was
         // itself blocked — the connection indicator stayed red for the full 5 minutes after a
-        // recovery (pre-1.6.0 architecture review, §3.3). A successful probe closes the circuit on the spot.
+        // recovery. A successful probe closes the circuit on the spot.
         //
         // And the status concludes nothing on its own: the body must carry "data", the property that
         // signs the OpenAI-compatible surface. See ConfirmsBackendPayload - the measurement was made
@@ -566,7 +566,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     private async Task<OpenAiModelsResponse?> GetModelsAsync(string v1Base, CancellationToken ct)
     {
         // Bounded: the shared HttpClient's timeout is infinite, and a server that accepts TCP but
-        // never answers froze every model dropdown behind this call (pre-1.6.0 architecture review).
+        // never answers froze every model dropdown behind this call.
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(TimeSpan.FromSeconds(10));
         using var req = new HttpRequestMessage(HttpMethod.Get, $"{v1Base}/models");

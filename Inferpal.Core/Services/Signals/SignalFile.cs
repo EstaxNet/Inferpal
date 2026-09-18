@@ -60,7 +60,7 @@ internal static class SignalFile
     /// </remarks>
     internal static string PathFor(string fileName) => Path.Combine(Dir, fileName);
 
-    // ── Keyed file-name grammar (§22 tranche 2) ─────────────────────────────────
+    // ── Keyed file-name grammar ─────────────────────────────────
     // One owner for the "<baseName>.<key>.json" shape: the path builders, the name parser and the
     // enumeration all live here, so a future change to the grammar cannot update one copy and
     // silently strand another (the drift this class exists to prevent).

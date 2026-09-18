@@ -8,15 +8,15 @@ namespace Inferpal.Services.Debugging;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The out-of-process extension host cannot touch <c>EnvDTE</c>, and the roadmap §21 probe
-/// established that the out-of-process debugger API is not the channel — the MEF package already
-/// holds a real <c>DTE</c> and already publishes break snapshots the other way
-/// (<see cref="DebuggerStateSignal"/>). This class is the reverse leg of that same transport.
+/// The out-of-process extension host cannot touch <c>EnvDTE</c>, and the out-of-process debugger API
+/// is not the channel either — while the MEF package already holds a real <c>DTE</c> and already
+/// publishes break snapshots the other way (<see cref="DebuggerStateSignal"/>). This class is the
+/// reverse leg of that same transport.
 /// </para>
 /// <para>
 /// <b>One request at a time, enforced here.</b> A debugger is a single stateful machine: two
-/// overlapping <c>continue</c> calls would race for the same stop event, and the second answer
-/// would describe a state the first caller believes it caused. The semaphore is the reason
+/// overlapping <c>continue</c> calls would race for the same stop event, and the second answer would
+/// describe a state the first caller believes it caused. The semaphore is the reason
 /// <see cref="DebugCommandSignal"/> can be a single pair of files instead of a queue.
 /// </para>
 /// <para>
@@ -42,13 +42,13 @@ internal sealed class SignalDebugSession : IDebugSession
     internal const string OpState            = DebugOps.State;
     internal const string OpEvaluate         = DebugOps.Evaluate;
     internal const string OpStop             = DebugOps.Stop;
-    /// <summary>§25: attach to a waiting repro runner and capture the unhandled-exception stop.</summary>
+    /// <summary>Attaches to a waiting repro runner and captures the unhandled-exception stop.</summary>
     internal const string OpCaptureTest      = DebugOps.CaptureTest;
 
     /// <summary>
-    /// Starting a session builds the solution first, so its budget is measured in minutes. This is
-    /// the one place where the probe's numbers do not apply: it measured 1,5 s to the first break
-    /// on an <i>already built</i> throwaway solution, and said so.
+    /// Starting a session builds the solution first, so its budget is measured in minutes — unlike
+    /// every other operation here, which answers in well under a second on an already-built
+    /// solution.
     /// </summary>
     internal static TimeSpan StartTimeout { get; set; } = DebugOps.StartBudget;
 
@@ -58,7 +58,7 @@ internal sealed class SignalDebugSession : IDebugSession
     /// <summary>Everything else is a question asked of a debugger that is already paused.</summary>
     internal static TimeSpan QueryTimeout { get; set; } = TimeSpan.FromSeconds(20);
 
-    // Shared with the §25 capture client: the channel carries one request at a time, whoever asks.
+    // Shared with the capture client: the channel carries one request at a time, whoever asks.
     private static SemaphoreSlim _oneAtATime => Signals.DebugCommandSignal.ChannelLock;
 
     public bool IsAvailable => DebugCommandSignal.IsDriverReady();
@@ -107,8 +107,8 @@ internal sealed class SignalDebugSession : IDebugSession
               + "a build that failed or a dialog waiting in the IDE — check the Build output before "
               + "assuming anything about the program's behaviour.");
 
-        // The driver's own words, unchanged. Since 2026-08-06 the commonest one is a build that
-        // failed: it refuses the launch itself rather than letting Visual Studio raise its modal.
+        // The driver's own words, unchanged. The commonest one is a build that failed: the driver
+        // refuses the launch itself rather than letting Visual Studio raise its modal.
         if (!response.Ok)
             return DebugStartResult.Failed(response.Error ?? "The debugger refused to start the session.");
 

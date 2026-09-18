@@ -125,7 +125,7 @@ public class TaskProposalApplyTests
     [Fact]
     public async Task ApplyingOpensAChangeTrackingRun_SoUndoRunReallyCoversIt()
     {
-        // The message says "/undo-run covers it like any other write". Verified live on 2026-08-03
+        // The message says "/undo-run covers it like any other write". Verified live
         // and it did not: the snapshot was taken but attached to no run, because a run is opened by
         // a chat turn and `/task apply` is not one. The promise was the part that was wrong.
         var registry = new RecordingRegistry(succeed: true);

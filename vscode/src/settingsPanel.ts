@@ -88,7 +88,7 @@ export class SettingsPanel {
             models = await host.modelsList();
           } catch {
             // ⚠ A host or RPC failure, NOT an unreachable backend: that one does not fail, it
-            // returns an empty list through the success path (measured 2026-09-03). Both end up
+            // returns an empty list through the success path. Both end up
             // as `models = []` here, and the popup is what names them.
           }
           // Labels/hints/sections from the host's .resx — identical wording to the VS window.

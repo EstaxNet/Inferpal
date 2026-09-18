@@ -3,7 +3,7 @@ using System.IO;
 namespace Inferpal.Services.Debugging;
 
 /// <summary>
-/// Finds the built test assembly a failing test FQN lives in (§25 tranche B). Pure heuristics on
+/// Finds the built test assembly a failing test FQN lives in. Pure heuristics on
 /// the workspace's <c>bin</c> outputs — no compiler, no editor: the assembly whose file name is
 /// the <b>longest prefix</b> of the FQN wins (assembly and root namespace almost always agree),
 /// newest write time as the tie-breaker. The `/tdd` loop just ran <c>run_tests</c>, so the

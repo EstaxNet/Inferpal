@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// /bench (ROADMAP 1.3.0 §5): frozen-task scorers, the runner's measurement/scoring loop
+// /bench: frozen-task scorers, the runner's measurement/scoring loop
 // (via FakeInferenceProvider) and the handler's model selection / formatting / persistence.
 // All BenchStore-touching tests live in this single class: _fileOverride is a static global,
 // and xUnit parallelises across classes, not within one.

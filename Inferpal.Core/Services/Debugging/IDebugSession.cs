@@ -20,11 +20,10 @@ internal sealed record DebugFrame(int Id, string Function, string? File, int? Li
 /// </summary>
 /// <remarks>
 /// ⚠ <paramref name="Value"/> and <paramref name="Type"/> are <b>opaque</b>: they are rendered by
-/// the debug adapter, not by us, and the two front-ends disagree on purpose. The feasibility probe
-/// measured the same string list shown as <c>"probe-42"</c> / <c>Count = 3</c> under
-/// Visual Studio and <c>'probe-42'</c> / <c>(3) [21, 42, 43]</c> under VS Code. Present them,
-/// never parse them, never compare them across editors — that is the §18 mistake (matching a
-/// tool's own message) wearing a different hat.
+/// the debug adapter, not by us, and the two front-ends disagree on purpose — the same list of
+/// strings shows as <c>"probe-42"</c> / <c>Count = 3</c> under Visual Studio and <c>'probe-42'</c> /
+/// <c>(3) [21, 42, 43]</c> under VS Code. Present them, never parse them, never compare them across
+/// editors: matching a tool's own message is a mistake this repository has made before.
 /// </remarks>
 internal sealed record DebugVariable(string Name, string Type, string Value);
 
@@ -95,17 +94,16 @@ internal sealed record DebugStopState(
 /// </summary>
 /// <remarks>
 /// <para>
-/// Feasibility measured on 2026-08-04 before this interface existed: the seven
-/// operations below were driven end to end, without a human click, in <b>both</b> front-ends.
-/// The probes are kept in <c>docs/probes/debug-feasibility/</c>.
+/// The seven operations below were driven end to end, without a human click, in <b>both</b>
+/// front-ends before this interface existed; those probes are kept in
+/// <c>docs/probes/debug-feasibility/</c>.
 /// </para>
 /// <para>
-/// <b>Consent model, locked before the code was written.</b> Starting a session <i>executes the
-/// user's program</i>, so <see cref="StartAsync"/> is gated by <c>IApprovalService</c> in the tool
-/// layer — same family as <c>run_command</c>. Everything after that (breakpoints, stepping,
-/// reading, evaluating) is <b>not</b> gated: the execution it observes is already consented to, and
-/// a prompt per step would make the loop unusable. The granularity of consent is the
-/// <b>session</b>, not the step.
+/// <b>Consent model.</b> Starting a session <i>executes the user's program</i>, so
+/// <see cref="StartAsync"/> is gated by <c>IApprovalService</c> in the tool layer — same family as
+/// <c>run_command</c>. Everything after that (breakpoints, stepping, reading, evaluating) is
+/// <b>not</b> gated: the execution it observes is already consented to, and a prompt per step would
+/// make the loop unusable. The granularity of consent is the <b>session</b>, not the step.
 /// </para>
 /// <para>
 /// Every operation is best-effort and must not throw for an ordinary debugger condition (no

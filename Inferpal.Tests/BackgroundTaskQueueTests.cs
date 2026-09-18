@@ -3,7 +3,7 @@
 namespace Inferpal.Tests;
 
 /// <summary>
-/// Lifecycle of <c>/task</c>'s serial queue (ROADMAP §9). Everything the queue depends on — the
+/// Lifecycle of <c>/task</c>'s serial queue. Everything the queue depends on — the
 /// runner, the chat-idle gate, the clock — is injected, so these run without a backend or a GPU.
 /// Tasks are driven by explicit gates rather than delays: a sleeping test is a flaky test.
 /// </summary>
@@ -84,7 +84,7 @@ public class BackgroundTaskQueueTests
     /// It used to. Leaving <c>_current</c> and entering <c>_finished</c> were two separate locks:
     /// the finish path appended to <c>_finished</c>, and the worker loop cleared <c>_current</c>
     /// afterwards. Between the two the job sat in both, so <c>List()</c> returned it twice and
-    /// <c>Count</c> counted it twice. Caught by CI on 2026-09-01 — on a tree the local machine had
+    /// <c>Count</c> counted it twice. Caught by CI — on a tree the local machine had
     /// just run green twice — as two identical snapshots of <c>t1</c>, both already Succeeded.
     ///
     /// ⚠ The window is microseconds wide, so this spins instead of polling: a <c>Task.Delay(10)</c>
@@ -192,7 +192,7 @@ public class BackgroundTaskQueueTests
         // GPU gate opens — so a job can sit in state Queued, OUT of _pending, for minutes. The
         // old Cancel took the drop-branch for it: marked Cancelled without cancelling the CTS,
         // then the gate opened and the run executed anyway, finishing a second time into the
-        // list (pre-1.6.0 architecture review, §1.6).
+        // list.
         var gate   = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var runner = new GatedRunner();
         using var queue = new BackgroundTaskQueue(runner.RunAsync, waitForChatIdle: ct => gate.Task.WaitAsync(ct));

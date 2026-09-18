@@ -6,7 +6,7 @@ namespace Inferpal.Tests;
 
 public class McpStdioClientTests
 {
-    // A "server" that exits immediately — cmd on Windows, /bin/sh elsewhere (§23).
+    // A "server" that exits immediately — cmd on Windows, /bin/sh elsewhere.
     private static McpServerConfig ExitsAtOnce() => OperatingSystem.IsWindows()
         ? new("test", "cmd.exe", ["/c", "exit"], new Dictionary<string, string>())
         : new("test", "/bin/sh", ["-c", "exit"], new Dictionary<string, string>());

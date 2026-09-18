@@ -13,7 +13,7 @@ namespace Inferpal.Services.Execution;
 /// The 8-hex-char hash of the <em>full</em> path disambiguates same-named files: matching on the
 /// bare file name let <c>restore_file</c> on <c>A\Config.cs</c> silently restore the content of a
 /// more recently touched <c>B\Config.cs</c>, and homonyms pruned each other's retention slots
-/// (pre-1.6.0 architecture review, §1.4). Snapshots written before this format are no longer found by
+///. Snapshots written before this format are no longer found by
 /// name-matching — deliberate: that matching is the bug — but stay on disk and remain restorable
 /// via <c>/undo-run</c>, which keeps exact snapshot paths.
 /// </remarks>
@@ -97,7 +97,7 @@ internal class FileHistoryService
         {
             // A failed snapshot means the write that follows has NO safety net. Swallowing it
             // without a trace made the file silently vanish from the /undo-run perimeter while
-            // the tool description still promised "snapshotted" (pre-1.6.0 architecture review, §1.3): trace
+            // the tool description still promised "snapshotted": trace
             // it, and record the file in the run as snapshot-failed so UndoRunAsync reports it
             // as Failed instead of not knowing it was ever touched.
             Diagnostics.Swallow($"FileHistoryService.Snapshot({filePath})", ex);

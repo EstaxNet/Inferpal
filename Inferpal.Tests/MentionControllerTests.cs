@@ -95,7 +95,7 @@ public class MentionControllerTests
         public string AddFile(string relPath, string content = "x")
         {
             // Fixtures are written Windows-style; on POSIX the backslash would land in the file
-            // NAME instead of creating a subdirectory (§23).
+            // NAME instead of creating a subdirectory.
             var full = System.IO.Path.Combine(
                 Path, relPath.Replace('\\', System.IO.Path.DirectorySeparatorChar));
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(full)!);

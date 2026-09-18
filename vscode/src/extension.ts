@@ -174,7 +174,7 @@ export async function deactivate(): Promise<void> {
 // Serializes startHost: the command `inferpal.restartHost` and onDidChangeWorkspaceFolders can
 // overlap, and two interleaved starts each saw `host === undefined` after the first await and
 // spawned two .NET processes — the loser orphaned with its MCP servers and shells, and its
-// onCrash later clobbered the winner (pre-1.6.0 architecture review, §2.8).
+// onCrash later clobbered the winner.
 let startChain: Promise<void> = Promise.resolve();
 
 function startHost(
@@ -224,7 +224,7 @@ async function startHostCore(
   }
 
   // The VSIX is a zip built on a Windows CI runner: the bundled host's exec bit does not
-  // survive packaging, so a fresh install on Linux/macOS would spawn straight into EACCES (§23).
+  // survive packaging, so a fresh install on Linux/macOS would spawn straight into EACCES.
   // Re-asserting the bit is idempotent; a failure here surfaces as the spawn error right below.
   if (process.platform !== 'win32') {
     try {

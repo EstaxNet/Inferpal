@@ -6,27 +6,25 @@ namespace Inferpal.Services.Signals;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ROADMAP §22, reduced slice. The signal directory is <b>machine-wide</b>: one folder, one fixed
-/// file name per channel, shared by every Inferpal process on the box. The readers of
-/// <see cref="ActiveSolutionSignal"/> and <see cref="DebuggerStateSignal"/> live in
-/// <c>Inferpal.Core</c>, so they are served by <em>both</em> front-ends — and a
-/// <c>Inferpal.Host</c> driving VS Code therefore answered with the solution open in <b>Visual
-/// Studio</b>, and with the break state of <b>Visual Studio's</b> debugger. Not a two-VS collision:
-/// one VS plus one VS Code is enough, which is this repository's daily setup.
+/// The signal directory is <b>machine-wide</b>: one folder, one fixed file name per channel, shared
+/// by every Inferpal process on the box. The readers of <see cref="ActiveSolutionSignal"/> and
+/// <see cref="DebuggerStateSignal"/> live in <c>Inferpal.Core</c>, so they serve <em>both</em>
+/// front-ends — and a <c>Inferpal.Host</c> driving VS Code therefore answered with the solution
+/// open in <b>Visual Studio</b>, and with the break state of <b>Visual Studio's</b> debugger. It
+/// does not take two Visual Studio instances: one VS plus one VS Code is enough.
 /// </para>
 /// <para>
-/// The first correction (reduced slice) was a <b>read policy</b>: a process with no in-process VS
-/// peer does not consult those files at all. Tranche 2 then keyed the family-A channels — the §21
-/// debug transport included, once its human validation pass was done — on the devenv
-/// PID via <see cref="VsInstanceKey"/>, so two VS instances stop reading each other's state.
+/// The first half is a <b>read policy</b>: a process with no in-process VS peer does not consult
+/// those files at all. The second keys the VS-published channels on the devenv PID through
+/// <see cref="VsInstanceKey"/>, so two VS instances stop reading each other's state.
 /// </para>
 /// <para>
-/// <b>Why the default is <c>true</c>, and it is not laziness.</b> Failing the other way round costs
-/// more than it saves: a VS host that forgot to opt <em>in</em> would silently lose
-/// <c>get_solution_info</c>, <c>/map</c> and RAG rooting — a real regression, in the adapter that is
-/// hardest to test. A Host that forgot to opt <em>out</em> merely keeps today's behaviour. The
-/// process that knows it has no VS peer is <see cref="Inferpal.Host"/>, it says so in one line, and
-/// a test pins that line so the knowledge cannot quietly disappear.
+/// <b>The default is <c>true</c> on purpose.</b> Failing the other way round costs more than it
+/// saves: a VS host that forgot to opt <em>in</em> would silently lose <c>get_solution_info</c>,
+/// <c>/map</c> and RAG rooting — a real regression, in the adapter that is hardest to test. A Host
+/// that forgot to opt <em>out</em> merely keeps the old behaviour. The process that knows it has no
+/// VS peer is <see cref="Inferpal.Host"/>, it says so in one line, and a test pins that line so the
+/// knowledge cannot quietly disappear.
 /// </para>
 /// </remarks>
 internal static class SignalScope
@@ -43,24 +41,24 @@ internal static class SignalScope
     /// the VS-published signals are somebody else's state and must not be read.
     /// </summary>
     /// <remarks>
-    /// Called by <c>Inferpal.Host</c> at construction. Explicit declaration rather than inference:
-    /// the same reasoning as the <c>debug: true</c> capability of §21 — a process that guesses its
-    /// own role guesses wrong the day a third front-end appears.
+    /// Called by <c>Inferpal.Host</c> at construction. An explicit declaration rather than an
+    /// inference, for the same reason as the <c>debug</c> capability: a process that guesses its own
+    /// role guesses wrong the day a third front-end appears.
     /// </remarks>
     internal static void DeclareNoVsInProcessPeer() => HasVsInProcessPeer = false;
 
     /// <summary>
-    /// The devenv PID this process belongs to, or <c>null</c> when no instance was declared.
-    /// Family-A channels (§22 tranche 2) key their file names on it, so two Visual Studio
-    /// instances stop reading — and overwriting — each other's state.
+    /// The devenv PID this process belongs to, or <c>null</c> when no instance was declared. The
+    /// VS-published channels key their file names on it, so two Visual Studio instances stop
+    /// reading — and overwriting — each other's state.
     /// </summary>
     /// <remarks>
-    /// The key is the one probe 6 measured green on both sides without any VS API: the in-process
-    /// package is devenv, so it declares its <b>own</b> PID; the out-of-process extensibility host
-    /// is a direct child of its devenv, so it declares its <b>parent</b> PID. <c>null</c> keeps
-    /// the legacy unscoped file names — today's behaviour — so a front-end that forgot to declare
-    /// degrades to the pre-§22 world instead of losing its signal pairing (same "the default is
-    /// chosen, not suffered" reasoning as <see cref="HasVsInProcessPeer"/>).
+    /// The key needs no VS API: the in-process package <i>is</i> devenv, so it declares its
+    /// <b>own</b> PID; the out-of-process extensibility host is a direct child of its devenv, so it
+    /// declares its <b>parent</b> PID. <c>null</c> keeps the unscoped file names, so a front-end
+    /// that forgot to declare degrades to the older behaviour instead of losing its signal pairing
+    /// — the same "the default is chosen, not suffered" reasoning as
+    /// <see cref="HasVsInProcessPeer"/>.
     /// </remarks>
     internal static int? VsInstanceKey => _vsInstanceKey == 0 ? null : _vsInstanceKey;
 

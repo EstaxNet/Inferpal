@@ -13,7 +13,7 @@ var stdin  = Console.OpenStandardInput();
 Console.SetOut(Console.Error);
 Console.OutputEncoding = Encoding.UTF8;
 
-// ── Signal scope (§22 slice 2) ────────────────────────────────────────────────
+// ── Signal scope ────────────────────────────────────────────────
 // Family-A channels are scoped by devenv PID. This sidecar is started BY devenv and receives its
 // PID: without this declaration it would read an unscoped ChatBusySignal and ghost text would stop
 // yielding to the chat - exactly the GPU contention that signal exists to avoid.

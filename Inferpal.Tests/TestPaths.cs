@@ -1,7 +1,7 @@
 namespace Inferpal.Tests;
 
 /// <summary>
-/// Platform-neutral fixture paths (§23). Many pure-logic tests fake a file system with
+/// Platform-neutral fixture paths. Many pure-logic tests fake a file system with
 /// Windows-style literals (<c>C:\repo\src</c>); the logic under test walks them with
 /// <c>System.IO.Path</c>, which on Linux does not treat <c>\</c> as a separator — the walk
 /// silently goes nowhere and the test fails for a reason that has nothing to do with the code.

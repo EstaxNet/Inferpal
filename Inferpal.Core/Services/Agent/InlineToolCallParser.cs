@@ -58,7 +58,7 @@ internal static class InlineToolCallParser
     /// When provided, gates the <b>bare-JSON</b> shape (2) only: a whole-content JSON object is
     /// promoted to a tool call solely when its <c>name</c> is a registered tool. Without the gate,
     /// asking the model for "a JSON of a person" turned <c>{"name":"Alice","age":30}</c> into a
-    /// call of the tool "Alice" and DESTROYED the legitimate answer (pre-1.6.0 architecture review, §3.2). The
+    /// call of the tool "Alice" and DESTROYED the legitimate answer. The
     /// explicit <c>&lt;tool_call&gt;</c> shapes stay ungated: their intent is unambiguous, and an
     /// unknown name there should keep flowing to the registry's "Unknown tool" feedback, which is
     /// what lets the model correct a typo.

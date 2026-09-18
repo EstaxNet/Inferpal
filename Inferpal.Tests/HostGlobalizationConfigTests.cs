@@ -5,7 +5,7 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// Locks the libicu fallback of the VS Code extension (§23). On a bare Linux without libicu, the
+/// Locks the libicu fallback of the VS Code extension. On a bare Linux without libicu, the
 /// self-contained host FailFasts at boot; the extension then respawns it with
 /// <c>DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1</c> (hostClient.ts). That fallback only works
 /// because the published runtimeconfig carries <b>no</b> <c>System.Globalization.Invariant</c>

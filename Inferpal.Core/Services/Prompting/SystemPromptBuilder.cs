@@ -36,9 +36,9 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// <para>
     /// The localised prompt said "integrated in Visual Studio 2026 … run PowerShell commands", in
     /// all ten languages, and the same resource is what <c>Inferpal.Host</c> hands to the VS Code
-    /// front-end. Every VS Code user was therefore told the wrong editor, and every Linux/macOS
-    /// user the wrong shell — on VSIX published for linux-x64 and darwin-arm64 since 1.5.0. A model
-    /// told it lives in Visual Studio answers with Solution Explorer and Rebuild Solution.
+    /// front-end. Every VS Code user was therefore told the wrong editor, and every Linux/macOS user
+    /// the wrong shell. A model told it lives in Visual Studio answers with Solution Explorer and
+    /// Rebuild Solution.
     /// </para>
     /// <para>
     /// The editor is <b>declared</b> by the front-end, never inferred — same rule as
@@ -269,15 +269,14 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
 
     /// <summary>Adds a <c>## header</c> file-backed section; missing/empty/unreadable file ⇒ no-op.</summary>
     // ⚠ Once per path and per process, not once per build: the system prompt is rebuilt on EVERY
-    // active-file change, so reporting on each pass would drown the ring's 200 entries under the
-    // same message — and a noisy channel stops being read (that is what DroppedLine exists for: it
-    // already keeps out what the parsers skip normally). A path that comes back leaves the set: if
-    // the file disappears again, we say so again.
+    // active-file change, so reporting on each pass would drown the diagnostics ring under the same
+    // message — and a noisy channel stops being read. A path that comes back leaves the set: if the
+    // file disappears again, we say so again.
     //
-    // ⚠ The set of already-reported paths lived HERE, privately, and two other repeated parsers
-    // (CustomTools, UserTemplates) did not inherit it — they drowned the ring exactly as described
-    // above. The gesture moved into Diagnostics.DroppedLineOnce; this site keeps only the casing of
-    // its keys, which is its own: a file path.
+    // ⚠ The set of already-reported paths used to live here, privately, and the two other repeated
+    // parsers (CustomTools, UserTemplates) did not inherit it. It moved into
+    // Diagnostics.DroppedLineOnce; this site keeps only the casing of its keys, which is its own: a
+    // file path.
     private static void ReportMissingPinOnce(string path) =>
         Diagnostics.DroppedLineOnce(PinContext, "Pinned context file not found", MissingKey(path), path);
 
@@ -286,12 +285,11 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         Diagnostics.ForgetDroppedLine(PinContext, MissingKey(path));
 
     /// <summary>
-    /// ⚠ <b>A pinned file that is PRESENT but unreadable</b> — locked by another editor, permission
+    /// ⚠ <b>A pinned file that is present but unreadable</b> — locked by another editor, permission
     /// denied, a network drive gone. Same consequence as a missing one (it is not in the prompt, the
-    /// 📌 chip keeps showing it), and it rested on a bare <c>Swallow</c>: measured,
-    /// <b>30 rebuilds = 30 entries</b> in a ring that keeps <see cref="Diagnostics.Capacity"/> of
-    /// them, since this prompt is rebuilt on every change of active file. The rule was written three
-    /// lines above, for the other cause.
+    /// 📌 chip keeps showing it), and it used to rest on a bare <c>Swallow</c>: since this prompt is
+    /// rebuilt on every change of active file, that is one ring entry per rebuild. The rule was
+    /// written three lines above, for the other cause.
     /// </summary>
     private static void ReportUnreadablePinOnce(string path, Exception ex) =>
         Diagnostics.RecordOnce(PinContext,

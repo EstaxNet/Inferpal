@@ -49,8 +49,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// </summary>
     public IDebugSession? Debug => _debug;
 
-    /// <summary>The approval pipeline this registry gates its tools with — exposed so §25's
-    /// `/tdd` capture asks consent through the same prompt as everything else.</summary>
+    /// <summary>The approval pipeline this registry gates its tools with — exposed so that
+    /// `/tdd`'s debugger capture asks consent through the same prompt as everything else.</summary>
     public IApprovalService Approval => _approval;
 
     /// <param name="overlay">Open-document mirror for dirty-buffer reads;
@@ -108,10 +108,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new SearchDocsTool(docsIndex, client, config));
         Register(new GenerateProjectMapTool(mapService));
 
-        // Roadmap §21. Registered only when the front-end can actually drive a debugger: a tool
-        // whose every answer is "unavailable here" costs prompt tokens on every turn and teaches a
-        // small model to keep trying. The step budget is per registry, i.e. per editor session, and
-        // is reset by each `start`.
+        // Registered only when the front-end can actually drive a debugger: a tool whose every
+        // answer is "unavailable here" costs prompt tokens on every turn and teaches a small model
+        // to keep trying. The step budget is per registry, i.e. per editor session, and is reset by
+        // each `start`.
         if (debug is not null)
         {
             var budget = new DebugStepBudget();
@@ -123,16 +123,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             Register(new GetDebuggerStateTool(debug, () => indexService.RootDir));
         }
 
-        // ⚠ No `delegate` tool here, and this one is closed rather than merely absent. It was built
-        // and measured twice against gates registered before the code was written:
-        //   §11 — 91 % of the main thread's prompt tokens saved, accuracy halved
-        //                      (4/12 → 2/12). Cut; the redesign was scoped as §20.
-        //   §20 — one sub-agent per target, explicit budget, audited citations. On a
-        //                      valid reference arm (58,3 %, inside the 40-80 % window): 7/36 against
-        //                      21/36, and only 13,9 % of tokens saved because the parent re-explored
-        //                      what the sub-agents failed to establish.
-        // The §20 gate said in advance that a second failure closes the track for good. It did.
-        // Do not re-add this tool. Recoverable at commit 60e68a1 if the dossier ever needs reading.
+        // ⚠ There is deliberately no sub-agent `delegate` tool, and its absence is a decision rather
+        // than an omission. It was built and measured twice: both times it saved prompt tokens on
+        // the main thread and roughly halved the accuracy, because the parent re-explored whatever
+        // the sub-agents failed to establish. Do not re-add it; the last implementation is
+        // recoverable at commit 60e68a1 if the reasoning ever needs re-reading.
     }
 
     /// <summary>
@@ -140,25 +135,24 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Used by a background task running in proposal mode, whose approval service
-    /// records every request and grants none. The service is injected into each tool's constructor,
-    /// so it cannot be swapped by a wrapper: a fresh registry is the only construction where no tool
-    /// holds a reference to the real prompting service. That is the point — not an inconvenience.
+    /// Used by a background task running in proposal mode, whose approval service records every
+    /// request and grants none. The service is injected into each tool's constructor, so it cannot
+    /// be swapped by a wrapper: a fresh registry is the only construction where no tool holds a
+    /// reference to the real prompting service. That is the point, not an inconvenience.
     /// </para>
     /// <para>
-    /// The sibling <b>shares this registry's</b> <see cref="FileHistoryService"/>. It used to get a
-    /// fresh, runless one — true no-op while every sibling was proposal-mode (nothing wrote), but
-    /// since §25 routes <c>/tdd</c>'s REAL writes through a sibling, those snapshots landed in a
-    /// history nobody could see and every <c>/tdd</c> edit silently escaped <c>/undo-run</c>
-    /// (pre-1.6.0 architecture review, §1.5). Sharing is safe for proposal mode: a recorder that refuses every
-    /// write never reaches the snapshot path.
+    /// The sibling <b>shares this registry's</b> <see cref="FileHistoryService"/>. A fresh one was
+    /// harmless while every sibling was proposal-mode and nothing wrote, but <c>/tdd</c> routes real
+    /// writes through a sibling: its snapshots then landed in a history nobody could see, and every
+    /// <c>/tdd</c> edit escaped <c>/undo-run</c>. Sharing is safe for proposal mode — a recorder
+    /// that refuses every write never reaches the snapshot path.
     /// </para>
     /// </remarks>
     /// <remarks>
     /// ⚠ The debug surface is <b>not</b> carried over. A background task must not be able to launch
     /// the user's program: starting a session is an execution, and deferring an execution to be
-    /// approved later is the blank cheque §9 refused. The sibling registry therefore has no debug
-    /// tools at all, rather than tools whose approval would be recorded as a proposal.
+    /// approved later is a blank cheque. The sibling registry therefore has no debug tools at all,
+    /// rather than tools whose approval would be recorded as a proposal.
     /// </remarks>
     public ToolRegistry WithApprovalService(IApprovalService approval) =>
         new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null, fileHistory: _fileHistory);
@@ -168,26 +162,25 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⚠ <b>This property is recomputed on EVERY read of <see cref="Definitions"/></b>, that is at
+    /// ⚠ <b>This property is recomputed on every read of <see cref="Definitions"/></b>, that is at
     /// least three times per request to the model (the client's <c>.Count</c> then its
     /// <c>.ToList()</c>, the set of known names, the orchestrator's two guards). That is why its
     /// rejections go through <see cref="Diagnostics.DroppedLineOnce"/>: said on every pass, they
-    /// wiped the diagnostics ring's 200 entries within a few agent turns.
+    /// wipe the diagnostics ring within a few agent turns.
     /// </para>
     /// <para>
-    /// ⚠ And two lines cannot claim the same name. This is not a hypothesis: the name is
-    /// <b>normalised</b> (lower-cased, spaces to underscores), so <c>My Tool=…</c> and
-    /// <c>my_tool=…</c> are two lines the user reads as distinct that yield one single name — the
-    /// exact shape of the trap <c>McpToolService</c> documents for <c>my-server</c> and
-    /// <c>my.server</c>. Without a guard, the backend received two function definitions with the
-    /// same name (malformed in the OpenAI tool schema) and <see cref="ExecuteAsync"/> always ran
-    /// the first: the second command never ran, silently.
+    /// ⚠ And two lines cannot claim the same name. The name is <b>normalised</b> (lower-cased,
+    /// spaces to underscores), so <c>My Tool=…</c> and <c>my_tool=…</c> are two lines the user reads
+    /// as distinct that yield a single name — the same trap <c>McpToolService</c> documents for
+    /// <c>my-server</c> and <c>my.server</c>. Without a guard the backend receives two function
+    /// definitions with the same name, which is malformed in the OpenAI tool schema, and
+    /// <see cref="ExecuteAsync"/> always runs the first: the second command never runs, silently.
     /// </para>
     /// <para>
-    /// The second one is <b>dropped</b>, not renamed: unlike an MCP tool, whose name is derived
-    /// from its server, here the name is the one the user wrote — exposing a <c>my_tool_2</c> would
-    /// put in the model's list a name that appears nowhere in their configuration. Same arbitration
-    /// as for the clash with a built-in tool.
+    /// The second one is <b>dropped</b>, not renamed: unlike an MCP tool, whose name is derived from
+    /// its server, here the name is the one the user wrote — exposing a <c>my_tool_2</c> would put a
+    /// name in the model's list that appears nowhere in their configuration. Same arbitration as for
+    /// a clash with a built-in tool.
     /// </para>
     /// </remarks>
     private IEnumerable<ITool> UserTools
@@ -242,9 +235,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
     /// <summary>The MCP tools rebound to <b>this</b> registry's approval pipeline. The shared
     /// <see cref="McpToolService"/> built them with the original service; served raw, a sibling
-    /// registry (<see cref="WithApprovalService"/>) would gate every tool it exposes EXCEPT the
-    /// MCP ones — the decorator (e.g. §25's TestFileWriteGuard) silently not applying to the very
-    /// tools that can write files (pre-1.6.0 architecture review, §1.5).</summary>
+    /// registry (<see cref="WithApprovalService"/>) would gate every tool it exposes EXCEPT the MCP
+    /// ones — the decorator silently not applying to the very tools that can write files.</summary>
     private IEnumerable<ITool> McpTools =>
         _mcp.Tools.Select(t => t is Mcp.McpTool m ? m.WithApproval(_approval) : t);
 

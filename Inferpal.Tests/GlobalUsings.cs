@@ -1,5 +1,5 @@
-// Voir Inferpal/GlobalUsings.cs — les tests référencent les types de Services/ via
-// les mêmes sous-namespaces réorganisés.
+// See Inferpal/GlobalUsings.cs — the tests reach the types of Services/ through the same
+// sub-namespaces.
 global using Inferpal.Services.Inference;
 global using Inferpal.Services.Agent;
 global using Inferpal.Services.Execution;

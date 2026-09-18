@@ -47,7 +47,7 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
 
   /** Thread reported by the last `stopped` event — never assumed to be 1 (the probe saw 0). */
   private stoppedThreadId: number | undefined;
-  /** Reason/text of the last `stopped` event (§25 capture reads the exception identity here). */
+  /** Reason/text of the last `stopped` event. */
   private lastStop: { reason: string; text: string | null } | undefined;
   /** Resolvers waiting for the next stop-or-end transition. */
   private waiters: Array<(t: Transition) => void> = [];
@@ -295,12 +295,12 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     }
     if (!started) {
       // Disarm the transition waiter: nothing will ever fire it, and left armed it consumed the
-      // next real session's event 5 minutes later (pre-1.6.0 architecture review).
+      // next real session's event 5 minutes later.
       this.release('ended');
       return null;
     }
     // Pin OUR session now: after a 5-minute entry timeout, activeDebugSession may be one the
-    // USER started meanwhile — this.stop() would have killed theirs (pre-1.6.0 architecture review).
+    // USER started meanwhile — this.stop() would have killed theirs.
     const launched = vscode.debug.activeDebugSession as vscode.DebugSession | undefined;
     if ((await entrySettled) !== 'stopped') {
       if (launched) {
@@ -445,7 +445,7 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     return {
       // The stopped event's identity was frozen to 'break': after an exception stop, debug/state
       // and debug/step reported "break" and the exception text existed only in the captureTest
-      // path (pre-1.6.0 architecture review). lastStop carries what the adapter actually said.
+      // path. lastStop carries what the adapter actually said.
       reason: this.lastStop?.reason ?? 'break',
       threadId,
       frames: frames.slice(0, MAX_FRAMES),

@@ -6,7 +6,7 @@ namespace Inferpal.Services.Commands;
 
 /// <summary>
 /// Pure logic of <c>/bench [model…]</c> and <c>/bench last</c> — the local model test bench
-/// (ROADMAP 1.3.0 §5). Runs the frozen <see cref="BenchTasks"/> suite on each requested model
+///. Runs the frozen <see cref="BenchTasks"/> suite on each requested model
 /// (default: every installed model, capped), formats the comparative markdown table and derives a
 /// per-role recommendation that feeds the Model Router. UI concerns (live status bubble) stay in
 /// the callers; progress is reported through the <c>onProgress</c> callback, same convention as

@@ -179,7 +179,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
             // flips it to Running AFTER the GPU gate opens (WaitForChatIdleAsync), so a job can sit
             // as _current in state Queued for minutes. Taking the drop-branch for it marked the
             // task Cancelled without cancelling its CTS — the run then executed anyway and
-            // finished a second time into _finished (pre-1.6.0 architecture review, §1.6). The drop-branch is
+            // finished a second time into _finished. The drop-branch is
             // therefore gated on actual _pending membership.
             if (job.State == BackgroundTaskState.Queued && _pending.Contains(job))
             {
@@ -331,7 +331,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         // ONE lock. It used to be two: this method appended to _finished, and the worker loop
         // cleared _current afterwards in a lock of its own. Between the two the job was in both
         // places at once, so List() returned it TWICE and Count counted it twice — for a window
-        // the caller cannot see or avoid. Caught by CI on 2026-09-01, on a run where the local
+        // the caller cannot see or avoid. Caught by CI, on a run where the local
         // machine had passed the same test twice: the collection held two identical snapshots of
         // t1, both already Succeeded.
         // ReferenceEquals, not an id comparison: a pending job cancelled before it ever started

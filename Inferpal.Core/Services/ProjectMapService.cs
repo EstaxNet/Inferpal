@@ -107,7 +107,7 @@ internal sealed class ProjectMapService
                 refCounts.TryAdd(Path.GetFileNameWithoutExtension(file), 0);
             }
             // Cancellation must PROPAGATE: swallowed, every remaining read failed instantly and
-            // a partial map was returned as if complete (pre-1.6.0 architecture review).
+            // a partial map was returned as if complete.
             catch (OperationCanceledException) { throw; }
             // Counted rather than traced: one ring entry per unreadable file, on every regeneration,
             // is the noise RecordOnce and DroppedLineOnce exist to prevent. The count IS the channel,

@@ -74,15 +74,14 @@ internal static class InProcConfig
     }
 
     /// <summary>
-    /// Relit le fichier. Un fichier <b>absent</b> rend les valeurs par défaut ; un fichier
-    /// <b>illisible</b> rend les dernières valeurs lues avec succès.
+    /// Re-reads the file. A <b>missing</b> file returns the defaults; an <b>unreadable</b> file
+    /// returns the last values successfully read.
     /// </summary>
     /// <remarks>
-    /// La distinction n'est pas cosmétique : <c>Enabled</c> vaut <c>true</c> par défaut, donc un
-    /// <c>config.json</c> tronqué — une écriture concurrente, un disque plein — <b>rallumait</b>
-    /// la complétion inline chez quelqu'un qui l'avait éteinte, et remettait le sidecar à
-    /// consommer du GPU sans un mot. Une préférence qu'on ne sait plus lire n'est pas une
-    /// préférence qui vient de changer.
+    /// The distinction is not cosmetic: <c>Enabled</c> defaults to <c>true</c>, so a truncated
+    /// <c>config.json</c> — a concurrent write, a full disk — turned inline completion back on for
+    /// someone who had turned it off, and put the sidecar back to consuming GPU without a word. A
+    /// preference one can no longer read is not a preference that has just changed.
     /// </remarks>
     private static Snapshot Read(long stamp)
     {
@@ -109,9 +108,9 @@ internal static class InProcConfig
         catch (Exception ex)
         {
             Diagnostics.Swallow("InProcConfig.Read", ex);
-            // Les dernières valeurs LUES, au nouveau stamp pour ne pas relire à chaque frappe un
-            // fichier qui ne se laisse pas lire. Rien n'est perdu : la prochaine écriture valide
-            // change le stamp et repasse ici.
+            // The last values READ, at the new stamp so as not to re-read on every keystroke a file
+            // that will not be read. Nothing is lost: the next valid write changes the stamp and
+            // comes back through here.
             return new Snapshot
             {
                 Enabled = _cached.Enabled,

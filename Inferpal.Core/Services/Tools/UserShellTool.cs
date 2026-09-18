@@ -31,7 +31,7 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
         {
             // Resolved per machine like run_command: powershell.exe was hard-coded here, so every
             // user-defined tool died on the published linux-x64/darwin-arm64 hosts with "cannot
-            // start process 'powershell.exe'" (pre-1.6.0 architecture review). The encoding contract is
+            // start process 'powershell.exe'". The encoding contract is
             // ShellLauncher's: -EncodedCommand on PowerShell, ArgumentList -c on POSIX — neither
             // goes through a shell quoting layer. `args` are still appended INTO the script by
             // design — the approval prompt above (full command shown) is the actual guard.

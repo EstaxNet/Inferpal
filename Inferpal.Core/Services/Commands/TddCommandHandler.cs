@@ -6,12 +6,12 @@ using Inferpal.Models;
 namespace Inferpal.Services.Commands;
 
 /// <summary>
-/// Pure logic of <c>/tdd [filter]</c> — the "fix until green" loop (ROADMAP 1.5.0 §10, pulled
-/// forward): <c>run_tests</c> → agent patches the code → re-run, until the suite is green or the
-/// iteration budget runs out. The twin of <c>/fix-build</c> on the test side, but shared by both
-/// front-ends: the VM and the Host drive it through callbacks (status line, per-round test report,
-/// streamed fix tokens) and the handler owns the loop. Mutating tools still go through the usual
-/// approval/permission pipeline of the registry — the loop adds no bypass.
+/// Pure logic of <c>/tdd [filter]</c> — the "fix until green" loop: <c>run_tests</c> → agent patches
+/// the code → re-run, until the suite is green or the iteration budget runs out. The twin of
+/// <c>/fix-build</c> on the test side, but shared by both front-ends: the VM and the Host drive it
+/// through callbacks (status line, per-round test report, streamed fix tokens) and the handler owns
+/// the loop. Mutating tools still go through the registry's usual approval/permission pipeline —
+/// the loop adds no bypass.
 /// </summary>
 internal static class TddCommandHandler
 {
@@ -34,12 +34,12 @@ internal static class TddCommandHandler
     /// <param name="onToken">Agent token stream during fix iterations.</param>
     /// <param name="onFixResult">Agent's final text per fix iteration (raw — may contain think
     /// tags; the front-end strips/renders).</param>
-    /// <param name="debugCapture">§25 port: re-runs the first failing test under the editor's
-    /// debugger so the fix prompt carries the state at the failure point. Null (or unavailable)
-    /// = the historical loop, unchanged — the block is a bonus, never a prerequisite.</param>
+    /// <param name="debugCapture">Re-runs the first failing test under the editor's debugger so the
+    /// fix prompt carries the state at the failure point. Null (or unavailable) = the plain loop,
+    /// unchanged — the block is a bonus, never a prerequisite.</param>
     /// <param name="approval">Gate for <paramref name="debugCapture"/>: re-running a test is an
-    /// execution. Asked once per `/tdd` run (the §21 consent granularity is the session, not the
-    /// step); a refusal disables the capture for the rest of the run without stopping it.</param>
+    /// execution. Asked once per <c>/tdd</c> run, and a refusal disables the capture for the rest of
+    /// the run without stopping it.</param>
     public static async Task<TddCommandResult> HandleAsync(
         IInferenceProvider client, InferpalConfig config, IToolRegistry tools,
         string? systemPrompt, string[] parts, string? projectRoot,
@@ -51,10 +51,10 @@ internal static class TddCommandHandler
         var filter = parts.Length >= 2 ? string.Join(" ", parts[1..]) : null;
         bool captureApproved = false, captureDeclined = false, captureAbsenceAnnounced = false;
 
-        // §25: writes aimed at test files are force-prompted for the whole run — the loop's most
-        // natural failure mode is rewriting the assertion to the observed buggy value. The sibling
-        // shares the parent's FileHistoryService, and the run opened here groups every fix-round
-        // write so /undo-run can revert the whole /tdd session (pre-1.6.0 architecture review, §1.5).
+        // Writes aimed at test files are force-prompted for the whole run — the loop's most natural
+        // failure mode is rewriting the assertion to the observed buggy value. The sibling shares
+        // the parent's FileHistoryService, and the run opened here groups every fix-round write so
+        // /undo-run can revert the whole /tdd session.
         IDisposable? run = null;
         if (tools is ToolRegistry concrete)
         {
@@ -99,22 +99,21 @@ internal static class TddCommandHandler
             if (green)              return new(Strings.TddSuccess(round));
             if (round == MaxRounds) return new(Strings.TddGiveUp(MaxRounds));
 
-            // ── §25: state at the failure point, captured under the editor's debugger ──
-            // Measured before being built (probe gate 12/12 vs 10/12): on the cases the plain
-            // loop loses, the runner text never carries the cause — the locals do.
+            // ── State at the failure point, captured under the editor's debugger ──
+            // On the cases the plain loop loses, the runner's text never carries the cause; the
+            // locals do.
             string? debugBlock = null;
 
-            // A missing capability is announced, once, before the first round it degrades.
-            // Staying silent here was measured to cost an evening: the in-process driver had not
-            // started, `/tdd` ran its bare red loop, and nothing - neither the chat nor the probe
-            // reading it - could tell that apart from a model that fails to fix the code. Same
-            // rule as the failed capture two blocks below: never a silent fallback that passes a
-            // degraded round off as an ordinary one. `captureDeclined` is excluded: a refusal is
+            // A missing capability is announced, once, before the first round it degrades. Staying
+            // silent here is expensive: when the in-process driver has not started, `/tdd` runs its
+            // bare red loop and nothing distinguishes that from a model failing to fix the code.
+            // Same rule as the failed capture two blocks below: never a silent fallback that passes
+            // a degraded round off as an ordinary one. `captureDeclined` is excluded — a refusal is
             // a user decision, not a failure, and they already read it on their card.
             //
-            // ⚠ An ABSENT port (`null`) stays quiet: that is a front-end with no debugger at all
-            // (VS Code without the §21 `debug` capability), not a failure. Announcing a missing
-            // capability where it never existed is noise on every `/tdd`.
+            // ⚠ An ABSENT port (`null`) stays quiet: that is a front-end with no debugger at all,
+            // not a failure. Announcing a missing capability where it never existed is noise on
+            // every `/tdd`.
             if (debugCapture is { IsAvailable: false } && !captureAbsenceAnnounced)
             {
                 captureAbsenceAnnounced = true;

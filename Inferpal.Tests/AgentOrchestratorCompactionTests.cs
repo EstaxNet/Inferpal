@@ -25,7 +25,7 @@ public class AgentOrchestratorCompactionTests
     {
         // A write_file turn carries the whole file in the assistant's tool_calls, not in Content:
         // ignoring them meant a run writing large files never crossed the compaction threshold and
-        // the backend silently truncated the head (pre-1.6.0 architecture review, §2.10).
+        // the backend silently truncated the head.
         var bigArgs = System.Text.Json.JsonSerializer.SerializeToElement(
             new { path = "a.cs", content = new string('x', 4000) });
         var call = new ToolCallDto(new ToolCallFunction("write_file", bigArgs));

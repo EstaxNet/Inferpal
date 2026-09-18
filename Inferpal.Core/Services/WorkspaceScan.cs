@@ -7,29 +7,17 @@ namespace Inferpal.Services;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>There were seven of these, and no two agreed.</b> The review of 2026-08-07 found a private
-/// <c>IsExcluded</c> in <c>ProjectMapService</c>, <c>NexusIntelligenceTool</c>,
-/// <c>AnalyzeImpactTool</c>, <c>TraceDependencyTool</c>, <c>RenameSymbolTool</c>,
-/// <c>WorkspaceSymbolScanner</c> and <c>MentionController</c>, each with its own list. The
-/// divergences were not academic:
+/// Every tool that walks the workspace used to carry its own exclusion list, and they disagreed —
+/// on case sensitivity, on separators, on whether <c>.inferpal</c> was excluded at all. The last
+/// one matters most: <c>.inferpal/history/</c> holds copies of the user's own source files, so a
+/// walk that descends there analyses stale duplicates, and <c>rename_symbol</c> would rewrite
+/// symbols inside them.
 /// </para>
-/// <list type="bullet">
-///   <item><b><c>rename_symbol</c> — the one that writes</b> — compared with
-///         <c>StringComparison.Ordinal</c>, so a path containing <c>\Obj\</c> or
-///         <c>\Node_Modules\</c> was not excluded at all on a case-insensitive filesystem; and it
-///         did not know about <c>.inferpal</c>, so it could rewrite symbols inside the undo
-///         snapshots Inferpal keeps of the user's own files.</item>
-///   <item>Only two of the seven excluded <c>.inferpal</c>. The others walked
-///         <c>.inferpal/history/</c>, which holds COPIES of source files with the same extensions —
-///         a project map and an impact analysis built partly on stale duplicates.</item>
-///   <item><c>AnalyzeImpactTool</c> excluded <c>\.git\</c> but not <c>/.git/</c>.</item>
-/// </list>
 /// <para>
-/// <b>The list is the union of what the code base already believed</b>, not a fresh opinion:
-/// picking a subset would have changed more behaviour than adopting all of it. It stays a
-/// heuristic — a project whose real sources live in <c>build/</c> is misjudged here, and the way
-/// to tell Inferpal so is <c>.inferpal/project.json</c>, which extends the index exclusions
-/// on top of this list.
+/// The list is the union of what the tools already excluded rather than a fresh opinion, and it
+/// stays a heuristic: a project whose real sources live in <c>build/</c> is misjudged here. The way
+/// to tell Inferpal so is <c>.inferpal/project.json</c>, which extends the index exclusions on top
+/// of this list.
 /// </para>
 /// </remarks>
 internal static class WorkspaceScan
@@ -265,30 +253,23 @@ internal static class WorkspaceScan
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⚠ <b><see cref="WalkOptions"/> carries <c>IgnoreInaccessible = true</c>, so the walk skips
-    /// such a folder in SILENCE and its files are never even enumerated.</b> That is one step worse
-    /// than a file it took and could not read: the files are absent from the total, so a scan
-    /// coverage built from the walk says "complete". Measured on a two-file workspace with the only
-    /// dependant inside an unlistable folder: <c>analyze_impact</c> answered
-    /// <c>Direct dependants (0) · Risk: LOW</c> while the funnel itself reported success
-    /// (<c>failed = false</c>, which only ever meant "the START directory could not be opened").
-    /// The real cases are named by <c>InaccessibleFolderTests</c>: a database volume mounted inside
-    /// the repository and owned by a container's user, a locked junction under a Windows profile.
+    /// ⚠ <see cref="WalkOptions"/> carries <c>IgnoreInaccessible = true</c>, so the walk skips such
+    /// a folder in silence and its files are never enumerated. That is worse than a file it took
+    /// and could not read: the files are missing from the total too, so a scan coverage built from
+    /// the walk reports "complete". Typical causes are a database volume mounted inside the
+    /// repository and owned by a container's user, or a locked junction under a Windows profile.
     /// </para>
     /// <para>
-    /// Cheap on purpose, and this is what decided the shape: a <b>directory-only</b> enumeration
-    /// with <c>IgnoreInaccessible = false</c> throws and NAMES the path, so nothing here
-    /// re-implements Win32 name matching — the trap this repository already paid on
-    /// <c>*.sln</c>/<c>*.slnx</c>. It walks by hand rather than with
-    /// <c>RecurseSubdirectories</c> for one reason: <see cref="IsExcludedDirName"/> must be
-    /// honoured, or a <c>node_modules</c> with odd permissions would be reported although it is
-    /// excluded anyway — and a gate whose output is noise ends up disarmed. Skipping those subtrees
-    /// also makes it cheaper than the flat call.
+    /// The shape is deliberately cheap. A <b>directory-only</b> enumeration with
+    /// <c>IgnoreInaccessible = false</c> throws and names the path, so nothing here re-implements
+    /// Win32 name matching. It descends by hand rather than with <c>RecurseSubdirectories</c> so
+    /// that <see cref="IsExcludedDirName"/> is honoured — otherwise a <c>node_modules</c> with odd
+    /// permissions would be reported although it is excluded anyway, and a gate whose output is
+    /// noise ends up disarmed.
     /// </para>
     /// <para>
-    /// ⚠ The <b>first</b> one, not all of them: naming one folder is what makes the message
-    /// actionable, and stopping there keeps the cost of a clean repository to a single
-    /// directory-only traversal.
+    /// The <b>first</b> one, not all of them: naming one folder is what makes the message
+    /// actionable, and stopping there keeps a clean repository to a single traversal.
     /// </para>
     /// </remarks>
     public static WalkGap? FirstWalkGap(string start, string? root = null)
@@ -365,51 +346,45 @@ internal static class WorkspaceScan
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⚠ <b>Refusing to descend into a linked directory is a CRASH fix, not a preference.</b> A
-    /// junction or symlink pointing at one of its own ancestors — a `latest` link, a Docker bind
-    /// mount, a junction into a Windows profile — made this enumeration walk the cycle until the
-    /// process died: measured <see cref="OutOfMemoryException"/>, and in another run more than ten
-    /// minutes without returning. <see cref="EnumerationOptions.IgnoreInaccessible"/> is what makes
-    /// it fatal rather than noisy: it swallows the per-directory error at the bottom of the cycle
-    /// and keeps queueing directories. This is the single walk funnel of the product — the index,
-    /// `search_in_files`, `list_files` and every analysis tool — so the blast radius was everything.
+    /// ⚠ Refusing to descend into a linked directory is a crash fix, not a preference. A junction or
+    /// symlink pointing at one of its own ancestors — a `latest` link, a Docker bind mount, a
+    /// junction into a Windows profile — makes the enumeration walk the cycle until the process
+    /// dies. <see cref="EnumerationOptions.IgnoreInaccessible"/> is what makes that fatal rather
+    /// than noisy: it swallows the per-directory error at the bottom of the cycle and keeps queueing
+    /// directories. This is the product's single walk funnel — the index, `search_in_files`,
+    /// `list_files` and every analysis tool — so the blast radius is everything.
     /// </para>
     /// <para>
-    /// ⚠ Bounding the depth instead (<c>MaxRecursionDepth</c>) was measured and rejected: it stops
-    /// the crash but walks the cycle over and over, returning <b>43 paths for 2 real files</b> —
-    /// the same file indexed twenty-one times under twenty-one paths. A crash traded for a poisoned
-    /// index.
+    /// Bounding the depth instead stops the crash but walks the cycle over and over, returning the
+    /// same file many times under many paths: a crash traded for a poisoned index.
     /// </para>
     /// <para>
-    /// ⚠ <b>And the obvious spelling costs files for nothing.</b>
+    /// ⚠ And the obvious spelling costs files for nothing.
     /// <c>AttributesToSkip = ReparsePoint</c> on <c>Directory.EnumerateFiles</c> is one line and
-    /// stops the cycle, but the attribute is the same on a linked <i>file</i>: measured, a symlinked
-    /// <c>Linked.cs</c> disappeared from the walk while no gap was reported, because
-    /// <see cref="FirstWalkGap"/> only ever looks at folders. A linked file cannot loop — only a
-    /// directory can — so it is data lost for nothing.
-    /// <see cref="FileSystemEnumerable{TResult}"/> is the only shape that separates "descend into"
-    /// from "return", and the recursion predicate carries the whole fix.
+    /// stops the cycle, but the attribute is the same on a linked <i>file</i>, which cannot loop —
+    /// so it silently drops data, and <see cref="FirstWalkGap"/> would not report it either since
+    /// it only looks at folders. <see cref="FileSystemEnumerable{TResult}"/> is the only shape that
+    /// separates "descend into" from "return", and the recursion predicate carries the whole fix.
     /// </para>
     /// <para>
-    /// The cost that remains is real and is SAID: the files of a legitimately linked folder are not
-    /// read (measured: 2 files instead of 3), and <see cref="FirstWalkGap"/> names the folder with
-    /// its own reason, so it is a declared gap and not a silence.
+    /// The remaining cost is real and is said: the files of a legitimately linked folder are not
+    /// read, and <see cref="FirstWalkGap"/> names the folder with its own reason, so it is a
+    /// declared gap rather than a silence.
     /// </para>
     /// <para>
     /// ⚠ The pattern is matched by <see cref="FileSystemName.MatchesWin32Expression"/> — the
     /// framework's own matcher, the one <c>Directory.EnumerateFiles</c> uses under
-    /// <see cref="MatchType.Win32"/>, never a reimplementation of Win32 wildcards (the trap already
-    /// paid on <c>*.sln</c>/<c>*.slnx</c>). Its case flag mirrors
-    /// <see cref="MatchCasing.PlatformDefault"/> rather than being hard-coded: <c>*.cs</c> must not
-    /// start matching <c>A.CS</c> on Linux, where it did not before.
+    /// <see cref="MatchType.Win32"/> — never a reimplementation of Win32 wildcards. Its case flag
+    /// mirrors <see cref="MatchCasing.PlatformDefault"/> rather than being hard-coded, so
+    /// <c>*.cs</c> does not start matching <c>A.CS</c> on Linux.
     /// </para>
     /// <para>
-    /// ⚠ <b>And the matcher takes a TRANSLATED expression, not the raw pattern</b> —
+    /// ⚠ And the matcher takes a <b>translated</b> expression, not the raw pattern:
     /// <c>Directory.EnumerateFiles</c> runs <see cref="FileSystemName.TranslateWin32Expression"/>
-    /// first, and calling the matcher without it quietly changes what the walk answers: measured,
-    /// <c>*.*</c> dropped a file with no extension (<c>Makefile</c>) and <c>*.</c> — whose Win32
-    /// meaning is exactly "no extension" — returned nothing at all. Both are patterns the model
-    /// writes for <c>list_files</c> and <c>search_in_files</c>.
+    /// first, and calling the matcher without it changes what the walk answers — <c>*.*</c> drops
+    /// files with no extension, and <c>*.</c>, whose Win32 meaning is exactly "no extension",
+    /// returns nothing. Both are patterns the model writes for <c>list_files</c> and
+    /// <c>search_in_files</c>.
     /// </para>
     /// </remarks>
     private static IEnumerable<string> Walk(string start, string pattern)

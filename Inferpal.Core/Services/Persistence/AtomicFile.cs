@@ -12,7 +12,7 @@ namespace Inferpal.Services.Persistence;
 /// A plain <c>File.WriteAllText</c> truncates the target before writing: a crash, a full disk or a
 /// kill between the two leaves a half-written file — and for the configuration that means the
 /// extension can no longer start. Staging into a sibling file and renaming makes the replacement
-/// atomic on both NTFS and POSIX, so a reader ever only sees the old file or the new one.
+/// atomic on both NTFS and POSIX, so a reader only ever sees the old file or the new one.
 /// </para>
 /// <para>
 /// <b>The staging name is unique per write, and that is not a detail.</b> A name derived only from
@@ -27,8 +27,7 @@ namespace Inferpal.Services.Persistence;
 /// <b>The rename itself still contends, and is retried.</b> Two replacements of the same
 /// destination overlap in the Win32 rename, not just in the staging: the loser gets
 /// <see cref="UnauthorizedAccessException"/> or <see cref="IOException"/> for a few milliseconds.
-/// Measured, not assumed — eight writers on one file reproduce it every run. The rename stays
-/// atomic; it is only <i>attempted</i> more than once.
+/// The rename stays atomic; it is only <i>attempted</i> more than once.
 /// </para>
 /// </remarks>
 internal static class AtomicFile
@@ -53,12 +52,11 @@ internal static class AtomicFile
     /// </summary>
     /// <remarks>
     /// ⚠ It used to be <c>Encoding.UTF8</c> unconditionally, which <b>emits</b> a mark, while the
-    /// read side strips one: a rewrite therefore ADDED three bytes at the head of any file that had
+    /// read side strips one: a rewrite therefore added three bytes at the head of any file that had
     /// none. Invisible for this class's own JSON stores — they are born here, so they all have the
     /// mark — but a plan is markdown a team commits, and <c>PlanDocument.WithStepDone</c> promises
     /// that "only the single checkbox character changes; every other byte of the file is preserved".
     /// Ticking a step on a hand-written plan showed up as a diff at the head of the file.
-    /// Measured, then fixed: the byte was there.
     /// </remarks>
     private static Encoding EncodingFor(string path)
     {
@@ -87,12 +85,11 @@ internal static class AtomicFile
 
     /// <summary>Atomically replaces <paramref name="path"/> with <paramref name="content"/>.</summary>
     /// <param name="preserveExistingMark">
-    /// Keep the destination's own byte-order mark instead of always writing one. Off by default,
-    /// and deliberately: reading the destination on <i>every</i> write widened the rename window
-    /// enough to make eight concurrent writers refuse each other — measured, this class's own
-    /// <c>ConcurrentWriters</c> test went red — and the JSON stores it was written for are all born
-    /// here with a mark, so they have nothing to preserve. Only a file the <b>user</b> may have
-    /// written needs it, and only one caller promises those bytes.
+    /// Keep the destination's own byte-order mark instead of always writing one. Off by default, and
+    /// deliberately: reading the destination on <i>every</i> write widens the rename window enough
+    /// for concurrent writers to start refusing each other, and the JSON stores this class was
+    /// written for are all born here with a mark, so they have nothing to preserve. Only a file the
+    /// <b>user</b> may have written needs it, and a single caller promises those bytes.
     /// </param>
     public static void WriteAllText(string path, string content, bool preserveExistingMark = false)
     {
@@ -191,13 +188,12 @@ internal static class AtomicFile
     /// that the file is unreadable — this helper only knows how to keep the bytes.
     /// </summary>
     /// <remarks>
-    /// ⚠ The gesture this repository paid for twice in a row. An unreadable file is not merely
-    /// <i>ignored</i>: the load returns an empty document or factory defaults, and the next save
-    /// writes them OVER the original bytes. That is no longer a failed read, it is a loss. Measured
-    /// on <c>config.json</c> (backends, per-role models, MCP servers, permission rules) and on
-    /// <c>snippets.json</c> (up to a hundred fragments replaced by one).
+    /// ⚠ An unreadable file is not merely <i>ignored</i>: the load returns an empty document or
+    /// factory defaults, and the next save writes them over the original bytes. That is no longer a
+    /// failed read, it is a loss — of a configuration (backends, per-role models, MCP servers,
+    /// permission rules) or of a snippet library.
     ///
-    /// Best-effort by construction: NEVER prevent the save. Failing to archive is less serious than
+    /// Best-effort by construction: never prevent the save. Failing to archive is less serious than
     /// leaving the user unable to write.
     /// </remarks>
     internal static string? PreserveAside(string path)

@@ -10,7 +10,7 @@ namespace Inferpal.Services.Tools;
 /// <c>File.WriteAllTextAsync(path, content)</c> always emits UTF-8 without BOM — so every
 /// one-line <c>apply_diff</c> stripped the BOM Visual Studio puts on .cs/.resx files (whole-file
 /// churn in git, "file completely changed" hooks) and silently transcoded UTF-16 files
-/// (pre-1.6.0 architecture review, §1.9 — measured on four call sites). This helper detects the existing
+///. This helper detects the existing
 /// file's BOM before writing and re-writes with the same encoding; a <em>new</em> file gets
 /// UTF-8 without BOM, the modern default. Detection is BOM-based only: a BOM-less file is
 /// treated as UTF-8, exactly what the read path (<c>File.ReadAllTextAsync</c>) already assumes,

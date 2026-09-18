@@ -10,7 +10,7 @@ namespace Inferpal.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The 129 label/hint properties are <b>irreducible boilerplate</b>, and the review of 2026-08-07
+/// The 129 label/hint properties are <b>irreducible boilerplate</b>, and the review
 /// left them alone on purpose: Remote UI binds XAML to named <c>[DataMember]</c> properties parsed
 /// inside <c>devenv.exe</c>, so a collection or a reflective loop would have to be paid for with a
 /// UI rewrite — and VS itself does not read initial values at DataContext assignment, which is why

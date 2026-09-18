@@ -11,10 +11,9 @@ namespace Inferpal.Host;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The mirror of <see cref="Services.Debugging.SignalDebugSession"/> under Visual Studio, and the
-/// reason this port exists at all: the §21 probe drove <b>both</b> APIs through the same seven
-/// conditions, and VS Code was the faster of the two on the inner loop (0,016 s to a breakpoint set
-/// during a break, against 0,15 s). The asymmetry is elsewhere — see <see cref="IsAvailable"/>.
+/// The mirror of <see cref="Services.Debugging.SignalDebugSession"/> under Visual Studio. Of the two
+/// APIs, VS Code is the faster on the inner loop — setting a breakpoint during a break is an order
+/// of magnitude quicker. The asymmetry is elsewhere; see <see cref="IsAvailable"/>.
 /// </para>
 /// <para>
 /// <b>No serialising semaphore here, unlike the Visual Studio side.</b> That one exists because a
@@ -35,10 +34,9 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
     /// </summary>
     /// <remarks>
     /// ⚠ It answers "this editor can drive a debugger", never "this workspace can be debugged".
-    /// The §21 probe was explicit about the limit it did not clear: it drove the Node adapter
-    /// bundled with VS Code, while debugging C# there needs a third-party extension that is not
-    /// guaranteed to be installed — and a workspace with no launch configuration cannot start
-    /// anything at all. Both surface at <see cref="StartAsync"/>, as a <c>Failure</c> that says so.
+    /// Debugging C# under VS Code needs a third-party extension that is not guaranteed to be
+    /// installed, and a workspace with no launch configuration cannot start anything at all. Both
+    /// surface at <see cref="StartAsync"/>, as a <c>Failure</c> that says so.
     /// </remarks>
     public bool IsAvailable => declared;
 

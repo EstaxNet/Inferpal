@@ -47,7 +47,7 @@ internal class SearchInFilesTool : ITool
         // Lazy enumeration + the same artefact exclusions as the semantic index: GetFiles used to
         // materialise the whole tree (long seconds on a node project) and happily searched .git/,
         // node_modules/, bin/, obj/ — and the 100-result cap was only checked per FILE, so a
-        // single minified file could add tens of thousands of lines (pre-1.6.0 architecture review).
+        // single minified file could add tens of thousands of lines.
         // ⚠ "No results" is a CONCLUSION the model acts on — it stops looking. A walk that could
         // not start is not that answer, and this catch used to return it anyway.
         var files = WorkspaceScan.EnumerateFiles(path, filePattern, root, out var walkFailed);

@@ -23,10 +23,10 @@ internal sealed record SymbolLocation(string RelPath, int Line, string Snippet)
 /// several candidates</b> and the caller should disambiguate.
 /// </param>
 /// <remarks>
-/// Returning a bare list would hide the one thing that matters: <c>Diagnostics</c> names a class in
-/// the Core *and* two test members here, so "references to Diagnostics" is not a question with one
-/// answer. Answering silently about whichever declaration was scanned first is precisely the
-/// plausible-but-wrong failure that sank the ex-§8 prototype.
+/// A bare list would hide the one thing that matters: <c>Diagnostics</c> names a class in the Core
+/// and two test members here, so "references to Diagnostics" is not a question with one answer.
+/// Answering silently about whichever declaration was scanned first is plausible and wrong, which
+/// is the worst combination.
 /// </remarks>
 internal sealed record ReferenceResult(
     SymbolLocation? Declaration,
@@ -45,26 +45,22 @@ internal sealed record ReferenceResult(
 /// </summary>
 /// <remarks>
 /// <para>
-/// This is the answer to a measured defect, not a hypothesis. Searching this repository for
-/// <c>Handle(</c> returns <b>61</b> occurrences; exactly <b>3</b> of them refer to
-/// <c>TaskCommandHandler.Handle</c>. The analysis tools shipped today (<c>analyze_impact</c>,
-/// <c>rename_symbol</c>, <c>trace_dependency</c>) work on the former number — around 5 % precision
-/// on a name shared by a dozen handlers. It is also what sank the ex-§8 "Next Edit" prototype at
-/// 61 % precision: two homonyms in different scopes are indistinguishable to a regex.
+/// The gap it closes is wide: searching this repository for <c>Handle(</c> returns 61 occurrences,
+/// three of which refer to <c>TaskCommandHandler.Handle</c>. The text-based tools
+/// (<c>analyze_impact</c>, <c>rename_symbol</c>, <c>trace_dependency</c>) work on the first number.
 /// </para>
 /// <para>
 /// <b>No MSBuild.</b> A <see cref="CSharpCompilation"/> is built directly from the parsed files
 /// plus the runtime's reference assemblies — no <c>.csproj</c> parsing, no restore, no
 /// <c>MSBuildLocator</c>, and no extra package (<c>Microsoft.CodeAnalysis.CSharp</c> is already
-/// referenced for RAG chunking). Measured on this repository: 622 ms to parse 408 files, 433 ms to
-/// build the compilation, ~75 MB.
+/// referenced for RAG chunking). On this repository: ~620 ms to parse 408 files, ~430 ms to build
+/// the compilation, ~75 MB.
 /// </para>
 /// <para>
 /// <b>Grep filters, semantics arbitrates.</b> Building a <see cref="SemanticModel"/> for all 408
 /// files costs ~10 s, so a query first discards every file whose text does not contain the symbol
 /// name — a cheap, exact pre-filter, since a reference cannot exist without the name appearing —
-/// and only then resolves the survivors. This inverts today's architecture, where the textual hit
-/// <i>is</i> the answer.
+/// and only then resolves the survivors.
 /// </para>
 /// <para>
 /// <b>Limits, deliberately.</b> Without <c>.csproj</c> there are no conditional-compilation
@@ -113,11 +109,11 @@ internal sealed class CSharpSemanticIndex
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Rebuilding per call costs ~750 ms; keeping one instance costs 4 ms per saved file. The cache
+    /// Rebuilding per call costs ~750 ms; keeping one instance costs ~4 ms per saved file. The cache
     /// is only safe <b>because</b> something invalidates it — <c>ProjectIndexService</c>'s file
-    /// watcher calls <see cref="Update"/> — which is why the two were added together and must stay
-    /// together. A cache without invalidation would answer about code that no longer exists, the
-    /// exact silent wrongness this class exists to remove.
+    /// watcher calls <see cref="Update"/> — so the two belong together. A cache without invalidation
+    /// answers about code that no longer exists, which is the silent wrongness this class exists to
+    /// remove.
     /// </para>
     /// <para>
     /// ⚠ With RAG disabled there is no watcher, so the index would go stale. <see cref="ForWorkspace"/>
@@ -201,11 +197,11 @@ internal sealed class CSharpSemanticIndex
     /// Adds the file when it is new, removes it when it no longer exists on disk.
     /// </summary>
     /// <remarks>
-    /// A full <see cref="Build"/> costs ~755 ms on this repository. Paying that on every save — the
-    /// editor's file watcher fires constantly — would make the index the most expensive thing in
-    /// the process for the sake of one changed file. <see cref="CSharpCompilation"/> is immutable
-    /// and gives <c>ReplaceSyntaxTree</c> exactly for this: the new compilation shares everything
-    /// with the old but one tree.
+    /// A full <see cref="Build"/> costs ~750 ms on this repository. Paying that on every save — the
+    /// editor's file watcher fires constantly — would make the index the most expensive thing in the
+    /// process for one changed file. <see cref="CSharpCompilation"/> is immutable and gives
+    /// <c>ReplaceSyntaxTree</c> exactly for this: the new compilation shares everything with the old
+    /// but one tree.
     /// </remarks>
     /// <returns><c>true</c> when the index changed.</returns>
     public bool Update(string path)
@@ -465,13 +461,12 @@ internal sealed class CSharpSemanticIndex
     /// C# files under <paramref name="root"/>, common exclusions applied.
     /// </summary>
     /// <remarks>
-    /// This used to carry its own four-entry list, matched on <c>\obj\</c> — a <b>backslash</b>.
-    /// The host ships for linux-x64 and darwin-arm64 (VS Code, since 1.5.0), and on those the list
-    /// excluded exactly nothing: the semantic index read <c>bin/</c>, <c>obj/</c>, <c>.git/</c> and
-    /// <c>.inferpal/history/</c> — the last of which holds snapshot COPIES of the user's own
-    /// sources, so "find references" answered with duplicates of an older version of the file the
-    /// user was looking at. <see cref="WorkspaceScan"/> exists because seven copies of this list
-    /// had drifted apart once already; this was the eighth, and it was the same defect.
+    /// This used to carry its own four-entry list, matched on <c>\obj\</c> — a <b>backslash</b>. The
+    /// host also ships for linux-x64 and darwin-arm64, and there the list excluded nothing: the
+    /// semantic index read <c>bin/</c>, <c>obj/</c>, <c>.git/</c> and <c>.inferpal/history/</c> —
+    /// the last of which holds snapshot copies of the user's own sources, so "find references"
+    /// answered with duplicates of an older version of the file in front of them.
+    /// <see cref="WorkspaceScan"/> is the shared answer, and private copies of it drift.
     /// </remarks>
     private static IEnumerable<string> EnumerateCSharpFiles(string root) =>
         WorkspaceScan.EnumerateFiles(root, "*.cs");

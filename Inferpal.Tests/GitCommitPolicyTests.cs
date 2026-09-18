@@ -77,7 +77,7 @@ public class GitCommitPolicyTests
     {
         // Win32/MSVCRT rule: a backslash escapes only when it precedes a quote. A message ending
         // in `bin\` produced `…bin\"` — the closing quote was swallowed and the remaining git
-        // arguments merged into the message (pre-1.6.0 architecture review).
+        // arguments merged into the message.
         Assert.Equal(@"move to bin\\", GitCommitPolicy.EscapeMessage(@"move to bin\"));
         Assert.Equal(@"a\\\\", GitCommitPolicy.EscapeMessage(@"a\\"));
     }

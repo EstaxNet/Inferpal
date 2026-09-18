@@ -75,7 +75,7 @@ public class ApplyEditsToolTests
     public async Task Edit_PreservesBomAndEncoding_OfTheExistingFile()
     {
         // File.WriteAllTextAsync always emits UTF-8 without BOM: a one-line edit used to strip
-        // the BOM VS puts on .cs files and to transcode UTF-16 files outright (revue §1.9).
+        // the BOM VS puts on.cs files and to transcode UTF-16 files outright.
         using var tmp = new TempDir();
         var bomFile  = Path.Combine(tmp.Path, "Bom.cs");
         var utf16    = Path.Combine(tmp.Path, "Wide.cs");

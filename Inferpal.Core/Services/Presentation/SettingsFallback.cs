@@ -6,22 +6,21 @@ namespace Inferpal.Services.Presentation;
 /// <remarks>
 /// <para>
 /// An empty box and an unreadable box do not mean the same thing, and confusing the two costs the
-/// user a value. <b>Empty</b> = they cleared the box, which is the existing affordance for "give
-/// me the default back". <b>Non-empty but unreadable</b> = they typed something that does not
-/// parse — <c>4o</c> for <c>40</c>, a comma where the culture expects a dot — and a typo must not
+/// user a value. <b>Empty</b> = they cleared the box, which is the existing affordance for "give me
+/// the default back". <b>Non-empty but unreadable</b> = they typed something that does not parse —
+/// <c>4o</c> for <c>40</c>, a comma where the culture expects a dot — and a typo must not
 /// <b>destroy</b> a setting.
 /// </para>
 /// <para>
-/// ⚠ Measured in the Visual Studio settings window: the nine unsanitized numeric boxes read
-/// <c>int.TryParse(text, out var v) ? clamp(v) : &lt;factory default&gt;</c>. A single typo
-/// therefore reset that setting to its factory value — <c>AgentMaxIterations</c> from 40 to 20,
-/// <c>RagTopK</c> to 5 — the save reported "settings saved", and the box kept showing what the
-/// user had typed. The VS Code panel had the same class one notch milder: it keeps the previous
-/// value and merely says nothing.
+/// ⚠ The Visual Studio window used to read <c>int.TryParse(text, out var v) ? clamp(v) : factory
+/// default</c> for its nine numeric boxes. A single typo therefore reset that setting to its
+/// factory value, the save reported "settings saved", and the box kept showing what the user had
+/// typed. The VS Code panel had the same class one notch milder: it kept the previous value and
+/// said nothing.
 /// </para>
 /// <para>
-/// The silence was settled separately: <b>we save, and we name the ignored fields</b> — refusing
-/// the whole save would also throw away the other valid edits of the same form.
+/// The silence is settled separately: <b>we save, and we name the ignored fields</b> — refusing the
+/// whole save would also throw away the other valid edits of the same form.
 /// <see cref="WasIgnored"/> decides what gets named, and both panels render the same sentence
 /// (<c>Strings.SettingsFieldsIgnored</c>).
 /// </para>
@@ -76,13 +75,11 @@ internal static class SettingsFallback
     /// <paramref name="matched"/> tells the two cases apart, for <see cref="WasIgnored"/>.
     /// </summary>
     /// <remarks>
-    /// ⚠ Same rule as <see cref="For{T}"/>, and it cost more here than on the numeric boxes: the
-    /// three dropdowns of the Visual Studio form resolved <b>by label</b> with a fallback to the
-    /// <b>factory default</b>. An unrecognised label therefore reset the language to "follow Visual
-    /// Studio", the inline mode to "Default" -- and above all the <b>backend</b> to Ollama: the user
-    /// had LM Studio on screen and the product was talking to something else, without a word
-    /// (issue #8 describes exactly that state). The inline mode had been fixed on its own in 1.6.8;
-    /// the other two stayed three lines above and below it.
+    /// ⚠ Same rule as <see cref="For{T}"/>, and it costs more here than on the numeric boxes. The
+    /// Visual Studio form's dropdowns used to resolve <b>by label</b> with a fallback to the
+    /// <b>factory default</b>, so an unrecognised label reset the language to "follow Visual
+    /// Studio", the inline mode to "Default" — and above all the <b>backend</b> to Ollama: the user
+    /// had LM Studio on screen and the product was talking to something else, without a word.
     ///
     /// ⚠ The index comes <b>before</b> the label because translated labels move under the
     /// comparison when the language changes in the same save. Pass <c>-1</c> when the front-end

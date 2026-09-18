@@ -169,7 +169,7 @@ export class HostClient {
 
   /**
    * Spawns the host, wires reverse handlers and performs the `initialize` handshake.
-   * On a bare Linux without libicu the self-contained host FailFasts at boot (§23);
+   * On a bare Linux without libicu the self-contained host FailFasts at boot;
    * that one crash is retried once with .NET's invariant-globalization fallback —
    * degraded collation, but the resx localization survives (fr measured end-to-end) —
    * rather than greeting a fresh install with a dead extension.
@@ -261,7 +261,7 @@ export class HostClient {
 
     // ── Reverse requests (host → editor) ────────────────────────────────────
     // The cancellation token carries the host's $/cancelRequest: a cancelled agent turn must
-    // retire its approval card instead of leaving a ghost the user can still click (§27.5).
+    // retire its approval card instead of leaving a ghost the user can still click.
     conn.onRequest('approval/request', (note: ApprovalNote, token: CancellationToken) =>
       this.delegate.approvalRequest(note, token));
     conn.onRequest('editor/activeDocument', () => this.delegate.activeDocument());
@@ -301,7 +301,7 @@ export class HostClient {
     conn.onNotification('chat/stepPaused', () => this.events.onStepPaused?.());
     conn.onNotification('chat/stepResumed', () => this.events.onStepResumed?.());
     // Dedicated channel: as a `chat/step` status line the notice was wiped by the next
-    // setBusy(false) — a task finishing while the user looked away left no trace (revue §3.6).
+    // setBusy(false) — a task finishing while the user looked away left no trace.
     conn.onNotification('task/finished', (n: TextNote) => this.events.onTaskFinished?.(n.text));
 
     conn.onError((err) => this.options.log?.(`[rpc] error: ${String(err)}`));

@@ -79,12 +79,12 @@ internal static class ChildProcess
     /// <para>
     /// <b>Why one implementation.</b> Seven call sites grew their own copy of "start, drain, wait,
     /// give up", and they did not agree. Two never drained <c>stderr</c> at all — the textbook
-    /// deadlock this repository already paid for once in <see cref="GitProcess"/> on 2026-08-03:
+    /// deadlock this repository already paid for once in <see cref="GitProcess"/>:
     /// a child that fills the stderr buffer blocks writing, therefore never closes stdout,
     /// therefore the read of stdout never completes. Three never killed the process tree on
     /// timeout, so <c>Process.Dispose()</c> left an orphaned <c>dotnet build</c> or
     /// <c>powershell.exe</c> behind. Each copy was a chance to forget one of the two, and the
-    /// forgetting is not hypothetical: it is what the review of 2026-08-07 found still live.
+    /// forgetting is not hypothetical: it is what the review found still live.
     /// </para>
     /// <para>
     /// Both pipes are drained <b>concurrently</b> and with no cancellation of their own: killing

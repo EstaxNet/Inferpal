@@ -14,7 +14,7 @@ namespace Inferpal.GhostText;
 /// <see cref="GhostTextViewListener"/> is the MEF belt-and-braces that always loads with the
 /// first editor. On a machine where BOTH run — the common case — each used to create its own
 /// handler: every failed build was collected twice on the UI thread and the signal file written
-/// twice (pre-1.6.0 architecture review, §27.4). Neither bootstrap can be removed (each is the only one that
+/// twice. Neither bootstrap can be removed (each is the only one that
 /// runs in SOME install world), so they funnel here instead: one handler per devenv, whoever
 /// arrives first.
 /// </para>

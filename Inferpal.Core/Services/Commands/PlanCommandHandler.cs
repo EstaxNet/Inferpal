@@ -116,7 +116,7 @@ internal static class PlanCommandHandler
 
         // A plan named like a sub-command would be unreachable forever: `/plan list` lists, it
         // never opens `list.md`. The Reserved set existed but was enforced nowhere — the promise
-        // in its own doc-comment was false (pre-1.6.0 architecture review). Suffix rather than refuse:
+        // in its own doc-comment was false. Suffix rather than refuse:
         // the save the user asked for still happens, under a name every route can reach.
         if (Reserved.Contains(name)) name += "-plan";
 

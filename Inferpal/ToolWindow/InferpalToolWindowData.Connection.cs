@@ -270,7 +270,7 @@ internal partial class InferpalToolWindowData
 
     /// <summary>Toggles agent step mode (shared by the <c>/agent-step</c> command and the toolbar button).</summary>
     /// <remarks>Commands run OFF the VM context (see SendAsync) — [DataMember] mutations are
-    /// marshalled, like every other property write (pre-1.6.0 architecture review, §2.5).</remarks>
+    /// marshalled, like every other property write.</remarks>
     private async Task ToggleStepModeAsync()
     {
         await RunOnVMContextAsync(() => IsStepMode = !IsStepMode);

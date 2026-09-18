@@ -3,7 +3,7 @@
 /// <summary>
 /// Character-count truncation that never cuts a UTF-16 surrogate pair in half. A chunk with an
 /// emoji or astral-plane character exactly at the boundary used to leave a lone surrogate in the
-/// prompt — some JSON serializers replace it, others throw (pre-1.6.0 architecture review).
+/// prompt — some JSON serializers replace it, others throw.
 /// </summary>
 internal static class SafeTruncate
 {

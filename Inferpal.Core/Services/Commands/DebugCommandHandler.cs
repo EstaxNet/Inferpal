@@ -5,8 +5,8 @@ using Inferpal.Services.Debugging;
 namespace Inferpal.Services.Commands;
 
 /// <summary>
-/// Pure logic of <c>/debug</c> — the hypothesis loop of roadmap §21: instead of guessing what the
-/// running program does, set a breakpoint, look, and ask again.
+/// Pure logic of <c>/debug</c> — the hypothesis loop: instead of guessing what the running program
+/// does, set a breakpoint, look, and ask again.
 /// </summary>
 /// <remarks>
 /// <para>

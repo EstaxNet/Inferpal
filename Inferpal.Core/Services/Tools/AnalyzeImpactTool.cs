@@ -65,15 +65,15 @@ internal class AnalyzeImpactTool : ITool
     /// <para>
     /// Everything else in this report is a <b>heuristic</b>: a textual scan that lists files
     /// mentioning a name. On this repository, <c>Handle(</c> appears 61 times and refers to the
-    /// handler asked about 3 of them — about 5 % precision. When the caller names a symbol and the
-    /// file is C#, that question has an exact answer, and giving the heuristic instead would be a
-    /// choice, not a limitation.
+    /// handler asked about in 3 of them. When the caller names a symbol and the file is C#, that
+    /// question has an exact answer, and giving the heuristic instead would be a choice, not a
+    /// limitation.
     /// </para>
     /// <para>
     /// <b>The index is rebuilt on every call</b> (~750 ms here) rather than cached. A cache without
     /// invalidation would serve answers about code that no longer exists — precisely the silent
-    /// wrongness this section exists to remove. Caching belongs with the file-watcher hook, added
-    /// as one coherent step (roadmap §14, decision (a)).
+    /// wrongness this section exists to remove. Caching belongs with the file-watcher hook, as one
+    /// coherent step.
     /// </para>
     /// </remarks>
     private Lsp.ReferenceResult? TryResolveSemantically(
@@ -186,8 +186,7 @@ internal class AnalyzeImpactTool : ITool
             {
                 // Script languages put their exports in ExportedNames, not Types — before this
                 // branch, naming any TS/JS/py symbol made the tool refuse outright instead of
-                // running its heuristic (measured: 10/10 "symbol not found" on the vscode/src
-                // probe set, 2026-08-20). Scope the scan to that name and carry on.
+                // running its heuristic. Scope the scan to that name and carry on.
                 if (api.ExportedNames.Any(n => n.Equals(symbol, StringComparison.OrdinalIgnoreCase)))
                     api = api with { ExportedNames = [symbol!] };
                 else
@@ -205,13 +204,12 @@ internal class AnalyzeImpactTool : ITool
         var (layer1, unreadable1) = await ScanDirectDependantsAsync(api, filePath, allFiles, contentCache, ct);
         coverage = coverage.WithUnreadable(unreadable1);
 
-        // ── 2b. Symbol grain for scripts: importing the file is not using the symbol ──
+        // ── Symbol grain for scripts: importing the file is not using the symbol ──
         // A C# dependant must mention the filtered type (CheckReference requires a match); the
         // script path only required importing the FILE, so a contract file reported every importer
-        // for every symbol — measured P = 0.12-0.38 on protocol.ts/webviewMessages.ts while the
-        // "uses:" mention annotations were 100 % right (docs/probes/semantique-ts, seconde passe).
-        // At the symbol grain only the importers that mention the symbol count; the rest are said
-        // in the report, not silently dropped.
+        // for every symbol, while the "uses:" mention annotations were right. At the symbol grain
+        // only the importers that mention the symbol count; the rest are said in the report, not
+        // silently dropped.
         var symbolScopedScript     = !string.IsNullOrWhiteSpace(symbol) && ext is not ".cs";
         var importersNotMentioning = 0;
         if (symbolScopedScript)
@@ -382,11 +380,11 @@ internal class AnalyzeImpactTool : ITool
     }
 
     // ── Bounded, cached scan regexes ──────────────────────────────────────────
-    // The static patterns of this file are carefully budgeted, but the per-candidate ×
-    // per-type patterns of CheckReference/DetermineKind were built on every call through the
-    // static Regex.IsMatch — no timeout at all, on up to 500 files: the exact "never returns"
-    // failure RegexBudget documents (pre-1.6.0 architecture review). A timeout here surfaces as the
-    // registry's "too pathological to parse" message, by design.
+    // The static patterns of this file are carefully budgeted, but the per-candidate × per-type
+    // patterns of CheckReference/DetermineKind were built on every call through the static
+    // Regex.IsMatch — no timeout at all, on up to 500 files: the exact "never returns" failure
+    // RegexBudget documents. A timeout here surfaces as the registry's "too pathological to parse"
+    // message, by design.
     private static class ScanRegex
     {
         private static readonly object _lock = new();
@@ -493,7 +491,7 @@ internal class AnalyzeImpactTool : ITool
 
             // Route by the layer-1 file's OWN language: running the C# extractor on a .ts file
             // found zero types, so "Layer 2 (0)" was presented as a result when it was a
-            // non-capability (pre-1.6.0 architecture review).
+            // non-capability.
             var depExt = Path.GetExtension(dep.FilePath).ToLowerInvariant();
             var depApi = depExt is ".cs"
                 ? CSharpApiExtractor.Extract(depSource, dep.FilePath)
@@ -700,8 +698,7 @@ internal class AnalyzeImpactTool : ITool
     private static class ScriptApiExtractor
     {
         // interface/type/enum included: TypeScript's most-shared exports ARE its types — without
-        // them, every symbol of a protocol/contract file was invisible to the symbol filter
-        // (measured on vscode/src: protocol.ts and webviewMessages.ts cases, 2026-08-20).
+        // them, every symbol of a protocol/contract file was invisible to the symbol filter.
         private static readonly Regex _jsExport   = new(@"export\s+(?:default\s+)?(?:abstract\s+)?(?:class|function|const|let|var|async\s+function|interface|type|enum|const\s+enum)\s+([\w]+)", RegexOptions.Compiled, RegexBudget.Default);
         private static readonly Regex _pyExport   = new(@"(?m)^(?:def|class)\s+([A-Z][\w]*|[a-z_][\w]*)\s*[:(]", RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
         private static readonly Regex _goExport   = new(@"func\s+(?:\([^)]+\)\s+)?([\w]+)\s*\(",                  RegexOptions.Compiled, RegexBudget.Default);

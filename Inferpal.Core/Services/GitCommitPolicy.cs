@@ -55,7 +55,7 @@ internal static class GitCommitPolicy
     /// quote, so every backslash in front of an inserted <c>\"</c> — or at the END of the message,
     /// where the closing quote follows — must itself be doubled. Without it, a message ending in
     /// <c>bin\</c> produced <c>…bin\"</c>: the quote was swallowed and the remaining arguments
-    /// merged into the message (pre-1.6.0 architecture review).</remarks>
+    /// merged into the message.</remarks>
     public static string EscapeMessage(string message)
     {
         var m  = message.Trim();

@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// /arena (ROADMAP 1.3.0 §6): pair resolution (auto chat-vs-utility, explicit, fallback to another
+// /arena: pair resolution (auto chat-vs-utility, explicit, fallback to another
 // installed model), blind A/B shuffle, vote recording + reveal, standings formatting and store
 // round-trip. All ArenaStore-touching tests live in this single class: _fileOverride is a static
 // global, and xUnit parallelises across classes, not within one.

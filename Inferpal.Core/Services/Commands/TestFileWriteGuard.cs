@@ -52,7 +52,7 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
                     segment.Equals("tests", StringComparison.OrdinalIgnoreCase) ||
                     segment.Equals("__tests__", StringComparison.OrdinalIgnoreCase) ||
                     // .NET convention "<Project>.Tests" — the test directory of THIS very repo was
-                    // under the radar (pre-1.6.0 architecture review): any file in such a folder is test
+                    // under the radar: any file in such a folder is test
                     // collateral (fixtures, fakes), exactly what the loop likes to bend.
                     segment.EndsWith(".tests", StringComparison.OrdinalIgnoreCase) ||
                     segment.EndsWith(".test", StringComparison.OrdinalIgnoreCase))

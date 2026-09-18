@@ -54,7 +54,7 @@ internal class GetGitStatusTool : ITool
 
         // Same confinement contract as every other path-taking tool: this was the one tool that
         // took the model's raw path and would read the git status of any repository on the
-        // machine (pre-1.6.0 architecture review, §1.10). Read-only, but outside the advertised boundary.
+        // machine. Read-only, but outside the advertised boundary.
         if (startPath is not null)
         {
             var workspace = _getRoot();
@@ -181,7 +181,7 @@ internal class GetGitStatusTool : ITool
     /// stderr, so a repository chatty enough to fill that buffer deadlocked git (it blocks writing,
     /// never closes stdout, and the read of stdout never returns) until the 15 s budget expired,
     /// after which the catch-all reported "no changes". That is the exact defect
-    /// <see cref="GitProcess"/> was fixed for on 2026-08-03; the copy kept it. Found by the review
+    /// <see cref="GitProcess"/> was fixed for; the copy kept it. Found by the review
     /// of 2026-08-07.
     /// </remarks>
     /// <remarks>
@@ -189,8 +189,8 @@ internal class GetGitStatusTool : ITool
     /// and it had drifted: it never drained stderr, so a repository chatty enough to fill that
     /// buffer deadlocked git (it blocks writing, never closes stdout, and the read of stdout never
     /// returns) until the 15 s budget expired, after which the catch-all reported "no changes".
-    /// That is the exact defect <see cref="GitProcess"/> was fixed for on 2026-08-03; the copy kept
-    /// it. Found by the review of 2026-08-07.
+    /// That is the exact defect <see cref="GitProcess"/> was fixed for; the copy kept
+    /// it. Found by the review.
     /// </remarks>
     private static async Task<GitAnswer> GitAsync(string arguments, string workDir, CancellationToken ct)
     {

@@ -454,7 +454,7 @@ function renderApprovalMessage(message: string): HTMLElement {
   return pre;
 }
 
-// Cards still awaiting an answer, by id — so a host-side cancellation can retire its card (§27.5).
+// Cards still awaiting an answer, by id — so a host-side cancellation can retire its card.
 const approvalCards = new Map<number, HTMLElement>();
 
 function addApprovalCard(id: number, message: string): void {
@@ -1127,7 +1127,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'assistant':
       // Out-of-turn assistant bubble (e.g. a background /task finishing) — persistent, unlike a
-      // status line the next setBusy wipes (pre-1.6.0 architecture review, §3.6).
+      // status line the next setBusy wipes.
       addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp });
       break;
     case 'tool':

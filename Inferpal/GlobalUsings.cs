@@ -1,7 +1,6 @@
-// Sous-namespaces de Services/ réorganisés par responsabilité (juin 2026).
-// Exposés globalement pour éviter d'ajouter un `using` par fichier consommateur :
-// les types vivaient tous dans Inferpal.Services (un seul namespace), donc aucun
-// conflit de nom ne peut apparaître en les répartissant.
+// Sub-namespaces of Services/, split by responsibility. Exposed globally to avoid adding a `using`
+// per consuming file: the types all lived in Inferpal.Services, a single namespace, so splitting
+// them up cannot create a name conflict.
 global using Inferpal.Services.Inference;
 global using Inferpal.Services.Agent;
 global using Inferpal.Services.Execution;

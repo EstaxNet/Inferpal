@@ -390,7 +390,7 @@ export interface DebugStartDto {
   failure: string | null;
 }
 
-/** `debug/captureTest` (§25): launch the repro runner under coreclr and capture the failure. */
+/** `debug/captureTest`: launch the repro runner under coreclr and capture the failure. */
 export interface DebugCaptureTestParams {
   program: string;
   args: string[];

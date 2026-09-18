@@ -11,27 +11,27 @@ using Task = System.Threading.Tasks.Task;
 namespace Inferpal.GhostText;
 
 /// <summary>
-/// Serves the out-of-process host's debugger commands by driving EnvDTE automation
-/// from inside devenv. The mirror image of <see cref="VsDebuggerTracker"/>, which publishes break
-/// snapshots outwards: this one takes requests inwards, over
+/// Serves the out-of-process host's debugger commands by driving EnvDTE automation from inside
+/// devenv. The mirror image of <see cref="VsDebuggerTracker"/>, which publishes break snapshots
+/// outwards: this one takes requests inwards, over
 /// <see cref="Services.Signals.DebugCommandSignal"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Why this class exists in-process at all.</b> The §21 probe established that the
-/// out-of-process debugger API is not the channel — the automation object lives here, so the
-/// driver does too. No new transport was invented: this is the same file-signal family already
-/// carrying build results, the active solution and inline-diff previews.
+/// <b>Why this lives in-process at all.</b> The out-of-process debugger API is not the channel —
+/// the automation object lives here, so the driver does too. No new transport was invented: this is
+/// the same file-signal family already carrying build results, the active solution and inline-diff
+/// previews.
 /// </para>
 /// <para>
-/// <b>Waiting for a stop is a transition, never a state.</b> The probe recorded a resume answering
-/// "break reached" in 0,15 s — fast enough that a check on <i>being</i> in break mode would have
-/// validated a resume that had not happened. Every wait below therefore keys on the mode-change
-/// counter bumped by <see cref="IVsDebuggerEvents.OnModeChange"/>, not on the current mode.
+/// <b>Waiting for a stop is a transition, never a state.</b> A resume can answer "break reached" in
+/// a fraction of a second, fast enough that a check on <i>being</i> in break mode would validate a
+/// resume that had not happened. Every wait below therefore keys on the mode-change counter bumped
+/// by <see cref="IVsDebuggerEvents.OnModeChange"/>, not on the current mode.
 /// </para>
 /// <para>
-/// EnvDTE is UI-thread-only, while waiting for the program to run must not occupy that thread —
-/// so each automation call is a short hop onto the main thread and every wait happens off it.
+/// EnvDTE is UI-thread-only, while waiting for the program to run must not occupy that thread — so
+/// each automation call is a short hop onto the main thread and every wait happens off it.
 /// </para>
 /// </remarks>
 internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
@@ -163,14 +163,13 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                     return new(request.Id, Ok: false,
                         Error: "A debugging session is already running — continue or stop it first.");
 
-                // Built explicitly first, and the launch is abandoned when it fails. Measured
-                // before being written (probe 3, 2026-08-06): `Debug.Start` on a solution that does
-                // not compile opens a modal — "There were build errors. Would you like to continue
-                // and run the last successful build?" — 2 s later, and it sits on
+                // Built explicitly first, and the launch is abandoned when it fails. `Debug.Start`
+                // on a solution that does not compile opens a modal — "There were build errors.
+                // Would you like to continue and run the last successful build?" — and it sits on
                 // the UI thread until a human answers. Every later request would then block on its
                 // hop to that thread: the whole driver stops, not just this call. Building through
-                // the automation instead reports the same failure in 0,34 s with no dialog at all.
-                // The host's start budget covers the build too: measured from here, not after it.
+                // the automation instead reports the same failure with no dialog at all. The host's
+                // start budget covers the build too: it is measured from here, not after it.
                 var launchDeadline = NowMs() + (long)DebugOps.StartBudget.TotalMilliseconds;
                 var failure = await BuildBeforeLaunchAsync(ct);
                 if (failure is not null) return new(request.Id, Ok: false, Error: failure);
@@ -241,13 +240,12 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
     /// <remarks>
     /// <para>
     /// <b>Asynchronous on purpose.</b> <c>Build(true)</c> would hold the UI thread for the whole
-    /// build — minutes on a real solution, with a frozen IDE — so the build is started and its
-    /// state polled instead. Each poll is a short hop onto the UI thread to read a property, never
-    /// a wait held there.
+    /// build — minutes on a real solution, with a frozen IDE — so the build is started and its state
+    /// polled instead. Each poll is a short hop onto the UI thread to read a property, never a wait
+    /// held there.
     /// </para>
     /// <para>
-    /// <c>LastBuildInfo</c> is the number of projects that failed. Measured, not assumed: 1 on the
-    /// probe's deliberately broken solution.
+    /// <c>LastBuildInfo</c> is the number of projects that failed.
     /// </para>
     /// </remarks>
     private async Task<string?> BuildBeforeLaunchAsync(CancellationToken ct)
@@ -321,8 +319,8 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         switch (op)
         {
             // F5, both times. In design mode it builds and launches; in break mode it continues —
-            // which is what F5 does. Debugger.Go() is avoided on purpose: the §21 probe recorded it
-            // failing where ExecuteCommand succeeded.
+            // which is what F5 does. Debugger.Go() is avoided on purpose: it fails where
+            // ExecuteCommand succeeds.
             case DebugOps.Start:
             case DebugOps.Continue: _dte.ExecuteCommand("Debug.Start"); break;
             case DebugOps.StepOver: _dte.Debugger.StepOver(false);      break;
@@ -370,15 +368,13 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         return null;
     }
 
-    // ── §25: capture one failing test under the debugger ─────────────────────────────
+    // ── Capture one failing test under the debugger ──────────────────────────────────
 
     /// <summary>
-    /// Launches the repro runner in wait-for-debugger mode, attaches through
-    /// <c>LocalProcesses</c>, waits for the unhandled-exception break at the original throw site
-    /// (the runner invokes with <c>DoNotWrapExceptions</c>) and snapshots it. Every step was
-    /// probed before being written (2026-08-20, <c>docs/probes/tdd-debug-launch/</c>): attach
-    /// ~2 s, break ~3 s — and the current frame is <b>empty at the break signal</b>, so the
-    /// snapshot retries until the stack settles.
+    /// Launches the repro runner in wait-for-debugger mode, attaches through <c>LocalProcesses</c>,
+    /// waits for the unhandled-exception break at the original throw site (the runner invokes with
+    /// <c>DoNotWrapExceptions</c>) and snapshots it. The current frame is <b>empty at the break
+    /// signal</b>, so the snapshot retries until the stack settles.
     /// </summary>
     private async Task<DebugStopState?> CaptureTestAsync(
         Services.Signals.DebugCommandRequest request, CancellationToken ct)
@@ -427,7 +423,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             }
             if (!attached) return null;
 
-            // Only the TRANSITION to break counts (§21 lesson) — attach machinery can flicker.
+            // Only the TRANSITION to break counts — attach machinery can flicker.
             var breakDeadline = NowMs() + 90_000;
             while (NowMs() < breakDeadline)
             {
@@ -468,8 +464,8 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
     }
 
     // ── net472 supplements ──────────────────────────────────────────────────────────
-    // Three modern .NET BCL APIs do not exist on .NET Framework, and this assembly is
-    // en net472 par obligation (devenv est un process Framework — docs/probes/inproc-net8-verdict.md).
+    // Three modern .NET BCL APIs do not exist on .NET Framework, and this assembly has to be
+    // net472 because devenv is a Framework process.
 
     /// <summary>Windows escaping of a command-line argument (replaces ArgumentList).</summary>
     private static string QuoteArg(string value)

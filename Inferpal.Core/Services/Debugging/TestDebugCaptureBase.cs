@@ -3,7 +3,7 @@ using System.IO;
 namespace Inferpal.Services.Debugging;
 
 /// <summary>
-/// Shared half of <see cref="ITestDebugCapture"/> (§25 tranche B): locates the test assembly,
+/// Shared half of <see cref="ITestDebugCapture"/>: locates the test assembly,
 /// makes sure the repro runner exists, and delegates only the debugger drive to the front-end.
 /// Everything above the adapter line is testable without an editor.
 /// </summary>

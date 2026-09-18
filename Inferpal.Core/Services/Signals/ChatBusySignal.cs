@@ -18,9 +18,9 @@ internal sealed record ChatBusyState(
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠ Deliberately <b>machine-wide as a channel</b> (ROADMAP §22, family B): there is one GPU, so a
+/// ⚠ Deliberately <b>machine-wide as a channel</b>: there is one GPU, so a
 /// chat in one editor must silence the ghost-text of every other. But the <em>writing</em> is
-/// per-process (§22 tranche 2, gate G4): each writer owns <c>chat_busy.&lt;pid&gt;.json</c> and
+/// per-process: each writer owns <c>chat_busy.&lt;pid&gt;.json</c> and
 /// <see cref="Clear"/> only ever deletes its own marker. The previous design — one shared file plus
 /// an unconditional <c>Clear()</c> — meant that when two hosts chatted in parallel, the first one to
 /// finish erased the other's marker and FIM resumed against a busy GPU. Shared read, un-shared
@@ -37,7 +37,7 @@ internal sealed record ChatBusyState(
 /// repaired defect.
 /// </para>
 /// <para>
-/// Migration (§22, family-B nuance from the 2026-08-15 review): unlike the family-A identity
+/// Migration: unlike the family-A identity
 /// channels, this is a machine-wide <em>hint</em>, so the legacy unscoped <c>chat_busy.json</c> of
 /// an old-version writer is still <b>read</b> — honouring it keeps FIM quiet during that chat,
 /// which is correct. It is never written to and never deleted: an old-version pair on the same

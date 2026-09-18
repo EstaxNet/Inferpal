@@ -22,7 +22,7 @@ internal static class BuildSignalFile
 {
 
 
-    /// <summary>Full path of the signal file, scoped to the declared VS instance (§22 tranche 2).</summary>
+    /// <summary>Full path of the signal file, scoped to the declared VS instance.</summary>
     internal static string FilePath => SignalFile.ScopedPathFor("build_signal");
 
     // ── In-process side (GhostTextPackage) ────────────────────────────────────

@@ -345,7 +345,7 @@ internal class OllamaClient : InferenceProviderBase
         {
             // Bounded like CheckConnectionAsync: the shared HttpClient has an infinite timeout, so
             // a server that accepts TCP but never answers froze the model dropdowns until the
-            // caller's token fired — if it had one (pre-1.6.0 architecture review).
+            // caller's token fired — if it had one.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
             var base_  = (url ?? _config.BaseUrl).TrimEnd('/');
@@ -415,7 +415,7 @@ internal class OllamaClient : InferenceProviderBase
             while (true)
             {
                 // Per-line inactivity fuse: the pull stream had NO re-arm (unlike SendChatAsync),
-                // so a registry that froze left /models pull suspended forever (revue, lot 4).
+                // so a registry that froze left /models pull suspended forever.
                 // 2 minutes without a single progress line is a dead pull, not a slow one.
                 string? line;
                 using (var lineCts = CancellationTokenSource.CreateLinkedTokenSource(ct))

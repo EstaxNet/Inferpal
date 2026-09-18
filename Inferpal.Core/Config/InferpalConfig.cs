@@ -76,7 +76,7 @@ internal class InferpalConfig
     /// Inline diff preview for in-place code actions (/fix /refactor /doc): the rewrite is shown
     /// as per-hunk ✓/✗ overlays in the editor instead of being applied immediately. Falls back to
     /// the direct apply when no in-process renderer picks the request up. Comfort feature only —
-    /// orthogonal to tool approval, which it never replaces nor bypasses (ROADMAP design rules).
+    /// orthogonal to tool approval, which it never replaces nor bypasses.
     /// </summary>
     [JsonPropertyName("inlineDiffPreviewEnabled")]
     public bool InlineDiffPreviewEnabled { get; set; } = true;

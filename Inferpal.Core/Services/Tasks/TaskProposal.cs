@@ -14,8 +14,7 @@ namespace Inferpal.Services.Tasks;
 internal sealed record TaskProposal(string Tool, string Subject, string Details, DiffInfo? Diff);
 
 /// <summary>
-/// The approval service a background task is given: it <b>records</b> every request and grants
-/// none (roadmap §18, the V2 of §9).
+/// The approval service a background task is given: it <b>records</b> every request and grants none.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -28,11 +27,11 @@ internal sealed record TaskProposal(string Tool, string Subject, string Details,
 /// </para>
 /// <para>
 /// <b>It always returns <c>false</c>, and that is the whole safety argument.</b> Every mutating tool
-/// treats a refused approval as "do not touch anything" — no write, no snapshot, no side effect —
-/// so a task running against this service cannot modify the workspace even if the model insists.
-/// The §9 rule stands untouched: consenting to a task at submission is not consenting to writes
-/// nobody can see yet, so nothing is approved here, ever. The diffs are shown <b>when the report
-/// comes back</b>, and each one is then applied through the ordinary prompt.
+/// treats a refused approval as "do not touch anything" — no write, no snapshot, no side effect — so
+/// a task running against this service cannot modify the workspace even if the model insists.
+/// Consenting to a task at submission is not consenting to writes nobody can see yet, so nothing is
+/// approved here, ever. The diffs are shown <b>when the report comes back</b>, and each one is then
+/// applied through the ordinary prompt.
 /// </para>
 /// <para>
 /// ⚠ <b>Not a security boundary — a recorder.</b> It is handed to a registry that only exposes file
@@ -189,7 +188,7 @@ internal static class TaskProposalApplication
     /// <param name="beginRun">
     /// Opens a change-tracking run around the write, exactly as a chat turn does. Without it the
     /// snapshot is taken but attaches to no run, so <c>/undo-run</c> answers "nothing to undo" while
-    /// the message promises the opposite — verified live on 2026-08-03, and the promise was the part
+    /// the message promises the opposite — verified live, and the promise was the part
     /// that was wrong.
     /// </param>
     /// <remarks>

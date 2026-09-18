@@ -27,7 +27,7 @@ internal class FetchUrlTool : ITool
         {
             Timeout = TimeSpan.FromSeconds(30),
             // The whole body was downloaded before the character-level truncation: a multi-GB
-            // response was pulled entirely into memory first (pre-1.6.0 architecture review).
+            // response was pulled entirely into memory first.
             MaxResponseContentBufferSize = 8 * 1024 * 1024,
         };
         client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
@@ -83,7 +83,7 @@ internal class FetchUrlTool : ITool
             // ⚠ Best-effort, not a closed gap: the actual GET below resolves DNS again on its own,
             // so a TTL≈0 attacker can answer public here and private there (classic rebinding).
             // Pinning the validated IP via ConnectCallback would close it; today the approval
-            // prompt upstream is the real boundary (pre-1.6.0 architecture review — comment honesty).
+            // prompt upstream is the real boundary.
             if (IsPrivateOrLoopback(current) || await ResolvesToPrivateAsync(current, ct))
                 throw new ArgumentException(
                     hop == 0

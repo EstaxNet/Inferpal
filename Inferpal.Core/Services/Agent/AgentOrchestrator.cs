@@ -841,7 +841,7 @@ internal sealed class AgentOrchestrator
                     // RemoveAt, NOT Remove(assistantMsg): ChatMessageDto is a record, so Remove
                     // uses VALUE equality and strips the FIRST equal occurrence — after a plan
                     // fallback also produced an empty assistant, a double stall corrupted the plan
-                    // trio instead of dropping this turn (pre-1.6.0 architecture review, §2.9). The empty turn
+                    // trio instead of dropping this turn. The empty turn
                     // was appended just above; it is by construction the last element.
                     messages.RemoveAt(messages.Count - 1);
                     onStreamReset?.Invoke();

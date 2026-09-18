@@ -29,7 +29,7 @@ public class OpenDocumentOverlayTests
         Assert.Equal("content", text);
 
         // Case-folding follows the file system: on Linux a.cs and A.CS are two distinct
-        // files, and the overlay must NOT hand one buffer out for the other (§23).
+        // files, and the overlay must NOT hand one buffer out for the other.
         Assert.Equal(!OperatingSystem.IsLinux(),
                      overlay.TryGet(TestPaths.P(@"C:\proj\a.cs"), out _));
     }

@@ -222,7 +222,7 @@ internal static class DiagnosticsCommandHandler
     /// credential-shaped runs.
     /// </summary>
     /// <remarks>
-    /// The second arrived on 2026-09-09 and had been missing from the start: this bundle redacted
+    /// The second arrived and had been missing from the start: this bundle redacted
     /// the config API key -- the place a secret is EXPECTED -- and exported the ring verbatim, which
     /// is where one actually shows up. <c>Permission</c> entries carry the <b>raw command line</b>
     /// the model wrote (the force-prompt branch fires precisely on the opaque ones);

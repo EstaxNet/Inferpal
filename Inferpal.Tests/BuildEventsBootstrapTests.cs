@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// §27.4 (pre-1.6.0 architecture review): two independent bootstraps — GhostTextPackage (registry-loaded) and
+// §27.4: two independent bootstraps — GhostTextPackage (registry-loaded) and
 // GhostTextViewListener (MEF, first editor) — used to each create their own VsBuildEventHandler:
 // every failed build was collected twice on the UI thread and the signal file written twice.
 // Neither bootstrap can be removed (each is the only one that runs in SOME install world), so

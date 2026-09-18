@@ -148,14 +148,12 @@ internal class RunTestsTool : ITool
     /// Deliberately carries no <c>✓</c>. <see cref="Commands.TddCommandHandler.TestsPassed"/> reads
     /// a leading <c>✓</c> as green, so this line keeps the loop running instead of letting it
     /// announce a victory nobody measured — same tactic as the "no test matched the filter"
-    /// message, and same lesson: <b>never infer green from an exit code alone</b>.
+    /// message, and same rule: <b>never infer green from an exit code alone</b>.
     /// </para>
     /// <para>
-    /// The 1.5.2 patch closed one named instance of this (a vstest filter matching zero tests) and
-    /// left the general fallback in place in all four parsers. It is the same defect: a runner
-    /// whose summary format moves — which is exactly what vstest did between SDK 8 and 9 — turns
-    /// every red run green, in silence. The raw output still follows, which is what the model
-    /// actually reads.
+    /// A runner whose summary format moves — which is exactly what vstest did between SDK 8 and 9 —
+    /// would otherwise turn every red run green, in silence. The raw output still follows, which is
+    /// what the model actually reads.
     /// </para>
     /// </remarks>
     internal const string NothingProven =
@@ -191,9 +189,9 @@ internal class RunTestsTool : ITool
             totalTotal   += int.Parse(m.Groups[4].Value);
         }
 
-        // Modern vstest (SDK 9/10) prints a multi-line block instead — the single-line format
-        // above never matches there, so every run fell through to "no summary line detected"
-        // (green) or the raw dump (red). Found by an internal measurement campaign, 2026-08-20:
+        // Modern vstest (SDK 9/10) prints a multi-line block instead — the single-line format above
+        // never matches there, so every run fell through to "no summary line detected" (green) or
+        // the raw dump (red):
         //   Test Run Successful.
         //   Total tests: 16
         //        Passed: 16
@@ -217,11 +215,11 @@ internal class RunTestsTool : ITool
             var status = totalFailed == 0 ? "✓ PASSED" : "✗ FAILED";
             sb.AppendLine($"{status} — Failed: {totalFailed}, Passed: {totalPassed}, Skipped: {totalSkipped}, Total: {totalTotal}");
         }
-        // A filter matching zero tests exits 0 and used to read as a pass — so an agent that
-        // renamed or deleted the failing test made `/tdd` declare victory on a run where nothing
-        // ran (found by an internal measurement campaign, 2026-08-20). The vstest message is reliably English
-        // here because this tool forces the child's UI language. No ✓/✗ prefix on purpose:
-        // callers' verdict parsing reads it as not-green and the loop keeps working.
+        // A filter matching zero tests exits 0 and used to read as a pass — so an agent that renamed
+        // or deleted the failing test made `/tdd` declare victory on a run where nothing ran. The
+        // vstest message is reliably English here because this tool forces the child's UI language.
+        // No ✓/✗ prefix on purpose: callers' verdict parsing reads it as not-green and the loop
+        // keeps working.
         else if (raw.Contains("No test matches the given testcase filter", StringComparison.Ordinal))
         {
             sb.AppendLine(NoTestMatchedFilter);
@@ -486,8 +484,8 @@ internal class RunTestsTool : ITool
             // The dotnet/vstest summary lines this tool parses ("Passed! - Failed: …",
             // "Failed X [10 ms]", "Error Message:") are localized by the SDK: on a French machine
             // every red run fell through to the raw-log fallback — a truncated MSBuild wall instead
-            // of test names and assert messages (found by an internal measurement campaign, 2026-08-20). Forcing
-            // the child's UI language keeps the parser input deterministic on every locale.
+            // of test names and assert messages. Forcing the child's UI language keeps the parser
+            // input deterministic on every locale.
             psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
             psi.EnvironmentVariables["VSLANG"]                 = "1033";
 

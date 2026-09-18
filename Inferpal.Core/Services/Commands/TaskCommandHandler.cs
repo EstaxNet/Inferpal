@@ -34,7 +34,7 @@ internal static class TaskCommandHandler
 
         // Keyword sub-commands only bind in their exact shape: "/task clear the build warnings"
         // used to ERASE the finished reports instead of submitting the objective, and
-        // "/task list all TODO comments" listed (pre-1.6.0 architecture review, §3.7). A keyword followed by
+        // "/task list all TODO comments" listed. A keyword followed by
         // free text falls through to submission, same prudence the id-lookup below already has.
         if (args.Length == 0 || (args.Length == 1 && IsWord(args[0], "list")))
             return new(RenderList(queue));

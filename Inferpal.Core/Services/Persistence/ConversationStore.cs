@@ -75,7 +75,7 @@ internal class ConversationStore
         // the interrupted save would be of the conversation the user is keeping. Via AtomicFile,
         // NOT a hand-rolled fixed ".tmp": both front-ends share %AppData% and auto-save
         // last_session.json every turn, and a fixed staging name turns those concurrent writers
-        // into a collision (pre-1.6.0 architecture review, §1.7 — the exact bug AtomicFile documents).
+        // into a collision.
         await AtomicFile.WriteAllTextAsync(file, JsonSerializer.Serialize(payload, _opts), ct);
     }
 

@@ -38,7 +38,7 @@ internal sealed record BranchPlan(
     int                ForkTurn);
 
 /// <summary>
-/// Pure conversation-branching logic (ROADMAP 1.4.0 §7): turn splitting, truncation, branch
+/// Pure conversation-branching logic: turn splitting, truncation, branch
 /// naming and the markdown views. Sessions stay plain files — a branch is a normal session
 /// carrying two extra fields (<c>parent</c>, <c>fork_turn</c>), so nothing else in the store,
 /// the history rebuild or the UI has to know about branching.

@@ -800,7 +800,7 @@ internal sealed partial class HostServer : IDisposable
 
         // Slot-held, not merely idle-checked: a settings save (or onDidChangeConfiguration) used
         // to mutate the shared Config the agent loop reads and replace the History it appends to,
-        // mid-run (pre-1.6.0 architecture review, §2.6).
+        // mid-run.
         await WithTurnSlotAsync("config/update", ct, async _ =>
         {
             var mcpBefore  = (s.Config.McpEnabled, s.Config.McpServersJson);
@@ -900,7 +900,7 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("session/load", UseSingleObjectParameterDeserialization = true)]
     public Task<SessionLoadResult?> SessionLoadAsync(SessionRefParams p, CancellationToken ct) =>
         // Slot held across the await: the old entry-check let a chat/send slip in while the store
-        // was loading, then the history swap landed under the running loop (revue §2.6, TOCTOU).
+        // was loading, then the history swap landed under the running loop.
         WithTurnSlotAsync<SessionLoadResult?>("session/load", ct, async token =>
         {
             var s    = Session();
@@ -931,7 +931,7 @@ internal sealed partial class HostServer : IDisposable
     /// </summary>
     [JsonRpcMethod("session/branch", UseSingleObjectParameterDeserialization = true)]
     public Task<SessionBranchResult?> SessionBranchAsync(SessionBranchParams p, CancellationToken ct) =>
-        // Slot held across the awaits — same TOCTOU as session/load (revue §2.6).
+        // Slot held across the awaits — same TOCTOU as session/load.
         WithTurnSlotAsync<SessionBranchResult?>("session/branch", ct, async token =>
         {
             var s        = Session();
@@ -1013,7 +1013,7 @@ internal sealed partial class HostServer : IDisposable
     {
         var s = Session();
         // Slot-held: this rewrites History[0] — under a running loop that is the same race as
-        // chat/reset (revue §2.6).
+        // chat/reset.
         return WithTurnSlotFunc("xray/toggle", () =>
         {
             if (p.Enabled) s.XrayDisabledSections.Remove(p.Id);
@@ -1086,7 +1086,7 @@ internal sealed partial class HostServer : IDisposable
     /// Runs a History/Config mutation while <b>holding</b> the turn slot. The predecessor
     /// (`AssertIdle`) merely tested the slot at entry — a check-then-act: a `chat/send` arriving
     /// during the operation's awaits slipped in and raced the very mutation the check existed to
-    /// prevent (pre-1.6.0 architecture review, §2.6). Taking the slot makes the exclusion symmetric: the
+    /// prevent. Taking the slot makes the exclusion symmetric: the
     /// mutation excludes a turn exactly as a turn excludes the mutation.
     /// </summary>
     private void WithTurnSlot(string operation, Action body)
@@ -1145,7 +1145,7 @@ internal sealed partial class HostServer : IDisposable
 
             // Parity with the VS VM: the adapter names the files it inlined as attachments so a
             // chunk of an attached file is not injected a second time — this set used to be
-            // hard-coded empty (pre-1.6.0 architecture review). Resolved to full paths, the grain the
+            // hard-coded empty. Resolved to full paths, the grain the
             // chunks carry.
             var attached = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (attachedPaths is { Count: > 0 } && !string.IsNullOrEmpty(s.RootDir))
@@ -1209,7 +1209,7 @@ internal sealed partial class HostServer : IDisposable
 
     /// <summary>Bounded defensive copy of the history: `xray/panel` is a read the webview can ask
     /// for mid-stream (its button is not gated on busy), and enumerating the List the agent loop
-    /// is appending to throws (pre-1.6.0 architecture review, §2.6). A handful of retries always wins — the
+    /// is appending to throws. A handful of retries always wins — the
     /// loop appends in bursts, it does not spin.</summary>
     private static List<ChatMessageDto> SnapshotHistory(HostSession s)
     {

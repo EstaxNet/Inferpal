@@ -66,7 +66,7 @@ internal static class Diagnostics
                 if (frames.Count == 3) break;
             }
             // ⚠ TargetSite both as a fallback AND at the front: the JIT inlines, and a Release
-            // stack may no longer carry the frame that threw. Measured in the field on 2026-09-12 -
+            // stack may no longer carry the frame that threw. Measured in the field -
             // the SAME failure produced two different stacks, depending on tier-0 vs tier-1.
             var thrower = Site(ex);
             if (thrower.Length > 0 && (frames.Count == 0 || frames[0] != thrower))
@@ -321,7 +321,7 @@ internal static class Diagnostics
     }
 
     /// <summary>Cap on the opt-in log file. A forgotten `/diagnostics on` must not grow without
-    /// bound (pre-1.6.0 architecture review); past the cap the file restarts with a marker rather than
+    /// bound; past the cap the file restarts with a marker rather than
     /// silently dropping new lines — the RECENT entries are the ones a bug report needs.</summary>
     private const long MaxLogBytes = 5 * 1024 * 1024;
 

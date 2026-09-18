@@ -439,7 +439,7 @@ internal partial class InferpalToolWindowData
         {
             // Snapshot the layered system prompt at start time, as a chat turn would — read on
             // the VM context: _history is replaced wholesale there (ClearAsync/restore), and this
-            // runner is a background thread (pre-1.6.0 architecture review).
+            // runner is a background thread.
             string? systemPrompt = null;
             await RunOnVMContextAsync(() =>
                 systemPrompt = _history.Count > 0 && _history[0].Role == "system"

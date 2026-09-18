@@ -10,19 +10,16 @@ namespace Inferpal.Services.Commands;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠ <b>Pourquoi cette commande existe</b> (mesure du 2026-09-10). Des quatre artefacts de
-/// gouvernance commitables, <c>.inferpal/permissions.json</c> était le seul sans surface de
-/// listing : <c>/rules</c>, <c>/checks</c> et <c>/prompts</c> en ont une, et c'est le seul des
-/// quatre qui <b>restreint</b> au lieu de conseiller. Or il peut cesser d'appliquer TOUTES ses
-/// règles en silence — JSON invalide, tableau <c>rules</c> absent, ligne malformée — et le seul
-/// canal qui le disait était <c>/diagnostics</c>, dont l'arbitrage de Dams du 2026-09-06 a établi
-/// qu'il ne suffit pas : « personne n'ouvre /diagnostics après avoir écrit une règle qu'il croit
-/// avoir posée ».
+/// Of the four committable governance files, <c>.inferpal/permissions.json</c> is the only one that
+/// restricts rather than advises, and it was the only one with no listing surface. It can also stop
+/// applying all of its rules in silence — invalid JSON, missing <c>rules</c> array, malformed line —
+/// and the only channel that said so was <c>/diagnostics</c>, which nobody opens after writing a
+/// rule they believe they have set.
 /// </para>
 /// <para>
-/// L'ordre affiché est l'ordre d'ÉVALUATION (<see cref="PermissionPolicy.Compose"/>) : overlay
-/// d'abord, config machine ensuite, premier match gagnant. Le montrer autrement serait un rapport
-/// juste sur le contenu et faux sur l'effet.
+/// The order displayed is the evaluation order (<see cref="PermissionPolicy.Compose"/>): overlay
+/// first, machine config next, first match wins. Showing it any other way would be a report that is
+/// right about the content and wrong about the effect.
 /// </para>
 /// </remarks>
 internal static class PermissionsCommandHandler
@@ -58,8 +55,8 @@ internal static class PermissionsCommandHandler
             {
                 var report = PermissionPolicy.ReadOverlay(json);
 
-                // ⚠ L'état qui a motivé la commande passe EN PREMIER et il est nommé : le fichier
-                // est là, l'utilisateur l'a écrit, et rien de ce qu'il contient ne s'applique.
+                // ⚠ The state that motivated this command comes first, and it is named: the file is
+                // there, the user wrote it, and nothing in it applies.
                 if (report.Unusable)
                     sb.Append('\n').Append(Strings.PermissionsOverlayUnusable);
 
@@ -69,9 +66,9 @@ internal static class PermissionsCommandHandler
                 if (report.Rules.Count == 0 && !report.Unusable)
                     sb.Append('\n').Append(Strings.PermissionsOverlayEmpty);
 
-                // Deux issues distinctes, parce qu'elles ne se réparent pas au même endroit : une
-                // ligne malformée est un défaut à corriger, une règle `allow` écartée est le
-                // contrat de l'overlay (deny-only) et ne demande rien à personne.
+                // Two distinct outcomes, because they are not fixed in the same place: a malformed
+                // line is a defect to correct, while an `allow` rule set aside is the overlay's
+                // contract (deny-only) and asks nothing of anyone.
                 if (report.Malformed > 0)
                     sb.Append('\n').Append(Strings.PermissionsOverlayMalformed(report.Malformed));
                 if (report.AllowIgnored > 0)
@@ -89,8 +86,8 @@ internal static class PermissionsCommandHandler
                 sb.Append("\n- `").Append(r.Decision == PermissionDecision.Allow ? "allow" : "deny")
                   .Append(' ').Append(r.Tool).Append(' ').Append(r.Pattern).Append('`');
 
-        // Même raison que pour l'overlay : une ligne écartée est une règle que l'utilisateur croit
-        // avoir posée, et le réglage n'a pas de place pour le dire ligne par ligne.
+        // Same reason as for the overlay: a discarded line is a rule the user believes they have
+        // set, and the setting has no room to say so line by line.
         if (dropped.Count > 0)
             sb.Append('\n').Append(Strings.PermissionsConfigDropped(dropped.Count));
 
@@ -105,8 +102,8 @@ internal static class PermissionsCommandHandler
         try { return File.Exists(path) ? File.ReadAllText(path) : null; }
         catch (Exception ex)
         {
-            // Lire a échoué alors que le fichier est là : ne pas rendre `null`, qui se lirait
-            // « aucun overlay » — la panne exacte que cette commande existe pour montrer.
+            // Reading failed although the file is there: do not return `null`, which would read as
+            // "no overlay" — the exact failure this command exists to show.
             Diagnostics.Swallow("PermissionsCommandHandler.ReadOverlay", ex);
             return "{}";
         }

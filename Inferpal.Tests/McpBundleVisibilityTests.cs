@@ -5,7 +5,7 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// A declared MCP server that fails to start left <b>no</b> readable trace (measured 2026-09-10):
+/// A declared MCP server that fails to start left <b>no</b> readable trace:
 /// the error was filed in <c>McpServerStatus.Error</c> and read by the Visual Studio settings window
 /// alone. In VS Code — no panel, no diagnostic entry, no message — the user simply saw their tools
 /// missing. And the support bundle, the only artifact a maintainer ever receives, carried nothing

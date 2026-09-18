@@ -85,7 +85,7 @@ public class SignalDebugSessionTests : IDisposable
                     var request = DebugCommandSignal.ClaimRequest();
                     // ⚠ WAIT ON THE TOKEN, do not sleep: a bare Thread.Sleep cannot be interrupted,
                     // so a previous test's loop outlives its Dispose and claims the next test's
-                    // request - they share the signal redirection. Measured on 2026-09-12:
+                    // request - they share the signal redirection.
                     // TwoConcurrentCalls saw ONE operation instead of two.
                     if (request is null) { token.WaitHandle.WaitOne(15); continue; }
 

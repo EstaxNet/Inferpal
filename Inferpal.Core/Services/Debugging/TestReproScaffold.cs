@@ -208,8 +208,8 @@ internal static class TestReproScaffold
                 return null;
             }
 
-            // Même contrôle qu'à l'entrée : l'autre hôte a pu être tué en cours de build, et son
-            // reliquat est alors exactement le fichier qu'on refuse de servir.
+            // Same check as on entry: the other host may have been killed mid-build, and its
+            // leftover is then exactly the file we refuse to serve.
             if (LooksLikeAssembly(dll)) return dll; // the other host built it while we waited
 
             await File.WriteAllTextAsync(Path.Combine(dir, "InferpalTestRepro.csproj"), ProjectFile, ct);
@@ -230,11 +230,10 @@ internal static class TestReproScaffold
             {
                 Diagnostics.Swallow("TestReproScaffold.Build",
                     new InvalidOperationException($"exit {run.ExitCode}: {Truncate(run.Combined)}"));
-                // Ne pas laisser derrière soi ce qu'on vient de refuser : sans ça, un build
-                // interrompu redevient le cache d'entrée du prochain appel. ⚠ Le dossier de
-                // SORTIE, pas le dossier de hash : ce dernier porte `.build.lock`, encore ouvert
-                // ici — sous Windows sa suppression échouerait, en silence, et la garde serait
-                // décorative.
+                // Do not leave behind what we have just refused: without this, an interrupted build
+                // becomes the next call's input cache again. ⚠ The OUTPUT folder, not the hash
+                // folder: the latter holds `.build.lock`, still open here — deleting it would fail
+                // on Windows, silently, and the guard would be decorative.
                 DiscardBuild(Path.GetDirectoryName(dll));
                 return null;
             }
