@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region UI helpers: budget, scrolling, view-model context, theme
+    #region UI helpers: budget, scrolling, VM context, theme
 
     // ── Context budget ─────────────────────────────────────────────────────────
 
@@ -119,7 +119,7 @@ internal partial class InferpalToolWindowData
     /// <para>
     /// <b>Why the wait, and not just a cancel.</b> Loading a session, <c>/clear</c> and
     /// <c>/branch</c> all replace <c>_history</c> and refill <c>Messages</c>. Done under a running
-    /// agent loop, that is the race the host side closed with its turn slot (revue pré-1.6.0,
+    /// agent loop, that is the race the host side closed with its turn slot (pre-1.6.0 review,
     /// §2.6) and that this front-end — the primary one — never had: the loop holds the OLD list, so
     /// its answer is appended to the freshly restored conversation when it lands, and the render
     /// pass looks for a streaming bubble that <c>Messages.Clear()</c> has already removed
@@ -208,7 +208,7 @@ internal partial class InferpalToolWindowData
         // RunContinuationsAsynchronously is load-bearing: without it, SetResult runs the awaiting
         // caller's continuation INLINE on the VM pump's worker — so all the "off-context" code
         // after each `await RunOnVMContextAsync(...)` (history building, clipboard Join…) executed
-        // on the pump, behind which the streaming Post()s pile up (pre-1.6.0 architecture review, §2.4).
+        // on the pump, behind which the streaming Post()s pile up.
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         SynchronizationContext.Post(_ =>
         {

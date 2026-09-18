@@ -48,7 +48,7 @@ public sealed class WalkCycleTests : IDisposable
         File.WriteAllText(Path.Combine(_root, "src", "A.cs"), "class A { }");
         File.WriteAllText(Path.Combine(_root, "src", "deep", "B.cs"), "class B { }");
 
-        // Le cycle : un lien de dossier qui renvoie vers la racine.
+        // The cycle: a directory link pointing back at the root.
         _link = Path.Combine(_root, "src", "deep", "loop");
         try { Directory.CreateSymbolicLink(_link, _root); } catch { }
 
@@ -153,9 +153,9 @@ public sealed class WalkCycleTests : IDisposable
     [Fact]
     public void TheWalk_DoesNotReadALegitimatelyLinkedFolder_AndTheDetectorSaysSo()
     {
-        // ⚠ The fix's COST, asserted rather than discovered later: the contents of a linked folder
-        // are not read. The product has to say so, and that is all it can do — following the link
-        // means the cycle and the death of the walk.
+        // ⚠ The COST of the fix, asserted rather than discovered later: the content of a linked
+        // folder is not read. The product must say so, and that is all it can do — following the
+        // link is the cycle, and the death of the walk.
         Assert.True(Directory.Exists(_legitLink), "legitimate link not created: test UNDECIDED");
         Assert.True(File.Exists(Path.Combine(_legitLink, "Shared.cs")), "the legitimate link does not point at the share");
 

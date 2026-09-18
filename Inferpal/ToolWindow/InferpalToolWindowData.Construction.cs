@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Construction & propriétés liées
+    #region Construction & bound properties
 
     public InferpalToolWindowData(IInferenceProvider client, ToolRegistry tools, InferpalConfig config,
         VisualStudioExtensibility extensibility, VsContextHolder contextHolder,

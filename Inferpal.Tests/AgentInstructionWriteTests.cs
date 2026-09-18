@@ -214,7 +214,7 @@ public class AgentInstructionWriteTests
 
         Assert.NotNull(approval.LastSubject);
         Assert.True(AgentInstructionFiles.Targets(approval.LastSubject),
-            "McpTool no longer hands over a subject its guards can read: subject = " + approval.LastSubject);
+            "McpTool no longer passes a subject the guards can read: subject = " + approval.LastSubject);
 
         // Witness: the ordinary call goes through the same path and is NOT targeted.
         await tool.ExecuteAsync(Args("""{"path":"C:\\repo\\src\\App.cs"}"""), CancellationToken.None);

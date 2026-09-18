@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Invocation d'outils & export
+    #region Tool invocation & export
 
     private async Task InvokeToolAsync(string toolName, object argsObj, CancellationToken ct, string? attachAs = null)
     {

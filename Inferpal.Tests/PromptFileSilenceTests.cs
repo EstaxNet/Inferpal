@@ -49,7 +49,7 @@ public sealed class PromptFileSilenceTests : IDisposable
         _context = Path.Combine(_root, ".inferpal", "context.md");
         _rule    = Path.Combine(_root, ".inferpal", "rules", "style.md");
         File.WriteAllText(_pinned,  "# Architecture\n\nThe file the user pinned.");
-        File.WriteAllText(_context, "# Contexte\n\nLe contexte du projet.");
+        File.WriteAllText(_context, "# Context\n\nThe project context.");
         File.WriteAllText(_rule,    "---\nalwaysApply: true\n---\n\nAlways answer in English.");
     }
 
@@ -181,7 +181,7 @@ public sealed class PromptFileSilenceTests : IDisposable
         var prompt = BuildOnce();
 
         Assert.Contains("The file the user pinned.", prompt);
-        Assert.Contains("Le contexte du projet.", prompt);
+        Assert.Contains("The project context.", prompt);
         Assert.Empty(Notes().Where(n => n.Contains("ARCHITECTURE.md") || n.Contains("context.md")));
     }
 

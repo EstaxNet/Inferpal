@@ -111,8 +111,8 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
 
     public Task<bool> CheckConnectionAsync(string url, CancellationToken ct) => Task.FromResult(ConnectionOk);
 
-    /// <summary>L URL que le dernier <see cref="ListModelsAsync"/> a recue — le panneau de
-    /// settings panel must list the models of the FORM's URL, not of the saved one, and without
+    /// <summary>The URL the last <see cref="ListModelsAsync"/> received — the settings panel
+    /// must list the models of the FORM's URL, not of the saved one, and without
     /// this witness the test could not tell the difference.</summary>
     public string? LastListModelsUrl;
 

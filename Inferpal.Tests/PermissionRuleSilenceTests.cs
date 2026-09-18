@@ -35,7 +35,7 @@ public class PermissionRuleSilenceTests
 
         var rules = PermissionPolicy.ParseRules("deny run_command rm -rf /\nthis is not a rule");
 
-        Assert.Single(rules);                                        // the good line still applies
+        Assert.Single(rules);                                        // the good line applies
         Assert.Contains(PermissionNotes(), d => d.Contains("this is not a rule"));
     }
 

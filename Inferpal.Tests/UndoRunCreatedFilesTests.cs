@@ -68,7 +68,7 @@ public class UndoRunCreatedFilesTests
                 await tool.ExecuteAsync(
                     Raw("""{"mode":"append","content":"the agent decided this"}"""), CancellationToken.None);
 
-            // WITNESS: the run really did create the file — without that, the test would measure a
+            // WITNESS: the run really did create the file — without it the test would measure a
             // deletion with nothing to delete.
             Assert.True(File.Exists(memPath), "update_memory did not create the memory: nothing to undo.");
 

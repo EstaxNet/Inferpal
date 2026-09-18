@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Commandes slash — routage & handlers
+    #region Slash commands - routing & handlers
 
     // ── Slash commands ─────────────────────────────────────────────────────────
     // Parsing, usage validation, and tool-argument building live in SlashCommandRouter

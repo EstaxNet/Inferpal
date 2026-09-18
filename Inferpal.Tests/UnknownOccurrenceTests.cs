@@ -129,7 +129,7 @@ public class UnknownOccurrenceTests
         finally { Directory.Delete(dir, recursive: true); }
     }
 
-    // ── apply_edits : tout ou rien, et par son nom ───────────────────────────
+    // ── apply_edits: all or nothing, and by name ─────────────────────────────
 
     [Fact]
     public async Task ApplyEdits_AbortsTheWholeBatch_NamingTheOccurrence()

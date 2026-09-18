@@ -47,9 +47,9 @@ public class StoreUnreadableFileTests : IDisposable
     {
         await SnippetStore.SaveAsync("csharp", "var mine = 1; // USER-MARKER", CancellationToken.None);
         var whole = await File.ReadAllTextAsync(_path);
-        Assert.Contains("USER-MARKER", whole);   // reference arm: really written
-        // No apostrophe in the marker: JsonSerializer escapes it as ', and a literal search
-        // would fail on a perfectly correct file.
+        Assert.Contains("USER-MARKER", whole);   // reference arm: it really was written
+        // ⚠ No apostrophe in the marker: JsonSerializer escapes the apostrophe as ', and the
+        // literal search would fail on a file that is in fact correct.
         var torn = whole[..(whole.Length / 2)];
         await File.WriteAllTextAsync(_path, torn);
         return torn;
@@ -61,8 +61,8 @@ public class StoreUnreadableFileTests : IDisposable
         var torn = await WriteThenTearAsync();
 
         // The user saves a new snippet: the loaded list is empty, so the write replaces a hundred
-        // snippets with one.
-        await SnippetStore.SaveAsync("csharp", "new one", CancellationToken.None);
+        // snippets with a single one.
+        await SnippetStore.SaveAsync("csharp", "nouveau", CancellationToken.None);
 
         Assert.DoesNotContain("USER-MARKER", await File.ReadAllTextAsync(_path));
 
@@ -79,8 +79,8 @@ public class StoreUnreadableFileTests : IDisposable
     [Fact]
     public async Task SavingOverAReadableFile_LeavesNoCopy()
     {
-        await SnippetStore.SaveAsync("csharp", "one", CancellationToken.None);
-        await SnippetStore.SaveAsync("csharp", "two", CancellationToken.None);
+        await SnippetStore.SaveAsync("csharp", "un", CancellationToken.None);
+        await SnippetStore.SaveAsync("csharp", "deux", CancellationToken.None);
 
         Assert.Equal(2, (await SnippetStore.LoadAllAsync(CancellationToken.None)).Count);
         Assert.Single(Directory.GetFiles(_dir));
@@ -91,8 +91,8 @@ public class StoreUnreadableFileTests : IDisposable
     [Fact]
     public async Task ADisposableStore_DoesNotPreserveAnything()
     {
-        var path = Path.Combine(_dir, "disposable.json");
-        var file = new AppDataJsonFile<List<string>>("disposable.json", "Test") { PathOverride = path };
+        var path = Path.Combine(_dir, "jetable.json");
+        var file = new AppDataJsonFile<List<string>>("jetable.json", "Test") { PathOverride = path };
 
         await file.SaveAsync(["a"], CancellationToken.None);
         var whole = await File.ReadAllTextAsync(path);
@@ -100,6 +100,6 @@ public class StoreUnreadableFileTests : IDisposable
 
         await file.SaveAsync(["b"], CancellationToken.None);
 
-        Assert.Single(Directory.GetFiles(_dir).Where(f => Path.GetFileName(f).StartsWith("disposable")));
+        Assert.Single(Directory.GetFiles(_dir).Where(f => Path.GetFileName(f).StartsWith("jetable")));
     }
 }

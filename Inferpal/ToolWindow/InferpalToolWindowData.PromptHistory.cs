@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Historique de prompt & commandes (contexte, fix-build, git, rules)
+    #region Prompt history & commands (context, fix-build, git, rules)
 
     // ── Prompt history navigation ──────────────────────────────────────────────
 
@@ -390,7 +390,7 @@ internal partial class InferpalToolWindowData
                 onToken: token => sink.Append(token), tok);
             gotProposal = true;
         }
-        catch (OperationCanceledException) { /* arrêté : rien n'est proposé */ }
+        catch (OperationCanceledException) { /* cancelled: nothing is suggested */ }
         finally
         {
             sink.Stop();

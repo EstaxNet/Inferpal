@@ -44,10 +44,10 @@ public class ConfigUnreadableFileTests : IDisposable
     /// <summary>Writes a recognisable configuration, then tears it in half.</summary>
     private void WriteThenTear()
     {
-        new InferpalConfig { DefaultModel = "the-users-own-model", AgentMaxIterations = 42 }.Save();
+        new InferpalConfig { DefaultModel = "the-users-model", AgentMaxIterations = 42 }.Save();
         var whole = File.ReadAllText(_path);
-        Assert.Contains("the-users-own-model", whole);   // reference arm: it really is there
-        File.WriteAllText(_path, whole[..(whole.Length / 2)]);  // torn write
+        Assert.Contains("the-users-model", whole);   // reference arm: it really is there
+        File.WriteAllText(_path, whole[..(whole.Length / 2)]);  // a torn write
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public class ConfigUnreadableFileTests : IDisposable
     public void ANullTextSetting_FallsBackToItsDefault_AndSaysWhichOne()
     {
         var json = System.Text.Json.Nodes.JsonNode.Parse(
-            System.Text.Json.JsonSerializer.Serialize(new InferpalConfig { DefaultModel = "the-users-own-model" }))!.AsObject();
+            System.Text.Json.JsonSerializer.Serialize(new InferpalConfig { DefaultModel = "the-users-model" }))!.AsObject();
 
         var nullability = new System.Reflection.NullabilityInfoContext();
         var nulled = 0;
@@ -117,8 +117,8 @@ public class ConfigUnreadableFileTests : IDisposable
                 && prop.Name != nameof(InferpalConfig.DefaultModel))
                 Assert.True(prop.GetValue(loaded) is not null, $"{prop.Name} came out null.");
 
-        // Reference arm: what was not null is kept — the file is not rejected as a whole.
-        Assert.Equal("the-users-own-model", loaded.DefaultModel);
+        // Reference arm: what was not null is kept, the file is not rejected wholesale.
+        Assert.Equal("the-users-model", loaded.DefaultModel);
         var entry = Assert.Single(Diagnostics.Snapshot(), e => e.Context.Contains("InferpalConfig"));
         Assert.Contains("baseUrl", entry.Detail);
     }
@@ -131,11 +131,11 @@ public class ConfigUnreadableFileTests : IDisposable
 
         // The user changes any setting at all: /model, /hardware, the panel...
         var cfg = InferpalConfig.Load();
-        cfg.DefaultModel = "something-else";
+        cfg.DefaultModel = "autre-chose";
         cfg.Save();
 
-        // config.json now holds factory defaults - expected, something had to be written.
-        Assert.DoesNotContain("the-users-own-model", File.ReadAllText(_path));
+        // config.json now carries the factory values — expected, something had to be written.
+        Assert.DoesNotContain("the-users-model", File.ReadAllText(_path));
 
         // What must NOT be true is that the old bytes are gone from the disk.
         var rescued = Directory.GetFiles(_dir)
@@ -151,13 +151,13 @@ public class ConfigUnreadableFileTests : IDisposable
     [Fact]
     public void AReadableFile_IsOverwrittenWithoutLeavingACopy()
     {
-        new InferpalConfig { DefaultModel = "before" }.Save();
+        new InferpalConfig { DefaultModel = "avant" }.Save();
 
         var cfg = InferpalConfig.Load();
-        cfg.DefaultModel = "after";
+        cfg.DefaultModel = "apres";
         cfg.Save();
 
-        Assert.Equal("after", InferpalConfig.Load().DefaultModel);
+        Assert.Equal("apres", InferpalConfig.Load().DefaultModel);
         Assert.Single(Directory.GetFiles(_dir));
     }
 }

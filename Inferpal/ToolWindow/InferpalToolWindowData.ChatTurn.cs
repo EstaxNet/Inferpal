@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Envoi & tour de chat
+    #region Sending & the chat turn
 
     // ── Handlers ───────────────────────────────────────────────────────────────
 

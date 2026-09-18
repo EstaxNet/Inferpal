@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Types imbriqués
+    #region Nested types
 
     private sealed class ThrottledTokenSink : IDisposable
     {

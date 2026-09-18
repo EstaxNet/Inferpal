@@ -61,12 +61,12 @@ public class RulesServiceTests : IDisposable
     [InlineData("*.cs", "deep/nested/Bar.cs", true)]   // bare pattern matches file name at any depth
     [InlineData("*.cs", "Bar.cs", true)]
     [InlineData("*.cs", "Bar.ts", false)]
-    [InlineData("src/**", "src/app/Foo.cs", true)]
-    [InlineData("src/**", "lib/Foo.cs", false)]
-    [InlineData("src/*.cs", "src/Foo.cs", true)]
-    [InlineData("src/*.cs", "src/sub/Foo.cs", false)]  // * does not cross '/'
-    [InlineData("file?.cs", "fileA.cs", true)]
-    [InlineData("file?.cs", "fileAB.cs", false)]
+    [InlineData("**/Program.cs", "Program.cs", true)]        // zero segment: `**/` is optional
+    [InlineData("**/Program.cs", "src/MyProgram.cs", false)]
+    [InlineData("**/bin/**", "src/bin/x.dll", true)]
+    [InlineData("**/bin/**", "src/mybin/x.cs", false)]
+    [InlineData("**/test/**", "a/test/b.ts", true)]
+    [InlineData("**/test/**", "a/latest/b.ts", false)]
     public void GlobMatch_Cases(string glob, string path, bool expected)
     {
         Assert.Equal(expected, RulesService.GlobMatch(glob, path));
@@ -83,7 +83,7 @@ public class RulesServiceTests : IDisposable
     {
         // .inferpal/rules globs arrive with any clone, and Matches() runs on every system-prompt
         // rebuild: without a match timeout, a catastrophic-backtracking glob froze the build
-        // (pre-1.6.0 architecture review, §1.8). Run on a worker so a regression fails fast instead of hanging
+        //. Run on a worker so a regression fails fast instead of hanging
         // the suite: the old behaviour never returns.
         var glob = string.Concat(Enumerable.Repeat("a*", 20)) + "b";
         var path = new string('a', 40) + "c";   // never matches → worst-case backtracking

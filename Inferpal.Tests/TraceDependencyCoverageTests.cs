@@ -114,4 +114,4 @@ public class TraceDependencyCoverageTests : IDisposable
         Assert.DoesNotContain("[not in scanned subset]", report);
         Assert.DoesNotContain(Inferpal.Localization.Strings.ScanPartial(TraceDependencyTool.MaxFilesScanned, 6), report);
     }
-}
+            }

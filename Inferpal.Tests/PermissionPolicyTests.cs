@@ -52,7 +52,7 @@ public class PermissionPolicyTests
     public void MultiPathSubject_ADeniedPathDeniesTheWholeCall()
     {
         // Without per-line evaluation, 'deny * \.env$' only saw the LAST line of the aggregate:
-        // a two-file apply_edits touching .env slipped past the repo's own deny (revue §1.1).
+        // a two-file apply_edits touching .env slipped past the repo's own deny.
         var policy = FromDsl(@"deny * \.env$");
         Assert.Equal(PermissionDecision.Deny, policy.Evaluate("apply_edits", ".env\nreadme.md"));
     }
@@ -83,7 +83,7 @@ public class PermissionPolicyTests
     {
         // The old config-first order let 'allow write_file \.cs$' (machine) shadow the repo's
         // 'deny write_file Migrations/' under first-match-wins — the documented promise that a
-        // project tightening its own restrictions is always safe was silently false (revue §1.2).
+        // project tightening its own restrictions is always safe was silently false.
         var config  = PermissionPolicy.ParseRules(@"allow write_file \.cs$");
         var overlay = PermissionPolicy.ParseJsonOverlay("""{ "rules": ["deny write_file Migrations/"] }""");
 
@@ -141,8 +141,10 @@ public class PermissionPolicyTests
 
     [Theory]
     [InlineData("rm -rf /")]
-    [InlineData("rm -rf ~")]
-    [InlineData("rm --no-preserve-root -rf /tmp")]
+    // Same command, flags swapped. The pattern used to demand r-before-f, so this exact form —
+    // as common as the other in the wild — walked straight through the floor.
+    [InlineData("rm -fr /")]
+    [InlineData("rm -vfr ~")]
     [InlineData(@"Remove-Item -Recurse -Force C:\")]
     [InlineData(@"Remove-Item -Force -Recurse 'D:\'")]
     [InlineData("mkfs.ext4 /dev/sda1")]

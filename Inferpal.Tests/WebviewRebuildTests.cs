@@ -41,7 +41,7 @@ public class WebviewRebuildTests
     {
         var path = Path.Combine(RepoRoot(), "vscode", "src",
                                 relative.Replace('/', Path.DirectorySeparatorChar));
-        Assert.True(File.Exists(path), $"vscode/src/{relative} is gone.");
+        Assert.True(File.Exists(path), $"vscode/src/{relative} a disparu.");
         return SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(path));
     }
 
@@ -88,8 +88,8 @@ public class WebviewRebuildTests
         Assert.Contains("type: 'hydrate'", hydrate, StringComparison.Ordinal);
 
         Assert.True(Regex.IsMatch(hydrate, @"this\.pendingApprovals[\s\S]{0,200}?type: 'approval'"),
-            "hydrate() does not re-post the cards still waiting: a rehydration during an approval "
-            + "wipes the card and leaves the agent waiting for an answer nobody can give.");
+            "hydrate() does not put the still-pending cards back: a rehydration during an "
+            + "approval wipes the card and leaves the agent waiting for an answer nobody can give.");
     }
 
     /// <summary>
@@ -107,14 +107,14 @@ public class WebviewRebuildTests
 
         Assert.True(Regex.IsMatch(Body(provider, "private hydrate(): void"),
                                   @"this\.stepPaused[\s\S]{0,120}?type: 'stepPaused'"),
-            "hydrate() does not re-post the pause banner: a rehydration during a step-by-step pause "
+            "hydrate() does not put the pause banner back: a rehydration during a step-mode pause "
             + "removes the only Resume button.");
 
         // And the banner does not outlive its turn (cancelled while paused, host crashed): the
         // webview removes it on `stepResumed` only, not on `turnEnded`.
         Assert.True(Regex.IsMatch(Body(provider, "private async chatTurn("),
                                   @"finally[\s\S]*?this\.stepPaused[\s\S]{0,160}?type: 'stepResumed'"),
-            "The end of the turn does not retire the pause banner: a turn cancelled during the pause "
+            "The end of the turn does not remove the pause banner: a turn cancelled while paused "
             + "leaves a Resume button that resumes nothing.");
     }
 
@@ -286,8 +286,8 @@ public class WebviewRebuildTests
         Assert.True(catchAt >= 0, "chatTurn has no catch any more — the rule no longer measures anything.");
 
         Assert.True(chatTurn[catchAt..].Contains("this.dismissAllPending()", StringComparison.Ordinal),
-            "A turn whose request failed (host crashed or restarted) leaves its approval cards "
-            + "clickable, while nobody waits for their answer any more.");
+            "A turn whose request failed (host down or restarted) leaves its approval cards "
+            + "clickable, while nobody is waiting for their answer any more.");
     }
 
     /// <summary>

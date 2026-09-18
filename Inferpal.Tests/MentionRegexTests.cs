@@ -13,7 +13,7 @@ namespace Inferpal.Tests;
 ///
 /// Regression target: selecting <c>@code</c> commits "@code " (trailing space) with an
 /// empty query. That must be recognised as a committed code mention so the empty-query
-/// branch can show a hint instead of silently closing the popup ("@code ne fait rien").
+/// branch can show a hint instead of silently closing the popup ("@code does nothing").
 /// </summary>
 public class MentionRegexTests
 {

@@ -85,7 +85,7 @@ public class TruncatedHistorySilenceTests
 
         var marker = history[plan.Start];
         Assert.Equal("user", marker.Role);
-        Assert.True(marker.IsScaffolding, "un marqueur non-scaffolding devient un tour utilisateur.");
+        Assert.True(marker.IsScaffolding, "a non-scaffolding marker becomes a user turn.");
 
         // And the proof by use: the turn count is that of the kept turns, not one more.
         var turns = history.Skip(1).Count(m => m.Role == "user" && !m.IsScaffolding);

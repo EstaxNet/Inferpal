@@ -122,8 +122,8 @@ public class PathCaseFoldingTests
         Assert.True(scanned >= 100, $"Only {scanned} source(s) read: the rule measures nothing any more.");
 
         Assert.True(offenders.Count == 0,
-            "Path case folding is re-derived on the spot instead of going through PathComparer — "
-            + "that is how two sites came to say the opposite of each other about macOS:"
+            "Path case folding is re-derived in place instead of going through PathComparer — "
+            + "that is how two sites came to say the opposite of each other about "
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 

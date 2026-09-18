@@ -85,7 +85,7 @@ public class LocalizationCompletenessTests
     /// English string as its key, so the key carries the reference placeholders.
     /// </para>
     /// <para>
-    /// ⚠ Measured at zero violations on 2026-09-15 (244 resources with placeholders × 9
+    /// ⚠ Measured at zero violations (244 resources with placeholders × 9
     /// translations, 261 bundle entries × 9) — free, so now. Same arbitration as rules 15 and 19 of
     /// <c>ConventionCoverageTests</c> and as the fourth channel above.
     /// </para>
@@ -113,10 +113,10 @@ public class LocalizationCompletenessTests
 
                 var got = Placeholders(data.Element("value")?.Value);
                 Assert.True(got.SetEquals(expected),
-                    $"Strings.{locale}.resx / {key}: the neutral file carries "
+                    $"Strings.{locale}.resx / {key}: the neutral one carries "
                     + $"[{string.Join(", ", expected.Order())}] and the translation "
-                    + $"[{string.Join(", ", got.Order())}]. An extra index makes string.Format throw "
-                    + "in that language only; a missing one silently drops the value.");
+                    + $"[{string.Join(", ", got.Order())}]. One index too many makes string.Format "
+                    + "throw in that language only; a missing index loses the value in silence.");
             }
         }
 
@@ -225,7 +225,7 @@ public class LocalizationCompletenessTests
         return dir!;
     }
 
-    // ── The .resx files and Strings.cs: the half of the rule nobody held ───────────────────
+    // ── The .resx and Strings.cs: the half of the rule nobody held ─────────────────────────
     //
     // "Every new localization key -> translated in the 10 .resx AND A PROPERTY IN Strings.cs": the
     // two tests above hold the first half, the second was held by nobody. It fails silently on both
@@ -246,7 +246,7 @@ public class LocalizationCompletenessTests
     private static HashSet<string> StringsAccessorKeys()
     {
         var path = Path.Combine(LocalizationDir(), "Strings.cs");
-        Assert.True(File.Exists(path), $"{path} does not exist - the rule checks nothing any more.");
+        Assert.True(File.Exists(path), $"{path} does not exist — the rule checks nothing any more.");
 
         var code = ConventionCoverageTests.CodeOnly(path);
         var keys = Regex.Matches(code, @"(?<![A-Za-z0-9_])Get\(\s*nameof\(\s*([A-Za-z0-9_]+)\s*\)")
@@ -332,7 +332,7 @@ public class LocalizationCompletenessTests
         var path = locale.Length == 0
             ? Path.Combine(dir, "string-resources.json")
             : Path.Combine(dir, locale, "string-resources.json");
-        Assert.True(File.Exists(path), $"{path} does not exist - the rule checks nothing any more.");
+        Assert.True(File.Exists(path), $"{path} does not exist — the rule checks nothing any more.");
 
         return JsonDocument.Parse(File.ReadAllText(path)).RootElement
             .EnumerateObject().Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
@@ -347,9 +347,9 @@ public class LocalizationCompletenessTests
         var gaps = tokens.Keys.Order()
             .Select(t => (Token: t, Missing: locales
                 .Where(l => !CommandResourceKeys(l).Contains(t))
-                .Select(l => l.Length == 0 ? "neutral" : l).ToList()))
+                .Select(l => l.Length == 0 ? "neutre" : l).ToList()))
             .Where(x => x.Missing.Count > 0)
-            .Select(x => $"\"%{x.Token}%\" ({tokens[x.Token]}) missing in: {string.Join(", ", x.Missing)}")
+            .Select(x => $"« %{x.Token}% » ({tokens[x.Token]}) manque en : {string.Join(", ", x.Missing)}")
             .ToList();
 
         Assert.True(gaps.Count == 0,
@@ -390,7 +390,7 @@ public class LocalizationCompletenessTests
     //     the product;
     //   . missing from a TRANSLATED file -> English fallback, a half-translated UI.
     //
-    // It is the mirror of the defect found on 2026-09-08: the VSIX command table, the twin channel
+    // It is the mirror of the defect found: the VSIX command table, the twin channel
     // on the Visual Studio side, was equally unguarded and shipped a command with no label in all
     // ten files. Measured here at ZERO violations (19 tokens x 10 bundles): free, hence locked now.
 
@@ -421,7 +421,7 @@ public class LocalizationCompletenessTests
         {
             var missing = tokens.Except(BundleKeys(bundle)).Order().ToList();
             if (missing.Count > 0)
-                report.Add($"{Path.GetFileName(bundle)}: {missing.Count} missing -> {string.Join(", ", missing.Take(5))}");
+                report.Add($"{Path.GetFileName(bundle)} : {missing.Count} manquant(s) → {string.Join(", ", missing.Take(5))}");
         }
 
         Assert.True(report.Count == 0,
@@ -442,7 +442,7 @@ public class LocalizationCompletenessTests
         {
             var orphaned = BundleKeys(bundle).Except(tokens).Order().ToList();
             if (orphaned.Count > 0)
-                report.Add($"{Path.GetFileName(bundle)}: {orphaned.Count} orphan(s) -> {string.Join(", ", orphaned.Take(5))}");
+                report.Add($"{Path.GetFileName(bundle)} : {orphaned.Count} orphelin(s) → {string.Join(", ", orphaned.Take(5))}");
         }
 
         Assert.True(report.Count == 0,
@@ -468,7 +468,7 @@ public class LocalizationCompletenessTests
     /// this class exists to hold.
     /// </para>
     /// <para>
-    /// Measured at zero divergence on 2026-09-15 across the 828 accessors, with two
+    /// Measured at zero divergence across the 828 accessors, with two
     /// <b>nominative</b> exemptions: the <c>…Template</c> members return the format string itself,
     /// for the caller to format. ⚠ The first measurement counted the method's <i>parameters</i> and
     /// produced eight false positives — <c>PromptExplain(fileName)</c> passes

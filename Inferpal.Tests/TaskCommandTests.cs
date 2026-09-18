@@ -142,7 +142,7 @@ public class TaskCommandTests
     public void KeywordFollowedByFreeText_IsAnObjective_NotASubCommand()
     {
         // "/task clear the build warnings" used to ERASE the finished reports, and
-        // "/task list all TODO comments" listed instead of submitting (pre-1.6.0 architecture review, §3.7).
+        // "/task list all TODO comments" listed instead of submitting.
         using var queue = new BackgroundTaskQueue(
             (_, _, _) => Task.FromResult(BackgroundTaskQueue.TaskRunOutcome.Of("done")));
         Run(queue, "/task", "quick", "one");
@@ -337,7 +337,7 @@ public class TaskCommandTests
     // ── The sentence a task announces when it ends ────────────────────────
 
     private static BackgroundTaskSnapshot Snapshot(BackgroundTaskState state, string? error = null) =>
-        new("t1", "objective", state, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
+        new("t1", "objectif", state, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow, null, error, [], 0);
 
     [Fact]

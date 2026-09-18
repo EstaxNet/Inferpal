@@ -17,7 +17,7 @@ namespace Inferpal.Tests;
 /// This is exactly how the VS Code extension will drive the host — minus the process spawn.
 /// </summary>
 // In the serialised signal collection because constructing a HostServer declares, process-wide and
-// one-way, that this process has no in-process Visual Studio peer (§22). Production has one role
+// one-way, that this process has no in-process Visual Studio peer. Production has one role
 // per process; a test process plays both, so this suite must not run alongside one that needs the
 // VS-peer side of that switch — SignalScratchDir resets it, and this keeps the reset meaningful.
 [Collection(SignalCollection.Name)]
@@ -60,7 +60,7 @@ public class HostServerTests
         }
 
         /// <summary>Every reasoning notification received, text included (null in plain chat).
-        /// Remplie par le fil de dispatch RPC pendant que le test la lit.</summary>
+        /// Filled by the RPC dispatch thread while the test reads it.</summary>
         public readonly System.Collections.Concurrent.ConcurrentQueue<string?> Thinking = new();
 
         [JsonRpcMethod("chat/thinking", UseSingleObjectParameterDeserialization = true)]
@@ -140,8 +140,8 @@ public class HostServerTests
         public required ClientTarget          Target    { get; init; }
 
         /// <summary>The configs the provider factory received, in order. It is the only way to see
-        /// that a call built a THROWAWAY client from the values of the
-        /// formulaire plutot que de reutiliser celui de la session.</summary>
+        /// that a call built a THROWAWAY client from the form's values rather than
+        /// reusing the session's.</summary>
         public required List<InferpalConfig>  ProviderConfigs { get; init; }
 
         /// <summary>Empty folder of this harness alone, the default workspace root. The whole %TEMP% was: a solution
@@ -460,9 +460,9 @@ public class HostServerTests
     [Fact]
     public async Task ChatThinking_IsThrottled_AndCarriesNoTextInPlainChat()
     {
-        // Le defaut repare, en deux moities toutes les deux fausses : le host relayait UNE
-        // notification PAR DELTA de raisonnement — des milliers de messages JSON-RPC sur stdio pour
-        // une phase de reflexion — et l adaptateur JETAIT le texte transporte.
+        // Two halves, both wrong: the host relayed ONE notification PER reasoning DELTA —
+        // thousands of JSON-RPC messages over stdio for a single thinking phase — and the adapter
+        // THREW AWAY the text they carried.
         using var h = CreateHarness(cfg => cfg.AgentModeEnabled = false);
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
@@ -480,15 +480,15 @@ public class HostServerTests
 
         // Bounded: the throttle is 120 ms, so a synchronous burst cannot produce one notification
         // per delta. No exact count is pinned (it depends on the clock) —
-        // refuse l ordre de grandeur qui etait le defaut.
+        // what is refused is the order of magnitude that was the defect.
         Assert.True(h.Target.Thinking.Count < deltas / 10,
             $"{h.Target.Thinking.Count} notifications for {deltas} deltas: the channel is not bounded.");
         // Witness: the channel really did serve, otherwise "few notifications" means nothing.
         Assert.NotEmpty(h.Target.Thinking);
 
-        // Chat simple : un modele raisonneur deverse toute sa deliberation, l afficher se lit comme
-        // stray output. The host therefore sends NO text — the adapter shows its
-        // indicateur generique. Meme arbitrage que la fenetre Visual Studio.
+        // Plain chat: a reasoning model pours out its whole deliberation, and showing it reads
+        // as stray output. The host therefore sends NO text — the adapter shows its generic
+        // indicator. Same arbitration as the Visual Studio window.
         Assert.All(h.Target.Thinking, Assert.Null);
     }
 
@@ -540,7 +540,7 @@ public class HostServerTests
         var lost = await Beat();
         Assert.False(lost.Connected);
         Assert.NotNull(lost.EdgeNotice);
-        Assert.Null((await Beat()).EdgeNotice);   // toujours coupe : plus rien a annoncer
+        Assert.Null((await Beat()).EdgeNotice);   // still down: nothing left to announce
 
         // 3. So is the recovery, and only once.
         h.Fake.ConnectionOk = true;
@@ -556,7 +556,7 @@ public class HostServerTests
     {
         // ⚠ Reference arm for case 1: the first heartbeat is silent only if it SUCCEEDS. A backend
         // already down when the panel opens must be said — otherwise the one state where
-        // l utilisateur a vraiment besoin d une phrase serait justement celui qui n en produit pas.
+        // the user really needs a sentence would be exactly the one that produces none.
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.ConnectionOk = false;
@@ -572,8 +572,8 @@ public class HostServerTests
     [Fact]
     public async Task ChatExport_RendersTheCoreDocument_WithItsStatsHeader()
     {
-        // Le defaut repare : l export etait ecrit DEUX fois, et la copie TypeScript perdait tout
-        // the statistics header. What is checked here is that the host returns the Core's document
+        // The export used to be written TWICE, and the TypeScript copy lost the whole
+        // statistics header. What is checked here is that the host returns the Core's document
         // — the Visual Studio window's — and not another one.
         using var h = CreateHarness(cfg => cfg.DefaultModel = "qwen3:8b");
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -594,7 +594,7 @@ public class HostServerTests
 
         // The header is exactly what the TypeScript copy did not write. ⚠ Its labels follow the
         // language (ConversationExporterTests pins them): here we read the STRUCTURE, otherwise the
-        // test depend de la culture de la machine.
+        // test would depend on the machine's culture.
         Assert.Contains("|---|---|",        markdown, StringComparison.Ordinal);
         Assert.Contains("qwen3:8b",         markdown, StringComparison.Ordinal);
         // ⚠ The Core formats with N0, so ACCORDING TO THE PROCESS CULTURE: "1,234" in English,
@@ -615,8 +615,8 @@ public class HostServerTests
     [Fact]
     public async Task ChatExport_HonoursThePlainTextLayout()
     {
-        // ⚠ La boite d enregistrement du panneau propose un filtre « Text » depuis toujours, et la
-        // copie TypeScript ecrivait du Markdown dedans : une affordance offerte et non tenue.
+        // ⚠ The panel's save box has always offered a "Text" filter, and the TypeScript copy
+        // wrote Markdown into it: an affordance offered and not honoured.
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
@@ -637,13 +637,13 @@ public class HostServerTests
         Assert.Contains("—", text, StringComparison.Ordinal);
     }
 
-    // ── models/list : le panneau agit sur ce qu il A SOUS LES YEUX ────────────
+    // ── models/list: the panel acts on what it HAS IN FRONT OF IT ─────────────
 
     [Fact]
     public async Task ModelsList_ListsFromTheFormValues_NotFromTheSavedConfiguration()
     {
-        // Le defaut repare : le panneau VS Code offrait un ↻ qui listait les modeles de l URL
-        // ENREGISTREE apres qu on en ait tape une nouvelle. La fenetre Visual Studio construit
+        // The VS Code panel used to offer a ↻ listing the models of the SAVED URL after a new
+        // one had been typed. The Visual Studio window
         // has always built a throwaway InferpalConfig from its form's values (RefreshModelsAsync);
         // the host could not do it.
         using var h = CreateHarness(cfg =>
@@ -665,16 +665,16 @@ public class HostServerTests
         Assert.Equal("lmstudio",          draft.Provider);
         Assert.Equal("clef-tapee",        draft.ApiKey);
 
-        // ⚠ Et l URL doit aussi atteindre l APPEL : un client jetable bien construit qui
-        // interroge quand meme l ancienne adresse rendrait le meme resultat faux.
+        // ⚠ And the URL must also reach the CALL: a throwaway client built correctly that still
+        // queried the old address would give the same wrong result.
         Assert.Equal("http://tapee:1234", h.Fake.LastListModelsUrl);
     }
 
     [Fact]
     public async Task ModelsList_UsesTheSession_WhenTheFormSendsNothing()
     {
-        // Bras de reference : le premier chargement du panneau, et le ↻ d une session ordinaire,
-        // send nothing. They must keep going through the session's client — otherwise every refresh
+        // Reference arm: the panel's first load, and the ↻ of an ordinary session, send nothing.
+        // They must keep going through the session's client — otherwise every refresh
         // would build one more client for nothing.
         using var h = CreateHarness(cfg => cfg.BaseUrl = "http://enregistree:11434");
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));

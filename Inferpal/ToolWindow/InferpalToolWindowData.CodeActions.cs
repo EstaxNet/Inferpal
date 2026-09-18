@@ -101,7 +101,7 @@ internal partial class InferpalToolWindowData
         Post(() =>
         {
             // The field moves inside the marshalled block: it was written on the watcher thread
-            // while "Fix with AI" read it from the command path (pre-1.6.0 architecture review, §2.5).
+            // while "Fix with AI" read it from the command path.
             _buildFailedErrorLines = errorLines;
             BuildFailedFirstError  = firstError;
             HasBuildFailedBanner   = true;

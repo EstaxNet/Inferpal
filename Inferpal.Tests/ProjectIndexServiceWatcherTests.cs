@@ -125,14 +125,14 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
 
         var svc = NewService(provider);
         svc.StartIndexing(_root);
-        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "end of the pass", () => svc.Status);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the pass is finished", () => svc.Status);
 
         var matches = Diagnostics.Snapshot()
             .Where(e => e.Context == "ProjectIndexService" && e.Detail.Contains("skipped", StringComparison.Ordinal))
             .ToList();
         Assert.True(matches.Count > 0,
-            "The pass discarded a file without saying so: exactly the silence that hid the missing "
-            + "Roslyn chunker for six versions.");
+            "The pass dropped a file without saying so: exactly the silence that hid the absence "
+            + "of Roslyn for six versions.");
 
         // The count, the total, and the first cause observed - the three make the diagnosis.
         var detail = matches[0].Detail;
@@ -151,7 +151,7 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
 
         var svc = NewService(new FakeInferenceProvider());
         svc.StartIndexing(_root);
-        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "end of the pass", () => svc.Status);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the pass is finished", () => svc.Status);
 
         Assert.DoesNotContain(Diagnostics.Snapshot(),
             e => e.Context == "ProjectIndexService" && e.Detail.Contains("skipped", StringComparison.Ordinal));
@@ -174,7 +174,7 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
 
         var svc = NewService(provider);
         svc.StartIndexing(_root);
-        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "end of the pass", () => svc.Status);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the pass is finished", () => svc.Status);
 
         var missing = (await svc.GetFileChunksAsync(hole, _root, CancellationToken.None)).Count;
         Assert.True(missing > 0, "witness: Hole.cs should have produced at least one chunk");
@@ -195,7 +195,7 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
 
         var svc = NewService(new FakeInferenceProvider { Embedding = [0.1f, 0.2f] });
         svc.StartIndexing(_root);
-        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "end of the pass", () => svc.Status);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the pass is finished", () => svc.Status);
 
         Assert.DoesNotContain("without embedding", svc.Status, StringComparison.Ordinal);
         Assert.DoesNotContain(Diagnostics.Snapshot(),
@@ -220,7 +220,7 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
         var svc = NewService(provider);
         svc.StartIndexing(_root);
 
-        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "fin de la passe initiale", () => svc.Status);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the initial pass is finished", () => svc.Status);
         var afterPass = embedCalls;
         Assert.True(afterPass > 0, "the initial pass should have embedded at least one chunk");
         var before = (await svc.GetFileChunksAsync(file, _root, CancellationToken.None)).First();

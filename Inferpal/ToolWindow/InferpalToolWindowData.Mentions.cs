@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Mentions & autocomplétion
+    #region Mentions & autocompletion
 
     // ── Shadow RAG pre-warm ────────────────────────────────────────────────────
 

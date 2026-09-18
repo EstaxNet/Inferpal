@@ -161,7 +161,7 @@ public class EnvironmentFactsTests
     }
 
     /// <summary>The parameter schema as the model receives it — this is the half that said
-    /// « PowerShell command to execute » quel que soit le shell.</summary>
+    /// "PowerShell command to execute" whatever the shell was.</summary>
     private static string Describe(RunCommandTool tool) =>
         System.Text.Json.JsonSerializer.Serialize(tool.Parameters);
 }

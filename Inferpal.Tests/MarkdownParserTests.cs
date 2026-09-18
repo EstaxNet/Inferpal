@@ -44,9 +44,9 @@ public class MarkdownParserTests
         var md =
             "1. **Installation** :\n" +
             "   - telecharger le paquet\n" +
-            "   - lancer le programme\n" +
+            "   - run the program\n" +
             "2. **Configuration** :\n" +
-            "   - editer le fichier\n";
+            "   - edit the file\n";
 
         var blocks = MarkdownParser.Parse(md);
 
@@ -56,8 +56,8 @@ public class MarkdownParserTests
 
         // The nested detail (previously dropped) is present as bullet items.
         Assert.Contains(blocks, b => b.Type == "bullet_item" && b.Text.Contains("telecharger le paquet"));
-        Assert.Contains(blocks, b => b.Type == "bullet_item" && b.Text.Contains("lancer le programme"));
-        Assert.Contains(blocks, b => b.Type == "bullet_item" && b.Text.Contains("editer le fichier"));
+        Assert.Contains(blocks, b => b.Type == "bullet_item" && b.Text.Contains("run the program"));
+        Assert.Contains(blocks, b => b.Type == "bullet_item" && b.Text.Contains("edit the file"));
     }
 
     [Fact]
@@ -125,25 +125,25 @@ public class MarkdownParserTests
     [Fact]
     public void Parse_RemovesAnUnclosedThinkTail_AndKeepsTheAnswerBeforeIt()
     {
-        // Same rule as StripThinkTags: a turn stopped during the reasoning ends inside an unclosed
-        // tag. Parse applied a pattern of its own, which only sees closed blocks.
-        var blocks = MarkdownParser.Parse("the answer\n<think>unfinished reasoning");
+        // Same rule as StripThinkTags: a turn stopped during the reasoning ends in an unclosed tag.
+        // Parse applied its own pattern, which only sees closed blocks.
+        var blocks = MarkdownParser.Parse("la reponse\n<think>raisonnement inacheve");
         var text   = string.Join("\n", blocks.Select(b => b.Text));
 
-        Assert.DoesNotContain("unfinished", text);
-        Assert.Contains("the answer", text);
+        Assert.DoesNotContain("inacheve", text);
+        Assert.Contains("la reponse", text);
     }
 
     [Theory]
-    // Several blocks: the pattern is non-greedy, it must not swallow what sits between them.
-    [InlineData("<think>a</think>keep<think>b</think>", "keep")]
-    // Multi-line: models emit their reasoning over dozens of lines.
-    [InlineData("<think>\nline 1\nline 2\n</think>visible", "visible")]
+    // Several blocks: the pattern is non-greedy, it must not swallow what lies between them.
+    [InlineData("<think>a</think>garde<think>b</think>", "garde")]
+    // Multiline: models emit their reasoning over dozens of lines.
+    [InlineData("<think>\nligne 1\nligne 2\n</think>visible", "visible")]
     // Case: the pattern is IgnoreCase, and models are not consistent about it.
-    [InlineData("<THINK>noise</THINK>visible", "visible")]
-    [InlineData("<Think>noise</Think>visible", "visible")]
+    [InlineData("<THINK>bruit</THINK>visible", "visible")]
+    [InlineData("<Think>bruit</Think>visible", "visible")]
     // Unclosed tag: a turn stopped during the reasoning has no </think>. The webview already
-    // stripped that tail; here it stayed, and the bubble showed the raw tag.
+    // removed that tail; here it stayed, and the bubble showed the raw tag.
     [InlineData("visible<think>still streaming", "visible")]
     [InlineData("<Think>still\nstreaming", "")]
     public void StripThinkTags_HandlesTheFormsModelsActuallyEmit(string content, string expected)
@@ -163,8 +163,8 @@ public class MarkdownParserTests
     [Fact]
     public void AThinkOnlyMessage_ProducesNoBlockAtAll()
     {
-        // What is left after stripping is empty: Parse must return an empty list rather than a
-        // blank bubble. That is the "the model produced nothing but reasoning" case, which the
+        // What remains after the strip is empty: Parse must return an empty list rather than a blank
+        // bubble. This is the "the model produced nothing but reasoning" case, which the
         // orchestrator then treats as an empty turn.
         Assert.Empty(MarkdownParser.Parse("<think>nothing but reasoning</think>"));
     }

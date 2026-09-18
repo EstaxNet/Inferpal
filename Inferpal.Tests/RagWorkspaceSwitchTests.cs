@@ -40,7 +40,7 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
     public void Dispose()
     {
         foreach (var s in _services) s.Dispose();
-        try { Directory.Delete(_base, recursive: true); } catch { /* best-effort cleanup */ }
+        try { Directory.Delete(_base, recursive: true); } catch { /* nettoyage best-effort */ }
     }
 
     /// <summary>A C# class large enough to pass the chunkers' MinChunkLines threshold.</summary>
@@ -104,7 +104,7 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
         var svc = NewService(provider);
         svc.StartIndexing(_rootA);
         await WaitUntilAsync(async () => await Mentions(svc, "AlphaProbe") && !svc.IsIndexing,
-            "end of the pass over A", () => svc.Status);
+            "the pass over A is finished", () => svc.Status);
 
         svc.StartIndexing(_rootB);
         try
@@ -112,7 +112,7 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
             Assert.True(inPassB.Wait(TimeSpan.FromSeconds(30)), "the pass over B never asked for an embedding");
 
             Assert.False(await Mentions(svc, "AlphaProbe"),
-                "During the new workspace's pass, search still returns the previous workspace's code.");
+                "During the new workspace's pass, the search still returns the old one's code.");
         }
         finally { gate.Set(); }
     }
@@ -131,7 +131,7 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
         var svc = NewService(provider);
         svc.StartIndexing(_rootA);
         await WaitUntilAsync(async () => await Mentions(svc, "AlphaProbe") && !svc.IsIndexing,
-            "end of the pass over A", () => svc.Status);
+            "the pass over A is finished", () => svc.Status);
 
         await svc.ShadowPreWarmAsync("AlphaProbe", "embed-model", CancellationToken.None);
 
@@ -142,11 +142,11 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
 
         svc.StartIndexing(_rootB);
         await WaitUntilAsync(async () => await Mentions(svc, "BetaProbe") && !svc.IsIndexing,
-            "end of the pass over B", () => svc.Status);
+            "the pass over B is finished", () => svc.Status);
 
         var after = svc.TryGetShadow("AlphaProbe").Results;
         Assert.True(after is null || !after.Any(r => r.Chunk.Content.Contains("AlphaProbe", StringComparison.Ordinal)),
-            "The auto-context's precomputed search still returns the previous workspace's chunks.");
+            "The auto-context pre-computation still returns the old workspace's excerpts.");
     }
 
     [Fact]
@@ -160,19 +160,19 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
         var svc = NewService(new FakeInferenceProvider(), debounceMs: 600_000);
         svc.StartIndexing(_rootA);
         await WaitUntilAsync(async () => await Mentions(svc, "AlphaProbe") && !svc.IsIndexing,
-            "end of the pass over A", () => svc.Status);
+            "the pass over A is finished", () => svc.Status);
 
         svc.OnFileChangedCore(alpha);
 
         svc.StartIndexing(_rootB);
         await WaitUntilAsync(async () => await Mentions(svc, "BetaProbe") && !svc.IsIndexing,
-            "end of the pass over B, drain included", () => svc.Status);
+            "the pass over B is finished, backlog drained", () => svc.Status);
 
         // Witness: the new workspace is indexed.
         Assert.True(await Mentions(svc, "BetaProbe"));
 
         Assert.False(await Mentions(svc, "AlphaProbe"),
-            "A change queued in the previous workspace was indexed into the new one.");
+            "A save pending in the old workspace was indexed into the new one.");
         var onDiskB = await new RagDatabase(_rootB).LoadAsync(CancellationToken.None);
         Assert.DoesNotContain(onDiskB, c => c.Content.Contains("AlphaProbe", StringComparison.Ordinal));
     }

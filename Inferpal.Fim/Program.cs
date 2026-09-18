@@ -25,7 +25,7 @@ for (var i = 0; i < args.Length - 1; i++)
     break;
 }
 
-// ── Le Core, et rien d'autre ──────────────────────────────────────────────────
+// ── The Core, and nothing else ───────────────────────────────────────────────
 // The configuration is read once: the in-process client recycles this process when the file
 // changes, which is safer than a hot reload (switching backend in flight would leave an HttpClient
 // and a loaded model behind).

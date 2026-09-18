@@ -31,7 +31,7 @@ internal partial class InferpalToolWindowData
     /// </summary>
     internal const string EditorName = "Visual Studio";
 
-    #region Indexation RAG, premier lancement, OODA & compaction
+    #region RAG indexing, first run, OODA & compaction
 
     // ── RAG indexing ──────────────────────────────────────────────────────────
 

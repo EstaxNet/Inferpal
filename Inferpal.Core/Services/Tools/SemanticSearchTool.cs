@@ -124,7 +124,7 @@ internal sealed class SemanticSearchTool : ITool
 
         // ── Format results ────────────────────────────────────────────────────
         var sb     = new StringBuilder();
-        // Le libelle se lit sur TOUS les resultats et la provenance de chacun sur RagHit.IsCosine :
+        // The label is read from ALL the results, and each one's provenance from RagHit.IsCosine:
         // inferring it from the FIRST result's score announced "keyword" as soon as a purely
         // lexical hit came first — the very case the lexical half exists for.
         var modeLabel = RagResultPresentation.ModeLabel(queryEmbedding is { Length: > 0 }, results);

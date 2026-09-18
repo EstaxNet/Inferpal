@@ -486,11 +486,11 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         return sb.Append('"').ToString();
     }
 
-    /// <summary>Horloge monotone en millisecondes (remplace le TickCount64 du BCL moderne).</summary>
+    /// <summary>Monotonic clock in milliseconds (stands in for the modern BCL's TickCount64).</summary>
     private static long NowMs() =>
         System.Diagnostics.Stopwatch.GetTimestamp() / (System.Diagnostics.Stopwatch.Frequency / 1000);
 
-    /// <summary>Tue le process et sa descendance (remplace Kill(entireProcessTree: true)).</summary>
+    /// <summary>Kills the process and its descendants (stands in for Kill(entireProcessTree: true)).</summary>
     private static void KillTree(System.Diagnostics.Process process)
     {
         try

@@ -77,8 +77,8 @@ public class ConventionCoverageTests
             var source = File.ReadAllText(file);
             Assert.False(
                 System.Text.RegularExpressions.Regex.IsMatch(source, @"(?<![\w.])File\.WriteAllText(Async)?\s*\("),
-                $"{Rel(file)} writes a text file directly - File.WriteAllText emits UTF-8 without " +
-                "a BOM whatever happens (VS BOM stripped, UTF-16 silently transcoded). " +
+                $"{Rel(file)} writes a text file directly — File.WriteAllText emits UTF-8 with no " +
+                "BOM whatever the target was (a VS BOM is stripped, UTF-16 transcoded in silence). " +
                 "Use SafeFileWriter.WritePreservingAsync, or add a justified exemption here.");
         }
     }
@@ -97,7 +97,7 @@ public class ConventionCoverageTests
         {
             var source = File.ReadAllText(file);
             foreach (System.Text.RegularExpressions.Match m in callSite.Matches(source))
-            {
+    {
                 var args = BalancedArguments(source, source.IndexOf('(', m.Index + m.Length - 1));
                 Assert.True(args is not null,
                     $"{Rel(file)}: argument list never closed after \"{Snippet(source, m.Index)}\" - unexpected balancing or source.");
@@ -105,8 +105,8 @@ public class ConventionCoverageTests
                     args!.Contains("RegexBudget") || args.Contains("Timeout"),
                     $"{Rel(file)}: \"{Snippet(source, m.Index)}\" has no match timeout - " +
                     "pass RegexBudget.Default (last argument), like all of its neighbours.");
-            }
         }
+    }
     }
 
     // ── 3. AtomicFile sous Services\Persistence ───────────────────────────────
@@ -123,9 +123,9 @@ public class ConventionCoverageTests
             Assert.False(
                 System.Text.RegularExpressions.Regex.IsMatch(
                     source, @"(?<![\w.])File\.(WriteAllText|WriteAllBytes)(Async)?\s*\("),
-                $"{Rel(file)} writes a store directly - File.WriteAll* truncates the target before " +
-                "writing (crash/full disk = store lost, and the config file is shared " +
-                "VS <-> VS Code). Use AtomicFile.WriteAllText[Async]/WriteAllBytes.");
+                $"{Rel(file)} writes a store directly — File.WriteAll* truncates the target before " +
+                "writing (a crash or a full disk = store lost, and the config file is shared " +
+                "VS ↔ VS Code). Use AtomicFile.WriteAllText[Async]/WriteAllBytes.");
         }
     }
 
@@ -148,7 +148,7 @@ public class ConventionCoverageTests
         }
     }
 
-    // ── 5. The scrolling contract of the chat list ────────────────────────────
+    // ── 9. What the MODEL reads asserts no variable fact ──────────────────────
 
     [Fact]
     public void TheChatList_KeepsTheContractTheAutoScrollerDependsOn()
@@ -191,24 +191,24 @@ public class ConventionCoverageTests
 
         var chatList = matches[0].El;
         var missing = new[]
-            {
+        {
                 @"VirtualizingPanel\.IsVirtualizing\s*=\s*""False""",
                 @"ScrollViewer\.CanContentScroll\s*=\s*""False""",
-            }
+        }
             .Where(attr => !Regex.IsMatch(chatList, attr))
             .Select(attr => attr.Replace(@"\.", ".").Replace(@"\s*", string.Empty))
-            .ToList();
+                    .ToList();
 
         Assert.True(missing.Count == 0,
             $"The chat list ({Rel(matches[0].Xaml)}) lost: {string.Join(", ", missing)}. "
-            + "With virtualization or logical scrolling on, off-screen bubbles have no container: "
-            + "BringIntoView has nothing to bring and ScrollToEnd aims at a wrong extent - the "
+            + "of ten will read it in English with nothing saying so. Add a key to the 10 .resx "
+            + "files plus a property in Strings.cs:"
             + "conversation silently stops following the stream.");
     }
 
-    // ── 9. What the MODEL reads asserts no variable fact ──────────────────────
+    // ── 21. What the MODEL reads asserts no variable fact ─────────────────────
 
-    /// <summary>The two facts the product knows to be variable, and that its own text asserted.</summary>
+    /// <summary>The two facts the product knows to be variable, and that its text asserted.</summary>
     private static readonly string[] VariableFacts = ["Visual Studio", "PowerShell", "powershell"];
 
     [Fact]
@@ -223,10 +223,11 @@ public class ConventionCoverageTests
         // editor: get_solution_info and get_open_editors named Visual Studio to the VS Code
         // front-end.
         //
-        // ⚠ The rule reads the Description and Parameters PROPERTIES, not the file: run_command
-        // must be able to name both dialects in the code that CHOOSES between them — that is the
-        // whole point. What is forbidden is writing the fact down where the model reads it.
-        var offenders    = new List<string>();
+        // ⚠ The rule reads the Description and Parameters PROPERTIES, not the file: `run_command`
+        // must be able to name both dialects in the code that CHOOSES (ShellDialect.PowerShell,
+        // "bash"), which is the whole point. What is forbidden is writing it hard where the model
+        // reads it.
+        var offenders   = new List<string>();
         var descriptions = 0;
 
         foreach (var file in ToolsSources())
@@ -252,21 +253,21 @@ public class ConventionCoverageTests
             $"The scan read only {descriptions} Description propertie(s) under Services/Tools: the rule no longer checks anything.");
 
         Assert.True(offenders.Count == 0,
-            "Model-facing text naming an editor or a shell. One Core serves both front-ends and "
-            + "three operating systems: state the fact instead of asserting it (the dialect comes "
-            + "from ShellLauncher.Resolve, the editor is declared by the front-end):"
+            "Text read by the model that names an editor or a shell. The same Core serves both "
+            + "front-ends and three operating systems: state the fact instead of asserting it (the "
+            + "dialect comes from ShellLauncher.Resolve, the editor is declared by the front-end):"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     [Fact]
     public void TheBaseSystemPrompt_AssertsNeitherEditorNorShell()
     {
-        // The SAME resource is served to both front-ends: Inferpal.Host hands it to VS Code
-        // verbatim. "integrated in Visual Studio 2026" was therefore false for every VS Code user,
-        // in all ten languages, and "PowerShell commands" false for every Linux/macOS machine. Both
-        // facts are now built at runtime by SystemPromptBuilder.EnvironmentFacts, where they hold.
-        var dir       = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
-        var files     = Directory.EnumerateFiles(dir, "Strings*.resx").ToList();
+        // The SAME resource is served to both front-ends: Inferpal.Host passes it to VS Code as is.
+        // "integrated into Visual Studio 2026" was therefore false for every VS Code user, in all
+        // ten languages, and "PowerShell commands" false for every Linux/macOS machine. Both facts
+        // are now built at run time by SystemPromptBuilder.EnvironmentFacts, where they are true.
+        var dir      = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
+        var files    = Directory.EnumerateFiles(dir, "Strings*.resx").ToList();
         var inspected = 0;
         var offenders = new List<string>();
 
@@ -293,8 +294,8 @@ public class ConventionCoverageTests
             + "translation:" + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
-    /// <summary>The text a model will read inside a property: literals and the fixed parts of
-    /// interpolated strings. Identifiers (<c>ShellDialect.PowerShell</c>) are not.</summary>
+    /// <summary>The text a model will read in a property: literals and the fixed parts of
+    /// interpolated strings. Identifiers (<c>ShellDialect.PowerShell</c>) are not part of it.</summary>
     private static IEnumerable<string> ModelFacingText(PropertyDeclarationSyntax property)
     {
         foreach (var node in property.DescendantNodes())
@@ -306,7 +307,7 @@ public class ConventionCoverageTests
         }
     }
 
-    // ── 8. Who yields the GPU, and who must NEVER wait for it ─────────────────
+    // ── 20. Who yields the GPU, and who must NEVER wait for it ────────────────
 
     [Fact]
     public void EmbeddingLoopsYieldTheGpu_AndQueriesNeverWaitForIt()
@@ -366,16 +367,16 @@ public class ConventionCoverageTests
             }
         }
 
-        // One witness per half: without both, a scan gone blind would pass while judging neither
-        // the loops nor the queries.
+        // One witness per half: without both, a scan gone blind would go green while judging
+        // neither the loops nor the queries.
         Assert.True(loops >= 2, $"Only {loops} in-loop embedding(s) found: the background half judges nothing.");
         Assert.True(oneShots >= 2, $"Only {oneShots} one-shot embedding(s) found: the query half judges nothing.");
 
         Assert.True(offenders.Count == 0,
-            "GPU discipline broken. An embedding loop yields before every call "
-            + "(GpuScheduler.WaitForChatIdleAsync); a query NEVER does - it is called from an agent "
-            + "run already holding the chat lease, so waiting for the chat to be idle is waiting "
-            + "for itself. Sites:"
+            "GPU discipline broken. An embedding LOOP yields before every call "
+            + "(GpuScheduler.WaitForChatIdleAsync); a QUERY never yields — it is called from an "
+            + "agent run already holding the chat lease, so waiting for the chat to go idle is "
+            + "waiting for itself. Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
@@ -427,7 +428,7 @@ public class ConventionCoverageTests
                 if (target is null || !forbidden.Contains(target)) continue;
 
                 var line = assign.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                offenders.Add($"{Rel(file)}({line}): {assign.Left} = ...");
+                offenders.Add($"{Rel(file)}({line}) : {assign.Left} = …");
             }
         }
 
@@ -436,7 +437,7 @@ public class ConventionCoverageTests
 
         Assert.True(offenders.Count == 0,
             "The ambient culture is written instead of being overridden. This process is not ours "
-            + "(devenv, Extensibility host) and neither is the thread: go through "
+            + "(devenv, the Extensibility host) and neither is the thread: go through "
             + "Strings.OverrideCulture, which Get() consults first. Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
@@ -480,9 +481,9 @@ public class ConventionCoverageTests
         {
             var name = type.ToString().Replace(" ", string.Empty).TrimEnd('?');
 
-            if (primitives.Contains(name))              { shapes.Add("primitive"); return true; }
-            if (name == "AsyncCommand")                 { shapes.Add("command");   return true; }
-            if (contracts.Contains(name))               { shapes.Add("contract");  return true; }
+            if (primitives.Contains(name))              { shapes.Add("primitif"); return true; }
+            if (name == "AsyncCommand")                 { shapes.Add("commande"); return true; }
+            if (contracts.Contains(name))               { shapes.Add("contrat");  return true; }
 
             var collection = Regex.Match(name, @"^ObservableCollection<([A-Za-z0-9_]+)>$");
             if (collection.Success
@@ -510,29 +511,22 @@ public class ConventionCoverageTests
             }
 
         // Two witnesses, because two things can break: the enumeration (it no longer reads any
-        // property) and the classifier (it accepts everything, or nothing). A "zero violation"
+        // properties) and the classifier (it accepts everything, or nothing). A "zero violations"
         // means nothing without both.
         Assert.True(seen > 100, $"Only {seen} [DataMember] propertie(s) read: the rule scans nothing.");
-        foreach (var shape in new[] { "primitive", "command", "collection", "contract" })
+        foreach (var shape in new[] { "primitif", "commande", "collection", "contrat" })
             Assert.Contains(shape, shapes);
 
         Assert.True(offenders.Count == 0,
-            "Property exposed to devenv with a type the Remote UI boundary cannot carry. It will be "
-            + "INVISIBLE on the VS side: no error, no binding, the element stays empty. The only "
-            + "shapes that cross are the primitives (string/bool/int/double), AsyncCommand, a "
+            "A property exposed to devenv with a type the Remote UI boundary does not carry. It "
+            + "will be INVISIBLE on the VS side: no error, no binding, the element stays empty. The "
+            + "only shapes that cross are the primitives (string/bool/int/double), AsyncCommand, a "
             + "[DataContract] type, and an ObservableCollection of either of the last two. Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
-    /// <summary>
-    /// The witness of <see cref="CodeOnly"/>: it neutralizes comments in BOTH directions that
-    /// matter, and shifts nothing.
-    /// </summary>
-    /// <remarks>
-    /// Without it the repair would be invisible: the rules above are green before and after, since
-    /// no source in the repository breaks them. That is exactly the failure mode this file exists
-    /// to close - a rule that measures nothing is green for the worst possible reason.
-    /// </remarks>
+    // ── 17. The chat list's scrolling contract ────────────────────────────────
+
     [Fact]
     public void CodeOnly_NeutralizesComments_InBothDirections()
     {
@@ -551,7 +545,7 @@ public class ConventionCoverageTests
         ]);
         File.WriteAllText(path, source);
         try
-        {
+            {
             var code = CodeOnly(path);
 
             // False RED: prose documenting a forbidden pattern must no longer carry it.
@@ -567,11 +561,11 @@ public class ConventionCoverageTests
             // the failure messages would point at the wrong line.
             Assert.Equal(source.Length, code.Length);
             Assert.Equal(source.Count(c => c == '\n'), code.Count(c => c == '\n'));
-        }
+            }
         finally { File.Delete(path); }
     }
 
-    // ── 11. What the USER reads does not assert the editor either ────────────
+    // ── 24. A solution is looked up by its EXTENSION, never by `*.sln` ────────
 
     [Fact]
     public void SharedUiText_NamesNeitherAnEditorNorAShell()
@@ -626,7 +620,7 @@ public class ConventionCoverageTests
                 foreach (var fact in VariableFacts)
                     if (m.Groups[2].Value.Contains(fact, StringComparison.OrdinalIgnoreCase))
                         offenders.Add($"{Path.GetFileName(file)} / {m.Groups[1].Value} : '{fact}'");
-            }
+        }
         }
 
         // Two witnesses, because two things can break silently: collecting the shared names (it
@@ -637,14 +631,14 @@ public class ConventionCoverageTests
             $"Only {scanned} shared value(s) read across {files.Length} file(s): the scan judges nothing.");
 
         Assert.True(offenders.Count == 0,
-            "A text served to BOTH front-ends names an editor or a shell. `settings/strings` and "
-            + "`command/list` render these strings verbatim in VS Code, and the shell is resolved "
-            + "per machine, so the sentence is false for the other half of the users. Reword in "
-            + "neutral terms ('the editor', 'shell') rather than naming ours:"
+            "A solution looked up through the *.sln pattern gives an answer that depends on the "
+            + "volume (8.3 short names): it finds .slnx files on one machine and not on another. "
+            + "is read by users of all ten languages, and a French sentence is as unreadable there "
+            + "as anywhere else. Sites (with the offending letters):"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
-    // ── 10. A model keyword is read through Keyword, never any other way ──────
+    // ── 22. A model keyword is read through Keyword, never otherwise ──────────
 
     [Fact]
     public void ModelKeywords_AreReadThroughToolArgsKeyword()
@@ -779,15 +773,25 @@ public class ConventionCoverageTests
             + "(argument read or comparison against a literal - the counter is their intersection).");
 
         Assert.True(offenders.Count == 0,
-            "A keyword written by the MODEL is read without normalisation. The code compares this "
-            + "value against literals: 'Callers', 'Replace' or a value with spaces around it match "
-            + "none of them, and the tool then returns a wrong answer WITH NO ERROR - an empty "
-            + "report, or a write different from the one asked for. Go through ToolArgs.Keyword:"
+            "A keyword written by the MODEL, read without normalisation. The code compares that "
+            + "value against literals: Callers, Replace, or a value padded with spaces match none "
+            + "of them, and the tool then returns a WRONG answer with no error — an empty report, "
+            + "or a write other than the one asked for. Go through ToolArgs.Keyword:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
-    // ── 12. A solution is looked up by its EXTENSION, never by `*.sln` ────
+    // ── Plomberie ─────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// The text of a source file with its COMMENTS neutralized - replaced by spaces, length for
+    /// length, newlines preserved: offsets, and therefore the line numbers of failure messages,
+    /// stay exact.
+    /// </summary>
+    /// <remarks>
+    /// Without it the repair would be invisible: the ten rules above are green before as after,
+    /// since no source in the repository is in breach. That is exactly the failure mode this file
+    /// exists to close — a rule that measures nothing is green for the worst of reasons.
+    /// </remarks>
     [Fact]
     public void ASolutionIsNeverLookedUpByThe_sln_Pattern()
     {
@@ -837,20 +841,33 @@ public class ConventionCoverageTests
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
-    // ── Plumbing ──────────────────────────────────────────────────────────────
-
     /// <summary>
-    /// The text of a source file with its COMMENTS neutralized - replaced by spaces, length for
-    /// length, newlines preserved: offsets, and therefore the line numbers of failure messages,
+    /// The text of a source file with its <b>comments neutralized</b> — replaced by spaces, length
+    /// for length, newlines preserved: offsets, and therefore the line numbers of error messages,
     /// stay exact.
     /// </summary>
     /// <remarks>
-    /// A convention scan that reads raw text finds its patterns INSIDE comments, and that is paid
-    /// for in both directions. False RED: the rule fails on the prose documenting the very defect
-    /// it forbids. False GREEN: a rule requiring the presence of a call is satisfied by finding it
-    /// COMMENTED OUT, i.e. disabled. Here the language is C#, so a syntax tree decides what a
-    /// regex cannot. One reader per language, never two - this is the C# one, hence
-    /// <c>internal</c>.
+    /// <para>
+    /// ⚠ A convention scan that reads raw text finds its patterns <b>in the comments</b>, and that
+    /// is paid for in both directions. In false <b>red</b>: the rule goes red on the prose that
+    /// documents the defect it forbids — which happened <b>three times</b>/04, once
+    /// on the very comment written to explain the fix the rule had just demanded. In false
+    /// <b>green</b>: a rule requiring the presence of a call is happy to find it COMMENTED OUT,
+    /// hence disabled.
+    /// </para>
+    /// <para>
+    /// This is the same class as <c>Test-PublicParity</c>'s neutralizer, fixed, and
+    /// the same lesson as rule 2's Roslyn pattern: <i>a guard written in the language of the defect
+    /// it hunts inherits its blind spots</i>. Here the language is C#, so the syntax tree settles
+    /// what a regex cannot.
+    /// </para>
+    /// <para>
+    /// ⚠ One reader per language, never two: this is also what <c>SettingsSchemaDriftTests</c> calls
+    /// for the C# sources it scans (hence <c>internal</c>). The other two languages have their own,
+    /// because Roslyn does not read them — <c>DeployScriptGuardTests.NeutralizeScriptComments</c>
+    /// for PowerShell, <c>SettingsSchemaDriftTests.NeutralizeTypeScriptComments</c> for TypeScript —
+    /// and each carries its own witness.
+    /// </para>
     /// </remarks>
     internal static string CodeOnly(string path)
     {
@@ -890,7 +907,7 @@ public class ConventionCoverageTests
     internal static IReadOnlyList<string> ViewModelSources()
     {
         var dir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
-        Assert.True(Directory.Exists(dir), $"The convention scan targets {dir}, which does not exist - the rule checks nothing any more.");
+        Assert.True(Directory.Exists(dir), $"The convention scan targets {dir}, which does not exist — the rule checks nothing any more.");
 
         var files = Directory.EnumerateFiles(dir, "*.cs", SearchOption.TopDirectoryOnly).ToList();
         Assert.NotEmpty(files);
@@ -900,7 +917,7 @@ public class ConventionCoverageTests
     internal static IReadOnlyList<string> ProjectSources(string project)
     {
         var dir = Path.Combine(RepoRoot(), project);
-        Assert.True(Directory.Exists(dir), $"The convention scan targets {dir}, which does not exist - the rule checks nothing any more.");
+        Assert.True(Directory.Exists(dir), $"The convention scan targets {dir}, which does not exist — the rule checks nothing any more.");
 
         var files = Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
@@ -1046,13 +1063,13 @@ public class ConventionCoverageTests
             }
         }
 
-        // Witness: with no site replacing the conversation the rule is green while measuring
-        // nothing - this repo's failure mode. There are two: /clear and restoring.
-        Assert.True(seen >= 2, $"Only {seen} replacement site(s) read -- the rule no longer measures anything.");
+        // Witness: with no site replacing the conversation, the rule is green while measuring
+        // nothing — this whole repository's failure mode. There are two: /clear and restore.
+        Assert.True(seen >= 2, $"Only {seen} replacement site(s) read -- the rule measures nothing any more.");
 
         Assert.True(offenders.Count == 0,
-            "These methods replace the conversation without resetting its counters: the token total "
-            + "shown and exported, and the measurement the pre-send context check decides on, then "
+            "These methods replace the conversation without resetting its counters: the token "
+            + "total shown and exported, and the measurement the context pre-check decides on, then "
             + "describe the previous conversation. Call ResetTurnAccounting():"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
@@ -1100,9 +1117,9 @@ public class ConventionCoverageTests
         Assert.True(seen >= 1, $"Only {seen} site(s) raising IsLoading read -- the rule no longer measures anything.");
 
         Assert.True(offenders.Count == 0,
-            "These methods show the Stop button (IsLoading = true) without giving it anything to "
-            + "cancel: SendAsync and SettleCurrentTurnAsync only cancel _currentCts. Wire a linked "
-            + "CancellationTokenSource to _currentCts and pass its token:"
+            "These methods show the Stop button (IsLoading = true) with nothing for it to cancel: "
+            + "SendAsync and SettleCurrentTurnAsync only cancel _currentCts. Wire a "
+            + "CancellationTokenSource bound to _currentCts and pass its token:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
@@ -1145,7 +1162,7 @@ public class ConventionCoverageTests
 
                 var line = property.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
                 offenders.Add($"{Rel(file)}({line}) : {property.Type} {name}");
-            }
+        }
         }
 
         // Second witness: every binding finds its property. A property renamed on one side only
@@ -1155,9 +1172,9 @@ public class ConventionCoverageTests
             "Bound to SelectedItem in the XAML, not found in the view models: " + string.Join(", ", missing));
 
         Assert.True(offenders.Count == 0,
-            "A property bound to SelectedItem is declared non-nullable: the Selector writes null into it "
-            + "when the item leaves its list, and a read such as `.Trim()` then throws an exception the "
-            + "compiler could not report. Declare it nullable. Sites:"
+            "This channel writes its signal file IN PLACE. File.WriteAll* truncates then fills, "
+            + "so a reader in another process can land on an empty or half-written file — and the "
+            + "readers of this bus erase what they have just read, which turns the tear into a "
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
@@ -1200,11 +1217,11 @@ public class ConventionCoverageTests
 
         Assert.True(offenders.Count == 0,
             "These tools resolve a path against the process's working directory, which in Visual "
-            + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
+            + "failure instead of swallowing it). Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
-    // ── 29. A turn is taken and released through one funnel ───────────────────
+    // ── 29. A turn is taken and returned through the same funnel ──────────────
 
     [Fact]
     public void ATurnIsTakenAndReleased_ThroughOneFunnel()
@@ -1247,9 +1264,9 @@ public class ConventionCoverageTests
             }
         }
 
-        Assert.True(declared == 1, $"BeginOwnedTurn is declared {declared} time(s) -- the funnel no longer exists.");
+        Assert.True(declared == 1, $"BeginOwnedTurn is declared {declared} times -- the funnel no longer exists.");
         // Witness: the chat turn, /fix-build, /tdd, /commit and the long commands.
-        Assert.True(callers >= 5, $"Only {callers} site(s) taking the turn read -- the rule no longer measures anything.");
+        Assert.True(callers >= 5, $"Only {callers} site(s) taking the turn read -- the rule measures nothing any more.");
 
         Assert.True(raisers.Count == 0,
             "These methods raise IsLoading themselves instead of going through BeginOwnedTurn — "
@@ -1303,8 +1320,8 @@ public class ConventionCoverageTests
             }
         }
 
-        Assert.True(declared == 1, $"ApplySystemPrompt is declared {declared} time(s) -- the funnel no longer exists.");
-        // Witness: plan mode, active file, /note, /rules, X-Ray, /template.
+        Assert.True(declared == 1, $"ApplySystemPrompt is declared {declared} times -- the funnel no longer exists.");
+        // Witness: plan, active file, /note, /rules, X-Ray, /template.
         Assert.True(refreshes >= 5, $"Only {refreshes} call(s) to RefreshSystemPrompt read -- the rule no longer measures anything.");
 
         Assert.True(writers.Count == 0,
@@ -1316,4 +1333,4 @@ public class ConventionCoverageTests
             + "and the next rebuild erases it. Set _personaLanguage instead:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", withArgs));
     }
-}
+        }

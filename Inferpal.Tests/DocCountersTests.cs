@@ -102,8 +102,8 @@ public class DocCountersTests
             Assert.True(listClaim.Success, "MARKETPLACE.md no longer states 'N built-in tools'.");
             AssertCounter(listPath, actual, int.Parse(listClaim.Groups[1].Value),
                           text => Regex.Replace(text, @"\d+ built-in tools", $"{actual} built-in tools"),
-                          "built-in tools (Marketplace listing)");
-        }
+                              "built-in tools");
+            }
     }
 
     [Fact]

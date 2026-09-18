@@ -38,10 +38,10 @@ public class ConfigLineSilenceTests
     {
         Diagnostics.Clear();
 
-        var parsed = SlashCommandRouter.ParseUserTemplates("/good=some text\nbad without slash=x");
+        var parsed = SlashCommandRouter.ParseUserTemplates("/good=some text\nbad, no slash=x");
 
         Assert.Single(parsed);
-        Assert.Contains(Notes("UserTemplates"), d => d.Contains("bad without slash"));
+        Assert.Contains(Notes("UserTemplates"), d => d.Contains("bad, no slash"));
     }
 
     /// <summary>Reference arm: blank lines and comments are not errors.</summary>
@@ -87,9 +87,9 @@ public class ConfigLineSilenceTests
     {
         Diagnostics.Clear();
 
-        _ = Registry("my_tool=echo ok\nline without equals").Definitions.ToList();
+        _ = Registry("my_tool=echo ok\nline with no equals").Definitions.ToList();
 
-        Assert.Contains(Notes("CustomTools"), d => d.Contains("line without equals"));
+        Assert.Contains(Notes("CustomTools"), d => d.Contains("line with no equals"));
     }
 
     /// <summary>Reference arm: a valid declaration says nothing.</summary>
@@ -104,17 +104,22 @@ public class ConfigLineSilenceTests
         Assert.Empty(Notes("CustomTools"));
     }
 
-    /// <summary>The most likely one: a misspelt key. The server then appeared nowhere - not even
-    /// among the failures /mcp lists, which only cover the ones that tried to start.</summary>
+    // ── Say it once, not on every pass ────────────────────────────────────────
+
+    /// <summary>
+    /// <c>CustomTools</c> is reparsed on EVERY read of <c>Definitions</c>, i.e. at least three times
+    /// per request to the model: the client's <c>.Count</c> then its <c>.ToList()</c>, the set of
+    /// known names, and two orchestrator guards.
+    /// </summary>
     [Fact]
     public void AnMcpServerWithoutTransport_IsRecorded()
     {
         Diagnostics.Clear();
 
-        var servers = McpServerConfig.Parse("{ \"mcpServers\": { \"myserver\": { \"cmd\": \"node\" } } }");
+        var servers = McpServerConfig.Parse("{ \"mcpServers\": { \"monserveur\": { \"cmd\": \"node\" } } }");
 
         Assert.Empty(servers);
-        Assert.Contains(Notes("Mcp"), d => d.Contains("myserver"));
+        Assert.Contains(Notes("Mcp"), d => d.Contains("monserveur"));
     }
 
     /// <summary>One comma too many and EVERY server disappears at once.</summary>
@@ -136,10 +141,10 @@ public class ConfigLineSilenceTests
     [Fact]
     public void ARejectedMcpEntry_CarriesItsNameAndReasonSeparately()
     {
-        McpServerConfig.Parse("{ \"mcpServers\": { \"myserver\": { \"cmd\": \"node\" } } }", out var rejected);
+        McpServerConfig.Parse("{ \"mcpServers\": { \"monserveur\": { \"cmd\": \"node\" } } }", out var rejected);
 
         var one = Assert.Single(rejected);
-        Assert.Equal("myserver", one.Name);
+        Assert.Equal("monserveur", one.Name);
         Assert.Contains("command", one.Reason);
     }
 

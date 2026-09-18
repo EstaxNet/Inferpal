@@ -97,7 +97,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private CancellationTokenSource? _currentCts;
     // Completed by the owning turn's (conditional) finalisation — the signal the code-action
     // pending-prompt path awaits after cancelling a turn, so it never starts the next one while
-    // the previous is still unwinding (pre-1.6.0 architecture review, §2.1). Touched on the VM context only.
+    // the previous is still unwinding. Touched on the VM context only.
     private TaskCompletionSource?    _turnDone;
     // The last session restored when the window opens. A pending prompt (a code action that opened
     // the window) waits for it: the restore replaces the conversation, and it could not wait for a

@@ -107,12 +107,14 @@ public sealed class IndexBootstrapSilenceTests : IDisposable
         svc.StartIndexing(_root);
 
         await WaitUntilAsync(() => svc.Status.Contains("error", StringComparison.OrdinalIgnoreCase),
-                             "the pass to give up with an error", () => svc.Status);
+                             "the pass hands back on an error", () => svc.Status);
 
-        // ⚠ The ring is NOT cleared: it is static and shared by the whole suite, which runs in
-        // parallel. The failure is therefore looked up by its EXACT context — nine sites in that
-        // file trace under a context starting with "ProjectIndexService", and a prefix would have
-        // let the neighbour green this test in place of the path it measures.
+        // ⚠ The failure is looked up by its EXACT context: nine sites in that file trace under a
+        // context starting with "ProjectIndexService", and a prefix would have let the neighbour
+        // green this test in place of the path it measures. And the class joins the "Diagnostics"
+        // collection because the ring is static: a class running in parallel that calls Clear()
+        // between the action and the assertion makes this test red on a product that is fine
+        // (measured once, one run in two hundred).
         Assert.Contains(Diagnostics.Snapshot(),
             e => e.Context == "ProjectIndexService.IndexingPass");
         Assert.True(Directory.Exists(dbPath));
@@ -127,7 +129,7 @@ public sealed class IndexBootstrapSilenceTests : IDisposable
         svc.StartIndexing(_root);
 
         await WaitUntilAsync(() => !svc.IsIndexing && svc.Status.Length > 0,
-                             "the pass to finish", () => svc.Status);
+                             "the pass finishes", () => svc.Status);
 
         Assert.DoesNotContain("error", svc.Status, StringComparison.OrdinalIgnoreCase);
     }
@@ -137,7 +139,7 @@ public sealed class IndexBootstrapSilenceTests : IDisposable
     [Fact]
     public void TheMessageOfAWrapper_IsTheMessageOfWhatItWraps()
     {
-        var real = new FileNotFoundException("e_sqlite3.dll cannot be found");
+        var real = new FileNotFoundException("e_sqlite3.dll est introuvable");
 
         Assert.Equal(real.Message,
             Diagnostics.RootMessage(new TypeInitializationException("Sqlite", real)));
@@ -150,7 +152,7 @@ public sealed class IndexBootstrapSilenceTests : IDisposable
     [Fact]
     public void NestedWrappers_AreUnwrappedAllTheWayDown()
     {
-        var real = new FileNotFoundException("e_sqlite3.dll cannot be found");
+        var real = new FileNotFoundException("e_sqlite3.dll est introuvable");
         var wrapped = new System.Reflection.TargetInvocationException(
             new TypeInitializationException("Sqlite", new AggregateException(real)));
 
@@ -161,8 +163,8 @@ public sealed class IndexBootstrapSilenceTests : IDisposable
     public void AnOrdinaryExceptionThatHasAnInnerOne_KeepsItsOwnMessage()
     {
         // ⚠ The reference arm that matters: unwrapping ALWAYS to the bottom would replace a message
-        // written for the user ("the index folder is not writable") with a plumbing detail. Only
-        // the framework's wrappers are unwrapped.
+        // written for the user ("the index folder is not writable") with a plumbing detail. Only the
+        // framework's wrappers are unwrapped.
         var outer = new IOException("the index folder is not writable",
                                     new UnauthorizedAccessException("access denied"));
 
@@ -173,7 +175,7 @@ public sealed class IndexBootstrapSilenceTests : IDisposable
     public void AWrapperWithNothingInside_KeepsItsOwnMessage()
     {
         // The loop must stop, and return something rather than nothing.
-        var empty = new AggregateException("nothing inside");
+        var empty = new AggregateException("rien dedans");
 
         Assert.Equal(empty.Message, Diagnostics.RootMessage(empty));
     }

@@ -90,9 +90,9 @@ public class MarkdownFolderTests : IDisposable
     [Fact]
     public void TheNote_IsSaidOncePerFile_AndSpeaksAgainAfterASuccessfulRead()
     {
-        var path = Write("regle.md", "---\ndescription: R\n---\ncorps");
+        var path = Write("rule.md", "---\ndescription: R\n---\ncorps");
         string[] Notes() =>
-            [.. Diagnostics.Snapshot().Where(e => e.Context.Contains("regle.md")).Select(e => e.Detail)];
+            [.. Diagnostics.Snapshot().Where(e => e.Context.Contains("rule.md")).Select(e => e.Detail)];
 
         Diagnostics.Clear();
 
@@ -104,7 +104,7 @@ public class MarkdownFolderTests : IDisposable
         Assert.Empty(ok);                             // the read goes through: the memory forgets
 
         using (Lock(path)) MarkdownFolder.ReadAll(_dir, "Test.Load", out _);
-        Assert.Equal(2, Notes().Length);              // une nouvelle panne se redit
+        Assert.Equal(2, Notes().Length);              // a new failure is said again
     }
 
     /// <summary>⚠ An empty file stays a SILENT omission, deliberately: that is not a failure, it is
@@ -124,18 +124,18 @@ public class MarkdownFolderTests : IDisposable
     [Fact]
     public void EachServiceReportsItsUnreadableFiles()
     {
-        var locked = Write("regle.md", "---\ndescription: R\n---\ncorps");
+        var locked = Write("rule.md", "---\ndescription: R\n---\ncorps");
 
         using (Lock(locked))
         {
             Assert.Empty(RulesService.Load(_dir, out var r));
-            Assert.Equal(["regle.md"], r);
+            Assert.Equal(["rule.md"], r);
 
             Assert.Empty(ChecksService.Load(_dir, out var c));
-            Assert.Equal(["regle.md"], c);
+            Assert.Equal(["rule.md"], c);
 
             Assert.Empty(PromptFilesService.LoadUncached(_dir, out var p));
-            Assert.Equal(["regle.md"], p);
+            Assert.Equal(["rule.md"], p);
         }
     }
 
@@ -147,20 +147,20 @@ public class MarkdownFolderTests : IDisposable
     [Fact]
     public void WhenEveryFileIsUnreadable_TheListingDoesNotClaimThereAreNone()
     {
-        var locked = Write("regle.md", "---\ndescription: R\n---\ncorps");
+        var locked = Write("rule.md", "---\ndescription: R\n---\ncorps");
         var root   = Path.GetDirectoryName(Path.GetDirectoryName(_dir))!;
 
         // The handler builds its own path: <root>/.inferpal/rules
         var rulesDir = Path.Combine(_dir, ".inferpal", "rules");
         Directory.CreateDirectory(rulesDir);
-        File.Move(locked, Path.Combine(rulesDir, "regle.md"));
+        File.Move(locked, Path.Combine(rulesDir, "rule.md"));
 
-        using (Lock(Path.Combine(rulesDir, "regle.md")))
+        using (Lock(Path.Combine(rulesDir, "rule.md")))
         {
             var result = RulesChecksPromptsCommandHandler.Rules(_dir, ["/rules"]);
 
             Assert.NotNull(result.Message);
-            Assert.Contains("regle.md", result.Message!);   // the file is named
+            Assert.Contains("rule.md", result.Message!);   // the file is named
         }
     }
 }

@@ -128,8 +128,8 @@ public sealed class UnlistableFolderCoverageTests : IDisposable
 
         Assert.NotNull(gap);
         Assert.Equal("pgdata", gap!.Value.Folder);
-        // La CAUSE compte autant que le dossier : « illisible » et « lien non suivi » envoient le
-        // reader in two different places.
+        // The CAUSE matters as much as the folder: "unlistable" and "link not followed" send
+        // the reader to two different places.
         Assert.Equal(WorkspaceScan.WalkGapKind.Unlistable, gap.Value.Kind);
     }
 

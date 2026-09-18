@@ -143,18 +143,18 @@ public class ReplayCommandHandlerTests
         var run = new HistoryRun("r1");
         run.RecordToolCall("write_file", "a.cs", 5, error: false);
         run.RecordFirst(@"C:\p\created.cs", snapshot: null);
-        run.RecordFirst(@"C:\p\modified.cs", snapshot: @"C:\snap\1");
-        run.RecordFirst(@"C:\p\no-net.cs", snapshot: null, snapshotFailed: true);
+        run.RecordFirst(@"C:\p\modifie.cs", snapshot: @"C:\snap\1");
+        run.RecordFirst(@"C:\p\sans-filet.cs", snapshot: null, snapshotFailed: true);
 
         var text = ReplayCommandHandler.Handle([run], NoArgs, root: null);
 
         // Witnesses: the two known states are still rendered as before.
         Assert.Contains("🆕 C:\\p\\created.cs", text);
-        Assert.Contains("✏ C:\\p\\modified.cs", text);
+        Assert.Contains("✏ C:\\p\\modifie.cs", text);
 
         // And the third no longer passes itself off as a creation.
-        Assert.DoesNotContain("🆕 C:\\p\\no-net.cs", text);
-        Assert.Contains("⚠ C:\\p\\no-net.cs", text);
+        Assert.DoesNotContain("🆕 C:\\p\\sans-filet.cs", text);
+        Assert.Contains("⚠ C:\\p\\sans-filet.cs", text);
         Assert.Contains(Strings.ReplayFileUnprotected, text);
     }
 }

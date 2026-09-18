@@ -210,6 +210,17 @@ public class DiagnosticsCommandHandlerTests : IDisposable
         Assert.Contains(@"<workspace>\src\A.cs", bundle);
     }
 
+    /// <summary>
+    /// The same scrub as the ring's entries, on the MCP lines — which also carry text from outside.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The message below is <b>measured</b>, not invented: it is exactly what .NET puts in the
+    /// exception when <c>Process.Start</c> fails, and exactly what <c>McpStdioClient</c> puts in
+    /// <c>LastError</c> — hence what <c>DescribeForBundle</c> returns. A misconfigured stdio MCP
+    /// server therefore published the home directory and the repository path into the file the user
+    /// pastes into a public issue, while the same bundle carefully replaces them with <c>~</c> and
+    /// <c>&lt;workspace&gt;</c> two lines below. One rule, two readers, one of them holding it.
+    /// </remarks>
     [Fact]
     public void Export_WithoutContext_FallsBackToList()
     {

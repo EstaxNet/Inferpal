@@ -8,7 +8,7 @@ namespace Inferpal.Tests;
 /// not work a moment ago".
 /// </summary>
 /// <remarks>
-/// Revue post-1.6.0, §2.3. <c>FimSidecar</c> posait un unique <c>bool _disabled</c> sur trois
+/// <c>FimSidecar</c> used to set a single <c>bool _disabled</c> on three
 /// events - executable missing, <c>Process.Start</c> returning null, <c>Process.Start</c> throwing
 /// - and nothing ever cleared it. An antivirus holding the exe for one second therefore killed
 /// ghost text for the whole life of that devenv, with no way for the user to find out: the trace

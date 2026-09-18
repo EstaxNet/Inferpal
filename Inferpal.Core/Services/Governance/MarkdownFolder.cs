@@ -60,8 +60,8 @@ internal static class MarkdownFolder
                 // prompt build, which is redone on EVERY change of active file: a bare `Swallow`
                 // wrote one entry per unreadable rule per pass, and the ring only keeps
                 // Diagnostics.Capacity of them. The `unreadable` list, on the other hand, is returned
-                // on every call — the two channels are distinct, and it is the
-                // que /rules affiche qui doit rester complet.
+                // on every call — the two channels are distinct, and it is the list /rules
+                // shows that must stay complete.
                 Diagnostics.RecordOnce($"{context}({Path.GetFileName(file)})",
                     $"Could not be read, so its content was not applied: {ex.Message}", file);
                 failed.Add(Path.GetFileName(file));

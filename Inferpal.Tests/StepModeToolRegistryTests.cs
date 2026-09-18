@@ -169,4 +169,4 @@ public class StepModeToolRegistryTests
 
         Assert.Equal([1, 2], calls);
     }
-}
+        }

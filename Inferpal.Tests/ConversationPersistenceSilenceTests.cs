@@ -110,7 +110,7 @@ public sealed class ConversationPersistenceSilenceTests
         var untilCatch = body.IndexOf("} catch", start, StringComparison.Ordinal);
         Assert.True(untilCatch > start, "the rebuild's try/catch is gone: worth checking.");
 
-        // Entre le rechargement et le catch, la branche « revenu vide » doit nommer sa raison.
+        // Between the reload and the catch, the "came back empty" branch must name its reason.
         var successPath = body[start..untilCatch];
         Assert.Matches(Translated, successPath);
     }
@@ -172,7 +172,7 @@ public sealed class ConversationPersistenceSilenceTests
 
         var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>()
                          .SingleOrDefault(m => m.Identifier.Text == name);
-        // WITNESS: the method this test is about still exists, under this name, in this file.
+        // WITNESS: the method this test is about still exists, under that name, in that file.
         Assert.True(method is not null, $"{name} was not found: this test would have measured nothing.");
         return method!;
     }

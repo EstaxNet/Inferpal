@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Connexion, heartbeat, sessions & modes
+    #region Connection, heartbeat, sessions & modes
 
     private async Task RetryConnectionAsync(object? _, CancellationToken ct)
     {

@@ -141,4 +141,4 @@ public class CodeActionPipelineTests
         Assert.Equal(CodeActionOutcome.Edited, run.Outcome);
         Assert.Equal("void M()\n{\n    return 2;\n}", run.NewDocText);
     }
-}
+    }

@@ -166,16 +166,6 @@ public class LmStudioClientTests
         Assert.Contains("/api/v1/models", server.Paths);
     }
 
-    /// <summary>
-    /// A turn that returns NOTHING leaves a trace of what the stream contained.
-    /// </summary>
-    /// <remarks>
-    /// ⚠ Reported from a machine on the network: every message answered "the model returned no
-    /// response", and the investigation stopped there — the accused server turned out perfectly
-    /// healthy (listing, chat, streaming, 28 tools, forced tool_choice), and <b>nothing recorded
-    /// what the stream contained</b>. It was the client's only failure leaving no trace at all:
-    /// everything else throws an AgentHttpException that carries its cause to the screen.
-    /// </remarks>
     [Fact]
     public async Task AnEmptyTurn_RecordsWhatTheStreamContained()
     {
@@ -257,5 +247,5 @@ public class LmStudioClientTests
 
         Assert.Equal(["servi-par-api-native"], await client.ListModelsAsync(CancellationToken.None));
         Assert.Equal(42, (await client.ListInstalledModelsAsync(CancellationToken.None)).Single().SizeBytes);
-    }
+}
 }

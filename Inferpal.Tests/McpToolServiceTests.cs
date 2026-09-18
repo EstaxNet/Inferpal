@@ -80,7 +80,7 @@ public class McpToolServiceTests
     // Generous budget, not a tight one: this helper waits for something to HAPPEN, it does
     // not measure how long it takes - that depends on the machine's load, not on the product.
     // The GitHub runner plays two test series in parallel, so 2 s are not 2 s there: measured
-    // on 2026-09-11, the net8.0-windows leg went red here while the local suite passed twice.
+    //, the net8.0-windows leg went red here while the local suite passed twice.
     // Lengthening hides nothing (what is broken still fails) and costs nothing.
     private static async Task WaitUntil(Func<bool> cond, string because, int timeoutMs = 30_000)
     {
@@ -185,7 +185,7 @@ public class McpToolServiceTests
     {
         // McpTool captures its approval at construction, so a sibling built by
         // WithApprovalService used to keep prompting through the ORIGINAL service: the §25
-        // TestFileWriteGuard never applied to MCP tools (pre-1.6.0 architecture review, §1.5). The whole
+        // TestFileWriteGuard never applied to MCP tools. The whole
         // surface of a registry must answer to that registry's approval — tested through the
         // sibling, not just on the nominal path.
         var config = new InferpalConfig { McpServersJson = OneServer("srv") };
@@ -216,7 +216,7 @@ public class McpToolServiceTests
     public async Task ASiblingRegistry_SharesTheParentsFileHistory()
     {
         // A fresh, runless history on the sibling made every real /tdd write invisible to
-        // /undo-run (pre-1.6.0 architecture review, §1.5).
+        // /undo-run.
         var config = new InferpalConfig();
         await using var svc = NewService(config, cfg => new FakeMcpClient(cfg.Name));
         var editor   = new NullEditor();
@@ -404,7 +404,7 @@ public class McpToolServiceTests
         await refresh;
 
         Assert.True(parallel, "the fast server only started after the slow one: serial start");
-        // Tool order follows the configuration, not the order of arrival.
+        // The tools' order follows the configuration, not the order of arrival.
         Assert.Equal(["mcp__slow__a", "mcp__fast__b"], svc.Tools.Select(t => t.Name));
     }
 

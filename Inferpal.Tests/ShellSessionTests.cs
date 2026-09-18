@@ -14,7 +14,7 @@ namespace Inferpal.Tests;
 // PowerShell (powershell.exe on Windows, pwsh elsewhere — every CI matrix runner ships one) to
 // prove cwd/env really persist and that a background job can be launched, polled and stopped.
 // On a pwsh-less POSIX machine they skip silently: the same contract runs in bash via
-// PosixShellTests (§23).
+// PosixShellTests.
 [Collection(ShellSerialCollection.Name)]
 public class ShellSessionTests
 {

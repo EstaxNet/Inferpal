@@ -203,7 +203,7 @@ public class SlashCommandCoverageTests
     /// single build complaining. The quoted sets must be identical.
     /// </para>
     /// <para>
-    /// Measured at zero violations on 2026-09-15 (960 occurrences, 25 distinct commands, 96 per
+    /// Measured at zero violations (960 occurrences, 25 distinct commands, 96 per
     /// language) — free to lock, so now rather than later.
     /// </para>
     /// </remarks>
@@ -233,8 +233,8 @@ public class SlashCommandCoverageTests
             quoted[Path.GetFileName(resx)] = words;
         }
 
-        // Witnesses: ten files read, and hundreds of quotes found. A broken glob or a regex that no
-        // longer matches would make both checks below green without reading anything.
+        // Witnesses: ten files read and hundreds of citations found. A broken glob or a regex that
+        // no longer matches would green both checks below while reading nothing.
         Assert.True(quoted.Count == 10, $"{quoted.Count} resource file(s) read instead of 10.");
         Assert.True(occurrences >= 200,
             $"Only {occurrences} quoted command(s) found — the reading is dead.");

@@ -134,7 +134,7 @@ public class FileHistoryRunTests
     {
         // Snapshot names used to carry the bare file name only: restore_file on A\Config.cs
         // picked the most recent snapshot NAMED Config.cs — B's — and wrote B's content into A
-        // with a plausible-looking approval diff (pre-1.6.0 architecture review, §1.4). The shared history dir
+        // with a plausible-looking approval diff. The shared history dir
         // requires a common git root, hence the fake .git below.
         using var tmp = new TempDir();
         Directory.CreateDirectory(Path.Combine(tmp.Path, ".git"));
@@ -158,7 +158,7 @@ public class FileHistoryRunTests
     {
         // A locked file (antivirus, another process, full disk…) used to fail the snapshot in a
         // bare catch: the write went ahead with no net and the file silently vanished from the
-        // /undo-run perimeter (pre-1.6.0 architecture review, §1.3). It must surface as Failed — and never be
+        // /undo-run perimeter. It must surface as Failed — and never be
         // treated as "created this run" (which undo would DELETE).
         using var tmp = new TempDir();
         var file = tmp.File("locked.txt", "precious");
@@ -207,7 +207,8 @@ public class FileHistoryRunTests
             try { Directory.Delete(Path, recursive: true); } catch { }
         }
     }
-    // ── Undoing a run writes: the current state is captured first ─────────────
+
+    // ── Ordre des snapshots ────────────────────────────────
 
     [Fact]
     public async Task UndoRun_SnapshotsWhatItIsAboutToOverwrite()
@@ -220,9 +221,9 @@ public class FileHistoryRunTests
         await svc.SnapshotAsync(file, CancellationToken.None);   // captures "original"
         await File.WriteAllTextAsync(file, "written by the agent");
 
-        // The user picks the file back up AFTER the run: that is the work an undo used to
-        // overwrite without a trace, and with no approval prompt since /undo-run asks for none.
-        await File.WriteAllTextAsync(file, "fixed by hand");
+        // The user picks the file up again AFTER the run: that is the work an undo overwrote
+        // without a trace, and without an approval prompt since /undo-run raises none.
+        await File.WriteAllTextAsync(file, "corrige a la main");
 
         var run    = svc.Runs.First(r => r.FileCount > 0);
         var result = await svc.UndoRunAsync(run, CancellationToken.None);
@@ -233,7 +234,7 @@ public class FileHistoryRunTests
         // And what was overwritten is findable again: that is what "recoverable" means.
         var saved = svc.FindMostRecentSnapshot(file);
         Assert.NotNull(saved);
-        Assert.Equal("fixed by hand", await File.ReadAllTextAsync(saved!));
+        Assert.Equal("corrige a la main", await File.ReadAllTextAsync(saved!));
     }
 
     [Fact]
@@ -245,11 +246,11 @@ public class FileHistoryRunTests
         var svc = new FileHistoryService();
         svc.BeginRun();
         svc.NoteCreated(created);
-        await File.WriteAllTextAsync(created, "agent scaffolding");
+        await File.WriteAllTextAsync(created, "echafaudage de l agent");
 
-        // The file the run created has been filled in since. The delete branch removed it as is,
-        // while the neighbouring branch already refuses to delete "because that would destroy
-        // data".
+        // The file the run created has been filled in since. The deletion branch removed it as
+        // it stood, while the branch next door already refuses to delete "because that would
+        // destroy data".
         await File.WriteAllTextAsync(created, "scaffolding + two hundred lines from the user");
 
         var run    = svc.Runs.First(r => r.FileCount > 0);

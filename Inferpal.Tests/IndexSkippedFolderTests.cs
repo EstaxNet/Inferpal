@@ -148,7 +148,7 @@ public sealed class IndexSkippedFolderTests : IDisposable
         svc.StartIndexing(_root);
 
         await WaitUntilAsync(() => svc.SkippedFolder is not null,
-                             "la passe enregistre le dossier illisible", () => svc.Status);
+                             "the pass records the unlistable folder", () => svc.Status);
 
         Assert.Equal("pgdata", svc.SkippedFolder!.Value.Folder);
     }
@@ -167,7 +167,7 @@ public sealed class IndexSkippedFolderTests : IDisposable
         // Wait until the pass has actually run — otherwise `SkippedFolder` would be `null`
         // because nothing happened, which is the false green of this shape of test.
         await WaitUntilAsync(() => svc.ChunkCount > 0,
-                             "la passe indexe les deux fichiers", () => svc.Status);
+                             "the pass indexes both files", () => svc.Status);
 
         Assert.Null(svc.SkippedFolder);
     }

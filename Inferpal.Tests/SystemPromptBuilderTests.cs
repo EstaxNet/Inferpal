@@ -136,4 +136,4 @@ public class SystemPromptBuilderTests : IDisposable
         var builder = new SystemPromptBuilder(new InferpalConfig());
         Assert.Equal(Base(builder), builder.Build("BASE", projectRoot: null));
     }
-}
+    }

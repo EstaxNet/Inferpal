@@ -60,7 +60,7 @@ public class InProcContractTests
             .ToDictionary(f => f.Name, f => (string)f.GetRawConstantValue()!);
 
         Assert.NotEmpty(ops);
-        Assert.Equal(ops.Count, ops.Values.Distinct().Count());   // aucun doublon sur le fil
+        Assert.Equal(ops.Count, ops.Values.Distinct().Count());   // no duplicate on the wire
 
         var session = typeof(Inferpal.Services.Debugging.SignalDebugSession)
             .GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)

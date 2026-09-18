@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Prompt en attente, fichier actif & sessions
+    #region Pending prompt, active file & sessions
 
     // ── Pending prompt from editor context menu ────────────────────────────────
 

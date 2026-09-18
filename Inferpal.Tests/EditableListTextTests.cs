@@ -13,14 +13,14 @@ public class EditableListTextTests
     [Fact]
     public void ALineThatIsNotAnEntry_SurvivesTheRewrite()
     {
-        const string text = "build=dotnet build\nmytool: npx thing\n#off=echo off\n/deploy without an equals sign";
+        const string text = "build=dotnet build\nmytool: npx thing\n#off=echo off\n/deploy sans signe egal";
 
         var entries   = EditableListText.Parse(text, out var unparsed);
         var rewritten = EditableListText.Render(entries, unparsed);
 
         Assert.Equal(["build", "off"], entries.Select(e => e.Name));
         Assert.Contains("mytool: npx thing", rewritten);
-        Assert.Contains("/deploy without an equals sign", rewritten);
+        Assert.Contains("/deploy sans signe egal", rewritten);
     }
 
     [Fact]

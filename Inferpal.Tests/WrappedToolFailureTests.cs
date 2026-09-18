@@ -73,7 +73,7 @@ public class WrappedToolFailureTests
         // context keeps ITS message — that is the one that makes sense, and `PathSanitizer` builds
         // exactly that shape.
         var said = await Failing(new ArgumentException(
-            "the path 'C:\\elsewhere\\x.cs' is outside the workspace root",
+            "the path 'C:\\ailleurs\\x.cs' is outside the workspace root",
             new IOException("plumbing")));
 
         Assert.Contains("outside the workspace root", said, StringComparison.Ordinal);

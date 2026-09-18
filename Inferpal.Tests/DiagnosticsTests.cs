@@ -241,9 +241,9 @@ public class DiagnosticsTests : IDisposable
             Assert.Contains("at ", log);   // the raw stack, not just the compacted line
 
             // Witness: a note with no exception writes no stack.
-            Diagnostics.Record("Ctx", "just a note");
+            Diagnostics.Record("Ctx", "juste une note");
             var after = File.ReadAllText(path);
-            Assert.Contains("just a note", after);
+            Assert.Contains("juste une note", after);
         }
         finally
         {

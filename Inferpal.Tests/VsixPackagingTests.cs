@@ -35,7 +35,7 @@ public class VsixPackagingTests
             .ToList();
         Assert.True(produced.Count == 9,
             $"Only {produced.Count} satellite(s) built out of 9 ({string.Join(", ", produced)}): "
-            + "the packaging switch is no longer what to look at - resource generation itself is.");
+            + "is.");
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class VsixPackagingTests
             Assert.Contains(marker, licence);
             Assert.Contains(marker, embedded);
             Assert.Contains(marker, embeddedCode);
-        }
+}
 
         // LICENSE must stay VERBATIM: adding the project copyright or the section 7 terms to it
         // loses GitHub's "GPL-3.0" detection, which compares against the reference text.

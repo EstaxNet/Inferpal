@@ -35,7 +35,7 @@ public class SettingsFallbackTests
     {
         // The heart of the fix: "4o" must not mean "put 20 back".
         Assert.Equal(40, SettingsFallback.For("4o", current: 40, whenCleared: 20));
-        Assert.Equal(40, SettingsFallback.For("forty", current: 40, whenCleared: 20));
+        Assert.Equal(40, SettingsFallback.For("quarante", current: 40, whenCleared: 20));
         Assert.Equal(40, SettingsFallback.For("-", current: 40, whenCleared: 20));
         // A comma where the culture expects a dot: the most ordinary mistake of the two decimal
         // fields (VramBudgetGb, RagSimilarityThreshold).
@@ -83,8 +83,8 @@ public class SettingsFallbackTests
     public void ALabelQuotedInASentenceDropsItsColon()
     {
         Assert.Equal("Results per query (top-K)", SettingsFallback.LabelForSentence("Results per query (top-K):"));
-        Assert.Equal("Fenêtre de contexte", SettingsFallback.LabelForSentence("Fenêtre de contexte :"));
-        Assert.Equal("Seuil", SettingsFallback.LabelForSentence("Seuil :"));
+        Assert.Equal("Fenêtre de contexte", SettingsFallback.LabelForSentence("Fenêtre de contexte :"));
+        Assert.Equal("Seuil", SettingsFallback.LabelForSentence("Seuil :"));
         Assert.Equal("コンテキスト", SettingsFallback.LabelForSentence("コンテキスト："));
 
         // Labels that carry none stay untouched — four of the nine boxes are in that case.
@@ -127,8 +127,8 @@ public class SettingsFallbackTests
     [Fact]
     public void TheIndexWins_BecauseATranslationMovesTheLabelAndNotThePosition()
     {
-        // Translated label (so not found) but a known position: the position decides.
-        var code = SettingsFallback.ResolveSelection(Backends, 1, "LM Studio, translated", "ollama", out var ok);
+        // A translated label (hence not found) but a known position: the position is what decides.
+        var code = SettingsFallback.ResolveSelection(Backends, 1, "LM Studio, traduit", "ollama", out var ok);
 
         Assert.Equal("lmstudio", code);
         Assert.True(ok);

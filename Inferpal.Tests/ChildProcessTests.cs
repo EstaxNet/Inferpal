@@ -9,7 +9,7 @@ namespace Inferpal.Tests;
 public class ChildProcessTests
 {
     // ChildProcess is cross-platform Core code, so its guinea-pig children are too: the same
-    // behaviours are exercised through cmd/powershell on Windows and /bin/sh on POSIX (§23).
+    // behaviours are exercised through cmd/powershell on Windows and /bin/sh on POSIX.
     private static ProcessStartInfo Psi(string windowsCmdArgs, string posixShScript)
     {
         var psi = OperatingSystem.IsWindows()
@@ -111,4 +111,4 @@ public class ChildProcessTests
         // unconditional "\n" join used to reach their parsers.
         Assert.Equal(expected, new ChildProcessResult(0, stdout, stderr, TimedOut: false).Combined);
     }
-}
+    }

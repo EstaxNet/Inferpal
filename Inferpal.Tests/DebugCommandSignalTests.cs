@@ -287,12 +287,12 @@ public class DebugCommandSignalTests : IDisposable
     [Fact]
     public void StopState_SurvivesTheRoundTrip_UnParsed()
     {
-        // Values are rendered by the debug adapter and travel as opaque strings (§21): whatever VS
+        // Values are rendered by the debug adapter and travel as opaque strings: whatever VS
         // wrote must come back byte for byte, including the IDE's localised pseudo-locals.
         var state = new DebugStopState(
             "breakpoint", ThreadId: 7,
             Frames: [new DebugFrame(3, "Program.Compute", @"C:\p\Program.cs", 12)],
-            Locals: [new DebugVariable("int.ToString retourné", "string", "\"probe-42\"")],
+            Locals: [new DebugVariable("int.ToString returned", "string", "\"probe-42\"")],
             Exception: "`InvalidOperationException` — boom");
 
         DebugCommandSignal.WriteResponse(new DebugCommandResponse("r1", Ok: true, State: state));
@@ -302,8 +302,8 @@ public class DebugCommandSignalTests : IDisposable
         Assert.Equal(7, read.State.ThreadId);
         Assert.Equal("Program.Compute", read.State.Frames[0].Function);
         Assert.Equal(3, read.State.Frames[0].Id);
-        Assert.Equal("int.ToString retourné", read.State.Locals[0].Name);
+        Assert.Equal("int.ToString returned", read.State.Locals[0].Name);
         Assert.Equal("\"probe-42\"", read.State.Locals[0].Value);
         Assert.Equal("`InvalidOperationException` — boom", read.State.Exception);
     }
-}
+    }

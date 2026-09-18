@@ -164,7 +164,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       } catch (err) {
         // The host refused (a turn is in flight): clearing the webview anyway used to desync the
         // two — an empty transcript over a full host history, and the running turn's answer then
-        // landed alone in a "new" conversation carrying the old context (pre-1.6.0 architecture review, §2.7).
+        // landed alone in a "new" conversation carrying the old context.
         this.log(`[chat] reset refused: ${String(err)}`);
         void vscode.window.showWarningMessage(
           t('A turn is still running — stop it before starting a new conversation.'));
@@ -246,7 +246,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       },
       onTaskFinished: (text) => {
         // A persistent assistant bubble, like the VS front-end — not an ephemeral status line
-        // wiped by the next setBusy (pre-1.6.0 architecture review, §3.6).
+        // wiped by the next setBusy.
         const item: WvTranscriptItem = { role: 'assistant', text, timestamp: ChatViewProvider.now() };
         this.append(item);
         this.post({ type: 'assistant', text, timestamp: item.timestamp! });
@@ -1792,7 +1792,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * VS Code side of the inline diff preview (ROADMAP 1.2.0 §1): the host runs the model step
+   * VS Code side of the inline diff preview: the host runs the model step
    * (`codeAction/run`) and returns per-hunk offset edits; they are shown in the native
    * Refactor Preview (one confirmable entry per hunk — the ✓/✗ of the VS adornment).
    * Preview disabled (`inlineDiffPreviewEnabled: false`) ⇒ direct apply, one undo step.

@@ -66,7 +66,7 @@ public class PublicDocsCoverageTests
 
         var undocumented = catalog.Except(mentioned).Order().ToList();
         Assert.True(undocumented.Count == 0,
-            "Shipped command the public site mentions nowhere - it exists and nobody can learn "
+            "Shipped command the public site mentions nowhere — it exists and nobody can learn "
             + "about it: " + string.Join(", ", undocumented));
 
         // The other direction: the docs may quote a legacy ALIAS, absent from the catalog but
@@ -77,8 +77,8 @@ public class PublicDocsCoverageTests
 
         var invented = mentioned.Except(catalog).Except(routed).Order().ToList();
         Assert.True(invented.Count == 0,
-            "The public site documents a command the router does not know: the user types it and "
-            + "nothing happens - " + string.Join(", ", invented));
+            "The public site documents a command the router does not know: the user types it "
+            + "and nothing happens — " + string.Join(", ", invented));
     }
 
     [Fact]
@@ -102,13 +102,13 @@ public class PublicDocsCoverageTests
 
         var undocumented = real.Except(listed).Order().ToList();
         Assert.True(undocumented.Count == 0,
-            "Persisted setting missing from the key reference - it exists in the config file and "
-            + "nothing describes it: " + string.Join(", ", undocumented));
+            "Persisted setting missing from the key reference — it exists in the configuration "
+            + "file and nothing describes it: " + string.Join(", ", undocumented));
 
         var invented = listed.Except(real).Order().ToList();
         Assert.True(invented.Count == 0,
-            "The key reference announces one the configuration never reads: the user writes it into "
-            + "their file and it does nothing, with no message at all - "
+            "The key reference announces one the configuration does not read: the user writes it "
+            + "into their file and it does nothing, without the slightest message — "
             + string.Join(", ", invented));
     }
 
@@ -163,8 +163,8 @@ public class PublicDocsCoverageTests
         var undocumented = tools.Where(t => !doc.Contains($"`{t}`", StringComparison.Ordinal)).Order().ToList();
 
         Assert.True(undocumented.Count == 0,
-            "Built-in tool that docs/tools.md never mentions. The DocCountersTests counter stays "
-            + "correct meanwhile - which is exactly why this rule exists: "
+            "Built-in tool docs/tools.md does not mention. The DocCountersTests counter stays "
+            + "right all the while — which is exactly why this rule exists: "
             + string.Join(", ", undocumented));
     }
     /// <summary>
@@ -184,7 +184,7 @@ public class PublicDocsCoverageTests
     /// the rule.
     /// </para>
     /// <para>
-    /// Measured at zero divergence on 2026-09-15 across the 47 comparable defaults (the only
+    /// Measured at zero divergence across the 47 comparable defaults (the only
     /// "differences" the measurement reported were <c>""</c> against <c>string.Empty</c>, two
     /// spellings of one value).
     /// </para>

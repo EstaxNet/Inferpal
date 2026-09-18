@@ -101,7 +101,7 @@ internal sealed class ApplyEditsTool : ITool
 
             // Same vocabulary as apply_diff, same reader. Aborted like any malformed edit: an
             // unrecognised value became 'unique' and the whole batch came back with
-            // « ambiguous (N matches) », qui accuse un old_content parfaitement correct.
+            // "ambiguous (N matches)", which blames a perfectly correct old_content.
             var occurrence = e.Keyword("occurrence");
             if (ApplyDiffMatcher.RejectOccurrence(occurrence) is { } badOccurrence)
                 return Strings.ApplyEditsAborted(

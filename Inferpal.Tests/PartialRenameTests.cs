@@ -27,7 +27,7 @@ namespace Inferpal.Tests;
 /// phase, puts back every file already written and names the ones it could not put back — its
 /// commentaire porte la raison : <i>« the description promises the model "if ANY edit cannot be
 /// applied, NO file is changed"</i>. The description of <c>rename_symbol</c> promises the same
-/// (<i>« replaces EVERY occurrence … across ALL source files »</i>), et un renommage partiel est
+/// (<i>"replaces EVERY occurrence … across ALL source files"</i>), and a partial rename is
 /// worse than a partial edit: it is the one refactor whose half-applied state never compiles.
 /// </para>
 /// </remarks>

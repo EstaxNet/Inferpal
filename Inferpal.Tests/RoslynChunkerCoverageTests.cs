@@ -72,4 +72,4 @@ public class RoslynChunkerCoverageTests
 
         Assert.Contains(chunks, c => c.TypeName == "Calc.Add");
     }
-}
+                }

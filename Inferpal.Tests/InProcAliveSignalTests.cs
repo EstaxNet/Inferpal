@@ -15,7 +15,7 @@ namespace Inferpal.Tests;
 /// </para>
 /// <para>
 /// ⚠ The two leftover cases are not decoration: a recycled PID is exactly what the PID-scoped
-/// naming grammar (§22 slice 2) makes possible, and a green on a leftover would be worse than no
+/// naming grammar makes possible, and a green on a leftover would be worse than no
 /// channel at all - it would get a legitimate bug report closed.
 /// </para>
 /// </remarks>
@@ -108,7 +108,7 @@ public sealed class InProcAliveSignalTests : IDisposable
         // not, the case would be vacuous, so we check it.
         Assert.True(System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime()
                     > DateTime.UtcNow.AddHours(-4),
-                    "test process too old: this case would measure nothing");
+                    "the test process is too old: this case would measure nothing");
         Assert.Null(InProcAliveSignal.TryRead());
     }
 
@@ -140,7 +140,7 @@ public sealed class InProcAliveSignalTests : IDisposable
         Assert.Contains("package+mef", InProcAliveSignal.DescribeForBundle());
     }
 
-    // ── The third door: the /tdd debugger driver (§25) ──────────────────────────────
+    // ── The third door: the /tdd debugger driver ──────────────────────────────
     //
     // Measured: components = ["package"], active_solution written, and NO debug_ready. So the
     // package was loaded and the driver absent - two facts this channel used to conflate, by

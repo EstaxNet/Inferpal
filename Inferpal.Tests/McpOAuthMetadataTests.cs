@@ -128,4 +128,4 @@ public class McpOAuthMetadataTests
     {
         Assert.Equal(expected, McpOAuthMetadata.CanonicalResource(new Uri(input)));
     }
-}
+    }

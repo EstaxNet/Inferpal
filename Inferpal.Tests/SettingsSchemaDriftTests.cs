@@ -163,7 +163,7 @@ public class SettingsSchemaDriftTests
     /// like the Visual Studio window's combo box.
     /// </summary>
     /// <remarks>
-    /// Reported from the UI on 2026-09-03: "the models offered are restricted, unlike Visual
+    /// Reported from the UI: "the models offered are restricted, unlike Visual
     /// Studio". The field was an <c>&lt;input list="models"&gt;</c>, and Chromium filters a
     /// <c>&lt;datalist&gt;</c>'s options against what the input <b>already</b> contains: a field
     /// holding a model id offered nothing but itself, and no gesture showed the others.
@@ -194,16 +194,18 @@ public class SettingsSchemaDriftTests
 
         var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
         Assert.True(File.Exists(webview), "vscode/src/webview/settings.ts has disappeared.");
-        var source = File.ReadAllText(webview);
+        var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
 
         // Witness 2: this really is the file rendering model fields, not an emptied namesake.
         Assert.Contains("field.kind === 'model'", source, StringComparison.Ordinal);
 
-        // ⚠ The CONSTRUCTION, not the word. The first version banned "datalist" and "'list'", and
-        // it came out red on the comment explaining the defect — the trap this repo has already
-        // paid twice ("a pattern anchored on the word goes red on its own documentation", and its
-        // mirror: it goes green on commented-out code).
-        foreach (var mechanism in new[] { "createElement('datalist')", "setAttribute('list'", "list=\"models\"" })
+        // ⚠ The WORD is forbidden again, and it is the neutralizer that allows it. The first version
+        // of this rule banned "datalist", and it came out red on the comment explaining the defect;
+        // it had therefore been narrowed to three spellings of the construct — a contortion that let
+        // the fourth through. Now that the source is read without its comments (settings.ts carries
+        // two that name the datalist), the rule can target the property: this element does not exist
+        // in this file.
+        foreach (var mechanism in new[] { "datalist", "setAttribute('list'", "list=\"models\"" })
             Assert.False(source.Contains(mechanism, StringComparison.Ordinal),
                 $"vscode/src/webview/settings.ts rebuilds a datalist ({mechanism}): the browser will " +
                 "filter its options against what the field already contains again, and a filled " +
@@ -234,7 +236,7 @@ public class SettingsSchemaDriftTests
         // Witness: the parity anchor — the Visual Studio window's lists are all non-editable.
         var xaml = File.ReadAllText(Path.Combine(dir!, "Inferpal", "ToolWindow", "InferpalSettingsContent.xaml"));
         Assert.True(Regex.Matches(xaml, "IsEditable=\"False\"").Count >= 7,
-            "The Visual Studio window's non-editable lists are no longer counted — the rule has lost its anchor.");
+            "The Visual Studio window's non-editable lists no longer count — the rule has lost its anchor.");
         Assert.DoesNotContain("IsEditable=\"True\"", xaml, StringComparison.Ordinal);
 
         var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
@@ -242,8 +244,8 @@ public class SettingsSchemaDriftTests
         var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
         Assert.Matches(new Regex(@"field\.kind === 'model'[\s\S]{0,400}?\.readOnly = true"), source);
         Assert.False(source.Contains("addEventListener('input'", StringComparison.Ordinal),
-            "A model field still filters as it is typed in: it accepts free text.");
-        // The optional roles keep their empty entry, like the leading "" of AvailableOptionalModels.
+            "A model field still filters as you type: it therefore accepts free text.");
+        // Optional roles keep their empty entry, like the leading "" of AvailableOptionalModels.
         Assert.Contains("field.gate === 'roles'", source, StringComparison.Ordinal);
 
         // Read-only, the keyboard has nothing but the list to pick from: the arrow keys move through it and
@@ -299,15 +301,21 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
-    /// The adapter tells the host whether a mirrored buffer has unsaved changes, and a save says it no
-    /// longer does.
+    /// A document the editor stops mirroring is REMOVED from the host's overlay, never simply left
+    /// behind.
     /// </summary>
     /// <remarks>
-    /// <c>read_file</c> served the mirrored buffer of every open document. After a tool wrote a file
-    /// that was open and saved, the buffer still held the old text until the editor reloaded it from
-    /// disk and the debounced change arrived — so an edit followed by a read in the same turn read the
-    /// file as it was before the edit, and a document that is never reloaded (a watcher-excluded
-    /// folder) stayed stale for as long as it was open. Only an unsaved buffer must win over the disk.
+    /// <c>OpenDocumentOverlay</c> wins over the disk <b>unconditionally</b>: <c>ReadFileTool</c>
+    /// returns the buffer and never opens the file when an entry exists. The VS Code adapter stops
+    /// mirroring a document above a 1 MB ceiling — and it then left the change handler <b>without
+    /// sending <c>didClose</c></b>. A file opened under the ceiling and then grown above it (a
+    /// paste, a log that keeps growing) therefore left the host serving the model its last version
+    /// under 1 MB, for as long as it stayed open, without a word — and the header comment promised
+    /// the opposite ("the host reads them from disk instead"), which is only true if the overlay
+    /// carries no entry.
+    ///
+    /// The rule is textual because there is no TypeScript harness here. It therefore targets both
+    /// halves of the mechanism: tracking what is mirrored, and the <c>didClose</c> that cancels it.
     /// </remarks>
     [Fact]
     public void EditorBridge_TellsTheHostWhetherABufferIsUnsaved()
@@ -335,9 +343,9 @@ public class SettingsSchemaDriftTests
 
     /// <summary>
     /// Issue #8. "Use a separate model per role" unchecked promises the chat model everywhere — its
-    /// tooltip says so. The panel only folded the fields away: the per-role models stayed in the
-    /// configuration, the router kept using them, and the box came back checked at the next opening
-    /// (it is derived from the filled-in fields).
+    /// tooltip says so. The panel only collapsed the fields: the per-role models stayed in the
+    /// configuration, the router kept using them, and the box came back checked on the next opening
+    /// (it is inferred from the filled fields).
     /// </summary>
     [Fact]
     public void VsCodePanel_SavingWithSeparateRoleModelsOff_ClearsTheRoleFields()
@@ -356,11 +364,11 @@ public class SettingsSchemaDriftTests
         var end  = source.IndexOf("\nfunction ", start + 1, StringComparison.Ordinal);
         var body = end < 0 ? source[start..] : source[start..end];
 
-        // The fold is read from the schema (the "roles" gate), not from a list of keys copied here: a
-        // role added to the schema must be covered without anyone thinking of it.
+        // The fallback is read from the schema (the "roles" gate), not from a list of keys copied
+        // here: a role added to the schema must be covered without anyone thinking about it.
         Assert.True(body.Contains("gateOn.roles", StringComparison.Ordinal)
                     && body.Contains("'roles'", StringComparison.Ordinal),
-            "onSave saves the per-role models even when \"Use a separate model per role\" is unchecked.");
+            "onSave saves the per-role models even when 'Use a separate model per role' is unchecked.");
     }
 
     /// <summary>
@@ -504,7 +512,7 @@ public class SettingsSchemaDriftTests
             "const tpl = `a // b ${ real(1) } c`;",
             "const re  = s.replace(/[\\\\/:*?\"<>|]+/g, ' ');   // banned()",
             "const div = total / count;                       // banned()",
-            "/* block:",
+            "/* bloc :",
             "   banned(); */",
             "real(2);",
             "// real(3)",
@@ -513,10 +521,10 @@ public class SettingsSchemaDriftTests
 
         var code = NeutralizeTypeScriptComments(source);
 
-        // False RED: prose documenting a forbidden pattern no longer carries it. The three
-        // end-of-line comments are the traps: a regular expression taken for a string (because of
-        // the quote inside its character class), and a division taken for a regular expression,
-        // would derail the rest of their line - and so let it through.
+        // False RED: the prose documenting a forbidden pattern no longer carries it. The three
+        // trailing comments are the traps: a regular expression taken for a string (because of the
+        // quote in its character class), and a division taken for a regular expression, would
+        // derail the rest of their line — hence let it through.
         Assert.DoesNotContain("banned", code, StringComparison.Ordinal);
 
         // False GREEN: a COMMENTED-OUT call no longer counts as present. The three real ones do.
@@ -534,11 +542,25 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
-    /// A breakpoint the model sets is reported by the line it asked for first. The bridge took the first breakpoint
-    /// within one line of the request, and VS Code lists the existing ones before the new one: with the user's own
-    /// breakpoint on line 41, setting one on line 42 answered "Breakpoint set at …:41" — and a model that then clears
-    /// what it set removes the user's.
+    /// The VS Code manifest and the code agree on commands: every declared command has a handler,
+    /// and every keybinding or menu entry targets a command that exists.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Nothing ties the two together at compile time: <c>package.json</c> is data, and
+    /// <c>registerCommand</c> takes a string. The two halves fail differently and both in front of
+    /// the user — a declared command with no handler shows up in the palette and answers
+    /// <i>"command 'x' not found"</i> when picked; a keybinding or menu entry pointing at an unknown
+    /// command does nothing at all.
+    /// </para>
+    /// <para>
+    /// ⚠ The exemption is <b>derived</b>, not listed: VS Code makes <c>&lt;viewId&gt;.focus</c> for
+    /// every contributed view, so a keybinding aimed at it is correct without appearing anywhere.
+    /// The first draft counted it missing — that was the probe ignoring the host's rule, not the
+    /// manifest lying.
+    /// </para>
+    /// <para>Measured at zero divergence: 10 declared, 10 registered, 8 menu entries.</para>
+    /// </remarks>
     [Fact]
     public void VsCodeBreakpoint_IsReportedByTheLineAskedForFirst()
     {
@@ -705,9 +727,9 @@ public class SettingsSchemaDriftTests
         Assert.True(registered.Count >= 5, $"Only {registered.Count} registered command(s): the call shape changed.");
 
         Assert.True(declared.SetEquals(registered),
-            "The manifest and the code disagree on commands — declared with no handler: "
-            + $"[{string.Join(", ", declared.Except(registered).Order())}]; registered but not "
-            + $"declared (invisible in the palette): [{string.Join(", ", registered.Except(declared).Order())}].");
+            "The manifest and the code disagree about the commands — declared with no handler: "
+            + $"[{string.Join(", ", declared.Except(registered).Order())}]; registered with no "
+            + $"[{string.Join(", ", registered.Except(declared).Order())}].");
 
         // VS Code makes `<viewId>.focus` for every contributed view.
         var viewFocus = manifest.TryGetProperty("views", out var views)

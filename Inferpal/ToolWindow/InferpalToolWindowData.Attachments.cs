@@ -24,7 +24,7 @@ namespace Inferpal.ToolWindow;
 
 internal partial class InferpalToolWindowData
 {
-    #region Pièces jointes, pins & contexte workspace
+    #region Attachments, pins & workspace context
 
     private async Task<string> BuildWorkspaceContextAsync(CancellationToken ct)
     {
