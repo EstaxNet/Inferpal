@@ -67,21 +67,49 @@ internal sealed class ModelLifetimeService : IDisposable
         _ = Task.Run(RefreshAsync);
     }
 
-    private async Task RefreshAsync()
+    /// <summary>One poll: reads the state, then publishes it — whatever it is.</summary>
+    /// <remarks>
+    /// ⚠ <b>Publishing only on success is what made the badge lie.</b> A failed poll used to leave
+    /// <c>_currentModels</c> untouched and raise no event, so the header kept asserting that models
+    /// occupy the GPU long after they did not — and the XML doc on <see cref="CurrentModels"/>
+    /// promised the opposite. The commonest path is not even a failure: switching the backend to an
+    /// OpenAI-compatible server turns <c>VramMonitoring</c> off, and the early return left the
+    /// previous Ollama models on screen for good. Empty is not "nothing is loaded", it is "I cannot
+    /// say" — and it is the only honest badge, the same reason a wrong number costs more than a
+    /// silence everywhere else in this product.
+    /// </remarks>
+    internal async Task RefreshAsync()
     {
         if (_disposed) return;
+
+        var models = await PollAsync().ConfigureAwait(false);
+        if (_disposed) return;
+
+        _currentModels = models;
+        // Outside the poll's try: a subscriber that throws is its own failure, not the backend's.
+        try { ModelsRefreshed?.Invoke(models); }
+        catch (Exception ex) { Diagnostics.Swallow("ModelLifetimeService.Notify", ex); }
+    }
+
+    /// <summary>What is loaded right now, or an empty list when this backend cannot say.</summary>
+    private async Task<IReadOnlyList<RunningModelInfo>> PollAsync()
+    {
         // Backends without VRAM monitoring (OpenAI-compatible) expose no running-model endpoint.
-        if (!_client.Capabilities.VramMonitoring) return;
+        if (!_client.Capabilities.VramMonitoring) return [];
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-            var models = await _client.GetRunningModelsAsync(cts.Token).ConfigureAwait(false);
-            if (_disposed) return;
-
-            _currentModels = models;
-            ModelsRefreshed?.Invoke(models);
+            return await _client.GetRunningModelsAsync(cts.Token).ConfigureAwait(false);
         }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Inferpal] ModelLifetimeService: {ex.GetType().Name}: {ex.Message}"); }
+        catch (OperationCanceledException) { return []; }
+        catch (Exception ex)
+        {
+            // ⚠ Diagnostics, not Debug.WriteLine: the Release build strips the latter, so the only
+            // explanation for an empty badge did not exist in the published product — and
+            // /diagnostics is the channel the user opens precisely to find out.
+            Diagnostics.Swallow("ModelLifetimeService.Poll", ex);
+            return [];
+        }
     }
 
     // ── IDisposable ───────────────────────────────────────────────────────────

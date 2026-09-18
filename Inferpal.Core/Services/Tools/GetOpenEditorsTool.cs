@@ -56,7 +56,7 @@ internal class GetOpenEditorsTool : ITool
             sb.AppendLine($"Open files ({openPaths.Count}):");
             foreach (var path in openPaths.OrderBy(p => p))
             {
-                var active = string.Equals(path, activePath, StringComparison.OrdinalIgnoreCase);
+                var active = string.Equals(path, activePath, PathComparer.Comparison);
                 sb.AppendLine(active ? $"  * {path}  [active]" : $"    {path}");
             }
         }

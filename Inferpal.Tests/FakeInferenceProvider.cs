@@ -138,8 +138,15 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
 
     public void ResetCircuit() { }
 
-    public Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct) =>
-        Task.FromResult<IReadOnlyList<RunningModelInfo>>(Running);
+    /// <summary>The VRAM-poll lever: without it no test can see what the service does with a
+    /// backend that stops answering — which is precisely where it kept stale state.</summary>
+    public Action? OnRunningModels { get; set; }
+
+    public Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct)
+    {
+        OnRunningModels?.Invoke();
+        return Task.FromResult<IReadOnlyList<RunningModelInfo>>(Running);
+    }
 
     public Task UnloadModelAsync(string model, CancellationToken ct)
     {

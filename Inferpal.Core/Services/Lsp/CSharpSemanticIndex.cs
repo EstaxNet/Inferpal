@@ -148,7 +148,8 @@ internal sealed class CSharpSemanticIndex
             // BELOW the root, not merely spelled like it: "C:\dev\App2\x.cs" starts with "C:\dev\App".
             var root = index._root.TrimEnd('\\', '/');
             if (path.Length <= root.Length
-                || !path.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+                // Membership of a compilation: the same rule as every other path question.
+                || !path.StartsWith(root, Services.PathComparer.Comparison)
                 || path[root.Length] is not ('\\' or '/')) continue;
             // The full build's exclusions: a history snapshot (.inferpal/history/…_Foo.cs) or an obj/ file
             // added here became a second `class Foo`, and queries answered on the stale copy.

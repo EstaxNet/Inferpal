@@ -118,13 +118,49 @@ public class PathCaseFoldingTests
                 offenders.Add(Path.GetFileName(file));
         }
 
-        // WITNESS: the rule only holds if it really read some sources.
+        // WITNESS: the rule is worth nothing unless it really read some sources.
         Assert.True(scanned >= 100, $"Only {scanned} source(s) read: the rule measures nothing any more.");
 
         Assert.True(offenders.Count == 0,
-            "Path case folding is re-derived in place instead of going through PathComparer — that "
-            + "is how two sites came to say the opposite of each other about macOS:"
+            "Path case folding is re-derived on the spot instead of going through PathComparer — "
+            + "that is how two sites came to say the opposite of each other about macOS:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    /// <summary>
+    /// The comparisons that decide a path IDENTITY, as opposed to those that are tolerant on
+    /// purpose.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>Named assertions, not a rule</b>: the discriminator is semantic. Four sites fold case
+    /// <b>deliberately</b> and must go on doing so — excluded folder names (<c>bin</c>, <c>obj</c>,
+    /// <c>node_modules</c>: a <c>BIN</c> must stay excluded), <c>@Docs</c> URLs (a host is
+    /// case-insensitive), the diff anchor suffix, and the <c>/tests/</c> heuristic of
+    /// <c>analyze_impact</c>. A scan rule would live off those exemptions, which this repository
+    /// forbids itself.
+    /// ⚠ The site that stings is <c>analyze_impact</c>: skipping the target file in its own scan
+    /// for dependants is an identity, and folding it dropped a <b>real</b> dependant on Linux —
+    /// with no cap and no read failure, hence invisible to the whole coverage machinery.
+    /// </remarks>
+    [Theory]
+    [InlineData("Inferpal.Core", "Services", "Tools", "AnalyzeImpactTool.cs", "file.Equals(targetFile")]
+    [InlineData("Inferpal.Core", "Services", "Lsp", "CSharpSemanticIndex.cs", "path.StartsWith(root")]
+    [InlineData("Inferpal.Core", "Services", "WorkspaceScan.cs", "path.StartsWith(r,")]
+    [InlineData("Inferpal.Core", "Services", "Tools", "GetOpenEditorsTool.cs", "string.Equals(path, activePath")]
+    public void APathIDENTITY_IsDecidedByTheSharedRule(string a, string b, string c, string d, string? site = null)
+    {
+        // The third InlineData carries only three path segments: the fourth then holds the site.
+        var parts = site is null ? new[] { a, b, c } : new[] { a, b, c, d };
+        var probe = site ?? d;
+
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), Path.Combine(parts)));
+
+        // WITNESS: the comparison this case targets still exists, in this shape.
+        var at = code.IndexOf(probe, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"\"{probe}\" is nowhere to be found: this case would have measured nothing.");
+
+        var line = code[at..(code.IndexOf('\n', at) is var e && e > at ? e : code.Length)];
+        Assert.Contains("PathComparer.Comparison", line, StringComparison.Ordinal);
     }
 
     [Theory]

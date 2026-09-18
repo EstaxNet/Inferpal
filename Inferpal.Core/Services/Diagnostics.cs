@@ -79,6 +79,28 @@ internal static class Diagnostics
     }
 
     /// <summary>
+    /// The message that NAMES the cause: a wrapper exception hides its own.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>TypeInitializationException.Message</c> reads "The type initializer for 'X' threw an
+    /// exception" — a fixed sentence that names nothing, and it is exactly what the user is shown
+    /// when the native SQLite library fails to load, i.e. when the semantic index does not exist at
+    /// all. Same for <c>TargetInvocationException</c> and <c>AggregateException</c>. Unwrapping
+    /// stops at the <b>three</b> known wrapper types: the message of an <c>IOException</c> or an
+    /// <c>HttpRequestException</c> is already the right one, and unwrapping past it would replace
+    /// an exact cause with a deeper, less actionable one.
+    /// </remarks>
+    internal static string RootMessage(Exception ex)
+    {
+        var cur = ex;
+        while (cur is TypeInitializationException or System.Reflection.TargetInvocationException
+                   or AggregateException
+               && cur.InnerException is { } inner)
+            cur = inner;
+        return cur.Message;
+    }
+
+    /// <summary>
     /// <c>   at Inferpal.ToolWindow.SettingsData.&lt;SaveCoreAsync&gt;d__12.MoveNext() in …:line 42</c>
     /// → <c>SettingsData.SaveCoreAsync</c>. The state machine of an <c>async</c> method is what the
     /// stack carries most of the time here: rendering it as-is would be unreadable.

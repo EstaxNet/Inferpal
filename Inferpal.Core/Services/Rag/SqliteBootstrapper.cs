@@ -39,10 +39,14 @@ internal static class SqliteBootstrapper
             var provider = Assembly.Load("SQLitePCLRaw.provider.e_sqlite3");
             NativeLibrary.SetDllImportResolver(provider, Resolve);
         }
-        catch
+        catch (Exception ex)
         {
-            // If the provider assembly cannot be pre-loaded we fall back to the
-            // default runtime behaviour — nothing worse than before.
+            // If the provider assembly cannot be pre-loaded we fall back to the default runtime
+            // behaviour — nothing worse than before. ⚠ But it IS said: this is the first of three
+            // links on the only path that decides whether the semantic index exists at all, and a
+            // bare catch here left the user with "RAG: error — The type initializer for … threw an
+            // exception" and nothing in /diagnostics to explain it.
+            Diagnostics.Swallow("SqliteBootstrapper.LoadProvider", ex);
         }
     }
 
@@ -78,6 +82,14 @@ internal static class SqliteBootstrapper
         if (File.Exists(flatPath) && NativeLibrary.TryLoad(flatPath, out handle))
             return handle;
 
+        // ⚠ Returning Zero hands the failure back to the runtime, which throws a
+        // TypeInitializationException whose own message names nothing. Said ONCE (this resolver runs
+        // on every P/Invoke attempt), with the two paths that were tried — that is what turns "the
+        // index does not work" into something a user can act on.
+        Diagnostics.RecordOnce("SqliteBootstrapper.Resolve",
+            $"the native e_sqlite3 library was not found (tried {ridPath} and {flatPath}); "
+            + "the semantic index cannot open its database",
+            key: baseDir);
         return IntPtr.Zero;
     }
 }

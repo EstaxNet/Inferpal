@@ -125,7 +125,7 @@ internal static class WorkspaceScan
         if (string.IsNullOrEmpty(root)) return path;
         var r = root.TrimEnd('\\', '/');
         return path.Length > r.Length
-               && path.StartsWith(r, StringComparison.OrdinalIgnoreCase)
+               && path.StartsWith(r, PathComparer.Comparison)
                && path[r.Length] is '\\' or '/'
             ? path[r.Length..]
             : path;

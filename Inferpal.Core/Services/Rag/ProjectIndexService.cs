@@ -539,7 +539,11 @@ internal sealed class ProjectIndexService : IDisposable
         }
         catch (Exception ex)
         {
-            Status = $"RAG: error — {ex.Message}";
+            // ⚠ The one failure that stops the whole pass, and it traced nothing: the support
+            // bundle carried not a line of it. And `ex.Message` of a WRAPPER exception — which is
+            // what a failure to load the native SQLite library produces — names nothing at all.
+            Diagnostics.Swallow("ProjectIndexService.IndexingPass", ex);
+            Status = $"RAG: error — {Diagnostics.RootMessage(ex)}";
         }
         finally
         {

@@ -11,11 +11,16 @@ namespace Inferpal.Services.Mcp.OAuth;
 /// </summary>
 internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
-    public LoopbackAuthCodeReceiver()
+    private readonly TimeSpan _timeout;
+
+    /// <param name="timeout">How long to wait for the browser redirect. Tests pass a short one;
+    /// nothing else does.</param>
+    public LoopbackAuthCodeReceiver(TimeSpan? timeout = null)
     {
-        Port = FreeLoopbackPort();
+        _timeout    = timeout ?? DefaultTimeout;
+        Port        = FreeLoopbackPort();
         RedirectUri = $"http://127.0.0.1:{Port}/callback";
     }
 
@@ -32,11 +37,11 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
             OpenBrowser(authorizationUrl);
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(Timeout);
+            cts.CancelAfter(_timeout);
             var contextTask = listener.GetContextAsync();
             using (cts.Token.Register(listener.Stop))
             {
-                var context = await contextTask.ConfigureAwait(false);
+                var context = await AwaitCallbackAsync(contextTask, ct, cts.Token).ConfigureAwait(false);
                 var query   = context.Request.QueryString;
                 var error   = query["error"];
                 var code    = query["code"];
@@ -54,6 +59,54 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
         finally
         {
             if (listener.IsListening) listener.Stop();
+        }
+    }
+
+    /// <summary>
+    /// The redirect, or a failure that <b>names its cause</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ Stopping the listener is how the wait is interrupted, and an interrupted
+    /// <see cref="HttpListener.GetContextAsync"/> throws an <see cref="HttpListenerException"/>
+    /// whose message is the operating system's own I/O sentence — <i>"the I/O operation has been
+    /// aborted because of either a thread exit or an application request"</i>, in the machine's
+    /// display language. It names nothing, and it is what the user was shown both when they
+    /// cancelled and when the five minutes ran out: two situations with two different remedies.
+    /// </para>
+    /// <para>
+    /// ⚠ And cancellation arrived as the <b>wrong type</b>. Everywhere else in this product
+    /// cancellation is <see cref="OperationCanceledException"/> — the one exception callers let
+    /// through and swallow on purpose. Coming out as a socket error, a cancelled sign-in was
+    /// recorded and displayed as a failed one.
+    /// </para>
+    /// </remarks>
+    private async Task<HttpListenerContext> AwaitCallbackAsync(
+        Task<HttpListenerContext> contextTask, CancellationToken ct, CancellationToken deadline)
+    {
+        try
+        {
+            return await contextTask.ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // ⚠ The decision is read off the TOKENS, never off the exception type: which type a
+            // stopped listener throws is the platform's choice — HttpListenerException here,
+            // ObjectDisposedException elsewhere — and this product ships on three of them. The
+            // tokens are the only thing that actually knows why the wait ended.
+            //
+            // The caller's cancellation comes first: it is the only one of the three that is not a
+            // failure at all.
+            ct.ThrowIfCancellationRequested();
+
+            if (deadline.IsCancellationRequested)
+                throw new TimeoutException(
+                    $"No authorization redirect arrived within {_timeout.TotalMinutes:0.#} minutes. "
+                    + "The sign-in page was never completed in the browser, or it redirected "
+                    + $"somewhere other than {RedirectUri}.");
+
+            // Anything else really is a socket failure: it keeps its own cause.
+            throw;
         }
     }
 

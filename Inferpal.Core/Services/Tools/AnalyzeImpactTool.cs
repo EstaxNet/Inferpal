@@ -428,7 +428,10 @@ internal class AnalyzeImpactTool : ITool
         foreach (var file in candidateFiles)
         {
             ct.ThrowIfCancellationRequested();
-            if (file.Equals(targetFile, StringComparison.OrdinalIgnoreCase)) continue;
+            // ⚠ PathComparer: this is file IDENTITY, not tolerance. On Linux `A.cs` and `a.cs`
+            // are two files, and folding case here dropped a REAL dependant from the report —
+            // silently, since nothing was capped and no read had failed.
+            if (file.Equals(targetFile, PathComparer.Comparison)) continue;
 
             try
             {
