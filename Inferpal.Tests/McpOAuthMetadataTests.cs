@@ -128,4 +128,51 @@ public class McpOAuthMetadataTests
     {
         Assert.Equal(expected, McpOAuthMetadata.CanonicalResource(new Uri(input)));
     }
+
+    // ── Endpoints venus du distant ─────────────────────────
+
+    [Theory]
+    // The case that is not "just a bad request": authorization_endpoint goes to the browser through
+    // UseShellExecute, so a non-web scheme there is a PROGRAM LAUNCH.
+    [InlineData("file:///C:/Windows/System32/calc.exe")]
+    [InlineData("ms-settings:privacy")]
+    [InlineData("javascript:alert(1)")]
+    // And this one sends the authorization code and the client_secret in the clear, wherever the server wants.
+    [InlineData("http://evil.example.com/token")]
+    [InlineData("ftp://example.com/token")]
+    [InlineData("pas une url")]
+    [InlineData("")]
+    public void RequireWebEndpoint_RefusesWhatIsNotAWebEndpoint(string url)
+    {
+        Assert.Throws<InvalidOperationException>(
+            () => McpOAuthMetadata.RequireWebEndpoint(url, "authorization_endpoint"));
     }
+
+    [Theory]
+    [InlineData("https://auth.example.com/authorize")]
+    // http stays allowed on loopback: that is how local MCP servers run, and it is the only case
+    // where the clear text costs nothing.
+    [InlineData("http://127.0.0.1:7000/authorize")]
+    [InlineData("http://localhost:7000/authorize")]
+    [InlineData("http://[::1]:7000/authorize")]
+    public void RequireWebEndpoint_AcceptsHttpsAnywhereAndHttpOnLoopback(string url)
+    {
+        Assert.Equal(url, McpOAuthMetadata.RequireWebEndpoint(url, "authorization_endpoint").ToString().TrimEnd('/'),
+                     ignoreCase: true);
+    }
+
+    [Fact]
+    public void ParseAuthServerMetadata_RefusesAMetadataDocumentCarryingSuchAnEndpoint()
+    {
+        // Validation happens at PARSE time, not at use: the record is the only thing the flow
+        // carries afterwards, so no later reader has to remember it.
+        const string json = """
+        {
+          "authorization_endpoint": "file:///C:/Windows/System32/calc.exe",
+          "token_endpoint": "https://auth.example.com/token"
+        }
+        """;
+
+        Assert.Throws<InvalidOperationException>(() => McpOAuthMetadata.ParseAuthServerMetadata(json));
+    }
+}

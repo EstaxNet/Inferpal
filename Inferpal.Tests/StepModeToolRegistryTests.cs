@@ -169,4 +169,81 @@ public class StepModeToolRegistryTests
 
         Assert.Equal([1, 2], calls);
     }
+
+    // ── Step mode and a parallel batch ────────────────────────────────────────
+
+    /// <summary>
+    /// The "stepper" of both front-ends, reduced to what matters: a <b>single resume slot</b>.
+    /// </summary>
+    /// <remarks>
+    /// This is not a simplification for the test's sake — it is the exact shape of the shipped
+    /// code: <c>HostServer.PauseForStepAsync</c> writes <c>s.StepResume</c> and
+    /// <c>InferpalToolWindowData</c> writes <c>_stepResume</c>, both a single field replaced at
+    /// every pause. A second concurrent pause makes the first one <b>unreachable</b>.
+    /// </remarks>
+    private sealed class SingleSlotStepper
+    {
+        private TaskCompletionSource<bool>? _resume;
+
+        /// <summary>Released at every announced "pause", like the notification the UI receives.</summary>
+        public SemaphoreSlim Announced { get; } = new(0);
+
+        public async Task PauseAsync(CancellationToken ct)
+        {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _resume = tcs;
+            Announced.Release();
+            try { await tcs.Task.WaitAsync(ct); }
+            finally { _resume = null; }
         }
+
+        /// <summary>Le clic « Reprendre ».</summary>
+        public void Resume() => _resume?.TrySetResult(true);
+    }
+
+    /// <summary>
+    /// A tool batch run <b>in parallel</b> must stay step-by-step: one pause at a time.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <c>AgentOrchestrator</c> runs in parallel (<c>Task.WhenAll</c>) any batch of at least two
+    /// safe read-only tools — <c>read_file</c>/<c>list_files</c>/<c>search_in_files</c>, that is,
+    /// the commonest batch shape a model emits. In step mode, every call therefore entered the pause
+    /// <b>at the same time</b>, each overwriting the previous one's resume slot: a single call
+    /// resumed, the others waited for an answer nobody could give them any more, and the
+    /// <c>WhenAll</c> never completed. The turn stayed stuck until cancellation, and the "Resume"
+    /// button had nothing left to unblock.
+    /// </para>
+    /// <para>
+    /// "Step by step" means one tool at a time: the serialization therefore lives here, in the
+    /// shared decorator, and is not copied into each of the two front-ends.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AParallelBatch_StepsOneToolAtATime_InsteadOfDeadlocking()
+    {
+        // A test that WAITS does not set a budget of a few seconds: the runner builds, then runs two
+        // series in parallel. The green path waits for nothing — this budget is only consumed when
+        // the guard is broken.
+        var budget  = TimeSpan.FromSeconds(30);
+        var stepper = new SingleSlotStepper();
+        var fake    = new FakeRegistry();
+        var sut     = new StepModeToolRegistry(fake, stepper.PauseAsync);
+
+        const int batch = 3;
+        var running = Task.WhenAll(Enumerable.Range(0, batch)
+            .Select(_ => sut.ExecuteAsync("read_file", default, CancellationToken.None)));
+
+        // The user clicks "Resume" once per announced pause.
+        for (var i = 0; i < batch; i++)
+        {
+            Assert.True(await stepper.Announced.WaitAsync(budget),
+                        $"Pause {i + 1}/{batch} never announced: the batch no longer crosses step mode.");
+            stepper.Resume();
+        }
+
+        var results = await running.WaitAsync(budget);
+        Assert.Equal(batch, results.Length);
+        Assert.Equal(batch, fake.ExecuteCallCount);   // witness: the three tools really did run
+    }
+}

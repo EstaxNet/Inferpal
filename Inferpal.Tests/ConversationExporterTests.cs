@@ -56,6 +56,46 @@ public class ConversationExporterTests
         Assert.Contains("what does <think>x</think> mean?", document);
     }
 
+    // ── RoleLabel: a single source, translated ────────────────────────────────
+
+    [Fact]
+    public void RoleLabel_IsLocalized_AndNotHardCodedFrench()
+    {
+        // ⚠ The defect: `ChatMessageItem.UserMsg` wrote `Label = "Vous"` hard, and that label goes
+        // into the exported document. A Japanese user received "Vous" at the head of every one of
+        // their turns, in all ten languages.
+        try
+        {
+            Strings.ApplyLanguage("ja");
+            var japanese = ConversationExporter.RoleLabel("user");
+            Strings.ApplyLanguage("en");
+            var english = ConversationExporter.RoleLabel("user");
+
+            Assert.NotEqual(japanese, english);
+            Assert.Equal("You", english);
+            // The witness that matters: the defect's original value must come out in NEITHER of the
+            // two languages tested here (it stays correct in French, and that is the point).
+            Assert.NotEqual("Vous", japanese);
+            Assert.NotEqual("Vous", english);
+        }
+        finally { Strings.ApplyLanguage(null); }
+    }
+
+    [Fact]
+    public void RoleLabel_NamesTheModelAndTheTool()
+    {
+        try
+        {
+            Strings.ApplyLanguage("en");
+            Assert.Equal("qwen3:8b",     ConversationExporter.RoleLabel("assistant", "qwen3:8b"));
+            Assert.Equal("Assistant",    ConversationExporter.RoleLabel("assistant"));
+            Assert.Equal("🔧 read_file", ConversationExporter.RoleLabel("tool", "read_file"));
+            // A role the export does not render (status, error) does not invent a label.
+            Assert.Equal(string.Empty,   ConversationExporter.RoleLabel("status"));
+        }
+        finally { Strings.ApplyLanguage(null); }
+    }
+
     // ── FormatDuration ─────────────────────────────────────────────────────────
 
     [Fact]

@@ -75,12 +75,12 @@ public class ScanCoverageTests
         // never runs and returns `default` — not partial, therefore silent. That `default` was
         // what got reported, while the index had quietly left files out.
         var neverRan = default(ScanCoverage);
-        var indexed  = new ScanCoverage(Total: 652, Scanned: 400);
+        var indexed  = new ScanCoverage(Total: 652, Scanned: 500);
 
         var worst = ScanCoverage.Worst(neverRan, indexed);
 
         Assert.True(worst.IsPartial);
-        Assert.Equal(400, worst.Scanned);
+        Assert.Equal(500, worst.Scanned);
         Assert.Equal(652, worst.Total);
     }
 

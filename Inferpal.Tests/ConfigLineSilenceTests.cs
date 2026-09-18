@@ -112,6 +112,167 @@ public class ConfigLineSilenceTests
     /// known names, and two orchestrator guards.
     /// </summary>
     [Fact]
+    public void ACustomToolRejection_IsReportedOnce_NotOnEveryReadOfTheToolList()
+    {
+        Diagnostics.Clear();
+        var registry = Registry("read_file=echo hello");
+
+        for (var i = 0; i < 5; i++) _ = registry.Definitions.ToList();
+
+        Assert.Contains("read_file", Assert.Single(Notes("CustomTools")));
+    }
+
+    /// <summary>
+    /// The consequence, and it is the one that costs: the ring keeps only
+    /// <see cref="Diagnostics.Capacity"/> entries, so a faulty line repeated on every request pushes
+    /// out the failure the user came to <c>/diagnostics</c> to find.
+    /// </summary>
+    /// <remarks>
+    /// POSITIVE assertion: we require the witness to still be there. Two faulty lines × 120 passes =
+    /// 240 entries without the guard, i.e. more than the ring's capacity.
+    /// </remarks>
+    [Fact]
+    public void AnUnusableCustomToolLine_DoesNotPushTheRestOfTheRingOut()
+    {
+        Diagnostics.Clear();
+        Diagnostics.Record("Witness", "the failure the user opened /diagnostics to find");
+        var registry = Registry("read_file=echo hello\nline with no equals");
+
+        for (var i = 0; i < 120; i++) _ = registry.Definitions.ToList();
+
+        Assert.Contains(Diagnostics.Snapshot(), e => e.Context == "Witness");
+        Assert.Equal(2, Notes("CustomTools").Length);
+    }
+
+    /// <summary>
+    /// <c>/diagnostics clear</c>: the user starts again from a clean ring, so what they have just
+    /// erased must be able to be said again — otherwise "once per process" becomes "never again".
+    /// </summary>
+    [Fact]
+    public void ClearingTheChannel_MakesTheNextPassSpeakAgain()
+    {
+        Diagnostics.Clear();
+        var registry = Registry("line with no equals sign at all");
+
+        _ = registry.Definitions.ToList();
+        Assert.Single(Notes("CustomTools"));
+
+        Diagnostics.Clear();
+        _ = registry.Definitions.ToList();
+        Assert.Single(Notes("CustomTools"));
+    }
+
+    /// <summary>
+    /// The command-template loader is the <b>autocomplete</b>'s: it runs on every keystroke while a
+    /// slash command is being typed — <c>IsBuiltIn</c>'s comment says so, and that is why that
+    /// particular answer has been cached for a long time.
+    /// </summary>
+    [Fact]
+    public void AShadowedTemplate_IsReportedOnce_NotOnEveryKeystroke()
+    {
+        Diagnostics.Clear();
+        var cfg = new InferpalConfig { PromptTemplates = "/plan=mon modele" };
+
+        for (var i = 0; i < 12; i++) Assert.Empty(SlashTemplates.Load(cfg, null));
+
+        Assert.Contains("/plan", Assert.Single(Notes("UserTemplates")));
+    }
+
+    // ── A pathological pattern is said only once ──────────────────────────────
+
+    /// <summary>
+    /// A glob whose evaluation blows past its budget is reported <b>once per pattern</b>, not once
+    /// per item.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ This is the half of the class <c>DroppedLineOnce</c> had left open: it covered a rejected
+    /// configuration <i>line</i>, and the ring drowns just as well under a note emitted <b>per
+    /// item</b>. The multiplier is worse there — <c>IndexExclusions</c> evaluates its patterns on
+    /// <b>every file</b> of the indexing pass, hence thousands of identical entries in a ring that
+    /// keeps <see cref="Diagnostics.Capacity"/>, and <c>RulesService</c> re-evaluates its globs on
+    /// every rebuild of the system prompt, that is, on every change of active file.
+    /// </para>
+    /// <para>
+    /// Both patterns come from a file that arrives with a <b>cloned repository</b>
+    /// (<c>.inferpal/project.json</c>, <c>.inferpal/rules/*.md</c>): that is untrusted input, and
+    /// the glob used here is the one
+    /// <c>RulesServiceTests.GlobMatch_APathologicalRepoAuthoredGlob_CannotFreezeThePromptBuild</c>
+    /// has already measured as exceeding its budget.
+    /// </para>
+    /// <para>
+    /// ⚠ These two tests live HERE and not in <c>IndexExclusionsTests</c>/<c>RulesServiceTests</c>:
+    /// they read the ring, which is <b>process</b> state, and only this class is in the serialized
+    /// collection. Written elsewhere, a concurrent <c>Clear()</c> erased their witness — measured,
+    /// not assumed.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void APathologicalIndexExclusion_IsReportedOncePerPattern_NotOncePerFile()
+    {
+        Diagnostics.Clear();
+        Diagnostics.Record("Witness", "the failure the user opened /diagnostics to find");
+
+        var root  = Path.Combine(Path.GetTempPath(), "inferpal-excl-" + Guid.NewGuid().ToString("N"));
+        string[] extra = [string.Concat(Enumerable.Repeat("a*", 20)) + "b"];
+        var file  = Path.Combine(root, "src", new string('a', 40) + "c");
+
+        for (var i = 0; i < 20; i++)
+            Assert.False(Inferpal.Services.Rag.IndexExclusions.IsExcluded(file, root, extra));
+
+        var said = Notes("IndexExclusions");
+        Assert.Single(said);
+        Assert.Contains("timed out", said[0]);
+        Assert.Contains(Diagnostics.Snapshot(), e => e.Context == "Witness");
+    }
+
+    /// <summary>The second reader of the same glob dialect, whose consequence differs: the rule this
+    /// glob scopes does not apply.</summary>
+    [Fact]
+    public void APathologicalRuleGlob_IsReportedOncePerGlob_NotOnEveryPromptRebuild()
+    {
+        Diagnostics.Clear();
+        Diagnostics.Record("Witness", "the failure the user opened /diagnostics to find");
+
+        var glob = string.Concat(Enumerable.Repeat("b*", 20)) + "z";
+        var path = new string('b', 40) + "c";
+
+        for (var i = 0; i < 20; i++)
+            Assert.False(Inferpal.Services.Governance.RulesService.GlobMatch(glob, path));
+
+        var said = Notes("Rules");
+        Assert.Single(said);
+        Assert.Contains("is not applied", said[0]);
+        Assert.Contains(Diagnostics.Snapshot(), e => e.Context == "Witness");
+    }
+
+    // ── Two tools cannot claim the same name ──────────────────────────────────
+
+    /// <summary>
+    /// ⚠ Two lines the user reads as <b>distinct</b>: the name is normalized (lowercase, spaces to
+    /// underscores), so <c>My Tool</c> and <c>my_tool</c> are one and the same — the same trap as
+    /// <c>my-server</c> / <c>my.server</c> on the MCP side, where it is documented and handled.
+    /// Without a guard, the backend received two definitions of the same name and only the first
+    /// command ran, in silence.
+    /// </summary>
+    [Fact]
+    public void TwoCustomToolsClaimingTheSameName_AreNotBothOffered_AndTheSecondIsSaid()
+    {
+        Diagnostics.Clear();
+
+        var names = Registry("My Tool=echo one\nmy_tool=echo two")
+            .Definitions.Select(d => d.Function.Name).ToList();
+
+        Assert.Single(names, n => n == "my_tool");   // exposed, and exactly once
+        Assert.Contains(Notes("CustomTools"),
+                        d => d.Contains("already declared") && d.Contains("echo two"));
+    }
+
+    // ── Serveurs MCP ──────────────────────────────────────────────────────────
+
+    /// <summary>The likeliest one: a misspelled key. The server then appeared nowhere — not even in
+    /// /mcp's "failed" list, which lists only those that tried to start.</summary>
+    [Fact]
     public void AnMcpServerWithoutTransport_IsRecorded()
     {
         Diagnostics.Clear();
@@ -194,6 +355,69 @@ public class ConfigLineSilenceTests
         // times would drown the ring, and a noisy channel stops being read.
         new SystemPromptBuilder(cfg).Build("BASE");
         Assert.Single(Notes("PinnedFiles"));
+    }
+
+    /// <summary>
+    /// "Once" is not "only once in the process's life": a pinned file that comes back and then
+    /// disappears again is said again.
+    /// </summary>
+    /// <remarks>
+    /// This behaviour already existed; it is tested here because its mechanism moved from
+    /// <c>SystemPromptBuilder</c>'s private set to <c>Diagnostics.DroppedLineOnce</c>, shared with
+    /// the two other repeated parsers. A move without a witness is a bet.
+    /// </remarks>
+    [Fact]
+    public void APinnedFileThatComesBackThenVanishesAgain_IsSaidAgain()
+    {
+        Diagnostics.Clear();
+        var path = Path.Combine(Path.GetTempPath(), "inferpal-pin-back-" + Guid.NewGuid().ToString("N") + ".md");
+        var cfg  = new InferpalConfig { PinnedContextFiles = path };
+
+        new SystemPromptBuilder(cfg).Build("BASE");
+        Assert.Single(Notes("PinnedFiles"));
+
+        File.WriteAllText(path, "PINNED CONTENT");
+        try { Assert.Contains("PINNED CONTENT", new SystemPromptBuilder(cfg).Build("BASE")); }
+        finally { File.Delete(path); }
+
+        new SystemPromptBuilder(cfg).Build("BASE");
+        Assert.Equal(2, Notes("PinnedFiles").Length);
+    }
+
+    /// <summary>
+    /// A pinned file dropped <b>by the cap</b> is said, like the one that is missing.
+    /// </summary>
+    /// <remarks>
+    /// Same silence, another cause. The settings window sets no cap and
+    /// <c>PinnedFilesPolicy.Serialize</c> deliberately keeps the entries beyond <c>MaxPinned</c>:
+    /// the user writes five, sees all five in the settings, and two never reach the system prompt —
+    /// nor the 📌 bullets, which read the same capped list. It is word for word what the missing
+    /// file's comment complains about.
+    /// </remarks>
+    [Fact]
+    public void PinnedFilesPastTheCap_AreReportedInsteadOfSilentlyDropped()
+    {
+        Diagnostics.Clear();
+        var paths = Enumerable.Range(0, PinnedFilesPolicy.MaxPinned + 2)
+            .Select(_ => Path.Combine(Path.GetTempPath(), "inferpal-pin-cap-" + Guid.NewGuid().ToString("N") + ".md"))
+            .ToList();
+        foreach (var p in paths) File.WriteAllText(p, "PINNED " + Path.GetFileNameWithoutExtension(p));
+
+        try
+        {
+            var prompt = new SystemPromptBuilder(
+                new InferpalConfig { PinnedContextFiles = string.Join("\n", paths) }).Build("BASE");
+
+            // Witness: the first three really did go — the cap did not eat everything.
+            foreach (var kept in paths.Take(PinnedFilesPolicy.MaxPinned))
+                Assert.Contains("PINNED " + Path.GetFileNameWithoutExtension(kept), prompt);
+
+            var said = Notes("PinnedFiles");
+            Assert.Equal(2, said.Length);
+            foreach (var dropped in paths.Skip(PinnedFilesPolicy.MaxPinned))
+                Assert.Contains(said, d => d.Contains(Path.GetFileName(dropped)));
+        }
+        finally { foreach (var p in paths) File.Delete(p); }
     }
 
     /// <summary>Reference arm: a pinned file that EXISTS says nothing.</summary>

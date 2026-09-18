@@ -141,4 +141,47 @@ public class CodeActionPipelineTests
         Assert.Equal(CodeActionOutcome.Edited, run.Outcome);
         Assert.Equal("void M()\n{\n    return 2;\n}", run.NewDocText);
     }
+
+    /// <summary>
+    /// A selection that includes its line break keeps it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ This is Visual Studio's commonest selection gesture — a click in the margin, or
+    /// <c>Shift+Down</c> — and it selects the line <b>with its line ending</b>. Cleaning the model's
+    /// answer does a <c>TrimEnd()</c>, so the replacement never ends with a line break: the next
+    /// line came up and stuck to the one just edited.
+    /// </remarks>
+    [Fact]
+    public async Task Run_SelectionIncludingItsLineBreak_KeepsIt()
+    {
+        const string doc = "void M()\n{\n    return 1;\n}";
+        var start = doc.IndexOf("    return 1;", StringComparison.Ordinal);
+        var end   = start + "    return 1;\n".Length;   // the selection carries the line break
+
+        var run = await RunAsync(ProviderReplying("return 2;"), doc, start, end, selectionEmpty: false);
+
+        Assert.Equal(CodeActionOutcome.Edited, run.Outcome);
+        Assert.Equal("void M()\n{\n    return 2;\n}", run.NewDocText);
     }
+
+    /// <summary>
+    /// Reference arm: an unchanged echo of a selection carrying its line ending stays "nothing to
+    /// change", and is therefore not applied at all.
+    /// </summary>
+    /// <remarks>
+    /// Without restoring the line break, the rebuilt text differed from the original by that single
+    /// byte: the identity check no longer saw the echo, and the "no change" edit was applied — while
+    /// eating the line ending.
+    /// </remarks>
+    [Fact]
+    public async Task Run_UnchangedEcho_OfASelectionWithItsLineBreak_IsStillNoChange()
+    {
+        const string doc = "void M()\n{\n    return 1;\n}";
+        var start = doc.IndexOf("    return 1;", StringComparison.Ordinal);
+        var end   = start + "    return 1;\n".Length;
+
+        var run = await RunAsync(ProviderReplying("return 1;"), doc, start, end, selectionEmpty: false);
+
+        Assert.Equal(CodeActionOutcome.NoChangeNeeded, run.Outcome);
+    }
+}

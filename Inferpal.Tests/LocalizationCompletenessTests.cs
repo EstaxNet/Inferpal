@@ -169,6 +169,138 @@ public class LocalizationCompletenessTests
             "Untranslated VS Code keys (add them to the listed bundles):\n" + string.Join("\n", report));
     }
 
+    /// <summary>The repository root (where the .sln lives) — the same walk up as the two helpers above.</summary>
+    /// <summary>
+    /// Every string the extension displays: the literals of <c>l10n.t()</c> under
+    /// <c>vscode/src</c>, key → file. <b>Carries the enumeration's witness</b>, so that the rules
+    /// using it inherit it instead of each asking for it again.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The <b>aliased</b> sites (<c>const t = vscode.l10n.t;</c>) are found by looking for the
+    /// alias, never through a list of files: the first version kept one, saw 43 keys out of 98, and
+    /// would have missed both defects of 2026-09-07 — one of which lives precisely in one of those
+    /// files. Comments are neutralized: a commented-out <c>t('…')</c> displays nothing, and
+    /// requiring it in the bundles would be a false red.
+    /// </remarks>
+    private static Dictionary<string, string> DisplayedStrings()
+    {
+        var root  = Path.Combine(RepoRootDir(), "vscode", "src");
+        var files = Directory.EnumerateFiles(root, "*.ts", SearchOption.AllDirectories).ToList();
+        Assert.True(files.Count > 5, $"Only {files.Count} TypeScript source(s) — the rule sweeps nothing.");
+
+        var direct     = new Regex(@"(?:vscode\.)?l10n\.t\(\s*(['""])((?:\\.|(?!\1).)*)\1");
+        var aliased    = new Regex(@"(?<![\w.])t\(\s*(['""])((?:\\.|(?!\1).)*)\1");
+        // The extension's translator (src/i18n.ts): it follows Inferpal's language and keeps the same keys.
+        var translator = new Regex(@"import\s*\{[^}]*\bt\b[^}]*\}\s*from\s*'(?:\.\.?/)+i18n'");
+        var keys       = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var file in files)
+        {
+            var code  = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(file));
+            var scans = new List<Regex> { direct };
+            if (code.Contains("= vscode.l10n.t", StringComparison.Ordinal) || translator.IsMatch(code)) scans.Add(aliased);
+
+            foreach (var scan in scans)
+                foreach (Match m in scan.Matches(code))
+                    keys.TryAdd(m.Groups[2].Value.Replace("\\'", "'"), Path.GetRelativePath(RepoRootDir(), file));
+        }
+
+        Assert.True(keys.Count > 50, $"Only {keys.Count} key(s) found: the enumerator is too narrow.");
+        // One per call-site shape: direct, then aliased.
+        foreach (var witness in new[] { "Conversation exported: {0}", "Settings saved." })
+            Assert.True(keys.ContainsKey(witness), $"The enumerator no longer sees {witness}.");
+        return keys;
+    }
+
+    private static string RepoRootDir()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        return dir!;
+    }
+
+    /// <summary>
+    /// Every string displayed by the extension is translated in the <b>nine</b> bundles.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the rule "every new localization key → the ten .resx", on the TypeScript side, where
+    /// nothing enforced it. A miss there is <b>silent by construction</b>: <c>l10n.t()</c> returns
+    /// the English string when the key is missing, so the only way to notice is to open the product
+    /// in the right language and land on the right window.
+    /// </para>
+    /// <para>
+    /// two keys were missing in the nine languages, one of them the
+    /// <c>Save</c> button of a dialog <b>whose question was translated</b> — the user read a French
+    /// sentence under an English button. One half translated by hand, the other forgotten: that is
+    /// the shape this file exists to catch.
+    /// </para>
+    /// <para>
+    /// ⚠ The <b>aliased</b> call sites (<c>const t = vscode.l10n.t;</c>) are found by looking for
+    /// the alias, not through a list of files: my first measurement kept one, saw only 43 keys out
+    /// of 98, and would have missed both defects.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryDisplayedString_IsTranslatedInAllBundles()
+    {
+        var keys    = DisplayedStrings();
+        var bundles = Directory.EnumerateFiles(Path.Combine(RepoRootDir(), "vscode", "l10n"), "bundle.l10n.*.json")
+            .ToDictionary(
+                f => Path.GetFileName(f).Split('.')[2],
+                f => JsonDocument.Parse(File.ReadAllText(f)).RootElement
+                        .EnumerateObject().Select(x => x.Name).ToHashSet(StringComparer.Ordinal));
+
+        // Witness for the bundle reader: the nine are there, and a known key really is found in
+        // them. (The enumerator's lives in DisplayedStrings, so both rules inherit it.)
+        Assert.Equal(Locales.Length, bundles.Count);
+        Assert.All(bundles, b => Assert.Contains("Settings saved.", b.Value));
+
+        var gaps = keys.Keys
+            .Select(k => (Key: k, Missing: bundles.Where(b => !b.Value.Contains(k)).Select(b => b.Key).ToList()))
+            .Where(x => x.Missing.Count > 0)
+            .Select(x => $"« {x.Key} » ({keys[x.Key]}) manque en : {string.Join(", ", x.Missing)}")
+            .ToList();
+
+        Assert.True(gaps.Count == 0,
+            "Command token with no label: VS has nothing to show wherever it names the command, "
+            + "and no build says so -" + Environment.NewLine + "  "
+            + string.Join(Environment.NewLine + "  ", gaps));
+    }
+
+    /// <summary>
+    /// The mirror of the test above, on the VS Code side: a bundle entry no <c>l10n.t()</c> asks
+    /// for any more.
+    /// </summary>
+    /// <remarks>
+    /// Exactly the reason for <see cref="NoLocale_CarriesAKeyTheNeutralResxDropped"/>, one editor
+    /// further: a dead translation reads later as "already translated" when the name is reused.
+    /// <b>46 entries per bundle</b>, all of them settings-panel labels from
+    /// before the host served the schema (<c>settings/strings</c>, the same .resx as Visual Studio)
+    /// — 414 lines claiming to translate what nobody displayed any more.
+    /// </remarks>
+    [Fact]
+    public void NoVsCodeBundle_CarriesAKeyNothingDisplays()
+    {
+        var used    = DisplayedStrings().Keys.ToHashSet(StringComparer.Ordinal);
+        var bundles = Directory.GetFiles(VsCodeL10nDir(), "bundle.l10n.*.json").Order().ToList();
+        Assert.Equal(Locales.Length, bundles.Count);
+
+        var report = new List<string>();
+        foreach (var bundle in bundles)
+        {
+            var orphaned = BundleKeys(bundle).Except(used).Order().ToList();
+            if (orphaned.Count > 0)
+                report.Add($"{Path.GetFileName(bundle)}: {orphaned.Count} orphaned → {string.Join(", ", orphaned.Take(5))}");
+        }
+
+        Assert.True(report.Count == 0,
+            "Bundle entries no l10n.t() asks for any more (remove them):\n"
+            + string.Join("\n", report));
+    }
+
     private static HashSet<string> KeysOf(string resxPath) =>
         XDocument.Load(resxPath).Root!
             .Elements("data")
@@ -213,16 +345,6 @@ public class LocalizationCompletenessTests
 
         Assert.True(report.Count == 0,
             "Orphaned keys (remove them from the listed .resx files):\n" + string.Join("\n", report));
-    }
-
-    /// <summary>Repository root - first ancestor of the test binary holding the .sln.</summary>
-    private static string RepoRootDir()
-    {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-        return dir!;
     }
 
     // ── The .resx and Strings.cs: the half of the rule nobody held ─────────────────────────
@@ -370,11 +492,12 @@ public class LocalizationCompletenessTests
         {
             var orphaned = CommandResourceKeys(locale).Except(used).Order().ToList();
             if (orphaned.Count > 0)
-                report.Add($"{(locale.Length == 0 ? "neutral" : locale)}: {orphaned.Count} orphaned → {string.Join(", ", orphaned.Take(5))}");
+                report.Add($"{(locale.Length == 0 ? "neutre" : locale)}: {orphaned.Count} orphelin(s) → {string.Join(", ", orphaned.Take(5))}");
         }
 
         Assert.True(report.Count == 0,
-            "Command labels no token asks for any more (remove them):\n" + string.Join("\n", report));
+            "Command labels no token asks for any more (remove them):\n"
+            + string.Join("\n", report));
     }
 
     // -- VS Code manifest (vscode/package.nls*.json) ---------------------------

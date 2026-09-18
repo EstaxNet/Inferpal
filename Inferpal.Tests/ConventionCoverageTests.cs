@@ -74,7 +74,7 @@ public class ConventionCoverageTests
 
         foreach (var file in ToolsSources().Where(f => !exempt.Contains(Path.GetFileName(f))))
         {
-            var source = File.ReadAllText(file);
+            var source = CodeOnly(file);
             Assert.False(
                 System.Text.RegularExpressions.Regex.IsMatch(source, @"(?<![\w.])File\.WriteAllText(Async)?\s*\("),
                 $"{Rel(file)} writes a text file directly — File.WriteAllText emits UTF-8 with no " +
@@ -86,27 +86,105 @@ public class ConventionCoverageTests
     // ── 2. RegexBudget sous Services\Tools ────────────────────────────────────
 
     [Fact]
-    public void ToolRegexes_CarryAMatchTimeout()
+    public void ServiceRegexes_CarryAMatchTimeout()
     {
-        // A match without a timeout on workspace content = one pathological minified file freezes
-        // the agent turn with no error. Regex.Escape/Unescape match nothing -> out of scope.
-        var callSite = new System.Text.RegularExpressions.Regex(
-            @"(?<![\w.])(?:Regex\.(?:IsMatch|Match|Matches|Replace|Split)|new\s+Regex|(?<=\bRegex\s+\w{1,64}\s*=\s*)new)\s*\(");
-
-        foreach (var file in UntrustedInputSources())
+        // Two fixes from the post-1.6.1 review, and the second one is the lesson.
+        //
+        // SCOPE. The rule covered only Services\Tools + Services\Docs, on the grounds that this is
+        // where untrusted content enters. But "untrusted" does not follow the folder split: the
+        // MODEL's output is untrusted, and it arrives in Services\Execution (the subject of an
+        // approval), Services\Agent (the inline call parser) and Services\Commands (the runner's
+        // output). The scan therefore covers all of Services\**.
+        //
+        // TOOL. The scan itself was a regex, and it had the blind spot that matters: it recognised
+        // `new Regex(…)` and `Regex Foo = new(…)`, never a `new(…)` element of a COLLECTION
+        // (`private static readonly Regex[] HardDeny = [ new(…), … ]`). That is exactly the shape
+        // of PermissionPolicy's two pattern sets — the denylist and the "opaque execution" tier —
+        // which match the model's output on the approval path, and therefore had NO budget at all:
+        // measured, 49 s on a 64 KB subject. A guard written in the same language as the defect it
+        // hunts inherits its blind spots; this one now reads a syntax tree, where "a Regex is built
+        // here" is a question with an exact answer.
+        // A scan reports ALL its sites at once: failing on the first makes the list appear one run
+        // at a time, and that is what turns a repair into a series of round trips.
+        var offenders = new List<string>();
+        foreach (var file in ServicesSources())
         {
-            var source = File.ReadAllText(file);
-            foreach (System.Text.RegularExpressions.Match m in callSite.Matches(source))
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var site in RegexSites(root))
+                if (!site.Arguments.Any(a => a.Contains("RegexBudget") || a.Contains("Timeout")))
+                    offenders.Add($"{Rel(file)}({site.Line}) : {site.Snippet}");
+        }
+
+        Assert.True(offenders.Count == 0,
+            "These tools resolve a path against the process's working directory, which in Visual "
+            + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    /// <summary>
+    /// Every site that builds a <c>Regex</c> or calls a static <c>Regex</c> method under
+    /// <paramref name="root"/>. Three shapes, the third being the one that was missing:
+    /// <c>new Regex(…)</c>, <c>Regex.IsMatch(…)</c>, and an implicit <c>new(…)</c> whose target
+    /// type is declared <c>Regex</c> / <c>Regex[]</c> / a collection of <c>Regex</c>.
+    /// </summary>
+    private static IEnumerable<(int Line, string Snippet, IReadOnlyList<string> Arguments)> RegexSites(SyntaxNode root)
     {
-                var args = BalancedArguments(source, source.IndexOf('(', m.Index + m.Length - 1));
-                Assert.True(args is not null,
-                    $"{Rel(file)}: argument list never closed after \"{Snippet(source, m.Index)}\" - unexpected balancing or source.");
-                Assert.True(
-                    args!.Contains("RegexBudget") || args.Contains("Timeout"),
-                    $"{Rel(file)}: \"{Snippet(source, m.Index)}\" has no match timeout - " +
-                    "pass RegexBudget.Default (last argument), like all of its neighbours.");
+        // Regex.Escape/Unescape match nothing: no budget to carry.
+        string[] matching = ["IsMatch", "Match", "Matches", "Replace", "Split", "Count", "EnumerateMatches"];
+
+        foreach (var node in root.DescendantNodes())
+        {
+            IReadOnlyList<string>? args = node switch
+            {
+                ObjectCreationExpressionSyntax oc when TypeIsRegex(oc.Type)
+                    => ArgumentTexts(oc.ArgumentList),
+                ImplicitObjectCreationExpressionSyntax ioc when DeclaredTypeMentionsRegex(ioc)
+                    => ArgumentTexts(ioc.ArgumentList),
+                InvocationExpressionSyntax inv
+                    when inv.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "Regex" } } ma
+                         && matching.Contains(ma.Name.Identifier.Text)
+                    => ArgumentTexts(inv.ArgumentList),
+                _ => null,
+            };
+            if (args is null) continue;
+
+            var line = node.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+            yield return (line, Squash(node.ToString()), args);
         }
     }
+
+    private static bool TypeIsRegex(TypeSyntax type) =>
+        type.ToString() is "Regex" or "System.Text.RegularExpressions.Regex";
+
+    /// <summary>
+    /// An implicit <c>new(…)</c> does not carry its type: it is read off the enclosing
+    /// declaration — field, local variable or property. <c>Regex</c>, <c>Regex[]</c> and
+    /// <c>List&lt;Regex&gt;</c> all count, an element of a Regex collection being a Regex.
+    /// </summary>
+    private static bool DeclaredTypeMentionsRegex(SyntaxNode node)
+    {
+        for (var current = node.Parent; current is not null; current = current.Parent)
+        {
+            var declared = current switch
+            {
+                VariableDeclarationSyntax v => v.Type.ToString(),
+                PropertyDeclarationSyntax p => p.Type.ToString(),
+                _ => null,
+            };
+            if (declared is null) continue;
+            return declared == "Regex" || declared.StartsWith("Regex[") || declared.Contains("<Regex>");
+        }
+        return false;
+    }
+
+    private static IReadOnlyList<string> ArgumentTexts(BaseArgumentListSyntax? list) =>
+        list is null ? [] : list.Arguments.Select(a => a.ToString()).ToList();
+
+    private static string Squash(string text)
+    {
+        var single = text.ReplaceLineEndings(" ");
+        return single.Length <= 90 ? single : single[..90] + "…";
     }
 
     // ── 3. AtomicFile sous Services\Persistence ───────────────────────────────
@@ -119,7 +197,7 @@ public class ConventionCoverageTests
         foreach (var file in CoreSources(Path.Combine("Services", "Persistence"))
                      .Where(f => !exempt.Contains(Path.GetFileName(f))))
         {
-            var source = File.ReadAllText(file);
+            var source = CodeOnly(file);
             Assert.False(
                 System.Text.RegularExpressions.Regex.IsMatch(
                     source, @"(?<![\w.])File\.(WriteAllText|WriteAllBytes)(Async)?\s*\("),
@@ -132,78 +210,463 @@ public class ConventionCoverageTests
     // ── 4. WorkspaceScan sous Services\Tools ──────────────────────────────────
 
     [Fact]
-    public void ToolRecursiveEnumerations_RouteThroughWorkspaceScan()
+    public void ServiceRecursiveEnumerations_RouteThroughWorkspaceScan()
     {
-        // A tool that enumerates recursively goes THROUGH WorkspaceScan.EnumerateFiles: mentioning it
-        // is no longer enough. Filtering with IsExcludedPath left each site its own enumeration, hence
-        // its own failures — one unreadable folder (a Docker volume mounted in the repository, a
-        // locked junction in a Windows profile) stopped every walk, and each failed differently
-        // (a false "directory not found", an exception, a silently partial list). Read without
-        // comments.
-        foreach (var file in ToolsSources())
-        {
-            Assert.False(CodeOnly(file).Contains("SearchOption.AllDirectories"),
-                $"{Rel(file)} enumerates recursively on its own - it walks bin/obj/.git/node_modules " +
-                "and .inferpal/history, and one unreadable folder stops it. Use WorkspaceScan.EnumerateFiles.");
-        }
+        // Whoever enumerates the workspace recursively goes THROUGH WorkspaceScan.EnumerateFiles:
+        // mentioning it is no longer enough. Filtering by IsExcludedPath oneself left every site
+        // with its own enumeration, hence its own failures — a single unlistable folder (a Docker
+        // volume mounted in the repo, a locked junction to a Windows profile) stopped each walk,
+        // and each failed differently (a false "directory not found", an exception, a silent
+        // partial list). Read without comments: the funnel documents the shape it replaces.
+        string[] exempt =
+        [
+            "WorkspaceScan.cs",        // the funnel itself
+            // Deliberately walks the BUILD OUTPUT (bin/) to find the test assemblies there: the
+            // workspace exclusions would be a contradiction in terms.
+            "TestAssemblyLocator.cs",
+        ];
+
+        var offenders = ServicesSources()
+            .Where(f => !exempt.Contains(Path.GetFileName(f)))
+            .Where(f => CodeOnly(f).Contains("SearchOption.AllDirectories"))
+            .Select(Rel)
+            .ToList();
+
+        Assert.True(offenders.Count == 0,
+            "These tools resolve a path against the process's working directory, which in Visual "
+            + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     // ── 9. What the MODEL reads asserts no variable fact ──────────────────────
 
     [Fact]
-    public void TheChatList_KeepsTheContractTheAutoScrollerDependsOn()
+    public void MutatingTools_GoThroughTheApprovalService()
     {
-        // Three facts that must keep agreeing across a XAML file (project Inferpal) and an
-        // in-process class (project Inferpal.InProc), with NO compiler link between them:
+        // The repository's doctrine is written down: "destructive tools → mandatory approval +
+        // snapshot". It was applied to a LIST (write_file, apply_diff, apply_edits, delete_file,
+        // run_command), not to the property — and three tools that write were not on it:
+        // insert_at_cursor and replace_selection (which change the open document, so they also
+        // bypassed the permission rules and /undo-run) and update_memory, whose file is re-injected
+        // into the system prompt of every later session. The scan asks the property: "does this
+        // file have a write sink?" — in which case it must ask too.
         //
-        //   - the literal Tag, by which the two WPF class handlers recognise THE chat list among
-        //     every ListBox living in devenv - renaming one side breaks no build, it simply turns
-        //     scrolling off;
-        //   - IsVirtualizing="False" and CanContentScroll="False", without which the ScrollViewer
-        //     scrolls by ITEM (logical scrolling) and off-screen bubbles have no container:
-        //     BringIntoView has nothing to bring, and ScrollToEnd aims at a wrong extent.
-        //
-        // All three fail the same way: the conversation stops following the stream, with no error,
-        // no exception and no trace - the user concludes the model stopped answering. The comment
-        // on ChatAutoScroller already STATED the agreement ("Must match the literal Tag set on the
-        // chat ListBox in InferpalToolWindowContent.xaml"); nobody held it.
-        var scroller = Path.Combine(RepoRoot(), "Inferpal.InProc", "GhostText", "ChatAutoScroller.cs");
-        Assert.True(File.Exists(scroller), $"{scroller} does not exist - the rule checks nothing any more.");
+        // Write sinks recognised, all verified present in the folder at the time of writing.
+        string[] writeSinks =
+        [
+            "SafeFileWriter.", "File.WriteAllText", "File.WriteAllBytes", "File.Delete",
+            "Directory.Delete", "InsertAtCursorAsync", "ReplaceSelectionAsync",
+        ];
 
-        var tagConst = Regex.Match(CodeOnly(scroller), @"ChatListTag\s*=\s*""([^""]+)""");
-        Assert.True(tagConst.Success, "ChatAutoScroller no longer exposes a ChatListTag literal: the rule derives nothing.");
-        var tag = tagConst.Groups[1].Value;
+        string[] exempt =
+        [
+            "SafeFileWriter.cs",    // the write funnel itself, called by the guarded tools
+            "EditorWriteGate.cs",   // the gate: it is the one calling RequestApprovalAsync
+            "RestoreFileTool.cs",   // guarded, but the call lives in the body — checked by hand below
+        ];
 
-        var xamlDir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
-        var xamls   = Directory.EnumerateFiles(xamlDir, "*.xaml", SearchOption.TopDirectoryOnly).ToList();
-        Assert.True(xamls.Count >= 2, $"Only {xamls.Count} XAML file(s) found: the rule reads nothing.");
-
-        var element = new Regex(@"<[A-Za-z][^>]*?>", RegexOptions.Singleline);
-        var matches = xamls
-            .SelectMany(x => element.Matches(File.ReadAllText(x)).Select(m => (Xaml: x, El: m.Value)))
-            .Where(e => Regex.IsMatch(e.El, $@"Tag\s*=\s*""{Regex.Escape(tag)}"""))
-            .ToList();
-
-        Assert.True(matches.Count == 1,
-            $"{matches.Count} XAML element(s) carry Tag=\"{tag}\"; there must be exactly one. "
-            + "Chat auto-scroll is a global WPF class handler filtered by that Tag: at zero it "
-            + "attaches to nothing, at two it follows the wrong list - and neither says a word.");
-
-        var chatList = matches[0].El;
-        var missing = new[]
+        var offenders = new List<string>();
+        foreach (var file in ToolsSources().Where(f => !exempt.Contains(Path.GetFileName(f))))
         {
-                @"VirtualizingPanel\.IsVirtualizing\s*=\s*""False""",
-                @"ScrollViewer\.CanContentScroll\s*=\s*""False""",
+            var source = CodeOnly(file);
+            var sink   = writeSinks.FirstOrDefault(s => source.Contains(s, StringComparison.Ordinal));
+            if (sink is null) continue;
+
+            // Either the tool asks itself, or it goes through the shared gate.
+            if (source.Contains("RequestApprovalAsync", StringComparison.Ordinal) ||
+                source.Contains("EditorWriteGate.", StringComparison.Ordinal)) continue;
+
+            offenders.Add($"{Rel(file)} (writes through '{sink}')");
         }
-            .Where(attr => !Regex.IsMatch(chatList, attr))
-            .Select(attr => attr.Replace(@"\.", ".").Replace(@"\s*", string.Empty))
+
+        Assert.True(offenders.Count == 0,
+            "Tools that write without going through IApprovalService — approval is THE boundary " +
+            "of the product, and a tool that dodges it also dodges the permission rules, the " +
+            "force-prompt on repo-authored content, and /undo-run's snapshot:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    /// <summary>The only file exempt from the scan above must really ask: checked by name.</summary>
+    [Fact]
+    public void RestoreFileTool_StillAsks()
+    {
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "Tools", "RestoreFileTool.cs"));
+        Assert.Contains("RequestApprovalAsync", source, StringComparison.Ordinal);
+    }
+
+    // ── 6. Replacing the conversation waits for the turn to end ───────────────
+
+    [Fact]
+    public void ReplacingTheConversation_SettlesTheRunningTurnFirst()
+    {
+        // The host holds its turn slot for this; the Visual Studio VM —
+        // the MAIN front-end — did it nowhere. Loading a session or clearing the chat while a turn
+        // is running replaces _history under the agent loop: its answer lands in the freshly
+        // restored conversation, and the render pass looks for a bubble that Messages.Clear() has
+        // already removed (IndexOf = -1 ⇒ insert at -1, caught as an error bubble in the wrong
+        // conversation).
+        //
+        // The VM cannot be instantiated without Visual Studio: the rule is therefore checked on the
+        // text, like the script guards. Method granularity.
+        var offenders = new List<string>();
+
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                // The method that DEFINES the restoration is the point of application, not a caller.
+                if (method.Identifier.Text is "RestoreConversation" or "SettleCurrentTurnAsync") continue;
+
+                // ⚠ The CALLS, not the text. Written as `body.Contains("SettleCurrentTurnAsync")`,
+                // this rule was green on a disarmed site: the COMMENT documenting the call contains
+                // the word, and `method.ToString()` carries the trivia. The repository has already
+                // paid for this shape twice ("REACHED" contained in "NOT REACHED", and a guard whose
+                // comment quoted the pattern it looked for) — verified by breaking the site.
+                var calls = method.DescendantNodes().OfType<InvocationExpressionSyntax>()
+                    .Select(i => i.Expression switch
+                    {
+                        MemberAccessExpressionSyntax ma => ma.Name.Identifier.Text,
+                        IdentifierNameSyntax id         => id.Identifier.Text,
+                        _                               => string.Empty,
+                    })
                     .ToList();
 
-        Assert.True(missing.Count == 0,
-            $"The chat list ({Rel(matches[0].Xaml)}) lost: {string.Join(", ", missing)}. "
+                var replaces = calls.Contains("RestoreConversation")
+                    || method.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(i =>
+                           i.Expression is MemberAccessExpressionSyntax
+                           {
+                               Name.Identifier.Text: "Clear",
+                               Expression: IdentifierNameSyntax { Identifier.Text: "Messages" },
+                           });
+                if (!replaces) continue;
+                if (calls.Contains("SettleCurrentTurnAsync")) continue;
+
+                offenders.Add($"{Rel(file)} : {method.Identifier.Text}");
+            }
+        }
+
+        Assert.True(offenders.Count == 0,
+            "These methods replace the conversation without letting the turn in flight unwind — " +
+            "the agent loop holds the OLD list and will write its answer into the new one. " +
+            "Call SettleCurrentTurnAsync() first:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 7. The model's arguments are read without trust ───────────────────────
+
+    [Fact]
+    public void ToolArguments_AreReadThroughToolArgs()
+    {
+        // ToolArgs was created by the review for exactly this: a 7B sends
+        // « "top_k": "5" » and omits « query », so GetProperty/GetInt32 throw, and the model reads
+        // "The given key was not present in the dictionary." — which names neither the tool nor the
+        // argument. The helper was adopted in 2 tools out of 14: the post-1.6.1 review converted the
+        // other 12, and this rule is what stops the next one from starting again on the throwing
+        // shape.
+        //
+        // ⚠ And that list left out `.GetString()`: **23 sites**, against
+        // ZERO for the two shapes it named. JsonElement.GetString() throws exactly like GetInt32()
+        // — InvalidOperationException as soon as the element is not a string, so on « "path": 42 » —
+        // and the model then reads "The requested operation requires an element of type 'String',
+        // but the target element has type 'Number'", which names neither the tool nor the argument:
+        // the very message this rule exists to remove. It is the shape defect this file documents
+        // everywhere else: a sound rule, carried by an ENUMERATION whose list leaves out the
+        // majority case.
+        string[] throwing = ["args.GetProperty(", ".GetInt32()", ".GetBoolean()", ".GetString()"];
+        string[] exempt   = ["ToolArgs.cs"];
+
+        var offenders = new List<string>();
+        foreach (var file in ToolsSources().Where(f => !exempt.Contains(Path.GetFileName(f))))
+        {
+            var source = CodeOnly(file);
+            foreach (var form in throwing.Where(t => source.Contains(t, StringComparison.Ordinal)))
+                offenders.Add($"{Rel(file)} : {form}");
+        }
+
+        Assert.True(offenders.Count == 0,
+            "Argument reads that throw on a value written by the MODEL — go through ToolArgs "
+            + "(args.Str / Trimmed / Keyword / Int / Bool), which degrades instead of throwing:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 8. A chat bubble is inserted themed ───────────────────────────────────
+
+    [Fact]
+    public void ChatBubbles_AreInsertedThroughTheThemingFunnel()
+    {
+        // Fifteen sites built the item INSIDE the call to Messages.Insert(...), which makes theming
+        // impossible: there is no reference to theme. Those bubbles rendered in default colours
+        // under a dark theme. The pre-1.6.0 review had repaired four by hand, in ChatTurn only —
+        // hence the InsertThemed funnel, and this rule.
+        var inline = new System.Text.RegularExpressions.Regex(
+            @"Messages\.Insert\([^;]*?ChatMessageItem\.[A-Za-z]+Msg\(",
+            System.Text.RegularExpressions.RegexOptions.Singleline);
+
+        var offenders = new List<string>();
+        foreach (var file in ViewModelSources())
+        {
+            var source = CodeOnly(file);
+            foreach (System.Text.RegularExpressions.Match m in inline.Matches(source))
+                offenders.Add($"{Rel(file)}({source[..m.Index].Count(c => c == '\n') + 1})");
+        }
+
+        Assert.True(offenders.Count == 0,
+            "Bubbles inserted without going through InsertThemed: built inside the Insert call, "
+            + "they cannot be themed and come out in light colours under a dark theme:" + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 9. Text shown to the user goes through Strings ────────────────────────
+
+    [Fact]
+    public void UserFacingChatText_GoesThroughStrings()
+    {
+        // Measured (review of the VS adapter). §17 had localized the PlanModeOn/
+        // PlanModeOff pair and left the step-mode one, three lines above, in literal English — in
+        // the VM AND in the host, where the neighbouring `/plan` returns Strings.PlanModeOn from the
+        // same switch, under a comment claiming it was "deliberately English". Same pattern twice
+        // more: the /fix-build loop had its two END messages localized and its two PROGRESS labels
+        // hard-coded, and a file dialog passed its Title through Strings and not its Filter, one
+        // line below. Nine users out of ten read English, and nothing anywhere said so — while the
+        // VS Code front-end carries this rule in the header of its l10n.ts.
+        (string Marker, int MessageArg)[] sinks =
+        [
+            ("ShowInfoAsync(",                 0),
+            ("ChatMessageItem.AssistantMsg(",  0),
+            ("ChatMessageItem.UserMsg(",       0),
+            ("ChatMessageItem.StatusMsg(",     0),
+            ("ChatMessageItem.ToolMsg(",       1),   // arg 0 = tool name: an identifier, not prose
+            ("SlashCommandResult(",            1),   // arg 0 = ok, arg 2 = effects: same
+        ];
+
+        // NAMED exemptions, with their reason — that is the shape this repository gives a decision,
+        // as opposed to a pattern that merely fails to see the site.
+        string[] exempt =
+        [
+            // /test-build-banner: a diagnostic command whose audience is us. It names a signal file
+            // and the in-proc -> OOP path; translating it would help nobody.
+            "Test build-failure signal sent",
+            // A git command name, not prose ("commit" is the four-letter word).
+            "git commit",
+            // The product name — the tool window title is not translated.
+            "Inferpal",
+        ];
+
+        // A three-letter word is enough: the "Fix {0}" label of the /fix-build loop is one of them,
+        // and the threshold of 4 let it through. Measure before choosing: going from 4 to 3 adds NO
+        // false positive on the current tree, so nothing pays for that gain.
+        // What stays under the threshold — "**", "…", "\n```" — is not prose.
+        var word = new System.Text.RegularExpressions.Regex("[A-Za-z]{3,}");
+        var sources = ViewModelSources()
+            .Append(Path.Combine(RepoRoot(), "Inferpal.Host", "HostSlashCommands.cs"))
+            .ToList();
+
+        // Witness: the rule is worth nothing unless it really sees sinks. Renaming a method would
+        // turn it green while measuring nothing — that is this file's failure mode.
+        var sites = 0;
+        var offenders = new List<string>();
+
+        foreach (var file in sources)
+        {
+            Assert.True(File.Exists(file), $"Source not found, the rule guards nothing any more: {file}");
+            var source = CodeOnly(file);
+
+            foreach (var (marker, messageArg) in sinks)
+            {
+                var from = 0;
+                while (true)
+                {
+                    var at = source.IndexOf(marker, from, StringComparison.Ordinal);
+                    if (at < 0) break;
+                    from = at + marker.Length;
+                    sites++;
+
+                    var args = BalancedArguments(source, at + marker.Length - 1);
+                    if (args is null) continue;
+                    var message = messageArg == 0 ? args : NthArgument(args, messageArg);
+
+                    foreach (var literal in TopLevelLiterals(message))
+                    {
+                        var text = LiteralText(literal);
+                        if (!word.IsMatch(text)) continue;
+                        if (exempt.Any(e => literal.Contains(e, StringComparison.Ordinal))) continue;
+                        offenders.Add($"{Rel(file)}({source[..at].Count(c => c == '\n') + 1}) : "
+                                      + marker + " ← \"" + literal[..Math.Min(60, literal.Length)] + "\"");
+                        break;
+                    }
+                }
+            }
+
+            // CurrentStep and a file dialog's properties: ASSIGNMENTS, not calls. CurrentStep often
+            // lives in a lambda, so the statement stops at the ';' of level 0 OR at the parenthesis
+            // closing the lambda.
+            //
+            // ⚠ Title/Filter were added afterwards: the first version of this rule looked only at
+            // CHAT sinks, and the export dialog kept "Export Conversation" and its filter in hard
+            // English, two lines from the sites it had just had corrected. A text sink is anything
+            // the user reads.
+            foreach (System.Text.RegularExpressions.Match m in
+                     System.Text.RegularExpressions.Regex.Matches(source, @"(CurrentStep|Title|Filter)\s*="))
+            {
+                sites++;
+                foreach (var literal in TopLevelLiterals(AssignedExpression(source, m.Index + m.Length)))
+                {
+                    var text = LiteralText(literal);
+                    if (!word.IsMatch(text)) continue;
+                    if (exempt.Any(e => literal.Contains(e, StringComparison.Ordinal))) continue;
+                    offenders.Add($"{Rel(file)}({source[..m.Index].Count(c => c == '\n') + 1}) : "
+                                  + m.Groups[1].Value + " ← \"" + literal[..Math.Min(60, literal.Length)] + "\"");
+                    break;
+                }
+            }
+        }
+
+        Assert.True(sites >= 40, $"Only {sites} text sink(s) found — the rule measures nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "Text shown to the user, hard-coded: it will never be translated, and nine users out "
             + "of ten will read it in English with nothing saying so. Add a key to the 10 .resx "
             + "files plus a property in Strings.cs:"
-            + "conversation silently stops following the stream.");
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 10. A WPF dialog goes through the shared STA thread ───────────────────
+
+    /// <summary>
+    /// No site under <c>Inferpal\ToolWindow</c> spins up its own thread to open a dialog.
+    /// </summary>
+    /// <remarks>
+    /// Four sites did it by hand and did not do it the same way: two had
+    /// <b>no</b> <c>try</c> at all, so an exception from <c>ShowDialog</c> left their
+    /// <c>TaskCompletionSource</c> pending — the command waited forever, without a word — and on a
+    /// <b>foreground</b> thread an unhandled exception terminates the process. The third did
+    /// everything right, which proves the shape was known; none set <c>IsBackground</c>, although
+    /// the two inline-edit windows have always done so. <c>StaDialog.RunAsync</c> is that funnel,
+    /// and the rule stops the next site from starting over.
+    /// </remarks>
+    [Fact]
+    public void WpfDialogs_GoThroughTheSharedStaThread()
+    {
+        // The funnel itself, and the two inline-edit windows, which own their thread for another
+        // reason: they host an entire WPF window there, not a modal dialog.
+        string[] exempt = ["StaDialog.cs", "InlineEditInputWindow.cs", "ClipboardHelper.cs"];
+
+        var sites = 0;
+        var offenders = new List<string>();
+        foreach (var file in ViewModelSources().Where(f => !exempt.Contains(Path.GetFileName(f))))
+        {
+            var source = CodeOnly(file);
+            foreach (System.Text.RegularExpressions.Match m in
+                     System.Text.RegularExpressions.Regex.Matches(source, @"new\s+(System\.Threading\.)?Thread\s*\("))
+            {
+                sites++;
+                offenders.Add($"{Rel(file)}({source[..m.Index].Count(c => c == '\n') + 1})");
+            }
+        }
+
+        // Witness: the funnel exists and really does spin up a thread — otherwise the rule forbids
+        // a shape with no replacement, and its green means nothing any more.
+        var funnel = CodeOnly(Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "StaDialog.cs"));
+        Assert.Contains("new Thread(", funnel, StringComparison.Ordinal);
+        Assert.Contains("IsBackground", funnel, StringComparison.Ordinal);
+        Assert.Contains("TrySetResult(default)", funnel, StringComparison.Ordinal);
+
+        Assert.True(offenders.Count == 0,
+            "A thread built by hand for a dialog: without StaDialog's try/finally, an exception "
+            + "out of ShowDialog leaves the task hanging (the command waits forever) and, on a "
+            + "foreground thread, takes the whole process down. Go through StaDialog.RunAsync:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+        Assert.Equal(0, sites);
+    }
+
+    // ── 11. A connection badge does not conclude from a status code ───────────
+
+    [Fact]
+    public void CheckConnection_ConfirmsThePayload_NotJustTheStatusCode()
+    {
+        // an LM Studio behind a reverse proxy answers HTTP 200 on
+        // /api/tags — as on /anything — with the body
+        // {"error":"Unexpected endpoint or method. (GET /api/tags)"}. An Ollama-typed client
+        // pointed at it showed a GREEN badge while no turn could possibly complete.
+        //
+        // ProviderProbe has required the discriminating property since it existed and wrote the rule
+        // down in black and white ("a bare status code is not enough"): the repository kept in code
+        // what its own comment forbade — the pattern CLAUDE.md already names about test-suite
+        // parsers ("exit 0 = green"). The rule therefore carries the PROPERTY — a connection probe
+        // looks at what the server answered — and not today's two implementations.
+        var sites = 0;
+        var offenders = new List<string>();
+
+        foreach (var file in CoreSources(Path.Combine("Services", "Inference")))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>()
+                         .Where(m => m.Identifier.ValueText == "CheckConnectionAsync"))
+            {
+                // The base's abstract declaration has no body: nothing to probe.
+                if (method.Body is null && method.ExpressionBody is null) continue;
+
+                sites++;
+                var confirms = method.DescendantNodes().OfType<IdentifierNameSyntax>()
+                    .Any(n => n.Identifier.ValueText == "ConfirmsBackendPayload");
+                if (!confirms)
+                    offenders.Add($"{Rel(file)}({method.GetLocation().GetLineSpan().StartLinePosition.Line + 1})");
+            }
+        }
+
+        // Witness: the rule is worth nothing unless probes remain to be judged. Zero sites — a
+        // renamed method, a moved file — would turn it green while looking at nothing.
+        Assert.True(sites >= 2,
+            $"The scan found only {sites} implementation(s) of CheckConnectionAsync under " +
+            "Services\\Inference: the rule checks nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "A connection probe concluding on the status code alone. A server — or a reverse "
+            + "proxy — answering 200 on every route then gives a green badge while no chat turn "
+            + "can complete. Go through ConfirmsBackendPayload, which requires the root property "
+            + "signing the backend and traces what was observed:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 12. A tool that can degrade SAYS so when it returns nothing ───────────
+
+    [Fact]
+    public void ASearchToolThatEmbeds_ReportsWhenOnlyItsKeywordHalfRan()
+    {
+        // ProjectIndexService.SearchAsync skips its vector half when the embedding is null — model
+        // not downloaded, backend off, circuit breaker open. The two tools then answered "No
+        // relevant code found for …": a flat negative, which the model reads as "this code does not
+        // exist". A missing capability rendered as a result.
+        //
+        // The rule carries the PROPERTY — a tool that embeds a query can lose its semantic half, so
+        // it must be able to say so — and not today's two files. A third search tool will inherit it.
+        var sites = 0;
+        var offenders = new List<string>();
+
+        foreach (var file in ToolsSources())
+        {
+            var source = CodeOnly(file);
+            if (!source.Contains("GetEmbeddingAsync", StringComparison.Ordinal)) continue;
+
+            sites++;
+            if (!source.Contains("SearchDegradation", StringComparison.Ordinal))
+                offenders.Add(Rel(file));
+        }
+
+        // Witness: the rule is worth nothing unless tools that embed remain. Zero sites — a renamed
+        // method, a moved file — would turn it green while looking at nothing.
+        Assert.True(sites >= 2,
+            $"The scan found only {sites} tool(s) calling GetEmbeddingAsync under Services/Tools: " +
+            "the rule checks nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "A search tool that embeds a query without ever saying when only its lexical half "
+            + "ran. Pass the nothing-found through SearchDegradation.Explain, which keeps the three "
+            + "states apart (full search / semantics turned off by the user / embedding "
+            + "unavailable):"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     // ── 21. What the MODEL reads asserts no variable fact ─────────────────────
@@ -268,7 +731,7 @@ public class ConventionCoverageTests
         // are now built at run time by SystemPromptBuilder.EnvironmentFacts, where they are true.
         var dir      = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
         var files    = Directory.EnumerateFiles(dir, "Strings*.resx").ToList();
-        var inspected = 0;
+        var checkedd = 0;
         var offenders = new List<string>();
 
         foreach (var file in files)
@@ -278,20 +741,95 @@ public class ConventionCoverageTests
                                 RegexOptions.Singleline);
             if (!m.Success) continue;
 
-            inspected++;
+            checkedd++;
             foreach (var fact in VariableFacts)
                 if (m.Groups[1].Value.Contains(fact, StringComparison.Ordinal))
                     offenders.Add($"{Path.GetFileName(file)} : « {fact} »");
         }
 
-        // Witness: all ten languages, otherwise a broken pattern would make the rule green on zero files.
-        Assert.True(inspected == 10,
-            $"The scan read {inspected} SystemPrompt value(s) out of the 10 expected in {dir}: the rule no longer checks anything.");
+        // Witness: all ten languages, otherwise a broken pattern would green the rule on zero files.
+        Assert.True(checkedd == 10,
+            $"The scan read {checkedd} SystemPrompt value(s) out of the 10 expected in {dir}: the rule checks nothing any more.");
 
         Assert.True(offenders.Count == 0,
             "The base system prompt asserts an editor or a shell. Both facts vary from one "
             + "front-end and one machine to the next: they belong to EnvironmentFacts, not to a "
             + "translation:" + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 23. What the USER reads does not assert the editor either ─────────────
+
+    [Fact]
+    public void SharedUiText_NamesNeitherAnEditorNorAShell()
+    {
+        // The user half of rule 21. That one closes what the MODEL reads; the same Core also serves
+        // the text the USER reads, to BOTH front-ends, and nobody saw it.
+        //
+        // The channel is explicit, and its own comment sells it as a feature: `settings/strings`
+        // serves the labels "straight from the same .resx resources as the Visual Studio settings
+        // window. The VS Code settings webview renders them VERBATIM, so both editors share the
+        // exact same wording in all 10 languages". That is true — and it is exactly why a label
+        // naming ONE editor becomes false for the other.
+        //
+        // out of 731 entries, seven name an editor or a shell. FOUR are
+        // served to both front-ends, hence false for one of them:
+        //   · LabelLanguage    "(overrides Visual Studio)"                   -> VS Code
+        //   · HintProvider     "Takes effect after reloading Visual Studio"  -> VS Code, and it
+        //     names a REMEDY IT CANNOT APPLY (lesson of 1.6.6)
+        //   · LabelCustomTools "name=powershell_command"                     -> VS Code + every
+        //     Linux/macOS host. Fourth survival of the PowerShell assumption after ShellLauncher
+        //, UserShellTool (pre-1.6.0) and run_command's description (09/08).
+        //   · SlashHintRun     "run a PowerShell command"                    -> every non-Windows host
+        //
+        // ⚠ And THREE are legitimate, which is the heart of the rule: HintLanguage, LangAuto and
+        // LabelToolCommand live only in the VS window (`InferpalSettingsData`), never in the schema
+        // nor in the catalogue. The criterion is therefore not "this text names Visual Studio" but
+        // "is this text SERVED TO BOTH". A rule on the word alone would redden three correct
+        // strings — and a rule that gets it wrong is a rule that gets disarmed.
+        var schema  = CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "Presentation", "SettingsSchema.cs"));
+        var catalog = CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "SlashCommandRouter.cs"));
+
+        // The resource names the host sends: the settings schema's literals, and the Strings.X of
+        // the slash command catalogue (served by `command/list`).
+        var shared = new HashSet<string>(StringComparer.Ordinal);
+        foreach (Match m in Regex.Matches(schema, "\"(Label|Hint|Title|Tab)[A-Za-z0-9]+\""))
+            shared.Add(m.Value.Trim('"'));
+        foreach (Match m in Regex.Matches(catalog, @"Strings\.(\w+)"))
+            shared.Add(m.Groups[1].Value);
+
+        var resxDir = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
+        var files   = Directory.GetFiles(resxDir, "Strings*.resx");
+
+        var offenders = new List<string>();
+        var scanned   = 0;
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(file);
+            foreach (Match m in Regex.Matches(text, @"<data name=""(\w+)""[^>]*><value>(.*?)</value>",
+                                              RegexOptions.Singleline))
+            {
+                if (!shared.Contains(m.Groups[1].Value)) continue;
+                scanned++;
+                foreach (var fact in VariableFacts)
+                    if (m.Groups[2].Value.Contains(fact, StringComparison.OrdinalIgnoreCase))
+                        offenders.Add($"{Path.GetFileName(file)} / {m.Groups[1].Value} : « {fact} »");
+            }
+        }
+
+        // Two witnesses, because two things can break without a sound: collecting the shared names
+        // (it finds none any more) and reading the .resx (it reads no values any more).
+        Assert.True(shared.Count >= 40,
+            $"Only {shared.Count} shared resource name(s) collected: the scan judges nothing.");
+        Assert.True(scanned >= 400,
+            $"Only {scanned} shared value(s) read in {files.Length} file(s): "
+            + "the scan judges nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "A text served to BOTH front-ends names an editor or a shell. `settings/strings` and "
+            + "`command/list` hand those strings to VS Code verbatim, and the shell is resolved per "
+            + "machine: the sentence is then false for the other half of the users. Reword it in "
+            + "neutral terms (the editor, the shell) rather than naming ours:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     /// <summary>The text a model will read in a property: literals and the fixed parts of
@@ -305,6 +843,181 @@ public class ConventionCoverageTests
             else if (node is InterpolatedStringTextSyntax interpolated)
                 yield return interpolated.TextToken.ValueText;
         }
+    }
+
+    // ── 16. Clearing a bound collection loses its selection ───────────────────
+
+    [Fact]
+    public void TwoWayBoundCollections_AreNeverCleared()
+    {
+        // A Selector resets its bound property to null when the selected item leaves the
+        // collection. ⚠ Re-filling it in the same method does NOT give it back: under Remote UI the
+        // null write crosses the boundary and comes back AFTER the re-fill, which re-selects
+        // nothing. That is the mechanism of issue #8, where the model list removed then re-added its
+        // value in a single pass. Such a collection is updated in place, through
+        // SelectionPreservingList.
+        //
+        // ⚠ The list of collections concerned is DERIVED FROM THE XAML — every element binding both
+        // ItemsSource and SelectedItem — and not copied.
+        //
+        // NAMED exemption: Messages, whose SelectedItem is the scroll anchor (ScrollTarget) — a
+        // stateless selection, which the chat repositions itself.
+        string[] exempt = ["Messages"];
+        var xamlDir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        var xamls   = Directory.EnumerateFiles(xamlDir, "*.xaml", SearchOption.TopDirectoryOnly).ToList();
+        Assert.True(xamls.Count >= 2, $"Only {xamls.Count} XAML file(s) found: the rule reads nothing.");
+
+        var element = new Regex(@"<[A-Za-z][^>]*?>", RegexOptions.Singleline);
+        var items   = new Regex(@"ItemsSource\s*=\s*""\{Binding\s+([A-Za-z0-9_]+)");
+        var selected = new Regex(@"SelectedItem\s*=\s*""\{Binding\s+[A-Za-z0-9_]+");
+
+        var bound = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var xaml in xamls)
+        {
+            var text = File.ReadAllText(xaml);
+            foreach (Match el in element.Matches(text))
+            {
+                var m = items.Match(el.Value);
+                if (m.Success && selected.IsMatch(el.Value)) bound.Add(m.Groups[1].Value);
+            }
+        }
+
+        // Witness: the derivation must find something, otherwise the rule is green for nothing.
+        Assert.True(bound.Count >= 4,
+            $"Only {bound.Count} SelectedItem-bound property(ies) derived from the XAML -- the derivation is broken.");
+
+        // Witness for the exemption: an exemption that names nothing bound any more is an open door.
+        foreach (var name in exempt)
+            Assert.True(bound.Contains(name), $"Exemption {name} no longer names any bound collection.");
+
+        var offenders = new List<string>();
+        var exemptClears = 0;
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var clear in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (clear.Expression is not MemberAccessExpressionSyntax ma
+                 || ma.Name.Identifier.ValueText != "Clear"
+                 || clear.ArgumentList.Arguments.Count != 0) continue;
+
+                var target = (ma.Expression as IdentifierNameSyntax)?.Identifier.ValueText;
+                if (target is null || !bound.Contains(target)) continue;
+                if (exempt.Contains(target)) { exemptClears++; continue; }
+
+                var line = clear.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Rel(file)}({line}) : {target}.Clear()");
+            }
+        }
+
+        // Witness for the scan: the chat really does clear Messages somewhere (/clear, restore).
+        // Zero would mean the scan no longer sees any Clear, and the rule would be green for nothing.
+        Assert.True(exemptClears >= 1, "No Messages.Clear() seen: the scan no longer detects Clear() calls.");
+
+        Assert.True(offenders.Count == 0,
+            "A collection whose XAML also binds SelectedItem is cleared: the Selector writes null "
+            + "back into the bound property, and refilling it right away does not give the selection "
+            + "back. Update in place (SelectionPreservingList). Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 27. A path is resolved against the root it is checked against ─────────
+
+    [Fact]
+    public void ToolPaths_ResolveAgainstTheRootTheyAreCheckedAgainst()
+    {
+        // Sanitize(path) resolves a relative path against the PROCESS's current directory. Under
+        // Visual Studio that is not the project: the out-of-process host keeps its start folder.
+        // "src/Foo.cs" therefore pointed at another folder — refused as "outside the workspace root"
+        // by the tools that check a root, and looked for in the wrong place, silently, by those that
+        // do not (run_tests: "No test runner detected" on a solution full of tests). The same call
+        // passed under VS Code, whose host starts in the workspace.
+        // ⚠ The rule therefore covers EVERY call on an argument, not only those followed by
+        // AssertUnderRoot: its first version looked only at those, and three tools were left out.
+        var offenders   = new List<string>();
+        var rootedCalls = 0;
+        foreach (var file in ToolsSources())
+        {
+            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            foreach (var call in tree.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (call.Expression is not MemberAccessExpressionSyntax
+                    {
+                        Expression: IdentifierNameSyntax { Identifier.ValueText: "PathSanitizer" },
+                        Name.Identifier.ValueText: "Sanitize",
+                    }) continue;
+
+                if (call.ArgumentList.Arguments.Count == 2) { rootedCalls++; continue; }
+
+                var line = call.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Rel(file)}({line}) : {call}");
+            }
+        }
+
+        // Witness: the file tools really are read, otherwise "no site" means nothing.
+        Assert.True(rootedCalls >= 14,
+            $"Only {rootedCalls} Sanitize(path, root) call(s) read: the scan measures nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "These tools resolve a path against the process's working directory, which in Visual "
+            + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 26. A property bound to SelectedItem is declared nullable ─────────────
+
+    [Fact]
+    public void SelectedItemBoundProperties_AreDeclaredNullable()
+    {
+        // The Selector writes null into the bound property as soon as the selected item leaves its
+        // collection. Declared `string`, the property promises the compiler what the binding does
+        // not keep: `agentModel.Trim()` compiled without a warning and threw a
+        // NullReferenceException on every Save. Declared `string?`, every unguarded read becomes a
+        // Release-build error. The compiler holds the SITES; this rule only holds the DECLARATION,
+        // without which it sees nothing.
+        //
+        // ⚠ The list comes from the XAML, as for rule 16: it is the binding that makes the property
+        // nullable, not its name.
+        var xamlDir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        var selected = new Regex(@"SelectedItem\s*=\s*""\{Binding\s+([A-Za-z0-9_]+)");
+        var bound = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var xaml in Directory.EnumerateFiles(xamlDir, "*.xaml", SearchOption.TopDirectoryOnly))
+            foreach (Match m in selected.Matches(File.ReadAllText(xaml)))
+                bound.Add(m.Groups[1].Value);
+
+        // Witness: the derivation must find at least the model lists.
+        Assert.True(bound.Count >= 8,
+            $"Only {bound.Count} SelectedItem-bound property(ies) derived from the XAML -- the derivation is broken.");
+
+        var declared = new HashSet<string>(StringComparer.Ordinal);
+        var offenders = new List<string>();
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            foreach (var property in root.DescendantNodes().OfType<PropertyDeclarationSyntax>())
+            {
+                var name = property.Identifier.ValueText;
+                if (!bound.Contains(name)) continue;
+                declared.Add(name);
+                if (property.Type is NullableTypeSyntax) continue;
+
+                var line = property.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Rel(file)}({line}) : {property.Type} {name}");
+            }
+        }
+
+        // Second witness: every binding finds its property. A property renamed on one side only
+        // would otherwise drop out of the rule with nothing going red.
+        var missing = bound.Except(declared).ToList();
+        Assert.True(missing.Count == 0,
+            "Bound to SelectedItem in the XAML, not found in the view models: " + string.Join(", ", missing));
+
+        Assert.True(offenders.Count == 0,
+            "A property bound to SelectedItem is declared non-nullable: the Selector writes null "
+            + "into it as soon as the item leaves its list, and a read such as `.Trim()` then throws "
+            + "where the compiler could not warn. Declare it nullable. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     // ── 20. Who yields the GPU, and who must NEVER wait for it ────────────────
@@ -528,111 +1241,288 @@ public class ConventionCoverageTests
     // ── 17. The chat list's scrolling contract ────────────────────────────────
 
     [Fact]
-    public void CodeOnly_NeutralizesComments_InBothDirections()
+    public void TheChatList_KeepsTheContractTheAutoScrollerDependsOn()
     {
-        var path = Path.Combine(Path.GetTempPath(), $"inferpal-codeonly-{Guid.NewGuid():N}.cs");
-        var source = string.Join(Environment.NewLine,
-        [
-            "class Subject",
-            "{",
-            "    // Tag=\"InferpalChatList\" quoted in prose",
-            "    /// <summary>File.WriteAllText(path, text) in an XML comment</summary>",
-            "    void Real() { Called(); }",
-            "    /* Called();",
-            "       Called(); */",
-            "    void Other() { }",
-            "}",
-        ]);
-        File.WriteAllText(path, source);
-        try
+        // The three of them fail the same way: the conversation stops following the stream, with no
+        // error, no exception, no trace — the user believes the model has stopped.
+        //
+        // The scroll never comes from a SelectedItem change: WPF has no BringIntoView in
+        // Selector/ListBox, so the real scroll comes from the in-proc class handler
+        // ChatAutoScroller, which finds the chat list by the literal Tag set in the XAML.
+        //
+        // ChatAutoScroller's comment ALREADY stated the agreement ("Must match the literal Tag set
+        // on the chat ListBox in InferpalToolWindowContent.xaml"); nobody held it.
+        var scroller = Path.Combine(RepoRoot(), "Inferpal.InProc", "GhostText", "ChatAutoScroller.cs");
+        Assert.True(File.Exists(scroller), $"{scroller} does not exist - the rule checks nothing any more.");
+
+        var tagConst = Regex.Match(CodeOnly(scroller), @"ChatListTag\s*=\s*""([^""]+)""");
+        Assert.True(tagConst.Success, "ChatAutoScroller no longer exposes a ChatListTag literal: the rule derives nothing.");
+        var tag = tagConst.Groups[1].Value;
+
+        var xamlDir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        var xamls   = Directory.EnumerateFiles(xamlDir, "*.xaml", SearchOption.TopDirectoryOnly).ToList();
+        Assert.True(xamls.Count >= 2, $"Only {xamls.Count} XAML file(s) found: the rule reads nothing.");
+
+        var element = new Regex(@"<[A-Za-z][^>]*?>", RegexOptions.Singleline);
+        var matches = xamls
+            .SelectMany(x => element.Matches(File.ReadAllText(x)).Select(m => (Xaml: x, El: m.Value)))
+            .Where(e => Regex.IsMatch(e.El, $@"Tag\s*=\s*""{Regex.Escape(tag)}"""))
+            .ToList();
+
+        Assert.True(matches.Count == 1,
+            $"{matches.Count} XAML element(s) carry Tag=\"{tag}\"; there must be exactly one. "
+            + "The chat's auto-scroll is a global WPF class handler, filtered on that Tag: at zero "
+            + "it hooks onto nothing, at two it follows the wrong list — in both cases without the "
+            + "slightest error.");
+
+        var chatList = matches[0].El;
+        var missing = new[]
             {
-            var code = CodeOnly(path);
-
-            // False RED: prose documenting a forbidden pattern must no longer carry it.
-            Assert.DoesNotContain("InferpalChatList", code, StringComparison.Ordinal);
-            Assert.DoesNotContain("File.WriteAllText", code, StringComparison.Ordinal);
-
-            // False GREEN: a COMMENTED-OUT call no longer counts as present. The real one does.
-            Assert.Equal(1, Regex.Matches(code, @"Called\(").Count);
-            Assert.Contains("void Real()", code, StringComparison.Ordinal);
-            Assert.Contains("void Other()", code, StringComparison.Ordinal);
-
-            // Offsets are preserved: same length, same newlines - otherwise the line numbers in
-            // the failure messages would point at the wrong line.
-            Assert.Equal(source.Length, code.Length);
-            Assert.Equal(source.Count(c => c == '\n'), code.Count(c => c == '\n'));
+                @"VirtualizingPanel\.IsVirtualizing\s*=\s*""False""",
+                @"ScrollViewer\.CanContentScroll\s*=\s*""False""",
             }
-        finally { File.Delete(path); }
+            .Where(attr => !Regex.IsMatch(chatList, attr))
+            .Select(attr => attr.Replace(@"\.", ".").Replace(@"\s*", string.Empty).Replace(@"""", "\""))
+            .ToList();
+
+        Assert.True(missing.Count == 0,
+            $"The chat list ({Rel(matches[0].Xaml)}) lost: {string.Join(", ", missing)}. "
+            + "With virtualization or logical scrolling on, off-screen bubbles have no container: "
+            + "BringIntoView has nothing to bring and ScrollToEnd aims at a wrong extent - the "
+            + "conversation silently stops following the stream.");
     }
 
     // ── 24. A solution is looked up by its EXTENSION, never by `*.sln` ────────
 
     [Fact]
-    public void SharedUiText_NamesNeitherAnEditorNorAShell()
+    public void ASolutionIsNeverLookedUpByThe_sln_Pattern()
     {
-        // The user-facing half of the "variable facts" rule. That one closes what the MODEL reads;
-        // the same Core also serves the text the USER reads, to BOTH front-ends, and nobody looked.
+        // Issue #9. `Directory.GetFiles(dir, "*.sln")` OFTEN returns the
+        // `.slnx` too — through 8.3 short-name matching, which is configured PER VOLUME. The same
+        // code found the solution on the maintainer's system volume and not on the reporter's
+        // `G:\`: wrong workspace root, `read_file` refusing the project's paths, "No .sln file
+        // found — cannot find .inferpal/context.md".
         //
-        // The channel is explicit, and its own comment sells it as a feature: `settings/strings`
-        // serves the labels "straight from the same .resx resources as the Visual Studio settings
-        // window. The VS Code settings webview renders them VERBATIM, so both editors share the
-        // exact same wording in all 10 languages." True -- and exactly why a label naming ONE
-        // editor becomes false for the other.
-        //
-        // Measured 2026-09-09: of 731 entries, seven name an editor or a shell. FOUR are served to
-        // both front-ends and are therefore false for one of them:
-        //   . LabelLanguage    "(overrides Visual Studio)"                  -> VS Code
-        //   . HintProvider     "Takes effect after reloading Visual Studio" -> VS Code, and it
-        //     names a REMEDY THEY CANNOT PERFORM
-        //   . LabelCustomTools "name=powershell_command"                    -> VS Code and every
-        //     Linux/macOS host. Fourth survival of the PowerShell assumption.
-        //   . SlashHintRun     "run a PowerShell command"                   -> every non-Windows host
-        //
-        // And THREE are legitimate, which is the heart of the rule: HintLanguage, LangAuto and
-        // LabelToolCommand live only in the VS window, never in the schema or the catalogue. The
-        // criterion is therefore not "this text says Visual Studio" but "is this text SERVED TO
-        // BOTH". A rule on the word alone would redden three correct strings -- and a rule that is
-        // wrong is a rule people learn to disarm.
-        var schema  = CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "Presentation", "SettingsSchema.cs"));
-        var catalog = CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "SlashCommandRouter.cs"));
-
-        // The resource names the host actually sends: string literals of the settings schema, and
-        // the Strings.X of the slash-command catalogue (served through `command/list`).
-        var shared = new HashSet<string>(StringComparer.Ordinal);
-        foreach (Match m in Regex.Matches(schema, "\"(Label|Hint|Title|Tab)[A-Za-z0-9]+\""))
-            shared.Add(m.Value.Trim('"'));
-        foreach (Match m in Regex.Matches(catalog, @"Strings\.(\w+)"))
-            shared.Add(m.Groups[1].Value);
-
-        var resxDir = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
-        var files   = Directory.GetFiles(resxDir, "Strings*.resx");
-
+        // ⚠ The rule exists because the first pass fixed the SIX sites in the Core and left the TWO
+        // in the VS adapter — including the one that returns exactly the message above. A pattern
+        // spread over two projects is not held in one's head; `SolutionFiles` is the funnel.
         var offenders = new List<string>();
-        var scanned   = 0;
-        foreach (var file in files)
+        var sites     = 0;
+
+        foreach (var file in CoreSources("Services").Concat(ViewModelSources())
+                                                    .Concat(ProjectSources("Inferpal.Host"))
+                                                    .Concat(ProjectSources("Inferpal.InProc")))
         {
-            var text = File.ReadAllText(file);
-            foreach (Match m in Regex.Matches(text, @"<data name=""(\w+)""[^>]*><value>(.*?)</value>",
-                                              RegexOptions.Singleline))
-            {
-                if (!shared.Contains(m.Groups[1].Value)) continue;
-                scanned++;
-                foreach (var fact in VariableFacts)
-                    if (m.Groups[2].Value.Contains(fact, StringComparison.OrdinalIgnoreCase))
-                        offenders.Add($"{Path.GetFileName(file)} / {m.Groups[1].Value} : '{fact}'");
-        }
+            // The funnel class is the only place allowed to name the format, and its text documents
+            // the trap precisely: it exempts itself, by name.
+            if (Path.GetFileName(file).Equals("SolutionFiles.cs", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var source = CodeOnly(file);
+
+            // A file that names BOTH formats has done the work: it looks for project markers, not
+            // for "the" solution, and the list is explicit. What the rule chases is the pattern
+            // that DECIDES ALONE — the one that lets 8.3 answer.
+            if (source.Contains("\"*.slnx\"", StringComparison.Ordinal)) continue;
+
+            // Witness: the rule is worth nothing unless it really sees file lookups.
+            sites += System.Text.RegularExpressions.Regex.Matches(source, @"(?:GetFiles|EnumerateFiles)\s*\(").Count;
+
+            foreach (System.Text.RegularExpressions.Match m in
+                     System.Text.RegularExpressions.Regex.Matches(source, "\"\\*\\.sln\""))
+                offenders.Add($"{Rel(file)}({source[..m.Index].Count(c => c == '\n') + 1}) : \"*.sln\"");
         }
 
-        // Two witnesses, because two things can break silently: collecting the shared names (it
-        // finds none any more) and reading the .resx (it reads no values any more).
-        Assert.True(shared.Count >= 40,
-            $"Only {shared.Count} shared resource name(s) collected: the scan judges nothing.");
-        Assert.True(scanned >= 400,
-            $"Only {scanned} shared value(s) read across {files.Length} file(s): the scan judges nothing.");
+        Assert.True(sites >= 20,
+            $"Only {sites} file lookup(s) found — the rule no longer measures anything.");
 
         Assert.True(offenders.Count == 0,
             "A solution looked up through the *.sln pattern gives an answer that depends on the "
             + "volume (8.3 short names): it finds .slnx files on one machine and not on another. "
+            + "Go through Services/SolutionFiles, which filters on the extension. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 15. Ni `async void`, ni `.Wait()` ─────────────────────────────────────
+
+    [Fact]
+    public void AsyncCode_NeverSwallowsItsFailuresNorBlocks()
+    {
+        // Two shapes this repository has always forbidden in CLAUDE.md, and that nothing held.
+        // They have no legitimate use here:
+        //   `async void`  — the exception comes back to no await; it kills the process or vanishes,
+        //                   and it is the purest shape of "something failed in silence";
+        //   `.Wait()`     — blocks a thread on a task, which deadlocks as soon as a synchronization
+        //                   context is in play (the VS window has one).
+        //
+        // ⚠ `.Result` is NOT in the rule, deliberately. its eight
+        // occurrences are all legitimate — two `read.IsCompletedSuccessfully ? read.Result : …`
+        // (no blocking possible) and six DTO properties called Result. No text tells those cases
+        // apart from a real block, so the rule would live off its exemption list: exactly the
+        // antipattern this file exists to avoid. Zero violations today, checked by hand; if that
+        // ever changes it will show up in review, not here.
+        var offenders = new List<string>();
+        var sites     = 0;
+
+        foreach (var file in CoreSources("Services").Concat(CoreSources("Config"))
+                                                    .Concat(ViewModelSources())
+                                                    .Concat(ProjectSources("Inferpal.Host"))
+                                                    .Concat(ProjectSources("Inferpal.Fim"))
+                                                    .Concat(ProjectSources("Inferpal.InProc")))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            // Witness: the rule is worth nothing unless async code remains to be judged.
+            sites += root.DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .Count(m => m.Modifiers.Any(t => t.IsKind(SyntaxKind.AsyncKeyword)));
+
+            foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                if (!method.Modifiers.Any(t => t.IsKind(SyntaxKind.AsyncKeyword))) continue;
+                if (method.ReturnType is not PredefinedTypeSyntax pt || !pt.Keyword.IsKind(SyntaxKind.VoidKeyword)) continue;
+                offenders.Add($"{Rel(file)}({method.GetLocation().GetLineSpan().StartLinePosition.Line + 1}) : async void {method.Identifier.ValueText}");
+            }
+
+            foreach (var inv in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (inv.Expression is not MemberAccessExpressionSyntax ma
+                 || ma.Name.Identifier.ValueText != "Wait"
+                 || inv.ArgumentList.Arguments.Count != 0) continue;
+                offenders.Add($"{Rel(file)}({inv.GetLocation().GetLineSpan().StartLinePosition.Line + 1}) : .Wait()");
+            }
+        }
+
+        Assert.True(sites >= 50,
+            $"The scan found only {sites} async method(s): the rule checks nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "These tools resolve a path against the process's working directory, which in Visual "
+            + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 14. No bubble label is a literal ──────────────────────────────────────
+
+    [Fact]
+    public void ChatBubbleLabels_NeverCarryALiteral()
+    {
+        // ⚠ `ChatMessageItem.UserMsg` carried `Label = "Vous"`. The bubble does not display it (the
+        // template binds Label only for the "tool" role), so nothing signalled it — but the export
+        // uses it as the header of every turn: a Japanese user received "Vous". The defect did not
+        // live in what one looks at, it lived in what one takes away.
+        //
+        // ⚠ Rule 9 could not catch it: it reads the argument of a call that DISPLAYS, and this is a
+        // property initializer. Fourth shape this file adds for the same doctrine — the text the
+        // user reads comes from a resource, wherever it is written.
+        var sites     = 0;
+        var offenders = new List<string>();
+
+        foreach (var file in ViewModelSources())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var assignment in root.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+            {
+                if (assignment.Left is not IdentifierNameSyntax name
+                 || name.Identifier.ValueText is not ("Label" or "SubLabel")) continue;
+
+                sites++;
+                // Every string literal the VALUE can evaluate to, not only a bare one: a switch arm or a
+                // ternary branch (`Label = role switch { "user" => "Vous" }`) is the same hard-coded
+                // label one level deeper. An arm's PATTERN ("user") is matched, not displayed, and a
+                // literal passed to a call (`RoleLabel("user")`) is a key: the call decides the text.
+                foreach (var lit in assignment.Right.DescendantNodesAndSelf().OfType<LiteralExpressionSyntax>())
+                {
+                    if (!lit.IsKind(SyntaxKind.StringLiteralExpression) || lit.Token.ValueText.Length == 0) continue;
+                    if (lit.Parent is ConstantPatternSyntax or ArgumentSyntax) continue;
+                    offenders.Add($"{Rel(file)}({lit.GetLocation().GetLineSpan().StartLinePosition.Line + 1}) : \"{lit.Token.ValueText}\"");
+                }
+            }
+        }
+
+        // Witness: the rule is worth nothing unless labels remain to be judged.
+        Assert.True(sites >= 4,
+            $"The scan found only {sites} label assignment(s): the rule checks nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "A hard-coded bubble label: it is rendered into the exported document, and therefore "
+            + "read by users of all ten languages. Go through ConversationExporter.RoleLabel, which "
+            + "takes it from the resources. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 13. What /diagnostics displays is in ENGLISH, like the whole channel ──
+
+    [Fact]
+    public void DiagnosticsDetails_AreWrittenInEnglish()
+    {
+        // The /diagnostics channel is read BY THE USER, in all ten languages, and it also carries
+        // exception messages that nobody ever translates. The repository therefore settled this
+        // long ago, by usage: every one of its details is in English. That is not written anywhere
+        // else, and that is exactly why four FRENCH sentences could get in there in one evening —
+        // caught by Dams, not by a test.
+        //
+        // ⚠ Rule 9 ("displayed text goes through Strings") could not catch it: it scans the VM and
+        // the host, never Services/**. A convention that stops at a folder does not see the site one
+        // writes elsewhere — the third time this file pays for it.
+        //
+        // ⚠ FOURTH time, and this time it is THIS rule that stopped at a folder: its scope covered
+        // only the Core and the VM, so neither the FIM sidecar nor the in-proc. Two FRENCH details
+        // lived there ("introuvable :" in FimSidecar, the framing sentence in FimRpcLoop) and it is
+        // not this test that found them — it is the PORT to the public repository, where both were
+        // translated into English. The channel is the same for the user, whichever project writes
+        // into it.
+        //
+        // ⚠ And it must be said plainly: widening the scope would NOT have caught those two.
+        // "introuvable :" and "En-tetes lus sans Content-Length exploitable" are written without a
+        // single accented letter, and this test is a proxy on accents — checked by sabotage, it
+        // stays GREEN on the exact word that was in the code. The scope is fixed because it was
+        // wrong, not because it would have been enough: what found those sentences is the
+        // comparison with the public repository, and nothing else could.
+        //
+        // ⚠ It is a PROXY, not a proof: it catches accented prose (French, Spanish,
+        // Portuguese...), not French written without accents. It catches the mistake that was made,
+        // and it claims no more. Non-ASCII punctuation (—, ≠, «, ») stays allowed: it is already in
+        // existing English details.
+        var sites = 0;
+        var offenders = new List<string>();
+
+        foreach (var file in CoreSources("Services").Concat(CoreSources("Config"))
+                                    .Concat(ViewModelSources())
+                                    .Concat(ProjectSources("Inferpal.Host"))
+                                    .Concat(ProjectSources("Inferpal.Fim"))
+                                    .Concat(ProjectSources("Inferpal.InProc")))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+
+            foreach (var inv in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (inv.Expression is not MemberAccessExpressionSyntax ma
+                 || ma.Name.Identifier.ValueText != "Record"
+                 || !ma.Expression.ToString().Contains("Diagnostics")) continue;
+                if (inv.ArgumentList.Arguments.Count < 2) continue;
+
+                sites++;
+                var detail = inv.ArgumentList.Arguments[1].Expression;
+                var text = string.Concat(detail.DescendantNodesAndSelf()
+                    .Select(n => n switch
+                    {
+                        LiteralExpressionSyntax lit          => lit.Token.ValueText,
+                        InterpolatedStringTextSyntax interp   => interp.TextToken.ValueText,
+                        _                                     => string.Empty,
+                    }));
+
+                var accented = new string([.. text.Where(c => char.IsLetter(c) && c > 127).Distinct()]);
+                if (accented.Length > 0)
+                    offenders.Add($"{Rel(file)}({inv.GetLocation().GetLineSpan().StartLinePosition.Line + 1}) : {accented}");
+            }
+        }
+
+        // Witness: the rule is worth nothing unless calls remain to be judged.
+        Assert.True(sites >= 10, $"The scan found only {sites} call(s) to Diagnostics.Record: the rule checks nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "A /diagnostics detail written with accented letters: the channel is in English, it "
             + "is read by users of all ten languages, and a French sentence is as unreadable there "
             + "as anywhere else. Sites (with the offending letters):"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
@@ -793,52 +1683,41 @@ public class ConventionCoverageTests
     /// exists to close — a rule that measures nothing is green for the worst of reasons.
     /// </remarks>
     [Fact]
-    public void ASolutionIsNeverLookedUpByThe_sln_Pattern()
+    public void CodeOnly_NeutralizesComments_InBothDirections()
     {
-        // Issue #9, measured 2026-09-10. `Directory.GetFiles(dir, "*.sln")` OFTEN returns `.slnx`
-        // files as well — through 8.3 short-name matching, which is configured PER VOLUME. The same
-        // code found the solution on the maintainer's system volume and not on the reporter's
-        // `G:\`: wrong workspace root, `read_file` refusing the project's own paths, and
-        // "No .sln file found — cannot find .inferpal/context.md".
-        //
-        // ⚠ The rule exists because the first pass fixed the SIX Core sites and left the TWO in
-        // the VS adapter — including the one that renders exactly the message above. A pattern
-        // spread over two projects is not held in one's head; SolutionFiles is the funnel.
-        var offenders = new List<string>();
-        var sites     = 0;
-
-        foreach (var file in CoreSources("Services").Concat(ViewModelSources())
-                                                    .Concat(ProjectSources("Inferpal.Host"))
-                                                    .Concat(ProjectSources("Inferpal.InProc")))
+        var path = Path.Combine(Path.GetTempPath(), $"inferpal-codeonly-{Guid.NewGuid():N}.cs");
+        var source = string.Join(Environment.NewLine,
+        [
+            "class Subject",
+            "{",
+            "    // Messages.Insert(Messages.Count - 2, ChatMessageItem.StreamingMsg(x));",
+            "    /// <summary>File.WriteAllText(path, text) inside an XML comment</summary>",
+            "    void Live() { Called(); }",
+            "    /* Called();",
+            "       Called(); */",
+            "    void Other() { }",
+            "}",
+        ]);
+        File.WriteAllText(path, source);
+        try
         {
-            // The funnel class is the only place allowed to name the format, and its text documents
-            // the trap precisely: it exempts itself, by name.
-            if (Path.GetFileName(file).Equals("SolutionFiles.cs", StringComparison.OrdinalIgnoreCase))
-                continue;
+            var code = CodeOnly(path);
 
-            var source = CodeOnly(file);
+            // False RED: the prose documenting a forbidden pattern must no longer carry it.
+            Assert.DoesNotContain("ChatMessageItem.StreamingMsg", code, StringComparison.Ordinal);
+            Assert.DoesNotContain("File.WriteAllText", code, StringComparison.Ordinal);
 
-            // A file that names BOTH formats has done the work: it is looking for project markers,
-            // not for "the" solution, and the list is explicit. What the rule is after is the
-            // pattern that DECIDES ALONE — the one that lets 8.3 answer.
-            if (source.Contains("\"*.slnx\"", StringComparison.Ordinal)) continue;
+            // False GREEN: a COMMENTED-OUT call no longer counts as present. The real call does.
+            Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(code, "Called\\(").Count);
+            Assert.Contains("void Live()", code, StringComparison.Ordinal);
+            Assert.Contains("void Other()", code, StringComparison.Ordinal);
 
-            // Witness: the rule is only worth something if it actually sees file lookups.
-            sites += System.Text.RegularExpressions.Regex.Matches(source, @"(?:GetFiles|EnumerateFiles)\s*\(").Count;
-
-            foreach (System.Text.RegularExpressions.Match m in
-                     System.Text.RegularExpressions.Regex.Matches(source, "\"\\*\\.sln\""))
-                offenders.Add($"{Rel(file)}({source[..m.Index].Count(c => c == '\n') + 1}) : \"*.sln\"");
+            // Offsets are preserved: same length, same newlines — otherwise the line numbers of
+            // error messages would point at the wrong line.
+            Assert.Equal(source.Length, code.Length);
+            Assert.Equal(source.Count(c => c == '\n'), code.Count(c => c == '\n'));
         }
-
-        Assert.True(sites >= 20,
-            $"Only {sites} file lookup(s) found — the rule no longer measures anything.");
-
-        Assert.True(offenders.Count == 0,
-            "A solution looked up with the « *.sln » pattern gives an answer that depends on the "
-            + "volume (8.3 short names): it finds .slnx files on one machine and not on another. "
-            + "Go through Services/SolutionFiles, which filters on the extension. Sites:"
-            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+        finally { File.Delete(path); }
     }
 
     /// <summary>
@@ -891,19 +1770,44 @@ public class ConventionCoverageTests
         return new string(buffer);
     }
 
+    private static IEnumerable<string> ToolsSources() =>
+        CoreSources(Path.Combine("Services", "Tools"));
+
+    /// <summary>The Core's whole Services folder — the scope of rules 2 and 4 since the post-1.6.1
+    /// review: "untrusted input" and "disk walk" do not follow the sub-folder split, and a rule that
+    /// stops at a folder does not see the site one moves into it.</summary>
+    private static IEnumerable<string> ServicesSources() =>
+        CoreSources("Services");
+
     /// <summary>
-    /// Every <c>.cs</c> file of one project of the repository, WITH ITS WITNESS - a renamed folder
-    /// or a broken glob would otherwise make a rule pass by scanning nothing.
+    /// Where a regex meets input nobody in this repository controls. <c>Services\Tools</c> parses
+    /// the workspace; <c>Services\Docs</c> parses HTML fetched from the open web, which is the
+    /// least controlled input the product touches — and it was outside the rule until the
+    /// post-1.6.0 review found the crawler running unbounded patterns over it, while its twin
+    /// <c>FetchUrlTool</c> had been bounding the same ones since it was written.
+    /// </summary>
+    private static IEnumerable<string> UntrustedInputSources() =>
+        ToolsSources().Concat(CoreSources(Path.Combine("Services", "Docs")));
+
+    /// <summary>
+    /// Every <c>.cs</c> under <c>Inferpal.Core\&lt;subdir&gt;</c>, <b>with a positive witness</b>.
     /// </summary>
     /// <remarks>
     /// <c>internal</c> for the same reason as <see cref="CodeOnly"/>: one enumerator, therefore one
     /// witness. <c>LocalizationCompletenessTests</c> uses it to sweep the VS adapter for the
     /// <c>%Key%</c> tokens of the command table.
     /// </remarks>
-    /// <summary>
-    /// The VS adapter view models (<c>Inferpal\ToolWindow</c>), WITH ITS WITNESS - the same guard
-    /// as <see cref="ProjectSources"/>.
-    /// </summary>
+    internal static IReadOnlyList<string> CoreSources(string subdir)
+    {
+        var dir = Path.Combine(RepoRoot(), "Inferpal.Core", subdir);
+        Assert.True(Directory.Exists(dir), $"The convention scan targets {dir}, which does not exist — the rule checks nothing any more.");
+
+        var files = Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories).ToList();
+        Assert.NotEmpty(files);
+        return files;
+    }
+
+    /// <summary>Same for the VS adapter: rules 6 and 8 scan <c>Inferpal\ToolWindow</c>.</summary>
     internal static IReadOnlyList<string> ViewModelSources()
     {
         var dir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
@@ -926,23 +1830,6 @@ public class ConventionCoverageTests
         Assert.NotEmpty(files);
         return files;
     }
-
-    private static IEnumerable<string> ToolsSources() =>
-        CoreSources(Path.Combine("Services", "Tools"));
-
-    /// <summary>
-    /// Where a regex meets input nobody in this repository controls. <c>Services\Tools</c> parses
-    /// the workspace; <c>Services\Docs</c> parses HTML fetched from the open web, which is the
-    /// least controlled input the product touches - and it was outside the rule until the
-    /// post-1.6.0 review found the crawler running unbounded patterns over it, while its twin
-    /// <c>FetchUrlTool</c> had been bounding the same ones since it was written.
-    /// </summary>
-    private static IEnumerable<string> UntrustedInputSources() =>
-        ToolsSources().Concat(CoreSources(Path.Combine("Services", "Docs")));
-
-    internal static IEnumerable<string> CoreSources(string subdir) =>
-        Directory.EnumerateFiles(
-            Path.Combine(RepoRoot(), "Inferpal.Core", subdir), "*.cs", SearchOption.AllDirectories);
 
     private static string Rel(string path) =>
         Path.GetRelativePath(RepoRoot(), path);
@@ -1015,6 +1902,197 @@ public class ConventionCoverageTests
             }
         }
         return null; // never closed - the call site reports file + snippet
+    }
+
+    /// <summary>The <paramref name="index"/>-th top-level argument of a list.</summary>
+    private static string NthArgument(string args, int index)
+    {
+        var parts = new List<string>();
+        var start = 0;
+        var depth = 0;
+        for (var i = 0; i < args.Length; i++)
+        {
+            var c = args[i];
+            if (c == '"' || c == '\'') { i = SkipLiteral(args, i); continue; }
+            if (c is '(' or '[' or '<') depth++;
+            else if (c is ')' or ']' or '>') depth--;
+            else if (c == ',' && depth == 0) { parts.Add(args[start..i]); start = i + 1; }
+        }
+        parts.Add(args[start..]);
+        return index < parts.Count ? parts[index] : string.Empty;
+    }
+
+    /// <summary>
+    /// The assigned expression, from <paramref name="afterEquals"/>: up to the top-level <c>;</c> or
+    /// <c>,</c>, or up to the parenthesis closing the enclosing lambda — <c>CurrentStep</c> is most
+    /// often written inside a <c>Post(() =&gt; CurrentStep = …)</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The comma was not in the first version, and the rule immediately accused the wrong site: an
+    /// object-initializer member (<c>Title = X,</c>) ends with a comma, so the expression spilled
+    /// over the following members and reported their literal under the first one's name.
+    /// </remarks>
+    private static string AssignedExpression(string source, int afterEquals)
+    {
+        var depth = 0;
+        for (var i = afterEquals; i < source.Length; i++)
+        {
+            var c = source[i];
+            if (c == '"' || c == '\'') { i = SkipLiteral(source, i); continue; }
+            if (c is '(' or '[' or '{') depth++;
+            else if (c is ')' or ']' or '}') { if (--depth < 0) return source[afterEquals..i]; }
+            else if ((c == ';' || c == ',') && depth == 0) return source[afterEquals..i];
+        }
+        return source[afterEquals..];
+    }
+
+    /// <summary>
+    /// The literals <b>written in</b> an expression, not those it passes to a nested call.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Three shapes were measured before settling on this one, and the first two were wrong. "The
+    /// literal right after the parenthesis" did not see <c>ShowInfoAsync(cond ? "…" : "…")</c> —
+    /// that is, <b>the exact shape of the defect that gave birth to the rule</b>. "Every literal of
+    /// the statement" counted 30 sites, 20 of which were protocol effect names
+    /// (<c>stateChange</c>, <c>openFile</c>) and tool names, which are not displayed text. What
+    /// remains: <c>Strings.SlashUsage("/commit-exec &lt;message&gt;")</c> passes a command name as a
+    /// parameter, <c>HandleAsync(dir, "context.md", …)</c> a file name — a literal handed to a call
+    /// is not the message.
+    ///
+    /// ⚠ A <b>grouping</b> parenthesis is not a call: <c>(ok ? "a" : "b") + x</c> is written in the
+    /// expression. Only parentheses following an identifier count.
+    /// </remarks>
+    private static IEnumerable<string> TopLevelLiterals(string expression)
+    {
+        var callDepth = 0;
+        var stack = new Stack<bool>();
+        for (var i = 0; i < expression.Length; i++)
+        {
+            var c = expression[i];
+            if (c == '"')
+            {
+                var end = SkipLiteral(expression, i);
+                if (callDepth == 0) yield return expression[(i + 1)..Math.Min(end, expression.Length)];
+                i = end;
+                continue;
+            }
+            if (c == '\'') { i = SkipLiteral(expression, i); continue; }
+            if (c is '(' or '[')
+            {
+                var j = i - 1;
+                while (j >= 0 && char.IsWhiteSpace(expression[j])) j--;
+                var isCall = j >= 0 && (char.IsLetterOrDigit(expression[j]) || expression[j] is '_' or ')' or ']' or '>');
+                stack.Push(isCall);
+                if (isCall) callDepth++;
+            }
+            else if (c is ')' or ']')
+            {
+                if (stack.Count > 0 && stack.Pop()) callDepth--;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The <b>text</b> of a literal: its interpolation holes removed, because they carry code, not
+    /// prose.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Seen red while writing the rule: <c>$"**{Strings.LabelModeChat}**"</c> contains no
+    /// displayed word — but "Strings" and "LabelModeChat" are words, and the rule accused the one
+    /// line in the file that was already doing exactly what it asks.
+    /// </remarks>
+    private static string LiteralText(string literal)
+    {
+        var sb = new System.Text.StringBuilder(literal.Length);
+        for (var i = 0; i < literal.Length; i++)
+        {
+            if (literal[i] == '{')
+            {
+                if (i + 1 < literal.Length && literal[i + 1] == '{') { i++; continue; }   // {{ = accolade
+                var depth = 1;
+                i++;
+                while (i < literal.Length && depth > 0)
+                {
+                    if (literal[i] == '{') depth++;
+                    else if (literal[i] == '}') depth--;
+                    i++;
+                }
+                i--;
+                continue;
+            }
+            sb.Append(literal[i]);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Index of the closing quote/apostrophe of a literal opened at <paramref name="at"/>.</summary>
+    private static int SkipLiteral(string source, int at)
+    {
+        var quote = source[at];
+        var verbatim = quote == '"' && ((at > 0 && source[at - 1] == '@') ||
+                                        (at > 1 && source[at - 1] == '$' && source[at - 2] == '@'));
+        for (var i = at + 1; i < source.Length; i++)
+        {
+            if (verbatim && source[i] == '"' && i + 1 < source.Length && source[i + 1] == '"') { i++; continue; }
+            if (!verbatim && source[i] == '\\') { i++; continue; }
+            if (source[i] == quote) return i;
+            if (!verbatim && source[i] == '\n') return i;   // unterminated literal: do not devour what follows
+        }
+        return source.Length - 1;
+    }
+
+    /// <summary>
+    /// A bubble inserted into <c>Messages</c> is THEMED: either through the <c>InsertThemed</c>
+    /// funnel, or by an <c>ApplyItemTheme</c> on the same variable just before.
+    /// </summary>
+    /// <remarks>
+    /// The neighbouring rule saw only ONE shape of bypass: the bubble built INSIDE the call to
+    /// <c>Messages.Insert(...)</c>. The one built a line above and then inserted without theming
+    /// escaped it — and that was the STREAMING bubble, i.e. the one the user watches for a whole
+    /// answer.
+    ///
+    /// the defaults of <c>ChatMessageItem</c>'s colour fields are those of
+    /// the DARK theme (<c>ThemeText = #D4D4D4</c>). Under a light theme, the unthemed bubble
+    /// therefore rendered its text at <b>1.36:1</b> contrast on the <c>#F5F5F5</c> window
+    /// background — the WCAG minimum for body text is 4.5:1, and the themed value gives 15.29:1.
+    /// The answer was unreadable while it was generated, then appeared at once when
+    /// <c>FinalizeStreamingBubble</c> themed it at the end of the turn.
+    /// </remarks>
+    [Fact]
+    public void EveryInsertedBubble_IsThemed()
+    {
+        var insertion = new System.Text.RegularExpressions.Regex(
+            @"Messages\.Insert\(\s*[^,]+,\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)");
+
+        var offenders = new List<string>();
+        var seen = 0;
+        foreach (var file in ViewModelSources())
+        {
+            var source = CodeOnly(file);
+            var lines  = source.Split('\n');
+            foreach (System.Text.RegularExpressions.Match m in insertion.Matches(source))
+            {
+                var name = m.Groups[1].Value;
+                // The funnel itself: IT is what themes.
+                if (name == "item" && source.Contains("private ChatMessageItem InsertThemed", StringComparison.Ordinal))
+                    continue;
+                seen++;
+                var at     = source[..m.Index].Count(c => c == '\n');
+                var window = string.Join("\n", lines[Math.Max(0, at - 25)..(at + 1)]);
+                if (window.Contains($"ApplyItemTheme({name})", StringComparison.Ordinal)) continue;
+                if (window.Contains("InsertThemed", StringComparison.Ordinal)) continue;
+                offenders.Add($"{Rel(file)}({at + 1}) : {name}");
+            }
+        }
+
+        // Witness: the rule is worth nothing unless insertions really remain to be guarded. Zero
+        // would mean the VM has been rewritten and the rule scans nothing any more.
+        Assert.True(seen >= 20, $"Only {seen} bubble insertion(s) read -- the rule measures nothing any more.");
+
+        Assert.True(offenders.Count == 0,
+            "A bubble inserted without theming: under a light theme it comes out at 1.36:1 of "
+            + "contrast, where WCAG asks for 4.5:1. Go through InsertThemed:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
     // ── 25. Replacing the conversation resets its counters ────────────────────
 
@@ -1112,9 +2190,9 @@ public class ConventionCoverageTests
             }
         }
 
-        // Witness: since rule 29 a single site raises the flag — BeginOwnedTurn — and it is the
-        // one that must set _currentCts.
-        Assert.True(seen >= 1, $"Only {seen} site(s) raising IsLoading read -- the rule no longer measures anything.");
+        // Witness: since rule 29, a single site raises the flag — BeginOwnedTurn — and it is the one
+        // that must set _currentCts.
+        Assert.True(seen >= 1,$"Only {seen} site(s) raising IsLoading read -- the rule measures nothing any more.");
 
         Assert.True(offenders.Count == 0,
             "These methods show the Stop button (IsLoading = true) with nothing for it to cancel: "
@@ -1126,97 +2204,60 @@ public class ConventionCoverageTests
     // ── 13. A property bound to SelectedItem is declared nullable ─────────────
 
     [Fact]
-    public void SelectedItemBoundProperties_AreDeclaredNullable()
+    public void SignalChannels_WriteThroughTheSignalFunnel()
     {
-        // The Selector writes null into the bound property as soon as the selected item leaves its
-        // collection. Declared `string`, the property promises the compiler what the binding does
-        // not keep: `agentModel.Trim()` compiled without a warning and threw a
-        // NullReferenceException on every Save. Declared `string?`, every unguarded read becomes an
-        // error of the Release build. The compiler holds the SITES; this rule only holds the
-        // DECLARATION, without which it sees nothing.
+        // A signal channel is published through SignalFile.Write (staging + rename), never through
+        // File.WriteAllText: the readers of this bus erase what they have just read
+        // (VsBuildMonitor calls Clear() unconditionally after TryRead()), so a read landing on the
+        // truncated file does not return "no signal", it LOSES the payload — a failed build with no
+        // banner and no "Fix with AI".
         //
-        // ⚠ The list comes from the XAML: it is the binding that makes the property nullable, not
-        // its name.
-        var xamlDir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
-        var selected = new Regex(@"SelectedItem\s*=\s*""\{Binding\s+([A-Za-z0-9_]+)");
-        var bound = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var xaml in Directory.EnumerateFiles(xamlDir, "*.xaml", SearchOption.TopDirectoryOnly))
-            foreach (Match m in selected.Matches(File.ReadAllText(xaml)))
-                bound.Add(m.Groups[1].Value);
-
-        // Witness: the derivation must find at least the model lists.
-        Assert.True(bound.Count >= 8,
-            $"Only {bound.Count} SelectedItem-bound property(ies) derived from the XAML -- the derivation is broken.");
-
-        var declared = new HashSet<string>(StringComparer.Ordinal);
+        // ⚠ THE SCOPE IS A PROPERTY, NOT A FOLDER. Rules 1 and 3 designate their subject by a
+        // sub-folder (`Services\Tools`, `Services\Persistence`), and that is precisely the blind
+        // spot this site went through: it writes a file, in a folder shared between processes, from
+        // `Services\Signals`, which neither of them looks at. The subject here is "this file
+        // resolves a path through the signal bus" — so it publishes into %TEMP%\Inferpal, so it owes
+        // the atomicity guarantee, wherever it lives tomorrow.
         var offenders = new List<string>();
-        foreach (var file in ViewModelSources())
+        var channels  = 0;
+        var funnelled = 0;
+
+        var writesDirectly = new Regex(
+            @"(?<![\w.])File\.(WriteAllText|WriteAllBytes|WriteAllLines|AppendAllText|AppendAllLines)(Async)?\s*\(");
+
+        foreach (var file in ServicesSources())
         {
-            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
-            foreach (var property in root.DescendantNodes().OfType<PropertyDeclarationSyntax>())
-            {
-                var name = property.Identifier.ValueText;
-                if (!bound.Contains(name)) continue;
-                declared.Add(name);
-                if (property.Type is NullableTypeSyntax) continue;
+            // The funnel itself is the only exemption: it is the one that writes the staging file.
+            if (Path.GetFileName(file) == "SignalFile.cs") continue;
 
-                var line = property.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                offenders.Add($"{Rel(file)}({line}) : {property.Type} {name}");
-        }
+            var source = CodeOnly(file);
+
+            // "This file publishes into the signals folder": it resolves a path there.
+            if (!Regex.IsMatch(source, @"SignalFile\.(ScopedPathFor|KeyedPathFor|PathFor|Dir)\b")) continue;
+            channels++;
+
+            if (Regex.IsMatch(source, @"SignalFile\.Write\s*\(")) funnelled++;
+
+            var direct = writesDirectly.Match(source);
+            if (direct.Success)
+                offenders.Add($"{Rel(file)} : {Snippet(source, direct.Index)}");
         }
 
-        // Second witness: every binding finds its property. A property renamed on one side only
-        // would otherwise leave the rule without anything turning red.
-        var missing = bound.Except(declared).ToList();
-        Assert.True(missing.Count == 0,
-            "Bound to SelectedItem in the XAML, not found in the view models: " + string.Join(", ", missing));
+        // Two witnesses, because two things can break in silence: collecting the channels (a moved
+        // folder, a renamed path grammar) and recognising the funnel. "Zero offenders" is worth
+        // nothing if the scan found no channel, nor if none of those found goes through the funnel —
+        // that would be the generalised defect, rendered green.
+        Assert.True(channels >= 8,
+            $"Only {channels} signal channel(s) found: the rule judges nothing any more.");
+        Assert.True(funnelled >= 8,
+            $"Only {funnelled} channel(s) go through SignalFile.Write: the funnel has been "
+            + "renamed or bypassed everywhere, and the rule no longer recognises what it enforces.");
 
         Assert.True(offenders.Count == 0,
             "This channel writes its signal file IN PLACE. File.WriteAll* truncates then fills, "
             + "so a reader in another process can land on an empty or half-written file — and the "
             + "readers of this bus erase what they have just read, which turns the tear into a "
-            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
-    }
-
-    // ── 14. A path resolves against the root it is checked against ────────────
-
-    [Fact]
-    public void ToolPaths_ResolveAgainstTheRootTheyAreCheckedAgainst()
-    {
-        // Sanitize(path) resolves a relative path against the PROCESS's working directory. In Visual
-        // Studio that is not the project: the out-of-process host keeps the folder it started in.
-        // "src/Foo.cs" therefore pointed elsewhere — refused as "outside the workspace root" by the
-        // tools that check a root, and looked up in the wrong place, silently, by those that do not
-        // (run_tests: "No test runner detected" on a solution full of tests). The same call worked in
-        // VS Code, whose host starts in the workspace.
-        // ⚠ The rule therefore targets EVERY one-argument call, not only those followed by
-        // AssertUnderRoot: its first version only looked at those, and three tools were outside it.
-        var offenders   = new List<string>();
-        var rootedCalls = 0;
-        foreach (var file in ToolsSources())
-        {
-            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
-            foreach (var call in tree.DescendantNodes().OfType<InvocationExpressionSyntax>())
-            {
-                if (call.Expression is not MemberAccessExpressionSyntax
-                    {
-                        Expression: IdentifierNameSyntax { Identifier.ValueText: "PathSanitizer" },
-                        Name.Identifier.ValueText: "Sanitize",
-                    }) continue;
-
-                if (call.ArgumentList.Arguments.Count == 2) { rootedCalls++; continue; }
-
-                var line = call.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                offenders.Add($"{Rel(file)}({line}) : {call}");
-            }
-        }
-
-        // Witness: the file tools are actually read, otherwise "no site" means nothing.
-        Assert.True(rootedCalls >= 14,
-            $"Only {rootedCalls} Sanitize(path, root) call(s) read -- the scan no longer measures anything.");
-
-        Assert.True(offenders.Count == 0,
-            "These tools resolve a path against the process's working directory, which in Visual "
+            + "permanent loss. Go through SignalFile.Write (staging + rename, and it traces its "
             + "failure instead of swallowing it). Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
@@ -1333,4 +2374,68 @@ public class ConventionCoverageTests
             + "and the next rebuild erases it. Set _personaLanguage instead:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", withArgs));
     }
+
+    // ── 32. A scan coverage counts what was READ ──────────────────────────────
+
+    [Fact]
+    public void ScanCoverage_CountsWhatWasRead_NotWhatWasTaken()
+    {
+        // `ScanCoverage.Take` can say one thing only: how many files the CAP let through. Its doc,
+        // however, promised "how many were actually read". Between the two lives the file taken then
+        // unreadable — a running build's lock, denied permissions, a file gone between the
+        // enumeration and the read — which every tool swallowed in a per-file `catch` without
+        // removing it from the count. Measured on a TWO-file workspace, far below the cap, with the
+        // single dependant unreadable: `analyze_impact` returned "Layer 1 · Direct dependants (0)",
+        // then "Risk: LOW ↳ No dependants detected — safe to refactor freely", with NO warning at
+        // all — `ScanCoverage(2, 2)` is not partial.
+        //
+        // ⭐ The tell: `rename_symbol`, the sibling in the same folder, the one that WRITES, already
+        // counted its unreadable files. The rule was written once and held by one reader out of four.
+        //
+        // ⚠ THE SUBJECT IS THE FILE, NOT THE METHOD. In `AnalyzeImpactTool` the `Take` lives in
+        // `ExecuteAsync` and the `Swallow`s in two private scan methods: a per-method rule would
+        // have exempted both sides and measured nothing. The property is "this file asserts a
+        // coverage AND loses files in silence".
+        var offenders = new List<string>();
+        var subjects  = 0;
+        var counting  = 0;
+
+        foreach (var file in ServicesSources())
+        {
+            var source = CodeOnly(file);
+
+            // "This file asserts a coverage": it builds one.
+            if (!Regex.IsMatch(source, @"ScanCoverage\.Take\s*\(|new ScanCoverage\s*\(")) continue;
+            // "… and it loses files in silence": it swallows a per-file error.
+            if (!Regex.IsMatch(source, @"Diagnostics\.Swallow\s*\(")) continue;
+            subjects++;
+
+            // Give the count back: either through WithUnreadable, or through the constructor's 3rd
+            // argument (the shape of `rename_symbol`, which held the rule before it existed).
+            var feedsItBack =
+                Regex.IsMatch(source, @"\.WithUnreadable\s*\(")
+                || Regex.IsMatch(source, @"new ScanCoverage\s*\([^;]*,[^;]*,[^;)]+\)");
+
+            if (feedsItBack) counting++;
+            else offenders.Add(Rel(file));
         }
+
+        // Witness: "zero offenders" is worth nothing if the scan found no subject — a moved folder,
+        // `ScanCoverage` renamed, and the rule goes green while reading nothing. The second witness
+        // is the other half: if nobody gives their count back any more, it is the recognition of the
+        // gesture that is broken, not the repository that is clean.
+        Assert.True(subjects >= 5,
+            $"Only {subjects} file(s) build a scan coverage AND swallow a per-file error: "
+            + "the rule judges nothing any more.");
+        Assert.True(counting >= 5,
+            $"Only {counting} file(s) report their loss count back: the gesture has been renamed "
+            + "and the rule no longer recognises what it enforces.");
+
+        Assert.True(offenders.Count == 0,
+            "These files assert a scan coverage while swallowing per-file read errors without "
+            + "counting them: `Scanned` then announces files nobody read, `IsPartial` stays false, "
+            + "and `0 dependants` reads as `nothing depends on this`. Report them back through "
+            + "ScanCoverage.WithUnreadable:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+}

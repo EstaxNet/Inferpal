@@ -224,9 +224,10 @@ public class PublicDocsCoverageTests
                 wrong.Add($"{row.Groups[1].Value}: the page says {row.Groups[2].Value.Trim()}, the code puts {code.Trim()}");
         }
 
-        // Witness: a reformatted table or a renamed attribute would leave the loop above comparing
-        // zero defaults, and green.
-        Assert.True(compared >= 30, $"Only {compared} default(s) compared: the reading is dead.");
+        // Witness: a reformatted table, a renamed attribute, and the loop above would compare zero
+        // defects while staying green.
+        Assert.True(compared >= 30,
+            $"Only {compared} default(s) compared: the reading is dead.");
 
         Assert.True(wrong.Count == 0,
             "The key reference announces a default the code does not put — that is the line someone "
@@ -242,7 +243,7 @@ public class PublicDocsCoverageTests
     private static string Normalize(string value)
     {
         var v = value.Trim().Trim('`').Trim().Replace("_", string.Empty);
-        if (v is "\"\"" or "''" or "string.Empty" or "null" or "—" or "-" or "(none)")
+        if (v is "\"\"" or "''" or "string.Empty" or "null" or "—" or "-" or "(none)" or "(aucun)")
             return string.Empty;
 
         v = v.ToLowerInvariant();

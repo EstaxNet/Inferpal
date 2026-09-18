@@ -211,6 +211,42 @@ public class FileHistoryRunTests
     // ── Ordre des snapshots ────────────────────────────────
 
     [Fact]
+    public async Task MostRecentSnapshot_IsTheOneWrittenLast_NotTheOneNamedLast()
+    {
+        // The name carried the LOCAL time and served as the sort key: at the switch to winter time,
+        // an hour of snapshots is named "before" older snapshots, and restore_file put back the
+        // stale content. Sorting is now done on the write date; this test reproduces the inversion
+        // by naming backwards what was written in order.
+        var root = Directory.CreateTempSubdirectory("inferpal-snaporder").FullName;
+        try
+        {
+            var target = Path.Combine(root, "target.cs");
+            await File.WriteAllTextAsync(target, "v2");
+
+            var historyDir = FileHistoryService.GetHistoryDir(target);
+            Directory.CreateDirectory(historyDir);
+            var suffix = $"{FileHistoryService.PathHash(target)}_{Path.GetFileName(target)}";
+
+            // A "greater" name, OLD content, written first.
+            var older = Path.Combine(historyDir, $"2030-01-01_03-30-00-000_{suffix}");
+            await File.WriteAllTextAsync(older, "ancien");
+            File.SetLastWriteTimeUtc(older, DateTime.UtcNow.AddMinutes(-10));
+
+            // A "smaller" name, RECENT content, written last — the fall-back-an-hour case.
+            var newer = Path.Combine(historyDir, $"2030-01-01_02-30-00-000_{suffix}");
+            await File.WriteAllTextAsync(newer, "recent");
+            File.SetLastWriteTimeUtc(newer, DateTime.UtcNow);
+
+            var found = new FileHistoryService().FindMostRecentSnapshot(target);
+
+            Assert.Equal(newer, found);
+            Assert.Equal("recent", await File.ReadAllTextAsync(found!));
+        }
+        finally { try { Directory.Delete(root, recursive: true); } catch { } }
+    }
+    // ── Undoing a written run: the current state is captured first ────────────
+
+    [Fact]
     public async Task UndoRun_SnapshotsWhatItIsAboutToOverwrite()
     {
         using var tmp = new TempDir();

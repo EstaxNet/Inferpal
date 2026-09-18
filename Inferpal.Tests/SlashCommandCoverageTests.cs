@@ -176,8 +176,19 @@ public class SlashCommandCoverageTests
             "/test-build-banner",  // developer-only probe
         ];
 
+        // Positive witness: this test reads `case "/x":` in a source file. The day the router stops
+        // using that shape — a switch expression, a table — the regex matches nothing and the test
+        // goes green having checked NOTHING, exactly the defect it was written to catch (`/docs`,
+        // routed and invisible everywhere). The repository routes about fifty commands; counting a
+        // handful means the reading is dead, not that the router has slimmed down (post-1.6.1
+        // review).
+        var routedList = routed.ToList();
+        Assert.True(routedList.Count >= 30,
+            $"Only {routedList.Count} `case \"/x\":` read in SlashCommandRouter.cs — the shape " +
+            "changed and this test checks nothing any more.");
+
         var advertised = SlashCommandRouter.Catalog.Select(c => c.Cmd).ToHashSet();
-        foreach (var cmd in routed.Except(unadvertised))
+        foreach (var cmd in routedList.Except(unadvertised))
             Assert.True(advertised.Contains(cmd),
                 $"{cmd} is routed but missing from SlashCommandRouter.Catalog — it would be " +
                 "invisible in both autocompletes and in /help.");

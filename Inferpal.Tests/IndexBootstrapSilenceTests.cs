@@ -35,6 +35,7 @@ namespace Inferpal.Tests;
 /// <c>InProcContractTests</c>, with their witness.
 /// </para>
 /// </remarks>
+[Collection("Diagnostics")]
 public sealed class IndexBootstrapSilenceTests : IDisposable
 {
     private readonly string _root;
@@ -168,7 +169,8 @@ public sealed class IndexBootstrapSilenceTests : IDisposable
         var outer = new IOException("the index folder is not writable",
                                     new UnauthorizedAccessException("access denied"));
 
-        Assert.Equal("the index folder is not writable", Diagnostics.RootMessage(outer));
+        Assert.Equal("the index folder is not writable",
+                     Diagnostics.RootMessage(outer));
     }
 
     [Fact]

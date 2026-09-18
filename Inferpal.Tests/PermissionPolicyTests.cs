@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using Inferpal.Services;
 using Xunit;
 
@@ -145,6 +148,8 @@ public class PermissionPolicyTests
     // as common as the other in the wild — walked straight through the floor.
     [InlineData("rm -fr /")]
     [InlineData("rm -vfr ~")]
+    [InlineData("rm -rf ~")]
+    [InlineData("rm --no-preserve-root -rf /tmp")]
     [InlineData(@"Remove-Item -Recurse -Force C:\")]
     [InlineData(@"Remove-Item -Force -Recurse 'D:\'")]
     [InlineData("mkfs.ext4 /dev/sda1")]
@@ -241,6 +246,60 @@ public class PermissionPolicyTests
     {
         Assert.Empty(PermissionPolicy.ParseJsonOverlay(json));
     }
+
+    // ── Match budget on the built-in sets ───────────────────
+
+    [Fact]
+    public void BuiltInPatterns_AllCarryAMatchTimeout()
+    {
+        // The user-rule leg has been bounded since it was written, and for a reason spelled out
+        // on MatchTimeout: these patterns run on the approval path over text nobody here wrote.
+        // The built-in sets — matched on the very same subject — carried no budget at all.
+        foreach (var field in new[] { "HardDeny", "OpaqueExecution" })
+        {
+            var patterns = (Regex[])typeof(PermissionPolicy)
+                .GetField(field, BindingFlags.NonPublic | BindingFlags.Static)!
+                .GetValue(null)!;
+
+            Assert.NotEmpty(patterns);
+            foreach (var pattern in patterns)
+                Assert.True(pattern.MatchTimeout > TimeSpan.Zero && pattern.MatchTimeout != Regex.InfiniteMatchTimeout,
+                    $"{field}: « {pattern} » has no match budget — a pathological subject freezes the approval path.");
+        }
+    }
+
+    [Fact]
+    public void PathologicalSubject_IsClassifiedPromptly()
+    {
+        // Measured on the previous form of the rm pattern: 49 s for this exact subject, ~3 h
+        // extrapolated at 1 MB — no prompt, no error, the turn simply stopped. The budget caps
+        // the damage; the rewritten pattern removes it (15 ms). Two seconds is a ceiling either
+        // way, and it is what a re-introduced quadratic pattern would trip over.
+        var subject = "rm -" + new string('r', 64 * 1024);
+
+        var watch = Stopwatch.StartNew();
+        PermissionPolicy.IsHardDenied(subject);
+        PermissionPolicy.IsOpaqueExecution(subject);
+        watch.Stop();
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(2),
+            $"Classifying a {subject.Length}-char subject took {watch.ElapsedMilliseconds} ms.");
+    }
+
+    [Fact]
+    public void AnUnreadablePatternCountsAsOpaque_NeverAsSafe()
+    {
+        // Drives the shared matcher with a pattern that really does blow up, since after the
+        // rewrite no built-in one can: what is under test is the direction of the failure.
+        // "Could not read it" must never come out as "nothing matched, carry on".
+        var catastrophic = new Regex(@"^(a+)+$", RegexOptions.None, TimeSpan.FromMilliseconds(50));
+
+        var matched = PermissionPolicy.MatchesAny(
+            [catastrophic], new string('a', 40) + "!", "test", out var unreadable);
+
+        Assert.False(matched);      // no verdict was reached…
+        Assert.True(unreadable);    // …and the caller is told, which is what forces the prompt
+    }
     // ── A DENY the engine could not read still reaches the human ────────────────
     //
     // The documented arbitration for a USER pattern that times out is "the rule does not decide, we
@@ -252,9 +311,7 @@ public class PermissionPolicyTests
     /// <summary>A pattern that really does blow its budget, on a subject built to make it.</summary>
     private static PermissionPolicy WithCatastrophicDeny() =>
         new([new PermissionRule(PermissionDecision.Deny, "run_command",
-                                new System.Text.RegularExpressions.Regex(
-                                    @"^(a+)+$", System.Text.RegularExpressions.RegexOptions.None,
-                                    TimeSpan.FromMilliseconds(50)))]);
+                                new Regex(@"^(a+)+$", RegexOptions.None, TimeSpan.FromMilliseconds(50)))]);
 
     private static readonly string Pathological = new string('a', 40) + "!";
 
@@ -274,9 +331,7 @@ public class PermissionPolicyTests
         // fails to grant, which is the safe direction and needs no human.
         var policy = new PermissionPolicy(
             [new PermissionRule(PermissionDecision.Allow, "run_command",
-                                new System.Text.RegularExpressions.Regex(
-                                    @"^(a+)+$", System.Text.RegularExpressions.RegexOptions.None,
-                                    TimeSpan.FromMilliseconds(50)))]);
+                                new Regex(@"^(a+)+$", RegexOptions.None, TimeSpan.FromMilliseconds(50)))]);
 
         var decision = policy.Evaluate("run_command", Pathological, out var unreadableDeny);
 

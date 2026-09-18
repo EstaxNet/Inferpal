@@ -273,7 +273,8 @@ public class WebviewRebuildTests
         Assert.True(created.Success, "createWebviewPanel not found — the rule no longer measures anything.");
 
         Assert.True(Regex.IsMatch(created.Groups[1].Value, @"retainContextWhenHidden:\s*true"),
-            "The settings panel does not keep its hidden webview: switching tabs erases unsaved edits.");
+            "The settings panel does not retain its hidden webview: switching tabs wipes the "
+            + "unsaved changes.");
     }
 
     [Fact]

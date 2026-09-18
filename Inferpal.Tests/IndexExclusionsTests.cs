@@ -1,4 +1,6 @@
 using System.IO;
+using System.Linq;
+using Inferpal.Services;
 using Inferpal.Services.Rag;
 using Xunit;
 
@@ -60,6 +62,29 @@ public class IndexExclusionsTests
         Assert.True(IndexExclusions.IsExcluded(P("docs", "generated", "deep", "api.md"), Root, extra));
         Assert.False(IndexExclusions.IsExcluded(P("docs", "hand-written.md"), Root, extra));
     }
+
+    /// <summary>
+    /// <c>**/</c> means "zero or more <b>segments</b>", not "any characters".
+    /// </summary>
+    /// <remarks>
+    /// Second reader of <c>RulesService.GlobToRegex</c>, and its consequence is not the rules': here
+    /// a too permissive <c>**/</c> makes files disappear from the semantic index —
+    /// <c>search_codebase</c> no longer finds them, and nothing says they are missing. A folder
+    /// whose name ENDS with the excluded name (<c>mybin</c>, <c>vendored-bin</c>) was taken with it.
+    /// </remarks>
+    [Fact]
+    public void ADirectoryGlob_MatchesAWholeSegment_NotASuffixOfOne()
+    {
+        string[] extra = ["**/bin/**"];
+
+        Assert.True(IndexExclusions.IsExcluded(P("src", "bin", "out.dll"), Root, extra));
+        Assert.True(IndexExclusions.IsExcluded(P("bin", "out.dll"), Root, extra));
+        Assert.False(IndexExclusions.IsExcluded(P("src", "mybin", "Helper.cs"), Root, extra));
+    }
+
+    // ⚠ "A pathological pattern is reported only once" lives in ConfigLineSilenceTests, not here:
+    // that test reads the diagnostics ring, which is PROCESS state, and this class is not in the
+    // serialized collection — a `Clear()` from another class would erase its witness.
 
     /// <summary>
     /// The profile is additive by construction: there is no syntax for "index this after all", and

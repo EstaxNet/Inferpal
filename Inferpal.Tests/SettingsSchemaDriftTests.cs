@@ -27,12 +27,7 @@ public class SettingsSchemaDriftTests
 
     private static HashSet<string> ResourceNames()
     {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-
-        var resx = Path.Combine(dir!, "Inferpal.Core", "Localization", "Strings.resx");
+        var resx = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization", "Strings.resx");
         return XDocument.Load(resx).Root!
             .Elements("data")
             .Select(e => e.Attribute("name")?.Value ?? string.Empty)
@@ -133,17 +128,139 @@ public class SettingsSchemaDriftTests
         foreach (var opt in field.Options!)
         {
             var preset = FimContextBuilder.GetSettings(opt.Value);
-            var delay  = preset.DebounceMs >= 1000
-                ? $"{preset.DebounceMs / 1000} s"
-                : $"{preset.DebounceMs} ms";
-            Assert.Contains($"{preset.MaxTokens} tok", opt.Text);
-            Assert.Contains(delay, opt.Text);
+            // .Display, not .Text: it is the RENDERED text that makes the promise. Now that these
+            // three are translated, checking the English literal would let a translation lose the
+            // figures without any test moving.
+            Assert.Contains($"{preset.MaxTokens} tok", opt.Display);
+            Assert.Contains(DelayText(preset.DebounceMs), opt.Display);
         }
 
         // GetSettings falls back to Default on an unknown code: pairwise-distinct presets prove
         // every option of the form is a real preset, not the fallback.
         var presets = field.Options!.Select(o => FimContextBuilder.GetSettings(o.Value)).ToList();
         Assert.Equal(presets.Count, presets.Distinct().Count());
+    }
+
+    /// <summary>
+    /// The technical suffix of the three FIM modes survives in <b>all ten</b> languages. Translating
+    /// "Fast" is the point; losing "128 tok · 300 ms" while doing it would be the same failure as
+    /// before, the other way round — a form that lies about what it promises.
+    /// </summary>
+    [Fact]
+    public void FimModeLabels_KeepTheirNumbers_InEveryLanguage()
+    {
+        var field = SettingsSchema.AllFields.Single(f => f.Key == "inlineCompletionMode");
+        var dir   = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
+        var files = Directory.GetFiles(dir, "Strings*.resx");
+
+        // Witness: the ten files really are there. Zero files would green the rule for nothing.
+        Assert.Equal(10, files.Length);
+
+        var offenders = new List<string>();
+        foreach (var file in files)
+        {
+            var values = XDocument.Load(file).Root!.Elements("data")
+                .ToDictionary(e => e.Attribute("name")!.Value,
+                              e => e.Element("value")?.Value ?? string.Empty, StringComparer.Ordinal);
+
+            foreach (var opt in field.Options!)
+            {
+                var key = "FimMode" + opt.Value;
+                if (!values.TryGetValue(key, out var text))
+                {
+                    offenders.Add($"{Path.GetFileName(file)} : {key} absente");
+                    continue;
+                }
+                var preset = FimContextBuilder.GetSettings(opt.Value);
+                if (!text.Contains($"{preset.MaxTokens} tok", StringComparison.Ordinal)
+                 || !text.Contains(DelayText(preset.DebounceMs), StringComparison.Ordinal))
+                    offenders.Add($"{Path.GetFileName(file)} : {key} = \"{text}\"");
+            }
+        }
+
+        Assert.True(offenders.Count == 0,
+            "FIM mode label that no longer carries its preset:" + Environment.NewLine + "  "
+            + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    /// <summary>
+    /// The Visual Studio window redeclares none of the schema's option lists. It kept two copies of
+    /// them, and one had <b>already drifted</b> — "OpenAI-compatible (generic)" on one side,
+    /// "OpenAI-compatible" on the other — with no test able to see it.
+    /// </summary>
+    [Fact]
+    public void TheVsWindow_DeclaresNoSecondCopyOfTheOptionLists()
+    {
+        // ⚠ Without the comments: the block that DOCUMENTS the drift quotes both labels in full.
+        // One reader per language, never two — the C# one is CodeOnly.
+        var source = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
+
+        // Witness: this really is the file that serves those lists.
+        Assert.Contains("AvailableInlineModes", source, StringComparison.Ordinal);
+        Assert.Contains("AvailableProviders",   source, StringComparison.Ordinal);
+
+        // POSITIVE rule: both lists come from the schema.
+        Assert.Contains("SettingsSchema.Providers", source, StringComparison.Ordinal);
+        Assert.Contains("SettingsSchema.FimModes",  source, StringComparison.Ordinal);
+
+        // NEGATIVE rule, on the only labels that cannot be anything but a list entry. ⚠ Not on the
+        // backend ones: "Ollama" and "LM Studio" legitimately appear elsewhere in this file (the
+        // provider code, the capability hints), and a rule going red on them would be noise — hence
+        // disarmed.
+        foreach (var literal in SettingsSchema.FimModes.Select(o => o.Text))
+            Assert.False(source.Contains(literal, StringComparison.Ordinal),
+                $"The VS window rewrites the label '{literal}' instead of reading it from "
+                + "SettingsSchema: the copy would stop being translated, and the two lists would "
+                + "end up diverging the way the backend one already did.");
+    }
+
+    private static string DelayText(int debounceMs) =>
+        debounceMs >= 1000 ? $"{debounceMs / 1000} s" : $"{debounceMs} ms";
+
+    /// <summary>
+    /// Clearing a numeric box restores the default — the same thing on <b>both</b> sides.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ the Visual Studio window applies this affordance
+    /// (<c>SettingsFallback.For</c>: "empty" ⇒ the default, "unreadable" ⇒ what is configured) and
+    /// the VS Code panel did <b>nothing</b> on a cleared box — it did not know the defaults. The same
+    /// gesture, two results: two implementations of one rule. The host now serves them with the
+    /// schema, and the panel applies them.
+    /// </remarks>
+    [Fact]
+    public void ClearingANumericBox_RestoresTheDefault_InBothPanels()
+    {
+        // VS side: the shared decision exists and does tell the two states apart.
+        Assert.Equal(7, SettingsFallback.For("", current: 3, whenCleared: 7));
+        Assert.Equal(3, SettingsFallback.For("4o", current: 3, whenCleared: 7));
+
+        // VS Code side: the panel receives the default, and applies it to a cleared box.
+        var panel = NeutralizeTypeScriptComments(File.ReadAllText(
+            Path.Combine(RepoRoot(), "vscode", "src", "webview", "settings.ts")));
+        // ⚠ BOTH numeric branches, by name. The first version of this rule looked for
+        // "applyDefault(config, field": removing the call from the `int` branch left it GREEN,
+        // because the `float` one was enough to satisfy it. A decoration, seen as such by sabotaging
+        // it — that is what sabotage is for.
+        Assert.Contains("applyDefault(config, field, parseInt)",   panel, StringComparison.Ordinal);
+        Assert.Contains("applyDefault(config, field, parseFloat)", panel, StringComparison.Ordinal);
+        Assert.Contains("field.defaultValue", panel, StringComparison.Ordinal);
+
+        // And the host serves it, for numeric fields only.
+        var host = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal.Host", "HostSettingsStrings.cs"));
+        Assert.Contains("DefaultFor(f)", host, StringComparison.Ordinal);
+        Assert.Contains("SettingKind.Int or SettingKind.Float", host, StringComparison.Ordinal);
+
+        // ⚠ And the RPC really does return the count. It did NOT: `ConfigUpdate` had stayed `void` —
+        // the DTO existed, the string was served, the panel displayed it, and the number was always
+        // zero. The invisible half of a repair is the worst state: everything looks done. Lost while
+        // restoring a sabotage backup over a real change, and caught only when porting the code to
+        // the public clone.
+        var server = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal.Host", "HostServer.cs"));
+        Assert.Contains("public async Task<ConfigUpdateResult> ConfigUpdate(", server, StringComparison.Ordinal);
+        Assert.Contains("return new ConfigUpdateResult(", server, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -182,19 +299,12 @@ public class SettingsSchemaDriftTests
     [Fact]
     public void VsCodeModelFields_OfferEveryModel_NotOnlyTheOneAlreadyTyped()
     {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-
-        // Witness 1: the rule is only worth anything if model fields actually exist.
+        // Witness 1: the rule is worth nothing unless model fields really remain to be guarded.
         var modelFields = SettingsSchema.AllFields.Count(f => f.Kind == SettingKind.Model);
         Assert.True(modelFields >= 4,
             $"Only {modelFields} model field(s) in the schema — the rule no longer guards anything.");
 
-        var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
-        Assert.True(File.Exists(webview), "vscode/src/webview/settings.ts has disappeared.");
-        var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
+        var source = TsCode("webview/settings.ts");
 
         // Witness 2: this really is the file rendering model fields, not an emptied namesake.
         Assert.Contains("field.kind === 'model'", source, StringComparison.Ordinal);
@@ -228,20 +338,13 @@ public class SettingsSchemaDriftTests
     [Fact]
     public void VsCodeModelFields_AreReadOnly_LikeVisualStudio()
     {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-
         // Witness: the parity anchor — the Visual Studio window's lists are all non-editable.
-        var xaml = File.ReadAllText(Path.Combine(dir!, "Inferpal", "ToolWindow", "InferpalSettingsContent.xaml"));
+        var xaml = File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsContent.xaml"));
         Assert.True(Regex.Matches(xaml, "IsEditable=\"False\"").Count >= 7,
             "The Visual Studio window's non-editable lists no longer count — the rule has lost its anchor.");
         Assert.DoesNotContain("IsEditable=\"True\"", xaml, StringComparison.Ordinal);
 
-        var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
-        Assert.True(File.Exists(webview), "vscode/src/webview/settings.ts has disappeared.");
-        var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
+        var source = TsCode("webview/settings.ts");
         Assert.Matches(new Regex(@"field\.kind === 'model'[\s\S]{0,400}?\.readOnly = true"), source);
         Assert.False(source.Contains("addEventListener('input'", StringComparison.Ordinal),
             "A model field still filters as you type: it therefore accepts free text.");
@@ -262,13 +365,7 @@ public class SettingsSchemaDriftTests
     [Fact]
     public void VsCodeInlineCompletions_FollowInferpalsSettings()
     {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-        var provider = Path.Combine(dir!, "vscode", "src", "inlineCompletions.ts");
-        Assert.True(File.Exists(provider), "vscode/src/inlineCompletions.ts has disappeared.");
-        var source = NeutralizeTypeScriptComments(File.ReadAllText(provider));
+        var source = TsCode("inlineCompletions.ts");
         // Witness: this really is the inline provider.
         Assert.Contains("provideInlineCompletionItems", source, StringComparison.Ordinal);
 
@@ -285,13 +382,7 @@ public class SettingsSchemaDriftTests
     [Fact]
     public void VsCodeSelects_KeepAValueNoOptionLists()
     {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-        var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
-        Assert.True(File.Exists(webview), "vscode/src/webview/settings.ts has disappeared.");
-        var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
+        var source = TsCode("webview/settings.ts");
 
         Assert.Matches(new Regex(@"function fillSelect\([\s\S]{0,1500}?if \(!match\)[\s\S]{0,400}?\.selected = true"), source);
         // Both lists — the language at the top and the schema fields — go through this filling.
@@ -318,27 +409,428 @@ public class SettingsSchemaDriftTests
     /// halves of the mechanism: tracking what is mirrored, and the <c>didClose</c> that cancels it.
     /// </remarks>
     [Fact]
+    public void EditorBridge_DropsTheOverlayEntry_WhenADocumentStopsBeingMirrored()
+    {
+        var source = TsCode("editorBridge.ts");
+
+        // Witness: this really is the file that mirrors documents, not an emptied namesake.
+        foreach (var anchor in new[] { "onDidChangeTextDocument", "MAX_MIRRORED_BYTES", "didChange(" })
+            Assert.True(source.Contains(anchor, StringComparison.Ordinal),
+                $"editorBridge.ts no longer carries '{anchor}': the rule guards nothing any more.");
+
+        // Tracking what is mirrored, and the gesture that cancels it.
+        Assert.Contains("this.mirrored", source, StringComparison.Ordinal);
+        Assert.Contains("dropMirror", source, StringComparison.Ordinal);
+
+        // ⚠ The CALL, not the word: dropMirror must really notify the host, otherwise the entry
+        // stays and the model re-reads a stale file — the original defect, identically.
+        Assert.Matches(
+            new Regex(@"private dropMirror[\s\S]{0,500}?didClose\("),
+            source);
+
+        // ⚠ BOTH branches that stop mirroring must call it, and the rule must tell them apart: the
+        // first version of this test looked for "onDidChangeTextDocument … dropMirror" and stayed
+        // GREEN when the original defect was put back (a bare return on the pre-filter), because it
+        // found the other branch's call 900 characters further on. Verified red since, on that exact
+        // sabotage.
+        Assert.Matches(
+            new Regex(@"if \(!couldBeMirrorable\([^)]*\)\) {[\s\S]{0,160}?dropMirror\("),
+            source);
+        Assert.Matches(
+            new Regex(@"Buffer.byteLength[\s\S]{0,200}?MAX_MIRRORED_BYTES[\s\S]{0,160}?dropMirror\("),
+            source);
+    }
+
+    /// <summary>
+    /// The adapter tells the host whether a mirrored buffer has unsaved changes, and a save says it no
+    /// longer does.
+    /// </summary>
+    /// <remarks>
+    /// <c>read_file</c> served the mirrored buffer of every open document. After a tool wrote a file
+    /// that was open and saved, the buffer still held the old text until the editor reloaded it from
+    /// disk and the debounced change arrived — so an edit followed by a read in the same turn read the
+    /// file as it was before the edit, and a document that is never reloaded (a watcher-excluded
+    /// folder) stayed stale for as long as it was open. Only an unsaved buffer must win over the disk.
+    /// </remarks>
+    [Fact]
     public void EditorBridge_TellsTheHostWhetherABufferIsUnsaved()
     {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
+        var source = TsCode("editorBridge.ts");
 
-        string Ts(string relative)
-        {
-            var path = Path.Combine(dir!, "vscode", "src", relative);
-            Assert.True(File.Exists(path), $"vscode/src/{relative} has disappeared.");
-            return NeutralizeTypeScriptComments(File.ReadAllText(path));
-        }
-
-        var source = Ts("editorBridge.ts");
         Assert.Matches(new Regex(@"didOpen\(\{[^}]*dirty: doc\.isDirty"), source);
         Assert.Matches(new Regex(@"didChange\(\{[^}]*dirty: e\.document\.isDirty"), source);
         Assert.Matches(
             new Regex(@"onDidSaveTextDocument\([\s\S]{0,400}?didChange\(\{[^}]*dirty: false"),
             source);
-        Assert.Matches(new Regex(@"interface DocumentParams \{[^}]*dirty\?: boolean"), Ts("protocol.ts"));
+        Assert.Matches(new Regex(@"interface DocumentParams \{[^}]*dirty\?: boolean"), TsCode("protocol.ts"));
+    }
+
+    /// <summary>
+    /// No path comparator in the VS Code adapter folds case <b>unconditionally</b>.
+    /// </summary>
+    /// <remarks>
+    /// Case folding is a property of the <b>file system</b>, not of the process: Windows and macOS
+    /// (APFS by default) fold, Linux does not — and the extension is published as linux-x64.
+    /// <c>OpenDocumentOverlay</c>, on the Core side, has chosen its comparator that way since §23;
+    /// both comparators in <c>debugBridge.ts</c> folded everywhere, which made <c>a.cs</c> and
+    /// <c>A.cs</c> the <b>same</b> breakpoint under Linux — removing one removed the other, and the
+    /// listing handed the model the wrong file. The doctrine existed, this file did not have it.
+    ///
+    /// The rule carries the <b>shape</b> and not today's two functions: what is forbidden is the
+    /// normalization idiom (replacing backslashes) followed by an unconditional
+    /// <c>toLowerCase()</c>, so a third comparator would inherit it.
+    /// </remarks>
+    [Fact]
+    public void VsCodeAdapter_NeverFoldsPathCaseUnconditionally()
+    {
+        var root = Path.Combine(RepoRoot(), "vscode", "src");
+        var sources = Directory.EnumerateFiles(root, "*.ts", SearchOption.AllDirectories).ToList();
+
+        // Witness: a renamed folder or a broken glob would green the rule while reading nothing.
+        Assert.True(sources.Count >= 10,
+            $"Only {sources.Count} TypeScript source(s) read under vscode/src — the rule scans "
+            + "nothing any more.");
+
+        // The idiom: normalize the separators, then fold case, on the same expression.
+        var folding = new Regex(@"replace\(/\\\\/g[^)]*\)[^;\r\n]*\.toLowerCase\(\)");
+        var offenders = sources
+            .Where(f => folding.IsMatch(NeutralizeTypeScriptComments(File.ReadAllText(f))))
+            .Select(f => Path.GetFileName(f))
+            .Order()
+            .ToList();
+
+        Assert.True(offenders.Count == 0,
+            "Path comparator folding case with no platform condition: "
+            + string.Join(", ", offenders)
+            + " — under Linux, a.cs and A.cs become the same file. Go through a helper guarded by "
+            + "process.platform, the way OpenDocumentOverlay does on the Core side.");
+
+        // And the guard must exist somewhere, otherwise the rule above is green because nobody
+        // compares paths any more.
+        var bridge = TsCode("debugBridge.ts");
+        Assert.Contains("process.platform", bridge, StringComparison.Ordinal);
+        Assert.Contains("normalizePath", bridge, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A breakpoint the model sets is reported by the line it asked for first. The bridge took the first breakpoint
+    /// within one line of the request, and VS Code lists the existing ones before the new one: with the user's own
+    /// breakpoint on line 41, setting one on line 42 answered "Breakpoint set at …:41" — and a model that then clears
+    /// what it set removes the user's.
+    /// </summary>
+    [Fact]
+    public void VsCodeBreakpoint_IsReportedByTheLineAskedForFirst()
+    {
+        var bridge = TsCode("debugBridge.ts");
+        var at = bridge.IndexOf("async addBreakpoint(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "addBreakpoint moved — the rule measures nothing.");
+        var body = bridge[at..bridge.IndexOf("async removeBreakpoint(", at, StringComparison.Ordinal)];
+        Assert.Contains("d.line === line", body, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The "chat is holding the GPU" state is taken and returned through a <b>single funnel</b>, and
+    /// it is counted — the TypeScript twin of rule 29.
+    /// </summary>
+    /// <remarks>
+    /// It was a boolean, and <b>three</b> requests raised it: <c>chat/send</c>,
+    /// <c>command/slash</c> and <c>codeAction/run</c>. They overlap in ordinary use (a <c>/tdd</c>
+    /// typed while an answer is streaming, a code action started from the editor): the first
+    /// <c>finally</c> reset the flag to false while the other request still held the GPU lease, FIM
+    /// stopped yielding, and its requests went to queue behind the busy GPU only to be thrown away.
+    /// A silent failure: nothing fails, completions are missing.
+    ///
+    /// The rule carries the <b>shape</b>: the counter is mutated only in the funnel, and a fourth
+    /// request holding the GPU would go through it by construction.
+    /// </remarks>
+    [Fact]
+    public void VsCodeHostClient_TakesAndReleasesTheChatBusyStateThroughOneFunnel()
+    {
+        var client = TsCode("hostClient.ts");
+
+        var open = client.IndexOf("private async whileChatBusy<T>(", StringComparison.Ordinal);
+        Assert.True(open >= 0, "whileChatBusy has disappeared from hostClient.ts — the rule measures nothing.");
+        var close = client.IndexOf("\n  }", open, StringComparison.Ordinal);
+        Assert.True(close > open, "whileChatBusy has no readable end — the rule measures nothing.");
+
+        // Witness: with no mutation found, "no mutation outside the funnel" would be true of a file
+        // that counts nothing at all any more.
+        // `this.` on purpose: the field's declaration (`private chatBusyDepth = 0;`) is an
+        // initialization, not a mutation — the first version of the rule went red on it.
+        var mutations = Regex.Matches(client, @"this\.chatBusyDepth\s*(\+\+|--|=[^=])");
+        Assert.True(mutations.Count >= 2,
+            $"Only {mutations.Count} mutation(s) of the counter found — the rule measures nothing.");
+
+        foreach (Match m in mutations)
+            Assert.True(m.Index > open && m.Index < close,
+                "hostClient.ts mutates the busy counter outside whileChatBusy (offset "
+                + $"{m.Index}) — that is how a shared boolean used to clear itself while another "
+                + "request still held the GPU lease. Go through the funnel.");
+
+        // And the old shape must not come back through the back door.
+        Assert.DoesNotMatch(new Regex(@"isChatBusy\s*=[^=]"), client);
+
+        foreach (var request in new[] { "chatSend(", "commandSlash(", "codeActionRun(" })
+        {
+            var at = client.IndexOf("  " + request, StringComparison.Ordinal);
+            Assert.True(at >= 0, $"{request} has disappeared from hostClient.ts — the rule measures nothing.");
+            var end = client.IndexOf("\n  }", at, StringComparison.Ordinal);
+            Assert.True(end > at, $"{request} has no readable end — the rule measures nothing.");
+
+            Assert.Contains("whileChatBusy", client[at..end], StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// The bridge's two captures say <b>which frame</b> the locals come from.
+    /// </summary>
+    /// <remarks>
+    /// They do not read the same one: <c>capture()</c> takes the top of the stack,
+    /// <c>captureTest()</c> the first frame below the workspace root. The rendering, however,
+    /// <b>hides</b> the frames outside the workspace — so the frame printed first is often not the
+    /// one the locals come from, and the "Locals (current frame)" label attributed runtime-frame
+    /// variables to the user's code. The field has no other purpose than making that sentence true:
+    /// a capture that forgets it falls back to "we do not know", that is, to silence.
+    ///
+    /// The rule reads the <b>body</b> of each capture, not the file: <c>localsFrameId</c> written
+    /// once somewhere would green both.
+    /// </remarks>
+    [Fact]
+    public void VsCodeDebugCaptures_SayWhichFrameTheLocalsCameFrom()
+    {
+        var bridge = TsCode("debugBridge.ts");
+
+        foreach (var (name, opening, closing) in new[]
+                 {
+                     ("capture()",     "private async capture(",  "private async frames("),
+                     ("captureTest()", "async captureTest(",      "private async localsExpanded("),
+                 })
+        {
+            var at = bridge.IndexOf(opening, StringComparison.Ordinal);
+            Assert.True(at >= 0, $"{opening} has disappeared from debugBridge.ts — the rule measures nothing.");
+            var end = bridge.IndexOf(closing, at, StringComparison.Ordinal);
+            Assert.True(end > at, $"{closing} no longer follows {opening} — the rule measures nothing.");
+
+            Assert.Contains("localsFrameId", bridge[at..end], StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// The three model lists go through <c>SelectionPreservingList</c>, each with the values its
+    /// bound properties carry — the chat model included.
+    /// </summary>
+    /// <remarks>
+    /// A Selector writes null into its bound property when the selected item leaves the collection,
+    /// through <c>Clear()</c> as through the last <c>RemoveAt</c>, and under Remote UI that null
+    /// comes back after any re-add: "remove then add back" protects nothing. The guarantee rests on
+    /// a held value never being removed. The funnel does that (checked on its events in
+    /// <c>SelectionPreservingListTests</c>); this rule holds that the window goes through it, with
+    /// the right values, and removes nothing itself on the side.
+    ///
+    /// A textual rule: the Remote UI window does not instantiate in a test.
+    /// </remarks>
+    [Fact]
+    public void VsSettings_ModelListsNeverDropTheValueTheirDropdownsHold()
+    {
+        // The repository's C# reader, ConventionCoverageTests': a COMMENTED-OUT call does not count.
+        var source = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
+
+        (string List, string[] Held)[] lists =
+        [
+            ("AvailableModels",          ["current"]),
+            ("AvailableOptionalModels",  ["CodeActionsModel", "InlineCompletionModel", "InlineEditModel", "AgentModel", "UtilityModel"]),
+            ("AvailableEmbeddingModels", ["RagEmbeddingModel"]),
+        ];
+
+        foreach (var (list, held) in lists)
+        {
+            var call = Regex.Match(source, @"SelectionPreservingList\.Sync\(\s*" + list + @"\b[^;]*;");
+            Assert.True(call.Success, $"{list} is no longer updated through SelectionPreservingList.");
+
+            foreach (var value in held)
+                Assert.True(Regex.IsMatch(call.Value, @"\b" + value + @"\b"),
+                    $"{list} is synced without {value}: its selected value can leave the list.");
+
+            Assert.False(Regex.IsMatch(source, @"\b" + list + @"\.(RemoveAt|Remove|Clear)\("),
+                $"{list} removes items outside SelectionPreservingList.");
+        }
+    }
+
+    /// <summary>
+    /// A numeric entry that was not kept is <b>named</b> to the user, on both sides — and the VS
+    /// Code panel reads strictly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Dams's arbitration: we save, and we name the ignored fields. Refusing the whole
+    /// form would also cancel the other valid changes of the same save; staying silent was the
+    /// original defect — the Visual Studio window announced "saved" having restored a factory
+    /// default, the VS Code panel having kept everything.
+    /// </para>
+    /// <para>
+    /// ⚠ On the VS Code side there were two defects, not one: <c>parseInt('12abc')</c> is <b>12</b>,
+    /// so the permissive read did not ignore the faulty entry — it wrote a <i>truncation</i> the
+    /// user had not typed. The rule therefore forbids the permissive shape itself, not only the
+    /// missing message.
+    /// </para>
+    /// <para>A textual rule: neither the webview nor the Remote UI window runs here.</para>
+    /// </remarks>
+    /// <summary>
+    /// The reasoning preview crosses the adapter — it is not dropped there.
+    /// </summary>
+    /// <remarks>
+    /// `chat/thinking` carried the text and the adapter ignored it (<c>onThinking: () =&gt;
+    /// …</c>, with no parameter): a reasoning model's thinking phase, which can take most of a turn,
+    /// showed nothing but a frozen status. ⚠ The rule carries the <b>parameter</b>, because its
+    /// absence was the defect — a callback that takes nothing can pass nothing on, and it reads like
+    /// a callback that works.
+    /// </remarks>
+    [Fact]
+    public void ReasoningPreview_ReachesTheWebview_InsteadOfBeingDropped()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+        var webview  = TsCode("webview/main.ts");
+
+        // Witness: the channel still exists on both sides.
+        Assert.Contains("onThinking:", provider, StringComparison.Ordinal);
+        Assert.Contains("case 'thinking':", webview, StringComparison.Ordinal);
+
+        // The adapter TAKES the text and passes it on.
+        Assert.Matches(new Regex(@"onThinking:\s*\(\s*text\s*\)\s*=>[\s\S]{0,120}?type: 'thinking'[\s\S]{0,40}?text"), provider);
+
+        // And the webview displays it when there is one, keeping its generic fallback.
+        Assert.Matches(new Regex(@"case 'thinking':[\s\S]{0,200}?msg\.text[\s\S]{0,80}?t\('thinking'\)"), webview);
+    }
+
+    /// <summary>
+    /// A backend outage is <b>announced</b> in the VS Code thread, and it is the Core that decides
+    /// when.
+    /// </summary>
+    /// <remarks>
+    /// Losing the backend mid-session changed nothing there but the colour of a badge. A badge says
+    /// "this is how it is now"; it does not say "this has just gone down" — and that is the sentence
+    /// the Visual Studio window has always put in the conversation. ⚠ The rule requires the adapter
+    /// to <b>render</b> the host's verdict, not to write a second state machine: "first successful
+    /// check is silent, one message per edge" is exactly the kind of arithmetic that diverges when
+    /// copied.
+    /// </remarks>
+    [Fact]
+    public void BackendOutage_IsAnnouncedInTheThread_FromTheCoreVerdict()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+
+        // Witness: the connection heartbeat still exists in this file.
+        Assert.Contains("host.backendStatus()", provider, StringComparison.Ordinal);
+
+        // The verdict comes from the host, and it is rendered in the thread.
+        Assert.Matches(new Regex(@"edgeNotice\s*=\s*s\.edgeNotice"), provider);
+        Assert.Matches(new Regex(@"if \(edgeNotice\)[\s\S]{0,200}?this\.append\("), provider);
+
+        // ⚠ And no second state machine here: the "which edge" decision belongs to the Core.
+        foreach (var reinvented in new[] { "previouslyConnected", "wasConnected", "firstCheck" })
+            Assert.False(provider.Contains(reinvented, StringComparison.OrdinalIgnoreCase),
+                $"chatViewProvider.ts carries '{reinvented}': the edge decision is being copied, "
+                + "so it will diverge. It lives in ConnectionStatusPresenter.");
+    }
+
+    /// <summary>
+    /// Conversation export is rendered by the <b>Core</b>, once, for both editors.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It was written twice: <c>ConversationExporter</c> on the Core side for Visual Studio, and
+    /// eleven lines of TypeScript for VS Code. The copy lost <b>all</b> of the statistics header
+    /// (model, turns, tool calls, tokens, date, duration) and ignored the <c>.txt</c> filter its own
+    /// save box offered: choosing *Text* wrote Markdown.
+    /// </para>
+    /// <para>
+    /// ⚠ The rule targets <b>both</b> halves: that the document comes from the host, and that the
+    /// format comes from the file the user named. An export going through the host but always
+    /// sending <c>asPlainText: false</c> would leave the filter inert, which was the defect.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ConversationExport_IsRenderedByTheCore_ForBothEditors()
+    {
+        var provider = TsCode("chatViewProvider.ts");
+
+        // Witness: the export command still exists in this file.
+        Assert.Contains("async exportCommand()", provider, StringComparison.Ordinal);
+
+        // The document comes from the Core, through the host.
+        Assert.Contains("host.chatExport({", provider, StringComparison.Ordinal);
+
+        // And the format comes from the extension the user chose, not from a constant.
+        Assert.Matches(new Regex(@"asPlainText:\s*target\.fsPath[^,]*'\.txt'"), provider);
+
+        // ⚠ No second exporter anywhere in the extension: the duplication was the defect, not the
+        // place where it lived.
+        var root  = Path.Combine(RepoRoot(), "vscode", "src");
+        var files = Directory.EnumerateFiles(root, "*.ts", SearchOption.AllDirectories).ToList();
+        Assert.True(files.Count > 5, $"Only {files.Count} TypeScript source(s) found under "
+            + "vscode/src — the rule sweeps nothing any more.");
+
+        var offenders = files
+            .Where(f => NeutralizeTypeScriptComments(File.ReadAllText(f))
+                        .Contains("renderExport", StringComparison.Ordinal))
+            .Select(f => Path.GetRelativePath(RepoRoot(), f))
+            .ToList();
+        Assert.True(offenders.Count == 0,
+            "A conversation exporter still lives in the extension: "
+            + string.Join(", ", offenders)
+            + ". Rendering belongs to the Core — with two copies, this is the one that will be "
+            + "forgotten when a fix comes.");
+    }
+
+    /// <summary>
+    /// The VS Code panel's two buttons act on what the user HAS IN FRONT OF THEM.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The webview already sent the typed URL with <c>testConnection</c>, the message type declared
+    /// it — and the handler did not read it: it probed the <b>saved</b> configuration. The panel
+    /// could therefore display "Connected" about another URL, and the case that fools you most is
+    /// the most ordinary one: the old one works, the new one is wrong. The comment covering the gap
+    /// invoked a symmetry with the Visual Studio window that does not exist.
+    /// </para>
+    /// <para>
+    /// ⚠ The rule targets <b>both</b> buttons. Closing "Test" alone would have left the class alive —
+    /// <i>the panel acts on what is saved while the user looks at what they typed</i> — of which the
+    /// models ↻ is the other half.
+    /// </para>
+    /// <para>
+    /// ⚠ A field declared and never read is worse than a missing field: it makes you believe the
+    /// information travels. That is why the rule carries the <b>read</b> (<c>msg.baseUrl</c> passed
+    /// to the call), never the presence of the field.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void SettingsPanel_ActsOnTheFormValues_NotOnTheSavedConfiguration()
+    {
+        var panel = TsCode("settingsPanel.ts");
+
+        // Witness: both buttons still exist in this file.
+        foreach (var anchor in new[] { "case 'testConnection':", "case 'refreshModels':" })
+            Assert.True(panel.Contains(anchor, StringComparison.Ordinal),
+                $"settingsPanel.ts no longer carries '{anchor}': the rule guards nothing any more.");
+
+        // "Test" probes the form's URL WITH the form's key, not the session's. ⚠ The rule required
+        // `connectionCheck(msg.baseUrl)` alone — it therefore froze the other half of the defect: a
+        // new URL probed with the old key answered "unreachable".
+        Assert.Matches(new Regex(@"connectionCheck\(\s*msg\.baseUrl\s*,\s*msg\.apiKey\s*\)"), panel);
+
+        // ↻ lists the models of the form's backend — all three values, because a correct URL with
+        // the old provider or the old key still queries something else.
+        var refresh = Regex.Match(panel, @"modelsList\(\s*\{[\s\S]{0,200}?\}\s*\)");
+        Assert.True(refresh.Success, "settingsPanel.ts calls modelsList without passing it the "
+            + "form values: the ↻ button then lists the models of the SAVED URL.");
+        foreach (var field in new[] { "baseUrl", "provider", "apiKey" })
+            Assert.True(refresh.Value.Contains($"msg.{field}", StringComparison.Ordinal),
+                $"the model refresh does not pass msg.{field} on.");
+
+        // And the result NAMES the backend found, like the Visual Studio window.
+        Assert.Contains("provider: result.provider", panel, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -350,14 +842,7 @@ public class SettingsSchemaDriftTests
     [Fact]
     public void VsCodePanel_SavingWithSeparateRoleModelsOff_ClearsTheRoleFields()
     {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-
-        var webview = Path.Combine(dir!, "vscode", "src", "webview", "settings.ts");
-        Assert.True(File.Exists(webview), "vscode/src/webview/settings.ts has disappeared.");
-        var source = NeutralizeTypeScriptComments(File.ReadAllText(webview));
+        var source = TsCode("webview/settings.ts");
 
         var start = source.IndexOf("function onSave(", StringComparison.Ordinal);
         Assert.True(start >= 0, "webview/settings.ts has no onSave any more — the rule guards nothing.");
@@ -369,6 +854,135 @@ public class SettingsSchemaDriftTests
         Assert.True(body.Contains("gateOn.roles", StringComparison.Ordinal)
                     && body.Contains("'roles'", StringComparison.Ordinal),
             "onSave saves the per-role models even when 'Use a separate model per role' is unchecked.");
+    }
+
+    [Fact]
+    public void BothPanels_NameTheNumericFieldsTheyCouldNotRead()
+    {
+        var webview = TsCode("webview/settings.ts");
+
+        // Witness: the panel really does read numeric boxes.
+        foreach (var anchor in new[] { "case 'int':", "case 'float':" })
+            Assert.True(webview.Contains(anchor, StringComparison.Ordinal),
+                $"webview/settings.ts no longer carries '{anchor}': the rule guards nothing any more.");
+
+        // The permissive read is forbidden: it truncates instead of ignoring.
+        foreach (var lax in new[] { "parseInt(input.value", "parseFloat(input.value" })
+            Assert.False(webview.Contains(lax, StringComparison.Ordinal),
+                $"webview/settings.ts reads a numeric box with no guard ({lax}): '12abc' is worth "
+                + "12 there, so a value the user never typed is written without a word.");
+
+        // Both branches name what they did not read, and the status line renders it.
+        Assert.Equal(2, Regex.Matches(webview, @"ignored\.push\(").Count);
+        Assert.Matches(new Regex(@"case 'saveDone':[\s\S]{0,240}?savedStatus\(\)"), webview);
+        Assert.Contains("SettingsFieldsIgnored", webview, StringComparison.Ordinal);
+
+        // ── Visual Studio side: every fallback carries its report ─────────────
+        var vs = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
+
+        var fallbacks = Regex.Matches(vs, @"SettingsFallback\.For\(");
+        // Witness: the nine numeric boxes all go through this fallback — seven through ReadInt (a
+        // single site in the text) and two inline, for their own culture and their own guard.
+        Assert.True(fallbacks.Count >= 3,
+            $"Only {fallbacks.Count} fallback(s) found in InferpalSettingsData — the rule "
+            + "measures nothing any more.");
+
+        // ⚠ The PROPERTY, not today's sites: a fallback is an entry that did not take, hence a field
+        // to name. A tenth numeric box added without its Note() will come out red here.
+        foreach (Match f in fallbacks)
+        {
+            var from = Math.Max(0, f.Index - 500);
+            var before = vs[from..f.Index];
+            Assert.True(before.Contains("Note(", StringComparison.Ordinal),
+                "A numeric-box fallback is not reported to the user (no Note() before "
+                + $"SettingsFallback.For at offset {f.Index}): the save would say OK about an entry "
+                + "it has just discarded.");
+        }
+    }
+
+    /// <summary>
+    /// A VS Code palette command that tests the host's state <b>says so</b> when it is absent — it
+    /// does not merely do nothing.
+    /// </summary>
+    /// <remarks>
+    /// "Save session", "Load a session" and "Delete a session" left on a
+    /// bare <c>return</c> when the host was not started: from the palette the command then has
+    /// <b>no</b> visible effect — indistinguishable from a command that failed, or from a bug. The
+    /// message-sending path, by contrast, says both states since 1.6.6
+    /// (<c>hostUnavailableMessage</c> names the real cause: host stopped, or no folder open — in
+    /// which case "restart the host" would be an inert remedy).
+    /// </remarks>
+    [Fact]
+    public void VsCodeCommands_SayWhenTheHostIsMissing_InsteadOfDoingNothing()
+    {
+        var source = TsCode("chatViewProvider.ts");
+
+        // Witness: the file really does carry commands and the host-state test.
+        var commands = Regex.Matches(source, @"async (\w+Command)\s*\(");
+        Assert.True(commands.Count >= 3,
+            $"Only {commands.Count} command(s) found in chatViewProvider.ts — the rule guards "
+            + "nothing any more.");
+        Assert.Contains("hostUnavailableMessage", source, StringComparison.Ordinal);
+
+        var offenders = new List<string>();
+        foreach (Match c in commands)
+        {
+            // ⚠ The body is delimited by BRACES, not by a text window: the first version took
+            // "up to the next command", so the file's last command swallowed everything after it —
+            // and the rule accused `runSlashCommand`, which delegates to `send`, which has reported
+            // the failure since 1.6.6. This is the lesson already written for the PowerShell scripts
+            // ("a text window does not delimit a construct"), paid a second time in another
+            // language.
+            var body = MethodBody(source, c.Index);
+
+            if (body.Contains("isRunning", StringComparison.Ordinal)
+                && !body.Contains("hostUnavailableMessage", StringComparison.Ordinal))
+                offenders.Add(c.Groups[1].Value);
+        }
+
+        Assert.True(offenders.Count == 0,
+            "VS Code command(s) that probe the host and return without a word — from the palette "
+            + "the user sees NOTHING: " + string.Join(", ", offenders));
+    }
+
+    // ── Plomberie ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// The body of a TypeScript method, by brace matching from its signature.
+    /// </summary>
+    private static string MethodBody(string source, int signatureAt)
+    {
+        var open = source.IndexOf('{', signatureAt);
+        Assert.True(open >= 0, "whileChatBusy has disappeared from hostClient.ts — the rule measures nothing.");
+
+        var depth = 0;
+        for (var i = open; i < source.Length; i++)
+        {
+            if (source[i] == '{') depth++;
+            else if (source[i] == '}' && --depth == 0) return source[(open + 1)..i];
+        }
+        Assert.Fail("unterminated method body.");
+        return string.Empty;
+    }
+
+    /// <summary>The repository root, found by walking up to the solution.</summary>
+    private static string RepoRoot()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+        return dir!;
+    }
+
+    /// <summary>A source under <c>vscode\src</c>, <b>comments neutralized</b>.</summary>
+    private static string TsCode(string relative)
+    {
+        var path = Path.Combine(RepoRoot(), "vscode", "src",
+                                relative.Replace('/', Path.DirectorySeparatorChar));
+        Assert.True(File.Exists(path), $"vscode/src/{relative} a disparu.");
+        return NeutralizeTypeScriptComments(File.ReadAllText(path));
     }
 
     /// <summary>
@@ -562,138 +1176,6 @@ public class SettingsSchemaDriftTests
     /// <para>Measured at zero divergence: 10 declared, 10 registered, 8 menu entries.</para>
     /// </remarks>
     [Fact]
-    public void VsCodeBreakpoint_IsReportedByTheLineAskedForFirst()
-    {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-        var path = Path.Combine(dir!, "vscode", "src", "debugBridge.ts");
-        Assert.True(File.Exists(path), "vscode/src/debugBridge.ts has disappeared.");
-        var bridge = NeutralizeTypeScriptComments(File.ReadAllText(path));
-        var at = bridge.IndexOf("async addBreakpoint(", StringComparison.Ordinal);
-        Assert.True(at >= 0, "addBreakpoint moved — the rule measures nothing.");
-        var body = bridge[at..bridge.IndexOf("async removeBreakpoint(", at, StringComparison.Ordinal)];
-        Assert.Contains("d.line === line", body, StringComparison.Ordinal);
-    }
-
-    /// <summary>Reads a TypeScript source of the extension, comments neutralized.</summary>
-    private static string VsCodeSource(string relative)
-    {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "Inferpal.sln")))
-            dir = Path.GetDirectoryName(dir);
-        Assert.NotNull(dir);
-        var path = Path.Combine(dir!, "vscode", "src", relative);
-        Assert.True(File.Exists(path), $"vscode/src/{relative} has disappeared.");
-        return NeutralizeTypeScriptComments(File.ReadAllText(path));
-    }
-
-    /// <summary>
-    /// Both captures of the bridge say <b>which frame</b> the locals came from.
-    /// </summary>
-    /// <remarks>
-    /// They do not read the same one: <c>capture()</c> takes the top of the stack,
-    /// <c>captureTest()</c> the first frame under the workspace root. The renderer, in turn,
-    /// <b>hides</b> frames outside the workspace — so the frame printed first is often not the one
-    /// the locals came from, and the label "Locals (current frame)" attributed a runtime frame's
-    /// variables to the user's code. The field exists only to make that sentence true: a capture
-    /// that forgets it falls back to "we do not know", which is to say to silence.
-    ///
-    /// The rule reads the <b>body</b> of each capture, not the file: <c>localsFrameId</c> written
-    /// once somewhere would make both green.
-    /// </remarks>
-    [Fact]
-    public void VsCodeDebugCaptures_SayWhichFrameTheLocalsCameFrom()
-    {
-        var bridge = VsCodeSource("debugBridge.ts");
-
-        foreach (var (opening, closing) in new[]
-                 {
-                     ("private async capture(", "private async frames("),
-                     ("async captureTest(",     "private async localsExpanded("),
-                 })
-        {
-            var at = bridge.IndexOf(opening, StringComparison.Ordinal);
-            Assert.True(at >= 0, $"{opening} has disappeared from debugBridge.ts — the rule measures nothing.");
-            var end = bridge.IndexOf(closing, at, StringComparison.Ordinal);
-            Assert.True(end > at, $"{closing} no longer follows {opening} — the rule measures nothing.");
-
-            Assert.Contains("localsFrameId", bridge[at..end], StringComparison.Ordinal);
-        }
-    }
-
-    /// <summary>
-    /// The "the chat is holding the GPU" state is taken and released through a <b>single funnel</b>,
-    /// and it is counted — the TypeScript twin of rule 29.
-    /// </summary>
-    /// <remarks>
-    /// It was a boolean, and <b>three</b> requests raised it: <c>chat/send</c>,
-    /// <c>command/slash</c> and <c>codeAction/run</c>. They overlap in ordinary use (a <c>/tdd</c>
-    /// typed while an answer streams, a code action launched from the editor): the first
-    /// <c>finally</c> cleared the flag while the other request still held the GPU lease, FIM stopped
-    /// yielding, and its requests queued behind the busy GPU only to be dropped. A silent failure:
-    /// nothing errors, completions are missing.
-    ///
-    /// The rule is about <b>shape</b>: the counter is only mutated inside the funnel, so a fourth
-    /// GPU-holding request goes through it by construction.
-    /// </remarks>
-    [Fact]
-    public void VsCodeHostClient_TakesAndReleasesTheChatBusyStateThroughOneFunnel()
-    {
-        var client = VsCodeSource("hostClient.ts");
-
-        var open = client.IndexOf("private async whileChatBusy<T>(", StringComparison.Ordinal);
-        Assert.True(open >= 0, "whileChatBusy has disappeared from hostClient.ts — the rule measures nothing.");
-        var close = client.IndexOf("\n  }", open, StringComparison.Ordinal);
-        Assert.True(close > open, "whileChatBusy has no readable end — the rule measures nothing.");
-
-        // `this.` on purpose: the field declaration (`private chatBusyDepth = 0;`) is an
-        // initialization, not a mutation — the first version of the rule went red on it.
-        var mutations = Regex.Matches(client, @"this\.chatBusyDepth\s*(\+\+|--|=[^=])");
-        Assert.True(mutations.Count >= 2,
-            $"Only {mutations.Count} mutation(s) of the counter found — the rule measures nothing.");
-
-        foreach (Match m in mutations)
-            Assert.True(m.Index > open && m.Index < close,
-                "hostClient.ts mutates the busy counter outside whileChatBusy (offset "
-                + $"{m.Index}) — that is how a shared boolean used to clear itself while another "
-                + "request still held the GPU lease. Go through the funnel.");
-
-        // And the old shape must not come back through the back door.
-        Assert.DoesNotMatch(new Regex(@"isChatBusy\s*=[^=]"), client);
-
-        foreach (var request in new[] { "chatSend(", "commandSlash(", "codeActionRun(" })
-        {
-            var at = client.IndexOf("  " + request, StringComparison.Ordinal);
-            Assert.True(at >= 0, $"{request} has disappeared from hostClient.ts — the rule measures nothing.");
-            var end = client.IndexOf("\n  }", at, StringComparison.Ordinal);
-            Assert.True(end > at, $"{request} has no readable end — the rule measures nothing.");
-
-            Assert.Contains("whileChatBusy", client[at..end], StringComparison.Ordinal);
-        }
-    }
-    /// <summary>
-    /// The VS Code manifest and the code agree on commands: every declared command has a handler,
-    /// and every keybinding or menu entry points at a command that exists.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Nothing ties the two together at compile time: <c>package.json</c> is data, and
-    /// <c>registerCommand</c> takes a string. The two halves fail differently and both in front of
-    /// the user — a declared command with no handler shows up in the palette and answers
-    /// <i>"command 'x' not found"</i> when picked; a keybinding or menu entry pointing at an unknown
-    /// command does nothing at all.
-    /// </para>
-    /// <para>
-    /// ⚠ The exemption is <b>derived</b>, not listed: VS Code makes <c>&lt;viewId&gt;.focus</c> for
-    /// every contributed view, so a keybinding aimed at it is correct without appearing anywhere.
-    /// The first draft counted it missing — that was the probe ignoring the host's rule, not the
-    /// manifest lying.
-    /// </para>
-    /// <para>Measured at zero divergence on 2026-09-15: 10 declared, 10 registered, 8 menu entries.</para>
-    /// </remarks>
-    [Fact]
     public void EveryVsCodeCommand_IsDeclaredAndHandled()
     {
         var dir = AppContext.BaseDirectory;
@@ -729,6 +1211,7 @@ public class SettingsSchemaDriftTests
         Assert.True(declared.SetEquals(registered),
             "The manifest and the code disagree about the commands — declared with no handler: "
             + $"[{string.Join(", ", declared.Except(registered).Order())}]; registered with no "
+            + $"declaration (invisible in the palette): "
             + $"[{string.Join(", ", registered.Except(declared).Order())}].");
 
         // VS Code makes `<viewId>.focus` for every contributed view.

@@ -40,14 +40,12 @@ public sealed class UpdateMemoryRootTests : IDisposable
     private sealed class Approve : IApprovalService
     {
         public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct,
-            string? subject = null, Inferpal.Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false) =>
-            Task.FromResult(true);
+            string? subject = null, DiffInfo? diff = null, bool forcePrompt = false) => Task.FromResult(true);
     }
 
     private static JsonElement Args(object o) => JsonDocument.Parse(JsonSerializer.Serialize(o)).RootElement;
 
-    private UpdateMemoryTool Tool() =>
-        new(new NoEditor(), new Approve(), new Inferpal.Services.Execution.FileHistoryService(), () => _root);
+    private UpdateMemoryTool Tool() => new(new NoEditor(), new Approve(), new FileHistoryService(), () => _root);
 
     [Fact]
     public async Task WritesUnderTheWorkspaceRoot_WithoutASolutionOrAnInferpalFolder()

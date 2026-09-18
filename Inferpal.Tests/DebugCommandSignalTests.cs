@@ -306,4 +306,47 @@ public class DebugCommandSignalTests : IDisposable
         Assert.Equal("\"probe-42\"", read.State.Locals[0].Value);
         Assert.Equal("`InvalidOperationException` — boom", read.State.Exception);
     }
+
+    // ── Writing through staging + rename ──────────────────
+
+    [Fact]
+    public void WriteRequest_LeavesNoStagingFileBehind()
+    {
+        // The request is now written into a staging file renamed onto the target: a reader can no
+        // longer land on a half-written request (the driver polls every 60 ms while the caller waits
+        // two minutes). The staging file must not stay behind.
+        var id = DebugCommandSignal.WriteRequest(Request("continue"));
+
+        Assert.NotNull(id);
+        Assert.True(File.Exists(DebugCommandSignal.RequestPath));
+        Assert.Empty(Directory.EnumerateFiles(SignalFile.Dir, "*.staging"));
+
+        // And what landed is readable in full, not a fragment.
+        var claimed = DebugCommandSignal.ClaimRequest();
+        Assert.NotNull(claimed);
+        Assert.Equal("continue", claimed!.Op);
     }
+
+    [Fact]
+    public void WriteRequest_ReturnsNull_WhenTheWriteCannotLand()
+    {
+        // WriteRequest's contract is "null = nothing went out". Going through SignalFile, which
+        // swallows its errors, a failed write would return a valid id — and the caller would wait
+        // its whole budget for an answer to a request never posted.
+        //
+        // ⚠ The failure must happen INSIDE SignalFile.Write, not before: a signals directory that
+        // cannot be created fails one line above, in WriteRequest itself, and the test
+        Directory.CreateDirectory(SignalFile.Dir);
+        Directory.CreateDirectory(DebugCommandSignal.RequestPath);
+
+        try
+        {
+            Assert.Null(DebugCommandSignal.WriteRequest(Request("continue")));
+            Assert.Empty(Directory.EnumerateFiles(SignalFile.Dir, "*.staging"));
+        }
+        finally
+        {
+            Directory.Delete(DebugCommandSignal.RequestPath, recursive: true);
+        }
+    }
+}

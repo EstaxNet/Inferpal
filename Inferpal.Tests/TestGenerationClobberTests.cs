@@ -106,7 +106,7 @@ public sealed class TestGenerationClobberTests : IDisposable
     [Fact]
     public async Task AnExistingTestFileThatCannotBeRead_IsNeverTreatedAsAbsent()
     {
-        var (source, test) = Fixture("public class WidgetTests { /* three years of tests */ }");
+        var (source, test) = Fixture("public class WidgetTests { /* trois ans de tests */ }");
         Deny(test);
 
         // WITNESS: the lock really holds, and the file really is there.
@@ -114,7 +114,7 @@ public sealed class TestGenerationClobberTests : IDisposable
         Assert.ThrowsAny<Exception>(() => File.ReadAllText(test));
 
         var plan = await TestGenerationPlanner.PlanAsync(
-            Model("public class WidgetTests { /* brand new */ }"),
+            Model("public class WidgetTests { /* tout neuf */ }"),
             "m", source, "public class Widget { }", CancellationToken.None);
 
         // `Ok && !Extended` is what triggers the bare write on the VS side: the clobbering pair.
@@ -131,16 +131,16 @@ public sealed class TestGenerationClobberTests : IDisposable
     [Fact]
     public async Task AndNothingIsWrittenOverIt()
     {
-        // ⚠ What is measured here is the PLAN, because that is what decides: the bare write lives
-        // in the VS applier, which is not executable from the suite (hence the named assertion
-        // below). The content on disk is checked anyway — a planner writes nothing, and the day one
-        // of them does, this must go red.
-        var original = "public class WidgetTests { /* three years of tests */ }";
+        // ⚠ What is measured here is the PLAN, because that is what decides: the bare write lives in
+        // the VS applier, which is not executable from the suite (hence the named assertion below).
+        // The content on disk is checked anyway — a planner writes nothing, and the day one of them
+        // does, this must go red.
+        var original = "public class WidgetTests { /* trois ans de tests */ }";
         var (source, test) = Fixture(original);
         Deny(test);
 
         var plan = await TestGenerationPlanner.PlanAsync(
-            Model("public class WidgetTests { /* brand new */ }"),
+            Model("public class WidgetTests { /* tout neuf */ }"),
             "m", source, "public class Widget { }", CancellationToken.None);
 
         Assert.False(plan.Ok);
@@ -173,7 +173,7 @@ public sealed class TestGenerationClobberTests : IDisposable
         var (source, _) = Fixture(string.Empty);
 
         var plan = await TestGenerationPlanner.PlanAsync(
-            Model("public class WidgetTests { /* brand new */ }"),
+            Model("public class WidgetTests { /* tout neuf */ }"),
             "m", source, "public class Widget { }", CancellationToken.None);
 
         Assert.True(plan.Ok);

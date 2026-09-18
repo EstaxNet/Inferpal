@@ -42,6 +42,39 @@ public class DiagnosticsCommandHandlerTests : IDisposable
         Assert.True(msg.IndexOf("CtxNew", StringComparison.Ordinal) < msg.IndexOf("CtxOld", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// The screen must say it is showing a <b>fragment</b> — the support bundle, in the same file,
+    /// already announces it ("N of M").
+    /// </summary>
+    /// <remarks>
+    /// This is the screen the user opens to find their failure: a capped listing that reads as
+    /// complete makes them conclude "there is nothing else", while the ring keeps up to
+    /// <see cref="Diagnostics.Capacity"/> entries and up to 170 stayed underneath.
+    /// </remarks>
+    [Fact]
+    public void List_BeyondTheCap_SaysHowManyOfHowMany()
+    {
+        for (var i = 0; i < 45; i++) Diagnostics.Record("Ctx" + i, "detail " + i);
+
+        var msg = DiagnosticsCommandHandler.Handle(Cmd()).Message;
+
+        Assert.Contains(Strings.DiagnosticsShowing(30, 45), msg);
+        Assert.Contains("Ctx44", msg);    // witness: the most recent ones really are there
+        Assert.DoesNotContain("Ctx0 ", msg);
+    }
+
+    /// <summary>Reference arm: under the cap, no truncation sentence.</summary>
+    [Fact]
+    public void List_UnderTheCap_SaysNothingAboutTruncation()
+    {
+        for (var i = 0; i < 5; i++) Diagnostics.Record("Ctx" + i, "detail " + i);
+
+        var msg = DiagnosticsCommandHandler.Handle(Cmd()).Message;
+
+        Assert.Contains("Ctx4", msg);
+        Assert.DoesNotContain(Strings.DiagnosticsShowing(30, 5), msg);
+    }
+
     [Fact]
     public void Clear_EmptiesRingAndConfirms()
     {
@@ -221,6 +254,39 @@ public class DiagnosticsCommandHandlerTests : IDisposable
     /// pastes into a public issue, while the same bundle carefully replaces them with <c>~</c> and
     /// <c>&lt;workspace&gt;</c> two lines below. One rule, two readers, one of them holding it.
     /// </remarks>
+    [Fact]
+    public void Export_ScrubsTheMcpLines_NotOnlyTheRingEntries()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var line = "monserveur — NOT connected: An error occurred trying to start process "
+                 + $@"'{home}\tools\mcp.exe' with working directory 'C:\repo'. --api-key sk-abc12345678";
+
+        var bundle = DiagnosticsCommandHandler.Handle(
+            Cmd("export"), Ctx(root: @"C:\repo") with { McpServers = [line] }).CopyToClipboard!;
+
+        Assert.Contains("monserveur", bundle);           // witness: the line really is in the bundle
+        Assert.Contains("<workspace>", bundle);
+        Assert.DoesNotContain(home, bundle);
+        Assert.DoesNotContain("sk-abc12345678", bundle);
+    }
+
+    /// <summary>Same for the two other free-text fields coming from outside.</summary>
+    [Fact]
+    public void Export_ScrubsTheBackendAndInProcLines()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        var bundle = DiagnosticsCommandHandler.Handle(Cmd("export"), Ctx(root: @"C:\repo") with
+        {
+            BackendStatus = $@"unreachable — probed {home}\.ollama",
+            InProcHalf    = $@"fim NOT LOADED: sidecar missing at {home}\ext\Inferpal.Fim.exe",
+        }).CopyToClipboard!;
+
+        Assert.Contains("unreachable", bundle);          // witness: both lines are there
+        Assert.Contains("fim NOT LOADED", bundle);
+        Assert.DoesNotContain(home, bundle);
+    }
+
     [Fact]
     public void Export_WithoutContext_FallsBackToList()
     {

@@ -114,4 +114,55 @@ public class TraceDependencyCoverageTests : IDisposable
         Assert.DoesNotContain("[not in scanned subset]", report);
         Assert.DoesNotContain(Inferpal.Localization.Strings.ScanPartial(TraceDependencyTool.MaxFilesScanned, 6), report);
     }
+
+    // ── The scan starts at the root, not at the file's folder ─────────────────
+
+    /// <summary>
+    /// A caller living <b>outside the folder</b> of the analysed file is found.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ The scan started from <c>Path.GetDirectoryName(filePath)</c>: asked about
+    /// <c>Services/Commands/TaskCommandHandler.cs</c>, the tool looked ONLY at
+    /// <c>Services/Commands/**</c>, so every caller living in the host, the VS window or the tests
+    /// was <b>structurally invisible</b> — and "Callers" came out empty, which reads as "nothing
+    /// calls this method". A <b>wrong</b> answer, not a cap: the coverage warning does not fire
+    /// either, a single folder never exceeding the cap of 400.
+    /// </para>
+    /// <para>
+    /// ⚠ <b>Why the neighbouring tests could not see it</b>: they put the target at the workspace
+    /// root, where the file's folder and the root are the same path. This one puts it in a
+    /// sub-folder, and the caller in another — the only layout that discriminates.
+    /// </para>
+    /// <para>
+    /// ⭐ And the <i>tell</i> was the comment right above the defect, which quantified the cap's
+    /// impact on "652 <c>.cs</c>" — the whole repository — while the code enumerated one folder.
+    /// <c>AnalyzeImpactTool</c> had repaired exactly that, the lesson written in its own comment.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task Callers_LivingOutsideTheTargetsOwnFolder_AreFound()
+    {
+        var target = Write("Services/Commands/TaskCommandHandler.cs", """
+            namespace App.Services.Commands;
+            public class TaskCommandHandler
+            {
+                public void HandleTask() { }
             }
+            """);
+        Write("Host/HostSlashCommands.cs", """
+            namespace App.Host;
+            public class HostSlashCommands
+            {
+                public void Route() { new TaskCommandHandler().HandleTask(); }
+            }
+            """);
+
+        var tool   = new TraceDependencyTool(() => _root);
+        var json   = $$"""{"path": {{JsonSerializer.Serialize(target)}}, "direction": "callers"}""";
+        var report = await tool.ExecuteAsync(JsonDocument.Parse(json).RootElement, CancellationToken.None);
+
+        Assert.Contains("HandleTask", report);              // witness: the method really was seen
+        Assert.Contains("HostSlashCommands", report);
+    }
+}

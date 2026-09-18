@@ -61,6 +61,17 @@ public class RulesServiceTests : IDisposable
     [InlineData("*.cs", "deep/nested/Bar.cs", true)]   // bare pattern matches file name at any depth
     [InlineData("*.cs", "Bar.cs", true)]
     [InlineData("*.cs", "Bar.ts", false)]
+    [InlineData("src/**", "src/app/Foo.cs", true)]
+    [InlineData("src/**", "lib/Foo.cs", false)]
+    [InlineData("src/*.cs", "src/Foo.cs", true)]
+    [InlineData("src/*.cs", "src/sub/Foo.cs", false)]  // * does not cross '/'
+    [InlineData("file?.cs", "fileA.cs", true)]
+    [InlineData("file?.cs", "fileAB.cs", false)]
+    // ⚠ `**/` is "zero or more SEGMENTS", not "any characters". Translated to `.*` with the `/`
+    // swallowed, `**/Program.cs` became `^.*Program\.cs$` — which matches `src/MyProgram.cs`. A rule
+    // the user scoped to Program.cs therefore also fired on MyProgram.cs, and the same translation
+    // serves the index exclusions.
+    [InlineData("**/Program.cs", "src/Program.cs", true)]
     [InlineData("**/Program.cs", "Program.cs", true)]        // zero segment: `**/` is optional
     [InlineData("**/Program.cs", "src/MyProgram.cs", false)]
     [InlineData("**/bin/**", "src/bin/x.dll", true)]

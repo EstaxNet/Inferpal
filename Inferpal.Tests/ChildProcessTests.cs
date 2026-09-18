@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using Inferpal.Services;
 using Xunit;
 
@@ -111,4 +112,40 @@ public class ChildProcessTests
         // unconditional "\n" join used to reach their parsers.
         Assert.Equal(expected, new ChildProcessResult(0, stdout, stderr, TimedOut: false).Combined);
     }
+
+    // ── Plafond de capture ─────────────────────────────────
+
+    [Fact]
+    public async Task ReadCapped_KeepsHeadAndTail_AndSaysWhatItDropped()
+    {
+        // The foreground path read the pipe to the end with no ceiling, while its detached twin
+        // (BackgroundShellRegistry) has capped at 512 KB forever, with the reason written on its
+        // constant. A `type` of a large file was enough to hold all of it in memory, in UTF-16, in
+        // the host process.
+        var size    = ChildProcess.MaxCapturedChars * 3;
+        var payload = "DEBUT" + new string('x', size) + "FIN";
+
+        var read = await ChildProcess.ReadCappedAsync(new StreamReader(
+            new MemoryStream(System.Text.Encoding.UTF8.GetBytes(payload))));
+
+        Assert.True(read.Length < ChildProcess.MaxCapturedChars + 200,
+            $"captured {read.Length} chars for a cap of {ChildProcess.MaxCapturedChars}.");
+        // Both ends survive: a parser reads the closing summary (run_tests) or the first error (a
+        // compiler). It is the middle that nobody reads.
+        Assert.StartsWith("DEBUT", read, StringComparison.Ordinal);
+        Assert.EndsWith("FIN", read, StringComparison.Ordinal);
+        Assert.Contains("dropped to bound memory", read, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task ReadCapped_LeavesOrdinaryOutputExactlyAsItIs()
+    {
+        // The cap must cost the common case nothing: no marker, no truncated copy.
+        var payload = string.Join('\n', "line 1", "line 2", "Passed!  - Failed: 0, Passed: 12", "");
+
+        var read = await ChildProcess.ReadCappedAsync(new StreamReader(
+            new MemoryStream(System.Text.Encoding.UTF8.GetBytes(payload))));
+
+        Assert.Equal(payload, read);
+    }
+}

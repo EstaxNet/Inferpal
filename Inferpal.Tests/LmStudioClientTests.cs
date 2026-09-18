@@ -76,70 +76,6 @@ public class LmStudioClientTests
     //  A raw socket needs nothing.
     // ──────────────────────────────────────────────────────────────────────────────────────────
 
-    private sealed class LoopbackServer : IDisposable
-    {
-        private readonly TcpListener _listener;
-        private readonly CancellationTokenSource _cts = new();
-        private readonly List<string> _paths = [];
-
-        /// <summary>Paths actually probed — the witness that the stand-in was really called.</summary>
-        public IReadOnlyList<string> Paths { get { lock (_paths) return _paths.ToList(); } }
-
-        public string BaseUrl => $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}";
-
-        public LoopbackServer(Func<string, string?> body)
-        {
-            _listener = new TcpListener(IPAddress.Loopback, 0);
-            _listener.Start();
-            _ = Task.Run(async () =>
-            {
-                while (!_cts.IsCancellationRequested)
-                {
-                    TcpClient client;
-                    try { client = await _listener.AcceptTcpClientAsync(_cts.Token); }
-                    catch { return; }
-                    _ = Task.Run(async () =>
-                    {
-                        using (client)
-                        {
-                            var stream = client.GetStream();
-                            var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
-                            var line = await reader.ReadLineAsync();
-                            var path = line?.Split(' ') is [_, var p, ..] ? p : string.Empty;
-                            lock (_paths) _paths.Add(path);
-                            while (true)
-                            {
-                                var header = await reader.ReadLineAsync();
-                                if (header is null || header.Length == 0) break;
-                            }
-                            var payload = body(path);
-                            var bytes = Encoding.UTF8.GetBytes(payload ?? "{}");
-                            var status = payload is null ? "404 Not Found" : "200 OK";
-                            // Explicit CRLF: the HTTP grammar requires it, Environment.NewLine is
-                            // not CRLF everywhere, and this test also runs on a Linux runner.
-                            const string crlf = "\r\n";
-                            var head = Encoding.ASCII.GetBytes(
-                                $"HTTP/1.1 {status}{crlf}"
-                                + $"Content-Type: application/json{crlf}"
-                                + $"Content-Length: {bytes.Length}{crlf}"
-                                + $"Connection: close{crlf}{crlf}");
-                            await stream.WriteAsync(head);
-                            await stream.WriteAsync(bytes);
-                            await stream.FlushAsync();
-                        }
-                    });
-                }
-            });
-        }
-
-        public void Dispose()
-        {
-            _cts.Cancel();
-            _listener.Stop();
-            _cts.Dispose();
-        }
-    }
-
     private const string OpenAiPayload =
         """{"object":"list","data":[{"id":"servi-par-v1","object":"model"}]}""";
 
@@ -167,18 +103,45 @@ public class LmStudioClientTests
     }
 
     [Fact]
+    public async Task ListModels_PrefersTheNativeApi_WhenItAnswers()
+    {
+        // Negative control: the fallback must NEVER hide the native surface, the only one carrying
+        // the loaded state and the size — the real dev server returns its native ids.
+        using var server = new LoopbackHttpServer(path => path switch
+        {
+            "/api/v1/models" => NativePayload,
+            "/v1/models"     => OpenAiPayload,
+            _                => null,
+        });
+        var client = new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = server.BaseUrl });
+
+        Assert.Equal(["servi-par-api-native"], await client.ListModelsAsync(CancellationToken.None));
+        Assert.Equal(42, (await client.ListInstalledModelsAsync(CancellationToken.None)).Single().SizeBytes);
+    }
+
+    /// <summary>
+    /// A turn that returns NOTHING leaves a trace of what the stream contained.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Reported from a machine on the network: every message answered "the model returned no
+    /// response", and the investigation stopped there — the accused server turned out perfectly
+    /// healthy (listing, chat, streaming, 28 tools, forced tool_choice), and <b>nothing recorded
+    /// what the stream contained</b>. It was the client's only failure leaving no trace at all:
+    /// everything else throws an AgentHttpException that carries its cause to the screen.
+    /// </remarks>
+    [Fact]
     public async Task AnEmptyTurn_RecordsWhatTheStreamContained()
     {
         Diagnostics.Clear();
 
         // A perfectly valid SSE stream… and an empty one: the exact shape of the reported symptom.
-        const string empty = """
+        const string vide = """
             data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
 
             data: [DONE]
 
             """;
-        using var server = new LoopbackServer(path => path.StartsWith("/v1/chat/completions") ? empty : null);
+        using var server = new LoopbackHttpServer(path => path.StartsWith("/v1/chat/completions") ? vide : null);
         var client = new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = server.BaseUrl });
 
         var turn = await client.SendChatAsync(
@@ -211,7 +174,7 @@ public class LmStudioClientTests
     {
         using var configured = new LoopbackHttpServer(path => path switch
         {
-            "/api/v1/models" => """{"models":[{"key":"the-one-from-config"}]}""",
+            "/api/v1/models" => """{"models":[{"key":"the-one-from-the-config"}]}""",
             "/v1/models"     => OpenAiPayload,
             _                => null,
         });
@@ -231,21 +194,4 @@ public class LmStudioClientTests
         Assert.Contains("/api/v1/models", typed.Paths);
         Assert.Empty(configured.Paths);
     }
-
-    [Fact]
-    public async Task ListModels_PrefersTheNativeApi_WhenItAnswers()
-    {
-        // Negative control: the fallback must NEVER shadow the native surface, the only one
-        // carrying loaded state and size — a real development server returns its native ids.
-        using var server = new LoopbackServer(path => path switch
-        {
-            "/api/v1/models" => NativePayload,
-            "/v1/models"     => OpenAiPayload,
-            _                => null,
-        });
-        var client = new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = server.BaseUrl });
-
-        Assert.Equal(["servi-par-api-native"], await client.ListModelsAsync(CancellationToken.None));
-        Assert.Equal(42, (await client.ListInstalledModelsAsync(CancellationToken.None)).Single().SizeBytes);
-}
 }

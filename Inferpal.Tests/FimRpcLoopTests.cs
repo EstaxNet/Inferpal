@@ -36,7 +36,7 @@ public class FimRpcLoopTests
              {"prefix":"var x = ","suffix":";","maxTokens":42,"temperature":0.3,"model":"qwen"}}
             """);
 
-        var (id, result) = await ReadResultAsync(client);
+        var (id, result) = await ReadResultAsync(client).WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal(7, id);
         Assert.Equal("<<var x = |;|42|qwen>>", result);
 
@@ -94,6 +94,43 @@ public class FimRpcLoopTests
         // neither answer nor kill the loop.
         var (id, result) = await ReadResultAsync(client);
         Assert.Equal(2, id);
+        Assert.Equal("ok", result);
+
+        client.Dispose();
+        await running;
+    }
+
+    /// <summary>
+    /// A UTF-8 BOM at the head of the stream must not kill the session in silence.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Any client whose stdin writer emits its preamble makes
+    /// <c>EF BB BF</c> arrive before <c>Content-Length:</c> — which is what
+    /// <c>Process.StandardInput</c> does under PowerShell 5.1, where merely touching it takes its
+    /// <c>BaseStream</c>. Without tolerance the first line no longer starts with the marker, the
+    /// length stays unknown, and the loop gives up: the process exits with code 0, empty stderr,
+    /// without having answered. A healthy sidecar that looks dead — a diagnosis that did accuse the
+    /// product before the measurement pointed at the client.
+    /// </remarks>
+    [Fact]
+    public async Task LeadingBom_IsToleratedInsteadOfEndingTheSession()
+    {
+        var (client, server) = FullDuplexStream.CreatePair();
+        var loop = new FimRpcLoop(server, server, (_, _) => Task.FromResult("ok"));
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var running = loop.RunAsync(cts.Token);
+
+        // The BOM is written BEFORE the first frame, exactly as a StreamWriter lays it down.
+        await client.WriteAsync(new byte[] { 0xEF, 0xBB, 0xBF });
+        await SendAsync(client, """{"jsonrpc":"2.0","id":7,"method":"fim/complete","params":{"prefix":"","suffix":""}}""");
+
+        // ⚠ BOUND. Without BOM tolerance the loop gives up without answering, and this read then
+        // waits FOREVER: the test does not go red, it HANGS — and a hanging test passes for a slow
+        // test, not for a missing guard. Measured: removing the tolerance made the suite come out
+        // on a 600 s timeout instead of failing.
+        var (id, result) = await ReadResultAsync(client).WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(7, id);
         Assert.Equal("ok", result);
 
         client.Dispose();

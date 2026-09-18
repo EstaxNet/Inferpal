@@ -136,4 +136,31 @@ public class SystemPromptBuilderTests : IDisposable
         var builder = new SystemPromptBuilder(new InferpalConfig());
         Assert.Equal(Base(builder), builder.Build("BASE", projectRoot: null));
     }
+
+    // ── The cap on file sections ───────────────────────────
+
+    [Fact]
+    public void AFileSection_IsCapped_AndSaysSo()
+    {
+        // No file section was bounded: memory.md (written by the agent itself), notes.md,
+        // context.md, the repository's rules, a pinned file. A block that is too large makes the
+        // backend truncate the request FROM THE HEAD — that is, where the system prompt lives: the
+        // section that grows evicts the instructions it was meant to complete.
+        var huge = new string('x', SystemPromptBuilder.MaxFileSectionChars * 2);
+
+        var capped = SystemPromptBuilder.CapSection(huge, ".inferpal/memory.md");
+
+        Assert.True(capped.Length < huge.Length);
+        // And the cut is SAID: a silent truncation would make the model answer on half a rule
+        // without anyone knowing.
+        Assert.Contains("truncated", capped, StringComparison.Ordinal);
+        Assert.Contains(".inferpal/memory.md", capped, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ASmallFileSection_IsUntouched()
+    {
+        var small = string.Join(Environment.NewLine, "## rule", "", "use tabs");
+        Assert.Equal(small, SystemPromptBuilder.CapSection(small, "x"));
+    }
+}
