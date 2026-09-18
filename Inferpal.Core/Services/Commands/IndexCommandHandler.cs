@@ -61,12 +61,12 @@ internal static class IndexCommandHandler
             sb.AppendLine(Strings.IndexRootLine(index.RootDir));
             sb.AppendLine(Strings.IndexModelLine(model));
             sb.AppendLine(Strings.IndexTopKLine(config.RagTopK));
-            // ⚠ A folder the pass could not LIST is said here, and this is the only place it can
-            // be: the index is persisted, so its absence survives restarts, and a chunk count reads
-            // as complete. Same sentence as the analysis tools — one cause, one sentence, already
-            // translated into the ten languages.
-            if (index.SkippedFolder is { Length: > 0 } skipped)
-                sb.AppendLine(Strings.ScanFolderSkipped(skipped));
+            // ⚠ A folder the pass could not LIST is said here, and here is the only place it can
+            // be said: the index is persisted, so its absence survives restarts, and a chunk count
+            // reads as complete. Same sentence as the analysis tools — one cause, one sentence,
+            // already translated into the ten languages.
+            if (index.SkippedFolder is { } gap)
+                sb.AppendLine(gap.Sentence());
             sb.AppendLine();
             sb.AppendLine(Strings.IndexForceHint);
         }

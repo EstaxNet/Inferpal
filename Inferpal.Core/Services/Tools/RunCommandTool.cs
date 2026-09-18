@@ -39,10 +39,12 @@ internal sealed class RunCommandTool : ITool, IDisposable
     /// trial and error what the tool could have said in one sentence. <c>UserShellTool</c> carries
     /// the same fault on the execution side, and it was repaired there in the pre-1.6.0 review.
     /// </remarks>
-    private static (string Shell, string SetEnv) Speak() =>
-        ShellLauncher.Resolve().Dialect == ShellDialect.PowerShell
-            ? ("PowerShell", "$env:NAME='…'")
-            : ("bash",       "export NAME=…");
+    private static (string Shell, string SetEnv) Speak()
+    {
+        var (dialect, fileName) = ShellLauncher.Resolve();
+        return (ShellLauncher.SpokenName(dialect, fileName),
+                dialect == ShellDialect.PowerShell ? "$env:NAME='…'" : "export NAME=…");
+    }
 
     public string Description
     {

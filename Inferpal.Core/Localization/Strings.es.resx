@@ -434,6 +434,11 @@ Usa `/clear` después de editar el archivo para recargarlo.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>No es un repositorio git (no se encontró la carpeta .git).</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ Este lote abarca más proyectos de los que Smart Fix comprueba de una vez: {0} se compilaron, {1} más NO se comprobaron. Compílelos usted mismo o edítelos en una llamada aparte.</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd se detuvo: esta ejecución no lanzó ningún test, así que no hay nada que corregir.</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ La conversación que acaba de dejar NO pudo archivarse: {0}. Se ha perdido: no se guardó con ningún nombre y el chat ya está vacío.</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Esta conversación NO se pudo guardar para la próxima vez: {0}. Sigue aquí, pero no volverá por sí sola: expórtala si quieres conservarla.</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git no pudo responder a «git {0}»: {1}. No se leyó nada de este repositorio: esto NO significa «sin cambios».</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>No se encontró ningún archivo .sln. Proporciona la ruta explícitamente.</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>Ruta no encontrada o no es un archivo .sln: {0}</value></data>
 
@@ -464,6 +469,8 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <data name="CommitConfirmHint" xml:space="preserve"><value>Mensaje prellenado abajo — edita si es necesario y pulsa **Intro** para confirmar el commit.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Sin reglas de proyecto. Crea `.inferpal/rules/*.md` o ejecuta `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ No se pudieron leer {0} archivo(s), por lo que NO se aplican: {1}. La causa está en /diagnostics.</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ {0} sesión(es) guardada(s) no se pudieron leer y por tanto NO se buscaron: {1}. Esto NO significa «el término no aparece». La causa está en /diagnostics.</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ {0} sesión(es) guardada(s) no se pudieron leer y por tanto NO están en esta lista: {1}. La causa está en /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Sin checks de revisión. Crea `.inferpal/checks/*.md` o ejecuta `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Reglas de proyecto** (`.inferpal/rules`):</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>listar las reglas de permisos realmente vigentes y lo que se ha ignorado</value></data>
@@ -904,6 +911,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Análisis parcial: solo se han examinado {0} de {1} archivos fuente (límite). Los resultados pueden estar incompletos.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ No se pudieron leer ni analizar {0} archivo(s) de origen (permisos, un bloqueo o han desaparecido). Los resultados pueden estar incompletos.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ No se pudo enumerar la carpeta «{0}», por lo que no se analizó ninguno de los archivos que contiene (permisos). Los resultados pueden estar incompletos.</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ La carpeta «{0}» es un enlace, que no se sigue (un enlace que apunte de vuelta al proyecto daría vueltas sin fin), por lo que no se analizó ninguno de los archivos que contiene. Los resultados pueden estar incompletos.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>La autorización OAuth de MCP solo está disponible en Windows por ahora: el token de actualización solo puede guardarse cifrado (DPAPI) y guardarlo en texto plano no es una opción. Usa un servidor con token de cabecera estático.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>ejecutar una tarea del agente en segundo plano (`/task [objetivo]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>Tarea **{0}** iniciada en segundo plano: {1}</value></data>

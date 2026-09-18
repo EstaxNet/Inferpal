@@ -209,7 +209,10 @@ exists.
 - **Model bench** — `/bench [model…]` runs a local test bench of installed models: warm
   time-to-first-token, tokens/s, VRAM pressure and a 5-task quality micro-eval scored by
   programmatic assertions (no LLM judge), with per-role recommendations (agent / utility /
-  FIM) feeding the Model Router. `/bench last` redisplays the persisted run.
+  FIM) feeding the Model Router. `/bench last` redisplays the persisted run. The tokens/s figure
+  only aggregates the tasks whose generation could actually be timed — a reply that never streams
+  (a tool call) is left out rather than counted as free tokens — and the column shows `—` when
+  nothing in the run could be timed.
 - **Model arena** — `/arena <prompt>` sends the same prompt to two models (sequentially — one
   GPU) and shows both answers blind-labelled A/B; `/arena a|b|tie` records the vote and
   reveals the models, `/arena stats` shows the cumulative local standings.

@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace Inferpal.Services.Docs;
 
 /// <summary>
@@ -23,7 +25,7 @@ internal static class DocChunker
     public static List<DocChunk> Chunk(string docId, string url, string pageTitle, string text)
     {
         var chunks = new List<DocChunk>();
-        var lines  = text.Replace("\r\n", "\n").Split('\n');
+        var lines  = CutOverLongLines(text.Replace("\r\n", "\n").Split('\n'));
 
         int i = 0;
         while (i < lines.Length)
@@ -65,6 +67,60 @@ internal static class DocChunker
         }
 
         return chunks;
+    }
+
+    /// <summary>Characters a single line may hold before it is cut — the token target, in the
+    /// estimator's own unit (<c>chars / 4</c>).</summary>
+    private const int MaxLineChars = TargetChunkTokens * 4;
+
+    /// <summary>
+    /// The same lines, none of them longer than one chunk's budget.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <b>The window below is LINE-based, and prose has no lines to rely on</b> — this class's own
+    /// summary says as much and then slid a line window over it anyway. An ordinary page survives
+    /// because <c>HtmlToText</c> emits a newline after every block-level close; three real shapes do
+    /// not: a page that is one long <c>&lt;p&gt;</c>, a <c>&lt;pre&gt;</c> dump, and — always — a page
+    /// that took <c>HtmlToText</c>'s regex-timeout fallback, which strips tags and inserts <b>no</b>
+    /// newline at all. Measured: 128 231 characters on one line produced exactly ONE chunk, embedded
+    /// whole (so its vector describes the opening and nothing else) and shown to the model as its
+    /// first 900 characters. In the index, counted, unfindable.
+    /// </para>
+    /// <para>
+    /// ⚠ Cut, never shrunk — the lesson the code chunker already paid for: every character of the
+    /// line lands in some piece. The cut goes to the last space inside the window so a word is never
+    /// split in two; a token with no space in it at all (a base64 blob, a minified line) is cut hard,
+    /// because the alternative is to keep it whole, which is the defect.
+    /// </para>
+    /// </remarks>
+    private static string[] CutOverLongLines(string[] lines)
+    {
+        if (lines.All(l => l.Length <= MaxLineChars)) return lines;   // the ordinary page, untouched
+
+        var result = new List<string>(lines.Length + 8);
+        foreach (var line in lines)
+        {
+            if (line.Length <= MaxLineChars) { result.Add(line); continue; }
+
+            var start = 0;
+            while (start < line.Length)
+            {
+                var take = Math.Min(MaxLineChars, line.Length - start);
+                var skip = 0;
+                if (start + take < line.Length)
+                {
+                    var lastSpace = line.LastIndexOf(' ', start + take - 1, take);
+                    // The space itself is dropped, not carried: the pieces are rejoined with a
+                    // newline, which is already a separator, and a trailing blank would show up at
+                    // every cut in what the model reads.
+                    if (lastSpace > start) { take = lastSpace - start; skip = 1; }
+                }
+                result.Add(line.Substring(start, take));
+                start += take + skip;
+            }
+        }
+        return [.. result];
     }
 
     private static string? FirstNonEmptyLine(string[] lines)

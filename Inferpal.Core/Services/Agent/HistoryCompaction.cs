@@ -129,9 +129,39 @@ internal static class HistoryCompaction
         ];
     }
 
-    /// <summary>Drops the planned range without replacement (hard truncation / safety fallback).</summary>
-    public static void ApplyTruncation(List<ChatMessageDto> history, CompactionPlan plan) =>
+    /// <summary>
+    /// What the model is told in place of the turns that were dropped without a summary.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Deliberately NOT localized, like <c>[Context Summary]</c> next door: this is a structural
+    /// marker in the transcript, not prose shown to anyone. Read through this helper rather than
+    /// copied at the far end — a phrase copied into an assertion matches until the day the phrase is
+    /// reworded, then stops without a sign.
+    /// </remarks>
+    public static string TruncationMarker(int dropped) =>
+        $"[Context Note] {dropped} earlier message(s) of this conversation were dropped to fit the "
+      + "context window. That part is gone from your context: if the user refers to something said "
+      + "there, say you no longer have it rather than treating it as never said.";
+
+    /// <summary>
+    /// Drops the planned range, leaving the model a marker in its place (hard truncation / safety
+    /// fallback).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The marker is the whole point. A bare <c>RemoveRange</c> leaves the model a conversation
+    /// that simply starts later, which reads as "this is all of it": the user writes "as I told you
+    /// earlier…" and gets told it was never mentioned. <see cref="ApplySummary"/> two lines down has
+    /// always marked its own rewrite (<c>[Context Summary]</c>) — the same rule, honoured by one of
+    /// its two sites. ⚠ <c>IsScaffolding</c> is not decoration: it is what keeps this <c>user</c>
+    /// message out of the turn count (<see cref="Decide"/> filters on it), which
+    /// <c>contextWindowKeepTurns</c>, <c>/branch</c> numbering and regeneration all read.
+    /// </remarks>
+    public static void ApplyTruncation(List<ChatMessageDto> history, CompactionPlan plan)
+    {
         history.RemoveRange(plan.Start, plan.Count);
+        history.Insert(plan.Start,
+                       new ChatMessageDto("user", TruncationMarker(plan.Count)) { IsScaffolding = true });
+    }
 
     /// <summary>
     /// Replaces the planned range with a "[Context Summary]" user/assistant pair, inserted

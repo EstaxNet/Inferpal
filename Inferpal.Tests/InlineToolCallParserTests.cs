@@ -1,5 +1,11 @@
-﻿using System.Text.Json;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Inferpal.Models;
 using Inferpal.Services;
+using Inferpal.Services.Agent;
+using Inferpal.Services.Execution;
+using Inferpal.Services.Tools;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -226,5 +232,113 @@ public class InlineToolCallParserTests
         var call = Assert.Single(calls!);
         Assert.Equal("get_git_status", call.Function.Name);
         Assert.Equal(JsonValueKind.Object, call.Function.Arguments.ValueKind);
+    }
+
+    // ── UNREADABLE arguments are not ABSENT arguments ─────────────────────────
+
+    /// <summary>
+    /// ⚠ The repository already writes the rule, in <c>OpenAiCompatibleClient.ParseArguments</c>: "anything
+    /// else — typically a turn cut off mid-call — is kept in UnparsedArguments and must not run:
+    /// defaulting it to {} turned <c>run_tests {"filter":"Foo…</c> into the whole test suite ». Le
+    /// structured path applies it; the INLINE path fell back to <c>{}</c> — and a call with no
+    /// arguments is not the same call.
+    /// </summary>
+    [Theory]
+    // The model writes the filter as raw text rather than a JSON object — the commonest shape from
+    // small models, and the dearest: `run_tests` with no filter is the WHOLE suite.
+    [InlineData("""{"name":"run_tests","arguments":"MyFilter"}""", "MyFilter")]
+    // A turn cut in the middle of its double-encoded arguments.
+    [InlineData("""{"name":"run_tests","arguments":"{\"filter\":\"Foo"}""", "filter")]
+    // An array where the schema wants an object.
+    [InlineData("""{"name":"list_files","arguments":["src"]}""", "src")]
+    public void ArgumentsThatDoNotParse_AreKeptRaw_NotSilentlyEmptied(string content, string expectedInRaw)
+    {
+        var (calls, _) = InlineToolCallParser.TryParse(content);
+
+        var call = Assert.Single(Assert.IsAssignableFrom<System.Collections.Generic.List<ToolCallDto>>(calls));
+        Assert.NotNull(call.Function.UnparsedArguments);
+        Assert.Contains(expectedInRaw, call.Function.UnparsedArguments!);
+    }
+
+    /// <summary>
+    /// The other half, and the one that protects the user: the guard that REFUSES to execute already
+    /// existed — it was only waiting for this path to mark its calls.
+    /// </summary>
+    [Fact]
+    public async Task AnInlineCallWithUnreadableArguments_IsRefusedInsteadOfRunWithNoArguments()
+    {
+        var (calls, _) = InlineToolCallParser.TryParse("""{"name":"run_tests","arguments":"MyFilter"}""");
+        var call = Assert.Single(Assert.IsAssignableFrom<System.Collections.Generic.List<ToolCallDto>>(calls));
+
+        var result = await AgentOrchestrator.ExecuteToolSafeAsync(
+            EmptyToolRegistry.Instance, call.Function, CancellationToken.None);
+
+        Assert.Contains("not a valid JSON object", result);
+        Assert.Contains("MyFilter", result);     // the cause is returned to the model, which can resend
+    }
+
+    /// <summary>
+    /// ⚠ Reference arm, without which the fix would break the NORMAL case: a call that legitimately
+    /// has no arguments (<c>get_git_status</c>, <c>get_solution_info</c>) keeps its empty object and
+    /// executes. "Absent" and "unreadable" are two states, not one.
+    /// </summary>
+    [Fact]
+    public async Task ACallWithNoArgumentsAtAll_StillRuns()
+    {
+        var (calls, _) = InlineToolCallParser.TryParse("""{"name":"get_git_status"}""");
+        var call = Assert.Single(Assert.IsAssignableFrom<System.Collections.Generic.List<ToolCallDto>>(calls));
+
+        Assert.Null(call.Function.UnparsedArguments);
+
+        var result = await AgentOrchestrator.ExecuteToolSafeAsync(
+            EmptyToolRegistry.Instance, call.Function, CancellationToken.None);
+
+        Assert.DoesNotContain("not a valid JSON object", result);
+    }
+
+    // ── The same question, but on what comes off the WIRE ─────────────────────
+
+    /// <summary>
+    /// ⚠ The funnel, not the path: <c>arguments</c> is deserialized as it comes into a
+    /// <see cref="JsonElement"/>, so a payload where it is not an object travels through the whole
+    /// product with nobody judging it. And <c>ToolArgs</c> — by contract, so that it never throws on
+    /// what the model writes — then returns the default value of EVERY argument: <c>run_tests</c>'s
+    /// filter disappears, and the whole suite goes.
+    /// </summary>
+    [Theory]
+    [InlineData(""""{"done":true,"message":{"role":"assistant","tool_calls":[{"function":{"name":"run_tests","arguments":"MyFilter"}}]}}"""")]
+    [InlineData(""""{"done":true,"message":{"role":"assistant","tool_calls":[{"function":{"name":"run_tests","arguments":["MyFilter"]}}]}}"""")]
+    public async Task WireArgumentsThatAreNotAnObject_AreRefused_NotRunWithDefaults(string wire)
+    {
+        var call = JsonSerializer.Deserialize<ChatResponse>(wire)!.Message!.ToolCalls![0].Function;
+
+        // The witness of what it costs: read by a tool, that argument does not exist.
+        Assert.Null(call.Arguments.Str("filter"));
+
+        var result = await AgentOrchestrator.ExecuteToolSafeAsync(
+            EmptyToolRegistry.Instance, call, CancellationToken.None);
+
+        Assert.Contains("not a valid JSON object", result);
+        Assert.Contains("MyFilter", result);
+    }
+
+    /// <summary>
+    /// ⚠ Reference arm: the three shapes that mean "no arguments" stay executable — the missing
+    /// property (<see cref="JsonValueKind.Undefined"/>), <c>null</c>, and the empty object. That is
+    /// <c>ParseArguments</c>'s contract, and its readers must not
+    /// diverger.
+    /// </summary>
+    [Theory]
+    [InlineData(""""{"done":true,"message":{"role":"assistant","tool_calls":[{"function":{"name":"get_git_status"}}]}}"""")]
+    [InlineData(""""{"done":true,"message":{"role":"assistant","tool_calls":[{"function":{"name":"get_git_status","arguments":null}}]}}"""")]
+    [InlineData(""""{"done":true,"message":{"role":"assistant","tool_calls":[{"function":{"name":"get_git_status","arguments":{}}}]}}"""")]
+    public async Task WireCallsWithoutArguments_StillRun(string wire)
+    {
+        var call = JsonSerializer.Deserialize<ChatResponse>(wire)!.Message!.ToolCalls![0].Function;
+
+        var result = await AgentOrchestrator.ExecuteToolSafeAsync(
+            EmptyToolRegistry.Instance, call, CancellationToken.None);
+
+        Assert.DoesNotContain("not a valid JSON object", result);
     }
 }

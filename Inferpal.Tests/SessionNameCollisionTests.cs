@@ -40,6 +40,12 @@ public class SessionNameCollisionTests
                                              ["2026-07-30_1012_question", "2026-07-30_1012_question_2"]));
     }
 
+    /// <summary>A session folder every file of which could be read.</summary>
+    /// <remarks>Explicit rather than an implicit conversion from a list: the unreadable half is
+    /// exactly what a caller must not be able to forget.</remarks>
+    private static SessionScan<SessionSummary> Scan(params SessionSummary[] sessions) =>
+        new([.. sessions], []);
+
     [Fact]
     public void BranchingAnUnsavedConversation_DoesNotTakeAnExistingSessionsName()
     {
@@ -50,7 +56,7 @@ public class SessionNameCollisionTests
         ];
         var existing = new SessionSummary("2026-07-30_1012_first_question", DateTime.UtcNow, 2, "first question");
 
-        var plan = BranchManager.Plan(conversation, 1, currentName: null, [existing],
+        var plan = BranchManager.Plan(conversation, 1, currentName: null, Scan(existing),
                                       new DateTime(2026, 7, 30, 10, 12, 0));
 
         Assert.NotNull(plan);

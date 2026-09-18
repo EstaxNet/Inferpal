@@ -202,44 +202,103 @@ internal static class MentionController
 
     // ── @folder context body ──────────────────────────────────────────────────
 
-    /// <summary>Concatenates the text files under a folder (tree header + bodies) within a size budget.</summary>
+    /// <summary>Files whose text is included; past it the listing stands alone.</summary>
+    private const int MaxFiles = 30;
+
+    /// <summary>Characters the bodies may take together.</summary>
+    private const int MaxTotalChars = 60_000;
+
+    /// <summary>Files the walk lists at most.</summary>
+    private const int MaxWalkFiles = 200;
+
+    /// <summary>Levels below the folder the walk descends into.</summary>
+    private const int MaxWalkDepth = 4;
+
+    /// <summary>
+    /// Concatenates the text files under a folder (tree header + bodies) within a size budget.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>Every cut is stated, because the listing and the bodies are not the same set.</b> The
+    /// "Files:" block names every file the walk found; the text below it stops at
+    /// <see cref="MaxFiles"/> and at a character budget, a file may have been unreadable, and the
+    /// walk itself has a file ceiling and a depth ceiling. A model handed 120 names and 30 bodies
+    /// cannot tell which is which — it answers "that symbol is not used in this folder" about a
+    /// folder it was shown the index of. The per-body "…(truncated)" marker was already here, so the
+    /// rule was known; it was applied to the one cut that is visible in the text, and to none of the
+    /// four that are not.
+    /// </remarks>
     public static string BuildFolderContext(string folderPath, CancellationToken ct)
     {
-        const int MaxFiles = 30;
-        const int MaxTotalChars = 60_000;
-
         var sb = new StringBuilder();
         sb.Append("Folder: ").AppendLine(folderPath).AppendLine();
 
-        var files = new List<string>();
-        CollectFolderFiles(folderPath, files, 0, ct);
+        var files  = new List<string>();
+        var limits = new FolderWalkLimits();
+        CollectFolderFiles(folderPath, files, 0, ct, limits);
 
         sb.AppendLine("Files:");
         foreach (var f in files)
             sb.Append("  ").AppendLine(Path.GetRelativePath(folderPath, f));
         sb.AppendLine();
 
+        var attempted  = Math.Min(files.Count, MaxFiles);
+        var included   = 0;
+        var unreadable = 0;
+        var budgetStop = false;
+
         foreach (var f in files.Take(MaxFiles))
         {
             if (ct.IsCancellationRequested) break;
             string body;
-            try { body = File.ReadAllText(f); } catch { continue; }
+            // Counted, not traced: one ring entry per unreadable file, on a folder the user may
+            // attach repeatedly, is the noise RecordOnce exists to prevent. The count below is the
+            // channel, and it goes where the reader of this context will see it.
+            try { body = File.ReadAllText(f); } catch { unreadable++; continue; }
 
             var header = $"\n----- {Path.GetRelativePath(folderPath, f)} -----\n";
             if (sb.Length + header.Length + body.Length > MaxTotalChars)
             {
                 var budget = MaxTotalChars - sb.Length - header.Length;
-                if (budget < 200) break;
+                if (budget < 200) { budgetStop = true; break; }
                 body = body[..Math.Min(body.Length, budget)] + "\n…(truncated)";
             }
             sb.Append(header).Append(body);
+            included++;
         }
+
+        // One sentence per cause, and only when that cause fired. They are not interchangeable: a
+        // body cap is narrowed by attaching a subfolder, a character budget by attaching fewer
+        // files, an unreadable file by a permission, a walk ceiling by nothing the user can do
+        // without splitting the folder.
+        var notes = new List<string>(4);
+        if (files.Count > MaxFiles)
+            notes.Add($"(bodies: the first {MaxFiles} of {files.Count} listed files — the rest are named above but NOT included)");
+        if (budgetStop)
+            notes.Add($"(stopped at the {MaxTotalChars:N0}-character budget: {attempted - included - unreadable} more listed file(s) not included)");
+        if (unreadable > 0)
+            notes.Add($"({unreadable} file(s) could not be read and are not included)");
+        if (limits.FileCapHit)
+            notes.Add($"(the folder walk stopped at {MaxWalkFiles} files — this folder holds more, and they are not listed above)");
+        if (limits.DepthCapHit)
+            notes.Add($"(subfolders deeper than {MaxWalkDepth} levels were not listed)");
+
+        if (notes.Count > 0) sb.Append('\n').AppendLine().AppendJoin('\n', notes);
         return sb.ToString();
     }
 
-    private static void CollectFolderFiles(string dir, List<string> results, int depth, CancellationToken ct)
+    /// <summary>Which ceilings the walk actually ran into. Mutable: it is filled during recursion.</summary>
+    private sealed class FolderWalkLimits
     {
-        if (depth > 4 || ct.IsCancellationRequested || results.Count >= 200) return;
+        public bool FileCapHit;
+        public bool DepthCapHit;
+    }
+
+    private static void CollectFolderFiles(
+        string dir, List<string> results, int depth, CancellationToken ct, FolderWalkLimits limits)
+    {
+        if (ct.IsCancellationRequested) return;
+        if (depth > MaxWalkDepth) { limits.DepthCapHit = true; return; }
+        if (results.Count >= MaxWalkFiles) { limits.FileCapHit = true; return; }
         if (IsSkippedDir(dir)) return;
 
         try
@@ -247,10 +306,15 @@ internal static class MentionController
             foreach (var file in Directory.GetFiles(dir))
             {
                 if (ct.IsCancellationRequested) return;
-                if (IndexableExtensions.Contains(Path.GetExtension(file))) results.Add(file);
+                if (!IndexableExtensions.Contains(Path.GetExtension(file))) continue;
+                // ⚠ The ceiling is checked HERE too, not only on entry: a single folder holding
+                // five thousand files was listed whole, because the count was only ever consulted
+                // between directories. A cap that a common shape walks straight past is not a cap.
+                if (results.Count >= MaxWalkFiles) { limits.FileCapHit = true; return; }
+                results.Add(file);
             }
             foreach (var subDir in Directory.GetDirectories(dir))
-                CollectFolderFiles(subDir, results, depth + 1, ct);
+                CollectFolderFiles(subDir, results, depth + 1, ct, limits);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("MentionController.CollectFolderFiles", ex); }

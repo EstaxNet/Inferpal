@@ -105,7 +105,7 @@ internal static class DocsCommandHandler
                 if (shown.Count == 0) return Strings.DocsNoSites;
 
                 var stats = indexed.ToDictionary(x => x.Site.Id, x => (x.PageCount, x.ChunkCount));
-                return DocSite.FormatList(shown, stats);
+                return DocSite.FormatList(shown, stats, docs.UnembeddedBySite);
             }
         }
     }

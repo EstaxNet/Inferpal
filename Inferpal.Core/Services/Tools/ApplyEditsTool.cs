@@ -99,7 +99,15 @@ internal sealed class ApplyEditsTool : ITool
                     $"edit #{index} in {RelPath(root, path)}: 'new_content' is missing or is not a string "
                     + "(send \"\" to delete the matched block)");
 
-            edits.Add(new Edit(path, old, neu, e.Keyword("occurrence")));
+            // Same vocabulary as apply_diff, same reader. Aborted like any malformed edit: an
+            // unrecognised value became 'unique' and the whole batch came back with
+            // « ambiguous (N matches) », qui accuse un old_content parfaitement correct.
+            var occurrence = e.Keyword("occurrence");
+            if (ApplyDiffMatcher.RejectOccurrence(occurrence) is { } badOccurrence)
+                return Strings.ApplyEditsAborted(
+                    $"edit #{index} in {RelPath(root, path)}: {badOccurrence}");
+
+            edits.Add(new Edit(path, old, neu, occurrence));
         }
         if (edits.Count == 0) return Strings.ApplyEditsEmpty;
 
@@ -150,36 +158,24 @@ internal sealed class ApplyEditsTool : ITool
         // Approved and backed up: the writes no longer observe cancellation, so a Stop cannot leave
         // half the batch applied. ⚠ A write that FAILS puts back the files already written — the
         // description promises the model "if ANY edit cannot be applied, NO file is changed".
-        var written = new List<string>();
-        foreach (var path in changed)
+        // ⚠ Funnel shared with rename_symbol, which carried the opposite failure: it collected the
+        // error and carried on. The all-or-nothing property lives in the writer, not copied into
+        // each tool — that is what makes the third one inherit it.
+        var write = await SafeFileWriter.WriteAllOrRollBackAsync(
+            [.. changed.Select(p => (p, current[p], original[p]))]);
+
+        if (!write.Ok)
         {
-            try
-            {
-                await SafeFileWriter.WritePreservingAsync(path, current[path], CancellationToken.None);
-                written.Add(path);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                var stuck = new List<string>();
-                foreach (var done in written)
-                {
-                    try { await SafeFileWriter.WritePreservingAsync(done, original[done], CancellationToken.None); }
-                    catch (Exception rollback) when (rollback is IOException or UnauthorizedAccessException)
-                    {
-                        Diagnostics.Swallow("ApplyEditsTool.Rollback", rollback);
-                        stuck.Add(RelPath(root, done));
-                    }
-                }
-                var reason = $"writing {RelPath(root, path)} failed ({ex.Message})";
-                return stuck.Count == 0
-                    ? Strings.ApplyEditsAborted(reason)
-                    : $"Error: {reason}, and {string.Join(", ", stuck)} could not be put back — restore it with restore_file.";
-            }
+            var reason = $"writing {RelPath(root, write.FailedPath!)} failed ({write.Error})";
+            return write.Stuck.Count == 0
+                ? Strings.ApplyEditsAborted(reason)
+                : $"Error: {reason}, and {string.Join(", ", write.Stuck.Select(s => RelPath(root, s)))} "
+                  + "could not be put back — restore it with restore_file.";
         }
 
         // Smart Fix once: building any edited file validates its project (covers same-project edits).
         var smartFixNote = _smartFix is not null
-            ? "\n\n" + (await _smartFix.ValidateAsync(changed[0], ct) ?? string.Empty)
+            ? "\n\n" + (await _smartFix.ValidateManyAsync(changed, ct) ?? string.Empty)
             : string.Empty;
 
         return Strings.ApplyEditsOk(edits.Count, changed.Count) + smartFixNote.TrimEnd();

@@ -64,6 +64,12 @@ internal class ListFilesTool : ITool
         var result = string.Join("\n", files);
         if (truncated)
             result += $"\n(showing first {limit} files — narrow the path or pattern for the rest)";
+        // ⚠ The cap is not the only reason this listing is partial. A folder the walk could not list,
+        // or one it will not follow because it is a link, contributes NOTHING and is absent from the
+        // output altogether — which reads as "that folder is empty", or as "it does not exist". The
+        // walk's `failed` flag only ever meant "the START directory could not be opened".
+        if (WorkspaceScan.FirstWalkGap(path, root) is { } gap)
+            result += $"\n({gap.Sentence()})";
 
         return Task.FromResult(result);
     }

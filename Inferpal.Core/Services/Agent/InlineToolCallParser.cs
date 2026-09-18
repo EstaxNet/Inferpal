@@ -156,11 +156,42 @@ internal static class InlineToolCallParser
         if (string.IsNullOrWhiteSpace(name)) return false;
 
         // Arguments may live under "arguments" or "parameters"; as an object or a JSON string.
-        if (!TryGetArgs(obj, "arguments", out var argsEl) && !TryGetArgs(obj, "parameters", out argsEl))
-            argsEl = EmptyObject();
+        if (TryGetArgs(obj, "arguments", out var argsEl) || TryGetArgs(obj, "parameters", out argsEl))
+        {
+            calls.Add(new ToolCallDto(new ToolCallFunction(name!, argsEl)));
+            return true;
+        }
 
-        calls.Add(new ToolCallDto(new ToolCallFunction(name!, argsEl)));
+        // ⚠ <b>UNREADABLE arguments are not ABSENT arguments.</b> This site fell back to `{}` in
+        // both cases, so a `run_tests` whose filter the model wrote as raw text — the commonest shape
+        // from small models — became a `run_tests` with no filter, that is, the WHOLE suite. The rule
+        // is written in `OpenAiCompatibleClient.ParseArguments`, with that exact example, and the
+        // guard that refuses to execute (`ExecuteToolSafeAsync`) already existed: it was only waiting
+        // for this path to mark its calls.
+        calls.Add(new ToolCallDto(
+            new ToolCallFunction(name!, EmptyObject()) { UnparsedArguments = RawArguments(obj) }));
         return true;
+    }
+
+    /// <summary>
+    /// The arguments text the model wrote when it did not parse into an object — <c>null</c> when it
+    /// wrote none at all, which is a legitimate call without arguments.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Same contract as <c>OpenAiCompatibleClient.ParseArguments</c>, deliberately: an absent
+    /// property, an explicit <c>null</c> and an empty string all mean "no arguments" on the
+    /// structured path, and two readers of the same model output must not disagree about which
+    /// calls are runnable.
+    /// </remarks>
+    private static string? RawArguments(JsonElement obj)
+    {
+        foreach (var prop in (string[])["arguments", "parameters"])
+        {
+            if (!obj.TryGetProperty(prop, out var el) || el.ValueKind == JsonValueKind.Null) continue;
+            var raw = el.ValueKind == JsonValueKind.String ? el.GetString() : el.GetRawText();
+            if (!string.IsNullOrWhiteSpace(raw) && raw.Trim() != "null") return raw;
+        }
+        return null;
     }
 
     /// <summary>Builds a tool call from the Qwen/GLM XML shape: a function name plus a block of

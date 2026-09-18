@@ -28,6 +28,7 @@ public class HostServerTests
     // ── In-test editor adapter (client side of the connection) ────────────────
 
     private sealed record TokenNote(string Text);
+    private sealed record ThinkingNote(string? Text);
     private sealed record ToolNote(string Name, string Input, string Output, bool HasErrors);
     private sealed record ApprovalNote(string Message);
 
@@ -57,6 +58,13 @@ public class HostServerTests
             Tokens.Add(note.Text);
             FirstToken.TrySetResult(note.Text);
         }
+
+        /// <summary>Every reasoning notification received, text included (null in plain chat).
+        /// Remplie par le fil de dispatch RPC pendant que le test la lit.</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string?> Thinking = new();
+
+        [JsonRpcMethod("chat/thinking", UseSingleObjectParameterDeserialization = true)]
+        public void ChatThinking(ThinkingNote note) => Thinking.Enqueue(note.Text);
 
         /// <summary>Every <c>chat/tool</c> notice received, in order (filled by the RPC dispatch thread).</summary>
         public readonly System.Collections.Concurrent.ConcurrentQueue<ToolNote> ToolNotes = new();
@@ -131,6 +139,11 @@ public class HostServerTests
         public required FakeInferenceProvider Fake      { get; init; }
         public required ClientTarget          Target    { get; init; }
 
+        /// <summary>The configs the provider factory received, in order. It is the only way to see
+        /// that a call built a THROWAWAY client from the values of the
+        /// formulaire plutot que de reutiliser celui de la session.</summary>
+        public required List<InferpalConfig>  ProviderConfigs { get; init; }
+
         /// <summary>Empty folder of this harness alone, the default workspace root. The whole %TEMP% was: a solution
         /// another test was writing there at that moment entered the first turn's workspace block.</summary>
         public required string                RootDir   { get; init; }
@@ -155,7 +168,8 @@ public class HostServerTests
 
         // The host's chat mode runs the basic tool loop: the fake answers it through OnChat, like the real loop.
         var fake   = new FakeInferenceProvider { RunAgentThroughChat = true };
-        var server = new HostServer(_ => fake, () =>
+        var built  = new List<InferpalConfig>();
+        var server = new HostServer(cfg => { built.Add(cfg); return fake; }, () =>
         {
             // RAG off unless a test asks: initialize indexes the workspace when it is on.
             var cfg = new InferpalConfig { RagEnabled = false };
@@ -174,7 +188,7 @@ public class HostServerTests
         Directory.CreateDirectory(root);
 
         return new Harness { Client = client, ServerRpc = serverRpc, Server = server, Fake = fake,
-                             Target = target, RootDir = root };
+                             Target = target, ProviderConfigs = built, RootDir = root };
     }
 
     // ── harness ────────────────────────────────────────────────────────────────
@@ -439,6 +453,238 @@ public class HostServerTests
         {
             try { Directory.Delete(root, recursive: true); } catch { }
         }
+    }
+
+    // ── chat/thinking: bounded, and the text goes out ONLY on the agent path ──
+
+    [Fact]
+    public async Task ChatThinking_IsThrottled_AndCarriesNoTextInPlainChat()
+    {
+        // Le defaut repare, en deux moities toutes les deux fausses : le host relayait UNE
+        // notification PAR DELTA de raisonnement — des milliers de messages JSON-RPC sur stdio pour
+        // une phase de reflexion — et l adaptateur JETAIT le texte transporte.
+        using var h = CreateHarness(cfg => cfg.AgentModeEnabled = false);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        const int deltas = 400;
+        h.Fake.DriveThinking = emit => { for (var i = 0; i < deltas; i++) emit("pensee "); };
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "bonjour", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        // The notifications go out before chat/send's reply, but the client may deliver them after
+        // it: under the load of the whole suite, the channel was still empty here.
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (h.Target.Thinking.IsEmpty && DateTime.UtcNow < deadline) await Task.Delay(20);
+
+        // Bounded: the throttle is 120 ms, so a synchronous burst cannot produce one notification
+        // per delta. No exact count is pinned (it depends on the clock) —
+        // refuse l ordre de grandeur qui etait le defaut.
+        Assert.True(h.Target.Thinking.Count < deltas / 10,
+            $"{h.Target.Thinking.Count} notifications for {deltas} deltas: the channel is not bounded.");
+        // Witness: the channel really did serve, otherwise "few notifications" means nothing.
+        Assert.NotEmpty(h.Target.Thinking);
+
+        // Chat simple : un modele raisonneur deverse toute sa deliberation, l afficher se lit comme
+        // stray output. The host therefore sends NO text — the adapter shows its
+        // indicateur generique. Meme arbitrage que la fenetre Visual Studio.
+        Assert.All(h.Target.Thinking, Assert.Null);
+    }
+
+    [Fact]
+    public async Task ChatThinking_CarriesTheRollingTail_OnTheAgentPath()
+    {
+        // Reference arm for the previous test: where reasoning IS step progress, the text goes out.
+        // Without this second arm, "no text" would be green even if the text never went out
+        // jamais nulle part.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.DriveThinking = emit => { for (var i = 0; i < 50; i++) emit("etape "); };
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "bonjour", agentMode = true })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var deadline = DateTime.UtcNow.AddSeconds(30);   // same late delivery as the previous test
+        while (h.Target.Thinking.IsEmpty && DateTime.UtcNow < deadline) await Task.Delay(20);
+
+        Assert.NotEmpty(h.Target.Thinking);
+        Assert.All(h.Target.Thinking, note => Assert.False(string.IsNullOrEmpty(note)));
+        Assert.Contains(h.Target.Thinking, note => note!.Contains("etape", StringComparison.Ordinal));
+    }
+
+    // ── backend/status: the cut ANNOUNCES itself, and only once ───────────────
+
+    [Fact]
+    public async Task BackendStatus_AnnouncesTheEdges_AndOnlyTheEdges()
+    {
+        // The defect repaired: on the VS Code side, losing the backend mid-session changed only the
+        // colour of a chip. A chip says "this is how it is now"; it does not say "this just went
+        // down". The Visual Studio window has always put the sentence in the thread, and the state
+        // machine that decides lives in the Core — it is not copied.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        async Task<BackendStatusResult> Beat() =>
+            await h.Client.InvokeAsync<BackendStatusResult>("backend/status")
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        // 1. First heartbeat SUCCESSFUL: silent. The presenter starts optimistic, so opening the
+        //    panel on a backend that answers must not write "reconnected".
+        h.Fake.ConnectionOk = true;
+        Assert.Null((await Beat()).EdgeNotice);
+
+        // 2. The cut is announced, ONCE.
+        h.Fake.ConnectionOk = false;
+        var lost = await Beat();
+        Assert.False(lost.Connected);
+        Assert.NotNull(lost.EdgeNotice);
+        Assert.Null((await Beat()).EdgeNotice);   // toujours coupe : plus rien a annoncer
+
+        // 3. So is the recovery, and only once.
+        h.Fake.ConnectionOk = true;
+        var restored = await Beat();
+        Assert.True(restored.Connected);
+        Assert.NotNull(restored.EdgeNotice);
+        Assert.NotEqual(lost.EdgeNotice, restored.EdgeNotice);
+        Assert.Null((await Beat()).EdgeNotice);
+    }
+
+    [Fact]
+    public async Task BackendStatus_AnnouncesAnOutageThatWasThereFromTheStart()
+    {
+        // ⚠ Reference arm for case 1: the first heartbeat is silent only if it SUCCEEDS. A backend
+        // already down when the panel opens must be said — otherwise the one state where
+        // l utilisateur a vraiment besoin d une phrase serait justement celui qui n en produit pas.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ConnectionOk = false;
+
+        var first = await h.Client.InvokeAsync<BackendStatusResult>("backend/status")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.NotNull(first.EdgeNotice);
+    }
+
+    // ── chat/export: ONE exporter only, the Core's ────────────────────────────
+
+    [Fact]
+    public async Task ChatExport_RendersTheCoreDocument_WithItsStatsHeader()
+    {
+        // Le defaut repare : l export etait ecrit DEUX fois, et la copie TypeScript perdait tout
+        // the statistics header. What is checked here is that the host returns the Core's document
+        // — the Visual Studio window's — and not another one.
+        using var h = CreateHarness(cfg => cfg.DefaultModel = "qwen3:8b");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var markdown = await h.Client.InvokeWithParameterObjectAsync<string>("chat/export", new
+        {
+            asPlainText = false,
+            messages = new object[]
+            {
+                new { role = "user",      name = (string?)null, content = "bonjour", timestamp = "10:00" },
+                new { role = "tool",      name = "read_file",   content = "contenu", timestamp = "10:00" },
+                new { role = "assistant", name = (string?)null, content = "salut",   timestamp = "10:01" },
+                new { role = "status",    name = (string?)null, content = "ignore",  timestamp = "10:01" },
+            },
+            sessionTokens = 1234,
+            durationSeconds = 184,
+        }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        // The header is exactly what the TypeScript copy did not write. ⚠ Its labels follow the
+        // language (ConversationExporterTests pins them): here we read the STRUCTURE, otherwise the
+        // test depend de la culture de la machine.
+        Assert.Contains("|---|---|",        markdown, StringComparison.Ordinal);
+        Assert.Contains("qwen3:8b",         markdown, StringComparison.Ordinal);
+        // ⚠ The Core formats with N0, so ACCORDING TO THE PROCESS CULTURE: "1,234" in English,
+        // "1 234" (non-breaking space) in French. Hard-coding the separator makes the test green or
+        // red per machine rather than per product.
+        Assert.Contains(1234.ToString("N0"), markdown, StringComparison.Ordinal);
+        Assert.Contains("3m 4s",            markdown, StringComparison.Ordinal);
+        // One user turn and one tool call; the status bubble counts for neither.
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(markdown, @"^\| [^|\r\n]+ \| 1 \|\r?$",
+            System.Text.RegularExpressions.RegexOptions.Multiline).Count);
+
+        // The labels come from the Core, not from the adapter.
+        Assert.Contains("🔧 read_file", markdown, StringComparison.Ordinal);
+        // A status bubble is not a turn: it does not come out.
+        Assert.DoesNotContain("ignore", markdown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ChatExport_HonoursThePlainTextLayout()
+    {
+        // ⚠ La boite d enregistrement du panneau propose un filtre « Text » depuis toujours, et la
+        // copie TypeScript ecrivait du Markdown dedans : une affordance offerte et non tenue.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var messages = new object[]
+        {
+            new { role = "user", name = (string?)null, content = "bonjour", timestamp = "10:00" },
+        };
+        var text = await h.Client.InvokeWithParameterObjectAsync<string>("chat/export",
+            new { asPlainText = true, messages }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var markdown = await h.Client.InvokeWithParameterObjectAsync<string>("chat/export",
+            new { asPlainText = false, messages }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.DoesNotContain("|---|---|", text, StringComparison.Ordinal);
+        Assert.Contains("|---|---|", markdown, StringComparison.Ordinal);
+        Assert.NotEqual(text, markdown);
+
+        // With no duration supplied, the Core writes its dash — not an invented zero.
+        Assert.Contains("—", text, StringComparison.Ordinal);
+    }
+
+    // ── models/list : le panneau agit sur ce qu il A SOUS LES YEUX ────────────
+
+    [Fact]
+    public async Task ModelsList_ListsFromTheFormValues_NotFromTheSavedConfiguration()
+    {
+        // Le defaut repare : le panneau VS Code offrait un ↻ qui listait les modeles de l URL
+        // ENREGISTREE apres qu on en ait tape une nouvelle. La fenetre Visual Studio construit
+        // has always built a throwaway InferpalConfig from its form's values (RefreshModelsAsync);
+        // the host could not do it.
+        using var h = CreateHarness(cfg =>
+        {
+            cfg.Provider = "ollama";
+            cfg.BaseUrl  = "http://enregistree:11434";
+            cfg.ApiKey   = "clef-enregistree";
+        });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var before = h.ProviderConfigs.Count;
+
+        await h.Client.InvokeWithParameterObjectAsync<IReadOnlyList<string>>(
+            "models/list",
+            new { baseUrl = "http://tapee:1234", provider = "lmstudio", apiKey = "clef-tapee" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var draft = Assert.Single(h.ProviderConfigs.Skip(before));
+        Assert.Equal("http://tapee:1234", draft.BaseUrl);
+        Assert.Equal("lmstudio",          draft.Provider);
+        Assert.Equal("clef-tapee",        draft.ApiKey);
+
+        // ⚠ Et l URL doit aussi atteindre l APPEL : un client jetable bien construit qui
+        // interroge quand meme l ancienne adresse rendrait le meme resultat faux.
+        Assert.Equal("http://tapee:1234", h.Fake.LastListModelsUrl);
+    }
+
+    [Fact]
+    public async Task ModelsList_UsesTheSession_WhenTheFormSendsNothing()
+    {
+        // Bras de reference : le premier chargement du panneau, et le ↻ d une session ordinaire,
+        // send nothing. They must keep going through the session's client — otherwise every refresh
+        // would build one more client for nothing.
+        using var h = CreateHarness(cfg => cfg.BaseUrl = "http://enregistree:11434");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var before = h.ProviderConfigs.Count;
+
+        await h.Client.InvokeWithParameterObjectAsync<IReadOnlyList<string>>("models/list", new { })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(before, h.ProviderConfigs.Count);
+        Assert.Null(h.Fake.LastListModelsUrl);
     }
 
     [Fact]
@@ -1552,22 +1798,22 @@ public class HostServerTests
         {
             var source = Path.Combine(dir, "Calculator.cs");
             File.WriteAllText(source, "public class Calculator { public int Add(int a, int b) => a + b; }");
-            var testPath = Inferpal.Services.CodeActions.TestFilePathResolver.Resolve(source);
+            var testPath = TestFilePathResolver.Resolve(source);
             Directory.CreateDirectory(Path.GetDirectoryName(testPath)!);
             File.WriteAllText(testPath, "// existing tests the model may drop");
 
             using var h = CreateHarness();
             await h.InitializeAsync(rootDir: dir).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
             h.Target.ActiveDocument = new { path = source, text = File.ReadAllText(source) };
-            h.Fake.ChatResult = new Inferpal.Models.ChatTurnResult("// rewritten test file", null, 0, 0);
+            h.Fake.ChatResult = new ChatTurnResult("// rewritten test file", null, 0, 0);
 
             var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
                 "command/slash", new { text = "/test" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
             Assert.True(result.Handled);
             Assert.Equal("// rewritten test file", File.ReadAllText(testPath));
-            var historyDir = Inferpal.Services.Execution.FileHistoryService.GetHistoryDir(testPath);
-            Assert.True(Directory.Exists(historyDir), "no backup was taken before the rewrite");
+            var historyDir = FileHistoryService.GetHistoryDir(testPath);
+            Assert.True(Directory.Exists(historyDir), "no backup taken before the rewrite");
             Assert.Contains(Directory.EnumerateFiles(historyDir),
                 f => File.ReadAllText(f) == "// existing tests the model may drop");
             Assert.Contains("/restore", result.Markdown, StringComparison.Ordinal);
@@ -1630,6 +1876,24 @@ public class HostServerTests
         Assert.True(baseRow.Enabled);
         Assert.True(panel.TotalTokens > 0);
         Assert.Equal(panel.RawPrompt.Length > 0, panel.TotalTokens > 0);
+    }
+
+    /// <summary>
+    /// ⚠ A conversation's history STARTS with the system message, and the panel adds its own sum
+    /// of the prompt sections to whatever it is handed as "history": the system prompt was counted
+    /// twice, so a brand-new session reported a history as heavy as the whole prompt and a budget
+    /// line inflated by exactly the part X-Ray exists to display.
+    /// </summary>
+    [Fact]
+    public async Task XrayPanel_OnAFreshSession_ReportsNoHistory()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var panel = await h.Client.InvokeAsync<Host.XRayPanelDto>("xray/panel");
+
+        Assert.True(panel.TotalTokens > 0, "no prompt sections: this test would measure nothing.");
+        Assert.Equal(0, panel.HistoryTokens);
     }
 
     [Fact]

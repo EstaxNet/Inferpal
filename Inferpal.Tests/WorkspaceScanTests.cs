@@ -161,4 +161,63 @@ public class WorkspaceScanTests
     [InlineData(@"C:\p\src", false)]
     public void DirectoryNamesAreJudgedOnTheirLeaf(string dir, bool skipped) =>
         Assert.Equal(skipped, WorkspaceScan.IsExcludedDirName(dir));
+
+    /// <summary>
+    /// ⚠ Win32 wildcards do not mean what they look like they mean: <c>*.*</c> means "any name at
+    /// all", files WITHOUT an extension included, and <c>*.</c> means exactly "without an
+    /// extension". The walk must therefore translate the pattern
+    /// (<c>FileSystemName.TranslateWin32Expression</c>) avant de le matcher, comme le fait
+    /// <c>Directory.EnumerateFiles</c>: measured, without the translation <c>*.*</c> lost
+    /// <c>Makefile</c> and <c>*.</c> returned nothing. Both patterns are written by the model
+    /// pour <c>list_files</c> et <c>search_in_files</c>.
+    /// </summary>
+    [Theory]
+    [InlineData("*",        "A.cs Makefile note.txt")]
+    [InlineData("*.*",      "A.cs Makefile note.txt")]
+    [InlineData("*.",       "Makefile")]
+    [InlineData("*.cs",     "A.cs")]
+    [InlineData("?.cs",     "A.cs")]
+    public void Win32Wildcards_MeanWhatTheFrameworkSaysTheyMean(string pattern, string expected)
+    {
+        var root = NewTree(("src/A.cs", "x"), ("src/Makefile", "x"), ("src/note.txt", "x"));
+        try
+        {
+            var got = WorkspaceScan.EnumerateFiles(root, pattern, root)
+                                   .Select(Path.GetFileName).OrderBy(f => f, StringComparer.Ordinal);
+            Assert.Equal(expected, string.Join(" ", got));
+        }
+        finally { DeleteTree(root); }
+    }
+
+    /// <summary>
+    /// ⚠ To .NET, the pattern <c>"."</c> means "everything" — <c>Directory.EnumerateFiles</c>
+    /// normalises it to <c>*</c> before matching. The home-grown walk only inherits what it repeats:
+    /// without that normalisation, measured, <c>"."</c> returned nothing.
+    /// </summary>
+    [Fact]
+    public void ADotMeansEverything_AsItDoesForDotNet()
+    {
+        var root = NewTree(("src/A.cs", "x"), ("src/Makefile", "x"), ("src/note.txt", "x"));
+        try
+        {
+            Assert.Equal("*", WorkspaceScan.NormalizeFilePattern("."));
+            Assert.Equal(3, WorkspaceScan.EnumerateFiles(root, ".", root).Count());
+        }
+        finally { DeleteTree(root); }
+    }
+
+    /// <summary>
+    /// ⚠ The two patterns <c>Directory.EnumerateFiles</c> refused by THROWING — a rooted path and a
+    /// pattern carrying a <c>NUL</c> — are now named to the model instead of returning an empty
+    /// list. This is the defect the funnel has always documented: "nothing matches" and "we could
+    /// not look" are not the same answer.
+    /// </summary>
+    [Fact]
+    public void ThePatternsDotNetWouldThrowOn_AreRefusedByName()
+    {
+        // "C:foo" names a drive only under Windows — judged by the same rule .NET uses.
+        Assert.Equal(OperatingSystem.IsWindows() ? null : "C:foo",
+                     WorkspaceScan.NormalizeFilePattern("C:foo"));
+        Assert.Null(WorkspaceScan.NormalizeFilePattern("foo\0bar"));
+    }
 }

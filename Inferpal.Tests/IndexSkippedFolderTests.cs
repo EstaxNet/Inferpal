@@ -150,7 +150,7 @@ public sealed class IndexSkippedFolderTests : IDisposable
         await WaitUntilAsync(() => svc.SkippedFolder is not null,
                              "la passe enregistre le dossier illisible", () => svc.Status);
 
-        Assert.Equal("pgdata", svc.SkippedFolder);
+        Assert.Equal("pgdata", svc.SkippedFolder!.Value.Folder);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public sealed class IndexSkippedFolderTests : IDisposable
         var svc = NewService();
         svc.StartIndexing(_root);
         await WaitUntilAsync(() => svc.SkippedFolder is not null && svc.ChunkCount > 0,
-                             "la passe a tourné et enregistré le dossier", () => svc.Status);
+                             "the pass ran and recorded the folder", () => svc.Status);
 
         var report = Inferpal.Services.Commands.IndexCommandHandler.Handle(
             svc, new InferpalConfig { RagEnabled = true }, ["/index"], _root);

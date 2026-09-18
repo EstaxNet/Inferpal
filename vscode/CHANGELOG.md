@@ -3,6 +3,38 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.17
+
+Thirty-two fixes, almost all of the same kind: something failed, or stopped short, without telling
+you or the assistant.
+
+- **A conversation still on your screen could be silently forgotten.** When the host restarts — a
+  setting changed, a crash, "Restart Host" — Inferpal hands it back the conversation shown in the
+  panel. If that failed, the thread still showed everything while the assistant had none of it, and
+  your next question was answered as if the conversation had never happened. It is now said in the
+  conversation itself.
+- **A conversation that could not be saved for next time said nothing**, so you found out by
+  reopening the editor and not finding it. Now said once, while it is still on screen and can be
+  exported.
+- **Losing turns to the context window looked exactly like a successful summary** — same collapsed
+  chip. When the conversation is trimmed without a summary, the assistant is now told what it lost,
+  so it can say so instead of answering as if you never mentioned it.
+- **Codebase search could announce itself as keyword-only when it was not**, and hide every
+  similarity score, whenever an exact-identifier match came first. It now reports `hybrid` and shows
+  a score on each result that has a real one.
+- **A project-wide rename could leave your code half-renamed and call it a success**; clearing the
+  project memory could destroy it with no way back; and `/undo-run` left behind files the run had
+  created, including that memory.
+- **On a Linux host without `/bin/bash`, every shell command failed** — Inferpal looked bash up at a
+  fixed location instead of on your `PATH`, and never fell back to `sh`.
+- **`/bench` inflated tokens/s with tokens it had not timed**, `/tdd` spent five rounds patching code
+  against a run that had executed no test, a multi-file edit only build-checked one of its files, and
+  an MCP tool answering with an image was reported as having answered nothing.
+- **The Context X-Ray counted your system prompt twice**, and a conversation past its window showed
+  as exactly full.
+- Plus `@folder`, `@Docs`, git status, `analyze_impact` and the semantic index: each of them could
+  answer about a part of your project it had not been able to read, without saying so.
+
 ## 1.6.16
 
 Settings, inline completions and the interface language now follow what you set, and a lot of silent

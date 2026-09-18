@@ -162,11 +162,11 @@ internal sealed class RenameSymbolTool : ITool
         // ⚠ The unreadable count is its own member, not a subtraction from Scanned: folded into
         // Scanned it came out as the CAP sentence ("only N of M files were scanned (cap)"), which
         // sends the reader to narrow a budget when the fix is a lock or a permission.
-        // ⚠ Et le dossier qu'on n'a pas pu LISTER, qui est la pire des trois causes ici : cet outil
-        // ÉCRIT. Un dossier invisible ne rend pas un rapport incomplet, il rend un renommage
-        // PARTIEL — les appels qu'il contient gardent l'ancien nom et le code ne compile plus.
+        // ⚠ And the folder that could not be LISTED, the worst of the three causes here: this tool
+        // WRITES. An invisible folder does not produce an incomplete report, it produces a PARTIAL
+        // rename — the calls inside it keep the old name and the code no longer compiles.
         var coverage = new ScanCoverage(files.Count + skippedBySize, files.Count, unreadable)
-            .WithUnlistableFolder(WorkspaceScan.FirstUnlistableFolder(root, root));
+            .WithGap(WorkspaceScan.FirstWalkGap(root, root));
         var partial  = coverage.IsIncomplete ? "\n" + coverage.Warning() : string.Empty;
 
         if (hits.Count == 0)
@@ -227,26 +227,28 @@ internal sealed class RenameSymbolTool : ITool
         }
 
         // Approved and backed up: a Stop no longer interrupts the writes halfway through the rename.
-        var errors = new List<string>();
-        foreach (var (filePath, _, _, newContent) in hits)
-        {
-            try
-            {
-                await SafeFileWriter.WritePreservingAsync(filePath, newContent, CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"  {Path.GetFileName(filePath)}: {ex.Message}");
-            }
-        }
+        // ⚠ And a write that FAILS puts back the files already written. Collecting the error and
+        // carrying on left the symbol renamed in eight files out of nine, under a line that read
+        // "Applied with 1 error(s)" — a partially applied rename is the one refactor whose half
+        // state never compiles. Same funnel as apply_edits, which already owed the model this.
+        var write = await SafeFileWriter.WriteAllOrRollBackAsync(
+            [.. hits.Select(h => (h.FilePath, h.NewContent, h.OldContent))]);
 
         sb.AppendLine();
-        if (errors.Count == 0)
+        if (write.Ok)
             // The coverage line is already in the header of this same report — saying it twice in
             // the text the model reads is noise, and noise is how a warning stops being read.
             sb.AppendLine($"✅ Applied to {hits.Count} file(s). Use `restore_file` to undo individual files.");
         else
-            sb.AppendLine($"⚠ Applied with {errors.Count} error(s):\n{string.Join('\n', errors)}");
+        {
+            var failed = Path.GetRelativePath(root, write.FailedPath!);
+            sb.AppendLine(write.Stuck.Count == 0
+                ? $"❌ Nothing was renamed: writing {failed} failed ({write.Error}). "
+                  + "Every file already written was put back unchanged."
+                : $"❌ Writing {failed} failed ({write.Error}), and "
+                  + string.Join(", ", write.Stuck.Select(s => Path.GetRelativePath(root, s)))
+                  + " could not be put back — restore them with `restore_file`.");
+        }
 
         return sb.ToString().TrimEnd();
     }

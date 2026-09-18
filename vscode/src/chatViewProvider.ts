@@ -47,10 +47,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private toolBubblesExpanded = false;
   private promptTokens = 0;
   private lastTokens = 0;
-  /** The thread's token total and the time of its first turn - the export's stats header asks for
-   *  both, and the Visual Studio window has always held them (`_sessionTokens`,
+  /** Running token total for the thread and the time of its first turn — the export's statistics
+   *  header asks for them, and the Visual Studio window has always kept them (`_sessionTokens`,
    *  `_sessionStartTime`). Here there was nothing: the TypeScript exporter wrote no header at all,
-   *  so nobody noticed. Reset with the rest of the thread. */
+   *  so nobody noticed. Reset to zero with the rest of the thread. */
   private sessionTokens = 0;
   private sessionStart: number | null = null;
   private statusTimer: NodeJS.Timeout | undefined;
@@ -304,6 +304,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // model "forgot" what is on screen. Save what is shown, then load it back so the host rebuilds
     // its history from it.
     if (this.transcript.length > 0) {
+      // ⚠ TWO doors into that amnesia, and only one of them throws. When the rebuild does not
+      // happen the failure IS the bug this block exists to prevent, so it is said in the thread —
+      // next to the messages the model can no longer see — and not in the output channel.
+      let rebuildFailure: string | null = null;
       try {
         await host.sessionSave('last_session', this.snapshot());
         const back = await host.sessionLoad('last_session');
@@ -311,9 +315,21 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.applySession(back.messages);
           return; // applySession hydrates
         }
+        // Nothing threw and the slot came back empty: the host declined to hand it over (see
+        // HostServer, which returns null when the auto-save belongs to another workspace).
+        rebuildFailure = t('the restarted assistant did not take the saved conversation back');
       } catch (err) {
-        this.log(`[chat] history rebuild after host restart failed: ${String(err)}`);
+        rebuildFailure = ChatViewProvider.errorText(err);
       }
+      this.log(`[chat] history rebuild after host restart failed: ${rebuildFailure}`);
+      this.append({
+        role: 'assistant',
+        text: t(
+          '⚠ The assistant restarted and the conversation above could NOT be handed back to it: {0}. It will answer your next question without that context — restate what matters, or start a new conversation.',
+          rebuildFailure,
+        ),
+        timestamp: ChatViewProvider.now(),
+      });
     }
 
     // Continuity across restarts: bring back the auto-saved conversation, like the VS VM.
@@ -448,14 +464,38 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hydrate();
   }
 
+  /** Set when the auto-save last failed and the user was told; cleared by the next one that works. */
+  private autoSaveFailureTold = false;
+
   private autoSaveLast(): void {
     const host = this.getHost();
     if (!host?.isRunning || this.transcript.length === 0) {
       return;
     }
-    host.sessionSave('last_session', this.snapshot()).catch((err) => {
-      this.log(`[chat] auto-save failed: ${String(err)}`);
-    });
+    host.sessionSave('last_session', this.snapshot()).then(
+      () => {
+        this.autoSaveFailureTold = false;
+      },
+      (err: unknown) => {
+        this.log(`[chat] auto-save failed: ${String(err)}`);
+        // ⚠ Said ONCE: this runs on every turn and its causes last (a full disk, a read-only
+        // settings folder), so a notice per turn buries the conversation it is about. Re-armed by
+        // the next save that works, otherwise "once" becomes "once in the life of the view".
+        if (this.autoSaveFailureTold) {
+          return;
+        }
+        this.autoSaveFailureTold = true;
+        this.append({
+          role: 'assistant',
+          text: t(
+            '⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.',
+            ChatViewProvider.errorText(err),
+          ),
+          timestamp: ChatViewProvider.now(),
+        });
+        this.hydrate();
+      },
+    );
   }
 
   /**
@@ -559,6 +599,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await host.sessionSave(fileName, messages, true);
       } catch (err) {
         this.log(`[chat] archive failed: ${String(err)}`);
+        void vscode.window.showWarningMessage(
+          t(
+            'The conversation you just left could not be archived: {0}. It was not saved under a name, and the chat has already been cleared.',
+            ChatViewProvider.errorText(err),
+          ),
+        );
       }
     })();
   }
@@ -693,7 +739,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /**
    * Command: export the conversation to a Markdown or text file.
    *
-   * ⚠ The document is rendered by the **Core** exporter, through the host - the same one the
+   * ⚠ The document is rendered by the **Core** exporter, through the host — the same one the
    * Visual Studio window uses. It used to be rendered here, in eleven lines of TypeScript, which
    * dropped the entire stats header (model, turns, tool calls, tokens, date, duration) and ignored
    * the `.txt` filter this very dialog offers: choosing *Text* wrote Markdown into a `.txt`. An

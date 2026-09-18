@@ -434,6 +434,11 @@ Użyj `/clear` po edytowaniu pliku, aby go przeładować.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>To nie jest repozytorium git (nie znaleziono folderu .git).</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ Ta partia obejmuje więcej projektów, niż Smart Fix sprawdza za jednym razem: {0} zbudowano, kolejnych {1} NIE sprawdzono. Zbuduj je samodzielnie albo edytuj w osobnym wywołaniu.</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd zatrzymane: to uruchomienie nie wykonało żadnego testu, więc nie ma czego naprawiać.</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ Rozmowy, którą właśnie opuszczono, NIE udało się zarchiwizować: {0}. Przepadła — nie została zapisana pod żadną nazwą, a czat jest już wyczyszczony.</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Tej rozmowy NIE udało się zapisać na następny raz: {0}. Nadal tu jest, ale sama nie wróci — wyeksportuj ją, jeśli chcesz ją zachować.</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git nie mógł odpowiedzieć na „git {0}”: {1}. Nic nie zostało odczytane z tego repozytorium — to NIE znaczy „brak zmian”.</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>Nie znaleziono pliku .sln. Podaj ścieżkę jawnie.</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>Ścieżka nie znaleziona lub to nie plik .sln: {0}</value></data>
 
@@ -464,6 +469,8 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="CommitConfirmHint" xml:space="preserve"><value>Wiadomość wstępnie wypełniona poniżej — edytuj jeśli potrzeba, następnie naciśnij **Enter**, aby zacommitować.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Brak reguł projektu. Utwórz `.inferpal/rules/*.md` lub uruchom `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać {0} plik(ów), więc NIE są stosowane: {1}. Przyczyna jest w /diagnostics.</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ {0} zapisanych sesji nie udało się odczytać, więc NIE zostały przeszukane: {1}. To NIE znaczy „brak tego słowa”. Przyczyna jest w /diagnostics.</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ {0} zapisanych sesji nie udało się odczytać, więc NIE ma ich na tej liście: {1}. Przyczyna jest w /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Brak sprawdzeń recenzji. Utwórz `.inferpal/checks/*.md` lub uruchom `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Reguły projektu** (`.inferpal/rules`):</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>wypisz rzeczywiście obowiązujące reguły uprawnień oraz to, co zostało pominięte</value></data>
@@ -904,6 +911,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Analiza częściowa: przeskanowano tylko {0} z {1} plików źródłowych (limit). Wyniki mogą być niepełne.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać ani przeanalizować {0} plik(ów) źródłowych (uprawnienia, blokada lub usunięcie). Wyniki mogą być niepełne.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ Nie udało się wyświetlić zawartości folderu „{0}”, więc żaden z plików w nim zawartych nie został przeanalizowany (uprawnienia). Wyniki mogą być niepełne.</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ Folder „{0}” jest łączem, za którym nie podążamy (łącze wskazujące z powrotem do projektu krążyłoby bez końca), więc żaden z plików w nim zawartych nie został przeanalizowany. Wyniki mogą być niepełne.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>Autoryzacja OAuth dla MCP jest na razie dostępna tylko w systemie Windows: token odświeżania można przechowywać wyłącznie zaszyfrowany (DPAPI), a przechowywanie go jawnie nie wchodzi w grę. Użyj serwera ze statycznym tokenem w nagłówku.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>uruchom zadanie agenta w tle (`/task [cel]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>Zadanie **{0}** uruchomione w tle: {1}</value></data>

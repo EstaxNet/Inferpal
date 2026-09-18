@@ -292,9 +292,18 @@ internal static class OnboardCommandHandler
             catch (Exception ex) { Diagnostics.Swallow("Onboard.Readme", ex); }
         }
 
-        var log = (await git($"log --format=%s -n {MaxCommits}", ct)).Output;
-        if (!string.IsNullOrWhiteSpace(log))
-            sb.Append("\n## Recent commit subjects\n").Append(log.Trim()).Append('\n');
+        // ⚠ This brief is what `/onboard context` writes into `.inferpal/context.md`, i.e. into the
+        // system prompt of every session after it — and the summary above says "a fact the model has
+        // to guess is a fact it can get wrong". A refused git arrives here as a non-empty output
+        // (RunAsync appends stderr), so `fatal: …` was pasted under this heading and read as this
+        // project's most recent commit. English on purpose, like the rest of the brief: its only
+        // reader is the model.
+        var log = await git($"log --format=%s -n {MaxCommits}", ct);
+        sb.Append("\n## Recent commit subjects\n");
+        if (log.ExitCode != 0)
+            sb.Append("(unavailable — git said: ").Append(GitProcess.FirstLine(log.Output)).Append(")\n");
+        else
+            sb.Append(string.IsNullOrWhiteSpace(log.Output) ? "(none)" : log.Output.Trim()).Append('\n');
 
         return sb.ToString();
     }

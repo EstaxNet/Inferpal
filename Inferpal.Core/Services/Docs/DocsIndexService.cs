@@ -50,6 +50,33 @@ internal sealed class DocsIndexService
     /// <summary>Number of documentation chunks currently held in memory.</summary>
     public int    ChunkCount { get; private set; }
 
+    /// <summary>
+    /// Chunks held with <b>no vector</b>: invisible to the semantic half of the search, and nothing
+    /// recomputes them.
+    /// </summary>
+    /// <remarks>
+    /// The embedding loop stops as soon as the circuit opens, and a chunk can come back without a
+    /// vector on its own; both are persisted as they are. Unlike the code index — whose pass runs at
+    /// every boot and recounts — this one only ever hydrates, so a hole from one bad afternoon was
+    /// permanent and invisible: the status read "Docs: 400 chunks from 1 source(s)" and the listing
+    /// "(50 pages, 400 chunks)". The only remedy is an explicit /docs reindex, so it is named.
+    /// </remarks>
+    public int    UnembeddedCount { get; private set; }
+
+    /// <summary>The same count per source id, for the <c>/docs</c> listing.</summary>
+    public IReadOnlyDictionary<string, int> UnembeddedBySite { get; private set; } =
+        new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The sentence a hole gets, or an empty string. One reader for the status, the listing and
+    /// <c>search_docs</c> — three sites that would otherwise each phrase the same gap differently.
+    /// </summary>
+    internal static string HoleNote(int unembedded, int total, string? siteId = null) =>
+        unembedded <= 0
+            ? string.Empty
+            : $" ({unembedded} of {total} chunks without embedding — semantic search misses them; "
+            + $"run /docs reindex{(siteId is { Length: > 0 } ? " " + siteId : string.Empty)})";
+
     /// <summary>Snapshot of the configured documentation sources with their crawl stats.</summary>
     /// <remarks>
     /// Async because the lock it takes is also taken by async code. The synchronous
@@ -81,17 +108,11 @@ internal sealed class DocsIndexService
             var sites  = await db.LoadSitesAsync(ct);
             var chunks = await db.LoadAllChunksAsync(ct);
 
-            await _chunkLock.WaitAsync(ct);
-            try
-            {
-                _sites     = sites;
-                _chunks    = chunks;
-                ChunkCount = chunks.Count;
-            }
-            finally { _chunkLock.Release(); }
+            await PublishAsync(sites, chunks, ct);
 
             Status = chunks.Count > 0
                 ? $"Docs: {chunks.Count} chunks from {sites.Count} source(s)"
+                  + HoleNote(UnembeddedCount, chunks.Count)
                 : "Docs: no documentation indexed";
         }
         catch (Exception ex)
@@ -212,7 +233,10 @@ internal sealed class DocsIndexService
             await db.SaveSiteAsync(site, pages.Count, chunks, ct);
             await ReloadFromDbAsync(db, ct);
 
-            var embNote = _client.IsEmbeddingCircuitOpen ? " (⚠ embedding circuit open, keyword fallback)" : string.Empty;
+            // The circuit note says WHY; the hole note says HOW MUCH and what to do about it — and it
+            // is the one that survives into the next session.
+            var embNote = (_client.IsEmbeddingCircuitOpen ? " (⚠ embedding circuit open, keyword fallback)" : string.Empty)
+                        + HoleNote(UnembeddedCount, ChunkCount);
             var crawlNote = pages.Count >= DocCrawler.MaxPages
                 ? $" (crawl limit of {DocCrawler.MaxPages} pages reached — the site may have more)"
                 : string.Empty;
@@ -259,7 +283,8 @@ internal sealed class DocsIndexService
             var db = new DocsDatabase();
             await db.DeleteSiteAsync(docId, ct);
             await ReloadFromDbAsync(db, ct);
-            Status = $"Docs: {ChunkCount} chunks from {_sites.Count} source(s)";
+            Status = $"Docs: {ChunkCount} chunks from {_sites.Count} source(s)"
+                   + HoleNote(UnembeddedCount, ChunkCount);
         }
         finally
         {
@@ -282,16 +307,28 @@ internal sealed class DocsIndexService
             await AddOrReindexAsync(site, progress, CancellationToken.None, stillWanted);
     }
 
-    private async Task ReloadFromDbAsync(DocsDatabase db, CancellationToken ct)
+    private async Task ReloadFromDbAsync(DocsDatabase db, CancellationToken ct) =>
+        await PublishAsync(await db.LoadSitesAsync(ct), await db.LoadAllChunksAsync(ct), ct);
+
+    /// <summary>
+    /// The only place the in-memory index is replaced — and therefore the only place the hole is
+    /// counted. Two sites used to assign <c>_chunks</c> and <c>ChunkCount</c> by hand; a third would
+    /// have had to remember the count as well.
+    /// </summary>
+    private async Task PublishAsync(
+        List<(DocSite Site, int PageCount, int ChunkCount)> sites, List<DocChunk> chunks, CancellationToken ct)
     {
-        var sites  = await db.LoadSitesAsync(ct);
-        var chunks = await db.LoadAllChunksAsync(ct);
         await _chunkLock.WaitAsync(ct);
         try
         {
-            _sites     = sites;
-            _chunks    = chunks;
-            ChunkCount = chunks.Count;
+            _sites          = sites;
+            _chunks         = chunks;
+            ChunkCount      = chunks.Count;
+            UnembeddedCount = chunks.Count(c => c.Embedding is not { Length: > 0 });
+            UnembeddedBySite = chunks
+                .Where(c => c.Embedding is not { Length: > 0 })
+                .GroupBy(c => c.DocId, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
         }
         finally { _chunkLock.Release(); }
     }

@@ -48,11 +48,22 @@ internal static class MarkdownFolder
             try
             {
                 read.Add((file, File.ReadAllText(file, Encoding.UTF8)));
+                // ⚠ The SAME context as the note, otherwise the forget targets another slot and
+                // "once" becomes "once in the life of the process".
+                Diagnostics.ForgetDroppedLine($"{context}({Path.GetFileName(file)})", file);
             }
             catch (Exception ex)
             {
-                // The name ALONE goes to the report (it is shown to the user), the cause to the trace.
-                Diagnostics.Swallow($"{context}({Path.GetFileName(file)})", ex);
+                // The name ALONE in the report (the user sees it), the cause in the trace.
+                //
+                // ⚠ Once per file, not once per pass. `RulesService.Load` is called from the system
+                // prompt build, which is redone on EVERY change of active file: a bare `Swallow`
+                // wrote one entry per unreadable rule per pass, and the ring only keeps
+                // Diagnostics.Capacity of them. The `unreadable` list, on the other hand, is returned
+                // on every call — the two channels are distinct, and it is the
+                // que /rules affiche qui doit rester complet.
+                Diagnostics.RecordOnce($"{context}({Path.GetFileName(file)})",
+                    $"Could not be read, so its content was not applied: {ex.Message}", file);
                 failed.Add(Path.GetFileName(file));
             }
         }

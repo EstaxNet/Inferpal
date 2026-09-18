@@ -434,6 +434,11 @@ Utilisez `/clear` après modification du fichier pour le recharger.</value></dat
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>Dépôt git introuvable (dossier .git absent).</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ Ce lot touche plus de projets que Smart Fix n'en vérifie d'un coup : {0} ont été construits, {1} de plus n'ont PAS été vérifiés. Construisez-les vous-même, ou modifiez-les dans un appel séparé.</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd s'arrête : cette exécution n'a lancé aucun test, il n'y a donc rien à corriger.</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ La conversation que vous venez de quitter n'a PAS pu être archivée : {0}. Elle est perdue — elle n'a pas été enregistrée sous un nom, et le chat est déjà vidé.</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Cette conversation n'a PAS pu être enregistrée pour la prochaine fois : {0}. Elle est toujours là, mais elle ne reviendra pas d'elle-même — exportez-la si vous voulez la garder.</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git n'a pas pu répondre à « git {0} » : {1}. Rien n'a été lu de ce dépôt — ce n'est PAS « aucun changement ».</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>Aucun fichier .sln trouvé. Fournissez le chemin explicitement.</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>Chemin introuvable ou pas un fichier .sln : {0}</value></data>
 
@@ -464,6 +469,8 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pré-rempli ci-dessous — modifie si besoin, puis **Entrée** pour committer.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Aucune règle de projet. Crée `.inferpal/rules/*.md` ou lance `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} fichier(s) n'ont pas pu être lus et ne sont donc PAS appliqués : {1}. La cause est dans /diagnostics.</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ {0} session(s) enregistrée(s) n'ont pas pu être lues et n'ont donc PAS été parcourues : {1}. Ce n'est PAS « le terme est absent ». La cause est dans /diagnostics.</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ {0} session(s) enregistrée(s) n'ont pas pu être lues et ne figurent donc PAS dans cette liste : {1}. La cause est dans /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Aucun check de revue. Crée `.inferpal/checks/*.md` ou lance `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Règles de projet** (`.inferpal/rules`) :</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>lister les règles de permission réellement en vigueur, et ce qui a été ignoré</value></data>
@@ -904,6 +911,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Analyse partielle : seuls {0} fichiers source sur {1} ont été balayés (plafond). Les résultats peuvent être incomplets.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ {0} fichier(s) source n'ont pas pu être lus et n'ont pas été analysés (droits, verrou, ou disparus). Les résultats peuvent être incomplets.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ Le dossier « {0} » n'a pas pu être listé, donc aucun des fichiers qu'il contient n'a été analysé (droits). Les résultats peuvent être incomplets.</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ Le dossier « {0} » est un lien, qui n'est pas suivi (un lien qui renvoie dans le projet boucherait indéfiniment), donc aucun des fichiers qu'il contient n'a été analysé. Les résultats peuvent être incomplets.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>L'autorisation OAuth MCP n'est disponible que sous Windows pour l'instant : le jeton de rafraîchissement ne peut être stocké que chiffré (DPAPI), et le stocker en clair n'est pas une option. Utilisez plutôt un serveur avec un jeton d'en-tête statique.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>lancer une tâche d'agent en arrière-plan (`/task [objectif]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>Tâche **{0}** lancée en arrière-plan : {1}</value></data>

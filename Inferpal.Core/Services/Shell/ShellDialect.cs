@@ -40,10 +40,45 @@ internal static class ShellLauncher
         if (_overrideForTests is { } o) return (o.Dialect, o.FileName);
         if (OperatingSystem.IsWindows()) return (ShellDialect.PowerShell, "powershell.exe");
 
-        var pwsh = FindOnPath("pwsh");
-        return pwsh is not null ? (ShellDialect.PowerShell, pwsh)
-                                : (ShellDialect.Posix, "/bin/bash");
+        return ResolvePosixHost(FindOnPath, File.Exists);
     }
+
+    /// <summary>The off-Windows half of <see cref="Resolve"/>, with its two probes injected.</summary>
+    /// <remarks>
+    /// ⚠ <c>pwsh</c> was looked up on PATH while bash was written down as the absolute path
+    /// <c>/bin/bash</c> — the same question asked two ways. A host whose bash lives elsewhere
+    /// (NixOS puts it in <c>/nix/store</c> and ships only <c>/bin/sh</c>) or that has none at all
+    /// (Alpine/busybox, a mainstream dev-container base) was handed an executable that does not
+    /// exist, so every <c>run_command</c>, the persistent shell, every background job and every user
+    /// shell tool died on a <c>Win32Exception</c> — while the POSIX wrapper of
+    /// <see cref="ShellStateProtocol"/> uses nothing but printf/eval/base64/awk/printenv/tr and runs
+    /// unchanged under <c>/bin/sh</c>. The last resort is <c>/bin/sh</c> rather than a bash already
+    /// known to be absent: POSIX requires that path to exist.
+    /// </remarks>
+    internal static (ShellDialect Dialect, string FileName) ResolvePosixHost(
+        Func<string, string?> onPath, Func<string, bool> exists)
+    {
+        if (onPath("pwsh") is { } pwsh) return (ShellDialect.PowerShell, pwsh);
+        if (onPath("bash") is { } bash) return (ShellDialect.Posix, bash);
+        if (exists("/bin/bash"))        return (ShellDialect.Posix, "/bin/bash");
+        if (onPath("sh")   is { } sh)   return (ShellDialect.Posix, sh);
+        return (ShellDialect.Posix, "/bin/sh");
+    }
+
+    /// <summary>How the resolved shell is NAMED to the model — the single reader of that name.</summary>
+    /// <remarks>
+    /// ⚠ PowerShell keeps its LANGUAGE name (<c>powershell.exe</c> and <c>pwsh</c> speak the same
+    /// one); the POSIX side takes the executable's, extension stripped so a Windows box driven at
+    /// Git bash reads <c>bash</c> and not <c>bash.exe</c>. bash and sh are <i>not</i> the same
+    /// language: a model told "bash" on a busybox host writes <c>[[ ]]</c>, arrays, <c>source</c>
+    /// and <c>&lt;&lt;&lt;</c>, and ash refuses them one by one — the very defect §23 repaired in
+    /// the other direction, left alive on the leg nobody looked at. A blank name falls back to the
+    /// dialect's floor rather than to bash, which is precisely what the host may not have.
+    /// </remarks>
+    public static string SpokenName(ShellDialect dialect, string fileName) =>
+        dialect == ShellDialect.PowerShell           ? "PowerShell"
+      : Path.GetFileNameWithoutExtension(fileName) is { Length: > 0 } name ? name
+      : "sh";
 
     /// <summary>
     /// Builds the <see cref="ProcessStartInfo"/> that runs <paramref name="script"/> under the

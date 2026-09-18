@@ -119,14 +119,18 @@ internal sealed record DocSite(
     /// <summary>The <c>/docs</c> listing: one line per source with its crawl stats.</summary>
     public static string FormatList(
         IReadOnlyList<DocSite> sites,
-        IReadOnlyDictionary<string, (int Pages, int Chunks)> stats)
+        IReadOnlyDictionary<string, (int Pages, int Chunks)> stats,
+        IReadOnlyDictionary<string, int>? unembeddedBySite = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine(Strings.DocsListHeader);
         foreach (var s in sites)
         {
             var (pc, cc) = stats.TryGetValue(s.Id, out var st) ? st : (0, 0);
-            sb.AppendLine($"- **{s.Id}** — {s.Title} ({pc} pages, {cc} chunks) · {s.StartUrl}");
+            var hole = unembeddedBySite is not null && unembeddedBySite.TryGetValue(s.Id, out var missing)
+                ? Docs.DocsIndexService.HoleNote(missing, cc, s.Id)
+                : string.Empty;
+            sb.AppendLine($"- **{s.Id}** — {s.Title} ({pc} pages, {cc} chunks) · {s.StartUrl}{hole}");
         }
         return sb.ToString().TrimEnd();
     }

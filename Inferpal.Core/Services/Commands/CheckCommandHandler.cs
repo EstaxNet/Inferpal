@@ -64,12 +64,25 @@ internal static class CheckCommandHandler
 
         // Staged first, unstaged as a fallback — same rule as /commit, so the two commands always
         // talk about the same change.
-        var staged = (await git("diff --staged", ct)).Output;
+        // ⚠ Same gate as /commit, for the same reason: `Strings.CheckNoDiff` says "the working tree
+        // is clean", which is a claim about the user's repository — and a git that refused would
+        // instead have its `fatal:` line reviewed against the user's checks, since RunAsync appends
+        // stderr to the output.
+        var stagedRun = await git("diff --staged", ct);
+        if (GitProcess.FailureNote("diff --staged", stagedRun) is { } stagedFailed)
+            return new(Named(stagedFailed));
+        var staged = stagedRun.Output;
         string diff;
         if (string.IsNullOrWhiteSpace(staged))
         {
-            var unstaged = (await git("diff", ct)).Output;
-            var status   = (await git("status --short", ct)).Output;
+            var unstagedRun = await git("diff", ct);
+            if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
+                return new(Named(unstagedFailed));
+            var statusRun = await git("status --short", ct);
+            if (GitProcess.FailureNote("status --short", statusRun) is { } statusFailed)
+                return new(Named(statusFailed));
+            var unstaged = unstagedRun.Output;
+            var status   = statusRun.Output;
             if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
                 return new(Strings.CheckNoDiff);
             diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);

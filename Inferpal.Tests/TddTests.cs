@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -349,5 +349,69 @@ public class TddTests
 
         Assert.True(inner.Asked[0].Forced,  "a test-file write must reach the human whatever the rules say");
         Assert.False(inner.Asked[1].Forced, "production writes keep the normal pipeline");
+    }
+    // -- A run that executed NOTHING is a third state ---------------------------
+
+    /// <summary>
+    /// What `run_tests` writes when the filter matched nothing. Taken from the tool's own constant,
+    /// never retyped: a copy here would keep passing after the tool changed its wording.
+    /// </summary>
+    private static string NoMatch => Services.Tools.RunTestsTool.NoTestMatchedFilter;
+
+    /// <summary>The same, for a runner that exited 0 without a parsable summary.</summary>
+    private static string Unproven => Services.Tools.RunTestsTool.NothingProven;
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ARunThatExecutedNoTest_StopsTheLoop_AndNeverAsksTheModel(bool byFilter)
+    {
+        // The loop had two states, the product has three. Folded into "failing", a mistyped filter
+        // or a runner that proved nothing bought five agent rounds of speculative patches against a
+        // report that says nothing ran.
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(byFilter ? NoMatch : Unproven);
+
+        var result = await RunAsync(client, tools, ["/tdd", "MyFilter"]);
+
+        Assert.Contains(Strings.TddNothingRan, result.Message, StringComparison.Ordinal);
+        Assert.Contains(byFilter ? "No test matched" : "nothing was proven", result.Message,
+                        StringComparison.Ordinal);                    // the tool's own words are kept
+        Assert.Empty(client.AgentRuns);
+        Assert.Single(tools.Calls);                                   // one run, not five
+    }
+
+    [Fact]
+    public async Task IfTheFailingTestDisappearsMidLoop_TheLoopStops_InsteadOfDeclaringVictory()
+    {
+        // The dishonest way for a fix loop to go green: make the test stop existing. Round 1 is red,
+        // round 2 answers "no test matched" -- which is not a pass, and not a failure either.
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(Red);
+        tools.TestOutputs.Enqueue(NoMatch);
+
+        var result = await RunAsync(client, tools, ["/tdd", "MyFilter"]);
+
+        Assert.Contains(Strings.TddNothingRan, result.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Strings.TddSuccess(2), result.Message, StringComparison.Ordinal);
+        Assert.Single(client.AgentRuns);                              // the one real red round
+    }
+
+    [Fact]
+    public async Task AGenuinelyFailingRun_StillIterates()
+    {
+        // REFERENCE ARM: without it, a fix that stopped on every non-green report would pass the
+        // two tests above and turn /tdd into a one-shot command.
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(Red);
+        tools.TestOutputs.Enqueue(Green);
+
+        var result = await RunAsync(client, tools, ["/tdd"]);
+
+        Assert.Equal(Strings.TddSuccess(2), result.Message);
+        Assert.Single(client.AgentRuns);
     }
 }

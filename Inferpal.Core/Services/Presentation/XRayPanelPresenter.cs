@@ -129,7 +129,7 @@ internal static class XRayPanelPresenter
               && overhead * 100.0 / enabledTokens >= OverheadPromptSharePct;
 
         var fill = contextWindow > 0
-            ? Math.Min(100.0, (enabledTokens + historyTokens) * 100.0 / contextWindow)
+            ? (enabledTokens + historyTokens) * 100.0 / contextWindow
             : 0;
 
         return new XRayPanelModel(rows, enabledTokens, historyTokens, contextWindow, fill, warning, rawPrompt);

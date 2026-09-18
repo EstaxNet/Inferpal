@@ -19,7 +19,7 @@ internal static class RagAutoContext
     /// <param name="results">Ranked (chunk, score) results, best first.</param>
     /// <param name="attachedPaths">Source file paths already injected as attachments — their chunks are skipped.</param>
     public static string Build(
-        IReadOnlyList<(RagChunk Chunk, float Score)> results,
+        IReadOnlyList<RagHit> results,
         ISet<string> attachedPaths,
         int budget = DefaultBudgetChars,
         int maxChunks = DefaultMaxChunks)
@@ -30,7 +30,7 @@ internal static class RagAutoContext
         int used  = 0;
         int count = 0;
 
-        foreach (var (chunk, _) in results)
+        foreach (var chunk in results.Select(r => r.Chunk))
         {
             if (count >= maxChunks) break;
             if (chunk.FilePath is { Length: > 0 } fp && attachedPaths.Contains(fp)) continue;

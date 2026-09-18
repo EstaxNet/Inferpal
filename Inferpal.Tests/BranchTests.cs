@@ -101,11 +101,17 @@ public class BranchTests
         => Assert.Equal("chat__brainstorm__b2", BranchManager.MakeBranchName("chat__brainstorm", []));
 
     // ── Fork planning ──────────────────────────────────────────────────────────
+    /// <summary>A session folder every file of which could be read.</summary>
+    /// <remarks>Explicit rather than an implicit conversion from a list: the unreadable half is
+    /// exactly what a caller must not be able to forget.</remarks>
+    private static SessionScan<SessionSummary> Scan(params SessionSummary[] sessions) =>
+        new([.. sessions], []);
+
 
     [Fact]
     public void Plan_NamedSession_ForksAndRefreshesTheParentFile()
     {
-        var plan = BranchManager.Plan(Conversation(), 2, "my_session", [S("my_session")], new DateTime(2026, 7, 30, 10, 12, 0));
+        var plan = BranchManager.Plan(Conversation(), 2, "my_session", Scan(S("my_session")), new DateTime(2026, 7, 30, 10, 12, 0));
 
         Assert.NotNull(plan);
         Assert.False(plan!.ParentIsNew);
@@ -123,7 +129,7 @@ public class BranchTests
     {
         // Re-saving the parent must not flatten the tree it already belongs to.
         var plan = BranchManager.Plan(
-            Conversation(), 1, "root__b2", [S("root"), S("root__b2", "root", 2)], DateTime.Now);
+            Conversation(), 1, "root__b2", Scan(S("root"), S("root__b2", "root", 2)), DateTime.Now);
 
         Assert.Equal("root__b2", plan!.ParentName);
         Assert.Equal("root", plan.ParentParent);
@@ -135,7 +141,7 @@ public class BranchTests
     public void Plan_UnsavedConversation_GivesTheParentAGeneratedName()
     {
         // Branching must never be the operation that loses the other half of the conversation.
-        var plan = BranchManager.Plan(Conversation(), 1, currentName: null, [], new DateTime(2026, 7, 30, 10, 12, 0));
+        var plan = BranchManager.Plan(Conversation(), 1, currentName: null, Scan(), new DateTime(2026, 7, 30, 10, 12, 0));
 
         Assert.True(plan!.ParentIsNew);
         Assert.Equal("2026-07-30_1012_first_question", plan.ParentName);
@@ -147,7 +153,7 @@ public class BranchTests
     [Fact]
     public void Plan_AutoSaveSlot_CountsAsUnsaved()
     {
-        var plan = BranchManager.Plan(Conversation(), 1, "last_session", [S("last_session")], DateTime.Now);
+        var plan = BranchManager.Plan(Conversation(), 1, "last_session", Scan(S("last_session")), DateTime.Now);
 
         Assert.True(plan!.ParentIsNew);
         Assert.NotEqual("last_session", plan.ParentName);
@@ -158,7 +164,7 @@ public class BranchTests
     {
         // The conversation's file was deleted since it was loaded: re-saving the parent under that
         // name would bring back a session the user chose to delete.
-        var plan = BranchManager.Plan(Conversation(), 1, "deleted_session", [S("other")], new DateTime(2026, 7, 30, 10, 12, 0));
+        var plan = BranchManager.Plan(Conversation(), 1, "deleted_session", Scan(S("other")), new DateTime(2026, 7, 30, 10, 12, 0));
 
         Assert.True(plan!.ParentIsNew);
         Assert.Equal("2026-07-30_1012_first_question", plan.ParentName);
@@ -166,7 +172,7 @@ public class BranchTests
 
     [Fact]
     public void Plan_UnknownTurn_ReturnsNull()
-        => Assert.Null(BranchManager.Plan(Conversation(), 9, "s", [], DateTime.Now));
+        => Assert.Null(BranchManager.Plan(Conversation(), 9, "s", Scan(), DateTime.Now));
 
     // ── Family tree ────────────────────────────────────────────────────────────
 

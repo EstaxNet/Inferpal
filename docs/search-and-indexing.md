@@ -17,6 +17,10 @@ Results are ranked by **hybrid search** — semantic cosine similarity *and* lex
 with Reciprocal Rank Fusion — and include file paths and line numbers. The lexical side catches
 exact identifiers, symbol names, and file names that weak local embeddings tend to dilute.
 
+The report says which halves produced it — `semantic`, `hybrid` or `keyword` — and shows a
+`score` only on results the semantic half ranked, since a BM25 score is not on the same scale as
+a cosine similarity.
+
 ### How it works
 
 ```mermaid
@@ -88,7 +92,12 @@ the docs themselves, citing the source page and URL.
   URL's path), capped at 50 pages / depth 3, reusing the HTML-to-text converter and the same
   SSRF guard as `fetch_url`.
 - **Chunk & embed**: each page is sliced into ~500-token windows and embedded in the
-  background (progress shown as chat bubbles).
+  background (progress shown as chat bubbles). A page that arrives as one long block — a single
+  `<p>`, a `<pre>` dump — is cut at word boundaries like any other.
+- **Holes are counted**: if the backend goes down mid-crawl, the pages already fetched are kept
+  without their vectors, which puts them out of reach of the semantic half of the search. Nothing
+  recomputes them on its own, so `/docs list` and `search_docs` say how many there are and name the
+  remedy (`/docs reindex <id>`).
 - **Storage**: a single **global** SQLite database at `%AppData%/Inferpal/docs/docs.db`, so a
   site you index once is available across every solution.
 - **Retrieve**: the `search_docs` tool runs cosine search (keyword fallback) and cites the

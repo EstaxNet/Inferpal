@@ -81,7 +81,55 @@ internal sealed class SmartFixValidator
         @"is not recognized as|n'est pas reconnu|command not found|No such file|cannot find the path|could not be found|ENOENT",
         RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
-    public async Task<string?> ValidateAsync(string writtenFilePath, CancellationToken ct)
+    public Task<string?> ValidateAsync(string writtenFilePath, CancellationToken ct) =>
+        ResolveTarget(writtenFilePath) is { } target
+            ? RunTargetAsync(target, ct)
+            : Task.FromResult<string?>(null);
+
+    /// <summary>Distinct checks a single batch may run before it stops and says so.</summary>
+    /// <remarks>
+    /// A coordinated refactor across ten projects would otherwise spend ten builds inside one tool
+    /// call. Three is a budget, not a belief about repositories — and reaching it is reported.
+    /// </remarks>
+    internal const int MaxBatchTargets = 3;
+
+    /// <summary>
+    /// Validates every distinct check a batch of written files calls for — once each.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>Written for <c>apply_edits</c>, whose whole purpose is to write several files at once.</b>
+    /// It used to validate <c>changed[0]</c> alone, under a comment that named its own scope
+    /// ("covers same-project edits") and let the rest go: a Core+Tests refactor, or a
+    /// <c>.cs</c> + <c>.ts</c> one — which do not even share a validator — was written, reported as
+    /// applied, and half of it never compiled, beneath a Smart Fix note that reads as "the build is
+    /// fine". Deduplicated by <b>what would actually run</b> (command + directory), so the ordinary
+    /// batch of several files in one project still builds exactly once.
+    /// </remarks>
+    public async Task<string?> ValidateManyAsync(IReadOnlyList<string> writtenFilePaths, CancellationToken ct)
+    {
+        var seen  = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var notes = new List<string>();
+        var skipped = 0;
+
+        foreach (var path in writtenFilePaths)
+        {
+            if (ResolveTarget(path) is not { } target) continue;
+            if (!seen.Add(target.ProjectDir + "\n<>\n" + target.Command)) continue;
+            if (seen.Count > MaxBatchTargets) { skipped++; continue; }
+
+            if (await RunTargetAsync(target, ct) is { Length: > 0 } note) notes.Add(note);
+        }
+
+        if (skipped > 0)
+            notes.Add(Strings.SmartFixBatchCapped(MaxBatchTargets, skipped));
+
+        return notes.Count == 0 ? null : string.Join("\n\n", notes);
+    }
+
+    /// <summary>What a written file would make this validator run, or <c>null</c> when nothing.</summary>
+    private readonly record struct Target(BuildValidator Validator, string ProjectDir, string Command);
+
+    private Target? ResolveTarget(string writtenFilePath)
     {
         if (!_config.SmartFixEnabled) return null;
 
@@ -90,7 +138,12 @@ internal sealed class SmartFixValidator
         if (match is null) return null;
 
         var (validator, projectDir, projectFile) = match.Value;
-        var command = validator.Command.Replace("{project}", projectFile);
+        return new Target(validator, projectDir, validator.Command.Replace("{project}", projectFile));
+    }
+
+    private async Task<string?> RunTargetAsync(Target target, CancellationToken ct)
+    {
+        var (validator, projectDir, command) = target;
 
         // Safety: never auto-run a catastrophic command sourced from a (possibly committed)
         // validators.json. Shares the built-in hard denylist with the approval policy (axe 1).

@@ -1,4 +1,4 @@
-{
+﻿{
   "Allow once": "允许一次",
   "Always allow (session)": "始终允许（会话）",
   "Inferpal needs an open folder to start.": "Inferpal 需要打开一个文件夹才能启动。",
@@ -110,5 +110,9 @@
   "The backend is unreachable — the last answer was kept and nothing was sent.": "无法连接后端——已保留上一条回答，未发送任何内容。",
   "Inferpal could not save this setting: {0}": "Inferpal 无法保存此设置：{0}",
   "Pin the active file": "固定当前文件",
-  "Unpin": "取消固定"
+  "Unpin": "取消固定",
+  "The conversation you just left could not be archived: {0}. It was not saved under a name, and the chat has already been cleared.": "刚刚离开的对话未能归档：{0}。它没有以任何名称保存，而聊天已被清空。",
+  "the restarted assistant did not take the saved conversation back": "重启后的助手没有接回已保存的对话",
+  "⚠ The assistant restarted and the conversation above could NOT be handed back to it: {0}. It will answer your next question without that context — restate what matters, or start a new conversation.": "⚠ 助手已重启，且未能将上方的对话交还给它：{0}。它将在没有该上下文的情况下回答你的下一个问题 — 请重述要点，或开始新的对话。",
+  "⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.": "⚠ 此对话未能保存以供下次使用：{0}。它仍在此处，但不会自行恢复 — 如需保留请导出。"
 }

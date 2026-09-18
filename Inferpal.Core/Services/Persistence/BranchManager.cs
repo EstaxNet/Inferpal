@@ -133,20 +133,26 @@ internal static class BranchManager
     /// (null/empty for a conversation that has never been saved).
     /// </summary>
     public static BranchPlan? Plan(
-        IReadOnlyList<SavedMessage>   messages,
-        int                           turn,
-        string?                       currentName,
-        IReadOnlyList<SessionSummary> sessions,
-        DateTime                      localNow)
+        IReadOnlyList<SavedMessage>      messages,
+        int                              turn,
+        string?                          currentName,
+        SessionScan<SessionSummary>      sessions,
+        DateTime                         localNow)
     {
         var branchMessages = TruncateAtTurn(messages, turn);
         if (branchMessages is null) return null;
 
-        var names       = sessions.Select(s => s.Name).ToList();
+        // ⚠ A name is TAKEN as soon as a file bears it, readable or not. Built from the summaries
+        // alone, this list omitted every session the store had failed to open — so `MakeBranchName`
+        // handed back a name whose file exists, and the save that follows overwrites it. That is the
+        // unreadable ⇒ absent ⇒ overwritten cycle `AppDataJsonFile.preserveUnreadable` exists to
+        // stop, reached here by a different door. The summaries still drive the tree and the name
+        // matching, where an unreadable session has nothing to contribute.
+        var names       = sessions.Items.Select(s => s.Name).Concat(sessions.Unreadable).ToList();
         // A current name the store no longer lists was deleted since: writing the parent back under it
         // would bring that file back, so the conversation counts as unsaved.
         var parentIsNew = string.IsNullOrWhiteSpace(currentName) || currentName == "last_session"
-                          || !sessions.Any(s => s.Name.Equals(currentName, StringComparison.OrdinalIgnoreCase));
+                          || !sessions.Items.Any(s => s.Name.Equals(currentName, StringComparison.OrdinalIgnoreCase));
         var parentName  = parentIsNew
             ? SessionManager.UniqueSessionName(MakeParentName(messages, localNow), names)
             : currentName!;
@@ -154,7 +160,7 @@ internal static class BranchManager
         if (parentIsNew) names.Add(parentName);
 
         // Re-saving the parent must preserve its own place in the tree when it is itself a branch.
-        var parent = sessions.FirstOrDefault(s => s.Name.Equals(parentName, StringComparison.OrdinalIgnoreCase));
+        var parent = sessions.Items.FirstOrDefault(s => s.Name.Equals(parentName, StringComparison.OrdinalIgnoreCase));
 
         return new BranchPlan(
             parentName, messages.ToList(), parentIsNew, parent?.Parent, parent?.ForkTurn,

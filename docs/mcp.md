@@ -71,6 +71,13 @@ arbitrary external code, so the choice is deliberately not remembered across ses
 ## Scope & limits
 
 > [!NOTE]
+> **Tool results are forwarded as text.** Inferpal passes on `text` blocks and the text of `resource`
+> blocks. A tool that answers with an image, audio, a resource link or a binary blob has that block
+> **named** in the result instead of forwarded — a local text model cannot read a PNG, but "the tool
+> returned an image" and "the tool returned nothing" are not the same answer, and a screenshot server
+> used to read as the second.
+
+> [!NOTE]
 > HTTP auth supports **static headers** (bearer token / custom headers, with `${ENV_VAR}` expansion)
 > **and OAuth 2.1** (see below). An expired HTTP session (a `404` on a request carrying an
 > `Mcp-Session-Id`) is handled transparently: the client re-runs `initialize` and replays the request.

@@ -1,4 +1,4 @@
-using Inferpal.Models;
+﻿using Inferpal.Models;
 using Inferpal.Services;
 
 namespace Inferpal.Tests;
@@ -33,6 +33,13 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// the exposed tools (e.g. the /bench runner) — checked before <see cref="OnChat"/>.</summary>
     public Func<string, List<ChatMessageDto>, IToolRegistry, Action<string>?, Task<ChatTurnResult>>? OnChatRequest { get; set; }
 
+    /// <summary>
+    /// Drives the REASONING channel: called with the turn's <c>onThinking</c>, if there is one.
+    /// Without this lever, no test can see that the host relayed one notification PER DELTA, with no
+    /// throttle, to a client that threw the text away.
+    /// </summary>
+    public Action<Action<string>>? DriveThinking { get; set; }
+
     /// <summary>Scripted FIM completion (prefix, suffix → streamed text); null = no-op like a
     /// backend without FIM output.</summary>
     public Func<string, string, string>? OnFim { get; set; }
@@ -65,6 +72,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         string? toolChoice = null, Action<string>? onThinking = null)
     {
         ChatModels.Add(model);
+        if (onThinking is not null) DriveThinking?.Invoke(onThinking);
         return OnChatRequest?.Invoke(model, messages, tools, onToken)
             ?? OnChat?.Invoke(onToken, ct)
             ?? Task.FromResult(ChatResult);
@@ -86,6 +94,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         AgentRuns.Add((model, history));
         if (RunAgentThroughChat)
             return RunOneChatTurnAsync(model, history, tools, onToken, ct, complexity, onThinking);
+        if (onThinking is not null) DriveThinking?.Invoke(onThinking);
         return Task.FromResult(new AgentResult(ChatResult.TextContent, [], history));
     }
 
@@ -102,8 +111,16 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
 
     public Task<bool> CheckConnectionAsync(string url, CancellationToken ct) => Task.FromResult(ConnectionOk);
 
-    public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct, string? url = null) =>
-        Task.FromResult<IReadOnlyList<string>>(ModelNames);
+    /// <summary>L URL que le dernier <see cref="ListModelsAsync"/> a recue — le panneau de
+    /// settings panel must list the models of the FORM's URL, not of the saved one, and without
+    /// this witness the test could not tell the difference.</summary>
+    public string? LastListModelsUrl;
+
+    public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct, string? url = null)
+    {
+        LastListModelsUrl = url;
+        return Task.FromResult<IReadOnlyList<string>>(ModelNames);
+    }
 
     public Task<IReadOnlyList<InstalledModelInfo>> ListInstalledModelsAsync(CancellationToken ct, string? url = null) =>
         Task.FromResult<IReadOnlyList<InstalledModelInfo>>(Installed);

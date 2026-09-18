@@ -124,9 +124,13 @@ public sealed class UnlistableFolderCoverageTests : IDisposable
     {
         AssertTheFixtureDiscriminates();
 
-        var folder = WorkspaceScan.FirstUnlistableFolder(_root, _root);
+        var gap = WorkspaceScan.FirstWalkGap(_root, _root);
 
-        Assert.Equal("pgdata", folder);
+        Assert.NotNull(gap);
+        Assert.Equal("pgdata", gap!.Value.Folder);
+        // La CAUSE compte autant que le dossier : « illisible » et « lien non suivi » envoient le
+        // reader in two different places.
+        Assert.Equal(WorkspaceScan.WalkGapKind.Unlistable, gap.Value.Kind);
     }
 
     [Fact]
@@ -137,7 +141,7 @@ public sealed class UnlistableFolderCoverageTests : IDisposable
         Unlock();
         Directory.EnumerateFiles(_lockedDir).ToList();   // witness: the lock really is lifted
 
-        Assert.Null(WorkspaceScan.FirstUnlistableFolder(_root, _root));
+        Assert.Null(WorkspaceScan.FirstWalkGap(_root, _root));
     }
 
     [Fact]
@@ -171,7 +175,7 @@ public sealed class UnlistableFolderCoverageTests : IDisposable
             Assert.ThrowsAny<UnauthorizedAccessException>(
                 () => Directory.EnumerateFiles(excluded).ToList());
 
-            Assert.Null(WorkspaceScan.FirstUnlistableFolder(_root, _root));
+            Assert.Null(WorkspaceScan.FirstWalkGap(_root, _root));
         }
         finally
         {

@@ -94,6 +94,13 @@ internal class SearchInFilesTool : ITool
             notes.Append($"\n({skippedLarge} file(s) larger than {MaxSearchFileBytes / (1024 * 1024)} MB were not searched.)");
         if (unreadable > 0)
             notes.Append($"\n({unreadable} file(s) could not be read and were not searched.)");
+        // ⚠ The last reason, and the only one whose files are never even ENUMERATED: a folder the
+        // walk could not list, or one it will not follow because it is a link. No count above can
+        // express it — those files are absent from every total — so it names the folder instead.
+        // The sentence belongs to WalkGap and is never written here: "cannot be listed" and "is a
+        // link, not followed" send the reader to two different places.
+        if (WorkspaceScan.FirstWalkGap(path, root) is { } gap)
+            notes.Append($"\n({gap.Sentence()})");
 
         return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results)) + notes);
     }

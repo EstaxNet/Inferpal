@@ -84,4 +84,52 @@ internal static class GitProcess
             combined += (combined.Length > 0 ? "\n" : "") + r.Stderr.Trim();
         return (combined, r.ExitCode);
     }
+
+    /// <summary>
+    /// The named failure for a runner result, or <c>null</c> when git answered.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <b>THE reader of a <see cref="GitRunner"/> result.</b> The exit code is returned so that
+    /// "no git here" can be told apart from "nothing changed" — the remark on this class says so —
+    /// and every reader but <c>CommitCommandHandler.ExecuteAsync</c> dropped it. They did not even
+    /// fail alike: <see cref="RunAsync"/> appends stderr to the output, so a refusal arrives as a
+    /// NON-empty string and became the diff <c>/commit</c> described, the diff <c>/check</c>
+    /// reviewed, and the "recent commit subjects" of the brief written into
+    /// <c>.inferpal/context.md</c> — i.e. into the system prompt of every session after it.
+    /// </para>
+    /// <para>
+    /// ⚠ <b>A non-zero exit is not always a broken repository, and this is why the gate belongs to
+    /// the caller, not here.</b> Measured on a fresh repository: <c>log</c> and <c>diff HEAD</c>
+    /// both answer 128 because <c>HEAD</c> does not exist yet, and the repository is perfectly
+    /// healthy. This method names what happened; where a failure is fatal to the answer is the
+    /// caller's call.
+    /// </para>
+    /// </remarks>
+    /// <param name="command">git's arguments, for the message — the caller's own spelling.</param>
+    public static string? FailureNote(string command, (string Output, int ExitCode) result) =>
+        result.ExitCode == 0
+            ? null
+            : Inferpal.Localization.Strings.GitCommandFailed(command, Detail(result.Output, result.ExitCode));
+
+    /// <summary>
+    /// The first non-empty line of git's output — what it says, never a phrase of ours.
+    /// </summary>
+    /// <remarks>
+    /// git follows a refusal with a usage dump (<c>git diff</c> outside a repository prints eight
+    /// lines of it): the actionable sentence is the first, and the rest is noise a reader learns to
+    /// skip — which is how a gate ends up disarmed.
+    /// </remarks>
+    public static string FirstLine(string text)
+    {
+        foreach (var line in text.Split('\n'))
+            if (line.Trim() is { Length: > 0 } t) return t;
+        return string.Empty;
+    }
+
+    /// <summary>git's own words, or its exit code when it produced none.</summary>
+    internal static string Detail(string output, int exitCode) =>
+        FirstLine(output) is { Length: > 0 } said ? said
+      : exitCode < 0 ? "git could not be started (is it installed and on PATH?)"
+      : $"exit code {exitCode}";
 }

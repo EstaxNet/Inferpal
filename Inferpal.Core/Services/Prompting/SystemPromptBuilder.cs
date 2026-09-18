@@ -49,8 +49,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// </remarks>
     internal string EnvironmentFacts()
     {
-        var shell = Shell.ShellLauncher.Resolve().Dialect == Shell.ShellDialect.PowerShell
-            ? "PowerShell" : "bash";
+        var (dialect, fileName) = Shell.ShellLauncher.Resolve();
+        var shell = Shell.ShellLauncher.SpokenName(dialect, fileName);
         var editor = string.IsNullOrWhiteSpace(editorName) ? string.Empty : $"Editor: {editorName}. ";
         return $"\n\n{editor}Operating system: {RuntimeInformation.OSDescription}. "
              + $"The run_command shell is {shell}.";
@@ -201,6 +201,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             {
                 var pinnedContent = CapSection(File.ReadAllText(pinnedPath, Encoding.UTF8).Trim(),
                                                Path.GetFileName(pinnedPath));
+                // The read goes through again: a later failure will say so again.
+                Diagnostics.ForgetDroppedLine(PinContext, UnreadableKey(pinnedPath));
                 if (!string.IsNullOrEmpty(pinnedContent))
                     // The label is the file name; the identity is the PATH — two pins can be called
                     // README.md, and one switch used to turn both off.
@@ -208,7 +210,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                         "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n" + pinnedContent,
                         Key: pinnedPath));
             }
-            catch (Exception ex) { Diagnostics.Swallow($"SystemPromptBuilder.PinnedFile({Path.GetFileName(pinnedPath)})", ex); }
+            catch (Exception ex) { ReportUnreadablePinOnce(pinnedPath, ex); }
         }
 
 
@@ -277,15 +279,37 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     // above. The gesture moved into Diagnostics.DroppedLineOnce; this site keeps only the casing of
     // its keys, which is its own: a file path.
     private static void ReportMissingPinOnce(string path) =>
-        Diagnostics.DroppedLineOnce("PinnedFiles", "Pinned context file not found", PinKey(path), path);
+        Diagnostics.DroppedLineOnce(PinContext, "Pinned context file not found", MissingKey(path), path);
 
     /// <summary>The path is back: the next time it goes missing will be reported again.</summary>
     private static void ForgetMissingPin(string path) =>
-        Diagnostics.ForgetDroppedLine("PinnedFiles", PinKey(path));
+        Diagnostics.ForgetDroppedLine(PinContext, MissingKey(path));
 
-    /// <summary>Paths are compared case-insensitively — <c>C:\A.md</c> and <c>c:\a.md</c> are the
-    /// same pinned file, while the shared key itself is ordinal.</summary>
+    /// <summary>
+    /// ⚠ <b>A pinned file that is PRESENT but unreadable</b> — locked by another editor, permission
+    /// denied, a network drive gone. Same consequence as a missing one (it is not in the prompt, the
+    /// 📌 chip keeps showing it), and it rested on a bare <c>Swallow</c>: measured,
+    /// <b>30 rebuilds = 30 entries</b> in a ring that keeps <see cref="Diagnostics.Capacity"/> of
+    /// them, since this prompt is rebuilt on every change of active file. The rule was written three
+    /// lines above, for the other cause.
+    /// </summary>
+    private static void ReportUnreadablePinOnce(string path, Exception ex) =>
+        Diagnostics.RecordOnce(PinContext,
+            $"Pinned context file could not be read, so it is NOT in the system prompt: {path} ({ex.Message})",
+            UnreadableKey(path));
+
+    private const string PinContext = "PinnedFiles";
+
+    /// <summary>Paths compare case-insensitively — <c>C:\A.md</c> and <c>c:\a.md</c> are the same
+    /// pinned file, while the shared key itself is ordinal.</summary>
     private static string PinKey(string path) => path.ToLowerInvariant();
+
+    // ⚠ The two causes have DISJOINT keys, and that is not cosmetic: `ForgetMissingPin` runs on
+    // every pass as soon as the file exists. A shared key would therefore be forgotten on every
+    // rebuild, and "once" would become "every time" for the unreadable one — the defect just closed,
+    // coming back by the other end.
+    private static string MissingKey(string path)    => "missing:"    + PinKey(path);
+    private static string UnreadableKey(string path) => "unreadable:" + PinKey(path);
 
     private static void AddFileSection(List<PromptSection> sections, PromptSectionKind kind, string path, string header, string detail)
     {
@@ -293,9 +317,19 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         try
         {
             var text = CapSection(File.ReadAllText(path, Encoding.UTF8).Trim(), detail);
+            Diagnostics.ForgetDroppedLine(PromptFileContext, PinKey(path));
             if (!string.IsNullOrEmpty(text))
                 sections.Add(new(kind, detail, "\n\n## " + header + "\n\n" + text));
         }
-        catch (Exception ex) { Diagnostics.Swallow($"SystemPromptBuilder.FileSection({header})", ex); }
+        catch (Exception ex)
+        {
+            // Same class and same remedy as the unreadable pinned file: those three files (project
+            // context, memory, notes) are re-read on every rebuild of the prompt.
+            Diagnostics.RecordOnce(PromptFileContext,
+                $"{detail} could not be read, so it is NOT in the system prompt: {ex.Message}",
+                PinKey(path));
+        }
     }
+
+    private const string PromptFileContext = "PromptFiles";
 }

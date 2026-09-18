@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -98,7 +98,7 @@ internal partial class InferpalToolWindowData
         });
 
         var sessions = await _store.ListWithPreviewAsync(ct);
-        var result   = Services.Commands.BranchCommandHandler.Handle(parts, snapshot, currentName, sessions);
+        var result   = Services.Commands.BranchCommandHandler.Handle(parts, snapshot, currentName, sessions.Items);
 
         if (result.Message is { } message)
         {
@@ -143,12 +143,12 @@ internal partial class InferpalToolWindowData
         await ShowInfoAsync(Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
     }
 
-    // Logique partagée avec le Host (HistoryCommandHandler) — la VM n'apporte que la bulle.
+    // Logic shared with the Host (HistoryCommandHandler) — the view-model only adds the bubble.
     private async Task HandleHistoryCommandAsync(string[] parts, CancellationToken ct) =>
         await ShowInfoAsync(await Services.Commands.HistoryCommandHandler.HandleAsync(
             _store, parts, DateTime.UtcNow, ct));
 
-    // /undo-run [list] — logique partagée avec le Host (UndoRunCommandHandler).
+    // /undo-run [list] — logic shared with the Host (UndoRunCommandHandler).
     private async Task HandleUndoRunCommandAsync(string[] parts, CancellationToken ct) =>
         await ShowInfoAsync(await Services.Commands.UndoRunCommandHandler.HandleAsync(
             _tools.History, parts, FindProjectRoot(), ct));
@@ -390,7 +390,7 @@ internal partial class InferpalToolWindowData
                 onToken: token => sink.Append(token), tok);
             gotProposal = true;
         }
-        catch (OperationCanceledException) { /* stopped: nothing is offered */ }
+        catch (OperationCanceledException) { /* arrêté : rien n'est proposé */ }
         finally
         {
             sink.Stop();
@@ -649,11 +649,6 @@ internal partial class InferpalToolWindowData
             ScrollToBottom();
         });
     }
-
-    /// <summary>Git for the chat commands — the shared runner, so the Host behaves identically.</summary>
-    private static Task<(string Output, int ExitCode)> RunGitAsync(
-        string args, string workDir, CancellationToken ct)
-        => Services.GitProcess.RunAsync(args, workDir, ct);
 
     #endregion
 }

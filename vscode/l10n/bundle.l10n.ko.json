@@ -1,4 +1,4 @@
-{
+﻿{
   "Allow once": "한 번 허용",
   "Always allow (session)": "항상 허용(세션)",
   "Inferpal needs an open folder to start.": "Inferpal을 시작하려면 열린 폴더가 필요합니다.",
@@ -110,5 +110,9 @@
   "The backend is unreachable — the last answer was kept and nothing was sent.": "백엔드에 연결할 수 없습니다. 마지막 답변은 그대로 유지되었으며 아무것도 전송되지 않았습니다.",
   "Inferpal could not save this setting: {0}": "Inferpal에서 이 설정을 저장하지 못했습니다: {0}",
   "Pin the active file": "활성 파일 고정",
-  "Unpin": "고정 해제"
+  "Unpin": "고정 해제",
+  "The conversation you just left could not be archived: {0}. It was not saved under a name, and the chat has already been cleared.": "방금 떠난 대화를 보관하지 못했습니다: {0}. 이름으로 저장되지 않았고 채팅은 이미 비워졌습니다.",
+  "the restarted assistant did not take the saved conversation back": "다시 시작된 어시스턴트가 저장된 대화를 다시 받지 않았습니다",
+  "⚠ The assistant restarted and the conversation above could NOT be handed back to it: {0}. It will answer your next question without that context — restate what matters, or start a new conversation.": "⚠ 어시스턴트가 다시 시작되었고 위의 대화를 돌려줄 수 없었습니다: {0}. 다음 질문은 그 맥락 없이 답합니다 — 중요한 내용을 다시 말하거나 새 대화를 시작하세요.",
+  "⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.": "⚠ 이 대화를 다음번을 위해 저장하지 못했습니다: {0}. 아직 화면에 있지만 저절로 돌아오지는 않습니다 — 보관하려면 내보내세요."
 }

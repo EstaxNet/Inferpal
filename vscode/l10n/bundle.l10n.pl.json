@@ -1,4 +1,4 @@
-{
+﻿{
   "Allow once": "Zezwól raz",
   "Always allow (session)": "Zawsze zezwalaj (sesja)",
   "Inferpal needs an open folder to start.": "Inferpal wymaga otwartego folderu, aby się uruchomić.",
@@ -110,5 +110,9 @@
   "The backend is unreachable — the last answer was kept and nothing was sent.": "Backend jest nieosiągalny — ostatnia odpowiedź została zachowana i nic nie zostało wysłane.",
   "Inferpal could not save this setting: {0}": "Inferpal nie mógł zapisać tego ustawienia: {0}",
   "Pin the active file": "Przypnij aktywny plik",
-  "Unpin": "Odepnij"
+  "Unpin": "Odepnij",
+  "The conversation you just left could not be archived: {0}. It was not saved under a name, and the chat has already been cleared.": "Rozmowy, którą właśnie opuszczono, nie udało się zarchiwizować: {0}. Nie została zapisana pod żadną nazwą, a czat jest już wyczyszczony.",
+  "the restarted assistant did not take the saved conversation back": "ponownie uruchomiony asystent nie przyjął zapisanej rozmowy",
+  "⚠ The assistant restarted and the conversation above could NOT be handed back to it: {0}. It will answer your next question without that context — restate what matters, or start a new conversation.": "⚠ Asystent został uruchomiony ponownie i NIE udało się przekazać mu powyższej rozmowy: {0}. Odpowie na kolejne pytanie bez tego kontekstu — powtórz to, co ważne, albo rozpocznij nową rozmowę.",
+  "⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.": "⚠ Tej rozmowy NIE udało się zapisać na następny raz: {0}. Nadal tu jest, ale sama nie wróci — wyeksportuj ją, jeśli chcesz ją zachować."
 }

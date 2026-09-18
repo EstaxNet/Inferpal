@@ -14,6 +14,28 @@ internal static class ApplyDiffMatcher
     /// </summary>
     internal sealed record Result(string? Modified, int Count, bool Fuzzy);
 
+    /// <summary>The whole vocabulary of <c>occurrence</c>, written once.</summary>
+    private static readonly string[] Modes = ["unique", "first", "all"];
+
+    /// <summary>
+    /// The message for an <c>occurrence</c> outside <see cref="Modes"/>, or <c>null</c> when it is
+    /// one of them (or absent, which means the default).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Ten tools read a keyword the model wrote; eight name a value they do not recognise, and the
+    /// two that did not are the two that <b>write</b>. Here an unknown value fell into
+    /// <see cref="Resolve"/>'s <c>default:</c> — that is, <c>"unique"</c> — so
+    /// <c>occurrence: "every"</c> on three matches came back as <i>"ambiguous (3 matches)"</i>: the
+    /// model is told its <c>old_content</c> is the problem, rewrites a perfectly good one, and
+    /// applies one edit where it wanted three. One reader for both tools, because the vocabulary
+    /// copied on each side is the drift this repository pays for elsewhere.
+    /// </remarks>
+    public static string? RejectOccurrence(string? occurrence) =>
+        occurrence is null || Modes.Contains(occurrence.Trim().ToLowerInvariant())
+            ? null
+            : $"Unknown occurrence '{occurrence.Trim()}'. Use one of: 'unique' (default: require "
+            + "exactly one match), 'first' (replace the first of several), or 'all' (replace every match).";
+
     /// <param name="occurrence"><c>"unique"</c> (default — require exactly one match),
     /// <c>"first"</c> (replace the first of several), or <c>"all"</c> (replace every match).</param>
     public static Result Resolve(string file, string oldContent, string newContent, string? occurrence)

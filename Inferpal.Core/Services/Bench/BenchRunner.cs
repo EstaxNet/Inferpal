@@ -39,8 +39,8 @@ internal static class BenchRunner
     public static async Task<BenchModelResult> RunModelAsync(
         IInferenceProvider client, string model, CancellationToken ct)
     {
-        var ttfts        = new List<double>();
-        double genTokens = 0, genSeconds = 0;
+        var ttfts   = new List<double>();
+        var samples = new List<(double Tokens, double Seconds)>();
         int passed = 0, attempted = 0;
 
         try
@@ -56,8 +56,7 @@ internal static class BenchRunner
                     var (result, ttftMs, tokens, seconds) = await TimedChatAsync(
                         client, model, task.Prompt, EmptyToolRegistry.Instance, ct);
                     ttfts.Add(ttftMs);
-                    genTokens  += tokens;
-                    genSeconds += seconds;
+                    samples.Add((tokens, seconds));
                     attempted++;
                     if (task.Score(result.TextContent)) passed++;
                 }
@@ -66,8 +65,7 @@ internal static class BenchRunner
                 var (toolResult, toolTtft, toolTokens, toolSeconds) = await TimedChatAsync(
                     client, model, BenchTasks.ToolPrompt, BenchTasks.ToolRegistry.Instance, ct);
                 ttfts.Add(toolTtft);
-                genTokens  += toolTokens;
-                genSeconds += toolSeconds;
+                samples.Add((toolTokens, toolSeconds));
                 attempted++;
                 if (BenchTasks.ScoreToolCall(toolResult)) passed++;
             }
@@ -95,7 +93,7 @@ internal static class BenchRunner
             return new BenchModelResult(
                 Model:        model,
                 TtftMs:       ttfts.Count > 0 ? ttfts.Average() : 0,
-                TokensPerSec: genSeconds > 0 ? genTokens / genSeconds : 0,
+                TokensPerSec: Throughput(samples),
                 VramBytes:    vram,
                 QualityScore: passed,
                 QualityMax:   attempted,
@@ -107,6 +105,36 @@ internal static class BenchRunner
         {
             return new BenchModelResult(model, 0, 0, -1, 0, 0, null, ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Aggregate generation throughput over the run's samples, <b>ignoring those whose time could
+    /// not be measured</b>. Zero means unknown, not slow.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A reply that never streams has no measurable generation time: time-to-first-token swallows
+    /// the whole call, so its <c>seconds</c> is 0 — and its tokens used to be added to the numerator
+    /// all the same. The tool-call task is exactly that case, on EVERY run (its reply is a tool
+    /// call, and most backends still report usage for it), so the rate was inflated by a different
+    /// amount per backend, inside the one command whose purpose is to compare backends and models.
+    /// </para>
+    /// <para>
+    /// ⚠ And it is not a decorative number: <c>BenchCommandHandler.Recommend</c> sorts the utility
+    /// and FIM roles by it and breaks the agent tie with it, and <c>ModelRouter</c> reads that
+    /// recommendation when auto-routing is on.
+    /// </para>
+    /// </remarks>
+    internal static double Throughput(IEnumerable<(double Tokens, double Seconds)> samples)
+    {
+        double tokens = 0, seconds = 0;
+        foreach (var (t, s) in samples)
+        {
+            if (s <= 0) continue;
+            tokens  += t;
+            seconds += s;
+        }
+        return seconds > 0 ? tokens / seconds : 0;
     }
 
     /// <summary>One measured chat call: TTFT = first streamed token (thinking counts — it is the

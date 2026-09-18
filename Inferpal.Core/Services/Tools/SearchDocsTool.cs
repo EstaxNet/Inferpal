@@ -112,6 +112,12 @@ internal sealed class SearchDocsTool : ITool
             sb.AppendLine();
         }
 
+        // ⚠ The same footer `search_codebase` prints, for the same reason: the model is the one that
+        // will act on "it is not in the documentation", and a corpus with chunks held without a
+        // vector cannot be reached by the semantic half at all. Without this the answer ended on the
+        // last excerpt, and a three-quarters-blind index looked like a complete one.
+        sb.AppendLine($"*Docs: {_docs.ChunkCount} chunks — {_docs.Status}*");
+
         return sb.ToString().TrimEnd();
     }
 }

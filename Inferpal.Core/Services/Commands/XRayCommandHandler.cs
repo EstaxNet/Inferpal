@@ -54,7 +54,10 @@ internal static class XRayCommandHandler
         if (contextWindow > 0)
         {
             var used = total + historyTokens;
-            var pct  = Math.Min(100.0, used * 100.0 / contextWindow);
+            // ⚠ Not clamped: this line is text, and the clamp belongs to Bar(), which already does
+            // its own (on shares of the total, which cannot exceed 100 anyway). Clamped here, a
+            // prompt at 450 % of the window read as exactly full.
+            var pct  = used * 100.0 / contextWindow;
             sb.AppendLine("- " + Strings.XrayBudget($"~{used:N0}", $"{contextWindow:N0}", $"{pct:0}"));
         }
 

@@ -11,7 +11,7 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `write_file` | `path`, `content` | Write/overwrite a file. **Approval** + snapshot + Smart Fix |
 | `list_files` | `path`, `pattern?` | List files (glob, max 300, recursive) |
 | `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (max 100 results) |
-| `run_command` | `command`, `working_directory?` | Run a shell command — PowerShell on Windows, bash on Linux/macOS ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout |
+| `run_command` | `command`, `working_directory?` | Run a shell command — PowerShell on Windows, bash on Linux/macOS (`sh` on a host without bash) ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout |
 | `apply_diff` | `path`, `old_content`, `new_content`, `occurrence?` | Find-and-replace (exact, then whitespace-tolerant fuzzy fallback). `occurrence`: `unique` (default) / `first` / `all`. **Approval** (shows the diff) + snapshot + Smart Fix |
 | `apply_edits` | `edits[]` (`path`, `old_content`, `new_content`, `occurrence?`) | **Atomic** multi-file edit — all edits resolved first; nothing is written unless every edit matches. One approval (combined diff) + snapshot per file + Smart Fix |
 | `restore_file` | `path`, `snapshot_path?` | Restore a file from `.inferpal/history/` |
@@ -29,12 +29,12 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `get_solution_info` | `path?` | Parse `.sln` / `.csproj` — projects, frameworks, packages |
 | `insert_at_cursor` | `text` | Insert text at the cursor in the active editor |
 | `replace_selection` | `text` | Replace the active selection |
-| `update_memory` | `content` | Update `.inferpal/memory.md` (append / replace / clear) |
+| `update_memory` | `content`, `mode?` | Update `.inferpal/memory.md` (`append` default / `replace` / `clear`). Writing it changes the system prompt of every later session, so the prompt is **always** shown even if a rule would allow it + snapshot; a snapshot that cannot be saved leaves the memory untouched |
 | `analyze_code` | `mode`, … | Unified analysis facade (see below) |
 | `search_codebase` | `query`, `top_k?` | Semantic search over the indexed project |
 | `search_docs` | `query`, `top_k?` | Semantic search over `@Docs` external documentation |
 | `generate_project_map` | — | Namespace tree, types, dependencies, hotspots (TTL-cached) |
-| `rename_symbol` | `old_name`, `new_name`, `root?`, `file_pattern?`, `dry_run?` | Project-wide rename. On C# it renames the **symbol**, not the spelling: a method called `Handle` is renamed without touching the dozen unrelated `Handle` methods that share the name (compiler-resolved; falls back to syntax when no workspace is known). Other languages use a word-boundary regex. **Approval** + snapshot; `dry_run=true` by default |
+| `rename_symbol` | `old_name`, `new_name`, `root?`, `file_pattern?`, `dry_run?` | Project-wide rename. On C# it renames the **symbol**, not the spelling: a method called `Handle` is renamed without touching the dozen unrelated `Handle` methods that share the name (compiler-resolved; falls back to syntax when no workspace is known). Other languages use a word-boundary regex. All-or-nothing: a file that cannot be written puts every other one back unchanged. **Approval** + snapshot; `dry_run=true` by default |
 
 ### `analyze_code` modes
 

@@ -159,9 +159,10 @@ public class HistoryCompactionTests
         var plan    = Decide(history, keepTurns: 2);
         HistoryCompaction.ApplyTruncation(history, plan);
 
-        Assert.Equal(5, history.Count);            // system + 2 kept turns
+        Assert.Equal(6, history.Count);            // system + marker + 2 kept turns
         Assert.Equal("system", history[0].Role);
-        Assert.Equal("question 4", history[1].Content);
+        Assert.True(history[1].IsScaffolding);
+        Assert.Equal("question 4", history[2].Content);
         Assert.Equal("answer 5", history[^1].Content);
     }
 

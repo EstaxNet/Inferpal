@@ -162,6 +162,16 @@ internal class RunTestsTool : ITool
         "⚠ The runner exited 0 but no test summary could be parsed — nothing was proven. " +
         "Read the raw output below; do not treat this as a pass.";
 
+    /// <summary>The filter matched no test — the other way a run proves nothing.</summary>
+    /// <remarks>
+    /// A constant because <c>TddCommandHandler.NothingRan</c> has to recognise it: a sentence
+    /// re-typed at the reading end keeps matching right up to the day the writing end is reworded,
+    /// and then silently stops.
+    /// </remarks>
+    internal const string NoTestMatchedFilter =
+        "⚠ No test matched the filter — nothing ran. " +
+        "The tests may have been renamed or removed; that is not a pass.";
+
     internal static string ParseDotnetOutput(string raw, int exitCode)
     {
         var sb = new StringBuilder();
@@ -214,8 +224,7 @@ internal class RunTestsTool : ITool
         // callers' verdict parsing reads it as not-green and the loop keeps working.
         else if (raw.Contains("No test matches the given testcase filter", StringComparison.Ordinal))
         {
-            sb.AppendLine("⚠ No test matched the filter — nothing ran. " +
-                          "The tests may have been renamed or removed; that is not a pass.");
+            sb.AppendLine(NoTestMatchedFilter);
         }
         else if (exitCode == 0)
         {

@@ -79,7 +79,7 @@ internal sealed class SemanticSearchTool : ITool
         // If the user typed a prompt matching this query before sending, the embedding
         // and initial results were pre-computed in the background (0 ms round-trip).
         float[]? queryEmbedding = null;
-        List<(RagChunk Chunk, float Score)>? cachedResults = null;
+        List<RagHit>? cachedResults = null;
 
         var model = string.IsNullOrEmpty(_config.RagEmbeddingModel)
             ? "nomic-embed-text"
@@ -101,7 +101,7 @@ internal sealed class SemanticSearchTool : ITool
         }
 
         // ── Search (use shadow results when topK is satisfied) ────────────────
-        List<(RagChunk Chunk, float Score)> results;
+        List<RagHit> results;
         if (cachedResults is not null && cachedResults.Count >= topK)
         {
             // Shadow had enough results — take the first topK (already ranked)
@@ -124,8 +124,10 @@ internal sealed class SemanticSearchTool : ITool
 
         // ── Format results ────────────────────────────────────────────────────
         var sb     = new StringBuilder();
-        bool isSemantic = queryEmbedding is { Length: > 0 } && results[0].Score is > 0f and < 1.001f;
-        var modeLabel   = isSemantic ? "semantic" : "keyword";
+        // Le libelle se lit sur TOUS les resultats et la provenance de chacun sur RagHit.IsCosine :
+        // inferring it from the FIRST result's score announced "keyword" as soon as a purely
+        // lexical hit came first — the very case the lexical half exists for.
+        var modeLabel = RagResultPresentation.ModeLabel(queryEmbedding is { Length: > 0 }, results);
 
         sb.AppendLine($"## Codebase search: \"{query}\" ({modeLabel}, top {results.Count})");
         sb.AppendLine($"*Index: {_index.ChunkCount} chunks — {_index.Status}*");
@@ -133,13 +135,14 @@ internal sealed class SemanticSearchTool : ITool
 
         for (int i = 0; i < results.Count; i++)
         {
-            var (chunk, score) = results[i];
+            var hit = results[i];
+            var chunk = hit.Chunk;
 
             var header = $"### [{i + 1}] `{chunk.RelPath}` — lines {chunk.StartLine}–{chunk.EndLine}";
             if (chunk.TypeName is not null)
                 header += $" · `{chunk.TypeName}`";
-            if (isSemantic && score > 0f)
-                header += $" · score {score:F3}";
+            if (RagResultPresentation.ShowsScore(modeLabel, hit))
+                header += $" · score {hit.Score:F3}";
 
             sb.AppendLine(header);
             sb.AppendLine("```");

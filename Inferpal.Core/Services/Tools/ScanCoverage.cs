@@ -36,7 +36,7 @@ namespace Inferpal.Services.Tools;
 /// whole tree could be listed. See <see cref="WithUnlistableFolder"/>.
 /// </param>
 internal readonly record struct ScanCoverage(
-    int Total, int Scanned, int Unreadable = 0, string? UnlistableFolder = null)
+    int Total, int Scanned, int Unreadable = 0, WorkspaceScan.WalkGap? Gap = null)
 {
     /// <summary>True when the <b>cap</b> left files out.</summary>
     public bool IsPartial => Total > Scanned;
@@ -51,7 +51,7 @@ internal readonly record struct ScanCoverage(
     /// <see cref="Warning"/>, so a second cause of incompleteness had to be remembered five times.
     /// A property the callers cannot forget beats a rule they must apply.
     /// </remarks>
-    public bool IsIncomplete => IsPartial || Unreadable > 0 || UnlistableFolder is not null;
+    public bool IsIncomplete => IsPartial || Unreadable > 0 || Gap is not null;
 
     /// <summary>The same coverage, plus <paramref name="count"/> files that could not be read.</summary>
     /// <remarks>Additive, so a tool whose scan runs in several loops can call it per loop.</remarks>
@@ -71,8 +71,8 @@ internal readonly record struct ScanCoverage(
     /// (<c>EnumerationOptions.IgnoreInaccessible</c>), and the funnel's <c>failed</c> flag only ever
     /// meant "the START directory could not be opened".
     /// </remarks>
-    public ScanCoverage WithUnlistableFolder(string? folder) =>
-        folder is null ? this : this with { UnlistableFolder = folder };
+    public ScanCoverage WithGap(WorkspaceScan.WalkGap? gap) =>
+        gap is null ? this : this with { Gap = gap };
 
     /// <summary>
     /// Takes at most <paramref name="cap"/> items and records how many there were in total.
@@ -100,7 +100,7 @@ internal readonly record struct ScanCoverage(
         var lines = new List<string>(3);
         if (IsPartial) lines.Add(Strings.ScanPartial(Scanned, Total));
         if (Unreadable > 0) lines.Add(Strings.ScanUnreadable(Unreadable));
-        if (UnlistableFolder is { Length: > 0 } folder) lines.Add(Strings.ScanFolderSkipped(folder));
+        if (Gap is { } gap) lines.Add(gap.Sentence());
         return string.Join("\n", lines);
     }
 
@@ -133,7 +133,7 @@ internal readonly record struct ScanCoverage(
             // Either scan having seen it is enough: they walk the same tree, so the folder is the
             // same folder, and losing the mention because the other scan happened to be "worse"
             // would be the silence this member exists to end.
-            UnlistableFolder = a.UnlistableFolder ?? b.UnlistableFolder,
+            Gap              = a.Gap ?? b.Gap,
         };
     }
 

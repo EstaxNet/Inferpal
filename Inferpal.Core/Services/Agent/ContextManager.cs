@@ -28,7 +28,22 @@ internal enum ContextOutcome
 /// <param name="Summary">Non-null only for <see cref="ContextOutcome.Compacted"/>.</param>
 /// <param name="Notice">What to show the user, or empty for <see cref="ContextOutcome.None"/>.</param>
 internal sealed record ContextDecision(
-    ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice);
+    ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice)
+{
+    /// <summary>
+    /// The conversation lost turns with nothing put in their place — a degraded result, not the one
+    /// that was asked for.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The rule lives here because it is read by BOTH front-ends and was written down in only one
+    /// of them: the VS window rendered a successful compaction as a collapsible tool bubble and the
+    /// two fallbacks as plain warnings (<i>"the conversation lost turns, that is read in plain
+    /// text"</i>), while the host sent all three as the same collapsed <c>context_compact</c>
+    /// bubble. Same event, two renderings, and the degraded one was the one that looked routine.
+    /// </remarks>
+    public bool IsDegraded =>
+        Outcome is ContextOutcome.Truncated or ContextOutcome.CompactionFellBack;
+}
 
 /// <summary>
 /// The pre-send context check, shared by both front-ends.

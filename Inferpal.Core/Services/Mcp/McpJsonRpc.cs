@@ -66,7 +66,8 @@ internal static class McpJsonRpc
     /// single string; an <c>isError</c> result is wrapped in an explanatory message.</summary>
     public static string ExtractCallResult(JsonElement result, string toolName)
     {
-        var sb = new StringBuilder();
+        var sb      = new StringBuilder();
+        var dropped = new List<string>();
         if (result.ValueKind == JsonValueKind.Object
             && result.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
         {
@@ -74,22 +75,45 @@ internal static class McpJsonRpc
             {
                 // A malformed block is skipped: it failed the whole call, and the text of the others was lost.
                 var type = StringProperty(block, "type");
-                if (type == "text" && StringProperty(block, "text") is { } txt)
-                    sb.AppendLine(txt);
-                else if (type == "resource" && block.TryGetProperty("resource", out var res)
-                         && StringProperty(res, "text") is { } rtxt)
-                    sb.AppendLine(rtxt);
+                if (string.IsNullOrEmpty(type)) continue;                    // not even a typed block
+
+                if (type == "text")
+                {
+                    if (StringProperty(block, "text") is { } txt) sb.AppendLine(txt);
+                    continue;                                                // a text block with no text is malformed
+                }
+
+                if (type == "resource")
+                {
+                    if (!block.TryGetProperty("resource", out var res) || res.ValueKind != JsonValueKind.Object)
+                        continue;                                            // malformed, not a kind
+                    if (StringProperty(res, "text") is { } rtxt) sb.AppendLine(rtxt);
+                    else dropped.Add("resource");                            // a blob, or a link with no text
+                    continue;
+                }
+
+                dropped.Add(type);
             }
         }
 
         var text = sb.ToString().TrimEnd();
+        // Named, and named as NOT an empty result: that is the conclusion the model would otherwise draw.
+        var note = dropped.Count == 0
+            ? string.Empty
+            : $"[the tool returned {dropped.Count} content block(s) Inferpal cannot pass on "
+            + $"({string.Join(", ", dropped.Distinct(StringComparer.Ordinal))}); this is NOT an empty result]";
+
         var isError = result.ValueKind == JsonValueKind.Object
                       && result.TryGetProperty("isError", out var err) && err.ValueKind == JsonValueKind.True;
         if (isError)
-            return $"MCP tool '{toolName}' reported an error: {text}";
+            return $"MCP tool '{toolName}' reported an error: {Join(text, note)}";
 
-        return text.Length == 0 ? "(no output)" : text;
+        return text.Length == 0 && note.Length == 0 ? "(no output)" : Join(text, note);
     }
+
+    /// <summary>The two halves on one line each, skipping whichever is empty.</summary>
+    private static string Join(string text, string note) =>
+        text.Length == 0 ? note : note.Length == 0 ? text : text + "\n" + note;
 
     /// <summary>
     /// The text of a JSON-RPC <c>error</c> member. Not every server sends the <c>{ "message": … }</c> object: a bare

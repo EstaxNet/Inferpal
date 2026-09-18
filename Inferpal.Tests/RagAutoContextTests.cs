@@ -7,8 +7,9 @@ namespace Inferpal.Tests;
 // chunk cap, and the empty cases.
 public class RagAutoContextTests
 {
-    private static (RagChunk, float) Chunk(string file, string rel, string content, int start = 1, int end = 5) =>
-        (new RagChunk { FilePath = file, RelPath = rel, Content = content, StartLine = start, EndLine = end, ContentHash = "h" }, 0.5f);
+    private static RagHit Chunk(string file, string rel, string content, int start = 1, int end = 5) =>
+        new(new RagChunk { FilePath = file, RelPath = rel, Content = content, StartLine = start, EndLine = end, ContentHash = "h" },
+            0.5f, IsCosine: true);
 
     [Fact]
     public void Empty_WhenNoResults()

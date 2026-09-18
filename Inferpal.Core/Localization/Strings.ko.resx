@@ -434,6 +434,11 @@
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>git 저장소가 아닙니다 (.git 폴더를 찾을 수 없습니다).</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ 이 배치는 Smart Fix가 한 번에 검사하는 프로젝트 수를 넘어서습니다: {0}개를 빌드했고 {1}개는 검사하지 못했습니다. 직접 빌드하거나 별도 호출로 수정하세요.</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd 중단: 이번 실행에서는 테스트가 하나도 실행되지 않았으므로 고칠 것이 없습니다.</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ 방금 떠난 대화를 보관하지 못했습니다: {0}. 이름으로 저장되지 않았고 채팅은 이미 비워졌습니다 — 잃었습니다.</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ 이 대화를 다음번을 위해 저장하지 못했습니다: {0}. 아직 화면에 있지만 저절로 돌아오지는 않습니다 — 보관하려면 내보내세요.</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git가 'git {0}'에 응답하지 못했습니다: {1}. 이 저장소에서 아무것도 읽지 못했습니다 — '변경 없음'이라는 뜻이 아닙니다.</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>.sln 파일을 찾을 수 없습니다. 경로를 명시적으로 제공하세요.</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>경로를 찾을 수 없거나 .sln 파일이 아닙니다: {0}</value></data>
 
@@ -464,6 +469,8 @@
   <data name="CommitConfirmHint" xml:space="preserve"><value>아래에 메시지가 미리 채워져 있습니다 — 필요하면 편집한 후 **Enter**를 눌러 커밋하세요.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>프로젝트 규칙이 없습니다. `.inferpal/rules/*.md`를 만들거나 `/rules init`를 실행하세요.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0}개 파일을 읽지 못해 적용되지 않았습니다: {1}. 원인은 /diagnostics 에 있습니다.</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ 저장된 세션 {0}개를 읽지 못해 검색하지 못했습니다: {1}. '해당 단어가 없다'는 뜻이 아닙니다. 원인은 /diagnostics에 있습니다.</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ 저장된 세션 {0}개를 읽지 못해 이 목록에 포함되지 않았습니다: {1}. 원인은 /diagnostics에 있습니다.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>리뷰 체크가 없습니다. `.inferpal/checks/*.md`를 만들거나 `/checks init`를 실행하세요.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**프로젝트 규칙** (`.inferpal/rules`):</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>실제로 적용 중인 권한 규칙과 무시된 항목을 나열</value></data>
@@ -904,6 +911,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="ScanPartial" xml:space="preserve"><value>⚠ 부분 분석: 소스 파일 {1}개 중 {0}개만 검사했습니다(상한). 결과가 불완전할 수 있습니다.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ 소스 파일 {0}개를 읽을 수 없어 분석하지 못했습니다(권한, 잠김 또는 삭제됨). 결과가 불완전할 수 있습니다.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ 폴더 '{0}'의 목록을 읽지 못해 그 안의 파일을 하나도 분석하지 못했습니다(권한). 결과가 불완전할 수 있습니다.</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ 폴더 '{0}'은 링킬이며 따라가지 않습니다(프로젝트 안을 가리키는 링킬은 무한하게 순환합니다). 그 안의 파일은 하나도 분석되지 않았습니다. 결과가 불완전할 수 있습니다.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP OAuth 승인은 현재 Windows에서만 사용할 수 있습니다. 새로 고침 토큰은 암호화(DPAPI)해야만 저장할 수 있으며 평문 저장은 선택지가 아닙니다. 정적 헤더 토큰을 쓰는 서버를 사용하세요.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>에이전트 작업을 백그라운드에서 실행 (`/task [목표]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>작업 **{0}** 을(를) 백그라운드에서 시작했습니다: {1}</value></data>

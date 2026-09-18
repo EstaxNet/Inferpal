@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -324,11 +324,13 @@ internal partial class InferpalToolWindowData
 
             _lastPromptTokens = 0;
 
-            // A successful compaction is a tool event (collapsible); both fallbacks are warnings -
-            // the conversation has lost turns, and that reads in plain text.
-            InsertThemed(decision.Outcome == Services.Agent.ContextOutcome.Compacted
-                ? ChatMessageItem.ToolMsg("context_compact", decision.Notice, _config.ToolBubblesExpanded)
-                : ChatMessageItem.AssistantMsg(decision.Notice));
+            // A successful compaction is a tool event (collapsible); the two fallbacks are
+            // warnings — the conversation lost turns, and that is read in plain text. ⚠ The rule is
+            // READ from ContextDecision, not rewritten here: it used to live in this comment and the
+            // host, its other reader, did not honour it.
+            InsertThemed(decision.IsDegraded
+                ? ChatMessageItem.AssistantMsg(decision.Notice)
+                : ChatMessageItem.ToolMsg("context_compact", decision.Notice, _config.ToolBubblesExpanded));
             ScrollToBottom();
         });
     }

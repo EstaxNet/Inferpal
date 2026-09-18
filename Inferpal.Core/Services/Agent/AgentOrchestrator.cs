@@ -122,6 +122,13 @@ internal sealed class AgentOrchestrator
     /// turns a truncated <c>run_tests {"filter":"Foo…</c> into the whole suite.</summary>
     internal static Task<string> ExecuteToolSafeAsync(IToolRegistry tools, ToolCallFunction call, CancellationToken ct)
     {
+        // ⚠ The judgement lives HERE and not in the providers: `arguments` is deserialized as it
+        // comes, so a payload where it is neither an object, nor absent, nor `null` travelled through
+        // the whole product with nobody judging it — and `ToolArgs`, which never throws by contract,
+        // then returned the DEFAULT value of every argument. A `run_tests` whose filter arrived as a
+        // string became the whole suite.
+        call = ToolCallArguments.Judge(call);
+
         if (call.UnparsedArguments is not { } raw)
             return ExecuteToolSafeAsync(tools, call.Name, call.Arguments, ct);
 
@@ -188,6 +195,27 @@ internal sealed class AgentOrchestrator
     // (system prompt + plan), the exact failure compaction exists to prevent (pre-1.6.0 architecture review,
     // §2.10; same formula as OpenAiCompatibleClient.EstimateRequestTokens).
     internal static int EstimateTokens(IEnumerable<ChatMessageDto> messages) => EstimateChars(messages) / 4;
+
+    /// <summary>
+    /// The same estimate over the <b>exchange only</b>: the leading system message is left out.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>For a reader that already accounts for the system prompt separately</b> — the Context
+    /// X-Ray, which breaks it into layers and then adds a "history" figure on top. Handed
+    /// <see cref="EstimateTokens"/> of the whole history, it counted the prompt twice: a brand-new
+    /// conversation reported a history as heavy as the entire prompt, and the budget line
+    /// over-reported by exactly the part X-Ray exists to display. The header gauge keeps
+    /// <see cref="EstimateTokens"/> — it measures what is sent, prompt included — and the two
+    /// figures now agree on the same conversation.
+    /// <para>
+    /// Only the FIRST message, and only when it is a system one: a history restored without a
+    /// prompt must keep its first turn, and a system turn inserted mid-run is part of the exchange.
+    /// </para>
+    /// </remarks>
+    internal static int EstimateConversationTokens(IReadOnlyList<ChatMessageDto> messages) =>
+        messages.Count > 0 && messages[0].Role == "system"
+            ? EstimateTokens(messages.Skip(1))
+            : EstimateTokens(messages);
 
     /// <summary>The characters <see cref="EstimateTokens"/> counts — content plus tool-call payloads.
     /// Shared with <c>OpenAiCompatibleClient.EstimateRequestTokens</c>.</summary>

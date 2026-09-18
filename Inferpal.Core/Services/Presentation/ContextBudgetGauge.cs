@@ -21,7 +21,13 @@ internal static class ContextBudgetGauge
     {
         if (limit <= 0 || promptTokens <= 0) return null;
 
-        var pct   = Math.Min(100.0, promptTokens * 100.0 / limit);
+        // ⚠ NOT clamped to 100: the clamp belongs to a bar, which cannot be wider than itself, and
+        // it had been applied to the VALUE — so a conversation sitting at 187 % of the window read
+        // as exactly full, in the tooltip the user opens to decide whether to clear. At 100 % one
+        // more turn is a question; past it the backend is already dropping the head of the
+        // conversation, system prompt included, without saying so. The indicator is a WPF
+        // ProgressBar with Maximum=100, which coerces its own Value.
+        var pct   = promptTokens * 100.0 / limit;
         var color = pct < 50 ? "#606060"
                   : pct < 80 ? "#C0A000"
                   : pct < 95 ? "#D06000"

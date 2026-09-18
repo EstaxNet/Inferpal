@@ -40,18 +40,30 @@ internal static class CommitCommandHandler
         IInferenceProvider client, InferpalConfig config, GitRunner git,
         Action<string>? onToken, CancellationToken ct)
     {
-        var staged = (await git("diff --staged", ct)).Output;
+        // ⚠ git that REFUSED is not git that found nothing — and the confusion is not silent here,
+        // it is loud: RunAsync appends stderr to the output, so `fatal: detected dubious ownership`
+        // arrived as a non-empty "staged diff" and the model was asked to write a commit message
+        // about it. One click from committing under it.
+        var stagedRun = await git("diff --staged", ct);
+        if (GitProcess.FailureNote("diff --staged", stagedRun) is { } stagedFailed)
+            return new(stagedFailed, null, null);
+        var staged = stagedRun.Output;
 
         string diffContext;
         string? notice = null;
         if (string.IsNullOrWhiteSpace(staged))
         {
-            var status = (await git("status --short", ct)).Output;
+            var statusRun = await git("status --short", ct);
+            if (GitProcess.FailureNote("status --short", statusRun) is { } statusFailed)
+                return new(statusFailed, null, null);
+            var status = statusRun.Output;
             if (string.IsNullOrWhiteSpace(status))
                 return new(Strings.CommitNothingToCommit, null, null);
 
-            var unstaged = (await git("diff", ct)).Output;
-            diffContext  = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
+            var unstagedRun = await git("diff", ct);
+            if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
+                return new(unstagedFailed, null, null);
+            diffContext  = GitCommitPolicy.BuildUnstagedContext(status, unstagedRun.Output);
             notice       = Strings.CommitNothingStaged;
         }
         else

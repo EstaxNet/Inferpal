@@ -106,7 +106,13 @@ internal class UpdateMemoryTool : ITool
             return Strings.RunCancelled;
 
         // Before the write, so /undo-run can put back a memory that "clear" or "replace" removed.
-        if (File.Exists(memPath)) await _history.SnapshotAsync(memPath, ct);
+        // ⚠ And through BackUpBeforeChangeAsync, whose remark carries the rule the seven other
+        // writing tools honour: "the change must then NOT happen". The direct call to SnapshotAsync
+        // threw its answer away, so an impossible snapshot (an unwritable history folder) let `clear`
+        // empty the project memory — the one re-injected into the system prompt of every later
+        // session — with no net, and the turn answered success.
+        var (saved, _) = await _history.BackUpBeforeChangeAsync(memPath, ct);
+        if (!saved) return FileHistoryService.BackupFailedMessage(memPath);
 
         Directory.CreateDirectory(ollamaDir);
 

@@ -47,7 +47,7 @@ internal sealed class ProjectIndexService : IDisposable
     // The three values are bundled in one immutable record and published via a single
     // volatile reference assignment, so a reader never sees a torn (half-updated) cache.
     private sealed record ShadowCache(
-        string Query, float[] Embedding, List<(RagChunk Chunk, float Score)> Results);
+        string Query, float[] Embedding, List<RagHit> Results);
 
     private volatile ShadowCache? _shadow      = null;
     private readonly SemaphoreSlim _shadowLock = new(1, 1);
@@ -89,7 +89,7 @@ internal sealed class ProjectIndexService : IDisposable
     /// silence (<c>EnumerationOptions.IgnoreInaccessible</c>), so it is absent from every count
     /// rather than subtracted from one: no arithmetic here could have revealed it.
     /// </remarks>
-    public string? SkippedFolder { get; private set; }
+    public WorkspaceScan.WalkGap? SkippedFolder { get; private set; }
 
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
@@ -123,6 +123,14 @@ internal sealed class ProjectIndexService : IDisposable
     {
         RootDir          = rootDir;
         _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
+        // ⚠ The watcher is armed HERE too, not only by the indexing pass, because it has a second
+        // consumer that has nothing to do with RAG: the C# semantic index is cached per workspace
+        // and this watcher is the only thing that invalidates it. Armed from the pass alone, it did
+        // not exist at all when `ragEnabled` is off — so `analyze_impact` answered its
+        // compiler-resolved section, the one it tells the model to trust over the name-matching
+        // ones, from a compilation frozen at the first C# analysis of the session. `SetRoot` is
+        // what both front-ends call with RAG on or off, which is exactly the property needed.
+        SetupFileWatcher(rootDir);
     }
 
     /// <summary>
@@ -208,7 +216,7 @@ internal sealed class ProjectIndexService : IDisposable
     /// <param name="queryEmbedding">Embedding of the search query; when <c>null</c> or empty, falls back to keyword search.</param>
     /// <param name="keywordFallback">Plaintext query used when semantic search is unavailable.</param>
     /// <param name="topK">Maximum number of results to return.</param>
-    public async Task<List<(RagChunk Chunk, float Score)>> SearchAsync(
+    public async Task<List<RagHit>> SearchAsync(
         float[]? queryEmbedding,
         string?  keywordFallback,
         int      topK,
@@ -281,14 +289,16 @@ internal sealed class ProjectIndexService : IDisposable
                 vector.Select(x => x.Idx).ToList(),
                 lexical.Select(x => x.Idx).ToList(),
             });
-            return fused.Take(topK).Select(i => (allChunks[i], cosByIdx.GetValueOrDefault(i, 0f))).ToList();
+            // IsCosine says where THIS result came from: a purely lexical hit has no cosine, and
+            // that is the only way to know — its score is 0f, just like a similarity of zero.
+            return RagHit.FromFusion(fused, allChunks, cosByIdx, topK);
         }
 
         if (vector.Count > 0)
-            return vector.Take(topK).Select(x => (allChunks[x.Idx], x.Cos)).ToList();
+            return vector.Take(topK).Select(x => new RagHit(allChunks[x.Idx], x.Cos, IsCosine: true)).ToList();
 
         if (lexical.Count > 0)
-            return lexical.Take(topK).Select(x => (allChunks[x.Idx], (float)x.Score)).ToList();
+            return lexical.Take(topK).Select(x => new RagHit(allChunks[x.Idx], (float)x.Score, IsCosine: false)).ToList();
 
         return [];
     }
@@ -336,7 +346,7 @@ internal sealed class ProjectIndexService : IDisposable
     /// Returns the pre-computed embedding and results if <paramref name="query"/> exactly
     /// matches the last shadow query (case-insensitive); otherwise returns (<c>null</c>, <c>null</c>).
     /// </summary>
-    public (float[]? Embedding, List<(RagChunk Chunk, float Score)>? Results) TryGetShadow(string query)
+    public (float[]? Embedding, List<RagHit>? Results) TryGetShadow(string query)
     {
         // Single volatile read — the captured reference is immutable, so no tearing.
         var shadow = _shadow;
@@ -590,9 +600,27 @@ internal sealed class ProjectIndexService : IDisposable
 
     // ── File watching ──────────────────────────────────────────────────────────
 
+    /// <summary>The root <see cref="_watcher"/> is currently watching, if any.</summary>
+    private string? _watchedRoot;
+
+    /// <summary>
+    /// Arms the watcher on <paramref name="rootDir"/>, unless it is already watching it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>Idempotent by root because it is now armed from two places</b>: the indexing pass, which
+    /// needs it before reading anything, and <see cref="SetRoot"/>, which the front-ends call on
+    /// every heartbeat. Re-creating the watcher on each of those would drop the events raised
+    /// between the dispose and the next one — a save landing exactly there would be lost.
+    /// </remarks>
     private void SetupFileWatcher(string rootDir)
     {
+        if (_disposed) return;
+        if (_watcher is not null && string.Equals(_watchedRoot, rootDir, StringComparison.OrdinalIgnoreCase))
+            return;
+
         _watcher?.Dispose();
+        _watcher     = null;
+        _watchedRoot = null;
         try
         {
             _watcher = new FileSystemWatcher(rootDir)
@@ -612,6 +640,7 @@ internal sealed class ProjectIndexService : IDisposable
                 OnFileChangedCore(e.OldFullPath);
                 OnFileChangedCore(e.FullPath);
             };
+            _watchedRoot = rootDir;
         }
         catch { /* file watching is best-effort */ }
     }
@@ -629,6 +658,13 @@ internal sealed class ProjectIndexService : IDisposable
         if (IsExcluded(path)) return;
 
         Lsp.CSharpSemanticIndex.NotifyFileChanged(path);
+
+        // ⚠ The RAG half only when a pass owns this root. Since SetRoot arms the watcher, events now
+        // arrive with `ragEnabled` off as well — and chunking a file into an index that does not
+        // exist, then writing its rows to SQLite, is work the user turned off. `IndexedRoot` rather
+        // than `_config.RagEnabled`: `/index rebuild` indexes on demand whatever the setting says,
+        // and that index must keep following its files.
+        if (string.IsNullOrEmpty(IndexedRoot)) return;
 
         lock (_pendingRebuild) _pendingRebuild.Add(path);
 
@@ -875,10 +911,10 @@ internal sealed class ProjectIndexService : IDisposable
         var result = new List<string>();
         // ⚠ Once per pass, BEFORE the walk: `IgnoreInaccessible` skips an unlistable folder without
         // throwing, so the `catch` below never sees it and the `null` it returns — "partial list,
-        // do not replace the index" — does not fire either. The pass is legitimate (nothing better
+        // does not replace the index" — does not fire either. The pass is legitimate (nothing better
         // can be done), but it has to SAY so: this is the only trace that a whole folder is missing
-        // from the index, and that absence survives on disk.
-        SkippedFolder = WorkspaceScan.FirstUnlistableFolder(rootDir, rootDir);
+        // from the index, and it survives on disk.
+        SkippedFolder = WorkspaceScan.FirstWalkGap(rootDir, rootDir);
         try
         {
             // ONE walk filtered by extension: the per-extension loop walked the whole tree once for
@@ -973,6 +1009,7 @@ internal sealed class ProjectIndexService : IDisposable
         try { _cts?.Cancel(); } catch (ObjectDisposedException) { }
         _cts?.Dispose();
         _watcher?.Dispose();
+        _watchedRoot = null;
 
         // Deliberately NOT disposing _chunkLock/_shadowLock: a background indexing pass may still
         // be awaiting them, and disposing a SemaphoreSlim under a waiter turns a clean cancellation

@@ -116,7 +116,19 @@ internal class FileHistoryService
     /// delete what it could not save.</remarks>
     internal async Task<(bool Saved, string Snapshot)> BackUpBeforeChangeAsync(string filePath, CancellationToken ct)
     {
-        if (!File.Exists(filePath)) return (true, string.Empty);
+        if (!File.Exists(filePath))
+        {
+            // ⚠ Nothing to back up, and that is precisely the moment we know the write that follows
+            // CREATES this file — so /undo-run can delete it. A file created during a run has no
+            // snapshot by construction (SnapshotAsync returns before recording anything when the
+            // file is absent), so NoteCreated is its ONLY way into the undo perimeter, and it used
+            // to have a single caller: write_file. update_memory creates .inferpal/memory.md on its
+            // first call, so undoing the run gave every other file back and left that one — the one
+            // re-injected into the system prompt of every later session. Said here, the property
+            // holds for all eight callers instead of being a list to remember.
+            NoteCreated(filePath);
+            return (true, string.Empty);
+        }
         var snapshot = await SnapshotAsync(filePath, ct);
         return (snapshot.Length > 0, snapshot);
     }

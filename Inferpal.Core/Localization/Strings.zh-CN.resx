@@ -434,6 +434,11 @@
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>不是 git 仓库（未找到 .git 文件夹）。</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ 此批次涉及的项目超过 Smart Fix 一次检查的数量：已构建 {0} 个，另有 {1} 个未被检查。请自行构建，或在单独的调用中修改它们。</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd 已停止：本次运行没有执行任何测试，因此没有需要修复的内容。</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ 刚刚离开的对话未能归档：{0}。它已丢失 —— 没有以任何名称保存，而聊天已被清空。</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ 此对话未能保存以供下次使用：{0}。它仍在此处，但不会自行恢复 — 如需保留请导出。</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git 无法响应“git {0}”：{1}。未能从该仓库读取任何内容 —— 这并不表示“没有更改”。</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>未找到 .sln 文件，请明确提供路径。</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>路径不存在或不是 .sln 文件：{0}</value></data>
 
@@ -464,6 +469,8 @@
   <data name="CommitConfirmHint" xml:space="preserve"><value>信息已预填到输入框 — 如需修改请编辑，然后按 **Enter** 确认提交。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>没有项目规则。请创建 `.inferpal/rules/*.md` 或运行 `/rules init`。</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ 有 {0} 个文件无法读取，因此并未生效：{1}。原因见 /diagnostics。</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ 有 {0} 个已保存的会话无法读取，因此未被搜索：{1}。这并不表示“没有这个词”。原因请见 /diagnostics。</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ 有 {0} 个已保存的会话无法读取，因此未出现在此列表中：{1}。原因请见 /diagnostics。</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>没有评审检查项。请创建 `.inferpal/checks/*.md` 或运行 `/checks init`。</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**项目规则** (`.inferpal/rules`):</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>列出实际生效的权限规则，以及被忽略的内容</value></data>
@@ -904,6 +911,7 @@ ollama serve
   <data name="ScanPartial" xml:space="preserve"><value>⚠ 部分分析：仅扫描了 {1} 个源文件中的 {0} 个（上限）。结果可能不完整。</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ 有 {0} 个源文件无法读取，未参与分析（权限、被锁定或已删除）。结果可能不完整。</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ 无法列出文件夹“{0}”，因此其中的文件均未参与分析（权限）。结果可能不完整。</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ 文件夹“{0}”是一个链接，不会被跟随（指回项目内部的链接会无限循环），因此其中的文件均未参与分析。结果可能不完整。</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP 的 OAuth 授权目前仅支持 Windows：刷新令牌只能加密存储（DPAPI），明文存储不可接受。请改用带静态请求头令牌的服务器。</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>在后台运行智能体任务 (`/task [目标]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>任务 **{0}** 已在后台启动：{1}</value></data>

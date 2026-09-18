@@ -56,6 +56,12 @@ internal class ApplyDiffTool : ITool
         var newContent = args.Str("new_content")
             ?? throw new ArgumentException("new_content is required (send \"\" to delete the matched block).");
         var occurrence = args.Keyword("occurrence");
+        // ⚠ Named, not silently narrowed to 'unique': an unknown value came back as "old_content
+        // found 3 times", which sends the model to rewrite an old_content that was already right.
+        // Before the approval prompt, like update_memory's unknown mode — having a write approved
+        // and then doing another one is worse than refusing.
+        if (ApplyDiffMatcher.RejectOccurrence(occurrence) is { } badOccurrence)
+            return badOccurrence;
 
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);

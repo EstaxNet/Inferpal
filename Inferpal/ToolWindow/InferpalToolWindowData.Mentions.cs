@@ -87,7 +87,7 @@ internal partial class InferpalToolWindowData
 
     private void UpdateAutoRagAttachments(
         List<string> paths,
-        List<(RagChunk Chunk, float Score)> results)
+        List<RagHit> results)
     {
         // Remove existing auto-attach chips
         var toRemove = Attachments.Where(a => a.IsAutoAttach).ToList();

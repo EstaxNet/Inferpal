@@ -434,6 +434,11 @@ Usa `/clear` dopo aver modificato il file per ricaricarlo.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>Non è un repository git (nessuna cartella .git trovata).</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ Questo lotto tocca più progetti di quanti Smart Fix ne verifichi in una volta: {0} sono stati compilati, altri {1} NON sono stati verificati. Compilateli voi, oppure modificateli in una chiamata separata.</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd si è fermato: questa esecuzione non ha lanciato alcun test, quindi non c'è nulla da correggere.</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ La conversazione appena lasciata NON è stata archiviata: {0}. È persa: non è stata salvata con un nome e la chat è già stata svuotata.</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Questa conversazione NON è stata salvata per la prossima volta: {0}. È ancora qui, ma non tornerà da sola: esportala se vuoi conservarla.</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git non ha potuto rispondere a «git {0}»: {1}. Non è stato letto nulla da questo repository: NON significa «nessuna modifica».</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>Nessun file .sln trovato. Fornisci esplicitamente il percorso.</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>Percorso non trovato o non è un file .sln: {0}</value></data>
 
@@ -464,6 +469,8 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <data name="CommitConfirmHint" xml:space="preserve"><value>Messaggio precompilato sotto — modifica se necessario, poi premi **Invio** per committare.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Nessuna regola di progetto. Crea `.inferpal/rules/*.md` o esegui `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} file non sono stati letti e quindi NON sono applicati: {1}. La causa è in /diagnostics.</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ {0} sessione/i salvata/e non è stato possibile leggerla/e e quindi NON è stata cercata: {1}. NON significa «il termine non compare». La causa è in /diagnostics.</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ {0} sessione/i salvata/e non è stato possibile leggerla/e e quindi NON compare/compaiono in questo elenco: {1}. La causa è in /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Nessun check di revisione. Crea `.inferpal/checks/*.md` o esegui `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Regole di progetto** (`.inferpal/rules`):</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>elencare le regole di permesso realmente in vigore e ciò che è stato ignorato</value></data>
@@ -904,6 +911,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Analisi parziale: sono stati esaminati solo {0} file sorgente su {1} (limite). I risultati possono essere incompleti.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ {0} file sorgente non sono stati letti né analizzati (permessi, un blocco o scomparsi). I risultati possono essere incompleti.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ Non è stato possibile elencare la cartella «{0}», quindi nessuno dei file che contiene è stato analizzato (permessi). I risultati possono essere incompleti.</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ La cartella «{0}» è un collegamento, che non viene seguito (un collegamento che rimanda dentro il progetto girerebbe all'infinito), quindi nessuno dei file che contiene è stato analizzato. I risultati possono essere incompleti.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>L'autorizzazione OAuth MCP è per ora disponibile solo su Windows: il refresh token può essere salvato solo cifrato (DPAPI) e salvarlo in chiaro non è un'opzione. Usa invece un server con token di intestazione statico.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>avviare un'attività dell'agente in background (`/task [obiettivo]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>Attività **{0}** avviata in background: {1}</value></data>

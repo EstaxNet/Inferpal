@@ -7,7 +7,7 @@ replaced with the corresponding attachment.
 | Mention | Attaches |
 |---|---|
 | `@file` | A file you pick |
-| `@folder` | A folder (its tree) |
+| `@folder` | A folder: the list of its files, plus the text of the first of them |
 | `@code` | The active editor selection |
 | `@diff` | The current `git diff` |
 | `@problems` | The current build errors |
@@ -19,6 +19,13 @@ replaced with the corresponding attachment.
 > [!TIP]
 > The `@`-mention popup and the `/`-command popup are mutually exclusive — typing `@` opens
 > the mention picker, `/` opens the command list.
+
+> [!NOTE]
+> **`@folder` is bounded, and it says where.** It lists up to 200 files, up to 4 levels deep, and
+> includes the text of the first 30 of them within a 60 000-character budget. Whenever one of those
+> limits bites — or a file cannot be read — the attachment ends with a line saying which one, so a
+> file named in the list but absent from the text is never mistaken for a file that is simply empty.
+> Attach a subfolder to get the rest.
 
 > [!NOTE]
 > **VS Code:** typed mentions work there too (since 1.2.0) — the eight categories from

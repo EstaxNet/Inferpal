@@ -66,7 +66,7 @@ The model operates autonomously for up to 20 turns: it picks its tools, executes
 | `delete_file` | Deletes a file (confirmation required, snapshot saved before deletion) |
 | `list_files` | Lists files in a folder (glob, max 300) |
 | `search_in_files` | Regex search across files (max 100 results) |
-| `run_command` | Executes a shell command — PowerShell on Windows, bash on Linux and macOS (confirmation required) |
+| `run_command` | Executes a shell command — PowerShell on Windows, bash on Linux and macOS, `sh` where there is no bash (confirmation required) |
 | `get_diagnostics` | Runs `dotnet build`, returns MSBuild errors and warnings |
 | `run_tests` | Runs `dotnet test` / `pytest` / `npm test` / `cargo test` / `go test`, returns summary and failures |
 | `get_active_document` | Retrieves the active file in the editor — including your **unsaved** edits |

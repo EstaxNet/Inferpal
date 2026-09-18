@@ -88,7 +88,13 @@ internal static class BenchCommandHandler
             }
             sb.Append("| `").Append(r.Model).Append("` | ")
               .Append(r.TtftMs.ToString("0", CultureInfo.InvariantCulture)).Append(" ms | ")
-              .Append(r.TokensPerSec.ToString("0.0", CultureInfo.InvariantCulture)).Append(" | ")
+              // ⚠ Zero means "nothing in this run could be timed", not "this model generates
+              // nothing" — and "0.0" in a speed column reads as the second. The VRAM column next to
+              // it already spells its own unknown as a dash; this one printed a number.
+              .Append(r.TokensPerSec > 0
+                  ? r.TokensPerSec.ToString("0.0", CultureInfo.InvariantCulture)
+                  : "—")
+              .Append(" | ")
               .Append(r.VramBytes >= 0
                   ? (r.VramBytes / 1073741824.0).ToString("0.0", CultureInfo.InvariantCulture) + " GB"
                   : "—")

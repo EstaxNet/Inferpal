@@ -416,38 +416,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         foreach (var (_, slot) in acc)
         {
             if (string.IsNullOrEmpty(slot.Name)) continue;
-            calls.Add(new ToolCallDto(ParseArguments(slot.Name, slot.Args.ToString())));
+            calls.Add(new ToolCallDto(ToolCallArguments.Parse(slot.Name, slot.Args.ToString())));
         }
         return calls.Count > 0 ? calls : null;
-    }
-
-    /// <summary>Parses a call's streamed arguments text.</summary>
-    /// <remarks>Empty or <c>null</c> is a call without arguments (<c>{}</c>); an object nested in a JSON
-    /// string (double-encoded) is unwrapped. ⚠ Anything else — typically a turn cut off mid-call — is
-    /// kept in <see cref="ToolCallFunction.UnparsedArguments"/> and must not run: defaulting it to
-    /// <c>{}</c> turned <c>run_tests {"filter":"Foo…</c> into the whole test suite.</remarks>
-    internal static ToolCallFunction ParseArguments(string name, string raw)
-    {
-        var trimmed = raw.Trim();
-        if (trimmed.Length == 0 || trimmed == "null") return new ToolCallFunction(name, EmptyArguments());
-        try
-        {
-            using var doc = JsonDocument.Parse(trimmed);
-            var root = doc.RootElement;
-            if (root.ValueKind == JsonValueKind.Object)
-                return new ToolCallFunction(name, root.Clone());
-            if (root.ValueKind == JsonValueKind.String && root.GetString() is { } inner
-                && inner.TrimStart().StartsWith('{'))
-                return ParseArguments(name, inner);
-        }
-        catch (JsonException) { /* falls through to the unparsed call */ }
-        return new ToolCallFunction(name, EmptyArguments()) { UnparsedArguments = raw };
-    }
-
-    private static JsonElement EmptyArguments()
-    {
-        using var doc = JsonDocument.Parse("{}");
-        return doc.RootElement.Clone();
     }
 
     /// <summary>Assembles streamed tool-call fragments into calls.</summary>

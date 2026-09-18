@@ -244,7 +244,12 @@ internal sealed partial class HostServer : IDisposable
                     Services.Agent.HistoryCompaction.ApplyTruncation(s.History, ctxDecision.Plan);
 
                 s.LastPromptTokens = 0;
-                Notify("chat/tool", new ToolNotice("context_compact", string.Empty, ctxDecision.Notice, false));
+                // ⚠ All three outcomes went out as the SAME collapsed bubble: "your conversation
+                // lost turns, with no summary" looked exactly like a successful compaction. The VS
+                // window has always told them apart; the rule now lives in ContextDecision, and
+                // HasErrors opens the bubble on the webview side.
+                Notify("chat/tool", new ToolNotice(
+                    "context_compact", string.Empty, ctxDecision.Notice, ctxDecision.IsDegraded));
             }
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
             var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
@@ -883,7 +888,7 @@ internal sealed partial class HostServer : IDisposable
     public async Task<List<SessionSummaryDto>> SessionListAsync(CancellationToken ct)
     {
         var summaries = await Session().Store.ListWithPreviewAsync(ct);
-        return summaries
+        return summaries.Items
             .Select(x => new SessionSummaryDto(x.Name, x.SavedAt, x.MessageCount, x.FirstUserPreview, x.Parent, x.ForkTurn))
             .ToList();
     }
@@ -968,7 +973,7 @@ internal sealed partial class HostServer : IDisposable
         var messages = (p.Messages ?? []).Select(ToSaved).ToList();
         var sessions = await s.Store.ListWithPreviewAsync(ct);
 
-        var result = Inferpal.Services.Commands.BranchCommandHandler.Handle(parts, messages, s.CurrentSessionName, sessions);
+        var result = Inferpal.Services.Commands.BranchCommandHandler.Handle(parts, messages, s.CurrentSessionName, sessions.Items);
         return new SessionBranchCommandResult(
             result.SwitchTo is { } target ? Strings.BranchSwitched(target) : result.Message,
             result.ForkTurn,
@@ -1194,7 +1199,7 @@ internal sealed partial class HostServer : IDisposable
     {
         var model = XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
-            AgentOrchestrator.EstimateTokens(SnapshotHistory(s)), s.Config.ContextWindowSize);
+            AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.Config.ContextWindowSize);
         return new XRayPanelDto(
             model.Sections.Select(x => new XRaySectionDto(
                 x.Id, x.Label, x.Tokens, x.Percent, x.Content, x.Enabled, x.CanToggle)).ToList(),

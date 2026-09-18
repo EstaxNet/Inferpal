@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services;
 using Inferpal.Services.Commands;
@@ -317,7 +317,7 @@ internal sealed partial class HostServer
                         projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
                     return new SlashCommandResult(true, XRayCommandHandler.Handle(
                         sections,
-                        AgentOrchestrator.EstimateTokens(s.History),
+                        AgentOrchestrator.EstimateConversationTokens(s.History),
                         s.Config.ContextWindowSize,
                         s.Config.RagAutoContextEnabled));
                 }

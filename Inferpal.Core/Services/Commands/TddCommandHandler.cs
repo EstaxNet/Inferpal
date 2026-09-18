@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
@@ -83,6 +83,15 @@ internal static class TddCommandHandler
 
             // No runner / unusable report → surface the tool's own explanation, don't loop on it.
             if (!LooksLikeTestReport(output)) return new(output.Trim());
+
+            // ⚠ THREE states, not two. `run_tests` distinguishes "green", "failing" and "nothing
+            // ran" — a filter that matched nothing, a runner that exited 0 without a parsable
+            // summary — and this loop folded the third into the second: five agent rounds of
+            // speculative patches against a report whose first line says no test was executed.
+            // Stopping on ANY round is deliberate: the dishonest way for a fix loop to go green is
+            // to make the failing test stop existing, and that shows up here as round 2 suddenly
+            // matching nothing.
+            if (NothingRan(output)) return new(Strings.TddNothingRan + "\n\n" + output.Trim());
 
             bool green = TestsPassed(output);
             onTestReport?.Invoke(output, green);
@@ -181,6 +190,19 @@ internal static class TddCommandHandler
     /// tool's raw fallback dumps still carry the failure text the agent needs, so they loop.</summary>
     internal static bool LooksLikeTestReport(string output) =>
         !output.TrimStart().StartsWith("No test runner detected", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The report says no test was <b>executed</b> — neither a pass nor something to fix.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Matched on <see cref="Tools.RunTestsTool"/>'s own constants, never on a sentence re-typed
+    /// here: a copy keeps matching right up to the day the writing end is reworded, and then stops
+    /// without a sign. Both spellings of the state are covered — a filter that matched nothing
+    /// (dotnet) and a runner that exited 0 with no parsable summary (all four parsers).
+    /// </remarks>
+    internal static bool NothingRan(string output) =>
+        output.Contains(Tools.RunTestsTool.NoTestMatchedFilter, StringComparison.Ordinal)
+     || output.Contains(Tools.RunTestsTool.NothingProven,       StringComparison.Ordinal);
 
     /// <summary>Fix-iteration prompt. English on purpose — model-facing, like the agent system
     /// prompt and the bench tasks; only UI strings are localized.</summary>

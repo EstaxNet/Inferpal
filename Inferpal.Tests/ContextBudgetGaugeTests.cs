@@ -30,10 +30,10 @@ public class ContextBudgetGaugeTests
         Assert.Equal(expectedColor, ContextBudgetGauge.Compute(tokens, limit)!.Color);
 
     [Fact]
-    public void Compute_ClampsFillAt100Percent()
+    public void Compute_PastTheWindow_ReportsTheRealFill_AndStaysRed()
     {
         var b = ContextBudgetGauge.Compute(20_000, 8000)!;
-        Assert.Equal(100.0, b.FillPercent);
+        Assert.Equal(250.0, b.FillPercent);
         Assert.Equal("#CC2222", b.Color);
     }
 

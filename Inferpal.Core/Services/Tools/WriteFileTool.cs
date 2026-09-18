@@ -54,18 +54,13 @@ internal class WriteFileTool : ITool
                 diff: new DiffInfo(oldContent, content, path)))
             return Strings.WriteCancelled;
 
-        var snapNote = string.Empty;
-        if (exists)
-        {
-            var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
-            if (!saved) return FileHistoryService.BackupFailedMessage(path);
-            if (!string.IsNullOrEmpty(snapPath))
-                snapNote = Strings.HistoryNote(snapPath);
-        }
-        else
-        {
-            _history.NoteCreated(path);   // no prior content → /undo-run deletes it
-        }
+        // One branch only: the net KNOWS how to tell "nothing to back up, so this write creates the
+        // file" from "the backup failed". The `else` that declared the creation by hand was the only
+        // site doing it — and that shape, a case handled OUTSIDE the funnel, is what left
+        // update_memory out of /undo-run's perimeter.
+        var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
+        if (!saved) return FileHistoryService.BackupFailedMessage(path);
+        var snapNote = string.IsNullOrEmpty(snapPath) ? string.Empty : Strings.HistoryNote(snapPath);
 
         var dir = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(dir))

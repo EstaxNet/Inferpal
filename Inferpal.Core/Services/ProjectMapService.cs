@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Inferpal.Services.Rag;
+using Inferpal.Services.Tools;
 
 namespace Inferpal.Services;
 
@@ -58,6 +59,14 @@ internal sealed class ProjectMapService
     {
         // ── 1. Scan ───────────────────────────────────────────────────────────
         var files = EnumerateSourceFiles(root).ToList();
+        // ⚠ The header below is literally labelled "Scanned: N source files", and N is what the walk
+        // TOOK. Two holes never reach that number: a file taken and then unreadable (counted here,
+        // skipped by the catch below) and a folder the walk never listed or would not follow, whose
+        // files are absent from the list altogether. An inventory read as exhaustive is how a model
+        // concludes a namespace, a type or a whole layer does not exist in this project.
+        var coverage   = new ScanCoverage(files.Count, files.Count)
+                             .WithGap(WorkspaceScan.FirstWalkGap(root, root));
+        var unreadable = 0;
 
         // Per-file parsed data
         var nsFiles      = new Dictionary<string, List<string>>(StringComparer.Ordinal);      // ns → file list
@@ -100,7 +109,10 @@ internal sealed class ProjectMapService
             // Cancellation must PROPAGATE: swallowed, every remaining read failed instantly and
             // a partial map was returned as if complete (pre-1.6.0 architecture review).
             catch (OperationCanceledException) { throw; }
-            catch { /* skip unreadable files */ }
+            // Counted rather than traced: one ring entry per unreadable file, on every regeneration,
+            // is the noise RecordOnce and DroppedLineOnce exist to prevent. The count IS the channel,
+            // and it goes where the reader of the map will see it.
+            catch { unreadable++; }
         }
 
         // ── 2. Cross-file ref counts (over the pass-1 contents, no second disk walk) ──
@@ -125,6 +137,9 @@ internal sealed class ProjectMapService
         sb.AppendLine($"🗺️  PROJECT MAP  —  {Path.GetFileName(root)}");
         sb.AppendLine($"    Root   : {root}");
         sb.AppendLine($"    Scanned: {files.Count} source files  |  {typeList.Count} types  |  {nsFiles.Count} namespaces");
+        // Right under the count it qualifies, not at the far end of a sixty-line report.
+        coverage = coverage.WithUnreadable(unreadable);
+        if (coverage.IsIncomplete) sb.AppendLine($"    {coverage.Warning().Replace("\n", "\n    ")}");
         sb.AppendLine(bar);
 
         // ── Namespace tree ───────────────────────────────────────────────────

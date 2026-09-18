@@ -126,8 +126,7 @@ public class McpJsonRpcTests
         var text = McpJsonRpc.ExtractCallResult(El("""
         { "content": [
             { "type": "text", "text": "line one" },
-            { "type": "resource", "resource": { "text": "line two" } },
-            { "type": "image", "data": "ignored" }
+            { "type": "resource", "resource": { "text": "line two" } }
         ] }
         """), "t");
 

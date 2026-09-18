@@ -1,3 +1,5 @@
+using System.IO.Enumeration;
+
 namespace Inferpal.Services;
 
 /// <summary>
@@ -161,7 +163,9 @@ internal static class WorkspaceScan
         var p = string.IsNullOrWhiteSpace(pattern) ? "*" : pattern.Trim();
         while (p.StartsWith("**/", StringComparison.Ordinal) || p.StartsWith("**\\", StringComparison.Ordinal))
             p = p[3..];
+        if (p == ".") p = "*";
         return p.Length == 0 || p.IndexOfAny(['\\', '/']) >= 0 || p.Contains("..", StringComparison.Ordinal)
+            || p.Contains('\0') || Path.IsPathRooted(p)
             ? null
             : p;
     }
@@ -216,8 +220,7 @@ internal static class WorkspaceScan
         if (NormalizeFilePattern(pattern) is not { } safePattern) { failed = true; return []; }
         try
         {
-            return Directory.EnumerateFiles(start, safePattern, WalkOptions)
-                            .Where(f => !IsExcludedPath(f, judgedBelow));
+            return Walk(start, safePattern).Where(f => !IsExcludedPath(f, judgedBelow));
         }
         catch (Exception ex)
         {
@@ -228,8 +231,37 @@ internal static class WorkspaceScan
     }
 
     /// <summary>
-    /// The first folder below <paramref name="start"/> that the process cannot <b>list</b>, relative
-    /// to <paramref name="root"/> — or <c>null</c> when the whole tree could be listed.
+    /// Why a directory of an entry, and which one, describing a hole in what a walk will see.
+    /// </summary>
+    /// <param name="Folder">The folder, relative to the walk's root.</param>
+    /// <param name="Kind">Which of the two reasons applies.</param>
+    internal readonly record struct WalkGap(string Folder, WalkGapKind Kind)
+    {
+        /// <summary>The localized sentence for this gap — one reader for both causes.</summary>
+        /// <remarks>
+        /// ⚠ The two causes need two sentences and the choice lives HERE, not at each rendering
+        /// site: "cannot be listed" sends the reader to a permission or a lock, "is a link, not
+        /// followed" sends them somewhere else entirely. Two call sites picking the sentence
+        /// themselves is one call site that will pick the wrong one.
+        /// </remarks>
+        public string Sentence() => Kind == WalkGapKind.NotFollowed
+            ? Inferpal.Localization.Strings.ScanFolderNotFollowed(Folder)
+            : Inferpal.Localization.Strings.ScanFolderSkipped(Folder);
+    }
+
+    /// <summary>The two reasons a folder's files never reach a walk.</summary>
+    internal enum WalkGapKind
+    {
+        /// <summary>The process cannot list the folder (permissions, a lock).</summary>
+        Unlistable,
+
+        /// <summary>The folder is a symlink or junction, which the walk does not follow.</summary>
+        NotFollowed,
+    }
+
+    /// <summary>
+    /// The first folder below <paramref name="start"/> whose files a walk will <b>not</b> see, with
+    /// the reason — or <c>null</c> when the whole tree is readable and unlinked.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -259,14 +291,25 @@ internal static class WorkspaceScan
     /// directory-only traversal.
     /// </para>
     /// </remarks>
-    public static string? FirstUnlistableFolder(string start, string? root = null)
+    public static WalkGap? FirstWalkGap(string start, string? root = null)
     {
         try
         {
             foreach (var child in Directory.EnumerateDirectories(start))
             {
                 if (IsExcludedDirName(child)) continue;
-                if (FirstUnlistableFolder(child, root) is { } deeper) return deeper;
+
+                // ⚠ A LINKED directory is not descended into, by this detector or by the walk
+                // itself — see WalkOptions. It is a gap all the same: its files are not analysed,
+                // and saying "not followed" sends the reader somewhere else entirely than saying
+                // "cannot be listed". Checked BEFORE recursing, which is also what keeps this
+                // method finite: a junction pointing at an ancestor made it descend ~60 levels
+                // until Windows refused the path, and it then reported an 895-character
+                // `src\deep\loop\src\deep\loop\…` as the folder at fault.
+                if (IsLink(child))
+                    return new WalkGap(Rel(child, root), WalkGapKind.NotFollowed);
+
+                if (FirstWalkGap(child, root) is { } deeper) return deeper;
             }
             return null;
         }
@@ -278,13 +321,36 @@ internal static class WorkspaceScan
             // workspace that has such a folder, which is the very noise DroppedLineOnce and
             // RecordOnce exist to prevent. `ex` is bound only to narrow the filter.
             _ = ex;
-            // Reported relative to the root when there is one: an absolute path here would leak the
-            // user's folders into the model's context.
-            return string.IsNullOrEmpty(root) ? Path.GetFileName(start.TrimEnd('\\', '/'))
-                                              : Path.GetRelativePath(root, start);
+            return new WalkGap(Rel(start, root), WalkGapKind.Unlistable);
         }
     }
 
+    /// <summary><c>true</c> when the entry is a symlink or a junction.</summary>
+    /// <remarks>
+    /// ⚠ .NET maps a Unix symlink to <see cref="FileAttributes.ReparsePoint"/> as well, so one test
+    /// covers both platforms. A path that cannot even be stat'ed is not a link we can name: it is
+    /// treated as listable here and caught by the enumeration above.
+    /// </remarks>
+    private static bool IsLink(string path)
+    {
+        try { return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint); }
+        catch { return false; }
+    }
+
+    // Relative to the root when there is one: an absolute path would leak the user's folders into
+    // the model's context.
+    private static string Rel(string path, string? root) =>
+        string.IsNullOrEmpty(root) ? Path.GetFileName(path.TrimEnd('\\', '/'))
+                                   : Path.GetRelativePath(root, path);
+
+    /// <remarks>
+    /// ⚠ <b>Nothing here skips reparse points, and that is deliberate</b>: the options cannot tell a
+    /// linked <i>directory</i> from a linked <i>file</i>, and only the first one loops. That
+    /// distinction lives in <see cref="Walk"/>, which is why this walk goes through
+    /// <see cref="FileSystemEnumerable{TResult}"/> rather than <c>Directory.EnumerateFiles</c>.
+    /// <see cref="EnumerationOptions.MatchType"/> must stay in step with the matcher
+    /// <see cref="Walk"/> calls — the enumerable's own pattern matching is bypassed.
+    /// </remarks>
     private static readonly EnumerationOptions WalkOptions = new()
     {
         RecurseSubdirectories = true,
@@ -292,4 +358,72 @@ internal static class WorkspaceScan
         AttributesToSkip      = 0,
         MatchType             = MatchType.Win32,
     };
+
+    /// <summary>
+    /// The walk itself: the files under <paramref name="start"/> matching <paramref name="pattern"/>,
+    /// never descending into a <b>linked</b> directory.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <b>Refusing to descend into a linked directory is a CRASH fix, not a preference.</b> A
+    /// junction or symlink pointing at one of its own ancestors — a `latest` link, a Docker bind
+    /// mount, a junction into a Windows profile — made this enumeration walk the cycle until the
+    /// process died: measured <see cref="OutOfMemoryException"/>, and in another run more than ten
+    /// minutes without returning. <see cref="EnumerationOptions.IgnoreInaccessible"/> is what makes
+    /// it fatal rather than noisy: it swallows the per-directory error at the bottom of the cycle
+    /// and keeps queueing directories. This is the single walk funnel of the product — the index,
+    /// `search_in_files`, `list_files` and every analysis tool — so the blast radius was everything.
+    /// </para>
+    /// <para>
+    /// ⚠ Bounding the depth instead (<c>MaxRecursionDepth</c>) was measured and rejected: it stops
+    /// the crash but walks the cycle over and over, returning <b>43 paths for 2 real files</b> —
+    /// the same file indexed twenty-one times under twenty-one paths. A crash traded for a poisoned
+    /// index.
+    /// </para>
+    /// <para>
+    /// ⚠ <b>And the obvious spelling costs files for nothing.</b>
+    /// <c>AttributesToSkip = ReparsePoint</c> on <c>Directory.EnumerateFiles</c> is one line and
+    /// stops the cycle, but the attribute is the same on a linked <i>file</i>: measured, a symlinked
+    /// <c>Linked.cs</c> disappeared from the walk while no gap was reported, because
+    /// <see cref="FirstWalkGap"/> only ever looks at folders. A linked file cannot loop — only a
+    /// directory can — so it is data lost for nothing.
+    /// <see cref="FileSystemEnumerable{TResult}"/> is the only shape that separates "descend into"
+    /// from "return", and the recursion predicate carries the whole fix.
+    /// </para>
+    /// <para>
+    /// The cost that remains is real and is SAID: the files of a legitimately linked folder are not
+    /// read (measured: 2 files instead of 3), and <see cref="FirstWalkGap"/> names the folder with
+    /// its own reason, so it is a declared gap and not a silence.
+    /// </para>
+    /// <para>
+    /// ⚠ The pattern is matched by <see cref="FileSystemName.MatchesWin32Expression"/> — the
+    /// framework's own matcher, the one <c>Directory.EnumerateFiles</c> uses under
+    /// <see cref="MatchType.Win32"/>, never a reimplementation of Win32 wildcards (the trap already
+    /// paid on <c>*.sln</c>/<c>*.slnx</c>). Its case flag mirrors
+    /// <see cref="MatchCasing.PlatformDefault"/> rather than being hard-coded: <c>*.cs</c> must not
+    /// start matching <c>A.CS</c> on Linux, where it did not before.
+    /// </para>
+    /// <para>
+    /// ⚠ <b>And the matcher takes a TRANSLATED expression, not the raw pattern</b> —
+    /// <c>Directory.EnumerateFiles</c> runs <see cref="FileSystemName.TranslateWin32Expression"/>
+    /// first, and calling the matcher without it quietly changes what the walk answers: measured,
+    /// <c>*.*</c> dropped a file with no extension (<c>Makefile</c>) and <c>*.</c> — whose Win32
+    /// meaning is exactly "no extension" — returned nothing at all. Both are patterns the model
+    /// writes for <c>list_files</c> and <c>search_in_files</c>.
+    /// </para>
+    /// </remarks>
+    private static IEnumerable<string> Walk(string start, string pattern)
+    {
+        var expression = FileSystemName.TranslateWin32Expression(pattern);
+        return new FileSystemEnumerable<string>(start, static (ref FileSystemEntry e) => e.ToSpecifiedFullPath(), WalkOptions)
+        {
+            ShouldRecursePredicate = static (ref FileSystemEntry e) =>
+                (e.Attributes & FileAttributes.ReparsePoint) == 0,
+            ShouldIncludePredicate = (ref FileSystemEntry e) =>
+                !e.IsDirectory && FileSystemName.MatchesWin32Expression(expression, e.FileName, IgnoreCaseHere),
+        };
+    }
+
+    /// <summary>What <see cref="MatchCasing.PlatformDefault"/> resolves to on this platform.</summary>
+    private static readonly bool IgnoreCaseHere = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
 }

@@ -434,6 +434,11 @@
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>Не является репозиторием git (папка .git не найдена).</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ Этот пакет затрагивает больше проектов, чем Smart Fix проверяет за раз: собрано {0}, ещё {1} НЕ проверено. Соберите их сами или правьте отдельным вызовом.</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd остановлен: этот запуск не выполнил ни одного теста, так что исправлять нечего.</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ Только что покинутый разговор НЕ удалось архивировать: {0}. Он потерян — не сохранён под именем, а чат уже очищен.</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Этот разговор НЕ удалось сохранить на следующий раз: {0}. Он ещё здесь, но сам не вернётся — экспортируйте его, если хотите сохранить.</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git не смог выполнить «git {0}»: {1}. Из этого репозитория ничего не прочитано — это НЕ «нет изменений».</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>Файл .sln не найден. Укажите путь явно.</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>Путь не найден или не является файлом .sln: {0}</value></data>
 
@@ -464,6 +469,8 @@
   <data name="CommitConfirmHint" xml:space="preserve"><value>Сообщение заполнено ниже — при необходимости отредактируйте, затем нажмите **Enter** для коммита.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Нет правил проекта. Создайте `.inferpal/rules/*.md` или выполните `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать файлов: {0} — они НЕ применяются: {1}. Причина — в /diagnostics.</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ Не удалось прочитать сохранённых сессий: {0}, поэтому по ним не искали: {1}. Это НЕ «термина нет». Причина — в /diagnostics.</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ Не удалось прочитать сохранённых сессий: {0}, поэтому их НЕТ в этом списке: {1}. Причина — в /diagnostics.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>Нет проверок ревью. Создайте `.inferpal/checks/*.md` или выполните `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Правила проекта** (`.inferpal/rules`):</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>показать действующие правила разрешений и то, что было проигнорировано</value></data>
@@ -904,6 +911,7 @@ ollama serve
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Частичный анализ: просмотрено только {0} из {1} исходных файлов (предел). Результаты могут быть неполными.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать и проанализировать {0} исходных файлов (права доступа, блокировка или файл удалён). Результаты могут быть неполными.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ Не удалось прочитать содержимое папки «{0}», поэтому ни один файл в ней не был проанализирован (права доступа). Результаты могут быть неполными.</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ Папка «{0}» — это ссылка, по которой переход не выполняется (ссылка назад в проект зациклится), поэтому ни один файл в ней не был проанализирован. Результаты могут быть неполными.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>Авторизация OAuth для MCP пока доступна только в Windows: токен обновления можно хранить только в зашифрованном виде (DPAPI), а хранить его открытым текстом недопустимо. Используйте сервер со статическим токеном в заголовке.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>запустить задачу агента в фоне (`/task [цель]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>Задача **{0}** запущена в фоне: {1}</value></data>

@@ -434,6 +434,11 @@
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>git リポジトリではありません（.git フォルダが見つかりません）。</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ このバッチは Smart Fix が一度に検証するプロジェクト数を超えています: {0} 件をビルドしましたが、さらに {1} 件は検証されていません。自分でビルドするか、別の呼び出しで編集してください。</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd を中止しました: この実行ではテストが 1 つも実行されておらず、修正すべきものがありません。</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ 退出した会話をアーカイブできませんでした: {0}。名前を付けて保存されておらず、チャットはすでにクリアされています — 失われました。</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ この会話を次回のために保存できませんでした: {0}。まだ画面には残っていますが、自動では戻りません — 残したい場合はエクスポートしてください。</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git が「git {0}」に応答できませんでした: {1}。このリポジトリからは何も読み取っていません — これは「変更なし」ではありません。</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>.sln ファイルが見つかりません。パスを明示的に指定してください。</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>パスが見つからないか .sln ファイルではありません：{0}</value></data>
 
@@ -464,6 +469,8 @@
   <data name="CommitConfirmHint" xml:space="preserve"><value>メッセージが下に事前入力されています — 必要に応じて編集し、**Enter** でコミット。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>プロジェクトルールがありません。`.inferpal/rules/*.md` を作成するか `/rules init` を実行してください。</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} 個のファイルを読み取れなかったため、適用されていません: {1}。原因は /diagnostics にあります。</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ 保存済みセッション {0} 件を読み取れず、検索できませんでした: {1}。「語が存在しない」という意味ではありません。原因は /diagnostics を見てください。</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ 保存済みセッション {0} 件を読み取れなかったため、この一覧には含まれていません: {1}。原因は /diagnostics を見てください。</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>レビューチェックがありません。`.inferpal/checks/*.md` を作成するか `/checks init` を実行してください。</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**プロジェクトルール** (`.inferpal/rules`):</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>実際に有効な権限ルールと、無視されたものを一覧表示</value></data>
@@ -904,6 +911,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ScanPartial" xml:space="preserve"><value>⚠ 部分的な解析です: {1} 件中 {0} 件のソースファイルのみを走査しました（上限）。結果は不完全な可能性があります。</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ {0} 件のソースファイルを読み取れず、解析できませんでした（権限、ロック、または削除）。結果は不完全な可能性があります。</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ フォルダー「{0}」の一覧を取得できなかったため、その下のファイルは一つも解析されていません（権限）。結果は不完全な可能性があります。</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ フォルダー「{0}」はリンクで、たどられません（プロジェクト内を指すリンクは無限に循環します）。その下のファイルは一つも解析されていません。結果は不完全な可能性があります。</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP の OAuth 認可は現在 Windows のみ対応です。リフレッシュトークンは暗号化 (DPAPI) してのみ保存でき、平文保存は選択肢にありません。静的ヘッダートークンのサーバーをご利用ください。</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>エージェントのタスクをバックグラウンドで実行する (`/task [目的]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>タスク **{0}** をバックグラウンドで開始しました: {1}</value></data>

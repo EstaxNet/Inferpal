@@ -435,6 +435,11 @@ Use `/clear` after editing the file to reload it.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>Not a git repository (no .git folder found).</value></data>
+  <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ This batch spans more projects than Smart Fix checks in one go: {0} were built, {1} more were NOT checked. Build them yourself, or edit them in a separate call.</value></data>
+  <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd stopped: this run executed no test at all, so there is nothing to fix.</value></data>
+  <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ The conversation you just left could NOT be archived: {0}. It is gone — it was not saved under a name, and the chat has already been cleared.</value></data>
+  <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.</value></data>
+  <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git could not answer 'git {0}': {1}. Nothing was read from this repository — this is NOT "no changes".</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>No .sln file found. Try providing the path explicitly.</value></data>
   <data name="SolutionPathNotFound" xml:space="preserve"><value>Path not found or not a .sln file: {0}</value></data>
 
@@ -465,6 +470,8 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pre-filled below — edit if needed, then press **Enter** to commit.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>No project rules. Create `.inferpal/rules/*.md` or run `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} file(s) could not be read and are therefore NOT applied: {1}. See /diagnostics for the reason.</value></data>
+  <data name="SessionsUnreadableSearched" xml:space="preserve"><value>⚠ {0} saved session(s) could not be read and were therefore NOT searched: {1}. This is NOT "the term is absent". See /diagnostics for the reason.</value></data>
+  <data name="SessionsUnreadableListed" xml:space="preserve"><value>⚠ {0} saved session(s) could not be read and are therefore NOT in this list: {1}. See /diagnostics for the reason.</value></data>
   <data name="ChecksNone" xml:space="preserve"><value>No review checks. Create `.inferpal/checks/*.md` or run `/checks init`.</value></data>
   <data name="RulesListHeader" xml:space="preserve"><value>**Project rules** (`.inferpal/rules`):</value></data>
   <data name="SlashHintPermissions" xml:space="preserve"><value>list the permission rules actually in force, and what was ignored</value></data>
@@ -908,6 +915,7 @@ ollama serve
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Partial analysis: only {0} of {1} source files were scanned (cap). Results may be incomplete.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ {0} source file(s) could not be read and were not analysed (permissions, a lock, or they disappeared). Results may be incomplete.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ The folder '{0}' could not be listed, so none of the files under it were analysed (permissions). Results may be incomplete.</value></data>
+  <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ The folder '{0}' is a link, which is not followed (a link pointing back into the project would loop forever), so none of the files under it were analysed. Results may be incomplete.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP OAuth authorization is only available on Windows for now: the refresh token can only be stored encrypted (DPAPI), and storing it in clear text is not an option. Use a server with a static header token instead.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>run an agent task in the background (`/task [objective]`)</value></data>
   <data name="TaskSubmitted" xml:space="preserve"><value>Task **{0}** started in the background: {1}</value></data>

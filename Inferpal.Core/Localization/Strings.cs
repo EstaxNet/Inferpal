@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Resources;
 
 namespace Inferpal.Localization;
@@ -763,6 +763,19 @@ internal static class Strings
 
     // ── Git / Solution tool outputs ────────────────────────────────────────────
     public static string GitNotRepo                        => Get(nameof(GitNotRepo));
+    /// <param name="command">The git arguments, without the leading <c>git</c>.</param>
+    /// <param name="detail">What git itself said — its own words, never a phrase of ours.</param>
+    public static string GitCommandFailed(string command, string detail) =>
+        string.Format(Get(nameof(GitCommandFailed)), command, detail);
+    /// <summary>
+    /// The conversation being left could not be archived. Shown <b>after</b> the transcript was
+    /// cleared, which is why it says what was lost rather than only why.
+    /// </summary>
+    public static string SessionArchiveFailed(string reason) =>
+        string.Format(Get(nameof(SessionArchiveFailed)), reason);
+
+    public static string SessionAutoSaveFailed(string reason) =>
+        string.Format(Get(nameof(SessionAutoSaveFailed)), reason);
     public static string SolutionNoSln                     => Get(nameof(SolutionNoSln));
     public static string SolutionPathNotFound(string path) => string.Format(Get(nameof(SolutionPathNotFound)), path);
 
@@ -784,6 +797,12 @@ internal static class Strings
     public static string SmartFixBuildOk                                   => Get(nameof(SmartFixBuildOk));
     public static string SmartFixBuildErrors(int count, string errorLines) => string.Format(Get(nameof(SmartFixBuildErrors)), count, errorLines);
     public static string SmartFixTimeout                                    => Get(nameof(SmartFixTimeout));
+    /// <summary>
+    /// A multi-file batch spanned more projects than Smart Fix builds in one call. Said rather than
+    /// trimmed in silence: the files were written either way.
+    /// </summary>
+    public static string SmartFixBatchCapped(int checkedCount, int skipped) =>
+        string.Format(Get(nameof(SmartFixBatchCapped)), checkedCount, skipped);
     public static string LabelSmartFixEnabled                               => Get(nameof(LabelSmartFixEnabled));
     public static string HintSmartFixEnabled                                => Get(nameof(HintSmartFixEnabled));
 
@@ -799,6 +818,16 @@ internal static class Strings
     // rule PlanStore.List had already written, for itself alone.
     public static string GovernanceFilesUnreadable(int count, string names) =>
         string.Format(Get(nameof(GovernanceFilesUnreadable)), count, names);
+    /// <summary>Saved sessions missing from a listing because they could not be read.</summary>
+    public static string SessionsUnreadableListed(int count, string names) =>
+        string.Format(Get(nameof(SessionsUnreadableListed)), count, names);
+    /// <summary>
+    /// Saved sessions a search could not open. Deliberately a <b>second</b> sentence rather than a
+    /// reuse of the one above: "missing from the list" and "not searched — this is not «absent»"
+    /// send the reader to two different conclusions, and it is the second that gets acted on.
+    /// </summary>
+    public static string SessionsUnreadableSearched(int count, string names) =>
+        string.Format(Get(nameof(SessionsUnreadableSearched)), count, names);
     public static string RulesNone               => Get(nameof(RulesNone));
     public static string ChecksNone              => Get(nameof(ChecksNone));
     public static string RulesListHeader         => Get(nameof(RulesListHeader));
@@ -1034,6 +1063,11 @@ internal static class Strings
     public static string TddFixing(int round)                => string.Format(Get(nameof(TddFixing)), round);
     public static string TddSuccess(int rounds)              => string.Format(Get(nameof(TddSuccess)), rounds);
     public static string TddGiveUp(int maxRounds)            => string.Format(Get(nameof(TddGiveUp)), maxRounds);
+    /// <summary>
+    /// The loop stopped because the run executed no test — a third state, between "green" and
+    /// "failing", that it used to fold into the second and then spend five agent rounds on.
+    /// </summary>
+    public static string TddNothingRan                       => Get(nameof(TddNothingRan));
     public static string TddDebugCaptureApproval(string test) => string.Format(Get(nameof(TddDebugCaptureApproval)), test);
     public static string TddDebugCapturing                   => Get(nameof(TddDebugCapturing));
     public static string TddDebugCaptureFailed               => Get(nameof(TddDebugCaptureFailed));
@@ -1064,6 +1098,8 @@ internal static class Strings
         string.Format(Get(nameof(ScanUnreadable)), count);
     public static string ScanFolderSkipped(string folder) =>
         string.Format(Get(nameof(ScanFolderSkipped)), folder);
+    public static string ScanFolderNotFollowed(string folder) =>
+        string.Format(Get(nameof(ScanFolderNotFollowed)), folder);
 
     // ── /branch command (conversation branching) ───────────────────────────────
     public static string SlashHintBranch                     => Get(nameof(SlashHintBranch));

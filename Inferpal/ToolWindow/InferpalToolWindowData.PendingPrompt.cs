@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -130,13 +130,28 @@ internal partial class InferpalToolWindowData
             await _store.SaveAsync(name, snapshot, CancellationToken.None);
             await RunOnVMContextAsync(RefreshSessionsList);
         }
-        catch (Exception ex) { Diagnostics.Swallow("Session.SaveNamed", ex); }
+        catch (Exception ex)
+        {
+            // ⚠ This runs fire-and-forget — /clear must not wait on the model call that names the
+            // session — so by the time it fails the transcript is ALREADY cleared: the failure lands
+            // after the only moment the user could still have copied anything. A trace in
+            // /diagnostics is therefore not a channel; the conversation they are now in is. The same
+            // rule is applied two methods down for a session that could not be deleted.
+            Diagnostics.Swallow("Session.SaveNamed", ex);
+            var reason = ex.Message;
+            await RunOnVMContextAsync(() =>
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.SessionArchiveFailed(reason))));
+        }
     }
 
     // Shared with the Host (`session/title`, VS Code) — prompt, timeout and fallback live in the
     // Core so the two front-ends can never drift apart on how a session gets named.
     private Task<string> GenerateSessionTitleAsync(string firstUserContent) =>
         SessionTitleGenerator.GenerateAsync(_client, _config, firstUserContent, CancellationToken.None);
+
+    /// <summary>Set when the auto-save last failed and the user was told; cleared by the next one
+    /// that works.</summary>
+    private bool _autoSaveFailureTold;
 
     private async Task AutoSaveAsync()
     {
@@ -149,8 +164,23 @@ internal partial class InferpalToolWindowData
                     Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
             });
             await _store.AutoSaveAsync(snapshot, CancellationToken.None, _indexService.RootDir);
+            _autoSaveFailureTold = false;
         }
-        catch (Exception ex) { Diagnostics.Swallow("Session.AutoSave", ex); }
+        catch (Exception ex)
+        {
+            // ⚠ The product PROMISES this conversation comes back — it restores it at window
+            // opening — so an auto-save that never works loses it at the next close, with nothing
+            // said. The transcript is still on screen here (unlike the archive of a /clear two
+            // methods up), so the notice names what to do while it still can.
+            Diagnostics.Swallow("Session.AutoSave", ex);
+            // Said ONCE: this runs on every turn and its causes last. Re-armed by the next save
+            // that works, otherwise "once" becomes "once in the life of the window".
+            if (_autoSaveFailureTold) return;
+            _autoSaveFailureTold = true;
+            var reason = ex.Message;
+            await RunOnVMContextAsync(() =>
+                InsertThemed(ChatMessageItem.AssistantMsg(Strings.SessionAutoSaveFailed(reason))));
+        }
     }
 
     private async Task DeleteSessionAsync(object? _, CancellationToken ct)
