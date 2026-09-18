@@ -334,6 +334,7 @@ Backup: {0}</value></data>
 {1}</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Build: {0} error(s), {1} warning(s) — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS context unavailable — open the Inferpal window via the View menu.</value></data>
+  <data name="EditNotApplied" xml:space="preserve"><value>The edit was not applied to {0} — the document changed under it, or it is read-only. Nothing was written.</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>No file open in the editor.</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>Active file: {0}
 
@@ -390,6 +391,7 @@ Backup: {0}</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ The code is already clear — no refactor needed.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ No bug or issue found — nothing to fix.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ The code is already adequately documented.</value></data>
+  <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** already exists but could not be read — nothing was written over it. Free the file (a build or another editor may be holding it) and run the command again.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nothing useful to test — every meaningful case is already covered.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ The code action failed — check the backend connection and the model.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Usage: `{0}`</value></data>

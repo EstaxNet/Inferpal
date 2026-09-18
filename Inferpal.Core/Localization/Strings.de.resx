@@ -333,6 +333,7 @@ Sicherung: {0}</value></data>
 {1}</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Build: {0} Fehler, {1} Warnung(en) – {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS-Kontext nicht verfügbar – öffnen Sie das Inferpal-Fenster über das Menü „Ansicht".</value></data>
+  <data name="EditNotApplied" xml:space="preserve"><value>Die Änderung wurde nicht auf {0} angewendet — das Dokument hat sich zwischenzeitlich geändert oder ist schreibgeschützt. Es wurde nichts geschrieben.</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>Keine Datei im Editor geöffnet.</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>Aktive Datei: {0}
 
@@ -389,6 +390,7 @@ Sicherung: {0}</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ Der Code ist bereits klar — kein Refactoring nötig.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Kein Fehler oder Problem gefunden — nichts zu beheben.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Der Code ist bereits ausreichend dokumentiert.</value></data>
+  <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** ist bereits vorhanden, konnte aber nicht gelesen werden — es wurde nichts überschrieben. Geben Sie die Datei frei (möglicherweise hält sie ein Build oder ein anderer Editor) und führen Sie den Befehl erneut aus.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nichts Sinnvolles zu testen — alle relevanten Fälle sind bereits abgedeckt.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Die Codeaktion ist fehlgeschlagen — prüfen Sie die Backend-Verbindung und das Modell.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Verwendung: `{0}`</value></data>

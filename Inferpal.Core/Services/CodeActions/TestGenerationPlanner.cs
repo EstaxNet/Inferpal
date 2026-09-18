@@ -17,11 +17,23 @@ namespace Inferpal.Services.CodeActions;
 /// failure: nothing must be written, and the user must be told why the chat stayed quiet.
 /// </param>
 /// <param name="Content">Full content to write; empty unless <paramref name="Ok"/>.</param>
+/// <param name="Unreadable">
+/// The test file exists and could not be read. ⚠ The one outcome where carrying on <b>destroys</b>
+/// something: with nothing read, the plan is indistinguishable from "there is no test file", and
+/// the branch that applies it writes a brand-new file straight over the old one — on the VS side
+/// with no snapshot and no undoable edit. Refused, and the cause named.
+/// </param>
 internal sealed record TestGenerationPlan(
-    bool Ok, string TestPath, string TestFileName, bool Extended, bool NoChange, string Content)
+    bool Ok, string TestPath, string TestFileName, bool Extended, bool NoChange, string Content,
+    bool Unreadable = false)
 {
     public static TestGenerationPlan Failed(string testPath = "", bool extended = false) =>
         new(false, testPath, Path.GetFileName(testPath), extended, false, string.Empty);
+
+    /// <summary>The existing test file could not be read: nothing is written over it.</summary>
+    public static TestGenerationPlan CannotRead(string testPath) =>
+        new(false, testPath, Path.GetFileName(testPath), Extended: true, NoChange: false,
+            string.Empty, Unreadable: true);
 }
 
 /// <summary>
@@ -57,12 +69,19 @@ internal static class TestGenerationPlanner
         var testName   = Path.GetFileName(testPath);
 
         // Read any existing test file so the model extends it instead of clobbering it.
+        // ⚠ And a read that FAILS is not "there is no test file": swallowing it left `existing`
+        // null, which is the very state that means "create a new one" — i.e. the clobbering this
+        // read exists to prevent, on the branch that has no undo.
         string? existing = null;
         if (File.Exists(testPath))
         {
             try { existing = await File.ReadAllTextAsync(testPath, ct); }
             catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Diagnostics.Swallow($"TestGenerationPlanner.Read({testName})", ex); }
+            catch (Exception ex)
+            {
+                Diagnostics.Swallow($"TestGenerationPlanner.Read({testName})", ex);
+                return TestGenerationPlan.CannotRead(testPath);
+            }
         }
         var extend = !string.IsNullOrWhiteSpace(existing);
 

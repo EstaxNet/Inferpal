@@ -128,6 +128,8 @@ internal static class Strings
     public static string TestsExtended(string fileName) =>
         string.Format(Get(nameof(TestsExtended)), fileName);
     public static string TestsGenerateFailed => Get(nameof(TestsGenerateFailed));
+    public static string TestsFileUnreadable(string fileName) =>
+        string.Format(Get(nameof(TestsFileUnreadable)), fileName);
 
     // ── Code actions: "nothing to do" verdicts (the code is already good) ───────
     public static string RefactorNoChange => Get(nameof(RefactorNoChange));
@@ -540,6 +542,8 @@ internal static class Strings
     public static string DebugStartCancelled => Get(nameof(DebugStartCancelled));
     public static string DiagNoProject     => Get(nameof(DiagNoProject));
     public static string ActiveDocNoContext => Get(nameof(ActiveDocNoContext));
+    public static string EditNotApplied(string path) =>
+        string.Format(Get(nameof(EditNotApplied)), path);
     public static string ActiveDocNoFile   => Get(nameof(ActiveDocNoFile));
 
     public static string ToolFileNotFound(string path) =>

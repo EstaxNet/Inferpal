@@ -51,6 +51,9 @@ internal class AddTestsSelectionCommand : Command
         if (result.Cancelled) return;
         if (result.NoChange)
             await Extensibility.Shell().ShowPromptAsync(Strings.TestsNoChange, PromptOptions.OK, ct);
+        else if (result.Unreadable)
+            await Extensibility.Shell().ShowPromptAsync(
+                Strings.TestsFileUnreadable(result.TestFileName), PromptOptions.OK, ct);
         else if (!result.Ok)
             await Extensibility.Shell().ShowPromptAsync(Strings.TestsGenerateFailed, PromptOptions.OK, ct);
     }

@@ -259,6 +259,12 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     return { path: editor.document.uri.fsPath, text: editor.document.getText() };
   }
 
+  /**
+   * The path that was edited, or null when the edit DID NOT APPLY — never "no file is open".
+   * The Core resolves the active document (and refuses without one) before calling this, so null
+   * reaching it means a refused edit: reporting it as "no file open" made the tool contradict
+   * `get_active_document` on the same session.
+   */
   async insertAtCursor(text: string): Promise<string | null> {
     const editor = this.currentEditor();
     if (!editor || editor.document.uri.scheme !== 'file') {

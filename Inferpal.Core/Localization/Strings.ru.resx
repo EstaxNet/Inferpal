@@ -333,6 +333,7 @@
 {1}</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Сборка: {0} ошибок, {1} предупреждений — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>Контекст VS недоступен — откройте окно Inferpal через меню «Вид».</value></data>
+  <data name="EditNotApplied" xml:space="preserve"><value>Правка не применена к {0} — документ изменился за это время или доступен только для чтения. Ничего не записано.</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>В редакторе нет открытых файлов.</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>Активный файл: {0}
 
@@ -389,6 +390,7 @@
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ Код уже понятен — рефакторинг не требуется.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Ошибок или проблем не найдено — исправлять нечего.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Код уже достаточно документирован.</value></data>
+  <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** уже существует, но его не удалось прочитать — поверх ничего не записано. Освободите файл (его может удерживать сборка или другой редактор) и выполните команду ещё раз.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Тестировать нечего — все значимые случаи уже покрыты.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Не удалось выполнить действие с кодом — проверьте подключение к бэкенду и модель.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Использование: `{0}`</value></data>

@@ -333,6 +333,7 @@ Sauvegarde : {0}</value></data>
 {1}</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Build : {0} erreur(s), {1} avertissement(s) — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>Contexte VS non disponible — ouvre la fenêtre Inferpal via le menu View.</value></data>
+  <data name="EditNotApplied" xml:space="preserve"><value>L'édition n'a pas été appliquée à {0} — le document a changé entre-temps, ou il est en lecture seule. Rien n'a été écrit.</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>Aucun fichier ouvert dans l'éditeur.</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>Fichier actif : {0}
 
@@ -389,6 +390,7 @@ Sauvegarde : {0}</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ Le code est déjà clair — aucune refactorisation nécessaire.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Aucun bug ni problème détecté — rien à corriger.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Le code est déjà suffisamment documenté.</value></data>
+  <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** existe déjà mais n'a pas pu être lu — rien n'a été écrit par-dessus. Libérez le fichier (une compilation ou un autre éditeur le retient peut-être) puis relancez la commande.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Rien d'utile à tester — tous les cas pertinents sont déjà couverts.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ L'action de code a échoué — vérifiez la connexion au backend et le modèle.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Utilisation : `{0}`</value></data>

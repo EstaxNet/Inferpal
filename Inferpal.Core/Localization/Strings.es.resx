@@ -333,6 +333,7 @@ Copia de seguridad: {0}</value></data>
 {1}</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Compilación: {0} error(es), {1} advertencia(s) — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>Contexto de VS no disponible — abra la ventana de Inferpal desde el menú Ver.</value></data>
+  <data name="EditNotApplied" xml:space="preserve"><value>La edición no se ha aplicado a {0}: el documento ha cambiado mientras tanto o es de solo lectura. No se ha escrito nada.</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>No hay ningún archivo abierto en el editor.</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>Archivo activo: {0}
 
@@ -389,6 +390,7 @@ Copia de seguridad: {0}</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ El código ya es claro: no hace falta refactorizar.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ No se ha encontrado ningún error o problema: nada que corregir.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ El código ya está suficientemente documentado.</value></data>
+  <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** ya existe pero no se ha podido leer: no se ha escrito nada encima. Libere el archivo (puede que lo retenga una compilación u otro editor) y vuelva a ejecutar el comando.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nada útil que probar: todos los casos relevantes ya están cubiertos.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ La acción de código ha fallado: comprueba la conexión con el backend y el modelo.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Uso: `{0}`</value></data>

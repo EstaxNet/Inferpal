@@ -333,6 +333,7 @@ Kopia zapasowa: {0}</value></data>
 {1}</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Kompilacja: {0} błąd(ów), {1} ostrzeżenie(ń) — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>Kontekst VS niedostępny — otwórz okno Inferpal z menu Widok.</value></data>
+  <data name="EditNotApplied" xml:space="preserve"><value>Nie zastosowano zmiany do {0} — dokument zmienił się w międzyczasie lub jest tylko do odczytu. Nic nie zostało zapisane.</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>Brak otwartego pliku w edytorze.</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>Aktywny plik: {0}
 
@@ -389,6 +390,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ Kod jest już czytelny — refaktoryzacja nie jest potrzebna.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Nie znaleziono błędu ani problemu — nie ma czego poprawiać.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Kod jest już wystarczająco udokumentowany.</value></data>
+  <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** już istnieje, ale nie udało się go odczytać — nic nie zostało nadpisane. Zwolnij plik (może go przytrzymywać kompilacja lub inny edytor) i uruchom polecenie ponownie.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nie ma nic wartego przetestowania — wszystkie istotne przypadki są już pokryte.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Akcja kodu nie powiodła się — sprawdź połączenie z backendem i model.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Użycie: `{0}`</value></data>

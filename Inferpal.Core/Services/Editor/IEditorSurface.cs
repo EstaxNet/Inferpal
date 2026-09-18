@@ -58,9 +58,16 @@ internal interface IEditorSurface
     Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct);
 
     /// <summary>
-    /// Inserts <paramref name="text"/> at the caret of the active document.
-    /// Returns the file path, or <c>null</c> when no editor is active.
+    /// Inserts <paramref name="text"/> at the caret of the active document, and returns the file
+    /// path.
     /// </summary>
+    /// <remarks>
+    /// ⚠ <c>null</c> means <b>the edit did not apply</b> — the document changed under it, it is
+    /// read-only, or the view was disposed. It does <b>not</b> mean "no file is open": both callers
+    /// go through <see cref="Tools.EditorWriteGate"/>, which resolves the active document first and
+    /// refuses when there is none. Reporting it as "no file open" made this tool contradict
+    /// <c>get_active_document</c> on the same session.
+    /// </remarks>
     Task<string?> InsertAtCursorAsync(string text, CancellationToken ct);
 
     /// <summary>

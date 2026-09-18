@@ -333,6 +333,7 @@
 {1}</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>生成：{0} 个错误，{1} 个警告 — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS 上下文不可用 — 请通过"视图"菜单打开 Inferpal 窗口。</value></data>
+  <data name="EditNotApplied" xml:space="preserve"><value>未能将编辑应用到 {0} —— 文档在此期间发生了更改，或者为只读。未写入任何内容。</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>编辑器中没有打开的文件。</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>当前文件：{0}
 
@@ -389,6 +390,7 @@
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ 代码已经很清晰，无需重构。</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ 未发现错误或问题，无需修复。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ 代码已有足够的文档说明。</value></data>
+  <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** 已存在但无法读取 —— 未覆盖任何内容。请释放该文件（可能被生成过程或其他编辑器占用），然后重新运行命令。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ 没有需要测试的内容，所有重要情况都已覆盖。</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ 代码操作失败。请检查后端连接和模型。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>用法：`{0}`</value></data>

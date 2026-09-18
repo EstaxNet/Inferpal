@@ -654,8 +654,11 @@ internal sealed partial class HostServer
         var plan = await TestGenerationPlanner.PlanAsync(
             s.Client, ModelRouter.Resolve(s.Config, ModelRole.CodeActions), doc.Path, doc.Text, ct);
 
-        if (plan.NoChange) return new SlashCommandResult(true, Strings.TestsNoChange);
-        if (!plan.Ok)      return new SlashCommandResult(true, Strings.TestsGenerateFailed);
+        if (plan.NoChange)   return new SlashCommandResult(true, Strings.TestsNoChange);
+        // ⚠ Before the generic refusal: "the file exists and I could not read it" is the one
+        // outcome where carrying on overwrites tests, and it names the file to free.
+        if (plan.Unreadable) return new SlashCommandResult(true, Strings.TestsFileUnreadable(plan.TestFileName));
+        if (!plan.Ok)        return new SlashCommandResult(true, Strings.TestsGenerateFailed);
 
         Inferpal.Services.Execution.BackedUpFileWriter.Outcome outcome;
         try

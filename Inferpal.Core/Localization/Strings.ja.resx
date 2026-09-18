@@ -333,6 +333,7 @@
 {1}</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>ビルド：エラー {0} 件、警告 {1} 件 — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS コンテキストが利用できません — 表示メニューから Inferpal ウィンドウを開いてください。</value></data>
+  <data name="EditNotApplied" xml:space="preserve"><value>{0} に編集を適用できませんでした。その間にドキュメントが変更されたか、読み取り専用です。何も書き込まれていません。</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>エディターにファイルが開かれていません。</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>アクティブファイル：{0}
 
@@ -389,6 +390,7 @@
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ コードはすでに明確です。リファクタリングは不要です。</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ バグや問題は見つかりませんでした。修正は不要です。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ コードはすでに十分に文書化されています。</value></data>
+  <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** は既に存在しますが読み取れませんでした。上書きは行っていません。ファイルを解放して (ビルドや別のエディターが保持している可能性があります)、コマンドをもう一度実行してください。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ テストすべき有用なものはありません。重要なケースはすべて網羅済みです。</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ コードアクションに失敗しました。バックエンド接続とモデルを確認してください。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>使用法：`{0}`</value></data>
