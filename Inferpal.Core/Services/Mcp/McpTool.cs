@@ -82,6 +82,17 @@ internal sealed class McpTool : ITool
     internal static string BuildName(string server, string tool)
         => $"mcp__{Sanitize(server)}__{Sanitize(tool)}";
 
+    /// <summary>
+    /// True when <paramref name="toolName"/> is a name this server's tools would carry.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Built from <see cref="BuildName"/> rather than by splitting on <c>__</c>: sanitising turns
+    /// every non-alphanumeric character into <c>_</c>, so a server or tool whose name already holds
+    /// one makes any split ambiguous. Asking the prefix question with the same builder cannot drift.
+    /// </remarks>
+    internal static bool BelongsTo(string toolName, string serverName)
+        => toolName.StartsWith(BuildName(serverName, string.Empty), StringComparison.Ordinal);
+
     private static string Sanitize(string s)
     {
         var sb = new StringBuilder(s.Length);

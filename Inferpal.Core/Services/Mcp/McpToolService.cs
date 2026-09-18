@@ -133,9 +133,44 @@ internal sealed class McpToolService : IAsyncDisposable
             ? s.Error is { Length: > 0 } problem
                 ? $"{s.Name} — connected, {s.ToolCount} tool(s): {problem}"
                 : $"{s.Name} — connected, {s.ToolCount} tool(s)"
-            : s.AuthRequired
-                ? $"{s.Name} — NOT connected: authorization required"
-                : $"{s.Name} — NOT connected: {s.Error ?? "no reason reported"}")];
+            : $"{s.Name} — NOT connected: {NotConnectedReason(s)}")];
+
+    /// <summary>Why <paramref name="s"/> cannot serve anything, or <c>null</c> when it can.</summary>
+    /// <remarks>
+    /// One wording for every reader of that question: the support bundle, and the model when it calls
+    /// a tool of a server that went away.
+    /// </remarks>
+    internal static string? NotConnectedReason(McpServerStatus s) =>
+        s.Connected             ? null
+      : s.AuthRequired          ? "authorization required"
+      : s.Error is { Length: > 0 } e ? e
+      : "no reason reported";
+
+    /// <summary>
+    /// What to tell the <b>model</b> when it calls a tool name no registry holds — <c>null</c> when no
+    /// configured server claims that name, which is the only case that really is an unknown tool.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ "Unknown tool" means "you invented this name". A tool served by an MCP server that went away
+    /// mid-run is not invented: the model READ it in its own tool list, and the reason it is gone sits
+    /// one field away in this very object. Told otherwise, the model looks for another name instead of
+    /// saying the server is down — the same silence <c>/diagnostics</c> and the support bundle were
+    /// taught to break, held by two of its three readers.
+    /// </remarks>
+    public string? DescribeMissingTool(string toolName)
+    {
+        foreach (var s in Status)
+        {
+            if (!McpTool.BelongsTo(toolName, s.Name)) continue;
+
+            return NotConnectedReason(s) is { } reason
+                ? $"Tool '{toolName}' is unavailable: its MCP server '{s.Name}' is not connected — "
+                  + $"{reason}. Do not retry it; say so and continue without it."
+                : $"Tool '{toolName}' is not offered by MCP server '{s.Name}', which is connected "
+                  + $"with {s.ToolCount} tool(s). Use one of the names in your tool list.";
+        }
+        return null;
+    }
 
     /// <summary>
     /// Tears down any running servers and re-connects from the current config. Safe to call

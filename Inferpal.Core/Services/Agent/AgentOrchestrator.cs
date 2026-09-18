@@ -158,8 +158,7 @@ internal sealed class AgentOrchestrator
         catch (Exception ex)
         {
             Diagnostics.Swallow($"Agent.Tool({name})", ex);
-            return $"Error: the '{name}' call failed — {ex.Message}. "
-                 + "Check the arguments against the tool's schema and try again.";
+            return Execution.ToolFailure.Describe(name, ex);
         }
     }
 

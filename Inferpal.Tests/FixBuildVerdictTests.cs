@@ -52,7 +52,11 @@ public class FixBuildVerdictTests
             "file-not-found"                   => Strings.ToolFileNotFound(Path.Combine("proj", "Ap.sln")),
             "no-project"                       => Strings.DiagNoProject,
             "build-failed-without-diagnostics" => Strings.DiagBuildFailed(1, "Build FAILED."),
-            "tool-error"                       => "Tool 'get_diagnostics' error: The path is outside the workspace root.",
+            // ⚠ The sentence comes from the PRODUCER, never copied: a copy at the reading end
+            // matches until the day the writing end is reworded, then stops without a sign.
+            "tool-error"                       => Services.Execution.ToolFailure.Describe(
+                                                      "get_diagnostics",
+                                                      new ArgumentException("The path is outside the workspace root.")),
             "error-message"                    => Strings.MsgError("boom"),
             _                                  => "",
         };

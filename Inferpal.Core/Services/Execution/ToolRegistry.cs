@@ -269,7 +269,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         if (tool is null)
         {
             _fileHistory.RecordToolCall(name, subject: null, durationMs: 0, error: true);
-            return $"Unknown tool: {name}";
+            // ⚠ "Unknown tool" means "you invented this name". A tool served by an MCP server that
+            // went away mid-run was not invented: the model READ it in its own tool list, and the
+            // reason it is gone sits one field away from here.
+            return _mcp.DescribeMissingTool(name) ?? $"Unknown tool: {name}";
         }
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -302,7 +305,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         catch (Exception ex)
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: true);
-            return $"Tool '{name}' error: {ex.Message}";
+            return ToolFailure.Describe(name, ex);
         }
     }
 
