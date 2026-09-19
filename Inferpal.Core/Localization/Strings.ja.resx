@@ -462,6 +462,7 @@
   <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} 件のコンパイルエラーを検出 — 続行前に修正してください:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: ビルド確認がタイムアウト (60 秒) — 手動で確認してください。</value></data>
+  <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: ビルドチェックはエラーを一つも示さずに失敗しました — 理由を確認するにはご自身で実行してください。</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>書き込み後の自動ビルド検証 (Smart Fix)</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>チェックすると、C#/プロジェクトファイルへの write_file または apply_diff の後に自動的に高速ビルドが実行されます。コンパイルエラーはインラインで返されるため、エージェントが即座に修正できます。</value></data>
 

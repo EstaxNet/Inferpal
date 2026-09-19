@@ -462,6 +462,7 @@
   <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix：检测到 {0} 个编译错误 — 请在继续之前修复：
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix：编译检查超时（60 秒）— 请手动检查。</value></data>
+  <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix：构建检查失败，但没有指出任何错误——请自行运行以查看原因。</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>写入后自动编译检查（Smart Fix）</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>勾选后，每次对 C#/项目文件执行 write_file 或 apply_diff 后，将自动运行快速编译。编译错误将内联返回，以便代理立即修复。</value></data>
 

@@ -29,7 +29,14 @@ internal sealed class McpOAuthFlow
     public McpOAuthFlow(IAuthCodeReceiver receiver, HttpMessageHandler? handler = null)
     {
         _receiver = receiver;
-        _http     = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        // ⚠ NO automatic redirect, the third of the three guarantees the other HTTP clients of
+        // this repository state in the same words — and this is the one client that follows URLs a
+        // REMOTE PARTY chose. `McpOAuthMetadata` refuses an endpoint that is not https (or http on
+        // loopback) precisely because "this value comes from the remote server"; a redirect walks
+        // around that check, since the guard only ever sees the address before the bounce.
+        _http     = handler is null
+            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
+            : new HttpClient(handler, disposeHandler: false);
 
         // Metadata documents and token responses are small by specification and remote by nature;
         // without a ceiling, ReadAsStringAsync buffers whatever the far end decides to send.
@@ -198,17 +205,35 @@ internal sealed class McpOAuthFlow
         return new TokenResponse(access!, refresh, expiresIn);
     }
 
-    private async Task<string?> TryGetAsync(string url, CancellationToken ct)
+    /// <summary>
+    /// Fetches one discovery document, or <c>null</c> when it is not there — <b>saying why</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ `null` is a legitimate answer here (a server without metadata is the ordinary case, and
+    /// the caller falls back), which is exactly why the failures have to be traced: a refused
+    /// connection, a 500, a redirect this client will not follow and a genuinely absent document
+    /// all came back as the same silent `null`, and the sign-in then failed further down with no
+    /// trace of the step that actually went wrong. Once per authorization, so the ring is safe.
+    /// </remarks>
+    internal async Task<string?> TryGetAsync(string url, CancellationToken ct)
     {
         try
         {
             using var req = new HttpRequestMessage(HttpMethod.Get, url);
             req.Headers.TryAddWithoutValidation("MCP-Protocol-Version", "2025-06-18");
             using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
-            return resp.IsSuccessStatusCode ? await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false) : null;
+            if (resp.IsSuccessStatusCode)
+                return await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+            Diagnostics.Record("McpOAuthFlow.Discovery",
+                $"{url} answered {(int)resp.StatusCode} {resp.StatusCode}"
+                + (resp.Headers.Location is { } to ? $" -> {to} (redirects are not followed)" : ""));
+            return null;
         }
-        catch
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
         {
+            Diagnostics.Swallow($"McpOAuthFlow.Discovery({url})", ex);
             return null;
         }
     }

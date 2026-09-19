@@ -44,9 +44,12 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
             var run = await ChildProcess.RunAsync(
                 psi, TimeSpan.FromSeconds(config.CommandTimeoutSeconds), ct);
 
-            // Timeout is reported to the model, not thrown: it must not abort the whole agent run.
+            // Timeout is reported to the model, not thrown: it must not abort the whole agent run —
+            // and it carries what the command had printed, like the persistent shell. ChildProcess
+            // already hands the partial streams back; this tool used to drop them on the floor.
             if (run.TimedOut)
-                return $"Error: command timed out after {config.CommandTimeoutSeconds}s.";
+                return ChildProcess.TimedOutMessage(config.CommandTimeoutSeconds,
+                                                    (run.Stdout + run.Stderr).Trim());
 
             var result = (run.Stdout + run.Stderr).Trim();
             return string.IsNullOrEmpty(result) ? "(no output)" : result;

@@ -462,6 +462,7 @@
   <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: обнаружено {0} ошибок(а) компиляции — исправьте перед продолжением:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: время проверки сборки истекло (60 с) — проверьте вручную.</value></data>
+  <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: проверка сборки завершилась неудачей, не назвав ни одной ошибки — запустите её сами, чтобы понять причину.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Автопроверка сборки после записи (Smart Fix)</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>Если включено, после каждого write_file или apply_diff для файла C#/проекта автоматически запускается быстрая сборка. Ошибки компиляции возвращаются прямо в ответе, чтобы агент мог немедленно их исправить.</value></data>
 

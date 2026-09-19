@@ -96,10 +96,7 @@ internal sealed class ShellSession
                                Task.Delay(ChildProcess.PipeGraceAfterExit, CancellationToken.None));
 
             var salvaged = ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker).Output;
-            var timedOut = $"Error: command timed out after {_config.CommandTimeoutSeconds}s.";
-            return string.IsNullOrWhiteSpace(salvaged)
-                ? timedOut
-                : $"{timedOut}\n[output before the timeout]\n{salvaged.TrimEnd()}";
+            return ChildProcess.TimedOutMessage(_config.CommandTimeoutSeconds, salvaged);
         }
 
         // The shell exited; a background process it started may still hold the pipes (see

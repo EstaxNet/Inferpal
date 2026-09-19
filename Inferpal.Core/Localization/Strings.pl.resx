@@ -462,6 +462,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: wykryto {0} błąd/błędy kompilacji — popraw przed kontynuowaniem:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: sprawdzanie kompilacji przekroczyło limit czasu (60 s) — sprawdź ręcznie.</value></data>
+  <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: sprawdzenie kompilacji nie powiodło się, nie wskazując żadnego błędu — uruchom je samodzielnie, aby zobaczyć dlaczego.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Automatyczna weryfikacja kompilacji po zapisie (Smart Fix)</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>Po zaznaczeniu, po każdym write_file lub apply_diff na pliku C#/projektu automatycznie uruchamiana jest szybka kompilacja. Błędy są zwracane bezpośrednio, aby agent mógł je natychmiast poprawić.</value></data>
 

@@ -463,6 +463,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} compilation error(s) detected — please fix before continuing:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: build check timed out (60 s) — verify manually.</value></data>
+  <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: the build check failed without naming a single error — run it yourself to see why.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Auto build-check after write (Smart Fix)</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>When checked, a quick dotnet build is run automatically after each write_file or apply_diff on a C#/project file. Compilation errors are returned inline so the agent can correct them immediately in the same loop.</value></data>
 

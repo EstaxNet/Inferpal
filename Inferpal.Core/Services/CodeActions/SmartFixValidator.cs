@@ -161,8 +161,8 @@ internal sealed class SmartFixValidator
 
         try
         {
-            var (exitCode, output) = await RunAsync(command, projectDir, ct);
-            return Interpret(exitCode, output, validator.UseDotnetErrorFilter);
+            var (exitCode, output, timedOut) = await RunAsync(command, projectDir, ct);
+            return Interpret(exitCode, output, validator.UseDotnetErrorFilter, timedOut);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -185,8 +185,11 @@ internal sealed class SmartFixValidator
     /// every other toolchain. A build killed on timeout (-1) or dying without a <c>: error XX:</c> line prints
     /// none, and "no error line" is not "built".
     /// </remarks>
-    internal static string? Interpret(int exitCode, string output, bool dotnetFilter)
+    internal static string? Interpret(int exitCode, string output, bool dotnetFilter, bool timedOut = false)
     {
+        // The fuse blew: nothing was proven either way, and the partial output is not a diagnosis.
+        if (timedOut) return Strings.SmartFixTimeout;
+
         // .NET: errors only — warnings don't warrant a fix iteration.
         if (dotnetFilter && GetDiagnosticsTool.OutputHasBuildErrors(output))
         {
@@ -204,7 +207,11 @@ internal sealed class SmartFixValidator
         if (ToolMissingRegex.IsMatch(output)) return null;   // toolchain absent → stay silent
 
         var lines = ExtractErrorLines(output);
-        return Strings.SmartFixBuildErrors(lines.Count, Listed(lines));
+        // ⚠ "0 compilation error(s) detected — please fix before continuing" is not a sentence:
+        // the build failed and named nothing, which is a different thing to go and look at.
+        return lines.Count == 0
+            ? Strings.SmartFixBuildFailedNoErrors
+            : Strings.SmartFixBuildErrors(lines.Count, Listed(lines));
     }
 
     /// <summary>Error lines rendered into the note. The COUNT that goes with them is the count of
@@ -276,7 +283,7 @@ internal sealed class SmartFixValidator
     // Runs the command line under the machine's shell (resolved like run_command — powershell.exe
     // was hard-coded, so validators silently failed on the published Linux/macOS hosts), in the
     // project directory, with a 60s fuse. Returns (exit code, output).
-    private static async Task<(int ExitCode, string Output)> RunAsync(string command, string workDir, CancellationToken ct)
+    private static async Task<(int ExitCode, string Output, bool TimedOut)> RunAsync(string command, string workDir, CancellationToken ct)
     {
         var (dialect, shell) = Shell.ShellLauncher.Resolve();
         var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, command);
@@ -287,6 +294,12 @@ internal sealed class SmartFixValidator
         // A validator that hangs is a failed validation, not a cancelled edit: -1 with the partial
         // output lets the caller reject the write and show why, where the thrown cancellation used
         // to surface as if the user had stopped it.
-        return (run.TimedOut ? -1 : run.ExitCode, run.Combined);
+        //
+        // ⚠ And the FACT travels with it. Flattened to -1 alone, a killed build reached Interpret
+        // with a partial output carrying no `: error XX:` line, and came out as
+        // "N compilation error(s) detected" — measured: two restore lines presented to the model as
+        // compilation errors, and an empty output as "0 error(s) — please fix before continuing".
+        // Strings.SmartFixTimeout existed, translated into ten languages, and nothing could reach it.
+        return (run.TimedOut ? -1 : run.ExitCode, run.Combined, run.TimedOut);
     }
 }

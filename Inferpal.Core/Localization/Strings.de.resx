@@ -462,6 +462,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} Kompilierfehler gefunden – bitte vor dem Fortfahren beheben:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: Build-Prüfung nach 60 s abgebrochen – bitte manuell prüfen.</value></data>
+  <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: Die Build-Prüfung ist fehlgeschlagen, ohne einen einzigen Fehler zu nennen — führen Sie sie selbst aus, um zu sehen, warum.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Automatische Build-Prüfung nach dem Schreiben (Smart Fix)</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>Wenn aktiviert, wird nach jedem write_file oder apply_diff auf einer C#/Projektdatei automatisch ein schneller Build gestartet. Kompilierfehler werden direkt zurückgegeben, damit der Agent sie sofort beheben kann.</value></data>
 

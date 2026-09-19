@@ -462,6 +462,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix : {0} erreur(s) de compilation détectée(s) — corrigez avant de continuer :
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix : délai dépassé (60 s) — vérifiez manuellement.</value></data>
+  <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix : la vérification de build a échoué sans nommer la moindre erreur — lancez-la vous-même pour voir pourquoi.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Vérification build automatique après écriture (Smart Fix)</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>Quand coché, un build rapide est lancé automatiquement après chaque write_file ou apply_diff sur un fichier C#/projet. Les erreurs de compilation sont renvoyées en ligne pour que l'agent les corrige immédiatement.</value></data>
 

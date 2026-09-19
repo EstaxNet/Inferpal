@@ -802,6 +802,7 @@ internal static class Strings
     public static string SmartFixBuildOk                                   => Get(nameof(SmartFixBuildOk));
     public static string SmartFixBuildErrors(int count, string errorLines) => string.Format(Get(nameof(SmartFixBuildErrors)), count, errorLines);
     public static string SmartFixTimeout                                    => Get(nameof(SmartFixTimeout));
+    public static string SmartFixBuildFailedNoErrors                        => Get(nameof(SmartFixBuildFailedNoErrors));
     /// <summary>
     /// A multi-file batch spanned more projects than Smart Fix builds in one call. Said rather than
     /// trimmed in silence: the files were written either way.
