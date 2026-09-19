@@ -391,6 +391,7 @@ Backup: {0}</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ The code is already clear — no refactor needed.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ No bug or issue found — nothing to fix.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ The code is already adequately documented.</value></data>
+  <data name="InlineEditNoChange" xml:space="preserve"><value>✅ The model returned the code unchanged — nothing was applied.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** already exists but could not be read — nothing was written over it. Free the file (a build or another editor may be holding it) and run the command again.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nothing useful to test — every meaningful case is already covered.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ The code action failed — check the backend connection and the model.</value></data>
@@ -596,6 +597,9 @@ Pull a model to get started:
 ollama pull llama3.1
 ```
 Then restart Visual Studio (or open Settings and click **Test**).</value></data>
+  <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal's first-run setup could not complete: {0}
+
+Type `/setup` to try again.</value></data>
   <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **First launch** — the model server is not reachable at **{0}**.
 
 Start Ollama and click **↻ Retry** in the header:

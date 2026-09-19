@@ -64,7 +64,7 @@ internal sealed class SemanticSearchTool : ITool
         if (string.IsNullOrEmpty(query))
             return "query is required.";
 
-        var topK = args.TryGetProperty("top_k", out _)
+        var topK = args.Has("top_k")
             ? Math.Clamp(args.Int("top_k", _config.RagTopK), 1, 10)
             : Math.Max(1, _config.RagTopK);
 

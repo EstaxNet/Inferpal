@@ -390,6 +390,7 @@ Backup: {0}</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ Il codice è già chiaro: nessun refactoring necessario.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Nessun bug o problema rilevato: niente da correggere.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Il codice è già documentato a sufficienza.</value></data>
+  <data name="InlineEditNoChange" xml:space="preserve"><value>✅ Il modello ha restituito il codice invariato: non è stato applicato nulla.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** esiste già ma non è stato possibile leggerlo: non è stato scritto nulla sopra. Libera il file (potrebbe trattenerlo una build o un altro editor) ed esegui di nuovo il comando.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Niente di utile da testare: tutti i casi rilevanti sono già coperti.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ L'azione sul codice non è riuscita: controlla la connessione al backend e il modello.</value></data>
@@ -556,6 +557,9 @@ Scarica un modello per iniziare:
 ollama pull llama3.1
 ```
 Riavvia Visual Studio (oppure apri le Impostazioni e clicca su **Test**).</value></data>
+  <data name="FirstRunFailed" xml:space="preserve"><value>⚠ La configurazione iniziale di Inferpal non è riuscita: {0}
+
+Digita `/setup` per riprovare.</value></data>
   <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Primo avvio** — il server dei modelli non è raggiungibile all'indirizzo **{0}**.
 
 Avvia Ollama e clicca su **↻ Riprova** nell'intestazione:

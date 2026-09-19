@@ -119,7 +119,18 @@ internal partial class InferpalToolWindowData
             // First-run posts its bubbles directly (no user turn exists yet to attach a reply to).
             await RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None).ConfigureAwait(false);
         }
-        catch (Exception ex) { Diagnostics.Swallow("Rag.FirstRun", ex); }
+        // ⚠ The first run is the one moment where silence costs the most: the window opens on an
+        // EMPTY conversation, so a swallowed failure leaves someone who has just installed the
+        // extension with a chat that did nothing and no cause — and the ring of /diagnostics is not
+        // where they look. Said where it happened, and naming the gesture that re-runs it.
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("Rag.FirstRun", ex);
+            var detail = ex.Message;
+            try { await FirstRunPresentAsync(Strings.FirstRunFailed(detail)).ConfigureAwait(false); }
+            catch (Exception notice) { Diagnostics.Swallow("Rag.FirstRunNotice", notice); }
+        }
     }
 
     /// <summary>Presenter used by the automatic first-run path: inserts a themed assistant bubble.</summary>

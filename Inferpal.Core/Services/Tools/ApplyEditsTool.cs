@@ -65,8 +65,14 @@ internal sealed class ApplyEditsTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        if (!args.TryGetProperty("edits", out var editsEl) || editsEl.ValueKind != JsonValueKind.Array)
+        // ⚠ Two outcomes, not one. "You sent no edits" and "your edits were not a list" do not
+        // send the model to the same place: told the first for a double-encoded list — the shape a
+        // small model emits — it resends the same payload. The per-entry shape check below already
+        // names its offender; this is the same event one level up.
+        if (!args.Has("edits"))
             return Strings.ApplyEditsEmpty;
+        if (!args.Array("edits", out var editsEl))
+            return Strings.ApplyEditsAborted("'edits' must be an array of edit objects");
 
         var root  = _getWorkspaceRoot();
         var edits = new List<Edit>();

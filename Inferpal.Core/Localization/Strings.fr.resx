@@ -390,6 +390,7 @@ Sauvegarde : {0}</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ Le code est déjà clair — aucune refactorisation nécessaire.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Aucun bug ni problème détecté — rien à corriger.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Le code est déjà suffisamment documenté.</value></data>
+  <data name="InlineEditNoChange" xml:space="preserve"><value>✅ Le modèle a rendu le code inchangé — rien n'a été appliqué.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** existe déjà mais n'a pas pu être lu — rien n'a été écrit par-dessus. Libérez le fichier (une compilation ou un autre éditeur le retient peut-être) puis relancez la commande.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Rien d'utile à tester — tous les cas pertinents sont déjà couverts.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ L'action de code a échoué — vérifiez la connexion au backend et le modèle.</value></data>
@@ -556,6 +557,9 @@ Téléchargez un modèle pour démarrer :
 ollama pull llama3.1
 ```
 Redémarrez Visual Studio (ou ouvrez les Paramètres et cliquez sur **Test**).</value></data>
+  <data name="FirstRunFailed" xml:space="preserve"><value>⚠ La configuration initiale d'Inferpal n'a pas pu aboutir : {0}
+
+Tapez `/setup` pour réessayer.</value></data>
   <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Premier lancement** — le serveur de modèles n'est pas joignable à **{0}**.
 
 Démarrez Ollama et cliquez sur **↻ Réessayer** dans l'en-tête :

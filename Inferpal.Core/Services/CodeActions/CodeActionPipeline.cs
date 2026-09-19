@@ -117,7 +117,41 @@ internal static class CodeActionPipeline
             return new CodeActionRun(CodeActionOutcome.Failed, FailureDetail: ex.Message);
         }
 
-        var cleaned = InlineEditResponse.Clean(result.TextContent);
+        var finished = Finish(result.TextContent, originalCode, docText, hasSelection,
+                              model, client.ServerAddress);
+        if (finished.Outcome != CodeActionOutcome.Edited)
+            return finished;
+
+        var editedCode = finished.EditedCode!;
+        return new CodeActionRun(
+            CodeActionOutcome.Edited, editedCode, start, end, hasSelection,
+            NewDocText: docText[..start] + editedCode + docText[end..]);
+    }
+
+    /// <summary>
+    /// Turns a model reply into the text to apply — or into the verdict that nothing should be.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ This is a FUNNEL, and it was extracted because it had a second, incomplete reader. The
+    /// Visual Studio "Edit with AI" command did <c>Reindent(Clean(reply))</c> and applied the
+    /// result — so it missed four of the steps below, including the two whose comment cites its
+    /// own gesture: a click in the margin plus Shift+Down selects the line WITH its ending,
+    /// <c>Clean</c> trims it, the next line moves up against the edited one — and the unchanged
+    /// echo, now differing from the original by that single byte, was applied instead of being
+    /// reported as "nothing to change". Measured: <c>"    return 1;\r\n"</c> came back as
+    /// <c>"    return 1;"</c>.
+    /// </para>
+    /// <para>
+    /// ⚠ Order is the substance here: the line breaks are restored AFTER the empty guard (which an
+    /// added break would disarm) and BEFORE the identity check (which they are what makes exact).
+    /// </para>
+    /// </remarks>
+    internal static CodeActionRun Finish(
+        string? reply, string originalCode, string docText, bool reindent,
+        string model, string serverAddress)
+    {
+        var cleaned = InlineEditResponse.Clean(reply ?? string.Empty);
 
         // The model signalled the action would bring nothing — leave the document untouched.
         if (CodeActionSentinel.IsNoChange(cleaned))
@@ -126,7 +160,7 @@ internal static class CodeActionPipeline
         // Reindent re-anchors a snippet to its original base indent — meaningful only for a
         // selection. A whole-file rewrite is emitted at column 0 by the model and applied as-is
         // (reindenting it would reformat the whole file).
-        var editedCode = hasSelection
+        var editedCode = reindent
             ? InlineEditReindenter.Reindent(originalCode, cleaned)
             : cleaned;
         // ⚠ Model output (and Reindent's) is LF: a CRLF document gets its own endings back — both to
@@ -137,7 +171,7 @@ internal static class CodeActionPipeline
         // so the failure prompt carries a cause instead of the bare generic verdict.
         if (string.IsNullOrWhiteSpace(editedCode))
             return new CodeActionRun(CodeActionOutcome.Failed,
-                                     FailureDetail: Strings.MsgEmptyResponseFrom(model, client.ServerAddress));
+                                     FailureDetail: Strings.MsgEmptyResponseFrom(model, serverAddress));
 
         // ⚠ Visual Studio's most common selection — a click in the margin, Shift+Down — carries its
         // LINE ENDING, and `InlineEditResponse.Clean` does a TrimEnd: the replacement never ended
@@ -156,9 +190,9 @@ internal static class CodeActionPipeline
         if (editedCode == LineEndings.ToEol(originalCode, eol))
             return new CodeActionRun(CodeActionOutcome.NoChangeNeeded);
 
-        return new CodeActionRun(
-            CodeActionOutcome.Edited, editedCode, start, end, hasSelection,
-            NewDocText: docText[..start] + editedCode + docText[end..]);
+        // The range and the rebuilt document belong to the CALLER: this funnel decides the text and
+        // the verdict, not where they land — "Edit with AI" replaces a range it resolved itself.
+        return new CodeActionRun(CodeActionOutcome.Edited, editedCode);
     }
 
     /// <summary>True if <c>text[start..end]</c> contains only whitespace (or is empty).</summary>

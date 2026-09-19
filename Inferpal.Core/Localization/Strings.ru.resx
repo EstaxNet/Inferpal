@@ -390,6 +390,7 @@
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ Код уже понятен — рефакторинг не требуется.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Ошибок или проблем не найдено — исправлять нечего.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Код уже достаточно документирован.</value></data>
+  <data name="InlineEditNoChange" xml:space="preserve"><value>✅ Модель вернула код без изменений — ничего не применено.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** уже существует, но его не удалось прочитать — поверх ничего не записано. Освободите файл (его может удерживать сборка или другой редактор) и выполните команду ещё раз.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Тестировать нечего — все значимые случаи уже покрыты.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Не удалось выполнить действие с кодом — проверьте подключение к бэкенду и модель.</value></data>
@@ -556,6 +557,9 @@
 ollama pull llama3.1
 ```
 Перезапустите Visual Studio (или откройте Настройки и нажмите **Test**).</value></data>
+  <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Первоначальная настройка Inferpal не завершилась: {0}
+
+Введите `/setup`, чтобы повторить попытку.</value></data>
   <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Первый запуск** — сервер моделей недоступен по адресу **{0}**.
 
 Запустите Ollama и нажмите **↻ Повторить** в заголовке:

@@ -390,6 +390,7 @@
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ コードはすでに明確です。リファクタリングは不要です。</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ バグや問題は見つかりませんでした。修正は不要です。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ コードはすでに十分に文書化されています。</value></data>
+  <data name="InlineEditNoChange" xml:space="preserve"><value>✅ モデルはコードを変更せずに返しました — 何も適用されていません。</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** は既に存在しますが読み取れませんでした。上書きは行っていません。ファイルを解放して (ビルドや別のエディターが保持している可能性があります)、コマンドをもう一度実行してください。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ テストすべき有用なものはありません。重要なケースはすべて網羅済みです。</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ コードアクションに失敗しました。バックエンド接続とモデルを確認してください。</value></data>
@@ -556,6 +557,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
 ollama pull llama3.1
 ```
 Visual Studio を再起動するか、設定を開いて **Test** をクリックしてください。</value></data>
+  <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal の初期セットアップを完了できませんでした: {0}
+
+`/setup` と入力すると再試行できます。</value></data>
   <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **初回起動** — **{0}** でモデルサーバーに接続できません。
 
 Ollama を起動してヘッダーの **↻ 再試行** をクリックしてください:

@@ -1,4 +1,5 @@
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services;
 using Microsoft.VisualStudio.Extensibility;
@@ -150,13 +151,28 @@ internal class InlineEditSelectionCommand : Command
         }
         if (dlg.CancelledByUser.IsCancellationRequested) return;
 
-        var editedCode = InlineEditReindenter.Reindent(originalCode, InlineEditResponse.Clean(result.TextContent));
-        if (string.IsNullOrWhiteSpace(editedCode))
+        // ⚠ The SAME funnel as the slash commands and the host, and it was not always: this command
+        // did `Reindent(Clean(reply))` and applied it, so it missed the document's line endings, the
+        // no-change sentinel, the named empty reply — and the two steps whose comment cites THIS
+        // command's gesture. A click in the margin plus Shift+Down selects the line with its ending,
+        // `Clean` trims it, and the next line moved up against the one just edited; the unchanged
+        // echo, differing by that single byte, was applied instead of being reported.
+        var finished = CodeActionPipeline.Finish(
+            result.TextContent, originalCode, view.Document.Text.CopyToString(),
+            reindent: true, model, _client.ServerAddress);
+
+        if (finished.Outcome == CodeActionOutcome.NoChangeNeeded)
         {
-            // The spinner vanished and nothing changed: say that the model gave nothing to apply.
-            await ShowFailureAsync(null, ct);
+            await ShowInfoAsync(Strings.InlineEditNoChange, ct);
             return;
         }
+        if (finished.Outcome != CodeActionOutcome.Edited)
+        {
+            // The spinner vanished and nothing changed: say that the model gave nothing to apply.
+            await ShowFailureAsync(finished.FailureDetail, ct);
+            return;
+        }
+        var editedCode = finished.EditedCode!;
 
         // ── 5. Apply the edit ─────────────────────────────────────────────────
         try
@@ -187,6 +203,18 @@ internal class InlineEditSelectionCommand : Command
         try
         {
             await Extensibility.Shell().ShowPromptAsync(InPlaceCodeEdit.FailureMessage(detail), PromptOptions.OK, ct);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Diagnostics.Swallow("InlineEdit.Notify", ex); }
+    }
+
+    /// <summary>Tells the user the model had nothing to change — a command that does nothing is
+    /// indistinguishable from one that failed.</summary>
+    private async Task ShowInfoAsync(string message, CancellationToken ct)
+    {
+        try
+        {
+            await Extensibility.Shell().ShowPromptAsync(message, PromptOptions.OK, ct);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("InlineEdit.Notify", ex); }

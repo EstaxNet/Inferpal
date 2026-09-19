@@ -390,6 +390,7 @@
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ 代码已经很清晰，无需重构。</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ 未发现错误或问题，无需修复。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ 代码已有足够的文档说明。</value></data>
+  <data name="InlineEditNoChange" xml:space="preserve"><value>✅ 模型原样返回了代码——未应用任何更改。</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** 已存在但无法读取 —— 未覆盖任何内容。请释放该文件（可能被生成过程或其他编辑器占用），然后重新运行命令。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ 没有需要测试的内容，所有重要情况都已覆盖。</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ 代码操作失败。请检查后端连接和模型。</value></data>
@@ -556,6 +557,9 @@
 ollama pull llama3.1
 ```
 然后重启 Visual Studio（或打开设置并点击 **Test**）。</value></data>
+  <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal 的首次设置未能完成：{0}
+
+输入 `/setup` 可重试。</value></data>
   <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **首次启动** — 无法连接到 **{0}** 上的模型服务器。
 
 请启动 Ollama 并点击标题栏中的 **↻ 重试**：

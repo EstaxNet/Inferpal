@@ -72,6 +72,37 @@ internal static class ToolArgs
         };
     }
 
+    /// <summary>
+    /// Is the argument THERE? — the one legitimate reason a tool used to reach for
+    /// <c>TryGetProperty</c> itself, and therefore the reason this exists: a rule with an exemption
+    /// for "presence only" would live off that exemption.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Present is not the same as usable, and callers rely on the difference: "absent → the
+    /// configured default, present → clamp what the model asked for" is not expressible with a
+    /// fallback value alone.
+    /// </remarks>
+    public static bool Has(this JsonElement args, string name) =>
+        args.ValueKind == JsonValueKind.Object && args.TryGetProperty(name, out _);
+
+    /// <summary>
+    /// An ARRAY argument: <c>true</c> only when the property is there AND is a JSON array.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The caller must be able to tell "absent" from "the wrong shape": a small model sends its
+    /// list double-encoded as a string, and answering "you sent none" to that sends it round the
+    /// loop resending the same shape. Same distinction the call funnel already draws for the whole
+    /// argument object.
+    /// </remarks>
+    public static bool Array(this JsonElement args, string name, out JsonElement value)
+    {
+        value = default;
+        if (!args.Has(name) || !args.TryGetProperty(name, out var v) || v.ValueKind != JsonValueKind.Array)
+            return false;
+        value = v;
+        return true;
+    }
+
     /// <summary>A boolean argument, tolerating <c>"true"</c>/<c>"false"</c> as strings.</summary>
     public static bool Bool(this JsonElement args, string name, bool fallback)
     {

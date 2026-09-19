@@ -135,6 +135,7 @@ internal static class Strings
     public static string RefactorNoChange => Get(nameof(RefactorNoChange));
     public static string FixNoChange      => Get(nameof(FixNoChange));
     public static string DocNoChange      => Get(nameof(DocNoChange));
+    public static string InlineEditNoChange => Get(nameof(InlineEditNoChange));
     public static string TestsNoChange    => Get(nameof(TestsNoChange));
     /// <summary>Shown when an in-place code action fails (model/network error, empty reply).</summary>
     public static string CodeActionFailed => Get(nameof(CodeActionFailed));
@@ -891,6 +892,11 @@ internal static class Strings
     public static string MsgFirstRunWelcome(string models, string selected) =>
         string.Format(Get(nameof(MsgFirstRunWelcome)), models, selected);
     public static string MsgFirstRunNoModels => Get(nameof(MsgFirstRunNoModels));
+
+    /// <summary>The first run could not complete — said in the conversation, which is empty
+    /// and waiting, and naming the gesture that re-runs it.</summary>
+    public static string FirstRunFailed(string detail) =>
+        string.Format(Get(nameof(FirstRunFailed)), detail);
     public static string MsgFirstRunBackendDown(string url) =>
         string.Format(Get(nameof(MsgFirstRunBackendDown)), url);
     public static string MsgFirstRunVramWarning(string neededGb, string budgetGb) =>

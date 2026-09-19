@@ -390,6 +390,7 @@
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ 코드가 이미 명확합니다 — 리팩터링이 필요하지 않습니다.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ 버그나 문제를 찾지 못했습니다 — 수정할 것이 없습니다.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ 코드가 이미 충분히 문서화되어 있습니다.</value></data>
+  <data name="InlineEditNoChange" xml:space="preserve"><value>✅ 모델이 코드를 변경하지 않고 반환했습니다 — 아무것도 적용되지 않았습니다.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** 파일이 이미 있지만 읽을 수 없었습니다. 덮어쓰지 않았습니다. 파일을 해제한 뒤(빌드나 다른 편집기가 잡고 있을 수 있습니다) 명령을 다시 실행하세요.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ 테스트할 만한 것이 없습니다 — 의미 있는 모든 경우가 이미 다뤄졌습니다.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ 코드 작업에 실패했습니다 — 백엔드 연결과 모델을 확인하세요.</value></data>
@@ -556,6 +557,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
 ollama pull llama3.1
 ```
 Visual Studio를 다시 시작하거나, 설정을 열고 **Test**를 클릭하세요.</value></data>
+  <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal 초기 설정을 완료하지 못했습니다: {0}
+
+다시 시도하려면 `/setup`을 입력하세요.</value></data>
   <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **첫 실행** — **{0}**에서 모델 서버에 연결할 수 없습니다.
 
 Ollama를 시작하고 헤더의 **↻ 다시 시도**를 클릭하세요:

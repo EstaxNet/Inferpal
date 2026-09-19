@@ -38,8 +38,10 @@ internal sealed class GenerateProjectMapTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        bool refresh = args.TryGetProperty("refresh", out var rv) &&
-                       rv.ValueKind == JsonValueKind.True;
+        // ⚠ Through ToolArgs, which accepts `"refresh": "true"` — the string-wrapped JSON a small
+        // local model emits constantly. Read raw, that form was dropped in silence and the model got
+        // the CACHED map right after creating files: the picture it asked to refresh, unrefreshed.
+        var refresh = args.Bool("refresh", false);
 
         if (refresh)
             _mapService.Invalidate();
