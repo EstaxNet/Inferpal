@@ -66,8 +66,10 @@ public class OAuthCallbackCauseTests
         var receiver = new LoopbackAuthCodeReceiver();
         using var cts = new CancellationTokenSource();
 
+        // ⚠ Cancelled at once, not after a wait: what is being measured is the CLASSIFICATION of
+        // an interrupted wait, and any window left open is a window in which the listener can fault
+        // on its own — see the remark on the deadline test below.
         var waiting = receiver.GetAuthorizationCodeAsync(NoBrowser, cts.Token);
-        await Task.Delay(200);
         cts.Cancel();
 
         var ex = await Record.ExceptionAsync(() => waiting);
@@ -76,10 +78,25 @@ public class OAuthCallbackCauseTests
         Assert.IsAssignableFrom<OperationCanceledException>(ex);
     }
 
+    /// <summary>
+    /// When the DEADLINE has fired, the answer is a <see cref="TimeoutException"/> naming the
+    /// address — whatever exception the platform chose to end the wait with.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The deadline is 1 ms, and that is the point rather than an optimisation. At 400 ms this
+    /// test went red on macOS and green on a rerun: the managed <c>HttpListener</c> there can fault
+    /// on its own inside the window, and the product then classified it — correctly — as a genuine
+    /// socket failure. The test was asserting that nothing but the deadline can end a 400 ms wait,
+    /// which is a claim about the platform, not about the product. Firing the deadline first makes
+    /// the assertion deterministic everywhere AND keeps it on the rule: whatever arrives, the
+    /// deadline token is the one that had fired, so the deadline's sentence is the right one.
+    /// ⚠ An intermittent red on the one CI leg that sees certain classes alone is worse than no
+    /// test: it is how that leg stops being read.
+    /// </remarks>
     [Fact]
     public async Task ADeadlineThatPasses_NamesWhatDidNotHappen()
     {
-        var receiver = new LoopbackAuthCodeReceiver(TimeSpan.FromMilliseconds(400));
+        var receiver = new LoopbackAuthCodeReceiver(TimeSpan.FromMilliseconds(1));
 
         var ex = await Record.ExceptionAsync(
             () => receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None));
