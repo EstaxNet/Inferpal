@@ -76,7 +76,7 @@ internal class RunTestsTool : ITool
             "npm"    => await RunNpmAsync(workDir, filter, timeout, ct),
             "cargo"  => await RunCargoAsync(workDir, filter, timeout, ct),
             "go"     => await RunGoAsync(workDir, filter, timeout, ct),
-            _        => "No test runner detected. Provide 'path' to a project, or set 'runner' explicitly (dotnet / pytest / npm / cargo / go).",
+            _        => NoRunnerDetected(workDir, root),
         };
     }
 
@@ -501,6 +501,30 @@ internal class RunTestsTool : ITool
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)               { return ($"Failed to start '{fileName}': {ex.Message}", -1); }
+    }
+
+    /// <summary>
+    /// "Nothing here to run" — plus, when it is true, "and there is a folder I could not look in".
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <see cref="DetectRunner"/> decides by WALKING, and a folder the walk cannot list leaves no
+    /// trace in any count: the answer is self-consistent and reads as a fact about the repository
+    /// when it is a fact about what this process may open. The remedy on its own makes it worse —
+    /// "provide 'path'" points at a file inside the folder nobody can open. The gap is added as a
+    /// CAUSE, never as a replacement: the remedy is still right in every other case.
+    /// ⚠ The detector is only asked on this branch, so a workspace that resolves its runner pays
+    /// nothing for it.
+    /// </remarks>
+    private static string NoRunnerDetected(string workDir, string? root)
+    {
+        const string message = "No test runner detected. Provide 'path' to a project, or set "
+                             + "'runner' explicitly (dotnet / pytest / npm / cargo / go).";
+
+        // The sentence belongs to WalkGap: "cannot be listed" and "is a link, not followed" send
+        // the reader to two different places, and that choice is made in one place only.
+        return WorkspaceScan.FirstWalkGap(workDir, root) is { } gap
+            ? $"{message}\n({gap.Sentence()})"
+            : message;
     }
 
     private static string DetectRunner(string workDir, string? explicitPath)

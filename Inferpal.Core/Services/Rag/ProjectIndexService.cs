@@ -91,6 +91,23 @@ internal sealed class ProjectIndexService : IDisposable
     /// </remarks>
     public WorkspaceScan.WalkGap? SkippedFolder { get; private set; }
 
+    /// <summary>
+    /// How many source files the last pass dropped because they are larger than
+    /// <see cref="CodeChunker.MaxFileSizeBytes"/>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The same argument as <see cref="SkippedFolder"/>, and the same reason it must be said
+    /// HERE rather than left to a tool: the index is persisted, so a file over the cap stays
+    /// invisible to <c>search_codebase</c> and to the per-turn auto-context across restarts, while
+    /// the chunk count reads as complete — a dropped file is missing from every total, not
+    /// subtracted from one.
+    /// ⚠ The rule was already written next door and held by one of its two sites:
+    /// <c>rename_symbol</c> folds its own oversize drops into its <c>ScanCoverage</c> under the
+    /// comment <i>"what was NOT looked at travels with the result, like in every other scanning
+    /// tool"</i>. The pass was the other scanning tool.
+    /// </remarks>
+    public int SkippedBySize { get; private set; }
+
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
 
@@ -913,6 +930,7 @@ internal sealed class ProjectIndexService : IDisposable
     private List<string>? EnumerateSourceFiles(string rootDir)
     {
         var result = new List<string>();
+        var tooBig = 0;
         // ⚠ Once per pass, BEFORE the walk: `IgnoreInaccessible` skips an unlistable folder without
         // throwing, so the `catch` below never sees it and the `null` it returns — "partial list,
         // does not replace the index" — does not fire either. The pass is legitimate (nothing better
@@ -931,6 +949,7 @@ internal sealed class ProjectIndexService : IDisposable
                 try
                 {
                     if (new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes) result.Add(f);
+                    else tooBig++;
                 }
                 // ⚠ Per file: a file deleted between the walk and the stat (a git pull, a generator) threw
                 // out of the WHOLE enumeration, and the pass replaced the index with what had been listed.
@@ -946,6 +965,10 @@ internal sealed class ProjectIndexService : IDisposable
             Diagnostics.Swallow("ProjectIndexService.CollectFiles", ex);
             return null;
         }
+        // ⚠ Published only on the path that actually replaces the index: the `null` returns above
+        // mean "partial list, keep the previous index", so a count taken from them would describe a
+        // pass whose result was thrown away.
+        SkippedBySize = tooBig;
         return result;
     }
 

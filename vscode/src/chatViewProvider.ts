@@ -838,7 +838,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         // Also push the pick into the host's shared config: without it, `/model` (no argument)
         // kept answering the OLD model and every Model Router role that falls back to
-        // DefaultModel (session titles, code actions) silently stayed on it (revue §3.5).
+        // DefaultModel (session titles, code actions) silently stayed on it.
         // Read-modify-write of the full JSON — config/update replaces the whole object.
         await this.pushModelToHost(msg.model);
         return;
@@ -1205,7 +1205,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /**
    * Pushes the picked model into the host's shared config: without it `/model` kept answering the
    * OLD model, and every Model Router role that falls back to DefaultModel (session titles, code
-   * actions) silently stayed on it (revue §3.5). Read-modify-write of the full JSON — config/update
+   * actions) silently stayed on it. Read-modify-write of the full JSON — config/update
    * replaces the whole object.
    * ⚠ config/update holds the turn slot: a pick made DURING a turn was refused and only logged, and
    * the host kept the old model with nothing saying so. Such a pick is replayed when the turn ends.
@@ -1820,6 +1820,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         selStart: document.offsetAt(editor.selection.start),
         selEnd: document.offsetAt(editor.selection.end),
         model: this.model || undefined,
+        path: document.uri.fsPath,
       });
     } catch (err) {
       finish('error', err instanceof Error ? err.message : String(err));

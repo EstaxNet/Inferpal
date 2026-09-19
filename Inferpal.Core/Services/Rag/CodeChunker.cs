@@ -35,6 +35,10 @@ internal static class CodeChunker
     /// <summary>Maximum file size to index (200 KB) — avoids memory issues with generated files.</summary>
     internal const long MaxFileSizeBytes = 200_000;
 
+    /// <summary>The same cap in the unit a human reads, converted <b>once</b>: the figure reaches
+    /// the user through <c>/index</c>, and a second conversion is a second answer.</summary>
+    internal static int MaxFileSizeKilobytes => (int)(MaxFileSizeBytes / 1024);
+
     // ── Supported extensions ───────────────────────────────────────────────────
 
     /// <summary>Source file extensions that will be indexed.</summary>

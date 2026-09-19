@@ -1102,6 +1102,11 @@ internal static class Strings
         string.Format(Get(nameof(ScanUnreadable)), count);
     public static string ScanFolderSkipped(string folder) =>
         string.Format(Get(nameof(ScanFolderSkipped)), folder);
+
+    /// <summary>Files the indexing pass dropped for their size — said by <c>/index</c>, because
+    /// the index is persisted and a chunk count reads as complete.</summary>
+    public static string IndexFilesTooLarge(int count, int kilobytes) =>
+        string.Format(Get(nameof(IndexFilesTooLarge)), count, kilobytes);
     public static string ScanFolderNotFollowed(string folder) =>
         string.Format(Get(nameof(ScanFolderNotFollowed)), folder);
 

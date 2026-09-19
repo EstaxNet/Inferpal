@@ -917,6 +917,7 @@ ollama serve
   <data name="ScanPartial" xml:space="preserve"><value>⚠ Partial analysis: only {0} of {1} source files were scanned (cap). Results may be incomplete.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ {0} source file(s) could not be read and were not analysed (permissions, a lock, or they disappeared). Results may be incomplete.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ The folder '{0}' could not be listed, so none of the files under it were analysed (permissions). Results may be incomplete.</value></data>
+  <data name="IndexFilesTooLarge" xml:space="preserve"><value>⚠ {0} file(s) over {1} kB were not indexed, so `search_codebase` and the automatic context cannot see them.</value></data>
   <data name="ScanFolderNotFollowed" xml:space="preserve"><value>⚠ The folder '{0}' is a link, which is not followed (a link pointing back into the project would loop forever), so none of the files under it were analysed. Results may be incomplete.</value></data>
   <data name="McpOAuthUnsupportedPlatform" xml:space="preserve"><value>MCP OAuth authorization is only available on Windows for now: the refresh token can only be stored encrypted (DPAPI), and storing it in clear text is not an option. Use a server with a static header token instead.</value></data>
   <data name="SlashHintTask" xml:space="preserve"><value>run an agent task in the background (`/task [objective]`)</value></data>

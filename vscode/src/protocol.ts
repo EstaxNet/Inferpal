@@ -189,6 +189,10 @@ export interface CodeActionParams {
   selStart: number;
   selEnd: number;
   model?: string;
+  /** The document's path. `/doc` needs it for the semantic block (namespace, hierarchy,
+   *  overrides, interface contracts) the Visual Studio window has always had: the extractor
+   *  dispatches on the extension and reads neighbouring files to find the contracts. */
+  path?: string;
 }
 
 /** One independently acceptable hunk: replace [start, end) of the submitted text. */

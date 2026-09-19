@@ -116,7 +116,16 @@ internal class GetDiagnosticsTool : ITool
         path ??= FindProjectFile(root);
 
         if (path is null)
-            return Strings.DiagNoProject;
+        {
+            // ⚠ "No .sln or .csproj found" is a CONCLUSION, and FindProjectFile reaches it by
+            // walking: a folder the walk cannot list is absent from every count, so the answer is
+            // self-consistent and reads as a fact about the repository. It is a fact about what
+            // this process may open — and the remedy it names ("provide the path parameter") points
+            // at a file inside that very folder. Said as a cause, next to the remedy, never instead.
+            var gap = WorkspaceScan.FirstWalkGap(SearchStart(root), root);
+            return gap is null ? Strings.DiagNoProject
+                               : $"{Strings.DiagNoProject}\n({gap.Value.Sentence()})";
+        }
 
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);
@@ -161,9 +170,14 @@ internal class GetDiagnosticsTool : ITool
 
     /// <summary>The first solution or project under <paramref name="root"/> — the working
     /// directory only when no workspace root is known.</summary>
+    /// <summary>Where the search for a project starts — the one reader, so the gap reported to the
+    /// caller is the gap of the walk that actually ran.</summary>
+    private static string SearchStart(string? root) =>
+        string.IsNullOrEmpty(root) ? Directory.GetCurrentDirectory() : root;
+
     internal static string? FindProjectFile(string? root)
     {
-        var start = string.IsNullOrEmpty(root) ? Directory.GetCurrentDirectory() : root;
+        var start = SearchStart(root);
         foreach (var ext in new[] { "*.sln", "*.slnx", "*.csproj" })
         {
             // WorkspaceScan: lazy + excluded dirs skipped — a stray .csproj under node_modules

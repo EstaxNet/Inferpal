@@ -594,13 +594,18 @@ internal sealed partial class HostServer : IDisposable
     public async Task<CodeActionResultDto> CodeActionRunAsync(CodeActionParams p, CancellationToken ct)
     {
         var s = Session();
-        var (system, instruction) = p.Kind switch
+        // ⚠ The kind arrives as a string from the adapter, so an unknown one is named rather than
+        // degraded to a default — but the PAIR itself comes from the Core funnel, enrichment
+        // included. Picking it here is what had let /doc drift: the VS window appended the
+        // document's semantic block and this did not.
+        var kind = p.Kind switch
         {
-            "fix"      => (InPlaceCodeActionPrompts.FixSystem,       InPlaceCodeActionPrompts.FixInstruction),
-            "refactor" => (InPlaceCodeActionPrompts.RefactorSystem,  InPlaceCodeActionPrompts.RefactorInstruction),
-            "doc"      => (InPlaceCodeActionPrompts.DocstringSystem, InPlaceCodeActionPrompts.DocstringInstruction),
+            "fix"      => SlashCodeActionKind.Fix,
+            "refactor" => SlashCodeActionKind.Refactor,
+            "doc"      => SlashCodeActionKind.Doc,
             _          => throw new ArgumentException($"Unknown code action kind '{p.Kind}'."),
         };
+        var (system, instruction) = await InPlaceCodeActionPrompts.BuildAsync(kind, p.Path, p.Text, ct);
 
         var model = string.IsNullOrWhiteSpace(p.Model)
             ? ModelRouter.Resolve(s.Config, ModelRole.CodeActions)

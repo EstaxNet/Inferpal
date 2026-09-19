@@ -136,21 +136,10 @@ internal partial class InferpalToolWindowData
         var view = await ResolveActiveViewAsync(ct);
         if (view is null) { await ShowInfoAsync(Strings.SlashNoActiveDocument); return; }
 
-        var (system, instruction) = kind switch
-        {
-            SlashCodeActionKind.Refactor => (InPlaceCodeActionPrompts.RefactorSystem,  InPlaceCodeActionPrompts.RefactorInstruction),
-            SlashCodeActionKind.Fix      => (InPlaceCodeActionPrompts.FixSystem,       InPlaceCodeActionPrompts.FixInstruction),
-            _                            => (InPlaceCodeActionPrompts.DocstringSystem, InPlaceCodeActionPrompts.DocstringInstruction),
-        };
-
-        if (kind == SlashCodeActionKind.Doc)
-        {
-            var fullPath     = view.Document.Uri.LocalPath;
-            var docText      = view.Document.Text.CopyToString();
-            var contextBlock = await DocContextExtractor.BuildContextBlockAsync(fullPath, docText, ct);
-            if (!string.IsNullOrWhiteSpace(contextBlock))
-                system += "\n\nContext (for reference only — do not output it):\n" + contextBlock;
-        }
+        // The pair, enrichment included, comes from the Core: the same call the host makes, so
+        // neither editor can end up with the weaker prompt.
+        var (system, instruction) = await InPlaceCodeActionPrompts.BuildAsync(
+            kind, view.Document.Uri.LocalPath, view.Document.Text.CopyToString(), ct);
 
         var model  = ModelRouter.Resolve(_config, ModelRole.CodeActions);
         var result = await InPlaceCodeEdit.RunAsync(_vs, view, _client, model, system, instruction, ct, _config);

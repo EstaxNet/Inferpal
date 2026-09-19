@@ -67,6 +67,14 @@ internal static class IndexCommandHandler
             // already translated into the ten languages.
             if (index.SkippedFolder is { } gap)
                 sb.AppendLine(gap.Sentence());
+            // ⚠ The other way a file never reaches the index, and it is invisible to the same
+            // arithmetic: past CodeChunker.MaxFileSizeBytes the pass drops it, so it is missing
+            // from the chunk count rather than subtracted from it. Two causes, two sentences —
+            // "the folder could not be listed" sends the reader to a permission, this one to a
+            // file they can split or exclude on purpose.
+            if (index.SkippedBySize > 0)
+                sb.AppendLine(Strings.IndexFilesTooLarge(index.SkippedBySize,
+                                                         CodeChunker.MaxFileSizeKilobytes));
             sb.AppendLine();
             sb.AppendLine(Strings.IndexForceHint);
         }

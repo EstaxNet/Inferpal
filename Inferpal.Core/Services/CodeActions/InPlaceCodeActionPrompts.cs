@@ -44,4 +44,41 @@ internal static class InPlaceCodeActionPrompts
         "public types, methods, properties and parameters in the given code. Do NOT change any executable code. " +
         "Keep the same programming language. " + CodeOnly +
         NoChangeHead + "the code is already adequately documented and adding more comments would be redundant" + NoChangeTail;
+
+    /// <summary>
+    /// The pair a code action runs on, <b>enrichment included</b> — the one place either front-end
+    /// gets it from.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ The pair used to be picked by each front-end, and the two had already drifted: the VS
+    /// window appended <see cref="Prompting.DocContextExtractor"/>'s semantic block for
+    /// <c>/doc</c> — namespace, type hierarchy, override members, interface contracts — and the
+    /// host did not. Same command, same file, a measurably weaker docstring on one editor: no
+    /// <c>&lt;inheritdoc/&gt;</c>, no base type, no contract, and nothing said so.
+    /// </para>
+    /// <para>
+    /// ⚠ <paramref name="filePath"/> may be null (a caller that has text but no file): the block is
+    /// then simply absent, which is the honest answer — the extractor dispatches on the extension
+    /// and reads neighbouring files to find the contracts.
+    /// </para>
+    /// </remarks>
+    public static async Task<(string System, string Instruction)> BuildAsync(
+        SlashCodeActionKind kind, string? filePath, string text, CancellationToken ct)
+    {
+        var (system, instruction) = kind switch
+        {
+            SlashCodeActionKind.Refactor => (RefactorSystem,  RefactorInstruction),
+            SlashCodeActionKind.Fix      => (FixSystem,       FixInstruction),
+            _                            => (DocstringSystem, DocstringInstruction),
+        };
+
+        if (kind != SlashCodeActionKind.Doc || string.IsNullOrEmpty(filePath))
+            return (system, instruction);
+
+        var block = await Prompting.DocContextExtractor.BuildContextBlockAsync(filePath, text, ct);
+        return string.IsNullOrWhiteSpace(block)
+            ? (system, instruction)
+            : (system + "\n\nContext (for reference only — do not output it):\n" + block, instruction);
+    }
 }
