@@ -31,7 +31,21 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
     {
         using var listener = new HttpListener();
         listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
-        listener.Start();
+        try
+        {
+            listener.Start();
+        }
+        catch (HttpListenerException ex)
+        {
+            // ⚠ The FOURTH outcome, and it was outside the classification entirely: not "the wait
+            // was interrupted" but "there was never a wait". FreeLoopbackPort probes a port and
+            // releases it, so between the probe and this Start another process can take it — and
+            // what reached the user was the operating system's own sentence, in the machine's
+            // display language, naming neither the address nor what to do.
+            throw new InvalidOperationException(
+                $"Could not listen on {RedirectUri} for the authorization redirect: {ex.Message} "
+                + "Another process may have taken the port; retry the connection.", ex);
+        }
         try
         {
             OpenBrowser(authorizationUrl);
@@ -97,17 +111,38 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
             //
             // The caller's cancellation comes first: it is the only one of the three that is not a
             // failure at all.
-            ct.ThrowIfCancellationRequested();
-
-            if (deadline.IsCancellationRequested)
-                throw new TimeoutException(
-                    $"No authorization redirect arrived within {_timeout.TotalMinutes:0.#} minutes. "
-                    + "The sign-in page was never completed in the browser, or it redirected "
-                    + $"somewhere other than {RedirectUri}.");
+            if (Classify(ct, deadline) is { } named) throw named;
 
             // Anything else really is a socket failure: it keeps its own cause.
             throw;
         }
+    }
+
+    /// <summary>
+    /// Which interruption ended the wait, read off the TOKENS — or <c>null</c> when neither of them
+    /// fired, which is the one case that really is a socket failure and keeps its own cause.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Extracted so it can be measured WITHOUT a listener. The test used to run a real one and
+    /// assert that nothing but the deadline could end a short wait — a claim about the platform:
+    /// macOS's managed <c>HttpListener</c> faults on its own, and shortening the window (round 65)
+    /// did not close it, the CI reproduced it identically. With explicit tokens there is no race
+    /// left to lose, on any platform.
+    /// </remarks>
+    internal Exception? Classify(CancellationToken ct, CancellationToken deadline)
+    {
+        // The caller's cancellation comes first: it is the only one of the three that is not a
+        // failure at all.
+        if (ct.IsCancellationRequested)
+            return new OperationCanceledException(ct);
+
+        if (deadline.IsCancellationRequested)
+            return new TimeoutException(
+                $"No authorization redirect arrived within {_timeout.TotalMinutes:0.#} minutes. "
+                + "The sign-in page was never completed in the browser, or it redirected "
+                + $"somewhere other than {RedirectUri}.");
+
+        return null;
     }
 
     private static int FreeLoopbackPort()

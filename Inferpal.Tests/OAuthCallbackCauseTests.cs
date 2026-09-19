@@ -60,52 +60,98 @@ public class OAuthCallbackCauseTests
         Assert.Contains("authorization complete", page, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// The three outcomes of an interrupted wait, decided on the TOKENS — measured without a
+    /// listener at all.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ These used to run a real <c>HttpListener</c> and assert that nothing but the cancel (or
+    /// the deadline) could end a short wait. That is a claim about the PLATFORM: macOS's managed
+    /// listener faults on its own, and the CI went red on it TWICE — shortening the window did not
+    /// close the instance, it only made the window smaller. With explicit tokens there is no race
+    /// left to lose, on any platform, and the assertion is on the rule the product holds.
+    /// </para>
+    /// <para>
+    /// ⚠ The end-to-end path keeps its cover: the reference arm above drives a real redirect
+    /// through a real listener, and it COMPLETES rather than racing a clock.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public async Task ACancelledSignIn_IsCancellation_NotAFailure()
+    public void ACancelledSignIn_IsCancellation_NotAFailure()
     {
-        var receiver = new LoopbackAuthCodeReceiver();
-        using var cts = new CancellationTokenSource();
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
 
-        // ⚠ Cancelled at once, not after a wait: what is being measured is the CLASSIFICATION of
-        // an interrupted wait, and any window left open is a window in which the listener can fault
-        // on its own — see the remark on the deadline test below.
-        var waiting = receiver.GetAuthorizationCodeAsync(NoBrowser, cts.Token);
-        cts.Cancel();
-
-        var ex = await Record.ExceptionAsync(() => waiting);
+        var ex = new LoopbackAuthCodeReceiver().Classify(cancelled.Token, CancellationToken.None);
 
         // The TYPE is the subject: it is what callers read so as not to report a failure.
         Assert.IsAssignableFrom<OperationCanceledException>(ex);
     }
 
+    /// <summary>The caller's cancellation wins over the deadline: it is the only one of the three
+    /// that is not a failure, so it must never come out as one.</summary>
+    [Fact]
+    public void CancellationWins_WhenBothFired()
+    {
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        var ex = new LoopbackAuthCodeReceiver().Classify(cancelled.Token, cancelled.Token);
+
+        Assert.IsAssignableFrom<OperationCanceledException>(ex);
+    }
+
+    /// <summary>When the DEADLINE fired, the sentence names the address that was being waited on —
+    /// "it did not work" sends the reader nowhere.</summary>
+    [Fact]
+    public void ADeadlineThatPasses_NamesWhatDidNotHappen()
+    {
+        using var expired = new CancellationTokenSource();
+        expired.Cancel();
+
+        var receiver = new LoopbackAuthCodeReceiver();
+        var timeout  = Assert.IsType<TimeoutException>(
+            receiver.Classify(CancellationToken.None, expired.Token));
+
+        Assert.Contains(receiver.RedirectUri, timeout.Message, StringComparison.Ordinal);
+        Assert.Contains("browser", timeout.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
-    /// When the DEADLINE has fired, the answer is a <see cref="TimeoutException"/> naming the
-    /// address — whatever exception the platform chose to end the wait with.
+    /// REFERENCE ARM, and what keeps the third outcome alive: neither token fired, so the wait
+    /// ended for a reason of its own — a genuine socket failure, which keeps its cause instead of
+    /// being dressed up as a timeout.
+    /// </summary>
+    [Fact]
+    public void AFailureThatIsNeither_KeepsItsOwnCause() =>
+        Assert.Null(new LoopbackAuthCodeReceiver().Classify(CancellationToken.None, CancellationToken.None));
+
+    /// <summary>
+    /// The FOURTH outcome, which sat outside the classification entirely: not "the wait was
+    /// interrupted" but "there was never a wait".
     /// </summary>
     /// <remarks>
-    /// ⚠ The deadline is 1 ms, and that is the point rather than an optimisation. At 400 ms this
-    /// test went red on macOS and green on a rerun: the managed <c>HttpListener</c> there can fault
-    /// on its own inside the window, and the product then classified it — correctly — as a genuine
-    /// socket failure. The test was asserting that nothing but the deadline can end a 400 ms wait,
-    /// which is a claim about the platform, not about the product. Firing the deadline first makes
-    /// the assertion deterministic everywhere AND keeps it on the rule: whatever arrives, the
-    /// deadline token is the one that had fired, so the deadline's sentence is the right one.
-    /// ⚠ An intermittent red on the one CI leg that sees certain classes alone is worse than no
-    /// test: it is how that leg stops being read.
+    /// ⚠ <c>FreeLoopbackPort</c> probes a port and releases it, so another process can take it
+    /// before <c>Start</c> binds. What reached the user was the operating system's own sentence, in
+    /// the machine's display language, naming neither the address nor what to do — the very shape
+    /// this class exists to remove, one step earlier in the method.
     /// </remarks>
     [Fact]
-    public async Task ADeadlineThatPasses_NamesWhatDidNotHappen()
+    public async Task AListenerThatCannotBeOpened_NamesTheAddress()
     {
-        var receiver = new LoopbackAuthCodeReceiver(TimeSpan.FromMilliseconds(1));
+        var receiver = new LoopbackAuthCodeReceiver();
+
+        // WITNESS: the port really is taken, by us, for the whole call.
+        using var squatter = new System.Net.Sockets.TcpListener(IPAddress.Loopback, receiver.Port);
+        squatter.Start();
 
         var ex = await Record.ExceptionAsync(
             () => receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None));
 
-        var timeout = Assert.IsType<TimeoutException>(ex);
-        // The sentence names the address that was being waited on — without it, "it did not work"
-        // sends the reader nowhere. And it is distinct from cancellation, which is not a failure.
-        Assert.Contains(receiver.RedirectUri, timeout.Message, StringComparison.Ordinal);
-        Assert.Contains("browser", timeout.Message, StringComparison.OrdinalIgnoreCase);
+        var named = Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains(receiver.RedirectUri, named.Message, StringComparison.Ordinal);
+        Assert.IsType<HttpListenerException>(named.InnerException);
     }
 
     [Fact]
