@@ -27,13 +27,15 @@ internal enum ModelRole
 }
 
 /// <summary>
-/// Central task→model resolution ("Model Router" V1). Every feature that needs a model name asks
-/// this class instead of hand-rolling its own fallback chain — the chains used to be duplicated
-/// across the VS commands and the chat VM, and drifting copies is exactly the bug this prevents.
+/// Central task→model resolution. Every feature that needs a model name asks this class instead of
+/// hand-rolling its own fallback chain: duplicated across the VS commands and the chat VM, those
+/// chains drift.
 /// </summary>
 /// <remarks>
-/// V1 is a plain lookup table (no VRAM-aware auto mode yet): an empty per-role override means
-/// "use the chat model". The swap-cost economics are handled by the user's choice of a small
+/// <see cref="Resolve"/> is a plain lookup table: an empty per-role override means "use the chat
+/// model". One role goes further — <see cref="ResolveUtility"/> is the VRAM-aware auto mode
+/// (<c>modelRouterAuto</c>), which routes background work to the <c>/bench</c> pick only while it
+/// is already warm. Everywhere else the swap-cost economics stay with the user's choice of a small
 /// utility model plus the <c>keep_alive</c> idle-unload policy, which keeps both models warm on
 /// backends that honour it.
 /// </remarks>
@@ -51,11 +53,11 @@ internal static class ModelRouter
     };
 
     /// <summary>
-    /// V2 "auto" mode for the utility role, pure core (unit-tested directly): route to the
+    /// Auto mode for the utility role, pure core (unit-tested directly): route to the
     /// <c>/bench</c>-recommended utility model only when it is already warm. An explicit
     /// <see cref="InferpalConfig.UtilityModel"/> always wins; a cold candidate falls back to the
-    /// plain resolution — the VRAM swap a cold load triggers costs more than a title or commit
-    /// message saves ("only route to the small model when the gain is net", ROADMAP §4).
+    /// plain resolution — the VRAM swap a cold load triggers costs more than a title or a commit
+    /// message saves.
     /// </summary>
     /// <param name="benchRecommended">Utility pick of the last persisted <c>/bench</c> run.</param>
     /// <param name="warmModels">Names currently loaded on the backend (tag-tolerant match).</param>

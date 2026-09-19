@@ -69,14 +69,13 @@ internal sealed class ModelLifetimeService : IDisposable
 
     /// <summary>One poll: reads the state, then publishes it — whatever it is.</summary>
     /// <remarks>
-    /// ⚠ <b>Publishing only on success is what made the badge lie.</b> A failed poll used to leave
-    /// <c>_currentModels</c> untouched and raise no event, so the header kept asserting that models
-    /// occupy the GPU long after they did not — and the XML doc on <see cref="CurrentModels"/>
-    /// promised the opposite. The commonest path is not even a failure: switching the backend to an
-    /// OpenAI-compatible server turns <c>VramMonitoring</c> off, and the early return left the
-    /// previous Ollama models on screen for good. Empty is not "nothing is loaded", it is "I cannot
-    /// say" — and it is the only honest badge, the same reason a wrong number costs more than a
-    /// silence everywhere else in this product.
+    /// ⚠ <b>Publishing only on success makes the badge lie.</b> A failed poll that leaves
+    /// <c>_currentModels</c> untouched and raises no event keeps the header asserting that models
+    /// occupy the GPU long after they do not. The commonest path is not even a failure: switching
+    /// the backend to an OpenAI-compatible server turns <c>VramMonitoring</c> off, and an early
+    /// return leaves the previous Ollama models on screen for good. Empty is not "nothing is
+    /// loaded", it is "I cannot say" — and that is the only honest badge, for the same reason a
+    /// wrong number costs more than a silence everywhere else in this product.
     /// </remarks>
     internal async Task RefreshAsync()
     {

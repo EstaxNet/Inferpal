@@ -8,11 +8,10 @@ namespace Inferpal.Services.Debugging;
 /// prompt.
 /// </summary>
 /// <remarks>
-/// Both editor recipes were probed before this port existed (2026-08-20,
-/// <c>docs/probes/tdd-debug-launch/</c>): VS Code launches an inline <c>coreclr</c> config on a
-/// repro runner and sets the exception filter mid-session (~1.4 s to the stop); Visual Studio
+/// The two editors reach the same stop by different recipes: VS Code launches an inline
+/// <c>coreclr</c> config on a repro runner and sets the exception filter mid-session; Visual Studio
 /// attaches to a runner waiting on <c>Debugger.IsAttached</c> whose reflection invoke uses
-/// <c>DoNotWrapExceptions</c>, so the unhandled break lands on the original throw site (~5 s).
+/// <c>DoNotWrapExceptions</c>, so the unhandled break lands on the original throw site.
 /// <para>
 /// Every implementation is <b>best-effort and never throws</b> for an ordinary failure (no
 /// debugger available, test assembly not found, no exception stop): it returns <c>null</c>,

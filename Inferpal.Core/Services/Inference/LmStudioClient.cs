@@ -37,13 +37,10 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// <paramref name="url"/> when a caller forces one, otherwise from the configuration.
     /// </summary>
     /// <remarks>
-    /// ⚠ The <c>url</c> parameter of <c>ListModelsAsync</c> / <c>ListInstalledModelsAsync</c> was
-    /// honoured by the two other providers (<c>url ?? _config.BaseUrl</c>) and <b>silently
-    /// ignored</b> here: the native probe queried the CONFIGURED server while the
-    /// OpenAI-compatible fallback queried the one it was handed. No caller paid for it today —
-    /// the one that passes a URL rebuilds a client whose config already carries it — but it is a
-    /// trap: the obvious gesture would have listed one server's models while presenting them as
-    /// another's.
+    /// ⚠ The <c>url</c> parameter of <c>ListModelsAsync</c> / <c>ListInstalledModelsAsync</c> is
+    /// honoured here as in the two other providers (<c>url ?? _config.BaseUrl</c>). Ignored, the
+    /// native probe queries the CONFIGURED server while the OpenAI-compatible fallback queries the
+    /// one it was handed — one server's models presented as another's.
     /// </remarks>
     private string HostRootFor(string? url)
     {
@@ -201,11 +198,10 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// <c>{base}/v1/models</c> — the surface the chat actually talks; the listing below comes from the
     /// NATIVE API <c>{base}/api/v1|v0/models</c>, the only one carrying loaded state and size. A server
     /// that serves only the OpenAI-compatible surface — a reverse proxy routing just <c>/v1</c>, the
-    /// most common shape of an LM Studio exposed on a domain — therefore answered "connected" with ZERO
-    /// models. Measured 2026-09-03 against a stand-in server serving only <c>/v1/models</c>: badge
-    /// <c>true</c>, empty list; control arm in <c>openai-compatible</c> on the same server, one model. And
-    /// on the UI side an empty list does not read as a failure: the picker puts the configured model back
-    /// and shows one entry, exactly like a backend serving a single model.
+    /// most common shape of an LM Studio exposed on a domain — therefore answers "connected" with ZERO
+    /// models, while the same server in <c>openai-compatible</c> mode lists them. And on the UI side an
+    /// empty list does not read as a failure: the picker puts the configured model back and shows one
+    /// entry, exactly like a backend serving a single model.
     ///
     /// Hence the fallback to the OpenAI-compatible surface when the native one answers nothing. It cannot
     /// lie the other way: what it lists is what the chat can actually talk to.
@@ -245,7 +241,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     }
 
     // ── Model management (native load / unload / download) ─────────────────────
-    // Request-body shapes confirmed by runtime probe against LM Studio:
+    // Request-body shapes, as LM Studio's native API expects them:
     //   load     POST /api/v1/models/load     { "model": "<id>" }        → { instance_id, status, … }
     //   download POST /api/v1/models/download  { "model": "<id>" }        → { job_id, status, … } (asynchronous job)
     //   unload   POST /api/v1/models/unload    { "instance_id": "<id>" }  → { instance_id }   (NOT "model"!)

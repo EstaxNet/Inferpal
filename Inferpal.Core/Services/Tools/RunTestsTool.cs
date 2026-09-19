@@ -69,20 +69,25 @@ internal class RunTestsTool : ITool
         var workDir = ResolveWorkDir(path, root);
         var runner  = (forced is null or "auto") ? DetectRunner(workDir, path) : forced;
 
-        return runner switch
+        // ⚠ The budget is decorated HERE, after the parser, never inside the log it reads: the
+        // parsers compose their verdict line from summaries, so a sentence buried in the raw text
+        // is dropped, and a killed run reported the pass of the projects that had finished.
+        var budget = new RunBudget(timeout);
+        var report = runner switch
         {
-            "dotnet" => await RunDotnetAsync(workDir, path, filter, timeout, ct),
-            "pytest" => await RunPytestAsync(workDir, filter, timeout, ct),
-            "npm"    => await RunNpmAsync(workDir, filter, timeout, ct),
-            "cargo"  => await RunCargoAsync(workDir, filter, timeout, ct),
-            "go"     => await RunGoAsync(workDir, filter, timeout, ct),
+            "dotnet" => await RunDotnetAsync(workDir, path, filter, budget, ct),
+            "pytest" => await RunPytestAsync(workDir, filter, budget, ct),
+            "npm"    => await RunNpmAsync(workDir, filter, budget, ct),
+            "cargo"  => await RunCargoAsync(workDir, filter, budget, ct),
+            "go"     => await RunGoAsync(workDir, filter, budget, ct),
             _        => NoRunnerDetected(workDir, root),
         };
+        return budget.Wrap(report);
     }
 
     // ── Runner implementations ─────────────────────────────────────────────────
 
-    private static async Task<string> RunDotnetAsync(string workDir, string? path, string? filter, int timeout, CancellationToken ct)
+    private static async Task<string> RunDotnetAsync(string workDir, string? path, string? filter, RunBudget budget, CancellationToken ct)
     {
         var sb = new StringBuilder("test");
         if (!string.IsNullOrWhiteSpace(path))
@@ -91,31 +96,31 @@ internal class RunTestsTool : ITool
         if (!string.IsNullOrWhiteSpace(filter))
             sb.Append($" --filter \"{filter}\"");
 
-        var (output, exitCode) = await RunProcessAsync("dotnet", sb.ToString(), workDir, timeout, ct);
+        var (output, exitCode) = await RunProcessAsync("dotnet", sb.ToString(), workDir, budget, ct);
         return ParseDotnetOutput(output, exitCode);
     }
 
-    private static async Task<string> RunPytestAsync(string workDir, string? filter, int timeout, CancellationToken ct)
+    private static async Task<string> RunPytestAsync(string workDir, string? filter, RunBudget budget, CancellationToken ct)
     {
         var args = "-m pytest -v --tb=short -q";
         if (!string.IsNullOrWhiteSpace(filter))
             args += $" -k \"{filter}\"";
 
-        var (output, exitCode) = await RunProcessAsync("python", args, workDir, timeout, ct);
+        var (output, exitCode) = await RunProcessAsync("python", args, workDir, budget, ct);
         return ParsePytestOutput(output, exitCode);
     }
 
-    private static async Task<string> RunNpmAsync(string workDir, string? filter, int timeout, CancellationToken ct)
+    private static async Task<string> RunNpmAsync(string workDir, string? filter, RunBudget budget, CancellationToken ct)
     {
         var args = "test";
         if (!string.IsNullOrWhiteSpace(filter))
             args += $" -- --testNamePattern=\"{filter}\"";
 
-        var (output, _) = await RunProcessAsync("npm", args, workDir, timeout, ct);
+        var (output, _) = await RunProcessAsync("npm", args, workDir, budget, ct);
         return Truncate(output.Trim(), MaxRawChars);
     }
 
-    private static async Task<string> RunCargoAsync(string workDir, string? filter, int timeout, CancellationToken ct)
+    private static async Task<string> RunCargoAsync(string workDir, string? filter, RunBudget budget, CancellationToken ct)
     {
         // cargo searches up for Cargo.toml, but run from the crate/workspace root for predictability.
         var root = FindUp(workDir, "Cargo.toml") ?? workDir;
@@ -123,18 +128,18 @@ internal class RunTestsTool : ITool
         if (!string.IsNullOrWhiteSpace(filter))
             args += $" {filter}";
 
-        var (output, exitCode) = await RunProcessAsync("cargo", args, root, timeout, ct);
+        var (output, exitCode) = await RunProcessAsync("cargo", args, root, budget, ct);
         return ParseCargoOutput(output, exitCode);
     }
 
-    private static async Task<string> RunGoAsync(string workDir, string? filter, int timeout, CancellationToken ct)
+    private static async Task<string> RunGoAsync(string workDir, string? filter, RunBudget budget, CancellationToken ct)
     {
         var root = FindUp(workDir, "go.mod") ?? workDir;
         var args = "test ./...";
         if (!string.IsNullOrWhiteSpace(filter))
             args += $" -run \"{filter}\"";
 
-        var (output, exitCode) = await RunProcessAsync("go", args, root, timeout, ct);
+        var (output, exitCode) = await RunProcessAsync("go", args, root, budget, ct);
         return ParseGoOutput(output, exitCode);
     }
 
@@ -169,6 +174,31 @@ internal class RunTestsTool : ITool
     internal const string NoTestMatchedFilter =
         "⚠ No test matched the filter — nothing ran. " +
         "The tests may have been renamed or removed; that is not a pass.";
+
+    /// <summary>The run was killed at its budget — the fourth state, and the only one that can
+    /// carry a <b>green</b> summary while being worthless.</summary>
+    /// <remarks>
+    /// <para>
+    /// The parsers read a log, not the clock: on a solution whose first project finishes and whose
+    /// second hangs, the killed run still carries <c>Passed! - Failed: 0, Passed: 16</c>, and that
+    /// became the whole report — <c>✓ PASSED</c>, with the projects that never ran nowhere in it.
+    /// The rule this file already states about exit codes ("never infer green from an exit code
+    /// alone") holds exactly as much for a summary that describes a fraction of the run.
+    /// </para>
+    /// <para>
+    /// A constant for the same reason as its two neighbours: <c>TddCommandHandler</c> has to
+    /// recognise this state, and a sentence re-typed at the reading end keeps matching right up to
+    /// the day the writing end is reworded.
+    /// </para>
+    /// </remarks>
+    internal const string StoppedAtBudget =
+        "⚠ The test run was stopped before it finished — nothing was proven.";
+
+    /// <summary>The sentence the report opens with when the budget ran out.</summary>
+    internal static string StoppedAtBudgetLine(int seconds) =>
+        $"{StoppedAtBudget} It exceeded its {seconds}s budget and the runner was killed, tree " +
+        "included; anything below describes only the part that ran. Raise 'timeout_seconds', or " +
+        "narrow 'filter' to the tests you are working on.";
 
     internal static string ParseDotnetOutput(string raw, int exitCode)
     {
@@ -215,9 +245,9 @@ internal class RunTestsTool : ITool
             var status = totalFailed == 0 ? "✓ PASSED" : "✗ FAILED";
             sb.AppendLine($"{status} — Failed: {totalFailed}, Passed: {totalPassed}, Skipped: {totalSkipped}, Total: {totalTotal}");
         }
-        // A filter matching zero tests exits 0 and used to read as a pass — so an agent that renamed
-        // or deleted the failing test made `/tdd` declare victory on a run where nothing ran. The
-        // vstest message is reliably English here because this tool forces the child's UI language.
+        // A filter matching zero tests exits 0: read as a pass, an agent that renamed or deleted
+        // the failing test makes `/tdd` declare victory on a run where nothing ran. The vstest
+        // message is reliably English here because this tool forces the child's UI language.
         // No ✓/✗ prefix on purpose: callers' verdict parsing reads it as not-green and the loop
         // keeps working.
         else if (raw.Contains("No test matches the given testcase filter", StringComparison.Ordinal))
@@ -410,11 +440,10 @@ internal class RunTestsTool : ITool
     {
         var sb = new StringBuilder();
 
-        // ⚠ Count BEFORE capping. `failing.Count` used to be read off the capped list, so a suite
-        // with eighty failures reported "30 failing test(s)": the loop fixes thirty, re-runs, finds
-        // fifty, and reads them as regressions it just introduced. Same mechanism as
-        // SmartFixValidator's build errors — and go is the one runner with no summary of its own,
-        // so this number is the only one the model gets.
+        // ⚠ Count BEFORE capping. Read off the capped list, a suite with eighty failures reports
+        // "30 failing test(s)": the loop fixes thirty, re-runs, finds fifty, and reads them as
+        // regressions it just introduced. go is the one runner with no summary of its own, so this
+        // number is the only one the model gets.
         var allFailing = Regex.Matches(raw, @"^\s*--- FAIL:\s+(\S+)", RegexOptions.Multiline, RegexBudget.Default)
             .Select(m => m.Groups[1].Value)
             .Distinct()
@@ -467,8 +496,26 @@ internal class RunTestsTool : ITool
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// The budget of one run, and whether it ran out.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ It travels DOWN to <see cref="RunProcessAsync"/> so the fact can be said ONCE, at the
+    /// funnel in <see cref="ExecuteAsync"/>. Said at the five runner sites instead, the sixth
+    /// runner would be written without it — and the failure is silent, because the parsers happily
+    /// compose a verdict out of a partial log.
+    /// </remarks>
+    private sealed class RunBudget(int seconds)
+    {
+        public int  Seconds { get; }      = seconds;
+        public bool Expired { get; set; }
+
+        public string Wrap(string report) =>
+            Expired ? StoppedAtBudgetLine(Seconds) + "\n\n" + report : report;
+    }
+
     private static async Task<(string Output, int ExitCode)> RunProcessAsync(
-        string fileName, string arguments, string workDir, int timeoutSeconds, CancellationToken ct)
+        string fileName, string arguments, string workDir, RunBudget budget, CancellationToken ct)
     {
         try
         {
@@ -489,13 +536,19 @@ internal class RunTestsTool : ITool
             psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
             psi.EnvironmentVariables["VSLANG"]                 = "1033";
 
-            var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(timeoutSeconds), ct);
+            var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(budget.Seconds), ct);
 
-            // A test run that overruns its budget now says so and keeps the partial log, instead of
-            // throwing a cancellation that aborted the agent turn and lost every line already
-            // produced. The runner is killed, tree included — a stray `dotnet test` used to survive.
+            // A test run that overruns its budget keeps the partial log rather than throwing a
+            // cancellation, which would abort the agent turn and lose every line already produced.
+            // The runner is killed, tree included, or a stray `dotnet test` survives it.
+            // ⚠ The FACT travels in the budget, not in this text: written into the log, the
+            // sentence reached a parser that does not read prose, and a summary from the projects
+            // that had finished became the verdict of a run that was killed.
             if (run.TimedOut)
-                return ($"The test run exceeded its {timeoutSeconds}s budget and was stopped.\n\n{run.Combined}", -1);
+            {
+                budget.Expired = true;
+                return (run.Combined, -1);
+            }
 
             return (run.Combined, run.ExitCode);
         }
@@ -532,7 +585,7 @@ internal class RunTestsTool : ITool
         if (explicitPath is not null)
         {
             // SolutionFiles recognises BOTH formats: a `path` pointing at a .slnx otherwise
-            // picked the wrong runner (issue #9).
+            // picked the wrong runner.
             if (SolutionFiles.IsSolution(explicitPath) ||
                 explicitPath.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
                 return "dotnet";

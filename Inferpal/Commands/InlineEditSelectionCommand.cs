@@ -124,7 +124,7 @@ internal class InlineEditSelectionCommand : Command
         var messages = BuildMessages(originalCode, instruction);
 
         ChatTurnResult result;
-        // Closing the spinner cancels the generation: the edit used to land anyway once the model answered.
+        // Closing the spinner cancels the generation, or the edit lands anyway once the model answers.
         using (var generation = CancellationTokenSource.CreateLinkedTokenSource(ct, dlg.CancelledByUser))
         {
             try

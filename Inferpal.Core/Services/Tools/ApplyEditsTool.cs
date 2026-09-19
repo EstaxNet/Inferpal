@@ -81,17 +81,16 @@ internal sealed class ApplyEditsTool : ITool
         {
             index++;
 
-            // ⚠ A malformed entry used to be `continue`d away, and the answer then reported the
-            // success of the SURVIVORS: "Applied 3 edit(s)" on a batch of 5. The model cannot see
-            // the two that were dropped -- and the description IT reads promises the opposite,
-            // word for word: "If ANY edit cannot be applied, NO file is changed". The matching
-            // failure below already aborts the whole batch naming the offending edit; a read
-            // failure is the same event and is said the same way.
+            // ⚠ A malformed entry aborts the batch; `continue`d away, the answer reports the
+            // success of the SURVIVORS — "Applied 3 edit(s)" on a batch of 5, with the two dropped
+            // ones invisible to the model, while the description IT reads promises the opposite
+            // word for word: "If ANY edit cannot be applied, NO file is changed". Same event and
+            // same wording as the matching failure below.
             if (e.ValueKind != JsonValueKind.Object)
                 return Strings.ApplyEditsAborted($"edit #{index} is not an object");
 
             // No null check on `path`: Sanitize already throws a readable, localised message when
-            // it is missing (ToolPathRequired). The check that used to be here could never fire.
+            // it is missing (ToolPathRequired), so a check here could never fire.
             var path = PathSanitizer.Sanitize(e.Str("path"), root);
             PathSanitizer.AssertUnderRoot(path, root);
 

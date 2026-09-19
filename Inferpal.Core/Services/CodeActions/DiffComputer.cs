@@ -5,19 +5,16 @@ namespace Inferpal.Services.CodeActions;
 
 internal static class DiffComputer
 {
-    // ⚠ This caps the REGION THAT DIFFERS, never the size of the file — and until 2026-09-10 it
-    // was read off the whole file. Measured consequence: a single changed line in a 400-line
-    // source did not show the change but a sentence in its place, at the **approval prompt** —
-    // the one surface where the human reads what they are agreeing to. 15% of the non-test
-    // sources here (74/486) are over 300 lines, and they are the large ones an assistant edits
-    // most.
+    // ⚠ This caps the REGION THAT DIFFERS, never the size of the file. Read off the whole file, a
+    // single changed line in a 400-line source shows a sentence instead of the change, at the
+    // **approval prompt** — the one surface where the human reads what they are agreeing to, on
+    // exactly the large files an assistant edits most.
     //
-    // What the cap protects is still real: the LCS below is O(m·n) and allocates an
-    // int[m+1, n+1] — 8,000 lines would be 256 MB, inside a modal dialog. The answer was not to
-    // give up on showing the diff, it was to keep out of the computation what is identical on
-    // both sides: after trimming, a one-line change costs a 7×7 DP. The name was a trap of its
-    // own too: `MaxLines` (the file) and ComputeText's `maxLines` parameter (rendered lines) were
-    // not talking about the same thing.
+    // What the cap protects is real: the LCS below is O(m·n) and allocates an int[m+1, n+1] —
+    // 8,000 lines would be 256 MB, inside a modal dialog. Keeping out of the computation what is
+    // identical on both sides is what makes both true at once: after trimming, a one-line change
+    // costs a 7×7 DP. ⚠ And `MaxLines` (the region) is not ComputeText's `maxLines` parameter
+    // (rendered lines) — two different things, one letter apart.
     private const int MaxWindowLines = 300;
     private const int CtxLines       = 3;
 
@@ -72,9 +69,8 @@ internal static class DiffComputer
         var oldWin = old[(head - ctxHead)..(old.Length - tail + ctxTail)];
         var newWin = @new[(head - ctxHead)..(@new.Length - tail + ctxTail)];
 
-        // The cap now only bites on what genuinely differs (a whole-file rewrite, a binary read as
-        // text) — and it SAYS so in all ten languages: this sentence used to be hard-coded in
-        // French and served as-is to everyone.
+        // The cap only bites on what genuinely differs (a whole-file rewrite, a binary read as
+        // text) — and it says so in all ten languages: this sentence reaches the approval prompt.
         if (oldWin.Length > MaxWindowLines || newWin.Length > MaxWindowLines)
             return
             [

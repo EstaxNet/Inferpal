@@ -39,14 +39,13 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
             var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, fullCmd);
 
             // Concurrent drain of both pipes and a killed process tree on timeout live in
-            // ChildProcess now — this tool was the one site that had both right, and the shared
-            // implementation is its behaviour.
+            // ChildProcess, shared with every other child this product starts.
             var run = await ChildProcess.RunAsync(
                 psi, TimeSpan.FromSeconds(config.CommandTimeoutSeconds), ct);
 
             // Timeout is reported to the model, not thrown: it must not abort the whole agent run —
             // and it carries what the command had printed, like the persistent shell. ChildProcess
-            // already hands the partial streams back; this tool used to drop them on the floor.
+            // hands the partial streams back; dropping them tells the model only the time.
             if (run.TimedOut)
                 return ChildProcess.TimedOutMessage(config.CommandTimeoutSeconds,
                                                     (run.Stdout + run.Stderr).Trim());

@@ -60,16 +60,21 @@ internal static class HardwareCommandHandler
     }
 
     /// <summary>
-    /// Computes the recommended max <c>num_ctx</c> for the active chat model from its KV-cache cost
-    /// (<c>/api/show</c> architecture) and the VRAM budget. Returns <c>null</c> when the budget is
-    /// unknown or the architecture metadata is unavailable, so the report simply omits the section.
+    /// What the report needs about the context window: the configured size, the largest that fits
+    /// the VRAM budget, and the largest the model itself accepts. <c>null</c> only when there is no
+    /// model to ask about, or the backend has no architecture metadata for it.
     /// </summary>
+    /// <remarks>
+    /// ⚠ A missing VRAM budget must not end this method: the model's own context length is a
+    /// property of the model, not of the machine. The recommendation is then 0 and the report says
+    /// so; the ceiling is reported either way.
+    /// </remarks>
     private static async Task<ContextWindowAdvice?> BuildContextWindowAdviceAsync(
         IInferenceProvider client, InferpalConfig config,
         IReadOnlyList<InstalledModelInfo> installed, CancellationToken ct)
     {
         var model = config.DefaultModel;
-        if (config.VramBudgetGb <= 0 || string.IsNullOrEmpty(model)) return null;
+        if (string.IsNullOrEmpty(model)) return null;
 
         var arch = await client.ShowModelAsync(model, ct);
         if (arch is null) return null;

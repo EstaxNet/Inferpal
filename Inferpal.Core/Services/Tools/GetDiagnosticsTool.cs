@@ -72,25 +72,30 @@ internal class GetDiagnosticsTool : ITool
     /// </summary>
     internal static BuildVerdict ReadVerdict(string output)
     {
-        if (OutputHasBuildErrors(output)) return BuildVerdict.Errors;
         if (string.IsNullOrEmpty(output)) return BuildVerdict.NotBuilt;
 
         const string NameSentinel  = "";
         const int    CountSentinel = 918273645;
         var firstLine = output.Split('\n')[0].TrimEnd('\r');
 
-        foreach (var shape in new[] { Strings.DiagBuildOk(NameSentinel), Strings.DiagSummary(0, CountSentinel, NameSentinel) })
+        bool FirstLineIs(string shape)
         {
             var pattern = "^" + Regex.Escape(shape)
                 .Replace(NameSentinel, ".+?")
                 .Replace(CountSentinel.ToString(), @"\d+") + "$";
-            try
-            {
-                if (Regex.IsMatch(firstLine, pattern, RegexOptions.None, RegexBudget.Default))
-                    return BuildVerdict.Clean;
-            }
-            catch (RegexMatchTimeoutException) { return BuildVerdict.NotBuilt; }
+            try   { return Regex.IsMatch(firstLine, pattern, RegexOptions.None, RegexBudget.Default); }
+            catch (RegexMatchTimeoutException) { return false; }
         }
+
+        // ⚠ Asked FIRST, before the error lines: a build killed at its budget carries whatever the
+        // compiler had already printed, so it usually DOES contain error lines — and "Errors" sends
+        // the /fix-build loop patching a fragment of a build that never finished.
+        if (FirstLineIs(Strings.DiagBuildStopped(CountSentinel))) return BuildVerdict.NotBuilt;
+        if (OutputHasBuildErrors(output))                         return BuildVerdict.Errors;
+
+        foreach (var shape in new[] { Strings.DiagBuildOk(NameSentinel), Strings.DiagSummary(0, CountSentinel, NameSentinel) })
+            if (FirstLineIs(shape)) return BuildVerdict.Clean;
+
         return BuildVerdict.NotBuilt;
     }
 
@@ -136,36 +141,58 @@ internal class GetDiagnosticsTool : ITool
             Arguments = $"build \"{path}\" --no-restore -v minimal",
         };
 
-        // 90 s, after which the build tree is killed — it used to be abandoned, and MSBuild node
-        // processes outlived the turn that started them.
-        var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(90), ct);
-        var stdout   = run.Stdout;
-        var combined = run.Combined;
+        // 90 s, after which the build tree is killed: abandoned instead, MSBuild node processes
+        // outlive the turn that started them.
+        var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(BudgetSeconds), ct);
+        return Interpret(run, Path.GetFileName(path), BudgetSeconds);
+    }
 
-        var diagnostics = combined
+    /// <summary>The budget of one build, after which the tree is killed.</summary>
+    private const int BudgetSeconds = 90;
+
+    /// <summary>What one build answers — <b>including</b> when there was no build to speak of.</summary>
+    /// <remarks>
+    /// ⚠ A build KILLED at its budget is not a build that has N errors. The compiler prints as it
+    /// goes, so the partial output usually does carry error lines, and summarising them reads as a
+    /// complete verdict — <c>"1 error(s), 0 warning(s) — X.csproj"</c> on a build that never reached
+    /// the end, which <c>/fix-build</c> then spends up to five model rounds on. Same rule in
+    /// <see cref="CodeActions.SmartFixValidator"/> and <see cref="RunTestsTool"/>, the two other
+    /// readers of a killed child.
+    /// ⚠ And the exit code of a killed child is <c>-1</c>, a sentinel of
+    /// <see cref="ChildProcess"/> — printed raw it reads as the compiler's own answer.
+    /// </remarks>
+    internal static string Interpret(ChildProcessResult run, string projectFile, int budgetSeconds)
+    {
+        var diagnostics = run.Combined
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Where(l => _diagLine.IsMatch(l))
             .Select(l => l.Trim())
             .Distinct()
             .ToList();
 
+        string body;
         if (diagnostics.Count == 0)
         {
-            return run.Succeeded
-                ? Strings.DiagBuildOk(Path.GetFileName(path))
-                : Strings.DiagBuildFailed(run.ExitCode, stdout.Trim());
+            body = run.TimedOut ? run.Stdout.Trim()
+                 : run.Succeeded ? Strings.DiagBuildOk(projectFile)
+                                 : Strings.DiagBuildFailed(run.ExitCode, run.Stdout.Trim());
+        }
+        else
+        {
+            var errors   = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("error",   StringComparison.OrdinalIgnoreCase));
+            var warnings = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("warning", StringComparison.OrdinalIgnoreCase));
+
+            var sb = new StringBuilder();
+            sb.AppendLine(Strings.DiagSummary(errors, warnings, projectFile));
+            sb.AppendLine();
+            foreach (var d in diagnostics)
+                sb.AppendLine(d);
+            body = sb.ToString().Trim();
         }
 
-        var errors   = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("error",   StringComparison.OrdinalIgnoreCase));
-        var warnings = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("warning", StringComparison.OrdinalIgnoreCase));
-
-        var sb = new StringBuilder();
-        sb.AppendLine(Strings.DiagSummary(errors, warnings, Path.GetFileName(path)));
-        sb.AppendLine();
-        foreach (var d in diagnostics)
-            sb.AppendLine(d);
-
-        return sb.ToString().Trim();
+        return run.TimedOut
+            ? (Strings.DiagBuildStopped(budgetSeconds) + "\n\n" + body).Trim()
+            : body;
     }
 
     /// <summary>The first solution or project under <paramref name="root"/> — the working

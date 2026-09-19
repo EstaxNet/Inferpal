@@ -30,11 +30,10 @@ internal readonly record struct ChildProcessResult(
 /// <b>Why this exists, and it is not a precaution.</b> A child started with
 /// <c>UseShellExecute = false</c> and no <c>RedirectStandardInput</c> inherits the parent's stdin
 /// handle. In the VS Code host that handle is the <b>JSON-RPC pipe</b> the editor speaks over —
-/// and a console program handed a pipe as stdin can allocate a console and stall on it. Measured on
-/// 2026-08-03 by driving the host: <c>git diff --staged</c> never returned, a <c>conhost.exe</c>
-/// child appeared next to <c>git.exe</c>, and the process sat at 0 % CPU indefinitely. The identical
-/// call takes 31 ms from an ordinary process, which is why nothing in Visual Studio ever showed it:
-/// there, stdin is devenv's.
+/// and a console program handed a pipe as stdin can allocate a console and stall on it: the symptom
+/// is a <c>git diff --staged</c> that never returns, a <c>conhost.exe</c> child next to
+/// <c>git.exe</c> and 0 % CPU forever, on a call that takes 31 ms from an ordinary process. Visual
+/// Studio never shows it — there, stdin is devenv's.
 /// </para>
 /// <para>
 /// Every call site in this code base spawns a child, reads its output and never writes to its

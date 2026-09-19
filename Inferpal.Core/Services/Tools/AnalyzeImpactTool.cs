@@ -158,13 +158,12 @@ internal class AnalyzeImpactTool : ITool
 
         var source   = await File.ReadAllTextAsync(filePath, ct);
         var ext      = Path.GetExtension(filePath).ToLowerInvariant();
-        // ⚠ The scan starts at the WORKSPACE root, not at the analysed file's own folder.
-        // It used to be the folder: asked about Services/Commands/TaskCommandHandler.cs, the tool
-        // only ever looked inside Services/Commands/**, so its six real dependants — in the host,
-        // the tests and the VS view-model — were structurally invisible and it answered
-        // "0 dependants · safe to refactor freely". A blast-radius tool that cannot leave the
-        // directory it was pointed at answers the wrong question. Falls back to the folder when no
-        // workspace is known, the only case the old behaviour was ever right for.
+        // ⚠ The scan starts at the WORKSPACE root, not at the analysed file's own folder. Started
+        // at the folder, a question about Services/Commands/TaskCommandHandler.cs only ever looks
+        // inside Services/Commands/**, so dependants in the host, the tests or the VS view-model are
+        // structurally invisible and the answer is "0 dependants · safe to refactor freely". A
+        // blast-radius tool that cannot leave the directory it was pointed at answers the wrong
+        // question. Falls back to the folder only when no workspace is known.
         var rootDir  = workspaceRoot is { Length: > 0 } ? workspaceRoot : Path.GetDirectoryName(filePath)!;
         var fileName = Path.GetFileName(filePath);
 

@@ -384,10 +384,10 @@ internal sealed class ProjectIndexService : IDisposable
             var db = new RagDatabase(rootDir);
 
             // ── Watch for file changes — armed BEFORE the pass reads anything ─
-            // The pass can run for minutes (embeddings); a file saved while it runs used to be
-            // invisible until the next boot (the watcher was only armed after the final save).
-            // Events raised during the pass accumulate in _pendingRebuild (OnDebounceElapsed
-            // defers while IsIndexing) and are drained after the final SaveAsync below.
+            // The pass can run for minutes (embeddings), and a watcher armed only after the final
+            // save leaves a file saved meanwhile invisible until the next boot. Events raised during
+            // the pass accumulate in _pendingRebuild (OnDebounceElapsed defers while IsIndexing) and
+            // are drained after the final SaveAsync below.
             SetupFileWatcher(rootDir);
 
             // ── Load existing index from disk ─────────────────────────────────
@@ -408,13 +408,12 @@ internal sealed class ProjectIndexService : IDisposable
                 Status = $"RAG: {ChunkCount} chunks loaded (verifying changes…)";
 
             // ── Enumerate source files ────────────────────────────────────────
-            // ⚠ What the pass DISCARDED, and why. The per-file catch below said "skip unreadable
-            // files" and said it to nobody: that is what made a missing Roslyn chunker invisible for
-            // six versions - every .cs in the workspace was dropped whole, and the index reported
-            // itself ready. The cause was fixed in 1.6.6; the silence that hid it was not. A truly
-            // unreadable file is ordinary, so we do not speak per file: we count, and say it ONCE at
-            // the end of the pass with the first exception seen - the "n out of N" ratio is what
-            // makes a systematic failure readable at a glance.
+            // ⚠ What the pass DISCARDED, and why. A per-file catch that says "skip unreadable
+            // files" and says it to nobody is what makes a systematic failure invisible: a missing
+            // Roslyn chunker drops every .cs in the workspace, and the index reports itself ready.
+            // A truly unreadable file is ordinary, so we do not speak per file: we count, and say it
+            // ONCE at the end of the pass with the first exception seen — the "n out of N" ratio is
+            // what makes the difference readable at a glance.
             var skipped      = 0;
             var firstSkipped = string.Empty;
 
@@ -516,8 +515,8 @@ internal sealed class ProjectIndexService : IDisposable
                 await db.SaveAsync(newChunks, ct);
             if (modelChanged)
                 await db.SetMetaAsync(EmbeddingModelMetaKey, embModel, ct);
-            // ⚠ Reported even when the pass "succeeds": a full index built on zero files read is
-            // exactly the state that used to read as normal.
+            // ⚠ Reported even when the pass "succeeds": a full index built on zero files read
+            // otherwise reads as normal.
             if (skipped > 0)
                 Diagnostics.Record("ProjectIndexService",
                     $"{skipped} of {files.Count} file(s) skipped while indexing; first: {firstSkipped}");

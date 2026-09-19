@@ -35,7 +35,7 @@ internal sealed record XRayPanelModel(
     string RawPrompt);
 
 /// <summary>
-/// Builds the interactive Context X-Ray panel model (roadmap 1.2.0, V2) from the same
+/// Builds the interactive Context X-Ray panel model from the same
 /// <see cref="SystemPromptBuilder.BuildSections"/> layers as the <c>/xray</c> markdown. Pure and
 /// synchronous → unit-testable; both front-ends render this model without recomputing anything.
 /// </summary>
@@ -53,15 +53,15 @@ internal static class XRayPanelPresenter
 
     /// <summary>Stable identity of a section across rebuilds.</summary>
     /// <remarks>
-    /// ⚠ It used to be <c>kind + Detail</c> for every layer, and <c>Detail</c> is a <b>label</b>:
-    /// the persona carries the active language, the rules layer carries <i>how many</i> rules
-    /// matched. Both change when the user opens another file — which is exactly when the prompt is
-    /// rebuilt — so a section switched off "for the next turns" came back <b>by itself</b>: the
-    /// disabled set no longer named it. The identity of those layers is the layer.
+    /// ⚠ Never <c>kind + Detail</c>, because <c>Detail</c> is a <b>label</b>: the persona carries
+    /// the active language, the rules layer carries <i>how many</i> rules matched. Both change when
+    /// the user opens another file — which is exactly when the prompt is rebuilt — so a section
+    /// switched off "for the next turns" comes back <b>by itself</b>, the disabled set no longer
+    /// naming it. The identity of those layers is the layer.
     /// <para>
     /// The pinned layer keeps a per-file identity, but from its <see cref="PromptSection.Key"/>
     /// (the path) rather than its label: two pins can both be called <c>README.md</c>, and one
-    /// switch turned both off.
+    /// switch would then turn both off.
     /// </para>
     /// </remarks>
     public static string SectionId(PromptSection s) => s.Kind switch

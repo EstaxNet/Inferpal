@@ -32,10 +32,10 @@ internal static class TaskCommandHandler
     {
         var args = parts.Length > 1 ? parts[1..] : [];
 
-        // Keyword sub-commands only bind in their exact shape: "/task clear the build warnings"
-        // used to ERASE the finished reports instead of submitting the objective, and
-        // "/task list all TODO comments" listed. A keyword followed by
-        // free text falls through to submission, same prudence the id-lookup below already has.
+        // Keyword sub-commands only bind in their exact shape, or "/task clear the build warnings"
+        // ERASES the finished reports instead of submitting the objective, and "/task list all TODO
+        // comments" lists. A keyword followed by free text falls through to submission, same
+        // prudence as the id-lookup below.
         if (args.Length == 0 || (args.Length == 1 && IsWord(args[0], "list")))
             return new(RenderList(queue));
 
@@ -67,8 +67,8 @@ internal static class TaskCommandHandler
             if (args.Length == 2 && (LooksLikeId(id) || queue.Get(id) is not null))
             {
                 if (queue.Cancel(id)) return new(Strings.TaskStopRequested(id));
-                // Cancel refuses both the unknown and the already-terminal id — telling a user that a
-                // task they can still display is "unknown" lies about the cause (preemption probe).
+                // Cancel tells the unknown id from the already-terminal one: calling a task the
+                // user can still display "unknown" lies about the cause.
                 return new(queue.Get(id) is not null ? Strings.TaskAlreadyFinished(id) : Strings.TaskUnknown(id));
             }
         }

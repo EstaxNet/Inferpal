@@ -11,10 +11,9 @@ namespace Inferpal.Services.Persistence;
 /// </summary>
 /// <remarks>
 /// A session file contains the <b>display</b> transcript — role, text, tool name, timestamp — and
-/// nothing else. ⚠ Not the API history: no <c>tool_calls</c>, no arguments, no call ids (this
-/// sentence claimed the opposite until 2026-09-11, and that is what made "resumed exactly where it
-/// left off" sound credible). What gets rebuilt on load, and how, lives in
-/// <see cref="SessionManager.BuildRestoredHistory"/>.
+/// nothing else. ⚠ Not the API history: no <c>tool_calls</c>, no arguments, no call ids, so a
+/// reloaded session does not resume exactly where it left off. What gets rebuilt on load, and how,
+/// lives in <see cref="SessionManager.BuildRestoredHistory"/>.
 /// The special name <c>"last_session"</c> is reserved for the auto-save slot.
 /// </remarks>
 internal class ConversationStore
@@ -41,9 +40,8 @@ internal class ConversationStore
     /// ⚠ <b>A test that needs a folder of its own uses THIS, never <see cref="OverrideDirForTests"/>.</b>
     /// That static belongs to the whole suite (<c>TestConfigIsolation</c> points it at one per-process
     /// folder), so repointing it from a class makes every other class read the wrong folder for as
-    /// long as that class lives — measured: four unrelated test classes went red at once, and a
-    /// <c>Dispose</c> that set it back to <c>null</c> sent the rest of the suite at the developer's
-    /// real <c>%AppData%</c>.
+    /// long as that class lives — and a <c>Dispose</c> that sets it back to <c>null</c> sends the
+    /// rest of the suite at the developer's real <c>%AppData%</c>.
     /// </remarks>
     public ConversationStore(string? directory = null) => _instanceDir = directory;
 
@@ -258,11 +256,11 @@ internal record SessionMatch(string Name, DateTime SavedAt, List<string> Snippet
 /// What a pass over the session folder found, <b>and what it could not read</b>.
 /// </summary>
 /// <remarks>
-/// ⚠ Both passes used to answer with the list alone and trace the rest to <c>/diagnostics</c>, which
-/// is not where the user is looking: <c>/history</c> then says "no saved sessions" to someone who
-/// has ten, or shows five of eight with nothing to say so. The same rule is already written one
-/// folder away for <c>.inferpal/checks</c> (<c>ChecksService.Load(dir, out var unreadable)</c>) —
-/// there it is a review criterion, here it is the user's own conversation.
+/// ⚠ A pass that answers with the list alone and traces the rest to <c>/diagnostics</c> reports to
+/// nobody: <c>/history</c> then says "no saved sessions" to someone who has ten, or shows five of
+/// eight with nothing to say so. Same rule as <c>.inferpal/checks</c> one folder away
+/// (<c>ChecksService.Load(dir, out var unreadable)</c>) — there a review criterion, here the user's
+/// own conversation.
 /// </remarks>
 /// <param name="Items">What could be read.</param>
 /// <param name="Unreadable">Session names that could not be, in listing order.</param>

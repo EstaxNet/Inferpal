@@ -3,17 +3,16 @@
 namespace Inferpal.Services.Commands;
 
 /// <summary>
-/// Approval decorator for the `/tdd` fix rounds (fiche §25): a write aimed at a <b>test file</b>
-/// is always force-prompted — no allow rule, session grant or disabled-alerts setting can wave
-/// it through. Reading and writes to production code go through the normal pipeline unchanged.
+/// Approval decorator for the `/tdd` fix rounds: a write aimed at a <b>test file</b> is always
+/// force-prompted — no allow rule, session grant or disabled-alerts setting can wave it through.
+/// Reading and writes to production code go through the normal pipeline unchanged.
 /// </summary>
 /// <remarks>
-/// Born from a measured failure mode, not caution: during the §25 gate pass, the loop's most
-/// natural way to "go green" was to rewrite the failing assertion to the observed buggy value —
-/// three different attempts on the same case, all aimed at the test file. The prompt now forbids
-/// it (see <see cref="TddCommandHandler.BuildFixPrompt"/>), and this guard makes the human read
-/// any test-file write that slips through anyway. Force-prompt, not deny: a test can genuinely
-/// be wrong, and the loop's rules say the model must say so — the human is the judge.
+/// Not caution: the loop's most natural way to "go green" is to rewrite the failing assertion to
+/// the observed buggy value, and models do reach for it. The prompt forbids it (see
+/// <see cref="TddCommandHandler.BuildFixPrompt"/>), and this guard makes the human read any
+/// test-file write that slips through anyway. Force-prompt, not deny: a test can genuinely be
+/// wrong, and the loop's rules say the model must say so — the human is the judge.
 /// </remarks>
 internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalService
 {

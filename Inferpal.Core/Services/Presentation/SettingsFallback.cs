@@ -12,11 +12,10 @@ namespace Inferpal.Services.Presentation;
 /// <b>destroy</b> a setting.
 /// </para>
 /// <para>
-/// ⚠ The Visual Studio window used to read <c>int.TryParse(text, out var v) ? clamp(v) : factory
-/// default</c> for its nine numeric boxes. A single typo therefore reset that setting to its
-/// factory value, the save reported "settings saved", and the box kept showing what the user had
-/// typed. The VS Code panel had the same class one notch milder: it kept the previous value and
-/// said nothing.
+/// ⚠ Read as <c>int.TryParse(text, out var v) ? clamp(v) : factory default</c>, a single typo
+/// resets that setting to its factory value while the save reports "settings saved" and the box
+/// keeps showing what the user typed. Keeping the previous value silently is the same class, one
+/// notch milder.
 /// </para>
 /// <para>
 /// The silence is settled separately: <b>we save, and we name the ignored fields</b> — refusing the
@@ -75,11 +74,11 @@ internal static class SettingsFallback
     /// <paramref name="matched"/> tells the two cases apart, for <see cref="WasIgnored"/>.
     /// </summary>
     /// <remarks>
-    /// ⚠ Same rule as <see cref="For{T}"/>, and it costs more here than on the numeric boxes. The
-    /// Visual Studio form's dropdowns used to resolve <b>by label</b> with a fallback to the
-    /// <b>factory default</b>, so an unrecognised label reset the language to "follow Visual
-    /// Studio", the inline mode to "Default" — and above all the <b>backend</b> to Ollama: the user
-    /// had LM Studio on screen and the product was talking to something else, without a word.
+    /// ⚠ Same rule as <see cref="For{T}"/>, and it costs more here than on the numeric boxes.
+    /// Resolved <b>by label</b> with a fallback to the <b>factory default</b>, an unrecognised label
+    /// resets the language to "follow Visual Studio", the inline mode to "Default" — and above all
+    /// the <b>backend</b> to Ollama: LM Studio on screen, the product talking to something else,
+    /// without a word.
     ///
     /// ⚠ The index comes <b>before</b> the label because translated labels move under the
     /// comparison when the language changes in the same save. Pass <c>-1</c> when the front-end

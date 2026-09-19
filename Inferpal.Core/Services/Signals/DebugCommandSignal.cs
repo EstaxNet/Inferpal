@@ -124,16 +124,16 @@ internal static class DebugCommandSignal
     /// <remarks>
     /// <para>
     /// The withdrawal is the whole point of this method existing, and it belongs here rather than
-    /// at the call sites: both callers used to discard on the timeout branch only, so a cancelled
-    /// turn left a live request on disk. For <c>/debug</c> that means a driver waking up later
-    /// <b>starts the user's program</b> long after the agent gave up on it; for the §25 capture it
-    /// means a debug session opening by itself seconds after the user pressed Stop. Two call
-    /// sites, one invariant — so the invariant lives in one place.
+    /// at the call sites: discarded on the timeout branch only, a cancelled turn leaves a live
+    /// request on disk. For <c>/debug</c> that means a driver waking up later
+    /// <b>starts the user's program</b> long after the agent gave up on it; for the <c>/tdd</c>
+    /// capture it means a debug session opening by itself seconds after the user pressed Stop. Two
+    /// call sites, one invariant — so the invariant lives in one place.
     /// </para>
     /// <para>
-    /// The loop also re-checks that the driver is still alive. It was only checked once, before
-    /// the request was written: a devenv closing right after that check cost the caller its full
-    /// budget (two minutes for a capture) staring at a peer that could no longer answer.
+    /// The loop also re-checks that the driver is still alive. Checked once, before the request is
+    /// written, a devenv closing right after costs the caller its full budget — two minutes for a
+    /// capture — staring at a peer that can no longer answer.
     /// </para>
     /// </remarks>
     internal static async Task<DebugCommandResponse?> WaitForAnswerAsync(

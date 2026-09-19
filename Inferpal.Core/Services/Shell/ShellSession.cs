@@ -90,8 +90,8 @@ internal sealed class ShellSession
             if (ct.IsCancellationRequested) throw; // user cancelled — abort the run
 
             // A bounded wait for the pipes the kill just closed, then report the partial output:
-            // the previous version returned the one-line timeout message alone, so a command that
-            // ran for its whole budget and printed a thousand useful lines told the model nothing.
+            // the one-line timeout message alone tells the model nothing about a command that ran
+            // for its whole budget and printed a thousand useful lines.
             await Task.WhenAny(Task.WhenAll(stdout.Completion, stderr.Completion),
                                Task.Delay(ChildProcess.PipeGraceAfterExit, CancellationToken.None));
 

@@ -151,11 +151,11 @@ internal sealed class DocsDatabase
     /// The one definition of this database's tables.
     /// </summary>
     /// <remarks>
-    /// ⚠ Written <b>once</b>, on purpose. The DDL used to appear twice — once for a fresh database
-    /// and once for the rebuild after a schema-version bump — identical but for
-    /// <c>IF NOT EXISTS</c>. That is the shape schema drift takes: add a column to the create path,
-    /// forget the rebuild path, and a database that has ever been rebuilt no longer matches a fresh
-    /// one, with queries silently failing on whichever machine took the other branch.
+    /// ⚠ Written <b>once</b>, on purpose. Two copies of the DDL — one for a fresh database, one for
+    /// the rebuild after a schema-version bump, identical but for <c>IF NOT EXISTS</c> — are the
+    /// shape schema drift takes: add a column to the create path, forget the rebuild path, and a
+    /// database that has ever been rebuilt no longer matches a fresh one, with queries silently
+    /// failing on whichever machine took the other branch.
     /// </remarks>
     private static string Ddl(bool ifNotExists)
     {

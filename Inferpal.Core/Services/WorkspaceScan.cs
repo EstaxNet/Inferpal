@@ -7,11 +7,10 @@ namespace Inferpal.Services;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Every tool that walks the workspace used to carry its own exclusion list, and they disagreed —
-/// on case sensitivity, on separators, on whether <c>.inferpal</c> was excluded at all. The last
-/// one matters most: <c>.inferpal/history/</c> holds copies of the user's own source files, so a
-/// walk that descends there analyses stale duplicates, and <c>rename_symbol</c> would rewrite
-/// symbols inside them.
+/// One list, not one per walking tool: private copies disagree on case sensitivity, on separators,
+/// and on whether <c>.inferpal</c> is excluded at all. That last one matters most —
+/// <c>.inferpal/history/</c> holds copies of the user's own source files, so a walk that descends
+/// there analyses stale duplicates, and <c>rename_symbol</c> rewrites symbols inside them.
 /// </para>
 /// <para>
 /// The list is the union of what the tools already excluded rather than a fresh opinion, and it

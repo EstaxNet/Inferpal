@@ -103,13 +103,35 @@ internal sealed class HardwareProfile
             sb.AppendLine("\n" + Strings.HardwareInstalledNote);
         }
 
-        if (CtxAdvice is { RecommendedMaxCtx: > 0 } adv)
+        // ⚠ The section renders on EITHER fact. Requiring the VRAM recommendation hides it exactly
+        // when that number is 0 — the weights already exceed the declared budget, i.e. a partially
+        // offloaded model, the most common shape of "my context is too big". The screen opened to
+        // ask "is my context window sane?" would then answer nothing at all, while the model's own
+        // ceiling, which owes nothing to VRAM, is in hand.
+        if (CtxAdvice is { } adv && (adv.RecommendedMaxCtx > 0 || adv.ModelMaxCtx > 0))
         {
             sb.AppendLine("\n" + Strings.HardwareContextHeading + "\n");
             sb.AppendLine(Strings.HardwareConfiguredCtx(adv.ConfiguredCtx));
-            var modelMax = adv.ModelMaxCtx > 0 ? Strings.HardwareModelMax(adv.ModelMaxCtx) : "";
-            sb.AppendLine(Strings.HardwareRecommendedCtx(adv.Model, adv.RecommendedMaxCtx, modelMax));
-            if (adv.ConfiguredCtx > adv.RecommendedMaxCtx)
+
+            if (adv.RecommendedMaxCtx > 0)
+            {
+                var modelMax = adv.ModelMaxCtx > 0 ? Strings.HardwareModelMax(adv.ModelMaxCtx) : "";
+                sb.AppendLine(Strings.HardwareRecommendedCtx(adv.Model, adv.RecommendedMaxCtx, modelMax));
+            }
+            else
+            {
+                sb.AppendLine(Strings.HardwareCtxNoVramRecommendation(adv.Model, adv.ModelMaxCtx));
+            }
+
+            // ⚠ Two ceilings, two consequences, two sentences. Over the VRAM recommendation the KV
+            // cache spills to system RAM: it is SLOWER. Over the model's own context length the
+            // request cannot be served as asked — the backend drops the head of the prompt, system
+            // prompt included, and this product's own compaction never fires because
+            // HistoryCompaction.Decide measures against the CONFIGURED number. Telling that user
+            // about generation speed sends them to the wrong problem.
+            if (adv.ModelMaxCtx > 0 && adv.ConfiguredCtx > adv.ModelMaxCtx)
+                sb.AppendLine("\n" + Strings.HardwareCtxExceedsModel(adv.ConfiguredCtx, adv.ModelMaxCtx));
+            else if (adv.RecommendedMaxCtx > 0 && adv.ConfiguredCtx > adv.RecommendedMaxCtx)
                 sb.AppendLine("\n" + Strings.HardwareCtxWarn(adv.ConfiguredCtx, adv.RecommendedMaxCtx));
         }
 
@@ -117,7 +139,12 @@ internal sealed class HardwareProfile
     }
 }
 
-/// <summary>Advice for the active chat model's context window, derived from its KV-cache cost and
-/// the VRAM budget. <see cref="RecommendedMaxCtx"/> is 0 when it cannot be computed (no budget or
-/// missing architecture metadata), in which case the report omits the section.</summary>
+/// <summary>Advice for the active chat model's context window: what is configured, what fits in
+/// VRAM, and what the model itself accepts.</summary>
+/// <remarks>
+/// ⚠ The two ceilings are independent and answer different questions. <see cref="RecommendedMaxCtx"/>
+/// is 0 whenever it cannot be computed — no budget, missing architecture metadata, or weights that
+/// already exceed the budget — and <see cref="ModelMaxCtx"/> still holds in every one of those
+/// cases, because a model's trained context length owes nothing to the machine it runs on.
+/// </remarks>
 internal sealed record ContextWindowAdvice(string Model, int ConfiguredCtx, int RecommendedMaxCtx, int ModelMaxCtx);

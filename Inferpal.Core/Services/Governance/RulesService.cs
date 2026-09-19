@@ -118,11 +118,10 @@ internal static class RulesService
     /// and <c>?</c>. Paths and globs are normalized to forward slashes. A glob without a slash
     /// (e.g. <c>*.cs</c>) also matches the file name alone, so it works regardless of folder depth.
     /// </summary>
-    // Compiled-glob cache. The globs come from .inferpal/rules/*.md — a file that arrives with
-    // any clone — and Matches() runs on every system-prompt rebuild (each active-file switch):
-    // recompiling per call was wasteful, and matching without a timeout handed a repo-authored
-    // pathological glob a way to freeze the prompt build (pre-1.6.0 architecture review, §1.8 — the exact
-    // budget IndexExclusions already applies to the same dialect).
+    // Compiled-glob cache. The globs come from .inferpal/rules/*.md — a file that arrives with any
+    // clone — and Matches() runs on every system-prompt rebuild (each active-file switch), so
+    // recompiling per call is waste. ⚠ The timeout is not: without it a repo-authored pathological
+    // glob freezes the prompt build. Same budget IndexExclusions applies to the same dialect.
     private static readonly TimeSpan GlobMatchTimeout = TimeSpan.FromMilliseconds(50);
     private static readonly object _globCacheLock = new();
     private static readonly Dictionary<string, Regex> _globCache = new(StringComparer.Ordinal);

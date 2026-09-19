@@ -11,9 +11,9 @@ using Inferpal.Services.Rag;
 namespace Inferpal.Services.Commands;
 
 /// <summary>
-/// Pure logic of <c>/onboard</c> — what a freshly cloned repository can say for itself (roadmap
-/// §19): read <c>.inferpal/project.json</c> and report it category by category, apply the part
-/// the user explicitly asks for, and draft <c>.inferpal/context.md</c> from the repository itself.
+/// Pure logic of <c>/onboard</c> — what a freshly cloned repository can say for itself: read
+/// <c>.inferpal/project.json</c> and report it category by category, apply the part the user
+/// explicitly asks for, and draft <c>.inferpal/context.md</c> from the repository itself.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -266,8 +266,8 @@ internal static class OnboardCommandHandler
             if (entries.Count > MaxEntries) sb.Append("- … +").Append(entries.Count - MaxEntries).Append('\n');
 
             // One level deeper, sampled. Without it the model only sees folder *names*, and a name
-            // is exactly the kind of thing it will happily invent a purpose for: the first probe
-            // read "Inferpal.Host" and announced it was the Visual Studio front-end.
+            // is exactly the kind of thing it will happily invent a purpose for — "Inferpal.Host"
+            // reads as the Visual Studio front-end to anything that has not looked inside.
             if (dirs.Count > 0) sb.Append("\n## Inside each top-level folder (sample)\n");
             foreach (var dir in dirs.Take(MaxSampledDirs))
             {

@@ -48,7 +48,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
    *
    * ⚠ Needed because the overlay WINS over disk: `ReadFileTool` returns the buffered text and
    * never opens the file when an entry exists. A document mirrored below the ceiling and then
-   * grown past it used to be dropped from the change handler with no `didClose`, so the host
+   * grown past it is dropped from the change handler with no `didClose`, so the host
    * kept serving the last version under 1 MB — for as long as the file stayed open, with nothing
    * saying so. The header comment promised the opposite ("the host reads them from disk
    * instead"), which is only true when the overlay holds no entry.

@@ -25,19 +25,14 @@ internal static class AgentLoopPolicy
     /// aborts the run on its first verbatim repeat.
     /// </summary>
     /// <remarks>
-    /// ⚠ <b>Derived, not listed.</b> This used to be a second hand-written set beside
+    /// ⚠ <b>Derived, not listed.</b> A second hand-written set beside
     /// <see cref="PlanModeToolRegistry"/>'s — the one that already answers "does this tool only
-    /// observe?" — and the two had drifted apart by two tools. Both misclassifications hurt in the
-    /// same direction, the dangerous one: a tool absent here is treated as a mutation, so its
-    /// <b>second identical call aborts the whole run as a loop</b>.
-    /// <list type="bullet">
-    /// <item><c>search_docs</c>: searching the same documentation twice stopped the run.</item>
-    /// <item><c>debug_inspect</c>: its own summary says it is "everything that observes", and
-    /// asking a paused debugger "where am I?" twice in one run stopped the run — in the middle of
-    /// the step/inspect cycle that is the whole point of the debug tools. Worse than the first:
-    /// a new mutation resets only the read-only counts, so a mutating key is never cleared and the
-    /// second call anywhere in the run is enough.</item>
-    /// </list>
+    /// observe?" — drifts, and the misclassification hurts in one direction only, the dangerous
+    /// one: a tool absent here is treated as a mutation, so its <b>second identical call aborts the
+    /// whole run as a loop</b>. Searching the same documentation twice, or asking a paused debugger
+    /// "where am I?" twice, is the middle of an ordinary cycle, not a loop. ⚠ And a mutating key is
+    /// never cleared — a new mutation resets only the read-only counts — so for those tools the
+    /// second call anywhere in the run is enough to end it.
     /// The two exceptions below are named with their reason: plan mode refuses them because they
     /// <i>execute</i> or need a live session, not because they change anything.
     /// </remarks>

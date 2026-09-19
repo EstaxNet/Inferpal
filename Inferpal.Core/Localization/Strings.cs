@@ -602,8 +602,8 @@ internal static class Strings
 
     // The three lines the diff renderer writes ITSELF (as opposed to the file content, which it
     // only copies). They reach the user in a DiffLineModel with the "…" prefix, at the approval
-    // prompt and in the chat bubble — interface text, in a product that speaks ten languages.
-    // They were hard-coded until 2026-09-10, DiffTooLarge in FRENCH for everyone.
+    // prompt and in the chat bubble — interface text, in a product that speaks ten languages, so
+    // they belong here and not in the renderer.
     public static string DiffTooLarge(int oldLines, int newLines) =>
         string.Format(Get(nameof(DiffTooLarge)), oldLines, newLines);
     public static string DiffUnchangedLines(int lines) =>
@@ -634,6 +634,9 @@ internal static class Strings
     public static string DiagBuildFailed(int exitCode, string output) =>
         string.Format(Get(nameof(DiagBuildFailed)), exitCode, output);
 
+    public static string DiagBuildStopped(int seconds) =>
+        string.Format(Get(nameof(DiagBuildStopped)), seconds);
+
     public static string DiagSummary(int errors, int warnings, string filename) =>
         string.Format(Get(nameof(DiagSummary)), errors, warnings, filename);
 
@@ -662,6 +665,8 @@ internal static class Strings
     public static string MentionDebuggerDesc  => Get(nameof(MentionDebuggerDesc));
     public static string MentionDebuggerNone  => Get(nameof(MentionDebuggerNone));
     public static string MentionClipboardEmpty => Get(nameof(MentionClipboardEmpty));
+    public static string MentionNothingToAttach(string category) =>
+        string.Format(Get(nameof(MentionNothingToAttach)), category);
     public static string BrowseError(string msg)              => string.Format(Get(nameof(BrowseError)),              msg);
     public static string PinLimitReached(int max)            => string.Format(Get(nameof(PinLimitReached)),           max);
 
@@ -714,11 +719,9 @@ internal static class Strings
     public static string SlashUsageRestore                => Get(nameof(SlashUsageRestore));
     /// <summary>Header alone: the command list that follows is generated from the Catalog.</summary>
     /// <remarks>
-    /// Was <c>SlashHelp</c>, and carried a hand-written list of commands in all ten languages —
-    /// the twin of <c>SlashHelpAll</c>, dropped for exactly this reason and left alive here.
-    /// Measured 2026-09-09: it listed 26 of the 57 shipped commands and one, <c>/search</c>, that
-    /// does not exist. It is shown at the worst possible moment — the user has just typed a command
-    /// the product did not recognise — while <c>/help</c>, generated, was right all along.
+    /// ⚠ Header ONLY. A hand-written list of commands here drifts in ten languages at once, and it
+    /// is shown at the worst possible moment — the user has just typed a command the product did
+    /// not recognise. The list comes from <c>SlashCommandRouter.Catalog</c>, like <c>/help</c>.
     /// </remarks>
     public static string SlashUnknownCommand(string cmd)  => string.Format(Get(nameof(SlashUnknownCommand)), cmd);
 
@@ -1076,9 +1079,11 @@ internal static class Strings
     public static string TddGiveUp(int maxRounds)            => string.Format(Get(nameof(TddGiveUp)), maxRounds);
     /// <summary>
     /// The loop stopped because the run executed no test — a third state, between "green" and
-    /// "failing", that it used to fold into the second and then spend five agent rounds on.
+    /// "failing", that must not be folded into the second: doing so spends agent rounds patching
+    /// code against a run where nothing was executed.
     /// </summary>
     public static string TddNothingRan                       => Get(nameof(TddNothingRan));
+    public static string TddStoppedAtBudget                  => Get(nameof(TddStoppedAtBudget));
     public static string TddDebugCaptureApproval(string test) => string.Format(Get(nameof(TddDebugCaptureApproval)), test);
     public static string TddDebugCapturing                   => Get(nameof(TddDebugCapturing));
     public static string TddDebugCaptureFailed               => Get(nameof(TddDebugCaptureFailed));
@@ -1194,6 +1199,12 @@ internal static class Strings
     public static string HardwareCtxWarn(int configured, int recommended) =>
         string.Format(Get(nameof(HardwareCtxWarn)), configured, recommended);
 
+    public static string HardwareCtxExceedsModel(int configured, int modelMax) =>
+        string.Format(Get(nameof(HardwareCtxExceedsModel)), configured, modelMax);
+
+    public static string HardwareCtxNoVramRecommendation(string model, int modelMax) =>
+        string.Format(Get(nameof(HardwareCtxNoVramRecommendation)), model, modelMax);
+
     // ── RAG / semantic search ──────────────────────────────────────────────────
     public static string RagIndexNotReady(string status) =>
         string.Format(Get(nameof(RagIndexNotReady)), status);
@@ -1299,7 +1310,7 @@ internal static class Strings
     public static string DialogExportTitle   => Get(nameof(DialogExportTitle));
     public static string DialogExportFilter  => Get(nameof(DialogExportFilter));
 
-    /// <summary>Three failures that used to say nothing.</summary>
+    /// <summary>Three failures that must not pass in silence.</summary>
     public static string SessionLoadFailed(string name)  => string.Format(Get(nameof(SessionLoadFailed)),  name);
     public static string PlanOpenFailed(string path)     => string.Format(Get(nameof(PlanOpenFailed)),     path);
     public static string SettingsSaveFailed(string error) => string.Format(Get(nameof(SettingsSaveFailed)), error);

@@ -66,8 +66,8 @@ internal static class Diagnostics
                 if (frames.Count == 3) break;
             }
             // ⚠ TargetSite both as a fallback AND at the front: the JIT inlines, and a Release
-            // stack may no longer carry the frame that threw. Measured in the field -
-            // the SAME failure produced two different stacks, depending on tier-0 vs tier-1.
+            // stack may no longer carry the frame that threw — the same failure yields two
+            // different stacks depending on tier-0 vs tier-1.
             var thrower = Site(ex);
             if (thrower.Length > 0 && (frames.Count == 0 || frames[0] != thrower))
                 frames.Insert(0, thrower);
@@ -122,8 +122,8 @@ internal static class Diagnostics
 
         // Async state machine or lambda: the real name sits between angle brackets.
         // ⚠ The LAST group, not the first: a closure class is written
-        // "<>c__DisplayClass89_0.<SaveCoreAsync>b__0", and taking the first "<>" produced an EMPTY
-        // name - measured in the field: "InferpalSettingsData. ← InferpalSettingsData.".
+        // "<>c__DisplayClass89_0.<SaveCoreAsync>b__0", so taking the first "<>" yields an EMPTY
+        // name — "InferpalSettingsData. ← InferpalSettingsData.", which localises nothing.
         var open = line.LastIndexOf('<');
         var close = open >= 0 ? line.IndexOf('>', open + 1) : -1;
         if (open >= 0 && close > open + 1)

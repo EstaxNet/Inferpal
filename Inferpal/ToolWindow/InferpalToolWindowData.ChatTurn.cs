@@ -145,10 +145,10 @@ internal partial class InferpalToolWindowData
 
             // ── Instant feedback ─────────────────────────────────────────────────────
             // Echo the user's message, clear the input and flip into the loading state NOW —
-            // before the (potentially slow) workspace + RAG context building below. A slow
-            // backend used to leave the UI looking frozen for that whole window, which is what
-            // tempted users to press Enter again. From this point IsLoading is the single
-            // re-entrancy guard, so the startup claim (_sendStarting) is handed off / released.
+            // before the (potentially slow) workspace + RAG context building below, which on a slow
+            // backend leaves the UI looking frozen for that whole window and invites a second
+            // Enter. From this point IsLoading is the single re-entrancy guard, so the startup
+            // claim (_sendStarting) is handed off / released.
             await RunOnVMContextAsync(() =>
             {
                 _config.Save();
@@ -186,13 +186,12 @@ internal partial class InferpalToolWindowData
             // First-turn workspace context: silently prepend solution + open editors
             if (!_workspaceContextInjected && !userText.StartsWith('/'))
             {
-                // ⚠ The flag is set AFTER success. It used to be set before, and
-                // BuildWorkspaceContextAsync is best-effort: both of its tools carry a 5-second
-                // deadline and return an empty string when they fail. But the first turn of a
-                // session is exactly the one where Visual Studio is still loading its solution — a
-                // timeout therefore consumed the flag, and the model NEVER AGAIN got the session's
-                // workspace context, with nothing saying so. "No solution open" is not that case:
-                // get_solution_info then returns text, hence non-empty.
+                // ⚠ The flag is set AFTER success. BuildWorkspaceContextAsync is best-effort —
+                // both of its tools carry a 5-second deadline and return an empty string when they
+                // fail — and the first turn of a session is exactly the one where Visual Studio is
+                // still loading its solution. Set before, a timeout consumes the flag and the model
+                // NEVER AGAIN gets the session's workspace context, with nothing saying so. "No
+                // solution open" is not that case: get_solution_info then returns text.
                 var workspaceCtx = await BuildWorkspaceContextAsync(localCts!.Token);
                 if (!string.IsNullOrEmpty(workspaceCtx))
                 {
@@ -322,9 +321,9 @@ internal partial class InferpalToolWindowData
             }));
 
             // ── Real-time token meter ────────────────────────────────────────────────
-            // The header's context-fill bar and "tokens used" readout used to stay frozen at the
-            // previous turn's value until the whole run finished, so a long generation looked
-            // stalled. Seed the gauge from the prompt about to be sent, then grow a rough estimate
+            // Left to the end of the run, the header's context-fill bar and "tokens used" readout
+            // stay frozen at the previous turn's value, so a long generation looks stalled. Seed
+            // the gauge from the prompt about to be sent, then grow a rough estimate
             // (~4 chars/token, matching EstimateTokens) as answer and reasoning tokens stream in.
             // These are provisional (prefixed "~"); the run's final block snaps both to the real
             // prompt_eval_count + eval_count once the provider reports them.

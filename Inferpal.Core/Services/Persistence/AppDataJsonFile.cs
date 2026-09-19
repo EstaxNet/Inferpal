@@ -9,13 +9,12 @@ namespace Inferpal.Services.Persistence;
 /// <typeparam name="T">Shape persisted; must round-trip through <see cref="JsonSerializer"/>.</typeparam>
 /// <remarks>
 /// <para>
-/// Three stores (<c>arena.json</c>, <c>bench.json</c>, <c>snippets.json</c>) had each grown the same
-/// six pieces: the <c>%AppData%\Inferpal</c> path, a <c>_fileOverride</c> so tests never touch the
-/// developer's real state, indented + null-skipping serializer options, <c>CreateDirectory</c>
-/// before writing, an atomic write, and a read that treats corruption as absence. The copies were
-/// close enough to look interchangeable and different enough to be wrong: one of the three read
-/// through a plain <c>Deserialize</c> with no guard at all, so a truncated file threw where the
-/// others returned a default.
+/// One implementation of the six pieces every store needs: the <c>%AppData%\Inferpal</c> path, a
+/// <c>_fileOverride</c> so tests never touch the developer's real state, indented + null-skipping
+/// serializer options, <c>CreateDirectory</c> before writing, an atomic write, and a read that
+/// treats corruption as absence. Copied per store, they look interchangeable and differ where it
+/// matters — a plain <c>Deserialize</c> with no guard throws on a truncated file where the others
+/// return a default.
 /// </para>
 /// <para>
 /// <b>Absence and corruption are the same answer on the READ side, deliberately.</b> Refusing to
@@ -24,19 +23,16 @@ namespace Inferpal.Services.Persistence;
 /// caller fallback. Anything whose loss matters (sessions, plans) does not come through here.
 /// </para>
 /// <para>
-/// <b>What is not symmetric is the WRITE, and it was written here as though it were.</b> The
-/// original text justified the fallback with "these files hold convenience state - past benchmark
-/// runs, arena votes, saved snippets - never anything the user cannot recreate". True of the first
-/// two; false of the third. A snippet is a fragment of code the user <i>chose</i> to keep, usually
-/// out of a conversation that is long gone - and the cycle is then a loss: unreadable file, empty
-/// list, first addition, a hundred snippets replaced by one. The same defect as
-/// <c>config.json</c>, one folder further.
+/// <b>What is not symmetric is the WRITE.</b> "These files hold convenience state — past benchmark
+/// runs, arena votes, saved snippets — never anything the user cannot recreate" is true of the
+/// first two and false of the third: a snippet is a fragment of code the user <i>chose</i> to keep,
+/// usually out of a conversation that is long gone, and the cycle is then a loss — unreadable file,
+/// empty list, first addition, a hundred snippets replaced by one.
 /// </para>
 /// <para>
 /// Hence <paramref name="preserveUnreadable"/>: the distinction lives in a <b>parameter</b>, not in
 /// this paragraph. Disposable documents keep the cheap path; the ones that carry what the user
-/// wrote are set aside before being overwritten. A rule true of a subcase and written as if it held
-/// for all is the pattern this repository keeps paying for.
+/// wrote are set aside before being overwritten.
 /// </para>
 /// </remarks>
 internal sealed class AppDataJsonFile<T>

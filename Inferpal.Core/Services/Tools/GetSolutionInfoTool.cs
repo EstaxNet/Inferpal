@@ -64,8 +64,8 @@ internal class GetSolutionInfoTool : ITool
         var slnDir     = Path.GetDirectoryName(slnPath)!;
         var slnContent = await File.ReadAllTextAsync(slnPath, ct);
         // ⚠ The format picks the parser: a .slnx is XML, and the regex reading a .sln's
-        // Project(...) lines finds nothing in it -- "Projects : 0" on a valid solution
-        // (issue #9). See SolutionFiles, the single reader for both formats.
+        // Project(...) lines finds nothing in it — "Projects : 0" on a valid solution. See
+        // SolutionFiles, the single reader for both formats.
         var projects   = SolutionFiles.ParseProjects(slnPath, slnContent);
 
         var sb = new StringBuilder();

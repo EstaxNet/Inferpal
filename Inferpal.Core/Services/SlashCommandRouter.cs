@@ -165,20 +165,17 @@ internal static class SlashCommandRouter
     };
 
     /// <summary>
-    /// Renders `/help` from <see cref="Catalog"/>. Generated rather than written: the previous
-    /// hand-maintained help text had silently drifted, missing ten shipped commands (`/tdd`,
-    /// `/branch`, `/arena`, `/bench`, `/xray`, `/replay`, `/undo-run`, `/diagnostics`, `/task`,
-    /// `/docs`) in all ten languages while claiming to list everything.
+    /// Renders `/help` from <see cref="Catalog"/>. Generated rather than written: a hand-maintained
+    /// help text drifts silently, and in ten languages at once, while claiming to list everything.
     /// </summary>
     /// <summary>
     /// The answer to a command the router does not know: the localized header, then the same
     /// generated list as <c>/help</c>.
     /// </summary>
     /// <remarks>
-    /// One builder, so the router and its tests cannot drift apart. The list used to be frozen by
-    /// hand in the ten <c>.resx</c> — twin of <c>SlashHelpAll</c>, dropped for that reason and left
-    /// alive here. Measured 2026-09-09: 26 of the 57 shipped commands, plus <c>/search</c>, which
-    /// does not exist. Shown at the worst moment: the user has just typed something unrecognised.
+    /// One builder, so the router and its tests cannot drift apart. Frozen by hand in the ten
+    /// <c>.resx</c> instead, the list goes stale — and it is shown at the worst possible moment:
+    /// the user has just typed something the product did not recognise.
     /// </remarks>
     internal static string UnknownCommandMessage(string cmd) =>
         Strings.SlashUnknownCommand(cmd) + "\n\n" + BuildHelp();

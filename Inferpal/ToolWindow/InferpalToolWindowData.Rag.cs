@@ -337,8 +337,8 @@ internal partial class InferpalToolWindowData
 
             // A successful compaction is a tool event (collapsible); the two fallbacks are
             // warnings — the conversation lost turns, and that is read in plain text. ⚠ The rule is
-            // READ from ContextDecision, not rewritten here: it used to live in this comment and the
-            // host, its other reader, did not honour it.
+            // READ from ContextDecision, never rewritten here: both front-ends must answer the
+            // same way.
             InsertThemed(decision.IsDegraded
                 ? ChatMessageItem.AssistantMsg(decision.Notice)
                 : ChatMessageItem.ToolMsg("context_compact", decision.Notice, _config.ToolBubblesExpanded));
@@ -373,7 +373,7 @@ internal partial class InferpalToolWindowData
 
     /// <summary>
     /// The only writer of the system message: the base prompt plus the OODA session summary, which
-    /// every other rewrite used to drop. VM context only.
+    /// any other rewrite would drop. VM context only.
     /// </summary>
     private void ApplySystemPrompt()
     {

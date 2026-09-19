@@ -21,9 +21,9 @@ namespace Inferpal.Services.Tools;
 /// How many of those <paramref name="Scanned"/> files could not be read after all.
 /// </param>
 /// <remarks>
-/// ⚠ <b>A file that was taken and then failed to read is the same silence as the cap.</b> A locked,
-/// permission-denied or just-deleted file used to be counted as scanned, <see cref="IsPartial"/>
-/// stayed <c>false</c>, and the report read as complete — so <c>analyze_impact</c> could answer
+/// ⚠ <b>A file that was taken and then failed to read is the same silence as the cap.</b> Counted
+/// as scanned, a locked, permission-denied or just-deleted file leaves <see cref="IsPartial"/> at
+/// <c>false</c> and the report reads as complete — so <c>analyze_impact</c> answers
 /// <c>Direct dependants (0) · Risk: LOW · No dependants detected — safe to refactor freely</c> with
 /// the one dependant simply unreadable.
 /// </remarks>

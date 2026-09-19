@@ -30,9 +30,6 @@ internal sealed record ScannedFile(
 /// <para>
 /// Its only consumer is the measurement bench (<see cref="ContextBenchTasks"/>), which needs
 /// ground truth — "this type is declared in exactly this file" — to grade a model's navigation.
-/// It was written for the repository-map primer, which was measured and removed;
-/// the scanning half survives because grading a bench needs facts about the repository whatever
-/// the feature under test.
 /// </para>
 /// <para>
 /// Shares the RAG's notion of what a source file is (<see cref="CodeChunker.SupportedExtensions"/>,
@@ -69,11 +66,9 @@ internal static class WorkspaceSymbolScanner
     /// Scanned files, plus how many the cap left out <b>and how many were taken but lost</b>.
     /// </returns>
     /// <remarks>
-    /// ⚠ This summary used to say "unreadable files are skipped" one line above a return value
-    /// documented as "how many the <b>cap</b> left out" — the skip was stated and never counted, so
-    /// a caller reading <see cref="ScanCoverage.IsPartial"/> saw a complete scan. Both losing
-    /// branches count: a file that cannot be read, and one whose parse hits its regex budget (that
-    /// one is dropped from the result too, which is the same silence one line down).
+    /// ⚠ Both losing branches COUNT — a file that cannot be read, and one whose parse hits its
+    /// regex budget (dropped from the result just the same). Stated and not counted, the skip
+    /// leaves a caller reading <see cref="ScanCoverage.IsPartial"/> to see a complete scan.
     /// </remarks>
     public static async Task<(IReadOnlyList<ScannedFile> Files, ScanCoverage Coverage)> ScanAsync(
         string root, CancellationToken ct = default)

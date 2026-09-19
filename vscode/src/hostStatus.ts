@@ -3,7 +3,7 @@
 //
 // With no folder open the host is deliberately never spawned (`startHostCore` returns before
 // the spawn — the workspace root is a required `initialize` parameter), so "Inferpal: Restart
-// Host" is inert in exactly that state. Measured on a fresh install (2026-09-02): VS Code opens
+// Host" is inert in exactly that state. On a fresh install VS Code opens
 // on the Welcome tab with no folder, and the chat greeted the first message with that command —
 // a first contact whose only advice cannot work. The output channel named the state correctly
 // ("no workspace folder open — host not started"); the UI did not.

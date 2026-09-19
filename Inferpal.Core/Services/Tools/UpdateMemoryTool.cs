@@ -12,18 +12,16 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Approved, confined and snapshotted since the post-1.6.1 review</b>, and of the three that
-/// matters most is the approval — because of where this file goes. <c>memory.md</c> is read by
+/// <b>Approved, confined and snapshotted</b>, and of the three the approval matters most, because
+/// of where this file goes. <c>memory.md</c> is read by
 /// <c>SystemPromptBuilder</c> and injected into the system prompt of <b>every future session</b>.
 /// A tool that writes it unattended is a tool that lets the model edit its own future instructions,
 /// permanently, with no human in the loop: the persistence half of a prompt-injection chain, where
 /// the content can come from a web page or a file the model was asked to read.
 /// </para>
 /// <para>
-/// This is not hypothetical here. The §25 validation runs found a hallucinated <c>memory.md</c>
-/// left inside the guinea-pig repository, and the run after it started with that memory loaded —
-/// the harness was fixed to clean it, which is the right fix for a harness and no fix at all for
-/// the product.
+/// Not hypothetical: a hallucinated <c>memory.md</c> written during one run is loaded by the next
+/// one, and by every one after it.
 /// </para>
 /// <para>
 /// <c>mode: "clear"</c> and <c>"replace"</c> also destroy what the user accumulated, which is

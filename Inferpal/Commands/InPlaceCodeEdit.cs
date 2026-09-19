@@ -66,7 +66,7 @@ internal static class InPlaceCodeEdit
         }
 
         CodeActionRun run;
-        // Closing the spinner cancels the generation: the edit used to land anyway once the model answered.
+        // Closing the spinner cancels the generation, or the edit lands anyway once the model answers.
         using (var generation = CancellationTokenSource.CreateLinkedTokenSource(ct, dlg.CancelledByUser))
         {
             try
@@ -96,8 +96,8 @@ internal static class InPlaceCodeEdit
             new TextPosition(view.Document, run.Start),
             new TextPosition(view.Document, run.End));
 
-        // Inline diff preview detour (comfort only — never a control, see ROADMAP design rules):
-        // hand the whole-document rewrite to the in-process renderer; if no renderer claims it
+        // Inline diff preview detour (comfort only — never a control): hand the whole-document
+        // rewrite to the in-process renderer; if no renderer claims it
         // within the pickup window (view closed, MEF component absent), fall back to the direct
         // apply below — the feature degrades to today's behaviour.
         if ((config?.InlineDiffPreviewEnabled ?? false) && run.NewDocText != docText)

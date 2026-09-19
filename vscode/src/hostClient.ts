@@ -146,7 +146,7 @@ export class HostClient {
     private readonly options: HostClientOptions,
     private readonly delegate: EditorDelegate,
     /**
-     * Optional debugger surface (roadmap §21). Its presence is what the host is told in the
+     * Optional debugger surface. Its presence is what the host is told in the
      * handshake, and what decides whether `debug_control` / `debug_inspect` exist for the model at
      * all — an editor that cannot drive a debugger must not advertise two tools that always fail.
      */
@@ -171,7 +171,7 @@ export class HostClient {
    * Spawns the host, wires reverse handlers and performs the `initialize` handshake.
    * On a bare Linux without libicu the self-contained host FailFasts at boot;
    * that one crash is retried once with .NET's invariant-globalization fallback —
-   * degraded collation, but the resx localization survives (fr measured end-to-end) —
+   * degraded collation, but the resx localization survives —
    * rather than greeting a fresh install with a dead extension.
    */
   async start(): Promise<InitializeResult> {
@@ -275,7 +275,7 @@ export class HostClient {
     conn.onRequest('secrets/unprotect', (p: { key: string; value: string }) =>
       this.delegate.unprotectSecret(p.key, p.value));
 
-    // ── Reverse debugger requests (roadmap §21) ─────────────────────────────
+    // ── Reverse debugger requests ───────────────────────────────────────────
     const debug = this.debugDelegate;
     if (debug) {
       conn.onRequest('debug/addBreakpoint', (p: DebugBreakpointParams) => debug.addBreakpoint(p.file, p.line));
@@ -392,7 +392,7 @@ export class HostClient {
   /** Slash commands the host serves headlessly. `promptHistory` (most-recent-last)
    * feeds /phistory; long commands are cancellable via chatCancel(). Flagged chat-busy like
    * chat/send: /tdd, /bench and /arena are multi-minute inferences holding the GPU lease, and
-   * FIM used to queue behind them on every keystroke (pre-1.6.0 architecture review — the cost on
+   * FIM would otherwise queue behind them on every keystroke (the cost on
    * instant slashes is a skipped FIM for a few milliseconds). */
   commandSlash(text: string, promptHistory?: string[]): Promise<SlashCommandResult> {
     return this.whileChatBusy(() =>

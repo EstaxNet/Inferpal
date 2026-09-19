@@ -728,11 +728,10 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             is { Length: > 0 } pn3 ? pn3 : ProviderOptions[0].Name;
 
         // These labels are translated: the list must be refreshed on EVERY ApplyLabels, not only
-        // when it is empty. Without that, a language change left the menu in the old language while
-        // SelectedInlineMode took the new one - an item absent from its own collection, so a
-        // Selector that clears its selection, exactly the defect repaired in 1.6.8 on the chat
-        // model. Updated IN PLACE: never .Clear() on a TwoWay-bound collection (same rule as the
-        // language list, three blocks above).
+        // when it is empty. Otherwise a language change leaves the menu in the old language while
+        // SelectedInlineMode takes the new one — an item absent from its own collection, so a
+        // Selector that clears its selection. Updated IN PLACE: never .Clear() on a TwoWay-bound
+        // collection (same rule as the language list, three blocks above).
         var inlineModes = InlineModeOptions;
         if (AvailableInlineModes.Count == 0)
             foreach (var (_, name) in inlineModes)
@@ -801,12 +800,11 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
     private Task RunOnVMContextAsync(Action action)
     {
-        // ⚠ RunContinuationsAsynchronously is load-bearing, and it was missing here while its twin
-        // in the chat window carries it with its reason written down since the pre-1.6.0 review
-        //: without it, SetResult runs the caller's continuation INLINE on the VM pump — so
-        // everything after an `await RunOnVMContextAsync(...)` executes on the pump. Here that is
-        // the settings save: `_config.Save()`, the MCP reconnection (processes and network) and the
-        // label reload all ran behind the panel's own pump.
+        // ⚠ RunContinuationsAsynchronously is load-bearing, here as in the chat window: without it
+        // SetResult runs the caller's continuation INLINE on the VM pump — so everything after an
+        // `await RunOnVMContextAsync(...)` executes on the pump. Here that is the settings save:
+        // `_config.Save()`, the MCP reconnection (processes and network) and the label reload, all
+        // behind the panel's own pump.
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         SynchronizationContext.Post(_ =>
         {
@@ -1368,7 +1366,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             modelIdleTimeoutText   = ModelIdleTimeoutText.Trim();
         });
         // Same resolution as the other duration boxes: an emptied sub-field counts 0, and only all
-        // three emptied means "back to the default" — the minutes box alone used to resolve to 30.
+        // three emptied means "back to the default" (an emptied minutes box alone is 0, not 30).
         var totalSec = DurationFields.CombineOr(th, tm, ts, whenCleared: 120);
 
         // ⚠ What could not be read is NAMED to the user, never swallowed. The save itself goes
@@ -1397,10 +1395,10 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         var langCode = SettingsFallback.ResolveSelection(
             LanguageOptions, index: -1, selectedLangName, _config.Language, out var langOk);
         Note(selectedLangName, langOk, () => Strings.LabelLanguage);
-        // By INDEX, not by text. Now that these labels are translated, a string comparison fails as
-        // soon as the language has changed - and the old fallback then wrote "Default", i.e. a
-        // language change quietly restored the factory mode. Same class as the nine numeric fields
-        // repaired in 1.6.8: what cannot be read is kept, it is not replaced by the factory value.
+        // By INDEX, not by text: these labels are translated, so a string comparison fails as soon
+        // as the language has changed, and a fallback to "Default" turns a language change into a
+        // silent return to the factory mode. Same rule as the numeric fields: what cannot be read
+        // is kept, never replaced by the factory value.
         var modes = InlineModeOptions;
         // It already kept the value in place; it did not SAY so -- the only one of the three to
         // stay silent.
@@ -1408,12 +1406,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             modes, selectedInlineModeIndex, selectedInlineModeName, _config.InlineCompletionMode, out var inlineOk);
         Note(selectedInlineModeName, inlineOk, () => Strings.LabelInlineCompletionMode);
 
-        // ⚠ Third field of the same class, and the costliest of the three: the fallback wrote
-        // `ollama`, so an unrecognised label CHANGED BACKEND in silence -- the user had LM Studio on
-        // screen and the product talked to Ollama, which is exactly what issue #8 describes (the
-        // active client there was the Ollama one while the selection said LM Studio). What cannot be
-        // read is kept, and it gets named, like the thirteen numeric boxes of 1.6.8 and like the
-        // inline mode above.
+        // ⚠ Third field of the same class and the costliest: a fallback to `ollama` makes an
+        // unrecognised label CHANGE BACKEND in silence — LM Studio on screen, Ollama answering.
+        // What cannot be read is kept, and it gets named.
         var providerCode = SettingsFallback.ResolveSelection(
             ProviderOptions, index: -1, selectedProviderName, _config.Provider, out var providerOk);
         Note(selectedProviderName, providerOk, () => Strings.LabelProvider);
@@ -1486,7 +1481,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         {
             // Unchecked, the switch promises the chat model everywhere (its hint says so): the
             // overrides are cleared, not kept behind the fold, where the router went on using them
-            // and from which the switch came back checked at the next opening (issue #8).
+            // and from which the switch came back checked at the next opening.
             ModelRoleSettings.UseChatModelEverywhere(edited);
         }
         edited.RagEnabled                = ragEnabled;

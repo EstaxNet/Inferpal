@@ -1,11 +1,10 @@
-﻿// Editor side of the reverse `debug/*` surface (roadmap §21): drives vscode.debug and the Debug
-// Adapter Protocol on behalf of the host's debug_control / debug_inspect tools.
+﻿// Editor side of the reverse `debug/*` surface: drives vscode.debug and the Debug Adapter
+// Protocol on behalf of the host's debug_control / debug_inspect tools.
 //
-// The Visual Studio front-end does the same job through EnvDTE inside devenv; the §21 probe drove
-// both APIs through the same seven conditions before either adapter existed, and VS Code was the
-// faster of the two on the inner loop. Three facts it measured are load-bearing here and are marked
-// where they apply: values are rendered by the adapter and must never be parsed, the thread id comes
-// from the `stopped` event and is never assumed, and a raw stack is mostly runtime noise.
+// The Visual Studio front-end does the same job through EnvDTE inside devenv. Three facts about
+// this API are load-bearing here and are marked where they apply: values are rendered by the
+// adapter and must never be parsed, the thread id comes from the `stopped` event and is never
+// assumed, and a raw stack is mostly runtime noise.
 import * as vscode from 'vscode';
 import {
   DebugBreakpointDto,
@@ -224,8 +223,8 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
    * Issues a resume and waits for the *next* stop.
    *
    * The waiter is armed before the request goes out, and it keys on a transition rather than on
-   * being stopped: the probe measured a resume answering in 0,016 s under VS Code, far faster than
-   * any check of the current state could be trusted to happen after it.
+   * being stopped: a resume can answer in milliseconds, far faster than any check of the current
+   * state could be trusted to happen after it.
    */
   private async resume(
     issue: (session: vscode.DebugSession, threadId: number) => Thenable<unknown>,
@@ -260,9 +259,9 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
   /**
    * Launches the repro runner under an ephemeral inline `coreclr` configuration (no launch.json),
    * arms the all-exceptions filter at the entry stop, and returns the first exception stop whose
-   * stack reaches the workspace. Probed before being wired (2026-08-20): ~1.4 s launch → stop on
-   * a warm host — but the very first launch of a cold C# extension may never start the adapter,
-   * hence the entry timeout answers null rather than waiting on a session that will not come.
+   * stack reaches the workspace. A warm host reaches the entry stop in about a second, but the very
+   * first launch of a cold C# extension may never start the adapter — hence the entry timeout
+   * answers null rather than waiting on a session that will not come.
    */
   async captureTest(p: DebugCaptureTestParams): Promise<DebugStopStateDto | null> {
     if (vscode.debug.activeDebugSession) {
@@ -322,7 +321,7 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
       await session.customRequest('setExceptionBreakpoints', { filters: ['all'] });
 
       // Continue past stops whose stack never reaches the workspace (loader-time first-chance
-      // noise), bounded — the same skip loop as the probe capturer.
+      // noise), bounded — the same skip loop as the capture path.
       for (let hop = 0; hop < 20; hop++) {
         const settled = this.nextTransition(RESUME_TIMEOUT_MS);
         await session.customRequest('continue', { threadId: this.stoppedThreadId });
@@ -500,8 +499,8 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
 
       return (answer?.variables ?? []).slice(0, MAX_LOCALS).map((v) => ({
         name: v.name,
-        // Rendered by the adapter, handed over untouched: the probe recorded the same list as
-        // `Count = 3` under Visual Studio and `(3) [21, 42, 43]` here.
+        // Rendered by the adapter, handed over untouched: the same list reads `Count = 3` under
+        // Visual Studio and `(3) [21, 42, 43]` here, so parsing it would be parsing a renderer.
         type: v.type ?? '',
         value: v.value,
       }));

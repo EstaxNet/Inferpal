@@ -20,7 +20,7 @@ internal sealed record DebuggerLocal(
 /// <summary>
 /// Snapshot of the debugger at the moment it entered break mode. <c>LocalsFrame</c> is the
 /// zero-based position, in <c>Frames</c>, of the frame the locals were read from — null when the
-/// writer could not tell, and absent from snapshots written before 1.6.16.
+/// writer cannot tell, and absent from snapshots written by an older in-process half.
 /// </summary>
 internal sealed record DebuggerSnapshot(
     [property: JsonPropertyName("reason")]    string Reason,

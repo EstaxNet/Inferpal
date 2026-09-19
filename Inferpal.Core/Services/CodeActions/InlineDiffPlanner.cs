@@ -159,8 +159,8 @@ internal static class InlineDiffPlanner
                 ? string.Empty
                 : string.Join("\n",hunk.NewLines) + (reachesEof ? string.Empty : "\n");
 
-            // Deleting the trailing lines outright must also swallow the '\n' that used to
-            // precede them, or the file would keep a dangling final newline.
+            // Deleting the trailing lines outright must also swallow the '\n' preceding them, or
+            // the file keeps a dangling final newline.
             if (reachesEof && hunk.NewLines.Count == 0 && hunk.OldStart > 0)
                 start--;
 

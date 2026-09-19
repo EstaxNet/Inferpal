@@ -99,11 +99,10 @@ internal static class DebugCommandHandler
     /// the agent system prompt and <c>/tdd</c>'s fix prompt; only the UI strings are localized.
     /// </summary>
     /// <remarks>
-    /// Every line here answers a failure mode the §21 probe or the two tools' own rules made
-    /// visible: a session must be started before anything can be read, values are the debugger's
-    /// own rendering and mean nothing when paraphrased, the step budget is finite and running out
-    /// is a result to report rather than a reason to conclude, and a run left paused blocks the
-    /// user's IDE.
+    /// Every line here answers a failure mode of the two tools: a session must be started before
+    /// anything can be read, values are the debugger's own rendering and mean nothing when
+    /// paraphrased, the step budget is finite and running out is a result to report rather than a
+    /// reason to conclude, and a run left paused blocks the user's IDE.
     /// </remarks>
     internal static string BuildLoopPrompt(string hypothesis) =>
         $"Investigate this at runtime rather than by reading the source: {hypothesis.Trim()}\n\n"

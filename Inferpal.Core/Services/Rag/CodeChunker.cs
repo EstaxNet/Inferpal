@@ -152,16 +152,15 @@ internal static class CodeChunker
             int mStart = methodStarts[i];
             int mEnd   = i + 1 < methodStarts.Count ? methodStarts[i + 1] - 1 : end;
 
-            // ⚠ Past the budget, the member is SPLIT into consecutive pieces. It used to be
-            // TRUNCATED (`mEnd` pulled back to what fitted), and its tail was indexed nowhere. This
-            // is the THIRD instance of the same shape across the chunker's three tiers: the Roslyn
-            // tier had fixed it, the LSP tier had kept it, and so had this one. ⚠ Honest scope:
-            // this block only serves C# that reached the regex tier, so only when Roslyn failed —
-            // the sliding window of the other languages does cover the whole file.
+            // ⚠ Past the budget, the member is SPLIT into consecutive pieces — never TRUNCATED
+            // (`mEnd` pulled back to what fits), which indexes its tail nowhere. The same rule
+            // holds in the other two chunker tiers. ⚠ Honest scope: this block only serves C# that
+            // reached the regex tier, so only when Roslyn failed — the sliding window of the other
+            // languages does cover the whole file.
             //
             // ⚠ A remainder shorter than MinChunkLines is absorbed by the current piece rather than
             // left aside: `MakeChunks` drops pieces that are too short, so publishing it separately
-            // would have lost it — that is, redone the defect, smaller.
+            // loses it — the same defect, smaller.
             var pieceStart = mStart;
             while (pieceStart <= mEnd)
             {

@@ -461,12 +461,11 @@ internal sealed class CSharpSemanticIndex
     /// C# files under <paramref name="root"/>, common exclusions applied.
     /// </summary>
     /// <remarks>
-    /// This used to carry its own four-entry list, matched on <c>\obj\</c> — a <b>backslash</b>. The
-    /// host also ships for linux-x64 and darwin-arm64, and there the list excluded nothing: the
-    /// semantic index read <c>bin/</c>, <c>obj/</c>, <c>.git/</c> and <c>.inferpal/history/</c> —
-    /// the last of which holds snapshot copies of the user's own sources, so "find references"
-    /// answered with duplicates of an older version of the file in front of them.
-    /// <see cref="WorkspaceScan"/> is the shared answer, and private copies of it drift.
+    /// <see cref="WorkspaceScan"/>, never a private list: one matched on <c>\obj\</c> — a
+    /// <b>backslash</b> — excludes nothing on the linux-x64 and darwin-arm64 hosts, and the
+    /// semantic index then reads <c>bin/</c>, <c>obj/</c>, <c>.git/</c> and
+    /// <c>.inferpal/history/</c>. That last one holds snapshot copies of the user's own sources, so
+    /// "find references" answers with duplicates of an older version of the file in front of them.
     /// </remarks>
     private static IEnumerable<string> EnumerateCSharpFiles(string root) =>
         WorkspaceScan.EnumerateFiles(root, "*.cs");

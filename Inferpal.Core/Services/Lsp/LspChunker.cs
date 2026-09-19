@@ -157,13 +157,11 @@ internal static class LspChunker
         int lineCount = endLine0 - startLine0 + 1;
         if (lineCount < 2) return; // skip trivial single-line entries
 
-        // ⚠ Past the budget, the symbol is SPLIT into consecutive pieces. It used to be SHRUNK
-        // until it fitted, and its tail was indexed nowhere: semantic search could never reach the
-        // end of a long TypeScript / Python / Go / Rust function, and nothing said so. ⚠ This is
-        // word for word the defect the Roslyn tier fixed, with the lesson written in its comment —
-        // and the LSP tier had kept it: a fix that closes the instance one saw leaves alive the
-        // class one did not look for. The consequence stings: turning `lspEnabled` on made the
-        // index WORSE than the regex tier, whose sliding window covers the whole file.
+        // ⚠ Past the budget, the symbol is SPLIT into consecutive pieces — never SHRUNK until it
+        // fits, which indexes its tail nowhere: semantic search then cannot reach the end of a long
+        // TypeScript / Python / Go / Rust function, and nothing says so. Turning `lspEnabled` on
+        // would make the index WORSE than the regex tier, whose sliding window covers the whole
+        // file. The Roslyn tier states the same rule for the same reason.
         var pieceStart = startLine0;
         while (pieceStart <= endLine0)
         {

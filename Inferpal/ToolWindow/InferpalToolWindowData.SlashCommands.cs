@@ -363,7 +363,7 @@ internal partial class InferpalToolWindowData
 
         // `/task apply <id> <n>`: the handler names the proposal, the write goes through the real
         // registry — so the ordinary approval prompt appears, the file is snapshotted and
-        // /undo-run covers it exactly like any other write (roadmap §18, decision (b)).
+        // /undo-run covers it exactly like any other write.
         if (result.Apply is { } proposal)
         {
             try

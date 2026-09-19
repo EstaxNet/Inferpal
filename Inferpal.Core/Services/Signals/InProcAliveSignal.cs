@@ -33,8 +33,8 @@ internal static class InProcAliveSignal
 {
     /// <summary>The classic VS package — autoloaded by the pkgdef. <b>Host</b> of the debugger driver.</summary>
     /// <remarks>
-    /// ⚠ Host, not door: a loaded package says <em>nothing</em> about the driver — measured, the two
-    /// do come apart. <see cref="ComponentDebugger"/> answers for the driver, and it alone.
+    /// ⚠ Host, not door: a loaded package says <em>nothing</em> about the driver, and the two do
+    /// come apart. <see cref="ComponentDebugger"/> answers for the driver, and it alone.
     /// </remarks>
     internal const string ComponentPackage = "package";
 
@@ -219,7 +219,7 @@ internal static class InProcAliveSignal
                  : s.HasPackage             ? "package only (MEF not composed yet - open a source file)"
                                             : "mef only (package autoload did not run)";
         // Said separately, because it is a separate failure: the package can be loaded and the
-        // driver absent, and this line used to claim the opposite from HasPackage alone.
+        // driver absent, so HasPackage alone cannot answer for it.
         var driver = s.HasDebugger                       ? "/tdd debugger driver ready"
                    : s.DebuggerReason is { Length: > 0 } r ? $"/tdd debugger driver UNAVAILABLE ({r})"
                    : s.HasPackage                        ? "/tdd debugger driver UNAVAILABLE (not advertised)"

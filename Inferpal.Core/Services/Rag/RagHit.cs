@@ -12,9 +12,9 @@ namespace Inferpal.Services.Rag;
 /// reader can compare with the others.
 /// </param>
 /// <remarks>
-/// ⚠ The provenance used to live nowhere: <c>SearchAsync</c> returned <c>(chunk, float)</c> and a
-/// lexical-only hit came back with <c>0f</c>, so the only way to ask "is this a similarity?" was to
-/// look at the number — which is exactly what the report did, and got wrong both ways.
+/// ⚠ The provenance is IN the data, never deduced from the score: returned as <c>(chunk, float)</c>,
+/// a lexical-only hit comes back with <c>0f</c>, and the only way left to ask "is this a
+/// similarity?" is to look at the number — which is wrong in both directions.
 /// </remarks>
 internal readonly record struct RagHit(RagChunk Chunk, float Score, bool IsCosine)
 {
@@ -58,9 +58,9 @@ internal static class RagResultPresentation
 
     /// <summary>Whether this hit's score may be shown as a similarity.</summary>
     /// <remarks>
-    /// ⚠ A BM25 score is unbounded and not comparable with a cosine, so one under 1.001 used to be
-    /// printed as <c>score 0.840</c> next to real similarities. A number the reader cannot compare
-    /// is worse than no number: a lexical hit shows none, and the mode label says why.
+    /// ⚠ A BM25 score is unbounded and not comparable with a cosine: one under 1.001 prints as
+    /// <c>score 0.840</c> next to real similarities. A number the reader cannot compare is worse
+    /// than no number — a lexical hit shows none, and the mode label says why.
     /// </remarks>
     internal static bool ShowsScore(string modeLabel, RagHit hit) => hit.IsCosine && hit.Score > 0f;
 }

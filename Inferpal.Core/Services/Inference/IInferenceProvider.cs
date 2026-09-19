@@ -6,8 +6,8 @@ namespace Inferpal.Services.Inference;
 /// Backend-agnostic inference provider: every operation the extension needs from a local model
 /// server, regardless of whether it speaks the Ollama REST API or an OpenAI-compatible one
 /// (LM Studio, llama.cpp server, vLLM, Jan, LiteLLM…). Resolved once at startup by
-/// <see cref="InferenceProviderFactory"/> from <c>config.Provider</c> and injected everywhere the
-/// old concrete <see cref="OllamaClient"/> used to be.
+/// <see cref="InferenceProviderFactory"/> from <c>config.Provider</c> and injected wherever a
+/// backend is needed — never the concrete <see cref="OllamaClient"/>.
 /// </summary>
 /// <remarks>
 /// Extends <see cref="IOllamaChatClient"/> so the <see cref="AgentOrchestrator"/> keeps depending on

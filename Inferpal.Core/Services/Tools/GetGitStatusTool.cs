@@ -52,9 +52,9 @@ internal class GetGitStatusTool : ITool
         var startPath    = args.Str("path");
         var includeDiff  = args.Bool("include_diff", false);
 
-        // Same confinement contract as every other path-taking tool: this was the one tool that
-        // took the model's raw path and would read the git status of any repository on the
-        // machine. Read-only, but outside the advertised boundary.
+        // Same confinement contract as every other path-taking tool: an unsanitised path would
+        // read the git status of any repository on the machine — read-only, but outside the
+        // advertised boundary.
         if (startPath is not null)
         {
             var workspace = _getRoot();
@@ -78,12 +78,11 @@ internal class GetGitStatusTool : ITool
         // ── status ────────────────────────────────────────────────────────────
         var status = await GitAsync("status", root, ct);
         // ⚠ THE gate of this tool, and it is `status` because its success is what proves git runs
-        // and this repository opens. Without it the four sections below each answered "" and were
-        // rendered as (empty) / (no commits) / (no branches) / (nothing to diff) — a complete,
-        // fabricated report of a pristine repository. Measured on a folder holding an empty `.git`,
-        // which is what a partial clone, a dubious-ownership refusal or a half-deleted worktree
-        // looks like from out here: `status` exits 128 with everything on stderr, and this tool
-        // kept stdout alone.
+        // and this repository opens. Without it the four sections below each answer "" and render
+        // as (empty) / (no commits) / (no branches) / (nothing to diff) — a complete, fabricated
+        // report of a pristine repository. A folder holding an empty `.git` (a partial clone, a
+        // dubious-ownership refusal, a half-deleted worktree) exits 128 with everything on stderr,
+        // and this tool keeps stdout alone.
         if (!status.Ok)
             return $"Repository root: {root}\n\n{Strings.GitCommandFailed("status", status.Detail)}";
 
@@ -98,10 +97,10 @@ internal class GetGitStatusTool : ITool
         // ── log ───────────────────────────────────────────────────────────────
         var log = await GitAsync("log --oneline -20", root, ct);
         sb.AppendLine("=== git log --oneline -20 ===");
-        // ⚠ Deliberately NOT gated: measured, a repository with no commits yet answers 128 here
-        // (and to `diff HEAD` below) because HEAD does not exist, and "(no commits)" is exactly
-        // right for it. What makes that safe is the gate above — a repository git will not open
-        // never reaches this line.
+        // ⚠ Deliberately NOT gated: a repository with no commits yet answers 128 here (and to
+        // `diff HEAD` below) because HEAD does not exist, and "(no commits)" is exactly right for
+        // it. What makes that safe is the gate above — a repository git will not open never
+        // reaches this line.
         sb.AppendLine(log.Or("(no commits)"));
         sb.AppendLine();
 
@@ -176,21 +175,11 @@ internal class GetGitStatusTool : ITool
     /// <summary>Runs <c>git &lt;arguments&gt;</c> and keeps <b>whether it answered</b>.</summary>
     /// <remarks>
     /// ⚠ <b>stdout only, deliberately</b>: every caller here parses porcelain output line by line,
-    /// and git writes advice and warnings to stderr. This used to be a third private copy of the
-    /// process plumbing — env vars, encodings, timeout — and it had drifted: it never drained
-    /// stderr, so a repository chatty enough to fill that buffer deadlocked git (it blocks writing,
-    /// never closes stdout, and the read of stdout never returns) until the 15 s budget expired,
-    /// after which the catch-all reported "no changes". That is the exact defect
-    /// <see cref="GitProcess"/> was fixed for; the copy kept it. Found by the review
-    /// of 2026-08-07.
-    /// </remarks>
-    /// <remarks>
-    /// This used to be a third private copy of the process plumbing — env vars, encodings, timeout —
-    /// and it had drifted: it never drained stderr, so a repository chatty enough to fill that
-    /// buffer deadlocked git (it blocks writing, never closes stdout, and the read of stdout never
-    /// returns) until the 15 s budget expired, after which the catch-all reported "no changes".
-    /// That is the exact defect <see cref="GitProcess"/> was fixed for; the copy kept
-    /// it. Found by the review.
+    /// and git writes advice and warnings to stderr.
+    /// ⚠ And it runs through <see cref="GitProcess"/> rather than its own process plumbing: both
+    /// pipes must be drained, or a repository chatty enough to fill the stderr buffer deadlocks git
+    /// (it blocks writing, never closes stdout, and the read of stdout never returns) until the
+    /// budget expires — after which the catch-all reports "no changes".
     /// </remarks>
     private static async Task<GitAnswer> GitAsync(string arguments, string workDir, CancellationToken ct)
     {

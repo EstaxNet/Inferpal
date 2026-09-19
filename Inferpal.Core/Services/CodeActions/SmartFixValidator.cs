@@ -98,10 +98,9 @@ internal sealed class SmartFixValidator
     /// </summary>
     /// <remarks>
     /// ⚠ <b>Written for <c>apply_edits</c>, whose whole purpose is to write several files at once.</b>
-    /// It used to validate <c>changed[0]</c> alone, under a comment that named its own scope
-    /// ("covers same-project edits") and let the rest go: a Core+Tests refactor, or a
-    /// <c>.cs</c> + <c>.ts</c> one — which do not even share a validator — was written, reported as
-    /// applied, and half of it never compiled, beneath a Smart Fix note that reads as "the build is
+    /// Validating <c>changed[0]</c> alone lets the rest go: a Core+Tests refactor, or a
+    /// <c>.cs</c> + <c>.ts</c> one — which do not even share a validator — is written, reported as
+    /// applied, and half of it never compiles, beneath a Smart Fix note that reads as "the build is
     /// fine". Deduplicated by <b>what would actually run</b> (command + directory), so the ordinary
     /// batch of several files in one project still builds exactly once.
     /// </remarks>
@@ -217,11 +216,10 @@ internal sealed class SmartFixValidator
     /// <summary>Error lines rendered into the note. The COUNT that goes with them is the count of
     /// the full list, never of this slice.</summary>
     /// <remarks>
-    /// ⚠ Measured 2026-09-10: both branches counted the list AFTER `.Take(...)`, and the
-    /// message they fill states "{0} compilation error(s) detected". Eighty errors therefore
-    /// reached the model as "20" — not a silence, a WRONG NUMBER, in the loop that runs after
-    /// EVERY write. The model fixes its twenty, rebuilds, finds sixty: it reads those as errors
-    /// it has just introduced.
+    /// ⚠ Counted AFTER `.Take(...)`, in a message that states "{0} compilation error(s) detected",
+    /// eighty errors reach the model as "20" — not a silence, a WRONG NUMBER, in the loop that runs
+    /// after EVERY write. The model fixes its twenty, rebuilds, finds sixty, and reads those as
+    /// errors it has just introduced.
     /// </remarks>
     internal const int MaxErrorLinesListed = 25;
 
@@ -292,14 +290,14 @@ internal sealed class SmartFixValidator
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(60), ct);
 
         // A validator that hangs is a failed validation, not a cancelled edit: -1 with the partial
-        // output lets the caller reject the write and show why, where the thrown cancellation used
-        // to surface as if the user had stopped it.
+        // output lets the caller reject the write and show why, where a thrown cancellation reads
+        // as if the user had stopped it.
         //
-        // ⚠ And the FACT travels with it. Flattened to -1 alone, a killed build reached Interpret
-        // with a partial output carrying no `: error XX:` line, and came out as
-        // "N compilation error(s) detected" — measured: two restore lines presented to the model as
-        // compilation errors, and an empty output as "0 error(s) — please fix before continuing".
-        // Strings.SmartFixTimeout existed, translated into ten languages, and nothing could reach it.
+        // ⚠ And the FACT travels with it. Flattened to -1 alone, a killed build reaches Interpret
+        // with a partial output carrying no `: error XX:` line and comes out as "N compilation
+        // error(s) detected" — restore lines presented to the model as compilation errors, an empty
+        // output as "0 error(s) — please fix before continuing", and Strings.SmartFixTimeout
+        // unreachable.
         return (run.TimedOut ? -1 : run.ExitCode, run.Combined, run.TimedOut);
     }
 }

@@ -106,10 +106,9 @@ internal sealed class AgentOrchestrator
     /// <para>
     /// Tools validate their arguments by <b>throwing</b> — <c>PathSanitizer</c> raises
     /// <see cref="ArgumentException"/> on a missing path, for one. Unguarded, a single malformed
-    /// call (routine from a small local model that omits a required argument) escaped the agent
-    /// loop and killed the whole turn, breaking the contract that a run never throws except on
-    /// cancellation. Found by the §11 bench, where devstral called <c>search_in_files</c> without
-    /// a <c>path</c>.
+    /// call (routine from a small local model that omits a required argument) escapes the agent
+    /// loop and kills the whole turn, breaking the contract that a run never throws except on
+    /// cancellation.
     /// </para>
     /// <para>
     /// Handing the error back as the tool's result is also what actually works: the model reads
@@ -190,9 +189,9 @@ internal sealed class AgentOrchestrator
     // Rough BPE estimate (~4 chars/token), matching the project's chunk-size estimation.
     // Tool-call arguments count too: a write_file/apply_diff turn carries the whole file in the
     // assistant's tool_calls, not in Content — ignoring them meant a run writing several large
-    // files never crossed the compaction threshold and the backend silently truncated the head
-    // (system prompt + plan), the exact failure compaction exists to prevent (pre-1.6.0 architecture review,
-    // §2.10; same formula as OpenAiCompatibleClient.EstimateRequestTokens).
+    // files never crosses the compaction threshold and the backend silently truncates the head
+    // (system prompt + plan), the exact failure compaction exists to prevent. Same formula as
+    // OpenAiCompatibleClient.EstimateRequestTokens.
     internal static int EstimateTokens(IEnumerable<ChatMessageDto> messages) => EstimateChars(messages) / 4;
 
     /// <summary>
@@ -827,12 +826,11 @@ internal sealed class AgentOrchestrator
                 // ── No tool calls ─────────────────────────────────────────────
                 var visible = MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent));
 
-                // (1) Empty / think-only stall: the model returned nothing worth showing and
-                //     has done no work yet. The A/B test (qwen3.6:27b) showed the same ACT call
-                //     succeeds ~3/3 — this failure is a stochastic stall, not a context problem.
-                //     Retry the very same (reliable) ACT call a bounded number of times rather
-                //     than ending on a silent "no response" bubble. We drop the empty turn we
-                //     just appended so it doesn't pollute the retried context.
+                // (1) Empty / think-only stall: the model returned nothing worth showing and has
+                //     done no work yet. The same ACT call usually succeeds on retry — this is a
+                //     stochastic stall, not a context problem — so retry it a bounded number of
+                //     times rather than ending on a silent "no response" bubble. The empty turn
+                //     just appended is dropped so it does not pollute the retried context.
                 if (!visible && executions.Count == 0 && tools.Definitions.Count > 0
                     && actRetries < MaxActRetries)
                 {

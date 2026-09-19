@@ -29,16 +29,15 @@ internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, str
 internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorName = null)
 {
     /// <summary>
-    /// The two facts the base prompt used to assert, stated from what this process can actually
-    /// observe — appended to the base layer so no new <c>/xray</c> section appears.
+    /// The editor and the shell, stated from what this process can actually observe — appended to
+    /// the base layer so no new <c>/xray</c> section appears.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The localised prompt said "integrated in Visual Studio 2026 … run PowerShell commands", in
-    /// all ten languages, and the same resource is what <c>Inferpal.Host</c> hands to the VS Code
-    /// front-end. Every VS Code user was therefore told the wrong editor, and every Linux/macOS user
-    /// the wrong shell. A model told it lives in Visual Studio answers with Solution Explorer and
-    /// Rebuild Solution.
+    /// ⚠ The base prompt is a localised resource shared by both front-ends, so it can assert
+    /// neither the editor nor the shell: a VS Code user would be told the wrong editor and a
+    /// Linux/macOS user the wrong shell. A model told it lives in Visual Studio answers with
+    /// Solution Explorer and Rebuild Solution.
     /// </para>
     /// <para>
     /// The editor is <b>declared</b> by the front-end, never inferred — same rule as
@@ -204,8 +203,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                 // The read goes through again: a later failure will say so again.
                 Diagnostics.ForgetDroppedLine(PinContext, UnreadableKey(pinnedPath));
                 if (!string.IsNullOrEmpty(pinnedContent))
-                    // The label is the file name; the identity is the PATH — two pins can be called
-                    // README.md, and one switch used to turn both off.
+                    // The label is the file name; the identity is the PATH — two pins can both be
+                    // called README.md, and one switch would then turn both off.
                     sections.Add(new(PromptSectionKind.Pinned, Path.GetFileName(pinnedPath),
                         "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n" + pinnedContent,
                         Key: pinnedPath));
@@ -246,11 +245,10 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// None of them were bounded.
     /// </summary>
     /// <remarks>
-    /// This is the failure the repository has already paid for twice, one layer down: an oversized
-    /// block makes the backend truncate the request <b>from the head</b>, which is exactly where the
-    /// system prompt lives — so the section that grew silently evicts the instructions it was meant
-    /// to add. <c>MaxToolResultCharsInContext</c> and <c>HistoryCompaction</c> bound the other two
-    /// inputs for that reason; the system prompt was the one left open.
+    /// An oversized block makes the backend truncate the request <b>from the head</b>, which is
+    /// exactly where the system prompt lives — so a section that grows silently evicts the
+    /// instructions it was meant to add. <c>MaxToolResultCharsInContext</c> and
+    /// <c>HistoryCompaction</c> bound the other two inputs for the same reason.
     /// </remarks>
     internal const int MaxFileSectionChars = 32_000;
 
@@ -273,10 +271,9 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     // message — and a noisy channel stops being read. A path that comes back leaves the set: if the
     // file disappears again, we say so again.
     //
-    // ⚠ The set of already-reported paths used to live here, privately, and the two other repeated
-    // parsers (CustomTools, UserTemplates) did not inherit it. It moved into
-    // Diagnostics.DroppedLineOnce; this site keeps only the casing of its keys, which is its own: a
-    // file path.
+    // ⚠ The set of already-reported paths lives in Diagnostics.DroppedLineOnce, shared with the
+    // other repeated parsers (CustomTools, UserTemplates); this site keeps only the casing of its
+    // keys, which is its own: a file path.
     private static void ReportMissingPinOnce(string path) =>
         Diagnostics.DroppedLineOnce(PinContext, "Pinned context file not found", MissingKey(path), path);
 
@@ -287,9 +284,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// <summary>
     /// ⚠ <b>A pinned file that is present but unreadable</b> — locked by another editor, permission
     /// denied, a network drive gone. Same consequence as a missing one (it is not in the prompt, the
-    /// 📌 chip keeps showing it), and it used to rest on a bare <c>Swallow</c>: since this prompt is
-    /// rebuilt on every change of active file, that is one ring entry per rebuild. The rule was
-    /// written three lines above, for the other cause.
+    /// 📌 chip keeps showing it), and the same rule: reported ONCE, not once per rebuild, since this
+    /// prompt is rebuilt on every change of active file.
     /// </summary>
     private static void ReportUnreadablePinOnce(string path, Exception ex) =>
         Diagnostics.RecordOnce(PinContext,

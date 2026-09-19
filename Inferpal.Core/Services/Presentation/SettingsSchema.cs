@@ -11,11 +11,10 @@ internal enum SettingKind { Text, Password, Bool, Int, Float, Model, Select, Tex
 /// <param name="Localized">Resource lookup for options whose text is <b>ordinary prose</b>, resolved
 /// at render time so a language change takes effect.</param>
 /// <remarks>
-/// This type used to carry "Option texts are product names or fixed technical labels - never
-/// localized". That was true of two thirds of its uses and false of the third: "Fast", "Default",
-/// "High Accuracy" are adjectives, and they came out in English in a panel whose every other word
-/// is translated. A rule true of a subcase, written as if it held for all - the pattern this
-/// repository keeps paying for. The distinction now lives in the TYPE, not in a comment.
+/// ⚠ "Option texts are product names, never localized" holds for two thirds of the uses and fails
+/// for the third: "Fast", "Default", "High Accuracy" are adjectives, and they come out in English
+/// in a panel whose every other word is translated. The distinction lives in the TYPE rather than
+/// in a comment, so neither case can be forgotten.
 ///
 /// And it resolves <b>at display time</b>, never while building the schema:
 /// <see cref="SettingsSchema.Tabs"/> is a property initialised once, so a text resolved in there

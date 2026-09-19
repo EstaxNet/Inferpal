@@ -24,7 +24,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   bridge = new EditorBridge(context.secrets);
   context.subscriptions.push(bridge);
 
-  // Roadmap §21: this is what makes debug_control / debug_inspect exist for the model on this
+  // This is what makes debug_control / debug_inspect exist for the model on this
   // front-end. Created unconditionally — vscode.debug is always there — while whether *this*
   // workspace can actually launch anything is answered at start time, in words the agent can use.
   debugBridge = new DebugBridge(log);

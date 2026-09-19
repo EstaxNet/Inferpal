@@ -100,9 +100,9 @@ internal static class PathSanitizer
 
     /// <summary>Windows paths are case-insensitive; Linux/macOS ones are not — and the host now
     /// ships for all three (VS Code publishes linux-* and darwin-* builds).</summary>
-    // ⚠ Read from the one place that answers this, never re-derived: this copy said macOS is
-    // case-SENSITIVE, so a root spelled with another case made the guard refuse a perfectly
-    // legitimate write — the shape of issue #9.
+    // ⚠ Read from the one place that answers this, never re-derived: a copy claiming macOS is
+    // case-SENSITIVE makes this guard refuse a perfectly legitimate write whenever the root is
+    // spelled with another case.
     private static StringComparison PathComparison => Services.PathComparer.Comparison;
 
     private static string Trim(string path) =>
@@ -150,13 +150,11 @@ internal static class PathSanitizer
     /// <remarks>
     /// ⚠ <c>ResolveLinkTarget</c> answers about the component you hand it and says nothing about
     /// its ancestors: on a path whose PARENT is the link it returns <c>null</c>, and the caller
-    /// happily concludes "not a link". That is the whole defect (measured 2026-09-10 on the macOS
-    /// CI leg): there <c>/var</c> is a symlink to <c>/private/var</c>, so a workspace under
-    /// <c>/var/folders/...</c> resolved to itself while a path the product derived from the
-    /// process's current directory -- which the kernel hands back already resolved -- came out
-    /// under <c>/private/var/...</c>. The two no longer shared a prefix and
-    /// <see cref="AssertUnderRoot"/> refused a perfectly legitimate write, with the very message a
-    /// user reported for an unrelated reason in issue #9.
+    /// happily concludes "not a link". On macOS <c>/var</c> is a symlink to <c>/private/var</c>, so
+    /// a workspace under <c>/var/folders/...</c> resolves to itself while a path the product derives
+    /// from the process's current directory — which the kernel hands back already resolved — comes
+    /// out under <c>/private/var/...</c>. The two no longer share a prefix, and
+    /// <see cref="AssertUnderRoot"/> refuses a perfectly legitimate write.
     /// <para>
     /// Resolving more of the chain can only make the two sides agree on the <i>real</i> location; it
     /// never widens what the sandbox allows, because the root and the target both go through here.
@@ -191,13 +189,12 @@ internal static class PathSanitizer
             // `ResolveLinkTarget` hands back the destination AS RECORDED in the link — .NET reads
             // the link value and combines it with the link's directory, it never realpaths the
             // ancestors. So an absolute recorded target keeps whatever links its own ancestors
-            // contain. Measured on the macOS CI leg, where `/var` is a link to
-            // `/private/var`: resolving `<root>/alias` returned `/var/folders/…/real` while the
-            // root itself had already come out as `/private/var/folders/…`, the two stopped
-            // sharing a prefix, and a legitimate write was refused. ⚠ Windows cannot see this —
-            // there `ResolveLinkTarget(returnFinalTarget: true)` goes through
-            // GetFinalPathNameByHandle, which canonicalises the whole path — hence the portable
-            // test that records the target THROUGH a second link.
+            // contain: on macOS, where `/var` links to `/private/var`, resolving `<root>/alias`
+            // yields `/var/folders/…/real` while the root itself already came out as
+            // `/private/var/folders/…`, the two stop sharing a prefix, and a legitimate write is
+            // refused. ⚠ Windows cannot see this — there `ResolveLinkTarget(returnFinalTarget:
+            // true)` goes through GetFinalPathNameByHandle, which canonicalises the whole path —
+            // hence the portable test that records the target THROUGH a second link.
             hops--;
             return ResolveChain(target.FullName, ref hops);
         }

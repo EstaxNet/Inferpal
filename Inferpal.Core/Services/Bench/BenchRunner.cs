@@ -114,10 +114,10 @@ internal static class BenchRunner
     /// <remarks>
     /// <para>
     /// A reply that never streams has no measurable generation time: time-to-first-token swallows
-    /// the whole call, so its <c>seconds</c> is 0 — and its tokens used to be added to the numerator
-    /// all the same. The tool-call task is exactly that case, on EVERY run (its reply is a tool
-    /// call, and most backends still report usage for it), so the rate was inflated by a different
-    /// amount per backend, inside the one command whose purpose is to compare backends and models.
+    /// the whole call, so its <c>seconds</c> is 0 and its tokens must not enter the numerator. The
+    /// tool-call task is exactly that case, on EVERY run (its reply is a tool call, and most
+    /// backends still report usage for it), so counting it inflates the rate by a different amount
+    /// per backend — inside the one command whose purpose is to compare backends and models.
     /// </para>
     /// <para>
     /// ⚠ And it is not a decorative number: <c>BenchCommandHandler.Recommend</c> sorts the utility

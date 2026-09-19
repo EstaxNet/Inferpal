@@ -32,9 +32,8 @@ namespace Inferpal.Services.Signals;
 internal static class LastKnownSolutionFile
 {
     /// <summary>Full path of the cache file.</summary>
-    /// <remarks>⚠ Deliberately machine-wide, unlike the channels scoped per instance — ROADMAP §22,
-    /// family C: this cache means "the last solution Inferpal knew about", not "the one open
-    /// here".</remarks>
+    /// <remarks>⚠ Deliberately machine-wide, unlike the channels scoped per instance: this cache
+    /// means "the last solution Inferpal knew about", not "the one open here".</remarks>
     internal static string FilePath => SignalFile.PathFor("last_solution.json");
 
     /// <summary>

@@ -59,8 +59,8 @@ internal static class HardwareProbe
                 Arguments = "--query-gpu=memory.total --format=csv,noheader,nounits",
             };
 
-            // stderr was redirected and never read here, so a chatty driver could have wedged the
-            // probe on a full buffer; the shared runner drains both.
+            // The shared runner drains both pipes: stderr redirected and never read wedges this on
+            // a full buffer when the driver is chatty.
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(5), ct)
                                         .ConfigureAwait(false);
 

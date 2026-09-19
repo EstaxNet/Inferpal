@@ -2675,6 +2675,27 @@ public class HostServerTests
         Assert.Empty(h.Target.DebugCalls);               // nothing was asked of an absent adapter
     }
 
+    [Theory]
+    [InlineData("banana", null)]          // a category this host does not serve
+    [InlineData("folder", null)]          // @folder with no path
+    [InlineData("code", "   ")]           // @code with a blank query
+    public async Task AMentionThatResolvesToNothing_SaysSo_InsteadOfSilence(string category, string? value)
+    {
+        // ⚠ The Notice field was added for the debugger case, under the words "nothing to attach
+        // is not nothing to say", and the reasoning stopped at that branch. Measured on the other
+        // four: name=∅ content=∅ notice=∅ — which the adapter shows as NOTHING AT ALL. The user
+        // typed a mention and the editor did not move.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.MentionResolveResult>(
+            "mention/resolve", new { category, value });
+
+        Assert.Null(result.Name);
+        Assert.Null(result.Content);
+        Assert.Equal(Strings.MentionNothingToAttach(category), result.Notice);
+    }
+
     [Fact]
     public async Task DebugStart_ThatTheAdapterRefuses_IsNotReportedAsACompletedRun()
     {

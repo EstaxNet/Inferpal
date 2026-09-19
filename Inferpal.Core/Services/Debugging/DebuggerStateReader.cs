@@ -18,11 +18,10 @@ namespace Inferpal.Services.Debugging;
 /// </para>
 /// <para>
 /// ⚠ <b>One reader, never two.</b> Three call sites ask this question — the tool, the VS mention and
-/// the VS Code mention — and each of them used to answer it its own way. That is how the VS Code
-/// mention ended up attaching a session <i>name</i> where Visual Studio attached a call stack, and
-/// how the tool ended up answering "not paused" to a VS Code user stopped at a breakpoint. Callers
-/// distinguish the two outcomes by <c>null</c>, never by matching the sentence a tool returned —
-/// matching a tool's own message is the §18 mistake wearing a different hat.
+/// the VS Code mention. Answered separately, one attaches a session <i>name</i> where the other
+/// attaches a call stack, and the tool says "not paused" to a user stopped at a breakpoint. Callers
+/// distinguish the two outcomes by <c>null</c>, never by matching the sentence a tool returned:
+/// reading a tool's own message back is never how a caller decides.
 /// </para>
 /// </remarks>
 internal static class DebuggerStateReader
@@ -36,8 +35,8 @@ internal static class DebuggerStateReader
     internal static async Task<string?> TryReadAsync(
         IDebugSession? session, string? rootDir, CancellationToken ct)
     {
-        // ⚠ rootDir on BOTH branches. It used to be passed only to the on-demand one, so the two
-        // channels answered the same question with two different stacks.
+        // ⚠ rootDir on BOTH branches, or the two channels answer the same question with two
+        // different stacks.
         if (DebuggerStateSignal.TryRead() is { } pushed) return DebuggerStateSignal.Format(pushed, rootDir);
 
         if (session is { IsAvailable: true } live && await live.GetStateAsync(ct) is { } state)

@@ -331,6 +331,7 @@
   <data name="DiagBuildFailed" xml:space="preserve"><value>生成失败（代码 {0}），无可解析的诊断信息。
 
 {1}</value></data>
+  <data name="DiagBuildStopped" xml:space="preserve"><value>⏱ 构建在 {0} 秒后被中止——下面只是它此前输出的内容，不是对该项目的结论。</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>生成：{0} 个错误，{1} 个警告 — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS 上下文不可用 — 请通过"视图"菜单打开 Inferpal 窗口。</value></data>
   <data name="EditNotApplied" xml:space="preserve"><value>未能将编辑应用到 {0} —— 文档在此期间发生了更改，或者为只读。未写入任何内容。</value></data>
@@ -358,6 +359,7 @@
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>附加调试器状态（调用堆栈、局部变量、异常）</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 没有暂停的调试会话。请先在断点或异常处暂停，然后使用 @debugger。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ 剪贴板为空。</value></data>
+  <data name="MentionNothingToAttach" xml:space="preserve"><value>无法为 @{0} 附加任何内容。</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ 浏览文件时出错：{0}</value></data>
 
   <!-- Export -->
@@ -439,6 +441,7 @@
   <data name="GitNotRepo" xml:space="preserve"><value>不是 git 仓库（未找到 .git 文件夹）。</value></data>
   <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ 此批次涉及的项目超过 Smart Fix 一次检查的数量：已构建 {0} 个，另有 {1} 个未被检查。请自行构建，或在单独的调用中修改它们。</value></data>
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd 已停止：本次运行没有执行任何测试，因此没有需要修复的内容。</value></data>
+  <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd 已停止：测试运行超出时间预算被强制结束，因此其报告不构成结论——包括已通过的部分。</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ 刚刚离开的对话未能归档：{0}。它已丢失 —— 没有以任何名称保存，而聊天已被清空。</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ 此对话未能保存以供下次使用：{0}。它仍在此处，但不会自行恢复 — 如需保留请导出。</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git 无法响应“git {0}”：{1}。未能从该仓库读取任何内容 —— 这并不表示“没有更改”。</value></data>
@@ -880,6 +883,8 @@ ollama serve
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**`{0}` 的推荐上限：** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> （模型上限 {0}）</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ 你的 num_ctx ({0}) 超出了 VRAM 预算的容纳范围 — KV-cache 可能溢出到系统 RAM 并降低生成速度。建议将其降低到 {1}。</value></data>
+  <data name="HardwareCtxNoVramRecommendation" xml:space="preserve"><value>**`{0}` 的模型上限：**{1} — 无法计算显存建议值（权重已超出预算，或缺少架构元数据）。</value></data>
+  <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ 您的 num_ctx（{0}）超过了该模型本身能接受的上限（{1}）。后端无法处理更长的提示：它会悄悄丢弃对话中最早的部分（包括系统提示），而 Inferpal 自身的压缩也不会介入，因为它以您配置的数值为准。请设为 {1} 或更小。</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>VRAM 预算</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>Ollama 主机上可用的总 VRAM（GB）。用于推荐安全的 num_ctx，并在所选模型无法容纳时发出警告。在本地主机上留空可自动检测；远程主机需要手动填写。也可通过 `/hardware &lt;gb&gt;` 设置。</value></data>
   <data name="TooltipAgentMode" xml:space="preserve"><value>在聊天模式和代理模式之间切换（自主 Plan → Act → Observe）。与“启用自主代理模式”设置联动。</value></data>

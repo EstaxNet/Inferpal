@@ -8,10 +8,10 @@ namespace Inferpal.Services;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Each of the three used to carry its own copy, and they had drifted: the language-server copy
-/// looked for a UTF-8 BOM as U+FEFF on a line built by casting bytes to chars — where the BOM arrives
-/// as three chars — so its check could never match and the channel closed on the first frame; two
-/// copies let a header line grow without bound on a stream that never sends a newline.
+/// One reader, because private copies drift: a BOM looked for as U+FEFF on a line built by casting
+/// bytes to chars — where it arrives as three chars — never matches, and the channel closes on the
+/// first frame; and a header line read without a bound grows forever on a stream that never sends a
+/// newline.
 /// </para>
 /// <para>
 /// Compiled into the in-process assembly as well (net472, by source link): BCL only, and no C# 8

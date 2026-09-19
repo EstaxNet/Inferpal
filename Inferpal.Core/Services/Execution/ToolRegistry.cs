@@ -123,11 +123,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             Register(new GetDebuggerStateTool(debug, () => indexService.RootDir));
         }
 
-        // ⚠ There is deliberately no sub-agent `delegate` tool, and its absence is a decision rather
-        // than an omission. It was built and measured twice: both times it saved prompt tokens on
-        // the main thread and roughly halved the accuracy, because the parent re-explored whatever
-        // the sub-agents failed to establish. Do not re-add it; the last implementation is
-        // recoverable at commit 60e68a1 if the reasoning ever needs re-reading.
+        // ⚠ There is deliberately no sub-agent `delegate` tool, and its absence is a decision, not
+        // an omission: built and measured twice, it saved prompt tokens on the main thread and
+        // roughly halved the accuracy, because the parent re-explores whatever the sub-agents fail
+        // to establish. Do not re-add it (last implementation: commit 60e68a1).
     }
 
     /// <summary>

@@ -96,12 +96,12 @@ internal static class ChatTurnPolicy
     /// it. Unchanged when nothing was attached.
     /// </summary>
     /// <remarks>
-    /// ⚠ The bubble only kept the typed text, and the chips are cleared on send: a second later
-    /// nothing — on screen, in the exported conversation or in the session file — said that a file,
-    /// a selection or a <c>@diff</c> went with the question. Measured consequences: a reloaded
-    /// session handed the model "explain this" <b>without</b> what "this" referred to (the attached
-    /// content lives only in the API history, never persisted), and regeneration replayed the turn
-    /// having lost its attachments without saying so.
+    /// ⚠ The chips are cleared on send, so a bubble that keeps only the typed text leaves nothing —
+    /// on screen, in the exported conversation or in the session file — saying that a file, a
+    /// selection or a <c>@diff</c> went with the question. A reloaded session then hands the model
+    /// "explain this" <b>without</b> what "this" referred to (the attached content lives only in
+    /// the API history, never persisted), and regeneration replays the turn having lost its
+    /// attachments without saying so.
     /// The content itself is deliberately not saved — a <c>@clipboard</c> or a <c>@diff</c> is the
     /// snapshot of a moment that has passed, and an attached file can be read again. The
     /// <b>label</b> is enough to stop lying.

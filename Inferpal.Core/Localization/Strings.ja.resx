@@ -331,6 +331,7 @@
   <data name="DiagBuildFailed" xml:space="preserve"><value>ビルド失敗（コード {0}）、診断情報なし。
 
 {1}</value></data>
+  <data name="DiagBuildStopped" xml:space="preserve"><value>⏱ ビルドは {0} 秒で中断されました — 以下はその時点までに出力された内容にすぎず、プロジェクトの判定ではありません。</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>ビルド：エラー {0} 件、警告 {1} 件 — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS コンテキストが利用できません — 表示メニューから Inferpal ウィンドウを開いてください。</value></data>
   <data name="EditNotApplied" xml:space="preserve"><value>{0} に編集を適用できませんでした。その間にドキュメントが変更されたか、読み取り専用です。何も書き込まれていません。</value></data>
@@ -358,6 +359,7 @@
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>デバッガーの状態を添付（スタック、変数、例外）</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 一時停止中のデバッグセッションがありません。まずブレークポイントまたは例外で停止してから @debugger を使用してください。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ クリップボードが空です。</value></data>
+  <data name="MentionNothingToAttach" xml:space="preserve"><value>@{0} に添付できるものがありませんでした。</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ 参照エラー：{0}</value></data>
 
   <!-- Export -->
@@ -439,6 +441,7 @@
   <data name="GitNotRepo" xml:space="preserve"><value>git リポジトリではありません（.git フォルダが見つかりません）。</value></data>
   <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ このバッチは Smart Fix が一度に検証するプロジェクト数を超えています: {0} 件をビルドしましたが、さらに {1} 件は検証されていません。自分でビルドするか、別の呼び出しで編集してください。</value></data>
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd を中止しました: この実行ではテストが 1 つも実行されておらず、修正すべきものがありません。</value></data>
+  <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd を中止しました: テスト実行が制限時間を超えて強制終了されたため、その報告は判定になりません — 成功した部分も含めてです。</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ 退出した会話をアーカイブできませんでした: {0}。名前を付けて保存されておらず、チャットはすでにクリアされています — 失われました。</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ この会話を次回のために保存できませんでした: {0}。まだ画面には残っていますが、自動では戻りません — 残したい場合はエクスポートしてください。</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git が「git {0}」に応答できませんでした: {1}。このリポジトリからは何も読み取っていません — これは「変更なし」ではありません。</value></data>
@@ -880,6 +883,8 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**`{0}` の推奨最大値:** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> （モデル最大 {0}）</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ num_ctx ({0}) が VRAM バジェットに収まる範囲を超えています — KV-cache がシステム RAM にあふれ、生成が遅くなる可能性があります。{1} に下げることを検討してください。</value></data>
+  <data name="HardwareCtxNoVramRecommendation" xml:space="preserve"><value>**`{0}` のモデル上限:** {1} — VRAM の推奨値は算出できませんでした（重みが既に予算を超えている、またはアーキテクチャのメタデータがありません）。</value></data>
+  <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ num_ctx ({0}) はこのモデルが受け付けられる上限 ({1}) を超えています。バックエンドはこれより長いプロンプトを処理できず、会話の最も古い部分（システムプロンプトを含む）を無言で切り捨てます。Inferpal 側の圧縮も設定値を基準にするため作動しません。{1} 以下に設定してください。</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>VRAM バジェット</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>Ollama ホストで利用可能な総 VRAM（GB）。安全な num_ctx の推奨と、選択したモデルが収まらない場合の警告に使われます。ローカルホストでは空のままにすると自動検出されます。リモートホストでは手動の値が必要です。`/hardware &lt;gb&gt;` でも設定できます。</value></data>
   <data name="TooltipAgentMode" xml:space="preserve"><value>チャットモードとエージェントモードを切り替えます（自律的な Plan → Act → Observe）。「自律エージェントモードを有効にする」設定に連動します。</value></data>

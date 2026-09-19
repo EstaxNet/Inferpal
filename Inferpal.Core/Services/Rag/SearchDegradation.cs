@@ -19,12 +19,12 @@ internal enum SemanticSide
 /// Decides what a hybrid search has to <b>say</b> when it returns nothing.
 /// </summary>
 /// <remarks>
-/// ⚠ "No results" and "the semantic half never ran" came out as the same words. <c>SearchAsync</c>
-/// skips its vector side when the embedding is null — embedding model not pulled, backend down,
-/// embedding breaker open — and the tool then answered "No relevant code found for …", a flat
-/// negative. A model reading that concludes the code does not exist and stops looking; the user
-/// sees an assistant that cannot find anything in their own repository. That is the 1.6.8 class:
-/// an absent capability rendered as a result.
+/// ⚠ "No results" and "the semantic half never ran" must not come out as the same words.
+/// <c>SearchAsync</c> skips its vector side when the embedding is null — embedding model not
+/// pulled, backend down, embedding breaker open — and a flat "No relevant code found for …" then
+/// reads as a fact about the repository: a model concludes the code does not exist and stops
+/// looking, and the user sees an assistant that cannot find anything in their own code. An absent
+/// capability rendered as a result.
 ///
 /// Three states kept apart, the way <c>SettingsFallback</c> does for a numeric box: the full search
 /// ran (nothing to say), the user turned semantic search off (that is what they asked for, but it

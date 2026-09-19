@@ -27,9 +27,9 @@ internal sealed record PlanStep(int Number, string Text, bool Done, int LineInde
 /// </para>
 /// <para>
 /// <b>⚠ Security — a plan file is committed, therefore it is repo-authored input.</b> It ships with
-/// any clone, exactly like <c>.inferpal/validators.json</c> did before 2026-08-01, and it is a
-/// *sequence of instructions*, which is a stronger lever than anything else under <c>.inferpal/</c>.
-/// The rule is the same one, written here before the code:
+/// any clone, like <c>.inferpal/validators.json</c>, and it is a *sequence of instructions*, which
+/// is a stronger lever than anything else under <c>.inferpal/</c>. Same rule as the rest of that
+/// folder:
 /// <list type="number">
 ///   <item><b>Only structure is parsed, never directives.</b> A plan yields a title, an ordered list
 ///   of steps and their done-state. There is no key, no command, no tool name and no permission this
@@ -38,8 +38,8 @@ internal sealed record PlanStep(int Number, string Text, bool Done, int LineInde
 ///   <item><b>The text of a step is prose handed to the model, and nothing more.</b> It steers, like
 ///   a rule file already does; it grants nothing. Every action a step leads to goes through the
 ///   ordinary approval prompt, which stays the frontier.</item>
-///   <item><b>No grouped approval, ever</b> — the §9 rule, restated. Consenting to a plan is not
-///   consenting to the writes it will turn out to need. There is no "run the whole plan".</item>
+///   <item><b>No grouped approval, ever.</b> Consenting to a plan is not consenting to the writes
+///   it will turn out to need. There is no "run the whole plan".</item>
 /// </list>
 /// </para>
 /// </remarks>

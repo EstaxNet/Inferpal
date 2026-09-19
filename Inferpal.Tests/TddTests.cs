@@ -127,6 +127,30 @@ public class TddTests
         Assert.Equal(TddCommandHandler.MaxRounds - 1, client.AgentRuns.Count); // 4 fix rounds
     }
 
+    /// <summary>
+    /// A run killed at its budget ends the loop — the fourth state, and the only one that can
+    /// arrive wearing a green summary.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ On a solution whose first project finishes and whose second hangs, the killed run still
+    /// carries the first one's pass: read as a verdict, the loop announced success on a run where
+    /// half the suite never started. Read as a red one, it would be five rounds of patches against
+    /// tests that never failed. Neither — it stops, and names the budget.
+    /// </remarks>
+    [Fact]
+    public async Task ARunStoppedAtItsBudget_EndsTheLoop_InsteadOfBeingReadAsAVerdict()
+    {
+        var client = new FakeInferenceProvider();
+        var tools  = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(Services.Tools.RunTestsTool.StoppedAtBudgetLine(120) + "\n\n" + Green);
+
+        var result = await RunAsync(client, tools, ["/tdd"]);
+
+        Assert.StartsWith(Strings.TddStoppedAtBudget, result.Message);
+        Assert.Empty(client.AgentRuns);   // no speculative fix round
+        Assert.Single(tools.Calls);       // and no second run
+    }
+
     [Fact]
     public async Task NoRunnerDetected_SurfacesToolMessage_WithoutLooping()
     {

@@ -142,7 +142,7 @@ internal sealed class GhostTextController
     }
 
     /// <summary>How many lines of context the FIM prompt keeps on each side of the caret.</summary>
-    /// <remarks>Same numbers as before, now used to bound the READ instead of trimming after it.</remarks>
+    /// <remarks>They bound the READ, rather than trimming after it.</remarks>
     private const int PrefixLines = 64;
     private const int SuffixLines = 16;
 
@@ -160,12 +160,12 @@ internal sealed class GhostTextController
         var caretPos = _view.Caret.Position.BufferPosition;
         var cursor   = caretPos.Position;
 
-        // ⚠ Read only the lines we keep. This used to be `snapshot.GetText()` — the WHOLE
-        // document, copied into a fresh string, on the UI thread of devenv, at every debounce
-        // tick — to then throw away everything but 64 lines before the caret and 16 after. On a
-        // large or generated file that is a multi-megabyte allocation per pause in typing, in the
-        // one process where a stall is visible to the user as "Visual Studio froze". The editor
-        // addresses text by line, so ask it for the lines.
+        // ⚠ Read only the lines we keep, never `snapshot.GetText()`: the WHOLE document copied
+        // into a fresh string, on the UI thread of devenv, at every debounce tick, to then throw
+        // away everything but 64 lines before the caret and 16 after. On a large or generated file
+        // that is a multi-megabyte allocation per pause in typing, in the one process where a stall
+        // is visible to the user as "Visual Studio froze". The editor addresses text by line, so
+        // ask it for the lines.
         var caretLine = snapshot.GetLineFromPosition(cursor);
         var firstLine = snapshot.GetLineFromLineNumber(Math.Max(0, caretLine.LineNumber - PrefixLines));
         var lastLine  = snapshot.GetLineFromLineNumber(

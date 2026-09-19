@@ -51,12 +51,11 @@ internal static class AtomicFile
     /// for has always had.
     /// </summary>
     /// <remarks>
-    /// ⚠ It used to be <c>Encoding.UTF8</c> unconditionally, which <b>emits</b> a mark, while the
-    /// read side strips one: a rewrite therefore added three bytes at the head of any file that had
-    /// none. Invisible for this class's own JSON stores — they are born here, so they all have the
-    /// mark — but a plan is markdown a team commits, and <c>PlanDocument.WithStepDone</c> promises
-    /// that "only the single checkbox character changes; every other byte of the file is preserved".
-    /// Ticking a step on a hand-written plan showed up as a diff at the head of the file.
+    /// ⚠ Never <c>Encoding.UTF8</c> unconditionally: it <b>emits</b> a mark while the read side
+    /// strips one, so a rewrite adds three bytes at the head of any file that had none. Invisible
+    /// for this class's own JSON stores — they are born here, so they all have the mark — but a plan
+    /// is markdown a team commits, and <c>PlanDocument.WithStepDone</c> promises that "only the
+    /// single checkbox character changes; every other byte of the file is preserved".
     /// </remarks>
     private static Encoding EncodingFor(string path)
     {

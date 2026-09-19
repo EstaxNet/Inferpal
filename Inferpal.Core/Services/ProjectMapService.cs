@@ -74,8 +74,7 @@ internal sealed class ProjectMapService
         var usingsByNs   = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);   // ns → used ns
         var refCounts    = new Dictionary<string, int>(PathComparer.Default);                  // file → ref count
 
-        // Pass-1 contents kept for pass 2: it used to re-read every file from disk a second time
-        //.
+        // Pass-1 contents kept for pass 2, which would otherwise re-read every file from disk.
         var contents = new Dictionary<string, string>(PathComparer.Default);
 
         foreach (var file in files)

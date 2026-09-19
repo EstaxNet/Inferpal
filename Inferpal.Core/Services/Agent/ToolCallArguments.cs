@@ -16,9 +16,9 @@ namespace Inferpal.Services.Agent;
 /// <para>
 /// ⚠ It lives here, and not in the provider that first needed it, because the same model output
 /// reaches the product by three doors — the OpenAI-compatible stream, the inline text parser, and
-/// the wire payload deserialized straight into <see cref="ToolCallFunction.Arguments"/> — and two
-/// of the three used to answer differently. <c>AgentOrchestrator.ExecuteToolSafeAsync</c> is the
-/// single gate that refuses what this class marks.
+/// the wire payload deserialized straight into <see cref="ToolCallFunction.Arguments"/> — which
+/// must not answer differently. <c>AgentOrchestrator.ExecuteToolSafeAsync</c> is the single gate
+/// that refuses what this class marks.
 /// </para>
 /// </remarks>
 internal static class ToolCallArguments

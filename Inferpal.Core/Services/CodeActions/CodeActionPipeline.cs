@@ -133,14 +133,13 @@ internal static class CodeActionPipeline
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⚠ This is a FUNNEL, and it was extracted because it had a second, incomplete reader. The
-    /// Visual Studio "Edit with AI" command did <c>Reindent(Clean(reply))</c> and applied the
-    /// result — so it missed four of the steps below, including the two whose comment cites its
-    /// own gesture: a click in the margin plus Shift+Down selects the line WITH its ending,
-    /// <c>Clean</c> trims it, the next line moves up against the edited one — and the unchanged
-    /// echo, now differing from the original by that single byte, was applied instead of being
-    /// reported as "nothing to change". Measured: <c>"    return 1;\r\n"</c> came back as
-    /// <c>"    return 1;"</c>.
+    /// ⚠ This is a FUNNEL: everything that turns a model reply into an edit goes through it, and a
+    /// caller doing its own <c>Reindent(Clean(reply))</c> misses four of the steps below. Two of
+    /// them answer the most ordinary gesture in Visual Studio — a click in the margin plus
+    /// Shift+Down selects the line WITH its ending, <c>Clean</c> trims it
+    /// (<c>"    return 1;\r\n"</c> → <c>"    return 1;"</c>), the next line moves up against the
+    /// edited one, and the unchanged echo now differs from the original by that single byte, so it
+    /// is applied instead of being reported as "nothing to change".
     /// </para>
     /// <para>
     /// ⚠ Order is the substance here: the line breaks are restored AFTER the empty guard (which an

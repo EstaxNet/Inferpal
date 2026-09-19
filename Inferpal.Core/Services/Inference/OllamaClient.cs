@@ -111,8 +111,8 @@ internal class OllamaClient : InferenceProviderBase
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
-            // "Cannot reach … check the URL" sent the user to verify a URL that was fine (the
-            // pre-1.6.0 architecture review, §3.1): say what the server said instead.
+            // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say what
+            // the server said instead.
             RecordFailure();
             throw new AgentHttpException(Strings.MsgServerError(base_, ex.Message), isTimeout: false);
         }
@@ -213,7 +213,7 @@ internal class OllamaClient : InferenceProviderBase
     /// Traverses the breaker cooldown (see the OpenAI-compatible sibling): the probe is the one
     /// call that can notice the server coming back, and a success closes the circuit.
     /// The 2xx concludes nothing on its own: the body must carry <c>models</c>, the property that
-    /// signs the native API - see <see cref="ConfirmsBackendPayload"/> for the measurement.</summary>
+    /// signs the native API — see <see cref="ConfirmsBackendPayload"/>.</summary>
     public override async Task<bool> CheckConnectionAsync(string url, CancellationToken ct)
     {
         var endpoint = $"{url.TrimEnd('/')}/api/tags";
@@ -260,8 +260,7 @@ internal class OllamaClient : InferenceProviderBase
             // Ollama /api/embeddings uses "prompt" as the text field (legacy API)
             var requestBody = new { model, prompt = text };
             // `using`: this runs in the indexing loop — thousands of undisposed responses per
-            // pass otherwise wait on the finalizer (pre-1.6.0 architecture review; the OpenAI sibling
-            // already disposed).
+            // pass otherwise wait on the finalizer.
             using var http = await _http.PostAsJsonAsync(
                 $"{base_}/api/embeddings", requestBody, _jsonOpts, sendCts.Token);
             http.EnsureSuccessStatusCode();
@@ -434,7 +433,7 @@ internal class OllamaClient : InferenceProviderBase
                 {
                     using var doc    = System.Text.Json.JsonDocument.Parse(line);
                     // A failed pull (mistyped name, registry refusal) still streams in HTTP 200 and
-                    // ends on {"error":"…"} — the loop used to finish normally and report a success.
+                    // ends on {"error":"…"}: unread, the loop finishes normally and reports a success.
                     if (TryExtractError(doc.RootElement.TryGetProperty("error", out var e) ? e : default) is { } error)
                     {
                         onStatus(error);

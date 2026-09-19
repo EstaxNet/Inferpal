@@ -5,8 +5,8 @@ namespace Inferpal.Services.Persistence;
 /// <summary>
 /// LLM-generated session titles, shared by both front-ends: the VS VM archives the conversation
 /// on <c>/clear</c>, the Host serves the same thing over the <c>session/title</c> RPC for VS Code.
-/// The call used to live in the VM only — routing it through the Core is what makes the VS Code
-/// side possible without duplicating the prompt, the timeout and the sanitising rules.
+/// In the Core rather than in a view-model, so the prompt, the timeout and the sanitising rules
+/// exist once.
 /// </summary>
 /// <remarks>
 /// Best-effort by design: any backend hiccup (offline, no model, timeout) degrades to

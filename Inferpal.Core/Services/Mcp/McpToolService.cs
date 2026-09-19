@@ -192,12 +192,11 @@ internal sealed class McpToolService : IAsyncDisposable
             var servers = McpServerConfig.Parse(_config.McpServersJson, out var rejected);
             _rejected = [.. rejected.Select(r => new McpServerStatus(r.Name, false, 0, r.Reason))];
 
-            // ⚠ A declared server that does not start left NO readable trace (measured
-            // 2026-09-10): the error was filed in McpServerStatus.Error and read by the Visual
-            // Studio settings window alone. In VS Code — no panel, no diagnostic entry, no
-            // message — the user simply saw their tools missing. The /diagnostics channel exists
-            // on BOTH sides: it is the floor, and it is where someone wondering why their tools
-            // are missing will eventually look.
+            // ⚠ A declared server that does not start must leave a readable trace. Filed in
+            // McpServerStatus.Error alone, it is read by the Visual Studio settings window and by
+            // nothing else: in VS Code there is no panel, so the user simply sees their tools
+            // missing. The /diagnostics channel exists on BOTH sides — it is the floor, and where
+            // someone wondering why their tools are missing eventually looks.
             foreach (var r in _rejected)
                 Diagnostics.Record("Mcp", $"Server '{r.Name}' rejected by the configuration: {r.Error}");
             // ⚠ In PARALLEL, keeping the configured order. Each start has its own handshake budget:

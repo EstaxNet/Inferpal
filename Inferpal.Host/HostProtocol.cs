@@ -77,12 +77,12 @@ internal sealed record ActiveDocumentDto(string? Path, string? Text);
 /// <summary>Reverse `editor/replaceSelection` answer from the adapter.</summary>
 internal sealed record EditResultDto(string? Path, bool ReplacedSelection);
 
-// ── Reverse `debug/*` requests (host → adapter), roadmap §21 ─────────────────
+// ── Reverse `debug/*` requests (host → adapter) ──────────────────────────────
 // Deliberately a flat mirror of the Core's Services/Debugging port rather than a rendering of
 // the Debug Adapter Protocol: the adapter speaks DAP on its side, and what crosses this wire is
-// only what IDebugSession needs. Values stay opaque strings — the §21 probe measured the same
-// list rendered `Count = 3` by Visual Studio and `(3) [21, 42, 43]` by VS Code, so parsing one
-// of them would break the other.
+// only what IDebugSession needs. Values stay opaque strings — the same list renders as
+// `Count = 3` under Visual Studio and `(3) [21, 42, 43]` under VS Code, so parsing one of them
+// breaks the other.
 
 /// <summary>Reverse `debug/addBreakpoint`, `debug/removeBreakpoint` parameters.</summary>
 internal sealed record DebugBreakpointParams(string File, int Line);
@@ -151,12 +151,11 @@ internal sealed record BackendStatusResult(bool Connected, string VramBadge, str
 /// panel can pre-select it the way the Visual Studio window does; <c>null</c> when nothing answered.
 /// </param>
 /// <remarks>
-/// ⚠ Used to return <c>bool</c> and probe <c>Config.BaseUrl</c> — the SAVED url — while the webview
-/// was sending it the one the user had just typed: the panel could therefore report "Connected"
-/// about a different address, and the case that misleads most is the ordinary one (the old one
-/// works, the new one is wrong). The comment covering the gap invoked a symmetry with the VS window
-/// that does not exist: that one reads the typed value, pre-selects the detected backend, then
-/// refreshes the models from that url.
+/// ⚠ The probe uses the url the webview sent, never the SAVED <c>Config.BaseUrl</c>: otherwise the
+/// panel reports "Connected" about a different address, and the case that misleads most is the
+/// ordinary one — the old url works, the new one is wrong. Same behaviour as the Visual Studio
+/// window: read the typed value, pre-select the detected backend, then refresh the models from
+/// that url.
 /// </remarks>
 internal sealed record ConnectionCheckResult(bool Ok, string? Provider);
 

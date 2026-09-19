@@ -61,7 +61,7 @@ internal sealed record DebugStartResult(DebugStopState? State, string? Failure)
 /// </summary>
 /// <param name="ThreadId">
 /// Taken from the adapter's stop notification and echoed back on the next request. Never assumed:
-/// the probe's Node adapter reported thread <c>0</c>, not <c>1</c>.
+/// a Node adapter reports thread <c>0</c>, not <c>1</c>.
 /// </param>
 /// <param name="LocalsFrameId">
 /// <see cref="DebugFrame.Id"/> of the frame <paramref name="Locals"/> were read from, or

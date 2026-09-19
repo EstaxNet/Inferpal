@@ -16,21 +16,17 @@ internal sealed record SolutionProject(string Name, string RelativePath, string 
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠ <b>Never look for a solution with the <c>"*.sln"</c> pattern</b> (issue #9, measured
-/// 2026-09-10). On Windows, <c>Directory.GetFiles(dir, "*.sln")</c> <b>sometimes</b> returns
-/// <c>.slnx</c> files too, through <b>8.3</b> short-name matching, never by intent. ⚠ And
-/// "sometimes" is the word: measured the same evening on one machine, one <c>%TEMP%</c> directory
-/// returned the <c>.slnx</c> for the <c>*.sln</c> pattern and another directory on the <b>same
-/// volume</b> did not. Short-name generation is configured per volume
-/// (<c>NtfsDisable8dot3NameCreation</c> = 2 there) and has never been a guarantee of anything —
-/// which is why the "No <c>.sln</c> file found" report came from a <c>G:\</c> drive while the
-/// maintainer's repository, on the system volume, looked fine. A result that depends on the volume
-/// is a wrong answer to a question that does not.
+/// ⚠ <b>Never look for a solution with the <c>"*.sln"</c> pattern</b>. On Windows,
+/// <c>Directory.GetFiles(dir, "*.sln")</c> <b>sometimes</b> returns <c>.slnx</c> files too, through
+/// <b>8.3</b> short-name matching, never by intent. ⚠ And "sometimes" is the word: two directories
+/// on the <b>same volume</b> can answer differently, because short-name generation is configured
+/// per volume (<c>NtfsDisable8dot3NameCreation</c>) and has never been a guarantee of anything. A
+/// result that depends on the volume is a wrong answer to a question that does not.
 /// </para>
 /// <para>
 /// Filtering is therefore <b>explicit on the extension</b>, never left to the pattern. And
 /// <c>.slnx</c> is an <b>XML</b> format: the regex that reads the <c>Project(…)</c> lines of a
-/// <c>.sln</c> finds nothing in it, which produced "Projects : 0" on a perfectly valid solution —
+/// <c>.sln</c> finds nothing in it, which reports "Projects : 0" on a perfectly valid solution —
 /// a wrong answer, not a missing capability.
 /// </para>
 /// </remarks>

@@ -35,11 +35,10 @@ internal sealed record ContextDecision(
     /// that was asked for.
     /// </summary>
     /// <remarks>
-    /// ⚠ The rule lives here because it is read by BOTH front-ends and was written down in only one
-    /// of them: the VS window rendered a successful compaction as a collapsible tool bubble and the
-    /// two fallbacks as plain warnings (<i>"the conversation lost turns, that is read in plain
-    /// text"</i>), while the host sent all three as the same collapsed <c>context_compact</c>
-    /// bubble. Same event, two renderings, and the degraded one was the one that looked routine.
+    /// ⚠ The rule lives here because BOTH front-ends read it: a successful compaction is a
+    /// collapsible tool bubble, the two fallbacks are plain warnings — the conversation lost turns,
+    /// and that is read in plain text. Rendered the same way, the degraded result is the one that
+    /// looks routine.
     /// </remarks>
     public bool IsDegraded =>
         Outcome is ContextOutcome.Truncated or ContextOutcome.CompactionFellBack;
@@ -49,14 +48,13 @@ internal sealed record ContextDecision(
 /// The pre-send context check, shared by both front-ends.
 /// </summary>
 /// <remarks>
-/// ⚠ It lived <b>entirely in the Visual Studio window</b>. Measured consequence: on the VS Code
-/// side the history was <b>never</b> bounded — it grew until it went past the model's
-/// <c>num_ctx</c>, and it was then the backend that dropped the head of the conversation, system
-/// prompt included, without a word. An assistant that "forgets".
+/// ⚠ Shared, and not a copy per front-end: where this check is missing the history is <b>never</b>
+/// bounded — it grows past the model's <c>num_ctx</c>, and the backend then drops the head of the
+/// conversation, system prompt included, without a word. An assistant that "forgets".
 ///
-/// And the VS Code settings panel offered <c>compactionEnabled</c>, <c>contextWindowKeepTurns</c>
-/// and <c>compactionTimeoutSeconds</c> — three controls that did <b>nothing</b> there. A setting
-/// rendered as functional with no effect is the class of this whole series.
+/// It is also what makes <c>compactionEnabled</c>, <c>contextWindowKeepTurns</c> and
+/// <c>compactionTimeoutSeconds</c> mean something in both editors: a settings panel must not offer
+/// a control that does nothing on its side.
 ///
 /// <para><b>What is here and what stays with the caller.</b> Here: the decision
 /// (<see cref="HistoryCompaction"/>), the summarising model call, and its fuse. With the caller:

@@ -53,7 +53,7 @@ internal static class TestGenerationEdit
         }
 
         TestGenerationPlan plan;
-        // Closing the spinner cancels the generation: the test file used to be written anyway.
+        // Closing the spinner cancels the generation, or the test file is written anyway.
         using (var generation = CancellationTokenSource.CreateLinkedTokenSource(ct, dlg.CancelledByUser))
         {
             try

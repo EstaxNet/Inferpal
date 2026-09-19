@@ -10,10 +10,9 @@ namespace Inferpal.Services.Commands;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Bare <c>/plan</c> keeps toggling read-only plan mode, as it always has; every other form works on
-/// a file under <c>.inferpal/plans/</c>. Both live here rather than half in each front-end, because
-/// the set of sub-commands is exactly the kind of table that drifts when it is written twice — that
-/// drift has already been paid for once (283 + 141 duplicated lines, 2026-07-31).
+/// Bare <c>/plan</c> toggles read-only plan mode; every other form works on a file under
+/// <c>.inferpal/plans/</c>. Both live here rather than half in each front-end, because the set of
+/// sub-commands is exactly the kind of table that drifts when it is written twice.
 /// </para>
 /// <para>
 /// The handler decides and reports; it never toggles anything itself. Plan mode is front-end state

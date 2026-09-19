@@ -333,7 +333,7 @@ export interface SettingsSchema {
   headerFields: SettingsField[];
 }
 
-// ── Reverse `debug/*` DTOs (host → editor), roadmap §21 ──────────────────────
+// ── Reverse `debug/*` DTOs (host → editor) ───────────────────────────────────
 // Mirror of Inferpal.Host/HostProtocol.cs. Deliberately not a rendering of the Debug Adapter
 // Protocol: only what the Core's IDebugSession port needs crosses this wire, and values stay
 // opaque strings because the two editors' debuggers render them differently on purpose.

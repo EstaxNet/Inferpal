@@ -29,10 +29,10 @@ internal partial class InferpalToolWindowData
     private async Task RetryConnectionAsync(object? _, CancellationToken ct)
     {
         _client.ResetCircuit();
-        // Dispose the old CTS (it leaked) and hand the NEW token to the loop explicitly: the loop
-        // used to read _heartbeatCts.Token at ITS start, so a double-click could start two loops
-        // on the same token — double polling and doubled "connection restored" bubbles (the
-        // pre-1.6.0 architecture review). Captured here, each loop dies with its own token.
+        // Dispose the old CTS and hand the NEW token to the loop explicitly: a loop that reads
+        // _heartbeatCts.Token at ITS start shares it with the next one, so a double-click starts
+        // two loops on the same token — double polling and doubled "connection restored" bubbles.
+        // Captured here, each loop dies with its own token.
         var old = _heartbeatCts;
         _heartbeatCts = new CancellationTokenSource();
         var token = _heartbeatCts.Token;

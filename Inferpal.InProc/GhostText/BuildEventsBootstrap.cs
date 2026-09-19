@@ -12,11 +12,10 @@ namespace Inferpal.GhostText;
 /// Packages/AutoLoadPackages registry keys exist (written by <c>deploy-dev.ps1</c> on dev
 /// machines, merged from <c>Inferpal.pkgdef</c> by VSIXInstaller on release installs), while
 /// <see cref="GhostTextViewListener"/> is the MEF belt-and-braces that always loads with the
-/// first editor. On a machine where BOTH run — the common case — each used to create its own
-/// handler: every failed build was collected twice on the UI thread and the signal file written
-/// twice. Neither bootstrap can be removed (each is the only one that
-/// runs in SOME install world), so they funnel here instead: one handler per devenv, whoever
-/// arrives first.
+/// first editor. On a machine where BOTH run — the common case — each would create its own
+/// handler, collecting every failed build twice on the UI thread and writing the signal file
+/// twice. Neither bootstrap can be removed (each is the only one that runs in SOME install world),
+/// so they funnel here: one handler per devenv, whoever arrives first.
 /// </para>
 /// </remarks>
 internal static class BuildEventsBootstrap

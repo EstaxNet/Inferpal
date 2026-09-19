@@ -39,12 +39,11 @@ internal sealed partial class HostServer
             case SlashDelegatedAction delegated:
                 return await RunDelegatedSlashAsync(s, delegated, p, ct);
 
-            // /test writes to a SEPARATE file, so there is nothing for the adapter's in-place
-            // code-action path to do with it: it fell through to `Handled = false` and the literal
-            // string "/test" reached the model, which improvised. Served here instead.
-            // Inside the turn slot like every other slash that infers: it used to run OUTSIDE it —
-            // a second inference in parallel with a chat turn on the same GPU, and chat/cancel
-            // could not stop it.
+            // /test writes to a SEPARATE file, so the adapter's in-place code-action path has
+            // nothing to do with it: left to it, the literal string "/test" reaches the model, which
+            // improvises. Served here, and inside the turn slot like every other slash that infers
+            // — outside it, a second inference runs in parallel with a chat turn on the same GPU
+            // and chat/cancel cannot stop it.
             case SlashCodeAction { Kind: SlashCodeActionKind.Test }:
             {
                 var cts = AcquireTurn(ct);
@@ -410,8 +409,8 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Plan:
                 {
-                    // Roadmap §17. Same handler as the VM: bare `/plan` still toggles read-only
-                    // plan mode, everything else works on a file under .inferpal/plans/.
+                    // Same handler as the VM: bare `/plan` toggles read-only plan mode, everything
+                    // else works on a file under .inferpal/plans/.
                     var result = PlanCommandHandler.Handle(
                         s.RootDir, parts,
                         s.History.LastOrDefault(m => m.Role == "assistant")?.Content,
@@ -437,8 +436,8 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Check:
                 {
-                    // Roadmap §15: same handler as the VM, so the anchored findings are identical
-                    // on both sides. Progress uses the chat/step channel like /bench and /tdd.
+                    // Same handler as the VM, so the anchored findings are identical on both
+                    // sides. Progress uses the chat/step channel like /bench and /tdd.
                     var result = await CheckCommandHandler.HandleAsync(
                         s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
                         git: GitProcess.For(s.RootDir),
@@ -456,8 +455,8 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Onboard:
                 {
-                    // Roadmap §19. The profile itself is applied (index exclusions) or merely
-                    // reported by the Core; the host only performs the IO it decided on.
+                    // The profile itself is applied (index exclusions) or merely reported by the
+                    // Core; the host only performs the IO it decided on.
                     var result = await OnboardCommandHandler.HandleAsync(
                         s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
                         git: GitProcess.For(s.RootDir),
@@ -495,10 +494,10 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Debug:
                 {
-                    // Roadmap §21. The handler never drives the debugger itself: it either reports,
-                    // or hands the model an instruction that goes through debug_control /
-                    // debug_inspect — and therefore through the approval on the one action that
-                    // executes the user's program.
+                    // The handler never drives the debugger itself: it either reports, or hands the
+                    // model an instruction that goes through debug_control / debug_inspect — and
+                    // therefore through the approval on the one action that executes the user's
+                    // program.
                     var result = await DebugCommandHandler.HandleAsync(s.Tools.Debug, parts, cts.Token);
                     return result.SendAsPrompt is { } prompt
                         ? new SlashCommandResult(true, null, [new SlashEffectDto("sendAsPrompt", prompt)])
@@ -785,15 +784,23 @@ internal sealed partial class HostServer
                         "search_codebase", JsonSerializer.SerializeToElement(new { query = p.Value }), ct);
                     return new MentionResolveResult("🔮 " + p.Value, hits);
                 }
+                // ⚠ Nulls all the way down are what the adapter shows as NOTHING AT ALL: the
+                // mention the user typed leaves no chip and no message, which reads as a broken
+                // product. The `debugger` case above was given a Notice for exactly that reason and
+                // the reasoning stopped at its own branch — an incomplete mention (`@folder` with
+                // no path, `@code` with a blank query) and a category this host does not serve fell
+                // through to here, silently, and so did every failure below.
                 default:
-                    return new MentionResolveResult(null, null);
+                    return new MentionResolveResult(null, null, Strings.MentionNothingToAttach(p.Category));
             }
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             Diagnostics.Swallow("HostServer.MentionResolve", ex);
-            return new MentionResolveResult(null, null);
+            // The same sentence the Visual Studio window writes for the same failure: one mention,
+            // two front-ends, one answer.
+            return new MentionResolveResult(null, null, Strings.AttachError(Diagnostics.RootMessage(ex)));
         }
     }
 }

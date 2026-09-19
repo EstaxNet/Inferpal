@@ -10,12 +10,11 @@ namespace Inferpal.Services.Execution;
 /// Backups are stored in <c>.inferpal/history/</c> at the git repository root
 /// (falls back to the file's directory when no git root is found).
 /// Snapshot filename format: <c>yyyy-MM-dd_HH-mm-ss-fff_&lt;pathHash8&gt;_&lt;originalFilename&gt;</c>.
-/// The 8-hex-char hash of the <em>full</em> path disambiguates same-named files: matching on the
-/// bare file name let <c>restore_file</c> on <c>A\Config.cs</c> silently restore the content of a
-/// more recently touched <c>B\Config.cs</c>, and homonyms pruned each other's retention slots
-///. Snapshots written before this format are no longer found by
-/// name-matching — deliberate: that matching is the bug — but stay on disk and remain restorable
-/// via <c>/undo-run</c>, which keeps exact snapshot paths.
+/// The 8-hex-char hash of the <em>full</em> path disambiguates same-named files: on the bare file
+/// name, <c>restore_file</c> on <c>A\Config.cs</c> silently restores the content of a more recently
+/// touched <c>B\Config.cs</c>, and homonyms prune each other's retention slots. Snapshots written
+/// before this format are no longer found by name-matching — deliberate: that matching is the bug —
+/// but stay on disk and remain restorable via <c>/undo-run</c>, which keeps exact snapshot paths.
 /// </remarks>
 internal class FileHistoryService
 {
@@ -168,12 +167,11 @@ internal class FileHistoryService
 
         var suffix = SnapshotSuffix(originalPath);
 
-        // Ordered by WRITE TIME, not by name. The name is written by this class and used to be
-        // trusted as a sort key, which made "which snapshot is the most recent?" — the question
-        // that decides what restore_file puts back — depend on the local clock: at the autumn
-        // fall-back an hour of snapshots sorts before older ones, so the tool restored the older
-        // content. It also survives the mix of local-named (pre-fix) and UTC-named files sitting
-        // in the same folder after an upgrade.
+        // Ordered by WRITE TIME, not by name. The name is written by this class, and trusting it
+        // as a sort key makes "which snapshot is the most recent?" — the question that decides what
+        // restore_file puts back — depend on the local clock: at the autumn fall-back an hour of
+        // snapshots sorts before older ones. It also survives a folder holding both local-named and
+        // UTC-named files after an upgrade.
         return Directory.EnumerateFiles(historyDir)
             .Where(f => MatchesSuffix(f, suffix))
             .OrderByDescending(File.GetLastWriteTimeUtc)
@@ -264,10 +262,10 @@ internal class FileHistoryService
     /// <summary>Starts a new change-tracking run; subsequent snapshots/creations attach to it.</summary>
     internal string BeginRun()
     {
-        // UTC, and invariant formatting. Local time repeats an hour every autumn, so two runs could
-        // be handed the same identifier, and the lexicographic order of identifiers lied for that
-        // hour — §27.6 fixed exactly this in SessionManager and left this site behind (revue
-        // post-1.6.0, item 4.5). The identifier is shown to nobody: it keys /undo-run.
+        // UTC, and invariant formatting. Local time repeats an hour every autumn, so two runs can
+        // be handed the same identifier and the lexicographic order of identifiers lies for that
+        // hour — SessionManager names its files the same way. The identifier is shown to nobody:
+        // it keys /undo-run.
         var run = new HistoryRun(DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss-fff",
                                                           System.Globalization.CultureInfo.InvariantCulture));
         lock (_runLock)

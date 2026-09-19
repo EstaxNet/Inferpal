@@ -37,11 +37,10 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
         }
         catch (HttpListenerException ex)
         {
-            // ⚠ The FOURTH outcome, and it was outside the classification entirely: not "the wait
-            // was interrupted" but "there was never a wait". FreeLoopbackPort probes a port and
-            // releases it, so between the probe and this Start another process can take it — and
-            // what reached the user was the operating system's own sentence, in the machine's
-            // display language, naming neither the address nor what to do.
+            // ⚠ The FOURTH outcome, and not a kind of interrupted wait: there was never a wait.
+            // FreeLoopbackPort probes a port and releases it, so between the probe and this Start
+            // another process can take it — and the operating system's own sentence, in the
+            // machine's display language, names neither the address nor what to do.
             throw new InvalidOperationException(
                 $"Could not listen on {RedirectUri} for the authorization redirect: {ex.Message} "
                 + "Another process may have taken the port; retry the connection.", ex);
@@ -123,11 +122,10 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
     /// fired, which is the one case that really is a socket failure and keeps its own cause.
     /// </summary>
     /// <remarks>
-    /// ⚠ Extracted so it can be measured WITHOUT a listener. The test used to run a real one and
-    /// assert that nothing but the deadline could end a short wait — a claim about the platform:
-    /// macOS's managed <c>HttpListener</c> faults on its own, and shortening the window (round 65)
-    /// did not close it, the CI reproduced it identically. With explicit tokens there is no race
-    /// left to lose, on any platform.
+    /// ⚠ Separate from the listener so the decision can be tested WITHOUT one. Driving a real
+    /// listener and asserting that nothing but the deadline can end a short wait is a claim about
+    /// the platform, and a false one: macOS's managed <c>HttpListener</c> faults on its own, so the
+    /// test races. With explicit tokens there is no race left to lose, on any platform.
     /// </remarks>
     internal Exception? Classify(CancellationToken ct, CancellationToken deadline)
     {

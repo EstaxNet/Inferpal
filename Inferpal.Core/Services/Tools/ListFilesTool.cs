@@ -35,9 +35,9 @@ internal class ListFilesTool : ITool
         if (!Directory.Exists(path))
             return Task.FromResult(Strings.DirNotFound(path));
 
-        // Lazy + excluded like the semantic index: on a node project root, GetFiles materialised
-        // the whole tree and the 300 results shown were mostly node_modules/.git noise (pre-1.6.0
-        // review, batch 4). Take(limit + 1) detects truncation without walking everything.
+        // Lazy + excluded like the semantic index: on a node project root, GetFiles materialises
+        // the whole tree and the 300 results shown are mostly node_modules/.git noise.
+        // Take(limit + 1) detects truncation without walking everything.
         const int limit = 300;
         List<string> files;
         // The walk is checked BEFORE it is consumed: "the directory does not exist" was answered

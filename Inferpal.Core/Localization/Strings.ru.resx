@@ -331,6 +331,7 @@
   <data name="DiagBuildFailed" xml:space="preserve"><value>Сборка не удалась (код {0}) без анализируемых диагностик.
 
 {1}</value></data>
+  <data name="DiagBuildStopped" xml:space="preserve"><value>⏱ Сборка была прервана через {0} с — ниже только то, что она успела вывести, а не вердикт о проекте.</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Сборка: {0} ошибок, {1} предупреждений — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>Контекст VS недоступен — откройте окно Inferpal через меню «Вид».</value></data>
   <data name="EditNotApplied" xml:space="preserve"><value>Правка не применена к {0} — документ изменился за это время или доступен только для чтения. Ничего не записано.</value></data>
@@ -358,6 +359,7 @@
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>прикрепить состояние отладчика (стек, переменные, исключение)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Нет приостановленной сессии отладки. Сначала остановитесь на точке останова или исключении, затем используйте @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Буфер обмена пуст.</value></data>
+  <data name="MentionNothingToAttach" xml:space="preserve"><value>Для @{0} не удалось ничего прикрепить.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Ошибка обзора: {0}</value></data>
 
   <!-- Export -->
@@ -439,6 +441,7 @@
   <data name="GitNotRepo" xml:space="preserve"><value>Не является репозиторием git (папка .git не найдена).</value></data>
   <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ Этот пакет затрагивает больше проектов, чем Smart Fix проверяет за раз: собрано {0}, ещё {1} НЕ проверено. Соберите их сами или правьте отдельным вызовом.</value></data>
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd остановлен: этот запуск не выполнил ни одного теста, так что исправлять нечего.</value></data>
+  <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd остановлен: прогон тестов превысил отведённое время и был прерван, поэтому ничто из его отчёта не является вердиктом — даже пройденная часть.</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ Только что покинутый разговор НЕ удалось архивировать: {0}. Он потерян — не сохранён под именем, а чат уже очищен.</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Этот разговор НЕ удалось сохранить на следующий раз: {0}. Он ещё здесь, но сам не вернётся — экспортируйте его, если хотите сохранить.</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git не смог выполнить «git {0}»: {1}. Из этого репозитория ничего не прочитано — это НЕ «нет изменений».</value></data>
@@ -880,6 +883,8 @@ ollama serve
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Рекомендуемый максимум для `{0}`:** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> (макс. модели {0})</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Ваш num_ctx ({0}) превышает то, что помещается в бюджет VRAM — KV-cache может вытесняться в системную ОЗУ и замедлять генерацию. Рассмотрите снижение до {1}.</value></data>
+  <data name="HardwareCtxNoVramRecommendation" xml:space="preserve"><value>**Предел модели `{0}`:** {1} — рекомендацию по VRAM вычислить не удалось (веса уже превышают бюджет либо отсутствуют метаданные архитектуры).</value></data>
+  <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ Ваш num_ctx ({0}) превышает то, что эта модель вообще принимает ({1}). Бэкенд не может обработать более длинный промпт: он отсекает САМУЮ СТАРУЮ часть диалога, включая системный промпт, ничего не сообщая, — а собственная компактизация Inferpal не срабатывает, так как опирается на заданное вами число. Установите {1} или меньше.</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>Бюджет VRAM</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>Общий объём VRAM (в GB) на хосте Ollama. Используется для рекомендации безопасного num_ctx и предупреждения, когда выбранные модели не помещаются. Оставьте пустым для автоопределения на локальном хосте; для удалённых хостов требуется ручное значение. Также задаётся через `/hardware &lt;gb&gt;`.</value></data>
   <data name="TooltipAgentMode" xml:space="preserve"><value>Переключение между режимами «Чат» и «Агент» (автономный Plan → Act → Observe). Связано с настройкой «Включить автономный режим агента».</value></data>

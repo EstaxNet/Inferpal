@@ -30,7 +30,7 @@ const labelForSentence = (label: string): string => label.replace(/[\s\u00A0\u20
  * here — it means adding it to the Core schema, where a test checks it against InferpalConfig and
  * against the .resx.
  */
-// The schema shapes come from protocol.ts, they are no longer redeclared here. They used to be -
+// The schema shapes come from protocol.ts, never redeclared here -
 // a second set of interfaces for the same JSON - and that is what left this panel ignoring
 // `defaultValue`: the property existed host-side and was missing from the local copy. Types are
 // erased at build time, so the import costs the bundle nothing.
@@ -123,7 +123,7 @@ function render(): void {
   // ⚠ NOT a <datalist>. Chromium filters its options against what the field ALREADY contains:
   // a field holding a model id offered nothing but ITSELF, and no gesture showed the others —
   // while the Visual Studio window, a combo box, lists them all whatever is in the box.
-  // Measured 2026-09-03: `models/list` did return the backend's 8 models, the extension received
+  // `models/list` can return the backend's models, the extension receive
   // them (no failure in the log), the browser displayed one. The defect was entirely in the
   // rendering, and it did not look like one: a one-entry list reads as a backend serving one
   // model.
@@ -589,7 +589,7 @@ function onSave(): void {
   }
   // "Use a separate model per role" unchecked promises the chat model everywhere (its tooltip says
   // so): the fields behind that gate are reset to "same as chat" instead of being kept behind the
-  // fold, where the router went on using them and from which the box came back checked (issue #8).
+  // fold, where the router goes on using them and from which the box comes back checked.
   // The fields come from the schema, not from a list copied here — same rule as ModelRoleSettings.
   if (!gateOn.roles) {
     for (const field of allFields) {

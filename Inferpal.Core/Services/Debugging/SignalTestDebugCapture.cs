@@ -3,11 +3,10 @@
 namespace Inferpal.Services.Debugging;
 
 /// <summary>
-/// Visual Studio implementation of the §25 capture: asks the in-process driver (over the §21
-/// signal channel) to launch the repro runner in wait-for-debugger mode, attach through EnvDTE
-/// and hand back the unhandled-exception stop. The recipe was probed before being wired
-/// (2026-08-20, <c>docs/probes/tdd-debug-launch/</c>): attach ~2 s, break at the original throw
-/// site ~3 s.
+/// Visual Studio implementation of the <c>/tdd</c> capture: asks the in-process driver (over the
+/// signal channel) to launch the repro runner in wait-for-debugger mode, attach through EnvDTE and
+/// hand back the unhandled-exception stop — a few seconds to attach and break at the original
+/// throw site.
 /// </summary>
 internal sealed class SignalTestDebugCapture : TestDebugCaptureBase
 {
@@ -37,8 +36,8 @@ internal sealed class SignalTestDebugCapture : TestDebugCaptureBase
             if (id is null) return null;
 
             // The channel withdraws the request on every answerless path, cancellation included:
-            // pressing Stop mid-capture used to leave it on disk, and a debug session opened by
-            // itself seconds later on a run the user had abandoned.
+            // left on disk, it opens a debug session by itself seconds later, on a run the user
+            // abandoned.
             var response = await DebugCommandSignal.WaitForAnswerAsync(id, CaptureTimeout, ct);
             return response is { Ok: true } ? response.State : null;
         }

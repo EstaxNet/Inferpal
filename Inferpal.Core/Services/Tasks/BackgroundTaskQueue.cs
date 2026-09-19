@@ -1,9 +1,9 @@
 ﻿namespace Inferpal.Services.Tasks;
 
 /// <summary>
-/// Serial queue of detached agent runs (<c>/task</c>) — ROADMAP §9. A task is submitted from the
-/// chat, leaves the conversation, and runs on its own while the user keeps coding; its report is
-/// collected afterwards instead of interrupting.
+/// Serial queue of detached agent runs (<c>/task</c>). A task is submitted from the chat, leaves
+/// the conversation, and runs on its own while the user keeps coding; its report is collected
+/// afterwards instead of interrupting.
 /// </summary>
 /// <remarks>
 /// <para><b>One slot, chat first.</b> Inferpal talks to a single backend on a single GPU, so tasks
@@ -12,13 +12,12 @@
 /// task: once started it holds its own chat lease through <c>RunAgentAsync</c>, so a chat turn
 /// opened meanwhile contends with it rather than preempting it — the honest limit of running an
 /// agent loop we cannot suspend mid-flight. Interactive work is never *blocked*, only slowed.</para>
-/// <para><b>No side effects in V1.</b> The runner is handed a read-only registry by the caller
-/// (see <c>BackgroundTaskToolRegistry</c>): a background run explores and reports, it does not
-/// write, delete or execute. This is a deliberate departure from the roadmap's "approvals batched
-/// at submission" sketch, which would mean consenting to writes before knowing what they are —
-/// a blank cheque, and precisely what the approval prompt exists to prevent. Mutating background
-/// tasks, if they ever ship, must present their diffs for approval when they report back, never
-/// before.</para>
+/// <para><b>No side effects.</b> The runner is handed a read-only registry by the caller (see
+/// <c>BackgroundTaskToolRegistry</c>): a background run explores and reports, it does not write,
+/// delete or execute. Batching approvals at submission would mean consenting to writes before
+/// knowing what they are — a blank cheque, and precisely what the approval prompt exists to
+/// prevent. Mutating background tasks, if they ever ship, must present their diffs for approval
+/// when they report back, never before.</para>
 /// <para>Pure and editor-agnostic: the runner, the idle gate and the clock are all injected, so
 /// the whole lifecycle is testable without a backend, a GPU or Visual Studio.</para>
 /// </remarks>
@@ -327,13 +326,10 @@ internal sealed class BackgroundTaskQueue : IDisposable
         job.FinishedAt = _now();
         job.Result     = result;
         job.Error      = error;
-        // ⚠ Leaving "current" and entering "finished" is ONE transition, and it happens under
-        // ONE lock. It used to be two: this method appended to _finished, and the worker loop
-        // cleared _current afterwards in a lock of its own. Between the two the job was in both
-        // places at once, so List() returned it TWICE and Count counted it twice — for a window
-        // the caller cannot see or avoid. Caught by CI, on a run where the local
-        // machine had passed the same test twice: the collection held two identical snapshots of
-        // t1, both already Succeeded.
+        // ⚠ Leaving "current" and entering "finished" is ONE transition, under ONE lock. Split in
+        // two — append to _finished here, clear _current in the worker loop afterwards — the job is
+        // in both places at once between them, so List() returns it TWICE and Count counts it
+        // twice, for a window the caller can neither see nor avoid.
         // ReferenceEquals, not an id comparison: a pending job cancelled before it ever started
         // also finishes here, and it was never _current.
         if (ReferenceEquals(_current, job)) _current = null;

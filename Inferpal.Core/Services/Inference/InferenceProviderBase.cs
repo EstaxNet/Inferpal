@@ -209,9 +209,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         if (response.IsSuccessStatusCode) return response;
 
         // A 4xx/5xx body is the server saying *why* (wrong parameter, template error, context
-        // overflow…) — EnsureSuccessStatusCode would throw it away and the user would only ever
-        // see the bare status code (preemption probe: two /task runs failed on a 400
-        // whose reason was unreadable). Read a bounded slice and carry it in the exception.
+        // overflow…) — EnsureSuccessStatusCode would throw it away and leave the user with the bare
+        // status code. Read a bounded slice and carry it in the exception.
         string detail;
         try
         {
@@ -306,15 +305,13 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// OpenAI-compatible surface). Otherwise records what was <i>observed</i> and returns false.
     /// </summary>
     /// <remarks>
-    /// A 2xx is not enough to conclude "connected", and that is not a theoretical precaution:
-    /// measured against an LM Studio instance behind a reverse proxy, <c>GET /api/tags</c> - like
-    /// <b>any</b> unknown route - returns <b>HTTP 200</b> whose entire body is
+    /// A 2xx is not enough to conclude "connected", and that is not a theoretical precaution: an
+    /// LM Studio instance behind a reverse proxy answers <c>GET /api/tags</c> — like <b>any</b>
+    /// unknown route — with <b>HTTP 200</b> whose entire body is
     /// <c>{"error":"Unexpected endpoint or method. (GET /api/tags)"}</c>. A client configured for
-    /// Ollama and pointed at it therefore showed a green badge, an active send button and not one
-    /// message, while no chat turn could ever complete: a failure rendered as a normal result.
-    /// <see cref="ProviderProbe"/> has required the discriminating property since it was written and
-    /// states the rule in its own comment ("a bare status code is not enough"); the badge did not
-    /// apply it - the repository kept in code what its own comment forbade.
+    /// Ollama and pointed at it then shows a green badge, an active send button and not one
+    /// message, while no chat turn can ever complete: a failure rendered as a normal result.
+    /// <see cref="ProviderProbe"/> requires the same discriminating property, for the same reason.
     ///
     /// The trace names no cause: it gives the endpoint probed, the fact that a 2xx came back, and
     /// the body received. A dead server and a reachable server that is not the configured type give
@@ -329,12 +326,11 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         if (seen.Length == 0) seen = "(empty)";
         else if (seen.Length > 200) seen = seen[..200] + "…";
 
-        // ⚠ The line NAMES the active backend (issue #8, 2026-09-10). Without it, "not as the
-        // configured backend" sends people to look at the SERVER, when the cause can be the
-        // opposite: an Ollama client pointed at an LM Studio URL, because the `provider` setting
-        // is not the one they think they picked. The reporter read this message, concluded
-        // "Inferpal calls the wrong endpoint" -- correct -- and had no way to know which of the
-        // two was misconfigured. The backend code settles it at a glance.
+        // ⚠ The line NAMES the active backend. Without it, "not as the configured backend" sends
+        // people to look at the SERVER, when the cause can be the opposite: an Ollama client
+        // pointed at an LM Studio URL, because the `provider` setting is not the one they think
+        // they picked. "Inferpal calls the wrong endpoint" is then true and useless — which of the
+        // two is misconfigured is what the backend code settles at a glance.
         Diagnostics.Record(context,
             $"{endpoint} answered 2xx WITHOUT the \"{requiredRootProperty}\" root property. Inferpal is "
           + $"configured for the \"{configuredProvider}\" backend and probed it as such; the server "

@@ -50,12 +50,10 @@ internal static class RoslynChunker
         }
         catch (Exception ex)
         {
-            // ⚠ This fallback was MUTE, and it is the one product degradation that needed an
-            // EXTERNAL probe (`docs/probes/rag-coverage`) because nothing said it: Roslyn is
-            // shipped into the VSIX by a dedicated target (`RestoreRoslynToVsix`), so a package
-            // where it fails to load drops ALL C# onto the regex chunker — the index loses
-            // `type_name`, semantic search loses its symbol boundaries, and `/diagnostics` showed
-            // nothing. The product can say it itself.
+            // ⚠ This fallback must never be mute. Roslyn is shipped into the VSIX by a dedicated
+            // target (`RestoreRoslynToVsix`), so a package where it fails to load drops ALL C# onto
+            // the regex chunker: the index loses `type_name` and semantic search loses its symbol
+            // boundaries, on every file, with nothing else to observe it from inside the product.
             //
             // ⚠ Once per CAUSE, not per file: this chunker runs on every `.cs` of the pass, so
             // speaking on every call would drown the ring (same class as the pathological patterns
@@ -140,8 +138,8 @@ internal static class RoslynChunker
         int lineCount = end0 - start0 + 1;
         if (lineCount < MinChunkLines) return;
 
-        // Hard cap: past the budget the member is SPLIT into consecutive pieces. ⚠ It used to be shrunk
-        // until it fit, and its tail was indexed nowhere — search could never reach the end of a long method.
+        // Hard cap: past the budget the member is SPLIT into consecutive pieces. ⚠ Shrunk until it
+        // fits instead, its tail is indexed nowhere — search never reaches the end of a long method.
         var pieceStart = start0;
         while (pieceStart <= end0)
         {

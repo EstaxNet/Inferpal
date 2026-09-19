@@ -149,17 +149,16 @@ internal sealed class PermissionPolicy
     // IsOpaqueExecution forces the human prompt so no auto-approval path applies. The
     // approval prompt — where a human reads the raw command — is the actual boundary.
     //
-    // ⚠ Every pattern here carries BuiltInMatchTimeout, for the reason written on MatchTimeout itself:
-    // these run on the approval path, over text nobody in this process wrote. The user-rule leg
-    // was bounded and this one was not — measured on the first pattern below
-    // in its previous form: 49 s on a 64 KB subject, ~3 h extrapolated at 1 MB, with no prompt,
-    // no error and no way for the user to know why the turn had stopped.
+    // ⚠ Every pattern here carries BuiltInMatchTimeout, for the reason written on MatchTimeout
+    // itself: these run on the approval path, over text nobody in this process wrote. Unbounded, a
+    // quadratic pattern takes 49 s on a 64 KB subject and hours at 1 MB — with no prompt, no error
+    // and no way for the user to know why the turn stopped.
     private static readonly Regex[] HardDeny =
     [
         // rm -rf targeting filesystem root / home / wildcard root, or with --no-preserve-root.
         // The two flags are found by same-position lookaheads rather than by three consecutive
-        // [a-zA-Z]* runs: the old form was quadratic on a long flag cluster (the 49 s above) AND
-        // order-sensitive, so `-fr` — the same command, flags swapped — was never denied at all.
+        // [a-zA-Z]* runs, which is quadratic on a long flag cluster (the 49 s above) AND
+        // order-sensitive — `-fr`, the same command with the flags swapped, matches nothing.
         new(@"\brm\s+-(?=[a-zA-Z]*[rR])(?=[a-zA-Z]*[fF])[a-zA-Z]+\s+(/|~|\$HOME|/\*|\.\s*$)", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         new(@"\brm\b[^|&;]*--no-preserve-root", RegexOptions.IgnoreCase | RegexOptions.Compiled, BuiltInMatchTimeout),
         // Remove-Item -Recurse -Force (any order) targeting a bare drive root (C:\, D:/ …)
@@ -280,9 +279,9 @@ internal sealed class PermissionPolicy
     /// A subject can carry <b>several paths</b> — <c>apply_edits</c> and <c>rename_symbol</c> join
     /// every affected file with <c>'\n'</c>. A rule that holds for one line does not hold for the
     /// aggregate: without <see cref="RegexOptions.Multiline"/>, a <c>$</c>-anchored deny only sees
-    /// the last line, so a two-file edit used to slip past <c>deny * \.env$</c> (pre-1.6.0 architecture review,
-    /// §1.1). Multi-line subjects are therefore evaluated line by line: one denied path denies the
-    /// whole call, and the call is only auto-approved when <em>every</em> path is allowed.
+    /// the last line, so a two-file edit slips past <c>deny * \.env$</c>. Multi-line subjects are
+    /// therefore evaluated line by line: one denied path denies the whole call, and the call is
+    /// only auto-approved when <em>every</em> path is allowed.
     /// </remarks>
     public PermissionDecision Evaluate(string toolName, string? subject) =>
         Evaluate(toolName, subject, out _);

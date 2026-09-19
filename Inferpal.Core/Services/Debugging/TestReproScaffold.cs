@@ -6,9 +6,9 @@ using System.Text;
 namespace Inferpal.Services.Debugging;
 
 /// <summary>
-/// Provides the repro runner the §25 capture launches under the editor's debugger: a tiny console
-/// that loads the user's test assembly (with its own <c>deps.json</c> context) and invokes one
-/// test method so the debugger observes the original throw site.
+/// Provides the repro runner the <c>/tdd</c> capture launches under the editor's debugger: a tiny
+/// console that loads the user's test assembly (with its own <c>deps.json</c> context) and invokes
+/// one test method so the debugger observes the original throw site.
 /// </summary>
 /// <remarks>
 /// <b>Built on demand, never shipped.</b> The runner is scaffolded to a per-source-hash folder
@@ -16,10 +16,10 @@ namespace Inferpal.Services.Debugging;
 /// construction: the feature only triggers on <c>dotnet</c> test reports. This keeps both VSIX
 /// packaging chains untouched; the one-time build (~5 s) is paid on the first capture only.
 /// <para>
-/// Two behaviours the probes measured are load-bearing in the generated source: the reflection
-/// invoke uses <c>DoNotWrapExceptions</c> (a <c>TargetInvocationException</c> would break at the
-/// Invoke frame with the original frames already unwound), and <c>INFERPAL_WAIT_DEBUGGER=1</c>
-/// makes it wait for an attach — the Visual Studio recipe.
+/// Two behaviours are load-bearing in the generated source: the reflection invoke uses
+/// <c>DoNotWrapExceptions</c> (a <c>TargetInvocationException</c> breaks at the Invoke frame with
+/// the original frames already unwound), and <c>INFERPAL_WAIT_DEBUGGER=1</c> makes it wait for an
+/// attach — the Visual Studio recipe.
 /// </para>
 /// </remarks>
 internal static class TestReproScaffold

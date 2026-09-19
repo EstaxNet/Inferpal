@@ -162,9 +162,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       try {
         await host.chatReset();
       } catch (err) {
-        // The host refused (a turn is in flight): clearing the webview anyway used to desync the
-        // two — an empty transcript over a full host history, and the running turn's answer then
-        // landed alone in a "new" conversation carrying the old context.
+        // The host refused (a turn is in flight): clearing the webview anyway desyncs the two —
+        // an empty transcript over a full host history, and the running turn's answer then lands
+        // alone in a "new" conversation carrying the old context.
         this.log(`[chat] reset refused: ${String(err)}`);
         void vscode.window.showWarningMessage(
           t('A turn is still running — stop it before starting a new conversation.'));
@@ -257,10 +257,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       this.models = await host.modelsList();
     } catch (err) {
-      // ⚠ This is NOT the unreachable-backend path, contrary to what this block long implied:
-      // measured 2026-09-03, all three providers swallow the HTTP failure and return an EMPTY
-      // list, so `models/list` SUCCEEDS. This catch only ever sees a host or RPC failure. The
-      // empty list goes through the success path instead — and the view is what names it now
+      // ⚠ This is NOT the unreachable-backend path: all three providers swallow the HTTP failure
+      // and return an EMPTY list, so `models/list` SUCCEEDS. This catch only ever sees a host or
+      // RPC failure. The empty list goes through the success path, and the view names it there
       // (a disabled "no model listed" option).
       this.log(`[chat] models/list failed: ${String(err)}`);
       this.models = this.model ? [this.model] : [];
@@ -389,11 +388,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     try {
       const listed = await host.modelsList();
-      // ⚠ An empty list used to REPLACE the previous one here, while the catch below promised the
-      // opposite — and it is the success path that returns it, not the catch (see bootstrap). So
-      // saving the settings with the backend down silently emptied the picker. The previous list is
-      // kept only when the new one is empty: a backend that REALLY lost models must still be able
-      // to remove them.
+      // ⚠ An empty list must not REPLACE the previous one: it arrives through the success path,
+      // not the catch (see bootstrap), so saving the settings with the backend down would silently
+      // empty the picker. The previous list is kept only when the new one is empty — a backend that
+      // REALLY lost models must still be able to remove them.
       if (listed.length > 0) {
         this.models = listed;
       }
@@ -740,10 +738,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * Command: export the conversation to a Markdown or text file.
    *
    * ⚠ The document is rendered by the **Core** exporter, through the host — the same one the
-   * Visual Studio window uses. It used to be rendered here, in eleven lines of TypeScript, which
-   * dropped the entire stats header (model, turns, tool calls, tokens, date, duration) and ignored
-   * the `.txt` filter this very dialog offers: choosing *Text* wrote Markdown into a `.txt`. An
-   * affordance offered and not honoured is the class this repository keeps paying for.
+   * Visual Studio window uses. Rendered here instead, it loses the stats header (model, turns, tool
+   * calls, tokens, date, duration) and ignores the `.txt` filter this very dialog offers: choosing
+   * *Text* writes Markdown into a `.txt`.
    */
   async exportCommand(): Promise<void> {
     if (this.transcript.length === 0) {
@@ -1050,10 +1047,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Materializes an instant/selected mention: clipboard and problems are editor-side (they read
    * panels only the adapter can see); everything else goes through the host (mention/resolve).
    *
-   * ⚠ `debugger` used to be editor-side too, and it attached the session's NAME AND TYPE — where
-   * Visual Studio attaches the stop reason, the call stack and the locals, and where the docs
-   * promise the break state for both editors. It reads the same port as `debug_inspect`, through
-   * the host, so the two editors now answer the same question the same way. */
+   * ⚠ `debugger` is served by the HOST, not here: answered editor-side it attaches the session's
+   * name and type, where Visual Studio attaches the stop reason, the call stack and the locals —
+   * and the docs promise the break state for both editors. Through the host it reads the same port
+   * as `debug_inspect`, so the two editors answer the same question the same way. */
   private async resolveMention(category: string, value?: string): Promise<void> {
     // Each source can refuse (a clipboard a remote session denies, a host call that fails): the chip
     // that never appears reads as a broken mention, so the failure is said, not only logged.
@@ -1080,6 +1077,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         default: {
           const host = this.getHost();
           if (!host?.isRunning) {
+            // ⚠ The rule three lines above, applied to the most common refusal of all: with no
+            // folder open the host never starts, so every host-backed mention did nothing at all
+            // — no chip, no message — while the palette commands next door all say it.
+            void vscode.window.showWarningMessage(hostUnavailableMessage());
+            promptOpenFolder();
             return;
           }
           const result = await host.mentionResolve(category, value);

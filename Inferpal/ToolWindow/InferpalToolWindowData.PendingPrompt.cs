@@ -76,11 +76,11 @@ internal partial class InferpalToolWindowData
         // The model is captured in the closure — no volatile field or
         // cross-thread race condition possible.
         // clearPrompt: false so the user's current draft is preserved.
-        // Performance Shield: cancel any in-flight request on the VM context before starting —
-        // and WAIT for it to unwind: firing the next turn immediately let the cancelled turn's
-        // finally stomp IsLoading/_currentCts under the new one (dead stop button, third send
-        // possible, interleaved bubbles — pre-1.6.0 architecture review, §2.1). _turnDone is completed by the
-        // owning turn's conditional finalisation.
+        // Cancel any in-flight request on the VM context before starting — and WAIT for it to
+        // unwind: firing the next turn immediately lets the cancelled turn's finally stomp
+        // IsLoading/_currentCts under the new one (dead stop button, a third send possible,
+        // interleaved bubbles). _turnDone is completed by the owning turn's conditional
+        // finalisation.
         Post(() =>
         {
             var previousTurn = _turnDone?.Task;

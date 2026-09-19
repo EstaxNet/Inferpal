@@ -81,9 +81,9 @@ internal partial class InferpalToolWindowData
     /// <summary>
     /// Finalizes a streaming bubble (must run on the VM context): stops streaming —
     /// which triggers ParseMarkdown — then either discards the bubble when it is
-    /// visually empty (returns <c>null</c>; see <see cref="Services.Agent.ChatTurnPolicy.IsVisiblyEmpty"/>
-    /// and the empty-bubble bug history) or themes it and returns it. Replaces the
-    /// triple guard that used to be copy-pasted at every stream completion/cancel/error.
+    /// visually empty (returns <c>null</c>; see <see cref="Services.Agent.ChatTurnPolicy.IsVisiblyEmpty"/>)
+    /// or themes it and returns it. The one place that guard lives, rather than copy-pasted at
+    /// every stream completion/cancel/error.
     /// </summary>
     private ChatMessageItem? FinalizeStreamingBubble(ChatMessageItem? item)
     {

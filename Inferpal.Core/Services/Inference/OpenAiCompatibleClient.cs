@@ -89,12 +89,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 // an id here produced a tool_call_id no assistant message declares, which
                 // OpenAI-compatible servers reject with a 400 — killing the run.
                 // ⚠ Dropping is a LAST-RESORT net, not a strategy: it is lossy, and silent to the
-                // user. It was covering two callers that built orphans by construction — session
-                // restore and the synthesis head — which each lost every tool result here while the
-                // Ollama backend kept them (2026-09-11; both now flatten via ToolTranscript). The
-                // history rewrites that remain are boundary-safe by construction (ToolBlockBoundary),
-                // so reaching this line again means a new caller broke that invariant: the
-                // Diagnostics entry is how it gets found.
+                // user. Callers that rewrite history are boundary-safe by construction
+                // (ToolTranscript, ToolBlockBoundary), so reaching this line means a new caller
+                // broke that invariant — the Diagnostics entry is how it gets found.
                 if (pendingIds.Count == 0)
                 {
                     Diagnostics.Record("OpenAiCompatible", "Dropped an orphaned tool result (no matching tool_call).");
@@ -210,8 +207,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
-            // "Cannot reach … check the URL" sent the user to verify a URL that was fine (the
-            // pre-1.6.0 architecture review, §3.1): say what the server said instead.
+            // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say
+            // what the server said instead.
             RecordFailure();
             throw new AgentHttpException(Strings.MsgServerError(base_, ex.Message), isTimeout: false);
         }
@@ -321,8 +318,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
-            // "Cannot reach … check the URL" sent the user to verify a URL that was fine (the
-            // pre-1.6.0 architecture review, §3.1): say what the server said instead.
+            // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say
+            // what the server said instead.
             RecordFailure();
             throw new AgentHttpException(Strings.MsgServerError(base_, ex.Message), isTimeout: false);
         }
@@ -503,10 +500,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // itself blocked — the connection indicator stayed red for the full 5 minutes after a
         // recovery. A successful probe closes the circuit on the spot.
         //
-        // And the status concludes nothing on its own: the body must carry "data", the property that
-        // signs the OpenAI-compatible surface. See ConfirmsBackendPayload - the measurement was made
-        // against Ollama, but it says nothing specific to Ollama: a server (or a reverse proxy) that
-        // returns 200 on every route gives a green badge for any configured backend.
+        // And the status concludes nothing on its own: the body must carry "data", the property
+        // that signs the OpenAI-compatible surface (see ConfirmsBackendPayload). A server — or a
+        // reverse proxy — that returns 200 on every route would otherwise give a green badge for
+        // any configured backend.
         var endpoint = $"{V1(url)}/models";
         try
         {

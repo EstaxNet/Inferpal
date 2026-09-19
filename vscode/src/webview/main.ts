@@ -671,7 +671,7 @@ function detectMention(): void {
   renderMentionCategories(typing[1].toLowerCase());
   // Free file suggestions under the categories, like the VS popup's open-file list. Debounced (each
   // query runs a workspace file search), and only the answer to the LATEST query is shown: a slow,
-  // older search used to land last and overwrite the right suggestions.
+  // older search otherwise lands last and overwrites the right suggestions.
   const query = typing[1];
   latestMentionQuery = query;
   clearTimeout(mentionQueryTimer);
@@ -1083,7 +1083,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       if (models.length === 0) {
         // ⚠ "the host listed NO model" and "the backend serves one" rendered the SAME thing:
         // a one-entry list — the entry added just above, which is the CONFIGURED model, not a
-        // served one. Measured 2026-09-03: under LM Studio a server exposing only the
+        // served one: under LM Studio a server exposing only the
         // OpenAI-compatible surface answered green badge + zero models, and nothing on screen
         // told that case apart from a backend with a single model.
         const warn = document.createElement('option');

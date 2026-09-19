@@ -2,17 +2,16 @@ namespace Inferpal.Services;
 
 /// <summary>
 /// Decides whether a start that has already failed may be attempted again — and tells apart the
-/// two failures that a single boolean used to conflate.
+/// two failures a single boolean conflates.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Written for <c>FimSidecar</c>, where one <c>bool _disabled</c> was set by three different
-/// events: the executable being missing (permanent — a VSIX shipped incomplete will not heal),
-/// <c>Process.Start</c> returning null, and <c>Process.Start</c> throwing (both of which can be an
-/// antivirus holding the file for a second, or a moment of memory pressure). Nothing ever cleared
-/// it, so a single transient failure killed ghost text for the whole life of that Visual Studio —
-/// with, as its only trace, an entry in the in-process diagnostics ring that <c>/diagnostics</c>
-/// does not read.
+/// Written for <c>FimSidecar</c>, whose three start failures are not the same kind: the executable
+/// being missing is permanent (a VSIX shipped incomplete will not heal), while
+/// <c>Process.Start</c> returning null or throwing can be an antivirus holding the file for a
+/// second, or a moment of memory pressure. Under one flag that nothing clears, a single transient
+/// failure kills ghost text for the whole life of that Visual Studio — its only trace an entry in
+/// the in-process diagnostics ring, which <c>/diagnostics</c> does not read.
 /// </para>
 /// <para>
 /// Hence two states. <see cref="LatchPermanently"/> is for a cause that cannot change on its own;

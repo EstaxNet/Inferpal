@@ -15,9 +15,8 @@ namespace Inferpal.Services.Tools;
 /// instead of a sentence the model can read and correct.
 /// </para>
 /// <para>
-/// The review of 2026-08-07 found exactly that in <c>search_codebase</c> and <c>search_docs</c>,
-/// with the same two lines copied between them. These helpers exist so the safe read is also the
-/// short one: everything degrades to the fallback, nothing throws.
+/// These helpers exist so the safe read is also the short one: everything degrades to the fallback,
+/// nothing throws.
 /// </para>
 /// </remarks>
 internal static class ToolArgs
@@ -39,9 +38,8 @@ internal static class ToolArgs
     /// <para>
     /// <b>This is the only reader of an argument the code compares against a fixed set of values</b>
     /// (<c>action</c>, <c>mode</c>, <c>direction</c>, <c>occurrence</c>, <c>runner</c>,
-    /// <c>bridges</c>). Until 2026-09-09 the sentence above was an aspiration: nine sites each
-    /// decided normalisation for themselves, and this helper had exactly one caller — its own unit
-    /// test. Four sites trimmed and lower-cased, one lower-cased only, and three did neither.
+    /// <c>bridges</c>). Left to each site, normalisation diverges — some trim and lower-case, some
+    /// lower-case only, some do neither.
     /// </para>
     /// <para>
     /// What that cost is not a thrown call but a <i>wrong answer with no error</i>:
@@ -73,9 +71,9 @@ internal static class ToolArgs
     }
 
     /// <summary>
-    /// Is the argument THERE? — the one legitimate reason a tool used to reach for
-    /// <c>TryGetProperty</c> itself, and therefore the reason this exists: a rule with an exemption
-    /// for "presence only" would live off that exemption.
+    /// Is the argument THERE? — the one legitimate reason to reach for <c>TryGetProperty</c>, and
+    /// therefore why this exists: a rule with an exemption for "presence only" would live off that
+    /// exemption.
     /// </summary>
     /// <remarks>
     /// ⚠ Present is not the same as usable, and callers rely on the difference: "absent → the

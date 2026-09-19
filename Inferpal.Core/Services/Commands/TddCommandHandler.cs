@@ -93,6 +93,14 @@ internal static class TddCommandHandler
             // matching nothing.
             if (NothingRan(output)) return new(Strings.TddNothingRan + "\n\n" + output.Trim());
 
+            // ⚠ FOUR states. The budget is the one that can hand back a GREEN summary: on a
+            // solution whose first project finishes and whose second hangs, the killed run still
+            // carries that first project's pass. Read as a verdict it ends the loop with
+            // "suite green" on a run where half the tests never started — and read as a red one it
+            // would be five rounds of patches against tests that did not fail. Neither: stop, and
+            // say which budget ran out. Same place to look as NothingRan, not the same place to fix.
+            if (StoppedAtBudget(output)) return new(Strings.TddStoppedAtBudget + "\n\n" + output.Trim());
+
             bool green = TestsPassed(output);
             onTestReport?.Invoke(output, green);
 
@@ -141,8 +149,8 @@ internal static class TddCommandHandler
                                 "(the debugger paused on the thrown exception; values were read live):\n\n" +
                                 Debugging.DebugStateFormatter.Format(state, projectRoot);
                         else
-                            // A failed capture says so (probe lesson: no silent fallback that
-                            // would make a degraded round look like a plain one).
+                            // A failed capture says so: no silent fallback, which would make a
+                            // degraded round look like a plain one.
                             onProgress?.Invoke(Strings.TddDebugCaptureFailed);
                     }
                 }
@@ -203,12 +211,23 @@ internal static class TddCommandHandler
         output.Contains(Tools.RunTestsTool.NoTestMatchedFilter, StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.NothingProven,       StringComparison.Ordinal);
 
+    /// <summary>
+    /// The runner was <b>killed at its budget</b> — the state that can carry a green summary and
+    /// still be worth nothing.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Matched on <see cref="Tools.RunTestsTool.StoppedAtBudget"/>, like its neighbour, and kept
+    /// apart from <see cref="NothingRan"/>: "the filter matched nothing" sends the reader to the
+    /// filter, "the run was cut short" to a hanging test or to a budget too small for this suite.
+    /// </remarks>
+    internal static bool StoppedAtBudget(string output) =>
+        output.Contains(Tools.RunTestsTool.StoppedAtBudget, StringComparison.Ordinal);
+
     /// <summary>Fix-iteration prompt. English on purpose — model-facing, like the agent system
     /// prompt and the bench tasks; only UI strings are localized.</summary>
-    /// <param name="debuggerBlock">§25 state block, inserted <b>before</b> the Rules section —
-    /// measured, not a preference: appended after the rules, the model narrated its diagnosis
-    /// round after round without ever calling apply_diff (probe, 2026-08-20). Both variants of
-    /// the prompt must end on the same action rules.</param>
+    /// <param name="debuggerBlock">Debugger state block, inserted <b>before</b> the Rules section:
+    /// appended after them, the model narrates its diagnosis round after round without ever calling
+    /// apply_diff. Both variants of the prompt must end on the same action rules.</param>
     internal static string BuildFixPrompt(string testReport, string? filter, string? debuggerBlock = null)
     {
         var scope = string.IsNullOrWhiteSpace(filter)
@@ -222,9 +241,8 @@ internal static class TddCommandHandler
             "- Read the involved code first (read_file / search_in_files), then apply the smallest " +
             "fix with apply_diff or apply_edits.\n" +
             "- Fix the production code. Only change a test if it is plainly wrong, and say so.\n" +
-            // The two lines below exist because of a measured failure mode, not caution: in the
-            // §25 gate pass, three different models read the debugger block as the truth to
-            // encode and rewrote the assertion to the observed buggy value (7.5, then 6.0).
+            // The two lines below are not caution: models read the debugger block as the truth to
+            // encode, and rewrite the failing assertion to the observed buggy value.
             "- NEVER rewrite an assertion to match the observed values: the report and the " +
             "debugger state show the BUGGY behaviour, not the expected one. The expected values " +
             "in the test are the specification.\n" +

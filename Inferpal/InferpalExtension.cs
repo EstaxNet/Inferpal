@@ -86,13 +86,13 @@ public class InferpalExtension : Extension
     {
         base.InitializeServices(services);
 
-        // §22 tranche 2: family-A signal channels are scoped by devenv PID. Out-of-process, that
-        // key is our parent (probe 6, C2/C3) — but the direct-child topology is empirical, not
-        // contractual, so the key is only declared after checking the parent actually IS devenv.
-        // On failure (lookup error, unexpected parent) no key is declared: this host keeps the
-        // legacy unscoped names while the in-process side scopes with its own PID, so the pair is
-        // LOST until VS restarts — solution rooting, build banner and diff previews go silent.
-        // That is why both branches trace to /diagnostics instead of failing mutely.
+        // Family-A signal channels are scoped by devenv PID. Out-of-process, that key is our
+        // parent — but the direct-child topology is empirical, not contractual, so the key is only
+        // declared after checking the parent actually IS devenv. On failure (lookup error,
+        // unexpected parent) no key is declared: this host keeps the legacy unscoped names while the
+        // in-process side scopes with its own PID, so the pair is LOST until VS restarts — solution
+        // rooting, build banner and diff previews go silent. Hence both branches trace to
+        // /diagnostics instead of failing mutely.
         try
         {
             var ppid = ParentProcess.GetParentProcessId();
@@ -117,9 +117,9 @@ public class InferpalExtension : Extension
         services.AddSingleton<LspSemanticProvider>();
         services.AddSingleton<McpToolService>();
         services.AddSingleton<DocsIndexService>();
-        // Roadmap §21. Registering it makes the two debug tools appear in the registry; the
-        // session itself answers "unavailable" until an in-process driver advertises itself, so a
-        // devenv whose package failed to load degrades to no debugger rather than to a hang.
+        // Registering it makes the two debug tools appear in the registry; the session itself
+        // answers "unavailable" until an in-process driver advertises itself, so a devenv whose
+        // package failed to load degrades to no debugger rather than to a hang.
         services.AddSingleton<Services.Debugging.IDebugSession, Services.Debugging.SignalDebugSession>();
         services.AddSingleton<ToolRegistry>();
         services.AddSingleton<ModelLifetimeService>();

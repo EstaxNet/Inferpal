@@ -332,6 +332,7 @@ Backup: {0}</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>Build failed (code {0}) with no parseable diagnostics.
 
 {1}</value></data>
+  <data name="DiagBuildStopped" xml:space="preserve"><value>⏱ The build was stopped after {0}s — what follows is only what it had printed by then, not a verdict on the project.</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Build: {0} error(s), {1} warning(s) — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS context unavailable — open the Inferpal window via the View menu.</value></data>
   <data name="EditNotApplied" xml:space="preserve"><value>The edit was not applied to {0} — the document changed under it, or it is read-only. Nothing was written.</value></data>
@@ -359,6 +360,7 @@ Backup: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>attach debugger state (stack, locals, exception)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No paused debug session. Hit a breakpoint or exception first, then use @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Clipboard is empty.</value></data>
+  <data name="MentionNothingToAttach" xml:space="preserve"><value>Nothing could be attached for @{0}.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Browse error: {0}</value></data>
 
   <!-- Export -->
@@ -440,6 +442,7 @@ Use `/clear` after editing the file to reload it.</value></data>
   <data name="GitNotRepo" xml:space="preserve"><value>Not a git repository (no .git folder found).</value></data>
   <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ This batch spans more projects than Smart Fix checks in one go: {0} were built, {1} more were NOT checked. Build them yourself, or edit them in a separate call.</value></data>
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd stopped: this run executed no test at all, so there is nothing to fix.</value></data>
+  <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd stopped: the test run ran out of its time budget and was killed, so nothing it reports is a verdict — not even the part that passed.</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ The conversation you just left could NOT be archived: {0}. It is gone — it was not saved under a name, and the chat has already been cleared.</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git could not answer 'git {0}': {1}. Nothing was read from this repository — this is NOT "no changes".</value></data>
@@ -892,6 +895,8 @@ ollama serve
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Recommended max for `{0}`:** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> (model max {0})</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Your num_ctx ({0}) exceeds what fits the VRAM budget — the KV-cache may spill to system RAM and slow generation. Consider lowering it to {1}.</value></data>
+  <data name="HardwareCtxNoVramRecommendation" xml:space="preserve"><value>**Model ceiling for `{0}`:** {1} — the VRAM recommendation could not be computed (the weights already exceed the budget, or the architecture metadata is missing).</value></data>
+  <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ Your num_ctx ({0}) exceeds what this model accepts at all ({1}). The backend cannot serve a longer prompt: it drops the OLDEST part of the conversation, system prompt included, without saying so — and Inferpal's own compaction will not step in, because it measures against the number you configured. Set it to {1} or less.</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>VRAM budget</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>Total VRAM (in GB) available on the Ollama host. Used to recommend a safe num_ctx and to warn when the selected models won't fit. Leave empty to auto-detect on a local host; a manual value is required for remote hosts. Also settable with `/hardware &lt;gb&gt;`.</value></data>
   <data name="TooltipAgentMode" xml:space="preserve"><value>Switch between Chat and Agent mode (autonomous Plan → Act → Observe). Wired to the 'Enable autonomous agent mode' setting.</value></data>

@@ -57,10 +57,9 @@ internal static class GitProcess
             psi.Environment["LANG"]                = "en_US.UTF-8";
 
             // ⚠ ChildProcess, not Process.Start: without it git inherits the host's stdin — the
-            // JSON-RPC pipe in VS Code — allocates a console and hangs at 0 % CPU forever. Measured
-            //; the same call takes 31 ms from an ordinary process, which is why only
-            // the VS Code front-end was affected. It also drains both pipes concurrently, which is
-            // the other half of that day's lesson. See ChildProcess for the full account.
+            // JSON-RPC pipe in VS Code — allocates a console and hangs at 0 % CPU forever, on a
+            // call that takes 31 ms elsewhere. It also drains both pipes concurrently, without
+            // which a chatty repository deadlocks git. See ChildProcess.
             return await ChildProcess.RunAsync(psi, Timeout, ct);
         }
         catch (OperationCanceledException) { throw; }
@@ -90,20 +89,18 @@ internal static class GitProcess
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⚠ <b>THE reader of a <see cref="GitRunner"/> result.</b> The exit code is returned so that
-    /// "no git here" can be told apart from "nothing changed" — the remark on this class says so —
-    /// and every reader but <c>CommitCommandHandler.ExecuteAsync</c> dropped it. They did not even
-    /// fail alike: <see cref="RunAsync"/> appends stderr to the output, so a refusal arrives as a
-    /// NON-empty string and became the diff <c>/commit</c> described, the diff <c>/check</c>
-    /// reviewed, and the "recent commit subjects" of the brief written into
-    /// <c>.inferpal/context.md</c> — i.e. into the system prompt of every session after it.
+    /// ⚠ <b>THE reader of a <see cref="GitRunner"/> result.</b> The exit code exists so that "no
+    /// git here" can be told apart from "nothing changed", and dropping it does not even fail alike
+    /// everywhere: <see cref="RunAsync"/> appends stderr to the output, so a refusal arrives as a
+    /// NON-empty string — it becomes the diff <c>/commit</c> describes, the diff <c>/check</c>
+    /// reviews, and the "recent commit subjects" of the brief written into
+    /// <c>.inferpal/context.md</c>, i.e. the system prompt of every session after it.
     /// </para>
     /// <para>
     /// ⚠ <b>A non-zero exit is not always a broken repository, and this is why the gate belongs to
-    /// the caller, not here.</b> Measured on a fresh repository: <c>log</c> and <c>diff HEAD</c>
-    /// both answer 128 because <c>HEAD</c> does not exist yet, and the repository is perfectly
-    /// healthy. This method names what happened; where a failure is fatal to the answer is the
-    /// caller's call.
+    /// the caller, not here.</b> On a fresh repository <c>log</c> and <c>diff HEAD</c> both answer
+    /// 128 because <c>HEAD</c> does not exist yet, and the repository is perfectly healthy. This
+    /// method names what happened; where a failure is fatal to the answer is the caller's call.
     /// </para>
     /// </remarks>
     /// <param name="command">git's arguments, for the message — the caller's own spelling.</param>

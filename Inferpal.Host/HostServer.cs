@@ -47,8 +47,7 @@ internal sealed partial class HostServer : IDisposable
     /// It has to be kept, and re-applied after the configuration is loaded: <c>Config.Load</c>
     /// calls <c>Strings.ApplyLanguage(cfg.Language)</c> unconditionally, so an empty language
     /// ("Auto", the default) resets the override to null and the strings fall back to the machine's
-    /// UI culture — silently discarding what the editor just said. Found by running the host, not by
-    /// reading it: with `locale: "en"` the answers came back in French on a French Windows.
+    /// UI culture — silently discarding what the editor just said.
     /// </remarks>
     private string?                  _editorLocale;
     private HostSession?             _session;
@@ -122,9 +121,8 @@ internal sealed partial class HostServer : IDisposable
         // once the session exists (below).
         index.SetRoot(p.RootDir);
 
-        // Slot-held: a re-entrant initialize used to dispose MCP/shells/tools under a running
-        // agent loop (pre-1.6.0 architecture review, §2.6 — the adapter never does it today, but the invariant
-        // belongs here, not in the adapter's good manners).
+        // Slot-held: a re-entrant initialize would otherwise dispose MCP/shells/tools under a
+        // running agent loop. The invariant belongs here, not in the adapter's good manners.
         WithTurnSlot("initialize", () => _session?.Dispose());
         _session = new HostSession
         {
@@ -319,8 +317,8 @@ internal sealed partial class HostServer : IDisposable
 
             if (s.ToolsEnabled)
             {
-                // Chat mode keeps its tools, as in Visual Studio: the basic tool loop, without the plan. Only
-                // `/tools off` is chat without tools — the Chat switch used to take every tool away.
+                // Chat mode keeps its tools, as in Visual Studio: the basic tool loop, without the
+                // plan. Only `/tools off` is chat without tools.
                 IToolRegistry chatTools = s.Tools;
                 if (s.PlanMode) chatTools = new PlanModeToolRegistry(chatTools);
                 if (s.StepMode) chatTools = new StepModeToolRegistry(chatTools, tok => PauseForStepAsync(s, tok));
@@ -693,8 +691,8 @@ internal sealed partial class HostServer : IDisposable
     /// of the Visual Studio window's Test button.
     /// </summary>
     /// <remarks>
-    /// ⚠ Used to probe <c>Config.BaseUrl</c>, the saved url, ignoring the one the webview was
-    /// sending: "Connected" could therefore be about an address other than the one displayed. See
+    /// ⚠ The url probed is the one the webview sent, never <c>Config.BaseUrl</c>: probing the saved
+    /// url makes "Connected" an answer about an address other than the one on screen. See
     /// <see cref="ConnectionCheckResult"/>.
     /// <para>
     /// The probe is <see cref="ProviderProbe"/>, not <c>CheckConnectionAsync</c>: it requires the
@@ -928,7 +926,7 @@ internal sealed partial class HostServer : IDisposable
     public bool SessionDelete(SessionRefParams p) => Session().Store.Delete(p.Name);
 
     /// <summary>
-    /// Forks the conversation at <paramref name="p"/>.Turn (<c>/branch &lt;n&gt;</c>, ROADMAP 1.4.0 §7):
+    /// Forks the conversation at <paramref name="p"/>.Turn (<c>/branch &lt;n&gt;</c>):
     /// the branch keeps turns 1..Turn, records its parent, becomes the current session and its
     /// (truncated) history replaces the host's. The parent is written to disk first when the
     /// conversation had no file yet — branching must not lose the discarded half. Null when the
@@ -1149,9 +1147,8 @@ internal sealed partial class HostServer : IDisposable
             if (results is null or { Count: 0 }) return string.Empty;
 
             // Parity with the VS VM: the adapter names the files it inlined as attachments so a
-            // chunk of an attached file is not injected a second time — this set used to be
-            // hard-coded empty. Resolved to full paths, the grain the
-            // chunks carry.
+            // chunk of an attached file is not injected a second time. Resolved to full paths, the
+            // grain the chunks carry.
             var attached = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (attachedPaths is { Count: > 0 } && !string.IsNullOrEmpty(s.RootDir))
                 foreach (var p in attachedPaths)
@@ -1307,11 +1304,9 @@ internal sealed partial class HostServer : IDisposable
     /// else a message that NAMES what was observed.
     /// </summary>
     /// <remarks>
-    /// This fallback chain lived only in the Visual Studio window. On the VS Code side a turn with
-    /// no text ended <b>in silence</b>: no answer, no message, no explanation - exactly the defect
-    /// 1.6.8 led with, repaired on one side only. The diagnostic half is in the Core
-    /// (<c>OpenAiCompatibleClient</c> records every empty turn in <c>/diagnostics</c>) so both
-    /// editors already had it; it is the VISIBLE half that was missing.
+    /// Without it a turn with no text ends <b>in silence</b>: no answer, no message, no
+    /// explanation. The diagnostic half is in the Core (<c>OpenAiCompatibleClient</c> records every
+    /// empty turn in <c>/diagnostics</c>); this is the visible half.
     ///
     /// The decision is <see cref="ChatTurnPolicy.DecideFinalAnswer"/>, the same one the VM uses -
     /// not a second implementation.

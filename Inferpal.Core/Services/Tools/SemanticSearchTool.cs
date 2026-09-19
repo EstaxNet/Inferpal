@@ -57,9 +57,9 @@ internal sealed class SemanticSearchTool : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        // ⚠ Not GetProperty/GetInt32: the arguments come from the model. A missing `query` used to
-        // throw KeyNotFoundException and a `"top_k": "5"` — which small local models send routinely —
-        // an InvalidOperationException, turning a correctable call into a tool failure.
+        // ⚠ Not GetProperty/GetInt32: the arguments come from the model. A missing `query` throws
+        // KeyNotFoundException there, and a `"top_k": "5"` — which small local models send routinely
+        // — an InvalidOperationException, turning a correctable call into a tool failure.
         var query = args.Trimmed("query") ?? string.Empty;
         if (string.IsNullOrEmpty(query))
             return "query is required.";

@@ -331,6 +331,7 @@ Sauvegarde : {0}</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>Build échoué (code {0}) sans diagnostic parsé.
 
 {1}</value></data>
+  <data name="DiagBuildStopped" xml:space="preserve"><value>⏱ La compilation a été interrompue au bout de {0} s — ce qui suit n'est que ce qu'elle avait imprimé à cet instant, pas un verdict sur le projet.</value></data>
   <data name="DiagSummary" xml:space="preserve"><value>Build : {0} erreur(s), {1} avertissement(s) — {2}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>Contexte VS non disponible — ouvre la fenêtre Inferpal via le menu View.</value></data>
   <data name="EditNotApplied" xml:space="preserve"><value>L'édition n'a pas été appliquée à {0} — le document a changé entre-temps, ou il est en lecture seule. Rien n'a été écrit.</value></data>
@@ -358,6 +359,7 @@ Sauvegarde : {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>attacher l'état du débogueur (pile, variables, exception)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Aucune session de débogage en pause. Atteins d'abord un point d'arrêt ou une exception, puis utilise @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Presse-papier vide.</value></data>
+  <data name="MentionNothingToAttach" xml:space="preserve"><value>Rien n'a pu être joint pour @{0}.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Erreur lors de la navigation : {0}</value></data>
 
   <!-- Export -->
@@ -439,6 +441,7 @@ Utilisez `/clear` après modification du fichier pour le recharger.</value></dat
   <data name="GitNotRepo" xml:space="preserve"><value>Dépôt git introuvable (dossier .git absent).</value></data>
   <data name="SmartFixBatchCapped" xml:space="preserve"><value>⚠ Ce lot touche plus de projets que Smart Fix n'en vérifie d'un coup : {0} ont été construits, {1} de plus n'ont PAS été vérifiés. Construisez-les vous-même, ou modifiez-les dans un appel séparé.</value></data>
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd s'arrête : cette exécution n'a lancé aucun test, il n'y a donc rien à corriger.</value></data>
+  <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd s'arrête : l'exécution des tests a dépassé son budget de temps et a été interrompue ; rien de ce qu'elle rapporte n'est un verdict — pas même la partie au vert.</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ La conversation que vous venez de quitter n'a PAS pu être archivée : {0}. Elle est perdue — elle n'a pas été enregistrée sous un nom, et le chat est déjà vidé.</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Cette conversation n'a PAS pu être enregistrée pour la prochaine fois : {0}. Elle est toujours là, mais elle ne reviendra pas d'elle-même — exportez-la si vous voulez la garder.</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git n'a pas pu répondre à « git {0} » : {1}. Rien n'a été lu de ce dépôt — ce n'est PAS « aucun changement ».</value></data>
@@ -888,6 +891,8 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Max recommandé pour `{0}` :** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> (max du modèle {0})</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Votre num_ctx ({0}) dépasse ce qui tient dans le budget VRAM — le KV-cache risque de déborder vers la RAM système et de ralentir la génération. Envisagez de le réduire à {1}.</value></data>
+  <data name="HardwareCtxNoVramRecommendation" xml:space="preserve"><value>**Plafond du modèle `{0}` :** {1} — la recommandation VRAM n'a pas pu être calculée (les poids dépassent déjà le budget, ou les métadonnées d'architecture manquent).</value></data>
+  <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ Votre num_ctx ({0}) dépasse ce que ce modèle accepte tout court ({1}). Le backend ne peut pas servir un prompt plus long : il coupe la partie la PLUS ANCIENNE de la conversation, prompt système compris, sans le dire — et la compaction d'Inferpal n'intervient pas, puisqu'elle se mesure au nombre que vous avez configuré. Mettez-le à {1} ou moins.</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>Budget VRAM</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>VRAM totale (en GB) disponible sur l'hôte Ollama. Sert à recommander un num_ctx sûr et à avertir quand les modèles sélectionnés ne tiennent pas. Laissez vide pour une détection automatique sur un hôte local ; une valeur manuelle est requise pour un hôte distant. Réglable aussi via `/hardware &lt;gb&gt;`.</value></data>
   <data name="TooltipAgentMode" xml:space="preserve"><value>Basculer entre le mode Chat et le mode Agent (Plan → Act → Observe autonome). Câblé sur le réglage « Activer le mode agent autonome ».</value></data>

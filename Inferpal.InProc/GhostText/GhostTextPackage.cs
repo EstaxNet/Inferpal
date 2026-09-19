@@ -57,15 +57,13 @@ internal sealed class GhostTextPackage : AsyncPackage
         // IVsUpdateSolutionEvents.Advise must be called on the VS UI thread.
         await JoinableTaskFactory.SwitchToMainThreadAsync(ct);
 
-        // ⚠ These two are requested ON THE UI THREAD, and that was a measured failure:
-        // `debuggerReason` said "VS debugger service unavailable" on a package that was otherwise
-        // loaded, with `active_solution` written. What separates them from the three requests
-        // above is not the service, it is its owner: `SVsSolution` & co. belong to the shell,
-        // already there; `SVsShellDebugger` and `SDTE` are served by packages loaded on demand,
+        // ⚠ These two are requested ON THE UI THREAD. What separates them from the three requests
+        // above is not the service, it is its owner: `SVsSolution` & co. belong to the shell and
+        // are already there; `SVsShellDebugger` and `SDTE` are served by packages loaded on demand,
         // and a service request that must first LOAD a package does not succeed from a background
-        // thread - VS refuses synchronous loading off the UI thread and returns `null`, with no
-        // error and no trace. Hence three successes and one null in the same block.
-        // Do not move them above the `SwitchToMainThreadAsync`.
+        // thread — VS refuses synchronous loading off the UI thread and returns `null`, with no
+        // error and no trace, which reads as "debugger service unavailable" on a package that
+        // loaded fine. Do not move them above the `SwitchToMainThreadAsync`.
         var dbgService = await GetServiceAsync(typeof(SVsShellDebugger));
         var dteService = await GetServiceAsync(typeof(SDTE));
         var shellDbg   = dbgService as IVsDebugger;
@@ -79,8 +77,8 @@ internal sealed class GhostTextPackage : AsyncPackage
         try
         {
             // Through the shared funnel: the MEF listener bootstraps the same handler on the
-            // first editor open, and depending on which ran first each used to create its OWN
-            // subscription — every failed build collected twice.
+            // first editor open, so without it each creates its OWN subscription and every failed
+            // build is collected twice.
             BuildEventsBootstrap.EnsureCreated(buildMgr, solution, taskList);
         }
         catch { /* non-critical */ }
@@ -107,12 +105,11 @@ internal sealed class GhostTextPackage : AsyncPackage
             // set breakpoints, run and step. Requires the DTE — without it there is nothing to
             // drive.
             //
-            // ⚠ Every outcome is now recorded, and that is the whole point. This
-            // block used to be silent in all three failure branches: `Diagnostics.Swallow` writes
-            // to the IN-PROC ring, while `/diagnostics` reads the out-of-process host's — so a
-            // driver that never started was unobservable by anyone. Downstream, `/tdd` gates its
-            // §25 capture on the driver and degraded without a word, and the step-2 probe scored
-            // that as a product red. A capability that can be absent must say so itself.
+            // ⚠ Every outcome is recorded, and that is the whole point: `Diagnostics.Swallow`
+            // writes to the IN-PROC ring while `/diagnostics` reads the out-of-process host's, so a
+            // driver that never started is otherwise unobservable by anyone. `/tdd` gates its
+            // debugger capture on this driver and degrades silently without it. A capability that
+            // can be absent must say so itself.
             // Four branches because there are four distinct failures, and "the service did not
             // answer" and "it answered something else" are not repaired in the same place: the
             // first is a thread or package problem, the second an interop binding problem.

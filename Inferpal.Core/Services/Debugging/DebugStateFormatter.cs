@@ -7,12 +7,11 @@ namespace Inferpal.Services.Debugging;
 /// testable: no debugger, no editor, no I/O.
 /// </summary>
 /// <remarks>
-/// The frame filtering exists because of a measured fact, not a preference. In the §21 probe the
-/// Node adapter answered a nine-frame stack for a program three calls deep — the rest was
-/// <c>wrapModuleLoad</c>, <c>executeUserEntryPoint</c> and anonymous runtime frames. Handing those
-/// to a model on a 16k window spends the scarce resource on noise, so frames outside the workspace
-/// are dropped. If that would leave nothing, everything is kept: showing an empty stack to explain
-/// a pause would be worse than showing runtime frames.
+/// The frame filtering is not a preference: a raw stack is mostly runtime. A Node adapter answers
+/// nine frames for a program three calls deep — the rest is <c>wrapModuleLoad</c>,
+/// <c>executeUserEntryPoint</c> and anonymous runtime frames — and handing those to a model on a
+/// 16k window spends the scarce resource on noise, so frames outside the workspace are dropped. If
+/// that would leave nothing, everything is kept: an empty stack explains a pause even less well.
 /// </remarks>
 internal static class DebugStateFormatter
 {
@@ -87,11 +86,11 @@ internal static class DebugStateFormatter
     /// producer did not say.
     /// </summary>
     /// <remarks>
-    /// The old label claimed "current frame" unconditionally, next to a stack whose first line is
-    /// the first frame <i>kept by <see cref="UserFrames"/></i>. On the measured Node stack — an
-    /// exception thrown inside a library, three user frames below — the model was handed the
-    /// runtime frame's variables as if they were the user frame's, which is the kind of wrong
-    /// answer it has no way to notice. Naming the frame costs one line and removes the claim.
+    /// Claiming "current frame" unconditionally is wrong next to a stack whose first line is the
+    /// first frame <i>kept by <see cref="UserFrames"/></i>: on an exception thrown inside a library,
+    /// three user frames below, it hands the model the runtime frame's variables as the user
+    /// frame's — the kind of wrong answer it has no way to notice. Naming the frame costs one line
+    /// and removes the claim.
     /// </remarks>
     internal static string LocalsScope(DebugStopState state, IReadOnlyList<DebugFrame> shown)
     {

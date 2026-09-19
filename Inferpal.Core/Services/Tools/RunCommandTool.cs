@@ -30,14 +30,13 @@ internal sealed class RunCommandTool : ITool, IDisposable
     /// How this machine's shell is named to the model, and how it sets an environment variable.
     /// </summary>
     /// <remarks>
-    /// ⚠ Read from <see cref="ShellLauncher"/>, never written down. The execution path has spoken
-    /// two dialects since §23 (PowerShell on Windows or where <c>pwsh</c> is on PATH, POSIX
-    /// otherwise), but this description — the only thing telling the model <i>how to write the
-    /// command</i> — still said "PowerShell" everywhere. On the published Linux and macOS VSIX that
-    /// is a Windows script handed to <c>/bin/bash</c>: the model writes <c>Get-ChildItem</c> and
-    /// <c>$env:FOO</c>, bash refuses them, and the agent spends its iteration budget discovering by
-    /// trial and error what the tool could have said in one sentence. <c>UserShellTool</c> carries
-    /// the same fault on the execution side, and it was repaired there in the pre-1.6.0 review.
+    /// ⚠ Read from <see cref="ShellLauncher"/>, never written down. The execution path speaks two
+    /// dialects (PowerShell on Windows or where <c>pwsh</c> is on PATH, POSIX otherwise), and this
+    /// description is the only thing telling the model <i>how to write the command</i>. Fixed to
+    /// "PowerShell", it hands a Windows script to <c>/bin/bash</c> on the published Linux and macOS
+    /// builds: the model writes <c>Get-ChildItem</c> and <c>$env:FOO</c>, bash refuses them, and the
+    /// agent spends its iteration budget discovering by trial and error what one sentence could have
+    /// said.
     /// </remarks>
     private static (string Shell, string SetEnv) Speak()
     {

@@ -51,11 +51,11 @@ internal static class InPlaceCodeActionPrompts
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⚠ The pair used to be picked by each front-end, and the two had already drifted: the VS
-    /// window appended <see cref="Prompting.DocContextExtractor"/>'s semantic block for
-    /// <c>/doc</c> — namespace, type hierarchy, override members, interface contracts — and the
-    /// host did not. Same command, same file, a measurably weaker docstring on one editor: no
-    /// <c>&lt;inheritdoc/&gt;</c>, no base type, no contract, and nothing said so.
+    /// ⚠ Picked by each front-end instead, the pair drifts: <c>/doc</c> needs
+    /// <see cref="Prompting.DocContextExtractor"/>'s semantic block — namespace, type hierarchy,
+    /// override members, interface contracts — and an editor that omits it produces a weaker
+    /// docstring on the same file (no <c>&lt;inheritdoc/&gt;</c>, no base type, no contract) with
+    /// nothing saying so.
     /// </para>
     /// <para>
     /// ⚠ <paramref name="filePath"/> may be null (a caller that has text but no file): the block is

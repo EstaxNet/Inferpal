@@ -180,9 +180,9 @@ internal sealed class SignalDebugSession : IDebugSession
             if (id is null) return null;
 
             // WaitForAnswerAsync withdraws the request itself on every path that produces no
-            // answer - timeout, driver gone, AND cancellation. The withdrawal used to live here,
-            // on the timeout branch only: a cancelled turn left a live request behind, and a
-            // driver waking up later would start the user's program long after the agent gave up.
+            // answer — timeout, driver gone, AND cancellation. Withdrawn on the timeout branch
+            // only, a cancelled turn leaves a live request behind, and a driver waking up later
+            // starts the user's program long after the agent gave up.
             return await DebugCommandSignal.WaitForAnswerAsync(id, timeout, ct);
         }
         finally

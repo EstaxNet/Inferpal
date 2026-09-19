@@ -462,10 +462,10 @@ internal class InferpalConfig
         }
         else
         {
-            // The fallback to factory defaults stays: the product has to start. What changes is
-            // that it is no longer MUTE. The code used to write `catch { }` - a user whose
-            // backends, per-role models, MCP servers and permission rules had "disappeared" had
-            // nowhere to look, and nothing told that apart from a first install.
+            // The fallback to factory defaults stays — the product has to start — but it is never
+            // MUTE: a user whose backends, per-role models, MCP servers and permission rules have
+            // "disappeared" otherwise has nowhere to look, and nothing tells that apart from a
+            // first install.
             Services.Diagnostics.Record("InferpalConfig.Load",
                 $"{path} exists but could not be read ({error!.GetType().Name}: {error.Message}) — "
                 + "factory defaults are used for this session, and the file will be set aside at the "
@@ -678,10 +678,9 @@ internal class InferpalConfig
     /// Copies an unreadable <c>config.json</c> aside before overwriting it.
     /// </summary>
     /// <remarks>
-    /// Without this, an unreadable file was not merely <i>ignored</i>, it was <b>destroyed</b>: the
-    /// load returned factory defaults, and the first <c>Save()</c> along - a setting, <c>/model</c>,
-    /// <c>/hardware</c>, <c>/docs</c> - wrote them over the original bytes. That is the 1.6.8 F8
-    /// defect ("a typo did not merely get ignored, it destroyed the setting") at whole-file scale.
+    /// Without this, an unreadable file is not merely <i>ignored</i>, it is <b>destroyed</b>: the
+    /// load returns factory defaults, and the first <c>Save()</c> along — a setting, <c>/model</c>,
+    /// <c>/hardware</c>, <c>/docs</c> — writes them over the original bytes.
     ///
     /// The state is judged <b>at the moment it matters</b>, by re-reading, rather than through a
     /// flag set at load time: a flag would be stale as soon as the user repairs the file by hand,

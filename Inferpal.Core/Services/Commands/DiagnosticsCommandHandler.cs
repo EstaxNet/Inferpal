@@ -34,13 +34,13 @@ internal sealed record DiagnosticsExportContext(
 /// Execution logic for <c>/diagnostics</c> — surfaces the in-memory <see cref="Diagnostics"/> ring so
 /// swallowed best-effort errors are inspectable in the field without a debugger. Sub-commands:
 /// <c>clear</c> (empty the ring), <c>on</c>/<c>off</c> (toggle file logging), <c>export</c> (support
-/// bundle, ROADMAP §24); no argument lists the most recent entries. Pure and synchronous →
-/// unit-testable. Same pattern as <see cref="SnippetsCommandHandler"/>.
+/// bundle); no argument lists the most recent entries. Pure and synchronous → unit-testable. Same
+/// pattern as <see cref="SnippetsCommandHandler"/>.
 /// </summary>
 /// <remarks>
 /// <b>Why <c>export</c> exists.</b> Inferpal ships zero telemetry on principle, so the only field
-/// signal the project ever gets is what a user pastes into a GitHub issue — and an issue used to
-/// arrive with no version, OS, backend or context at all. The bundle is rendered <b>in the chat,
+/// signal the project ever gets is what a user pastes into a GitHub issue — without this, one that
+/// carries no version, OS, backend or context at all. The bundle is rendered <b>in the chat,
 /// identically to what lands on the clipboard</b>: the user reads exactly what they are about to
 /// send, and nothing leaves the machine on its own. Bundle body is deliberately English — its
 /// audience is a public issue tracker, not the chat locale.
@@ -95,9 +95,9 @@ internal static class DiagnosticsCommandHandler
                 var entries = Diagnostics.Snapshot();
 
                 // ⚠ First, and before the "no entries" short-circuit: the in-process failure
-                // produces NO diagnostic entry at all - it happens inside devenv, in an assembly
-                // this process never loaded. A user whose ghost text does nothing used to see
-                // "No diagnostics recorded." and walk away with nothing.
+                // produces NO diagnostic entry at all — it happens inside devenv, in an assembly
+                // this process never loaded. Otherwise a user whose ghost text does nothing reads
+                // "No diagnostics recorded." and walks away with it.
                 var inproc = inProcLoaded == false ? Strings.DiagnosticsInProcDead : null;
                 if (entries.Count == 0)
                     return new(inproc is null ? Strings.DiagnosticsEmpty
@@ -138,17 +138,16 @@ internal static class DiagnosticsCommandHandler
           .Append(" (").Append(RuntimeInformation.OSArchitecture).Append(")\n");
         sb.Append("- **.NET**: ").Append(Environment.Version).Append('\n');
         // The in-process half dies silently (the chat is out-of-process and keeps working), so a
-        // "ghost text does nothing" report used to arrive without the one piece of information
-        // that settles it. It is also the only observation of the in-process half the project ever
-        // gets from a machine other than the maintainer's - see InProcAliveSignal.
+        // "ghost text does nothing" report without this line carries nothing that settles it. It is
+        // also the only observation of the in-process half the project ever gets from a machine
+        // other than the maintainer's — see InProcAliveSignal.
         // ⚠ SanitizePaths, like the ring entries. Those three fields (in-process half, backend,
         // MCP servers) carry text coming from OUTSIDE — an exception message, a probe, a remote
-        // server — and the bundle did not scrub them. Measured: when an stdio MCP server fails to
-        // start, .NET returns "An error occurred trying to start process '<full path>' with working
-        // directory '<root>'", which McpStdioClient puts verbatim into LastError. The home
-        // directory and the repository path therefore went into the file the user pastes into a
-        // public issue, while the same bundle carefully replaces them with ~ and <workspace> a few
-        // lines below.
+        // server — and that text holds paths: an stdio MCP server that fails to start yields "An
+        // error occurred trying to start process '<full path>' with working directory '<root>'",
+        // which McpStdioClient puts verbatim into LastError. Unscrubbed, the home directory and the
+        // repository path go into the file the user pastes into a public issue, while the same
+        // bundle replaces them with ~ and <workspace> a few lines below.
         if (!string.IsNullOrEmpty(ctx.InProcHalf))
             sb.Append("- **In-process half**: ").Append(SanitizePaths(ctx.InProcHalf, ctx.WorkspaceRoot)).Append('\n');
         sb.Append("- **Provider**: ").Append(c.Provider)

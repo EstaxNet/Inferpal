@@ -48,11 +48,11 @@ internal sealed class McpTool : ITool
 
     /// <summary>
     /// The same tool gated by a different approval pipeline. The service is captured at
-    /// construction, so a sibling registry built by <c>ToolRegistry.WithApprovalService</c> used to
-    /// keep prompting through the ORIGINAL service — the §25 <c>TestFileWriteGuard</c> never applied
-    /// to MCP tools, and a prior "Always" grant let a model rewrite a test file through an MCP
-    /// filesystem server without any force-prompt. Rebinding restores the
-    /// invariant that a registry's whole surface answers to its own approval service.
+    /// construction, so without rebinding a sibling registry built by
+    /// <c>ToolRegistry.WithApprovalService</c> keeps prompting through the ORIGINAL service:
+    /// <c>TestFileWriteGuard</c> would not apply to MCP tools, and a prior "Always" grant would let
+    /// a model rewrite a test file through an MCP filesystem server with no force-prompt. A
+    /// registry's whole surface answers to its own approval service.
     /// </summary>
     internal McpTool WithApproval(IApprovalService approval) =>
         ReferenceEquals(approval, _approval) ? this : new McpTool(this, approval);

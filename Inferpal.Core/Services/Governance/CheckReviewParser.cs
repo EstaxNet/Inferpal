@@ -35,9 +35,9 @@ internal sealed record CheckReview(IReadOnlyList<CheckFinding> Findings, string 
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Why parse at all.</b> <c>/check</c> used to hand back a wall of prose: the reader had to
-/// find "src/Foo.cs line 42" by eye and go there by hand, at the exact moment — just before a
-/// commit — when friction costs the most.
+/// <b>Why parse at all.</b> Handed back as prose, a review leaves the reader to find
+/// "src/Foo.cs line 42" by eye and go there by hand, at the exact moment — just before a commit —
+/// when friction costs the most.
 /// </para>
 /// <para>
 /// <b>Why every location is verified.</b> A local model asked for <c>file:line</c> always produces

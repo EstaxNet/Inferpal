@@ -83,9 +83,9 @@ internal static class DocChunker
     /// because <c>HtmlToText</c> emits a newline after every block-level close; three real shapes do
     /// not: a page that is one long <c>&lt;p&gt;</c>, a <c>&lt;pre&gt;</c> dump, and — always — a page
     /// that took <c>HtmlToText</c>'s regex-timeout fallback, which strips tags and inserts <b>no</b>
-    /// newline at all. Measured: 128 231 characters on one line produced exactly ONE chunk, embedded
-    /// whole (so its vector describes the opening and nothing else) and shown to the model as its
-    /// first 900 characters. In the index, counted, unfindable.
+    /// newline at all. A hundred thousand characters on one line then become exactly ONE chunk,
+    /// embedded whole (so its vector describes the opening and nothing else) and shown to the model
+    /// as its first 900 characters: in the index, counted, unfindable.
     /// </para>
     /// <para>
     /// ⚠ Cut, never shrunk — the lesson the code chunker already paid for: every character of the

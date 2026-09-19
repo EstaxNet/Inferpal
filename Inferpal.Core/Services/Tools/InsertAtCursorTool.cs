@@ -39,8 +39,8 @@ internal class InsertAtCursorTool : ITool
         if (args.Str("text") is not { } text)
             return "Missing required parameter: text";
 
-        // Approval + snapshot, like every other tool that changes a file — see EditorWriteGate
-        // for what this used to bypass.
+        // Approval + snapshot, like every other tool that changes a file — through EditorWriteGate,
+        // which is what makes an editor write obey the same rules as a disk write.
         var gate = await EditorWriteGate.AuthorizeAsync(_editor, _approval, _history, Name, text, ct);
         if (!gate.MayProceed) return gate.Refusal!;
 

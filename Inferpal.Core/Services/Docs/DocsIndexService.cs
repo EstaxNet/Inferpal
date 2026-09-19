@@ -312,8 +312,8 @@ internal sealed class DocsIndexService
 
     /// <summary>
     /// The only place the in-memory index is replaced — and therefore the only place the hole is
-    /// counted. Two sites used to assign <c>_chunks</c> and <c>ChunkCount</c> by hand; a third would
-    /// have had to remember the count as well.
+    /// counted. Assigning <c>_chunks</c> and <c>ChunkCount</c> by hand elsewhere means every new
+    /// site has to remember the count too.
     /// </summary>
     private async Task PublishAsync(
         List<(DocSite Site, int PageCount, int ChunkCount)> sites, List<DocChunk> chunks, CancellationToken ct)

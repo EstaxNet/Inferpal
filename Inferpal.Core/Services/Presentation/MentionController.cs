@@ -281,16 +281,44 @@ internal static class MentionController
             notes.Add($"(the folder walk stopped at {MaxWalkFiles} files — this folder holds more, and they are not listed above)");
         if (limits.DepthCapHit)
             notes.Add($"(subfolders deeper than {MaxWalkDepth} levels were not listed)");
+        // ⚠ These three do not narrow the answer, they INVALIDATE it: with an empty "Files:" block
+        // and no note, the context reads as "this folder holds no source file".
+        if (limits.RootUnlistable)
+            notes.Add("(this folder could not be listed at all — it may have been removed, or this "
+                    + "process may not be allowed to read it. The list above is NOT a statement "
+                    + "about what the folder contains.)");
+        if (limits.RootSkipped)
+            notes.Add("(this folder is one the walk skips by name — build output, dependencies or "
+                    + "VCS data — so nothing under it was listed)");
+        if (limits.UnlistableSub is { } sub)
+            notes.Add($"(the subfolder {Path.GetRelativePath(folderPath, sub)} could not be listed — "
+                    + "its files are missing from the list above)");
 
         if (notes.Count > 0) sb.Append('\n').AppendLine().AppendJoin('\n', notes);
         return sb.ToString();
     }
 
     /// <summary>Which ceilings the walk actually ran into. Mutable: it is filled during recursion.</summary>
+    /// <remarks>
+    /// ⚠ The last two are not ceilings but <b>failures</b>, and they belong here for the same
+    /// reason: they empty the listing without emptying the folder. A caller that reports the five
+    /// cuts and not these hands the model "Files:" with nothing under it, which reads as "this
+    /// folder holds no source file" — the one sentence the folder cannot answer.
+    /// </remarks>
     private sealed class FolderWalkLimits
     {
         public bool FileCapHit;
         public bool DepthCapHit;
+
+        /// <summary>The root itself could not be listed: removed, or not readable here.</summary>
+        public bool RootUnlistable;
+
+        /// <summary>The root is one the walk skips by name (build output, dependencies, VCS data).</summary>
+        public bool RootSkipped;
+
+        /// <summary>First sub-directory that could not be listed — named, never counted: how many
+        /// files it held is precisely what nobody can know.</summary>
+        public string? UnlistableSub;
     }
 
     private static void CollectFolderFiles(
@@ -299,7 +327,13 @@ internal static class MentionController
         if (ct.IsCancellationRequested) return;
         if (depth > MaxWalkDepth) { limits.DepthCapHit = true; return; }
         if (results.Count >= MaxWalkFiles) { limits.FileCapHit = true; return; }
-        if (IsSkippedDir(dir)) return;
+        if (IsSkippedDir(dir))
+        {
+            // Only at the root: a skipped SUBfolder is the ordinary case this walk exists to do,
+            // while a skipped root means the whole answer is empty for a reason the user can act on.
+            if (depth == 0) limits.RootSkipped = true;
+            return;
+        }
 
         try
         {
@@ -324,6 +358,14 @@ internal static class MentionController
                 CollectFolderFiles(subDir, results, depth + 1, ct, limits);
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { Diagnostics.Swallow("MentionController.CollectFolderFiles", ex); }
+        catch (Exception ex)
+        {
+            // ⚠ The trace stays (it carries the exception), but it is not the channel: the reader
+            // of this context is a model, and it never sees /diagnostics. The fact travels with the
+            // other cuts instead.
+            Diagnostics.Swallow("MentionController.CollectFolderFiles", ex);
+            if (depth == 0) limits.RootUnlistable = true;
+            else            limits.UnlistableSub ??= dir;
+        }
     }
 }
