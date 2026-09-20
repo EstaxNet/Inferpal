@@ -3,6 +3,40 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.18
+
+Thirty-nine fixes, and one thread runs through almost all of them: Inferpal told you — or told the
+assistant — that there was nothing, when in fact something could not be read, could not be opened,
+or had been cut short.
+
+- **The snippet library could answer "no snippets saved yet" when it held a hundred**, because the
+  file had not opened. The sentence even ended by offering the button that writes, which would have
+  replaced them. Your snippets were never lost (the file is set aside first), but nothing said so.
+- **A solution Inferpal could not read was described as a solution with no project**, and a project
+  whose `.csproj` would not open was listed with no target framework and no references at all —
+  inside the very report the assistant is handed to learn what your solution contains.
+- **Ghost text could stop appearing for the rest of the session with nothing to say why.** The
+  request to the completion sidecar had no time limit: a sidecar still running but never answering
+  left it waiting for exactly as long as you waited.
+- **`/onboard context` described folders it had never looked inside.** The project brief every later
+  session starts from stopped after twelve folders and said nothing about the rest, so the assistant
+  was left inventing a purpose from a name.
+- **`/doc` silently skipped the interface it was documenting against** when that interface's file
+  was too large or would not open — so it wrote its own summaries instead of inheriting yours.
+- **The documentation promised an `@token` mention that does not exist**, on every page including
+  both marketplace listings, and described `@code` as attaching your selection when it is a semantic
+  search. Typing a mention nobody offers just closes the popup.
+- **In VS Code, the settings panel's ↻ button could fail in silence**, leaving the previous model
+  list on screen as if that were all your backend served; and its Test button blamed the backend
+  when it was Inferpal's own host that was gone.
+- **On Linux and macOS, two paths differing only in capitals could be taken for one**, including in
+  the check that decides whether a restore may read a file from outside your project.
+- **A damaged arena file could take your whole `/arena` voting history with it** — the one thing in
+  there that nothing can recompute.
+
+Everything else in this release is the same shape, in smaller places: a cap that now says it is a
+cap, a failure that now says which file, a count that is no longer taken from a truncated list.
+
 ## 1.6.17
 
 Thirty-two fixes, almost all of the same kind: something failed, or stopped short, without telling
