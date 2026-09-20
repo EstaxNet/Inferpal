@@ -8,13 +8,12 @@ replaced with the corresponding attachment.
 |---|---|
 | `@file` | A file you pick |
 | `@folder` | A folder: the list of its files, plus the text of the first of them |
-| `@code` | The active editor selection |
+| `@code` | A semantic search of the indexed codebase — type the query after the token |
 | `@diff` | The current `git diff` |
 | `@problems` | The current build errors |
 | `@debugger` | The live debugger break state (via `get_debugger_state`) |
 | `@clipboard` | The clipboard contents |
 | `@tree` | The solution tree |
-| `@token` | A token counter |
 
 > [!TIP]
 > The `@`-mention popup and the `/`-command popup are mutually exclusive — typing `@` opens

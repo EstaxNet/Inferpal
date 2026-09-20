@@ -122,7 +122,12 @@ public class DocCountersTests
     /// <c>docs/revues</c> / <c>docs/reflexions</c>, which are dated measurements — rewriting a
     /// record of what was measured would be the exact opposite of this test's purpose.
     /// </summary>
-    private static IEnumerable<string> LivingDocs()
+    /// <remarks>
+    /// Shared with <see cref="PublicDocsCoverageTests"/>: "which pages describe the product as it
+    /// is" has one answer. A second enumeration would drift, and the page it stopped naming is the
+    /// one the drift would hide in — the reason the counters are swept rather than listed.
+    /// </remarks>
+    internal static IEnumerable<string> LivingDocs()
     {
         var root = RepoRoot();
 

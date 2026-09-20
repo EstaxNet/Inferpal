@@ -123,7 +123,7 @@ The assistant's persona adapts automatically to the language of the active file 
 Responses stream token by token in the sidebar (**Ctrl+Alt+I**). Full Markdown rendering: headings, code blocks, lists, **bold**, *italic*, `inline code`. Copy button on every code block. Conversation search with result dimming. **Regenerate** the last reply in one click. A **real-time context & token gauge** updates live *during generation*, then snaps to the exact `prompt_eval_count + eval_count` once the run finishes, so a long generation never looks frozen.
 
 ### @ Typed mentions
-Type `@` in the prompt to open a context picker and attach exactly what you mean, inline: `@file` · `@folder` · `@code` (active selection) · `@diff` (git diff) · `@problems` (live diagnostics from the Problems panel) · `@debugger` (live break state) · `@clipboard` · `@tree` · `@token`. The mention is resolved into real context the moment you send.
+Type `@` in the prompt to open a context picker and attach exactly what you mean, inline: `@file` · `@folder` · `@code` (semantic code search) · `@diff` (git diff) · `@problems` (live diagnostics from the Problems panel) · `@debugger` (live break state) · `@clipboard` · `@tree`. The mention is resolved into real context the moment you send.
 
 ### 📊 Project notes & workspace context
 `/note` appends timestamped notes to `.inferpal/notes.md`, automatically injected into future prompts. The first message automatically attaches workspace info and open editors as silent context.

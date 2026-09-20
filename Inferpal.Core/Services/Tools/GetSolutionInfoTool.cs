@@ -61,19 +61,23 @@ internal class GetSolutionInfoTool : ITool
         // in-process active-solution signal is absent (package not loaded / solution closed).
         LastKnownSolutionFile.Record(slnPath);
 
-        var slnDir     = Path.GetDirectoryName(slnPath)!;
         var slnContent = await File.ReadAllTextAsync(slnPath, ct);
         // ⚠ The format picks the parser: a .slnx is XML, and the regex reading a .sln's
         // Project(...) lines finds nothing in it — "Projects : 0" on a valid solution. See
         // SolutionFiles, the single reader for both formats.
-        var projects   = SolutionFiles.ParseProjects(slnPath, slnContent);
+        var contents   = SolutionFiles.ParseProjects(slnPath, slnContent);
 
         var sb = new StringBuilder();
         sb.AppendLine($"Solution : {Path.GetFileName(slnPath)}");
         sb.AppendLine($"Location : {slnPath}");
-        sb.AppendLine($"Projects : {projects.Count}");
+        // ⚠ "Projects : 0" is a fact about the repository and it is read as one. A solution file
+        // nobody could parse produces the same three characters, on a solution that names ten —
+        // and this report is what the workspace block hands the model at session start.
+        sb.AppendLine(contents.Unreadable is { } why
+            ? $"Projects : unknown — the solution file could not be read: {why}"
+            : $"Projects : {contents.Projects.Count}");
 
-        foreach (var proj in projects)
+        foreach (var proj in contents.Projects)
         {
             sb.AppendLine();
             sb.AppendLine($"── {proj.Name}");
@@ -86,6 +90,16 @@ internal class GetSolutionInfoTool : ITool
             }
 
             var info = await ReadProjectInfoAsync(proj.AbsolutePath, ct);
+
+            // ⚠ Same reading one level down: every field below is absent both when the project
+            // declares nothing and when the file could not be parsed. The second renders as a
+            // project with no framework and no dependencies at all — which is what the model uses
+            // to decide where code belongs and what it may already reference.
+            if (info.Unreadable is { } cause)
+            {
+                sb.AppendLine($"   [project file could not be read: {cause} — framework and references unknown]");
+                continue;
+            }
 
             if (info.TargetFramework is not null)
                 sb.AppendLine($"   Framework : {info.TargetFramework}");
@@ -126,11 +140,14 @@ internal class GetSolutionInfoTool : ITool
                 .OrderBy(n => n)
                 .ToList();
 
-            return new ProjectInfo(tf, outputType, projRefs, packages);
+            return new ProjectInfo(tf, outputType, projRefs, packages, null);
         }
-        catch
+        catch (Exception ex)
         {
-            return new ProjectInfo(null, null, [], []);
+            // Said once per project file: this report is rebuilt on demand, and a repository with a
+            // broken project would otherwise write one entry per call into a ring of 200.
+            Diagnostics.RecordOnce("GetSolutionInfo.ReadProject", $"{projPath}: {Diagnostics.RootMessage(ex)}", projPath);
+            return new ProjectInfo(null, null, [], [], Diagnostics.RootMessage(ex));
         }
     }
 
@@ -193,5 +210,10 @@ internal class GetSolutionInfoTool : ITool
 
     // ── Types ─────────────────────────────────────────────────────────────────
 
-    private record ProjectInfo(string? TargetFramework, string? OutputType, List<string> ProjectRefs, List<string> Packages);
+    /// <param name="Unreadable">
+    /// Why the project file could not be parsed, or <c>null</c>. ⚠ Three states, not two: a project
+    /// that declares nothing, one whose file is missing (already named), and one nobody could read.
+    /// </param>
+    private record ProjectInfo(string? TargetFramework, string? OutputType,
+                               List<string> ProjectRefs, List<string> Packages, string? Unreadable);
 }

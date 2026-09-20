@@ -195,7 +195,7 @@ exists.
 - **Welcome screen** — an empty session shows one-click suggestion cards (Explain the
   selection, Fix an error, Generate a test, See all commands) plus the active model and mode.
 - **Attach file / selection** — 📎 toolbar buttons attach a file or the current editor
-  selection as a context chip (the same context you can add with `/read`, `@file`, or `@code`).
+  selection as a context chip (the same context you can add with `/read` or `@file`).
   The message bubble names what went with it, so the transcript — on screen, exported, or
   reloaded later — still says what the question was asked about.
 

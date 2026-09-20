@@ -25,7 +25,12 @@ namespace Inferpal.Tests;
 /// <para>
 /// The failure lands in the worst possible order: <b>silent in the repository, visible to the
 /// user</b>. Nothing goes red here, and someone types a command the documentation promised them.
-/// Measured at zero in all six directions, so it is free to lock.
+/// </para>
+/// <para>
+/// ⚠ The subject is <b>every list the product publishes</b>, not a list of lists. A rule carried
+/// by an enumeration of kinds — commands, configuration keys, tools — leaves the kind nobody
+/// thought of outside it, and that is where the drift goes: the @-mention picker was the fourth
+/// such list, and it was the only one not already at zero.
 /// </para>
 /// </remarks>
 public class PublicDocsCoverageTests
@@ -167,6 +172,65 @@ public class PublicDocsCoverageTests
             + "right all the while — which is exactly why this rule exists: "
             + string.Join(", ", undocumented));
     }
+
+    /// <summary>
+    /// The typed @-mention picker, in both directions, across every page that describes it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A mention is not a command: there is no router to answer "unknown". The popup simply has
+    /// nothing to offer and closes, so a category the documentation invents costs the user the
+    /// exact silence the product spends its other rules avoiding — and the pages carrying it are
+    /// the two Marketplace listings a stranger reads before installing.
+    /// </para>
+    /// <para>
+    /// ⚠ The token must be quoted <b>whole</b> (<c>`@code`</c>, closing backtick included): an npm
+    /// scope (<c>`@vscode/vsce`</c>) and the documentation corpus's nickname (<c>`@Docs`</c>,
+    /// reached through <c>/docs</c> and <c>search_docs</c>, never through the picker) are not
+    /// picker entries and must not be read as one. Both are in the tree today.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryMention_IsDocumented_AndTheDocInventsNone()
+    {
+        var offered = MentionController.Categories.Select(c => c.Token).ToHashSet(StringComparer.Ordinal);
+        Assert.True(offered.Count >= 4, $"Only {offered.Count} mention category(ies) offered: the rule compares nothing.");
+
+        // The reference page lists them in a table; its first cell is the token.
+        // ⚠ The witness stays well under the real count: set to it, a missing row trips the
+        // witness instead of the rule, and the failure blames the table's format for a page that
+        // simply stopped documenting a category.
+        var listed = Regex.Matches(Doc("mentions.md"), @"^\|\s*`(@[a-z]+)`\s*\|", RegexOptions.Multiline)
+            .Select(m => m.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
+        Assert.True(listed.Count >= 4, $"Only {listed.Count} table row(s) read in mentions.md: the table format changed.");
+
+        var undocumented = offered.Except(listed).Order().ToList();
+        Assert.True(undocumented.Count == 0,
+            "Mention category the reference page does not list — it is offered in the picker and "
+            + "nothing describes it: " + string.Join(", ", undocumented));
+
+        // The other direction, on every page that describes the product as it is: the counters are
+        // swept rather than listed for the same reason — three times running, the wrong copy was
+        // the one no list named.
+        var quoted = 0;
+        var invented = new List<string>();
+        foreach (var path in DocCountersTests.LivingDocs())
+        {
+            foreach (Match m in Regex.Matches(File.ReadAllText(path), @"`(@[a-z]+)`"))
+            {
+                quoted++;
+                if (!offered.Contains(m.Groups[1].Value))
+                    invented.Add($"{Path.GetFileName(path)}: {m.Groups[1].Value}");
+            }
+        }
+
+        Assert.True(quoted >= 8, $"Only {quoted} mention(s) quoted across the living pages: the pattern reads nothing.");
+        Assert.True(invented.Count == 0,
+            "A living page promises an @-mention the picker does not offer: the user types it and "
+            + "the popup closes on them, with no message anywhere — "
+            + string.Join(", ", invented.Distinct().Order()));
+    }
+
     /// <summary>
     /// The <b>default</b> the key reference announces is the one the code puts there.
     /// </summary>

@@ -99,7 +99,7 @@ public class SolutionFilesTests : IDisposable
             </Solution>
             """;
 
-        var projects = SolutionFiles.ParseProjects(sln, xml);
+        var projects = SolutionFiles.ParseProjects(sln, xml).Projects;
 
         var p = Assert.Single(projects);
         Assert.Equal("LLMkonfiguracja", p.Name);
@@ -120,7 +120,7 @@ public class SolutionFilesTests : IDisposable
             </Solution>
             """;
 
-        Assert.Equal("Core", Assert.Single(SolutionFiles.ParseProjects(sln, xml)).Name);
+        Assert.Equal("Core", Assert.Single(SolutionFiles.ParseProjects(sln, xml).Projects).Name);
     }
 
     [Fact]
@@ -133,16 +133,32 @@ public class SolutionFilesTests : IDisposable
             "Project(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\") = \"Solution Items\", \"Solution Items\", \"{A}\"\r\n" +
             "Project(\"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}\") = \"App\", \"App\\App.csproj\", \"{B}\"\r\n";
 
-        var projects = SolutionFiles.ParseProjects(sln, text);
+        var projects = SolutionFiles.ParseProjects(sln, text).Projects;
 
         Assert.Equal("App", Assert.Single(projects).Name);
     }
 
+    /// <summary>
+    /// A failed read must not bring the tool down — and must not come back as "zero projects".
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Three assertions rather than one: <c>Assert.Empty</c> on its own is satisfied by the very
+    /// shape that folds a failed read into an empty solution, which renders as
+    /// <c>Projects : 0</c> for a solution naming ten. A comment stating the rule beside an
+    /// assertion that does not hold it is how the two drift apart.
+    /// </remarks>
     [Fact]
-    public void AMalformedSlnx_YieldsNoProject_WithoutThrowing()
+    public void AMalformedSlnx_SaysItCouldNotBeRead_RatherThanZeroProjects()
     {
-        // A failed read is not "zero projects", but it must not bring the tool down either: the
-        // trace goes to Diagnostics and the caller returns an empty list.
-        Assert.Empty(SolutionFiles.ParseProjects(Path.Combine(_dir, "Broken.slnx"), "<Solution"));
+        var broken = SolutionFiles.ParseProjects(Path.Combine(_dir, "Broken.slnx"), "<Solution");
+
+        Assert.Empty(broken.Projects);          // it still does not throw, and invents nothing
+        Assert.False(string.IsNullOrWhiteSpace(broken.Unreadable), "the cause did not travel with the result");
+
+        // WITNESS: a solution that parses is not reported as unreadable, and one that names no
+        // project is not either — that is the state this must stay distinguishable from.
+        Assert.Null(SolutionFiles.ParseProjects(Path.Combine(_dir, "Ok.slnx"),
+            "<Solution><Project Path=\"A/A.csproj\" /></Solution>").Unreadable);
+        Assert.Null(SolutionFiles.ParseProjects(Path.Combine(_dir, "Empty.slnx"), "<Solution />").Unreadable);
     }
 }

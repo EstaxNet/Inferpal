@@ -29,6 +29,40 @@ public sealed class SilentGestureTests
     private static string Source() =>
         File.ReadAllText(Path.Combine(RepoRoot(), "vscode", "src", "chatViewProvider.ts"));
 
+    /// <summary>
+    /// Every file that receives a gesture from a webview — derived, never listed.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The discriminator is <c>onDidReceiveMessage</c>, never a name: named, the rule covers the
+    /// view it happens to be written on and leaves the settings panel — the other half of the
+    /// product's own UI — outside, where a ↻ button whose failure reaches the output channel alone
+    /// sits eight lines under a remark spelling out that exact cost for the branch beside it. A
+    /// panel added tomorrow inherits the rule.
+    /// </remarks>
+    private static IEnumerable<(string Name, string Text)> GestureSources()
+    {
+        var dir   = Path.Combine(RepoRoot(), "vscode", "src");
+        var found = 0;
+        foreach (var path in Directory.EnumerateFiles(dir, "*.ts", SearchOption.TopDirectoryOnly))
+        {
+            // The extension decides, not the pattern: on Windows a `*.ts` filter also answers with
+            // `.tsx` files through 8.3 short-name matching — the shape that made a `*.sln` search
+            // return a `.slnx` here.
+            if (!string.Equals(Path.GetExtension(path), ".ts", StringComparison.OrdinalIgnoreCase)) continue;
+
+            var text = File.ReadAllText(path);
+            if (!text.Contains("onDidReceiveMessage", StringComparison.Ordinal)) continue;
+            found++;
+            yield return (Path.GetFileName(path), text);
+        }
+
+        // WITNESS: the chat view and the settings panel both receive gestures, so a lower count
+        // means the discriminator stopped finding one — a renamed folder, another way of
+        // subscribing — and the scan sweeps it no more, green.
+        Assert.True(found >= 2,
+            $"Only {found} webview host(s) discovered under vscode/src: the scan no longer reads them all.");
+    }
+
     /// <summary>The bare guard, as it reads when nothing is said.</summary>
     private const string BareGuard = "if (!host?.isRunning) {";
 
@@ -38,18 +72,16 @@ public sealed class SilentGestureTests
     [Fact]
     public void EveryGestureThatNeedsTheHost_SaysWhenItCannotRun()
     {
-        var src = Source();
-
         // WITNESS: the funnel exists, and the file really is the one that carries these gestures.
-        Assert.Contains("private hostForGesture()", src);
-        Assert.Contains("case 'xrayToggle'", src);
-        Assert.Contains("case 'pinActive'", src);
+        Assert.Contains("private hostForGesture()", Source());
+        Assert.Contains("case 'xrayToggle'", Source());
+        Assert.Contains("case 'pinActive'", Source());
 
-        var bare = Regex.Matches(src, Regex.Escape(BareGuard), RegexOptions.None, TimeSpan.FromSeconds(5));
-        Assert.NotEmpty(bare);   // witness: the pattern still exists in this file at all
-
-        foreach (Match m in bare)
+        var seen = 0;
+        foreach (var (file, src) in GestureSources())
+        foreach (Match m in Regex.Matches(src, Regex.Escape(BareGuard), RegexOptions.None, TimeSpan.FromSeconds(5)))
         {
+            seen++;
             var before = src[..m.Index];
             // ⚠ The method pattern must not require `private`: `onHostReady` and
             // `resetConversation` are public, and matching only the private ones attributes their
@@ -69,8 +101,12 @@ public sealed class SilentGestureTests
             var body    = src.Substring(m.Index, Math.Min(700, src.Length - m.Index));
 
             Assert.True(allowed || body.Contains("sayOnce") || body.Contains("hostUnavailable"),
-                        $"gesture '{name}' returns without saying why the host could not serve it");
+                        $"{file}: gesture '{name}' returns without saying why the host could not serve it");
         }
+
+        // WITNESS: the guard's spelling is what the scan recognises — reworded, it would judge
+        // nothing while staying green.
+        Assert.True(seen >= 8, $"Only {seen} host guard(s) read across the webview hosts: the pattern is dead.");
     }
 
     [Fact]
@@ -94,6 +130,46 @@ public sealed class SilentGestureTests
         Assert.True(funnel.Success, "gestureFailed was not found — the scan would pass on nothing");
         Assert.Contains("showWarningMessage", funnel.Value);
         Assert.Contains("this.log(", funnel.Value);   // the log line is kept, not replaced
+    }
+
+    /// <summary>The settings panel's ↻ button, and the probe beside it.</summary>
+    /// <remarks>
+    /// An assertion by name rather than a rule: "does this catch belong to a gesture?" is not a
+    /// syntactic question, and the sibling catches of the same handler degrade on purpose — an
+    /// unreachable backend does not throw, it answers an empty model list through the success
+    /// path, and the popup is what names that.
+    /// </remarks>
+    [Fact]
+    public void TheSettingsPanel_NamesWhatFailed_RatherThanBlamingTheBackend()
+    {
+        var src = File.ReadAllText(Path.Combine(RepoRoot(), "vscode", "src", "settingsPanel.ts"));
+
+        var refresh = Regex.Match(src, @"case 'refreshModels': \{[\s\S]*?\n      \}",
+                                  RegexOptions.None, TimeSpan.FromSeconds(5));
+        Assert.True(refresh.Success, "the refreshModels case was not found — the assertion reads nothing");
+
+        // ⚠ The subject is the CATCH, not the case: the no-host branch at the top of the same case
+        // already posts an error, and an assertion on the whole case is green while the catch says
+        // nothing — measured, on the very defect this test exists for.
+        var caught = Regex.Match(refresh.Value, @"catch \(err\) \{[\s\S]*?\n        \}",
+                                 RegexOptions.None, TimeSpan.FromSeconds(5));
+        Assert.True(caught.Success, "the refreshModels catch was not found — the assertion reads nothing");
+        Assert.Contains("models/list failed", caught.Value);   // the cause still reaches the channel
+        Assert.Contains("this.post(", caught.Value);           // and the clicker hears about it
+
+        // ⚠ `ok: false` alone renders as "Backend unreachable": the wrong cause when the host is
+        // what is gone, and the user goes to check a server that is answering. Both of the probe's
+        // branches reach it — the missing host, and the RPC that threw (an unreachable backend does
+        // not throw, it answers `ok: false` through the success path).
+        var probe = Regex.Match(src, @"case 'testConnection': \{[\s\S]*?\n      \}",
+                                RegexOptions.None, TimeSpan.FromSeconds(5));
+        Assert.True(probe.Success, "the testConnection case was not found");
+        Assert.Contains("hostUnavailableMessage()", probe.Value);
+
+        var probeCaught = Regex.Match(probe.Value, @"catch \(err\) \{[\s\S]*?\n        \}",
+                                      RegexOptions.None, TimeSpan.FromSeconds(5));
+        Assert.True(probeCaught.Success, "the testConnection catch was not found — the assertion reads nothing");
+        Assert.Contains("hostErrorText(err)", probeCaught.Value);
     }
 
     /// <summary>The per-keystroke path says it once, and re-arms when a search works again.</summary>

@@ -114,7 +114,11 @@ export class SettingsPanel {
       }
       case 'testConnection': {
         if (!host?.isRunning) {
+          // ⚠ On its own, `ok: false` reads as "Backend unreachable" — the wrong cause when it is
+          // the HOST that is gone, and it sends the user to check a server that is answering. The
+          // result clears the probe, the message names what actually failed.
           this.post({ type: 'testResult', ok: false, provider: null });
+          this.post({ type: 'error', message: hostUnavailableMessage() });
           return;
         }
         try {
@@ -123,8 +127,12 @@ export class SettingsPanel {
           // form, auto-selects the detected provider, then refreshes models from that URL).
           const result = await host.connectionCheck(msg.baseUrl, msg.apiKey);
           this.post({ type: 'testResult', ok: result.ok, provider: result.provider });
-        } catch {
+        } catch (err) {
+          // Same reading, one level down: an unreachable backend does not throw — it answers
+          // `ok: false` through the success path. A throw here is the host, and saying "Backend
+          // unreachable" about it points at the one thing that is not broken.
           this.post({ type: 'testResult', ok: false, provider: null });
+          this.post({ type: 'error', message: hostErrorText(err) });
         }
         return;
       }
@@ -144,7 +152,11 @@ export class SettingsPanel {
             }),
           });
         } catch (err) {
+          // ⚠ The other branch of the same ↻ button: a refresh that fails leaves the list exactly
+          // as it was, which reads as "the backend serves these and no more". The log keeps the
+          // cause for whoever opens the channel; the message is what the clicker gets.
           this.log(`[settings] models/list failed: ${String(err)}`);
+          this.post({ type: 'error', message: hostErrorText(err) });
         }
         return;
       }

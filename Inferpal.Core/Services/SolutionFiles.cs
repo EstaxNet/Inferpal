@@ -10,6 +10,19 @@ namespace Inferpal.Services;
 /// <param name="AbsolutePath">Resolved against the solution's directory.</param>
 internal sealed record SolutionProject(string Name, string RelativePath, string AbsolutePath);
 
+/// <summary>What a solution file references, and whether it could be read at all.</summary>
+/// <param name="Projects">The projects it names — empty when <paramref name="Unreadable"/> is set.</param>
+/// <param name="Unreadable">
+/// Why the file could not be read, or <c>null</c>.
+/// <para>
+/// ⚠ It must never fold back into an empty list. Rendered, the two are the same three characters
+/// (<c>: 0</c>) and two different answers: "this solution names no project" is a fact about the
+/// repository, "nobody could read this solution" is a fact about one file — and the first is what
+/// the model acts on, on a solution that has ten.
+/// </para>
+/// </param>
+internal sealed record SolutionContents(IReadOnlyList<SolutionProject> Projects, string? Unreadable);
+
 /// <summary>
 /// The single reader for "where is the solution, and what does it contain?" — across the two
 /// formats Visual Studio ships: the classic text <c>.sln</c> and the XML <c>.slnx</c>.
@@ -79,12 +92,12 @@ internal static class SolutionFiles
     /// The projects a solution references. Dispatches on the file's extension, not on a guess about
     /// the content: a <c>.slnx</c> is XML and yields nothing to the classic regex.
     /// </summary>
-    public static IReadOnlyList<SolutionProject> ParseProjects(string solutionPath, string content)
+    public static SolutionContents ParseProjects(string solutionPath, string content)
     {
         var dir = Path.GetDirectoryName(solutionPath) ?? ".";
         return solutionPath.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase)
             ? ParseSlnx(content, dir)
-            : ParseSln(content, dir);
+            : new SolutionContents(ParseSln(content, dir), null);
     }
 
     private static List<SolutionProject> ParseSln(string content, string dir)
@@ -106,7 +119,7 @@ internal static class SolutionFiles
     /// one, and inventing one from the folder would rename projects that live in a differently named
     /// directory.
     /// </summary>
-    private static List<SolutionProject> ParseSlnx(string content, string dir)
+    private static SolutionContents ParseSlnx(string content, string dir)
     {
         var results = new List<SolutionProject>();
         try
@@ -122,10 +135,13 @@ internal static class SolutionFiles
         catch (Exception ex)
         {
             // An unreadable .slnx is not "zero projects": it is a failed read, and conflating the
-            // two is exactly what this class exists to correct.
+            // two is exactly what this class exists to correct. ⚠ The trace alone did not correct
+            // it — it goes to a channel nobody opens while the caller renders "Projects : 0". The
+            // cause travels with the result, and the caller is the one that has to say it.
             Diagnostics.Swallow("SolutionFiles.ParseSlnx", ex);
+            return new SolutionContents([], Diagnostics.RootMessage(ex));
         }
-        return results;
+        return new SolutionContents(results, null);
     }
 
     private static SolutionProject Entry(string rawPath, string dir, string name)
