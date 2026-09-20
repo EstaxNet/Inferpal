@@ -79,8 +79,13 @@ jobs:
       # and everything printed up to the kill is uploaded — including which test was running.
       # `--blame-hang` still names the test when the hang is inside one; the detailed logger covers
       # the case where it is not (a host that never exits once every test has passed).
+      # ⚠ The step budget is back to being the outer net, and it can work now: what defeated it
+      # before was a child holding the step's PIPE, and the output goes to a file. The in-shell
+      # watchdog fires first (9 min), the step budget second (12), and the dump step below runs
+      # `if: always()` — so the tail reaches the log even when neither of the two ended things
+      # cleanly. Only a JOB-level kill still uploads nothing, and 12 < 30 keeps us away from it.
       - name: Test (net8.0 editor-agnostic slice)
-        timeout-minutes: 20
+        timeout-minutes: 12
         run: |
           set +e
           # ⚠ The output goes to a FILE, not to the step's pipe: a surviving `testhost` holding that
@@ -96,8 +101,8 @@ jobs:
             > test-output.log 2>&1 &
           runner=$!
           (
-            sleep 600
-            echo "::warning::watchdog: killing dotnet test after 600 s"
+            sleep 540
+            echo "::warning::watchdog: killing dotnet test after 540 s"
             kill -TERM "$runner" 2>/dev/null
             sleep 10
             pkill -TERM -f testhost 2>/dev/null
@@ -109,10 +114,15 @@ jobs:
           wait $runner
           code=$?
           kill "$watchdog" 2>/dev/null
-          echo "── last 2000 lines of the test output ──"
-          tail -n 2000 test-output.log
           echo "dotnet test exit=$code"
           exit $code
+
+      # Runs even when the step above was killed by its own budget: that is the whole point.
+      - name: Test output (tail)
+        if: always()
+        run: |
+          echo "── last 3000 lines of the test output ──"
+          tail -n 3000 test-output.log || echo "no test-output.log was produced"
 
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:
