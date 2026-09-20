@@ -92,7 +92,7 @@ public class BackgroundShellRegistryTests
     {
         if (!PowerShellAvailable) return;
         using var registry = new BackgroundShellRegistry();
-        var id = registry.Start("Start-Sleep -Seconds 300", "sleep", Path.GetTempPath());
+        var id = registry.Start("Start-Sleep -Seconds 30", "sleep", Path.GetTempPath());
 
         Assert.True(registry.Stop(id));
         Assert.False(registry.Stop(id));            // already gone
@@ -104,13 +104,13 @@ public class BackgroundShellRegistryTests
     {
         if (!PowerShellAvailable) return;
         using var registry = new BackgroundShellRegistry();
-        var id = registry.Start("Start-Sleep -Seconds 300", "sleep 300", Path.GetTempPath());
+        var id = registry.Start("Start-Sleep -Seconds 30", "sleep 30", Path.GetTempPath());
 
         var jobs = registry.List();
 
         var job = Assert.Single(jobs);
         Assert.Equal(id, job.Id);
-        Assert.Equal("sleep 300", job.Command);
+        Assert.Equal("sleep 30", job.Command);
         Assert.True(job.Running);
     }
 
@@ -120,8 +120,8 @@ public class BackgroundShellRegistryTests
         // The regression this guards: closing the editor used to leave these powershells behind.
         if (!PowerShellAvailable) return;
         var registry = new BackgroundShellRegistry();
-        registry.Start("Start-Sleep -Seconds 300", "a", Path.GetTempPath());
-        registry.Start("Start-Sleep -Seconds 300", "b", Path.GetTempPath());
+        registry.Start("Start-Sleep -Seconds 30", "a", Path.GetTempPath());
+        registry.Start("Start-Sleep -Seconds 30", "b", Path.GetTempPath());
         Assert.Equal(2, registry.List().Count);
 
         registry.Dispose();

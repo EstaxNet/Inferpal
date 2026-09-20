@@ -109,9 +109,13 @@ public sealed class KilledRunIsNotAVerdictTests
                   <!-- ⚠ VSTest, measured: with no source files CoreCompile is skipped entirely,
                        and `dotnet test` reaches Build through an inner instance a BeforeTargets
                        hook on Build does not see — both returned in 0.8s and measured nothing. -->
+                  <!-- ⚠ The stall only has to outlast the 5 s budget below, and it must NOT
+                       outlast the suite: MSBuild runs this Exec from a node that DETACHES to be
+                       reused, so the grandchild can sit outside the tree the timeout kills and
+                       hold the inherited output pipe for as long as it sleeps. -->
                   <Target Name="Hang" BeforeTargets="VSTest;Build">
-                    <Exec Command="sleep 600" Condition="'$(OS)' != 'Windows_NT'" />
-                    <Exec Command="ping -n 600 127.0.0.1 &gt; nul" Condition="'$(OS)' == 'Windows_NT'" />
+                    <Exec Command="sleep 20" Condition="'$(OS)' != 'Windows_NT'" />
+                    <Exec Command="ping -n 20 127.0.0.1 &gt; nul" Condition="'$(OS)' == 'Windows_NT'" />
                   </Target>
                 </Project>
                 """);

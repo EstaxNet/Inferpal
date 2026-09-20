@@ -9,6 +9,18 @@ on:
 permissions:
   contents: read
 
+# ⚠ A build server DETACHES on purpose — an MSBuild node survives its run for fifteen minutes to
+# be reused, and so does VBCSCompiler. Anything it started is then OUTSIDE the process tree a
+# timeout kills, and it keeps the output pipes it inherited open for as long as it lives. A reader
+# waits for the last holder, not for the process it launched: that is how a step whose process is
+# dead stays `in_progress`, with no log and no `if: always()` step to print one. Measured on the
+# macOS leg, in its own cleanup: `Terminate orphan process: pid (25287) (sleep)` beside
+# `(VBCSCompiler)`. Nothing in CI is built twice, so a warm node buys nothing here.
+env:
+  MSBUILDDISABLENODEREUSE: 1
+  DOTNET_CLI_USE_MSBUILD_SERVER: 0
+  UseSharedCompilation: false
+
 # Cancel superseded runs on the same ref (e.g. rapid pushes to a PR) to save CI minutes.
 concurrency:
   group: ci-${{ github.ref }}
@@ -105,6 +117,45 @@ jobs:
         run: |
           echo "── last 3000 lines of the test output ──"
           tail -n 3000 test-output.log || echo "no test-output.log was produced"
+
+  # ⚠ A MEASUREMENT, not a safety net, and it comes out once it has answered. It runs a handful of
+  # tests on the same image, the same SDK and the same `dotnet test` as the full leg. The two issues
+  # that describe our symptom — actions/runner-images#13452 (the macOS agent freezes about one run
+  # in ten, with no diagnostic at all) and dotnet/sdk#54580 (`dotnet test` waits forever for a
+  # testhost handshake that never comes) — do not depend on how many tests run. Our own tests do. A
+  # minimal leg that hangs accuses the environment; a minimal leg that stays green while the full
+  # one hangs accuses the volume, and makes a bisection possible.
+  macos-smoke:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build (net8.0 editor-agnostic slice)
+        timeout-minutes: 10
+        run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release
+
+      - name: Test (a handful, same host)
+        timeout-minutes: 10
+        run: |
+          set +e
+          dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
+            --filter "FullyQualifiedName~PathCaseFoldingTests" \
+            --logger "console;verbosity=detailed" > smoke.log 2>&1
+          code=$?
+          echo "dotnet test exit=$code"
+          exit $code
+
+      - name: Smoke output (tail)
+        if: always()
+        run: tail -n 200 smoke.log || echo "no smoke.log was produced"
 
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:

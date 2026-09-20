@@ -77,23 +77,25 @@ public class ChildProcessTests
     [Fact]
     public async Task ATimeoutKillsTheChildAndReportsInsteadOfThrowing()
     {
-        var psi = ShellPsi("Start-Sleep -Seconds 60", "sleep 60");
+        var psi = ShellPsi("Start-Sleep -Seconds 20", "sleep 20");
 
         var started = DateTime.UtcNow;
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(2), CancellationToken.None);
 
         Assert.True(run.TimedOut);
         Assert.Equal(-1, run.ExitCode);
-        // Killed, not merely abandoned: three call sites used to leave the tree running because
-        // Process.Dispose() does not terminate anything.
-        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(30));
+        // Killed, not merely abandoned: Process.Dispose() terminates nothing.
+        // ⚠ The ceiling stays well UNDER the child's own sleep: at 30 s against a 20 s sleep the
+        // assertion is met by the child dying of old age, so a kill that never happened reads the
+        // same as one that did.
+        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(10));
     }
 
     [Fact]
     public async Task TheCallersOwnCancellationStillThrows()
     {
         // A user pressing stop is not an expired budget, and the two must not arrive as one value.
-        var psi = ShellPsi("Start-Sleep -Seconds 60", "sleep 60");
+        var psi = ShellPsi("Start-Sleep -Seconds 20", "sleep 20");
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
 
