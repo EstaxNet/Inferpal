@@ -109,11 +109,12 @@ internal static class DocContextExtractor
         if (interfaceNames.Count > 0)
         {
             var contracts = await LoadInterfaceContractsAsync(filePath, interfaceNames, ct);
-            if (contracts.Count > 0)
+            var found     = contracts.Found;
+            if (found.Count > 0)
             {
                 sb.AppendLine();
                 sb.AppendLine("**Interface contracts** (use `<inheritdoc cref=\"IFoo.Member\"/>` for explicit impls):");
-                foreach (var (ifaceName, members) in contracts)
+                foreach (var (ifaceName, members) in found)
                 {
                     sb.AppendLine($"- `{ifaceName}`:");
                     foreach (var mem in members.Take(MaxContractMembers))
@@ -126,6 +127,15 @@ internal static class DocContextExtractor
                     if (members.Count > MaxContractMembers)
                         sb.AppendLine($"  - … +{members.Count - MaxContractMembers} more member(s)");
                 }
+            }
+
+            // An interface that simply lives elsewhere says nothing — that is the ordinary case.
+            // One that was FOUND and not read renders identically, and the model then writes its
+            // own summary for members it could have inherited.
+            if (contracts.Skipped.Count > 0)
+            {
+                if (found.Count == 0) sb.AppendLine();
+                sb.AppendLine($"- ⚠ contract not read: {string.Join(", ", contracts.Skipped)}");
             }
         }
 
@@ -235,17 +245,30 @@ internal static class DocContextExtractor
 
     private sealed record InterfaceMember(string Signature, string? Summary);
 
+    /// <summary>What the contract scan found, and what it deliberately did not read.</summary>
+    /// <param name="Skipped">
+    /// Files that matched an interface of this type and were <b>not</b> read, with the reason.
+    /// ⚠ Never folded into an absent contract: an interface that simply lives elsewhere is the
+    /// ordinary case and says nothing, while a contract that was found and skipped renders the
+    /// same way — and the model then writes its own summary for members it could have inherited.
+    /// The member cap two screens up already carries this rule ("+N more member(s)"); this is the
+    /// same rule one level higher, where the whole contract disappears instead of its tail.
+    /// </param>
+    private sealed record InterfaceContracts(
+        Dictionary<string, List<InterfaceMember>> Found, List<string> Skipped);
+
     /// <summary>
     /// Scans sibling <c>I*.cs</c> files (current dir + one level up) to find
     /// interface definitions and extract their member signatures + XML doc summaries.
     /// </summary>
-    private static async Task<Dictionary<string, List<InterfaceMember>>> LoadInterfaceContractsAsync(
+    private static async Task<InterfaceContracts> LoadInterfaceContractsAsync(
         string sourceFile, List<string> interfaceNames, CancellationToken ct)
     {
-        var result = new Dictionary<string, List<InterfaceMember>>(StringComparer.Ordinal);
+        var result  = new Dictionary<string, List<InterfaceMember>>(StringComparer.Ordinal);
+        var skipped = new List<string>();
 
         var dir = Path.GetDirectoryName(sourceFile);
-        if (dir is null) return result;
+        if (dir is null) return new InterfaceContracts(result, skipped);
 
         // Search current dir, then parent dir (handles Services/I*.cs patterns)
         var searchDirs = new List<string> { dir };
@@ -264,7 +287,11 @@ internal static class DocContextExtractor
 
             foreach (var candidate in candidates)
             {
-                if (filesScanned >= MaxInterfaceFiles) break;
+                if (filesScanned >= MaxInterfaceFiles)
+                {
+                    Skip(skipped, candidate, "the contract scan stopped at " + MaxInterfaceFiles + " files");
+                    break;
+                }
                 ct.ThrowIfCancellationRequested();
 
                 // Only load files likely to contain one of our target interfaces
@@ -276,7 +303,11 @@ internal static class DocContextExtractor
 
                 try
                 {
-                    if (new FileInfo(candidate).Length > MaxInterfaceFileBytes) continue;
+                    if (new FileInfo(candidate).Length > MaxInterfaceFileBytes)
+                    {
+                        Skip(skipped, candidate, "its file is over " + (MaxInterfaceFileBytes / 1000) + " KB");
+                        continue;
+                    }
 
                     var src = await File.ReadAllTextAsync(candidate, ct);
                     filesScanned++;
@@ -291,11 +322,21 @@ internal static class DocContextExtractor
                             result[ifaceName] = members;
                     }
                 }
-                catch { /* skip unreadable / parse errors */ }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Skip(skipped, candidate, "it could not be read");
+                }
             }
         }
 
-        return result;
+        return new InterfaceContracts(result, skipped);
+    }
+
+    /// <summary>Records a contract that was found and NOT read, with the reason.</summary>
+    private static void Skip(List<string> skipped, string candidate, string why)
+    {
+        var entry = Path.GetFileName(candidate) + " (" + why + ")";
+        if (!skipped.Contains(entry, StringComparer.Ordinal)) skipped.Add(entry);
     }
 
     // ── Interface body parser ──────────────────────────────────────────────────
