@@ -29,6 +29,12 @@ internal static class DebugStateFormatter
 
         var root = rootDir!.Replace('/', '\\').TrimEnd('\\');
         var kept = frames
+            // ⚠ Case-folded ON PURPOSE, and named as such next to the other deliberate foldings:
+            // this file is shared IN SOURCE with the net472 in-process half, which cannot reference
+            // the Core, so `PathComparer` is out of reach here — and duplicating the answer to "same
+            // file?" is what that type exists to prevent. The error direction is also the safe one:
+            // folding keeps a frame, and `UserFrames` already returns every frame when the filter
+            // leaves none.
             .Where(f => f.File is not null &&
                         f.File.Replace('/', '\\').StartsWith(root + "\\", StringComparison.OrdinalIgnoreCase))
             .ToList();

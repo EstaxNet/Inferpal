@@ -44,6 +44,17 @@ internal static class SnippetStore
     public static Task<List<Snippet>> LoadAllAsync(CancellationToken ct) =>
         _file.LoadAsync([], ct: ct);
 
+    /// <summary>
+    /// Same, plus whether the file <b>could not be read</b>. The listing needs the difference: a
+    /// snippet is something the user chose to keep, so "none saved yet" is the one sentence that
+    /// must never stand in for "this file did not open".
+    /// </summary>
+    public static Task<(List<Snippet> Value, bool Unreadable)> ReadAllAsync(CancellationToken ct) =>
+        _file.ReadAsync([], ct);
+
+    /// <summary>Where the snippets live — named in the message when they cannot be read.</summary>
+    public static string FilePath => _file.Path;
+
     /// <returns><c>true</c> when written, or when the index names no snippet (nothing to write).</returns>
     public static async Task<bool> DeleteAsync(int index, CancellationToken ct)
     {

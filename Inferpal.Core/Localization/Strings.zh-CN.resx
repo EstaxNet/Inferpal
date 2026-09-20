@@ -748,6 +748,7 @@ ollama serve
   <data name="SnippetsDeleted" xml:space="preserve"><value>已删除第 {0} 个代码片段。</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>无法保存代码片段库——未做任何更改。原因见 `/diagnostics`。</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>尚未保存任何代码片段。点击代码块上的 ⭐ 按钮即可保存。</value></data>
+  <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ 无法读取代码片段库（{0}）—— 这并不是“未保存任何片段”。您的片段仍在该文件中；Inferpal 会在写入新内容前将其另存。原因请见 /diagnostics。</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>用法：`/note &lt;文本&gt;` — 向 `.inferpal/notes.md` 追加一条带时间戳的笔记。</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>已保存笔记：*{0}*</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>已清除项目笔记。</value></data>

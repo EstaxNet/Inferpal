@@ -970,6 +970,8 @@ internal static class Strings
     /// <inheritdoc cref="SnippetsWriteFailed"/>
     public static string ArenaPendingNotSaved                => Get(nameof(ArenaPendingNotSaved));
     public static string SnippetsNone                        => Get(nameof(SnippetsNone));
+    /// <summary>The snippet file exists and did not open — never "none saved yet".</summary>
+    public static string SnippetsUnreadable(string path) => string.Format(Get(nameof(SnippetsUnreadable)), path);
 
     public static string NoteUsage                           => Get(nameof(NoteUsage));
     public static string NoteSaved(string text)              => string.Format(Get(nameof(NoteSaved)), text);

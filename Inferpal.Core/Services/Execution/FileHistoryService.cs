@@ -191,8 +191,12 @@ internal class FileHistoryService
         try
         {
             var full = Path.GetFullPath(snapshotPath);
-            return string.Equals(Path.GetDirectoryName(full), Path.GetFullPath(GetHistoryDir(originalPath)),
-                                 StringComparison.OrdinalIgnoreCase)
+            // ⚠ A path IDENTITY, and the one that gates a sandbox exemption: a `true` here is what
+            // lets `restore_file` accept a source ABOVE the workspace root. Folding case on a volume
+            // that does not fold makes two different directories one, so a history folder differing
+            // only by case would carry the exemption. The shared rule answers "same file?" once.
+            var history = Path.GetFullPath(GetHistoryDir(originalPath));
+            return string.Equals(Path.GetDirectoryName(full), history, PathComparer.Comparison)
                    && MatchesSuffix(full, SnapshotSuffix(originalPath));
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)

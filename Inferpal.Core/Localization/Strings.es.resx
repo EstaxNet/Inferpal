@@ -748,6 +748,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="SnippetsDeleted" xml:space="preserve"><value>Fragmento n.º {0} eliminado.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>No se pudo guardar la biblioteca de fragmentos: no se ha cambiado nada. `/diagnostics` indica la causa.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Aún no hay fragmentos guardados. Usa el botón ⭐ en cualquier bloque de código para guardar uno.</value></data>
+  <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ No se pudo leer la biblioteca de fragmentos ({0}): esto NO significa «ningún fragmento guardado». Sus fragmentos siguen en ese archivo; Inferpal lo aparta antes de escribir nada nuevo. Consulte /diagnostics para ver la causa.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Uso: `/note &lt;texto&gt;` — añade una nota con marca de tiempo a `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Nota guardada: *{0}*</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Notas del proyecto borradas.</value></data>

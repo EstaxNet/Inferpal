@@ -748,6 +748,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet #{0} gelöscht.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>Die Snippet-Bibliothek konnte nicht gespeichert werden — nichts wurde geändert. Die Ursache steht in `/diagnostics`.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Noch keine Snippets gespeichert. Nutzen Sie die ⭐-Schaltfläche an einem Codeblock, um eines zu speichern.</value></data>
+  <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ Die Snippet-Bibliothek konnte nicht gelesen werden ({0}) — das heißt NICHT „keine Snippets gespeichert“. Ihre Snippets sind weiterhin in dieser Datei; Inferpal legt sie beiseite, bevor etwas Neues geschrieben wird. Ursache siehe /diagnostics.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Verwendung: `/note &lt;Text&gt;` — fügt eine Notiz mit Zeitstempel zu `.inferpal/notes.md` hinzu.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Notiz gespeichert: *{0}*</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Projektnotizen gelöscht.</value></data>

@@ -756,6 +756,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet n°{0} supprimé.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>La bibliothèque de snippets n'a pas pu être enregistrée — rien n'a été modifié. `/diagnostics` en donne la cause.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Aucun snippet enregistré. Utilisez le bouton ⭐ sur un bloc de code pour en enregistrer un.</value></data>
+  <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ La bibliothèque d'extraits n'a pas pu être lue ({0}) — ce n'est PAS « aucun extrait enregistré ». Vos extraits sont toujours dans ce fichier ; Inferpal le met de côté avant d'écrire quoi que ce soit. Voir /diagnostics pour la cause.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Utilisation : `/note &lt;texte&gt;` — ajoute une note horodatée à `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Note enregistrée : *{0}*</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Notes de projet effacées.</value></data>

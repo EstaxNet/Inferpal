@@ -748,6 +748,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SnippetsDeleted" xml:space="preserve"><value>スニペット #{0} を削除しました。</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>スニペットライブラリを保存できませんでした。何も変更されていません。原因は `/diagnostics` にあります。</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>保存されたスニペットはまだありません。コードブロックの ⭐ ボタンで保存できます。</value></data>
+  <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ スニペットライブラリを読み取れませんでした ({0})。「保存済みのスニペットなし」という意味ではありません。スニペットはそのファイルに残っており、Inferpal は新しく書き込む前に退避します。原因は /diagnostics をご覧ください。</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>使い方: `/note &lt;テキスト&gt;` — タイムスタンプ付きのメモを `.inferpal/notes.md` に追加します。</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>メモを保存しました: *{0}*</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>プロジェクトのメモをクリアしました。</value></data>

@@ -748,6 +748,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="SnippetsDeleted" xml:space="preserve"><value>Usunięto fragment nr {0}.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>Nie udało się zapisać biblioteki fragmentów — nic nie zostało zmienione. Przyczynę znajdziesz w `/diagnostics`.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Nie zapisano jeszcze żadnych fragmentów. Użyj przycisku ⭐ na bloku kodu, aby zapisać.</value></data>
+  <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać biblioteki fragmentów ({0}) — to NIE znaczy „brak zapisanych fragmentów”. Twoje fragmenty nadal są w tym pliku; Inferpal odkłada go na bok przed zapisaniem czegokolwiek nowego. Przyczynę zobaczysz w /diagnostics.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Użycie: `/note &lt;tekst&gt;` — dodaje notatkę ze znacznikiem czasu do `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Zapisano notatkę: *{0}*</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Wyczyszczono notatki projektu.</value></data>

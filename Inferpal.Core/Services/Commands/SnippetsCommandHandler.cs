@@ -56,7 +56,12 @@ internal static class SnippetsCommandHandler
         if (sub != "list" || parts.Length > 2)
             return new(Strings.SlashUsage("/snippets [list | copy <n> | delete <n> | clear]"));
 
-        var all = await SnippetStore.LoadAllAsync(ct);
+        // ⚠ "No snippets saved yet" and "that file did not open" both arrive here as an empty
+        // list, and the first sentence ends by offering the gesture that WRITES — told to someone
+        // who has a hundred, it invites them to replace them. The bytes are kept (the store sets an
+        // unreadable file aside before overwriting), but a recovery nobody is told about is not one.
+        var (all, unreadable) = await SnippetStore.ReadAllAsync(ct);
+        if (unreadable) return new(Strings.SnippetsUnreadable(SnippetStore.FilePath));
         return all.Count == 0
             ? new(Strings.SnippetsNone)
             : new(SnippetStore.FormatList(all));

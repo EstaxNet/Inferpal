@@ -92,20 +92,32 @@ internal sealed class AppDataJsonFile<T>
     /// <summary>
     /// Reads the document, or <paramref name="fallback"/> when it is absent, empty or unreadable.
     /// </summary>
-    public async Task<T> LoadAsync(T fallback, CancellationToken ct = default)
+    public async Task<T> LoadAsync(T fallback, CancellationToken ct = default) =>
+        (await ReadAsync(fallback, ct)).Value;
+
+    /// <summary>
+    /// The document, and whether reading it <b>failed</b> — which is not the same as it being absent.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Both come back as <paramref name="fallback"/>, and a caller that renders that as "nothing
+    /// saved yet" tells someone with a hundred entries that they have none — then offers them the
+    /// gesture that overwrites the file. Absence is a fact about the user; a failed read is a fact
+    /// about one file, and only the second has a remedy worth naming.
+    /// </remarks>
+    public async Task<(T Value, bool Unreadable)> ReadAsync(T fallback, CancellationToken ct = default)
     {
         try
         {
-            if (!File.Exists(Path)) return fallback;
+            if (!File.Exists(Path)) return (fallback, false);
 
             var value = JsonSerializer.Deserialize<T>(await File.ReadAllTextAsync(Path, ct), _opts);
-            return value is not null && Readable(value) ? value : fallback;
+            return value is not null && Readable(value) ? (value, false) : (fallback, true);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             Diagnostics.Swallow($"{_diagnosticName}.Load", ex);
-            return fallback;
+            return (fallback, true);
         }
     }
 

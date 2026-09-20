@@ -208,4 +208,37 @@ public class SnippetsCommandHandlerTests : IDisposable
         Assert.Equal(Strings.SlashUsage("/snippets [list | copy <n> | delete <n> | clear]"), result.Message);
         Assert.Single(await SnippetStore.LoadAllAsync(CancellationToken.None));
     }
+
+    /// <summary>
+    /// "No snippets saved yet" is a fact about the USER; a file that will not open is a fact about
+    /// one file, and only the second has a remedy worth naming.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Both used to arrive as an empty list, and the empty sentence ends by offering the ⭐ button
+    /// — i.e. the gesture that WRITES. Told to someone holding a hundred snippets, it invites them to
+    /// replace them. The bytes are kept (the store sets an unreadable file aside before overwriting),
+    /// but a recovery nobody is told about is not one.
+    /// </remarks>
+    [Fact]
+    public async Task List_WhenTheFileCannotBeRead_SaysSo_RatherThanNoneSavedYet()
+    {
+        File.WriteAllText(_tempFile, "{ not json at all");
+
+        var result = await SnippetsCommandHandler.HandleAsync(Cmd(), CancellationToken.None);
+
+        Assert.NotEqual(Strings.SnippetsNone, result.Message);
+        Assert.Equal(Strings.SnippetsUnreadable(_tempFile), result.Message);
+    }
+
+    /// <summary>The other half: a genuinely empty library still says the ordinary thing.</summary>
+    [Fact]
+    public async Task List_WhenTheFileIsAbsent_StillSaysNoneSavedYet()
+    {
+        if (File.Exists(_tempFile)) File.Delete(_tempFile);
+
+        var result = await SnippetsCommandHandler.HandleAsync(Cmd(), CancellationToken.None);
+
+        Assert.Equal(Strings.SnippetsNone, result.Message);
+    }
+
 }

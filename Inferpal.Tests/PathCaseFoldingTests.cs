@@ -136,13 +136,21 @@ public class PathCaseFoldingTests
     /// <b>deliberately</b> and must go on doing so — excluded folder names (<c>bin</c>, <c>obj</c>,
     /// <c>node_modules</c>: a <c>BIN</c> must stay excluded), <c>@Docs</c> URLs (a host is
     /// case-insensitive), the diff anchor suffix, and the <c>/tests/</c> heuristic of
-    /// <c>analyze_impact</c>. A scan rule would live off those exemptions, which this repository
-    /// forbids itself.
+    /// <c>analyze_impact</c>, and the debugger frame filter of <c>DebugStateFormatter</c>, whose
+    /// file is shared IN SOURCE with the net472 in-process half and therefore cannot reach
+    /// <c>PathComparer</c> at all. A scan rule would live off those exemptions, which this
+    /// repository forbids itself.
     /// ⚠ The site that stings is <c>analyze_impact</c>: skipping the target file in its own scan
     /// for dependants is an identity, and folding it dropped a <b>real</b> dependant on Linux —
     /// with no cap and no read failure, hence invisible to the whole coverage machinery.
+    /// ⚠ And the sharpest is <c>IsSnapshotOf</c>: a <c>true</c> there is what lets
+    /// <c>restore_file</c> accept a snapshot source ABOVE the workspace root, so folding case on a
+    /// volume that does not fold hands that exemption to a history folder that only differs by
+    /// case. Its file already passed the collection assertion below — it keys collections with
+    /// the shared comparer — which is exactly how a direct comparison inside it stayed raw.
     /// </remarks>
     [Theory]
+    [InlineData("Inferpal.Core", "Services", "Execution", "FileHistoryService.cs", "Path.GetDirectoryName(full)")]
     [InlineData("Inferpal.Core", "Services", "Tools", "AnalyzeImpactTool.cs", "file.Equals(targetFile")]
     [InlineData("Inferpal.Core", "Services", "Lsp", "CSharpSemanticIndex.cs", "path.StartsWith(root")]
     [InlineData("Inferpal.Core", "Services", "WorkspaceScan.cs", "path.StartsWith(r,")]
