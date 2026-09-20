@@ -38,7 +38,6 @@ namespace Inferpal.GhostText;
 /// child dies too: its stdin closes, which its loop treats as a shutdown order.
 /// </para>
 /// </remarks>
-/// </remarks>
 internal static class FimSidecar
 {
     private const string ExeName = "Inferpal.Fim.exe";
@@ -63,6 +62,32 @@ internal static class FimSidecar
     // What a request receives when the pipe closes under it: the sidecar went away without answering.
     // A distinct instance compared by reference — never an answer, never a cancellation (null).
     private static readonly string DeadPipe = new string('\0', 1);
+
+    // Same, for the sidecar that is ALIVE and simply never answers.
+    private static readonly string NoAnswer = new string('\0', 2);
+
+    /// <summary>
+    /// How long a completion may take before the wait is abandoned.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ Without it the wait is bounded by the CALLER's token alone, and that token is cancelled by
+    /// the next keystroke — so a sidecar that is alive, whose pipe is open, and that never answers
+    /// leaves the request hanging for as long as the user waits for the suggestion, which is exactly
+    /// what someone does while waiting for a suggestion. Every other death branch here says why
+    /// (<see cref="NoteDeathLocked"/>, <see cref="ReleasePending"/> — "nobody must stay hanging on a
+    /// dead pipe"); this was the one branch that never returned at all, so the <c>fim</c> door stayed
+    /// false with no reason, the state this component is built to never produce.
+    /// </para>
+    /// <para>
+    /// Generous on purpose, and aligned with the MCP client's <c>CallTimeout</c>: the three other
+    /// RPCs of this repository (MCP over stdio, MCP over HTTP, the LSP server) all carry a budget,
+    /// and this is the fourth. ⚠ It does <b>not</b> recycle the sidecar: a cold model load can take
+    /// a long time, and killing a process that is loading turns a slow first completion into a
+    /// restart loop. A wedged sidecar therefore costs one budget per keystroke — and says so.
+    /// </para>
+    /// </remarks>
+    private static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(120);
 
     // First stderr line of the current sidecar: a .NET start-up crash puts its cause there ("Could
     // not load file or assembly…"), and that is the reason a user needs to read.
@@ -116,12 +141,16 @@ internal static class FimSidecar
             Send(stdin, payload);
 
             string? raw;
+            using (var budget = new CancellationTokenSource(CallTimeout))
+            using (budget.Token.Register(() => Expire(id)))
             using (ct.Register(() => Cancel(id)))
                 raw = await tcs.Task.ConfigureAwait(false);
 
-            // Cancelled (null), or the pipe closed under the request (DeadPipe — ReadLoop has said
-            // why): neither is an answer, and neither may be recorded as one.
-            if (raw is null || ReferenceEquals(raw, DeadPipe)) return null;
+            // Cancelled (null), the pipe closed under the request (DeadPipe — ReadLoop has said
+            // why), or the budget expired (NoAnswer — Expire has said why): none is an answer, and
+            // none may be recorded as one.
+            if (raw is null || ReferenceEquals(raw, DeadPipe) || ReferenceEquals(raw, NoAnswer))
+                return null;
 
             // ⚠ The door is recorded on an ANSWER, not on a start: a process that starts and then
             // dies on the first request is not a working sidecar. Recording it clears the reason,
@@ -294,6 +323,23 @@ internal static class FimSidecar
         var first  = _firstStderr?.Trim();
         if (string.IsNullOrEmpty(first)) return reason;
         return reason + ": " + (first!.Length <= 200 ? first : first.Substring(0, 200) + "…");
+    }
+
+    /// <summary>
+    /// The budget ran out: the sidecar is alive and has not answered. Say why — a door that is
+    /// false without a reason is the one thing <see cref="InProcAliveSignal"/> exists to prevent —
+    /// then tell the sidecar to drop the request, exactly as a keystroke would.
+    /// </summary>
+    private static void Expire(int id)
+    {
+        if (!_pending.TryGetValue(id, out var tcs)) return;   // answered between the two
+        if (!tcs.TrySetResult(NoAnswer)) return;
+
+        Interlocked.Exchange(ref _answered, 0);
+        Services.Signals.InProcAliveSignal.RecordFimUnavailable(
+            "sidecar did not answer within " + CallTimeout.TotalSeconds.ToString("0", CultureInfo.InvariantCulture) + " s");
+
+        Cancel(id);
     }
 
     private static void Cancel(int id)

@@ -240,6 +240,63 @@ public class InProcContractTests
             source);
     }
 
+    /// <summary>
+    /// Every RPC this repository speaks carries a BUDGET — including the one to the FIM sidecar.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Three of the four already did: the MCP client over stdio and over HTTP share their
+    /// <c>HandshakeTimeout</c>/<c>CallTimeout</c> in a base class, precisely so the two transports
+    /// cannot quietly drift, and the LSP server carries its own pair. The fourth waited on nothing
+    /// but the CALLER's token — and that token is cancelled by the next keystroke, so a sidecar that
+    /// is alive, whose pipe is open, and that never answers leaves the request hanging for exactly
+    /// as long as the user waits for the suggestion.
+    /// </para>
+    /// <para>
+    /// ⚠ What makes it worse than a lost completion: every other death branch of that file says WHY
+    /// (<c>NoteDeathLocked</c>, and <c>ReleasePending</c> whose summary is "nobody must stay hanging
+    /// on a dead pipe"), so the <c>fim</c> door of <see cref="InProcAliveSignal"/> was left false
+    /// with no reason — the one state that component exists to prevent.
+    /// </para>
+    /// <para>
+    /// ⚠ A source scan, and it reads the file WITHOUT its comments: the remark documenting this very
+    /// budget names <c>CallTimeout</c>, so a raw-text assertion would be green on the prose that
+    /// describes the fix rather than on the fix.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheFimSidecarWait_CarriesABudget_AndSaysSoWhenItExpires()
+    {
+        var source = ConventionCoverageTests.CodeOnly(Path.Combine(
+            RepoRoot(), "Inferpal.InProc", "Fim", "FimSidecar.cs"));
+
+        // WITNESS: this is still the request that waits for the sidecar's answer.
+        Assert.Contains("await tcs.Task", source, StringComparison.Ordinal);
+        Assert.Contains("ct.Register(() => Cancel(id))", source, StringComparison.Ordinal);
+
+        Assert.Contains("CallTimeout", source, StringComparison.Ordinal);
+        Assert.Contains("new CancellationTokenSource(CallTimeout)", source, StringComparison.Ordinal);
+        Assert.Contains("Register(() => Expire(id))", source, StringComparison.Ordinal);
+
+        // The expiry says why, in the channel that reports this half's liveness — and it is a
+        // distinct outcome from a cancellation (null) and from a dead pipe.
+        Assert.Contains("RecordFimUnavailable", source, StringComparison.Ordinal);
+        Assert.Contains("NoAnswer", source, StringComparison.Ordinal);
+
+        // WITNESS for the comparison above: the three sibling transports still name a budget, so
+        // this assertion is about a rule the repository holds rather than one it lost.
+        foreach (var (file, constant) in new[]
+                 {
+                     (Path.Combine("Inferpal.Core", "Services", "Mcp", "McpClientBase.cs"), "CallTimeout"),
+                     (Path.Combine("Inferpal.Core", "Services", "Lsp", "LspSemanticProvider.cs"), "RequestTimeout"),
+                 })
+        {
+            Assert.Contains(constant,
+                ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), file)),
+                StringComparison.Ordinal);
+        }
+    }
+
     private static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
