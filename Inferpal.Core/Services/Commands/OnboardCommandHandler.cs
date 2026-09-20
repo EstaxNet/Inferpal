@@ -269,14 +269,31 @@ internal static class OnboardCommandHandler
             // is exactly the kind of thing it will happily invent a purpose for — "Inferpal.Host"
             // reads as the Visual Studio front-end to anything that has not looked inside.
             if (dirs.Count > 0) sb.Append("\n## Inside each top-level folder (sample)\n");
+            var nothingToSample = new List<string>();
             foreach (var dir in dirs.Take(MaxSampledDirs))
             {
                 var children = SampleChildren(Path.Combine(root, dir));
-                if (children.Count == 0) continue;
+                if (children.Count == 0) { nothingToSample.Add(dir); continue; }
                 sb.Append("- `").Append(dir).Append("/` → ").Append(string.Join(", ", children)).Append('\n');
             }
+
+            // ⚠ A folder listed above with no line here is back to being a NAME, which the remark
+            // above says is exactly what the model invents a purpose for. Three states render
+            // identically without this: cut by the cap, empty, and holding only build/vendor
+            // folders — and this brief becomes the system prompt of every later session.
+            if (dirs.Count > MaxSampledDirs)
+                sb.Append("- ⚠ not looked inside (the sample stops at ").Append(MaxSampledDirs)
+                  .Append(" folders): ").Append(string.Join(", ", dirs.Skip(MaxSampledDirs))).Append('\n');
+            if (nothingToSample.Count > 0)
+                sb.Append("- ⚠ nothing to sample (empty, or only build/vendor folders): ")
+                  .Append(string.Join(", ", nothingToSample)).Append('\n');
         }
-        catch (Exception ex) { Diagnostics.Swallow("Onboard.Layout", ex); }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("Onboard.Layout", ex);
+            // A heading with nothing under it reads as "this repository has no top-level folders".
+            sb.Append("- ⚠ the layout could not be read: ").Append(Diagnostics.RootMessage(ex)).Append('\n');
+        }
 
         var readme = FindReadme(root);
         if (readme is not null)
