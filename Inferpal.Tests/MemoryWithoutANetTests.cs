@@ -20,13 +20,13 @@ namespace Inferpal.Tests;
 /// NOT happen: every editing tool promises that restore_file and /undo-run bring the previous
 /// version back, and a failed snapshot leaves nothing to bring back — a deletion is then
 /// permanent »</i>. <c>apply_diff</c>, <c>apply_edits</c>, <c>write_file</c>, <c>delete_file</c>,
-/// <c>rename_symbol</c>, <c>restore_file</c> et <c>BackedUpFileWriter</c> avortent sur
+/// <c>rename_symbol</c>, <c>restore_file</c> and <c>BackedUpFileWriter</c> all abort on
 /// <c>!saved</c>. <c>update_memory</c> called the method underneath — <c>SnapshotAsync</c> — and
 /// ignored what it returned.
 /// </para>
 /// <para>
 /// ⚠ <b>And the line just above the call PROMISED that net</b>: <i>"Before the write, so
-/// /undo-run can put back a memory that "clear" or "replace" removed »</i>. Avec
+/// /undo-run can put back a memory that "clear" or "replace" removed"</i>. Under
 /// <c>mode: "clear"</c>, the project memory — re-injected into the system prompt of every later
 /// session — was emptied with no net and the turn answered success.
 /// </para>

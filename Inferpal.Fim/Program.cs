@@ -7,7 +7,7 @@ using Inferpal.Services.Signals;
 // ── Discipline de stdout ──────────────────────────────────────────────────────
 // stdout belongs to the JSON-RPC framing: a single stray Console.WriteLine would corrupt the
 // stream. Grab the raw pipes first, then send Console.Out to stderr, which the caller (the
-// ghost-text in-process) recopie dans /diagnostics.
+// ghost-text in-process half) copies into /diagnostics.
 var stdout = Console.OpenStandardOutput();
 var stdin  = Console.OpenStandardInput();
 Console.SetOut(Console.Error);

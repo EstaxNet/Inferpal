@@ -16,7 +16,7 @@ namespace Inferpal.Tests;
 /// <c>run_command</c>, the persistent shell, every background job and every user shell tool died on
 /// a <c>Win32Exception</c> — while the POSIX wrapper of
 /// <see cref="ShellStateProtocol"/>, which uses nothing but <c>printf</c>/<c>eval</c>/<c>base64</c>/
-/// <c>awk</c>/<c>printenv</c>/<c>tr</c> (aucun bashisme : ni tableau, ni <c>local</c>, ni
+/// <c>awk</c>/<c>printenv</c>/<c>tr</c> (no bashism: no array, no <c>local</c>, no
 /// <c>[[ ]]</c>), would have run unchanged under <c>/bin/sh</c>.
 /// </para>
 /// <para>

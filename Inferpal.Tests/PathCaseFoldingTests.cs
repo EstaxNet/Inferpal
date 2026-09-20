@@ -88,7 +88,7 @@ public class PathCaseFoldingTests
         Assert.DoesNotContain("IsWindows()", code, StringComparison.Ordinal);
     }
 
-    // ── Une question, un lecteur ─────────────────────────────────────────────
+    // ── One question, one reader ─────────────────────────────────────────────
 
     [Fact]
     public void NoSiteAnswersTheQuestionOnItsOwn()

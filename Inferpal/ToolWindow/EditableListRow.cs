@@ -10,12 +10,16 @@ namespace Inferpal.ToolWindow;
 /// <see cref="Field2"/>) used to repopulate the inline editor, and per-row Edit/Delete commands.
 /// </summary>
 /// <remarks>
-/// Same RemoteUI snapshot caveat as <see cref="McpServerRow"/>: a per-item property changed
-/// <em>after</em> the row is added to the bound <c>ObservableCollection</c> is not propagated to
-/// the template. The parent therefore never mutates a live row — it rebuilds the whole collection
-/// from the persisted text on every add/edit/delete (see <c>InferpalSettingsData.BuildPinnedRows</c>
-/// and friends). Themed brushes/tooltips shared by all rows live on the root VM and are bound via
-/// <c>ElementName=root</c>. Deliberately no member named <c>Name</c> (reserved in RemoteUI
+/// Themed brushes and tooltips are shared by all rows: they live on the root VM and are bound via
+/// <c>ElementName=root</c>, like <see cref="McpServerRow"/>'s. The parent rebuilds the whole
+/// collection from the persisted text on every add/edit/delete (see
+/// <c>InferpalSettingsData.BuildPinnedRows</c> and friends) — the text on disk is the source of
+/// truth, and rebuilding keeps the two from drifting.
+/// <para>
+/// ⚠ That rebuild is a choice, not a platform constraint: a bound row CAN be updated in place
+/// (<see cref="McpServerRow"/> does it on every status refresh). ⚠ And the choice does not travel:
+/// these lists are <c>ItemsControl</c>s with no selection, whereas rebuilding a collection bound to
+/// a <c>SelectedItem</c> is the defect <c>SelectionPreservingList</c> exists to prevent. Deliberately no member named <c>Name</c> (reserved in RemoteUI
 /// serialization — it renders blank).
 /// </remarks>
 [DataContract]

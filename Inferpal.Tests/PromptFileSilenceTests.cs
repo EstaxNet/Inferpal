@@ -61,7 +61,7 @@ public sealed class PromptFileSilenceTests : IDisposable
         try { Directory.Delete(_root, recursive: true); } catch { }
     }
 
-    // ── Rendre un FICHIER illisible ───────────────────────────────────────────
+    // ── Making a FILE unreadable ──────────────────────────────────────────────
 
     /// <summary>
     /// The file is held open with <see cref="FileShare.None"/>, as another process would —

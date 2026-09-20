@@ -168,8 +168,8 @@ public class WorkspaceScanTests
     /// extension". The walk must therefore translate the pattern
     /// (<c>FileSystemName.TranslateWin32Expression</c>) before matching it, the way
     /// <c>Directory.EnumerateFiles</c>: measured, without the translation <c>*.*</c> lost
-    /// <c>Makefile</c> and <c>*.</c> returned nothing. Both patterns are written by the model
-    /// pour <c>list_files</c> et <c>search_in_files</c>.
+    /// <c>Makefile</c> and <c>*.</c> returned nothing. Both patterns are written by the model,
+    /// for <c>list_files</c> and <c>search_in_files</c>.
     /// </summary>
     [Theory]
     [InlineData("*",        "A.cs Makefile note.txt")]

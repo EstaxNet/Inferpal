@@ -10,8 +10,8 @@ namespace Inferpal.Tests;
 // §27.1 - the blind window of the RAG watcher. The watcher is armed BEFORE the initial pass and
 // the backlog accumulated during the pass is drained after the final SaveAsync: a file modified
 // while the pass runs no longer stays stale until the next boot. The drain (and the normal watcher
-// path) reuses the embeddings of chunks whose hash is unchanged instead of re-embedding
-// le fichier entier.
+// path) reuses the embeddings of chunks whose hash is unchanged instead of re-embedding the
+// whole file.
 // Serialized: two tests here read the Diagnostics ring buffer, which is static.
 [Collection("Diagnostics")]
 public sealed class ProjectIndexServiceWatcherTests : IDisposable
@@ -93,8 +93,8 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
         var svc = NewService(provider);
         svc.StartIndexing(_root);
 
-        // Before the fix, the watcher did not exist during the pass: the rewrite was
-        // invisible et l'index gardait AlphaOriginal jusqu'au prochain boot (timeout ici).
+        // Without a watcher armed during the pass, the rewrite is invisible and the index keeps
+        // AlphaOriginal until the next boot (hence the timeout here).
         await WaitUntilAsync(async () =>
         {
             var chunks = await svc.GetFileChunksAsync(file, _root, CancellationToken.None);

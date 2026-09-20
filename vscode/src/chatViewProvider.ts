@@ -30,6 +30,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private models: string[] = [];
   private model = '';
   private busy = false;
+
+  /** Channels that have already said why they are degraded, so a per-keystroke path says it once. */
+  private readonly saidOnce = new Set<string>();
   /** Step-by-step pause in force: its banner holds the only Resume button, and the transcript does
    *  not carry it, so hydrate posts it again. */
   private stepPaused = false;
@@ -521,7 +524,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.applySession(branch.messages);
       return [branch.message, true];
     } catch (err) {
-      this.log(`[chat] branch failed: ${String(err)}`);
+      this.gestureFailed('branch', err);
       return [ChatViewProvider.errorText(err), false];
     }
   }
@@ -552,7 +555,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       return [decision.message ?? '', false];
     } catch (err) {
-      this.log(`[chat] branch command failed: ${String(err)}`);
+      this.gestureFailed('branch command', err);
       return [ChatViewProvider.errorText(err), false];
     }
   }
@@ -574,7 +577,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.applySession(loaded.messages);
       return [true, ''];
     } catch (err) {
-      this.log(`[chat] branch switch failed: ${String(err)}`);
+      this.gestureFailed('branch switch', err);
       return [false, ChatViewProvider.errorText(err)];
     }
   }
@@ -817,7 +820,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         try {
           await this.getHost()?.chatCancel();
         } catch (err) {
-          this.log(`[chat] cancel failed: ${String(err)}`);
+          // Stop that does not reach the host leaves the turn running, and the button has already
+          // gone back to its idle look.
+          this.gestureFailed('cancel', err);
         }
         return;
       case 'reset':
@@ -864,8 +869,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       case 'xrayToggle': {
         // Applies the toggle host-side (next turns) and re-renders the refreshed panel.
-        const host = this.getHost();
-        if (!host?.isRunning) {
+        const host = this.hostForGesture();
+        if (!host) {
           return;
         }
         try {
@@ -919,15 +924,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await this.openXray();
         return;
       case 'mentionSearch': {
+        // ⚠ Said ONCE, and re-armed on the first search that works again: this runs on every
+        // keystroke, so a toast per call would be the noise that stops being read. An empty
+        // suggestion list otherwise reads as "no file matches", which is a fact about the
+        // workspace, not about a search that never ran.
         const host = this.getHost();
         if (!host?.isRunning) {
+          this.sayOnce('mentionSearch', hostUnavailableMessage());
           return;
         }
         try {
           const items = await host.mentionSearch(msg.category, msg.query);
           this.post({ type: 'mentionResults', category: msg.category, query: msg.query, items });
+          this.saidOnce.delete('mentionSearch');
         } catch (err) {
           this.log(`[chat] mention/search failed: ${String(err)}`);
+          this.sayOnce('mentionSearch', ChatViewProvider.errorText(err));
         }
         return;
       }
@@ -938,7 +950,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         try {
           await this.getHost()?.chatResumeStep();
         } catch (err) {
-          this.log(`[chat] resumeStep failed: ${String(err)}`);
+          // Resume that does not reach the host leaves the turn paused for good: the one gesture
+          // that can unblock it is the one that just did nothing.
+          this.gestureFailed('resumeStep', err);
         }
         return;
       case 'removeChip':
@@ -949,8 +963,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       case 'pinActive': {
         // Pins the active file (or one picked from disk) into every request, as the Visual Studio window does.
-        const host = this.getHost();
-        if (!host?.isRunning) {
+        const host = this.hostForGesture();
+        if (!host) {
           return;
         }
         try {
@@ -971,8 +985,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       case 'unpin': {
-        const host = this.getHost();
-        if (!host?.isRunning) {
+        const host = this.hostForGesture();
+        if (!host) {
           return;
         }
         try {
@@ -1101,15 +1115,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async openXray(): Promise<void> {
-    const host = this.getHost();
-    if (!host?.isRunning) {
+    const host = this.hostForGesture();
+    if (!host) {
       return;
     }
     try {
       const panel = await host.xrayPanel();
       this.post({ type: 'xrayPanel', panel });
     } catch (err) {
-      this.log(`[chat] xray/panel failed: ${String(err)}`);
+      this.gestureFailed('xray/panel', err);
     }
   }
 
@@ -1213,8 +1227,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * the host kept the old model with nothing saying so. Such a pick is replayed when the turn ends.
    */
   private async pushModelToHost(model: string): Promise<void> {
-    const host = this.getHost();
-    if (!host?.isRunning) {
+    // ⚠ Silence here is the picker showing one model while Inferpal answers with another — the
+    // cost this method's own remark states for the busy branch, which the replay covers.
+    const host = this.hostForGesture();
+    if (!host) {
       return;
     }
     if (this.busy) {
@@ -1230,7 +1246,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       this.sharedEcho.defaultModel = model;
     } catch (err) {
-      this.log(`[chat] model pick → host config failed: ${String(err)}`);
+      this.gestureFailed('model pick → host config', err);
     }
   }
 
@@ -1239,8 +1255,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * rule as pushModelToHost: a switch made during a turn is replayed when it ends.
    */
   private async pushAgentModeToHost(enabled: boolean): Promise<void> {
-    const host = this.getHost();
-    if (!host?.isRunning) {
+    // Same rule as the model pick: the switch is on screen, and the mode is read from the settings
+    // on every turn.
+    const host = this.hostForGesture();
+    if (!host) {
       return;
     }
     if (this.busy) {
@@ -1256,7 +1274,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       this.sharedEcho.agentModeEnabled = enabled;
     } catch (err) {
-      this.log(`[chat] agent mode → host config failed: ${String(err)}`);
+      this.gestureFailed('agent mode → host config', err);
     }
   }
 
@@ -1741,6 +1759,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Readable text for a failed RPC: JSON-RPC errors carry the host's message. */
   private static errorText(err: unknown): string {
     return hostErrorText(err);
+  }
+
+  /**
+   * The running host for a USER GESTURE — or undefined, having said why.
+   *
+   * ⚠ A gesture that returns in silence is indistinguishable from a broken product: the panel does
+   * not open, the pin does not appear, the model pick does not apply, and nothing on screen
+   * accounts for it. Background work (bootstrap, polling, pushing state on a change nobody asked
+   * for) keeps the bare `isRunning` test — a toast there is noise, not information.
+   */
+  private hostForGesture(): HostClient | undefined {
+    const host = this.getHost();
+    if (host?.isRunning) {
+      return host;
+    }
+    void vscode.window.showWarningMessage(hostUnavailableMessage());
+    promptOpenFolder();
+    return undefined;
+  }
+
+  /** Says a sentence once per channel, until {@link saidOnce} is cleared by a call that works. */
+  private sayOnce(channel: string, message: string): void {
+    if (this.saidOnce.has(channel)) {
+      return;
+    }
+    this.saidOnce.add(channel);
+    void vscode.window.showWarningMessage(message);
+  }
+
+  /** What a gesture that failed says: the line the log keeps, and the sentence the user reads. */
+  private gestureFailed(what: string, err: unknown): void {
+    this.log(`[chat] ${what} failed: ${String(err)}`);
+    void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
   }
 
   private finishTurn(text: string, error: string | null, cancelled: boolean, tokens: number): void {

@@ -13,13 +13,18 @@ namespace Inferpal.ToolWindow;
 /// <see cref="ChatMessageItem.InitFixCallback"/>). Toggling <see cref="Enabled"/> raises
 /// <c>PropertyChanged</c> so the parent can keep the JSON mirror in sync.
 /// <para>
-/// Theme colours and the Edit/Delete tooltips are deliberately NOT per-row properties: in the
-/// Extensibility RemoteUI a property changed on a collection item *after* it has been added to
-/// the bound <c>ObservableCollection</c> (i.e. after the initial snapshot) does not propagate to
-/// the rendered template. Those values are pushed by the parent at row-construction time on the
-/// theme/language sub-tree and the template binds them off the root data context via
-/// <c>ElementName=root</c>, so they always reflect the live theme/language. See
-/// <c>InferpalSettingsData.ApplyRowTheme</c>.
+/// ⚠ Theme colours and the Edit/Delete tooltips are deliberately NOT per-row properties, and the
+/// reason is that they are <b>shared</b>: one theme, one language, for every row. They live on the
+/// parent's theme/language sub-tree and the template binds them off the root data context via
+/// <c>ElementName=root</c>, so a theme or language change reaches every row at once without
+/// touching any of them. See <c>InferpalSettingsData.ApplyRowTheme</c>.
+/// <para>
+/// ⚠ It is <b>not</b> that a per-row property cannot change after the row is bound: it can, and the
+/// product depends on it — the chat streams by mutating <c>ChatMessageItem.Content</c> on an item
+/// already in <c>Messages</c>, and a theme switch re-themes those same items in place
+/// (<c>UpdateMessageBubbles</c>). <see cref="StatusText"/> and <see cref="AuthRequired"/> below are
+/// written on every status refresh for exactly that reason.
+/// </para>
 /// </para>
 /// </remarks>
 [DataContract]

@@ -64,7 +64,7 @@ internal static class GpuScheduler
 
     /// <summary>
     /// <c>true</c> when ghost text (FIM) must stay quiet: a chat turn holds the GPU, here or
-    /// ailleurs sur la machine.
+    /// elsewhere on the machine.
     /// </summary>
     /// <remarks>
     /// Order matters. <see cref="IsChatActive"/> is the <b>local</b> truth - an in-memory counter,

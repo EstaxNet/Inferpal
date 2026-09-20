@@ -115,7 +115,7 @@ public class MarkdownTextBlock : TextBlock
                 }
             }
 
-            // ── Saut de ligne ──────────────────────────────────────────────────
+            // ── Line break ─────────────────────────────────────────────────────
             if (c == '\n')
             {
                 Flush(i);
