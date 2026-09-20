@@ -58,12 +58,24 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # --blame-hang NAMES the test that never returned. Without it a hung test kills the job
-      # with no log at all: the run reports 46 minutes, an unfinished step and nothing to read,
-      # which is indistinguishable from a lost runner. The budget is generous next to the 2.5
-      # minutes this leg takes, so it only ever fires on a real hang.
+      # ⚠ Three steps rather than one, each with its own budget. A job killed by `timeout-minutes`
+      # uploads NO log at all, so the only thing readable from outside is the per-step status —
+      # granular enough to say WHERE it hung, and nothing else is. `dotnet test` alone restores,
+      # builds and runs: collapsing the three made "the macOS leg hangs" unanswerable, and
+      # --blame-hang cannot name a test when the tests never started.
+      - name: Restore (net8.0 editor-agnostic slice)
+        timeout-minutes: 10
+        run: dotnet restore Inferpal.Tests/Inferpal.Tests.csproj
+
+      - name: Build (net8.0 editor-agnostic slice)
+        timeout-minutes: 10
+        run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
+
+      # --blame-hang NAMES the test that never returned, when it is a test that hangs. The budget
+      # is generous next to the 2.5 minutes this leg takes, so it only fires on a real hang.
       - name: Test (net8.0 editor-agnostic slice)
-        run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --blame-hang --blame-hang-timeout 6m
+        timeout-minutes: 12
+        run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build --blame-hang --blame-hang-timeout 5m
 
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:
