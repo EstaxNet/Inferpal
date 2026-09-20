@@ -46,7 +46,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-13]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     # ⚠ macOS does not gate the verdict, and that is a MEASUREMENT, not a shrug: on that leg an
@@ -55,8 +55,10 @@ jobs:
     # its own budgets; a wedged agent can, which also explains why no log is ever uploaded. A leg
     # that hangs six runs out of ten and produces nothing to read already gives no signal, so
     # blocking on it only costs the feedback loop. It still runs, and a green one still counts.
-    # The image is pinned (macos-latest moved to arm64): if the hang stops here, it was the image.
-    continue-on-error: ${{ matrix.os == 'macos-13' }}
+    # ⚠ NOT pinned: `macos-13` sat queued for 18 minutes waiting for a scarce Intel runner,
+    # and the image hypothesis is not worth that wait now that the leg decides nothing. A leg
+    # that never gets a runner tells us even less than one that hangs.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
 
     steps:
       - uses: actions/checkout@v7
