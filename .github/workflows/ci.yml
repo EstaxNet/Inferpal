@@ -83,14 +83,31 @@ jobs:
         timeout-minutes: 20
         run: |
           set +e
+          # ⚠ Two things the previous watchdog got wrong, both measured on a leg that hung anyway:
+          #  · the output goes to a FILE, not to the step's pipe. A surviving `testhost` holding
+          #    that pipe keeps the step alive even after its parent is gone, so killing `dotnet`
+          #    alone ended nothing. Writing to a file means no child can hold the step open, and we
+          #    print the tail ourselves once we are back in control.
+          #  · `set -m` puts the run in its own process group and the kill targets the GROUP
+          #    (`-$runner`), so `testhost` goes with its parent. TERM first, KILL if it lingers.
+          set -m
           dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
-            --logger "console;verbosity=detailed" --blame-hang --blame-hang-timeout 5m &
+            --logger "console;verbosity=detailed" --blame-hang --blame-hang-timeout 5m \
+            > test-output.log 2>&1 &
           runner=$!
-          ( sleep 600; echo "::warning::watchdog: killing dotnet test after 600 s"; kill -TERM $runner 2>/dev/null ) &
+          (
+            sleep 600
+            echo "::warning::watchdog: killing the dotnet test process group after 600 s"
+            kill -TERM -"$runner" 2>/dev/null
+            sleep 20
+            kill -KILL -"$runner" 2>/dev/null
+          ) &
           watchdog=$!
           wait $runner
           code=$?
-          kill $watchdog 2>/dev/null
+          kill "$watchdog" 2>/dev/null
+          echo "── last 2000 lines of the test output ──"
+          tail -n 2000 test-output.log
           echo "dotnet test exit=$code"
           exit $code
 
