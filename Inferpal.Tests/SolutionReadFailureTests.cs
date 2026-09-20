@@ -107,11 +107,25 @@ public sealed class SolutionReadFailureTests : IDisposable
         Assert.Contains("framework and references unknown", report, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// The second cause: a file that opens for nobody — a compiler or an editor holding the project
+    /// while the model asks.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>Windows only, and not for lack of trying.</b> <c>FileShare</c> is a Win32 guarantee;
+    /// off Windows .NET emulates it with an advisory <c>flock</c>, whose behaviour depends on the
+    /// filesystem under the temp directory. A test that takes a lock the platform may honour, ignore
+    /// <i>or block on</i> is not a test: a blocked read has no budget, it hangs the whole leg, and a
+    /// leg that hangs is worse than a leg that is missing — nobody reads a CI that takes an hour.
+    /// The <b>rule</b> (an unreadable project file is named rather than rendered as a project
+    /// declaring nothing) is proven on every platform by the malformed-XML arm above; this arm only
+    /// adds the second <i>cause</i>, on the one platform where the refusal is deterministic.
+    /// </remarks>
     [Fact]
     public async Task AProjectFileHeldByAnotherProcess_IsNamedToo()
     {
-        // The parse error is one cause; a file that opens for nobody is the other, and it is the
-        // ordinary one — a compiler or an editor holding the project while the model asks.
+        if (!OperatingSystem.IsWindows()) return;
+
         var root = Workspace("locked", OneProject, "<Project Sdk=\"Microsoft.NET.Sdk\"></Project>");
         var path = Path.Combine(root, "App", "App.csproj");
 
