@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build-test:
     runs-on: windows-latest
+    # A job without a budget turns one hung test into the runner's six-hour default, and the
+    # log is only uploaded when the job ENDS — so the hang costs an hour and names nothing.
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v7
@@ -45,6 +48,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v7
@@ -54,8 +58,12 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # --blame-hang NAMES the test that never returned. Without it a hung test kills the job
+      # with no log at all: the run reports 46 minutes, an unfinished step and nothing to read,
+      # which is indistinguishable from a lost runner. The budget is generous next to the 2.5
+      # minutes this leg takes, so it only ever fires on a real hang.
       - name: Test (net8.0 editor-agnostic slice)
-        run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release
+        run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --blame-hang --blame-hang-timeout 6m
 
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:
