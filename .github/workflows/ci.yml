@@ -71,11 +71,28 @@ jobs:
         timeout-minutes: 10
         run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
 
-      # --blame-hang NAMES the test that never returned, when it is a test that hangs. The budget
-      # is generous next to the 2.5 minutes this leg takes, so it only fires on a real hang.
+      # ⚠ The kill has to be OURS. `timeout-minutes` asks the runner to stop the step, and a test
+      # host that does not answer keeps it running anyway — measured: a step budgeted at 12 minutes
+      # still in progress at 24. The job budget then kills the whole runner, and a job killed that
+      # way uploads NO log, which is how four runs in a row produced "it hung" and nothing else.
+      # A watchdog inside the step ends it on OUR terms, so the step completes, the job completes,
+      # and everything printed up to the kill is uploaded — including which test was running.
+      # `--blame-hang` still names the test when the hang is inside one; the detailed logger covers
+      # the case where it is not (a host that never exits once every test has passed).
       - name: Test (net8.0 editor-agnostic slice)
-        timeout-minutes: 12
-        run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build --blame-hang --blame-hang-timeout 5m
+        timeout-minutes: 20
+        run: |
+          set +e
+          dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
+            --logger "console;verbosity=detailed" --blame-hang --blame-hang-timeout 5m &
+          runner=$!
+          ( sleep 600; echo "::warning::watchdog: killing dotnet test after 600 s"; kill -TERM $runner 2>/dev/null ) &
+          watchdog=$!
+          wait $runner
+          code=$?
+          kill $watchdog 2>/dev/null
+          echo "dotnet test exit=$code"
+          exit $code
 
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:
