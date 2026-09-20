@@ -230,8 +230,16 @@ public class TaskCommandTests
         });
 
         queue.Submit("audit the RAG layer");
-        var deadline = DateTime.UtcNow.AddSeconds(5);
+        // ⚠ 30 s, not 5: the runner builds and then plays two series of tests in parallel, so five
+        // seconds are not five seconds on a loaded agent — the report is read while the task is
+        // still `queued`, and the assertion blames the rendering for the clock. Lengthening hides
+        // nothing here: the budget is not the assertion, it is the wait.
+        var deadline = DateTime.UtcNow.AddSeconds(30);
         while (queue.Get("t1")!.Steps.Count == 0 && DateTime.UtcNow < deadline) Thread.Sleep(10);
+
+        // WITNESS: without this, a timed-out wait renders an empty report and the failure below
+        // reads as a rendering defect.
+        Assert.True(queue.Get("t1")!.Steps.Count > 0, "the task never started: the wait timed out, nothing was rendered");
 
         var report = TaskCommandHandler.RenderReport(queue.Get("t1")!);
 
