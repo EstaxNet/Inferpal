@@ -246,4 +246,22 @@ public class BenchTests : IDisposable
         Assert.Contains("…", md);
         Assert.DoesNotContain("0.0 GB", md);
     }
+
+    /// <summary>
+    /// A bench run is deliberately NOT preserved: <c>/bench</c> rebuilds it, and keeping a copy of a
+    /// corrupt one would only clutter %AppData%. This is the distinction the flag carries, next to
+    /// <c>arena.json</c>, which holds votes nothing reproduces — it has to stay visible.
+    /// </summary>
+    [Fact]
+    public async Task ABenchFile_IsDeliberatelyNotPreserved()
+    {
+        File.WriteAllText(_tempFile, """{ "Results": null }""");
+
+        Assert.Null(await BenchStore.LoadAsync());   // witness: the shape check refuses it
+        await BenchStore.SaveAsync(new BenchSavedRun(DateTime.UtcNow, []));
+
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(_tempFile)!,
+                                        Path.GetFileName(_tempFile) + ".unreadable-*"));
+    }
+
 }

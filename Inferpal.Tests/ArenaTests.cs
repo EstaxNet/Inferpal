@@ -366,4 +366,53 @@ public class ArenaTests : IDisposable
         Assert.Equal(state.Battles, loaded.Battles);
         Assert.Equal(state.Pending, loaded.Pending);
     }
+
+    // ── Votes: what cannot be recomputed is kept ───────────────────────────────
+
+    /// <summary>A document that parses and is refused by the shape check — the truncated-write shape.</summary>
+    private const string NullBattles = """{ "Battles": null, "Pending": null }""";
+
+    private static string? AsideOf(string path) =>
+        Directory.GetFiles(Path.GetDirectoryName(path)!, Path.GetFileName(path) + ".unreadable-*")
+                 .FirstOrDefault();
+
+    /// <summary>
+    /// A vote is not recomputable state: an arena file that will not load is set aside, not replaced.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The flag alone is not the fix. The shape check ("a hand-edited or truncated file can
+    /// deserialise into a state whose list is null") lived on <c>LoadAsync</c> only, so the two
+    /// halves disagreed on what "readable" means: such a document is refused when loading and
+    /// counted as readable when saving, hence never set aside. One predicate, given at
+    /// construction, is read by both.
+    /// </remarks>
+    [Fact]
+    public async Task AnArenaFileRefusedByItsShapeCheck_IsSetAside_BeforeTheNextSaveOverwritesIt()
+    {
+        File.WriteAllText(_tempFile, NullBattles);
+
+        // WITNESS: the load really refuses it — otherwise this measures a file that was fine.
+        Assert.Empty((await ArenaStore.LoadAsync()).Battles);
+
+        Assert.True(await ArenaStore.SaveAsync(new ArenaSavedState(
+            [new ArenaBattle(DateTime.UtcNow, "p", "a", "b", "a")], null)));
+
+        var aside = AsideOf(_tempFile);
+        Assert.NotNull(aside);
+        Assert.Equal(NullBattles, File.ReadAllText(aside!));
+        Assert.Single((await ArenaStore.LoadAsync()).Battles);
+        try { File.Delete(aside!); } catch { }
+    }
+
+    /// <summary>The other half: setting a readable file aside on every save means nothing at all.</summary>
+    [Fact]
+    public async Task AReadableArenaFile_IsNotSetAside()
+    {
+        await ArenaStore.SaveAsync(new ArenaSavedState([], null));
+        await ArenaStore.SaveAsync(new ArenaSavedState(
+            [new ArenaBattle(DateTime.UtcNow, "p", "a", "b", "tie")], null));
+
+        Assert.Null(AsideOf(_tempFile));
+    }
+
 }

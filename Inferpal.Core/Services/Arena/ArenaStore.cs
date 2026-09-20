@@ -24,7 +24,16 @@ internal sealed record ArenaSavedState(List<ArenaBattle> Battles, ArenaPending? 
 /// </summary>
 internal static class ArenaStore
 {
-    private static readonly AppDataJsonFile<ArenaSavedState> _file = new("arena.json", "ArenaStore");
+    // ⚠ A vote is not recomputable state. The class remark below said "same conventions as
+    // BenchStore", and that is where the classification came from — but a bench run is exactly what
+    // `/bench` reproduces, while nothing reproduces which answer the user preferred three weeks ago.
+    // The cycle the preserve flag exists to stop (unreadable file, empty list, first write, the whole
+    // history replaced by one entry) applies here and not there.
+    private static readonly AppDataJsonFile<ArenaSavedState> _file =
+        new("arena.json", "ArenaStore", preserveUnreadable: true,
+            // The shape check is the file's own: a hand-edited or truncated document can deserialise
+            // into a state whose list is null, and every caller enumerates it.
+            accept: s => s.Battles is not null);
 
     /// <summary>Tests point this at a temp file so they never touch the real %AppData%.</summary>
     internal static string? _fileOverride
@@ -39,5 +48,5 @@ internal static class ArenaStore
     // `Battles: not null` is the shape check, not a formality: a hand-edited or truncated file can
     // deserialise into a state whose list is null, and every caller enumerates it.
     public static Task<ArenaSavedState> LoadAsync() =>
-        _file.LoadAsync(new ArenaSavedState([], null), accept: s => s.Battles is not null);
+        _file.LoadAsync(new ArenaSavedState([], null));
 }

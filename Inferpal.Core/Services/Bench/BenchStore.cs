@@ -14,7 +14,11 @@ internal sealed record BenchSavedRun(DateTime TimestampUtc, List<BenchModelResul
 /// </summary>
 internal static class BenchStore
 {
-    private static readonly AppDataJsonFile<BenchSavedRun?> _file = new("bench.json", "BenchStore");
+    // ⚠ Deliberately NOT preserved, unlike arena.json next door: a bench run is what `/bench`
+    // reproduces. Keeping a copy of a corrupt one would only clutter %AppData% for state the
+    // product can rebuild on demand — the very distinction the flag exists to carry.
+    private static readonly AppDataJsonFile<BenchSavedRun?> _file =
+        new("bench.json", "BenchStore", accept: r => r?.Results is not null);
 
     /// <summary>Tests point this at a temp file so they never touch the real %AppData%.</summary>
     internal static string? _fileOverride
@@ -27,5 +31,5 @@ internal static class BenchStore
 
     // Same shape check as the arena state, and for the same reason: `/bench last` enumerates it.
     public static Task<BenchSavedRun?> LoadAsync() =>
-        _file.LoadAsync(null, accept: r => r?.Results is not null);
+        _file.LoadAsync(null);
 }

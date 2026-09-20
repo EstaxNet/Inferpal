@@ -48,6 +48,18 @@ internal sealed class AppDataJsonFile<T>
 
     private readonly bool _preserveUnreadable;
 
+    /// <summary>
+    /// Shape check for a successfully parsed value — the SAME one on both halves.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ It used to be a parameter of <c>LoadAsync</c> alone, so the two halves disagreed on what
+    /// "readable" means: a document that parses into an object with null collections is rejected on
+    /// load (it reads as "no state") and counted as readable on save, hence never set aside. The
+    /// shape a caller bothers to guard against is exactly the one a truncated write produces, so it
+    /// is exactly the one whose bytes must be kept.
+    /// </remarks>
+    private readonly Func<T, bool>? _accept;
+
     /// <param name="fileName">Leaf name, e.g. <c>"bench.json"</c>.</param>
     /// <param name="diagnosticName">Prefix for <see cref="Diagnostics.Swallow"/> contexts.</param>
     /// <param name="preserveUnreadable">
@@ -55,9 +67,16 @@ internal sealed class AppDataJsonFile<T>
     /// not parse is copied aside before being overwritten. Leave <c>false</c> for state the product
     /// recomputes on its own - archiving it would only clutter <c>%AppData%</c>.
     /// </param>
-    public AppDataJsonFile(string fileName, string diagnosticName, bool preserveUnreadable = false)
+    /// <param name="accept">
+    /// Optional shape check applied to a parsed value. A JSON document that deserialises into an
+    /// object with null collections is syntactically valid and useless; callers that care say so
+    /// here rather than defending against it at every use site.
+    /// </param>
+    public AppDataJsonFile(string fileName, string diagnosticName, bool preserveUnreadable = false,
+                           Func<T, bool>? accept = null)
     {
         _preserveUnreadable = preserveUnreadable;
+        _accept             = accept;
         // Fully qualified: the Path property below shadows System.IO.Path inside this type.
         _defaultPath = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Inferpal", fileName);
@@ -73,20 +92,14 @@ internal sealed class AppDataJsonFile<T>
     /// <summary>
     /// Reads the document, or <paramref name="fallback"/> when it is absent, empty or unreadable.
     /// </summary>
-    /// <param name="accept">
-    /// Optional shape check applied to a successfully parsed value. A JSON document that
-    /// deserialises into an object with null collections is syntactically valid and useless;
-    /// callers that care say so here rather than defending against it at every use site.
-    /// </param>
-    public async Task<T> LoadAsync(T fallback, Func<T, bool>? accept = null, CancellationToken ct = default)
+    public async Task<T> LoadAsync(T fallback, CancellationToken ct = default)
     {
         try
         {
             if (!File.Exists(Path)) return fallback;
 
             var value = JsonSerializer.Deserialize<T>(await File.ReadAllTextAsync(Path, ct), _opts);
-            if (value is null) return fallback;
-            return accept is null || accept(value) ? value : fallback;
+            return value is not null && Readable(value) ? value : fallback;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -102,7 +115,8 @@ internal sealed class AppDataJsonFile<T>
         try
         {
             if (!File.Exists(Path)) return fallback;
-            return JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts) ?? fallback;
+            var value = JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts);
+            return value is not null && Readable(value) ? value : fallback;
         }
         catch (Exception ex)
         {
@@ -147,13 +161,17 @@ internal sealed class AppDataJsonFile<T>
     /// and it would not cover a save coming from another path. The cost is one re-read per save, on
     /// documents that are written rarely.
     /// </remarks>
+    /// <summary>What both halves mean by "this file can be used".</summary>
+    private bool Readable(T value) => _accept is null || _accept(value);
+
     private void PreserveIfUnreadable()
     {
         if (!_preserveUnreadable || !File.Exists(Path)) return;
 
         try
         {
-            if (JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts) is not null) return;
+            var value = JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts);
+            if (value is not null && Readable(value)) return;
         }
         catch (Exception ex)
         {
