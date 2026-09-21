@@ -1385,6 +1385,18 @@ public class ConventionCoverageTests
         // apart from a real block, so the rule would live off its exemption list: exactly the
         // antipattern this file exists to avoid. Zero violations today, checked by hand; if that
         // ever changes it will show up in review, not here.
+        //
+        // ⚠ Nor are the OTHER shapes of "this blocks until something else finishes", and that is a
+        // measurement rather than an oversight — a rule carried as a list of call forms is how four
+        // of this file's rules were born wrong, so the list is stated here instead of scanned:
+        //   `GetAwaiter().GetResult()` — two sites, both legitimate. One lives inside the string
+        //       literal of the GENERATED repro program (a console Main, no synchronization context,
+        //       and the failure must escape its frame); the other is `RpcSecretStore.Invoke`, which
+        //       is synchronous BY CONTRACT (`byte[] Protect(byte[])`, shared with DPAPI) and carries
+        //       its own 10-second deadline with the reason written above it;
+        //   `WaitForExit()` / `WaitOne()` with no bound — zero sites, swept.
+        // The discriminator is semantic: whether the wait is bounded, and whether a synchronization
+        // context is in play. A scan cannot see either, so this rule does not pretend to.
         var offenders = new List<string>();
         var sites     = 0;
 

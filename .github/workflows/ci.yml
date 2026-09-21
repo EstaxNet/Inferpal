@@ -60,11 +60,26 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    # ⚠ 15, not 30, and the number comes from a measurement: this leg completes in 168–188 seconds
+    # when it completes at all, so fifteen minutes is five times a healthy run. What the extra
+    # fifteen bought was not information — a job killed by its own budget uploads no log either
+    # way — it was a CONCURRENCY cost: `cancel-in-progress` cannot end a wedged agent, so the next
+    # push queued behind the stuck run for its full half hour. The budget bounds how long a wedge
+    # blocks the next verdict, not how long it costs in runner minutes.
+    timeout-minutes: 15
     # ⚠ macOS gates the verdict like every other leg, and it has to: it is the ONLY one that can
     # see a path guard compare case-sensitively on a volume that folds, or a symlink resolved one
     # component at a time. A leg that decides nothing is a leg nobody reads — this one was red for
     # two days while two releases were tagged through it.
+    #
+    # ⚠ It also WEDGES, intermittently, and that is measured rather than suspected: in one single
+    # run, two macOS jobs on the same image and the same commit finished differently — the full
+    # suite in 155 seconds, and a job running the same suite MINUS three test classes stuck past
+    # its budget. Two identical environments, opposite outcomes: no code explains that. It is the
+    # agent, which is also why no timer inside the job can end it and no log is ever uploaded
+    # (actions/runner-images#13452). The budget above is what bounds the cost; gating stays,
+    # because a leg that produces a verdict most of the time still produces the only verdict there
+    # is on those two classes. Re-open the question if it wedges on three consecutive pushes.
 
     steps:
       - uses: actions/checkout@v7
@@ -115,48 +130,6 @@ jobs:
         run: |
           echo "── last 3000 lines of the test output ──"
           tail -n 3000 test-output.log || echo "no test-output.log was produced"
-
-  # ⚠ A MEASUREMENT with one question, and it comes out the moment it answers.
-  #
-  # The question: is the hang caused by the tests added in the batch it started with? The macOS leg
-  # ran this suite in 168s, 175s and 188s across three runs — including the one that FAILED on an
-  # assertion, so it completed — and then hung past 18 minutes, twice. It is therefore not volume
-  # and not duration: something in that batch is implicated, or nothing in the job is.
-  #
-  # Isolation by REMOVAL, not by selection: running only the three new classes could pass trivially
-  # while what hangs is their interaction with the rest of the host. This runs everything EXCEPT
-  # them. Terminates ⇒ named to three files. Hangs ⇒ they are cleared, and the agent is the subject.
-  macos-bisect:
-    runs-on: macos-latest
-    timeout-minutes: 15
-    continue-on-error: true
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up .NET 8
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Build (net8.0 editor-agnostic slice)
-        timeout-minutes: 10
-        run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release
-
-      - name: Test (everything except the batch under suspicion)
-        timeout-minutes: 10
-        run: |
-          set +e
-          dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
-            --filter "FullyQualifiedName!~OAuthRedirectTests&FullyQualifiedName!~TeardownDoesNotThrowTests&FullyQualifiedName!~ClampedDepthTests" \
-            --logger "console;verbosity=normal" > bisect.log 2>&1
-          code=$?
-          echo "dotnet test exit=$code"
-          exit $code
-
-      - name: Bisect output (tail)
-        if: always()
-        run: tail -n 100 bisect.log || echo "no bisect.log was produced"
 
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:
