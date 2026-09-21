@@ -1023,6 +1023,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} erledigt</value></data>
   <data name="PlanNextStep" xml:space="preserve"><value>Nächster Schritt **{0}** — {1}</value></data>
   <data name="PlanComplete" xml:space="preserve"><value>**{0}** — alle Schritte sind erledigt. ✅</value></data>
+  <data name="PlanNoStepsYet" xml:space="preserve"><value>**{0}** — dieser Plan hat keinen zu erledigenden Schritt: In seiner Datei wurde keine `- [ ] …`-Zeile gefunden. Das ist NICHT dasselbe wie abgeschlossen.</value></data>
   <data name="PlanStepTicked" xml:space="preserve"><value>Schritt **{0}** erledigt — {1}</value></data>
   <data name="PlanStepUnticked" xml:space="preserve"><value>Schritt **{0}** wieder geöffnet.</value></data>
   <data name="PlanStepUnknown" xml:space="preserve"><value>Dieser Plan hat keinen Schritt {0} (er hat {1}).</value></data>

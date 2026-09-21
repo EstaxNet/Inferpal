@@ -1023,6 +1023,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} 完了</value></data>
   <data name="PlanNextStep" xml:space="preserve"><value>次のステップ **{0}** — {1}</value></data>
   <data name="PlanComplete" xml:space="preserve"><value>**{0}** — すべてのステップが完了しました。✅</value></data>
+  <data name="PlanNoStepsYet" xml:space="preserve"><value>**{0}** — このプランに実行すべきステップはありません。ファイル内に `- [ ] …` 行が見つかりませんでした。これは「完了」とは別です。</value></data>
   <data name="PlanStepTicked" xml:space="preserve"><value>ステップ **{0}** 完了 — {1}</value></data>
   <data name="PlanStepUnticked" xml:space="preserve"><value>ステップ **{0}** を未完了に戻しました。</value></data>
   <data name="PlanStepUnknown" xml:space="preserve"><value>このプランにステップ {0} はありません (全 {1} ステップ)。</value></data>

@@ -1023,6 +1023,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} 완료</value></data>
   <data name="PlanNextStep" xml:space="preserve"><value>다음 단계 **{0}** — {1}</value></data>
   <data name="PlanComplete" xml:space="preserve"><value>**{0}** — 모든 단계가 완료되었습니다. ✅</value></data>
+  <data name="PlanNoStepsYet" xml:space="preserve"><value>**{0}** — 이 계획에는 할 단계가 없습니다. 파일에서 `- [ ] …` 줄을 찾지 못했습니다. 이것은 “완료”와는 다릅니다.</value></data>
   <data name="PlanStepTicked" xml:space="preserve"><value>단계 **{0}** 완료 — {1}</value></data>
   <data name="PlanStepUnticked" xml:space="preserve"><value>단계 **{0}**을(를) 다시 열었습니다.</value></data>
   <data name="PlanStepUnknown" xml:space="preserve"><value>이 계획에는 {0}단계가 없습니다 (총 {1}단계).</value></data>

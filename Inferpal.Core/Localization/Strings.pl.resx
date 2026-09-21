@@ -1023,6 +1023,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} zrobione</value></data>
   <data name="PlanNextStep" xml:space="preserve"><value>Następny krok **{0}** — {1}</value></data>
   <data name="PlanComplete" xml:space="preserve"><value>**{0}** — wszystkie kroki są zrobione. ✅</value></data>
+  <data name="PlanNoStepsYet" xml:space="preserve"><value>**{0}** — ten plan nie ma żadnego kroku do wykonania: w jego pliku nie znaleziono linii `- [ ] …`. To NIE to samo co ukończony.</value></data>
   <data name="PlanStepTicked" xml:space="preserve"><value>Krok **{0}** zrobiony — {1}</value></data>
   <data name="PlanStepUnticked" xml:space="preserve"><value>Krok **{0}** otwarty ponownie.</value></data>
   <data name="PlanStepUnknown" xml:space="preserve"><value>Ten plan nie ma kroku {0} (ma ich {1}).</value></data>

@@ -1345,6 +1345,9 @@ internal static class Strings
         string.Format(Get(nameof(PlanNextStep)), number, text);
     public static string PlanComplete(string title) =>
         string.Format(Get(nameof(PlanComplete)), title);
+    /// <summary>A plan whose file holds no step at all — which is not the same as a finished one.</summary>
+    public static string PlanNoStepsYet(string title) =>
+        string.Format(Get(nameof(PlanNoStepsYet)), title);
     public static string PlanStepTicked(int number, string text) =>
         string.Format(Get(nameof(PlanStepTicked)), number, text);
     public static string PlanStepUnticked(int number) =>

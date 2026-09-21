@@ -1027,6 +1027,7 @@ ollama serve
   <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} done</value></data>
   <data name="PlanNextStep" xml:space="preserve"><value>Next step **{0}** — {1}</value></data>
   <data name="PlanComplete" xml:space="preserve"><value>**{0}** — every step is done. ✅</value></data>
+  <data name="PlanNoStepsYet" xml:space="preserve"><value>**{0}** — this plan has no step to do: no `- [ ] …` line was found in its file. That is NOT the same as being finished.</value></data>
   <data name="PlanStepTicked" xml:space="preserve"><value>Step **{0}** done — {1}</value></data>
   <data name="PlanStepUnticked" xml:space="preserve"><value>Step **{0}** reopened.</value></data>
   <data name="PlanStepUnknown" xml:space="preserve"><value>This plan has no step {0} (it has {1}).</value></data>

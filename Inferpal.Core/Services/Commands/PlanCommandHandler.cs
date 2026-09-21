@@ -192,6 +192,17 @@ internal static class PlanCommandHandler
         var doc = PlanStore.Load(root, name!);
         if (doc is null) return new(Strings.PlanNotFound(PlanStore.SanitizeName(name)));
 
+        // ⚠ "No next step" has TWO causes and they are opposite answers. `PlanDocument.Parse` never
+        // throws — "a file with no checkbox is a plan with no step" — so a plan file holding no
+        // parseable `- [ ] …` line yields zero steps, and `NextStep` is null for the same reason a
+        // finished plan's is. Announcing "every step is done" to the command whose whole job is
+        // "what do I do now?" is the worst of the two. ⚠ And `.inferpal/plans/` is COMMITTABLE:
+        // hand-edited by a teammate, truncated, or mangled by a merge are all ordinary ways to get
+        // there. The distinction already existed — `Render` states it for `/plan show` — and only
+        // one of its two readers held it.
+        if (doc.Steps.Count == 0)
+            return new(Strings.PlanNoStepsYet(doc.Title), SetActivePlan: PlanStore.SanitizeName(name));
+
         return new(doc.NextStep is { } step
                        ? Strings.PlanNextStep(step.Number, step.Text)
                        : Strings.PlanComplete(doc.Title),

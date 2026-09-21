@@ -1023,6 +1023,7 @@ ollama serve
   <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} выполнено</value></data>
   <data name="PlanNextStep" xml:space="preserve"><value>Следующий шаг **{0}** — {1}</value></data>
   <data name="PlanComplete" xml:space="preserve"><value>**{0}** — все шаги выполнены. ✅</value></data>
+  <data name="PlanNoStepsYet" xml:space="preserve"><value>**{0}** — в этом плане нет шагов к выполнению: в его файле не найдено ни одной строки `- [ ] …`. Это НЕ то же самое, что завершённый план.</value></data>
   <data name="PlanStepTicked" xml:space="preserve"><value>Шаг **{0}** выполнен — {1}</value></data>
   <data name="PlanStepUnticked" xml:space="preserve"><value>Шаг **{0}** снова открыт.</value></data>
   <data name="PlanStepUnknown" xml:space="preserve"><value>В этом плане нет шага {0} (всего шагов: {1}).</value></data>

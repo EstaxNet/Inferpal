@@ -1023,6 +1023,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — {2}/{3} faites</value></data>
   <data name="PlanNextStep" xml:space="preserve"><value>Prochaine étape **{0}** — {1}</value></data>
   <data name="PlanComplete" xml:space="preserve"><value>**{0}** — toutes les étapes sont faites. ✅</value></data>
+  <data name="PlanNoStepsYet" xml:space="preserve"><value>**{0}** — ce plan n'a aucune étape à faire : aucune ligne `- [ ] …` n'a été trouvée dans son fichier. Ce n'est PAS la même chose qu'un plan terminé.</value></data>
   <data name="PlanStepTicked" xml:space="preserve"><value>Étape **{0}** faite — {1}</value></data>
   <data name="PlanStepUnticked" xml:space="preserve"><value>Étape **{0}** rouverte.</value></data>
   <data name="PlanStepUnknown" xml:space="preserve"><value>Ce plan n'a pas d'étape {0} (il en a {1}).</value></data>

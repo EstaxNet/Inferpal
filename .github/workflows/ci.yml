@@ -60,8 +60,21 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    # ⚠ 15, not 30: a healthy run of this leg is 155–188 seconds, so fifteen minutes is five times
-    # one. It bounds a job that is merely SLOW — see below for what it does not bound.
+    # ⚠ 15, not 30, and this comment carries the OBSERVATIONS rather than a mechanism — three
+    # earlier versions of it each inferred a different mechanism from a single number, and each was
+    # wrong. Every wedged macOS job measured so far ended at its own budget, within five minutes:
+    #
+    #   budget 30 min → 1979 s (+179)   |   budget 15 min → 1200 s (+300, = the grace below)
+    #   budget 30 min → 1851 s (+51)    |   budget 15 min →  900 s (+0)
+    #
+    # So the job budget DOES end these jobs, and halving it halves how long a wedge holds the
+    # runner and the concurrency group. A healthy run of this leg is 155-188 s, so fifteen minutes
+    # is still five times one.
+    #
+    # ⚠ The five minutes is GitHub's grace before it force-cancels a job that has not complied.
+    # Measured on the queue side too: a run pushed behind a wedged one started its jobs 5 min later,
+    # twice (18:47:41 → 18:52:46, 19:18:42 → 19:23:47), against 4 seconds with nothing ahead. Which
+    # is why macOS needs no workflow of its own — the blocking cost is bounded by the budget above.
     timeout-minutes: 15
     #
     # ── Why this leg matters, why it does not gate, and how it gates again ────────────────────
@@ -76,11 +89,10 @@ jobs:
     # environments, opposite outcomes — no code explains that. It is the agent
     # (actions/runner-images#13452), which is also why no log is ever uploaded.
     #
-    # ⚠ NO timer inside the job can end a wedged agent — and that includes the job budget, because
-    # `timeout-minutes` is enforced BY the agent: measured, a job budgeted at 15 minutes ran for 20
-    # and ended only when the next push cancelled it. `--blame-hang` (5 min), an in-shell watchdog
-    # (10) and the step budget (12) all failed the same way. The operational consequence is the one
-    # that costs: a wedge holds the concurrency group, so the NEXT verdict waits for a push.
+    # ⚠ Nothing INSIDE the step ends it: `--blame-hang` (5 min) stays silent, an in-shell watchdog
+    # (10) never fired, and the step's own `timeout-minutes` (12) asks rather than kills — measured
+    # at 25 minutes elapsed with all three past due. What does end the job is the JOB budget, as
+    # the table above shows. Do not put another timer inside the step; that question is settled.
     #
     # ⚠ Hence no gating, and the reason previously written here — "a leg that produces a verdict
     # most of the time" — is exactly what the count falsified: FOUR of five macOS jobs wedged in a

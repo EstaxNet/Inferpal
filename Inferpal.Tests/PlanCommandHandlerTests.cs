@@ -334,4 +334,55 @@ public class PlanCommandHandlerTests : IDisposable
 
         Assert.Equal(["Message", "ToggleMode", "SetActivePlan", "OpenPath"], fields);
     }
+
+    // ── "No next step" has two causes, and they are opposite answers ───────────
+
+    private string WritePlan(string name, string body)
+    {
+        var dir = Path.Combine(_root, ".inferpal", "plans");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, name + ".md");
+        File.WriteAllText(path, body);
+        return path;
+    }
+
+    /// <summary>
+    /// ⚠ <c>PlanDocument.Parse</c> never throws — "a file with no checkbox is a plan with no step" —
+    /// so a plan whose file holds no parseable <c>- [ ] …</c> line has a null <c>NextStep</c> for
+    /// the same reason a finished plan does. <c>/plan next</c> answered "every step is done" to the
+    /// command whose whole job is "what do I do now?".
+    /// ⚠ And <c>.inferpal/plans/</c> is COMMITTABLE: written by hand by a teammate, truncated, or
+    /// mangled by a merge are all ordinary ways to land here.
+    /// </summary>
+    [Fact]
+    public void Next_OnAPlanWhoseFileHasNoStep_DoesNotSayEverythingIsDone()
+    {
+        WritePlan("handwritten", "# Ship the port\n\n- read the adapter\n- wire the host\n");
+
+        var message = Run("/plan next handwritten", active: "handwritten").Message;
+
+        Assert.Equal(Strings.PlanNoStepsYet("Ship the port"), message);
+        Assert.DoesNotContain(Strings.PlanComplete("Ship the port"), message!, StringComparison.Ordinal);
+    }
+
+    /// <summary>Reference arm: a plan whose steps are ALL ticked really is finished, and must keep
+    /// saying so — otherwise the fix trades one wrong answer for another.</summary>
+    [Fact]
+    public void Next_OnAPlanWhoseStepsAreAllTicked_StillSaysItIsComplete()
+    {
+        WritePlan("finished", "# Ship the port\n\n- [x] read the adapter\n- [X] wire the host\n");
+
+        Assert.Equal(Strings.PlanComplete("Ship the port"),
+                     Run("/plan next finished", active: "finished").Message);
+    }
+
+    /// <summary>Reference arm: an ordinary plan still names its next step.</summary>
+    [Fact]
+    public void Next_OnAPlanWithWorkLeft_NamesTheStep()
+    {
+        WritePlan("ongoing", "# Ship the port\n\n- [x] read the adapter\n- [ ] wire the host\n");
+
+        Assert.Equal(Strings.PlanNextStep(2, "wire the host"),
+                     Run("/plan next ongoing", active: "ongoing").Message);
+    }
 }

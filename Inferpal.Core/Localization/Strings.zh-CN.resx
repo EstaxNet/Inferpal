@@ -1023,6 +1023,7 @@ ollama serve
   <data name="PlanHeader" xml:space="preserve"><value>### {0}&#10;`{1}` — 已完成 {2}/{3}</value></data>
   <data name="PlanNextStep" xml:space="preserve"><value>下一步 **{0}** — {1}</value></data>
   <data name="PlanComplete" xml:space="preserve"><value>**{0}** —— 所有步骤都已完成。✅</value></data>
+  <data name="PlanNoStepsYet" xml:space="preserve"><value>**{0}** —— 此计划没有待办步骤：在其文件中未找到 `- [ ] …` 行。这并不等于已完成。</value></data>
   <data name="PlanStepTicked" xml:space="preserve"><value>步骤 **{0}** 已完成 —— {1}</value></data>
   <data name="PlanStepUnticked" xml:space="preserve"><value>步骤 **{0}** 已重新打开。</value></data>
   <data name="PlanStepUnknown" xml:space="preserve"><value>这个计划没有第 {0} 步（共 {1} 步）。</value></data>
