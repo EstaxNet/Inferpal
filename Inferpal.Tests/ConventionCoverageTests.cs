@@ -578,6 +578,30 @@ public class ConventionCoverageTests
             + "foreground thread, takes the whole process down. Go through StaDialog.RunAsync:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
         Assert.Equal(0, sites);
+
+        // ⚠ The exemption is from the FUNNEL, not from the property the funnel carries. Owning
+        // your thread for another reason is a reason to build it yourself, never a reason to
+        // build it in the FOREGROUND — and a foreground thread blocked on the clipboard, or on a
+        // window that never closed, keeps Visual Studio from exiting: the user closes the IDE and
+        // the process stays. `ClipboardHelper` held this exemption and had missed exactly that.
+        // ⚠ Resolved from the adapter tree, not from ViewModelSources: two of the three live under
+        // Commands/, so reading them through the view-model enumerator finds nothing and the rule
+        // would pass without checking anyone.
+        var owners = Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "Inferpal"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => exempt.Contains(Path.GetFileName(f)))
+            .ToList();
+        Assert.Equal(exempt.Length, owners.Count);   // witness: every exempted file was found
+
+        foreach (var owner in owners)
+        {
+            var name = Path.GetFileName(owner);
+            var text = CodeOnly(owner);
+            Assert.Contains("new Thread(", text, StringComparison.Ordinal);   // witness: it owns one
+            Assert.True(text.Contains("IsBackground", StringComparison.Ordinal),
+                $"{name} owns its STA thread and does not mark it IsBackground: a thread of its own "
+                + "is not a thread in the foreground, and the IDE will not exit while it is blocked.");
+        }
     }
 
     // ── 11. A connection badge does not conclude from a status code ───────────

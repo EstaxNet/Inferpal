@@ -90,40 +90,22 @@ jobs:
       # `--blame-hang` names the test when the hang is inside one; the detailed logger covers the
       # case where it is not (a host that never exits once every test has passed).
       #
-      # ⚠ The in-shell watchdog is BACK, and not on hope: it was removed after two runs in which it
-      # "never ended the step", and the reason was written in the same breath — a surviving
-      # `testhost` held the step's pipe, so the step stayed alive even once the kill had landed.
-      # That cause is closed (the parked child that escaped the kill tree is gone), and removing the
-      # watchdog left this leg with NO mechanism able to end a hung step: `timeout-minutes` on a
-      # STEP does not kill, it asks, and a test host that does not answer keeps going — measured at
-      # 12 minutes budgeted for 25 elapsed. A job killed by its own budget uploads no log at all, so
-      # without this the hang costs half an hour and names nothing.
-      #
-      # ⚠ The watchdog must not become the very thing it guards against: it polls in FIVE-SECOND
-      # steps instead of parking one long `sleep`, so it is gone within five seconds of a normal
-      # finish. A parked child must outlive the budget under test and nothing else — and no
-      # `set -m`: job control in this non-interactive shell kills the run by SIGHUP.
+      # ⚠ SETTLED, do not reinstate an in-shell watchdog a third time. Three independent timers
+      # inside this job cannot end a hung step here: `--blame-hang` at 5 min (silent — so the hang
+      # is not inside a test), an in-shell watchdog at 10 min killing the host by name, and the
+      # step's own `timeout-minutes` at 12. Measured again at 18 minutes elapsed, all three past
+      # due. A process we control would have died to at least one of them: what is wedged is the
+      # AGENT, which is also why no log is ever uploaded. The watchdog was brought back on the
+      # hypothesis that a pipe-holding orphan had defeated it; this run refuted that, and keeping a
+      # guard that does not fire is worse than having none.
       - name: Test (net8.0 editor-agnostic slice)
         timeout-minutes: 12
         run: |
           set +e
           dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
             --logger "console;verbosity=detailed" --blame-hang --blame-hang-timeout 5m \
-            > test-output.log 2>&1 &
-          test_pid=$!
-          (
-            for _ in $(seq 1 120); do
-              sleep 5
-              kill -0 "$test_pid" 2>/dev/null || exit 0
-            done
-            echo "── watchdog: 10 minutes elapsed, killing the test host by name ──" >> test-output.log
-            pkill -f testhost
-            pkill -f 'dotnet.*test'
-          ) &
-          dog_pid=$!
-          wait "$test_pid"
+            > test-output.log 2>&1
           code=$?
-          kill "$dog_pid" 2>/dev/null
           echo "dotnet test exit=$code"
           exit $code
 
@@ -133,6 +115,48 @@ jobs:
         run: |
           echo "── last 3000 lines of the test output ──"
           tail -n 3000 test-output.log || echo "no test-output.log was produced"
+
+  # ⚠ A MEASUREMENT with one question, and it comes out the moment it answers.
+  #
+  # The question: is the hang caused by the tests added in the batch it started with? The macOS leg
+  # ran this suite in 168s, 175s and 188s across three runs — including the one that FAILED on an
+  # assertion, so it completed — and then hung past 18 minutes, twice. It is therefore not volume
+  # and not duration: something in that batch is implicated, or nothing in the job is.
+  #
+  # Isolation by REMOVAL, not by selection: running only the three new classes could pass trivially
+  # while what hangs is their interaction with the rest of the host. This runs everything EXCEPT
+  # them. Terminates ⇒ named to three files. Hangs ⇒ they are cleared, and the agent is the subject.
+  macos-bisect:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build (net8.0 editor-agnostic slice)
+        timeout-minutes: 10
+        run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release
+
+      - name: Test (everything except the batch under suspicion)
+        timeout-minutes: 10
+        run: |
+          set +e
+          dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
+            --filter "FullyQualifiedName!~OAuthRedirectTests&FullyQualifiedName!~TeardownDoesNotThrowTests&FullyQualifiedName!~ClampedDepthTests" \
+            --logger "console;verbosity=normal" > bisect.log 2>&1
+          code=$?
+          echo "dotnet test exit=$code"
+          exit $code
+
+      - name: Bisect output (tail)
+        if: always()
+        run: tail -n 100 bisect.log || echo "no bisect.log was produced"
 
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:
