@@ -60,26 +60,37 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    # ⚠ 15, not 30, and the number comes from a measurement: this leg completes in 168–188 seconds
-    # when it completes at all, so fifteen minutes is five times a healthy run. What the extra
-    # fifteen bought was not information — a job killed by its own budget uploads no log either
-    # way — it was a CONCURRENCY cost: `cancel-in-progress` cannot end a wedged agent, so the next
-    # push queued behind the stuck run for its full half hour. The budget bounds how long a wedge
-    # blocks the next verdict, not how long it costs in runner minutes.
+    # ⚠ 15, not 30: a healthy run of this leg is 155–188 seconds, so fifteen minutes is five times
+    # one. It bounds a job that is merely SLOW — see below for what it does not bound.
     timeout-minutes: 15
-    # ⚠ macOS gates the verdict like every other leg, and it has to: it is the ONLY one that can
-    # see a path guard compare case-sensitively on a volume that folds, or a symlink resolved one
-    # component at a time. A leg that decides nothing is a leg nobody reads — this one was red for
-    # two days while two releases were tagged through it.
     #
-    # ⚠ It also WEDGES, intermittently, and that is measured rather than suspected: in one single
-    # run, two macOS jobs on the same image and the same commit finished differently — the full
-    # suite in 155 seconds, and a job running the same suite MINUS three test classes stuck past
-    # its budget. Two identical environments, opposite outcomes: no code explains that. It is the
-    # agent, which is also why no timer inside the job can end it and no log is ever uploaded
-    # (actions/runner-images#13452). The budget above is what bounds the cost; gating stays,
-    # because a leg that produces a verdict most of the time still produces the only verdict there
-    # is on those two classes. Re-open the question if it wedges on three consecutive pushes.
+    # ── Why this leg matters, why it does not gate, and how it gates again ────────────────────
+    #
+    # It is the ONLY leg that can see a path guard comparing case-sensitively on a volume that
+    # folds, or a symlink resolved one component at a time. It has earned that twice over: it is
+    # what caught the teardown that turned a passing test into a failing one.
+    #
+    # ⚠ It also WEDGES, and that is measured rather than suspected. In ONE run, two macOS jobs on
+    # the same image and the same commit ended differently: the full suite in 155 s, and a job
+    # running that same suite minus three test classes stuck past every budget. Two identical
+    # environments, opposite outcomes — no code explains that. It is the agent
+    # (actions/runner-images#13452), which is also why no log is ever uploaded.
+    #
+    # ⚠ NO timer inside the job can end a wedged agent — and that includes the job budget, because
+    # `timeout-minutes` is enforced BY the agent: measured, a job budgeted at 15 minutes ran for 20
+    # and ended only when the next push cancelled it. `--blame-hang` (5 min), an in-shell watchdog
+    # (10) and the step budget (12) all failed the same way. The operational consequence is the one
+    # that costs: a wedge holds the concurrency group, so the NEXT verdict waits for a push.
+    #
+    # ⚠ Hence no gating, and the reason previously written here — "a leg that produces a verdict
+    # most of the time" — is exactly what the count falsified: FOUR of five macOS jobs wedged in a
+    # day. A leg that cannot finish gates nothing; blocking on it costs every other leg.
+    #
+    # ⚠ This switch has now moved three times, so the way back is MECHANICAL rather than a
+    # judgement call: it gates again once it COMPLETES three consecutive runs. The leg still runs,
+    # a green one still counts and a genuine red is still read — what it no longer does is turn an
+    # environment fault into a blocked repository.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
 
     steps:
       - uses: actions/checkout@v7
