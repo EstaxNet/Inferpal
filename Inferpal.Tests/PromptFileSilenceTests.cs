@@ -205,4 +205,73 @@ public sealed class PromptFileSilenceTests : IDisposable
 
         Assert.Equal(2, Notes().Count(n => n.Contains("ARCHITECTURE.md")));
     }
+
+    // ── The third cause of the pin context: the cap ───────────────────────────
+
+    /// <summary>Builds with exactly these pins, one per line, as the settings window stores them.</summary>
+    private string BuildWith(params string[] pins) =>
+        new SystemPromptBuilder(new InferpalConfig { PinnedContextFiles = string.Join("\n", pins) })
+            .Build("BASE", projectRoot: _root);
+
+    private string[] FourPins()
+    {
+        var pins = new string[4];
+        for (var i = 0; i < 4; i++)
+        {
+            pins[i] = Path.Combine(_root, $"PIN{i}.md");
+            File.WriteAllText(pins[i], $"# Pin {i}");
+        }
+        return pins;
+    }
+
+    /// <summary>
+    /// ⚠ Being over the cap depends on the OTHER pins, not on this path — so the key never moves
+    /// while the condition comes and goes. Unpin one above it and it is back in the prompt; pin
+    /// another and it drops out again, under the very same key. Without a forget the second drop
+    /// is silent for the life of the process, and this note is the ONLY channel that says so: the
+    /// 📌 chips read the same capped list, so the file is nowhere.
+    /// </summary>
+    [Fact]
+    public void APinDroppedByTheCap_SpeaksAgain_WhenItDropsOutASecondTime()
+    {
+        var pins = FourPins();
+        Diagnostics.Clear();
+
+        BuildWith(pins);                                        // PIN3 is over the cap of 3
+        Assert.Single(Notes().Where(n => n.Contains("PIN3.md")));
+
+        BuildWith(pins[1], pins[2], pins[3]);                   // PIN0 unpinned: PIN3 fits again
+        BuildWith(pins);                                        // and drops out once more
+
+        Assert.Equal(2, Notes().Count(n => n.Contains("PIN3.md")));
+    }
+
+    /// <summary>Reference arm: the forget must not undo "once, not once per rebuild" — the prompt
+    /// is rebuilt on every change of active file.</summary>
+    [Fact]
+    public void APinDroppedByTheCap_IsStillReportedOnce_AcrossRebuilds()
+    {
+        var pins = FourPins();
+        Diagnostics.Clear();
+
+        for (var i = 0; i < 30; i++) BuildWith(pins);
+
+        Assert.Single(Notes().Where(n => n.Contains("PIN3.md")));
+    }
+
+    /// <summary>And the three causes keep DISJOINT keys: a path that is over the cap and a path
+    /// that is missing must not free each other's slot.</summary>
+    [Fact]
+    public void TheCapAndTheMissingFile_DoNotSilenceEachOther()
+    {
+        var pins  = FourPins();
+        var ghost = Path.Combine(_root, "GONE.md");             // never created
+        Diagnostics.Clear();
+
+        // GONE.md sits first, so it is within the cap and reported MISSING; PIN3 is over the cap.
+        for (var i = 0; i < 5; i++) BuildWith(ghost, pins[0], pins[1], pins[2], pins[3]);
+
+        Assert.Single(Notes().Where(n => n.Contains("GONE.md")));
+        Assert.Single(Notes().Where(n => n.Contains("PIN3.md")));
+    }
 }

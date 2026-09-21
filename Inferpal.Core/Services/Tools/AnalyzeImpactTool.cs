@@ -25,10 +25,17 @@ internal class AnalyzeImpactTool : ITool
 
     public string Name => "analyze_impact";
 
+    // ⚠ This text is NOT what the model reads: this tool is reached through the `analyze_code`
+    // facade, which carries its own description. It is therefore a spec for whoever reads this
+    // file — and it said "surface every consumer", in the tool whose whole ScanCoverage machinery
+    // exists because it cannot. A dead description that promises the impossible is a trap for the
+    // next maintainer, not a defect for the user.
     public string Description =>
         "Calculates the blast radius of changing a source file: " +
         "which files (direct + transitive), tests, and entry points would be affected. " +
-        "Use before a refactor to assess risk and surface every consumer of the file's public API. " +
+        "Use before a refactor to assess risk and surface the consumers of the file's public API. " +
+        "The report states what was actually scanned: a short list is only \"nothing depends on this\" " +
+        "when that line says the scan was complete. " +
         "Supports C# (namespace + type-name analysis) and other languages (import-path analysis).";
 
     public object Parameters => new

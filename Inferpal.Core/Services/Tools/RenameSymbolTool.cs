@@ -28,10 +28,17 @@ internal sealed class RenameSymbolTool : ITool
 
     public string Name => "rename_symbol";
 
+    // ⚠ No "every occurrence across all source files". This tool builds a ScanCoverage — files it
+    // could not read, files past the size cap, a folder it could not list — precisely because it
+    // CANNOT promise that, and the description is read BEFORE the report: a first claim is harder
+    // to dislodge than a footnote. What the description may state is the CONTRACT (all-or-nothing),
+    // which is a fact about this tool; how much of the tree was reached is a fact about the world.
     public string Description =>
-        "Project-wide symbol rename: replaces every occurrence of an identifier across all source files " +
-        "under 'root'. Uses Roslyn for C# (no false matches in strings or comments) and word-boundary " +
-        "regex for other languages. Always call with dry_run=true first to preview, then dry_run=false to apply.";
+        "Renames an identifier across the source files found under 'root'. Uses Roslyn for C# (no false " +
+        "matches in strings or comments) and word-boundary regex for other languages. The report states " +
+        "what was actually scanned — files it could not read, folders it could not list — and the write " +
+        "is all-or-nothing: nothing is changed if any file cannot be. Always call with dry_run=true " +
+        "first to preview, then dry_run=false to apply.";
 
     public object Parameters => new
     {

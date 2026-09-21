@@ -181,10 +181,16 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         foreach (var dropped in overCap)
             Diagnostics.DroppedLineOnce(
                 "PinnedFiles", $"Pinned context file ignored (only the first {PinnedFilesPolicy.MaxPinned} are sent)",
-                PinKey(dropped), dropped);
+                OverCapKey(dropped), dropped);
 
         foreach (var pinnedPath in pinned)
         {
+            // ⚠ This path is within the cap NOW. Unlike the other two causes, being over the cap
+            // depends on the OTHER pins, not on this path: unpin one above it and it comes back,
+            // pin another and it drops out again — under the very same key. Without this forget,
+            // the second drop is silent for the life of the process, and the over-cap note is the
+            // ONLY channel that says so (the 📌 chips read the same capped list).
+            Diagnostics.Forget(PinContext, OverCapKey(pinnedPath));
             if (!File.Exists(pinnedPath))
             {
                 // ⚠ A pinned file that is not there — mistyped path, file moved, disconnected
@@ -201,7 +207,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                 var pinnedContent = CapSection(File.ReadAllText(pinnedPath, Encoding.UTF8).Trim(),
                                                Path.GetFileName(pinnedPath));
                 // The read goes through again: a later failure will say so again.
-                Diagnostics.ForgetDroppedLine(PinContext, UnreadableKey(pinnedPath));
+                Diagnostics.Forget(PinContext, UnreadableKey(pinnedPath));
                 if (!string.IsNullOrEmpty(pinnedContent))
                     // The label is the file name; the identity is the PATH — two pins can both be
                     // called README.md, and one switch would then turn both off.
@@ -279,7 +285,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
 
     /// <summary>The path is back: the next time it goes missing will be reported again.</summary>
     private static void ForgetMissingPin(string path) =>
-        Diagnostics.ForgetDroppedLine(PinContext, MissingKey(path));
+        Diagnostics.Forget(PinContext, MissingKey(path));
 
     /// <summary>
     /// ⚠ <b>A pinned file that is present but unreadable</b> — locked by another editor, permission
@@ -298,12 +304,14 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// pinned file, while the shared key itself is ordinal.</summary>
     private static string PinKey(string path) => path.ToLowerInvariant();
 
-    // ⚠ The two causes have DISJOINT keys, and that is not cosmetic: `ForgetMissingPin` runs on
-    // every pass as soon as the file exists. A shared key would therefore be forgotten on every
-    // rebuild, and "once" would become "every time" for the unreadable one — the defect just closed,
-    // coming back by the other end.
+    // ⚠ The THREE causes have DISJOINT keys, and that is not cosmetic: each forget runs on its own
+    // pass condition, so a shared key would be freed by the wrong one and "once" would become
+    // "every time" — the defect closed at one end, coming back at the other. The over-cap key was
+    // the bare path while this note claimed there were two causes: an enumeration standing in for
+    // a rule, one cause short.
     private static string MissingKey(string path)    => "missing:"    + PinKey(path);
     private static string UnreadableKey(string path) => "unreadable:" + PinKey(path);
+    private static string OverCapKey(string path)    => "overcap:"    + PinKey(path);
 
     private static void AddFileSection(List<PromptSection> sections, PromptSectionKind kind, string path, string header, string detail)
     {
@@ -311,7 +319,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         try
         {
             var text = CapSection(File.ReadAllText(path, Encoding.UTF8).Trim(), detail);
-            Diagnostics.ForgetDroppedLine(PromptFileContext, PinKey(path));
+            Diagnostics.Forget(PromptFileContext, PinKey(path));
             if (!string.IsNullOrEmpty(text))
                 sections.Add(new(kind, detail, "\n\n## " + header + "\n\n" + text));
         }

@@ -29,11 +29,16 @@ internal sealed class SemanticSearchTool : ITool
 
     public string Name => "search_codebase";
 
+    // ⚠ No "across ALL project files". The index skips what `indexExclude` excludes, folders it
+    // could not list and files past the size cap — and it is PERSISTED, so a gap outlives the
+    // session. That is exactly why the header below names the index state; claiming exhaustiveness
+    // in the description would contradict it, before the model has even read it.
     public string Description =>
         "Semantically searches the indexed codebase for code snippets relevant to a natural language query. " +
-        "Use this to find classes, methods, or patterns related to a concept across ALL project files " +
-        "without knowing the exact file names. Returns ranked code chunks with file paths and line numbers. " +
-        "Prefer this over search_in_files for conceptual or cross-file questions.";
+        "Use this to find classes, methods, or patterns related to a concept without knowing the exact " +
+        "file names. Returns ranked code chunks with file paths and line numbers, under a header stating " +
+        "the index state: 'no result' from an index that is still building, or that skipped a folder, is " +
+        "not 'not in the codebase'. Prefer this over search_in_files for conceptual or cross-file questions.";
 
     public object Parameters => new
     {

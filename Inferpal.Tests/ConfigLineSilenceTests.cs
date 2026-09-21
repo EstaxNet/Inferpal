@@ -492,4 +492,41 @@ public class ConfigLineSilenceTests
         File.WriteAllText(Path.Combine(root, ".inferpal", "validators.json"), json);
         return root;
     }
+
+    // ── "Once" must not mean once in the life of the process ──────────────────
+
+    /// <summary>
+    /// ⚠ A duplicate-name rejection depends on the OTHER lines, not on the rejected one, so its key
+    /// — the line itself — does not move when the clash clears. Remove the earlier declaration and
+    /// the line works; put it back and it is refused again, under the same key. Without a forget on
+    /// the accepting pass, the second refusal is silent for the life of the process, and
+    /// <c>customTools</c> is read by the MODEL: the user only sees a tool that never gets called.
+    /// </summary>
+    [Fact]
+    public void ADuplicateCustomTool_SpeaksAgain_WhenTheClashComesBack()
+    {
+        const string Clashing = "my_tool=echo second";
+        Diagnostics.Clear();
+
+        _ = Registry("my_tool=echo first\n" + Clashing).Definitions.ToList();
+        Assert.Single(Notes("CustomTools"));
+
+        _ = Registry(Clashing).Definitions.ToList();              // the earlier line is gone: accepted
+        _ = Registry("my_tool=echo first\n" + Clashing).Definitions.ToList();
+
+        Assert.Equal(2, Notes("CustomTools").Length);
+    }
+
+    /// <summary>Reference arm: the forget must not undo "once per pass", which is what keeps the
+    /// ring readable — <c>Definitions</c> is re-read at least three times per model request.</summary>
+    [Fact]
+    public void ADuplicateCustomTool_IsStillReportedOnce_AcrossReads()
+    {
+        Diagnostics.Clear();
+        var registry = Registry("my_tool=echo first\nmy_tool=echo second");
+
+        for (var i = 0; i < 5; i++) _ = registry.Definitions.ToList();
+
+        Assert.Single(Notes("CustomTools"));
+    }
 }

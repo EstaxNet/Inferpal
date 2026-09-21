@@ -225,6 +225,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                         + "and two tools cannot share a name)", line, line);
                     continue;
                 }
+                // ⚠ This line is accepted NOW. The duplicate-name rejection above depends on the
+                // OTHER lines, not on this one, so its key does not move when the clash clears:
+                // remove the earlier declaration and this line works, put it back and the clash
+                // returns — silently, for the life of the process, without this.
+                Diagnostics.Forget("CustomTools", line);
                 tools.Add(new UserShellTool(name, cmd, _approval, _config));
             }
 

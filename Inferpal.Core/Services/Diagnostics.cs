@@ -266,7 +266,24 @@ internal static class Diagnostics
     /// pinned file that comes back then disappears again, a tool renamed then duplicated again,
     /// would never say so.
     /// </remarks>
-    internal static void ForgetDroppedLine(string context, string key)
+    internal static void ForgetDroppedLine(string context, string key) => Forget(context, key);
+
+    /// <summary>
+    /// The note identified by (<paramref name="context"/>, <paramref name="key"/>) is over — the
+    /// next one will be reported. Same memory as <see cref="DroppedLineOnce"/> and
+    /// <see cref="RecordOnce"/>, which is why one verb serves both.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>A forget is needed exactly when the rejection depends on something OTHER than the key.</b>
+    /// A glob that times out or a malformed line IS its own key: editing it changes the key, and the
+    /// next rejection speaks on its own. But a pinned file dropped by the cap depends on the other
+    /// pins, a custom tool refused as a duplicate depends on the other lines, and a project that
+    /// will not parse depends on its own content — there the key never moves while the condition
+    /// comes and goes, and without this "once" means once in the life of the process.
+    /// ⚠ And it must target the same <paramref name="context"/> as the note, or it frees another
+    /// slot and changes nothing.
+    /// </remarks>
+    internal static void Forget(string context, string key)
     {
         lock (_saidGate) _said.Remove(context + "\u0001" + key);
     }

@@ -140,6 +140,10 @@ internal class GetSolutionInfoTool : ITool
                 .OrderBy(n => n)
                 .ToList();
 
+            // ⚠ It parses NOW. The rejection below is keyed by the PATH and caused by the file's
+            // CONTENT, so the key never moves while the condition comes and goes: a project fixed
+            // and broken again would stay silent for the life of the process.
+            Diagnostics.Forget("GetSolutionInfo.ReadProject", projPath);
             return new ProjectInfo(tf, outputType, projRefs, packages, null);
         }
         catch (Exception ex)

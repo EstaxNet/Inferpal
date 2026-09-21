@@ -50,7 +50,7 @@ internal static class MarkdownFolder
                 read.Add((file, File.ReadAllText(file, Encoding.UTF8)));
                 // ⚠ The SAME context as the note, otherwise the forget targets another slot and
                 // "once" becomes "once in the life of the process".
-                Diagnostics.ForgetDroppedLine($"{context}({Path.GetFileName(file)})", file);
+                Diagnostics.Forget($"{context}({Path.GetFileName(file)})", file);
             }
             catch (Exception ex)
             {

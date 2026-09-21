@@ -24,11 +24,18 @@ namespace Inferpal.Tests;
 /// </para>
 /// <para>
 /// ⚠ <b>And the remedy was written three files away.</b> <c>apply_edits</c>, same shape, same
-/// phase, puts back every file already written and names the ones it could not put back — its
-/// commentaire porte la raison : <i>« the description promises the model "if ANY edit cannot be
-/// applied, NO file is changed"</i>. The description of <c>rename_symbol</c> promises the same
-/// (<i>"replaces EVERY occurrence … across ALL source files"</i>), and a partial rename is
-/// worse than a partial edit: it is the one refactor whose half-applied state never compiles.
+/// phase, puts back every file already written and names the ones it could not put back — its own
+/// comment carries the reason: <i>"the description promises the model: if ANY edit cannot be
+/// applied, NO file is changed"</i>. A partial rename is worse than a partial edit: it is the one
+/// refactor whose half-applied state never compiles.
+/// <para>
+/// ⚠ <b>Half of that promise was one no code could keep.</b> This class read
+/// <c>rename_symbol</c>'s description — <i>"replaces EVERY occurrence … across ALL source
+/// files"</i> — as an engagement to live up to, and made the write all-or-nothing, which is
+/// right: <b>atomicity is a contract the tool controls</b>. But how much of the tree was reached
+/// is a fact about the WORLD, and this very tool builds a <c>ScanCoverage</c> because it cannot
+/// promise it. The description now states the contract and points at that coverage line instead.
+/// </para>
 /// </para>
 /// </remarks>
 public class PartialRenameTests
