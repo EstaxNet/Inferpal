@@ -63,9 +63,11 @@ internal sealed class SearchDocsTool : ITool
         if (string.IsNullOrEmpty(query))
             return "query is required.";
 
-        var topK = args.Has("top_k")
-            ? Math.Clamp(args.Int("top_k", _config.RagTopK), 1, 10)
-            : Math.Max(1, _config.RagTopK);
+        // Same reason as `search_codebase`: a number the model asked for and did not get is an
+        // instruction overridden, and the report it shapes carries no trace of it.
+        var (topK, topKNotice) = args.Has("top_k")
+            ? ClampedArgument.Read(args, "top_k", _config.RagTopK, 1, 10)
+            : (Math.Max(1, _config.RagTopK), null);
 
         if (_docs.ChunkCount == 0)
             return Strings.DocsNotReady(_docs.Status);
@@ -118,6 +120,6 @@ internal sealed class SearchDocsTool : ITool
         // last excerpt, and a three-quarters-blind index looked like a complete one.
         sb.AppendLine($"*Docs: {_docs.ChunkCount} chunks — {_docs.Status}*");
 
-        return sb.ToString().TrimEnd();
+        return ClampedArgument.Above(topKNotice, sb.ToString().TrimEnd());
     }
 }

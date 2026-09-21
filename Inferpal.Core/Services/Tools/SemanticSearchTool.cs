@@ -69,9 +69,13 @@ internal sealed class SemanticSearchTool : ITool
         if (string.IsNullOrEmpty(query))
             return "query is required.";
 
-        var topK = args.Has("top_k")
-            ? Math.Clamp(args.Int("top_k", _config.RagTopK), 1, 10)
-            : Math.Max(1, _config.RagTopK);
+        // ⚠ A silent clamp here shapes a CONCLUSION: asked for 25 and served 10, the header
+        // still reads "top 10" and the model cannot tell a capped list from an exhausted one — it
+        // concludes "this symbol appears in ten places". `ClampedArgument` says what it changed.
+        // The absent case is NOT reported: `ragTopK` is the user's setting, nothing was asked for.
+        var (topK, topKNotice) = args.Has("top_k")
+            ? ClampedArgument.Read(args, "top_k", _config.RagTopK, 1, 10)
+            : (Math.Max(1, _config.RagTopK), null);
 
         // ── Guard: index not ready ────────────────────────────────────────────
         if (_index.ChunkCount == 0)
@@ -161,6 +165,6 @@ internal sealed class SemanticSearchTool : ITool
             sb.AppendLine();
         }
 
-        return sb.ToString().TrimEnd();
+        return ClampedArgument.Above(topKNotice, sb.ToString().TrimEnd());
     }
 }

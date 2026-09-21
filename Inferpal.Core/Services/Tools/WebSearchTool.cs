@@ -56,8 +56,9 @@ internal class WebSearchTool : ITool
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var query = args.Str("query") ?? throw new ArgumentException("query is required.");
-        var max   = Math.Clamp(
-            args.Int("max_results", 5), 1, 10);
+        // The same clamp as the two search tools, on a list the model reads as the web's answer:
+        // asked for 20 and served 10, "10 results" is indistinguishable from "the web has 10".
+        var (max, maxNotice) = ClampedArgument.Read(args, "max_results", 5, 1, 10);
 
         // The query string is sent to an external search engine — a covert exfiltration channel for
         // a prompt-injected model. Gate it like fetch_url (session "always allow" keeps it unobtrusive).
@@ -71,8 +72,8 @@ internal class WebSearchTool : ITool
         if (results.Count == 0)
             return Strings.NoResults;
 
-        return string.Join("\n\n", results.Select((r, i) =>
-            $"{i + 1}. {r.Title}\n   URL: {r.Url}\n   {r.Snippet}"));
+        return ClampedArgument.Above(maxNotice, string.Join("\n\n", results.Select((r, i) =>
+            $"{i + 1}. {r.Title}\n   URL: {r.Url}\n   {r.Snippet}")));
     }
 
     /// <summary>
