@@ -11,6 +11,10 @@ public class ModelsCommandHandlerTests
 {
     private static string[] Cmd(params string[] args) => ["/models", .. args];
 
+    /// <summary>A config with no backend URL: the empty-list branch then cannot ask anyone, and
+    /// keeps answering what it always did. The tests that DO exercise the check set one.</summary>
+    private static readonly Inferpal.Config.InferpalConfig Cfg = new() { BaseUrl = "" };
+
     private static RunningModelInfo Run(string name, long vramBytes) => new(name, vramBytes, "");
 
     [Fact]
@@ -18,7 +22,7 @@ public class ModelsCommandHandlerTests
     {
         var client = new FakeInferenceProvider { Capabilities = ProviderCapabilities.OpenAiCompatible };
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd("delete", "foo"), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd("delete", "foo"), CancellationToken.None);
 
         Assert.Equal(Strings.ModelsBackendUnsupported, result.Message);
         Assert.Empty(client.Deleted); // never reached the backend
@@ -29,7 +33,7 @@ public class ModelsCommandHandlerTests
     {
         var client = new FakeInferenceProvider { Capabilities = ProviderCapabilities.OpenAiCompatible };
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd("running"), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd("running"), CancellationToken.None);
 
         Assert.Equal(Strings.ModelsBackendUnsupported, result.Message);
     }
@@ -39,7 +43,7 @@ public class ModelsCommandHandlerTests
     {
         var client = new FakeInferenceProvider();
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd("delete"), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd("delete"), CancellationToken.None);
 
         Assert.Equal(Strings.ModelsDeleteUsage, result.Message);
         Assert.Empty(client.Deleted);
@@ -50,7 +54,7 @@ public class ModelsCommandHandlerTests
     {
         var client = new FakeInferenceProvider { OnDelete = _ => true };
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd("delete", "llama3.1"), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd("delete", "llama3.1"), CancellationToken.None);
 
         Assert.Equal(Strings.ModelsDeleted("llama3.1"), result.Message);
         Assert.Equal("llama3.1", Assert.Single(client.Deleted));
@@ -61,7 +65,7 @@ public class ModelsCommandHandlerTests
     {
         var client = new FakeInferenceProvider { OnDelete = _ => false };
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd("delete", "ghost"), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd("delete", "ghost"), CancellationToken.None);
 
         Assert.Equal(Strings.ModelsDeleteFailed("ghost"), result.Message);
     }
@@ -71,7 +75,7 @@ public class ModelsCommandHandlerTests
     {
         var client = new FakeInferenceProvider { Running = [] };
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd("running"), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd("running"), CancellationToken.None);
 
         Assert.Equal(Strings.ModelsNoneRunning, result.Message);
     }
@@ -81,7 +85,7 @@ public class ModelsCommandHandlerTests
     {
         var client = new FakeInferenceProvider { Running = [Run("qwen3", 5L * 1024 * 1024 * 1024)] };
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd("running"), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd("running"), CancellationToken.None);
 
         Assert.Contains("qwen3", result.Message);
     }
@@ -91,7 +95,7 @@ public class ModelsCommandHandlerTests
     {
         var client = new FakeInferenceProvider { ModelNames = [] };
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd(), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd(), CancellationToken.None);
 
         Assert.Equal(Strings.ModelsNoneInstalled, result.Message);
     }
@@ -105,7 +109,7 @@ public class ModelsCommandHandlerTests
             Running    = [Run("qwen3", 4L * 1024 * 1024 * 1024)],
         };
 
-        var result = await ModelsCommandHandler.HandleAsync(client, Cmd("list"), CancellationToken.None);
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd("list"), CancellationToken.None);
 
         Assert.Contains("llama3.1", result.Message);
         Assert.Contains("qwen3", result.Message);
@@ -181,5 +185,69 @@ public class ModelsCommandHandlerTests
         Assert.Contains("ModelsCommandHandler.SwitchMessageAsync(", host);
         Assert.DoesNotContain("Strings.SlashModelChanged(", vm);
         Assert.DoesNotContain("Strings.SlashModelChanged(", host);
+    }
+
+    // ── An empty list: nothing installed, or nobody to ask ────────────────────
+
+    private static Inferpal.Config.InferpalConfig Reachable(string url = "http://127.0.0.1:11434") =>
+        new() { BaseUrl = url };
+
+    /// <summary>
+    /// ⚠ An unreachable backend NEVER throws here: all three providers catch, trace and
+    /// <c>return []</c>. So "no model installed" was the answer given when the backend was simply
+    /// not running — and on a product whose prerequisite is `ollama serve`, that is the single most
+    /// likely state. It sent the user to install models instead of starting the server.
+    /// ⚠ The ambiguity was already written down in the handler, for its other reader:
+    /// <c>SwitchMessageAsync</c> "cannot judge, so it adds nothing". This one can, by asking.
+    /// </summary>
+    [Fact]
+    public async Task List_WithAnUnreachableBackend_NamesIt_InsteadOfSayingNothingIsInstalled()
+    {
+        var client = new FakeInferenceProvider { ModelNames = [], ConnectionOk = false };
+
+        var result = await ModelsCommandHandler.HandleAsync(
+            client, Reachable(), Cmd(), CancellationToken.None);
+
+        Assert.Equal(Strings.MsgUnreachable("http://127.0.0.1:11434"), result.Message);
+        Assert.NotEqual(Strings.ModelsNoneInstalled, result.Message);
+    }
+
+    /// <summary>Same conflation on the other listing.</summary>
+    [Fact]
+    public async Task Running_WithAnUnreachableBackend_NamesIt_InsteadOfSayingNothingRuns()
+    {
+        var client = new FakeInferenceProvider { Running = [], ConnectionOk = false };
+
+        var result = await ModelsCommandHandler.HandleAsync(
+            client, Reachable(), Cmd("running"), CancellationToken.None);
+
+        Assert.Equal(Strings.MsgUnreachable("http://127.0.0.1:11434"), result.Message);
+    }
+
+    /// <summary>Reference arm: a backend that ANSWERS and really has nothing installed keeps the
+    /// ordinary sentence — otherwise the fix trades one wrong cause for another.</summary>
+    [Fact]
+    public async Task List_WithAReachableBackendAndNoModel_StillSaysNothingIsInstalled()
+    {
+        var client = new FakeInferenceProvider { ModelNames = [], ConnectionOk = true };
+
+        var result = await ModelsCommandHandler.HandleAsync(
+            client, Reachable(), Cmd(), CancellationToken.None);
+
+        Assert.Equal(Strings.ModelsNoneInstalled, result.Message);
+    }
+
+    /// <summary>Reference arm: a non-empty list never pays the extra round-trip, and says what it
+    /// always said.</summary>
+    [Fact]
+    public async Task List_WithModels_IsUnchanged_AndAsksNobody()
+    {
+        var client = new FakeInferenceProvider { ModelNames = ["llama3.1"], ConnectionOk = false };
+
+        var result = await ModelsCommandHandler.HandleAsync(
+            client, Reachable(), Cmd(), CancellationToken.None);
+
+        Assert.Contains("llama3.1", result.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Cannot reach", result.Message, StringComparison.Ordinal);
     }
 }

@@ -277,7 +277,7 @@ internal partial class InferpalToolWindowData
             return;
         }
 
-        var result = await Services.Commands.ModelsCommandHandler.HandleAsync(_client, parts, ct);
+        var result = await Services.Commands.ModelsCommandHandler.HandleAsync(_client, _config, parts, ct);
         await ShowInfoAsync(result.Message);
     }
 

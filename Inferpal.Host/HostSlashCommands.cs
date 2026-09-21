@@ -604,7 +604,7 @@ internal sealed partial class HostServer
             return new SlashCommandResult(true, ok ? Strings.ModelsPulled(model) : Strings.ModelsPullFailed(model));
         }
 
-        var result = await ModelsCommandHandler.HandleAsync(s.Client, parts, ct);
+        var result = await ModelsCommandHandler.HandleAsync(s.Client, s.Config, parts, ct);
         return new SlashCommandResult(true, result.Message);
     }
 

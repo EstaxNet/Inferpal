@@ -21,8 +21,9 @@ internal static class ModelsCommandHandler
 
     /// <summary>Handles <c>/models</c> (list), <c>/models delete &lt;name&gt;</c> and
     /// <c>/models running</c>. <paramref name="parts"/> is the whitespace-split command line.</summary>
+    /// <param name="config">Read for the backend URL only — named when the backend does not answer.</param>
     public static async Task<ModelsCommandResult> HandleAsync(
-        IInferenceProvider client, string[] parts, CancellationToken ct)
+        IInferenceProvider client, Config.InferpalConfig config, string[] parts, CancellationToken ct)
     {
         var sub = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
 
@@ -43,7 +44,7 @@ internal static class ModelsCommandHandler
         {
             var running = await client.GetRunningModelsAsync(ct);
             return new(running.Count == 0
-                ? Strings.ModelsNoneRunning
+                ? await EmptyMeans(client, config, Strings.ModelsNoneRunning, ct)
                 : ModelCatalog.FormatRunningModels(running));
         }
 
@@ -51,8 +52,44 @@ internal static class ModelsCommandHandler
         var models   = await client.ListModelsAsync(ct);
         var running2 = await client.GetRunningModelsAsync(ct);
         return new(models.Count == 0
-            ? Strings.ModelsNoneInstalled
+            ? await EmptyMeans(client, config, Strings.ModelsNoneInstalled, ct)
             : ModelCatalog.FormatInstalledModels(models, running2));
+    }
+
+    /// <summary>
+    /// What an EMPTY model list actually means: nothing installed, or nobody to ask.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>An unreachable backend never throws here</b> — all three providers catch, trace and
+    /// <c>return []</c> — so "no model installed" was the answer given when the backend was simply
+    /// not running. On a product whose prerequisite is `ollama serve`, that is the single most
+    /// likely state, and it sends the user to install models instead of starting the server.
+    /// ⚠ The ambiguity was already written down <b>in this file</b>, for the other reader:
+    /// <c>SwitchMessageAsync</c> says "an empty list — backend unreachable, or nothing installed —
+    /// cannot judge, so it adds nothing". It cannot judge; this one can, by asking.
+    /// <para>
+    /// The extra round-trip happens only on the empty branch, so the ordinary answer costs nothing.
+    /// And the message NAMES the configured URL, like the connection badge: a cause that is not
+    /// named sends the reader to the wrong place.
+    /// </para>
+    /// </remarks>
+    private static async Task<string> EmptyMeans(
+        IInferenceProvider client, Config.InferpalConfig config, string nothingInstalled, CancellationToken ct)
+    {
+        var url = config.BaseUrl;
+        if (string.IsNullOrWhiteSpace(url)) return nothingInstalled;
+
+        // Best effort: a check that itself fails must not replace an answer with an exception.
+        try
+        {
+            return await client.CheckConnectionAsync(url, ct) ? nothingInstalled : Strings.MsgUnreachable(url);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ModelsCommandHandler.EmptyMeans", ex);
+            return nothingInstalled;
+        }
     }
 
     private static readonly TimeSpan SwitchListBudget = TimeSpan.FromSeconds(3);
