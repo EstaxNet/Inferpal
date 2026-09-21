@@ -412,7 +412,22 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var calls = new List<ToolCallDto>(acc.Count);
         foreach (var (_, slot) in acc)
         {
-            if (string.IsNullOrEmpty(slot.Name)) continue;
+            // ⚠ A slot that never received a name cannot be executed — but dropping it in SILENCE
+            // is the model asking for a tool and nothing happening, with no trace anywhere. When it
+            // was the only call, `Build` then returns null and the turn is read as a plain text
+            // answer. Same repair as the MCP sibling: a fragment we cannot turn into a call is
+            // NAMED rather than dropped quietly.
+            // ⚠ Said once: a gateway that does this does it on every response, and one entry per
+            // response is the noise `RecordOnce` exists to prevent.
+            if (string.IsNullOrEmpty(slot.Name))
+            {
+                Diagnostics.RecordOnce(
+                    "OpenAiCompatible.ToolCalls",
+                    "A streamed tool call carried arguments but never a name, so it was dropped: "
+                    + "the model asked for a tool and nothing ran. The backend's stream is malformed.",
+                    "unnamed-slot");
+                continue;
+            }
             calls.Add(new ToolCallDto(ToolCallArguments.Parse(slot.Name, slot.Args.ToString())));
         }
         return calls.Count > 0 ? calls : null;

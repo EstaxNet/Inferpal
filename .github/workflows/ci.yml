@@ -94,15 +94,14 @@ jobs:
     # at 25 minutes elapsed with all three past due. What does end the job is the JOB budget, as
     # the table above shows. Do not put another timer inside the step; that question is settled.
     #
-    # ⚠ Hence no gating, and the reason previously written here — "a leg that produces a verdict
-    # most of the time" — is exactly what the count falsified: FOUR of five macOS jobs wedged in a
-    # day. A leg that cannot finish gates nothing; blocking on it costs every other leg.
+    # ⚠ It stopped gating for a day, when FOUR of five macOS jobs wedged — a leg that cannot finish
+    # gates nothing, and blocking on it costs every other leg. The way back was written as a
+    # MECHANICAL criterion rather than a judgement call, precisely so it would fire without anyone
+    # arguing: gate again once it COMPLETES three consecutive runs.
     #
-    # ⚠ This switch has now moved three times, so the way back is MECHANICAL rather than a
-    # judgement call: it gates again once it COMPLETES three consecutive runs. The leg still runs,
-    # a green one still counts and a genuine red is still read — what it no longer does is turn an
-    # environment fault into a blocked repository.
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
+    # ⚠ It did: 187 s, 148 s, 162 s. So gating is back, by the rule and not by preference. If it
+    # wedges again, the same criterion applies in the other direction — and the switch has moved
+    # four times now, which is itself the reason it is a rule and no longer a decision.
 
     steps:
       - uses: actions/checkout@v7

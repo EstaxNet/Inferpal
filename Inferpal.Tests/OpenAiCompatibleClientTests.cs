@@ -12,6 +12,9 @@ namespace Inferpal.Tests;
 // Covers the pure wire-mapping helpers of the OpenAI-compatible provider (LM Studio et al.):
 // URL normalization, internal-message → OpenAI-shape mapping (ids, string arguments,
 // tool_call_id correlation), and streamed tool-call fragment assembly. No network.
+// ⚠ Serialised with the other Diagnostics readers: the ring and its "said once" memory are static
+// and process-wide, so a `Clear()` here would otherwise land in the middle of another class.
+[Collection("Diagnostics")]
 public class OpenAiCompatibleClientTests
 {
     // ── V1 URL normalization ──────────────────────────────────────────────────
@@ -179,6 +182,60 @@ public class OpenAiCompatibleClientTests
     [Fact]
     public void BuildToolCalls_NoFragments_ReturnsNull()
         => Assert.Null(OpenAiCompatibleClient.BuildToolCalls([]));
+
+    /// <summary>
+    /// ⚠ A slot that never received a name cannot be executed — but dropping it in SILENCE is the
+    /// model asking for a tool and nothing happening, with no trace anywhere. When it was the only
+    /// call, <c>Build</c> then returns null and the turn is read as a plain TEXT answer: the run
+    /// ends, looking like the model simply chose to answer.
+    /// ⚠ Same repair as the MCP sibling, where a result block that cannot be forwarded is NAMED
+    /// rather than dropped quietly — this is that rule reaching its other reader.
+    /// </summary>
+    [Fact]
+    public void BuildToolCalls_ASlotThatNeverGotAName_IsDropped_ButSaidSo()
+    {
+        Diagnostics.Clear();
+        var acc = new SortedDictionary<int, (string Name, StringBuilder Args)>
+        {
+            [0] = (string.Empty, new StringBuilder("""{"q":"hi"}""")),
+        };
+
+        Assert.Null(OpenAiCompatibleClient.BuildToolCalls(acc));   // nothing runnable came out
+        Assert.Contains(Diagnostics.Snapshot(),
+                        e => e.Context == "OpenAiCompatible.ToolCalls" && e.Detail.Contains("never a name"));
+    }
+
+    /// <summary>The surviving calls still come out, and the loss is still named — a batch where one
+    /// fragment is malformed must not read as a batch where nothing was asked.</summary>
+    [Fact]
+    public void BuildToolCalls_OneNamelessSlotBesideAGoodOne_KeepsTheGoodOne_AndSaysWhatItLost()
+    {
+        Diagnostics.Clear();
+        var acc = new SortedDictionary<int, (string Name, StringBuilder Args)>
+        {
+            [0] = (string.Empty, new StringBuilder("""{"a":1}""")),
+            [1] = ("search",     new StringBuilder("""{"q":"hi"}""")),
+        };
+
+        var call = Assert.Single(OpenAiCompatibleClient.BuildToolCalls(acc)!);
+        Assert.Equal("search", call.Function.Name);
+        Assert.Contains(Diagnostics.Snapshot(), e => e.Context == "OpenAiCompatible.ToolCalls");
+    }
+
+    /// <summary>Reference arm: an ordinary assembly says nothing — a note on every response is the
+    /// noise that gets the real ones skipped.</summary>
+    [Fact]
+    public void BuildToolCalls_WithNamedSlots_SaysNothing()
+    {
+        Diagnostics.Clear();
+        var acc = new SortedDictionary<int, (string Name, StringBuilder Args)>
+        {
+            [0] = ("search", new StringBuilder("""{"q":"hi"}""")),
+        };
+
+        Assert.Single(OpenAiCompatibleClient.BuildToolCalls(acc)!);
+        Assert.DoesNotContain(Diagnostics.Snapshot(), e => e.Context == "OpenAiCompatible.ToolCalls");
+    }
 
     // ── Capabilities ──────────────────────────────────────────────────────────
 
