@@ -370,19 +370,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         try {
           await settings.update('model', cfg.defaultModel, vscode.ConfigurationTarget.Workspace);
         } catch (err) {
-          this.log(`[chat] model setting not saved: ${String(err)}`);
+          // ⚠ Not just the log: this per-workspace copy WINS over the host's value at the next
+          // activation, so losing it silently reverts the model the panel just saved. The
+          // `stateChange` path two hundred lines below already says so for the same failure.
+          this.gestureFailed('model setting', err);
         }
       }
       if (typeof cfg.agentModeEnabled === 'boolean' && cfg.agentModeEnabled !== this.sharedEcho.agentModeEnabled) {
         try {
           await settings.update('agentMode', cfg.agentModeEnabled, vscode.ConfigurationTarget.Workspace);
         } catch (err) {
-          this.log(`[chat] agent mode not saved: ${String(err)}`);
+          this.gestureFailed('agent mode setting', err);
         }
       }
       this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
     } catch (err) {
-      this.log(`[chat] config/get failed: ${String(err)}`);
+      // ⚠ The panel saved and this re-read NOTHING: context window, tool bubbles, model and agent
+      // mode all stay as they were, right after the user pressed Save. Silence here is the state
+      // where the settings screen and the chat disagree and nobody is told which one is live.
+      this.gestureFailed('settings reload', err);
     }
     try {
       this.commands = await host.commandList();

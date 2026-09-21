@@ -66,7 +66,19 @@ public sealed class SilentGestureTests
     /// <summary>The bare guard, as it reads when nothing is said.</summary>
     private const string BareGuard = "if (!host?.isRunning) {";
 
-    /// <summary>The three paths that run without anyone asking, where a toast would be noise.</summary>
+    /// <summary>
+    /// Paths whose bare host guard may stay silent.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The discriminator is <b>whether a person is waiting for an answer</b>, not whether the code
+    /// started by itself. <c>onHostReady</c> and <c>pollBackendStatus</c> run unprompted, so a toast
+    /// there is noise. <c>configSaved</c> does NOT: it runs because the user pressed Save — it is
+    /// exempt only because the settings panel <b>is already answering that same person</b>
+    /// (<see cref="TheSettingsPanel_NamesWhatFailed_RatherThanBlamingTheBackend"/>).
+    /// ⚠ Calling it "background" is what hid its three silent catches from the rule above for so
+    /// long: the wrong reason for a right exemption still costs, because the next reader applies
+    /// the reason and not the entry.
+    /// </remarks>
     private static readonly string[] BackgroundPaths = ["onHostReady", "configSaved", "pollBackendStatus"];
 
     [Fact]
@@ -117,9 +129,14 @@ public sealed class SilentGestureTests
         // The gestures whose failure used to stop at this.log(...). Named, because "is this a
         // gesture?" is not a syntactic question — the same reason the editor-surface rule is an
         // assertion rather than a scan.
+        // ⚠ The last three are `configSaved`'s, and they were invisible because TWO rules agreed on
+        // the same misclassification: this list did not name them, and `BackgroundPaths` below
+        // called that method a path "that runs without anyone asking" — while its own doc says
+        // "called after the settings panel SAVED". Two rules agreeing is not two checks.
         foreach (var what in new[] { "cancel", "resumeStep", "xray/panel",
                                      "model pick → host config", "agent mode → host config",
-                                     "branch", "branch command", "branch switch" })
+                                     "branch", "branch command", "branch switch",
+                                     "model setting", "agent mode setting", "settings reload" })
         {
             Assert.Contains($"this.gestureFailed('{what}', err)", src);
         }
