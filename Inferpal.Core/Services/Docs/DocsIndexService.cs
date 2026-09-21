@@ -339,7 +339,7 @@ internal sealed class DocsIndexService
     /// Returns the most relevant documentation chunks for the query. Uses cosine similarity when
     /// <paramref name="queryEmbedding"/> is provided, otherwise falls back to keyword matching.
     /// </summary>
-    public async Task<List<(DocChunk Chunk, float Score)>> SearchAsync(
+    public async Task<List<DocHit>> SearchAsync(
         float[]? queryEmbedding, string? keywordFallback, int topK, CancellationToken ct)
     {
         List<DocChunk> all;
@@ -375,6 +375,9 @@ internal sealed class DocsIndexService
             lexical = new Bm25Index(docs).Rank(terms, pool);
         }
 
+        // ⚠ IsCosine says where THIS result came from, and nothing else can: a lexical-only hit
+        // scores 0f, exactly like a similarity of zero. It matters more here than on the code index,
+        // because the lexical side is the ONLY half that reaches the chunks held without a vector.
         if (vector.Count > 0 && lexical.Count > 0)
         {
             var cosByIdx = vector.ToDictionary(x => x.Idx, x => x.Cos);
@@ -384,11 +387,18 @@ internal sealed class DocsIndexService
                     lexical.Select(x => x.Idx).ToList(),
                 })
                 .Take(topK)
-                .Select(i => (all[i], cosByIdx.GetValueOrDefault(i, 0f)))
+                .Select(i =>
+                {
+                    var (score, isCosine) = HybridProvenance.OfFused(i, cosByIdx);
+                    return new DocHit(all[i], score, isCosine);
+                })
                 .ToList();
         }
         if (vector.Count > 0)
-            return vector.Take(topK).Select(x => (all[x.Idx], x.Cos)).ToList();
-        return lexical.Take(topK).Select(x => (all[x.Idx], (float)x.Score)).ToList();
+            return vector.Take(topK).Select(x => new DocHit(all[x.Idx], x.Cos, IsCosine: true)).ToList();
+        // A BM25 score is unbounded and is NOT a similarity — saying so is the whole point.
+        return lexical.Take(topK)
+                      .Select(x => new DocHit(all[x.Idx], (float)x.Score, IsCosine: false))
+                      .ToList();
     }
 }

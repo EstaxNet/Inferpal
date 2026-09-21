@@ -82,12 +82,13 @@ public class RagSearchProvenanceTests
         // Failure (1): these two had a cosine and did not show it, because a THIRD result — lexical
         // — held first place.
         List<RagHit> hits = [Lexical(0f), Cosine(0.83f)];
-        var label = RagResultPresentation.ModeLabel(embeddingsRan: true, hits);
+        // WITNESS: the label really is read from every hit, not from the first one.
+        Assert.Equal("hybrid", RagResultPresentation.ModeLabel(embeddingsRan: true, hits));
 
-        Assert.True(RagResultPresentation.ShowsScore(label, hits[1]));
+        Assert.True(RagResultPresentation.ShowsScore(hits[1].IsCosine, hits[1].Score));
         // And the lexical one shows nothing: a number not comparable with the cosines above it is
         // worse than no number.
-        Assert.False(RagResultPresentation.ShowsScore(label, hits[0]));
+        Assert.False(RagResultPresentation.ShowsScore(hits[0].IsCosine, hits[0].Score));
     }
 
     [Fact]
@@ -95,9 +96,9 @@ public class RagSearchProvenanceTests
     {
         // Failure (2), from the other end: the purely lexical fallback shows no score at all.
         List<RagHit> hits = [Lexical(0.84f)];
-        var label = RagResultPresentation.ModeLabel(embeddingsRan: true, hits);
+        Assert.Equal("keyword", RagResultPresentation.ModeLabel(embeddingsRan: true, hits));
 
-        Assert.False(RagResultPresentation.ShowsScore(label, hits[0]));
+        Assert.False(RagResultPresentation.ShowsScore(hits[0].IsCosine, hits[0].Score));
     }
 
     // ── The provenance is WRITTEN DOWN, not guessed ─────────────────────────

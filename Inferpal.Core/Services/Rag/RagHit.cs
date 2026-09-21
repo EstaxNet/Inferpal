@@ -27,9 +27,30 @@ internal readonly record struct RagHit(RagChunk Chunk, float Score, bool IsCosin
         IEnumerable<int> fusedOrder, IReadOnlyList<RagChunk> chunks,
         IReadOnlyDictionary<int, float> cosineByIndex, int topK) =>
         fusedOrder.Take(topK)
-                  .Select(i => new RagHit(chunks[i], cosineByIndex.GetValueOrDefault(i, 0f),
-                                          IsCosine: cosineByIndex.ContainsKey(i)))
+                  .Select(i =>
+                  {
+                      var (score, isCosine) = HybridProvenance.OfFused(i, cosineByIndex);
+                      return new RagHit(chunks[i], score, isCosine);
+                  })
                   .ToList();
+}
+
+/// <summary>
+/// Where one hit of a fused ranking came from — <b>written once, for every index</b>.
+/// </summary>
+/// <remarks>
+/// ⚠ The repository has TWO hybrid indexes over the same machinery (code and documentation) and the
+/// rule they share is <i>a chunk is a cosine hit iff the vector side ranked it</i>. Spelled out at
+/// each fusion site it is three characters away from <c>GetValueOrDefault(i, 0f)</c> alone, which
+/// silently turns every lexical-only hit into a similarity of zero.
+/// </remarks>
+internal static class HybridProvenance
+{
+    /// <param name="cosineByIndex">The cosine of every chunk the VECTOR side ranked — membership is
+    /// the fact, the value is only what to display.</param>
+    internal static (float Score, bool IsCosine) OfFused(
+        int index, IReadOnlyDictionary<int, float> cosineByIndex) =>
+        (cosineByIndex.GetValueOrDefault(index, 0f), cosineByIndex.ContainsKey(index));
 }
 
 /// <summary>
@@ -50,10 +71,19 @@ internal static class RagResultPresentation
     /// </remarks>
     internal static string ModeLabel(bool embeddingsRan, IReadOnlyList<RagHit> hits)
     {
-        if (!embeddingsRan || hits.Count == 0) return "keyword";
         var cosines = 0;
         foreach (var h in hits) if (h.IsCosine) cosines++;
-        return cosines == 0 ? "keyword" : cosines == hits.Count ? "semantic" : "hybrid";
+        return ModeLabel(embeddingsRan, hits.Count, cosines);
+    }
+
+    /// <summary>
+    /// The core, in the two facts it actually needs — so the documentation index answers this
+    /// question through the SAME reader as the code index rather than a copy of it.
+    /// </summary>
+    internal static string ModeLabel(bool embeddingsRan, int hitCount, int cosineCount)
+    {
+        if (!embeddingsRan || hitCount == 0) return "keyword";
+        return cosineCount == 0 ? "keyword" : cosineCount == hitCount ? "semantic" : "hybrid";
     }
 
     /// <summary>Whether this hit's score may be shown as a similarity.</summary>
@@ -61,6 +91,10 @@ internal static class RagResultPresentation
     /// ⚠ A BM25 score is unbounded and not comparable with a cosine: one under 1.001 prints as
     /// <c>score 0.840</c> next to real similarities. A number the reader cannot compare is worse
     /// than no number — a lexical hit shows none, and the mode label says why.
+    /// ⚠ Takes the two facts, not a hit: the documentation index carries a different chunk type and
+    /// must not get a second copy of this decision. The mode label is NOT a parameter — it is
+    /// computed from the same provenance, so passing it would invite answering per report what is
+    /// true per hit.
     /// </remarks>
-    internal static bool ShowsScore(string modeLabel, RagHit hit) => hit.IsCosine && hit.Score > 0f;
+    internal static bool ShowsScore(bool isCosine, float score) => isCosine && score > 0f;
 }

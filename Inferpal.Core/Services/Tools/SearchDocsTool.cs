@@ -90,19 +90,26 @@ internal sealed class SearchDocsTool : ITool
                 SearchDegradation.Classify(semanticRequested: true, queryEmbedding),
                 model);
 
-        var sb          = new StringBuilder();
-        bool isSemantic = queryEmbedding is { Length: > 0 } && results[0].Score is > 0f and < 1.001f;
-        var modeLabel   = isSemantic ? "semantic" : "keyword";
+        var sb = new StringBuilder();
+        // ⚠ The label is read from ALL the hits, and each one's provenance from the data. Deduced
+        // from `results[0].Score`, an exact-term query — the case the lexical half exists for — puts
+        // a BM25-only hit first and the whole report announced itself `keyword`; and on the purely
+        // lexical fallback a BM25 score under 1.001 passed for a similarity.
+        var cosines   = 0;
+        foreach (var h in results) if (h.IsCosine) cosines++;
+        var modeLabel = RagResultPresentation.ModeLabel(
+            queryEmbedding is { Length: > 0 }, results.Count, cosines);
 
         sb.AppendLine($"## Documentation search: \"{query}\" ({modeLabel}, top {results.Count})");
         sb.AppendLine();
 
         for (int i = 0; i < results.Count; i++)
         {
-            var (chunk, score) = results[i];
+            var hit   = results[i];
+            var chunk = hit.Chunk;
 
             var header = $"### [{i + 1}] {chunk.PageTitle}";
-            if (isSemantic && score > 0f) header += $" · score {score:F3}";
+            if (RagResultPresentation.ShowsScore(hit.IsCosine, hit.Score)) header += $" · score {hit.Score:F3}";
             sb.AppendLine(header);
             sb.AppendLine($"<{chunk.Url}>");
             sb.AppendLine();

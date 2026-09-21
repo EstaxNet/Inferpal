@@ -150,7 +150,7 @@ internal sealed class SemanticSearchTool : ITool
             var header = $"### [{i + 1}] `{chunk.RelPath}` — lines {chunk.StartLine}–{chunk.EndLine}";
             if (chunk.TypeName is not null)
                 header += $" · `{chunk.TypeName}`";
-            if (RagResultPresentation.ShowsScore(modeLabel, hit))
+            if (RagResultPresentation.ShowsScore(hit.IsCosine, hit.Score))
                 header += $" · score {hit.Score:F3}";
 
             sb.AppendLine(header);
