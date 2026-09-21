@@ -56,41 +56,14 @@ internal static class ModelsCommandHandler
             : ModelCatalog.FormatInstalledModels(models, running2));
     }
 
-    /// <summary>
-    /// What an EMPTY model list actually means: nothing installed, or nobody to ask.
-    /// </summary>
-    /// <remarks>
-    /// ⚠ <b>An unreachable backend never throws here</b> — all three providers catch, trace and
-    /// <c>return []</c> — so "no model installed" was the answer given when the backend was simply
-    /// not running. On a product whose prerequisite is `ollama serve`, that is the single most
-    /// likely state, and it sends the user to install models instead of starting the server.
-    /// ⚠ The ambiguity was already written down <b>in this file</b>, for the other reader:
-    /// <c>SwitchMessageAsync</c> says "an empty list — backend unreachable, or nothing installed —
-    /// cannot judge, so it adds nothing". It cannot judge; this one can, by asking.
-    /// <para>
-    /// The extra round-trip happens only on the empty branch, so the ordinary answer costs nothing.
-    /// And the message NAMES the configured URL, like the connection badge: a cause that is not
-    /// named sends the reader to the wrong place.
-    /// </para>
-    /// </remarks>
-    private static async Task<string> EmptyMeans(
-        IInferenceProvider client, Config.InferpalConfig config, string nothingInstalled, CancellationToken ct)
-    {
-        var url = config.BaseUrl;
-        if (string.IsNullOrWhiteSpace(url)) return nothingInstalled;
-
-        // Best effort: a check that itself fails must not replace an answer with an exception.
-        try
-        {
-            return await client.CheckConnectionAsync(url, ct) ? nothingInstalled : Strings.MsgUnreachable(url);
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow("ModelsCommandHandler.EmptyMeans", ex);
-            return nothingInstalled;
-        }
-    }
+    // ⚠ The discriminator lives in `ModelCatalog`, not here: `/bench` renders the same empty list
+    // and said "install one (/models pull …)" — a remedy that needs the backend that is down. The
+    // ambiguity was already written down in THIS file for the other reader (`SwitchMessageAsync`:
+    // "an empty list — backend unreachable, or nothing installed — cannot judge, so it adds
+    // nothing"). It cannot judge; these can, by asking, and they must all ask the same way.
+    private static Task<string> EmptyMeans(
+        IInferenceProvider client, Config.InferpalConfig config, string nothingInstalled, CancellationToken ct) =>
+        ModelCatalog.EmptyListMeansAsync(client, config, nothingInstalled, ct);
 
     private static readonly TimeSpan SwitchListBudget = TimeSpan.FromSeconds(3);
 

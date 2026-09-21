@@ -54,6 +54,11 @@ public class BenchTests : IDisposable
         Assert.Equal(expected, BenchTasks.ChatTasks[1].Score(output));
     }
 
+    /// <summary>A reachable-looking backend URL: the empty-list branch then asks, and the
+    /// fake answers `ConnectionOk`. Tests that want the unreachable answer set it false.</summary>
+    private static readonly Inferpal.Config.InferpalConfig BenchCfg =
+        new() { BaseUrl = "http://127.0.0.1:11434" };
+
     [Fact]
     public void SummaryScorer_AcceptsOneSentence_RejectsEchoAndEmpty()
     {
@@ -152,12 +157,46 @@ public class BenchTests : IDisposable
 
     // ── Handler ────────────────────────────────────────────────────────────────
 
+    /// <summary>Reference arm: a backend that ANSWERS and really has nothing installed keeps the
+    /// ordinary sentence.</summary>
     [Fact]
     public async Task Handler_NoModelsAnywhere_SaysSo()
     {
         var result = await BenchCommandHandler.HandleAsync(
-            new FakeInferenceProvider(), ["/bench"], null, CancellationToken.None);
+            new FakeInferenceProvider(), BenchCfg, ["/bench"], null, CancellationToken.None);
         Assert.Equal(Strings.BenchNoModels, result.Message);
+    }
+
+    /// <summary>
+    /// ⚠ An unreachable backend never throws — the providers catch and <c>return []</c> — so the
+    /// empty list read as "nothing installed". And the ordinary sentence makes it worse by naming
+    /// `/models pull`, which needs the very backend that is down: <b>a remedy impossible in the
+    /// state it describes costs more than no message.</b> Same reader as <c>/models</c>, so the two
+    /// cannot drift apart.
+    /// </summary>
+    [Fact]
+    public async Task Handler_WithAnUnreachableBackend_NamesIt_InsteadOfTellingThemToInstallOne()
+    {
+        var client = new FakeInferenceProvider { ConnectionOk = false };
+
+        var result = await BenchCommandHandler.HandleAsync(
+            client, BenchCfg, ["/bench"], null, CancellationToken.None);
+
+        Assert.Equal(Strings.MsgUnreachable("http://127.0.0.1:11434"), result.Message);
+        Assert.NotEqual(Strings.BenchNoModels, result.Message);
+    }
+
+    /// <summary>Reference arm: `/bench &lt;name&gt;` is EXPLICIT, so an empty list there means the
+    /// user typed nothing — no round-trip, and the ordinary sentence.</summary>
+    [Fact]
+    public async Task Handler_WithAnExplicitButEmptyList_DoesNotBlameTheBackend()
+    {
+        var client = new FakeInferenceProvider { ConnectionOk = false };
+
+        var result = await BenchCommandHandler.HandleAsync(
+            client, BenchCfg, ["/bench", "   "], null, CancellationToken.None);
+
+        Assert.DoesNotContain("Cannot reach", result.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -168,7 +207,7 @@ public class BenchTests : IDisposable
 
         var progress = new List<string>();
         var result   = await BenchCommandHandler.HandleAsync(
-            fake, ["/bench"], progress.Add, CancellationToken.None);
+            fake, BenchCfg, ["/bench"], progress.Add, CancellationToken.None);
 
         Assert.Equal(5, progress.Count);                       // capped at MaxAutoModels
         Assert.Equal(["m1", "m2", "m3", "m4"], fake.Unloaded); // evicted between models, last stays warm
@@ -183,7 +222,7 @@ public class BenchTests : IDisposable
         fake.Installed = [new InstalledModelInfo("ignored", 1)];
 
         var result = await BenchCommandHandler.HandleAsync(
-            fake, ["/bench", "alpha", "beta"], null, CancellationToken.None);
+            fake, BenchCfg, ["/bench", "alpha", "beta"], null, CancellationToken.None);
 
         Assert.Contains("`alpha`", result.Message);
         Assert.Contains("`beta`", result.Message);
@@ -194,14 +233,14 @@ public class BenchTests : IDisposable
     public async Task Handler_Last_ReplaysSavedRun_OrSaysNothingSaved()
     {
         var empty = await BenchCommandHandler.HandleAsync(
-            new FakeInferenceProvider(), ["/bench", "last"], null, CancellationToken.None);
+            new FakeInferenceProvider(), BenchCfg, ["/bench", "last"], null, CancellationToken.None);
         Assert.Equal(Strings.BenchNoSaved, empty.Message);
 
         var fake = PerfectProvider();
-        await BenchCommandHandler.HandleAsync(fake, ["/bench", "small"], null, CancellationToken.None);
+        await BenchCommandHandler.HandleAsync(fake, BenchCfg, ["/bench", "small"], null, CancellationToken.None);
 
         var last = await BenchCommandHandler.HandleAsync(
-            new FakeInferenceProvider(), ["/bench", "last"], null, CancellationToken.None);
+            new FakeInferenceProvider(), BenchCfg, ["/bench", "last"], null, CancellationToken.None);
         Assert.Contains("`small`", last.Message);
         Assert.Contains("5/5", last.Message);
     }

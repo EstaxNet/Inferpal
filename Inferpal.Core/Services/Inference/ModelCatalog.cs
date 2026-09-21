@@ -15,6 +15,41 @@ namespace Inferpal.Services.Inference;
 internal static class ModelCatalog
 {
     /// <summary>
+    /// What an EMPTY model list actually means: nothing installed, or nobody to ask.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>An unreachable backend never throws</b> — all three providers catch, trace and
+    /// <c>return []</c> — so every reader of an empty list is one sentence away from telling the
+    /// user their models are gone when the server is simply stopped. On a product whose
+    /// prerequisite is `ollama serve`, that is the most likely state of all.
+    /// ⚠ And the ordinary sentences make it worse by naming a remedy that cannot work in the state
+    /// they describe: <c>/bench</c> says "install one (/models pull …)", which needs the very
+    /// backend that is down.
+    /// <para>
+    /// One reader for every caller, and the round-trip happens only on the EMPTY branch, so the
+    /// ordinary answer costs nothing. Best effort: a check that fails on its own must not replace
+    /// an answer with an exception.
+    /// </para>
+    /// </remarks>
+    public static async Task<string> EmptyListMeansAsync(
+        IInferenceProvider client, Config.InferpalConfig config, string nothingInstalled, CancellationToken ct)
+    {
+        var url = config.BaseUrl;
+        if (string.IsNullOrWhiteSpace(url)) return nothingInstalled;
+
+        try
+        {
+            return await client.CheckConnectionAsync(url, ct) ? nothingInstalled : Strings.MsgUnreachable(url);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ModelCatalog.EmptyListMeans", ex);
+            return nothingInstalled;
+        }
+    }
+
+    /// <summary>
     /// Same model name, case aside, allowing Ollama's implicit <c>:latest</c> tag (<c>llama3.1</c> is
     /// <c>llama3.1:latest</c>). Any other tag names another model: <c>qwen3:8b</c> and <c>qwen3:32b</c> are
     /// two downloads, two sizes, two VRAM footprints.

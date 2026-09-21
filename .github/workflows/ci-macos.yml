@@ -1,0 +1,99 @@
+name: CI (macOS)
+
+# ⚠ A WORKFLOW of its own, and the reason is measured rather than assumed.
+#
+# This leg wedges: over one day, five of twelve macOS jobs never finished — two macOS jobs in ONE
+# run, same image and same commit, ended differently (the full suite in 155 s, and a job running
+# that same suite minus three test classes stuck past every budget). Two identical environments,
+# opposite outcomes: no code explains that. It is the agent (actions/runner-images#13452), which is
+# also why no log is ever uploaded.
+#
+# ⚠ `continue-on-error` does NOT contain it, and that is the measurement that moved the leg here. It
+# covers a job that FAILS; a wedged job ends `cancelled` (its own budget cancels it), and a
+# cancelled job cancels the whole RUN. Measured: run 35655290479 — three green jobs, macOS
+# cancelled at 1200 s, run conclusion `cancelled`. So the main CI had no green verdict on ~40 % of
+# pushes for a reason that is not the product.
+#
+# In its own workflow a cancelled run is its own, and the CI verdict stands on the three legs that
+# can produce one. What is lost is nothing: this leg was already not gating.
+#
+# ⚠ It still matters — it is the ONLY leg that can see a path guard comparing case-sensitively on a
+# volume that folds, or a symlink resolved one component at a time, and it earned that by catching
+# the teardown that turned a passing test into a failing one. Read it; a red here is real.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+# ⚠ A build server DETACHES on purpose — an MSBuild node survives its run for fifteen minutes to be
+# reused, and anything it started is then outside the process tree a timeout kills, holding the
+# output pipes it inherited. Nothing here is built twice, so a warm node buys nothing.
+env:
+  MSBUILDDISABLENODEREUSE: 1
+  DOTNET_CLI_USE_MSBUILD_SERVER: 0
+  UseSharedCompilation: false
+
+# Its own group: a wedged run here must not hold the main CI's queue either.
+concurrency:
+  group: ci-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-macos:
+    runs-on: macos-latest
+    # ⚠ 15, and the number carries OBSERVATIONS rather than a mechanism — three earlier versions of
+    # this comment each inferred a different mechanism from a single number, and each was wrong.
+    # Every wedged macOS job measured so far ended at its OWN budget, within five minutes:
+    #
+    #   budget 30 min → 1979 s (+179)   |   budget 15 min → 1200 s (+300, = GitHub's grace)
+    #   budget 30 min → 1851 s (+51)    |   budget 15 min →  900 s (+0)
+    #
+    # A healthy run of this leg is 148–188 s, so fifteen minutes is five times one.
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      # ⚠ Three steps rather than one, each with its own budget. A job killed by `timeout-minutes`
+      # uploads NO log at all, so the only thing readable from outside is the per-step status —
+      # granular enough to say WHERE it hung, and nothing else is.
+      - name: Restore (net8.0 editor-agnostic slice)
+        timeout-minutes: 10
+        run: dotnet restore Inferpal.Tests/Inferpal.Tests.csproj
+
+      - name: Build (net8.0 editor-agnostic slice)
+        timeout-minutes: 10
+        run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
+
+      # ⚠ SETTLED, do not reinstate an in-shell watchdog a third time. Three independent timers
+      # inside this job cannot end a hung step here: `--blame-hang` at 5 min (silent — so the hang
+      # is not inside a test), an in-shell watchdog at 10 min killing the host by name, and the
+      # step's own `timeout-minutes` at 12. Measured at 18 and at 25 minutes elapsed, all three past
+      # due. What does end the job is the JOB budget above.
+      - name: Test (net8.0 editor-agnostic slice)
+        timeout-minutes: 12
+        run: |
+          set +e
+          dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
+            --logger "console;verbosity=detailed" --blame-hang --blame-hang-timeout 5m \
+            > test-output.log 2>&1
+          code=$?
+          echo "dotnet test exit=$code"
+          exit $code
+
+      # Runs even when the step above was killed by its own budget: that is the whole point.
+      - name: Test output (tail)
+        if: always()
+        run: |
+          echo "── last 3000 lines of the test output ──"
+          tail -n 3000 test-output.log || echo "no test-output.log was produced"

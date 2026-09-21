@@ -326,7 +326,7 @@ internal sealed partial class HostServer
                     // Long-running (a full micro-eval suite per model). Progress is surfaced through
                     // the same chat/step notifications the agent loop uses.
                     var result = await BenchCommandHandler.HandleAsync(
-                        s.Client, parts, progress => Notify("chat/step", new { text = progress }), cts.Token);
+                        s.Client, s.Config, parts, progress => Notify("chat/step", new { text = progress }), cts.Token);
                     return new SlashCommandResult(true, result.Message);
                 }
 

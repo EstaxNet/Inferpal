@@ -21,8 +21,10 @@ internal static class BenchCommandHandler
     /// seconds per model, and an explicit list always wins over the cap.</summary>
     internal const int MaxAutoModels = 5;
 
+    /// <param name="config">Read for the backend URL only — named when the backend does not answer.</param>
     public static async Task<BenchCommandResult> HandleAsync(
-        IInferenceProvider client, string[] parts, Action<string>? onProgress, CancellationToken ct)
+        IInferenceProvider client, Config.InferpalConfig config, string[] parts,
+        Action<string>? onProgress, CancellationToken ct)
     {
         // /bench last → redisplay the persisted run, no inference.
         if (parts.Length >= 2 && parts[1].Equals("last", StringComparison.OrdinalIgnoreCase))
@@ -44,7 +46,16 @@ internal static class BenchCommandHandler
             var installed = await client.ListInstalledModelsAsync(ct);
             models = [.. installed.Select(m => m.Name).Take(MaxAutoModels)];
         }
-        if (models.Count == 0) return new(Strings.BenchNoModels);
+        // ⚠ An empty list is "nothing installed" OR "nobody answered" — an unreachable backend never
+        // throws, it returns []. And this sentence names `/models pull`, which needs the very
+        // backend that is down: a remedy impossible in the state it describes costs more than no
+        // message. Same reader as `/models`, so the two cannot drift apart.
+        // ⚠ Only when the list came from the BACKEND: `/bench <name>` was explicit, and an empty
+        // list there means the user typed nothing, which the ordinary sentence covers.
+        if (models.Count == 0)
+            return new(parts.Length >= 2
+                ? Strings.BenchNoModels
+                : await ModelCatalog.EmptyListMeansAsync(client, config, Strings.BenchNoModels, ct));
 
         var results = new List<BenchModelResult>();
         for (int i = 0; i < models.Count; i++)

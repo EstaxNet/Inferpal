@@ -311,7 +311,7 @@ internal partial class InferpalToolWindowData
         try
         {
             var result = await Services.Commands.BenchCommandHandler.HandleAsync(
-                _client, parts, progress => Post(() => statusBbl.Content = progress), ct);
+                _client, _config, parts, progress => Post(() => statusBbl.Content = progress), ct);
             await ShowInfoAsync(result.Message);
         }
         finally

@@ -55,60 +55,17 @@ jobs:
   # so restore/build here never touch the VS SDK. This is also where the bash dialect of
   # ShellStateProtocol runs against a real /bin/bash.
   test-posix:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    # ⚠ 15, not 30, and this comment carries the OBSERVATIONS rather than a mechanism — three
-    # earlier versions of it each inferred a different mechanism from a single number, and each was
-    # wrong. Every wedged macOS job measured so far ended at its own budget, within five minutes:
-    #
-    #   budget 30 min → 1979 s (+179)   |   budget 15 min → 1200 s (+300, = the grace below)
-    #   budget 30 min → 1851 s (+51)    |   budget 15 min →  900 s (+0)
-    #
-    # So the job budget DOES end these jobs, and halving it halves how long a wedge holds the
-    # runner and the concurrency group. A healthy run of this leg is 155-188 s, so fifteen minutes
-    # is still five times one.
-    #
-    # ⚠ The five minutes is GitHub's grace before it force-cancels a job that has not complied.
-    # Measured on the queue side too: a run pushed behind a wedged one started its jobs 5 min later,
-    # twice (18:47:41 → 18:52:46, 19:18:42 → 19:23:47), against 4 seconds with nothing ahead. Which
-    # is why macOS needs no workflow of its own — the blocking cost is bounded by the budget above.
+    runs-on: ubuntu-latest
+    # ⚠ Ubuntu ONLY. macOS lives in `ci-macos.yml`, and the reason is measured: that leg wedges
+    # (five of twelve jobs over one day), and `continue-on-error` does NOT contain a wedge — it
+    # covers a job that FAILS, while a wedged one ends `cancelled` by its own budget, and a
+    # cancelled job cancels the whole RUN. Measured: run 35655290479, three green jobs, macOS
+    # cancelled at 1200 s, run conclusion `cancelled`. Keeping it here meant no green CI verdict on
+    # roughly two pushes in five, for a reason that is not the product.
+    # ⚠ Its own workflow is NOT a way of ignoring it: that leg is the only one that sees a path
+    # guard comparing case-sensitively on a folding volume, and it has already caught a real defect.
+    # A red there is real and is read — it simply no longer cancels this verdict.
     timeout-minutes: 15
-    #
-    # ── Why this leg matters, why it does not gate, and how it gates again ────────────────────
-    #
-    # It is the ONLY leg that can see a path guard comparing case-sensitively on a volume that
-    # folds, or a symlink resolved one component at a time. It has earned that twice over: it is
-    # what caught the teardown that turned a passing test into a failing one.
-    #
-    # ⚠ It also WEDGES, and that is measured rather than suspected. In ONE run, two macOS jobs on
-    # the same image and the same commit ended differently: the full suite in 155 s, and a job
-    # running that same suite minus three test classes stuck past every budget. Two identical
-    # environments, opposite outcomes — no code explains that. It is the agent
-    # (actions/runner-images#13452), which is also why no log is ever uploaded.
-    #
-    # ⚠ Nothing INSIDE the step ends it: `--blame-hang` (5 min) stays silent, an in-shell watchdog
-    # (10) never fired, and the step's own `timeout-minutes` (12) asks rather than kills — measured
-    # at 25 minutes elapsed with all three past due. What does end the job is the JOB budget, as
-    # the table above shows. Do not put another timer inside the step; that question is settled.
-    #
-    # ⚠ It does not gate, and the interesting part is WHY the previous attempt to restore gating
-    # was wrong. The criterion then was "three consecutive completions", written as a mechanical
-    # rule precisely so it would fire without an argument. It fired — 187 s, 148 s, 162 s — and the
-    # very next run wedged.
-    #
-    # ⭐ A MECHANICAL criterion is not automatically a SOUND one. Counted over one day: eleven macOS
-    # jobs, four wedged — p ≈ 0.36. Three completions in a row therefore happen by chance about
-    # (0.64)³ ≈ 26 % of the time: that rule fired on noise one time in four. It looked rigorous
-    # because it was a rule.
-    #
-    # So the way back is the same shape with arithmetic behind it: gate again after TEN consecutive
-    # completions, which at the measured rate is (0.64)^10 ≈ 1 % — i.e. ten in a row really does
-    # mean the rate dropped rather than the coin landing the same way. Do not weaken this back to a
-    # shorter streak without re-measuring the rate first.
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
 
     steps:
       - uses: actions/checkout@v7
@@ -118,11 +75,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # ⚠ Three steps rather than one, each with its own budget. A job killed by `timeout-minutes`
-      # uploads NO log at all, so the only thing readable from outside is the per-step status —
-      # granular enough to say WHERE it hung, and nothing else is. `dotnet test` alone restores,
-      # builds and runs: collapsing the three made "the macOS leg hangs" unanswerable, and
-      # --blame-hang cannot name a test when the tests never started.
+      # Three steps rather than one, kept in step with `ci-macos.yml`: a job killed by
+      # `timeout-minutes` uploads no log at all, so the per-step status is the only thing readable
+      # from outside, and `dotnet test` alone would collapse restore, build and run into one.
       - name: Restore (net8.0 editor-agnostic slice)
         timeout-minutes: 10
         run: dotnet restore Inferpal.Tests/Inferpal.Tests.csproj
@@ -132,16 +87,9 @@ jobs:
         run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
 
       # `--blame-hang` names the test when the hang is inside one; the detailed logger covers the
-      # case where it is not (a host that never exits once every test has passed).
-      #
-      # ⚠ SETTLED, do not reinstate an in-shell watchdog a third time. Three independent timers
-      # inside this job cannot end a hung step here: `--blame-hang` at 5 min (silent — so the hang
-      # is not inside a test), an in-shell watchdog at 10 min killing the host by name, and the
-      # step's own `timeout-minutes` at 12. Measured again at 18 minutes elapsed, all three past
-      # due. A process we control would have died to at least one of them: what is wedged is the
-      # AGENT, which is also why no log is ever uploaded. The watchdog was brought back on the
-      # hypothesis that a pipe-holding orphan had defeated it; this run refuted that, and keeping a
-      # guard that does not fire is worse than having none.
+      # case where it is not (a host that never exits once every test has passed). This leg has
+      # never wedged — the instrumentation is here so the two posix legs read alike, and so a hang
+      # that ever appears here is named rather than guessed.
       - name: Test (net8.0 editor-agnostic slice)
         timeout-minutes: 12
         run: |
