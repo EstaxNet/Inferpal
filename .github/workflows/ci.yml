@@ -94,14 +94,21 @@ jobs:
     # at 25 minutes elapsed with all three past due. What does end the job is the JOB budget, as
     # the table above shows. Do not put another timer inside the step; that question is settled.
     #
-    # ⚠ It stopped gating for a day, when FOUR of five macOS jobs wedged — a leg that cannot finish
-    # gates nothing, and blocking on it costs every other leg. The way back was written as a
-    # MECHANICAL criterion rather than a judgement call, precisely so it would fire without anyone
-    # arguing: gate again once it COMPLETES three consecutive runs.
+    # ⚠ It does not gate, and the interesting part is WHY the previous attempt to restore gating
+    # was wrong. The criterion then was "three consecutive completions", written as a mechanical
+    # rule precisely so it would fire without an argument. It fired — 187 s, 148 s, 162 s — and the
+    # very next run wedged.
     #
-    # ⚠ It did: 187 s, 148 s, 162 s. So gating is back, by the rule and not by preference. If it
-    # wedges again, the same criterion applies in the other direction — and the switch has moved
-    # four times now, which is itself the reason it is a rule and no longer a decision.
+    # ⭐ A MECHANICAL criterion is not automatically a SOUND one. Counted over one day: eleven macOS
+    # jobs, four wedged — p ≈ 0.36. Three completions in a row therefore happen by chance about
+    # (0.64)³ ≈ 26 % of the time: that rule fired on noise one time in four. It looked rigorous
+    # because it was a rule.
+    #
+    # So the way back is the same shape with arithmetic behind it: gate again after TEN consecutive
+    # completions, which at the measured rate is (0.64)^10 ≈ 1 % — i.e. ten in a row really does
+    # mean the rate dropped rather than the coin landing the same way. Do not weaken this back to a
+    # shorter streak without re-measuring the rate first.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
 
     steps:
       - uses: actions/checkout@v7

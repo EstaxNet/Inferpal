@@ -222,6 +222,66 @@ public class OpenAiCompatibleClientTests
         Assert.Contains(Diagnostics.Snapshot(), e => e.Context == "OpenAiCompatible.ToolCalls");
     }
 
+    // ── Slot assignment: the part born from a measured gateway defect ─────────
+
+    /// <summary>
+    /// ⚠ The behaviour this locks was written because a gateway did it: it omits <c>index</c> — which
+    /// then reads 0 — and sends several COMPLETE calls on it, told apart only by their id. Merged,
+    /// the names overwrite each other and the arguments concatenate into <c>{…}{…}</c>, which parses
+    /// as nothing: the call lands in <c>UnparsedArguments</c> and never runs. ⚠ Silent when broken,
+    /// and held by no test until now — one edit away from coming back.
+    /// </summary>
+    [Fact]
+    public void Accumulator_TwoCompleteCallsOnOneIndex_AreNotMerged()
+    {
+        var acc = new OpenAiCompatibleClient.ToolCallAccumulator();
+        acc.Add(0, "call_1", "read_file", """{"path":"a"}""");
+        acc.Add(0, "call_2", "list_files", """{"path":"b"}""");
+
+        var calls = acc.Build()!;
+        Assert.Equal(2, calls.Count);
+        Assert.Equal(["read_file", "list_files"], calls.Select(c => c.Function.Name));
+        Assert.Equal("a", calls[0].Function.Arguments.GetProperty("path").GetString());
+        Assert.Equal("b", calls[1].Function.Arguments.GetProperty("path").GetString());
+    }
+
+    /// <summary>The ordinary stream: id and name on the first delta, arguments in pieces after —
+    /// one call, not one per delta.</summary>
+    [Fact]
+    public void Accumulator_FragmentsWithoutAnId_ContinueTheCurrentCall()
+    {
+        var acc = new OpenAiCompatibleClient.ToolCallAccumulator();
+        acc.Add(0, "call_1", "search", null);
+        acc.Add(0, null, null, """{"q":""");
+        acc.Add(0, null, null, "\"hi\"}");
+
+        var call = Assert.Single(acc.Build()!);
+        Assert.Equal("search", call.Function.Name);
+        Assert.Equal("hi", call.Function.Arguments.GetProperty("q").GetString());
+    }
+
+    /// <summary>Servers that repeat the id on EVERY delta must not open a call per delta.</summary>
+    [Fact]
+    public void Accumulator_AnIdRepeatedOnEveryFragment_IsStillOneCall()
+    {
+        var acc = new OpenAiCompatibleClient.ToolCallAccumulator();
+        acc.Add(0, "call_1", "search", """{"q":""");
+        acc.Add(0, "call_1", null, "\"hi\"}");
+
+        Assert.Single(acc.Build()!);
+    }
+
+    /// <summary>And a server that does send distinct indices keeps them in order.</summary>
+    [Fact]
+    public void Accumulator_DistinctIndices_KeepTheirOrder()
+    {
+        var acc = new OpenAiCompatibleClient.ToolCallAccumulator();
+        acc.Add(1, "b", "second", "{}");
+        acc.Add(0, "a", "first",  "{}");
+
+        Assert.Equal(["first", "second"], acc.Build()!.Select(c => c.Function.Name));
+    }
+
     /// <summary>Reference arm: an ordinary assembly says nothing — a note on every response is the
     /// noise that gets the real ones skipped.</summary>
     [Fact]

@@ -444,6 +444,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         private readonly SortedDictionary<int, (string Name, System.Text.StringBuilder Args)> _slots = new();
         private readonly Dictionary<int, int>    _slotByIndex = new();
         private readonly Dictionary<int, string> _idBySlot    = new();
+        private readonly Dictionary<int, int>    _indexBySlot = new();
 
         public void Add(int index, string? id, string? name, string? arguments)
         {
@@ -453,6 +454,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             {
                 key = _slots.Count;
                 _slotByIndex[index] = key;
+                _indexBySlot[key]   = index;
                 _slots[key] = (string.Empty, new System.Text.StringBuilder());
             }
             if (!string.IsNullOrEmpty(id)) _idBySlot.TryAdd(key, id);
@@ -463,7 +465,27 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             _slots[key] = slot;
         }
 
-        public List<ToolCallDto>? Build() => BuildToolCalls(_slots);
+        /// <summary>
+        /// The calls in the order the SERVER numbered them, not the order the fragments arrived.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ <c>_slots</c> is keyed by arrival rank, so a <c>SortedDictionary</c> over it sorts by
+        /// arrival and by nothing else — the structure announced an ordering it did not deliver.
+        /// Deltas may arrive out of order, and the batch order is not cosmetic: the orchestrator
+        /// runs a read-only batch in parallel but a MUTATING one sequentially, in list order, so two
+        /// edits to one file would land the wrong way round. Ordered by <c>index</c> first, then by
+        /// arrival — which keeps the several-complete-calls-on-one-index case in its own order.
+        /// </remarks>
+        public List<ToolCallDto>? Build()
+        {
+            var ordered = new SortedDictionary<int, (string Name, System.Text.StringBuilder Args)>();
+            var rank    = 0;
+            foreach (var key in _slots.Keys
+                         .OrderBy(k => _indexBySlot.TryGetValue(k, out var i) ? i : int.MaxValue)
+                         .ThenBy(k => k))
+                ordered[rank++] = _slots[key];
+            return BuildToolCalls(ordered);
+        }
     }
 
     // ── Embeddings ─────────────────────────────────────────────────────────────
