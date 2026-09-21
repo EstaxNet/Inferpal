@@ -89,19 +89,41 @@ jobs:
 
       # `--blame-hang` names the test when the hang is inside one; the detailed logger covers the
       # case where it is not (a host that never exits once every test has passed).
-      # ⚠ The in-shell watchdog that used to live here is GONE: measured twice, it never ended the
-      # step — keeping a guard that does not fire is worse than not having one, because it reads as
-      # protection. What stays is what costs nothing and did produce information: the output in a
-      # file (a surviving `testhost` holding the step's pipe keeps the step alive), the step budget,
-      # and the dump below.
+      #
+      # ⚠ The in-shell watchdog is BACK, and not on hope: it was removed after two runs in which it
+      # "never ended the step", and the reason was written in the same breath — a surviving
+      # `testhost` held the step's pipe, so the step stayed alive even once the kill had landed.
+      # That cause is closed (the parked child that escaped the kill tree is gone), and removing the
+      # watchdog left this leg with NO mechanism able to end a hung step: `timeout-minutes` on a
+      # STEP does not kill, it asks, and a test host that does not answer keeps going — measured at
+      # 12 minutes budgeted for 25 elapsed. A job killed by its own budget uploads no log at all, so
+      # without this the hang costs half an hour and names nothing.
+      #
+      # ⚠ The watchdog must not become the very thing it guards against: it polls in FIVE-SECOND
+      # steps instead of parking one long `sleep`, so it is gone within five seconds of a normal
+      # finish. A parked child must outlive the budget under test and nothing else — and no
+      # `set -m`: job control in this non-interactive shell kills the run by SIGHUP.
       - name: Test (net8.0 editor-agnostic slice)
         timeout-minutes: 12
         run: |
           set +e
           dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
             --logger "console;verbosity=detailed" --blame-hang --blame-hang-timeout 5m \
-            > test-output.log 2>&1
+            > test-output.log 2>&1 &
+          test_pid=$!
+          (
+            for _ in $(seq 1 120); do
+              sleep 5
+              kill -0 "$test_pid" 2>/dev/null || exit 0
+            done
+            echo "── watchdog: 10 minutes elapsed, killing the test host by name ──" >> test-output.log
+            pkill -f testhost
+            pkill -f 'dotnet.*test'
+          ) &
+          dog_pid=$!
+          wait "$test_pid"
           code=$?
+          kill "$dog_pid" 2>/dev/null
           echo "dotnet test exit=$code"
           exit $code
 
