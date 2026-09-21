@@ -102,10 +102,23 @@ internal sealed class LoopbackHttpServer : IDisposable
         });
     }
 
+    /// <summary>
+    /// Teardown of a loopback listener: every call guarded, and disposing twice is a no-op.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>A teardown that throws turns a PASSING test into a failing one, and the failure names
+    /// the cleanup instead of the subject.</b> `Cancel()` runs continuations, `Stop()` can raise a
+    /// socket error, and a second `Dispose()` on a cancelled source throws on its own — none of
+    /// which says anything about what the test measured. Four test files share this server, so one
+    /// throwing teardown reddens all of them.
+    /// ⚠ And the cost is larger than a red test: <b>a gating CI leg that reddens for something
+    /// that is not the product is how a gating leg gets turned off again.</b> `catch {}` is the
+    /// form this repository allows for pure cleanup, and this is exactly that.
+    /// </remarks>
     public void Dispose()
     {
-        _cts.Cancel();
-        _listener.Stop();
-        _cts.Dispose();
+        try { _cts.Cancel(); }    catch { }
+        try { _listener.Stop(); } catch { }
+        try { _cts.Dispose(); }   catch { }
     }
 }

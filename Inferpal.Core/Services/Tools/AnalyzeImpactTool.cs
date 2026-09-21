@@ -13,6 +13,12 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 internal class AnalyzeImpactTool : ITool
 {
+    // ⚠ Named and internal for the same reason as TraceDependencyTool's: the `analyze_code`
+    // facade states them to the model, and a stated default only stops drifting once it is
+    // interpolated from the constant that provides it.
+    internal const int MinAllowedDepth     = 1;
+    internal const int MaxAllowedDepth     = 3;
+    internal const int DefaultDepth        = 2;
     private const int MaxFilesScanned      = 500;
     private const int MaxTransitiveFiles   = 60;
     private const int MaxTransitivePerFile = 8;   // layer-2 entries shown per layer-1 file
@@ -161,7 +167,8 @@ internal class AnalyzeImpactTool : ITool
             return Strings.ToolFileNotFound(filePath);
 
         var symbol = args.Trimmed("symbol");
-        var depth  = Math.Clamp(args.Int("depth", 2), 1, 3);
+        var (depth, depthNotice) = ClampedArgument.Read(
+            args, "depth", DefaultDepth, MinAllowedDepth, MaxAllowedDepth);
 
         var source   = await File.ReadAllTextAsync(filePath, ct);
         var ext      = Path.GetExtension(filePath).ToLowerInvariant();
@@ -382,7 +389,7 @@ internal class AnalyzeImpactTool : ITool
         foreach (var bullet in riskBullets)
             sb.AppendLine($"  ↳ {bullet}");
 
-        return sb.ToString().TrimEnd();
+        return ClampedArgument.Above(depthNotice, sb.ToString().TrimEnd());
     }
 
     // ── Bounded, cached scan regexes ──────────────────────────────────────────

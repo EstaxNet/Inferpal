@@ -48,7 +48,15 @@ internal sealed class AnalyzeCodeTool : ITool
             path      = new { type = "string",  description = "Absolute path to the source file. Required for 'callgraph' and 'impact'." },
             root      = new { type = "string",  description = "Root directory to scan. Used by 'nexus'; defaults to the solution root." },
             symbol    = new { type = "string",  description = "Focus on a single method/type name. Used by 'callgraph' and 'impact'." },
-            depth     = new { type = "integer", description = "Cross-file recursion depth (callgraph: 0-3, default 1; impact: 1-3, default 2)." },
+            // ⚠ Interpolated, never written out: this is the ONLY default this repository states
+            // to the model whose value lives in another file, and a stated default stops drifting
+            // only once it is read from the constant that provides it (the form `run_tests` uses
+            // for its timeout). Written as literals, the two sub-tools could change and this
+            // sentence would keep promising the old numbers.
+            depth     = new { type = "integer", description =
+                $"Cross-file recursion depth (callgraph: {TraceDependencyTool.MinAllowedDepth}-{TraceDependencyTool.MaxAllowedDepth}, "
+                + $"default {TraceDependencyTool.DefaultDepth}; impact: {AnalyzeImpactTool.MinAllowedDepth}-{AnalyzeImpactTool.MaxAllowedDepth}, "
+                + $"default {AnalyzeImpactTool.DefaultDepth}). Out of range is clamped, and the report says so." },
             direction = new { type = "string",  description = "'callgraph' only: 'callees' (default) | 'callers' | 'both'." },
             focus     = new { type = "string",  description = "'nexus' only: filter to a specific route / function / hub-method name." },
             bridges   = new { type = "string",  description = "'nexus' only: 'rest' | 'interop' | 'signalr' | 'all' (default)." }

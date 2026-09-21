@@ -13,7 +13,13 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 internal class TraceDependencyTool : ITool
 {
-    private const int MaxAllowedDepth   = 3;
+    // ⚠ Named and internal because the `analyze_code` facade STATES them to the model, and the
+    // only stated default that cannot drift is one interpolated from the constant that provides
+    // it (the form `run_tests` already uses for its timeout). These live two files from the prose
+    // that quotes them.
+    internal const int MinAllowedDepth  = 0;
+    internal const int MaxAllowedDepth  = 3;
+    internal const int DefaultDepth     = 1;
     private const int MaxCallsPerMethod = 30;
     /// <summary>Files read per cross-file scan. ⚠ This is NOT the 500 of the two other
     /// analysis tools: each has its own, and assuming they shared one produced a wrong
@@ -75,7 +81,8 @@ internal class TraceDependencyTool : ITool
             return Strings.ToolFileNotFound(filePath);
 
         var symbol    = args.Trimmed("symbol");
-        var depth     = Math.Clamp(args.Int("depth", 1), 0, MaxAllowedDepth);
+        var (depth, depthNotice) = ClampedArgument.Read(
+            args, "depth", DefaultDepth, MinAllowedDepth, MaxAllowedDepth);
         // ⚠ Keyword, not GetString: "Callers", or "callees" with a space around it, matched
         // neither literal below, so NEITHER the Callers section NOR the Callees section was
         // rendered -- a well-formed report, without the answer, and without an error. The model
@@ -179,7 +186,7 @@ internal class TraceDependencyTool : ITool
         var worst = ScanCoverage.Worst(coverage, indexCoverage);
         if (worst.IsIncomplete) sb.AppendLine(worst.Warning());
 
-        return sb.ToString().TrimEnd();
+        return ClampedArgument.Above(depthNotice, sb.ToString().TrimEnd());
     }
 
     // ── Callees tree ──────────────────────────────────────────────────────────

@@ -40,10 +40,20 @@ public sealed class OAuthRedirectTests : IDisposable
         _ = Task.Run(ServeAsync);
     }
 
+    /// <remarks>
+    /// ⚠ <b>Pure cleanup, and BOTH calls can throw.</b> <c>Stop()</c> was guarded and
+    /// <c>Dispose()</c> — one line below — was not: on the managed <c>HttpListener</c> (every
+    /// non-Windows leg) <c>Dispose</c> re-resolves the endpoint and raises
+    /// <i>Address already in use</i> once the port has been taken again. The test body had already
+    /// PASSED; xUnit then reports the class as failed, naming the cleanup instead of the subject.
+    /// ⚠ And the cost is larger than one red test: <b>a gating leg that reddens for something that
+    /// is not the product is how a gating leg gets turned off again</b> — and this one alone sees
+    /// case-folding and ancestor symlinks.
+    /// </remarks>
     public void Dispose()
     {
         try { _listener.Stop(); } catch { }
-        ((IDisposable)_listener).Dispose();
+        try { ((IDisposable)_listener).Dispose(); } catch { }
     }
 
     private static int FreePort()
