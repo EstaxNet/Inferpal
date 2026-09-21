@@ -29,16 +29,34 @@ public class GitCommitPolicyTests
             GitCommitPolicy.BuildUnstagedContext("?? New.cs", blankDiff));
 
     [Fact]
-    public void CapDiff_TruncatesPastTheLimit()
+    public void CapDiff_TruncatesPastTheLimit_AndSaysByHowMuch()
     {
-        var capped = GitCommitPolicy.CapDiff(new string('d', GitCommitPolicy.MaxDiffChars + 1));
-        Assert.EndsWith("…(truncated)", capped);
-        Assert.True(capped.Length < GitCommitPolicy.MaxDiffChars + 20);
+        var capped = GitCommitPolicy.CapDiff(new string('d', GitCommitPolicy.MaxDiffChars + 500));
+
+        // The marker tells the MODEL, and it names the amount: "truncated" on its own cannot be
+        // weighed, and the sibling cap in get_git_status has always named it.
+        Assert.Contains("…(truncated", capped.Text, StringComparison.Ordinal);
+        Assert.Contains("500", capped.Text, StringComparison.Ordinal);
+        Assert.True(capped.Text.Length < GitCommitPolicy.MaxDiffChars + 60);
+
+        // And the count is what lets each caller tell the HUMAN.
+        Assert.True(capped.IsTruncated);
+        Assert.Equal(GitCommitPolicy.MaxDiffChars, capped.Kept);
+        Assert.Equal(GitCommitPolicy.MaxDiffChars + 500, capped.Total);
+        Assert.Equal(500, capped.Cut);
     }
 
+    /// <summary>Reference arm: a diff that fits is untouched and reports no cut, or every commit
+    /// would carry a warning about nothing.</summary>
     [Fact]
-    public void CapDiff_LeavesSmallDiffsUntouched() =>
-        Assert.Equal("small", GitCommitPolicy.CapDiff("small"));
+    public void CapDiff_LeavesSmallDiffsUntouched()
+    {
+        var capped = GitCommitPolicy.CapDiff("small");
+
+        Assert.Equal("small", capped.Text);
+        Assert.False(capped.IsTruncated);
+        Assert.Equal(0, capped.Cut);
+    }
 
     // ── Proposal request / clean-up ────────────────────────────────────────────
 

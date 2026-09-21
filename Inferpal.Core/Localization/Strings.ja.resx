@@ -472,6 +472,7 @@
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ git の変更が検出されませんでした。</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ ステージング済みのファイルがありません — ステージングされていない変更を分析します。</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 下のメッセージは、差分全体 {1} 文字のうち先頭 {0} 文字から作成されました。見ていない部分は説明できません。全体を覆うメッセージが必要な場合は、より小さい変更をステージしてください。</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 コミットメッセージ</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>メッセージが下に事前入力されています — 必要に応じて編集し、**Enter** でコミット。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>プロジェクトルールがありません。`.inferpal/rules/*.md` を作成するか `/rules init` を実行してください。</value></data>
@@ -499,6 +500,7 @@
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>あなたは綿密で完全にローカルなコードレビュアーです。以下の git 差分を、提供されたレビューチェックの観点のみで確認してください。違反は 1 行につき 1 件、次の形式で厳密に報告します: `- [severity] path/to/file.ext:行番号 - 何が問題で、どう直すか`。severity は blocker、warning、nit のいずれかで、行番号は差分に現れる番号にしてください。入れ子や小見出しは使わないこと。差分に含まれないファイルを指してはならず、問題を捏造したり、チェックや差分の外について述べたりしないでください。どのチェックが通ったかは、指摘行とは別に短い一文で述べます。すべて通った場合はその旨を明確に述べ、指摘は 1 件も報告しないでください。</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>「{0}」という名前のチェックはありません。`/checks` で一覧を表示してください。</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>差分に紐づく指摘はありません — チェックは何も検出しませんでした。</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 差分全体 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、変更全体についてではありません。残りは別途レビューするか、小さく分けてステージしてください。</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>差分に紐づく指摘 **{0} 件**:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**ブロッカー**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**警告**</value></data>
@@ -757,6 +759,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="NotesHeading" xml:space="preserve"><value>## プロジェクトのメモ</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>履歴エントリ #{0} はありません。</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>プロンプト履歴は空です。</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ プロンプト履歴を読み取れませんでした ({0})。「履歴が空」という意味ではありません。プロンプトはそのファイルに残っており、Inferpal は新しく書き込む前に退避します。原因は /diagnostics をご覧ください。</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>`{0}` に一致する履歴エントリはありません。</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>使い方: `/models delete &lt;モデル名&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` を削除しました。</value></data>
@@ -832,6 +835,8 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ArenaColTies" xml:space="preserve"><value>引き分け</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>勝率</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>アリーナの投票はまだ記録されていません。</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ アリーナの履歴を読み取れませんでした ({0})。「投票が記録されていない」という意味ではありません。投票はそのファイルに残っており、Inferpal は新しく書き込む前に退避します。原因は /diagnostics をご覧ください。</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>投票は記録されませんでした。保留中の対戦を読み取れません。/arena &lt;prompt&gt; で新しい対戦を開始してください。</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>アリーナが失敗しました: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>テスト実行 → AI が修正 → グリーンになるまで再実行（テストフィルター任意）</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 テスト {0}/{1}…</value></data>

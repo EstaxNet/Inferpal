@@ -17,6 +17,12 @@ internal static class BenchStore
     // ⚠ Deliberately NOT preserved, unlike arena.json next door: a bench run is what `/bench`
     // reproduces. Keeping a copy of a corrupt one would only clutter %AppData% for state the
     // product can rebuild on demand — the very distinction the flag exists to carry.
+    //
+    // ⚠ And this store deliberately keeps `LoadAsync`, where snippets and arena read through the
+    // half that reports a failed read. Both its readers survive the conflation: `/bench last`
+    // answers "no saved run — run /bench first", whose remedy is the one that actually repairs the
+    // file, and `ModelRouter` degrades to the configured model, which is what the user asked for.
+    // Nothing was set aside, so there is nothing the user could be told to go and get.
     private static readonly AppDataJsonFile<BenchSavedRun?> _file =
         new("bench.json", "BenchStore", accept: r => r?.Results is not null);
 

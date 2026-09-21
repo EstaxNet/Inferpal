@@ -472,6 +472,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Aucun changement git détecté.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Rien en staging — analyse des modifications non stagées.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Le message ci-dessous a été écrit à partir des {0} premiers caractères du diff, sur {1}. Il ne peut pas décrire ce qu'il n'a pas vu — indexez un changement plus petit pour un message qui couvre tout.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 message de commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pré-rempli ci-dessous — modifie si besoin, puis **Entrée** pour committer.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Aucune règle de projet. Crée `.inferpal/rules/*.md` ou lance `/rules init`.</value></data>
@@ -499,6 +500,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Tu es un relecteur de code méticuleux, 100 % local. Relis le diff git ci-dessous UNIQUEMENT au regard des checks de revue fournis. Signale chaque violation sur sa propre ligne, exactement dans ce format : `- [severity] chemin/vers/fichier.ext:LIGNE - ce qui ne va pas et comment le corriger`, où severity vaut blocker, warning ou nit, et où LIGNE est un numéro de ligne présent dans le diff. Un constat par ligne, sans imbrication ni sous-puces. Ne désigne jamais un fichier absent du diff, n'invente aucun problème et ne commente rien en dehors des checks ou du diff. Indique en une phrase courte, hors des lignes de constat, quels checks passent. Si tous passent, dis-le clairement et ne signale aucun constat.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Aucun check nommé « {0} ». Lance `/checks` pour les lister.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Aucun constat ancré — les checks n'ont rien relevé sur ce diff.</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Seuls les {0} premiers caractères du diff ont été relus, sur {1}. Ce qui suit porte sur cette partie, pas sur tout votre changement — relisez le reste à part, ou indexez-le par morceaux.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} constat(s)** ancré(s) au diff :</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**bloquant**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**avertissement**</value></data>
@@ -765,6 +767,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="NotesHeading" xml:space="preserve"><value>## Notes de projet</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>Aucune entrée d'historique n°{0}.</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>L'historique des prompts est vide.</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ L'historique des prompts n'a pas pu être lu ({0}) — ce n'est PAS « historique vide ». Vos prompts sont toujours dans ce fichier ; Inferpal le met de côté avant d'écrire quoi que ce soit. Voir /diagnostics pour la cause.</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>Aucune entrée d'historique correspondant à `{0}`.</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Utilisation : `/models delete &lt;nom-du-modèle&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` supprimé.</value></data>
@@ -840,6 +843,8 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="ArenaColTies" xml:space="preserve"><value>Égalités</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>Taux de victoire</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Aucun vote d'arène enregistré pour l'instant.</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ L'historique de l'arène n'a pas pu être lu ({0}) — ce n'est PAS « aucun vote enregistré ». Vos votes sont toujours dans ce fichier ; Inferpal le met de côté avant d'écrire quoi que ce soit. Voir /diagnostics pour la cause.</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>Votre vote n'a pas été enregistré : le duel en attente n'a pas pu être lu. Relancez-en un avec /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Échec de l'arène : {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>lancer les tests → l'IA corrige → relancer jusqu'au vert (filtre de test optionnel)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>

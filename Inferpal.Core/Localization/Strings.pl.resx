@@ -472,6 +472,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Nie wykryto zmian git.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nic w staging — analiza niewystawionych zmian.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Poniższy komunikat powstał z pierwszych {0} znaków diffa, na {1}. Nie może opisać tego, czego nie widział — dodaj do indeksu mniejszą zmianę, aby komunikat obejmował całość.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 wiadomość commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Wiadomość wstępnie wypełniona poniżej — edytuj jeśli potrzeba, następnie naciśnij **Enter**, aby zacommitować.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Brak reguł projektu. Utwórz `.inferpal/rules/*.md` lub uruchom `/rules init`.</value></data>
@@ -499,6 +500,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Jesteś skrupulatnym, w pełni lokalnym recenzentem kodu. Przejrzyj poniższy diff gita WYŁĄCZNIE pod kątem dostarczonych checków. Każde naruszenie zgłaszaj w osobnym wierszu, dokładnie w tym formacie: `- [severity] ścieżka/do/pliku.ext:WIERSZ - co jest nie tak i jak to naprawić`, gdzie severity to blocker, warning lub nit, a WIERSZ to numer wiersza występujący w diffie. Jedno spostrzeżenie na wiersz, bez zagnieżdżeń i podpunktów. Nigdy nie wskazuj pliku, którego diff nie dotyka, nie wymyślaj problemów i nie komentuj niczego spoza checków ani diffa. W krótkim zdaniu, poza wierszami spostrzeżeń, napisz które checki przechodzą. Jeśli przechodzą wszystkie, powiedz to jasno i nie zgłaszaj żadnego spostrzeżenia.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Brak sprawdzenia o nazwie „{0}". Uruchom `/checks`, aby je wyświetlić.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Brak zakotwiczonych spostrzeżeń — checki nic nie wykryły w tym diffie.</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Sprawdzono tylko pierwsze {0} znaków diffa, na {1}. To, co niżej, dotyczy tej części, a nie całej zmiany — przejrzyj resztę osobno albo dodawaj do indeksu mniejszymi porcjami.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**Spostrzeżenia: {0}**, zakotwiczone w diffie:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**blokujące**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**ostrzeżenie**</value></data>
@@ -757,6 +759,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="NotesHeading" xml:space="preserve"><value>## Notatki projektu</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>Brak wpisu historii nr {0}.</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>Historia promptów jest pusta.</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać historii promptów ({0}) — to NIE znaczy „historia jest pusta”. Twoje prompty nadal są w tym pliku; Inferpal odkłada go na bok przed zapisaniem czegokolwiek nowego. Przyczynę zobaczysz w /diagnostics.</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>Brak wpisów historii pasujących do `{0}`.</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Użycie: `/models delete &lt;nazwa-modelu&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ Usunięto `{0}`.</value></data>
@@ -832,6 +835,8 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="ArenaColTies" xml:space="preserve"><value>Remisy</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>Odsetek zwycięstw</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Nie zapisano jeszcze żadnego głosu areny.</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać historii areny ({0}) — to NIE znaczy „brak zapisanych głosów”. Twoje głosy nadal są w tym pliku; Inferpal odkłada go na bok przed zapisaniem czegokolwiek nowego. Przyczynę zobaczysz w /diagnostics.</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>Twój głos nie został zapisany: nie udało się odczytać oczekującego pojedynku. Rozpocznij nowy przez /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena nie powiodła się: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>uruchom testy → AI poprawia → ponowne uruchomienie aż do zieleni (opcjonalny filtr testów)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Testy {0}/{1}…</value></data>

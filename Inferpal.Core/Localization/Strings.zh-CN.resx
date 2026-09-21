@@ -472,6 +472,7 @@
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ 未检测到 git 变更。</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ 没有已暂存的文件 — 正在分析未暂存的修改。</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 下面的信息是根据差异前 {0} 个字符（共 {1} 个）写成的，无法描述它没看到的部分 —— 若需覆盖全部，请暂存更小的变更。</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 提交信息</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>信息已预填到输入框 — 如需修改请编辑，然后按 **Enter** 确认提交。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>没有项目规则。请创建 `.inferpal/rules/*.md` 或运行 `/rules init`。</value></data>
@@ -499,6 +500,7 @@
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>你是一位细致且完全本地运行的代码审查者。仅依据所提供的审查检查项，审阅下面的 git diff。每条违规单独占一行，严格采用以下格式：`- [severity] path/to/file.ext:行号 - 问题是什么以及如何修复`，其中 severity 为 blocker、warning 或 nit，行号必须是 diff 中出现的行号。每行一条，不要嵌套或使用子项。绝不要指向 diff 未涉及的文件，不要编造问题，也不要评论检查项或 diff 之外的内容。用一句简短的话在问题行之外说明哪些检查通过。若全部通过，请明确说明，并且不报告任何问题。</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>没有名为「{0}」的检查项。运行 `/checks` 查看列表。</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>没有可定位的问题 — 检查项在此 diff 中未发现任何内容。</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 仅审阅了差异的前 {0} 个字符（共 {1} 个）。以下内容针对该部分，而非您的整个变更 —— 请单独审阅其余部分，或分批暂存。</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} 条问题**，已定位到 diff：</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**阻断**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**警告**</value></data>
@@ -757,6 +759,7 @@ ollama serve
   <data name="NotesHeading" xml:space="preserve"><value>## 项目笔记</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>没有第 {0} 条历史记录。</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>提示历史为空。</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ 无法读取提示历史（{0}）—— 这并不是“历史为空”。您的提示仍在该文件中；Inferpal 会在写入新内容前将其另存。原因请见 /diagnostics。</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>没有与 `{0}` 匹配的历史记录。</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>用法：`/models delete &lt;模型名&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ 已删除 `{0}`。</value></data>
@@ -832,6 +835,8 @@ ollama serve
   <data name="ArenaColTies" xml:space="preserve"><value>平局</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>胜率</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>尚未记录任何竞技场投票。</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ 无法读取竞技场记录（{0}）—— 这并不是“没有任何投票”。您的投票仍在该文件中；Inferpal 会在写入新内容前将其另存。原因请见 /diagnostics。</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>您的投票未被记录：无法读取待投票的对局。请用 /arena &lt;prompt&gt; 重新发起一局。</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>竞技场失败：{0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>运行测试 → AI 修复 → 重新运行直到通过（可选测试过滤器）</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 测试 {0}/{1}…</value></data>

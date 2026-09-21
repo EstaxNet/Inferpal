@@ -473,6 +473,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ No git changes detected.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nothing staged — analysing unstaged changes.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ The message below was written from the first {0} characters of the diff, out of {1}. It cannot describe what it never saw — stage a smaller change for a message that covers all of it.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 commit message</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pre-filled below — edit if needed, then press **Enter** to commit.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>No project rules. Create `.inferpal/rules/*.md` or run `/rules init`.</value></data>
@@ -500,6 +501,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>You are a meticulous, fully local code reviewer. Review the git diff below ONLY against the review checks provided. Report every violation on its own line, in exactly this format: `- [severity] path/to/file.ext:LINE - what is wrong and how to fix it`, where severity is blocker, warning or nit, and LINE is a line number that appears in the diff. One finding per line, no nesting, no sub-bullets. Never point at a file the diff does not touch, and do not invent issues or comment on anything outside the checks or the diff. Say in a short sentence, outside the finding lines, which checks pass. If every check passes, say so clearly and report no finding.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>No check named '{0}'. Run `/checks` to list them.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>No anchored finding — the checks turned up nothing on this diff.</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Only the first {0} characters of the diff were reviewed, out of {1}. What follows is about that part, not about your whole change — review the rest separately, or stage it in smaller pieces.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} finding(s)** anchored to the diff:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**blocker**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**warning**</value></data>
@@ -769,6 +771,7 @@ ollama serve
   <data name="NotesHeading" xml:space="preserve"><value>## Project notes</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>No history entry #{0}.</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>Prompt history is empty.</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ The prompt history could not be read ({0}) — this is NOT "history is empty". Your past prompts are still in that file; Inferpal sets it aside before writing anything new. See /diagnostics for the reason.</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>No history entries matching `{0}`.</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Usage: `/models delete &lt;model-name&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` deleted.</value></data>
@@ -844,6 +847,8 @@ ollama serve
   <data name="ArenaColTies" xml:space="preserve"><value>Ties</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>Win rate</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>No arena vote recorded yet.</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ The arena history could not be read ({0}) — this is NOT "no vote recorded". Your past votes are still in that file; Inferpal sets it aside before writing anything new. See /diagnostics for the reason.</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>Your vote was not recorded: the pending battle could not be read. Hold a new one with /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena failed: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>run the tests → AI fixes → re-run until green (optional test filter)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>

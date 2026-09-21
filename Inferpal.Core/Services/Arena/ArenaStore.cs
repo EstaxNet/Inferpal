@@ -49,4 +49,19 @@ internal static class ArenaStore
     // deserialise into a state whose list is null, and every caller enumerates it.
     public static Task<ArenaSavedState> LoadAsync() =>
         _file.LoadAsync(new ArenaSavedState([], null));
+
+    /// <summary>
+    /// The same state, plus whether the file could not be <b>read</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The fallback is an empty log with no pending battle, so a failed read reaches the user as
+    /// two statements about them — "you have never voted" and "no battle is awaiting a vote" — made
+    /// from a fact about one file. Setting the bytes aside keeps them; only this flag can say so,
+    /// and a recovery nobody is told about is not one.
+    /// </remarks>
+    public static Task<(ArenaSavedState Value, bool Unreadable)> ReadAsync() =>
+        _file.ReadAsync(new ArenaSavedState([], null));
+
+    /// <summary>Where the battles live — named in the message when they cannot be read.</summary>
+    public static string FilePath => _file.Path;
 }

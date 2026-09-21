@@ -1,6 +1,7 @@
 using System.IO;
 using Inferpal.Config;
 using Inferpal.Models;
+using Inferpal.Services;
 using Inferpal.Services.Commands;
 using Inferpal.Services.Governance;
 using Xunit;
@@ -352,6 +353,87 @@ public class CheckReviewAnchorTests
             }
 
             Assert.Contains(Inferpal.Localization.Strings.GovernanceFilesUnreadable(1, "secrets.md"), message);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    // ── A verdict about a fifth of the change ─────────────────────────────────
+
+    /// <summary>
+    /// ⚠ The expensive branch is the EMPTY one: "the checks turned up nothing on this diff" is a
+    /// verdict the user acts on, and on a capped diff it is a verdict about the part that fit. The
+    /// cap is 12 000 characters and five of this repository's last six commits exceed it — one by
+    /// more than four times — so this is the ordinary case, not a corner.
+    /// </summary>
+    [Fact]
+    public async Task Handle_ADiffTooLargeToFit_SaysSoAboveAVerdictOfNoFindings()
+    {
+        var root = NewRootWithCheck();
+        try
+        {
+            var huge = RawDiff + "\n" + new string('d', GitCommitPolicy.MaxDiffChars);
+            var total = GitCommitPolicy.BuildStagedContext(huge).Length;
+
+            var message = (await CheckCommandHandler.HandleAsync(
+                Answering("Everything passes."), new InferpalConfig(), root, ["/check"],
+                git: (args, _) => Task.FromResult((args == "diff --staged" ? huge : "", 0)),
+                onProgress: null, CancellationToken.None)).Message;
+
+            Assert.StartsWith(
+                Inferpal.Localization.Strings.CheckDiffTruncated(GitCommitPolicy.MaxDiffChars, total),
+                message);
+            // And the verdict is still shown — the notice qualifies it, it does not replace it.
+            Assert.Contains(Inferpal.Localization.Strings.CheckNoFindings, message);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    /// <summary>The model is told too, and by how much: "truncated" alone cannot be weighed.</summary>
+    [Fact]
+    public async Task Handle_ADiffTooLargeToFit_TellsTheModelHowMuchItLost()
+    {
+        var root = NewRootWithCheck();
+        try
+        {
+            var seen = string.Empty;
+            var huge = RawDiff + "\n" + new string('d', GitCommitPolicy.MaxDiffChars);
+            var cut  = GitCommitPolicy.BuildStagedContext(huge).Length - GitCommitPolicy.MaxDiffChars;
+
+            await CheckCommandHandler.HandleAsync(
+                new FakeInferenceProvider
+                {
+                    OnChatRequest = (_, messages, _, _) =>
+                    {
+                        seen = messages[^1].Content;
+                        return Task.FromResult(new ChatTurnResult("Everything passes.", [], 0, 0));
+                    },
+                },
+                new InferpalConfig(), root, ["/check"],
+                git: (args, _) => Task.FromResult((args == "diff --staged" ? huge : "", 0)),
+                onProgress: null, CancellationToken.None);
+
+            // The amount, not just the word: a model told "truncated" cannot weigh what it lost,
+            // and this is the prompt whose answer becomes the user's verdict.
+            Assert.Contains($"…(truncated — {cut} more characters)", seen, StringComparison.Ordinal);
+            Assert.DoesNotContain(new string('d', GitCommitPolicy.MaxDiffChars + 1), seen, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    /// <summary>Reference arm: an ordinary diff is reviewed whole and the answer says nothing about
+    /// a cap, or the warning becomes the noise people stop reading.</summary>
+    [Fact]
+    public async Task Handle_ADiffThatFits_SaysNothingAboutTheCap()
+    {
+        var root = NewRootWithCheck();
+        try
+        {
+            var message = (await CheckCommandHandler.HandleAsync(
+                Answering("Everything passes."), new InferpalConfig(), root, ["/check"],
+                git: (args, _) => Task.FromResult((args == "diff --staged" ? RawDiff : "", 0)),
+                onProgress: null, CancellationToken.None)).Message;
+
+            Assert.StartsWith("Everything passes.", message);
         }
         finally { Directory.Delete(root, true); }
     }

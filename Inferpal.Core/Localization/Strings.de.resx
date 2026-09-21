@@ -472,6 +472,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Keine Git-Änderungen erkannt.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nichts im Staging – unstaged Änderungen werden analysiert.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Die Nachricht unten wurde aus den ersten {0} Zeichen des Diffs von insgesamt {1} geschrieben. Sie kann nicht beschreiben, was sie nie gesehen hat — stagen Sie eine kleinere Änderung für eine Nachricht, die alles abdeckt.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 Commit-Nachricht</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Nachricht unten vorausgefüllt – bei Bedarf bearbeiten, dann **Eingabe** zum Committen.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Keine Projektregeln. Erstelle `.inferpal/rules/*.md` oder führe `/rules init` aus.</value></data>
@@ -499,6 +500,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Du bist ein sorgfältiger, vollständig lokaler Code-Reviewer. Prüfe den folgenden Git-Diff AUSSCHLIESSLICH anhand der bereitgestellten Review-Checks. Melde jeden Verstoß in einer eigenen Zeile, exakt in diesem Format: `- [severity] pfad/zur/datei.ext:ZEILE - was falsch ist und wie es zu beheben ist`, wobei severity blocker, warning oder nit ist und ZEILE eine im Diff vorkommende Zeilennummer. Ein Befund pro Zeile, ohne Verschachtelung oder Unterpunkte. Verweise nie auf eine Datei, die der Diff nicht berührt, erfinde keine Probleme und kommentiere nichts außerhalb der Checks oder des Diffs. Nenne in einem kurzen Satz außerhalb der Befundzeilen, welche Checks bestanden sind. Wenn alle bestehen, sage es klar und melde keinen Befund.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Kein Check namens „{0}". Führe `/checks` aus, um sie aufzulisten.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Kein verankerter Befund — die Checks haben in diesem Diff nichts gefunden.</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Nur die ersten {0} Zeichen des Diffs von insgesamt {1} wurden geprüft. Das Folgende betrifft diesen Teil, nicht Ihre gesamte Änderung — prüfen Sie den Rest separat oder stagen Sie ihn in kleineren Stücken.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} Befund(e)**, im Diff verankert:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**Blocker**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**Warnung**</value></data>
@@ -757,6 +759,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="NotesHeading" xml:space="preserve"><value>## Projektnotizen</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>Kein Verlaufseintrag #{0}.</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>Der Prompt-Verlauf ist leer.</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ Der Prompt-Verlauf konnte nicht gelesen werden ({0}) — das heißt NICHT „Verlauf ist leer“. Ihre Prompts sind weiterhin in dieser Datei; Inferpal legt sie beiseite, bevor etwas Neues geschrieben wird. Ursache siehe /diagnostics.</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>Keine Verlaufseinträge passend zu `{0}`.</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Verwendung: `/models delete &lt;Modellname&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` gelöscht.</value></data>
@@ -832,6 +835,8 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="ArenaColTies" xml:space="preserve"><value>Unentschieden</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>Siegquote</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Noch keine Arena-Stimme erfasst.</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ Der Arena-Verlauf konnte nicht gelesen werden ({0}) — das heißt NICHT „keine Stimme gespeichert“. Ihre Stimmen sind weiterhin in dieser Datei; Inferpal legt sie beiseite, bevor etwas Neues geschrieben wird. Ursache siehe /diagnostics.</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>Ihre Stimme wurde nicht gespeichert: Das offene Duell konnte nicht gelesen werden. Starten Sie mit /arena &lt;prompt&gt; ein neues.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena fehlgeschlagen: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>Tests ausführen → KI korrigiert → erneut ausführen bis grün (optionaler Testfilter)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>

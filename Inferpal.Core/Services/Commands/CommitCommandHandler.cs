@@ -71,13 +71,22 @@ internal static class CommitCommandHandler
             diffContext = GitCommitPolicy.BuildStagedContext(staged);
         }
 
-        diffContext = GitCommitPolicy.CapDiff(diffContext);
+        // ⚠ The notice is the same field as "nothing staged" and for the same reason: it is shown
+        // BEFORE the proposal, which is about to be pre-filled into `/commit-exec`. A message
+        // written from the first 12 000 characters of a 55 000-character diff names the wrong
+        // scope, and nothing in the message itself can betray what it never saw.
+        var capped = GitCommitPolicy.CapDiff(diffContext);
+        if (capped.IsTruncated)
+        {
+            var cut = Strings.CommitDiffTruncated(capped.Kept, capped.Total);
+            notice  = notice is null ? cut : notice + "\n\n" + cut;
+        }
 
         try
         {
             var result = await client.RunAgentAsync(
                 model:   await ModelRouter.ResolveUtilityAsync(config, client, ct),
-                history: GitCommitPolicy.BuildProposalRequest(diffContext),
+                history: GitCommitPolicy.BuildProposalRequest(capped.Text),
                 tools:   EmptyToolRegistry.Instance,
                 onStep:  _ => { },
                 onToken: token => onToken?.Invoke(token),

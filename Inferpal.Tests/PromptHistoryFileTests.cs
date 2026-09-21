@@ -75,6 +75,44 @@ public class PromptHistoryFileTests : IDisposable
         Assert.Contains("_promptHistory.Entries", save, StringComparison.Ordinal);
         Assert.Contains("_promptHistoryStore.Save(", save, StringComparison.Ordinal);
         Assert.DoesNotContain("File.WriteAllText", save, StringComparison.Ordinal);
-        Assert.Contains("_promptHistoryStore.Load(", Body(code, "private void LoadPromptHistory("), StringComparison.Ordinal);
+
+        // ⚠ Through the half that REPORTS a failed read, not the one that throws it away: this is
+        // the only moment the failure is observable, and `/phistory` would otherwise call a history
+        // that did not open "empty".
+        var load = Body(code, "private void LoadPromptHistory(");
+        Assert.Contains("_promptHistoryStore.Read(", load, StringComparison.Ordinal);
+        Assert.Contains("_promptHistoryUnreadable", load, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The synchronous half must be able to give both answers. It could not: a caller that reads
+    /// once while it is constructed — which is what a window does — held the only chance to learn
+    /// that the file did not open, and <c>Load</c> handed it a fallback indistinguishable from an
+    /// empty file.
+    /// </summary>
+    [Fact]
+    public void TheSyncRead_SeparatesAnEmptyHistoryFromOneThatDidNotOpen()
+    {
+        var path = Path.Combine(_dir, "prompt_history.json");
+        var file = PromptHistoryFile.Create();
+        file.PathOverride = path;
+
+        // Absent: a fact about the user, and no failure.
+        var absent = file.Read([]);
+        Assert.Empty(absent.Value);
+        Assert.False(absent.Unreadable);
+
+        Assert.True(file.Save(["explain the vulkan crash", "MARKER-PROMPT"]));
+        var (entries, unreadable) = file.Read([]);
+        Assert.Equal(new[] { "explain the vulkan crash", "MARKER-PROMPT" }, entries);
+        Assert.False(unreadable);
+
+        var whole = File.ReadAllText(path);
+        File.WriteAllText(path, whole[..(whole.Length / 2)]);
+
+        var torn = file.Read([]);
+        Assert.Empty(torn.Value);
+        Assert.True(torn.Unreadable);
+        Assert.Empty(file.Load([]));   // and the plain half still answers what it always did
     }
 }

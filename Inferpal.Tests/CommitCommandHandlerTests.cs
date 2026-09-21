@@ -143,4 +143,58 @@ public class CommitCommandHandlerTests
         var commit = Assert.Single(git.Calls, c => c.StartsWith("commit ", StringComparison.Ordinal));
         Assert.Equal($"commit -m \"{GitCommitPolicy.EscapeMessage(message)}\"", commit);
     }
+
+    // ── A message written from a fifth of the change ───────────────────────────
+
+    /// <summary>
+    /// The cap is 12 000 characters and five of this repository's last six commits exceed it — one
+    /// by more than four times. So the ordinary case is a proposal written from part of the change,
+    /// pre-filled into <c>/commit-exec</c>, naming a scope taken from whatever fit.
+    /// </summary>
+    [Fact]
+    public async Task Propose_FromADiffTooLargeToFit_SaysSoBeforeTheMessage()
+    {
+        var git    = new FakeGit();
+        var staged = new string('d', GitCommitPolicy.MaxDiffChars + 8_000);
+        git.Answers["diff --staged"] = staged;
+        // The cap applies to the assembled context, not to git's raw output.
+        var total = GitCommitPolicy.BuildStagedContext(staged).Length;
+
+        var result = await CommitCommandHandler.ProposeAsync(
+            Proposing("feat: something"), new InferpalConfig(), git.Runner, null, CancellationToken.None);
+
+        Assert.Equal("feat: something", result.Proposal);   // the proposal still happens
+        Assert.Equal(Strings.CommitDiffTruncated(GitCommitPolicy.MaxDiffChars, total), result.Notice);
+    }
+
+    /// <summary>Both facts are about the same proposal and neither replaces the other.</summary>
+    [Fact]
+    public async Task Propose_FromAnUnstagedDiffTooLargeToFit_KeepsBothNotices()
+    {
+        var git      = new FakeGit();
+        var unstaged = new string('d', GitCommitPolicy.MaxDiffChars + 1);
+        git.Answers["status --short"] = " M A.cs";
+        git.Answers["diff"]           = unstaged;
+        var total = GitCommitPolicy.BuildUnstagedContext(" M A.cs", unstaged).Length;
+
+        var result = await CommitCommandHandler.ProposeAsync(
+            Proposing("chore: x"), new InferpalConfig(), git.Runner, null, CancellationToken.None);
+
+        Assert.Contains(Strings.CommitNothingStaged, result.Notice!);
+        Assert.Contains(Strings.CommitDiffTruncated(GitCommitPolicy.MaxDiffChars, total), result.Notice!);
+    }
+
+    /// <summary>Reference arm: an ordinary diff carries no notice at all, or the warning becomes
+    /// the noise people stop reading.</summary>
+    [Fact]
+    public async Task Propose_FromADiffThatFits_SaysNothingAboutTheCap()
+    {
+        var git = new FakeGit();
+        git.Answers["diff --staged"] = "diff --git a/A.cs b/A.cs\n+added";
+
+        var result = await CommitCommandHandler.ProposeAsync(
+            Proposing("feat: add"), new InferpalConfig(), git.Runner, null, CancellationToken.None);
+
+        Assert.Null(result.Notice);
+    }
 }

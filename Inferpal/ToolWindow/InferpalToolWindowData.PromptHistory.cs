@@ -34,9 +34,17 @@ internal partial class InferpalToolWindowData
         HistoryDownCommand.CanExecute = _promptHistory.CanDown;
     }
 
+    /// <remarks>
+    /// ⚠ This read happens once, while the window is built, and it is the only moment the failure
+    /// is observable: from here on the window holds an empty list, and `/phistory` would call it
+    /// "empty" — the sentence that describes the user, told to someone whose file simply did not
+    /// open. The path is kept, not a flag, because it is what the notice has to name.
+    /// </remarks>
     private void LoadPromptHistory()
     {
-        _promptHistory.Load(_promptHistoryStore.Load([]));
+        var (entries, unreadable) = _promptHistoryStore.Read([]);
+        _promptHistoryUnreadable  = unreadable ? _promptHistoryStore.Path : null;
+        _promptHistory.Load(entries);
     }
 
     private void SavePromptHistory()

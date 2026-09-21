@@ -472,6 +472,7 @@
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ git 변경 사항이 감지되지 않았습니다.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ 스테이징된 항목 없음 — 스테이징되지 않은 변경 사항 분석 중.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 아래 메시지는 전체 {1}자 중 앞쪽 {0}자만으로 작성되었습니다. 보지 못한 부분은 설명할 수 없습니다. 전체를 담은 메시지가 필요하면 더 작은 변경을 스테이징하세요.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 커밋 메시지</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>아래에 메시지가 미리 채워져 있습니다 — 필요하면 편집한 후 **Enter**를 눌러 커밋하세요.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>프로젝트 규칙이 없습니다. `.inferpal/rules/*.md`를 만들거나 `/rules init`를 실행하세요.</value></data>
@@ -499,6 +500,7 @@
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>당신은 꼼꼼하고 완전히 로컬에서 동작하는 코드 리뷰어입니다. 아래 git diff를 제공된 리뷰 체크 기준으로만 검토하세요. 위반 사항은 한 줄에 하나씩, 정확히 다음 형식으로 보고합니다: `- [severity] path/to/file.ext:줄번호 - 무엇이 잘못되었고 어떻게 고칠지`. severity는 blocker, warning, nit 중 하나이며 줄번호는 diff에 나타나는 번호여야 합니다. 중첩이나 하위 항목은 사용하지 마세요. diff에 없는 파일을 가리켜서는 안 되며, 문제를 지어내거나 체크 및 diff 밖의 내용을 언급하지 마세요. 어떤 체크가 통과했는지는 지적 줄과 별도로 짧은 한 문장으로 밝힙니다. 모두 통과했다면 명확히 그렇게 말하고 지적은 하나도 보고하지 마세요.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>'{0}'(이)라는 체크가 없습니다. `/checks`를 실행해 목록을 확인하세요.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>diff에 연결된 지적이 없습니다 — 체크에서 아무것도 발견되지 않았습니다.</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 전체 {1}자 중 앞쪽 {0}자만 검토되었습니다. 아래 내용은 그 부분에 대한 것이며 변경 전체에 대한 것이 아닙니다. 나머지는 따로 검토하거나 더 작게 나누어 스테이징하세요.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>diff에 연결된 지적 **{0}건**:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**차단**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**경고**</value></data>
@@ -757,6 +759,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="NotesHeading" xml:space="preserve"><value>## 프로젝트 메모</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>{0}번 기록 항목이 없습니다.</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>프롬프트 기록이 비어 있습니다.</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ 프롬프트 기록을 읽지 못했습니다 ({0}). “기록이 비어 있음”이 아닙니다. 프롬프트는 그 파일에 그대로 있으며, Inferpal은 새로 쓰기 전에 파일을 따로 보관합니다. 원인은 /diagnostics를 보세요.</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>`{0}`과(와) 일치하는 기록 항목이 없습니다.</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>사용법: `/models delete &lt;모델-이름&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}`을(를) 삭제했습니다.</value></data>
@@ -832,6 +835,8 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="ArenaColTies" xml:space="preserve"><value>무승부</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>승률</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>아직 기록된 아레나 투표가 없습니다.</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ 아레나 기록을 읽지 못했습니다 ({0}). “기록된 투표 없음”이 아닙니다. 투표는 그 파일에 그대로 있으며, Inferpal은 새로 쓰기 전에 파일을 따로 보관합니다. 원인은 /diagnostics를 보세요.</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>투표가 기록되지 않았습니다. 대기 중인 대결을 읽지 못했습니다. /arena &lt;prompt&gt; 로 새 대결을 시작하세요.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>아레나 실패: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>테스트 실행 → AI 수정 → 통과할 때까지 재실행(테스트 필터 선택)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 테스트 {0}/{1}…</value></data>

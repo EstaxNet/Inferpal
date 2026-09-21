@@ -472,6 +472,7 @@
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Изменения git не обнаружены.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Ничего в staging — анализ неподготовленных изменений.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Сообщение ниже написано по первым {0} символам диффа из {1}. Оно не может описать то, чего не видело, — добавьте в индекс изменение поменьше.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 сообщение коммита</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Сообщение заполнено ниже — при необходимости отредактируйте, затем нажмите **Enter** для коммита.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Нет правил проекта. Создайте `.inferpal/rules/*.md` или выполните `/rules init`.</value></data>
@@ -499,6 +500,7 @@
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Ты — дотошный, полностью локальный ревьюер кода. Проверь приведённый ниже git-дифф ТОЛЬКО по предоставленным проверкам. Сообщай о каждом нарушении отдельной строкой строго в таком формате: `- [severity] путь/к/файлу.ext:СТРОКА - что не так и как исправить`, где severity — blocker, warning или nit, а СТРОКА — номер строки, встречающийся в диффе. Одно замечание на строку, без вложенности и подпунктов. Никогда не указывай на файл, которого нет в диффе, не выдумывай проблем и не комментируй ничего вне проверок или диффа. Одним коротким предложением вне строк замечаний укажи, какие проверки пройдены. Если пройдены все, скажи об этом прямо и не сообщай ни одного замечания.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Нет проверки с именем «{0}». Выполните `/checks`, чтобы вывести список.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Ни одного привязанного замечания — проверки ничего не нашли в этом диффе.</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Проверены только первые {0} символов диффа из {1}. Всё ниже относится к этой части, а не ко всему изменению — проверьте остальное отдельно или добавляйте в индекс частями.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**Замечаний: {0}**, привязаны к диффу:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**блокер**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**предупреждение**</value></data>
@@ -755,6 +757,7 @@ ollama serve
   <data name="NotesHeading" xml:space="preserve"><value>## Заметки проекта</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>Нет записи истории №{0}.</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>История запросов пуста.</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать историю запросов ({0}) — это НЕ «история пуста». Ваши запросы по-прежнему в этом файле; Inferpal откладывает его перед записью нового. Причина — в /diagnostics.</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>Нет записей истории, соответствующих `{0}`.</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Использование: `/models delete &lt;имя-модели&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` удалена.</value></data>
@@ -830,6 +833,8 @@ ollama serve
   <data name="ArenaColTies" xml:space="preserve"><value>Ничьи</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>Доля побед</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Голосов арены пока нет.</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать историю арены ({0}) — это НЕ «голосов нет». Ваши голоса по-прежнему в этом файле; Inferpal откладывает его перед записью нового. Причина — в /diagnostics.</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>Ваш голос не записан: не удалось прочитать ожидающий поединок. Начните новый командой /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Сбой арены: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>запустить тесты → ИИ исправляет → перезапуск до зелёного (необязательный фильтр тестов)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Тесты {0}/{1}…</value></data>

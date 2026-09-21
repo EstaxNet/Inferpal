@@ -129,6 +129,9 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private readonly PromptHistoryNavigator _promptHistory = new(PromptHistoryMax);
 
     private readonly AppDataJsonFile<List<string>> _promptHistoryStore = PromptHistoryFile.Create();
+    /// <summary>Path of <c>prompt_history.json</c> when it did not open, <c>null</c> when it did —
+    /// what <c>/phistory</c> names instead of calling the history empty.</summary>
+    private string? _promptHistoryUnreadable;
     private bool   _navigatingHistory = false;
     private string           _currentStep           = string.Empty;
     private string           _tokenInfo             = string.Empty;

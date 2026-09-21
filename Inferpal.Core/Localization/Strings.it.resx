@@ -472,6 +472,7 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Nessuna modifica git rilevata.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nulla in staging — analisi delle modifiche non staged.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Il messaggio qui sotto è stato scritto dai primi {0} caratteri del diff, su {1}. Non può descrivere ciò che non ha visto — metti in stage una modifica più piccola per un messaggio che copra tutto.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 messaggio di commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Messaggio precompilato sotto — modifica se necessario, poi premi **Invio** per committare.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Nessuna regola di progetto. Crea `.inferpal/rules/*.md` o esegui `/rules init`.</value></data>
@@ -499,6 +500,7 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Sei un revisore di codice meticoloso e completamente locale. Esamina il diff git seguente SOLO rispetto ai check di revisione forniti. Segnala ogni violazione su una riga propria, esattamente in questo formato: `- [severity] percorso/al/file.ext:RIGA - cosa non va e come correggerlo`, dove severity è blocker, warning o nit e RIGA è un numero di riga presente nel diff. Un rilievo per riga, senza annidamenti né sotto-elenchi. Non indicare mai un file che il diff non tocca, non inventare problemi e non commentare nulla al di fuori dei check o del diff. Indica in una frase breve, fuori dalle righe di rilievo, quali check passano. Se passano tutti, dillo chiaramente e non segnalare alcun rilievo.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Nessun check chiamato «{0}». Esegui `/checks` per elencarli.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Nessun rilievo ancorato: i check non hanno trovato nulla su questo diff.</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Sono stati revisionati solo i primi {0} caratteri del diff, su {1}. Quanto segue riguarda quella parte, non l'intera modifica — rivedi il resto a parte, o mettilo in stage a pezzi più piccoli.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} rilievo/i** ancorati al diff:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**bloccante**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**avviso**</value></data>
@@ -757,6 +759,7 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="NotesHeading" xml:space="preserve"><value>## Note di progetto</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>Nessuna voce di cronologia n. {0}.</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>La cronologia dei prompt è vuota.</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ Impossibile leggere la cronologia dei prompt ({0}) — NON significa «cronologia vuota». I tuoi prompt sono ancora in quel file; Inferpal lo mette da parte prima di scrivere qualcosa di nuovo. Vedi /diagnostics per la causa.</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>Nessuna voce di cronologia corrispondente a `{0}`.</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Uso: `/models delete &lt;nome-modello&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` eliminato.</value></data>
@@ -832,6 +835,8 @@ Scrivi ora la risposta finale completa alla mia richiesta più recente, che era:
   <data name="ArenaColTies" xml:space="preserve"><value>Pareggi</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>Percentuale di vittorie</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Nessun voto dell'arena registrato finora.</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ Impossibile leggere la cronologia dell'arena ({0}) — NON significa «nessun voto registrato». I tuoi voti sono ancora in quel file; Inferpal lo mette da parte prima di scrivere qualcosa di nuovo. Vedi /diagnostics per la causa.</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>Il tuo voto non è stato registrato: impossibile leggere la sfida in attesa. Avviane un'altra con /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena non riuscita: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>esegui i test → l'IA corregge → riesegui fino al verde (filtro test opzionale)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Test {0}/{1}…</value></data>

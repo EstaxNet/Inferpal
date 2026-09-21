@@ -92,14 +92,18 @@ internal static class CheckCommandHandler
             diff = GitCommitPolicy.BuildStagedContext(staged);
         }
 
-        diff = GitCommitPolicy.CapDiff(diff);
+        // ⚠ The cut rides ABOVE the findings, because it qualifies them: "the checks turned up
+        // nothing on this diff" is a verdict the user acts on, and on a capped diff it is a verdict
+        // about the part that fit. Most real changes exceed the cap — the model is told, and the
+        // person reading the answer was not.
+        var capped = GitCommitPolicy.CapDiff(diff);
 
         onProgress?.Invoke(Strings.CheckReviewingLabel);
 
         var history = new List<ChatMessageDto>
         {
             new("system", Strings.CheckReviewSystemPrompt),
-            new("user",   ChecksService.BuildReviewPrompt(checks, diff)),
+            new("user",   ChecksService.BuildReviewPrompt(checks, capped.Text)),
         };
 
         string answer;
@@ -114,6 +118,9 @@ internal static class CheckCommandHandler
 
         // Anchors come from the very text the model was shown, so a location is checked against
         // what the model could actually see — not against the working tree, which may have moved.
-        return new(Named(CheckReviewParser.Render(CheckReviewParser.Parse(answer, DiffAnchors.Parse(diff)))));
+        var rendered = CheckReviewParser.Render(CheckReviewParser.Parse(answer, DiffAnchors.Parse(capped.Text)));
+        if (capped.IsTruncated)
+            rendered = Strings.CheckDiffTruncated(capped.Kept, capped.Total) + "\n\n" + rendered;
+        return new(Named(rendered));
     }
 }

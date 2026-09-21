@@ -472,6 +472,7 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ No se detectaron cambios en git.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nada en staging — analizando cambios sin staging.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ El mensaje de abajo se escribió a partir de los primeros {0} caracteres del diff, de {1}. No puede describir lo que nunca vio: prepare un cambio más pequeño para obtener un mensaje que lo cubra todo.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 mensaje de commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Mensaje prellenado abajo — edita si es necesario y pulsa **Intro** para confirmar el commit.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Sin reglas de proyecto. Crea `.inferpal/rules/*.md` o ejecuta `/rules init`.</value></data>
@@ -499,6 +500,7 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Eres un revisor de código meticuloso y totalmente local. Revisa el diff de git siguiente ÚNICAMENTE conforme a los checks de revisión proporcionados. Informa cada infracción en su propia línea, exactamente con este formato: `- [severity] ruta/al/archivo.ext:LÍNEA - qué falla y cómo corregirlo`, donde severity es blocker, warning o nit, y LÍNEA es un número de línea presente en el diff. Un hallazgo por línea, sin anidamiento ni subviñetas. Nunca señales un archivo que el diff no toca, no inventes problemas ni comentes nada fuera de los checks o del diff. Indica en una frase breve, fuera de las líneas de hallazgo, qué checks pasan. Si todos pasan, dilo con claridad y no informes ningún hallazgo.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>No hay ningún check llamado «{0}». Ejecuta `/checks` para listarlos.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Ningún hallazgo anclado: los checks no detectaron nada en este diff.</value></data>
+  <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Solo se revisaron los primeros {0} caracteres del diff, de {1}. Lo que sigue trata de esa parte, no de todo su cambio: revise el resto aparte, o prepárelo en trozos más pequeños.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} hallazgo(s)** anclados al diff:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**bloqueante**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**advertencia**</value></data>
@@ -757,6 +759,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="NotesHeading" xml:space="preserve"><value>## Notas del proyecto</value></data>
   <data name="PHistoryNoEntry" xml:space="preserve"><value>No existe la entrada de historial n.º {0}.</value></data>
   <data name="PHistoryEmpty" xml:space="preserve"><value>El historial de prompts está vacío.</value></data>
+  <data name="PHistoryUnreadable" xml:space="preserve"><value>⚠ No se pudo leer el historial de prompts ({0}): esto NO significa «historial vacío». Sus prompts siguen en ese archivo; Inferpal lo aparta antes de escribir nada nuevo. Consulte /diagnostics para ver la causa.</value></data>
   <data name="PHistoryNoMatch" xml:space="preserve"><value>No hay entradas de historial que coincidan con `{0}`.</value></data>
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Uso: `/models delete &lt;nombre-del-modelo&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` eliminado.</value></data>
@@ -832,6 +835,8 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="ArenaColTies" xml:space="preserve"><value>Empates</value></data>
   <data name="ArenaColWinRate" xml:space="preserve"><value>Tasa de victorias</value></data>
   <data name="ArenaNoStats" xml:space="preserve"><value>Aún no hay votos de arena registrados.</value></data>
+  <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ No se pudo leer el historial de la arena ({0}): esto NO significa «ningún voto registrado». Sus votos siguen en ese archivo; Inferpal lo aparta antes de escribir nada nuevo. Consulte /diagnostics para ver la causa.</value></data>
+  <data name="ArenaVoteNotRead" xml:space="preserve"><value>Su voto no se registró: no se pudo leer el duelo pendiente. Inicie otro con /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>La arena falló: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>ejecutar los tests → la IA corrige → reejecutar hasta verde (filtro de test opcional)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>

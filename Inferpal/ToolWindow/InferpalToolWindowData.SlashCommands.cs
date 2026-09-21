@@ -540,7 +540,7 @@ internal partial class InferpalToolWindowData
         List<string> history = [];
         await RunOnVMContextAsync(() => history = [.._promptHistory.Entries]);
 
-        var result = Services.Commands.PHistoryCommandHandler.Handle(history, parts);
+        var result = Services.Commands.PHistoryCommandHandler.Handle(history, parts, _promptHistoryUnreadable);
 
         if (result.FillPrompt is { } text)
             await RunOnVMContextAsync(() => Prompt = text);

@@ -18,18 +18,24 @@ namespace Inferpal.Tests;
 // global, and xUnit parallelises across classes, not within one.
 public class ArenaTests : IDisposable
 {
+    private readonly string _dir;
     private readonly string _tempFile;
 
+    // A folder of its own, not a loose file in %TEMP%: an unreadable arena.json is COPIED aside
+    // before it is overwritten, and that copy is a second file this class has to be able to find
+    // (and to take away with it).
     public ArenaTests()
     {
-        _tempFile = Path.Combine(Path.GetTempPath(), $"inferpal-arena-{Guid.NewGuid():N}.json");
+        _dir = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"arena-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_dir);
+        _tempFile = Path.Combine(_dir, "arena.json");
         ArenaStore._fileOverride = _tempFile;
     }
 
     public void Dispose()
     {
         ArenaStore._fileOverride = null;
-        try { File.Delete(_tempFile); } catch { }
+        try { Directory.Delete(_dir, recursive: true); } catch { }
     }
 
     private static InferpalConfig Config(string chat = "big", string utility = "small") =>
@@ -415,4 +421,106 @@ public class ArenaTests : IDisposable
         Assert.Null(AsideOf(_tempFile));
     }
 
+    // ── The bytes are kept, and the user is told ───────────────────────────────
+
+    /// <summary>
+    /// Keeping the bytes was half the repair. The other half is that every <c>/arena</c> answer
+    /// built from the fallback is a sentence about the USER — "no vote recorded yet", "no battle
+    /// awaiting a vote" — made from a fact about one file, and the copy sitting next to it has a
+    /// name nobody would ever go looking for.
+    /// </summary>
+    private async Task TearTheVoteLogAsync()
+    {
+        await ArenaStore.SaveAsync(new ArenaSavedState(
+            [new ArenaBattle(DateTime.UtcNow, "MARKER-PROMPT", "big", "small", "a")],
+            new ArenaPending(DateTime.UtcNow, "a pending prompt", "big", "small")));
+
+        var whole = await File.ReadAllTextAsync(_tempFile);
+        Assert.Contains("MARKER-PROMPT", whole);            // WITNESS: it really was written
+        await File.WriteAllTextAsync(_tempFile, whole[..(whole.Length / 2)]);
+        Assert.True((await ArenaStore.ReadAsync()).Unreadable);  // WITNESS: and it really is torn
+    }
+
+    [Fact]
+    public async Task Stats_WhenTheFileDidNotOpen_NamesIt_InsteadOfSayingNoVotes()
+    {
+        await TearTheVoteLogAsync();
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            EchoProvider(), Config(), ["/arena", "stats"], onProgress: null, CancellationToken.None);
+
+        Assert.Equal(Strings.ArenaUnreadable(ArenaStore.FilePath), result.Message);
+        Assert.DoesNotContain(Strings.ArenaNoStats, result.Message);
+    }
+
+    /// <summary>Reference arm: a user who really has never voted still gets the ordinary sentence,
+    /// or the notice is noise on every first run.</summary>
+    [Fact]
+    public async Task Stats_WithNoFileAtAll_StillSaysNoVotesYet()
+    {
+        Assert.False(File.Exists(_tempFile));
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            EchoProvider(), Config(), ["/arena", "stats"], onProgress: null, CancellationToken.None);
+
+        Assert.Equal(Strings.ArenaNoStats, result.Message);
+    }
+
+    [Fact]
+    public async Task Vote_WhenTheFileDidNotOpen_SaysTheVoteWasNotRecorded_AndWhy()
+    {
+        await TearTheVoteLogAsync();
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            EchoProvider(), Config(), ["/arena", "a"], onProgress: null, CancellationToken.None);
+
+        Assert.Contains(Strings.ArenaVoteNotRead, result.Message);
+        Assert.Contains(ArenaStore.FilePath, result.Message);
+        // "No battle awaiting a vote" describes the user's state, not the file's.
+        Assert.DoesNotContain(Strings.ArenaNoPending, result.Message);
+    }
+
+    /// <summary>Reference arm: with a readable file and nothing pending, the ordinary sentence.</summary>
+    [Fact]
+    public async Task Vote_WithAReadableFileAndNothingPending_StillSaysNoBattle()
+    {
+        await ArenaStore.SaveAsync(new ArenaSavedState([], null));
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            EchoProvider(), Config(), ["/arena", "tie"], onProgress: null, CancellationToken.None);
+
+        Assert.Equal(Strings.ArenaNoPending, result.Message);
+    }
+
+    /// <summary>
+    /// The battle that follows is the write that replaces the log, so it is the last moment anyone
+    /// can be told. From the next standings on, the answer is "1 battle" and nothing says why.
+    /// </summary>
+    [Fact]
+    public async Task ANewBattle_OverAnUnreadableLog_SaysTheOldVotesWereSetAside()
+    {
+        await TearTheVoteLogAsync();
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            EchoProvider(), Config(), ["/arena", "hello"],
+            onProgress: null, CancellationToken.None, swapOrder: () => false);
+
+        Assert.Contains(Strings.ArenaVotePrompt, result.Message);   // the battle itself still ran
+        Assert.Contains(Strings.ArenaUnreadable(ArenaStore.FilePath), result.Message);
+        Assert.NotNull(AsideOf(_tempFile));                         // and the sentence is true
+    }
+
+    /// <summary>Reference arm: the ordinary battle says none of it.</summary>
+    [Fact]
+    public async Task ANewBattle_OverAReadableLog_SaysNothingAboutTheFile()
+    {
+        await ArenaStore.SaveAsync(new ArenaSavedState([], null));
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            EchoProvider(), Config(), ["/arena", "hello"],
+            onProgress: null, CancellationToken.None, swapOrder: () => false);
+
+        Assert.Contains(Strings.ArenaVotePrompt, result.Message);
+        Assert.DoesNotContain(ArenaStore.FilePath, result.Message);
+    }
 }

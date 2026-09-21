@@ -61,16 +61,10 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
-    # ⚠ macOS does not gate the verdict, and that is a MEASUREMENT, not a shrug: on that leg an
-    # in-shell watchdog (9 min), the step budget (12) and the job budget (30) all failed to end a
-    # hung step — at 33 minutes it was still running. A test cannot stop the agent from applying
-    # its own budgets; a wedged agent can, which also explains why no log is ever uploaded. A leg
-    # that hangs six runs out of ten and produces nothing to read already gives no signal, so
-    # blocking on it only costs the feedback loop. It still runs, and a green one still counts.
-    # ⚠ NOT pinned: `macos-13` sat queued for 18 minutes waiting for a scarce Intel runner,
-    # and the image hypothesis is not worth that wait now that the leg decides nothing. A leg
-    # that never gets a runner tells us even less than one that hangs.
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
+    # ⚠ macOS gates the verdict like every other leg, and it has to: it is the ONLY one that can
+    # see a path guard compare case-sensitively on a volume that folds, or a symlink resolved one
+    # component at a time. A leg that decides nothing is a leg nobody reads — this one was red for
+    # two days while two releases were tagged through it.
 
     steps:
       - uses: actions/checkout@v7
@@ -117,45 +111,6 @@ jobs:
         run: |
           echo "── last 3000 lines of the test output ──"
           tail -n 3000 test-output.log || echo "no test-output.log was produced"
-
-  # ⚠ A MEASUREMENT, not a safety net, and it comes out once it has answered. It runs a handful of
-  # tests on the same image, the same SDK and the same `dotnet test` as the full leg. The two issues
-  # that describe our symptom — actions/runner-images#13452 (the macOS agent freezes about one run
-  # in ten, with no diagnostic at all) and dotnet/sdk#54580 (`dotnet test` waits forever for a
-  # testhost handshake that never comes) — do not depend on how many tests run. Our own tests do. A
-  # minimal leg that hangs accuses the environment; a minimal leg that stays green while the full
-  # one hangs accuses the volume, and makes a bisection possible.
-  macos-smoke:
-    runs-on: macos-latest
-    timeout-minutes: 15
-    continue-on-error: true
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up .NET 8
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Build (net8.0 editor-agnostic slice)
-        timeout-minutes: 10
-        run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release
-
-      - name: Test (a handful, same host)
-        timeout-minutes: 10
-        run: |
-          set +e
-          dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \
-            --filter "FullyQualifiedName~PathCaseFoldingTests" \
-            --logger "console;verbosity=detailed" > smoke.log 2>&1
-          code=$?
-          echo "dotnet test exit=$code"
-          exit $code
-
-      - name: Smoke output (tail)
-        if: always()
-        run: tail -n 200 smoke.log || echo "no smoke.log was produced"
 
   # VS Code extension: typecheck + bundle (no Windows dependency — cheaper runner)
   vscode-extension:

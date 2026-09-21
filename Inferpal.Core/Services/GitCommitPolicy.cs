@@ -11,10 +11,42 @@ namespace Inferpal.Services;
 internal static class GitCommitPolicy
 {
     /// <summary>Diff-context cap — keeps the proposal prompt within a small model's budget.</summary>
+    /// <remarks>
+    /// ⚠ The reason is written for <c>/commit</c>, which runs on the utility model; <c>/check</c>
+    /// reuses the same cap on the chat model, where the budget is not the binding constraint. The
+    /// number is therefore a shared floor, not a measured ceiling for both — which is exactly why
+    /// what it cuts has to be said rather than assumed harmless.
+    /// </remarks>
     public const int MaxDiffChars = 12_000;
 
-    public static string CapDiff(string context) =>
-        context.Length > MaxDiffChars ? context[..MaxDiffChars] + "\n…(truncated)" : context;
+    /// <summary>The diff as the model will see it, and how much of it never got there.</summary>
+    /// <param name="Text">Capped context, carrying its own marker for the model.</param>
+    /// <param name="Kept">Characters the model was shown.</param>
+    /// <param name="Total">Characters the diff actually had.</param>
+    internal readonly record struct CappedDiff(string Text, int Kept, int Total)
+    {
+        /// <summary>Characters the model was never shown.</summary>
+        public int Cut => Total - Kept;
+
+        public bool IsTruncated => Cut > 0;
+    }
+
+    /// <summary>
+    /// Cuts the context to <see cref="MaxDiffChars"/> and <b>reports the cut</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Both callers turn this text into something the user acts on — a review verdict, a commit
+    /// message — so the cut shapes a CONCLUSION and cannot stay between the cap and the model.
+    /// <c>/check</c> answers "the checks turned up nothing on this diff" about a diff the model saw
+    /// a fifth of; <c>/commit</c> names a scope from the part that fit. The marker tells the model;
+    /// the count is what lets each caller tell the human, and it names the amount for the same
+    /// reason <c>get_git_status</c> does one file away: "truncated" alone cannot be weighed.
+    /// </remarks>
+    public static CappedDiff CapDiff(string context) =>
+        context.Length > MaxDiffChars
+            ? new(context[..MaxDiffChars] + $"\n…(truncated — {context.Length - MaxDiffChars} more characters)",
+                  MaxDiffChars, context.Length)
+            : new(context, context.Length, context.Length);
 
     public static string BuildStagedContext(string staged) =>
         $"git diff --staged:\n{staged}";

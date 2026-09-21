@@ -33,7 +33,14 @@ internal static class ArenaCommandHandler
             case "a" or "b" or "tie" when parts.Length == 2:
                 return new(await VoteAsync(parts[1].ToLowerInvariant()));
             case "stats" when parts.Length == 2:
-                return new(FormatStats((await ArenaStore.LoadAsync()).Battles));
+            {
+                // ⚠ "No arena vote recorded yet" is a statement about the user; a file that did not
+                // open is a fact about one file, and only the second has a remedy worth naming.
+                var (state, unreadable) = await ArenaStore.ReadAsync();
+                return new(unreadable
+                    ? Strings.ArenaUnreadable(ArenaStore.FilePath)
+                    : FormatStats(state.Battles));
+            }
         }
 
         // ── New battle ──────────────────────────────────────────────────────────
@@ -57,7 +64,7 @@ internal static class ArenaCommandHandler
                 (textB, secondsB) = await AskAsync(client, modelB, prompt, ct);
             }
 
-            var state = await ArenaStore.LoadAsync();
+            var (state, unreadable) = await ArenaStore.ReadAsync();
             var pendingSaved = await ArenaStore.SaveAsync(state with
             {
                 Pending = new ArenaPending(DateTime.UtcNow, prompt, modelA, modelB),
@@ -71,6 +78,10 @@ internal static class ArenaCommandHandler
             sb.Append(Strings.ArenaVotePrompt);
             // Without the pending state on disk, the next vote would answer "no pending battle".
             if (!pendingSaved) sb.Append("\n\n").Append(Strings.ArenaPendingNotSaved);
+            // ⚠ Two facts about two file states, each repaired elsewhere: the save above is where
+            // the unreadable log was set aside, and this battle is the write that replaced it. The
+            // standings printed from here on count one battle, and nothing else would say why.
+            if (unreadable) sb.Append("\n\n").Append(Strings.ArenaUnreadable(ArenaStore.FilePath));
             return new(sb.ToString());
         }
         catch (OperationCanceledException) { throw; }
@@ -84,7 +95,12 @@ internal static class ArenaCommandHandler
     /// refreshed standings.</summary>
     private static async Task<string> VoteAsync(string vote)
     {
-        var state = await ArenaStore.LoadAsync();
+        var (state, unreadable) = await ArenaStore.ReadAsync();
+        // ⚠ An unreadable file has no pending battle either, and "no battle awaiting a vote" is the
+        // one sentence that must not stand in for "I could not read the file": it describes the
+        // user's state instead of the file's, and the vote they just cast is gone without a word.
+        if (unreadable)
+            return Strings.ArenaVoteNotRead + "\n\n" + Strings.ArenaUnreadable(ArenaStore.FilePath);
         if (state.Pending is not { } pending) return Strings.ArenaNoPending;
 
         var battles = new List<ArenaBattle>(state.Battles)

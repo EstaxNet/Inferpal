@@ -86,8 +86,10 @@ public class StoreUnreadableFileTests : IDisposable
         Assert.Single(Directory.GetFiles(_dir));
     }
 
-    /// <summary>And a genuinely disposable store does not pay that price: arena/bench recompute
-    /// themselves, setting their bytes aside would only clutter <c>%AppData%</c>.</summary>
+    /// <summary>And a genuinely disposable store does not pay that price: a bench run is what
+    /// <c>/bench</c> reproduces, so setting its bytes aside would only clutter <c>%AppData%</c>.
+    /// Arena is no longer on that side of the line — nothing reproduces which answer the user
+    /// preferred three weeks ago.</summary>
     [Fact]
     public async Task ADisposableStore_DoesNotPreserveAnything()
     {

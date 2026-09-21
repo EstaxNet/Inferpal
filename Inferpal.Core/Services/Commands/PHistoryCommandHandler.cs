@@ -24,8 +24,26 @@ internal static class PHistoryCommandHandler
     /// <summary>Parses and resolves a <c>/phistory</c> invocation against a history snapshot
     /// (<paramref name="history"/>, oldest-first). <paramref name="parts"/> is the whitespace-split
     /// command line (<c>parts[0]</c> is <c>/phistory</c>).</summary>
-    public static PHistoryCommandResult Handle(IReadOnlyList<string> history, string[] parts)
+    /// <param name="unreadablePath">
+    /// Path of the history file when it could not be <b>read</b>, <c>null</c> when it opened (or
+    /// when the caller keeps its history somewhere else, as the VS Code adapter does — it stores
+    /// prompts in the editor's own state, where a failed read is not a state we can observe).
+    /// </param>
+    /// <remarks>
+    /// ⚠ A history that did not open and a history that is genuinely empty arrive here the same
+    /// way, and every negative sentence below is a statement about the user: "empty", "no entries
+    /// matching", "no such entry". The bytes are kept — the store sets an unreadable file aside
+    /// before the next prompt overwrites it — but a recovery nobody is told about is not one. The
+    /// prompts typed in THIS session are still in <paramref name="history"/> and still list: the
+    /// notice rides above them rather than replacing them.
+    /// </remarks>
+    public static PHistoryCommandResult Handle(
+        IReadOnlyList<string> history, string[] parts, string? unreadablePath = null)
     {
+        var notice = unreadablePath is { } path
+            ? Strings.PHistoryUnreadable(path) + "\n\n"
+            : string.Empty;
+
         // /phistory use <key|n> — re-fill the prompt with an entry: by the content key the listing
         // prints, else by 1-based position (typed by hand; it shifts once the capped list evicts).
         if (parts.Length >= 3 && parts[1].Equals("use", StringComparison.OrdinalIgnoreCase))
@@ -36,11 +54,11 @@ internal static class PHistoryCommandHandler
             if (byKey is not null) return new(null, byKey);
             return int.TryParse(target, out var useIdx) && useIdx >= 1 && useIdx <= history.Count
                 ? new(null, history[useIdx - 1])
-                : new(Strings.PHistoryNoEntry(target), null);
+                : new(notice + Strings.PHistoryNoEntry(target), null);
         }
 
         if (history.Count == 0)
-            return new(Strings.PHistoryEmpty, null);
+            return new(unreadablePath is { } p ? Strings.PHistoryUnreadable(p) : Strings.PHistoryEmpty, null);
 
         // /phistory [term] — filtered list ("use" is reserved, not a search term).
         var term = parts.Length >= 2 && parts[1] != "use"
@@ -48,8 +66,6 @@ internal static class PHistoryCommandHandler
             : null;
 
         var listing = ChatTurnPolicy.FormatPromptHistory(history, term);
-        return listing is null
-            ? new(Strings.PHistoryNoMatch(term), null)
-            : new(listing, null);
+        return new(notice + (listing ?? Strings.PHistoryNoMatch(term)), null);
     }
 }

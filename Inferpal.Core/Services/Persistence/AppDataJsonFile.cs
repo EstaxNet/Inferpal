@@ -121,21 +121,29 @@ internal sealed class AppDataJsonFile<T>
         }
     }
 
-    /// <summary>Synchronous <see cref="LoadAsync"/>, for a caller that reads once while it is constructed.</summary>
-    public T Load(T fallback)
+    /// <summary>Synchronous <see cref="ReadAsync"/>, for a caller that reads once while it is constructed.</summary>
+    /// <remarks>
+    /// ⚠ The same two answers as <see cref="ReadAsync"/>, and the sync half must be able to give
+    /// them: a caller that reads at construction time holds the only chance to learn that the file
+    /// did not open, and whatever it shows later is built from the fallback it was handed here.
+    /// </remarks>
+    public (T Value, bool Unreadable) Read(T fallback)
     {
         try
         {
-            if (!File.Exists(Path)) return fallback;
+            if (!File.Exists(Path)) return (fallback, false);
             var value = JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts);
-            return value is not null && Readable(value) ? value : fallback;
+            return value is not null && Readable(value) ? (value, false) : (fallback, true);
         }
         catch (Exception ex)
         {
             Diagnostics.Swallow($"{_diagnosticName}.Load", ex);
-            return fallback;
+            return (fallback, true);
         }
     }
+
+    /// <summary>Synchronous <see cref="LoadAsync"/>, for a caller the difference does not concern.</summary>
+    public T Load(T fallback) => Read(fallback).Value;
 
     /// <summary>Synchronous <see cref="SaveAsync"/>: same set-aside of an unreadable file, same atomic write.</summary>
     public bool Save(T value)

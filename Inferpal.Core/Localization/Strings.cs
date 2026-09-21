@@ -818,6 +818,9 @@ internal static class Strings
     // ── Git commit assistant ───────────────────────────────────────────────────
     public static string CommitNothingToCommit  => Get(nameof(CommitNothingToCommit));
     public static string CommitNothingStaged    => Get(nameof(CommitNothingStaged));
+    /// <summary>The proposal describes only what fit in the prompt — said before the message.</summary>
+    public static string CommitDiffTruncated(int kept, int total) =>
+        string.Format(Get(nameof(CommitDiffTruncated)), kept, total);
     public static string CommitProposingLabel   => Get(nameof(CommitProposingLabel));
     public static string CommitConfirmHint      => Get(nameof(CommitConfirmHint));
 
@@ -867,6 +870,9 @@ internal static class Strings
     public static string CheckReviewSystemPrompt => Get(nameof(CheckReviewSystemPrompt));
     public static string CheckUnknownName(string name) => string.Format(Get(nameof(CheckUnknownName)), name);
     public static string CheckNoFindings         => Get(nameof(CheckNoFindings));
+    /// <summary>The verdict below covers only what fit — said above the findings, which it qualifies.</summary>
+    public static string CheckDiffTruncated(int kept, int total) =>
+        string.Format(Get(nameof(CheckDiffTruncated)), kept, total);
     public static string CheckSeverityBlocker    => Get(nameof(CheckSeverityBlocker));
     public static string CheckSeverityWarning    => Get(nameof(CheckSeverityWarning));
     public static string CheckSeverityNit        => Get(nameof(CheckSeverityNit));
@@ -982,6 +988,8 @@ internal static class Strings
 
     public static string PHistoryNoEntry(string target)      => string.Format(Get(nameof(PHistoryNoEntry)), target);
     public static string PHistoryEmpty                       => Get(nameof(PHistoryEmpty));
+    /// <summary>The history file exists and did not open — never "history is empty".</summary>
+    public static string PHistoryUnreadable(string path) => string.Format(Get(nameof(PHistoryUnreadable)), path);
     public static string PHistoryNoMatch(string? term)       => string.Format(Get(nameof(PHistoryNoMatch)), term);
 
     public static string ModelsDeleteUsage                   => Get(nameof(ModelsDeleteUsage));
@@ -1071,6 +1079,10 @@ internal static class Strings
     public static string ArenaColTies                        => Get(nameof(ArenaColTies));
     public static string ArenaColWinRate                     => Get(nameof(ArenaColWinRate));
     public static string ArenaNoStats                        => Get(nameof(ArenaNoStats));
+    /// <summary>The arena file exists and did not open — never "no vote recorded yet".</summary>
+    public static string ArenaUnreadable(string path) => string.Format(Get(nameof(ArenaUnreadable)), path);
+    /// <summary>What the vote itself became, said before the cause: nothing was written.</summary>
+    public static string ArenaVoteNotRead                    => Get(nameof(ArenaVoteNotRead));
     public static string ArenaFailed(string error)           => string.Format(Get(nameof(ArenaFailed)), error);
 
     // ── /tdd command ────────────────────────────────────────────────────────────
