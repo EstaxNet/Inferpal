@@ -189,9 +189,14 @@ internal static class DiagnosticsCommandHandler
         sb.Append("- **Recent diagnostics** (").Append(Math.Min(entries.Count, MaxExported))
           .Append(" of ").Append(entries.Count).Append("):");
         if (entries.Count == 0) sb.Append(" none");
+        // ⚠ BOTH halves of the pair, not just the detail: a context is built by interpolation from
+        // the very values the scrub exists for — `FileHistoryService.Snapshot({filePath})` and
+        // `UndoRunCommandHandler.Relativise({path})` carry absolute paths, `DocCrawler.Fetch({url})`
+        // a raw URL. They sit on the same line of the file the user pastes into a public issue.
         foreach (var e in entries.Reverse().Take(MaxExported))
             sb.Append("\n  - `").Append(e.Timestamp.ToString("HH:mm:ss")).Append("` **")
-              .Append(e.Context).Append("** — ").Append(SanitizePaths(e.Detail, ctx.WorkspaceRoot));
+              .Append(SanitizePaths(e.Context, ctx.WorkspaceRoot)).Append("** — ")
+              .Append(SanitizePaths(e.Detail, ctx.WorkspaceRoot));
 
         return sb.ToString();
 
