@@ -92,8 +92,17 @@ jobs:
           exit $code
 
       # Runs even when the step above was killed by its own budget: that is the whole point.
-      - name: Test output (tail)
+      # ⚠ FAILURES FIRST — same reason as the other leg: at `verbosity=detailed` one line per PASSED
+      # test means a 3269-test suite pushes the failure out of any fixed tail, and this step is the
+      # only thing readable from outside when the job is killed.
+      # ⚠ The marker is xUnit's `[FAIL]`, never the runner's "Failed": the VSTest console logger is
+      # LOCALIZED, the same trap `RunTestsTool` pins with DOTNET_CLI_UI_LANGUAGE.
+      # ⚠ `|| echo` on every grep: the shell is `bash -e`, and a grep matching nothing exits 1.
+      - name: Test output (failures first, then tail)
         if: always()
         run: |
+          echo "── failing tests ──"
+          grep -A 8 -F "[FAIL]" test-output.log | head -n 200 \
+            || echo "(no [FAIL] line — the run may have been killed before any test failed)"
           echo "── last 3000 lines of the test output ──"
           tail -n 3000 test-output.log || echo "no test-output.log was produced"
