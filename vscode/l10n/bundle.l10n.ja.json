@@ -114,5 +114,6 @@
   "The conversation you just left could not be archived: {0}. It was not saved under a name, and the chat has already been cleared.": "退出した会話をアーカイブできませんでした: {0}。名前を付けて保存されておらず、チャットはすでにクリアされています。",
   "the restarted assistant did not take the saved conversation back": "再起動したアシスタントは保存済みの会話を受け取りませんでした",
   "⚠ The assistant restarted and the conversation above could NOT be handed back to it: {0}. It will answer your next question without that context — restate what matters, or start a new conversation.": "⚠ アシスタントが再起動し、上記の会話を戻せませんでした: {0}。次の質問にはその文脈なしで答えます — 要点を言い直すか、新しい会話を始めてください。",
-  "⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.": "⚠ この会話を次回のために保存できませんでした: {0}。まだ画面には残っていますが、自動では戻りません — 残したい場合はエクスポートしてください。"
+  "⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.": "⚠ この会話を次回のために保存できませんでした: {0}。まだ画面には残っていますが、自動では戻りません — 残したい場合はエクスポートしてください。",
+  "The Inferpal chat view hit an error and may not be up to date. Reload the window if it stops responding.": "Inferpal のチャットビューでエラーが発生し、表示が最新でない可能性があります。応答しなくなった場合はウィンドウを再読み込みしてください。"
 }

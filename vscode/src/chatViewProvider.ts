@@ -814,9 +814,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     switch (msg.type) {
       case 'clientError':
         this.log(`[webview] ${msg.message}`);
+        // ⚠ A log line is not a message — the rule this file states for gestures, and this is the
+        // one channel that exists ONLY to report failure. An unhandled error in the chat view
+        // leaves a UI that has quietly stopped updating: from the outside, a button that does
+        // nothing, which is indistinguishable from a button that did something.
+        // ⚠ Said ONCE and re-armed on 'ready' (a webview that loaded again): a render that throws
+        // on every message would otherwise turn the notice into the noise nobody reads.
+        this.sayOnce('webviewError',
+          t('The Inferpal chat view hit an error and may not be up to date. Reload the window if it stops responding.'));
         return;
       case 'ready':
         this.log('[chat] webview ready');
+        // The webview is fresh, so the notice above is worth saying again if it breaks anew.
+        this.saidOnce.delete('webviewError');
         this.hydrate();
         return;
       case 'send':
