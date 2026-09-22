@@ -26,6 +26,14 @@ internal static class DocsCommandHandler
     {
         var sub = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
 
+        // ⚠ Exact shapes, like /diagnostics, and for the reason written there: a mistyped
+        // sub-command that falls through to the list is answered with something that LOOKS like a
+        // success. `/docs remov <id>` returned the sources — the one meant for deletion still among
+        // them — and `/docs reindx` started no crawl and returned the same list. Nothing said the
+        // word meant nothing.
+        if (sub is not ("list" or "add" or "remove" or "reindex"))
+            return Strings.SlashUsage("/docs [list | add <url> [title] | remove <id> | reindex [id]]");
+
         // Every sub-command stops here: `add` and `remove` would write a new list over the one that
         // could not be read, erasing the sources it still holds.
         if (!DocSite.TryParse(config.DocSitesJson, out var sites, out var problem))
