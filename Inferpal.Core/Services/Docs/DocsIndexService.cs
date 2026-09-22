@@ -371,8 +371,11 @@ internal sealed class DocsIndexService
         List<(int Idx, double Score)> lexical = [];
         if (!string.IsNullOrWhiteSpace(keywordFallback) && CodeTokenizer.Tokenize(keywordFallback) is { Count: > 0 } terms)
         {
-            var docs = all.Select(c => (IReadOnlyList<string>)CodeTokenizer.Tokenize(c.Content)).ToList();
-            lexical = new Bm25Index(docs).Rank(terms, pool);
+            // ⚠ The tokens come from the CHUNK, not from its body: they carry the page title, the
+            // heading and the URL, which is where documentation actually names its topic. They are
+            // also cached per chunk — tokenizing the whole corpus on every query is the cost the
+            // code index already removed.
+            lexical = new Bm25Index(all.Select(c => c.Bm25Tokens).ToList()).Rank(terms, pool);
         }
 
         // ⚠ IsCosine says where THIS result came from, and nothing else can: a lexical-only hit
