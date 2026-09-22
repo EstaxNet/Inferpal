@@ -208,12 +208,44 @@ internal sealed class DocsIndexService
             progress?.Report($"Docs: {site.Title} — {pages.Count} pages, {chunks.Count} chunks; embedding…");
 
             // ── Embed (throttled, circuit-breaker aware) ─────────────────────────
+            // ⚠ What has NOT changed is not embedded again. `ContentHash` was written, persisted and
+            // compared by nobody, so every re-index embedded the whole site — and embedding is the
+            // step that trips the circuit breaker, whose opening is exactly what leaves chunks
+            // stored without a vector. `/docs reindex` being the ONLY remedy the product names for
+            // that hole, a remedy whose cost scales with the whole corpus is the operation most
+            // likely to re-create it.
+            // ⚠ Reuse reads the IN-MEMORY chunks, which `ReadFromDbAsync` has already stripped of
+            // vectors produced by another embedding model — so that guard stays the single place
+            // deciding it, and cannot be forgotten here.
+            // ⚠ Only a chunk that HAS a vector is reusable: re-embedding the hole is the point.
+            var reusable = new Dictionary<(string Url, string Hash), float[]>();
+            await _chunkLock.WaitAsync(ct);
+            try
+            {
+                foreach (var c in _chunks)
+                    if (string.Equals(c.DocId, site.Id, StringComparison.OrdinalIgnoreCase)
+                        && c.Embedding is { Length: > 0 } vector)
+                        reusable[(c.Url, c.ContentHash)] = vector;
+            }
+            finally { _chunkLock.Release(); }
+
             var embModel = EmbeddingModel;
             for (int i = 0; i < chunks.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
 
-                if (_client.IsEmbeddingCircuitOpen) break; // keyword fallback still works
+                // Before the breaker is consulted, on purpose — see the `continue` below.
+                if (reusable.TryGetValue((chunks[i].Url, chunks[i].ContentHash), out var kept))
+                {
+                    chunks[i].Embedding = kept;
+                    continue;
+                }
+
+                // ⚠ `continue`, not `break`: this pass REPLACES the site's stored chunks, so
+                // abandoning the loop would persist every later chunk without the vector it already
+                // had — a re-index attempted during an outage would WIDEN the hole it exists to
+                // close. Skipping only the calls leaves it able to narrow it and never widen it.
+                if (_client.IsEmbeddingCircuitOpen) continue; // keyword fallback still works
 
                 // Yield the shared Ollama GPU to any in-flight chat/agent request.
                 await GpuScheduler.WaitForChatIdleAsync(ct);
