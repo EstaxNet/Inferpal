@@ -356,12 +356,8 @@ internal sealed class DocsIndexService
         List<(int Idx, float Cos)> vector = [];
         if (queryEmbedding is { Length: > 0 })
         {
-            vector = all
-                .Select((c, i) => (Idx: i, Cos: c.Embedding is { Length: > 0 } ? VectorMath.Cosine(queryEmbedding, c.Embedding!) : 0f))
-                .Where(x => x.Cos >= _config.RagSimilarityThreshold)
-                .OrderByDescending(x => x.Cos)
-                .Take(pool)
-                .ToList();
+            vector = VectorMath.RankBySimilarity(
+                all, c => c.Embedding, queryEmbedding, _config.RagSimilarityThreshold, pool);
         }
 
         // ⚠ The lexical side is BM25 over the query's words, like the code index. The old keyword

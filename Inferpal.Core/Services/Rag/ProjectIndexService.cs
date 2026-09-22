@@ -265,12 +265,8 @@ internal sealed class ProjectIndexService : IDisposable
         List<(int Idx, float Cos)> vector = [];
         if (queryEmbedding is { Length: > 0 })
         {
-            vector = allChunks
-                .Select((c, i) => (Idx: i, Cos: c.Embedding is { Length: > 0 } ? CosineSimilarity(queryEmbedding, c.Embedding!) : 0f))
-                .Where(x => x.Cos >= _config.RagSimilarityThreshold)
-                .OrderByDescending(x => x.Cos)
-                .Take(pool)
-                .ToList();
+            vector = VectorMath.RankBySimilarity(
+                allChunks, c => c.Embedding, queryEmbedding, _config.RagSimilarityThreshold, pool);
         }
 
         // ── Lexical side (BM25) ───────────────────────────────────────────
@@ -895,28 +891,6 @@ internal sealed class ProjectIndexService : IDisposable
     }
 
     /// <summary>Cosine similarity between two vectors (must have equal length; returns 0 if dimensions differ).</summary>
-    private static float CosineSimilarity(float[] a, float[] b)
-    {
-        // Vectors from different embedding models have incompatible dimensions.
-        // Truncating silently produces a meaningless similarity score; return 0 instead.
-        if (a.Length != b.Length) return 0f;
-        int   len   = a.Length;
-        float dot   = 0f;
-        float normA = 0f;
-        float normB = 0f;
-
-        for (int i = 0; i < len; i++)
-        {
-            dot   += a[i] * b[i];
-            normA += a[i] * a[i];
-            normB += b[i] * b[i];
-        }
-
-        return (normA > 0f && normB > 0f)
-            ? dot / (MathF.Sqrt(normA) * MathF.Sqrt(normB))
-            : 0f;
-    }
-
     private bool IsExcluded(string path) => IndexExclusions.IsExcluded(path, RootDir, _profileExcludes);
 
     /// <summary>
