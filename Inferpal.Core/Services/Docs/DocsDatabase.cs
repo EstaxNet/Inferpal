@@ -60,6 +60,33 @@ internal sealed class DocsDatabase
         return result;
     }
 
+    // ── Meta ─────────────────────────────────────────────────────────────────
+
+    /// <summary>A value recorded in the <c>meta</c> table, or <c>null</c> when absent.</summary>
+    /// <remarks>
+    /// Unlike the code index there is no per-root key: <c>docs.db</c> is global, its sources are
+    /// keyed by site id, and one embedding model produced every vector in it.
+    /// </remarks>
+    public async Task<string?> GetMetaAsync(string key, CancellationToken ct)
+    {
+        await using var conn = OpenConnection();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText = "SELECT value FROM meta WHERE key = $k";
+        cmd.Parameters.AddWithValue("$k", key);
+        return await cmd.ExecuteScalarAsync(ct) as string;
+    }
+
+    /// <summary>Records <paramref name="value"/> in the <c>meta</c> table.</summary>
+    public async Task SetMetaAsync(string key, string value, CancellationToken ct)
+    {
+        await using var conn = OpenConnection();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText = "INSERT OR REPLACE INTO meta (key, value) VALUES ($k, $v)";
+        cmd.Parameters.AddWithValue("$k", key);
+        cmd.Parameters.AddWithValue("$v", value);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
     // ── Chunks ───────────────────────────────────────────────────────────────
 
     /// <summary>Loads every chunk across all documentation sources into memory.</summary>

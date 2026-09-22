@@ -104,9 +104,8 @@ internal sealed class DocsIndexService
     {
         try
         {
-            var db     = new DocsDatabase();
-            var sites  = await db.LoadSitesAsync(ct);
-            var chunks = await db.LoadAllChunksAsync(ct);
+            var db = new DocsDatabase();
+            var (sites, chunks) = await ReadFromDbAsync(db, ct);
 
             await PublishAsync(sites, chunks, ct);
 
@@ -231,6 +230,9 @@ internal sealed class DocsIndexService
             // ── Persist + refresh memory ─────────────────────────────────────────
             var db = new DocsDatabase();
             await db.SaveSiteAsync(site, pages.Count, chunks, ct);
+            // Recorded with the vectors, and BEFORE reading them back: the model these were embedded
+            // with is the one thing a later session cannot infer from the numbers themselves.
+            await db.SetMetaAsync(EmbeddingModelMetaKey, embModel, ct);
             await ReloadFromDbAsync(db, ct);
 
             // The circuit note says WHY; the hole note says HOW MUCH and what to do about it — and it
@@ -307,8 +309,49 @@ internal sealed class DocsIndexService
             await AddOrReindexAsync(site, progress, CancellationToken.None, stillWanted);
     }
 
-    private async Task ReloadFromDbAsync(DocsDatabase db, CancellationToken ct) =>
-        await PublishAsync(await db.LoadSitesAsync(ct), await db.LoadAllChunksAsync(ct), ct);
+    /// <summary>The meta key under which the model that produced the stored vectors is recorded.</summary>
+    private const string EmbeddingModelMetaKey = "embedding_model";
+
+    /// <summary>
+    /// The single path by which chunks come back from <c>docs.db</c> — and therefore the only place
+    /// a vector from a previous embedding model can enter the index.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ <b>Vectors from ANOTHER embedding model are not reusable</b>, the same rule the code index
+    /// carries with its reason: other dimensions give a cosine of 0 everywhere, the same dimensions
+    /// give noise — under a ✅. Here nothing repairs it on its own: the code index re-runs its pass
+    /// at every startup, while this one only ever <b>hydrates</b>. A stale vector would be served
+    /// for as long as the database lives, restarts included, until the user re-indexed by hand.
+    /// </para>
+    /// <para>
+    /// ⚠ Dropping them is what makes it <b>sayable</b>: the chunks then count as unembedded, so the
+    /// existing hole note states how many and names <c>/docs reindex</c>. Kept, they are invisible —
+    /// the hole counter reads 0 and the status line stays a ✅ with its chunk count.
+    /// </para>
+    /// <para>
+    /// A corpus indexed before the model was ever recorded has no stored value: nothing is dropped,
+    /// because "unknown" is not "different", and the next pass records it.
+    /// </para>
+    /// </remarks>
+    private async Task<(List<(DocSite Site, int PageCount, int ChunkCount)> Sites, List<DocChunk> Chunks)>
+        ReadFromDbAsync(DocsDatabase db, CancellationToken ct)
+    {
+        var sites  = await db.LoadSitesAsync(ct);
+        var chunks = await db.LoadAllChunksAsync(ct);
+
+        var stored = await db.GetMetaAsync(EmbeddingModelMetaKey, ct);
+        if (stored is not null && !string.Equals(stored, EmbeddingModel, StringComparison.Ordinal))
+            foreach (var c in chunks) c.Embedding = null;
+
+        return (sites, chunks);
+    }
+
+    private async Task ReloadFromDbAsync(DocsDatabase db, CancellationToken ct)
+    {
+        var (sites, chunks) = await ReadFromDbAsync(db, ct);
+        await PublishAsync(sites, chunks, ct);
+    }
 
     /// <summary>
     /// The only place the in-memory index is replaced — and therefore the only place the hole is
