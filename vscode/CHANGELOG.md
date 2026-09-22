@@ -3,6 +3,41 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.19
+
+Fourteen fixes, and the thread this time is the answer that *looks* right: a search that quietly
+returned less than you asked for, a documentation corpus that could not find a page by its own
+title, and commands that replied with something plausible instead of saying they had not understood.
+
+- **`@Docs` could not find a page by the word in its own title.** Documentation names its subject in
+  the page title, the heading and the URL, then spends the page saying "it" — so a page called
+  *Retries*, at `/reference/retries`, did not come back for the query `retries`, even though every
+  result is labelled with exactly that title and URL.
+- **`/docs reindex` re-embedded every page of a source, including unchanged ones** — and it is the
+  command Inferpal tells you to run when pages are missing their embeddings, so the remedy was the
+  operation most likely to cause the problem again. It now embeds what changed, what is new, and
+  what is still missing. A re-index attempted while the backend was down used to make things *worse*;
+  it can now only improve them.
+- **Lowering the similarity threshold filled your results with passages never indexed for meaning.**
+  "This passage has no vector" was treated as a similarity of zero, so at a threshold of 0 those
+  passages passed the filter and took the place of real matches.
+- **Documentation results were labelled as coming from a search that had not run**, because the mode
+  and the whole score column were decided from the single top result.
+- **Inferpal quietly gave you less than you asked for**: 25 search results served as 10, a call graph
+  asked for depth 7 drawn at depth 3, "direct dependants only" answered transitively — each without
+  a word, so a truncated answer was indistinguishable from a complete one.
+- **A mistyped `/docs` sub-command answered with your list of sources**, which looks like a success:
+  `/docs remov <id>` returned the sources with the one you meant to delete still among them.
+- **Saving your settings could fail silently and hand back the model you had just replaced.**
+- **"No model installed" when the backend was simply not running** — and `/bench` told you to pull a
+  model with a command that needs the very backend that was down.
+- **A tool call your model made could vanish without a trace** on OpenAI-compatible backends
+  (LM Studio included) when it arrived without a name.
+- **`/plan next` said every step was done on a plan it could not read.**
+- **`/check` could tell you your change was clean after reviewing a fifth of it**, because the diff
+  it sends is capped and only the assistant was told.
+- **`/arena` and `/phistory` said you had nothing when their file would not open.**
+
 ## 1.6.18
 
 Thirty-nine fixes, and one thread runs through almost all of them: Inferpal told you — or told the
