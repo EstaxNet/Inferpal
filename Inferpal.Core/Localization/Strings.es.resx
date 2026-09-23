@@ -298,6 +298,7 @@ Haz clic en ↻ Reintentar en el encabezado cuando {1} esté en ejecución.</val
   <data name="DirNotFound" xml:space="preserve"><value>Directorio no encontrado: {0}</value></data>
   <data name="ToolPathInvalid" xml:space="preserve"><value>Ruta inválida '{0}': {1}</value></data>
   <data name="NoResults" xml:space="preserve"><value>Sin resultados.</value></data>
+  <data name="WebSearchRefused" xml:space="preserve"><value>DuckDuckGo ha rechazado esta búsqueda: ha respondido con su verificación antibots, que aparece tras varias búsquedas seguidas y dura varios minutos. No se ha buscado nada: esto NO es «sin resultados». Inténtelo más tarde o lea una página conocida con fetch_url.</value></data>
   <data name="WriteOverwrite" xml:space="preserve"><value>Sobrescribir: {0}
 ({1} caracteres)</value></data>
   <data name="WriteCreate" xml:space="preserve"><value>Crear: {0}

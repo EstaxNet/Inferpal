@@ -298,6 +298,7 @@
   <data name="DirNotFound" xml:space="preserve"><value>ディレクトリが見つかりません：{0}</value></data>
   <data name="ToolPathInvalid" xml:space="preserve"><value>パスが無効です '{0}'：{1}</value></data>
   <data name="NoResults" xml:space="preserve"><value>結果なし。</value></data>
+  <data name="WebSearchRefused" xml:space="preserve"><value>DuckDuckGo がこの検索を拒否しました — 短時間に何度か検索した後に表示され、数分間続くボット対策チェックで応答しました。検索は行われていません。これは「結果なし」ではありません。後でもう一度試すか、fetch_url で既知のページを読んでください。</value></data>
   <data name="WriteOverwrite" xml:space="preserve"><value>上書き：{0}
 （{1} 文字）</value></data>
   <data name="WriteCreate" xml:space="preserve"><value>作成：{0}

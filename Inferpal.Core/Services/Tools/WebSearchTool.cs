@@ -65,8 +65,24 @@ internal class WebSearchTool : ITool
         if (!await _approval.RequestApprovalAsync("web_search", query, ct))
             return "Cancelled by user.";
 
-        var url  = $"https://html.duckduckgo.com/html/?q={Uri.EscapeDataString(query)}&kl=wt-wt";
-        var html = await GetFollowingSameHostRedirectsAsync(new Uri(url), ct);
+        var url            = $"https://html.duckduckgo.com/html/?q={Uri.EscapeDataString(query)}&kl=wt-wt";
+        var (status, html) = await GetFollowingSameHostRedirectsAsync(new Uri(url), ct);
+
+        return Render(status, html, max, maxNotice);
+    }
+
+    /// <summary>What one answer of the engine says — including when it searched nothing.</summary>
+    /// <remarks>
+    /// ⚠ The challenge is asked BEFORE parsing. DuckDuckGo answers a second search made within a few
+    /// seconds with HTTP 202 and its anti-bot page, and keeps doing so for minutes — even for a
+    /// query it answered with ten results just before. That page has no result, so it parsed as
+    /// "No results.", the one sentence the model reads as a fact about the web: an agent refining
+    /// its query concludes that nothing exists, on every search of the session after the first.
+    /// </remarks>
+    internal static string Render(int status, string html, int max, string? maxNotice)
+    {
+        if (IsChallenge(status, html))
+            return Strings.WebSearchRefused;
 
         var results = ParseResults(html, max);
         if (results.Count == 0)
@@ -76,13 +92,18 @@ internal class WebSearchTool : ITool
             $"{i + 1}. {r.Title}\n   URL: {r.Url}\n   {r.Snippet}")));
     }
 
+    /// <summary>DuckDuckGo's anti-bot check: a 2xx that is not an answer.</summary>
+    internal static bool IsChallenge(int status, string html) =>
+        status == (int)HttpStatusCode.Accepted
+        || html.Contains("anomaly-modal", StringComparison.Ordinal);
+
     /// <summary>
     /// GETs <paramref name="uri"/>, following redirects <b>by hand</b> and only while they stay on
     /// DuckDuckGo over HTTPS. Turning the handler's automatic redirects off without this would have
     /// been a silent feature regression rather than a fix: the engine does redirect (locale, /html/
     /// path moves), and the tool would have parsed the redirect stub and reported "no results".
     /// </summary>
-    private static async Task<string> GetFollowingSameHostRedirectsAsync(Uri uri, CancellationToken ct)
+    private static async Task<(int Status, string Html)> GetFollowingSameHostRedirectsAsync(Uri uri, CancellationToken ct)
     {
         for (var hop = 0; hop < 4; hop++)
         {
@@ -91,7 +112,7 @@ internal class WebSearchTool : ITool
             if ((int)response.StatusCode is < 300 or > 399 || response.Headers.Location is null)
             {
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync(ct);
+                return ((int)response.StatusCode, await response.Content.ReadAsStringAsync(ct));
             }
 
             var next = response.Headers.Location.IsAbsoluteUri

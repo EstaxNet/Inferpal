@@ -298,6 +298,7 @@ Kontynuować?</value></data>
   <data name="DirNotFound" xml:space="preserve"><value>Katalog nie znaleziony: {0}</value></data>
   <data name="ToolPathInvalid" xml:space="preserve"><value>Nieprawidłowa ścieżka '{0}': {1}</value></data>
   <data name="NoResults" xml:space="preserve"><value>Brak wyników.</value></data>
+  <data name="WebSearchRefused" xml:space="preserve"><value>DuckDuckGo odrzucił to wyszukiwanie — odpowiedział weryfikacją antybotową, która pojawia się po kilku wyszukiwaniach w krótkim czasie i trwa kilka minut. Nic nie zostało wyszukane: to NIE jest „brak wyników”. Spróbuj później lub przeczytaj znaną stronę za pomocą fetch_url.</value></data>
   <data name="WriteOverwrite" xml:space="preserve"><value>Nadpisz: {0}
 ({1} znaków)</value></data>
   <data name="WriteCreate" xml:space="preserve"><value>Utwórz: {0}

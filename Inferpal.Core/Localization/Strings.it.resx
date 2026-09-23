@@ -298,6 +298,7 @@ Continuare?</value></data>
   <data name="DirNotFound" xml:space="preserve"><value>Directory non trovata: {0}</value></data>
   <data name="ToolPathInvalid" xml:space="preserve"><value>Percorso non valido '{0}': {1}</value></data>
   <data name="NoResults" xml:space="preserve"><value>Nessun risultato.</value></data>
+  <data name="WebSearchRefused" xml:space="preserve"><value>DuckDuckGo ha rifiutato questa ricerca: ha risposto con il suo controllo anti-bot, che segue diverse ricerche ravvicinate e dura alcuni minuti. Non è stato cercato nulla: questo NON significa «nessun risultato». Riprova più tardi, oppure leggi una pagina nota con fetch_url.</value></data>
   <data name="WriteOverwrite" xml:space="preserve"><value>Sovrascrivi: {0}
 ({1} caratteri)</value></data>
   <data name="WriteCreate" xml:space="preserve"><value>Crea: {0}

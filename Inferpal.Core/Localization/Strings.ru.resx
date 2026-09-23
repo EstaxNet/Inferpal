@@ -298,6 +298,7 @@
   <data name="DirNotFound" xml:space="preserve"><value>Директория не найдена: {0}</value></data>
   <data name="ToolPathInvalid" xml:space="preserve"><value>Неверный путь '{0}': {1}</value></data>
   <data name="NoResults" xml:space="preserve"><value>Результатов нет.</value></data>
+  <data name="WebSearchRefused" xml:space="preserve"><value>DuckDuckGo отклонил этот поиск — он ответил своей проверкой на ботов, которая появляется после нескольких поисков подряд и длится несколько минут. Ничего не искалось: это НЕ «нет результатов». Повторите позже или прочитайте известную страницу через fetch_url.</value></data>
   <data name="WriteOverwrite" xml:space="preserve"><value>Перезаписать: {0}
 ({1} символов)</value></data>
   <data name="WriteCreate" xml:space="preserve"><value>Создать: {0}

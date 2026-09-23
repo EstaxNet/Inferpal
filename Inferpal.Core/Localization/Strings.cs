@@ -537,6 +537,7 @@ internal static class Strings
     // ── Tool messages ──────────────────────────────────────────────────────────
     public static string ToolPathRequired  => Get(nameof(ToolPathRequired));
     public static string NoResults         => Get(nameof(NoResults));
+    public static string WebSearchRefused  => Get(nameof(WebSearchRefused));
     public static string WriteCancelled    => Get(nameof(WriteCancelled));
     public static string DeleteCancelled   => Get(nameof(DeleteCancelled));
     public static string RunCancelled      => Get(nameof(RunCancelled));

@@ -299,6 +299,7 @@ Continue?</value></data>
   <data name="DirNotFound" xml:space="preserve"><value>Directory not found: {0}</value></data>
   <data name="ToolPathInvalid" xml:space="preserve"><value>Invalid path '{0}': {1}</value></data>
   <data name="NoResults" xml:space="preserve"><value>No results.</value></data>
+  <data name="WebSearchRefused" xml:space="preserve"><value>DuckDuckGo refused this search — it answered with its anti-bot check, which follows several searches in quick succession and lasts several minutes. Nothing was searched: this is NOT "no results". Try again later, or read a known page with fetch_url.</value></data>
   <data name="WriteOverwrite" xml:space="preserve"><value>Overwrite: {0}
 ({1} characters)</value></data>
   <data name="WriteCreate" xml:space="preserve"><value>Create: {0}

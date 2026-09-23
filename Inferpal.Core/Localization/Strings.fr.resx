@@ -298,6 +298,7 @@ Continuer ?</value></data>
   <data name="DirNotFound" xml:space="preserve"><value>Répertoire introuvable : {0}</value></data>
   <data name="ToolPathInvalid" xml:space="preserve"><value>Chemin invalide '{0}' : {1}</value></data>
   <data name="NoResults" xml:space="preserve"><value>Aucun résultat.</value></data>
+  <data name="WebSearchRefused" xml:space="preserve"><value>DuckDuckGo a refusé cette recherche — il a répondu par sa vérification anti-robot, qui suit plusieurs recherches rapprochées et dure plusieurs minutes. Rien n'a été cherché : ce n'est PAS « aucun résultat ». Réessayez plus tard, ou lisez une page connue avec fetch_url.</value></data>
   <data name="WriteOverwrite" xml:space="preserve"><value>Écraser : {0}
 ({1} caractères)</value></data>
   <data name="WriteCreate" xml:space="preserve"><value>Créer : {0}
