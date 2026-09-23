@@ -211,6 +211,12 @@ internal partial class InferpalToolWindowData
             {
                 // Stopped during the build: the question stays on screen and never reaches the history.
                 localCts!.Token.ThrowIfCancellationRequested();
+                // ⚠ The system prompt is re-read for EVERY question, as the host does. It carries files
+                // the user and the agent edit — pinned files ("injected before each request", says the
+                // setting), .inferpal/context.md, memory.md, the rules — and rebuilt only on a few
+                // gestures (a toggle, /note, a change of active file when rules are glob-scoped), an
+                // edited file reached the model in its OLD version for the rest of the session.
+                RefreshSystemPrompt();
                 _history.Add(new ChatMessageDto("user", historyText));
                 // Shadow search is no longer needed — agent is running
                 _shadowSearchCts?.Cancel();
