@@ -139,17 +139,42 @@ internal sealed class DocsIndexService
     /// otherwise <c>@Docs</c> answers "not in the documentation" about half a site the user
     /// believes is indexed in full.
     /// </remarks>
-    internal static string DescribeCrawlOutcome(string startUrl, int pageCount, bool refused)
+    internal static string DescribeCrawlOutcome(
+        string startUrl, int pageCount, bool refused, IReadOnlyDictionary<int, int>? siteRefusals = null)
     {
         if (refused)
             return $"Docs: {startUrl} is a private or loopback address — refused on purpose "
                  + "(the same guard that protects fetch_url). Nothing was indexed.";
+        // ⚠ The same trap from the other side: OUR refusal was named, the SITE's read as an empty
+        // site — and a site behind bot protection is full in the user's browser.
+        if (pageCount == 0 && siteRefusals is { Count: > 0 })
+            return $"Docs: {startUrl} refused the crawler ({Codes(siteRefusals)}) — the site blocks automated "
+                 + "access (bot protection or rate limiting); it is not empty. Nothing was indexed.";
         if (pageCount == 0)
             return $"Docs: no readable pages found at {startUrl}.";
         return pageCount >= DocCrawler.MaxPages
             ? $"Docs: {pageCount} pages (crawl limit of {DocCrawler.MaxPages} reached — the site may have more)"
             : $"Docs: {pageCount} pages";
     }
+
+    /// <summary>
+    /// The pages a crawl that DID index something was refused, said with the result — or nothing.
+    /// </summary>
+    /// <remarks>
+    /// A site that throttles halfway leaves an index that answers "not in the documentation" about
+    /// the pages it withheld, under a ✅ that reads as the whole site.
+    /// </remarks>
+    internal static string RefusalNote(IReadOnlyDictionary<int, int> siteRefusals, string siteId)
+    {
+        if (siteRefusals.Count == 0) return string.Empty;
+        var total = siteRefusals.Values.Sum();
+        return $" (⚠ {total} page(s) refused by the site — {Codes(siteRefusals)}: the index is incomplete; "
+             + $"/docs reindex {siteId} later)";
+    }
+
+    private static string Codes(IReadOnlyDictionary<int, int> refusals) =>
+        string.Join(", ", refusals.OrderByDescending(r => r.Value).ThenBy(r => r.Key)
+                                  .Select(r => r.Value == 1 ? $"HTTP {r.Key}" : $"HTTP {r.Key} ×{r.Value}"));
 
     /// <param name="stillWanted">Asked again once it is this source's turn: a source removed while it waited is
     /// not written back, since a removal stops only the pass that is already running.</param>
@@ -195,7 +220,7 @@ internal sealed class DocsIndexService
                         : await crawler.CrawlAsync(site.StartUrl, crawlProgress, ct);
             if (pages.Count == 0)
             {
-                Status = DescribeCrawlOutcome(site.StartUrl, 0, refused);
+                Status = DescribeCrawlOutcome(site.StartUrl, 0, refused, crawler.Refusals);
                 progress?.Report(Status);
                 return;
             }
@@ -274,7 +299,8 @@ internal sealed class DocsIndexService
             var crawlNote = pages.Count >= DocCrawler.MaxPages
                 ? $" (crawl limit of {DocCrawler.MaxPages} pages reached — the site may have more)"
                 : string.Empty;
-            Status = $"Docs: ✅ {site.Title} — {pages.Count} pages, {chunks.Count} chunks{crawlNote}{embNote}";
+            Status = $"Docs: ✅ {site.Title} — {pages.Count} pages, {chunks.Count} chunks{crawlNote}"
+                   + $"{RefusalNote(crawler.Refusals, site.Id)}{embNote}";
             progress?.Report(Status);
         }
         catch (OperationCanceledException)

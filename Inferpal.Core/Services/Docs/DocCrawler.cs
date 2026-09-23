@@ -78,6 +78,34 @@ internal sealed class DocCrawler
     /// <summary>A single fetched documentation page.</summary>
     public readonly record struct Page(string Url, string Title, string Text);
 
+    private readonly HttpClient                                  _client;
+    private readonly Func<string, CancellationToken, Task<bool>> _isPrivate;
+    private readonly Dictionary<int, int>                        _refusals = [];
+
+    public DocCrawler() : this(null, null) { }
+
+    /// <summary>Test seam: the transport and the SSRF guard, both replaced at once.</summary>
+    internal DocCrawler(HttpMessageHandler? handler, Func<string, CancellationToken, Task<bool>>? isPrivate)
+    {
+        _client    = handler is null ? _http : new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        _isPrivate = isPrivate ?? (async (target, ct) =>
+            FetchUrlTool.IsPrivateOrLoopback(target) || await FetchUrlTool.ResolvesToPrivateAsync(target, ct));
+    }
+
+    /// <summary>
+    /// Pages the SITE refused during the last crawl, by HTTP status.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Not a dead link: a 404 is a page that does not exist, a 403, 429 or 5xx is a page that does
+    /// and that the crawler was not given. Dropped alike, a site behind bot protection — npmjs.com
+    /// and medium.com answer this crawler 403 and a Cloudflare challenge — read "no readable pages
+    /// found", the sentence of an EMPTY site, for pages that are full in the user's browser; and a
+    /// crawl throttled halfway read as a complete one.
+    /// </remarks>
+    public IReadOnlyDictionary<int, int> Refusals => _refusals;
+
+    internal static bool IsRefusal(int status) => status is 401 or 403 or 429 || status >= 500;
+
     /// <summary>
     /// GETs one page, following up to <see cref="MaxRedirects"/> redirects <b>manually</b> and
     /// re-validating every hop against the SSRF guard (literal private ranges + DNS resolution of
@@ -89,14 +117,13 @@ internal sealed class DocCrawler
         for (var hop = 0; hop <= MaxRedirects; hop++)
         {
             var target = current.ToString();
-            if (FetchUrlTool.IsPrivateOrLoopback(target) ||
-                await FetchUrlTool.ResolvesToPrivateAsync(target, ct))
+            if (await _isPrivate(target, ct))
             {
                 Diagnostics.Record("DocCrawler", $"Refused a private/loopback address: {target}");
                 return null;
             }
 
-            using var resp = await _http.GetAsync(current, ct);
+            using var resp = await _client.GetAsync(current, ct);
 
             if ((int)resp.StatusCode is >= 300 and < 400 && resp.Headers.Location is { } location)
             {
@@ -104,7 +131,12 @@ internal sealed class DocCrawler
                 continue;
             }
 
-            if (!resp.IsSuccessStatusCode) return null;
+            if (!resp.IsSuccessStatusCode)
+            {
+                var status = (int)resp.StatusCode;
+                if (IsRefusal(status)) _refusals[status] = _refusals.GetValueOrDefault(status) + 1;
+                return null;
+            }
 
             var mediaType = resp.Content.Headers.ContentType?.MediaType ?? string.Empty;
             if (mediaType.Length > 0 && !mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
@@ -126,6 +158,7 @@ internal sealed class DocCrawler
         CancellationToken ct)
     {
         var pages = new List<Page>();
+        _refusals.Clear();
 
         if (!Uri.TryCreate(startUrl, UriKind.Absolute, out var start) ||
             FetchUrlTool.IsPrivateOrLoopback(startUrl))
