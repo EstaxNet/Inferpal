@@ -287,7 +287,10 @@ internal static class SlashCommandRouter
             {
                 if (parts.Length < 2) return new SlashInfoAction(Strings.SlashUsage("/read <path>"));
                 var p = RestOf(prompt);
-                return new SlashToolAction("read_file", new { path = p }, AttachAs: Path.GetFileName(p));
+                // The whole file, asked for explicitly: with no range `read_file` pages a long file for the
+                // agent's context, and a chip attached for the user is not the agent's context.
+                return new SlashToolAction("read_file", new { path = p, start_line = 1, end_line = int.MaxValue },
+                                           AttachAs: Path.GetFileName(p));
             }
 
             case "/ls":

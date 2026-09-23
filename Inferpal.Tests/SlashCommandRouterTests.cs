@@ -27,7 +27,8 @@ public class SlashCommandRouterTests
         var path   = TestPaths.P(@"C:\src\My File.cs");
         var action = Assert.IsType<SlashToolAction>(Route("/read " + path));
         Assert.Equal("read_file", action.Tool);
-        Assert.Equal(JsonSerializer.Serialize(new { path }), Json(action.Args));
+        // The whole file, asked for explicitly: the chip is not the agent's paged context (ReadFilePagingTests).
+        Assert.Equal(JsonSerializer.Serialize(new { path, start_line = 1, end_line = int.MaxValue }), Json(action.Args));
         Assert.Equal("My File.cs", action.AttachAs);
     }
 
