@@ -31,6 +31,29 @@ internal sealed class ProjectIndexService : IDisposable
     private readonly SemaphoreSlim _chunkLock = new(1, 1);
     private readonly HashSet<string>     _pendingRebuild = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Source files the watcher saw change and that the index still holds in their previous version.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Not <see cref="_pendingRebuild"/>: that set empties when the re-index STARTS, and the re-index
+    /// then waits — for the GPU, which an agent holds for its whole turn. A file the agent writes is
+    /// therefore out of the index until the turn ends, and a search answered about the version from
+    /// before, or "nothing found" about a class just created, without a word. Leaves this set only
+    /// once its new chunks are published (or its removal is).
+    /// </remarks>
+    private readonly HashSet<string> _notYetReindexed = new(PathComparer.Default);
+
+    /// <summary>Changed source files the index has not caught up with yet, sorted.</summary>
+    public IReadOnlyList<string> NotYetReindexed
+    {
+        get { lock (_notYetReindexed) return [.. _notYetReindexed.Order(StringComparer.Ordinal)]; }
+    }
+
+    private void CaughtUp(string path)
+    {
+        lock (_notYetReindexed) _notYetReindexed.Remove(path);
+    }
+
     private CancellationTokenSource?    _cts;
     private FileSystemWatcher?          _watcher;
     private System.Threading.Timer?     _debounceTimer;
@@ -374,6 +397,8 @@ internal sealed class ProjectIndexService : IDisposable
     {
         IsIndexing = true;
         Status     = "RAG: starting indexer…";
+        // A full pass reads every file again; a change made DURING it re-enters through the watcher.
+        lock (_notYetReindexed) _notYetReindexed.Clear();
 
         try
         {
@@ -683,6 +708,8 @@ internal sealed class ProjectIndexService : IDisposable
         if (string.IsNullOrEmpty(IndexedRoot)) return;
 
         lock (_pendingRebuild) _pendingRebuild.Add(path);
+        if (CodeChunker.SupportedExtensions.Contains(Path.GetExtension(path)))
+            lock (_notYetReindexed) _notYetReindexed.Add(path);
 
         ArmDebounce();
     }
@@ -784,6 +811,8 @@ internal sealed class ProjectIndexService : IDisposable
                 }
                 finally { _chunkLock.Release(); }
 
+                CaughtUp(file);
+
                 try { await db.DeleteFileAsync(file, ct); }
                 catch (OperationCanceledException) { }
                 catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.DeleteFile", ex); }
@@ -843,6 +872,7 @@ internal sealed class ProjectIndexService : IDisposable
                     _contentVersion++;
                 }
                 finally { _chunkLock.Release(); }
+                CaughtUp(file);
 
                 // Surgical SQLite write — only this file's rows are touched
                 try { await db.SaveFileAsync(file, fileChunks, ct); }

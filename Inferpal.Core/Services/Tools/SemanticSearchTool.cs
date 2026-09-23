@@ -122,11 +122,15 @@ internal sealed class SemanticSearchTool : ITool
             results = await _index.SearchAsync(queryEmbedding, query, topK, ct);
         }
 
+        // ⚠ Said on BOTH branches, and above the report: "nothing found" about a class the agent has
+        // just written is the costliest answer this tool can give while the index is behind.
+        var behind = NotReindexedNote();
+
         if (results.Count == 0)
             // A "nothing found" does not say the same thing depending on whether the FULL search
             // ran or only its lexical half did. A model reading a flat negative concludes the code
             // does not exist and stops looking.
-            return SearchDegradation.Explain(
+            return behind + SearchDegradation.Explain(
                 Strings.RagNoResults(query),
                 SearchDegradation.Classify(_config.RagEnabled, queryEmbedding),
                 model);
@@ -165,6 +169,26 @@ internal sealed class SemanticSearchTool : ITool
             sb.AppendLine();
         }
 
-        return ClampedArgument.Above(topKNotice, sb.ToString().TrimEnd());
+        return ClampedArgument.Above(topKNotice, behind + sb.ToString().TrimEnd());
+    }
+
+    /// <summary>
+    /// The files the index has not caught up with, named — or nothing.
+    /// </summary>
+    /// <remarks>
+    /// A file saved while the chat is busy is re-indexed once it is idle: the agent's own writes stay
+    /// out of the index for the rest of its turn. Model-facing and structural: English.
+    /// </remarks>
+    private string NotReindexedNote()
+    {
+        var behind = _index.NotYetReindexed;
+        if (behind.Count == 0) return string.Empty;
+
+        var root  = _index.RootDir;
+        var names = behind.Take(5).Select(p => string.IsNullOrEmpty(root) ? Path.GetFileName(p) : Path.GetRelativePath(root, p));
+        var more  = behind.Count > 5 ? $" (+{behind.Count - 5} more)" : string.Empty;
+        return $"Note: {behind.Count} changed file(s) not re-indexed yet — these results show them as they were "
+             + $"before the change: {string.Join(", ", names)}{more}. The index catches up once the chat is idle; "
+             + "search_in_files reads them as they are now.\n\n";
     }
 }
