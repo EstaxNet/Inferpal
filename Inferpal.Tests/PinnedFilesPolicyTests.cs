@@ -62,10 +62,12 @@ public class PinnedFilesPolicyTests
     }
 
     [Fact]
-    public void Decide_DuplicateIsCaseInsensitive()
+    public void Decide_TheSamePathTwice_IsDuplicate()
     {
+        // Whether two spellings that differ by case are one file is the FILE SYSTEM's question, not
+        // this policy's: two files under Linux, one elsewhere — PinnedPathCaseTests.
         Assert.Equal(PinDecision.Duplicate,
-            PinnedFilesPolicy.Decide(["C:\\Foo\\Bar.cs"], "c:\\foo\\bar.cs"));
+            PinnedFilesPolicy.Decide(["C:\\Foo\\Bar.cs"], "C:\\Foo\\Bar.cs"));
     }
 
     [Fact]
