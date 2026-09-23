@@ -10,6 +10,7 @@ namespace Inferpal.Tests;
 /// What the semantic index refuses to read (roadmap §19). The profile may lengthen the list; the
 /// tests below exist to prove it can never shorten it.
 /// </summary>
+[Collection("Diagnostics")]   // clears and reads the static ring
 public class IndexExclusionsTests
 {
     private static readonly string Root = Path.Combine(Path.GetTempPath(), "idx_excl_root");

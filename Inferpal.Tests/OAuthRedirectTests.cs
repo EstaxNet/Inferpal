@@ -25,6 +25,7 @@ namespace Inferpal.Tests;
 /// real loopback server. Nothing here races a clock: the assertion is on which requests ARRIVED.
 /// </para>
 /// </remarks>
+[Collection("Diagnostics")]   // clears and reads the static ring: another class clearing it in parallel turned it red
 public sealed class OAuthRedirectTests : IDisposable
 {
     private readonly HttpListener _listener = new();

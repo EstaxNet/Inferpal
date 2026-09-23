@@ -37,6 +37,7 @@ namespace Inferpal.Tests;
 /// the channel one opens for exactly this — saw nothing.
 /// </para>
 /// </remarks>
+[Collection("Diagnostics")]   // clears and reads the static ring
 public class VramBadgeStalenessTests
 {
     private static RunningModelInfo Loaded(string name) =>
