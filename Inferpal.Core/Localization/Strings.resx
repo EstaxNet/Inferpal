@@ -328,6 +328,7 @@ Backup: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>Restored {0} from {1}.</value></data>
   <data name="RestoreNotFound" xml:space="preserve"><value>No backup found for: {0}</value></data>
   <data name="DiagNoProject" xml:space="preserve"><value>No .sln or .csproj file found. Provide the path parameter.</value></data>
+  <data name="DiagFromEditor" xml:space="preserve"><value>Live editor diagnostics — only the files the language services have analyzed, usually the open ones. No build was run; provide the path parameter to compile a project.</value></data>
   <data name="DiagBuildOk" xml:space="preserve"><value>✓ Build successful — 0 errors, 0 warnings ({0})</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>Build failed (code {0}) with no parseable diagnostics.
 

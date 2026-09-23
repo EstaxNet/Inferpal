@@ -15,9 +15,9 @@ internal class GetDiagnosticsTool : ITool
     private readonly Services.Editor.IEditorSurface? _editor;
     private readonly Func<string?> _getRoot;
 
-    /// <param name="editor">When the editor exposes live language-service diagnostics,
-    /// they are returned instantly instead of building; null / no diagnostics falls
-    /// back to the compile flow (VS today).</param>
+    /// <param name="editor">When the editor's live language-service diagnostics report an error,
+    /// they are returned instantly instead of building; null / no error falls back to the compile
+    /// flow (VS today).</param>
     /// <param name="getRoot">The workspace root: where the project file is looked for, and what a
     /// relative path resolves against. ⚠ Never the process's working directory, which in Visual
     /// Studio is the out-of-process host's folder, not the project.</param>
@@ -28,8 +28,9 @@ internal class GetDiagnosticsTool : ITool
     }
 
     public string Description =>
-        "Returns current errors and warnings. Uses the editor's live diagnostics when " +
-        "available (instant, open files); otherwise compiles the project or solution. " +
+        "Returns current errors and warnings. When the editor's live diagnostics report an " +
+        "error, returns those instead (instant, but only the files the editor has analyzed, " +
+        "and nothing is compiled); otherwise compiles the project or solution. " +
         "If path is omitted, looks for the first .sln or .csproj in the workspace root. " +
         "Timeout: 90 seconds.";
 
@@ -60,6 +61,20 @@ internal class GetDiagnosticsTool : ITool
 
     internal static bool OutputHasBuildErrors(string output) =>
         !string.IsNullOrEmpty(output) && ErrorLineRegex.IsMatch(output);
+
+    // The line shape vscode/src/editorBridge.ts writes: `rel(line,col): sev source code: message`.
+    // ⚠ Not ErrorLineRegex: a source and a code such as `eslint no-unused-vars` are two words, and
+    // `\w+` stops at the hyphen. A drift here fails safe — an unrecognised error only costs a build.
+    private static readonly Regex _panelErrorLine = new(
+        @"\(\d+,\d+\):\s*error\s", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+
+    internal static bool PanelReportsErrors(string panel) => _panelErrorLine.IsMatch(panel);
+
+    /// <summary>
+    /// A panel answer says what it is: without the line it reads as the build's answer — a list of
+    /// errors taken for all of them, when unopened files were never analyzed and nothing compiled.
+    /// </summary>
+    private static string FromPanel(string panel) => Strings.DiagFromEditor + "\n\n" + panel;
 
     /// <summary>What an answer of this tool says about the build.</summary>
     internal enum BuildVerdict { Clean, Errors, NotBuilt }
@@ -105,13 +120,19 @@ internal class GetDiagnosticsTool : ITool
 
         // Editor fast path: live language-service diagnostics beat a 90 s build, but only
         // when the model didn't ask for a specific project (an explicit path means "build
-        // THAT") and the editor actually reports problems (a clean panel proves nothing
-        // about unopened files — fall through to the compile).
+        // THAT") and the editor reports an ERROR. A panel without one proves nothing about
+        // unopened files — and warnings-only is its ordinary state (a lint rule, a nullable
+        // warning in an open file), so treating "has lines" as "has problems" meant the build
+        // never ran at all. Such a panel is kept for when there is nothing to compile.
+        string? panel = null;
         if (_editor is not null && string.IsNullOrWhiteSpace(rawPath))
         {
             var live = await _editor.GetEditorDiagnosticsAsync(ct);
             if (!string.IsNullOrWhiteSpace(live))
-                return live!.Trim();
+            {
+                panel = live!.Trim();
+                if (PanelReportsErrors(panel)) return FromPanel(panel);
+            }
         }
 
         var root = _getRoot();
@@ -122,6 +143,9 @@ internal class GetDiagnosticsTool : ITool
 
         if (path is null)
         {
+            // Nothing to compile (a TypeScript or Python workspace): the panel is all there is.
+            if (panel is not null) return FromPanel(panel);
+
             // ⚠ "No .sln or .csproj found" is a CONCLUSION, and FindProjectFile reaches it by
             // walking: a folder the walk cannot list is absent from every count, so the answer is
             // self-consistent and reads as a fact about the repository. It is a fact about what

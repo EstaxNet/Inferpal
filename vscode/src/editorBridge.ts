@@ -319,6 +319,8 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
           dropped++;
           continue;
         }
+        // ⚠ The host reads `(line,col): error` to decide whether this panel answers instead of a
+        // build (GetDiagnosticsTool.PanelReportsErrors): a warnings-only panel still compiles.
         const sev = d.severity === vscode.DiagnosticSeverity.Error ? 'error' : 'warning';
         const code = typeof d.code === 'object' ? d.code.value : d.code ?? '';
         const src = d.source ? `${d.source} ` : '';

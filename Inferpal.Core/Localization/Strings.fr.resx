@@ -327,6 +327,7 @@ Sauvegarde : {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{0} restauré depuis {1}.</value></data>
   <data name="RestoreNotFound" xml:space="preserve"><value>Aucune sauvegarde trouvée pour : {0}</value></data>
   <data name="DiagNoProject" xml:space="preserve"><value>Aucun fichier .sln ou .csproj trouvé. Fournissez le paramètre path.</value></data>
+  <data name="DiagFromEditor" xml:space="preserve"><value>Diagnostics en direct de l'éditeur — seuls les fichiers analysés par les services de langage, en général ceux qui sont ouverts. Aucun build n'a été lancé ; fournissez le paramètre path pour compiler un projet.</value></data>
   <data name="DiagBuildOk" xml:space="preserve"><value>✓ Build réussi — 0 erreur, 0 avertissement ({0})</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>Build échoué (code {0}) sans diagnostic parsé.
 

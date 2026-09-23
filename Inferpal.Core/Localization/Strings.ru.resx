@@ -327,6 +327,7 @@
   <data name="RestoreOk" xml:space="preserve"><value>{0} восстановлен из {1}.</value></data>
   <data name="RestoreNotFound" xml:space="preserve"><value>Резервная копия не найдена для: {0}</value></data>
   <data name="DiagNoProject" xml:space="preserve"><value>Файл .sln или .csproj не найден. Укажите параметр path.</value></data>
+  <data name="DiagFromEditor" xml:space="preserve"><value>Диагностика редактора в реальном времени — только файлы, проанализированные языковыми службами, обычно открытые. Сборка не запускалась; укажите параметр path, чтобы скомпилировать проект.</value></data>
   <data name="DiagBuildOk" xml:space="preserve"><value>✓ Сборка успешна — 0 ошибок, 0 предупреждений ({0})</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>Сборка не удалась (код {0}) без анализируемых диагностик.
 

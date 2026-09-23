@@ -327,6 +327,7 @@
   <data name="RestoreOk" xml:space="preserve"><value>{1} から {0} を復元しました。</value></data>
   <data name="RestoreNotFound" xml:space="preserve"><value>バックアップが見つかりません：{0}</value></data>
   <data name="DiagNoProject" xml:space="preserve"><value>.sln または .csproj ファイルが見つかりません。path パラメータを指定してください。</value></data>
+  <data name="DiagFromEditor" xml:space="preserve"><value>エディターのライブ診断 — 言語サービスが解析したファイルのみ（通常は開いているファイル）。ビルドは実行されていません。プロジェクトをコンパイルするには path パラメータを指定してください。</value></data>
   <data name="DiagBuildOk" xml:space="preserve"><value>✓ ビルド成功 — エラー 0、警告 0（{0}）</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>ビルド失敗（コード {0}）、診断情報なし。
 

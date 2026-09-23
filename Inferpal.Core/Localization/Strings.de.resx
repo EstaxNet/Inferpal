@@ -327,6 +327,7 @@ Sicherung: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{0} aus {1} wiederhergestellt.</value></data>
   <data name="RestoreNotFound" xml:space="preserve"><value>Keine Sicherung gefunden für: {0}</value></data>
   <data name="DiagNoProject" xml:space="preserve"><value>Keine .sln- oder .csproj-Datei gefunden. Geben Sie den Pfadparameter an.</value></data>
+  <data name="DiagFromEditor" xml:space="preserve"><value>Live-Diagnosen des Editors – nur die von den Sprachdiensten analysierten Dateien, meist die geöffneten. Es wurde kein Build ausgeführt; geben Sie den Pfadparameter an, um ein Projekt zu kompilieren.</value></data>
   <data name="DiagBuildOk" xml:space="preserve"><value>✓ Build erfolgreich – 0 Fehler, 0 Warnungen ({0})</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>Build fehlgeschlagen (Code {0}) ohne analysierbare Diagnosen.
 

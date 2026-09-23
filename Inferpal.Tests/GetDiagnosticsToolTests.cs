@@ -41,7 +41,7 @@ public class GetDiagnosticsToolTests
 
         var result = await tool.ExecuteAsync(Args(new { }), CancellationToken.None);
 
-        Assert.Equal("a.cs(1,2): error CS0103: boom", result);
+        Assert.Equal(Localization.Strings.DiagFromEditor + "\n\na.cs(1,2): error CS0103: boom", result);
         Assert.Equal(1, editor.DiagnosticsCalls);
     }
 
