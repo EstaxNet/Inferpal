@@ -31,8 +31,8 @@ namespace Inferpal.Tests;
 /// </para>
 /// <para>
 /// ⚠ <c>fetch_url</c> clamps <c>max_chars</c> the same way and is deliberately NOT in here: its own
-/// truncation line names both numbers (<i>"truncated to 50000 characters out of 183000 total"</i>),
-/// so the fragment is already declared. That single exemption is also why this is an assertion by
+/// footer names where it stands and how to read on (<i>"characters 0–7600 of 183000 shown — call
+/// fetch_url with start_char=7600 to read on"</i>), so the fragment is already declared. That single exemption is also why this is an assertion by
 /// name and not a scanned rule: one subject and one exemption measure nothing.
 /// </para>
 /// </remarks>

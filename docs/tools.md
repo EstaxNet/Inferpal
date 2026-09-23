@@ -24,7 +24,7 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `debug_control` | `action`, `file?`, `line?` | Drives the debugger: `set_breakpoint` / `clear_breakpoint` / `list_breakpoints` / `start` / `continue` / `step_over` / `step_into` / `step_out` / `stop`. **Approval on `start` only** — it runs your program; the steps that follow observe an execution you already consented to. Finite step budget, and running out is reported |
 | `debug_inspect` | `action?` (`state` \| `evaluate`), `expression?` | Reads a paused debugger: stop reason, user call stack, locals, and arbitrary expression evaluation in the current frame. Values are the debugger's own rendering — read, never parsed |
 | `run_tests` | `path?`, `filter?`, `runner?`, `timeout_seconds?` | `dotnet test` / `pytest` / `npm test` / `cargo test` / `go test` (auto-detected) |
-| `fetch_url` | `url`, `max_chars?` | Fetch a page as text. **Approval**, SSRF-guarded |
+| `fetch_url` | `url`, `max_chars?`, `start_char?` | Fetch a page as text; a long one comes back in windows, each naming the `start_char` to read on. **Approval**, SSRF-guarded |
 | `web_search` | `query`, `max_results?` | DuckDuckGo search. **Approval** |
 | `get_solution_info` | `path?` | Parse `.sln` / `.csproj` — projects, frameworks, packages |
 | `insert_at_cursor` | `text` | Insert text at the cursor in the active editor |

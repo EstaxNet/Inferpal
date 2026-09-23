@@ -44,17 +44,26 @@ internal class FetchUrlTool : ITool
         type = "object",
         properties = new
         {
-            url       = new { type = "string",  description = "Full URL to fetch (e.g. https://example.com/page)." },
-            max_chars = new { type = "integer", description = "Maximum characters to return (default 8000, max 50000)." }
+            url        = new { type = "string",  description = "Full URL to fetch (e.g. https://example.com/page)." },
+            max_chars  = new { type = "integer", description = $"Maximum characters to return (default and max {MaxWindow})." },
+            start_char = new { type = "integer", description = "Character offset to start from (optional) — to continue a long page." },
         },
         required = new[] { "url" }
     };
 
+    /// <summary>
+    /// The most one answer returns: every tool result enters the context cut to
+    /// <see cref="Agent.AgentOrchestrator.MaxToolResultCharsInContext"/>, so a window under it reaches the
+    /// model whole — with room for the footer.
+    /// </summary>
+    internal const int MaxWindow = Agent.AgentOrchestrator.MaxToolResultCharsInContext - 400;
+
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var url      = args.Str("url") ?? throw new ArgumentException("url is required.");
-        var maxChars = args.Int("max_chars", 8000);
-        maxChars     = Math.Clamp(maxChars, 500, 50_000);
+        var maxChars = args.Int("max_chars", MaxWindow);
+        maxChars     = Math.Clamp(maxChars, 500, MaxWindow);
+        var start    = Math.Max(0, args.Int("start_char", 0));
 
         // Outbound network = exfiltration channel. Gate it like the other side-effecting tools so a
         // prompt-injected model can't silently ship workspace data off-machine (session "always allow").
@@ -62,11 +71,38 @@ internal class FetchUrlTool : ITool
             return "Cancelled by user.";
 
         var html = await GetStringCheckingRedirectsAsync(url, ct);
-        var text = HtmlToText(html);
+        return Window(HtmlToText(html), start, maxChars);
+    }
 
-        return text.Length <= maxChars
-            ? text
-            : text[..maxChars] + $"\n\n[... truncated to {maxChars} characters out of {text.Length} total]";
+    /// <summary>
+    /// <paramref name="max"/> characters of the page from <paramref name="start"/>, ending on the offset to
+    /// continue from — or the page itself when it fits.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>max_chars</c> went up to 50 000, and the agent loop cuts every result to 8 000 before the
+    /// model reads it: whatever was asked, the middle of a long page was lost, and no argument could
+    /// reach it. A window under the loop's cap, and <c>start_char</c> to read on — the page is fetched
+    /// again for each window, which is the price of never holding it between calls.
+    /// </remarks>
+    internal static string Window(string text, int start, int max)
+    {
+        if (start == 0 && text.Length <= max) return text;
+        if (start >= text.Length)
+            return $"[start_char {start} is past the end: the page has {text.Length} characters]";
+
+        var end = Math.Min(text.Length, start + max);
+        if (end < text.Length)
+        {
+            // End on a line or a word rather than inside one, when there is one near the edge.
+            var soft = text.LastIndexOfAny(['\n', ' '], end - 1, Math.Min(200, end - start));
+            if (soft > start) end = soft + 1;
+            if (char.IsHighSurrogate(text[end - 1])) end--;
+        }
+
+        var body = text[start..end];
+        return end < text.Length
+            ? body + $"\n\n[... characters {start}–{end} of {text.Length} shown — call fetch_url with start_char={end} to read on]"
+            : body + $"\n\n[... characters {start}–{end} of {text.Length} — the end of the page]";
     }
 
     /// <summary>
