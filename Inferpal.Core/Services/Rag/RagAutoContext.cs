@@ -28,11 +28,18 @@ internal static class RagAutoContext
 
     /// <param name="results">Ranked (chunk, score) results, best first.</param>
     /// <param name="attachedPaths">Source file paths already injected as attachments — their chunks are skipped.</param>
+    /// <param name="notYetReindexed">
+    /// Files changed since the index read them (<see cref="ProjectIndexService.NotYetReindexed"/>).
+    /// ⚠ Their chunks are the version from BEFORE the change: the file saved a second ago and asked
+    /// about now — the most relevant file there is — came back as "relevant code" in its old form.
+    /// Left out, and said: unlike an attached file, their current content is nowhere in the prompt.
+    /// </param>
     public static string Build(
         IReadOnlyList<RagHit> results,
         ISet<string> attachedPaths,
         int budget = DefaultBudgetChars,
-        int maxChunks = DefaultMaxChunks)
+        int maxChunks = DefaultMaxChunks,
+        ISet<string>? notYetReindexed = null)
     {
         if (results is null || results.Count == 0) return string.Empty;
 
@@ -40,12 +47,14 @@ internal static class RagAutoContext
         int used    = 0;
         int count   = 0;
         int skipped = 0;          // already attached: their content IS in the prompt
+        int stale   = 0;          // changed since indexed: their content is NOT
         bool capped = false;      // a retrieved chunk did not make it in
 
         foreach (var chunk in results.Select(r => r.Chunk))
         {
             if (count >= maxChunks) { capped = true; break; }
             if (chunk.FilePath is { Length: > 0 } fp && attachedPaths.Contains(fp)) { skipped++; continue; }
+            if (chunk.FilePath is { Length: > 0 } sp && notYetReindexed?.Contains(sp) == true) { stale++; continue; }
 
             var body = chunk.Content.Length > MaxChunkChars
                 ? SafeTruncate.Truncate(chunk.Content, MaxChunkChars) + "\n…(truncated)"
@@ -60,14 +69,20 @@ internal static class RagAutoContext
             count++;
         }
 
-        if (count == 0) return string.Empty;
+        if (count == 0)
+            return stale == 0
+                ? string.Empty
+                : Header + "\n" + $"_{stale} matching snippet(s) are in files changed since they were indexed — "
+                  + "left out; `read_file` shows them as they are now._";
 
         // One line, and only the causes that fired. It costs ~20 tokens on a block capped at
         // ~375, and it is what keeps "here is the relevant code" from being read as "here is all
         // of it".
         var note = capped
-            ? $"_{count} of {results.Count - skipped} retrieved snippets — the rest did not fit. "
+            ? $"_{count} of {results.Count - skipped - stale} retrieved snippets — the rest did not fit. "
             : $"_Top {count} match(es) of the semantic index. ";
+        if (stale > 0)
+            note += $"{stale} snippet(s) of files changed since they were indexed were left out — `read_file` shows them as they are now. ";
         note += "This is a sample, not a search: call `search_codebase` to look further._";
 
         return Header + "\n" + note + "\n\n" + sb.ToString().TrimEnd();

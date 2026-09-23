@@ -1168,7 +1168,8 @@ internal sealed partial class HostServer : IDisposable
                     try { attached.Add(Path.GetFullPath(Path.IsPathRooted(p) ? p : Path.Combine(s.RootDir, p))); }
                     catch (Exception ex) { Diagnostics.Swallow("BuildRagAutoContext.AttachedPath", ex); }
 
-            return RagAutoContext.Build(results, attached);
+            return RagAutoContext.Build(results, attached,
+                notYetReindexed: s.Index.NotYetReindexed.ToHashSet(PathComparer.Default));
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)

@@ -90,7 +90,8 @@ internal partial class InferpalToolWindowData
                 .Select(a => a.SourcePath!)
                 .ToHashSet(PathComparer.Default);
 
-            return RagAutoContext.Build(results, attached);
+            return RagAutoContext.Build(results, attached,
+                notYetReindexed: _indexService.NotYetReindexed.ToHashSet(PathComparer.Default));
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("RagAutoContext", ex); return string.Empty; }
