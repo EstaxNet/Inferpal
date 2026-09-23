@@ -13,7 +13,7 @@ namespace Inferpal.Services.Tools;
 /// <b>silently</b> is not: "Direct dependants (0)" then reads as "nothing depends on this" when it
 /// really means "nothing among the first 500 files the filesystem happened to enumerate". The agent
 /// has no way to tell the two apart, and neither has the user. Same discipline as the agent loop's
-/// oversized tool results (<c>[... truncated to N characters out of M]</c>).
+/// oversized tool results (<c>[... truncated: N of M characters cut from the middle …]</c>).
 /// </remarks>
 /// <param name="Total">How many files the scan could have looked at.</param>
 /// <param name="Scanned">How many the cap let through — <b>taken</b>, not necessarily read.</param>

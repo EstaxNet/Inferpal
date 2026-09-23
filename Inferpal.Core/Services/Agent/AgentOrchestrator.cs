@@ -166,11 +166,35 @@ internal sealed class AgentOrchestrator
     // footgun (and the settings UI documents 0 as "use the default").
     internal const int DefaultMaxIterations = 20;
 
-    internal static string CapForContext(string result) =>
-        result.Length <= MaxToolResultCharsInContext
-            ? result
-            : SafeTruncate.Truncate(result, MaxToolResultCharsInContext) +
-              $"\n\n[... truncated to {MaxToolResultCharsInContext} characters out of {result.Length} to stay within the context window]";
+    /// <summary>Of what a capped result keeps, the share taken from its END.</summary>
+    internal const int TailCharsInContext = MaxToolResultCharsInContext / 4;
+
+    /// <summary>
+    /// A tool result as it enters the context: whole when it fits, otherwise its beginning AND its
+    /// end, the cut said in the middle.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The head alone dropped the verdict. A command's outcome is at its end — <c>ShellSession</c>
+    /// appends <c>[stderr]</c> and <c>[exit code N]</c> after the output, a build or a test run ends on
+    /// its summary — so a chatty command that failed reached the model as eight thousand characters of
+    /// progress lines, with neither the error nor the exit code. The head stays the larger part: a
+    /// report's own notes are written at its top.
+    /// </remarks>
+    internal static string CapForContext(string result)
+    {
+        if (result.Length <= MaxToolResultCharsInContext) return result;
+
+        var head      = SafeTruncate.Truncate(result, MaxToolResultCharsInContext - TailCharsInContext);
+        var tailStart = result.Length - TailCharsInContext;
+        if (char.IsLowSurrogate(result[tailStart])) tailStart++;   // never start on half a pair
+        var tail = result[tailStart..];
+        var cut  = result.Length - head.Length - tail.Length;
+
+        return head
+             + $"\n\n[... truncated: {cut} of {result.Length} characters cut from the middle to stay within the "
+             + "context window — the beginning and the end are shown ...]\n\n"
+             + tail;
+    }
 
     // Short quote of the user's current request, embedded in the synthesis prompt so the model
     // anchors on THIS question instead of an earlier turn it answered before (on a long multi-turn

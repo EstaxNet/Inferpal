@@ -33,8 +33,11 @@ public class AgentOrchestratorCapTests
         var capped = AgentOrchestrator.CapForContext(result);
 
         Assert.NotEqual(result, capped);
-        Assert.StartsWith(new string('x', Max), capped);   // first Max chars preserved verbatim
-        Assert.Contains("truncated", capped);              // truncation note appended
+        // The beginning AND the end kept verbatim, the cut in the middle (ToolResultTailTests: a
+        // command's verdict is at its end).
+        Assert.StartsWith(new string('x', Max - AgentOrchestrator.TailCharsInContext), capped);
+        Assert.EndsWith(new string('x', AgentOrchestrator.TailCharsInContext), capped);
+        Assert.Contains("truncated", capped);              // truncation note
         Assert.Contains((Max + 5000).ToString(), capped);  // original length reported
         // The kept payload never exceeds Max; only the short note is added on top.
         Assert.True(capped.Length < result.Length);
