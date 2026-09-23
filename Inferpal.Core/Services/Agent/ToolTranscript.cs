@@ -32,10 +32,18 @@ internal static class ToolTranscript
     /// One tool result as the body of a <c>user</c> turn. <paramref name="toolName"/> may be null
     /// or empty — a restored transcript does not always record which tool answered.
     /// </summary>
-    internal static string Render(string? toolName, string? content) =>
-        string.IsNullOrEmpty(toolName)
-            ? "[Tool result]\n"                 + content
-            : $"[Tool result — {toolName}]\n"   + content;
+    /// <remarks>
+    /// ⚠ Capped exactly as the live loop caps a result entering the context: the chat keeps — and a
+    /// session saves — the WHOLE output, so a reloaded or branched conversation otherwise came back
+    /// many times larger than anything the model saw, and its first question overflowed the window.
+    /// </remarks>
+    internal static string Render(string? toolName, string? content)
+    {
+        var body = AgentOrchestrator.CapForContext(content ?? string.Empty);
+        return string.IsNullOrEmpty(toolName)
+            ? "[Tool result]\n"               + body
+            : $"[Tool result — {toolName}]\n" + body;
+    }
 
     /// <summary>
     /// Appends one rendered result to <paramref name="history"/>, <b>folded into the preceding
