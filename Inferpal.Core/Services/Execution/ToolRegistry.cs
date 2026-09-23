@@ -303,6 +303,16 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: true);
             return ToolFailure.Describe(name, ex);
         }
+        finally
+        {
+            // ⚠ The project map is cached for two minutes. An agent that writes a file and then looks
+            // at the map — the ordinary way to check its own work, and `@tree` reads the same cache —
+            // read the map from before, with nothing saying so: the file it had just created was not in
+            // the project. Any call that may have changed the workspace drops it; the set that may NOT
+            // is plan mode's, so a tool it does not know (a new one, a user shell tool, an MCP tool)
+            // costs a rescan, never a stale map. In `finally`: a write that failed halfway wrote halfway.
+            if (!PlanModeToolRegistry.IsAllowed(name)) _mapService.Invalidate();
+        }
     }
 
     /// <summary>Best-effort human-readable target of a tool call for the run journal:
