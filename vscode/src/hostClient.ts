@@ -35,7 +35,7 @@ import {
   SettingsSchema,
   SessionLoadResult,
   SessionTitleResult,
-  SessionSummary,
+  SessionListResult,
   SlashCommandInfo,
   SlashCommandResult,
   StepUpdateNotice,
@@ -514,8 +514,8 @@ export class HostClient {
     return this.connection().sendRequest('session/save', { name, messages, archive });
   }
 
-  sessionList(): Promise<SessionSummary[]> {
-    return this.connection().sendRequest<SessionSummary[]>('session/list');
+  sessionList(): Promise<SessionListResult> {
+    return this.connection().sendRequest<SessionListResult>('session/list');
   }
 
   /** Rebuilds the host history from the saved session and returns the transcript. */

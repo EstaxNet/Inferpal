@@ -335,6 +335,10 @@ internal sealed record SessionRefParams(string Name);
 internal sealed record SessionSummaryDto(string Name, DateTime SavedAt, int MessageCount, string Preview,
                                          string? Parent = null, int? ForkTurn = null);
 
+/// <summary>`session/list` answer: the readable sessions, the files that could not be read (their
+/// names still taken), and the sentence naming them — <c>null</c> when every file was read.</summary>
+internal sealed record SessionListResult(List<SessionSummaryDto> Sessions, List<string> Unreadable, string? Notice);
+
 /// <summary>`session/load` answer: the transcript to re-render (host history already rebuilt).</summary>
 internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages);
 

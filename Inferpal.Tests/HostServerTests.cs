@@ -1499,9 +1499,9 @@ public class HostServerTests
             Assert.Equal(branch.Name, h.Server.CurrentSession!.CurrentSessionName);
 
             // Reloading the branch shows the parent link the store persisted.
-            var listed = await h.Client.InvokeAsync<List<SessionSummaryDto>>("session/list")
+            var listed = await h.Client.InvokeAsync<SessionListResult>("session/list")
                 .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
-            var summary = listed.Single(x => x.Name == branch.Name);
+            var summary = listed.Sessions.Single(x => x.Name == branch.Name);
             Assert.Equal(name, summary.Parent);
             Assert.Equal(1, summary.ForkTurn);
         }

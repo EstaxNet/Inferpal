@@ -255,6 +255,15 @@ export interface SessionSummary {
   forkTurn?: number | null;
 }
 
+/** `session/list` answer: the sessions that could be read, and the files that could not. */
+export interface SessionListResult {
+  sessions: SessionSummary[];
+  /** Session files present but unreadable: absent from `sessions`, their names still TAKEN. */
+  unreadable: string[];
+  /** Localized sentence naming them, or null when every file was read. */
+  notice?: string | null;
+}
+
 export interface SessionLoadResult {
   name: string;
   messages: SavedMessage[];

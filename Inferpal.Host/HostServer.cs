@@ -888,13 +888,26 @@ internal sealed partial class HostServer : IDisposable
         string.IsNullOrEmpty(m.Timestamp) ? null : m.Timestamp);
 
     [JsonRpcMethod("session/list")]
-    public async Task<List<SessionSummaryDto>> SessionListAsync(CancellationToken ct)
-    {
-        var summaries = await Session().Store.ListWithPreviewAsync(ct);
-        return summaries.Items
+    public async Task<SessionListResult> SessionListAsync(CancellationToken ct) =>
+        ToSessionList(await Session().Store.ListWithPreviewAsync(ct));
+
+    /// <summary>
+    /// The listing, <b>and the files it could not read</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ This is not only a picker's source: it is also the "does this name exist?" check of the
+    /// adapter's explicit save. Readable-only, an unreadable session was absent from both — the
+    /// picker said "No saved sessions." to someone who has ten, and a save under its name replaced
+    /// it without the "Replace?" question. Its name stays TAKEN, like in <see cref="BranchManager"/>.
+    /// </remarks>
+    internal static SessionListResult ToSessionList(SessionScan<SessionSummary> scan) => new(
+        scan.Items
             .Select(x => new SessionSummaryDto(x.Name, x.SavedAt, x.MessageCount, x.FirstUserPreview, x.Parent, x.ForkTurn))
-            .ToList();
-    }
+            .ToList(),
+        [.. scan.Unreadable],
+        scan.Unreadable.Count == 0
+            ? null
+            : Strings.SessionsUnreadableListed(scan.Unreadable.Count, string.Join(", ", scan.Unreadable)));
 
     /// <summary>Loads a session: the host history is rebuilt (fresh system prompt + every
     /// conversational turn, tool results included as plain labelled turns — see

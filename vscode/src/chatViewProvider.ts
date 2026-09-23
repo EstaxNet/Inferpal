@@ -657,7 +657,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       // Saving under a name another session already uses replaces that session: ask first, like a delete.
       const existing = await host.sessionList();
-      if (existing.some((s) => s.name.toLowerCase() === safeName.toLowerCase())) {
+      // ⚠ An unreadable session is absent from `sessions`, and its file is still there: left out of
+      // this check, the save replaced it without the question — unreadable ⇒ absent ⇒ overwritten.
+      const taken = [...existing.sessions.map((s) => s.name), ...existing.unreadable];
+      if (taken.some((n) => n.toLowerCase() === safeName.toLowerCase())) {
         const replaceLabel = t('Replace');
         const answer = await vscode.window.showWarningMessage(
           t('A session named {0} already exists. Replace it?', safeName),

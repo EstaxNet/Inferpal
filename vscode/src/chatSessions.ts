@@ -39,9 +39,16 @@ export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptIte
  * branch navigator. Returns the session name, or undefined when there is nothing to pick.
  */
 export async function pickSession(host: HostClient, placeholder: string): Promise<string | undefined> {
-  const sessions = await host.sessionList();
+  const { sessions, notice } = await host.sessionList();
+  // ⚠ A file the store could not read is not in `sessions`. Unsaid, "No saved sessions." is a
+  // claim about the user's own data made about files the product failed to open.
+  if (notice) {
+    void vscode.window.showWarningMessage(notice);
+  }
   if (sessions.length === 0) {
-    void vscode.window.showInformationMessage(t('No saved sessions.'));
+    if (!notice) {
+      void vscode.window.showInformationMessage(t('No saved sessions.'));
+    }
     return undefined;
   }
   const picked = await vscode.window.showQuickPick(
