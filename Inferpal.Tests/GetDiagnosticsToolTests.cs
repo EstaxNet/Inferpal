@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
+[Collection(CultureSerialCollection.Name)]   // compares a localized header
 public class GetDiagnosticsToolTests
 {
     private sealed class FakeEditorSurface : IEditorSurface

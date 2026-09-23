@@ -46,10 +46,8 @@ internal partial class InferpalToolWindowData
             ? $"Selection ({fileName})"
             : fileName;
 
-        if (rawCode.Length > MaxCodeChars)
-            rawCode = rawCode[..MaxCodeChars] + "\n…(truncated)";
-
-        return (rawCode, fileName, label);
+        var excerpt = CodeExcerpt.Of(rawCode);
+        return (excerpt.Text, fileName, excerpt.Label(label));
     }
 
     // One reader for both front-ends: the host picks the persona from the same table.

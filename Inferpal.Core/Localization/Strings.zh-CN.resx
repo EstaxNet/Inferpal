@@ -328,6 +328,7 @@
   <data name="RestoreNotFound" xml:space="preserve"><value>未找到 {0} 的备份</value></data>
   <data name="DiagNoProject" xml:space="preserve"><value>未找到 .sln 或 .csproj 文件。请提供 path 参数。</value></data>
   <data name="DiagFromEditor" xml:space="preserve"><value>编辑器实时诊断——仅包含语言服务已分析的文件，通常是已打开的文件。未运行任何生成；请提供 path 参数以编译项目。</value></data>
+  <data name="CodeExcerptLabel" xml:space="preserve"><value>{0} — 共 {2} 行中的前 {1} 行</value></data>
   <data name="DiagBuildOk" xml:space="preserve"><value>✓ 生成成功 — 0 个错误，0 个警告（{0}）</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>生成失败（代码 {0}），无可解析的诊断信息。
 

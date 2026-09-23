@@ -543,6 +543,8 @@ internal static class Strings
     public static string DebugStartCancelled => Get(nameof(DebugStartCancelled));
     public static string DiagNoProject     => Get(nameof(DiagNoProject));
     public static string DiagFromEditor    => Get(nameof(DiagFromEditor));
+    public static string CodeExcerptLabel(string label, int shown, int total) =>
+        string.Format(Get(nameof(CodeExcerptLabel)), label, shown, total);
     public static string ActiveDocNoContext => Get(nameof(ActiveDocNoContext));
     public static string EditNotApplied(string path) =>
         string.Format(Get(nameof(EditNotApplied)), path);

@@ -328,6 +328,7 @@ Copia de seguridad: {0}</value></data>
   <data name="RestoreNotFound" xml:space="preserve"><value>No se encontró copia de seguridad para: {0}</value></data>
   <data name="DiagNoProject" xml:space="preserve"><value>No se encontró ningún archivo .sln o .csproj. Proporcione el parámetro path.</value></data>
   <data name="DiagFromEditor" xml:space="preserve"><value>Diagnósticos en vivo del editor: solo los archivos que han analizado los servicios de lenguaje, normalmente los abiertos. No se ha ejecutado ninguna compilación; proporcione el parámetro path para compilar un proyecto.</value></data>
+  <data name="CodeExcerptLabel" xml:space="preserve"><value>{0}: primeras {1} de {2} líneas</value></data>
   <data name="DiagBuildOk" xml:space="preserve"><value>✓ Compilación exitosa — 0 errores, 0 advertencias ({0})</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>Compilación fallida (código {0}) sin diagnósticos analizables.
 

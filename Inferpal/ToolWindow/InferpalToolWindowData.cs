@@ -54,8 +54,6 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
 
     private static readonly SettingIdentifier<string> ColorThemeId = "environment.visualExperience.colorTheme";
 
-    private const int MaxCodeChars = 8_000;
-
     private IDisposable? _themeSubscription;
     private bool _isDark = true;
 

@@ -9,8 +9,6 @@ namespace Inferpal.Commands;
 
 internal abstract class SelectionCommandBase : Command
 {
-    private const int MaxCodeChars = 8_000;
-
     protected readonly VsContextHolder    _contextHolder;
     private   readonly InferpalConfig  _config;
 
@@ -58,8 +56,9 @@ internal abstract class SelectionCommandBase : Command
                     attachLabel = fileName;
                 }
 
-                if (rawCode.Length > MaxCodeChars)
-                    rawCode = rawCode[..MaxCodeChars] + "\n…(truncated)";
+                var excerpt = Services.CodeActions.CodeExcerpt.Of(rawCode);
+                rawCode     = excerpt.Text;
+                attachLabel = excerpt.Label(attachLabel);
             }
         }
         catch (Exception ex) { Services.Diagnostics.Swallow("SelectionCommand.Run", ex); }

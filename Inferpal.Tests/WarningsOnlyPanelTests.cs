@@ -13,6 +13,7 @@ namespace Inferpal.Tests;
 /// place of the build it made <c>get_diagnostics</c> — <c>/build</c> included — never compile in VS
 /// Code, without saying so.
 /// </summary>
+[Collection(CultureSerialCollection.Name)]   // compares a localized header
 public class WarningsOnlyPanelTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "inferpal-warnpanel-" + Guid.NewGuid().ToString("N"));

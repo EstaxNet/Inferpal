@@ -328,6 +328,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="RestoreNotFound" xml:space="preserve"><value>Nie znaleziono kopii zapasowej dla: {0}</value></data>
   <data name="DiagNoProject" xml:space="preserve"><value>Nie znaleziono pliku .sln ani .csproj. Podaj parametr path.</value></data>
   <data name="DiagFromEditor" xml:space="preserve"><value>Diagnostyka edytora na żywo — tylko pliki przeanalizowane przez usługi językowe, zwykle otwarte. Nie uruchomiono kompilacji; podaj parametr path, aby skompilować projekt.</value></data>
+  <data name="CodeExcerptLabel" xml:space="preserve"><value>{0} — pierwsze {1} z {2} wierszy</value></data>
   <data name="DiagBuildOk" xml:space="preserve"><value>✓ Kompilacja zakończona sukcesem — 0 błędów, 0 ostrzeżeń ({0})</value></data>
   <data name="DiagBuildFailed" xml:space="preserve"><value>Kompilacja nie powiodła się (kod {0}) bez parsowalnych diagnostyk.
 

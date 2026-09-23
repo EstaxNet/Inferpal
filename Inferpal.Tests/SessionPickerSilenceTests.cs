@@ -14,6 +14,7 @@ namespace Inferpal.Tests;
 /// name replaced it without the "Replace?" question — unreadable ⇒ absent ⇒ overwritten, the cycle
 /// <c>BranchManager.Plan</c> was already made to stop.
 /// </summary>
+[Collection(CultureSerialCollection.Name)]   // compares a localized notice
 public class SessionPickerSilenceTests
 {
     private static SessionSummary Summary(string name) => new(name, DateTime.UtcNow, 2, "hello", null, null);
