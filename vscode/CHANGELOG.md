@@ -3,6 +3,43 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.20
+
+Fifteen fixes, and most of them are about what the assistant actually gets to see: the start of a
+file and never the rest, a failed command with its error cut off, search results about code as it
+was before an edit — and a commit message describing files the commit did not contain.
+
+- **The assistant could not read past the first 8,000 characters of a file**, and asking again
+  returned the same beginning. A long file now comes back in pages of whole lines, each saying where
+  to continue.
+- **It could not read the middle of a long web page either**: `fetch_url` offered up to 50,000
+  characters, but only 8,000 ever reached the model. Long pages now come back in windows that fit.
+- **A long command that failed could reach the assistant without its error or its exit code**,
+  because the cut kept the beginning of the output and the verdict is at its end. Both ends are now
+  kept, and the cut is said.
+- **Semantic search did not see the files the assistant had just written**, and answered about the
+  version from before — or found nothing for a class it had just created. It now names the files
+  it has not caught up with.
+- **A file you had just saved could reach the model in its previous version**, through the excerpts
+  added to each question. Those excerpts are now left out, and the model is told why.
+- **The project map (`/map`, `@tree`) did not show files created a moment earlier.**
+- **`/commit` could write a message about files the commit would not contain**: new untracked
+  files were described, and `/commit-exec` only commits files git already tracks. They are now named
+  as left out instead.
+- **`/build` did not build when an open file had a warning** — the editor's Problems panel was
+  returned instead, which reads as "it builds". It now answers from the panel only when it shows an
+  error, and says that no build ran.
+- **`web_search` answered "No results." when DuckDuckGo had refused to search**, which it does for
+  minutes after a few searches in a row. It now says the search was refused.
+- **`@Docs` reported a site that blocks automated access as empty**, and a crawl cut short halfway
+  as complete.
+- **`/task propose`: of two edits to the same file, only the second reached you.**
+- **"Save session" could overwrite a session Inferpal could not read — without asking**, and the
+  session pickers said "No saved sessions." to someone who had some.
+- **Correcting the letter case of a pinned file in the settings was silently undone.**
+- **When the chat view itself hit an error, nothing said so.**
+- **The support bundle could carry a file path, or a token inside a URL, out to a public issue.**
+
 ## 1.6.19
 
 Fourteen fixes, and the thread this time is the answer that *looks* right: a search that quietly
