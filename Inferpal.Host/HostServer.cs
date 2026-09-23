@@ -518,7 +518,7 @@ internal sealed partial class HostServer : IDisposable
         {
             var s       = Session();
             var current = Services.Prompting.PinnedFilesPolicy.ParseActive(s.Config.PinnedContextFiles);
-            var kept    = current.Where(x => !string.Equals(x, p.Path.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+            var kept    = current.Where(x => !string.Equals(x, p.Path.Trim(), PathComparer.Comparison)).ToList();
             return Task.FromResult(kept.Count == current.Count ? new PinsResult(current) : SavePins(s, kept));
         });
 
@@ -1149,7 +1149,7 @@ internal sealed partial class HostServer : IDisposable
             // Parity with the VS VM: the adapter names the files it inlined as attachments so a
             // chunk of an attached file is not injected a second time. Resolved to full paths, the
             // grain the chunks carry.
-            var attached = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var attached = new HashSet<string>(PathComparer.Default);
             if (attachedPaths is { Count: > 0 } && !string.IsNullOrEmpty(s.RootDir))
                 foreach (var p in attachedPaths)
                     try { attached.Add(Path.GetFullPath(Path.IsPathRooted(p) ? p : Path.Combine(s.RootDir, p))); }

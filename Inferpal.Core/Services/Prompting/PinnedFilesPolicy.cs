@@ -42,7 +42,7 @@ internal static class PinnedFilesPolicy
     public static PinDecision Decide(IReadOnlyList<string> current, string path)
     {
         if (string.IsNullOrEmpty(path)) return PinDecision.Invalid;
-        if (current.Any(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase)))
+        if (current.Any(p => string.Equals(p, path, PathComparer.Comparison)))
             return PinDecision.Duplicate;
         if (current.Count >= MaxPinned) return PinDecision.CapReached;
         return PinDecision.Pin;
@@ -64,7 +64,7 @@ internal static class PinnedFilesPolicy
         var hidden = lines
             .Where(l => !l.StartsWith('#'))
             .Skip(MaxPinned)
-            .Where(l => !chips.Contains(l, StringComparer.OrdinalIgnoreCase));
+            .Where(l => !chips.Contains(l, PathComparer.Default));
         var disabled = lines.Where(l => l.StartsWith('#'));
         return string.Join("\n", chips.Concat(hidden).Concat(disabled));
     }
@@ -75,8 +75,11 @@ internal static class PinnedFilesPolicy
     /// </summary>
     /// <remarks>
     /// The settings window and the chat strip write the same setting. A window that rewrote it from its
-    /// rows erased a file pinned from the chat after it opened. Lines compare case-insensitively, like
-    /// the chips.
+    /// rows erased a file pinned from the chat after it opened.
+    /// ⚠ Two questions, two answers. "Did the editor change this line?" is about TEXT: a case
+    /// correction IS a change, on every platform — folded, it was discarded without a word, and under
+    /// Linux that correction is precisely the fix for a pin reported "not found". "Is this line
+    /// already pinned?" is about the FILE: <see cref="PathComparer"/>.
     /// </remarks>
     public static string MergeEdits(string? live, string? opened, string? edited)
     {
@@ -85,12 +88,12 @@ internal static class PinnedFilesPolicy
 
         var before  = Lines(opened);
         var after   = Lines(edited);
-        var removed = before.Where(l => !after.Contains(l, StringComparer.OrdinalIgnoreCase)).ToList();
-        var added   = after.Where(l => !before.Contains(l, StringComparer.OrdinalIgnoreCase));
+        var removed = before.Where(l => !after.Contains(l, StringComparer.Ordinal)).ToList();
+        var added   = after.Where(l => !before.Contains(l, StringComparer.Ordinal));
 
-        var result = Lines(live).Where(l => !removed.Contains(l, StringComparer.OrdinalIgnoreCase)).ToList();
+        var result = Lines(live).Where(l => !removed.Contains(l, StringComparer.Ordinal)).ToList();
         foreach (var line in added)
-            if (!result.Contains(line, StringComparer.OrdinalIgnoreCase)) result.Add(line);
+            if (!result.Contains(line, PathComparer.Default)) result.Add(line);
         return string.Join("\n", result);
     }
 }

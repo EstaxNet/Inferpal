@@ -88,7 +88,7 @@ internal partial class InferpalToolWindowData
             var attached = attachments
                 .Where(a => !string.IsNullOrEmpty(a.SourcePath))
                 .Select(a => a.SourcePath!)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .ToHashSet(PathComparer.Default);
 
             return RagAutoContext.Build(results, attached);
         }
