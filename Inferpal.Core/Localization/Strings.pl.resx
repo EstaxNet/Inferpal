@@ -475,6 +475,8 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Nie wykryto zmian git.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nic w staging — analiza niewystawionych zmian.</value></data>
+  <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} nieśledzonych plików NIE trafi do tego commita — /commit-exec dodaje tylko śledzone pliki: {1}. Najpierw wykonaj `git add`, aby je dołączyć, a potem ponownie /commit.</value></data>
+  <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ Zmieniły się tylko nieśledzone pliki ({0}) — /commit-exec dodaje tylko śledzone pliki, więc ten commit byłby pusty. Najpierw wykonaj `git add`, a potem ponownie /commit.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Poniższy komunikat powstał z pierwszych {0} znaków diffa, na {1}. Nie może opisać tego, czego nie widział — dodaj do indeksu mniejszą zmianę, aby komunikat obejmował całość.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 wiadomość commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Wiadomość wstępnie wypełniona poniżej — edytuj jeśli potrzeba, następnie naciśnij **Enter**, aby zacommitować.</value></data>

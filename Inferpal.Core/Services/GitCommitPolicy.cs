@@ -55,6 +55,32 @@ internal static class GitCommitPolicy
     /// Fallback context when nothing is staged: the short status, plus the unstaged
     /// diff when there is one (a blank diff section would only waste prompt budget).
     /// </summary>
+    /// <summary>
+    /// <c>git status --short</c> split into what <c>/commit-exec</c> will commit (<c>git add -u</c>:
+    /// tracked files) and the untracked paths (<c>??</c>) it leaves out on purpose.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Described whole, the untracked lines went to the model: it named the new class, and the
+    /// commit that carried the message did not contain it — a history entry describing code that is
+    /// not in it, and a build broken at that commit.
+    /// </remarks>
+    public static (string Tracked, List<string> Untracked) SplitUntracked(string status)
+    {
+        var tracked   = new List<string>();
+        var untracked = new List<string>();
+        foreach (var line in status.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var l = line.TrimEnd('\r');
+            if (l.StartsWith("?? ", StringComparison.Ordinal)) untracked.Add(l[3..].Trim());
+            else if (l.Trim().Length > 0) tracked.Add(l);
+        }
+        return (string.Join('\n', tracked), untracked);
+    }
+
+    /// <summary>Up to five paths, then how many more.</summary>
+    public static string NameList(IReadOnlyList<string> paths) =>
+        string.Join(", ", paths.Take(5)) + (paths.Count > 5 ? $" (+{paths.Count - 5})" : string.Empty);
+
     public static string BuildUnstagedContext(string status, string unstagedDiff)
     {
         var ctx = $"git status:\n{status}";

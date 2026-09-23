@@ -475,6 +475,8 @@
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Изменения git не обнаружены.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Ничего в staging — анализ неподготовленных изменений.</value></data>
+  <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} неотслеживаемых файл(ов) НЕ попадут в этот коммит — /commit-exec индексирует только отслеживаемые файлы: {1}. Сначала выполните `git add`, чтобы их включить, затем снова /commit.</value></data>
+  <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ Изменились только неотслеживаемые файлы ({0}) — /commit-exec индексирует только отслеживаемые файлы, так что коммит оказался бы пустым. Сначала выполните `git add`, затем снова /commit.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Сообщение ниже написано по первым {0} символам диффа из {1}. Оно не может описать то, чего не видело, — добавьте в индекс изменение поменьше.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 сообщение коммита</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Сообщение заполнено ниже — при необходимости отредактируйте, затем нажмите **Enter** для коммита.</value></data>

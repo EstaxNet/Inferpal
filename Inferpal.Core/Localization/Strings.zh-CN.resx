@@ -475,6 +475,8 @@
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ 未检测到 git 变更。</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ 没有已暂存的文件 — 正在分析未暂存的修改。</value></data>
+  <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} 个未跟踪的文件不会包含在此提交中——/commit-exec 只暂存已跟踪的文件：{1}。如需包含，请先执行 `git add`，然后再次运行 /commit。</value></data>
+  <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ 只有未跟踪的文件发生了变化（{0}）——/commit-exec 只暂存已跟踪的文件，因此此提交将为空。请先执行 `git add`，然后再次运行 /commit。</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 下面的信息是根据差异前 {0} 个字符（共 {1} 个）写成的，无法描述它没看到的部分 —— 若需覆盖全部，请暂存更小的变更。</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 提交信息</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>信息已预填到输入框 — 如需修改请编辑，然后按 **Enter** 确认提交。</value></data>

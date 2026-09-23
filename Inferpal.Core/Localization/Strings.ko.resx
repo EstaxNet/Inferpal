@@ -475,6 +475,8 @@
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ git 변경 사항이 감지되지 않았습니다.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ 스테이징된 항목 없음 — 스테이징되지 않은 변경 사항 분석 중.</value></data>
+  <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ 추적되지 않는 파일 {0}개는 이 커밋에 포함되지 않습니다 — /commit-exec는 추적 중인 파일만 스테이징합니다: {1}. 포함하려면 먼저 `git add`한 다음 /commit을 다시 실행하세요.</value></data>
+  <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ 추적되지 않는 파일만 변경되었습니다({0}) — /commit-exec는 추적 중인 파일만 스테이징하므로 이 커밋은 비어 있게 됩니다. 먼저 `git add`한 다음 /commit을 다시 실행하세요.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 아래 메시지는 전체 {1}자 중 앞쪽 {0}자만으로 작성되었습니다. 보지 못한 부분은 설명할 수 없습니다. 전체를 담은 메시지가 필요하면 더 작은 변경을 스테이징하세요.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 커밋 메시지</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>아래에 메시지가 미리 채워져 있습니다 — 필요하면 편집한 후 **Enter**를 눌러 커밋하세요.</value></data>

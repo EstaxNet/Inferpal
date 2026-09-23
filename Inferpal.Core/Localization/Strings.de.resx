@@ -475,6 +475,8 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Keine Git-Änderungen erkannt.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nichts im Staging – unstaged Änderungen werden analysiert.</value></data>
+  <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} nicht verfolgte Datei(en) sind NICHT in diesem Commit – /commit-exec staged nur verfolgte Dateien: {1}. Fügen Sie sie zuerst mit `git add` hinzu und führen Sie dann /commit erneut aus.</value></data>
+  <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ Nur nicht verfolgte Dateien wurden geändert ({0}) – /commit-exec staged nur verfolgte Dateien, dieser Commit wäre also leer. Fügen Sie sie zuerst mit `git add` hinzu und führen Sie dann /commit erneut aus.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Die Nachricht unten wurde aus den ersten {0} Zeichen des Diffs von insgesamt {1} geschrieben. Sie kann nicht beschreiben, was sie nie gesehen hat — stagen Sie eine kleinere Änderung für eine Nachricht, die alles abdeckt.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 Commit-Nachricht</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Nachricht unten vorausgefüllt – bei Bedarf bearbeiten, dann **Eingabe** zum Committen.</value></data>

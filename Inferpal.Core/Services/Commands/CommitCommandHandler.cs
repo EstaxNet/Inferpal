@@ -60,11 +60,18 @@ internal static class CommitCommandHandler
             if (string.IsNullOrWhiteSpace(status))
                 return new(Strings.CommitNothingToCommit, null, null);
 
+            // Describe exactly what /commit-exec will commit: `git add -u`, tracked files only.
+            var (tracked, untracked) = GitCommitPolicy.SplitUntracked(status);
+            if (string.IsNullOrWhiteSpace(tracked))
+                return new(Strings.CommitOnlyUntracked(GitCommitPolicy.NameList(untracked)), null, null);
+
             var unstagedRun = await git("diff", ct);
             if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
                 return new(unstagedFailed, null, null);
-            diffContext  = GitCommitPolicy.BuildUnstagedContext(status, unstagedRun.Output);
+            diffContext  = GitCommitPolicy.BuildUnstagedContext(tracked, unstagedRun.Output);
             notice       = Strings.CommitNothingStaged;
+            if (untracked.Count > 0)
+                notice += "\n\n" + Strings.CommitUntrackedLeftOut(untracked.Count, GitCommitPolicy.NameList(untracked));
         }
         else
         {

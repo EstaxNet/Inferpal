@@ -822,6 +822,10 @@ internal static class Strings
     // ── Git commit assistant ───────────────────────────────────────────────────
     public static string CommitNothingToCommit  => Get(nameof(CommitNothingToCommit));
     public static string CommitNothingStaged    => Get(nameof(CommitNothingStaged));
+    public static string CommitUntrackedLeftOut(int count, string names) =>
+        string.Format(Get(nameof(CommitUntrackedLeftOut)), count, names);
+    public static string CommitOnlyUntracked(string names) =>
+        string.Format(Get(nameof(CommitOnlyUntracked)), names);
     /// <summary>The proposal describes only what fit in the prompt — said before the message.</summary>
     public static string CommitDiffTruncated(int kept, int total) =>
         string.Format(Get(nameof(CommitDiffTruncated)), kept, total);

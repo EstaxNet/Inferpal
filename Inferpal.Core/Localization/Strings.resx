@@ -476,6 +476,8 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ No git changes detected.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nothing staged — analysing unstaged changes.</value></data>
+  <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} untracked file(s) will NOT be in this commit — /commit-exec stages tracked files only: {1}. `git add` them first to include them, then /commit again.</value></data>
+  <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ Only untracked files changed ({0}) — /commit-exec stages tracked files only, so this commit would hold nothing. `git add` them first, then /commit again.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ The message below was written from the first {0} characters of the diff, out of {1}. It cannot describe what it never saw — stage a smaller change for a message that covers all of it.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 commit message</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pre-filled below — edit if needed, then press **Enter** to commit.</value></data>

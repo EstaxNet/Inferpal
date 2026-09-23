@@ -475,6 +475,8 @@
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ git の変更が検出されませんでした。</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ ステージング済みのファイルがありません — ステージングされていない変更を分析します。</value></data>
+  <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ 追跡されていない {0} 個のファイルはこのコミットに含まれません — /commit-exec は追跡中のファイルのみをステージします: {1}。含めるには先に `git add` してから、もう一度 /commit を実行してください。</value></data>
+  <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ 変更されたのは追跡されていないファイルのみです（{0}）— /commit-exec は追跡中のファイルのみをステージするため、このコミットは空になります。先に `git add` してから、もう一度 /commit を実行してください。</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 下のメッセージは、差分全体 {1} 文字のうち先頭 {0} 文字から作成されました。見ていない部分は説明できません。全体を覆うメッセージが必要な場合は、より小さい変更をステージしてください。</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 コミットメッセージ</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>メッセージが下に事前入力されています — 必要に応じて編集し、**Enter** でコミット。</value></data>

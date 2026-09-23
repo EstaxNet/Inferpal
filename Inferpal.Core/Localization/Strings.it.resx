@@ -475,6 +475,8 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ Nessuna modifica git rilevata.</value></data>
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nulla in staging — analisi delle modifiche non staged.</value></data>
+  <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} file non tracciati NON saranno in questo commit: /commit-exec prepara solo i file tracciati: {1}. Esegui prima `git add` per includerli, poi di nuovo /commit.</value></data>
+  <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ Sono cambiati solo file non tracciati ({0}): /commit-exec prepara solo i file tracciati, quindi questo commit non conterrebbe nulla. Esegui prima `git add`, poi di nuovo /commit.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Il messaggio qui sotto è stato scritto dai primi {0} caratteri del diff, su {1}. Non può descrivere ciò che non ha visto — metti in stage una modifica più piccola per un messaggio che copra tutto.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 messaggio di commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Messaggio precompilato sotto — modifica se necessario, poi premi **Invio** per committare.</value></data>
