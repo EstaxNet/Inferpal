@@ -79,14 +79,26 @@ internal sealed class ProposalRecorder : IApprovalService
         return Task.FromResult(false);   // never granted — see the class remarks
     }
 
+    private ProposalOutcome _lastOutcome;
+
+    /// <summary>What the latest request did to the proposal list — read by the registry right after
+    /// the call, to tell the model.</summary>
+    public ProposalOutcome LastOutcome
+    {
+        get { lock (_gate) return _lastOutcome; }
+    }
+
     /// <summary>
-    /// Records a proposal, replacing an earlier one for the same file.
+    /// Records a proposal: one per file, in the order the task worked in.
     /// </summary>
     /// <remarks>
-    /// A task that writes a file twice (a first attempt, then a correction) has one intention, not
-    /// two. Keeping both would ask the user to review a change that was already superseded — and
-    /// the earlier <c>Diff</c> is stale anyway, since its "new" side is not what the task ended up
-    /// wanting. The last word wins, in place, so the report keeps the order the task worked in.
+    /// ⚠ Nothing is applied, so every edit is computed from the file ON DISK — never from the task's
+    /// own earlier proposal. Two <c>apply_diff</c> calls on two regions of one file are therefore two
+    /// intentions, each blind to the other, and "the last word wins" kept only the second: the model
+    /// was told both were recorded, its report described both, and the user could apply one. A
+    /// partial edit is <b>combined</b> with the earlier proposal when their regions do not overlap
+    /// (<see cref="ProposalMerge"/>); otherwise — the same lines touched again, a whole-file write, a
+    /// file that changed in between — the last word still wins, and the registry says so.
     /// </remarks>
     private void Record(TaskProposal proposal)
     {
@@ -95,12 +107,100 @@ internal sealed class ProposalRecorder : IApprovalService
             var at = _proposals.FindIndex(p =>
                 string.Equals(p.Subject, proposal.Subject, PathComparison));
 
-            if (at >= 0) _proposals[at] = proposal;
-            else         _proposals.Add(proposal);
+            if (at < 0)
+            {
+                _proposals.Add(proposal);
+                _lastOutcome = ProposalOutcome.Added;
+                return;
+            }
+
+            var (kept, outcome) = Supersede(_proposals[at], proposal);
+            _proposals[at] = kept;
+            _lastOutcome   = outcome;
         }
     }
 
+    private static (TaskProposal Kept, ProposalOutcome Outcome) Supersede(TaskProposal earlier, TaskProposal later)
+    {
+        if (earlier.Diff is not { } first || later.Diff is not { } second || first.OldText != second.OldText)
+            return (later, ProposalOutcome.Replaced);
+
+        if (first.NewText == second.NewText)
+            return (later, ProposalOutcome.Repeated);
+
+        // write_file and delete_file state the whole outcome: never merged into.
+        if (later.Tool is "apply_diff" or "apply_edits"
+            && ProposalMerge.TryMerge(first.OldText, first.NewText, second.NewText) is { } merged)
+            return (later with { Diff = second with { NewText = merged } }, ProposalOutcome.Combined);
+
+        return (later, ProposalOutcome.Replaced);
+    }
+
     private static StringComparison PathComparison => Services.PathComparer.Comparison;
+}
+
+/// <summary>What recording one request did to the task's proposals.</summary>
+internal enum ProposalOutcome
+{
+    /// <summary>First proposal for this file.</summary>
+    Added,
+    /// <summary>The same change again: nothing lost.</summary>
+    Repeated,
+    /// <summary>Merged with the earlier proposal for this file: both changes are in it.</summary>
+    Combined,
+    /// <summary>The earlier proposal for this file is gone — the model must be told.</summary>
+    Replaced,
+}
+
+/// <summary>
+/// Three-way merge of two edits made to the same text, each computed from it without the other.
+/// </summary>
+/// <remarks>
+/// One changed region per side — the span between the common head and the common tail — which is
+/// exact for one <c>apply_diff</c> and conservative for an <c>apply_edits</c> batch (its region spans
+/// all its edits). Conservative is the safe direction: an overlap refuses the merge, and the refusal
+/// is said, never silent. A merged proposal is still only a proposal — the user reviews its full
+/// diff at the approval prompt before anything is written.
+/// </remarks>
+internal static class ProposalMerge
+{
+    /// <summary>The text carrying both edits, or <c>null</c> when their regions overlap (or are
+    /// two insertions at the same point, whose order nothing decides).</summary>
+    public static string? TryMerge(string original, string first, string second)
+    {
+        var o = original.Split('\n');
+        var a = RegionOf(o, first.Split('\n'));
+        var b = RegionOf(o, second.Split('\n'));
+
+        var bothInsertAtOnePoint = a.Start == a.End && b.Start == b.End && a.Start == b.Start;
+        if (bothInsertAtOnePoint || (a.Start < b.End && b.Start < a.End)) return null;
+
+        // At an equal start, the insertion goes first: it sits before the lines the other replaces.
+        var (lo, hi) = a.Start < b.Start || (a.Start == b.Start && a.Start == a.End) ? (a, b) : (b, a);
+
+        var merged = new List<string>(o.Length + lo.Lines.Length + hi.Lines.Length);
+        merged.AddRange(o[..lo.Start]);
+        merged.AddRange(lo.Lines);
+        merged.AddRange(o[lo.End..hi.Start]);
+        merged.AddRange(hi.Lines);
+        merged.AddRange(o[hi.End..]);
+        return string.Join('\n', merged);
+    }
+
+    /// <summary>The lines <c>[Start, End)</c> of the original that <paramref name="edited"/> replaces, and by what.</summary>
+    private static (int Start, int End, string[] Lines) RegionOf(string[] original, string[] edited)
+    {
+        var head = 0;
+        while (head < original.Length && head < edited.Length && original[head] == edited[head])
+            head++;
+
+        var tail = 0;
+        while (tail < original.Length - head && tail < edited.Length - head
+               && original[original.Length - 1 - tail] == edited[edited.Length - 1 - tail])
+            tail++;
+
+        return (head, original.Length - tail, edited[head..(edited.Length - tail)]);
+    }
 }
 
 /// <summary>Why a proposal cannot be applied, or that it can.</summary>

@@ -109,6 +109,8 @@ exists.
   them: each write is recorded at the exact point it would have asked for approval, and never
   granted. `/task apply <id> <n>` replays one proposal through the ordinary approval prompt,
   real diff included; a proposal whose file changed since is refused instead of applied.
+  There is one proposal per file: edits to different parts of a file are combined into it, and
+  when two edits touch the same lines the later one replaces the earlier — the task is told so.
   Consent still happens at apply time, one write at a time — never in advance.
 - **`/debug [hypothesis]`** — settle a question about runtime behaviour by observing it: the
   agent starts a **real debug session** (after asking you first), sets breakpoints, steps, and
