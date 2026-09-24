@@ -4,7 +4,12 @@ using System.Text.Json.Serialization;
 namespace Inferpal.Services.Bench;
 
 /// <summary>A persisted <c>/bench</c> run: when it ran and what it measured.</summary>
-internal sealed record BenchSavedRun(DateTime TimestampUtc, List<BenchModelResult> Results);
+/// <param name="NotMeasured">
+/// Installed models an automatic run left out (its cap). Saved with the run because the model router
+/// reads the saved recommendation: <c>/bench last</c> must still say what it was chosen among.
+/// </param>
+internal sealed record BenchSavedRun(
+    DateTime TimestampUtc, List<BenchModelResult> Results, List<string>? NotMeasured = null);
 
 /// <summary>
 /// Persists the latest <c>/bench</c> run to <c>%AppData%\Inferpal\bench.json</c> so

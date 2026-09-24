@@ -829,6 +829,7 @@ ollama serve
   <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="BenchColQuality" xml:space="preserve"><value>Качество</value></data>
   <data name="BenchRecoHeader" xml:space="preserve"><value>Рекомендации по ролям</value></data>
+  <data name="BenchNotMeasured" xml:space="preserve"><value>⚠ Измерены только первые {0} из {1} установленных моделей — не измерены: {2}. Рекомендация ниже выбрана только среди измеренных; `/bench &lt;модель&gt; …` измерит остальные.</value></data>
   <data name="BenchRecoAgent" xml:space="preserve"><value>Агент / чат</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>Служебная модель</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM (призрачный текст)</value></data>

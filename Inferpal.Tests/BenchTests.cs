@@ -215,6 +215,42 @@ public class BenchTests : IDisposable
         Assert.Contains(Strings.BenchTitle, result.Message);
     }
 
+    /// <summary>
+    /// ⚠ The cap shapes a CONCLUSION: the report ends on a per-role recommendation, and the model router
+    /// READS the saved one to pick which model answers. Past the cap, installed models were neither
+    /// measured nor named — "the best of your models" was the best of the first five the backend listed.
+    /// </summary>
+    [Fact]
+    public async Task Handler_DefaultList_NamesTheModelsItDidNotMeasure_NowAndInTheSavedRun()
+    {
+        var fake = PerfectProvider();
+        fake.Installed = [.. Enumerable.Range(1, 7).Select(i => new InstalledModelInfo($"m{i}", 1))];
+        var note = Strings.BenchNotMeasured(5, 7, "`m6`, `m7`");
+
+        var result = await BenchCommandHandler.HandleAsync(fake, BenchCfg, ["/bench"], null, CancellationToken.None);
+        var last   = await BenchCommandHandler.HandleAsync(
+            new FakeInferenceProvider(), BenchCfg, ["/bench", "last"], null, CancellationToken.None);
+
+        Assert.Contains(note, result.Message);
+        Assert.True(result.Message!.IndexOf(note, StringComparison.Ordinal)
+                  < result.Message.IndexOf(Strings.BenchRecoHeader, StringComparison.Ordinal),
+                    "the note must come before the recommendation it qualifies");
+        Assert.Contains(note, last.Message);          // the saved run is what the router reads
+    }
+
+    [Fact]
+    public async Task Handler_DefaultList_UnderTheCap_SaysNothingMore()
+    {
+        // Reference arm: every installed model measured — a note there would be noise.
+        var fake = PerfectProvider();
+        fake.Installed = [.. Enumerable.Range(1, 3).Select(i => new InstalledModelInfo($"m{i}", 1))];
+
+        var result = await BenchCommandHandler.HandleAsync(fake, BenchCfg, ["/bench"], null, CancellationToken.None);
+
+        Assert.Contains("`m3`", result.Message);
+        Assert.DoesNotContain(Strings.BenchNotMeasured(3, 3, string.Empty)[..20], result.Message);
+    }
+
     [Fact]
     public async Task Handler_ExplicitModels_WinOverInstalledList()
     {

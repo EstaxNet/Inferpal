@@ -831,6 +831,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="BenchColQuality" xml:space="preserve"><value>Calidad</value></data>
   <data name="BenchRecoHeader" xml:space="preserve"><value>Recomendación por rol</value></data>
+  <data name="BenchNotMeasured" xml:space="preserve"><value>⚠ Solo se midieron los primeros {0} de tus {1} modelos instalados; sin medir: {2}. La recomendación de abajo solo abarca los medidos; `/bench &lt;modelo&gt; …` mide los demás.</value></data>
   <data name="BenchRecoAgent" xml:space="preserve"><value>Agente / chat</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>Modelo utilitario</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM (texto fantasma)</value></data>

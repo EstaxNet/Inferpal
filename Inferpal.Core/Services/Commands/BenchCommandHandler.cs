@@ -32,11 +32,12 @@ internal static class BenchCommandHandler
             var saved = await BenchStore.LoadAsync();
             return new(saved is null || saved.Results.Count == 0
                 ? Strings.BenchNoSaved
-                : FormatReport(saved.Results, saved.TimestampUtc));
+                : FormatReport(saved.Results, saved.TimestampUtc, saved.NotMeasured));
         }
 
         // Explicit model list wins; otherwise every installed model, capped.
         List<string> models;
+        List<string> notMeasured = [];
         if (parts.Length >= 2)
         {
             models = [.. parts[1..]];
@@ -44,7 +45,8 @@ internal static class BenchCommandHandler
         else
         {
             var installed = await client.ListInstalledModelsAsync(ct);
-            models = [.. installed.Select(m => m.Name).Take(MaxAutoModels)];
+            models      = [.. installed.Select(m => m.Name).Take(MaxAutoModels)];
+            notMeasured = [.. installed.Select(m => m.Name).Skip(MaxAutoModels)];
         }
         // ⚠ An empty list is "nothing installed" OR "nobody answered" — an unreachable backend never
         // throws, it returns []. And this sentence names `/models pull`, which needs the very
@@ -69,17 +71,26 @@ internal static class BenchCommandHandler
                 await client.UnloadModelAsync(models[i], ct);
         }
 
-        await BenchStore.SaveAsync(new BenchSavedRun(DateTime.UtcNow, results));
-        return new(FormatReport(results, savedAtUtc: null));
+        await BenchStore.SaveAsync(new BenchSavedRun(DateTime.UtcNow, results, notMeasured));
+        return new(FormatReport(results, savedAtUtc: null, notMeasured));
     }
 
     /// <summary>Comparative table + per-role recommendation. Pure — unit-tested directly.</summary>
-    internal static string FormatReport(IReadOnlyList<BenchModelResult> results, DateTime? savedAtUtc)
+    /// <remarks>
+    /// ⚠ The report ends on a RECOMMENDATION that the model router reads back: models an automatic run
+    /// left out are named above the table, or "the best of your models" is the best of the first ones
+    /// the backend happened to list.
+    /// </remarks>
+    internal static string FormatReport(
+        IReadOnlyList<BenchModelResult> results, DateTime? savedAtUtc, IReadOnlyList<string>? notMeasured = null)
     {
         var sb = new System.Text.StringBuilder();
         sb.Append("### ").AppendLine(Strings.BenchTitle);
         if (savedAtUtc is { } ts)
             sb.AppendLine(Strings.BenchSavedAt(ts.ToLocalTime().ToString("g", CultureInfo.CurrentUICulture)));
+        if (notMeasured is { Count: > 0 })
+            sb.AppendLine().AppendLine(Strings.BenchNotMeasured(
+                results.Count, results.Count + notMeasured.Count, string.Join(", ", notMeasured.Select(m => $"`{m}`"))));
         sb.AppendLine();
         sb.Append("| ").Append(Strings.BenchColModel)
           .Append(" | ").Append(Strings.BenchColTtft)

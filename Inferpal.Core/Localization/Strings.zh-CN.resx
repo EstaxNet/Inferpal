@@ -831,6 +831,7 @@ ollama serve
   <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="BenchColQuality" xml:space="preserve"><value>质量</value></data>
   <data name="BenchRecoHeader" xml:space="preserve"><value>按角色推荐</value></data>
+  <data name="BenchNotMeasured" xml:space="preserve"><value>⚠ 在已安装的 {1} 个模型中，只测量了前 {0} 个——未测量：{2}。下面的推荐仅来自已测量的模型；使用 `/bench &lt;模型&gt; …` 可测量其他模型。</value></data>
   <data name="BenchRecoAgent" xml:space="preserve"><value>代理 / 聊天</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>实用模型</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM（幽灵文本）</value></data>

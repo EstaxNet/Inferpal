@@ -831,6 +831,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="BenchColQuality" xml:space="preserve"><value>품질</value></data>
   <data name="BenchRecoHeader" xml:space="preserve"><value>역할별 추천</value></data>
+  <data name="BenchNotMeasured" xml:space="preserve"><value>⚠ 설치된 모델 {1}개 중 처음 {0}개만 측정했습니다. 측정하지 않음: {2}. 아래 추천은 측정한 모델 중에서만 고른 것입니다. `/bench &lt;모델&gt; …`로 다른 모델을 측정하세요.</value></data>
   <data name="BenchRecoAgent" xml:space="preserve"><value>에이전트 / 채팅</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>유틸리티 모델</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM(고스트 텍스트)</value></data>

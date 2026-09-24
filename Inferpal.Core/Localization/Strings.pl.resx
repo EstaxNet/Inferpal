@@ -831,6 +831,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="BenchColQuality" xml:space="preserve"><value>Jakość</value></data>
   <data name="BenchRecoHeader" xml:space="preserve"><value>Rekomendacje wg roli</value></data>
+  <data name="BenchNotMeasured" xml:space="preserve"><value>⚠ Zmierzono tylko pierwsze {0} z {1} zainstalowanych modeli — niezmierzone: {2}. Poniższa rekomendacja dotyczy wyłącznie zmierzonych; `/bench &lt;model&gt; …` mierzy pozostałe.</value></data>
   <data name="BenchRecoAgent" xml:space="preserve"><value>Agent / czat</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>Model pomocniczy</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM (tekst-widmo)</value></data>

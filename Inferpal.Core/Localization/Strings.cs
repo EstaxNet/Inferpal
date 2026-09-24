@@ -1083,6 +1083,9 @@ internal static class Strings
     public static string BenchColVram                        => Get(nameof(BenchColVram));
     public static string BenchColQuality                     => Get(nameof(BenchColQuality));
     public static string BenchRecoHeader                     => Get(nameof(BenchRecoHeader));
+    /// <summary>The installed models /bench left out of an automatic run, named above the table.</summary>
+    public static string BenchNotMeasured(int measured, int installed, string names) =>
+        string.Format(Get(nameof(BenchNotMeasured)), measured, installed, names);
     public static string BenchRecoAgent                      => Get(nameof(BenchRecoAgent));
     public static string BenchRecoUtility                    => Get(nameof(BenchRecoUtility));
     public static string BenchRecoFim                        => Get(nameof(BenchRecoFim));

@@ -831,6 +831,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="BenchColQuality" xml:space="preserve"><value>品質</value></data>
   <data name="BenchRecoHeader" xml:space="preserve"><value>ロール別のおすすめ</value></data>
+  <data name="BenchNotMeasured" xml:space="preserve"><value>⚠ インストール済みの {1} 個のモデルのうち、最初の {0} 個だけを測定しました。未測定: {2}。以下の推奨は測定したモデルの中からのみです。`/bench &lt;モデル&gt; …` で他のモデルを測定できます。</value></data>
   <data name="BenchRecoAgent" xml:space="preserve"><value>エージェント / チャット</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>ユーティリティモデル</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM（ゴーストテキスト）</value></data>

@@ -843,6 +843,7 @@ ollama serve
   <data name="BenchColVram" xml:space="preserve"><value>VRAM</value></data>
   <data name="BenchColQuality" xml:space="preserve"><value>Quality</value></data>
   <data name="BenchRecoHeader" xml:space="preserve"><value>Recommended per role</value></data>
+  <data name="BenchNotMeasured" xml:space="preserve"><value>⚠ Only the first {0} of your {1} installed models were measured — not measured: {2}. The recommendation below is among the measured ones only; `/bench &lt;model&gt; …` measures the others.</value></data>
   <data name="BenchRecoAgent" xml:space="preserve"><value>Agent / chat</value></data>
   <data name="BenchRecoUtility" xml:space="preserve"><value>Utility model</value></data>
   <data name="BenchRecoFim" xml:space="preserve"><value>FIM (ghost text)</value></data>
