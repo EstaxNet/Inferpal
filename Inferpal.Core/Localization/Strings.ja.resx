@@ -255,8 +255,9 @@
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>セッション</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>（反復制限に達しました — 20 ターン）</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ エージェントは反復回数の上限で停止しました。以下はそれまでに集めた内容の要約であり、完了したタスクではありません。</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ エージェントが同じツール呼び出しを繰り返したため停止しました。以下はそれまでに集めた内容の要約です。</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ エージェントは反復回数の上限で停止しました。上の回答はそれまでに集めた内容の要約であり、完了したタスクではありません。</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ エージェントが同じツール呼び出しを繰り返したため停止しました。上の回答はそれまでに集めた内容の要約です。</value></data>
+  <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上の回答はモデルの長さ制限で止まっており、不完全です。続きを依頼するか、コンテキスト長を増やしてください。</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>（ループ検出 — 同一のツール呼び出しが繰り返されたため停止します）</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>（サーキットブレーカー開放 — 繰り返し失敗のため 5 分間再試行を停止します）</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 完了 — {0}</value></data>

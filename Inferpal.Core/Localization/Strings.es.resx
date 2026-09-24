@@ -255,8 +255,9 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sesión</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(límite de iteraciones alcanzado — 20 turnos)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ El agente se detuvo en su límite de iteraciones: lo siguiente resume lo que había reunido, no una tarea terminada.</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ El agente repetía las mismas llamadas a herramientas y fue detenido: lo siguiente resume lo que había reunido.</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ El agente se detuvo en su límite de iteraciones: la respuesta de arriba resume lo que había reunido, no una tarea terminada.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ El agente repetía las mismas llamadas a herramientas y fue detenido: la respuesta de arriba resume lo que había reunido.</value></data>
+  <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La respuesta de arriba se detuvo en el límite de longitud del modelo: está incompleta. Pídele que continúe o aumenta la longitud de contexto.</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(bucle detectado — llamadas de herramientas idénticas repetidas, deteniéndose)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(disyuntor abierto — reintentos pausados 5 min tras fallos repetidos)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Listo — {0}</value></data>

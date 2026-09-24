@@ -256,8 +256,9 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(iteration limit reached — 20 turns)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ The agent stopped at its iteration limit: what follows summarises what it had gathered, not a finished task.</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ The agent was repeating the same tool calls and was stopped: what follows summarises what it had gathered.</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ The agent stopped at its iteration limit: the answer above summarises what it had gathered, not a finished task.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ The agent was repeating the same tool calls and was stopped: the answer above summarises what it had gathered.</value></data>
+  <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ The answer above stopped at the model's length limit: it is incomplete. Ask it to continue, or increase the context length.</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(loop detected — identical tool calls repeated, stopping)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(circuit breaker open — retries paused for 5 min after repeated failures)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Done — {0}</value></data>

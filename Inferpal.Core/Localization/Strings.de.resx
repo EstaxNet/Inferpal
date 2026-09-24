@@ -255,8 +255,9 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sitzung</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(Iterationslimit erreicht – 20 Runden)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Der Agent hat sein Iterationslimit erreicht: Das Folgende fasst zusammen, was er gesammelt hatte — keine abgeschlossene Aufgabe.</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Der Agent wiederholte dieselben Werkzeugaufrufe und wurde gestoppt: Das Folgende fasst zusammen, was er gesammelt hatte.</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Der Agent hat sein Iterationslimit erreicht: Die Antwort oben fasst zusammen, was er gesammelt hatte — keine abgeschlossene Aufgabe.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Der Agent wiederholte dieselben Werkzeugaufrufe und wurde gestoppt: Die Antwort oben fasst zusammen, was er gesammelt hatte.</value></data>
+  <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Die Antwort oben endete an der Längengrenze des Modells: Sie ist unvollständig. Bitten Sie um Fortsetzung oder erhöhen Sie die Kontextlänge.</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(Schleife erkannt — identische Werkzeugaufrufe wiederholt, Abbruch)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(Sicherungsschalter offen — Versuche nach wiederholten Fehlern für 5 Min. pausiert)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Fertig — {0}</value></data>

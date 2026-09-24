@@ -103,7 +103,8 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         CancellationToken ct, TaskComplexity complexity, Action<string>? onThinking)
     {
         var turn = await SendChatAsync(model, history, tools, onToken, ct, complexity, null, onThinking);
-        return new AgentResult(turn.TextContent, [], history, turn.TokensUsed, turn.PromptTokens);
+        return new AgentResult(turn.TextContent, [], history, turn.TokensUsed, turn.PromptTokens,
+                               AnswerCut: turn.CutAtLimit);
     }
 
     public Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct) =>

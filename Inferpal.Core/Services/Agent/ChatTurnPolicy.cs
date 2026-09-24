@@ -49,6 +49,24 @@ internal static class ChatTurnPolicy
     }
 
     /// <summary>
+    /// The line shown AFTER an answer that is not a task carried to its end — empty when it is. One
+    /// reader for both front-ends: the Visual Studio window and the host each recopied the choice.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A cut answer is a separate fact from how the run ended: a synthesis written at the iteration
+    /// limit can itself stop at the length limit, and the reader must learn both — the text is
+    /// incomplete AND the task was not carried through.
+    /// </remarks>
+    public static string EndNotice(bool reachedIterationLimit, bool loopDetected, bool answerCut)
+    {
+        var notices = new List<string>(2);
+        if (reachedIterationLimit) notices.Add(Strings.AgentEndedAtIterationLimit);
+        else if (loopDetected)     notices.Add(Strings.AgentEndedOnRepeat);
+        if (answerCut)             notices.Add(Strings.AnswerCutAtLimit);
+        return string.Join("\n\n", notices);
+    }
+
+    /// <summary>
     /// Picks what the final render pass should show. <paramref name="finalResponse"/> is
     /// the agent's stored final response (may still contain &lt;think&gt; tags).
     /// </summary>

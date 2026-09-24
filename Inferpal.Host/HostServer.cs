@@ -303,12 +303,10 @@ internal sealed partial class HostServer : IDisposable
                 // The run's last call measured the discarded transcript, not what the next turn sends:
                 // compaction decides on the durable history instead.
                 s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
-                // Both facts lived in OrchestratorResult and were read by nobody: a run cut short at
-                // its iteration limit returned a fluent answer, indistinguishable from a task
-                // carried to its end. Symmetric with the Visual Studio window.
-                var endNotice = result.ReachedIterationLimit ? Strings.AgentEndedAtIterationLimit
-                              : result.WasLoopDetected       ? Strings.AgentEndedOnRepeat
-                              : null;
+                // How the run ended, when not because the model had finished — iteration limit, repeat,
+                // or an answer cut at the length limit. One policy for both front-ends.
+                var endNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(
+                    result.ReachedIterationLimit, result.WasLoopDetected, result.AnswerCut));
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
@@ -345,7 +343,7 @@ internal sealed partial class HostServer : IDisposable
                 return new ChatSendResult(
                     FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, model, s),
                     false, run.TokensUsed, run.PromptTokens,
-                    EndNotice: run.WasLoopDetected ? Strings.AgentEndedOnRepeat : null);
+                    EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut)));
             }
 
             var turn = await s.Client.SendChatAsync(
@@ -359,7 +357,8 @@ internal sealed partial class HostServer : IDisposable
             await CountTurnAsync(s, cts.Token);
             return new ChatSendResult(
                 FinalAnswer(turn.TextContent, streamed.ToString(), [], model, s),
-                false, turn.TokensUsed, turn.PromptTokens);
+                false, turn.TokensUsed, turn.PromptTokens,
+                EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit)));
         }
         catch (OperationCanceledException)
         {
@@ -1329,6 +1328,9 @@ internal sealed partial class HostServer : IDisposable
         _session?.Dispose();
         _session = null;
     }
+
+    /// <summary>The wire carries no notice as <c>null</c>, not as an empty line under the answer.</summary>
+    private static string? NoticeOrNull(string notice) => notice.Length > 0 ? notice : null;
 
     /// <summary>
     /// What the turn actually puts on screen: the text, else the summary of the tools that ran,

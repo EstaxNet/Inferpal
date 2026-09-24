@@ -462,6 +462,7 @@ internal static class Strings
     // carried to its end. Both facts lived in OrchestratorResult all along and were read by NOBODY.
     public static string AgentEndedAtIterationLimit => Get(nameof(AgentEndedAtIterationLimit));
     public static string AgentEndedOnRepeat         => Get(nameof(AgentEndedOnRepeat));
+    public static string AnswerCutAtLimit           => Get(nameof(AnswerCutAtLimit));
     public static string MsgLoopDetected      => Get(nameof(MsgLoopDetected));
     public static string MsgCircuitOpen       => Get(nameof(MsgCircuitOpen));
     public static string TokenUsage(string last, string session) =>

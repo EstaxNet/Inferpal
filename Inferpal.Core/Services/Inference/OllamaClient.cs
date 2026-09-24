@@ -574,7 +574,9 @@ internal record AgentResult(
     /// <summary>The loop stopped because the model kept repeating the same tool batch. The answer
     /// stays (a summary of what had been gathered): this flag only says it is not a task carried to
     /// its end. Without it, the two came out the same.</summary>
-    bool                 WasLoopDetected = false);
+    bool                 WasLoopDetected = false,
+    /// <summary>The final answer stopped at the model's length limit: it is incomplete, and says so.</summary>
+    bool                 AnswerCut       = false);
 
 /// <summary>A single tool invocation within an agentic loop run.</summary>
 internal record ToolExecution(

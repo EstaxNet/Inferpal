@@ -255,8 +255,9 @@
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>сессия</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(достигнут лимит итераций — 20 ходов)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Агент остановился на пределе итераций: ниже — сводка собранного, а не завершённая задача.</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Агент повторял одни и те же вызовы инструментов и был остановлен: ниже — сводка собранного.</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Агент остановился на пределе итераций: ответ выше — сводка собранного, а не завершённая задача.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Агент повторял одни и те же вызовы инструментов и был остановлен: ответ выше — сводка собранного.</value></data>
+  <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Ответ выше остановился на ограничении длины модели: он неполон. Попросите продолжить или увеличьте длину контекста.</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(обнаружена петля — одинаковые вызовы инструментов повторяются, остановка)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(автоматический выключатель открыт — повторные попытки приостановлены на 5 мин)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Готово — {0}</value></data>

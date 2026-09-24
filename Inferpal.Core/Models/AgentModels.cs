@@ -134,7 +134,8 @@ internal record OrchestratorResult(
     int                  TokensUsed,
     int                  PromptTokens,
     bool                 WasLoopDetected,
-    bool                 ReachedIterationLimit)
+    bool                 ReachedIterationLimit,
+    bool                 AnswerCut = false)
 {
     /// <summary>Creates an error result (no plan, no executions).</summary>
     internal static OrchestratorResult Error(string message, List<ChatMessageDto> history) =>

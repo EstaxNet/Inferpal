@@ -399,13 +399,14 @@ internal sealed class AgentOrchestrator
     /// strip any tool_calls so the history is consistent with the empty registry. A degenerate refusal
     /// that slips through anyway is caught (<see cref="LooksLikeToolRefusal"/>) and falls back.
     /// </remarks>
-    private async Task<string> SynthesizeFinalAnswerAsync(
+    /// <returns>The answer, and whether it stopped at the model's length limit.</returns>
+    private async Task<(string Answer, bool Cut)> SynthesizeFinalAnswerAsync(
         string model, List<ChatMessageDto> messages, int anchorCount,
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
         Action<string>? onToken, Action? onStreamReset, Action<string> onStep, CancellationToken ct,
         Action<string>? onThinking = null)
     {
-        var (answer, synthesized) = await TrySynthesizeAsync(
+        var (answer, synthesized, cut) = await TrySynthesizeAsync(
             model, messages, anchorCount, executions, userTask, fallback, onToken, onStreamReset, onStep, ct, onThinking);
 
         // The synthesized answer is what the user read: it must also be what the model reads next
@@ -417,10 +418,10 @@ internal sealed class AgentOrchestrator
             else
                 messages.Add(new ChatMessageDto("assistant", answer));
         }
-        return answer;
+        return (answer, cut);
     }
 
-    private async Task<(string Answer, bool Synthesized)> TrySynthesizeAsync(
+    private async Task<(string Answer, bool Synthesized, bool Cut)> TrySynthesizeAsync(
         string model, List<ChatMessageDto> messages, int anchorCount,
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
         Action<string>? onToken, Action? onStreamReset, Action<string> onStep, CancellationToken ct,
@@ -459,14 +460,14 @@ internal sealed class AgentOrchestrator
                 model, synth, EmptyToolRegistry.Instance, onToken, ct, TaskComplexity.Normal, onThinking: onThinking);
             var answer = MarkdownParser.StripThinkTags(turn.TextContent);
             return MarkdownParser.HasPrintableText(answer) && !LooksLikeToolRefusal(answer)
-                ? (turn.TextContent, true)
-                : (fallback, false);
+                ? (turn.TextContent, true, turn.CutAtLimit)
+                : (fallback, false, false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)   // synthesis failed/timed out → keep the existing fallback
         {
             Diagnostics.Swallow("Agent.Synthesis", ex);
-            return (fallback, false);
+            return (fallback, false, false);
         }
     }
 
@@ -734,13 +735,13 @@ internal sealed class AgentOrchestrator
                             onStepUpdate?.Invoke(plan.Steps.IndexOf(step), AgentStepStatus.Done);
                         }
 
-                    var loopMsg = executions.Count > 0
+                    var (loopMsg, loopCut) = executions.Count > 0
                         ? await SynthesizeFinalAnswerAsync(
                             model, messages, anchorCount, executions, userTask, string.Empty, onToken, onStreamReset, onStep, ct, onThinking)
-                        : Strings.MsgLoopDetected;
+                        : (Strings.MsgLoopDetected, false);
                     return new OrchestratorResult(
                         loopMsg, plan, executions, messages,
-                        totalTokens, lastPromptTokens, true, false);
+                        totalTokens, lastPromptTokens, true, false, loopCut);
                 }
 
                 // ── Execute tools ─────────────────────────────────────────────
@@ -898,9 +899,10 @@ internal sealed class AgentOrchestrator
                 // the tools" refusal (tool-oriented models choke on the prose-now turn). Synthesise the
                 // answer from the gathered results rather than ending on an empty bubble / a refusal.
                 var finalText  = turn.TextContent;
+                var finalCut   = turn.CutAtLimit;
                 var degenerate = LooksLikeToolRefusal(turn.TextContent);
                 if ((!visible || degenerate) && executions.Count > 0)
-                    finalText = await SynthesizeFinalAnswerAsync(
+                    (finalText, finalCut) = await SynthesizeFinalAnswerAsync(
                         model, messages, anchorCount, executions, userTask,
                         degenerate ? string.Empty : finalText,   // never keep a refusal as the fallback
                         onToken, onStreamReset, onStep, ct, onThinking);
@@ -908,18 +910,18 @@ internal sealed class AgentOrchestrator
                 return new OrchestratorResult(
                     finalText,
                     plan, executions, messages,
-                    totalTokens, lastPromptTokens, false, false);
+                    totalTokens, lastPromptTokens, false, false, finalCut);
             }
         }
 
         // Hit the iteration cap. If tools ran, synthesise a final answer from what was gathered so
         // the user gets a real reply instead of only the "iteration limit" notice.
-        var capFinal = executions.Count > 0
+        var (capFinal, capCut) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
                 model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit, onToken, onStreamReset, onStep, ct, onThinking)
-            : Strings.MsgIterationLimit;
+            : (Strings.MsgIterationLimit, false);
         return new OrchestratorResult(
             capFinal, plan, executions, messages,
-            totalTokens, lastPromptTokens, false, true);
+            totalTokens, lastPromptTokens, false, true, capCut);
     }
 }
