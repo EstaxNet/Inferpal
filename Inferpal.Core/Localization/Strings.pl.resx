@@ -258,6 +258,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Agent zatrzymał się na limicie iteracji: powyższa odpowiedź podsumowuje to, co zebrał, a nie ukończone zadanie.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Agent powtarzał te same wywołania narzędzi i został zatrzymany: powyższa odpowiedź podsumowuje to, co zebrał.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Powyższa odpowiedź zatrzymała się na limicie długości modelu: jest niepełna. Poproś o kontynuację albo zwiększ długość kontekstu.</value></data>
+  <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Ten przegląd zatrzymał się na limicie długości modelu: brakuje uwag dalej, więc brak uwagi niczego nie dowodzi. Zwiększ długość kontekstu albo przeglądaj mniej zmian naraz (dodaj do indeksu tylko ich część).</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(wykryto pętlę — identyczne wywołania narzędzi powtórzono, zatrzymanie)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(bezpiecznik otwarty — ponowne próby wstrzymane na 5 min po powtarzających się błędach)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Gotowe — {0}</value></data>

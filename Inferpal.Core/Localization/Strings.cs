@@ -463,6 +463,7 @@ internal static class Strings
     public static string AgentEndedAtIterationLimit => Get(nameof(AgentEndedAtIterationLimit));
     public static string AgentEndedOnRepeat         => Get(nameof(AgentEndedOnRepeat));
     public static string AnswerCutAtLimit           => Get(nameof(AnswerCutAtLimit));
+    public static string CheckReviewCut             => Get(nameof(CheckReviewCut));
     public static string MsgLoopDetected      => Get(nameof(MsgLoopDetected));
     public static string MsgCircuitOpen       => Get(nameof(MsgCircuitOpen));
     public static string TokenUsage(string last, string session) =>

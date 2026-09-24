@@ -258,6 +258,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agente si è fermato al limite di iterazioni: la risposta qui sopra riassume ciò che aveva raccolto, non un compito completato.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agente ripeteva le stesse chiamate agli strumenti ed è stato fermato: la risposta qui sopra riassume ciò che aveva raccolto.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La risposta qui sopra si è interrotta al limite di lunghezza del modello: è incompleta. Chiedigli di continuare oppure aumenta la lunghezza del contesto.</value></data>
+  <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Questa revisione si è interrotta al limite di lunghezza del modello: mancano i rilievi successivi, quindi l'assenza di un rilievo non prova nulla. Aumenta la lunghezza del contesto oppure rivedi meno modifiche alla volta (mettine in stage solo una parte).</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(ciclo rilevato — chiamate strumento identiche ripetute, interruzione)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(circuit breaker aperto — tentativi sospesi per 5 min dopo errori ripetuti)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Fatto — {0}</value></data>

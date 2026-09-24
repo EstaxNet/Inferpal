@@ -107,11 +107,13 @@ internal static class CheckCommandHandler
         };
 
         string answer;
+        bool   cut;
         try
         {
             var result = await client.SendChatAsync(
                 ModelRouter.Resolve(config, ModelRole.Chat), history, EmptyToolRegistry.Instance, null, ct);
             answer = result.TextContent;
+            cut    = result.CutAtLimit;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { return new(Strings.MsgError(ex.Message)); }
@@ -119,6 +121,10 @@ internal static class CheckCommandHandler
         // Anchors come from the very text the model was shown, so a location is checked against
         // what the model could actually see — not against the working tree, which may have moved.
         var rendered = CheckReviewParser.Render(CheckReviewParser.Parse(answer, DiffAnchors.Parse(capped.Text)));
+        // ⚠ Same reason, other end: a review that stopped at the length limit lists the findings it
+        // reached, and the absence of the rest reads as "the rest is fine" — a verdict nobody gave.
+        if (cut)
+            rendered = Strings.CheckReviewCut + "\n\n" + rendered;
         if (capped.IsTruncated)
             rendered = Strings.CheckDiffTruncated(capped.Kept, capped.Total) + "\n\n" + rendered;
         return new(Named(rendered));

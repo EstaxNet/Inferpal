@@ -258,6 +258,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agent s'est arrêté à sa limite d'itérations : la réponse ci-dessus résume ce qu'il avait rassemblé, pas une tâche terminée.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agent répétait les mêmes appels d'outils et a été arrêté : la réponse ci-dessus résume ce qu'il avait rassemblé.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La réponse ci-dessus s'est arrêtée à la limite de longueur du modèle : elle est incomplète. Demandez-lui de continuer, ou augmentez la longueur de contexte.</value></data>
+  <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Cette relecture s'est arrêtée à la limite de longueur du modèle : les constats au-delà manquent, donc l'absence d'un constat ne prouve rien. Augmentez la longueur de contexte, ou relisez moins de changements à la fois (indexez-en une partie).</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(boucle détectée — appels d'outils identiques répétés, arrêt)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(disjoncteur ouvert — tentatives suspendues 5 min après des échecs répétés)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Terminé — {0}</value></data>

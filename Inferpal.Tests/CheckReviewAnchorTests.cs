@@ -248,6 +248,37 @@ public class CheckReviewAnchorTests
             Assert.DoesNotContain("status --short", asked);   // staged wins, like /commit
             Assert.Contains("src/Alpha.cs:11", result.Message);
             Assert.Contains("API key in clear text", result.Message);
+            Assert.DoesNotContain(Inferpal.Localization.Strings.CheckReviewCut, result.Message);   // a finished review says nothing
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    /// <summary>
+    /// ⚠ A review that stopped at the model's length limit lists the findings it reached: read as the
+    /// whole review, the absence of the others is a verdict ("the rest is fine") that nobody gave. The
+    /// note rides ABOVE the findings — it qualifies them — like the note of a capped diff.
+    /// </summary>
+    [Fact]
+    public async Task Handle_AReviewCutAtTheLengthLimit_SaysTheFindingsPastItAreMissing()
+    {
+        var root = NewRootWithCheck();
+        try
+        {
+            var client = new FakeInferenceProvider
+            {
+                OnChat = (_, _) => Task.FromResult(new ChatTurnResult(
+                    "- [blocker] src/Alpha.cs:11 — API key in clear text\n- [major] src/Al", [], 0, 0, CutAtLimit: true)),
+            };
+            var result = await CheckCommandHandler.HandleAsync(
+                client, new InferpalConfig(), root, ["/check"],
+                git: (args, _) => Task.FromResult((args == "diff --staged" ? RawDiff : "", 0)),
+                onProgress: null, CancellationToken.None);
+
+            var message = result.Message!;
+            var note    = message.IndexOf(Inferpal.Localization.Strings.CheckReviewCut, StringComparison.Ordinal);
+            Assert.True(note >= 0, "the cut is not said");
+            Assert.True(note < message.IndexOf("API key in clear text", StringComparison.Ordinal),
+                        "the note must come before the findings it qualifies");
         }
         finally { Directory.Delete(root, true); }
     }
