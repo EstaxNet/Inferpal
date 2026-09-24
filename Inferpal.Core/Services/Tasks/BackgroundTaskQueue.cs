@@ -42,6 +42,22 @@ internal sealed class BackgroundTaskQueue : IDisposable
     {
         /// <summary>A read-only run: report only.</summary>
         public static TaskRunOutcome Of(string report) => new(report, []);
+
+        /// <summary>
+        /// The outcome of an agent run: its answer as the report — followed, when the run was not a task
+        /// carried to its end, by the line that says so — and the proposals.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ A report is read LATER, out of the conversation, as the result of an investigation: a run
+        /// stopped on a repeat, or an answer that stopped at the length limit, must not read as a finished
+        /// one. Same policy as the chat's (<see cref="Agent.ChatTurnPolicy.EndNotice"/>), for both runners.
+        /// </remarks>
+        public static TaskRunOutcome Of(AgentResult run, IReadOnlyList<TaskProposal> proposals)
+        {
+            var notice = Agent.ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut);
+            return new(notice.Length == 0 ? run.FinalResponse : run.FinalResponse.TrimEnd() + "\n\n" + notice,
+                       proposals);
+        }
     }
 
     /// <summary>Runs one task to completion. Returns its outcome; may throw to fail the task.</summary>

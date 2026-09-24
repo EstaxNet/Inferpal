@@ -96,8 +96,7 @@ internal sealed partial class HostServer
                 onToken: null,
                 ct:      ct);
 
-            return new BackgroundTaskQueue.TaskRunOutcome(
-                run.FinalResponse, recorder?.Proposals ?? []);
+            return BackgroundTaskQueue.TaskRunOutcome.Of(run, recorder?.Proposals ?? []);
         },
         // Dedicated notification, not a chat/step status line: the adapter renders it as a
         // persistent bubble (VS parity) instead of a status wiped by the next setBusy.

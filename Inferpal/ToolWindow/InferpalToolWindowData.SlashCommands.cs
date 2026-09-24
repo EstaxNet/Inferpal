@@ -461,8 +461,7 @@ internal partial class InferpalToolWindowData
                 onToken: null,
                 ct:      taskCt);
 
-            return new BackgroundTaskQueue.TaskRunOutcome(
-                run.FinalResponse, recorder?.Proposals ?? []);
+            return BackgroundTaskQueue.TaskRunOutcome.Of(run, recorder?.Proposals ?? []);
         });
 
         // A finished task must announce itself: its report is worthless if nobody knows it exists.
