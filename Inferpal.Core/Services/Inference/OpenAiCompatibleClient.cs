@@ -124,22 +124,15 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     /// the agent's ~30 tool definitions add several thousand tokens and are exactly what tips a
     /// request over a modestly-sized loaded context, so they must be included.</summary>
     internal static int EstimateRequestTokens(List<ChatMessageDto> messages, List<ToolDefinition>? defs)
-    {
-        var chars = AgentOrchestrator.EstimateChars(messages);
-        if (defs is { Count: > 0 })
-        {
-            try   { chars += JsonSerializer.Serialize(defs).Length; }
-            catch { chars += defs.Count * 400; } // fallback: rough per-tool budget if serialization fails
-        }
-        return chars / 4;
-    }
+        => RequestSize.Of(messages, defs).Total;
 
-    /// <summary>Returns a user-facing overflow message when <paramref name="estimateTokens"/> already
-    /// exceeds the model's loaded context window, else <c>null</c>. A known, positive
-    /// <paramref name="loadedContext"/> is required — an unknown window never blocks a request.</summary>
-    internal static string? CheckContextFit(int estimateTokens, int? loadedContext)
-        => loadedContext is > 0 && estimateTokens > loadedContext
-            ? Strings.MsgContextWontFit(estimateTokens, loadedContext.Value)
+    /// <summary>Returns a user-facing overflow message when <paramref name="size"/> already exceeds the
+    /// model's loaded context window, else <c>null</c>. A known, positive <paramref name="loadedContext"/>
+    /// is required — an unknown window never blocks a request. The message lists what the request is
+    /// made of, largest part first (<see cref="RequestSize.Breakdown"/>).</summary>
+    internal static string? CheckContextFit(RequestSize size, int? loadedContext)
+        => loadedContext is > 0 && size.Total > loadedContext
+            ? Strings.MsgContextWontFit(size.Total, loadedContext.Value, size.Breakdown())
             : null;
 
     // ── Chat (SSE streaming) ───────────────────────────────────────────────────
@@ -177,7 +170,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // false-positive a request that would have fit. Ollama is a separate class, unaffected.
         var loadedCtx = await GetLoadedContextLengthAsync(model, ct);
         // The estimate serializes every tool schema: only pay for it when there is a window to check.
-        if (loadedCtx is > 0 && CheckContextFit(EstimateRequestTokens(messages, defs), loadedCtx) is { } overflowMsg)
+        if (loadedCtx is > 0 && CheckContextFit(RequestSize.Of(messages, defs), loadedCtx) is { } overflowMsg)
             throw new AgentHttpException(overflowMsg, isTimeout: false);
 
         var request = new OpenAiChatRequest(
@@ -251,7 +244,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     if (line.TrimStart().StartsWith('{') && TryExtractError(ParseErrorElement(line)) is { } bareError)
                     {
                         RecordFailure();
-                        throw new AgentHttpException(MapServerError(bareError, base_), isTimeout: false);
+                        throw new AgentHttpException(MapServerError(bareError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                     }
                     continue;
                 }
@@ -271,7 +264,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 if (TryExtractError(chunk?.Error ?? default) is { } serverError)
                 {
                     RecordFailure();
-                    throw new AgentHttpException(MapServerError(serverError, base_), isTimeout: false);
+                    throw new AgentHttpException(MapServerError(serverError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                 }
 
                 if (chunk?.Usage is { } usage)

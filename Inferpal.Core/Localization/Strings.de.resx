@@ -269,10 +269,20 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="MsgServerError" xml:space="preserve"><value>Der Inferenzserver unter {0} hat einen Fehler zurückgegeben:
 
 {1}</value></data>
-  <data name="MsgContextOverflow" xml:space="preserve"><value>Die Anfrage ist für das Kontextfenster des Modells im Agentenmodus zu groß — allein die Werkzeugdefinitionen belegen mehrere Tausend Tokens. Erhöhen Sie die Kontextlänge des Modells (16384 oder mehr in LM Studio empfohlen) oder reduzieren Sie die Anzahl der aktivierten Agenten-Werkzeuge.
+  <data name="MsgContextOverflow" xml:space="preserve"><value>Die Anfrage ist für das Kontextfenster des Modells zu groß. Sie enthält:
+{1}
+
+Verkleinern Sie den größten Teil oder erhöhen Sie die Kontextlänge des Modells.
 
 Serverdetails: {0}</value></data>
-  <data name="MsgContextWontFit" xml:space="preserve"><value>Die Anfrage (~{0} Tokens) ist größer als das Kontextfenster, mit dem das Modell geladen ist ({1} Tokens), im Agentenmodus — allein die Werkzeugdefinitionen belegen mehrere Tausend Tokens. Erhöhen Sie die geladene Kontextlänge (16384 oder mehr in LM Studio empfohlen) oder reduzieren Sie die Anzahl der aktivierten Agenten-Werkzeuge.</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>Die Anfrage (~{0} Tokens) ist größer als das Kontextfenster, mit dem das Modell geladen ist ({1} Tokens). Sie enthält:
+{2}
+
+Verkleinern Sie den größten Teil oder laden Sie das Modell mit einem größeren Kontext (mehr als ~{0} Tokens).</value></data>
+  <data name="ContextPartTools" xml:space="preserve"><value>Werkzeugdefinitionen: ~{0} Tokens — weniger aktivierte Werkzeuge</value></data>
+  <data name="ContextPartSystem" xml:space="preserve"><value>System-Prompt: ~{0} Tokens — angeheftete Dateien, Projektkontext, Gedächtnis, Regeln</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>bisherige Unterhaltung: ~{0} Tokens — /clear beginnt eine neue</value></data>
+  <data name="ContextPartLast" xml:space="preserve"><value>letzte Nachricht: ~{0} Tokens — angehängte Dateien, eingefügter Code</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{1} unter {0} nicht erreichbar
 
 Fehlerbehebung:

@@ -270,10 +270,20 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="MsgServerError" xml:space="preserve"><value>The inference server at {0} returned an error:
 
 {1}</value></data>
-  <data name="MsgContextOverflow" xml:space="preserve"><value>The request is too large for the model's context window in agent mode — the tool definitions alone take several thousand tokens. Increase the model's context length (16384 or more recommended in LM Studio), or reduce the number of enabled agent tools.
+  <data name="MsgContextOverflow" xml:space="preserve"><value>The request is too large for the model's context window. It carries:
+{1}
+
+Reduce the largest part, or increase the model's context length.
 
 Server detail: {0}</value></data>
-  <data name="MsgContextWontFit" xml:space="preserve"><value>The request (~{0} tokens) is larger than the context the model is loaded with ({1} tokens) in agent mode — the tool definitions alone take several thousand tokens. Increase the loaded context length (16384 or more recommended in LM Studio), or reduce the number of enabled agent tools.</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>The request (~{0} tokens) is larger than the context the model is loaded with ({1} tokens). It carries:
+{2}
+
+Reduce the largest part, or load the model with a larger context (more than ~{0} tokens).</value></data>
+  <data name="ContextPartTools" xml:space="preserve"><value>tool definitions: ~{0} tokens — fewer enabled tools</value></data>
+  <data name="ContextPartSystem" xml:space="preserve"><value>system prompt: ~{0} tokens — pinned files, project context, memory, rules</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>earlier conversation: ~{0} tokens — /clear starts a new one</value></data>
+  <data name="ContextPartLast" xml:space="preserve"><value>last message: ~{0} tokens — attached files, pasted code</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Cannot reach {1} at {0}
 
 Troubleshooting steps:

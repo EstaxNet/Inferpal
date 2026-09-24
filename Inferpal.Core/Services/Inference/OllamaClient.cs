@@ -150,7 +150,7 @@ internal class OllamaClient : InferenceProviderBase
                 if (TryExtractError(chunk.Error) is { } serverError)
                 {
                     RecordFailure();
-                    throw new AgentHttpException(MapServerError(serverError, base_), isTimeout: false);
+                    throw new AgentHttpException(MapServerError(serverError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                 }
 
                 if (chunk.Message is not null)

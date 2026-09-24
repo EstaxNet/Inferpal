@@ -372,16 +372,19 @@ public class OpenAiCompatibleClientTests
     [InlineData("Try to load the model with a larger context length")]
     public void MapServerError_ContextOverflow_GetsActionableHint(string serverError)
     {
-        var msg = OpenAiCompatibleClient.MapServerError(serverError, "http://localhost:1234/v1");
-        // The actionable hint mentions raising the context length; the raw server text is preserved.
-        Assert.Equal(Strings.MsgContextOverflow(serverError), msg);
+        var size = new RequestSize(Tools: 3_000, SystemPrompt: 1_000, Earlier: 0, Last: 5_000);
+        var msg  = OpenAiCompatibleClient.MapServerError(serverError, "http://localhost:1234/v1", () => size);
+        // The hint says what the request is made of; the raw server text is preserved.
+        Assert.Equal(Strings.MsgContextOverflow(serverError, size.Breakdown()), msg);
         Assert.Contains(serverError, msg);
     }
 
     [Fact]
     public void MapServerError_GenericError_SurfacedVerbatimWithUrl()
     {
-        var msg = OpenAiCompatibleClient.MapServerError("model not found", "http://host/v1");
+        // Not an overflow: the request is not even measured (serializing every tool schema is not free).
+        var msg = OpenAiCompatibleClient.MapServerError("model not found", "http://host/v1",
+                                                        () => throw new InvalidOperationException("measured"));
         Assert.Equal(Strings.MsgServerError("http://host/v1", "model not found"), msg);
         Assert.Contains("model not found", msg);
         Assert.Contains("http://host/v1", msg);
@@ -420,21 +423,22 @@ public class OpenAiCompatibleClientTests
     public void CheckContextFit_OverBudget_ReturnsActionableMessage()
     {
         // Prompt estimate alone exceeds the loaded window → fail fast with the concrete numbers.
-        var msg = OpenAiCompatibleClient.CheckContextFit(estimateTokens: 9233, loadedContext: 8192);
-        Assert.Equal(Strings.MsgContextWontFit(9233, 8192), msg);
+        var size = new RequestSize(Tools: 0, SystemPrompt: 0, Earlier: 0, Last: 9233);
+        var msg  = OpenAiCompatibleClient.CheckContextFit(size, loadedContext: 8192);
+        Assert.Equal(Strings.MsgContextWontFit(9233, 8192, size.Breakdown()), msg);
         Assert.Contains("9233", msg);
         Assert.Contains("8192", msg);
     }
 
     [Fact]
     public void CheckContextFit_WithinBudget_ReturnsNull()
-        => Assert.Null(OpenAiCompatibleClient.CheckContextFit(estimateTokens: 4000, loadedContext: 8192));
+        => Assert.Null(OpenAiCompatibleClient.CheckContextFit(new RequestSize(0, 0, 0, 4000), loadedContext: 8192));
 
     [Theory]
     [InlineData(null)]  // unknown loaded context (generic OpenAI server) → never blocks
     [InlineData(0)]     // a zero/garbage figure must not block either
     public void CheckContextFit_UnknownOrZeroContext_NeverBlocks(int? loadedContext)
-        => Assert.Null(OpenAiCompatibleClient.CheckContextFit(estimateTokens: 999_999, loadedContext));
+        => Assert.Null(OpenAiCompatibleClient.CheckContextFit(new RequestSize(0, 0, 0, 999_999), loadedContext));
 
     [Fact]
     public void Capabilities_OpenAi_DisablesOllamaOnlyFeatures()

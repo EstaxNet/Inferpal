@@ -269,10 +269,20 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="MsgServerError" xml:space="preserve"><value>Serwer inferencji pod adresem {0} zwrócił błąd:
 
 {1}</value></data>
-  <data name="MsgContextOverflow" xml:space="preserve"><value>Żądanie jest zbyt duże dla okna kontekstu modelu w trybie agenta — same definicje narzędzi zajmują kilka tysięcy tokenów. Zwiększ długość kontekstu modelu (zalecane 16384 lub więcej w LM Studio) albo zmniejsz liczbę włączonych narzędzi agenta.
+  <data name="MsgContextOverflow" xml:space="preserve"><value>Żądanie jest zbyt duże dla okna kontekstu modelu. Zawiera:
+{1}
+
+Zmniejsz największą część albo zwiększ długość kontekstu modelu.
 
 Szczegóły serwera: {0}</value></data>
-  <data name="MsgContextWontFit" xml:space="preserve"><value>Żądanie (~{0} tokenów) jest większe niż kontekst, z którym załadowano model ({1} tokenów) w trybie agenta — same definicje narzędzi zajmują kilka tysięcy tokenów. Zwiększ załadowaną długość kontekstu (zalecane 16384 lub więcej w LM Studio) albo zmniejsz liczbę włączonych narzędzi agenta.</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>Żądanie (~{0} tokenów) jest większe niż kontekst, z którym załadowano model ({1} tokenów). Zawiera:
+{2}
+
+Zmniejsz największą część albo załaduj model z większym kontekstem (ponad ~{0} tokenów).</value></data>
+  <data name="ContextPartTools" xml:space="preserve"><value>definicje narzędzi: ~{0} tokenów — mniej włączonych narzędzi</value></data>
+  <data name="ContextPartSystem" xml:space="preserve"><value>prompt systemowy: ~{0} tokenów — przypięte pliki, kontekst projektu, pamięć, reguły</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>wcześniejsza rozmowa: ~{0} tokenów — /clear zaczyna nową</value></data>
+  <data name="ContextPartLast" xml:space="preserve"><value>ostatnia wiadomość: ~{0} tokenów — załączone pliki, wklejony kod</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Nie można połączyć się z {1} pod adresem {0}
 
 Kroki rozwiązywania problemów:

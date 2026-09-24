@@ -269,10 +269,20 @@
   <data name="MsgServerError" xml:space="preserve"><value>{0} の推論サーバーがエラーを返しました:
 
 {1}</value></data>
-  <data name="MsgContextOverflow" xml:space="preserve"><value>エージェントモードではリクエストがモデルのコンテキストウィンドウに対して大きすぎます。ツール定義だけで数千トークンを占有します。モデルのコンテキスト長を増やす（LM Studio では 16384 以上を推奨）か、有効なエージェントツールの数を減らしてください。
+  <data name="MsgContextOverflow" xml:space="preserve"><value>リクエストがモデルのコンテキストウィンドウに対して大きすぎます。内訳:
+{1}
+
+最も大きい部分を減らすか、モデルのコンテキスト長を増やしてください。
 
 サーバー詳細: {0}</value></data>
-  <data name="MsgContextWontFit" xml:space="preserve"><value>エージェントモードでは、リクエスト（約 {0} トークン）がモデルにロードされているコンテキスト（{1} トークン）より大きくなっています。ツール定義だけで数千トークンを占有します。ロードするコンテキスト長を増やす（LM Studio では 16384 以上を推奨）か、有効なエージェントツールの数を減らしてください。</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>リクエスト（約 {0} トークン）がモデルにロードされているコンテキスト（{1} トークン）より大きくなっています。内訳:
+{2}
+
+最も大きい部分を減らすか、より大きなコンテキスト（約 {0} トークン超）でモデルをロードしてください。</value></data>
+  <data name="ContextPartTools" xml:space="preserve"><value>ツール定義: 約 {0} トークン — 有効なツールを減らす</value></data>
+  <data name="ContextPartSystem" xml:space="preserve"><value>システムプロンプト: 約 {0} トークン — ピン留めしたファイル、プロジェクトコンテキスト、メモリ、ルール</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>これまでの会話: 約 {0} トークン — /clear で新しい会話を開始</value></data>
+  <data name="ContextPartLast" xml:space="preserve"><value>最後のメッセージ: 約 {0} トークン — 添付ファイル、貼り付けたコード</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{0} の {1} に接続できません
 
 トラブルシューティング手順:

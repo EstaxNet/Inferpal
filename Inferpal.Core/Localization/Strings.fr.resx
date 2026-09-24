@@ -269,10 +269,20 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="MsgServerError" xml:space="preserve"><value>Le serveur d'inférence à {0} a renvoyé une erreur :
 
 {1}</value></data>
-  <data name="MsgContextOverflow" xml:space="preserve"><value>La requête est trop grande pour la fenêtre de contexte du modèle en mode agent — les seules définitions d'outils occupent plusieurs milliers de tokens. Augmentez la longueur de contexte du modèle (16384 ou plus recommandé dans LM Studio), ou réduisez le nombre d'outils agent activés.
+  <data name="MsgContextOverflow" xml:space="preserve"><value>La requête est trop grande pour la fenêtre de contexte du modèle. Elle contient :
+{1}
+
+Réduisez la plus grande part, ou augmentez la longueur de contexte du modèle.
 
 Détail du serveur : {0}</value></data>
-  <data name="MsgContextWontFit" xml:space="preserve"><value>La requête (~{0} tokens) est plus grande que le contexte avec lequel le modèle est chargé ({1} tokens) en mode agent — les seules définitions d'outils occupent plusieurs milliers de tokens. Augmentez la longueur de contexte chargée (16384 ou plus recommandé dans LM Studio), ou réduisez le nombre d'outils agent activés.</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>La requête (~{0} tokens) est plus grande que le contexte avec lequel le modèle est chargé ({1} tokens). Elle contient :
+{2}
+
+Réduisez la plus grande part, ou chargez le modèle avec un contexte plus grand (plus de ~{0} tokens).</value></data>
+  <data name="ContextPartTools" xml:space="preserve"><value>définitions d'outils : ~{0} tokens — moins d'outils activés</value></data>
+  <data name="ContextPartSystem" xml:space="preserve"><value>prompt système : ~{0} tokens — fichiers épinglés, contexte du projet, mémoire, règles</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>conversation précédente : ~{0} tokens — /clear en commence une nouvelle</value></data>
+  <data name="ContextPartLast" xml:space="preserve"><value>dernier message : ~{0} tokens — fichiers joints, code collé</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Impossible de joindre {1} à {0}
 
 Étapes de dépannage :

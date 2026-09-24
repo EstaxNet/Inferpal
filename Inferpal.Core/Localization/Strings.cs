@@ -500,11 +500,24 @@ internal static class Strings
     public static string MsgServerError(string url, string detail) =>
         string.Format(Get(nameof(MsgServerError)), url, detail);
 
-    public static string MsgContextOverflow(string detail) =>
-        string.Format(Get(nameof(MsgContextOverflow)), detail);
+    public static string MsgContextOverflow(string detail, string breakdown) =>
+        string.Format(Get(nameof(MsgContextOverflow)), detail, breakdown);
 
-    public static string MsgContextWontFit(int estimateTokens, int loadedContext) =>
-        string.Format(Get(nameof(MsgContextWontFit)), estimateTokens, loadedContext);
+    public static string MsgContextWontFit(int estimateTokens, int loadedContext, string breakdown) =>
+        string.Format(Get(nameof(MsgContextWontFit)), estimateTokens, loadedContext, breakdown);
+
+    // One line per part of an oversized request (RequestSize.Breakdown): its size and what shrinks it.
+    public static string ContextPartTools(int tokens) =>
+        string.Format(Get(nameof(ContextPartTools)), tokens);
+
+    public static string ContextPartSystem(int tokens) =>
+        string.Format(Get(nameof(ContextPartSystem)), tokens);
+
+    public static string ContextPartEarlier(int tokens) =>
+        string.Format(Get(nameof(ContextPartEarlier)), tokens);
+
+    public static string ContextPartLast(int tokens) =>
+        string.Format(Get(nameof(ContextPartLast)), tokens);
 
     public static string MsgConnectionGuardFailed(string url, string backend) =>
         string.Format(Get(nameof(MsgConnectionGuardFailed)), url, backend);

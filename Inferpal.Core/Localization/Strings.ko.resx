@@ -269,10 +269,20 @@
   <data name="MsgServerError" xml:space="preserve"><value>{0}의 추론 서버가 오류를 반환했습니다:
 
 {1}</value></data>
-  <data name="MsgContextOverflow" xml:space="preserve"><value>에이전트 모드에서 요청이 모델의 컨텍스트 창에 비해 너무 큽니다. 도구 정의만으로도 수천 토큰을 차지합니다. 모델의 컨텍스트 길이를 늘리거나(LM Studio에서 16384 이상 권장) 활성화된 에이전트 도구 수를 줄이세요.
+  <data name="MsgContextOverflow" xml:space="preserve"><value>요청이 모델의 컨텍스트 창에 비해 너무 큽니다. 구성:
+{1}
+
+가장 큰 부분을 줄이거나 모델의 컨텍스트 길이를 늘리세요.
 
 서버 세부 정보: {0}</value></data>
-  <data name="MsgContextWontFit" xml:space="preserve"><value>에이전트 모드에서 요청(~{0} 토큰)이 모델이 로드된 컨텍스트({1} 토큰)보다 큽니다. 도구 정의만으로도 수천 토큰을 차지합니다. 로드된 컨텍스트 길이를 늘리거나(LM Studio에서 16384 이상 권장) 활성화된 에이전트 도구 수를 줄이세요.</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>요청(~{0} 토큰)이 모델이 로드된 컨텍스트({1} 토큰)보다 큽니다. 구성:
+{2}
+
+가장 큰 부분을 줄이거나 더 큰 컨텍스트(~{0} 토큰 초과)로 모델을 로드하세요.</value></data>
+  <data name="ContextPartTools" xml:space="preserve"><value>도구 정의: ~{0} 토큰 — 활성화된 도구 줄이기</value></data>
+  <data name="ContextPartSystem" xml:space="preserve"><value>시스템 프롬프트: ~{0} 토큰 — 고정된 파일, 프로젝트 컨텍스트, 메모리, 규칙</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>이전 대화: ~{0} 토큰 — /clear로 새 대화 시작</value></data>
+  <data name="ContextPartLast" xml:space="preserve"><value>마지막 메시지: ~{0} 토큰 — 첨부 파일, 붙여 넣은 코드</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{0}의 {1}에 연결할 수 없습니다
 
 문제 해결 단계:

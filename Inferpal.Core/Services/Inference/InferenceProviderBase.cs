@@ -265,18 +265,19 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     }
 
     /// <summary>
-    /// Turns a raw server error into a user-facing message. A context-overflow error (the request,
-    /// inflated by the agent's tool definitions, no longer fits the model's loaded context window) is
-    /// the common failure, so it gets an actionable hint; everything else is surfaced verbatim.
+    /// Turns a raw server error into a user-facing message. A context-overflow error (the request no
+    /// longer fits the model's loaded context window) is the common failure, so it says what the request
+    /// is made of, largest part first (<see cref="RequestSize.Breakdown"/>) — <paramref name="size"/> is
+    /// only measured then; everything else is surfaced verbatim.
     /// </summary>
-    internal static string MapServerError(string serverError, string url)
+    internal static string MapServerError(string serverError, string url, Func<RequestSize> size)
     {
         var lower = serverError.ToLowerInvariant();
         var isContextOverflow =
             lower.Contains("context size") || lower.Contains("context length") ||
             lower.Contains("n_ctx") || lower.Contains("exceeds the available context");
         return isContextOverflow
-            ? Strings.MsgContextOverflow(serverError)
+            ? Strings.MsgContextOverflow(serverError, size().Breakdown())
             : Strings.MsgServerError(url, serverError);
     }
 

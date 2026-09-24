@@ -269,10 +269,20 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="MsgServerError" xml:space="preserve"><value>El servidor de inferencia en {0} devolvió un error:
 
 {1}</value></data>
-  <data name="MsgContextOverflow" xml:space="preserve"><value>La solicitud es demasiado grande para la ventana de contexto del modelo en modo agente: solo las definiciones de herramientas ocupan varios miles de tokens. Aumenta la longitud de contexto del modelo (se recomienda 16384 o más en LM Studio) o reduce el número de herramientas de agente activadas.
+  <data name="MsgContextOverflow" xml:space="preserve"><value>La solicitud es demasiado grande para la ventana de contexto del modelo. Contiene:
+{1}
+
+Reduce la parte más grande o aumenta la longitud de contexto del modelo.
 
 Detalle del servidor: {0}</value></data>
-  <data name="MsgContextWontFit" xml:space="preserve"><value>La solicitud (~{0} tokens) es mayor que el contexto con el que está cargado el modelo ({1} tokens) en modo agente: solo las definiciones de herramientas ocupan varios miles de tokens. Aumenta la longitud de contexto cargada (se recomienda 16384 o más en LM Studio) o reduce el número de herramientas de agente activadas.</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>La solicitud (~{0} tokens) es mayor que el contexto con el que está cargado el modelo ({1} tokens). Contiene:
+{2}
+
+Reduce la parte más grande o carga el modelo con un contexto mayor (más de ~{0} tokens).</value></data>
+  <data name="ContextPartTools" xml:space="preserve"><value>definiciones de herramientas: ~{0} tokens — menos herramientas activadas</value></data>
+  <data name="ContextPartSystem" xml:space="preserve"><value>prompt del sistema: ~{0} tokens — archivos fijados, contexto del proyecto, memoria, reglas</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>conversación anterior: ~{0} tokens — /clear empieza una nueva</value></data>
+  <data name="ContextPartLast" xml:space="preserve"><value>último mensaje: ~{0} tokens — archivos adjuntos, código pegado</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>No se puede alcanzar {1} en {0}
 
 Pasos para solucionar el problema:

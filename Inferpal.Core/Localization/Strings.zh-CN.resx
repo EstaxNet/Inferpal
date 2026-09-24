@@ -269,10 +269,20 @@
   <data name="MsgServerError" xml:space="preserve"><value>{0} 的推理服务器返回了错误：
 
 {1}</value></data>
-  <data name="MsgContextOverflow" xml:space="preserve"><value>在智能体模式下，请求对于模型的上下文窗口而言过大——仅工具定义就占用数千个 token。请增大模型的上下文长度（LM Studio 中建议 16384 或更高），或减少已启用的智能体工具数量。
+  <data name="MsgContextOverflow" xml:space="preserve"><value>请求对于模型的上下文窗口而言过大。其组成：
+{1}
+
+请缩减最大的部分，或增大模型的上下文长度。
 
 服务器详情：{0}</value></data>
-  <data name="MsgContextWontFit" xml:space="preserve"><value>在智能体模式下，请求（约 {0} 个 token）大于模型已加载的上下文（{1} 个 token）——仅工具定义就占用数千个 token。请增大已加载的上下文长度（LM Studio 中建议 16384 或更高），或减少已启用的智能体工具数量。</value></data>
+  <data name="MsgContextWontFit" xml:space="preserve"><value>请求（约 {0} 个 token）大于模型已加载的上下文（{1} 个 token）。其组成：
+{2}
+
+请缩减最大的部分，或以更大的上下文（超过约 {0} 个 token）加载模型。</value></data>
+  <data name="ContextPartTools" xml:space="preserve"><value>工具定义：约 {0} 个 token — 减少已启用的工具</value></data>
+  <data name="ContextPartSystem" xml:space="preserve"><value>系统提示词：约 {0} 个 token — 固定的文件、项目上下文、记忆、规则</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>之前的对话：约 {0} 个 token — /clear 开始新对话</value></data>
+  <data name="ContextPartLast" xml:space="preserve"><value>最后一条消息：约 {0} 个 token — 附加的文件、粘贴的代码</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>无法连接到 {0} 的 {1}
 
 故障排除步骤：
