@@ -1587,7 +1587,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const selection = !editor.selection.isEmpty;
     const code = selection ? doc.getText(editor.selection) : doc.getText();
     const file = vscode.workspace.asRelativePath(doc.uri, false);
-    const excerpt = await host.codeExcerpt(code, file, selection);
+    // The model the turn below will ask: the excerpt is sized for the window it really loaded.
+    const excerpt = await host.codeExcerpt(code, file, selection, this.model || undefined);
     const instruction = kind === 'explain'
       ? t('Explain the following code from {0} — what it does, how, and any pitfalls.', file)
       : t('Review the following code from {0}: point out bugs, risks, and concrete improvements.', file);

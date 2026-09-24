@@ -11,12 +11,15 @@ internal abstract class SelectionCommandBase : Command
 {
     protected readonly VsContextHolder    _contextHolder;
     private   readonly InferpalConfig  _config;
+    private   readonly IInferenceProvider _client;
 
-    protected SelectionCommandBase(VisualStudioExtensibility extensibility, VsContextHolder contextHolder, InferpalConfig config)
+    protected SelectionCommandBase(VisualStudioExtensibility extensibility, VsContextHolder contextHolder, InferpalConfig config,
+                                   IInferenceProvider client)
         : base(extensibility)
     {
         _contextHolder = contextHolder;
         _config        = config;
+        _client        = client;
     }
 
     /// <summary>Builds the instruction prompt for this code action (no code block — code is attached separately).</summary>
@@ -47,7 +50,10 @@ internal abstract class SelectionCommandBase : Command
                 rawCode     = !sel.IsEmpty ? sel.Extent.CopyToString() : view.Document.Text.CopyToString();
                 attachLabel = CodeExcerpt.SourceLabel(fileName, selection: !sel.IsEmpty);
 
-                var excerpt = CodeExcerpt.Of(rawCode, CodeExcerpt.BudgetFor(_config.ContextWindowSize));
+                // Sized for the window the code-actions model (the one the pending prompt names) REALLY loaded.
+                var window  = await Services.Agent.ContextManager.EffectiveWindowAsync(
+                    _config, _client, ModelRouter.Resolve(_config, ModelRole.CodeActions), ct);
+                var excerpt = CodeExcerpt.Of(rawCode, CodeExcerpt.BudgetFor(window));
                 rawCode     = excerpt.Text;
                 attachLabel = excerpt.Label(attachLabel);
             }

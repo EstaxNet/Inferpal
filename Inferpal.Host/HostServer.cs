@@ -244,11 +244,15 @@ internal sealed partial class HostServer : IDisposable
             // included - in silence. And the settings panel offered compactionEnabled,
             // contextWindowKeepTurns and compactionTimeoutSeconds, three controls with no effect.
             // Same service as the Visual Studio window, same order: after the user message.
+            var windowBefore = s.ContextWindowInUse;
             var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
                 s.History, s.Config, s.Client, s.LastPromptTokens,
                 onStep: step => Notify("chat/step", new { text = step }),
                 ct: cts.Token, model: model);
             s.LastContextWindow = ctxDecision.Window;
+            // The prompt was built above, against the window known then: when this check reveals another one — the
+            // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
+            if (ctxDecision.Window > 0 && ctxDecision.Window != windowBefore) RefreshSystemPrompt(s);
 
             if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
             {
@@ -596,10 +600,14 @@ internal sealed partial class HostServer : IDisposable
     /// Ollama drops its head, system prompt and instruction first, without a word. See <see cref="CodeExcerpt.BudgetFor"/>.
     /// </remarks>
     [JsonRpcMethod("code/excerpt", UseSingleObjectParameterDeserialization = true)]
-    public CodeExcerptResult CodeExcerptOf(CodeExcerptParams p)
+    public async Task<CodeExcerptResult> CodeExcerptOfAsync(CodeExcerptParams p, CancellationToken ct)
     {
-        var s       = Session();
-        var excerpt = CodeExcerpt.Of(p.Code ?? string.Empty, CodeExcerpt.BudgetFor(s.Config.ContextWindowSize));
+        var s = Session();
+        // Sized for the window the answering model REALLY loaded: the excerpt goes into a chat turn, and read from the
+        // setting (100 000 under LM Studio loading 4 096) the budget sent whole files that were then refused.
+        var model   = !string.IsNullOrWhiteSpace(p.Model) ? p.Model! : ModelRouter.Resolve(s.Config, ModelRole.Chat);
+        var window  = await Services.Agent.ContextManager.EffectiveWindowAsync(s.Config, s.Client, model, ct);
+        var excerpt = CodeExcerpt.Of(p.Code ?? string.Empty, CodeExcerpt.BudgetFor(window));
         return new(excerpt.Text, excerpt.Label(CodeExcerpt.SourceLabel(p.FileName ?? string.Empty, p.Selection)),
                    excerpt.IsTruncated);
     }
@@ -1208,7 +1216,7 @@ internal sealed partial class HostServer : IDisposable
         var root   = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
         // The /template suffix is a builder layer, as in the Visual Studio view model: appended after the build it
         // had no X-Ray section, so the panel could neither show it nor switch it off.
-        var prompt = new SystemPromptBuilder(s.Config, EditorName).Build(
+        var prompt = new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse).Build(
             Strings.SystemPrompt,
             language:           s.PersonaLanguage,
             templateSuffix:     s.TemplateSuffix,
@@ -1224,7 +1232,7 @@ internal sealed partial class HostServer : IDisposable
     private static IReadOnlyList<PromptSection> BuildPromptSections(HostSession s)
     {
         var root = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
-        return new SystemPromptBuilder(s.Config, EditorName).BuildSections(
+        return new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse).BuildSections(
             Strings.SystemPrompt,
             language:          s.PersonaLanguage,
             templateSuffix:    s.TemplateSuffix,

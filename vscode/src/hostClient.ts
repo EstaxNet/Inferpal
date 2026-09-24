@@ -423,10 +423,10 @@ export class HostClient {
     return this.whileChatBusy(() => this.connection().sendRequest<CodeActionResult>('codeAction/run', params));
   }
 
-  /** The code /explain and /review send, sized from the configured context window (the Visual Studio
-   *  window's excerpt, from the same Core), and the label that names it under the question. */
-  codeExcerpt(code: string, fileName: string, selection: boolean): Promise<CodeExcerptResult> {
-    return this.connection().sendRequest<CodeExcerptResult>('code/excerpt', { code, fileName, selection });
+  /** The code /explain and /review send, sized for the window `model` is really loaded with (the Visual
+   *  Studio window's excerpt, from the same Core), and the label that names it under the question. */
+  codeExcerpt(code: string, fileName: string, selection: boolean, model?: string): Promise<CodeExcerptResult> {
+    return this.connection().sendRequest<CodeExcerptResult>('code/excerpt', { code, fileName, selection, model });
   }
 
   /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved

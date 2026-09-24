@@ -9,8 +9,9 @@ namespace Inferpal.Commands;
 [VisualStudioContribution]
 internal class ExplainSelectionCommand : SelectionCommandBase
 {
-    public ExplainSelectionCommand(VisualStudioExtensibility extensibility, VsContextHolder contextHolder, InferpalConfig config)
-        : base(extensibility, contextHolder, config) { }
+    public ExplainSelectionCommand(VisualStudioExtensibility extensibility, VsContextHolder contextHolder, InferpalConfig config,
+                                   IInferenceProvider client)
+        : base(extensibility, contextHolder, config, client) { }
 
     public override CommandConfiguration CommandConfiguration => new("%ContextMenuExplain%")
     {

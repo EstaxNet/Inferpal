@@ -44,7 +44,11 @@ internal partial class InferpalToolWindowData
             : view.Document.Text.CopyToString();
         var label    = CodeExcerpt.SourceLabel(fileName, selection: !sel.IsEmpty);
 
-        var excerpt = CodeExcerpt.Of(rawCode, CodeExcerpt.BudgetFor(_config.ContextWindowSize));
+        // Sized for the window the code-actions model REALLY loaded (SendCodeActionAsync asks that model): read from
+        // the setting, 100 000 under LM Studio loading 4 096 sent whole files that were then refused.
+        var window  = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            _config, _client, ModelRouter.Resolve(_config, ModelRole.CodeActions), ct);
+        var excerpt = CodeExcerpt.Of(rawCode, CodeExcerpt.BudgetFor(window));
         return (excerpt.Text, fileName, excerpt.Label(label));
     }
 

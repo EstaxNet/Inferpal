@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using Inferpal.Config;
 using Inferpal.Host;
+using Inferpal.Models;
 using StreamJsonRpc;
 using Inferpal.Services;
 using Xunit;
@@ -146,5 +147,85 @@ public partial class HostServerTests
         {
             try { Directory.Delete(root, recursive: true); } catch { }
         }
+    }
+}
+
+public partial class HostServerTests
+{
+    /// <summary>
+    /// The files' budget follows the window the server really loaded — the configuration of the user who
+    /// reported issue #8 (100 000 configured, LM Studio loading far less). Measured against the configured window,
+    /// a pinned file sized for 100 000 kept every request over the loaded one. Already on the FIRST question: the
+    /// check of the turn reveals the smaller window, and the prompt is rebuilt before it is sent.
+    /// </summary>
+    [Fact]
+    public async Task TheFilesBudget_FollowsTheLoadedWindow_FromTheFirstQuestion()
+    {
+        var pinned = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"pin-{Guid.NewGuid():N}.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(pinned)!);
+        File.WriteAllText(pinned, new string('p', 30_000));
+        try
+        {
+            using var h = CreateHarness(cfg => { cfg.ContextWindowSize = 100_000; cfg.PinnedContextFiles = pinned; });
+            string? system = null;
+            h.Fake.LoadedContextWindow = 4_096;
+            h.Fake.OnChatRequest = (_, history, _, _) =>
+            {
+                system = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
+            };
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.NotNull(system);
+            Assert.Contains("## Pinned:", system);                                                   // witness
+            Assert.True(system!.Length < 4_096 + 2_000, $"the system prompt still carries {system.Length} characters into a 4 096-token window");
+        }
+        finally
+        {
+            try { File.Delete(pinned); } catch { }
+        }
+    }
+}
+
+/// <summary>
+/// Every site that builds the system prompt passes the window in use, and the Visual Studio view model rebuilds it
+/// when the turn's check reveals another window. The view model is not executable from this suite (Remote UI), so
+/// this is a source scan with its witness; the host half is executed above.
+/// </summary>
+public class PromptFileBudgetWindowSourceTests
+{
+    private static string Code(params string[] parts)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        return ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, Path.Combine(parts)));
+    }
+
+    [Theory]
+    [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs")]
+    [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.Xray.cs")]
+    [InlineData("Inferpal.Host", "HostServer.cs")]
+    public void EveryPromptBuild_PassesTheWindowInUse(params string[] parts)
+    {
+        var code  = Code(parts);
+        var sites = code.Split("new SystemPromptBuilder(").Skip(1).Select(s => s[..s.IndexOf(')')]).ToList();
+
+        Assert.NotEmpty(sites);                                                            // WITNESS
+        Assert.All(sites, args => Assert.Contains("ContextWindowInUse", args, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TheViewModel_RebuildsThePrompt_WhenTheTurnRevealsAnotherWindow()
+    {
+        var code  = Code("Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs");
+        var check = code.IndexOf("_contextWindowInUse = decision.Window", StringComparison.Ordinal);
+
+        Assert.True(check >= 0, "the view model no longer records the window of the turn's check: shape changed");
+        var after = code[check..code.IndexOf("});", check, StringComparison.Ordinal)];
+        Assert.Contains("RefreshSystemPrompt()", after);
     }
 }

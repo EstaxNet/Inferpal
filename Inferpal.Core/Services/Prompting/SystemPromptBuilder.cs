@@ -26,7 +26,9 @@ internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, str
 /// <c>memory.md</c>, <c>notes.md</c>) → glob-scoped rules.
 /// Extracted from the tool-window VM so the layering is unit-testable without VS.
 /// </summary>
-internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorName = null)
+/// <param name="contextWindow">The window the prompt is sent into, when the front-end knows a smaller one than the
+/// configured window — the one the server really loaded (<c>ContextWindowInUse</c>). 0 = the configured one.</param>
+internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorName = null, int contextWindow = 0)
 {
     /// <summary>
     /// The editor and the shell, stated from what this process can actually observe — appended to
@@ -246,7 +248,10 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             catch (Exception ex) { Diagnostics.Swallow("SystemPromptBuilder.Rules", ex); }
         }
 
-        sections.AddRange(ShareBudget(files, FileSectionsBudget(config.ContextWindowSize), disabledSectionIds));
+        // ⚠ The window the prompt is SENT into: configured 100 000 with a model loaded at 8 192, a budget read from the
+        // setting kept every request over the loaded window — the files are the one part compaction never shrinks.
+        sections.AddRange(ShareBudget(files, FileSectionsBudget(contextWindow > 0 ? contextWindow : config.ContextWindowSize),
+                                      disabledSectionIds));
         return sections;
     }
 
@@ -266,8 +271,9 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// (8 192 tokens) one section at that ceiling fills the whole window, there are up to seven of them (three
     /// pins, context, memory, notes, rules), and in agent mode the tool definitions already take about 4 900 tokens
     /// of it. The request then overflows on every question — refused by LM Studio, cut at the head by Ollama,
-    /// system prompt first — and compaction cannot help: the system prompt is never compacted. The window here is
-    /// the configured one: the prompt is built before the turn knows which model will answer.
+    /// system prompt first — and compaction cannot help: the system prompt is never compacted. The window is the one
+    /// the front-end passes (the smaller of the configured and the loaded one, once a turn has measured it), else
+    /// the configured one.
     /// </remarks>
     internal static int FileSectionsBudget(int contextWindow) =>
         contextWindow > 0 ? contextWindow : DefaultContextWindow;

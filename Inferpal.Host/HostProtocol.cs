@@ -304,8 +304,10 @@ internal sealed record CodeActionResultDto(
     string?                 FailureDetail = null);
 
 /// <summary>`code/excerpt` — the code a read-only action (<c>/explain</c>, <c>/review</c>) is about to
-/// send, with the file it comes from and whether it is a selection (the label says so).</summary>
-internal sealed record CodeExcerptParams(string Code, string FileName, bool Selection = false);
+/// send, with the file it comes from and whether it is a selection (the label says so). <paramref name="Model"/>
+/// is the model the chat will ask — the excerpt is sized for the window it really loaded; null = the chat model of
+/// the settings.</summary>
+internal sealed record CodeExcerptParams(string Code, string FileName, bool Selection = false, string? Model = null);
 
 /// <summary>`code/excerpt` answer: <paramref name="Text"/> is what goes into the prompt (the code, or
 /// its first lines and a marker naming the count), <paramref name="Label"/> what the chat shows under

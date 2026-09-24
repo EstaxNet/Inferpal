@@ -324,7 +324,14 @@ internal partial class InferpalToolWindowData
             onStep: step => Post(() => CurrentStep = step),
             ct: ct, model: model);
 
-        await RunOnVMContextAsync(() => _contextWindowInUse = decision.Window);
+        await RunOnVMContextAsync(() =>
+        {
+            var before = ContextWindowInUse;
+            _contextWindowInUse = decision.Window;
+            // The prompt was built at the start of the turn, against the window known then: when this check reveals
+            // another one — the first question, a model loaded smaller since — its files are re-budgeted now.
+            if (decision.Window > 0 && decision.Window != before) RefreshSystemPrompt();
+        });
 
         if (decision.Outcome == Services.Agent.ContextOutcome.None) return;
 
@@ -353,7 +360,7 @@ internal partial class InferpalToolWindowData
     private string BuildSystemPrompt()
     {
         var dir = FindProjectRoot();
-        var prompt = new SystemPromptBuilder(_config, EditorName).Build(
+        var prompt = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse).Build(
             Strings.SystemPrompt,
             PersonaLanguage,
             _activeTemplateSuffix,

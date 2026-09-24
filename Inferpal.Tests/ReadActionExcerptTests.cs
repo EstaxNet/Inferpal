@@ -49,7 +49,7 @@ public class ReadActionExcerptTests
     }
 
     [Fact]
-    public void EveryExcerptSite_IsSizedByTheConfiguredWindow()
+    public void EveryExcerptSite_IsSizedByTheWindow()
     {
         var root  = RepoRoot();
         var sites = new[] { "Inferpal", "Inferpal.Host" }
@@ -64,6 +64,25 @@ public class ReadActionExcerptTests
         Assert.True(sites.Count >= 3, $"only {sites.Count} excerpt site(s) found — the scan is not reading what it should");
         Assert.All(sites, s => Assert.True(s.Line.Contains("CodeExcerpt.BudgetFor(", StringComparison.Ordinal),
             $"{s.File}: an excerpt with the fixed budget — {s.Line.Trim()}"));
+        // ⚠ And the window is the one the answering model REALLY loaded, never the setting: configured at 100 000
+        // under LM Studio loading 4 096, the setting sent whole files that were then refused.
+        Assert.All(sites, s => Assert.DoesNotContain("ContextWindowSize", s.Line, StringComparison.Ordinal));
+    }
+
+    /// <summary>The two Visual Studio sites measure the window of the model that answers them — the code-actions
+    /// model (the view model is not executable from this suite; the host's site is executed below).</summary>
+    [Theory]
+    [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.CodeActions.cs")]
+    [InlineData("Inferpal", "Commands", "SelectionCommandBase.cs")]
+    public void TheVisualStudioExcerpts_AreSizedForTheCodeActionsModelsLoadedWindow(params string[] parts)
+    {
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), Path.Combine(parts)));
+        var at   = code.IndexOf("CodeExcerpt.Of(", StringComparison.Ordinal);
+
+        Assert.True(at >= 0, "no excerpt site in this file any more: the scan reads nothing");   // WITNESS
+        var before = code[Math.Max(0, at - 400)..at];
+        Assert.Contains("ContextManager.EffectiveWindowAsync(", before);
+        Assert.Contains("ModelRole.CodeActions", before);
     }
 
     [Fact]
@@ -141,5 +160,26 @@ public partial class HostServerTests
         Assert.Equal("Big.cs", whole.Label);
 
         Assert.Equal("Selection (Big.cs)", (await ExcerptAsync(h, code, selection: true)).Label);
+    }
+}
+
+public partial class HostServerTests
+{
+    /// <summary>
+    /// The excerpt is sized for the window the model REALLY loaded. Configured at 100 000 under LM Studio (the
+    /// configuration of issue #8) with the model loaded at 4 096, a budget read from the setting sent a whole file
+    /// of 36 000 characters: refused, where a declared excerpt would have been explained.
+    /// </summary>
+    [Fact]
+    public async Task CodeExcerpt_IsSizedForTheLoadedWindow_NotTheConfiguredOne()
+    {
+        using var h = CreateHarness(cfg => cfg.ContextWindowSize = 100_000);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.LoadedContextWindow = 4_096;
+
+        var r = await ExcerptAsync(h, ReadActionExcerptTests.Source(1_200));   // 36,000 characters
+
+        Assert.True(r.Truncated, "the whole file was sent into a 4 096-token window");
+        Assert.True(r.Text.Length <= CodeExcerpt.BudgetFor(4_096) + 120, $"{r.Text.Length} characters sent");
     }
 }
