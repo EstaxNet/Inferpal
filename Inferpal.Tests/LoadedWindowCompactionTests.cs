@@ -160,3 +160,56 @@ public partial class HostServerTests
         Assert.Equal(4_096, result.ContextWindow);
     }
 }
+
+public partial class HostServerTests
+{
+    /// <summary>X-Ray shows the same window as the gauge: the one the last turn was measured against.</summary>
+    [Fact]
+    public async Task XRay_AfterATurn_ShowsTheWindowThatTurnWasMeasuredAgainst()
+    {
+        using var h = CreateHarness(cfg => cfg.ContextWindowSize = 8_192);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.LoadedContextWindow = 4_096;
+        h.Fake.ChatResult = new ChatTurnResult("ok", null, 0, 0);
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var panel = await h.Client.InvokeAsync<XRayPanelDto>("xray/panel").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(4_096, panel.ContextWindow);
+    }
+}
+
+public class XRayWindowSourceTests
+{
+    /// <summary>No X-Ray site reads the configured window directly: each goes through the window in use.</summary>
+    [Theory]
+    [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.Xray.cs")]
+    [InlineData("Inferpal.Host", "HostServer.cs")]
+    [InlineData("Inferpal.Host", "HostSlashCommands.cs")]
+    public void EveryXRaySite_ShowsTheWindowInUse(params string[] parts)
+    {
+        var code  = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), Path.Combine(parts)));
+        var sites = new[] { "XRayPanelPresenter.Build(", "XRayCommandHandler.Handle(" }
+            .SelectMany(marker => AllIndexes(code, marker).Select(at => code[at..code.IndexOf(';', at)]))
+            .ToList();
+
+        Assert.NotEmpty(sites);                                                         // WITNESS
+        Assert.All(sites, call => Assert.DoesNotContain("Config.ContextWindowSize", call, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IEnumerable<int> AllIndexes(string text, string marker)
+    {
+        for (var at = text.IndexOf(marker, StringComparison.Ordinal); at >= 0; at = text.IndexOf(marker, at + 1, StringComparison.Ordinal))
+            yield return at;
+    }
+
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        return dir!.FullName;
+    }
+}

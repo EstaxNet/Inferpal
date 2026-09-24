@@ -66,7 +66,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     // Doctrine:
     //  - State is PER INSTANCE, not static: a provider lives as long as its configuration
     //    (recreated when the backend/URL changes), and two configured backends must not
-    //    partager leurs pannes.
+    //    share their failures.
     //  - RecordSuccess fires as soon as the streaming response HEADERS arrive: the breaker
     //    guards REACHABILITY (TTFB - dead server, queue, load); a stream that dies mid-body still
     //    records its RecordFailure. A server that accepts then systematically dies therefore
@@ -437,6 +437,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         // The caller's history (system prompt + conversation + the user's task) is the
         // anchored head — intra-run elision never touches it (see CompactRunContext).
         var anchorCount = messages.Count;
+        // The window the model is really loaded with when the server reports a smaller one — measured
+        // against the configured window alone, a run was refused mid-way while elision waited.
+        var window = await Agent.ContextManager.EffectiveWindowAsync(_config, this, model, ct);
 
         for (int i = 0; i < maxIterations; i++)
         {
@@ -445,7 +448,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             // Keep the running context under num_ctx: deterministically elide the oldest tool
             // results so the model never silently truncates the head (system prompt + task).
             // No LLM summary on this basic path — that extra call is the orchestrator's.
-            AgentOrchestrator.CompactRunContext(messages, anchorCount, _config.ContextWindowSize);
+            AgentOrchestrator.CompactRunContext(messages, anchorCount, window);
 
             onStep(Strings.StatusThinking);
 

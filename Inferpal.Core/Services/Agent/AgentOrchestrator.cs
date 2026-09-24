@@ -284,6 +284,13 @@ internal sealed class AgentOrchestrator
         }
     }
 
+    /// <summary>The window this run is measured against: <see cref="ContextManager.EffectiveWindowAsync"/>
+    /// when the client can report a loaded window, else the configured one.</summary>
+    private Task<int> RunWindowAsync(string model, CancellationToken ct) =>
+        _client is IInferenceProvider provider
+            ? ContextManager.EffectiveWindowAsync(_config, provider, model, ct)
+            : Task.FromResult(_config.ContextWindowSize);
+
     /// <summary>
     /// Intra-run compaction entry point. When the running estimate nears num_ctx, the <em>first</em>
     /// overflow of the run is handled by a single LLM summary of the old turns (when compaction is
@@ -296,7 +303,9 @@ internal sealed class AgentOrchestrator
         List<ChatMessageDto> messages, int anchorCount, string model,
         bool alreadySummarized, Action<string> onStep, CancellationToken ct)
     {
-        var budget = _config.ContextWindowSize;
+        // ⚠ The window the model is really loaded with when the server reports a smaller one: measured
+        // against the configured window alone, a run was refused mid-way while elision waited.
+        var budget = await RunWindowAsync(model, ct);
         if (budget <= 0) return alreadySummarized;
         if (EstimateTokens(messages) <= budget * 8 / 10) return alreadySummarized;
 
@@ -445,8 +454,9 @@ internal sealed class AgentOrchestrator
         // The gathered tool results + the synthesis instruction, in a single user turn so "those
         // results" in the prompt resolves to the digest directly above it. Bounded to ~60% of the
         // context window so the synthesis request can't overflow num_ctx and lose its head.
-        var budgetChars = _config.ContextWindowSize > 0
-            ? Math.Max(8000, _config.ContextWindowSize * 4 * 6 / 10)
+        var window      = await RunWindowAsync(model, ct);
+        var budgetChars = window > 0
+            ? Math.Max(8000, window * 4 * 6 / 10)
             : 24000;
         var digest = BuildToolDigest(executions, budgetChars);
         var prompt = digest.Length > 0

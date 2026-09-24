@@ -81,6 +81,15 @@ internal sealed class HostSession : IDisposable
     /// </remarks>
     public int LastPromptTokens { get; set; }
 
+    /// <summary>The window the last context check measured against (0 until one ran).</summary>
+    public int LastContextWindow { get; set; }
+
+    /// <summary>
+    /// The window every fill indicator shows (X-Ray, the gauge): the one the last turn was measured
+    /// against — the loaded one when the server reports a smaller one — else the configured one.
+    /// </summary>
+    public int ContextWindowInUse => LastContextWindow > 0 ? LastContextWindow : Config.ContextWindowSize;
+
     /// <summary>
     /// Session summary written every <c>OodaTurnThreshold</c> turns (mirror of the VS VM's
     /// <c>_oodaSummary</c>). The system-prompt builder appends it, so a prompt rebuild keeps it; a new

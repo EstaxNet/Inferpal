@@ -48,7 +48,7 @@ internal partial class InferpalToolWindowData
             Strings.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
-            AgentOrchestrator.EstimateConversationTokens(_history), _config.ContextWindowSize);
+            AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse);
 
         _xrayRawPrompt  = model.RawPrompt;
         XrayTotalText   = Strings.XrayHeader($"~{model.TotalTokens:N0}");
@@ -81,7 +81,7 @@ internal partial class InferpalToolWindowData
             Strings.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
-            AgentOrchestrator.EstimateConversationTokens(_history), _config.ContextWindowSize);
+            AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse);
 
         _xrayRawPrompt  = model.RawPrompt;
         XrayTotalText   = Strings.XrayHeader($"~{model.TotalTokens:N0}");

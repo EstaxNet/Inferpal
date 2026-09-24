@@ -316,7 +316,7 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, XRayCommandHandler.Handle(
                         sections,
                         AgentOrchestrator.EstimateConversationTokens(s.History),
-                        s.Config.ContextWindowSize,
+                        s.ContextWindowInUse,
                         s.Config.RagAutoContextEnabled));
                 }
 

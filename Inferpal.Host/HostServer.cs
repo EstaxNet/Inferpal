@@ -248,6 +248,7 @@ internal sealed partial class HostServer : IDisposable
                 s.History, s.Config, s.Client, s.LastPromptTokens,
                 onStep: step => Notify("chat/step", new { text = step }),
                 ct: cts.Token, model: model);
+            s.LastContextWindow = ctxDecision.Window;
 
             if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
             {
@@ -1235,7 +1236,7 @@ internal sealed partial class HostServer : IDisposable
     {
         var model = XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
-            AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.Config.ContextWindowSize);
+            AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse);
         return new XRayPanelDto(
             model.Sections.Select(x => new XRaySectionDto(
                 x.Id, x.Label, x.Tokens, x.Percent, x.Content, x.Enabled, x.CanToggle)).ToList(),
