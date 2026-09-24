@@ -312,7 +312,7 @@ internal partial class InferpalToolWindowData
     // Range computation, the summarize request, and the history rewrites live in
     // HistoryCompaction (unit-tested); the VM keeps the LLM call, its timeout fuse,
     // and the chat notices.
-    private async Task CompactOrTruncateAsync(CancellationToken ct)
+    private async Task CompactOrTruncateAsync(string model, CancellationToken ct)
     {
         // The decision, the summarising model call and its fuse lived HERE, so on the VS Code side
         // the history was NEVER bounded and three settings of the panel did nothing there. All of
@@ -322,7 +322,7 @@ internal partial class InferpalToolWindowData
         var decision = await Services.Agent.ContextManager.PrepareAsync(
             _history, _config, _client, _lastPromptTokens,
             onStep: step => Post(() => CurrentStep = step),
-            ct: ct);
+            ct: ct, model: model);
 
         if (decision.Outcome == Services.Agent.ContextOutcome.None) return;
 

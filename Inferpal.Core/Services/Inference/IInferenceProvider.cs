@@ -86,6 +86,13 @@ internal interface IInferenceProvider : IOllamaChatClient
 
     /// <inheritdoc cref="OllamaClient.DeleteModelAsync"/>
     Task<bool> DeleteModelAsync(string model, CancellationToken ct);
+
+    /// <summary>
+    /// The context window, in tokens, the server actually has <paramref name="model"/> loaded with — or
+    /// <c>null</c> when it cannot say (not loaded, or a backend that exposes no such figure). Ollama loads
+    /// with the configured window, so only a server that chooses its own (LM Studio) answers.
+    /// </summary>
+    Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct);
 }
 
 /// <summary>

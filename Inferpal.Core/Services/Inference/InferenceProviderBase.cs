@@ -355,6 +355,10 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         CancellationToken ct,
         string? model = null);
 
+    /// <inheritdoc/>
+    public virtual Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct) =>
+        Task.FromResult<int?>(null);
+
     // ── Ollama-only operations (safe no-op defaults; Ollama overrides them) ─────
 
     /// <inheritdoc/>

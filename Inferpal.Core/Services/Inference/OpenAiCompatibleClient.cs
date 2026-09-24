@@ -119,6 +119,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     private protected virtual Task<int?> GetLoadedContextLengthAsync(string model, CancellationToken ct)
         => Task.FromResult<int?>(null);
 
+    /// <inheritdoc/>
+    public override Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct)
+        => GetLoadedContextLengthAsync(model, ct);
+
     /// <summary>Rough request size in tokens (~4 chars/token, matching the project's estimator),
     /// counting message content, any assistant tool-call payloads, <em>and</em> the tool schemas —
     /// the agent's ~30 tool definitions add several thousand tokens and are exactly what tips a

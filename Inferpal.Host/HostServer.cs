@@ -223,6 +223,21 @@ internal sealed partial class HostServer : IDisposable
             RefreshSystemPrompt(s);
             s.History.Add(new ChatMessageDto("user", promptText));
 
+            // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
+            var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
+            // The reasoning tail is step progress only on the orchestrated path.
+            showReasoningTail = agentMode;
+            // The model picked in the chat is the CHAT model: the agent loop still routes to the
+            // configured AgentModel first, as in Visual Studio. Letting the per-request model win made
+            // agentModel unreachable — the adapter always sends one. Resolved BEFORE the context
+            // check, which needs the window the server really loaded this model with.
+            var chatModel = !string.IsNullOrWhiteSpace(p.Model)
+                ? p.Model!
+                : ModelRouter.Resolve(s.Config, ModelRole.Chat);
+            var model     = agentMode && !string.IsNullOrWhiteSpace(s.Config.AgentModel)
+                ? s.Config.AgentModel
+                : chatModel;
+
             // Pre-send context check.
             // It did not exist here. The history was never bounded: it grew until it went past the
             // model's num_ctx, and it was the backend that dropped its head - system prompt
@@ -232,7 +247,7 @@ internal sealed partial class HostServer : IDisposable
             var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
                 s.History, s.Config, s.Client, s.LastPromptTokens,
                 onStep: step => Notify("chat/step", new { text = step }),
-                ct: cts.Token);
+                ct: cts.Token, model: model);
 
             if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
             {
@@ -249,19 +264,6 @@ internal sealed partial class HostServer : IDisposable
                 Notify("chat/tool", new ToolNotice(
                     "context_compact", string.Empty, ctxDecision.Notice, ctxDecision.IsDegraded));
             }
-            // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
-            var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
-            // The reasoning tail is step progress only on the orchestrated path.
-            showReasoningTail = agentMode;
-            // The model picked in the chat is the CHAT model: the agent loop still routes to the
-            // configured AgentModel first, as in Visual Studio. Letting the per-request model win made
-            // agentModel unreachable — the adapter always sends one.
-            var chatModel = !string.IsNullOrWhiteSpace(p.Model)
-                ? p.Model!
-                : ModelRouter.Resolve(s.Config, ModelRole.Chat);
-            var model     = agentMode && !string.IsNullOrWhiteSpace(s.Config.AgentModel)
-                ? s.Config.AgentModel
-                : chatModel;
 
             if (agentMode)
             {

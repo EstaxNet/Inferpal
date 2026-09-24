@@ -149,6 +149,18 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         return Task.FromResult<IReadOnlyList<RunningModelInfo>>(Running);
     }
 
+    /// <summary>The window the "server" reports a model loaded with; null = it cannot say.</summary>
+    public int? LoadedContextWindow { get; set; }
+
+    /// <summary>Models asked about, in order — the witness that the right model was looked up.</summary>
+    public List<string> LoadedContextQueries { get; } = [];
+
+    public Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct)
+    {
+        LoadedContextQueries.Add(model);
+        return Task.FromResult(LoadedContextWindow);
+    }
+
     public Task UnloadModelAsync(string model, CancellationToken ct)
     {
         Unloaded.Add(model);

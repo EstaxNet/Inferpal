@@ -75,10 +75,11 @@ internal static class ContextManager
         IInferenceProvider            client,
         int                           lastPromptTokens,
         Action<string>?               onStep,
-        CancellationToken             ct)
+        CancellationToken             ct,
+        string?                       model = null)
     {
         var plan = HistoryCompaction.Decide(
-            history, config.ContextWindowSize, lastPromptTokens,
+            history, await EffectiveWindowAsync(config, client, model, ct).ConfigureAwait(false), lastPromptTokens,
             config.ContextWindowKeepTurns, config.KvCacheAnchorMessages, config.CompactionEnabled);
 
         if (plan.Action == CompactionAction.None)
@@ -101,6 +102,30 @@ internal static class ContextManager
         var note = plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty;
         return new ContextDecision(ContextOutcome.Compacted, plan, summary,
                                    Strings.MsgContextCompacted(plan.Count, plan.KeepTurns) + note);
+    }
+
+    /// <summary>
+    /// The window the conversation is measured against: the configured one, or the one the server
+    /// really loaded <paramref name="model"/> with when that is SMALLER.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ LM Studio loads a model with a window of its own choosing and says which. Measured against the
+    /// configured window alone, a conversation between the two was refused on every request while
+    /// compaction waited for a threshold it could never reach — stuck until the user cleared it. A larger
+    /// loaded window never raises the configured one: that is the user's budget (and Ollama's num_ctx).
+    /// </remarks>
+    internal static async Task<int> EffectiveWindowAsync(
+        InferpalConfig config, IInferenceProvider client, string? model, CancellationToken ct)
+    {
+        var configured = config.ContextWindowSize;
+        if (configured <= 0 || string.IsNullOrWhiteSpace(model)) return configured;
+
+        int? loaded = null;
+        try { loaded = await client.GetLoadedContextWindowAsync(model, ct).ConfigureAwait(false); }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("ContextManager.EffectiveWindow", ex); }
+
+        return loaded is > 0 && loaded < configured ? loaded.Value : configured;
     }
 
     /// <summary>The summarising call, with its own deadline. <c>null</c> on any failure.</summary>

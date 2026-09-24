@@ -288,8 +288,6 @@ internal partial class InferpalToolWindowData
         // (covers every chat entrypoint), so the chat model is never starved by the embedding workload.
         try
         {
-            await CompactOrTruncateAsync(localCts!.Token);
-
             // Agent mode (Plan→Act→Observe) is active only when the user switch is on AND tools are
             // engaged AND no one-time model overrides this turn. Computed here so model selection and
             // the execution path below share one source of truth.
@@ -305,6 +303,10 @@ internal partial class InferpalToolWindowData
                 !string.IsNullOrEmpty(oneTimeModel)
                     ? oneTimeModel
                     : ModelRouter.Resolve(_config, useOrchestrator ? ModelRole.Agent : ModelRole.Chat);
+
+            // After the model is known: the context check measures against the window the server
+            // really loaded THIS model with, when that is smaller than the configured one.
+            await CompactOrTruncateAsync(effectiveModel, localCts!.Token);
 
             using var sink = new ThrottledTokenSink(chunk => Post(() =>
             {
