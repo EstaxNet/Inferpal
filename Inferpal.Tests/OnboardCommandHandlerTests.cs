@@ -249,6 +249,23 @@ public class OnboardCommandHandlerTests : IDisposable
         Assert.Equal("generated", forced.Write!.Content);
     }
 
+    /// <summary>
+    /// ⚠ The draft becomes the system prompt of every following session: a draft that stopped at the
+    /// model's length limit was written as the project's description — ending mid-sentence, and, with
+    /// <c>force</c>, in place of the one the user had.
+    /// </summary>
+    [Fact]
+    public async Task Context_ACutDraft_IsNeverWritten()
+    {
+        _client.ChatResult = new ChatTurnResult("# Project\n\nA test fixture that", null, 0, 0, CutAtLimit: true);
+
+        var result = await Run(new InferpalConfig(), "context", "force");
+
+        Assert.Null(result.Write);
+        Assert.Equal(Strings.OnboardContextCut, result.Message);
+        Assert.False(File.Exists(Path.Combine(_root, ".inferpal", "context.md")));
+    }
+
     [Fact]
     public async Task Context_KeepsTheExistingFileWhenTheModelAnswersNothing()
     {

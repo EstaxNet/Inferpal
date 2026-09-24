@@ -265,6 +265,7 @@
   <data name="MsgEmptyResponse" xml:space="preserve"><value>모델이 응답을 반환하지 않았습니다. 구성된 모델이 텍스트 생성을 지원하지 않을 수 있습니다 — 기본 채팅 모델을 사용해 보세요.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>모델 **{0}** 이(가) 텍스트를 생성하지 않았습니다. 서버({1})는 요청을 수락했고, 토큰을 하나도 보내지 않은 채 오류도 알리지 않고 스트림을 닫았습니다 — 연결 문제가 아닙니다. 스트림의 내용은 `/diagnostics`에 있습니다.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>코드가 끝나기 전에 응답이 모델의 길이 제한에서 멈췄습니다. 아무것도 적용되지 않았습니다. 파일의 더 작은 부분을 선택하거나 컨텍스트 길이를 늘리세요.</value></data>
+  <data name="OnboardContextCut" xml:space="preserve"><value>초안이 끝나기 전에 모델의 길이 제한에서 멈췄습니다. .inferpal/context.md는 작성되지 않았습니다. 컨텍스트 길이를 늘리거나 더 큰 창의 모델을 선택한 뒤 /onboard context를 다시 실행하세요.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>연결 시간 초과 — {0}의 백엔드가 더 이상 응답하지 않습니다(무응답 시간 초과).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>{0}의 백엔드에 연결할 수 없습니다. 설정에서 URL을 확인하세요.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0}의 추론 서버가 오류를 반환했습니다:

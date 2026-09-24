@@ -491,6 +491,9 @@ internal static class Strings
     /// <summary>An in-place rewrite that stopped at the model's length limit: nothing was applied.</summary>
     public static string CodeActionReplyCut => Get(nameof(CodeActionReplyCut));
 
+    /// <summary>A /onboard context draft that stopped at the model's length limit: nothing was written.</summary>
+    public static string OnboardContextCut => Get(nameof(OnboardContextCut));
+
     public static string MsgError(string message) =>
         string.Format(Get(nameof(MsgError)), message);
 

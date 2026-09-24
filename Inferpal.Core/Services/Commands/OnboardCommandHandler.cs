@@ -218,6 +218,9 @@ internal static class OnboardCommandHandler
         {
             var result = await client.SendChatAsync(
                 ModelRouter.Resolve(config, ModelRole.Chat), history, EmptyToolRegistry.Instance, null, ct);
+            // A draft that stopped at the length limit ends mid-sentence, and it would become the system
+            // prompt of every following session — in place of the user's own file under `force`.
+            if (result.CutAtLimit) return new(Strings.OnboardContextCut);
             answer = result.TextContent;
         }
         catch (OperationCanceledException) { throw; }

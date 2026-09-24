@@ -265,6 +265,7 @@
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Модель не вернула ответ. Настроенная модель может не поддерживать генерацию текста — попробуйте модель чата по умолчанию.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Модель **{0}** не выдала ни одного фрагмента текста. Сервер ({1}) принял запрос и закрыл поток без единого токена и без сообщения об ошибке — значит, дело не в соединении. Подробности о содержимом потока — в `/diagnostics`.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>Ответ остановился на ограничении длины модели до конца кода — ничего не применено. Выделите меньшую часть файла или увеличьте длину контекста.</value></data>
+  <data name="OnboardContextCut" xml:space="preserve"><value>Черновик остановился на ограничении длины модели, не дойдя до конца, — .inferpal/context.md не записан. Увеличьте длину контекста или выберите модель с большим окном, затем снова выполните /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Таймаут подключения — бэкенд по адресу {0} перестал отвечать (таймаут бездействия).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Не удаётся подключиться к бэкенду по адресу {0}. Проверьте URL в настройках.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Сервер вывода по адресу {0} вернул ошибку:

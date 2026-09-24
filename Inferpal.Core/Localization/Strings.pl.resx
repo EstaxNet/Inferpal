@@ -265,6 +265,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Model nie zwrócił żadnej odpowiedzi. Skonfigurowany model może nie obsługiwać generowania tekstu — spróbuj domyślnego modelu czatu.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Model **{0}** nie wygenerował żadnego tekstu. Serwer ({1}) przyjął żądanie i zamknął strumień bez ani jednego tokenu i bez zgłoszenia błędu — to nie jest problem z połączeniem. Szczegóły zawartości strumienia znajdziesz w `/diagnostics`.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>Odpowiedź zatrzymała się na limicie długości modelu przed końcem kodu — nic nie zostało zastosowane. Zaznacz mniejszą część pliku albo zwiększ długość kontekstu.</value></data>
+  <data name="OnboardContextCut" xml:space="preserve"><value>Szkic zatrzymał się na limicie długości modelu przed końcem — .inferpal/context.md nie został zapisany. Zwiększ długość kontekstu albo wybierz model z większym oknem, a następnie uruchom ponownie /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Przekroczono limit czasu połączenia — backend pod adresem {0} przestał odpowiadać (limit bezczynności).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Nie można połączyć się z backendem pod adresem {0}. Sprawdź URL w ustawieniach.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Serwer inferencji pod adresem {0} zwrócił błąd:
