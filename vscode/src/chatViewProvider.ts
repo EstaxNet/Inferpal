@@ -1571,7 +1571,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /** /explain and /review: active selection (or whole document) fenced into the prompt,
-   * answered as a normal streamed chat turn. */
+   * answered as a normal streamed chat turn.
+   *
+   * ⚠ The code goes through the host's excerpt, sized from the configured context window. Fenced
+   * whole, a file larger than the window made the backend drop the HEAD of the request — the system
+   * prompt and this very instruction first — without a word; and the cut, when there is one, is named
+   * under the question, where the Visual Studio window shows it on the attachment chip. */
   private async runExplainReview(kind: 'explain' | 'review', host: HostClient): Promise<void> {
     const editor = this.getActiveEditor();
     if (!editor || editor.document.uri.scheme !== 'file') {
@@ -1579,12 +1584,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     const doc = editor.document;
-    const code = editor.selection.isEmpty ? doc.getText() : doc.getText(editor.selection);
+    const selection = !editor.selection.isEmpty;
+    const code = selection ? doc.getText(editor.selection) : doc.getText();
     const file = vscode.workspace.asRelativePath(doc.uri, false);
+    const excerpt = await host.codeExcerpt(code, file, selection);
     const instruction = kind === 'explain'
       ? t('Explain the following code from {0} — what it does, how, and any pitfalls.', file)
       : t('Review the following code from {0}: point out bugs, risks, and concrete improvements.', file);
-    await this.chatTurn(`${instruction}\n\n\`\`\`\n${code}\n\`\`\``, host);
+    this.nameAttachmentsInQuestion([excerpt.label]);
+    await this.chatTurn(`${instruction}\n\n\`\`\`\n${excerpt.text}\n\`\`\``, host);
   }
 
   /** One model turn (agent or plain chat) with @-mention and pending-chip expansion. */

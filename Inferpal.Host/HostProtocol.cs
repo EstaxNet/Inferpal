@@ -300,6 +300,15 @@ internal sealed record CodeActionResultDto(
     string?                 NewText = null,
     string?                 FailureDetail = null);
 
+/// <summary>`code/excerpt` — the code a read-only action (<c>/explain</c>, <c>/review</c>) is about to
+/// send, with the file it comes from and whether it is a selection (the label says so).</summary>
+internal sealed record CodeExcerptParams(string Code, string FileName, bool Selection = false);
+
+/// <summary>`code/excerpt` answer: <paramref name="Text"/> is what goes into the prompt (the code, or
+/// its first lines and a marker naming the count), <paramref name="Label"/> what the chat shows under
+/// the question — carrying the count too when <paramref name="Truncated"/>.</summary>
+internal sealed record CodeExcerptResult(string Text, string Label, bool Truncated);
+
 // ── Context X-Ray panel (interactive /xray V2) ───────────────────────────────
 
 /// <summary>One prompt layer of the X-Ray panel (wire mirror of the Core's <c>XRaySectionModel</c>).</summary>

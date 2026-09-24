@@ -212,6 +212,14 @@ export interface CodeActionResult {
   failureDetail?: string | null;
 }
 
+/** `code/excerpt` answer: what a read-only action (/explain, /review) puts in the prompt — the code, or
+ *  its first lines and a marker naming the count — and the label shown under the question. */
+export interface CodeExcerptResult {
+  text: string;
+  label: string;
+  truncated: boolean;
+}
+
 /** One prompt layer of the Context X-Ray panel (`xray/panel` / `xray/toggle`). */
 export interface XRaySection {
   id: string;

@@ -43,20 +43,11 @@ internal abstract class SelectionCommandBase : Command
                 fileName = Path.GetFileName(view.Document.Uri.LocalPath);
                 var sel  = view.Selection;
 
-                if (!sel.IsEmpty)
-                {
-                    // Selection present → attach only the selected code snippet.
-                    rawCode     = sel.Extent.CopyToString();
-                    attachLabel = $"Selection ({fileName})";
-                }
-                else
-                {
-                    // No selection → attach the whole file (original behaviour).
-                    rawCode     = view.Document.Text.CopyToString();
-                    attachLabel = fileName;
-                }
+                // Selection present → attach only the selected code; none → the whole file.
+                rawCode     = !sel.IsEmpty ? sel.Extent.CopyToString() : view.Document.Text.CopyToString();
+                attachLabel = CodeExcerpt.SourceLabel(fileName, selection: !sel.IsEmpty);
 
-                var excerpt = Services.CodeActions.CodeExcerpt.Of(rawCode);
+                var excerpt = CodeExcerpt.Of(rawCode, CodeExcerpt.BudgetFor(_config.ContextWindowSize));
                 rawCode     = excerpt.Text;
                 attachLabel = excerpt.Label(attachLabel);
             }

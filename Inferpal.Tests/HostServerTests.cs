@@ -21,7 +21,7 @@ namespace Inferpal.Tests;
 // per process; a test process plays both, so this suite must not run alongside one that needs the
 // VS-peer side of that switch — SignalScratchDir resets it, and this keeps the reset meaningful.
 [Collection(SignalCollection.Name)]
-public class HostServerTests
+public partial class HostServerTests
 {
     private const int TimeoutMs = 15_000;
 

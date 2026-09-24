@@ -584,6 +584,23 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>
+    /// The code a read-only action (<c>/explain</c>, <c>/review</c>) sends, sized from the configured window,
+    /// and the label that names it under the question — the Visual Studio window's excerpt, from the same Core.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The adapter fenced the whole file into the prompt: past the window the backend drops the head of the
+    /// request, system prompt and instruction first, without a word. See <see cref="CodeExcerpt.BudgetFor"/>.
+    /// </remarks>
+    [JsonRpcMethod("code/excerpt", UseSingleObjectParameterDeserialization = true)]
+    public CodeExcerptResult CodeExcerptOf(CodeExcerptParams p)
+    {
+        var s       = Session();
+        var excerpt = CodeExcerpt.Of(p.Code ?? string.Empty, CodeExcerpt.BudgetFor(s.Config.ContextWindowSize));
+        return new(excerpt.Text, excerpt.Label(CodeExcerpt.SourceLabel(p.FileName ?? string.Empty, p.Selection)),
+                   excerpt.IsTruncated);
+    }
+
+    /// <summary>
     /// Runs an in-place code action headlessly (same pipeline as the VS commands) and returns
     /// the rewrite as independent per-hunk edits — the adapter previews/applies them natively
     /// (VS Code: WorkspaceEdit + Refactor Preview). Never applies anything host-side.

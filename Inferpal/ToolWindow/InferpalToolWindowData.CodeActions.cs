@@ -42,11 +42,9 @@ internal partial class InferpalToolWindowData
         var rawCode  = !sel.IsEmpty
             ? sel.Extent.CopyToString()
             : view.Document.Text.CopyToString();
-        var label    = !sel.IsEmpty
-            ? $"Selection ({fileName})"
-            : fileName;
+        var label    = CodeExcerpt.SourceLabel(fileName, selection: !sel.IsEmpty);
 
-        var excerpt = CodeExcerpt.Of(rawCode);
+        var excerpt = CodeExcerpt.Of(rawCode, CodeExcerpt.BudgetFor(_config.ContextWindowSize));
         return (excerpt.Text, fileName, excerpt.Label(label));
     }
 

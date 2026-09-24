@@ -17,6 +17,7 @@ import {
   ChatSendResult,
   CodeActionParams,
   CodeActionResult,
+  CodeExcerptResult,
   ChatExportParams,
   ConnectionCheckResult,
   DocumentParams,
@@ -420,6 +421,12 @@ export class HostClient {
    * so FIM requests skip instead of queueing behind the rewrite on the shared GPU. */
   codeActionRun(params: CodeActionParams): Promise<CodeActionResult> {
     return this.whileChatBusy(() => this.connection().sendRequest<CodeActionResult>('codeAction/run', params));
+  }
+
+  /** The code /explain and /review send, sized from the configured context window (the Visual Studio
+   *  window's excerpt, from the same Core), and the label that names it under the question. */
+  codeExcerpt(code: string, fileName: string, selection: boolean): Promise<CodeExcerptResult> {
+    return this.connection().sendRequest<CodeExcerptResult>('code/excerpt', { code, fileName, selection });
   }
 
   /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved
