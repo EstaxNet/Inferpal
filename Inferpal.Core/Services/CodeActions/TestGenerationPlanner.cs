@@ -25,7 +25,7 @@ namespace Inferpal.Services.CodeActions;
 /// </param>
 internal sealed record TestGenerationPlan(
     bool Ok, string TestPath, string TestFileName, bool Extended, bool NoChange, string Content,
-    bool Unreadable = false)
+    bool Unreadable = false, bool Cut = false)
 {
     public static TestGenerationPlan Failed(string testPath = "", bool extended = false) =>
         new(false, testPath, Path.GetFileName(testPath), extended, false, string.Empty);
@@ -34,6 +34,13 @@ internal sealed record TestGenerationPlan(
     public static TestGenerationPlan CannotRead(string testPath) =>
         new(false, testPath, Path.GetFileName(testPath), Extended: true, NoChange: false,
             string.Empty, Unreadable: true);
+
+    /// <summary>
+    /// The answer stopped at the model's length limit: it is the file's first part, and extending
+    /// REWRITES the whole test file — applied, it would delete every test past the cut. Nothing is written.
+    /// </summary>
+    public static TestGenerationPlan CutAtLimit(string testPath, bool extended) =>
+        new(false, testPath, Path.GetFileName(testPath), extended, NoChange: false, string.Empty, Cut: true);
 }
 
 /// <summary>
@@ -104,6 +111,9 @@ internal static class TestGenerationPlanner
             Diagnostics.Swallow("TestGenerationPlanner.SendChat", ex);
             return TestGenerationPlan.Failed(testPath, extend);
         }
+
+        if (result.CutAtLimit)
+            return TestGenerationPlan.CutAtLimit(testPath, extend);
 
         var content = InlineEditResponse.Clean(result.TextContent);
 

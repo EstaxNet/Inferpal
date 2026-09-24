@@ -148,6 +148,43 @@ public sealed class TestGenerationClobberTests : IDisposable
         Assert.Equal(original, File.ReadAllText(test));
     }
 
+    // ── A cut answer ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// ⚠ Extending REWRITES the whole test file: the model gets the existing tests and returns them
+    /// with the new ones. An answer that stopped at the length limit is the file's first part — applied,
+    /// it deletes every test past the cut, through the very branch that looked safe.
+    /// </summary>
+    [Fact]
+    public async Task AnAnswerCutAtTheLengthLimit_NeverReplacesTheExistingTests()
+    {
+        var (source, _) = Fixture("public class WidgetTests { void A() { } void B() { } void C() { } }");
+        var cut = new FakeInferenceProvider
+        {
+            ChatResult = new ChatTurnResult("public class WidgetTests { void A() { }", null, 0, 0, CutAtLimit: true),
+        };
+
+        var plan = await TestGenerationPlanner.PlanAsync(cut, "m", source, "public class Widget { }", CancellationToken.None);
+
+        Assert.True(plan.Extended);                  // witness: the dangerous branch
+        Assert.False(plan.Ok);
+        Assert.True(plan.Cut);
+        Assert.Empty(plan.Content);
+    }
+
+    /// <summary>The same three screens must say it: a silent refusal reads as a broken command.</summary>
+    [Theory]
+    [InlineData("Inferpal.Host", "HostSlashCommands.cs")]
+    [InlineData("Inferpal", "Commands", "AddTestsSelectionCommand.cs")]
+    [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs")]
+    public void EveryFrontEndSaysACutAnswerWasNotWritten(params string[] parts)
+    {
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), Path.Combine(parts)));
+
+        Assert.Contains("TestsNoChange", code, StringComparison.Ordinal);        // WITNESS: a /test screen
+        Assert.Contains("CodeActionReplyCut", code, StringComparison.Ordinal);
+    }
+
     // ── The reference arms: the three other outcomes ─────────────────────────
 
     [Fact]

@@ -657,6 +657,7 @@ internal sealed partial class HostServer
         // ⚠ Before the generic refusal: "the file exists and I could not read it" is the one
         // outcome where carrying on overwrites tests, and it names the file to free.
         if (plan.Unreadable) return new SlashCommandResult(true, Strings.TestsFileUnreadable(plan.TestFileName));
+        if (plan.Cut)        return new SlashCommandResult(true, Strings.CodeActionReplyCut);
         if (!plan.Ok)        return new SlashCommandResult(true, Strings.TestsGenerateFailed);
 
         Inferpal.Services.Execution.BackedUpFileWriter.Outcome outcome;

@@ -121,6 +121,7 @@ internal partial class InferpalToolWindowData
             result.Cancelled ? Strings.MsgCancelled
             : result.NoChange ? Strings.TestsNoChange
             : result.Unreadable ? Strings.TestsFileUnreadable(result.TestFileName)
+            : result.Cut    ? Strings.CodeActionReplyCut
             : result.Ok     ? (result.Extended ? Strings.TestsExtended(result.TestFileName) : Strings.TestsGenerated(result.TestFileName))
             :                 Strings.TestsGenerateFailed);
     }
