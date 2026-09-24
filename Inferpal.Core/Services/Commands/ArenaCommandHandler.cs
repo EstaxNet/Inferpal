@@ -54,14 +54,13 @@ internal static class ArenaCommandHandler
 
         try
         {
-            string textA, textB;
-            double secondsA, secondsB;
+            (string Text, double Seconds, bool Cut) answerA, answerB;
             using (GpuScheduler.AcquireChatLease())
             {
                 onProgress?.Invoke(Strings.ArenaRunning("A"));
-                (textA, secondsA) = await AskAsync(client, modelA, prompt, ct);
+                answerA = await AskAsync(client, modelA, prompt, ct);
                 onProgress?.Invoke(Strings.ArenaRunning("B"));
-                (textB, secondsB) = await AskAsync(client, modelB, prompt, ct);
+                answerB = await AskAsync(client, modelB, prompt, ct);
             }
 
             var (state, unreadable) = await ArenaStore.ReadAsync();
@@ -73,8 +72,8 @@ internal static class ArenaCommandHandler
             var sb = new System.Text.StringBuilder();
             sb.Append("### ").AppendLine(Strings.ArenaTitle).AppendLine();
             sb.Append("> ").AppendLine(prompt.Replace("\n", "\n> ")).AppendLine();
-            AppendAnswer(sb, "A", textA, secondsA);
-            AppendAnswer(sb, "B", textB, secondsB);
+            AppendAnswer(sb, "A", answerA);
+            AppendAnswer(sb, "B", answerB);
             sb.Append(Strings.ArenaVotePrompt);
             // Without the pending state on disk, the next vote would answer "no pending battle".
             if (!pendingSaved) sb.Append("\n\n").Append(Strings.ArenaPendingNotSaved);
@@ -159,23 +158,28 @@ internal static class ArenaCommandHandler
     }
 
     /// <summary>One plain chat call (no tools), timed for the answer header.</summary>
-    private static async Task<(string Text, double Seconds)> AskAsync(
+    private static async Task<(string Text, double Seconds, bool Cut)> AskAsync(
         IInferenceProvider client, string model, string prompt, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var result = await client.SendChatAsync(
             model, [new("user", prompt)], EmptyToolRegistry.Instance, null, ct);
         sw.Stop();
-        return (result.TextContent, sw.Elapsed.TotalSeconds);
+        // Inline reasoning comes off per answer: left in the duel, an unclosed tag in the first answer reads as
+        // reasoning up to the end of the message — the second answer included.
+        return (MarkdownParser.WithoutLeadingReasoning(result.TextContent), sw.Elapsed.TotalSeconds, result.CutAtLimit);
     }
 
-    private static void AppendAnswer(System.Text.StringBuilder sb, string label, string text, double seconds)
+    // ⚠ A vote is a verdict: an answer that stopped at the length limit reads as a curt one, and the voter
+    // compares a fragment with a whole without knowing it. The mark goes under the answer it qualifies.
+    private static void AppendAnswer(System.Text.StringBuilder sb, string label, (string Text, double Seconds, bool Cut) answer)
     {
         sb.Append("#### ")
-          .AppendLine(Strings.ArenaAnswerHeader(label, seconds.ToString("0.0", CultureInfo.CurrentUICulture)))
+          .AppendLine(Strings.ArenaAnswerHeader(label, answer.Seconds.ToString("0.0", CultureInfo.CurrentUICulture)))
           .AppendLine()
-          .AppendLine(string.IsNullOrWhiteSpace(text) ? "*(∅)*" : text.Trim())
+          .AppendLine(string.IsNullOrWhiteSpace(answer.Text) ? "*(∅)*" : answer.Text.Trim())
           .AppendLine();
+        if (answer.Cut) sb.AppendLine(Strings.ArenaAnswerCut).AppendLine();
     }
 
     /// <summary>Cumulative standings table. Pure — unit-tested directly.</summary>

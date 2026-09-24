@@ -78,8 +78,8 @@ public class ContextOverflowCauseTests
     /// <summary>
     /// ⚠ A refusal that comes back as an HTTP error status went straight to the generic server-error
     /// message, never through the overflow check — and that is the form LM Studio actually uses
-    /// (measured: HTTP 400 with the body below). A generic OpenAI-compatible server exposes no loaded
-    /// window, so the proactive guard never runs there: every overflow takes this path.
+    /// (measured: HTTP 400 with the body below). When an OpenAI-compatible server does not say its loaded
+    /// window, the proactive guard never runs: every overflow takes this path.
     /// </summary>
     [Fact]
     public async Task AnOverflowRefusedWithAnHttpStatus_GetsTheSameBreakdown()

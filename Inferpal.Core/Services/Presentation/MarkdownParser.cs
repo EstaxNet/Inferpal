@@ -88,6 +88,40 @@ internal static class MarkdownParser
         return kept.ToString().Trim();
     }
 
+    /// <summary>
+    /// A reply that is turned into an ARTIFACT — an edit, a file, findings — without the reasoning a model put IN
+    /// FRONT of its answer. <c>null</c> reads as empty; a reply whose reasoning never closes is ALL reasoning, so it
+    /// yields an empty string (the answer never came).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A server that does not separate reasoning (vLLM without <c>--reasoning-parser</c>) sends it inline, at the head
+    /// of the content, and every site that writes the reply wrote the chain of thought with it: into the source file,
+    /// into the test file, into <c>.inferpal/context.md</c> — the system prompt of every following session.
+    /// </para>
+    /// <para>
+    /// ⚠ Only the HEAD, never <see cref="StripThinkTags"/>: code has no fence to hide behind here — an in-place action
+    /// answers with bare code — so a tag inside the code being rewritten would read as reasoning and the code between
+    /// two tags would vanish from the edit. Reasoning comes before the answer; a tag after the first line of answer is
+    /// the answer's. Nothing else is trimmed: the caller's own cleanup reads the leading indentation.
+    /// </para>
+    /// </remarks>
+    public static string WithoutLeadingReasoning(string? reply)
+    {
+        if (string.IsNullOrEmpty(reply)) return string.Empty;
+        var rest = reply;
+        while (true)
+        {
+            var start = 0;
+            while (start < rest.Length && char.IsWhiteSpace(rest[start])) start++;
+            if (string.Compare(rest, start, ThinkOpen, 0, ThinkOpen.Length, StringComparison.OrdinalIgnoreCase) != 0)
+                return rest;
+            var close = rest.IndexOf(ThinkClose, start + ThinkOpen.Length, StringComparison.OrdinalIgnoreCase);
+            if (close < 0) return string.Empty;
+            rest = rest[(close + ThinkClose.Length)..];
+        }
+    }
+
     // A fence line: up to three spaces, then three or more backticks or tildes. `Bare` = nothing after the
     // run, which a closing fence requires. A backtick run followed by another backtick on the same line
     // is an inline span (```x```), not a fence.

@@ -90,7 +90,8 @@ internal interface IInferenceProvider : IOllamaChatClient
     /// <summary>
     /// The context window, in tokens, the server actually has <paramref name="model"/> loaded with — or
     /// <c>null</c> when it cannot say (not loaded, or a backend that exposes no such figure). Ollama loads
-    /// with the configured window, so only a server that chooses its own (LM Studio) answers.
+    /// with the configured window, so only a server that chooses its own answers: LM Studio (native API),
+    /// vLLM (<c>/v1/models</c>) and llama-server (<c>/props</c>).
     /// </summary>
     Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct);
 }

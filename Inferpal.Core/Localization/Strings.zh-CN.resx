@@ -258,6 +258,8 @@
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ 智能体在迭代上限处停止：上面的回答是它已收集内容的摘要，并非已完成的任务。</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ 智能体反复发出相同的工具调用而被停止：上面的回答是它已收集内容的摘要。</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上面的回答在模型的长度限制处中断，内容不完整。请让它继续，或增大上下文长度。</value></data>
+  <data name="CommitProposalCut" xml:space="preserve"><value>⚠ 模型的回复在其长度限制处中断：建议的提交信息可能不完整。提交前请先阅读。</value></data>
+  <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ 此回答在模型的长度限制处中断——内容不完整。*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ 本次审查在模型的长度限制处中断：之后的问题缺失，因此没有发现问题并不能证明什么。请增大上下文长度，或一次审查更少的更改（只暂存其中一部分）。</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>（检测到循环 — 重复相同的工具调用，已停止）</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>（熔断器已开启 — 多次连接失败后暂停重试 5 分钟）</value></data>

@@ -111,13 +111,99 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
     /// <summary>
     /// The context window (in tokens) the server currently has <em>loaded</em> for
-    /// <paramref name="model"/>, or <c>null</c> when unknown. Generic OpenAI-compatible servers expose
-    /// no such figure (default); <see cref="LmStudioClient"/> overrides it from the native API so an
-    /// over-budget request can be rejected before the (expensive) call. Note: this is the loaded n_ctx,
-    /// not the model's <em>max</em> capability — a model can be loaded well below what it supports.
+    /// <paramref name="model"/>, or <c>null</c> when unknown — so an over-budget request can be rejected
+    /// before the (expensive) call, and compaction and the gauges measure against the window that refuses.
+    /// Note: this is the loaded n_ctx, not the model's <em>max</em> capability — a model can be loaded well
+    /// below what it supports. <see cref="LmStudioClient"/> reads its native API instead.
     /// </summary>
-    private protected virtual Task<int?> GetLoadedContextLengthAsync(string model, CancellationToken ct)
-        => Task.FromResult<int?>(null);
+    /// <remarks>
+    /// <para>
+    /// Two servers say it, each on its own endpoint: vLLM puts <c>max_model_len</c> on the model's entry of
+    /// <c>/v1/models</c>; llama-server puts the slot's <c>n_ctx</c> under <c>default_generation_settings</c> of
+    /// <c>/props</c> — the window ONE request must fit into (the context split across the slots). llama-server
+    /// loads 4 096 tokens by default: without this, the configured window was the only one compaction knew, and
+    /// past the loaded one every question was refused while compaction waited for a limit it never reached.
+    /// </para>
+    /// <para>
+    /// ⚠ Never <c>meta.n_ctx_train</c> (llama-server's <c>/v1/models</c>): that is what the model was trained on,
+    /// not what was loaded. And a <c>0</c> is "unknown" — the router of a multi-model llama-server answers it.
+    /// </para>
+    /// </remarks>
+    private protected virtual async Task<int?> GetLoadedContextLengthAsync(string model, CancellationToken ct)
+    {
+        lock (_loadedWindowLock)
+            if (_loadedWindowCache.Model == model && DateTime.UtcNow - _loadedWindowCache.At < LoadedWindowCacheLife)
+                return _loadedWindowCache.Window;
+
+        int? window;
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            window = await ServedModelLengthAsync(model, cts.Token) ?? await SlotContextLengthAsync(cts.Token);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            // Never let the probe block the actual request: unknown is the answer every other server gives.
+            Diagnostics.RecordOnce("OpenAiCompatible.LoadedWindow",
+                $"The loaded context window could not be read ({ex.GetType().Name}: {ex.Message}); the configured one is used.",
+                ex.GetType().FullName ?? "error");
+            window = null;
+        }
+
+        lock (_loadedWindowLock) _loadedWindowCache = (model, window, DateTime.UtcNow);
+        return window;
+    }
+
+    // The loaded window changes only on (un)load: cached briefly per model, so the probe does not run on every agent
+    // iteration — and a server that has neither endpoint costs two GETs per half-minute, not two per request.
+    private static readonly TimeSpan LoadedWindowCacheLife = TimeSpan.FromSeconds(30);
+    private readonly object _loadedWindowLock = new();
+    private (string Model, int? Window, DateTime At) _loadedWindowCache;
+
+    // vLLM: `/v1/models` → data[] { id, max_model_len }.
+    private async Task<int?> ServedModelLengthAsync(string model, CancellationToken ct)
+    {
+        using var doc = await GetJsonAsync($"{BaseV1}/models", ct);
+        if (doc?.RootElement.ValueKind != JsonValueKind.Object
+            || !doc.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+            return null;
+        foreach (var entry in data.EnumerateArray())
+            if (entry.ValueKind == JsonValueKind.Object
+                && entry.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String
+                && string.Equals(id.GetString(), model, StringComparison.OrdinalIgnoreCase))
+                return PositiveInt(entry, "max_model_len");
+        return null;
+    }
+
+    // llama-server: `/props` → default_generation_settings.n_ctx (the slot's window). At the host root, not under /v1.
+    private async Task<int?> SlotContextLengthAsync(CancellationToken ct)
+    {
+        var root = BaseV1.EndsWith("/v1", StringComparison.OrdinalIgnoreCase) ? BaseV1[..^3] : BaseV1;
+        using var doc = await GetJsonAsync($"{root}/props", ct);
+        return doc?.RootElement.ValueKind == JsonValueKind.Object
+               && doc.RootElement.TryGetProperty("default_generation_settings", out var settings)
+               && settings.ValueKind == JsonValueKind.Object
+            ? PositiveInt(settings, "n_ctx")
+            : null;
+    }
+
+    private async Task<JsonDocument?> GetJsonAsync(string url, CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        AddAuth(req);
+        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        await using var body = await resp.Content.ReadAsStreamAsync(ct);
+        try { return await JsonDocument.ParseAsync(body, cancellationToken: ct); }
+        catch (JsonException) { return null; }   // not JSON: a server that simply does not have this endpoint
+    }
+
+    private static int? PositiveInt(JsonElement obj, string name) =>
+        obj.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n) && n > 0
+            ? n
+            : null;
 
     /// <inheritdoc/>
     public override Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct)
@@ -168,9 +254,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // doesn't fail cleanly: it eval's the whole (oversized) prompt — minutes on a no-cache model —
         // then aborts mid-stream with a context-overflow error, which trips the orchestrator's
         // stall-retry into re-sending the same doomed request. When the server tells us the n_ctx the
-        // model is actually loaded with (LM Studio native API), catch the mismatch up front and fail
-        // fast with the concrete numbers. Skipped for generic OpenAI servers (loaded context unknown →
-        // null), and only fires when the prompt estimate alone already overflows, so it can't
+        // model is actually loaded with (LM Studio's native API, vLLM's /v1/models, llama-server's
+        // /props), catch the mismatch up front and fail fast with the concrete numbers. Skipped when the
+        // server does not say (null), and only fires when the prompt estimate alone already overflows, so it can't
         // false-positive a request that would have fit. Ollama is a separate class, unaffected.
         var loadedCtx = await GetLoadedContextLengthAsync(model, ct);
         // The estimate serializes every tool schema: only pay for it when there is a window to check.

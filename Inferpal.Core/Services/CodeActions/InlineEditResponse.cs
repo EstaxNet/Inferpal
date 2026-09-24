@@ -15,10 +15,14 @@ namespace Inferpal.Services.CodeActions;
 /// </summary>
 internal static class InlineEditResponse
 {
-    /// <summary>Removes surrounding markdown code fences and trailing whitespace from <paramref name="raw"/>.</summary>
+    /// <summary>Removes the model's leading reasoning, surrounding markdown code fences and trailing whitespace
+    /// from <paramref name="raw"/>.</summary>
+    /// <remarks>A server that does not separate reasoning sends it at the head of the reply: left there, it is
+    /// written into the file as code (<see cref="MarkdownParser.WithoutLeadingReasoning"/>).</remarks>
     public static string Clean(string raw)
     {
-        if (string.IsNullOrEmpty(raw)) return raw ?? string.Empty;
+        raw = MarkdownParser.WithoutLeadingReasoning(raw);
+        if (string.IsNullOrEmpty(raw)) return string.Empty;
 
         // Remove trailing whitespace and leading newlines (preserve leading spaces for indent detection).
         var s = raw.TrimEnd().TrimStart('\r', '\n');

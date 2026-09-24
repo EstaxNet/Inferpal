@@ -33,6 +33,48 @@ public class CommitCommandHandlerTests
         ChatResult = new ChatTurnResult(message, [], 0, 0),
     };
 
+    /// <summary>
+    /// A reply that stopped at the length limit was pre-filled into <c>/commit-exec</c> as if whole: a subject
+    /// cut mid-word reads as a terse one, and sent as is it becomes history. The notice comes before it.
+    /// </summary>
+    [Fact]
+    public async Task Propose_ACutProposal_SaysItMayBeIncomplete()
+    {
+        var git = new FakeGit();
+        git.Answers["diff --staged"] = "diff --git a/A.cs b/A.cs\n+added";
+        var client = new FakeInferenceProvider
+        {
+            RunAgentThroughChat = true,
+            ChatResult = new ChatTurnResult("feat(rag): make the index rebu", [], 0, 0, CutAtLimit: true),
+        };
+
+        var result = await CommitCommandHandler.ProposeAsync(
+            client, new InferpalConfig(), git.Runner, null, CancellationToken.None);
+
+        Assert.Equal("feat(rag): make the index rebu", result.Proposal);
+        Assert.Contains(Strings.CommitProposalCut, result.Notice);
+    }
+
+    /// <summary>An empty answer ended the command on an empty bubble (VS) or on nothing (VS Code).</summary>
+    [Fact]
+    public async Task Propose_AnEmptyAnswer_NamesTheModelThatGaveIt()
+    {
+        var git = new FakeGit();
+        git.Answers["diff --staged"] = "diff --git a/A.cs b/A.cs\n+added";
+        var client = new FakeInferenceProvider
+        {
+            RunAgentThroughChat = true,
+            ChatResult = new ChatTurnResult("   ", [], 0, 0),
+        };
+
+        var result = await CommitCommandHandler.ProposeAsync(
+            client, new InferpalConfig(), git.Runner, null, CancellationToken.None);
+
+        Assert.Null(result.Proposal);
+        var model = Assert.Single(client.AgentRuns).Model;
+        Assert.Equal(Strings.MsgEmptyResponseFrom(model, client.ServerAddress), result.Message);
+    }
+
     [Fact]
     public async Task Propose_WithNothingChanged_SaysSo_AndNeverAsksTheModel()
     {

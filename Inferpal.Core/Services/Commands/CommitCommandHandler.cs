@@ -91,17 +91,29 @@ internal static class CommitCommandHandler
 
         try
         {
+            var model  = await ModelRouter.ResolveUtilityAsync(config, client, ct);
             var result = await client.RunAgentAsync(
-                model:   await ModelRouter.ResolveUtilityAsync(config, client, ct),
+                model:   model,
                 history: GitCommitPolicy.BuildProposalRequest(capped.Text),
                 tools:   EmptyToolRegistry.Instance,
                 onStep:  _ => { },
                 onToken: token => onToken?.Invoke(token),
                 ct:      ct);
 
+            // ⚠ A reply that stopped at the length limit is pre-filled into `/commit-exec` all the same — a
+            // subject cut mid-word reads as a terse one, and sent as is it becomes history. The notice is
+            // shown BEFORE the proposal, like the capped diff's; it also explains an empty proposal, when the
+            // model never left its reasoning.
+            if (result.AnswerCut)
+                notice = notice is null ? Strings.CommitProposalCut : notice + "\n\n" + Strings.CommitProposalCut;
+
             // Think tags are stripped so reasoning-model output never lands in the commit message.
             var proposed = GitCommitPolicy.CleanProposal(result.FinalResponse);
-            return new(null, notice, string.IsNullOrWhiteSpace(proposed) ? null : proposed);
+            if (!string.IsNullOrWhiteSpace(proposed)) return new(null, notice, proposed);
+
+            // An empty answer is a model-side condition, and it has a name: without it the command ended on an
+            // empty bubble (Visual Studio) or on nothing at all (VS Code).
+            return new(result.AnswerCut ? null : Strings.MsgEmptyResponseFrom(model, client.ServerAddress), notice, null);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { return new(Strings.MsgError(ex.Message), notice, null); }

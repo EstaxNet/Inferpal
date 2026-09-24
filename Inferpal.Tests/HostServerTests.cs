@@ -299,15 +299,21 @@ public partial class HostServerTests
 
     /// <summary>Waits until the X-Ray panel shows (or no longer shows) a section: the active-document notification
     /// and the request after it are not dispatched in a guaranteed order.</summary>
+    /// <remarks>⚠ It FAILS at the deadline. Returning quietly made it a witness that witnessed nothing: a predicate that
+    /// never matches (the rules section's id is <c>Rules</c>, not <c>Rules|…</c>) cost each caller thirty seconds and
+    /// still let the test pass.</remarks>
     private static async Task WaitForXraySectionAsync(Harness h, Func<string, bool> matches, bool present = true)
     {
         var deadline = DateTime.UtcNow.AddSeconds(30);
+        var seen     = Array.Empty<string>();
         while (DateTime.UtcNow < deadline)
         {
             var panel = await h.Client.InvokeAsync<XRayPanelDto>("xray/panel");
-            if (panel.Sections.Any(sec => matches(sec.Id)) == present) return;
+            seen = [.. panel.Sections.Select(sec => sec.Id)];
+            if (seen.Any(matches) == present) return;
             await Task.Delay(20);
         }
+        Assert.Fail($"The X-Ray panel never {(present ? "showed" : "dropped")} the section; it shows: {string.Join(", ", seen)}");
     }
 
     private static string NewRootWithCSharpRule()
@@ -344,7 +350,7 @@ public partial class HostServerTests
 
             await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
                 new { path = Path.Combine(root, "src", "Program.cs") });
-            await WaitForXraySectionAsync(h, id => id.StartsWith("Rules|", StringComparison.Ordinal));
+            await WaitForXraySectionAsync(h, id => id == "Rules");
             await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
                 .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
@@ -356,7 +362,7 @@ public partial class HostServerTests
             // file, as in Visual Studio (a Markdown file picks none).
             await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
                 new { path = Path.Combine(root, "README.md") });
-            await WaitForXraySectionAsync(h, id => id.StartsWith("Rules|", StringComparison.Ordinal), present: false);
+            await WaitForXraySectionAsync(h, id => id == "Rules", present: false);
             await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "again", agentMode = false })
                 .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
@@ -387,7 +393,7 @@ public partial class HostServerTests
 
             await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
                 new { path = Path.Combine(root, "Program.cs") });
-            await WaitForXraySectionAsync(h, id => id.StartsWith("Rules|", StringComparison.Ordinal));
+            await WaitForXraySectionAsync(h, id => id == "Rules");
             await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
                 .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 

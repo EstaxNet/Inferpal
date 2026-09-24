@@ -310,9 +310,10 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Xray:
                 {
-                    var sections = new SystemPromptBuilder(s.Config, EditorName).BuildSections(
-                        Strings.SystemPrompt,
-                        projectRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir);
+                    // The layers the NEXT question will carry — persona, template, rules of the active file,
+                    // switched-off sections: built from the root alone, /xray described another prompt than the
+                    // one sent, and than the panel shows.
+                    var sections = BuildPromptSections(s);
                     return new SlashCommandResult(true, XRayCommandHandler.Handle(
                         sections,
                         AgentOrchestrator.EstimateConversationTokens(s.History),

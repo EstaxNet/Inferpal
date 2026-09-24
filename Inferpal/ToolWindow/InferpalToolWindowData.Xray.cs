@@ -45,7 +45,8 @@ internal partial class InferpalToolWindowData
     {
         var root     = FindProjectRoot();
         var sections = new SystemPromptBuilder(_config, EditorName).BuildSections(
-            Strings.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
+            Strings.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root),
+            _xrayDisabledSections);
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse);
@@ -78,7 +79,8 @@ internal partial class InferpalToolWindowData
     {
         var root     = FindProjectRoot();
         var sections = new SystemPromptBuilder(_config, EditorName).BuildSections(
-            Strings.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root));
+            Strings.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root),
+            _xrayDisabledSections);
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse);

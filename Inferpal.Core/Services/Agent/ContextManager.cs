@@ -114,7 +114,8 @@ internal static class ContextManager
     /// really loaded <paramref name="model"/> with when that is SMALLER.
     /// </summary>
     /// <remarks>
-    /// ⚠ LM Studio loads a model with a window of its own choosing and says which. Measured against the
+    /// ⚠ LM Studio, vLLM and llama-server load a model with a window of their own choosing and say which
+    /// (llama-server's default is 4 096 tokens). Measured against the
     /// configured window alone, a conversation between the two was refused on every request while
     /// compaction waited for a threshold it could never reach — stuck until the user cleared it. A larger
     /// loaded window never raises the configured one: that is the user's budget (and Ollama's num_ctx).

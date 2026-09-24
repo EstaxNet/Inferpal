@@ -258,6 +258,8 @@
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ エージェントは反復回数の上限で停止しました。上の回答はそれまでに集めた内容の要約であり、完了したタスクではありません。</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ エージェントが同じツール呼び出しを繰り返したため停止しました。上の回答はそれまでに集めた内容の要約です。</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上の回答はモデルの長さ制限で止まっており、不完全です。続きを依頼するか、コンテキスト長を増やしてください。</value></data>
+  <data name="CommitProposalCut" xml:space="preserve"><value>⚠ モデルの応答が長さ制限で止まりました。提案されたメッセージは不完全な可能性があります。コミットする前に確認してください。</value></data>
+  <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ この回答はモデルの長さ制限で止まりました。不完全です。*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ このレビューはモデルの長さ制限で止まりました。それ以降の指摘は欠けているため、指摘がないことは何も証明しません。コンテキスト長を増やすか、一度にレビューする変更を減らしてください（一部だけをステージします）。</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>（ループ検出 — 同一のツール呼び出しが繰り返されたため停止します）</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>（サーキットブレーカー開放 — 繰り返し失敗のため 5 分間再試行を停止します）</value></data>

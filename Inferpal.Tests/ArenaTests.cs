@@ -56,6 +56,55 @@ public class ArenaTests : IDisposable
 
     // ── Battles ────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// A server that does not separate reasoning sends it inline, at the head of the content. An answer that never
+    /// left its reasoning carried an unclosed tag into the duel, and the chat's reasoning strip — which reads an
+    /// unclosed tail as reasoning — hid the second answer with it: a vote between one answer and nothing.
+    /// </summary>
+    [Fact]
+    public async Task ADuel_ShowsBothAnswers_EvenWhenOneNeverLeftItsReasoning()
+    {
+        int calls = 0;
+        var fake = new FakeInferenceProvider
+        {
+            Installed = [new InstalledModelInfo("big:latest", 1), new InstalledModelInfo("small:latest", 1)],
+            OnChatRequest = (_, _, _, _) => Task.FromResult(Interlocked.Increment(ref calls) == 1
+                ? new ChatTurnResult("<think>\nweighing the options", null, 0, 0)
+                : new ChatTurnResult("second answer", null, 0, 0)),
+        };
+
+        var result = await ArenaCommandHandler.HandleAsync(
+            fake, Config(), ["/arena", "say", "hi"], onProgress: null, CancellationToken.None, swapOrder: () => false);
+
+        Assert.Contains("second answer", Inferpal.Services.Presentation.MarkdownParser.ShownText("assistant", result.Message));
+        Assert.DoesNotContain("<think>", result.Message);
+    }
+
+    /// <summary>
+    /// A vote is a verdict: an answer that stopped at the length limit reads as a curt one, and the voter compared a
+    /// fragment with a whole without knowing it. The mark goes under that answer — and only that one.
+    /// </summary>
+    [Fact]
+    public async Task ADuel_MarksTheAnswerThatStoppedAtTheLengthLimit()
+    {
+        int calls = 0;
+        var fake = new FakeInferenceProvider
+        {
+            Installed = [new InstalledModelInfo("big:latest", 1), new InstalledModelInfo("small:latest", 1)],
+            OnChatRequest = (_, _, _, _) => Task.FromResult(Interlocked.Increment(ref calls) == 1
+                ? new ChatTurnResult("The sky is blue because of Rayl", null, 0, 0, CutAtLimit: true)
+                : new ChatTurnResult("Rayleigh scattering.", null, 0, 0)),
+        };
+
+        var message = (await ArenaCommandHandler.HandleAsync(
+            fake, Config(), ["/arena", "why", "blue"], onProgress: null, CancellationToken.None, swapOrder: () => false)).Message;
+
+        var mark = message.IndexOf(Strings.ArenaAnswerCut, StringComparison.Ordinal);
+        Assert.True(mark > message.IndexOf("because of Rayl", StringComparison.Ordinal), "the cut answer is not marked");
+        Assert.True(mark < message.IndexOf("Rayleigh scattering.", StringComparison.Ordinal), "the mark is not under the cut answer");
+        Assert.Equal(mark, message.LastIndexOf(Strings.ArenaAnswerCut, StringComparison.Ordinal));   // the whole answer carries none
+    }
+
     [Fact]
     public async Task Battle_AutoPair_UsesChatAndUtilityModels_AndStoresPendingMapping()
     {

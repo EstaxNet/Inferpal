@@ -138,7 +138,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         string? projectRoot       = null,
         string? activeFileRelPath = null,
         IReadOnlySet<string>? disabledSectionIds = null)
-        => string.Concat(BuildSections(basePrompt, language, templateSuffix, projectRoot, activeFileRelPath)
+        => string.Concat(BuildSections(basePrompt, language, templateSuffix, projectRoot, activeFileRelPath, disabledSectionIds)
                          .Where(s => disabledSectionIds is null
                                      || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(s)))
                          .Select(s => s.Content));
@@ -148,12 +148,16 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// the <c>/xray</c> token breakdown reads these. Concatenating the sections' contents in order
     /// reproduces the exact prompt (each content carries its own leading separator).
     /// </summary>
+    /// <param name="disabledSectionIds">Sections switched off from the X-Ray panel: they are still returned (the panel
+    /// lists them), but they take no part of the budget the file-backed sections share — switching one off is how
+    /// the user makes room for the others.</param>
     public IReadOnlyList<PromptSection> BuildSections(
         string  basePrompt,
         string? language          = null,
         string? templateSuffix    = null,
         string? projectRoot       = null,
-        string? activeFileRelPath = null)
+        string? activeFileRelPath = null,
+        IReadOnlySet<string>? disabledSectionIds = null)
     {
         var sections = new List<PromptSection> { new(PromptSectionKind.Base, null, basePrompt + EnvironmentFacts()) };
 
@@ -170,6 +174,9 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
 
         if (!string.IsNullOrEmpty(templateSuffix))
             sections.Add(new(PromptSectionKind.Template, null, templateSuffix));
+
+        // File-backed layers are gathered whole, then share one budget before they are added (ShareBudget).
+        var files = new List<FileLayer>();
 
         var (pinned, overCap) = PinnedFilesPolicy.ParseActiveWithOverflow(config.PinnedContextFiles);
 
@@ -204,16 +211,15 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             ForgetMissingPin(pinnedPath);
             try
             {
-                var pinnedContent = CapSection(File.ReadAllText(pinnedPath, Encoding.UTF8).Trim(),
-                                               Path.GetFileName(pinnedPath));
+                var pinnedContent = File.ReadAllText(pinnedPath, Encoding.UTF8).Trim();
                 // The read goes through again: a later failure will say so again.
                 Diagnostics.Forget(PinContext, UnreadableKey(pinnedPath));
                 if (!string.IsNullOrEmpty(pinnedContent))
                     // The label is the file name; the identity is the PATH — two pins can both be
                     // called README.md, and one switch would then turn both off.
-                    sections.Add(new(PromptSectionKind.Pinned, Path.GetFileName(pinnedPath),
-                        "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n" + pinnedContent,
-                        Key: pinnedPath));
+                    files.Add(new(PromptSectionKind.Pinned, Path.GetFileName(pinnedPath),
+                        "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n", pinnedContent,
+                        Path.GetFileName(pinnedPath), Key: pinnedPath));
             }
             catch (Exception ex) { ReportUnreadablePinOnce(pinnedPath, ex); }
         }
@@ -221,9 +227,9 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
 
         if (projectRoot is not null)
         {
-            AddFileSection(sections, PromptSectionKind.ProjectContext, Path.Combine(projectRoot, ".inferpal", "context.md"), "Project context", ".inferpal/context.md");
-            AddFileSection(sections, PromptSectionKind.Memory,         Path.Combine(projectRoot, ".inferpal", "memory.md"),  "Agent memory",    ".inferpal/memory.md");
-            AddFileSection(sections, PromptSectionKind.Notes,          NotesStore.NotesPath(projectRoot),                       "Project notes",   ".inferpal/notes.md");
+            AddFileSection(files, PromptSectionKind.ProjectContext, Path.Combine(projectRoot, ".inferpal", "context.md"), "Project context", ".inferpal/context.md");
+            AddFileSection(files, PromptSectionKind.Memory,         Path.Combine(projectRoot, ".inferpal", "memory.md"),  "Agent memory",    ".inferpal/memory.md");
+            AddFileSection(files, PromptSectionKind.Notes,          NotesStore.NotesPath(projectRoot),                       "Project notes",   ".inferpal/notes.md");
 
             // Project rules (.inferpal/rules/*.md) — scoped by glob against the active file.
             try
@@ -233,18 +239,80 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                 {
                     var matched = rules.Where(r => RulesService.Matches(r, activeFileRelPath)).ToList();
                     if (matched.Count > 0)
-                        sections.Add(new(PromptSectionKind.Rules, matched.Count.ToString(),
-                                         CapSection(RulesService.Render(matched), ".inferpal/rules")));
+                        files.Add(new(PromptSectionKind.Rules, matched.Count.ToString(), "",
+                                      RulesService.Render(matched), ".inferpal/rules"));
                 }
             }
             catch (Exception ex) { Diagnostics.Swallow("SystemPromptBuilder.Rules", ex); }
         }
 
+        sections.AddRange(ShareBudget(files, FileSectionsBudget(config.ContextWindowSize), disabledSectionIds));
         return sections;
     }
 
+    /// <summary>A file-backed layer before the budget is applied: <see cref="Header"/> + the (capped) body.</summary>
+    private sealed record FileLayer(
+        PromptSectionKind Kind, string? Detail, string Header, string Body, string What, string? Key = null)
+    {
+        public PromptSection Section(string body) => new(Kind, Detail, Header + body, Key);
+    }
+
     /// <summary>
-    /// Ceiling on one file-backed prompt section (~8k tokens). Every section here comes from a
+    /// Characters the file-backed sections share, all of them together: one per token of the context window —
+    /// about a quarter of it at four characters per token.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The ceiling of a SINGLE section (<see cref="MaxFileSectionChars"/>) is not a budget: at the default window
+    /// (8 192 tokens) one section at that ceiling fills the whole window, there are up to seven of them (three
+    /// pins, context, memory, notes, rules), and in agent mode the tool definitions already take about 4 900 tokens
+    /// of it. The request then overflows on every question — refused by LM Studio, cut at the head by Ollama,
+    /// system prompt first — and compaction cannot help: the system prompt is never compacted. The window here is
+    /// the configured one: the prompt is built before the turn knows which model will answer.
+    /// </remarks>
+    internal static int FileSectionsBudget(int contextWindow) =>
+        contextWindow > 0 ? contextWindow : DefaultContextWindow;
+
+    private const int DefaultContextWindow = 8_192;
+
+    /// <summary>
+    /// Shares <paramref name="budget"/> between sections of the given sizes, fairly: sections under an equal share
+    /// keep all they have, the others split what is left equally — one large pinned file is cut, it does not cut
+    /// the project's rules down to nothing. No section gets more than <see cref="MaxFileSectionChars"/>.
+    /// </summary>
+    internal static int[] Allot(IReadOnlyList<int> sizes, int budget)
+    {
+        var allotted  = new int[sizes.Count];
+        var remaining = Math.Max(0, budget);
+        var order     = Enumerable.Range(0, sizes.Count).OrderBy(i => sizes[i]).ToList();
+        for (var k = 0; k < order.Count; k++)
+        {
+            var i = order[k];
+            allotted[i] = Math.Min(Math.Min(sizes[i], MaxFileSectionChars), remaining / (order.Count - k));
+            remaining  -= allotted[i];
+        }
+        return allotted;
+    }
+
+    // A section switched off is not sent, so it takes no share; it is still capped on its own, for the panel.
+    private static IEnumerable<PromptSection> ShareBudget(
+        List<FileLayer> files, int budget, IReadOnlySet<string>? disabledSectionIds)
+    {
+        var sent = Enumerable.Range(0, files.Count)
+            .Where(i => disabledSectionIds is null
+                        || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(files[i].Section(""))))
+            .ToList();
+        var shares   = Allot(sent.Select(i => files[i].Body.Length).ToList(), budget);
+        var allotted = files.Select(f => Math.Min(f.Body.Length, MaxFileSectionChars)).ToArray();
+        for (var j = 0; j < sent.Count; j++) allotted[sent[j]] = shares[j];
+
+        for (var i = 0; i < files.Count; i++)
+            yield return files[i].Section(CapSection(files[i].Body, files[i].What, allotted[i]));
+    }
+
+    /// <summary>
+    /// Ceiling on ONE file-backed prompt section (~8k tokens), under the budget they all share
+    /// (<see cref="FileSectionsBudget"/>) — on its own it bounds nothing: at the default window one
+    /// section at this ceiling fills the whole window. Every section here comes from a
     /// file this process does not control: <c>memory.md</c> is written by the agent itself,
     /// <c>notes.md</c> and <c>context.md</c> by the user, the rules by whoever authored the
     /// repository, and a pinned file is whatever the user pinned — a build log, a generated header.
@@ -258,16 +326,25 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// </remarks>
     internal const int MaxFileSectionChars = 32_000;
 
-    /// <summary>Caps one section and says so in the prompt — a silent cut would make the model
-    /// answer from half a rule without either party knowing.</summary>
-    internal static string CapSection(string text, string what)
-    {
-        if (text.Length <= MaxFileSectionChars) return text;
+    /// <summary>Caps one section at its own ceiling (<see cref="MaxFileSectionChars"/>) and says so in the prompt.</summary>
+    internal static string CapSection(string text, string what) => CapSection(text, what, MaxFileSectionChars);
 
-        Diagnostics.Record("SystemPrompt",
-            $"'{what}' is {text.Length} chars; truncated to {MaxFileSectionChars} for the system prompt.");
-        return SafeTruncate.Truncate(text, MaxFileSectionChars)
-             + $"\n\n[... {what} truncated to {MaxFileSectionChars} characters out of {text.Length} "
+    /// <summary>Caps one section at <paramref name="allotted"/> characters and says so in the prompt — a silent cut
+    /// would make the model answer from half a rule without either party knowing.</summary>
+    /// <remarks>⚠ The diagnostics note is said ONCE per condition, not once per build: the prompt is rebuilt on every
+    /// question, so a capped pinned file wrote one entry per question and a long session flushed the ring — and the
+    /// failure being looked for with it. The key IS the condition (size and share): when either moves, it is said
+    /// again.</remarks>
+    internal static string CapSection(string text, string what, int allotted)
+    {
+        if (text.Length <= allotted) return text;
+
+        Diagnostics.RecordOnce("SystemPrompt",
+            $"'{what}' is {text.Length} chars; truncated to {allotted} for the system prompt "
+            + "(the prompt's files share a budget set by the context window).",
+            $"{what}|{text.Length}|{allotted}");
+        return SafeTruncate.Truncate(text, allotted)
+             + $"\n\n[... {what} truncated to {allotted} characters out of {text.Length} "
              + "to keep the system prompt inside the context window]";
     }
 
@@ -313,15 +390,15 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     private static string UnreadableKey(string path) => "unreadable:" + PinKey(path);
     private static string OverCapKey(string path)    => "overcap:"    + PinKey(path);
 
-    private static void AddFileSection(List<PromptSection> sections, PromptSectionKind kind, string path, string header, string detail)
+    private static void AddFileSection(List<FileLayer> files, PromptSectionKind kind, string path, string header, string detail)
     {
         if (!File.Exists(path)) return;
         try
         {
-            var text = CapSection(File.ReadAllText(path, Encoding.UTF8).Trim(), detail);
+            var text = File.ReadAllText(path, Encoding.UTF8).Trim();
             Diagnostics.Forget(PromptFileContext, PinKey(path));
             if (!string.IsNullOrEmpty(text))
-                sections.Add(new(kind, detail, "\n\n## " + header + "\n\n" + text));
+                files.Add(new(kind, detail, "\n\n## " + header + "\n\n", text, detail));
         }
         catch (Exception ex)
         {

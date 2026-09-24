@@ -221,7 +221,8 @@ internal static class OnboardCommandHandler
             // A draft that stopped at the length limit ends mid-sentence, and it would become the system
             // prompt of every following session — in place of the user's own file under `force`.
             if (result.CutAtLimit) return new(Strings.OnboardContextCut);
-            answer = result.TextContent;
+            // Reasoning a server sends inline would become part of every following session's system prompt.
+            answer = MarkdownParser.WithoutLeadingReasoning(result.TextContent);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { return new(Strings.MsgError(ex.Message)); }

@@ -1229,7 +1229,8 @@ internal sealed partial class HostServer : IDisposable
             language:          s.PersonaLanguage,
             templateSuffix:    s.TemplateSuffix,
             projectRoot:       root,
-            activeFileRelPath: SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath));
+            activeFileRelPath: SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath),
+            disabledSectionIds: s.XrayDisabledSections);
     }
 
     private static XRayPanelDto ToXRayPanelDto(HostSession s)
