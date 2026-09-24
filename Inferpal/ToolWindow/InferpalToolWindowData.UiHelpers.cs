@@ -29,12 +29,14 @@ internal partial class InferpalToolWindowData
     // ── Context budget ─────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Recomputes the context-window fill indicator from <see cref="_lastPromptTokens"/>
-    /// and <see cref="InferpalConfig.ContextWindowSize"/>. Must be called on the VM thread.
+    /// Recomputes the context-window fill indicator from <see cref="_lastPromptTokens"/> and the window
+    /// the last context check measured against — the loaded one when the server reports a smaller one
+    /// than configured, or the gauge shows room while requests are refused. Must be called on the VM thread.
     /// </summary>
     private void UpdateContextBudget()
     {
-        var budget = Services.Presentation.ContextBudgetGauge.Compute(_lastPromptTokens, _config.ContextWindowSize);
+        var window = _contextWindowInUse > 0 ? _contextWindowInUse : _config.ContextWindowSize;
+        var budget = Services.Presentation.ContextBudgetGauge.Compute(_lastPromptTokens, window);
         if (budget is null)
         {
             HasContextBudget = false;

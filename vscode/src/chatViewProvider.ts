@@ -1642,6 +1642,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.busy = false;
       this.lastTokens = result.tokensUsed;
       this.sessionTokens += result.tokensUsed;
+      // The gauge measures against the window the host measured the turn against: the loaded one when
+      // the server reports a smaller one than configured, or it shows room while requests are refused.
+      if (result.contextWindow && result.contextWindow > 0) {
+        this.contextWindow = result.contextWindow;
+      }
       this.post({
         type: 'turnEnded',
         text: finalText,
@@ -1651,6 +1656,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         promptTokens: this.promptTokens,
         timestamp: ChatViewProvider.now(),
         endNotice: result.endNotice ?? null,
+        contextWindow: this.contextWindow,
       });
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {

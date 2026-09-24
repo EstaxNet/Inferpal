@@ -312,7 +312,7 @@ internal sealed partial class HostServer : IDisposable
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
-                    false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice);
+                    false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice, ContextWindow: ctxDecision.Window);
             }
 
             if (s.ToolsEnabled)
@@ -345,7 +345,8 @@ internal sealed partial class HostServer : IDisposable
                 return new ChatSendResult(
                     FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, model, s),
                     false, run.TokensUsed, run.PromptTokens,
-                    EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut)));
+                    EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut)),
+                    ContextWindow: ctxDecision.Window);
             }
 
             var turn = await s.Client.SendChatAsync(
@@ -360,7 +361,8 @@ internal sealed partial class HostServer : IDisposable
             return new ChatSendResult(
                 FinalAnswer(turn.TextContent, streamed.ToString(), [], model, s),
                 false, turn.TokensUsed, turn.PromptTokens,
-                EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit)));
+                EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit)),
+                ContextWindow: ctxDecision.Window);
         }
         catch (OperationCanceledException)
         {

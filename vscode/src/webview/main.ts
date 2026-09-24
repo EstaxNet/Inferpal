@@ -1238,6 +1238,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       }
       renderPlan(null);
       setBusy(false);
+      if (typeof msg.contextWindow === 'number' && msg.contextWindow > 0) {
+        contextWindow = msg.contextWindow;
+      }
       updateGauge(msg.promptTokens, msg.tokens);
       refreshRegenerate();
       scrollToBottom();

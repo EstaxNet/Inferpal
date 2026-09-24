@@ -203,6 +203,8 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private ChatMessageItem? _scrollTarget;
     private int              _sessionTokens;
     private int              _lastPromptTokens;
+    /// <summary>The window the last context check measured against (0 until one ran): what the gauge shows.</summary>
+    private int              _contextWindowInUse;
     private int              _conversationTurnCount;
     private double           _contextFillPercent;
     private bool             _hasContextBudget;

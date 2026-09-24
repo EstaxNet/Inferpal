@@ -48,7 +48,10 @@ internal sealed record ChatSendResult(
     string? Error = null,
     /// <summary>Why the run stopped, when it is not because the model was done. The answer stays in
     /// <see cref="Text"/>; this is added after it, never in its place.</summary>
-    string? EndNotice = null);
+    string? EndNotice = null,
+    /// <summary>The window this turn was measured against — the loaded one when the server reports a
+    /// smaller one than configured. The adapter's context gauge shows this, not the setting. 0 = unknown.</summary>
+    int     ContextWindow = 0);
 
 /// <summary>`chat/tool` notification — one executed tool call (uncapped output, like the VS bubble).</summary>
 internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors);

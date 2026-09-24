@@ -27,8 +27,12 @@ internal enum ContextOutcome
 /// </summary>
 /// <param name="Summary">Non-null only for <see cref="ContextOutcome.Compacted"/>.</param>
 /// <param name="Notice">What to show the user, or empty for <see cref="ContextOutcome.None"/>.</param>
+/// <param name="Window">
+/// The window, in tokens, the conversation was measured against (<see cref="ContextManager.EffectiveWindowAsync"/>)
+/// — what the context gauges must show too, or they announce room a smaller loaded window does not have.
+/// </param>
 internal sealed record ContextDecision(
-    ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice)
+    ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0)
 {
     /// <summary>
     /// The conversation lost turns with nothing put in their place — a degraded result, not the one
@@ -78,16 +82,17 @@ internal static class ContextManager
         CancellationToken             ct,
         string?                       model = null)
     {
-        var plan = HistoryCompaction.Decide(
-            history, await EffectiveWindowAsync(config, client, model, ct).ConfigureAwait(false), lastPromptTokens,
+        var window = await EffectiveWindowAsync(config, client, model, ct).ConfigureAwait(false);
+        var plan   = HistoryCompaction.Decide(
+            history, window, lastPromptTokens,
             config.ContextWindowKeepTurns, config.KvCacheAnchorMessages, config.CompactionEnabled);
 
         if (plan.Action == CompactionAction.None)
-            return new ContextDecision(ContextOutcome.None, plan, null, string.Empty);
+            return new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window);
 
         if (plan.Action == CompactionAction.Truncate)
             return new ContextDecision(ContextOutcome.Truncated, plan, null,
-                                       Strings.MsgContextTruncated(plan.Count, plan.KeepTurns));
+                                       Strings.MsgContextTruncated(plan.Count, plan.KeepTurns), window);
 
         onStep?.Invoke(Strings.StatusCompacting);
 
@@ -97,11 +102,11 @@ internal static class ContextManager
         // was asked for. The two look alike on the history and not at all to the user.
         if (string.IsNullOrEmpty(summary))
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
-                                       Strings.MsgContextCompactionFallback);
+                                       Strings.MsgContextCompactionFallback, window);
 
         var note = plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty;
         return new ContextDecision(ContextOutcome.Compacted, plan, summary,
-                                   Strings.MsgContextCompacted(plan.Count, plan.KeepTurns) + note);
+                                   Strings.MsgContextCompacted(plan.Count, plan.KeepTurns) + note, window);
     }
 
     /// <summary>

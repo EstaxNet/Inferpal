@@ -1,5 +1,7 @@
 using System.IO;
 using Inferpal.Config;
+using Inferpal.Host;
+using StreamJsonRpc;
 using Inferpal.Models;
 using Inferpal.Services.Agent;
 using Xunit;
@@ -74,6 +76,50 @@ public class LoadedWindowCompactionTests
         Assert.Equal(ContextOutcome.None, decision.Outcome);
     }
 
+    // ── The gauges show the same window ───────────────────────────────────────
+
+    [Theory]
+    [InlineData(4_096,  4_096)]    // loaded smaller: that is the window
+    [InlineData(null,   8_192)]    // reference arm: the server cannot say
+    [InlineData(65_536, 8_192)]    // loaded larger: the configured budget stands
+    public async Task TheDecision_CarriesTheWindowItMeasuredAgainst(int? loaded, int expected)
+    {
+        var decision = await ContextManager.PrepareAsync(
+            LongHistory(), Config(), new FakeInferenceProvider { LoadedContextWindow = loaded },
+            lastPromptTokens: 100, onStep: null, CancellationToken.None, model: "glm");
+
+        Assert.Equal(expected, decision.Window);
+    }
+
+    /// <summary>
+    /// ⚠ The context gauge read the CONFIGURED window in both front-ends: with a model loaded smaller,
+    /// it showed room — "40 % of 8,192" — while every request was being refused.
+    /// </summary>
+    [Fact]
+    public void TheVisualStudioGauge_ReadsTheWindowOfTheLastCheck()
+    {
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.UiHelpers.cs"));
+        var at   = code.IndexOf("ContextBudgetGauge.Compute(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the gauge is gone");                                     // WITNESS
+        var call = code[at..code.IndexOf(';', at)];
+
+        Assert.DoesNotContain("_config.ContextWindowSize", call, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheVsCodeGauge_TakesTheWindowFromTheTurn()
+    {
+        string Ts(params string[] parts) => SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+            File.ReadAllText(Path.Combine(RepoRoot(), Path.Combine(parts))));
+
+        Assert.Contains("result.contextWindow", Ts("vscode", "src", "chatViewProvider.ts"), StringComparison.Ordinal);
+        var webview = Ts("vscode", "src", "webview", "main.ts");
+        var turnEnded = webview[webview.IndexOf("case 'turnEnded'", StringComparison.Ordinal)..];
+        Assert.Contains("msg.contextWindow", turnEnded[..turnEnded.IndexOf("break;", StringComparison.Ordinal)],
+                        StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs")]
     [InlineData("Inferpal.Host", "HostServer.cs")]
@@ -94,5 +140,23 @@ public class LoadedWindowCompactionTests
             dir = dir.Parent;
         Assert.NotNull(dir);
         return dir!.FullName;
+    }
+}
+
+public partial class HostServerTests
+{
+    /// <summary>The window of the turn reaches the adapter, whose gauge shows it instead of the setting.</summary>
+    [Fact]
+    public async Task ChatSend_ReturnsTheWindowTheTurnWasMeasuredAgainst()
+    {
+        using var h = CreateHarness(cfg => cfg.ContextWindowSize = 8_192);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.LoadedContextWindow = 4_096;
+        h.Fake.ChatResult = new ChatTurnResult("ok", null, 0, 0);
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(4_096, result.ContextWindow);
     }
 }

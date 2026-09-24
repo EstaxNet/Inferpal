@@ -102,7 +102,7 @@ export type ExtToWebview =
   | { type: 'mentionSuggestions'; items: string[]; query: string }
   | { type: 'xrayPanel'; panel: XRayPanel }
   | { type: 'streamReset' }
-  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null }
+  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; contextWindow?: number }
   | { type: 'backendStatus'; status: WvBackendStatus }
   | { type: 'agentMode'; enabled: boolean }
   | { type: 'setPrompt'; text: string }

@@ -324,6 +324,8 @@ internal partial class InferpalToolWindowData
             onStep: step => Post(() => CurrentStep = step),
             ct: ct, model: model);
 
+        await RunOnVMContextAsync(() => _contextWindowInUse = decision.Window);
+
         if (decision.Outcome == Services.Agent.ContextOutcome.None) return;
 
         await RunOnVMContextAsync(() =>
