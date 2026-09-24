@@ -30,9 +30,9 @@ internal readonly record struct CodeExcerpt(string Text, int ShownLines, int Tot
     /// <see cref="MaxChars"/> takes of the default window, never less than <see cref="MaxChars"/>.
     /// </summary>
     /// <remarks>
-    /// ⚠ A fixed budget is wrong at both ends. With none, a file larger than the window goes out whole and
-    /// the backend drops the HEAD of the request — the system prompt and the instruction first — without a
-    /// word, so the model answers about a fragment it was never asked about. With a fixed one, a 32k window
+    /// ⚠ A fixed budget is wrong at both ends. With none, a file larger than the window goes out whole:
+    /// LM Studio refuses the request, Ollama drops its HEAD — the system prompt and the instruction first —
+    /// without a word, so the model answers about a fragment it was never asked about. With a fixed one, a 32k window
     /// loses three quarters of a file that would have fit. The excerpt shares the request with the system
     /// prompt, the workspace block and the answer, so it keeps the proportion that holds at the default.
     /// </remarks>

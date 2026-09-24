@@ -1574,8 +1574,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * answered as a normal streamed chat turn.
    *
    * ⚠ The code goes through the host's excerpt, sized from the configured context window. Fenced
-   * whole, a file larger than the window made the backend drop the HEAD of the request — the system
-   * prompt and this very instruction first — without a word; and the cut, when there is one, is named
+   * whole, a file larger than the window is refused by LM Studio, and loses the HEAD of the request
+   * with Ollama — the system prompt and this very instruction first — without a word; and the cut, when there is one, is named
    * under the question, where the Visual Studio window shows it on the attachment chip. */
   private async runExplainReview(kind: 'explain' | 'review', host: HostClient): Promise<void> {
     const editor = this.getActiveEditor();

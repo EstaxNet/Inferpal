@@ -588,8 +588,8 @@ internal sealed partial class HostServer : IDisposable
     /// and the label that names it under the question — the Visual Studio window's excerpt, from the same Core.
     /// </summary>
     /// <remarks>
-    /// ⚠ The adapter fenced the whole file into the prompt: past the window the backend drops the head of the
-    /// request, system prompt and instruction first, without a word. See <see cref="CodeExcerpt.BudgetFor"/>.
+    /// ⚠ The adapter fenced the whole file into the prompt: past the window LM Studio refuses the request and
+    /// Ollama drops its head, system prompt and instruction first, without a word. See <see cref="CodeExcerpt.BudgetFor"/>.
     /// </remarks>
     [JsonRpcMethod("code/excerpt", UseSingleObjectParameterDeserialization = true)]
     public CodeExcerptResult CodeExcerptOf(CodeExcerptParams p)

@@ -11,9 +11,9 @@ namespace Inferpal.Tests;
 /// <summary>
 /// ⚠ In VS Code, <c>/explain</c> and <c>/review</c> fenced the WHOLE active file into the prompt: no
 /// budget at all, where the Visual Studio window cuts to one and says so. A file larger than the
-/// context window then goes out whole, and past the window the backend drops the HEAD of the request —
-/// the system prompt and the "review the following code" instruction first — without a word: the model
-/// answers about a fragment it was never asked about. The excerpt now comes from the host, sized from
+/// context window then goes out whole: LM Studio refuses the request, Ollama drops its HEAD — the system
+/// prompt and the "review the following code" instruction first — without a word, and the model answers
+/// about a fragment it was never asked about. The excerpt now comes from the host, sized from
 /// the configured window, and so does Visual Studio's: the default window keeps the budget it had, a
 /// larger one no longer loses code that fits.
 /// </summary>
