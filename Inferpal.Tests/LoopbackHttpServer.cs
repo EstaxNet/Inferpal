@@ -32,7 +32,9 @@ internal sealed class LoopbackHttpServer : IDisposable
 
     public string BaseUrl => $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}";
 
-    public LoopbackHttpServer(Func<string, string?> body)
+    /// <param name="body">The body answered for a path; <c>null</c> answers 404.</param>
+    /// <param name="status">The status of a non-null body (default 200): how a test stands in for a server that refuses.</param>
+    public LoopbackHttpServer(Func<string, string?> body, Func<string, int>? status = null)
     {
         _listener = new TcpListener(IPAddress.Loopback, 0);
         _listener.Start();
@@ -84,12 +86,13 @@ internal sealed class LoopbackHttpServer : IDisposable
                             await reader.ReadBlockAsync(new char[contentLength], 0, contentLength);
                         var payload = body(path);
                         var bytes = Encoding.UTF8.GetBytes(payload ?? "{}");
-                        var status = payload is null ? "404 Not Found" : "200 OK";
+                        var code   = payload is null ? 404 : status?.Invoke(path) ?? 200;
+                        var statusLine = code switch { 200 => "200 OK", 404 => "404 Not Found", 400 => "400 Bad Request", _ => $"{code} Status" };
                         // Explicit CRLF: the HTTP grammar requires it, Environment.NewLine is not CRLF
                         // everywhere, and this test also runs on a Linux runner.
                         const string crlf = "\r\n";
                         var head = Encoding.ASCII.GetBytes(
-                            $"HTTP/1.1 {status}{crlf}"
+                            $"HTTP/1.1 {statusLine}{crlf}"
                             + $"Content-Type: application/json{crlf}"
                             + $"Content-Length: {bytes.Length}{crlf}"
                             + $"Connection: close{crlf}{crlf}");

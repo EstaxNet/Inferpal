@@ -1,3 +1,4 @@
+using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services.Inference;
@@ -73,6 +74,45 @@ public class ContextOverflowCauseTests
     public void ARequestThatFits_SaysNothing()
         => Assert.Null(OpenAiCompatibleClient.CheckContextFit(
                RequestSize.Of(Conversation(earlierChars: 400, lastChars: 400), Tools(2)), loadedContext: 8_192));
+
+    /// <summary>
+    /// ⚠ A refusal that comes back as an HTTP error status went straight to the generic server-error
+    /// message, never through the overflow check — and that is the form LM Studio actually uses
+    /// (measured: HTTP 400 with the body below). A generic OpenAI-compatible server exposes no loaded
+    /// window, so the proactive guard never runs there: every overflow takes this path.
+    /// </summary>
+    [Fact]
+    public async Task AnOverflowRefusedWithAnHttpStatus_GetsTheSameBreakdown()
+    {
+        const string refusal = """{"error":"The number of tokens to keep from the initial prompt is greater than the context length (n_keep: 21816>= n_ctx: 8192). Try to load the model with a larger context length, or provide a shorter input."}""";
+        using var server = new LoopbackHttpServer(
+            path => path.StartsWith("/v1/chat/completions", StringComparison.Ordinal) ? refusal : null, status: _ => 400);
+        var client   = new OpenAiCompatibleClient(new InferpalConfig { Provider = "openai-compatible", BaseUrl = server.BaseUrl });
+        var messages = Conversation(earlierChars: 400, lastChars: 60_000);
+
+        var ex = await Assert.ThrowsAsync<AgentHttpException>(() => client.SendChatAsync(
+            "m", messages, EmptyToolRegistry.Instance, onToken: null, CancellationToken.None));
+
+        Assert.Contains("/v1/chat/completions", string.Join(" ", server.Paths));      // witness: the server answered
+        Assert.Contains("n_keep", ex.Message);                                         // the server's words are kept
+        Assert.Contains("\n- " + Strings.ContextPartLast(RequestSize.Of(messages, null).Last), ex.Message);
+    }
+
+    [Fact]
+    public async Task AnyOtherRefusal_StaysTheServersOwnError()
+    {
+        // Reference arm: a 400 that is not about the window must not grow a breakdown.
+        using var server = new LoopbackHttpServer(
+            path => path.StartsWith("/v1/chat/completions", StringComparison.Ordinal) ? """{"error":"model 'm' not found"}""" : null,
+            status: _ => 400);
+        var client = new OpenAiCompatibleClient(new InferpalConfig { Provider = "openai-compatible", BaseUrl = server.BaseUrl });
+
+        var ex = await Assert.ThrowsAsync<AgentHttpException>(() => client.SendChatAsync(
+            "m", Conversation(400, 400), EmptyToolRegistry.Instance, onToken: null, CancellationToken.None));
+
+        Assert.Contains("not found", ex.Message);
+        Assert.DoesNotContain("\n- ", ex.Message);
+    }
 
     [Fact]
     public void AServerSideOverflow_NamesTheParts_AndKeepsTheServersWords()

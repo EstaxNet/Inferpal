@@ -114,7 +114,7 @@ internal class OllamaClient : InferenceProviderBase
             // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say what
             // the server said instead.
             RecordFailure();
-            throw new AgentHttpException(Strings.MsgServerError(base_, ex.Message), isTimeout: false);
+            throw new AgentHttpException(MapServerError(ex.Message, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
         }
         catch (Exception ex)
         {
