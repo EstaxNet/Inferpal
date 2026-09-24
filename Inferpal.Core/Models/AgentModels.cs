@@ -152,7 +152,8 @@ internal record ChatTurnResult(
     /// <summary>Tool calls requested by the model, or <c>null</c> / empty if none.</summary>
     List<ToolCallDto>? ToolCalls,
     int                TokensUsed,
-    int                PromptTokens);
+    int                PromptTokens,
+    bool               CutAtLimit = false);
 
 /// <summary>Thrown by <c>OllamaClient.SendChatAsync</c> on HTTP / network failure.</summary>
 internal sealed class AgentHttpException(string message, bool isTimeout)

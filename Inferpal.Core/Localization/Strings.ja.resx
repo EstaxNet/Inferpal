@@ -264,6 +264,7 @@
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama の URL が設定されていません。設定を開いて設定してください。</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>モデルが応答を返しませんでした。設定されたモデルがテキスト生成をサポートしていない可能性があります — デフォルトのチャットモデルをお試しください。</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>モデル **{0}** はテキストを生成しませんでした。サーバー ({1}) はリクエストを受け付け、トークンを 1 つも返さず、エラーも報告せずにストリームを閉じました — 接続の問題ではありません。ストリームの内容は `/diagnostics` にあります。</value></data>
+  <data name="CodeActionReplyCut" xml:space="preserve"><value>コードの終わりに達する前に、応答がモデルの長さ制限で止まりました。何も適用されていません。ファイルのより小さい部分を選択するか、コンテキスト長を増やしてください。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>接続タイムアウト — {0} のバックエンドが応答しなくなりました（無通信タイムアウト）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>{0} のバックエンドに接続できません。設定で URL を確認してください。</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0} の推論サーバーがエラーを返しました:

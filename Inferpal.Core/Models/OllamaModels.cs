@@ -74,7 +74,9 @@ record ChatResponse(
     [property: JsonPropertyName("prompt_eval_count")]  int?            PromptEvalCount  = null,
     /// <summary>Set when the runner fails after the 200 headers (crash, out of memory…): the stream
     /// then carries a bare <c>{"error":"…"}</c> line instead of a chunk.</summary>
-    [property: JsonPropertyName("error")]              JsonElement     Error            = default);
+    [property: JsonPropertyName("error")]              JsonElement     Error            = default,
+    /// <summary>On the final chunk: <c>"stop"</c>, or <c>"length"</c> when the answer stopped at the limit.</summary>
+    [property: JsonPropertyName("done_reason")]        string?         DoneReason       = null);
 
 /// <summary>A single tool invocation requested by the model.</summary>
 record ToolCallDto(

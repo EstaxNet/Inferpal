@@ -159,7 +159,7 @@ internal class InlineEditSelectionCommand : Command
         // echo, differing by that single byte, was applied instead of being reported.
         var finished = CodeActionPipeline.Finish(
             result.TextContent, originalCode, view.Document.Text.CopyToString(),
-            reindent: true, model, _client.ServerAddress);
+            reindent: true, model, _client.ServerAddress, result.CutAtLimit);
 
         if (finished.Outcome == CodeActionOutcome.NoChangeNeeded)
         {

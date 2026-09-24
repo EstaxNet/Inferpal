@@ -324,6 +324,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
         var toolCalls   = toolAcc.Build();
         var contentText = contentBuilder.ToString();
+        // The answer stopped at the length limit, not where the model meant to end: a caller that turns it
+        // into an edit must not apply it (CodeActionPipeline.Finish).
+        var cut         = finishReason == "length";
         // A reasoning model routes its real turn (tool call or final answer) into the reasoning
         // channel and can leak only stray, non-printable bytes into the content channel — qwen3.6 on
         // LM Studio prefixes every turn with "\n\n". Gate the reasoning-recovery on *printable*
@@ -338,7 +341,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
             var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentText, known.Contains);
             if (inlineCalls is { Count: > 0 })
-                return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens);
+                return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut);
         }
 
         // Last-resort: a reasoning model under tool_choice:"required" (e.g. Qwen3 on LM Studio) can
@@ -351,14 +354,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         {
             var (reasoningCalls, _) = InlineToolCallParser.TryParse(reasoningBuilder.ToString());
             if (reasoningCalls is { Count: > 0 })
-                return new ChatTurnResult(string.Empty, reasoningCalls, tokensUsed, promptTokens);
+                return new ChatTurnResult(string.Empty, reasoningCalls, tokensUsed, promptTokens, cut);
 
             // No tool call either: a reasoning model (e.g. Qwen3 on LM Studio) can route its whole
             // turn — final answer included — into the reasoning channel, leaving content empty. Without
             // this the answer is dropped: the UI streamed it as a live "💭" thinking preview, but the
             // turn returns "" → an empty answer bubble. Surface the reasoning text as the answer so the
             // user keeps what they already saw, rather than dead-ending on an empty turn.
-            return new ChatTurnResult(reasoningBuilder.ToString().Trim(), null, tokensUsed, promptTokens);
+            return new ChatTurnResult(reasoningBuilder.ToString().Trim(), null, tokensUsed, promptTokens, cut);
         }
 
         // Empty turn under tool_choice:"required": some models/runtimes (e.g. devstral/Mistral on
@@ -394,7 +397,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 new InvalidOperationException("no content, no tool call, no server error"));
         }
 
-        return new ChatTurnResult(contentText, toolCalls, tokensUsed, promptTokens);
+        return new ChatTurnResult(contentText, toolCalls, tokensUsed, promptTokens, cut);
     }
 
     /// <summary>Turns the accumulated streamed fragments into structured tool calls (arguments parsed as JSON).</summary>

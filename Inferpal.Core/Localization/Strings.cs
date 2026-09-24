@@ -488,6 +488,9 @@ internal static class Strings
     public static string MsgEmptyResponseFrom(string model, string server) =>
         string.Format(Get(nameof(MsgEmptyResponseFrom)), model, server);
 
+    /// <summary>An in-place rewrite that stopped at the model's length limit: nothing was applied.</summary>
+    public static string CodeActionReplyCut => Get(nameof(CodeActionReplyCut));
+
     public static string MsgError(string message) =>
         string.Format(Get(nameof(MsgError)), message);
 

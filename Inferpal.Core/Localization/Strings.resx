@@ -265,6 +265,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL not configured. Open Settings to set it.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>The model returned no response. The configured model may not support text generation — try the default chat model.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>The model **{0}** produced no text. The server ({1}) accepted the request and closed the stream without a single token, and without reporting an error — so this is not a connection problem. `/diagnostics` carries what the stream contained.</value></data>
+  <data name="CodeActionReplyCut" xml:space="preserve"><value>The answer stopped at the model's length limit before the end of the code — nothing was applied. Select a smaller part of the file, or increase the context length.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Connection timed out — the backend at {0} stopped responding (inactivity timeout).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Cannot reach the backend at {0}. Check the URL in Settings.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>The inference server at {0} returned an error:

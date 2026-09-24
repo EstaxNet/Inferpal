@@ -264,6 +264,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama non configurée. Ouvrez les paramètres pour la renseigner.</value></data>
   <data name="MsgEmptyResponse" xml:space="preserve"><value>Le modèle n'a retourné aucune réponse. Le modèle configuré ne supporte peut-être pas la génération de texte — essayez le modèle du chat par défaut.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Le modèle **{0}** n'a produit aucun texte. Le serveur ({1}) a accepté la requête et fermé le flux sans un seul jeton, sans signaler d'erreur — ce n'est donc pas un problème de connexion. `/diagnostics` porte le détail de ce que le flux contenait.</value></data>
+  <data name="CodeActionReplyCut" xml:space="preserve"><value>La réponse s'est arrêtée à la limite de longueur du modèle avant la fin du code — rien n'a été appliqué. Sélectionnez une partie plus petite du fichier, ou augmentez la longueur de contexte.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Délai d'attente dépassé — le backend à {0} ne répond plus (délai d'inactivité).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Impossible de joindre le backend à {0}. Vérifiez l'URL dans les paramètres.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Le serveur d'inférence à {0} a renvoyé une erreur :

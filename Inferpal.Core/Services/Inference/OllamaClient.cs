@@ -127,6 +127,7 @@ internal class OllamaClient : InferenceProviderBase
         var contentBuilder = new System.Text.StringBuilder();
         List<ToolCallDto>? toolCalls = null;
         int tokensUsed = 0, promptTokens = 0;
+        var cut = false;   // the answer stopped at the length limit (done_reason "length")
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -176,6 +177,7 @@ internal class OllamaClient : InferenceProviderBase
                 {
                     promptTokens = chunk.PromptEvalCount ?? 0;
                     tokensUsed   = promptTokens + (chunk.EvalCount ?? 0);
+                    cut          = chunk.DoneReason == "length";
                     break;
                 }
             }
@@ -203,10 +205,10 @@ internal class OllamaClient : InferenceProviderBase
             var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
             var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentBuilder.ToString(), known.Contains);
             if (inlineCalls is { Count: > 0 })
-                return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens);
+                return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut);
         }
 
-        return new ChatTurnResult(contentBuilder.ToString(), toolCalls, tokensUsed, promptTokens);
+        return new ChatTurnResult(contentBuilder.ToString(), toolCalls, tokensUsed, promptTokens, cut);
     }
 
     /// <summary>Pings <c>/api/tags</c> with a 5-second timeout to verify Ollama is reachable.

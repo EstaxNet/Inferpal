@@ -35,7 +35,7 @@ public class InlineEditFinishTests
     private const string Server = "http://localhost:11434";
 
     private static CodeActionRun Finish(string reply, string original, string doc, bool reindent = true) =>
-        CodeActionPipeline.Finish(reply, original, doc, reindent, Model, Server);
+        CodeActionPipeline.Finish(reply, original, doc, reindent, Model, Server, cutAtLimit: false);
 
     // ── The line ending the selection carried ────────────────────────────────
 
