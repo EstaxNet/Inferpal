@@ -552,33 +552,23 @@ public class WebviewRebuildTests
 
     /// <summary>
     /// Reasoning models are not consistent about the case of their tags: Visual Studio strips <c>&lt;THINK&gt;</c> and
-    /// <c>&lt;Think&gt;</c> (MarkdownParser, IgnoreCase), the webview stripped lowercase only — and with raw HTML
-    /// disabled, the model's chain of thought was shown in the VS Code bubble. The webview's own patterns run here.
+    /// <c>&lt;Think&gt;</c> (MarkdownParser, OrdinalIgnoreCase), the webview stripped lowercase only — and with raw HTML
+    /// disabled, the model's chain of thought was shown in the VS Code bubble.
     /// </summary>
-    [Theory]
-    [InlineData("<think>a</think>garde<think>b</think>", "garde")]
-    [InlineData("<think>\nligne 1\nligne 2\n</think>visible", "visible")]
-    [InlineData("<THINK>bruit</THINK>visible", "visible")]
-    [InlineData("<Think>bruit</Think>visible", "visible")]
-    [InlineData("visible<Think>still streaming", "visible")]
-    public void TheWebviewStripsReasoning_TheWayVisualStudioDoes(string content, string expected)
+    /// <remarks>
+    /// The webview's rule is a scanner (it leaves tags inside code alone — <see cref="ReasoningTagMentionTests"/>), not
+    /// a pair of regexes this suite could run, so the property is read in its source: lowercase tags, compared against a
+    /// lower-cased candidate — never the candidate as written.
+    /// </remarks>
+    [Fact]
+    public void TheWebviewStripsReasoning_WhateverTheCaseOfTheTag()
     {
-        var body     = Body(TsCode("webview/markdown.ts"), "export function stripThinkTags(");
-        var literals = System.Text.RegularExpressions.Regex.Matches(body, @"\.replace\(/((?:\\/|[^/\n])+)/([a-z]*),");
-        Assert.True(literals.Count == 2, $"{literals.Count} patterns read in stripThinkTags — the rule measures nothing.");
+        var rule = TsCode("webview/reasoning.ts");
 
-        var result = content;
-        foreach (System.Text.RegularExpressions.Match m in literals)
-        {
-            var flags   = m.Groups[2].Value;
-            var options = flags.Contains('i') ? System.Text.RegularExpressions.RegexOptions.IgnoreCase
-                                              : System.Text.RegularExpressions.RegexOptions.None;
-            var regex   = new System.Text.RegularExpressions.Regex(m.Groups[1].Value.Replace(@"\/", "/"), options);
-            // JavaScript replaces every match only with the 'g' flag.
-            result = flags.Contains('g') ? regex.Replace(result, "") : regex.Replace(result, "", 1);
-        }
-
-        Assert.Equal(expected, result.Trim());
+        Assert.Contains("const THINK_OPEN = '<think>';", rule);
+        Assert.Contains("const THINK_CLOSE = '</think>';", rule);
+        var tagAt = Body(rule, "function tagAt(");
+        Assert.Contains(".toLowerCase() === tag", tagAt);
     }
 
     /// <summary>

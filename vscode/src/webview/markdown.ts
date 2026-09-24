@@ -3,6 +3,7 @@
 // the VS renderer (Markdig blocks: headings, lists, tables, separators, code fences).
 import MarkdownIt from 'markdown-it';
 import { t } from './l10n';
+import { stripThinkTags } from './reasoning';
 
 const md = new MarkdownIt({
   html: false,
@@ -10,13 +11,9 @@ const md = new MarkdownIt({
   breaks: true,
 });
 
-/** Reasoning tags (Qwen3/DeepSeek) are stripped before rendering, like the VS
- * MarkdownParser — whatever their case, since models are not consistent about it (html is
- * disabled, so a tag left in place shows the chain of thought as text). An unclosed trailing tag
- * (mid-stream) is stripped too. */
-export function stripThinkTags(text: string): string {
-  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<think>[\s\S]*$/i, '');
-}
+// Reasoning tags (Qwen3/DeepSeek) are stripped before rendering, like the VS MarkdownParser: html is
+// disabled, so a tag left in place shows the chain of thought as text.
+export { stripThinkTags };
 
 /** Renders markdown into `target` and decorates code blocks with a copy button. */
 export function renderMarkdownInto(target: HTMLElement, text: string): void {

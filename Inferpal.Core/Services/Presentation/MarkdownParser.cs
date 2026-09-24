@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
@@ -16,21 +15,135 @@ internal static class MarkdownParser
             .UsePipeTables()
             .Build();
 
-    private static readonly Regex _thinkTagRegex =
-        new(@"<think>[\s\S]*?</think>", RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
-
-    // A reply stopped while the model was still reasoning ends inside an unclosed tag: that tail is reasoning too.
-    private static readonly Regex _unclosedThinkTagRegex =
-        new(@"<think>[\s\S]*$", RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
+    private const string ThinkOpen  = "<think>";
+    private const string ThinkClose = "</think>";
 
     /// <summary>
-    /// Removes all <c>&lt;think&gt;...&lt;/think&gt;</c> blocks from <paramref name="content"/>
-    /// and trims the result. Returns an empty string when the input is null or whitespace.
+    /// Removes the model's reasoning blocks (<c>&lt;think&gt;...&lt;/think&gt;</c>) from
+    /// <paramref name="content"/> and trims the result. Returns an empty string when the input is null
+    /// or whitespace.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Reasoning is text the model EMITS — at the head of a turn, or between the turns of an agent run
+    /// streamed into one message; a reply stopped while the model was still reasoning ends inside an
+    /// unclosed tag, and that tail is reasoning too. A tag inside a fenced block or a code span is
+    /// something the answer SHOWS: asked how to strip Qwen3's reasoning, a model answers with the regex,
+    /// and removing every tag it found deleted half that answer and left a broken fence — or, for an
+    /// opening tag named in backticks, everything after it. So code is copied untouched.
+    /// </para>
+    /// <para>
+    /// ⚠ The content of a block is skipped whole, never scanned: reasoning writes code too, and a fence
+    /// it opens and never closes must not turn the answer that follows into a code block.
+    /// </para>
+    /// </remarks>
     public static string StripThinkTags(string? content)
     {
         if (string.IsNullOrEmpty(content)) return string.Empty;
-        return _unclosedThinkTagRegex.Replace(_thinkTagRegex.Replace(content, ""), "").Trim();
+        if (content.IndexOf(ThinkOpen, StringComparison.OrdinalIgnoreCase) < 0) return content.Trim();
+
+        var kept = new StringBuilder(content.Length);
+        var fenceChar = '\0';
+        var fenceLength = 0; // > 0 while inside a fenced block
+        var i = 0;
+        while (i < content.Length)
+        {
+            // Line structure follows what is KEPT: a block removed at the head of a line leaves that line's start.
+            var atLineStart = kept.Length == 0 || kept[^1] == '\n';
+            if (atLineStart && ReadFence(content, i) is { } fence
+                && (fenceLength == 0 || (fence.Char == fenceChar && fence.Length >= fenceLength && fence.Bare)))
+            {
+                if (fenceLength == 0) { fenceChar = fence.Char; fenceLength = fence.Length; }
+                else fenceLength = 0;
+                i = CopyLine(content, i, kept);
+                continue;
+            }
+            if (fenceLength > 0)
+            {
+                i = CopyLine(content, i, kept);
+                continue;
+            }
+
+            if (content[i] == '`')
+            {
+                var run = RunLength(content, i, '`');
+                var closer = SpanCloser(content, i + run, run);
+                var end = closer < 0 ? i + run : closer + run; // an unmatched run is literal text
+                kept.Append(content, i, end - i);
+                i = end;
+                continue;
+            }
+
+            if (content[i] == '<' && string.Compare(content, i, ThinkOpen, 0, ThinkOpen.Length, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                var close = content.IndexOf(ThinkClose, i + ThinkOpen.Length, StringComparison.OrdinalIgnoreCase);
+                if (close < 0) break;
+                i = close + ThinkClose.Length;
+                continue;
+            }
+
+            kept.Append(content[i]);
+            i++;
+        }
+        return kept.ToString().Trim();
+    }
+
+    // A fence line: up to three spaces, then three or more backticks or tildes. `Bare` = nothing after the
+    // run, which a closing fence requires. A backtick run followed by another backtick on the same line
+    // is an inline span (```x```), not a fence.
+    private static (char Char, int Length, bool Bare)? ReadFence(string s, int lineStart)
+    {
+        var i = lineStart;
+        var indent = 0;
+        while (i < s.Length && s[i] == ' ' && indent < 3) { i++; indent++; }
+        if (i >= s.Length || (s[i] != '`' && s[i] != '~')) return null;
+        var ch = s[i];
+        var length = RunLength(s, i, ch);
+        if (length < 3) return null;
+        var eol = s.IndexOf('\n', i + length);
+        var rest = s.AsSpan(i + length, (eol < 0 ? s.Length : eol) - i - length);
+        if (ch == '`' && rest.Contains('`')) return null;
+        return (ch, length, rest.IsWhiteSpace());
+    }
+
+    private static int RunLength(string s, int start, char ch)
+    {
+        var end = start;
+        while (end < s.Length && s[end] == ch) end++;
+        return end - start;
+    }
+
+    // Index of the backtick run of exactly `run` characters that closes a code span, or -1. A span does not
+    // cross a blank line: past a paragraph break an unmatched run is literal text.
+    private static int SpanCloser(string s, int from, int run)
+    {
+        var i = from;
+        while (i < s.Length)
+        {
+            if (s[i] == '`')
+            {
+                var length = RunLength(s, i, '`');
+                if (length == run) return i;
+                i += length;
+                continue;
+            }
+            if (s[i] == '\n')
+            {
+                var j = i + 1;
+                while (j < s.Length && (s[j] == ' ' || s[j] == '\t' || s[j] == '\r')) j++;
+                if (j >= s.Length || s[j] == '\n') return -1;
+            }
+            i++;
+        }
+        return -1;
+    }
+
+    private static int CopyLine(string s, int start, StringBuilder kept)
+    {
+        var eol = s.IndexOf('\n', start);
+        var end = eol < 0 ? s.Length : eol + 1;
+        kept.Append(s, start, end - start);
+        return end;
     }
 
     /// <summary>
