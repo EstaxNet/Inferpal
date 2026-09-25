@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using Inferpal.Models;
 using Inferpal.Services.Tools;
 using Xunit;
 
@@ -50,6 +51,35 @@ public sealed class BinaryAndDirectoryReadTests : IDisposable
 
         Assert.Contains("directory", shown);
         Assert.Contains("list_files", shown);
+    }
+
+    [Fact]
+    public async Task AnEmptyFile_SaysSo()
+    {
+        // An empty tool result says nothing — not even "empty": the model cannot tell it from a call that did nothing.
+        File.WriteAllText(Path.Combine(_root, "Empty.cs"), string.Empty);
+
+        var shown = await ReadAsync("Empty.cs");
+
+        Assert.Contains("Empty.cs", shown);
+        Assert.Contains("empty", shown);
+    }
+
+    private sealed class SilentTool : IToolRegistry
+    {
+        public IReadOnlyList<ToolDefinition> Definitions => [];
+        public DiffInfo? ConsumeDiff() => null;
+        public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct) => Task.FromResult("  ");
+    }
+
+    [Fact]
+    public async Task AnyToolThatReturnsNothing_ReachesTheModelAsNoOutput()
+    {
+        // The funnel, not a list of tools: `cd` in run_command prints nothing, and so may the next tool.
+        var result = await Inferpal.Services.Agent.AgentOrchestrator.ExecuteToolSafeAsync(
+            new SilentTool(), "run_command", JsonDocument.Parse("{}").RootElement, CancellationToken.None);
+
+        Assert.Equal("(no output)", result);
     }
 
     [Fact]

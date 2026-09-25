@@ -56,6 +56,10 @@ internal class ReadFileTool : ITool
         else
             content = Cap(await TextFileEncoding.ReadTextAsync(path, ct), path);
 
+        // An empty tool result says nothing — not even "empty": the model cannot tell it from a call that did nothing.
+        if (content.Length == 0)
+            return $"[{Path.GetFileName(path)} is empty: 0 characters]";
+
         return Page(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
     }
 

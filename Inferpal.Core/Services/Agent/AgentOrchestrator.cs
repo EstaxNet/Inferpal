@@ -153,7 +153,10 @@ internal sealed class AgentOrchestrator
     {
         try
         {
-            return await tools.ExecuteAsync(name, args, ct);
+            // An empty result says nothing — not even "nothing": `cd` in run_command prints nothing, and the model
+            // cannot tell that from a call that did not happen. Said here, at the funnel, for every tool.
+            var result = await tools.ExecuteAsync(name, args, ct);
+            return string.IsNullOrWhiteSpace(result) ? "(no output)" : result;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }   // the user's Stop
         catch (OperationCanceledException ex)
