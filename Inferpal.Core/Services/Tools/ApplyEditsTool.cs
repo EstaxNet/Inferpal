@@ -149,6 +149,8 @@ internal sealed class ApplyEditsTool : ITool
         var changed = current.Where(kv => !string.Equals(kv.Value, original[kv.Key], StringComparison.Ordinal))
                              .Select(kv => kv.Key).ToList();
         if (changed.Count == 0) return Strings.ApplyEditsOk(edits.Count, 0);
+        foreach (var p in changed)
+            if (FileTarget.EncodingRefusal(p, current[p]) is { } cannotHold) return Strings.ApplyEditsAborted(cannotHold);
 
         // ── Approval: one prompt with the combined diff across files ───────────
         var details = BuildApprovalDetails(root, changed, original, current);

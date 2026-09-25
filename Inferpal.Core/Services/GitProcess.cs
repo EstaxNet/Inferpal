@@ -46,7 +46,11 @@ internal static class GitProcess
     {
         try
         {
-            var psi = new ProcessStartInfo("git", args)
+            // ⚠ core.quotePath (on by default) prints every path with a byte above 0x7F as octal escapes:
+            // Zażółć.cs becomes "Za\305\274\303\263\305\202\304\207.cs", a Chinese name nothing but octal — the name the
+            // model reads in get_git_status, /commit and /check, and cannot pass back to read_file. Off, git writes
+            // the name in UTF-8, which is how its output is decoded here.
+            var psi = new ProcessStartInfo("git", "-c core.quotePath=false " + args)
             {
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding  = Encoding.UTF8,

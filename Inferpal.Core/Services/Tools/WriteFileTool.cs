@@ -52,6 +52,7 @@ internal class WriteFileTool : ITool
         // A file without a line break says nothing about its convention: the content is kept as given.
         if (oldContent.Contains('\n'))
             content = LineEndings.ToEol(content, LineEndings.Dominant(oldContent));
+        if (exists && FileTarget.EncodingRefusal(path, content) is { } cannotHold) return cannotHold;
 
         var details    = exists
             ? Strings.WriteOverwrite(path, content.Length)

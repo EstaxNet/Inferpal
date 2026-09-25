@@ -198,6 +198,11 @@ internal sealed class RenameSymbolTool : ITool
         foreach (var (f, count, _, _) in hits.OrderBy(h => h.FilePath))
             sb.AppendLine($"- `{Path.GetRelativePath(root, f)}` — {count} occurrence(s)");
 
+        // A name one of the files cannot hold in its own encoding is said now, the dry run included: applied, it would
+        // be written as another character.
+        foreach (var (f, _, _, newContent) in hits)
+            if (FileTarget.EncodingRefusal(f, newContent) is { } cannotHold) return cannotHold;
+
         if (dryRun)
         {
             sb.AppendLine();

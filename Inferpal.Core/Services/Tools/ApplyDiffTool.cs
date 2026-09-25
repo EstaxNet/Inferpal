@@ -74,6 +74,7 @@ internal class ApplyDiffTool : ITool
             return resolution.Count > 1 ? Strings.DiffAmbiguous(resolution.Count, path) : Strings.DiffOldNotFound(path);
 
         var modified = resolution.Modified;
+        if (FileTarget.EncodingRefusal(path, modified) is { } cannotHold) return cannotHold;
 
         // Pass the structured change so the approval prompt shows the actual diff, not just a path
         // (colored viewer in VS; textual fallback elsewhere).

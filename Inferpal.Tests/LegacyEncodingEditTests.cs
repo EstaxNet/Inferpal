@@ -157,6 +157,22 @@ public sealed class LegacyEncodingEditTests : IDisposable
         Assert.Empty(offenders);
     }
 
+    [Theory]
+    [InlineData("string s = \"🙂\";")]          // outside every legacy code page
+    [InlineData("string s = \"中文\";")]         // outside every single-byte code page
+    public async Task ApplyDiff_WritingACharacterTheFilesEncodingCannotHold_WritesNothing_AndSaysWhy(string line)
+    {
+        // Encoding it anyway replaces the character with "?" — silently, behind an approval prompt that showed it.
+        var path   = LegacyFile();
+        var before = File.ReadAllBytes(path);
+
+        var result = await new ApplyDiffTool(new YesApproval(), new FileHistoryService(), () => _ws)
+            .ExecuteAsync(Args(new { path, old_content = "int x = 1;", new_content = line }), CancellationToken.None);
+
+        Assert.Equal(before, File.ReadAllBytes(path));
+        Assert.Contains(TextFileEncoding.LegacyEncoding.WebName, result);
+    }
+
     [Fact]
     public async Task ApplyDiff_OnAUtf8File_StaysUtf8()
     {

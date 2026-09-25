@@ -27,8 +27,15 @@ internal static class SafeFileWriter
     {
         ct.ThrowIfCancellationRequested();
         var encoding = File.Exists(path) ? TextFileEncoding.Detect(path) : TextFileEncoding.Utf8NoBom;
+        // The net under the tools' own refusal: a legacy code page's fallback would write "?" or a look-alike instead.
+        // An IOException, so a multi-file write puts the others back.
+        if (TextFileEncoding.FirstUnrepresentable(encoding, content) is { } bad)
+            throw new UnrepresentableTextException(FileTarget.CannotHold(path, encoding, bad.Character, bad.Line));
         return File.WriteAllTextAsync(path, content, encoding, CancellationToken.None);
     }
+
+    /// <summary>A write refused because the file's encoding cannot hold one of the characters.</summary>
+    internal sealed class UnrepresentableTextException(string message) : IOException(message);
 
     /// <summary>Outcome of a multi-file write: which one failed, why, and what could not be put back.</summary>
     /// <param name="Stuck">

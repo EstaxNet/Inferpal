@@ -35,14 +35,57 @@ internal static class TextFileEncoding
         try
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            var codePage = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage;
-            if (codePage > 0 && codePage != Encoding.UTF8.CodePage) return Encoding.GetEncoding(codePage);
+            // With the provider registered, code page 0 is the Windows ANSI code page (GetACP); elsewhere there is none.
+            var system   = OperatingSystem.IsWindows() ? Encoding.GetEncoding(0).CodePage : 0;
+            var codePage = LegacyCodePage(system, System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
+            if (codePage > 0) return Encoding.GetEncoding(codePage);
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
         {
             Diagnostics.Swallow("TextFileEncoding.LegacyEncoding", ex);
         }
         return Encoding.Latin1;
+    }
+
+    /// <summary>
+    /// The code page a file with no BOM that is not UTF-8 was most likely saved in; 0 when there is no guess.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ On Windows it is the SYSTEM ANSI code page — "language for non-Unicode programs", what Visual Studio and every
+    /// legacy editor saved with — not the regional FORMAT (<c>CurrentCulture</c>): a Chinese system with English formats
+    /// saved GBK, and its culture says 1252. The culture's code page is the guess left when the system one is UTF-8
+    /// (Windows' "worldwide language support" option) or does not exist (Linux, macOS).
+    /// </remarks>
+    internal static int LegacyCodePage(int systemCodePage, int cultureCodePage) =>
+        systemCodePage is > 0 and not 65001 ? systemCodePage
+        : cultureCodePage is > 0 and not 65001 ? cultureCodePage
+        : 0;
+
+    /// <summary>
+    /// The first character of <paramref name="text"/> that <paramref name="encoding"/> cannot hold, with its 1-based
+    /// line; <c>null</c> when it holds them all — always, for a Unicode encoding.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Encoding it anyway does not fail: the code page's fallback writes "?" — or a look-alike, Polish "zażółć"
+    /// becoming "zazólc" in Windows-1252 — silently, behind an approval prompt that showed the real text.
+    /// </remarks>
+    internal static (string Character, int Line)? FirstUnrepresentable(Encoding encoding, string text)
+    {
+        if (encoding.CodePage is 65001 or 1200 or 1201 or 12000 or 12001) return null;
+        var strict = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ReplacementFallback);
+        try
+        {
+            strict.GetByteCount(text);
+            return null;
+        }
+        catch (EncoderFallbackException ex)
+        {
+            var character = ex.CharUnknownHigh != '\0'
+                ? new string([ex.CharUnknownHigh, ex.CharUnknownLow])
+                : ex.CharUnknown.ToString();
+            var line = 1 + text.AsSpan(0, Math.Clamp(ex.Index, 0, text.Length)).Count('\n');
+            return (character, line);
+        }
     }
 
     /// <summary>The encoding an existing file is in: its BOM's, else UTF-8 when its bytes are UTF-8, else

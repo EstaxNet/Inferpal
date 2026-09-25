@@ -144,6 +144,32 @@ public class PowerShellStderrTests
     }
 
     /// <summary>
+    /// The same console, beyond Western European: Polish (outside Windows-1252), Chinese (outside every single-byte code
+    /// page) and Swedish — from a native tool writing UTF-8, from PowerShell's own text, from cmd's, and as a file NAME.
+    /// </summary>
+    [Theory]
+    [InlineData("Zażółć gęślą jaźń")]
+    [InlineData("中文注释：你好，世界")]
+    [InlineData("Räksmörgås ÅÄÖ åäö")]
+    public async Task EveryLanguage_ComesBackAsWritten(string text)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var dir  = Directory.CreateTempSubdirectory("inferpal-lang-").FullName;
+        var file = Path.Combine(dir, "utf8.txt");
+        File.WriteAllText(file, text + "\r\n", new System.Text.UTF8Encoding(false));
+        File.WriteAllText(Path.Combine(dir, text + ".cs"), "// x\n");
+        var shell = new ShellSession(() => dir, new InferpalConfig());
+        try
+        {
+            Assert.Contains(text, await shell.RunAsync($"cmd /c type \"{file}\"", null, CancellationToken.None));
+            Assert.Contains(text, await shell.RunAsync($"Write-Output '{text}'", null, CancellationToken.None));
+            Assert.Contains(text, await shell.RunAsync($"cmd /c echo {text}", null, CancellationToken.None));
+            Assert.Contains(text + ".cs", await shell.RunAsync("Get-ChildItem -Name", null, CancellationToken.None));
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ } }
+    }
+
+    /// <summary>
     /// <c>Select-Object -First</c> STOPS the native command upstream once it has its lines, and PowerShell then reports
     /// its exit code as -1: <c>dotnet --info | Select-Object -First 8</c> came back "[exit code -1]" — read as a failure —
     /// and <c>dotnet test | Select-Object -First 50</c> kills the test run after fifty lines, with that -1 as the only
