@@ -253,7 +253,7 @@ internal static class MentionController
             // Counted, not traced: one ring entry per unreadable file, on a folder the user may
             // attach repeatedly, is the noise RecordOnce exists to prevent. The count below is the
             // channel, and it goes where the reader of this context will see it.
-            try { body = File.ReadAllText(f); } catch { unreadable++; continue; }
+            try { body = Tools.TextFileEncoding.ReadText(f); } catch { unreadable++; continue; }
 
             var header = $"\n----- {Path.GetRelativePath(folderPath, f)} -----\n";
             if (sb.Length + header.Length + body.Length > MaxTotalChars)

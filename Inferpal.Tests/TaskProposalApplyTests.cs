@@ -278,15 +278,48 @@ public class TaskProposalApplyTests
         return string.Empty;
     }
 
+    /// <summary>Both front-ends read the proposed file through the ONE reader — each carried its own copy.</summary>
     [Theory]
     [InlineData("Inferpal/ToolWindow/InferpalToolWindowData.SlashCommands.cs")]
     [InlineData("Inferpal.Host/HostSlashCommands.cs")]
-    public void TheProposalReader_DoesNotTurnAReadFailureIntoAMissingFile(string relative)
+    public void BothFrontEnds_ReadTheProposedFileThroughTheCoreReader(string relative)
     {
         var code = ConventionCoverageTests.CodeOnly(System.IO.Path.Combine([RepoRoot(), .. relative.Split('/')]));
-        var body = Body(code, "private static string? ReadFileForProposal(");
 
-        Assert.Contains("File.Exists(path)", body, StringComparison.Ordinal);
-        Assert.DoesNotContain("catch", body, StringComparison.Ordinal);
+        Assert.Contains("TaskProposalApplication.ApplyAsync(", code, StringComparison.Ordinal);   // witness
+        Assert.Contains("TaskProposalApplication.ReadCurrent", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheProposalReader_AbsentIsNull_ALegacyFileIsDecodedLikeTheTools()
+    {
+        var dir = System.IO.Directory.CreateTempSubdirectory("inferpal-proposal-").FullName;
+        try
+        {
+            var path = System.IO.Path.Combine(dir, "Legacy.cs");
+            Assert.Null(TaskProposalApplication.ReadCurrent(path));
+
+            System.IO.File.WriteAllBytes(path, [.. "// caf"u8, 0xE9, (byte)'\n']);   // Windows-1252, not UTF-8
+            var read = TaskProposalApplication.ReadCurrent(path);
+            Assert.Equal(Inferpal.Services.Tools.TextFileEncoding.ReadText(path), read);
+            Assert.DoesNotContain("�", read);
+        }
+        finally { try { System.IO.Directory.Delete(dir, recursive: true); } catch { /* cleanup */ } }
+    }
+
+    /// <summary>A file that cannot be read is not an absent one: the reader throws (ApplyAsync names it).</summary>
+    [Fact]
+    public void TheProposalReader_DoesNotTurnAReadFailureIntoAMissingFile()
+    {
+        if (!OperatingSystem.IsWindows()) return;   // FileShare.None is advisory elsewhere
+        var dir = System.IO.Directory.CreateTempSubdirectory("inferpal-proposal-").FullName;
+        try
+        {
+            var path = System.IO.Path.Combine(dir, "Locked.cs");
+            System.IO.File.WriteAllText(path, "x");
+            using (new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.None))
+                Assert.ThrowsAny<System.IO.IOException>(() => TaskProposalApplication.ReadCurrent(path));
+        }
+        finally { try { System.IO.Directory.Delete(dir, recursive: true); } catch { /* cleanup */ } }
     }
 }

@@ -102,13 +102,6 @@ internal sealed partial class HostServer
         // persistent bubble (VS parity) instead of a status wiped by the next setBusy.
         onFinished: snapshot => Notify("task/finished", new { text = TaskCommandHandler.FinishedNotice(snapshot) }));
 
-    /// <summary>Current content of a proposed file, or null when it is not there. A read failure
-    /// throws: a file that cannot be read is not an absent one.</summary>
-    private static string? ReadFileForProposal(string path)
-    {
-        return File.Exists(path) ? File.ReadAllText(path) : null;
-    }
-
     /// <summary>Direct tool invocation (/read /ls /grep /run /git /map …): executed by the
     /// registry — approvals and permission rules apply exactly as in an agent run.</summary>
     private async Task<SlashCommandResult> RunSlashToolAsync(HostSession s, SlashToolAction tool, CancellationToken ct)
@@ -384,7 +377,7 @@ internal sealed partial class HostServer
                         {
                             return new SlashCommandResult(true,
                                 await TaskProposalApplication.ApplyAsync(
-                                    proposal, s.Tools, ReadFileForProposal, cts.Token,
+                                    proposal, s.Tools, TaskProposalApplication.ReadCurrent, cts.Token,
                                     beginRun: () => s.Tools.History.BeginRun()));
                         }
                         finally

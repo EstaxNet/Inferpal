@@ -370,7 +370,7 @@ internal partial class InferpalToolWindowData
             try
             {
                 await ShowInfoAsync(await Services.Tasks.TaskProposalApplication.ApplyAsync(
-                    proposal, _tools, ReadFileForProposal, CancellationToken.None,
+                    proposal, _tools, Services.Tasks.TaskProposalApplication.ReadCurrent, CancellationToken.None,
                     beginRun: () => _tools.History.BeginRun()));
             }
             finally
@@ -407,13 +407,6 @@ internal partial class InferpalToolWindowData
         // Every reporting path sets a message; matching rather than asserting keeps the two
         // branches of the result exclusive without a null-forgiving operator.
         if (result.Message is { } message) await ShowInfoAsync(message);
-    }
-
-    /// <summary>Current content of a proposed file, or null when it is not there. A read failure
-    /// throws: a file that cannot be read is not an absent one.</summary>
-    private static string? ReadFileForProposal(string path)
-    {
-        return File.Exists(path) ? File.ReadAllText(path) : null;
     }
 
     /// <summary>

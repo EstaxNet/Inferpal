@@ -236,7 +236,8 @@ internal partial class InferpalToolWindowData
                 return;
             }
 
-            var content = await File.ReadAllTextAsync(filePath, ct);
+            // Decoded like the file an edit will rewrite (legacy code pages included): quoted back, it must match.
+            var content = await Services.Tools.TextFileEncoding.ReadTextAsync(filePath, ct);
             var label   = Path.GetFileName(filePath);
             await RunOnVMContextAsync(() => AddAttachment(label, content, sourcePath: filePath));
         }

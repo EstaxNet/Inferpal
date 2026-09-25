@@ -213,7 +213,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             ForgetMissingPin(pinnedPath);
             try
             {
-                var pinnedContent = File.ReadAllText(pinnedPath, Encoding.UTF8).Trim();
+                var pinnedContent = Tools.TextFileEncoding.ReadText(pinnedPath).Trim();
                 // The read goes through again: a later failure will say so again.
                 Diagnostics.Forget(PinContext, UnreadableKey(pinnedPath));
                 if (!string.IsNullOrEmpty(pinnedContent))

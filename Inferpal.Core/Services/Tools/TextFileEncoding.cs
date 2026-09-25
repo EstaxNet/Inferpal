@@ -80,9 +80,25 @@ internal static class TextFileEncoding
     /// Reads a text file in the encoding <see cref="SafeFileWriter.WritePreservingAsync"/> will write it back in — the
     /// read every edit starts from, and the one the model quotes from.
     /// </summary>
-    internal static async Task<string> ReadTextAsync(string path, CancellationToken ct)
+    internal static async Task<string> ReadTextAsync(string path, CancellationToken ct) =>
+        Decode(await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false));
+
+    /// <summary><see cref="ReadTextAsync"/>, for the readers that are synchronous (a mention, a pinned file).</summary>
+    /// <remarks>⚠ Every reader whose text the model may QUOTE into an edit goes through here: a line shown
+    /// as "caf�" by one reader does not match the "café" another decoded, and the edit answers "not found".</remarks>
+    internal static string ReadText(string path) => Decode(File.ReadAllBytes(path));
+
+    /// <summary>The file's lines, split like <see cref="File.ReadAllLines(string)"/> (CR, LF or CRLF).</summary>
+    internal static List<string> ReadLines(string path)
     {
-        var bytes    = await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
+        var lines = new List<string>();
+        using var reader = new StringReader(ReadText(path));
+        while (reader.ReadLine() is { } line) lines.Add(line);
+        return lines;
+    }
+
+    private static string Decode(byte[] bytes)
+    {
         var encoding = Of(bytes);
         var preamble = encoding.GetPreamble();
         var start    = preamble.Length > 0 && bytes.AsSpan().StartsWith(preamble) ? preamble.Length : 0;

@@ -69,9 +69,10 @@ internal class SearchInFilesTool : ITool
                 // A multi-megabyte file (a dump, a bundle) was loaded whole for a few truncated matches
                 // at best. Skipped — and said, since a silent skip reads as "not in the code".
                 if (new FileInfo(file).Length > MaxSearchFileBytes) { skippedLarge++; continue; }
-                var lines = File.ReadAllLines(file);
+                // Decoded like the file an edit will rewrite: a line shown with "�" could not be quoted back.
+                var lines = TextFileEncoding.ReadLines(file);
                 var relPath = file[path.Length..].TrimStart('\\', '/');
-                for (int i = 0; i < lines.Length && results.Count < MaxResults; i++)
+                for (int i = 0; i < lines.Count && results.Count < MaxResults; i++)
                 {
                     if (!regex.IsMatch(lines[i])) continue;
                     var line = lines[i].Trim();

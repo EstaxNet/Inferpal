@@ -298,6 +298,16 @@ internal static class TaskProposalApplication
     /// the write is snapshotted, and <c>/undo-run</c> covers it like any other. Nothing here can
     /// bypass that: it has no approval service of its own to consult.
     /// </remarks>
+    /// <summary>
+    /// Current content of a proposed file, or null when it is not there — the <c>readFile</c> of both front-ends. A read
+    /// failure throws: a file that cannot be read is not an absent one.
+    /// </summary>
+    /// <remarks>⚠ Decoded like the tools decode it (<see cref="Tools.TextFileEncoding"/>): the proposal's diff was
+    /// recorded that way, so any other decoding of a legacy-encoded file reads as "changed since", and the check after
+    /// the write fails. The two front-ends each carried their own copy of this reader.</remarks>
+    public static string? ReadCurrent(string path) =>
+        System.IO.File.Exists(path) ? Tools.TextFileEncoding.ReadText(path) : null;
+
     public static async Task<string> ApplyAsync(
         TaskProposal proposal, IToolRegistry tools, Func<string, string?> readFile,
         CancellationToken ct, Action? beginRun = null)

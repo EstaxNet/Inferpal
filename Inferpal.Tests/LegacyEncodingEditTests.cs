@@ -80,6 +80,65 @@ public sealed class LegacyEncodingEditTests : IDisposable
         Assert.Contains("// caf", shown);
     }
 
+    // ── What the model is SHOWN of a file must be what an edit matches ────────────
+
+    [Fact]
+    public async Task ALineShownBySearch_CanBeQuotedIntoAnEdit()
+    {
+        var path = LegacyFile();
+
+        var found = await new SearchInFilesTool(() => _ws)
+            .ExecuteAsync(Args(new { path = _ws, pattern = "caf" }), CancellationToken.None);
+        var line = found.Split('\n').Select(l => l.TrimEnd('\r')).First(l => l.StartsWith("Legacy.cs:1: ", StringComparison.Ordinal));
+        var quoted = line["Legacy.cs:1: ".Length..];
+
+        var result = await new ApplyDiffTool(new YesApproval(), new FileHistoryService(), () => _ws)
+            .ExecuteAsync(Args(new { path, old_content = quoted, new_content = "// coffee" }), CancellationToken.None);
+
+        Assert.DoesNotContain("�", quoted);
+        Assert.Contains("// coffee", Encoding.Latin1.GetString(File.ReadAllBytes(path)));   // the quote matched
+    }
+
+    [Fact]
+    public void AFolderMention_ShowsTheAccent()
+    {
+        LegacyFile();
+
+        var body = Inferpal.Services.Presentation.MentionController.BuildFolderContext(_ws, CancellationToken.None);
+
+        Assert.Contains("// caf", body);                                                      // witness: it was read
+        Assert.DoesNotContain("�", body);
+    }
+
+    [Fact]
+    public void APinnedFile_ShowsTheAccent()
+    {
+        var path = LegacyFile();
+
+        var prompt = new Inferpal.Services.Prompting.SystemPromptBuilder(new Inferpal.Config.InferpalConfig { PinnedContextFiles = path })
+            .Build("BASE", projectRoot: _ws);
+
+        Assert.Contains("// caf", prompt);                                                    // witness: it was pinned
+        Assert.DoesNotContain("�", prompt);
+    }
+
+    [Fact]
+    public void TheViewModelsBrowsedFileAttachment_ReadsThroughTheSameReader()
+    {
+        // Not executable from this suite (Remote UI): a source scan, with its witness.
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(dir!.FullName, "Inferpal", "ToolWindow", "InferpalToolWindowData.Attachments.cs"));
+
+        // "Attach active file" reads the editor's buffer, which Visual Studio decoded itself; "Browse…" reads the DISK.
+        var method = code.IndexOf("Task BrowseFileAsync(", StringComparison.Ordinal);
+        var add    = code.IndexOf("AddAttachment(label, content", method, StringComparison.Ordinal);
+        Assert.True(method >= 0 && add > method, "the file attachment moved: the scan reads nothing");   // WITNESS
+        Assert.Contains("TextFileEncoding.ReadTextAsync(", code[method..add]);
+    }
+
     [Fact]
     public async Task ApplyDiff_OnAUtf8File_StaysUtf8()
     {
