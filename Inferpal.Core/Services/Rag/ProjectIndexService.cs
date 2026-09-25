@@ -470,7 +470,8 @@ internal sealed class ProjectIndexService : IDisposable
 
                 try
                 {
-                    var content    = await File.ReadAllTextAsync(files[fi], ct);
+                    // Decoded like the file an edit rewrites: an indexed excerpt is code the model quotes back.
+                    var content    = await Tools.TextFileEncoding.ReadTextAsync(files[fi], ct);
                     var fileChunks = await ChunkFileAsync(files[fi], content, rootDir, ct);
 
                     foreach (var chunk in fileChunks)
@@ -824,7 +825,7 @@ internal sealed class ProjectIndexService : IDisposable
 
             try
             {
-                var content    = await File.ReadAllTextAsync(file, ct);
+                var content    = await Tools.TextFileEncoding.ReadTextAsync(file, ct);
                 var fileChunks = await ChunkFileAsync(file, content, rootDir, ct);
 
                 // Reuse embeddings for unchanged chunks (same start line + content hash),
