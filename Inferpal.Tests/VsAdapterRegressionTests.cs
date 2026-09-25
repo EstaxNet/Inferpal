@@ -64,9 +64,11 @@ public class VsAdapterRegressionTests
     [Fact]
     public void TheSessionSummary_LeavesTheUtilityModelsReasoningOut()
     {
+        // The reply is read by SessionRecap, shared with the host, whose test executes it
+        // (ChatSend_TheSessionSummary_LeavesTheUtilityModelsReasoningOut).
         var run = Method("Inferpal/ToolWindow/InferpalToolWindowData.Rag.cs", "RunOodaSummaryAsync");
-        Assert.True(Calls(run, "StripThinkTags"),
-            "The session summary keeps the utility model's reasoning, folded into every following system prompt.");
+        Assert.True(Calls(run, "WriteAsync") && run.ToString().Contains("SessionRecap", StringComparison.Ordinal),
+            "The session summary does not go through SessionRecap: its reasoning and its request budget are not handled.");
     }
 
     /// <summary>

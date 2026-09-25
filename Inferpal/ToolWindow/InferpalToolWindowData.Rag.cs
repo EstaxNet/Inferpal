@@ -269,31 +269,19 @@ internal partial class InferpalToolWindowData
     {
         Post(() => CurrentStep = Strings.StatusOodaSummarizing);
 
-        var summarizeHistory = new List<ChatMessageDto>(_history)
-        {
-            new("user", Strings.OodaSummarizePrompt)
-        };
+        var history = new List<ChatMessageDto>(_history);
 
         try
         {
-            var result = await _client.RunAgentAsync(
-                model:   await ModelRouter.ResolveUtilityAsync(_config, _client, ct),
-                history: summarizeHistory,
-                tools:   EmptyToolRegistry.Instance,
-                onStep:  _ => { },
-                onToken: null,
-                ct:      ct);
-
-            // ⚠ A failed run returns its error as the reply — and this summary joins the system prompt of every following
-            // question. The request that fails is the likely one: it carries the whole conversation.
-            if (result.Failed)
+            // The request (bounded by the utility model's window), the call and the reading of the reply are shared
+            // with the host: SessionRecap.
+            var recap = await Services.Agent.SessionRecap.WriteAsync(history, _oodaSummary, _config, _client, ct);
+            if (recap.Failure is not null)
             {
-                Services.Diagnostics.Record("Ooda.Summary", "The session summary was not written: " + result.FinalResponse);
+                Services.Diagnostics.Record("Ooda.Summary", "The session summary was not written: " + recap.Failure);
                 return;
             }
-            // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
-            var summary = Services.Presentation.MarkdownParser.StripThinkTags(result.FinalResponse);
-            if (result.AnswerCut && !string.IsNullOrEmpty(summary)) summary += Services.Agent.HistoryCompaction.CutSummaryMarker;
+            var summary = recap.Recap ?? string.Empty;
             if (!string.IsNullOrEmpty(summary))
             {
                 await RunOnVMContextAsync(() =>

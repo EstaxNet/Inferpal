@@ -132,17 +132,29 @@ internal static class HistoryCompaction
     public static SummarizeRequest BuildSummarizeRequest(
         IReadOnlyList<ChatMessageDto> toCompact, int budgetChars = int.MaxValue)
     {
-        // Newest first, until the budget is spent. A newest message larger than the whole budget is sent cut rather
-        // than not at all: it is the one the kept turns continue from. Omitted counts messages of the SLICE, as the
-        // notice's total does — empty ones included.
+        var (transcript, omitted) = BoundedTranscript(toCompact, budgetChars);
+        return new SummarizeRequest(
+            [new ChatMessageDto("user", Strings.CompactionSummarizePrompt(transcript))], omitted);
+    }
+
+    /// <summary>
+    /// The labelled transcript of <paramref name="messages"/> ("User:"/"Assistant:"/"Tool:", empty messages skipped),
+    /// newest first until <paramref name="budgetChars"/> is spent, and how many of the messages were left out — the
+    /// oldest. One reader for every request that asks a model to summarize a conversation (compaction, session recap).
+    /// </summary>
+    public static (string Text, int Omitted) BoundedTranscript(IReadOnlyList<ChatMessageDto> messages, int budgetChars)
+    {
+        // A newest message larger than the whole budget is sent cut rather than not at all: it is the one the rest of
+        // the conversation continues from. Omitted counts messages of the input, as a notice's total does — empty ones
+        // included.
         var kept    = new List<string>();
         var used    = 0;
         var omitted = 0;
-        for (var i = toCompact.Count - 1; i >= 0; i--)
+        for (var i = messages.Count - 1; i >= 0; i--)
         {
-            var content = toCompact[i].Content;
+            var content = messages[i].Content;
             if (string.IsNullOrEmpty(content)) continue;
-            var entry = $"{Label(toCompact[i].Role)}: {content}";
+            var entry = $"{Label(messages[i].Role)}: {content}";
             if (used + entry.Length + 2 <= budgetChars) { kept.Insert(0, entry); used += entry.Length + 2; continue; }
             if (kept.Count == 0 && budgetChars > 0)
             {
@@ -154,14 +166,12 @@ internal static class HistoryCompaction
         }
 
         var sb = new StringBuilder();
-        // Model-facing and structural: not localized. Without it the instruction ("the beginning of our conversation")
-        // presents a middle as a beginning.
+        // Model-facing and structural: not localized. Without it an instruction that says "the beginning of our
+        // conversation" presents a middle as a beginning.
         if (omitted > 0)
             sb.AppendLine($"[The first {omitted} message(s) did not fit in this request and are not shown.]").AppendLine();
         foreach (var entry in kept) sb.AppendLine(entry).AppendLine();
-
-        return new SummarizeRequest(
-            [new ChatMessageDto("user", Strings.CompactionSummarizePrompt(sb.ToString()))], omitted);
+        return (sb.ToString(), omitted);
 
         static string Label(string role) => role switch
         {

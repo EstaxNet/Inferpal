@@ -452,26 +452,16 @@ internal sealed partial class HostServer : IDisposable
         Notify("chat/step", new { text = Strings.StatusOodaSummarizing });
         try
         {
-            var summarize = new List<ChatMessageDto>(s.History) { new("user", Strings.OodaSummarizePrompt) };
-            var result    = await s.Client.RunAgentAsync(
-                model:   await ModelRouter.ResolveUtilityAsync(s.Config, s.Client, ct),
-                history: summarize,
-                tools:   EmptyToolRegistry.Instance,
-                onStep:  _ => { },
-                onToken: null,
-                ct:      ct);
-
-            // ⚠ A failed run returns its error as the reply — and this summary joins the system prompt of every following
-            // question. The request that fails is the likely one: it carries the whole conversation.
-            if (result.Failed)
+            // The request (bounded by the utility model's window), the call and the reading of the reply are shared
+            // with the VS view model: SessionRecap.
+            var recap = await SessionRecap.WriteAsync(new List<ChatMessageDto>(s.History), s.OodaSummary, s.Config, s.Client, ct);
+            if (recap.Failure is not null)
             {
-                Diagnostics.Record("Ooda.Summary", "The session summary was not written: " + result.FinalResponse);
+                Diagnostics.Record("Ooda.Summary", "The session summary was not written: " + recap.Failure);
                 return;
             }
-            // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
-            var summary = MarkdownParser.StripThinkTags(result.FinalResponse);
-            if (string.IsNullOrEmpty(summary)) return;
-            if (result.AnswerCut) summary += HistoryCompaction.CutSummaryMarker;
+            if (string.IsNullOrEmpty(recap.Recap)) return;
+            var summary = recap.Recap;
 
             s.OodaSummary = summary;
             RefreshSystemPrompt(s);

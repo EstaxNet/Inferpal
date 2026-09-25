@@ -105,7 +105,10 @@ public partial class FailedAgentRunTests
         var method = code.IndexOf("Task RunOodaSummaryAsync(", StringComparison.Ordinal);
         var write  = code.IndexOf("_oodaSummary  = summary", method, StringComparison.Ordinal);
         Assert.True(method >= 0 && write > method, "the session summary moved: the scan reads nothing");   // WITNESS
-        Assert.Contains("result.Failed", code[method..write]);
+        // The run is read by SessionRecap (shared with the host, executed above); the view model must go through it
+        // and honour its failure.
+        Assert.Contains("SessionRecap.WriteAsync", code[method..write]);
+        Assert.Contains("recap.Failure is not null", code[method..write]);
     }
 }
 
