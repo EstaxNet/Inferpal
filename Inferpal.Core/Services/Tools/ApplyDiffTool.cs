@@ -66,7 +66,7 @@ internal class ApplyDiffTool : ITool
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);
 
-        var fileContent = await File.ReadAllTextAsync(path, ct);
+        var fileContent = await TextFileEncoding.ReadTextAsync(path, ct);
 
         var resolution = ApplyDiffMatcher.Resolve(fileContent, oldContent, newContent, occurrence);
         if (resolution.Modified is null)

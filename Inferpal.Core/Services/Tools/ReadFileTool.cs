@@ -47,7 +47,7 @@ internal class ReadFileTool : ITool
         else if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);
         else
-            content = Cap(await File.ReadAllTextAsync(path, ct), path);
+            content = Cap(await TextFileEncoding.ReadTextAsync(path, ct), path);
 
         return Page(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
     }

@@ -43,7 +43,7 @@ internal class WriteFileTool : ITool
         var content = args.Str("content") ?? throw new ArgumentException("content is required.");
 
         var exists     = File.Exists(path);
-        var oldContent = exists ? await File.ReadAllTextAsync(path, ct) : string.Empty;
+        var oldContent = exists ? await TextFileEncoding.ReadTextAsync(path, ct) : string.Empty;
 
         // ⚠ An existing file is rewritten in its OWN line endings, like apply_diff and the code actions: model output
         // is LF, and a CRLF file (Visual Studio's default) otherwise changed every line ending behind the approval

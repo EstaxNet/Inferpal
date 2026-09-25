@@ -63,8 +63,8 @@ internal class RestoreFileTool : ITool
         var details = Strings.DiffConfirm(path);
         try
         {
-            var current  = File.Exists(path) ? await File.ReadAllTextAsync(path, ct) : string.Empty;
-            var restored = await File.ReadAllTextAsync(snapPath, ct);
+            var current  = File.Exists(path) ? await TextFileEncoding.ReadTextAsync(path, ct) : string.Empty;
+            var restored = await TextFileEncoding.ReadTextAsync(snapPath, ct);
             var diffText = DiffComputer.ComputeText(current, restored);
             if (diffText is not null) details += "\n\n" + diffText;
         }

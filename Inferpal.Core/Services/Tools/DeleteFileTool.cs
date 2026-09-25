@@ -43,7 +43,7 @@ internal class DeleteFileTool : ITool
         var details = Strings.DeleteConfirm(path);
         try
         {
-            var diffText = DiffComputer.ComputeText(await File.ReadAllTextAsync(path, ct), string.Empty);
+            var diffText = DiffComputer.ComputeText(await TextFileEncoding.ReadTextAsync(path, ct), string.Empty);
             if (diffText is not null) details += "\n\n" + diffText;
         }
         catch (OperationCanceledException) { throw; }

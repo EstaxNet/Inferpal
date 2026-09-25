@@ -129,7 +129,7 @@ internal sealed class ApplyEditsTool : ITool
             if (!current.ContainsKey(edit.Path))
             {
                 if (!File.Exists(edit.Path)) return Strings.ToolFileNotFound(edit.Path);
-                var content = await File.ReadAllTextAsync(edit.Path, ct);
+                var content = await TextFileEncoding.ReadTextAsync(edit.Path, ct);
                 current[edit.Path]  = content;
                 original[edit.Path] = content;
             }

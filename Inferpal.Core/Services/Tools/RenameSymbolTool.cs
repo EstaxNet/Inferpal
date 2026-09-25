@@ -126,7 +126,7 @@ internal sealed class RenameSymbolTool : ITool
             ct.ThrowIfCancellationRequested();
             try
             {
-                var content = await File.ReadAllTextAsync(file, ct);
+                var content = await TextFileEncoding.ReadTextAsync(file, ct);
 
                 var isCSharp = Path.GetExtension(file).Equals(".cs", StringComparison.OrdinalIgnoreCase);
                 string newContent;

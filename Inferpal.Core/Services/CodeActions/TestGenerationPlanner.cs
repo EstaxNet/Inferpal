@@ -82,7 +82,7 @@ internal static class TestGenerationPlanner
         string? existing = null;
         if (File.Exists(testPath))
         {
-            try { existing = await File.ReadAllTextAsync(testPath, ct); }
+            try { existing = await Tools.TextFileEncoding.ReadTextAsync(testPath, ct); }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
