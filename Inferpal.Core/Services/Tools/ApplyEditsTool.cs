@@ -128,6 +128,7 @@ internal sealed class ApplyEditsTool : ITool
             var edit = edits[i];
             if (!current.ContainsKey(edit.Path))
             {
+                if (FileTarget.DirectoryRefusal(edit.Path) is { } isDirectory) return isDirectory;
                 if (!File.Exists(edit.Path)) return Strings.ToolFileNotFound(edit.Path);
                 var content = await TextFileEncoding.ReadTextAsync(edit.Path, ct);
                 current[edit.Path]  = content;

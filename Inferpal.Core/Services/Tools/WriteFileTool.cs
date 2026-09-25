@@ -40,6 +40,7 @@ internal class WriteFileTool : ITool
         var root    = _getWorkspaceRoot();
         var path    = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
+        if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
         var content = args.Str("content") ?? throw new ArgumentException("content is required.");
 
         var exists     = File.Exists(path);

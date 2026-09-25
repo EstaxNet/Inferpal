@@ -42,6 +42,7 @@ internal class RestoreFileTool : ITool
         var root = _getWorkspaceRoot();
         var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
+        if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
 
         string? snapPath = null;
         if (args.Str("snapshot") is { } snapRaw)

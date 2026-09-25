@@ -119,6 +119,30 @@ public class WrappedToolFailureTests
             ToolFailure.IsAboutTheArguments(new System.Reflection.TargetInvocationException(ex)));
     }
 
+    /// <summary>
+    /// A failure of ONE file — read-only (a TFVC or Perforce workspace keeps files read-only until checked out),
+    /// locked by another program, protected — was answered "continue without this tool": the model then gave up every
+    /// write of its task, when only that file is out of reach. The environmental failure keeps its advice.
+    /// </summary>
+    [Theory]
+    [InlineData(typeof(UnauthorizedAccessException))]
+    [InlineData(typeof(IOException))]
+    public void AFailureOfOneFile_DoesNotRetireTheTool(Type type)
+    {
+        var said = ToolFailure.Describe("write_file", (Exception)Activator.CreateInstance(type, "Access to the path 'a.cs' is denied.")!);
+
+        Assert.DoesNotContain("continue without this tool", said, StringComparison.Ordinal);
+        Assert.Contains("other files", said, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnEnvironmentalFailure_StillRetiresTheTool()
+    {
+        // Reference arm: a missing native library breaks the tool for every call.
+        Assert.Contains("continue without this tool", await Failing(StaticCtorFailure("e_sqlite3 was not found")),
+                        StringComparison.Ordinal);
+    }
+
     // ── The sentence itself ──────────────────────────────────────────────────
 
     [Fact]

@@ -44,8 +44,30 @@ internal static class ToolFailure
     private static string Advice(Exception ex) =>
         IsAboutTheArguments(ex)
             ? "Check the arguments against the tool's schema and try again."
+        // ⚠ A failure of ONE file is not a failure of the tool: read-only (a TFVC or Perforce workspace keeps files
+        // read-only until checked out), locked by another program, protected. "Continue without this tool" made the
+        // model give up every write of its task when only that file was out of reach.
+        : IsAboutOneFile(ex)
+            ? "The arguments are not the cause: this file or folder cannot be accessed as asked (read-only, locked by "
+              + "another program, or protected), so the same call will fail until that changes. Say what happened; "
+              + "other files are not affected."
             : "The arguments are not the cause, so the same call will fail the same way: say what "
               + "happened and continue without this tool.";
+
+    /// <summary>True when the root failure is about one file system entry rather than the tool itself.</summary>
+    /// <remarks>⚠ Not when a type initializer failed on the way: a native library missing inside a static constructor
+    /// surfaces as a FileNotFoundException too, and that type is unusable for every later call.</remarks>
+    private static bool IsAboutOneFile(Exception ex)
+    {
+        var cur = ex;
+        while (cur is TypeInitializationException or System.Reflection.TargetInvocationException or AggregateException
+               && cur.InnerException is { } inner)
+        {
+            if (cur is TypeInitializationException) return false;
+            cur = inner;
+        }
+        return cur is UnauthorizedAccessException or IOException;
+    }
 
     /// <summary>
     /// True when the failure really is about what the model wrote. Judged on the <b>root</b>

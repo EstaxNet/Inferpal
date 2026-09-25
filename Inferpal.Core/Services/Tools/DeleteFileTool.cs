@@ -35,6 +35,7 @@ internal class DeleteFileTool : ITool
         var root = _getWorkspaceRoot();
         var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
+        if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
 
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);

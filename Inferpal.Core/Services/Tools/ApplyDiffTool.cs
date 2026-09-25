@@ -47,6 +47,7 @@ internal class ApplyDiffTool : ITool
         var root       = _getWorkspaceRoot();
         var path       = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
+        if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
         var oldContent = args.Str("old_content") ?? throw new ArgumentException("old_content is required.");
         // ⚠ Was `?? ""`, on an argument the schema declares REQUIRED: omitting it therefore
         // became a DELETION of the matched block, and the answer said "diff applied". The model
