@@ -44,6 +44,14 @@ internal class WriteFileTool : ITool
 
         var exists     = File.Exists(path);
         var oldContent = exists ? await File.ReadAllTextAsync(path, ct) : string.Empty;
+
+        // ⚠ An existing file is rewritten in its OWN line endings, like apply_diff and the code actions: model output
+        // is LF, and a CRLF file (Visual Studio's default) otherwise changed every line ending behind the approval
+        // prompt — which compares lines with their "\r", so it showed a one-line change as a rewrite of every line.
+        // A file without a line break says nothing about its convention: the content is kept as given.
+        if (oldContent.Contains('\n'))
+            content = LineEndings.ToEol(content, LineEndings.Dominant(oldContent));
+
         var details    = exists
             ? Strings.WriteOverwrite(path, content.Length)
             : Strings.WriteCreate(path, content.Length);
