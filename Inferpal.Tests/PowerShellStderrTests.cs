@@ -85,6 +85,37 @@ public class PowerShellStderrTests
 
     // ── End to end, the real shell (Windows PowerShell is where this happens) ─
 
+    /// <summary>
+    /// A redirected Windows PowerShell formats objects to its hidden console's width, 120: a table was cut to
+    /// "aaa…" and a column past the width was DROPPED — no marker says so. The realistic case is
+    /// <c>Get-ChildItem -Recurse | Select-Object FullName</c>, whose long paths came back cut, then used as paths.
+    /// </summary>
+    [Fact]
+    public async Task AFormattedObject_IsNotCutAtTheConsoleWidth_AndTheSessionStillPersists()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var shell = new ShellSession(() => Path.GetTempPath(), new InferpalConfig());
+
+        var table = await shell.RunAsync("[pscustomobject]@{ Name = ('a' * 150) + 'TAIL'; Value = 'END' } | Format-Table",
+                                         null, CancellationToken.None);
+        Assert.Contains("Name", table);                                                           // witness
+        Assert.Contains("TAIL", table);
+        Assert.Contains("END", table);                                                            // the dropped column
+
+        // ⚠ A wide buffer PADS the default table views to its width: four files came back as 20 570 characters of
+        // spaces. What reaches the model has no trailing blanks.
+        var listing = await shell.RunAsync("Get-ChildItem C:\\Windows | Select-Object -First 4", null, CancellationToken.None);
+        Assert.Contains("Mode", listing);                                                         // witness
+        Assert.True(listing.Split('\n').Max(l => l.TrimEnd('\r').Length) < 300,
+                    $"a line of {listing.Split('\n').Max(l => l.Length)} characters: the table is padded to the buffer");
+
+        // Reference arm: the wrapper's pipeline must not cost the session its state.
+        await shell.RunAsync("cd C:\\Windows; $env:INFERPAL_PROBE = 'kept'", null, CancellationToken.None);
+        var state = await shell.RunAsync("(Get-Location).Path; $env:INFERPAL_PROBE", null, CancellationToken.None);
+        Assert.Contains("C:\\Windows", state);
+        Assert.Contains("kept", state);
+    }
+
     [Fact]
     public async Task ASucceedingCommand_HasNoStderrSection_AndAFailingOneReadsPlainly()
     {

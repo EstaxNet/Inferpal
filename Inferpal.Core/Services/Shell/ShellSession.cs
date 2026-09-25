@@ -95,7 +95,7 @@ internal sealed class ShellSession
             await Task.WhenAny(Task.WhenAll(stdout.Completion, stderr.Completion),
                                Task.Delay(ChildProcess.PipeGraceAfterExit, CancellationToken.None));
 
-            var salvaged = ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker).Output;
+            var salvaged = ShellStateProtocol.TrimLineEnds(ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker).Output);
             return ChildProcess.TimedOutMessage(_config.CommandTimeoutSeconds, salvaged);
         }
 
@@ -106,7 +106,7 @@ internal sealed class ShellSession
         var state = ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker);
         ApplyState(state);
 
-        var output     = state.Output;
+        var output     = ShellStateProtocol.TrimLineEnds(state.Output);   // a widened buffer pads tables
         var stderrText = PowerShellStderr.Decode(stderr.Snapshot());
         if (!string.IsNullOrWhiteSpace(stderrText))
             output += $"\n[stderr]\n{stderrText.Trim()}";

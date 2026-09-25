@@ -63,6 +63,7 @@ internal static class ShellStateProtocol
         var sb = new StringBuilder();
         sb.Append("$ErrorActionPreference='Continue'\n");
         AppendRestore(sb, cwd, env);
+        sb.Append(WidenConsole);
         sb.Append("try {\n");
         sb.Append("  $__c=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('").Append(B64Utf16(command)).Append("'))\n");
         sb.Append("  Invoke-Expression $__c\n");
@@ -88,10 +89,33 @@ internal static class ShellStateProtocol
         var sb = new StringBuilder();
         sb.Append("$ErrorActionPreference='Continue'\n");
         AppendRestore(sb, cwd, env);
+        sb.Append(WidenConsole);
         sb.Append("$__c=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('").Append(B64Utf16(command)).Append("'))\n");
         sb.Append("Invoke-Expression $__c\n");
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Widens the hidden console's buffer, so objects are formatted at a width no table reaches.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A redirected Windows PowerShell formats objects to its hidden console's width, 120: a table cell was cut to
+    /// "aaa…" and a column past the width was DROPPED, with nothing to say so — a long path from
+    /// <c>Get-ChildItem -Recurse | Select-Object FullName</c> came back cut, then used as a path. The buffer, not a
+    /// <c>| Out-String -Width</c>: in a pipeline PowerShell READS a native command's stdout, so a grandchild it
+    /// started in the background (<c>start /b</c>) held the call open until it exited. Best-effort: without a
+    /// console to widen, formatting keeps its default width.
+    /// </remarks>
+    /// <summary>
+    /// <paramref name="text"/> without the blanks that end its lines. ⚠ Required by <see cref="WidenConsole"/>: the
+    /// default table views pad every line to the buffer's width — four files of <c>Get-ChildItem</c> came back as
+    /// 20 570 characters, nearly all spaces, in the model's context.
+    /// </summary>
+    internal static string TrimLineEnds(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, @"[ \t]+(?=\r?\n|$)", string.Empty);
+
+    private const string WidenConsole =
+        "try { $__r=$Host.UI.RawUI; $__r.BufferSize = New-Object Management.Automation.Host.Size(4096, $__r.BufferSize.Height) } catch { }\n";
 
     // ── POSIX dialect ─────────────────────────────────────────────────────
     // Same design, same injection-proofing: every piece of user data (cwd, env names and values,

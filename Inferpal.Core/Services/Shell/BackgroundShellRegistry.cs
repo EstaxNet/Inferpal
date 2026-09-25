@@ -63,7 +63,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
         }
         var job = new Job { Id = id, Process = process, Command = command };
 
-        process.OutputDataReceived += (_, e) => Append(job, e.Data);
+        process.OutputDataReceived += (_, e) => Append(job, e.Data?.TrimEnd(' ', '\t'));   // a widened buffer pads tables
         process.ErrorDataReceived  += (_, e) => Append(job, PowerShellStderr.DecodeLine(e.Data));   // CLIXML → text
         process.Exited += (_, _) =>
         {
