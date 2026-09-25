@@ -118,17 +118,35 @@ public class SharedCommandHandlerTests
 
     // ── /history ───────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// A sessions folder of the test's own. ⚠ Not the suite's shared one (<c>new ConversationStore()</c>): the
+    /// answer to /history DOES depend on what is saved there — an unreadable session another test leaves behind adds
+    /// its note to the message — so an exact assertion on it failed whenever a neighbour ran at the same time.
+    /// </summary>
+    private static ConversationStore PrivateStore(out string dir)
+    {
+        dir = Directory.CreateTempSubdirectory("inferpal-history-").FullName;
+        return new ConversationStore(dir);
+    }
+
+    private static void DeleteDir(string dir)
+    {
+        try { Directory.Delete(dir, recursive: true); } catch { /* best-effort cleanup */ }
+    }
+
     [Fact]
     public async Task History_SearchWithNoHit_ReportsTheTerm()
     {
-        // The store is the developer's real session folder; a random term is the one query
-        // whose answer never depends on what happens to be saved there.
-        var term = "zz-" + Guid.NewGuid().ToString("N");
+        var term  = "zz-" + Guid.NewGuid().ToString("N");
+        var store = PrivateStore(out var dir);
+        try
+        {
+            var message = await HistoryCommandHandler.HandleAsync(
+                store, ["/history", term], DateTime.UtcNow, CancellationToken.None);
 
-        var message = await HistoryCommandHandler.HandleAsync(
-            new ConversationStore(), ["/history", term], DateTime.UtcNow, CancellationToken.None);
-
-        Assert.Equal(Strings.HistoryNoResults(term), message);
+            Assert.Equal(Strings.HistoryNoResults(term), message);
+        }
+        finally { DeleteDir(dir); }
     }
 
     [Fact]
@@ -137,10 +155,15 @@ public class SharedCommandHandlerTests
         var a = "zz-" + Guid.NewGuid().ToString("N");
         var b = "yy-" + Guid.NewGuid().ToString("N");
 
-        var message = await HistoryCommandHandler.HandleAsync(
-            new ConversationStore(), ["/history", a, b], DateTime.UtcNow, CancellationToken.None);
+        var store = PrivateStore(out var dir);
+        try
+        {
+            var message = await HistoryCommandHandler.HandleAsync(
+                store, ["/history", a, b], DateTime.UtcNow, CancellationToken.None);
 
-        Assert.Equal(Strings.HistoryNoResults($"{a} {b}"), message);
+            Assert.Equal(Strings.HistoryNoResults($"{a} {b}"), message);
+        }
+        finally { DeleteDir(dir); }
     }
 
     /// <summary>
@@ -151,7 +174,7 @@ public class SharedCommandHandlerTests
     [Fact]
     public async Task History_Search_DoesNotMatchOrQuoteTheModelsHiddenReasoning()
     {
-        var store  = new ConversationStore();
+        var store  = PrivateStore(out var dir);
         var name   = $"test-history-think-{Guid.NewGuid():N}";
         var hidden = "zz-" + Guid.NewGuid().ToString("N");
         var shown  = "yy-" + Guid.NewGuid().ToString("N");
@@ -173,7 +196,7 @@ public class SharedCommandHandlerTests
             Assert.Contains(name, onAnswer);
             Assert.DoesNotContain("chain of thought", onAnswer);
         }
-        finally { store.Delete(name); }
+        finally { store.Delete(name); DeleteDir(dir); }
     }
 
     // ── /index ─────────────────────────────────────────────────────────────────
