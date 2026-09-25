@@ -186,6 +186,52 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
     }
 
     [Fact]
+    public async Task AFileSavedWhileEmbeddingsFail_IsCountedAsAHole()
+    {
+        // The count was taken at the end of the FULL pass only: a file saved later, re-indexed while the embedding
+        // model did not answer, lost its vectors — the file just edited, the most relevant one, out of the semantic
+        // half of the search until the next start — under a status still reading "✅" with no hole.
+        var saved = Path.Combine(_root, "Saved.cs");
+        await File.WriteAllTextAsync(saved, SampleClass("Saved"));
+        var provider = new FakeInferenceProvider { Embedding = [0.1f, 0.2f] };
+        var svc = NewService(provider);
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the pass is finished", () => svc.Status);
+        Assert.DoesNotContain("without embedding", svc.Status, StringComparison.Ordinal);   // witness: a clean pass
+
+        provider.Embedding = null;                                                         // the model stops answering
+        await File.WriteAllTextAsync(saved, SampleClass("SavedAgain"));
+        await WaitUntilAsync(async () => (await svc.GetFileChunksAsync(saved, _root, CancellationToken.None))
+                                 .Any(c => c.Content.Contains("SavedAgain", StringComparison.Ordinal)),
+                             "the saved file is re-indexed", () => svc.Status);
+
+        var missing = (await svc.GetFileChunksAsync(saved, _root, CancellationToken.None)).Count;
+        Assert.Contains($"{missing} of {svc.ChunkCount} chunks without embedding", svc.Status, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AHoleFilledByASave_IsNoLongerCounted()
+    {
+        // The other direction: the pass left a hole, a later save re-embedded it — "run /index rebuild" is then false.
+        var hole = Path.Combine(_root, "Hole.cs");
+        await File.WriteAllTextAsync(hole, SampleClass("Hole"));
+        var provider = new FakeInferenceProvider();                                        // no vector during the pass
+        var svc = NewService(provider);
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the pass is finished", () => svc.Status);
+        Assert.Contains("without embedding", svc.Status, StringComparison.Ordinal);         // witness: a hole
+
+        provider.Embedding = [0.1f, 0.2f];                                                 // the model is back
+        await File.WriteAllTextAsync(hole, SampleClass("HoleFilled"));
+        await WaitUntilAsync(async () => (await svc.GetFileChunksAsync(hole, _root, CancellationToken.None))
+                                 .Any(c => c.Content.Contains("HoleFilled", StringComparison.Ordinal)),
+                             "the saved file is re-indexed", () => svc.Status);
+
+        Assert.DoesNotContain("without embedding", svc.Status, StringComparison.Ordinal);
+        Assert.Contains('✅', svc.Status);
+    }
+
+    [Fact]
     public async Task IndexingPass_SaysNothingAboutEmbeddings_WhenEveryChunkHasOne()
     {
         // Reference arm: the fake provider returns null by default, so without an explicit vector

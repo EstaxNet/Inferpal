@@ -395,8 +395,9 @@ internal sealed class ProjectIndexService : IDisposable
 
     private async Task RunIndexingAsync(string rootDir, CancellationToken ct)
     {
-        IsIndexing = true;
-        Status     = "RAG: starting indexer…";
+        IsIndexing     = true;
+        _passCompleted = false;   // a re-index must not write "✅" over a pass that is running, or failed
+        Status         = "RAG: starting indexer…";
         // A full pass reads every file again; a change made DURING it re-enters through the watcher.
         lock (_notYetReindexed) _notYetReindexed.Clear();
 
@@ -550,12 +551,10 @@ internal sealed class ProjectIndexService : IDisposable
             if (unembedded > 0)
                 Diagnostics.Record("ProjectIndexService",
                     $"{unembedded} of {newChunks.Count} chunk(s) without embedding; semantic search misses them until /index rebuild");
-            var holeStatus = unembedded > 0
-                ? $" ({unembedded} of {ChunkCount} chunks without embedding — semantic search misses them; run /index rebuild)"
-                : string.Empty;
 
-            var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
-            Status = $"RAG: ✅ {ChunkCount} chunks from {files.Count} files{holeStatus}{embStatus}";
+            _passFileCount = files.Count;
+            _passCompleted = true;
+            Status = await ReadyStatusAsync(ct);
 
             // ── Drain the backlog accumulated during the pass ─────────────────
             // A file modified after the pass read it entered the authoritative replaceAll above
@@ -777,6 +776,37 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>Bumped under <see cref="_chunkLock"/> whenever the published chunks change.</summary>
     private int _contentVersion;
 
+    /// <summary>Source files the last full pass listed, and whether it completed — only then is the index "✅".</summary>
+    private int  _passFileCount;
+    private bool _passCompleted;
+
+    /// <summary>
+    /// The "✅" status, from the index as it is NOW: its chunks, the ones without a vector, the embedding breaker.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Recomposed after every incremental re-index too, not only at the end of a full pass: a file saved while the
+    /// embedding model did not answer loses its vectors — the file just edited, out of the semantic half of the
+    /// search until the next start — and the pass's count said "✅" over it; a save that re-embeds a hole left the
+    /// status still telling the user to run /index rebuild.
+    /// </remarks>
+    private async Task<string> ReadyStatusAsync(CancellationToken ct)
+    {
+        int total, unembedded;
+        await _chunkLock.WaitAsync(ct);
+        try
+        {
+            total      = _chunksByFile.Values.Sum(l => l.Count);
+            unembedded = _chunksByFile.Values.Sum(l => l.Count(c => c.Embedding is not { Length: > 0 }));
+        }
+        finally { _chunkLock.Release(); }
+
+        var holeStatus = unembedded > 0
+            ? $" ({unembedded} of {total} chunks without embedding — semantic search misses them; run /index rebuild)"
+            : string.Empty;
+        var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
+        return $"RAG: ✅ {total} chunks from {_passFileCount} files{holeStatus}{embStatus}";
+    }
+
     /// <summary>
     /// Serialises the watcher's re-index tasks. Each one reads a file, waits for the chat to go
     /// idle, then publishes: two tasks for the same file both waited, and the one holding the OLDER
@@ -883,6 +913,9 @@ internal sealed class ProjectIndexService : IDisposable
             catch (OperationCanceledException) { return; }
             catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.ReIndexFile", ex); }
         }
+
+        // The status is recounted from the index as it now is: holes made or filled by these files included.
+        if (_passCompleted) Status = await ReadyStatusAsync(ct);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
