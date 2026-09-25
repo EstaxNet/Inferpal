@@ -222,6 +222,8 @@ internal static class TestReproScaffold
                 WorkingDirectory = dir,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,   // the SDK writes UTF-8 (see GetDiagnosticsTool)
+                StandardErrorEncoding  = System.Text.Encoding.UTF8,
                 UseShellExecute = false,
                 CreateNoWindow  = true,
             };

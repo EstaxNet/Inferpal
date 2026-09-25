@@ -163,6 +163,11 @@ internal class GetDiagnosticsTool : ITool
         {
             FileName  = "dotnet",
             Arguments = $"build \"{path}\" --no-restore -v minimal",
+            // ⚠ The SDK writes UTF-8. Left to the host's console code page, every French compiler error carried "┬á"
+            // (the non-breaking space before its colon) and accented messages came back mangled — the text this tool,
+            // /fix-build and "Fix with AI" hand the model.
+            StandardOutputEncoding = System.Text.Encoding.UTF8,
+            StandardErrorEncoding  = System.Text.Encoding.UTF8,
         };
 
         // 90 s, after which the build tree is killed: abandoned instead, MSBuild node processes
