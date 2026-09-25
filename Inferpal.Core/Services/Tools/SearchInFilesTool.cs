@@ -38,8 +38,18 @@ internal class SearchInFilesTool : ITool
         if (!Directory.Exists(path))
             return Task.FromResult(Strings.DirNotFound(path));
 
-        Regex regex;
-        try { regex = new Regex(search, RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default); }
+        // ⚠ "Text OR a regular expression", so a pattern that parses as a regex may still be meant as text: read
+        // only as a regex, `DoWork(x)` was "DoWorkx", `arr[i]` "arri", `obj?.Prop` an optional j — each missing the
+        // text that IS in the file, and "no results" reads as "not used anywhere". Such a pattern matches both
+        // ways: a real regex keeps its matches, and the literal text is never answered as absent.
+        Regex  regex;
+        Regex? literal = null;
+        try
+        {
+            regex = new Regex(search, RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+            if (Regex.Escape(search) != search)
+                literal = new Regex(Regex.Escape(search), RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+        }
         catch { regex = new Regex(Regex.Escape(search), RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default); }
 
         var results = new List<string>();
@@ -74,7 +84,7 @@ internal class SearchInFilesTool : ITool
                 var relPath = file[path.Length..].TrimStart('\\', '/');
                 for (int i = 0; i < lines.Count && results.Count < MaxResults; i++)
                 {
-                    if (!regex.IsMatch(lines[i])) continue;
+                    if (!regex.IsMatch(lines[i]) && literal?.IsMatch(lines[i]) != true) continue;
                     var line = lines[i].Trim();
                     if (line.Length > 400) line = line[..400] + "…";   // a minified line is not a result
                     results.Add($"{relPath}:{i + 1}: {line}");
