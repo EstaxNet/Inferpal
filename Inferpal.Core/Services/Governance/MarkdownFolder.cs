@@ -47,7 +47,7 @@ internal static class MarkdownFolder
         {
             try
             {
-                read.Add((file, File.ReadAllText(file, Encoding.UTF8)));
+                read.Add((file, Tools.TextFileEncoding.ReadText(file)));   // hand-written: may be in the legacy code page
                 // ⚠ The SAME context as the note, otherwise the forget targets another slot and
                 // "once" becomes "once in the life of the process".
                 Diagnostics.Forget($"{context}({Path.GetFileName(file)})", file);

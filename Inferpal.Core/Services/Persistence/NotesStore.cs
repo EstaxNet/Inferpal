@@ -33,7 +33,7 @@ internal static class NotesStore
     {
         var path = NotesPath(projectRoot);
         if (!File.Exists(path)) return null;
-        return (await File.ReadAllTextAsync(path, ct)).Trim();
+        return (await Tools.TextFileEncoding.ReadTextAsync(path, ct)).Trim();
     }
 
     public static void Clear(string projectRoot)

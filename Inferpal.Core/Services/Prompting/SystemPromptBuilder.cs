@@ -401,7 +401,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         if (!File.Exists(path)) return;
         try
         {
-            var text = File.ReadAllText(path, Encoding.UTF8).Trim();
+            var text = Tools.TextFileEncoding.ReadText(path).Trim();   // hand-written: may be in the legacy code page
             Diagnostics.Forget(PromptFileContext, PinKey(path));
             if (!string.IsNullOrEmpty(text))
                 files.Add(new(kind, detail, "\n\n## " + header + "\n\n", text, detail));

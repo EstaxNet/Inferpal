@@ -68,10 +68,12 @@ internal static class AtomicFile
             // ConcurrentWriters_OfTheSameFile_NeitherThrowNorTear went red at once.
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
                                               FileShare.ReadWrite | FileShare.Delete);
-            Span<byte> head = stackalloc byte[3];
-            return stream.Read(head) == 3 && head is [0xEF, 0xBB, 0xBF]
-                ? Utf8WithBom
-                : Utf8NoBom;
+            var bytes = new byte[stream.Length];
+            stream.ReadExactly(bytes);
+            // The file's own encoding, by the rule every editing tool uses — its mark's, UTF-8 when its bytes are, else
+            // the legacy code page: a plan written in an older editor must come back in it, or every accent it holds
+            // is rewritten as "�" under the promise that only the checkbox changes.
+            return Tools.TextFileEncoding.Of(bytes);
         }
         catch (Exception ex)
         {

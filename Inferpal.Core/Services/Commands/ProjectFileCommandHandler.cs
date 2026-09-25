@@ -31,7 +31,7 @@ internal static class ProjectFileCommandHandler
 
         try
         {
-            var content = await File.ReadAllTextAsync(path, Encoding.UTF8, ct);
+            var content = await Tools.TextFileEncoding.ReadTextAsync(path, ct);
             var preview = content.Length > PreviewChars ? content[..PreviewChars] + "…" : content;
             return loaded(path, content.Length, preview);
         }

@@ -304,7 +304,7 @@ internal static class OnboardCommandHandler
         {
             try
             {
-                var text = await File.ReadAllTextAsync(readme, ct);
+                var text = await Tools.TextFileEncoding.ReadTextAsync(readme, ct);
                 sb.Append("\n## ").Append(Path.GetFileName(readme)).Append(" (excerpt)\n")
                   .Append(text.Length > MaxReadmeChars ? text[..MaxReadmeChars] + "…" : text)
                   .Append('\n');

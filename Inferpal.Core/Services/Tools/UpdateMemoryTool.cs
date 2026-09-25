@@ -97,6 +97,9 @@ internal class UpdateMemoryTool : ITool
         // from the locator's fallbacks, which are a best guess.
         PathSanitizer.AssertUnderRoot(memPath, _getWorkspaceRoot());
 
+        // What the memory's own encoding cannot hold is refused before the prompt, like the other writing tools.
+        if (mode != "clear" && FileTarget.EncodingRefusal(memPath, content) is { } cannotHold) return cannotHold;
+
         // Asked on the path, like every other file tool, so a rule or a force-prompt written for
         // a path covers this write too.
         var details = string.Join(Environment.NewLine, $"{memPath} ({mode})", string.Empty, content);
@@ -131,8 +134,10 @@ internal class UpdateMemoryTool : ITool
             default: // append
                 if (string.IsNullOrWhiteSpace(content))
                     return Strings.UpdateMemoryNoContent;
+                // The shared reader: a memory the user wrote in an older editor is in the machine's legacy code page, and
+                // read as UTF-8 its accents came back as "�" — then written back over the user's own text.
                 var existing = File.Exists(memPath)
-                    ? await File.ReadAllTextAsync(memPath, Encoding.UTF8, ct)
+                    ? await TextFileEncoding.ReadTextAsync(memPath, ct)
                     : string.Empty;
                 newContent = string.IsNullOrWhiteSpace(existing)
                     ? content

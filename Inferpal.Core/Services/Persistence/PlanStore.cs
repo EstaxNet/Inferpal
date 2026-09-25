@@ -90,7 +90,7 @@ internal static class PlanStore
         {
             var name = Path.GetFileNameWithoutExtension(file);
             string text;
-            try { text = File.ReadAllText(file, Encoding.UTF8); }
+            try { text = Tools.TextFileEncoding.ReadText(file); }
             catch (Exception ex)
             {
                 // A plan we cannot read is still a plan the user has: list it rather than hide it,
@@ -115,7 +115,7 @@ internal static class PlanStore
     {
         var path = PathFor(workspaceRoot, name);
         return File.Exists(path)
-            ? PlanDocument.Parse(File.ReadAllText(path, Encoding.UTF8), SanitizeName(name))
+            ? PlanDocument.Parse(Tools.TextFileEncoding.ReadText(path), SanitizeName(name))
             : null;
     }
 
