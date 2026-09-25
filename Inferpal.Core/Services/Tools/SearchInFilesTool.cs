@@ -35,8 +35,12 @@ internal class SearchInFilesTool : ITool
         if (WorkspaceScan.NormalizeFilePattern(rawPattern) is not { } filePattern)
             return Task.FromResult(WorkspaceScan.InvalidPatternMessage("file_pattern", rawPattern));
 
-        if (!Directory.Exists(path))
+        // ⚠ A FILE is searched, not refused: "Directory not found" for a path that exists read "this file does not
+        // exist", on the most natural request there is — searching one file.
+        var singleFile = File.Exists(path);
+        if (!singleFile && !Directory.Exists(path))
             return Task.FromResult(Strings.DirNotFound(path));
+        var searchRoot = singleFile ? Path.GetDirectoryName(path)! : path;
 
         // ⚠ "Text OR a regular expression", so a pattern that parses as a regex may still be meant as text: read
         // only as a regex, `DoWork(x)` was "DoWorkx", `arr[i]` "arri", `obj?.Prop` an optional j — each missing the
@@ -60,7 +64,8 @@ internal class SearchInFilesTool : ITool
         // file add tens of thousands of lines.
         // ⚠ "No results" is a CONCLUSION the model acts on — it stops looking. A walk that could
         // not start is not that answer, so this catch must not return it.
-        var files = WorkspaceScan.EnumerateFiles(path, filePattern, out var walkFailed);
+        var walkFailed = false;
+        var files = singleFile ? [path] : WorkspaceScan.EnumerateFiles(path, filePattern, out walkFailed);
         if (walkFailed)
             return Task.FromResult(
                 $"Could not search '{path}': the directory could not be walked (permissions, or a "
@@ -81,7 +86,7 @@ internal class SearchInFilesTool : ITool
                 if (new FileInfo(file).Length > MaxSearchFileBytes) { skippedLarge++; continue; }
                 // Decoded like the file an edit will rewrite: a line shown with "�" could not be quoted back.
                 var lines = TextFileEncoding.ReadLines(file);
-                var relPath = file[path.Length..].TrimStart('\\', '/');
+                var relPath = file[searchRoot.Length..].TrimStart('\\', '/');
                 // A binary file's "lines" are noise, NULs included: said once, as grep does, never shown.
                 if (TextFileEncoding.IsBinaryFile(file))
                 {
@@ -117,7 +122,7 @@ internal class SearchInFilesTool : ITool
         // express it — those files are absent from every total — so it names the folder instead.
         // The sentence belongs to WalkGap and is never written here: "cannot be listed" and "is a
         // link, not followed" send the reader to two different places.
-        if (WorkspaceScan.FirstWalkGap(path, root) is { } gap)
+        if (!singleFile && WorkspaceScan.FirstWalkGap(path, root) is { } gap)
             notes.Append($"\n({gap.Sentence()})");
 
         return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results)) + notes);

@@ -32,6 +32,9 @@ internal class ListFilesTool : ITool
         if (WorkspaceScan.NormalizeFilePattern(rawPattern) is not { } pattern)
             return Task.FromResult(WorkspaceScan.InvalidPatternMessage("pattern", rawPattern));
 
+        // A file is not a missing directory: "Directory not found" for a path that exists read "it does not exist".
+        if (File.Exists(path))
+            return Task.FromResult($"'{path}' is a file, not a directory — read it with read_file.");
         if (!Directory.Exists(path))
             return Task.FromResult(Strings.DirNotFound(path));
 
