@@ -30,6 +30,38 @@ public class McpStdioClientTests
         await client.DisposeAsync();
     }
 
+    // A server that fails the way real ones do at startup: its reason on stderr, then a non-zero exit.
+    private static McpServerConfig DiesWithAReason() => OperatingSystem.IsWindows()
+        ? new("gh", "cmd.exe", ["/c", "echo Error: GITHUB_TOKEN is not set 1>&2 & exit 3"], new Dictionary<string, string>())
+        : new("gh", "/bin/sh", ["-c", "echo 'Error: GITHUB_TOKEN is not set' >&2; exit 3"], new Dictionary<string, string>());
+
+    [Fact]
+    public async Task AServerThatDiesAtStartup_IsReportedWithWhatItWroteAndItsExitCode()
+    {
+        // stderr is where a server writes WHY it cannot start (a missing token, a bad path, an npm 404) — and the
+        // only place. Drained and discarded, the failure read "connection closed": the cause, lost.
+        var client = new McpStdioClient(DiesWithAReason());
+
+        Assert.False(await client.StartAsync(CancellationToken.None));
+
+        Assert.Contains("GITHUB_TOKEN is not set", client.LastError);
+        Assert.Contains("3", client.LastError);
+        await client.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AServerThatDiesSilently_StillSaysItExited()
+    {
+        // Reference arm: nothing on stderr — the exit is still named, and nothing is made up.
+        var client = new McpStdioClient(ExitsAtOnce());
+
+        Assert.False(await client.StartAsync(CancellationToken.None));
+
+        Assert.Contains("exited", client.LastError);
+        Assert.DoesNotContain("stderr:", client.LastError);
+        await client.DisposeAsync();
+    }
+
     [Fact]
     public async Task Dispose_DoesNotRaiseASecondClose()
     {

@@ -25,8 +25,23 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
 
     private Process? _process;
     private Task?    _readLoop;
+    private Task?    _stderrDrain;
     private long     _nextId;
     private volatile bool _disposed;
+
+    // ⚠ stderr is where a server writes WHY it cannot start — a missing token, a bad path, a package npm cannot
+    // find — and the only place: drained and discarded, a server that died at startup read "connection closed".
+    // Node and npm put the reason on the FIRST line (the stack follows), Python on the LAST (after "Traceback"):
+    // the first lines and the last ones are kept, bounded, since a healthy server may log for hours.
+    private const int StderrEdgeLines = 4;
+    private const int StderrLineChars = 200;
+    private readonly object _stderrLock = new();
+    private readonly List<string> _stderrHead = [];
+    private readonly Queue<string> _stderrTail = new();
+    private int _stderrLines;
+
+    /// <summary>How long a failed start waits for the process to finish exiting, for its code and last words.</summary>
+    private static readonly TimeSpan ExitGrace = TimeSpan.FromSeconds(2);
 
     public McpStdioClient(McpServerConfig config) => _config = config;
 
@@ -83,10 +98,15 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
                 return false;
             }
 
-            // Drain stderr so a chatty server never blocks on a full pipe.
-            _ = Task.Run(async () =>
+            // Drain stderr so a chatty server never blocks on a full pipe — keeping its edges for a failed start.
+            var stderr = _process.StandardError;
+            _stderrDrain = Task.Run(async () =>
             {
-                try { while (await _process.StandardError.ReadLineAsync().ConfigureAwait(false) is not null) { } }
+                try
+                {
+                    while (await stderr.ReadLineAsync().ConfigureAwait(false) is { } line)
+                        KeepStderrLine(line);
+                }
                 catch { /* process exited */ }
             });
 
@@ -108,8 +128,66 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         }
         catch (Exception ex)
         {
-            LastError = ex.Message;
+            LastError = await DescribeStartFailureAsync(ex, ct).ConfigureAwait(false);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Why the start failed, in the terms that fix it: a process that exited is named with its exit code and what it
+    /// wrote on stderr; a live one that never answered is named with the budget it had.
+    /// </summary>
+    private async Task<string> DescribeStartFailureAsync(Exception ex, CancellationToken ct)
+    {
+        if (ct.IsCancellationRequested || _process is not { } p) return ex.Message;
+
+        // The handshake fails on the closed pipe a moment before the process is reaped: wait for its code.
+        using (var grace = new CancellationTokenSource(ExitGrace))
+        {
+            try { await p.WaitForExitAsync(grace.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) { }
+        }
+        if (!p.HasExited)
+            return ex is OperationCanceledException
+                ? $"initialize got no answer within {HandshakeTimeout.TotalSeconds:0} s"
+                : ex.Message;
+
+        // Its last lines may still be in the pipe when stdout closes.
+        if (_stderrDrain is { } drain)
+        {
+            try { await drain.WaitAsync(ExitGrace).ConfigureAwait(false); }
+            catch (TimeoutException) { }
+        }
+        var said = StderrEdges();
+        return said.Length == 0
+            ? $"the server exited with code {p.ExitCode} before answering (nothing on stderr)"
+            : $"the server exited with code {p.ExitCode} before answering; stderr: {said}";
+    }
+
+    private void KeepStderrLine(string line)
+    {
+        line = line.Trim();
+        if (line.Length == 0) return;
+        if (line.Length > StderrLineChars) line = line[..StderrLineChars] + "…";
+        lock (_stderrLock)
+        {
+            _stderrLines++;
+            if (_stderrHead.Count < StderrEdgeLines) { _stderrHead.Add(line); return; }
+            _stderrTail.Enqueue(line);
+            if (_stderrTail.Count > StderrEdgeLines) _stderrTail.Dequeue();
+        }
+    }
+
+    /// <summary>The first and last lines of stderr on one line, the elided middle counted.</summary>
+    private string StderrEdges()
+    {
+        lock (_stderrLock)
+        {
+            var skipped = _stderrLines - _stderrHead.Count - _stderrTail.Count;
+            var parts   = new List<string>(_stderrHead);
+            if (skipped > 0) parts.Add($"… {skipped} more line(s) …");
+            parts.AddRange(_stderrTail);
+            return string.Join(" | ", parts);
         }
     }
 

@@ -361,6 +361,9 @@ internal sealed class McpToolService : IAsyncDisposable
             finally { _gate.Release(); }
 
             // 2. Retry with backoff, outside the gate so saves and other servers aren't blocked.
+            // ⚠ The last attempt knows why the server will not come back — its exit code, what it wrote on stderr — and
+            // that is what the final state says: "reconnect failed" alone sends the user looking for the wrong cause.
+            string? lastFailure = null;
             foreach (var delay in _reconnectBackoff)
             {
                 await Task.Delay(delay).ConfigureAwait(false);
@@ -369,6 +372,7 @@ internal sealed class McpToolService : IAsyncDisposable
                 var client = _clientFactory(entry.Config);
                 if (!await client.StartAsync(CancellationToken.None).ConfigureAwait(false))
                 {
+                    lastFailure = client.LastError;
                     await client.DisposeAsync().ConfigureAwait(false);
                     continue;
                 }
@@ -380,6 +384,7 @@ internal sealed class McpToolService : IAsyncDisposable
                     // Restarted but not listed: publishing it "connected" with no tools would end the retries.
                     Diagnostics.Record("Mcp",
                         $"Server '{entry.Config.Name}' restarted, but its tool list could not be read: {client.LastError}");
+                    lastFailure = $"its tool list could not be read: {client.LastError}";
                     await client.DisposeAsync().ConfigureAwait(false);
                     continue;
                 }
@@ -423,7 +428,9 @@ internal sealed class McpToolService : IAsyncDisposable
             try
             {
                 if (_disposed || !_servers.Contains(entry)) return;
-                entry.Error = "server exited — reconnect failed";
+                entry.Error = string.IsNullOrWhiteSpace(lastFailure)
+                    ? "server exited — reconnect failed"
+                    : $"server exited — reconnect failed: {lastFailure}";
                 RebuildSnapshot();
             }
             finally { _gate.Release(); }

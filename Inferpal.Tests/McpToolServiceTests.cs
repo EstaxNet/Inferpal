@@ -361,6 +361,31 @@ public class McpToolServiceTests
     }
 
     [Fact]
+    public async Task Closed_ReconnectFails_NamesWhyTheLastAttemptFailed()
+    {
+        // The last attempt knows why the server will not come back (its exit code, what it wrote on stderr):
+        // "reconnect failed" alone sends the user looking for a network problem.
+        var config = new InferpalConfig { McpServersJson = OneServer("srv") };
+        var first  = new FakeMcpClient("srv") { ToolList = [Tool("a")] };
+        var dead   = new FakeMcpClient("srv")
+        {
+            StartResult = false,
+            LastError   = "the server exited with code 3 before answering; stderr: Error: GITHUB_TOKEN is not set",
+        };
+        var queue  = new Queue<FakeMcpClient>([first, dead]);
+        await using var svc = NewService(config, _ => queue.Dequeue(), [TimeSpan.FromMilliseconds(5)]);
+
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+
+        first.RaiseClosed();
+
+        await WaitUntil(() => svc.Status.Single().Error?.StartsWith("server exited — reconnect failed") == true,
+                        "after exhausting backoff the server stays disconnected");
+        Assert.Contains("GITHUB_TOKEN is not set", svc.Status.Single().Error);
+    }
+
+    [Fact]
     public async Task DisableMcp_RefreshTearsDownServers()
     {
         var config = new InferpalConfig { McpServersJson = OneServer("srv") };
