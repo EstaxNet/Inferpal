@@ -3,6 +3,41 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.21
+
+Forty-three fixes, and most of them are the same story: the assistant was told something that was
+not true — a command that succeeded reported as a failure, a file that exists reported as missing,
+an answer cut short presented as complete. And one of them damaged files saved in an older Windows
+encoding.
+
+- **Editing a file saved in a legacy encoding (Windows-1252) replaced every accent in it with "�"**,
+  on lines the edit never touched. Such files are now read and written in their own encoding.
+- **Rewriting a Windows (CRLF) file showed every line as changed in the approval prompt**, and the
+  file switched to Unix line endings. It now keeps its own.
+- **On Windows, every command looked like it had failed**: PowerShell's progress and errors came back
+  as XML under an error section, even for a successful command. They now come back as plain text.
+- **On Windows, accented output from git or dotnet came back garbled**, compiler errors included.
+- **A command's table could lose long values and whole columns** at 120 characters.
+- **A command cut short by `Select-Object -First` looked like a failure.**
+- **Searching for code could answer "no results" when it was there** (`DoWork(x)`, `arr[i]`), and
+  **a folder named explicitly — a library under `node_modules/` — was reported empty.**
+- **Reading a binary file handed the assistant noise; reading a folder, or searching one file,
+  answered "not found".** An empty result now says it is empty.
+- **A write aimed at a folder asked for approval, then told the assistant to stop writing**, and
+  **one file that could not be written made it give up writing altogether.**
+- **Reopening a saved conversation could overflow the context window on the next question**, and
+  **compacting a long conversation could fail or summarize only its end** without saying so.
+- **With LM Studio, llama.cpp's server or vLLM, a conversation could get stuck instead of being
+  compacted**: Inferpal now measures against the window the model is really loaded with.
+- **One large pinned file could make every request too large**, and **"the request is too large"
+  now says what the request is made of.**
+- **Answers cut off at the model's length limit looked finished**, and a cut-off rewrite could delete
+  the end of a file or existing tests. Such rewrites are now refused; cut answers are marked.
+- **When the server failed, its error message could become content** — a commit message, a session
+  summary, the assistant's own answer. Errors are now shown as errors and never kept.
+- **`/explain` and `/review` on a long file failed, or answered without the question.** The code is
+  now sized to the context window, and the cut is named.
+
 ## 1.6.20
 
 Fifteen fixes, and most of them are about what the assistant actually gets to see: the start of a
