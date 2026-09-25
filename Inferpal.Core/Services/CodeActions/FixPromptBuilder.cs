@@ -8,7 +8,8 @@ namespace Inferpal.Services.CodeActions;
 /// Pure formatting/parsing logic for the build-fix flow extracted from the tool-window
 /// VM: the "fix these errors" prompt enriched with the affected files' contents, the
 /// error-path extraction from compiler diagnostics, and the one-line banner preview.
-/// File access is injected so the VM decides how (and whether) sources are read.
+/// The disk reader lives here (<see cref="ReadFromDisk"/>), where a test can run it; file access stays
+/// injectable so the formatting can be tested without files.
 /// </summary>
 internal static class FixPromptBuilder
 {
@@ -28,6 +29,26 @@ internal static class FixPromptBuilder
 
     /// <summary>Lines shown before and after each diagnostic line, in a file that does not fit.</summary>
     private const int ContextLines = 10;
+
+    /// <summary>The fix prompt, with the affected files read from disk by <see cref="ReadFromDisk"/>.</summary>
+    public static string Build(string rawErrors) => Build(rawErrors, ReadFromDisk);
+
+    /// <summary>
+    /// A diagnosed file as the model must see it. ⚠ Decoded like the file an edit rewrites
+    /// (<see cref="Tools.TextFileEncoding"/>): the lines around each error are exactly what the model copies into
+    /// <c>old_content</c>, and a Windows-1252 file read as UTF-8 shows every accent as "�" — an edit quoting such a
+    /// line then matches nothing in the file the tool decodes. <c>null</c> skips the file.
+    /// </summary>
+    internal static string? ReadFromDisk(string path)
+    {
+        if (!File.Exists(path)) return null;
+        try { return Tools.TextFileEncoding.ReadText(path); }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("FixPromptBuilder.ReadFromDisk", ex);
+            return null;
+        }
+    }
 
     /// <summary>
     /// The localized fix prompt followed by an "Affected files" section: up to

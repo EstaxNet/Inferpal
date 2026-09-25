@@ -71,15 +71,9 @@ internal partial class InferpalToolWindowData
 
     // ── Diagnostics fix ────────────────────────────────────────────────────────
 
-    // Prompt formatting and diagnostic parsing live in FixPromptBuilder (unit-tested);
-    // the VM only supplies the file reader.
+    // Prompt formatting, diagnostic parsing and the disk reader live in FixPromptBuilder (unit-tested).
     private static string BuildFixPrompt(string rawErrors) =>
-        Services.CodeActions.FixPromptBuilder.Build(rawErrors, path =>
-        {
-            if (!File.Exists(path)) return null;
-            try { return File.ReadAllText(path, System.Text.Encoding.UTF8); }
-            catch { return null; }
-        });
+        Services.CodeActions.FixPromptBuilder.Build(rawErrors);
 
     // ── VS Build failure detection ────────────────────────────────────────────
 

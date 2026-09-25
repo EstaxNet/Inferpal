@@ -123,20 +123,38 @@ public sealed class LegacyEncodingEditTests : IDisposable
     }
 
     [Fact]
-    public void TheViewModelsBrowsedFileAttachment_ReadsThroughTheSameReader()
+    public void TheFixPrompt_ShowsTheAccent()
     {
-        // Not executable from this suite (Remote UI): a source scan, with its witness.
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
-        Assert.NotNull(dir);
-        var code = ConventionCoverageTests.CodeOnly(
-            Path.Combine(dir!.FullName, "Inferpal", "ToolWindow", "InferpalToolWindowData.Attachments.cs"));
+        // "Fix with AI" and /fix-build show the lines around each error: exactly what the model copies into old_content.
+        var path = LegacyFile();
 
-        // "Attach active file" reads the editor's buffer, which Visual Studio decoded itself; "Browse…" reads the DISK.
-        var method = code.IndexOf("Task BrowseFileAsync(", StringComparison.Ordinal);
-        var add    = code.IndexOf("AddAttachment(label, content", method, StringComparison.Ordinal);
-        Assert.True(method >= 0 && add > method, "the file attachment moved: the scan reads nothing");   // WITNESS
-        Assert.Contains("TextFileEncoding.ReadTextAsync(", code[method..add]);
+        var prompt = Inferpal.Services.CodeActions.FixPromptBuilder.Build($"{path}(2,9): error CS0103: The name 'y' does not exist");
+
+        Assert.Contains("int x = 1;", prompt);                                                // witness: the file was shown
+        Assert.Contains("// café", prompt);
+        Assert.DoesNotContain("�", prompt);
+    }
+
+    [Fact]
+    public void TheVisualStudioAdapter_ReadsNoFileTextOutsideTheSharedReader()
+    {
+        // Not executable from this suite (Remote UI): a source scan, with its witness. A property of the whole adapter, not
+        // one method: what it reads from disk (a browsed file, an @file mention, the files of a failed build) becomes
+        // something the model sees, then quotes back into an edit. "Attach active file" reads the editor's buffer, which
+        // Visual Studio decoded itself, and never goes through File.
+        var offenders = new List<string>();
+        var shared    = 0;
+        foreach (var file in ConventionCoverageTests.ProjectSources("Inferpal"))
+        {
+            var code = ConventionCoverageTests.CodeOnly(file);
+            shared += System.Text.RegularExpressions.Regex.Matches(code, @"TextFileEncoding\.ReadText(Async)?\(").Count;
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(
+                         code, @"\bFile\.(ReadAllText|ReadAllLines|ReadLines)(Async)?\("))
+                offenders.Add($"{Path.GetFileName(file)}: {m.Value}");
+        }
+
+        Assert.True(shared >= 2, "the adapter's file attachments moved: the scan reads nothing");          // WITNESS
+        Assert.Empty(offenders);
     }
 
     [Fact]

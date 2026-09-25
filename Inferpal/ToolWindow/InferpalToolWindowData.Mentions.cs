@@ -410,7 +410,8 @@ internal partial class InferpalToolWindowData
                 return;
             }
 
-            var content = await File.ReadAllTextAsync(filePath, ct);
+            // Decoded like the file an edit rewrites: an attached line is what the model quotes back into one.
+            var content = await Services.Tools.TextFileEncoding.ReadTextAsync(filePath, ct);
             var label   = Path.GetFileName(filePath);
 
             await RunOnVMContextAsync(() =>
