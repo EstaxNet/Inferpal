@@ -58,14 +58,14 @@ The model operates autonomously for up to 20 turns: it picks its tools, executes
 
 | Tool | Description |
 |---|---|
-| `read_file` | Reads the content of a file |
+| `read_file` | Reads a file — a long one page by page; a binary file is named, not shown |
 | `write_file` | Writes or overwrites a file (confirmation required, automatic snapshot) |
 | `apply_diff` | Find & replace in a file — exact, then whitespace-tolerant fuzzy; `occurrence` unique/first/all (snapshot, approval shows the diff) |
 | `apply_edits` | **Atomic** multi-file edit — nothing written unless every edit resolves (snapshot per file, approval required) |
 | `restore_file` | Restores a file from its last snapshot |
 | `delete_file` | Deletes a file (confirmation required, snapshot saved before deletion) |
 | `list_files` | Lists files in a folder (glob, max 300) |
-| `search_in_files` | Regex search across files (max 100 results) |
+| `search_in_files` | Text or regex search across files (max 100 results) |
 | `run_command` | Executes a shell command — PowerShell on Windows, and on Linux and macOS when `pwsh` is on the PATH; bash otherwise, `sh` where there is no bash (confirmation required) |
 | `get_diagnostics` | Runs `dotnet build`, returns MSBuild errors and warnings |
 | `run_tests` | Runs `dotnet test` / `pytest` / `npm test` / `cargo test` / `go test`, returns summary and failures |
@@ -84,17 +84,17 @@ The model operates autonomously for up to 20 turns: it picks its tools, executes
 | `search_docs` | Semantic search across external documentation indexed via `/docs` (passages + source URLs) |
 | `generate_project_map` | Generates a full project map — namespace tree, types, deps, hotspots |
 | `rename_symbol` | Renames a symbol project-wide (Roslyn for C#, regex fallback; dry_run first) |
-| + MCP servers | Tools from any connected stdio MCP server (filesystem, GitHub, databases…) |
+| + MCP servers | Tools from any connected MCP server, local (stdio) or remote (Streamable HTTP) — filesystem, GitHub, databases… |
 | + user-defined | Configure custom shell commands exposed as agent tools via Settings |
 
 ### 🔍 Semantic codebase search
-Background indexing of all source files using an embedding model from the configured provider. **Hybrid search** fuses semantic cosine similarity with lexical BM25 (Reciprocal Rank Fusion), so exact identifiers and symbol/file names rank well — not just fuzzy concepts. **Shadow pre-warm** fetches results while you type — the `search_codebase` tool responds instantly. **Smart Auto-attach** suggests the top-2 relevant files as dismissable chips, and **per-turn auto-context** silently injects the most relevant chunks into each code question. Indexing automatically **pauses while you chat** and resumes afterward, so the interactive model always gets the GPU first.
+Background indexing of all source files using an embedding model from the configured provider. **Hybrid search** fuses semantic cosine similarity with lexical BM25 (Reciprocal Rank Fusion), so exact identifiers and symbol/file names rank well — not just fuzzy concepts. **Per-turn auto-context** silently injects the most relevant chunks into each code question, and says it is a sample, not a search. Indexing automatically **pauses while you chat** and resumes afterward, so the interactive model always gets the GPU first.
 
 ### 📚 External documentation (@Docs)
 `/docs add <url>` crawls an external documentation site (same-domain, up to 50 pages), embeds it, and exposes the `search_docs` tool — so the agent answers library and framework questions from the docs themselves, citing the source page and URL. The documentation index is **global** and shared across every workspace. Manage sources with `/docs list / remove / reindex`.
 
 ### 🔌 MCP client (Model Context Protocol)
-Connect any **stdio MCP server** — the same servers used by Claude Desktop and Continue (filesystem, GitHub, databases, and hundreds more). Enable MCP in Settings, paste a server map, and their tools are exposed to the agent automatically as `mcp__<server>__<tool>`. Home-grown JSON-RPC client, zero extra dependencies. Every external tool call is gated by an approval prompt with an **Allow once / Always allow this tool / Cancel** choice (the "always" grant is scoped to the session, never persisted). **100% local stays 100% local** — you choose which servers to run.
+Connect any **stdio MCP server** — the same servers used by Claude Desktop and Continue (filesystem, GitHub, databases, and hundreds more) — or a remote **Streamable HTTP** one, with static headers or **OAuth 2.1**. Enable MCP in Settings, paste a server map, and their tools are exposed to the agent automatically as `mcp__<server>__<tool>`. Home-grown JSON-RPC client, zero extra dependencies. Every external tool call is gated by an approval prompt with an **Allow once / Always allow this tool / Cancel** choice (the "always" grant is scoped to the session, never persisted). **100% local stays 100% local** — you choose which servers to run.
 
 ### 📐 Project rules & AI checks
 Two fully-local, repo-versioned governance features:
@@ -107,14 +107,14 @@ Fill-in-the-Middle suggestions appear as you type in any code file, through VS C
 ### 🎯 Code actions (editor context menu)
 Right-click any selection → **Fix**, **Refactor** or **Add Docstring**, each powered by a dedicated configurable model without tool calling. The rewrite lands **directly in the editor**, re-indented to match, and is undoable with a single Ctrl+Z.
 
-### 📝 Inline diff viewer
-After every `write_file` or `apply_diff`, an LCS-based diff is shown directly in the chat bubble — added lines in green, removed in red, unchanged blocks collapsed.
+### 📝 The real diff, before anything is written
+Every file write is shown in the approval card as a diff — added lines in green, removed in red — with a button that opens it in VS Code's diff editor. Nothing touches the disk until you answer.
 
 ### 📋 Session templates & prompt templates
 `/template` loads one of 5 preconfigured session contexts (code-review, bug-hunt, architecture, refactoring, tests). Define your own reusable prompts with `{args}` placeholders via Settings.
 
 ### ⭐ Code snippet library
-Star any code block to save it to a persistent library. `/snippets list/copy/delete` manages your saved snippets across sessions.
+`/snippets list/copy/delete` manages the snippet library — the one you build in Visual Studio by starring code blocks, shared across both editors.
 
 ### 🧠 Smart Persona
 The assistant's persona adapts automatically to the language of the active file — C#, Python, TypeScript, Go, Rust, and more.
@@ -131,8 +131,8 @@ Type `@` in the prompt to open a context picker and attach exactly what you mean
 ### 📋 Session history & export
 Sessions auto-saved with a 4–5 word AI-generated title. Export to `.md` / `.txt` with a statistics header (model, turns, tool calls, tokens, duration).
 
-### 🛡️ File snapshots, multi-file restore & undo-run
-Every file modification creates a snapshot under `.inferpal/history/`. After multiple writes in one agent run, a **Restore All** button rolls back everything at once. **`/undo-run`** goes further — it reverts an entire agent run (restores edited files *and* deletes files created during that run); `/undo-run list` shows the session's tracked runs.
+### 🛡️ File snapshots & undo-run
+Every file modification creates a snapshot under `.inferpal/history/`; `/restore` puts a file back. **`/undo-run`** reverts an entire agent run (restores edited files *and* deletes files created during that run); `/undo-run list` shows the session's tracked runs.
 
 ### ⏱️ Dynamic timeout engine
 Timeouts adapt to task complexity: Quick (diagnostics, short reads), Normal (code edits), Deep (multi-file refactors). All three thresholds are configurable in Settings.
@@ -143,8 +143,8 @@ A live badge in the header shows the models currently resident in VRAM and their
 ### 🔐 Safe by design — hardened
 Every path-taking tool is confined to the workspace through a single `AssertUnderRoot` sandbox. Writes, diffs, deletes and renames require approval (the prompt shows the actual diff) — and so do `fetch_url` / `web_search`, the outbound channels of the *lethal trifecta*. **Permission rules** (`allow`/`deny` patterns, per-machine + committable `.inferpal/permissions.json`) auto-approve or block calls before the prompt, and a built-in **hard denylist** of catastrophic shell commands always applies. Indirect execution (`iex`, `-EncodedCommand`, `eval`, a piped interpreter, …) is **force-prompted**: no allow rule or session grant can auto-approve what text matching cannot read. Outbound fetches pass a hardened SSRF guard (blocks DNS rebinding, IPv4-mapped IPv6, `0.0.0.0/8`, loopback and private ranges, with a ReDoS-safe timeout). MCP tool calls get the same 3-way approval prompt.
 
-### 🔗 Heartbeat & connection guard
-Inferpal silently pre-flights the model server connection before every send. The Send button turns grey when the server is unreachable. Polling recovers automatically when the server comes back.
+### 🔗 Connection & VRAM badge
+The top bar shows whether the model server answers — with a retry button when it does not — and, on Ollama, the models resident in VRAM. Polling recovers automatically when the server comes back.
 
 ### ⚙️ Slash commands (50+)
 

@@ -115,6 +115,12 @@ save settings (or on startup).
 
 If a **stdio** server process **dies mid-session**, its tools are dropped immediately and Inferpal
 auto-reconnects with backoff (1s → 2s → 5s → 10s → 30s). On success the tools reappear; if every
-attempt fails the server is left disconnected (with an error in its status) until the next save.
+attempt fails the server is left disconnected until the next save, its status naming why the last
+attempt failed.
+
+**When a server does not start**, `/diagnostics` says why in the server's own words: a stdio server
+that exits is reported with its exit code and the first and last lines it wrote on stderr (where a
+server says it is missing a token, a path or a package), and an HTTP server that refuses is reported
+with the reason in its response, not only the status code.
 (HTTP has no equivalent process-death signal; an ended GET stream is treated as a normal rotation
 and simply re-opened.)

@@ -61,6 +61,6 @@ flowchart LR
 | VS Code | feature parity since 1.2.0 — VSIX for **Windows x64, Linux x64 and Apple Silicon** since 1.5.0, each with a bundled self-contained backend (`Inferpal.Host`) |
 | Runtime | .NET 8 (`net8.0-windows`; core engine is plain `net8.0`) |
 | Extension model | VS: hybrid VSIX — `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x out-of-process, plus `Inferpal.InProc` (**net472**) for everything `devenv.exe` hosts and its `Inferpal.Fim` sidecar · VS Code: TypeScript + JSON-RPC host |
-| Built-in tools | 26 (+ MCP servers + user shell tools) |
+| Built-in tools | 28 built-in tools (+ MCP servers + user shell tools) |
 | Languages (UI) | 10 |
-| Tests | 1188 xUnit tests |
+| Tests | the `tests-N passing` badge at the top of the [main README](../README.md), locked against the assembly by `DocCountersTests` |

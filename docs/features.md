@@ -45,8 +45,8 @@ exists.
   Nothing is ever executed from a plan file: it arrives with any clone, so its text steers the
   model exactly as a rules file does and grants nothing, and every action it leads to goes
   through the usual approval prompt. There is deliberately no "run the whole plan".
-- **Multi-file approval pass** — after ≥2 file writes in one run, a **Restore All** button
-  rolls everything back at once.
+- **Multi-file approval pass** *(Visual Studio)* — after ≥2 file writes in one run, a
+  **Restore All** button rolls everything back at once (`/undo-run` does it in both editors).
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
   (restores edited files, deletes files created that run); `/undo-run list` shows the
   session's tracked runs.
@@ -131,7 +131,7 @@ exists.
 
 - **Semantic codebase search** — background indexing with 3-tier chunking (Roslyn → LSP →
   regex) and **hybrid retrieval** (cosine + BM25 lexical fused with RRF, so exact identifiers
-  rank well). Shadow pre-warm, Smart Auto-attach chips, and **per-turn auto-context** that
+  rank well). Shadow pre-warm and Smart Auto-attach chips (Visual Studio), and **per-turn auto-context** that
   silently injects the most relevant chunks into each code question. See
   **[Search & Indexing](search-and-indexing.md)**.
 - **@Docs** — crawl and index external documentation sites, queried via `search_docs`.

@@ -96,14 +96,19 @@ The VS Code extension shares the same engine and the same Inferpal configuration
 Visual Studio extension — configure once, use in both editors. Since 1.2.0 it is at
 **feature parity** with the Visual Studio front-end.
 
-1. Download the VSIX for your platform from
+1. Install from the
+   **[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode)** —
+   search *Inferpal* in the Extensions view, or run
+   `code --install-extension EstaxNet.inferpal-vscode`. The backend (`Inferpal.Host`) is
+   bundled and self-contained — no .NET installation required.
+
+   To install by hand instead, take the VSIX for your platform from
    **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)** —
    `inferpal-vscode-win32-x64-<version>.vsix` (Windows x64),
    `inferpal-vscode-linux-x64-<version>.vsix` (Linux x64) or
-   `inferpal-vscode-darwin-arm64-<version>.vsix` (Apple Silicon) — and install it:
+   `inferpal-vscode-darwin-arm64-<version>.vsix` (Apple Silicon) —
    `code --install-extension inferpal-vscode-<platform>-<version>.vsix`
-   (or Extensions view → `…` → *Install from VSIX…*). The backend (`Inferpal.Host`) is
-   bundled and self-contained — no .NET installation required.
+   (or Extensions view → `…` → *Install from VSIX…*).
 2. Open the **Inferpal** view in the Activity Bar (or press **Ctrl+Alt+I**) and start
    chatting: streaming replies with full markdown, the agentic loop with approvals and a
    live plan block, collapsible tool bubbles, typed `@`-mentions, slash-command

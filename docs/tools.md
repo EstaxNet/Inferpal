@@ -7,7 +7,7 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 
 | Tool | Required params | Description |
 |---|---|---|
-| `read_file` | `path`, `start_line?`, `end_line?` | Read a file; a long one comes back in pages of whole lines, each naming the `start_line` to read on |
+| `read_file` | `path`, `start_line?`, `end_line?` | Read a file; a long one comes back in pages of whole lines, each naming the `start_line` to read on. A binary file is named, not shown |
 | `write_file` | `path`, `content` | Write/overwrite a file. **Approval** + snapshot + Smart Fix |
 | `list_files` | `path`, `pattern?` | List files (glob, max 300, recursive) |
 | `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (max 100 results) |

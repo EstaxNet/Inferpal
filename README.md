@@ -62,8 +62,8 @@ two editors.
 - **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, typed `@`-mentions, and 50+ slash commands.
 - **Built for the IDE** — live debugger awareness, VRAM monitoring, VS theme adaptation, and 10 UI languages.
 - **Debugger loop** — `/debug [goal]` lets the agent drive a **real debug session** from the chat: breakpoints, stepping, locals and call-stack inspection, in both editors (Visual Studio via an in-process driver, VS Code via a DAP bridge). Read-only, and starting a session always asks first.
-- **`/tdd` with a debugger** *(new in 1.6.0)* — when a test fails, the loop stops guessing from the runner's text: the failing test is re-run under the editor's debugger and the exception, the stack and the expanded locals go into the fix prompt. Measured on a fixed 12-case bench with a local 27B model: **12/12 fixed against 10/12** without it. It asks once per run, degrades cleanly when no debugger is available — and **says so** instead of silently looping. Writing a test file during a `/tdd` run always asks, whatever the permission rules say.
-- **Compiler-backed code intelligence** — `analyze_impact`, `analyze_code` and `rename_symbol` resolve C# symbols with the Roslyn compiler instead of name matching: real references, not homonyms — and `rename_symbol` no longer rewrites unrelated tokens that merely share the name.
+- **`/tdd` with a debugger** — when a test fails, the loop stops guessing from the runner's text: the failing test is re-run under the editor's debugger and the exception, the stack and the expanded locals go into the fix prompt. Measured on a fixed 12-case bench with a local 27B model: **12/12 fixed against 10/12** without it. It asks once per run, degrades cleanly when no debugger is available — and **says so** instead of silently looping. Writing a test file during a `/tdd` run always asks, whatever the permission rules say.
+- **Compiler-backed code intelligence** — `analyze_code` (its `impact` mode) and `rename_symbol` resolve C# symbols with the Roslyn compiler instead of name matching: real references, not homonyms — and `rename_symbol` no longer rewrites unrelated tokens that merely share the name.
 - **Anchored diff review** — `/check` reviews your pending diff against repo-versioned AI checks and anchors every finding to a diff line (and says so when a location can't be confirmed); `/commit` drafts the message, `/commit-exec` runs it only after you've read it.
 - **Persistent plans** — `/plan save|list|next|done` turns the current plan into a committable markdown file under `.inferpal/plans/` that survives `/clear`, restarts and editors; a plan can never execute anything by itself.
 - **Background agent tasks** — `/task [goal]` runs a read-only agent while you keep coding (serial queue behind the GPU scheduler); `/task propose` records the writes it *would* make, and `/task apply` replays each one through the normal approval prompt — never granted in advance.
@@ -143,4 +143,4 @@ Licensed under the [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0).
 
 ## Acknowledgments
 
-Developed with the assistance of **Claude Opus 5.0** (Anthropic).
+Developed with the assistance of **Claude** (Anthropic).
