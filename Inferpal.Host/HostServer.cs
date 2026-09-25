@@ -865,6 +865,10 @@ internal sealed partial class HostServer : IDisposable
             // VS settings window; going back to "Auto" returns to the editor's locale rather than
             // leaving whatever was last applied.
             ApplyLanguage(s.Config);
+            // ⚠ The window in use was the one the LAST TURN measured: after a new window or a new model, X-Ray and the
+            // gauge kept the old number until the next question, and the prompt rebuilt below sized its files for it.
+            s.LastContextWindow = await Services.Agent.ContextManager.EffectiveWindowAsync(
+                s.Config, s.Client, ModelRouter.Resolve(s.Config, ModelRole.Chat), ct);
             RefreshSystemPrompt(s);
 
             // MCP servers follow the saved settings, as the VS window does on save — only when those

@@ -37,6 +37,27 @@ public class TaskReportEndTests
         Assert.EndsWith(Strings.AgentEndedOnRepeat, report);
     }
 
+    /// <summary>
+    /// A run that FAILED — backend down, request refused — returns its error as the answer (the agent loop never
+    /// throws), and the queue marks a task failed only when its runner throws. The task finished as a success whose
+    /// report was the error message: "✅ finished" for an investigation that never happened.
+    /// </summary>
+    [Fact]
+    public async Task AFailedRun_FailsTheTask_WithItsCause()
+    {
+        using var queue = new BackgroundTaskQueue((_, _, _) => Task.FromResult(
+            BackgroundTaskQueue.TaskRunOutcome.Of(new AgentResult("the backend refused the request", [], [], Failed: true), [])));
+
+        var id = queue.Submit("audit the cache")!;
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (queue.Get(id)?.IsFinished != true && DateTime.UtcNow < deadline) await Task.Delay(10);
+
+        var task = queue.Get(id)!;
+        Assert.True(task.IsFinished, "the task never finished");                      // witness
+        Assert.Equal(BackgroundTaskState.Failed, task.State);
+        Assert.Contains("the backend refused the request", task.Error);
+    }
+
     [Fact]
     public void AFinishedReport_IsTheAnswer_WithNothingAdded()
     {

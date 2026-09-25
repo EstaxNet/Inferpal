@@ -367,6 +367,13 @@ internal class InferpalConfig
     internal void NotifyLanguageChanged() => LanguageChanged?.Invoke();
 
     /// <summary>
+    /// Raised after every <see cref="Save"/>. The chat window measures its context window again on it: the window in
+    /// use is the one the last turn measured, so after a new window or a new model X-Ray and the gauge kept the old
+    /// number until the next question. Not serialized; handlers must marshal to their own UI context.
+    /// </summary>
+    public event Action? Saved;
+
+    /// <summary>
     /// Maximum number of Plan → Act → Observe iterations the agent is allowed to run.
     /// <c>0</c> falls back to the default cap (<see cref="Services.Agent.AgentOrchestrator.DefaultMaxIterations"/>,
     /// 20) — there is no unlimited mode.
@@ -603,6 +610,8 @@ internal class InferpalConfig
         // Drop the cached parse: a save within the same file-time tick would otherwise keep
         // serving the previous values to Load().
         lock (_loadLock) { _cached = null; _cachedPath = null; _cachedStamp = default; }
+
+        Saved?.Invoke();
     }
 
     private static System.Text.Json.Nodes.JsonObject Snapshot(InferpalConfig cfg) =>

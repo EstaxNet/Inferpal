@@ -233,3 +233,68 @@ public partial class HostServerTests
         Assert.Contains("4096 loaded by the server", export.Markdown);
     }
 }
+
+public partial class HostServerTests
+{
+    /// <summary>
+    /// A settings save measures the window again. The window in use was the one the LAST TURN measured, so after the
+    /// user changed the window (or the model) X-Ray and the gauge kept the old number until the next question — a
+    /// setting that looks as if it did not take — and the prompt rebuilt by the save sized its files for it.
+    /// </summary>
+    [Fact]
+    public async Task ASettingsSave_MeasuresTheWindowAgain()
+    {
+        using var h = CreateHarness(cfg => cfg.ContextWindowSize = 8_192);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ChatResult = new ChatTurnResult("ok", null, 0, 0);
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var cfg = System.Text.Json.Nodes.JsonNode.Parse(await h.Client.InvokeAsync<string>("config/get"))!.AsObject();
+        cfg["contextWindowSize"] = 32_768;
+        await h.Client.InvokeWithParameterObjectAsync("config/update", new { json = cfg.ToJsonString() })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var panel = await h.Client.InvokeAsync<XRayPanelDto>("xray/panel").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(32_768, panel.ContextWindow);
+    }
+}
+
+/// <summary>
+/// The Visual Studio half of "a settings save measures the window again": the settings window is its own view model,
+/// so the chat learns of a save through <see cref="InferpalConfig.Saved"/>. The view model is not executable from this
+/// suite: the event is, the subscription is read in the source.
+/// </summary>
+[Collection(GlobalConfigPathCollection.Name)]   // Save() writes the suite's config file
+public class SettingsSaveWindowTests
+{
+    [Fact]
+    public void Save_RaisesSaved()
+    {
+        var config = new InferpalConfig();
+        var raised = 0;
+        config.Saved += () => raised++;
+
+        config.Save();
+
+        Assert.Equal(1, raised);
+    }
+
+    [Fact]
+    public void TheChatWindow_MeasuresTheWindowAgain_WhenTheSettingsAreSaved()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var toolWindow   = Path.Combine(dir!.FullName, "Inferpal", "ToolWindow");
+        var construction = ConventionCoverageTests.CodeOnly(Path.Combine(toolWindow, "InferpalToolWindowData.Construction.cs"));
+        var connection   = ConventionCoverageTests.CodeOnly(Path.Combine(toolWindow, "InferpalToolWindowData.Connection.cs"));
+
+        Assert.Contains("_config.Saved", construction);                                            // subscribed
+        var handler = connection.IndexOf("Task RemeasureContextWindowAsync(", StringComparison.Ordinal);
+        Assert.True(handler >= 0, "the re-measure moved: the scan reads nothing");                  // WITNESS
+        var body = connection[handler..connection.IndexOf("catch", handler, StringComparison.Ordinal)];
+        Assert.Contains("ContextManager.EffectiveWindowAsync(", body);
+        Assert.Contains("_contextWindowInUse = window", body);
+    }
+}

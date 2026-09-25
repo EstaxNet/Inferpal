@@ -38,7 +38,9 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// rather than folded into the report because <c>/task apply</c> needs the structured diff, not
     /// prose about it.
     /// </param>
-    internal sealed record TaskRunOutcome(string Report, IReadOnlyList<TaskProposal> Proposals)
+    /// <param name="Failure">Set when the run FAILED (backend down, request refused): the queue then fails the task
+    /// with this cause instead of reporting the error message as a finished investigation.</param>
+    internal sealed record TaskRunOutcome(string Report, IReadOnlyList<TaskProposal> Proposals, string? Failure = null)
     {
         /// <summary>A read-only run: report only.</summary>
         public static TaskRunOutcome Of(string report) => new(report, []);
@@ -54,6 +56,9 @@ internal sealed class BackgroundTaskQueue : IDisposable
         /// </remarks>
         public static TaskRunOutcome Of(AgentResult run, IReadOnlyList<TaskProposal> proposals)
         {
+            // ⚠ The agent loop never throws for a backend failure — it returns the message as the answer — so a runner
+            // never throws either, and the task finished "✅" with the error as its report.
+            if (run.Failed) return new(string.Empty, proposals, Failure: run.FinalResponse);
             var notice = Agent.ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut);
             return new(notice.Length == 0 ? run.FinalResponse : run.FinalResponse.TrimEnd() + "\n\n" + notice,
                        proposals);
@@ -280,10 +285,13 @@ internal sealed class BackgroundTaskQueue : IDisposable
 
             var outcome = await _runner(started, step => AppendStep(job, step), cts.Token).ConfigureAwait(false);
 
+            if (outcome.Failure is { } failure)
+                Diagnostics.Record($"BackgroundTaskQueue({job.Id})", "The task's run failed: " + failure);
             lock (_lock)
             {
                 job.Proposals = outcome.Proposals;
-                FinishLocked(job, BackgroundTaskState.Succeeded, outcome.Report, null);
+                if (outcome.Failure is { } cause) FinishLocked(job, BackgroundTaskState.Failed, null, cause);
+                else FinishLocked(job, BackgroundTaskState.Succeeded, outcome.Report, null);
                 return SnapshotLocked(job);
             }
         }

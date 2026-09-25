@@ -452,7 +452,8 @@ internal partial class InferpalToolWindowData
                 history.Add(new("system", systemPrompt + suffix));
             history.Add(new("user", task.Objective));
 
-            // RunAgentAsync never throws on network/backend errors — they come back in the result.
+            // RunAgentAsync never throws on network/backend errors — they come back in the result, flagged Failed, and
+            // TaskRunOutcome.Of turns that into a failed task with its cause.
             var run = await _client.RunAgentAsync(
                 ModelRouter.Resolve(_config, ModelRole.Agent),
                 history,

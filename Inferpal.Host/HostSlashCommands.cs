@@ -87,7 +87,7 @@ internal sealed partial class HostServer
             };
 
             // RunAgentAsync never throws for network/backend errors — they come back in the
-            // result — so a failed task carries the model's own explanation as its report.
+            // result, flagged Failed — and TaskRunOutcome.Of turns that into a failed task with its cause.
             var run = await s.Client.RunAgentAsync(
                 ModelRouter.Resolve(s.Config, ModelRole.Agent),
                 history,

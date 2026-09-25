@@ -338,6 +338,30 @@ internal partial class InferpalToolWindowData
     /// (welcome cards, input hints, tooltips) instead of waiting for the next window load.</summary>
     private void OnLanguageChanged() => Post(() => ApplyLabels());
 
+    /// <summary>
+    /// After a save, the window in use is measured again for the chat model: it was the one the LAST TURN measured, so
+    /// after a new window or a new model X-Ray and the gauge kept the old number until the next question — a setting
+    /// that looks as if it did not take. Fire-and-forget: the save is not held by a probe of the server.
+    /// </summary>
+    private void OnConfigSaved() => _ = RemeasureContextWindowAsync();
+
+    private async Task RemeasureContextWindowAsync()
+    {
+        try
+        {
+            var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
+                _config, _client, ModelRouter.Resolve(_config, ModelRole.Chat), CancellationToken.None);
+            // ⚠ Not RefreshSystemPrompt: a save can land mid-turn, and rewriting the system message changes the list the
+            // agent loop is reading. The prompt is rebuilt at the start of every question anyway.
+            await RunOnVMContextAsync(() =>
+            {
+                _contextWindowInUse = window;
+                UpdateContextBudget();
+            });
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ContextWindow.RemeasureOnSave", ex); }
+    }
+
     /// <summary>Releases a step-mode pause, letting the agent proceed to its next action.</summary>
     private void ResumeStep() => _stepResume?.TrySetResult(true);
 
