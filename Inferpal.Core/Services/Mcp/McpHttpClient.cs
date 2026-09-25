@@ -161,8 +161,48 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             NeedsAuthorization = true;
 
         CaptureSession(resp);
-        resp.EnsureSuccessStatusCode();
+        await ThrowIfRefusedAsync(resp, ct).ConfigureAwait(false);
         return await ReadResultAsync(resp, id, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// ⚠ A refusal carries its reason in the BODY — "invalid API key", or a JSON-RPC error such as the official SDK's
+    /// "No valid session ID provided" — and <c>EnsureSuccessStatusCode</c> keeps only the status line, which names
+    /// nothing a user can act on. The status stays on the exception for whoever branches on it.
+    /// </summary>
+    private static async Task ThrowIfRefusedAsync(HttpResponseMessage resp, CancellationToken ct)
+    {
+        if (resp.IsSuccessStatusCode) return;
+
+        var detail = string.Empty;
+        try { detail = RefusalDetail(await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false)); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("McpHttpClient.RefusalBody", ex); }
+
+        var head = $"HTTP {(int)resp.StatusCode} ({resp.ReasonPhrase ?? resp.StatusCode.ToString()})";
+        throw new HttpRequestException(detail.Length == 0 ? head : $"{head}: {detail}", null, resp.StatusCode);
+    }
+
+    /// <summary>
+    /// The reason in a refusal's body: a JSON-RPC <c>error.message</c>, an <c>error</c> or <c>message</c> string, or
+    /// short plain text. An HTML page (a proxy's error screen) says nothing the status line does not.
+    /// </summary>
+    internal static string RefusalDetail(string body)
+    {
+        body = body.Trim();
+        if (body.Length == 0 || body[0] == '<') return string.Empty;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                // The JSON-RPC error member when there is one, else the body itself ({"message": …}).
+                var text = McpJsonRpc.ErrorMessage(root.TryGetProperty("error", out var error) ? error : root);
+                if (text != McpJsonRpc.UnknownError) return text;
+            }
+        }
+        catch (JsonException) { /* plain text */ }
+        return body.Length > 300 ? body[..300] + "…" : body;
     }
 
     private async Task SendNotificationAsync(string method, CancellationToken ct)

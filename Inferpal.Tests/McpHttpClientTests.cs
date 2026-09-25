@@ -181,6 +181,60 @@ public class McpHttpClientTests
         Assert.NotNull(client.LastError);
     }
 
+    private static HttpResponseMessage Refused(HttpStatusCode code, string body, string mediaType) =>
+        new(code) { Content = new StringContent(body, Encoding.UTF8, mediaType) };
+
+    [Fact]
+    public async Task ARefusal_IsReportedWithTheReasonTheServerGave_InAJsonRpcError()
+    {
+        // The form the official TypeScript SDK answers with: HTTP 400 and a JSON-RPC error in the body. The status
+        // line alone ("400 (Bad Request)") names nothing a user can act on.
+        var handler = new StubHandler { Respond = _ => Refused(HttpStatusCode.BadRequest,
+            """{"jsonrpc":"2.0","error":{"code":-32000,"message":"Bad Request: No valid session ID provided"},"id":null}""",
+            "application/json") };
+        await using var client = Client(handler);
+
+        Assert.False(await client.StartAsync(CancellationToken.None));
+        Assert.Contains("400", client.LastError);
+        Assert.Contains("No valid session ID provided", client.LastError);
+    }
+
+    [Fact]
+    public async Task ARefusal_IsReportedWithTheReasonTheServerGave_InPlainText()
+    {
+        var handler = new StubHandler { Respond = _ => Refused(HttpStatusCode.Forbidden, "invalid API key", "text/plain") };
+        await using var client = Client(handler);
+
+        Assert.False(await client.StartAsync(CancellationToken.None));
+        Assert.Contains("403", client.LastError);
+        Assert.Contains("invalid API key", client.LastError);
+    }
+
+    [Fact]
+    public async Task ARefusedToolCall_TellsTheModelWhy()
+    {
+        var handler = new StubHandler { Respond = Responder(toolsCall: _ => Refused(HttpStatusCode.Forbidden,
+            """{"error":"token lacks the repo scope"}""", "application/json")) };
+        await using var client = Client(handler);
+        Assert.True(await client.StartAsync(CancellationToken.None));
+
+        var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.CallToolAsync("do_it", NoArgs(), CancellationToken.None));
+
+        Assert.Contains("token lacks the repo scope", ex.Message);
+    }
+
+    [Fact]
+    public async Task ARefusalWithNoBody_KeepsTheStatusAlone()
+    {
+        // Reference arm: an empty body, or an HTML error page from a proxy, adds nothing — and no tag soup.
+        var handler = new StubHandler { Respond = _ => Refused(HttpStatusCode.BadGateway, "<html><body><h1>502</h1></body></html>", "text/html") };
+        await using var client = Client(handler);
+
+        Assert.False(await client.StartAsync(CancellationToken.None));
+        Assert.Contains("502", client.LastError);
+        Assert.DoesNotContain("<", client.LastError);
+    }
+
     [Fact]
     public async Task Headers_ExpandEnvPlaceholders()
     {

@@ -123,8 +123,11 @@ internal static class McpJsonRpc
     internal static string ErrorMessage(JsonElement error)
     {
         var text = error.ValueKind == JsonValueKind.String ? error.GetString() : StringProperty(error, "message");
-        return string.IsNullOrEmpty(text) ? "unknown error" : text;
+        return string.IsNullOrEmpty(text) ? UnknownError : text;
     }
+
+    /// <summary>What <see cref="ErrorMessage"/> answers when the error carries no text.</summary>
+    internal const string UnknownError = "unknown error";
 
     /// <summary>A string member of an object; null when the element is not an object or the member not a string.</summary>
     private static string? StringProperty(JsonElement element, string name) =>
