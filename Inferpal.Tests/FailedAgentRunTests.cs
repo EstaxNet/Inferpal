@@ -108,3 +108,56 @@ public partial class FailedAgentRunTests
         Assert.Contains("result.Failed", code[method..write]);
     }
 }
+
+public partial class HostServerTests
+{
+    /// <summary>
+    /// A turn whose run FAILED is not answered: the plain chat already said so (its request throws, the adapter shows
+    /// an error), and the two loop paths — tools, agent — returned the error as the answer and KEPT it: the model
+    /// re-read "the backend refused" as what it had said, and a reload handed it back.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]   // chat with tools: the basic loop
+    [InlineData(true)]    // agent mode: the orchestrator
+    public async Task AFailedTurn_IsShownAsAnError_NeverKeptAsTheAnswer(bool agentMode)
+    {
+        using var h = CreateHarness();
+        var calls = 0;
+        List<ChatMessageDto>? next = null;
+        h.Fake.OnChatRequest = (_, history, _, _) =>
+        {
+            if (++calls == 1) throw new AgentHttpException("the backend refused the request", isTimeout: false);
+            next ??= [.. history];
+            return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
+        };
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var failed = await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "first", agentMode }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "second", agentMode }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Contains("the backend refused the request", failed.Error);           // shown as the error it is
+        Assert.NotNull(next);                                                       // witness: the second turn ran
+        Assert.DoesNotContain(next!, m => m.Role == "assistant" && (m.Content ?? "").Contains("backend refused"));
+    }
+}
+
+public partial class FailedAgentRunTests
+{
+    /// <summary>The Visual Studio half of "a failed turn is never kept as the answer": both run paths record the
+    /// failure, and the durable history leaves it out (the view model is not executable from this suite).</summary>
+    [Fact]
+    public void TheViewModel_NeverKeepsAFailedTurnAsTheAnswer()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(dir!.FullName, "Inferpal", "ToolWindow", "InferpalToolWindowData.ChatTurn.cs"));
+
+        Assert.Contains("agentFailed        = orchResult.Failed;", code);          // the agent path
+        Assert.Contains("agentFailed        = result.Failed;", code);              // the basic loop
+        Assert.Contains("if (persistedAnswer.Length > 0 && !agentFailed)", code);
+    }
+}

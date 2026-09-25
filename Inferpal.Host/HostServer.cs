@@ -300,6 +300,14 @@ internal sealed partial class HostServer : IDisposable
                     ct:             cts.Token,
                     onThinking:     OnThinking);
 
+                // ⚠ A FAILED run returns its error as the answer: said as the error it is, like the plain chat whose
+                // request threw — kept, the model re-read it as what it had said, and a reload handed it back.
+                if (result.Failed)
+                {
+                    s.History = durable;
+                    return new ChatSendResult(streamed.ToString(), false, result.TokensUsed, result.PromptTokens,
+                                              result.FinalResponse, ContextWindow: ctxDecision.Window);
+                }
                 // The answer the user saw — the streamed bubble when there was one, the final response otherwise.
                 var persisted = ChatTurnPolicy.ChoosePersistedAnswer(
                     !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null,
@@ -339,6 +347,13 @@ internal sealed partial class HostServer : IDisposable
                     onToolExecuted: te => Notify("chat/tool", new ToolNotice(te.Name, te.Input, te.Output, te.HasErrors)),
                     onThinking:     OnThinking);
 
+                // A FAILED run: the error, not an answer — see the agent path above.
+                if (run.Failed)
+                {
+                    s.History = durable;
+                    return new ChatSendResult(streamed.ToString(), false, run.TokensUsed, run.PromptTokens,
+                                              run.FinalResponse, ContextWindow: ctxDecision.Window);
+                }
                 var answer = ChatTurnPolicy.ChoosePersistedAnswer(
                     !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null,
                     run.FinalResponse);

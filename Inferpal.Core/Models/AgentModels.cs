@@ -135,11 +135,14 @@ internal record OrchestratorResult(
     int                  PromptTokens,
     bool                 WasLoopDetected,
     bool                 ReachedIterationLimit,
-    bool                 AnswerCut = false)
+    bool                 AnswerCut = false,
+    /// <summary>The run FAILED and <see cref="FinalResponse"/> is the message that says so — see
+    /// <c>AgentResult.Failed</c>: shown, never kept as the answer the model gave.</summary>
+    bool                 Failed    = false)
 {
     /// <summary>Creates an error result (no plan, no executions).</summary>
     internal static OrchestratorResult Error(string message, List<ChatMessageDto> history) =>
-        new(message, null, [], history, 0, 0, false, false);
+        new(message, null, [], history, 0, 0, false, false, Failed: true);
 }
 
 // ── Low-level HTTP primitives ─────────────────────────────────────────────────

@@ -717,7 +717,7 @@ internal sealed class AgentOrchestrator
             {
                 return new OrchestratorResult(
                     ex.Message, plan, executions, messages,
-                    totalTokens, lastPromptTokens, false, false);
+                    totalTokens, lastPromptTokens, false, false, Failed: true);
             }
 
             totalTokens      += turn.TokensUsed;

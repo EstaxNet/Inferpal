@@ -378,6 +378,8 @@ internal partial class InferpalToolWindowData
             string               agentEndNotice     = string.Empty;
             List<ToolExecution>  agentExecutions    = [];
             int                  agentTokensUsed    = 0;
+            // The run FAILED and agentFinalResponse is the error: shown, never kept as the answer the model gave.
+            bool                 agentFailed        = false;
 
             // Set true once tool bubbles have been streamed live (below), so the final
             // render pass skips re-inserting them and avoids duplicates.
@@ -495,6 +497,7 @@ internal partial class InferpalToolWindowData
                     onThinking: OnThinking);
 
                 agentFinalResponse = orchResult.FinalResponse;
+                agentFailed        = orchResult.Failed;
                 agentExecutions    = orchResult.Executions;
                 agentTokensUsed    = orchResult.TokensUsed;
                 agentEndNotice     = ChatTurnPolicy.EndNotice(
@@ -519,6 +522,7 @@ internal partial class InferpalToolWindowData
                     onThinking: OnThinking);
 
                 agentFinalResponse = result.FinalResponse;
+                agentFailed        = result.Failed;
                 agentEndNotice     = ChatTurnPolicy.EndNotice(false, result.WasLoopDetected, result.AnswerCut);
                 agentExecutions    = result.Executions;
                 agentTokensUsed    = result.TokensUsed;
@@ -566,9 +570,19 @@ internal partial class InferpalToolWindowData
                 if (streamingMsg is not null)
                     lastAssistant = streamingMsg;
 
+                // ⚠ A FAILED run returns its error as the answer (the loop never throws): shown as a notice, like the
+                // plain chat whose request threw — kept as the answer, the model re-read "the backend refused" as
+                // what it had said, and a reload handed it back.
+                if (agentFailed)
+                {
+                    var failedMsg = ChatMessageItem.NoticeMsg(agentFinalResponse);
+                    ApplyItemTheme(failedMsg);
+                    Messages.Insert(Messages.Count - 2, failedMsg);
+                    lastAssistant = failedMsg;   // still regenerable: that is the retry
+                }
                 // Fallback chain when the streamed bubble was absent or visibly empty:
                 // stored final response → tool summary → absolute "empty response" fallback.
-                switch (Services.Agent.ChatTurnPolicy.DecideFinalAnswer(
+                else switch (Services.Agent.ChatTurnPolicy.DecideFinalAnswer(
                             streamingBubbleVisible: streamingMsg is not null,
                             finalResponse:          agentFinalResponse,
                             executionCount:         agentExecutions.Count))
@@ -629,7 +643,7 @@ internal partial class InferpalToolWindowData
                 // word-for-word). This also matches what a session save/reload would rebuild.
                 var persistedAnswer = Services.Agent.ChatTurnPolicy.ChoosePersistedAnswer(
                     lastAssistant?.Content, agentFinalResponse);
-                if (persistedAnswer.Length > 0)
+                if (persistedAnswer.Length > 0 && !agentFailed)
                     _history.Add(new ChatMessageDto("assistant", persistedAnswer));
                 // The real prompt size of the run's last call reflects the discarded internal
                 // transcript, not what the next turn will send — estimate from the durable
