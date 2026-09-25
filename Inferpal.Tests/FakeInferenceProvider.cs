@@ -102,7 +102,11 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string>? onToken,
         CancellationToken ct, TaskComplexity complexity, Action<string>? onThinking)
     {
-        var turn = await SendChatAsync(model, history, tools, onToken, ct, complexity, null, onThinking);
+        // The real loop never throws for a backend failure: it returns the message as the result. Mirrored, or a test
+        // of a caller would see an exception the caller never gets.
+        ChatTurnResult turn;
+        try { turn = await SendChatAsync(model, history, tools, onToken, ct, complexity, null, onThinking); }
+        catch (AgentHttpException ex) { return new AgentResult(ex.Message, [], history, Failed: true); }
         return new AgentResult(turn.TextContent, [], history, turn.TokensUsed, turn.PromptTokens,
                                AnswerCut: turn.CutAtLimit);
     }

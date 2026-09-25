@@ -68,6 +68,29 @@ public class TddTests
     private const string RedFqn =
         "✗ FAILED — Failed: 1, Passed: 4, Skipped: 0, Total: 5\n\nFailing tests:\n  ✗ My.Tests.Class.Method";
 
+    /// <summary>
+    /// A fix round whose run FAILED (backend down, request refused) is not a fix attempt: the loop re-ran the whole
+    /// test suite and asked again, round after round, against a backend that had already said no — each round
+    /// paying a full test run. It stops on the first failure and says why.
+    /// </summary>
+    [Fact]
+    public async Task AFailedFixRun_StopsTheLoop_AndSaysWhy()
+    {
+        var client = new FakeInferenceProvider
+        {
+            RunAgentThroughChat = true,
+            OnChatRequest = (_, _, _, _) => throw new AgentHttpException("backend refused the request", isTimeout: false),
+        };
+        var tools = new FakeToolRegistry();
+        for (var i = 0; i < 6; i++) tools.TestOutputs.Enqueue(Red);
+
+        var result = await RunAsync(client, tools, ["/tdd"]);
+
+        Assert.Single(client.AgentRuns);                                            // one attempt, not five
+        Assert.Single(tools.Calls, c => c.Name == "run_tests");
+        Assert.Contains("backend refused the request", result.Message);
+    }
+
     [Fact]
     public async Task GreenFirstRound_StopsWithoutAgent()
     {

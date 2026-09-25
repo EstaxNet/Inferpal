@@ -576,7 +576,14 @@ internal record AgentResult(
     /// its end. Without it, the two came out the same.</summary>
     bool                 WasLoopDetected = false,
     /// <summary>The final answer stopped at the model's length limit: it is incomplete, and says so.</summary>
-    bool                 AnswerCut       = false);
+    bool                 AnswerCut       = false,
+    /// <summary>
+    /// The run FAILED — no URL, circuit open, the backend refused or went away — and <see cref="FinalResponse"/> is the
+    /// message that says so. Right for a chat bubble; wrong for anything that uses the reply as content: read as an
+    /// answer, the error became the session summary in every following system prompt, the commit message pre-filled
+    /// into <c>/commit-exec</c>, and the session's name.
+    /// </summary>
+    bool                 Failed          = false);
 
 /// <summary>A single tool invocation within an agentic loop run.</summary>
 internal record ToolExecution(

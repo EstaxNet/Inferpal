@@ -410,10 +410,10 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     {
         var base_ = _config.BaseUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
-            return new AgentResult(Strings.MsgNoUrl, [], history);
+            return new AgentResult(Strings.MsgNoUrl, [], history, Failed: true);
 
         if (IsInCooldown())
-            return new AgentResult(Strings.MsgCircuitOpen, [], history);
+            return new AgentResult(Strings.MsgCircuitOpen, [], history, Failed: true);
 
         // Claim the shared GPU for the whole run: background indexing pauses (GpuScheduler) and the
         // in-devenv ghost-text yields (ChatBusySignal) for the duration, across every agent turn AND
@@ -462,7 +462,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             catch (OperationCanceledException) { throw; } // propagate user-initiated cancel
             catch (AgentHttpException ex)
             {
-                return new AgentResult(ex.Message, executions, messages, totalTokens, lastPromptEval);
+                return new AgentResult(ex.Message, executions, messages, totalTokens, lastPromptEval, Failed: true);
             }
 
             totalTokens   += turn.TokensUsed;

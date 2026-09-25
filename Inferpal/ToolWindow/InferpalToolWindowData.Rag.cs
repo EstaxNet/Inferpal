@@ -284,8 +284,16 @@ internal partial class InferpalToolWindowData
                 onToken: null,
                 ct:      ct);
 
+            // ⚠ A failed run returns its error as the reply — and this summary joins the system prompt of every following
+            // question. The request that fails is the likely one: it carries the whole conversation.
+            if (result.Failed)
+            {
+                Services.Diagnostics.Record("Ooda.Summary", "The session summary was not written: " + result.FinalResponse);
+                return;
+            }
             // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
             var summary = Services.Presentation.MarkdownParser.StripThinkTags(result.FinalResponse);
+            if (result.AnswerCut && !string.IsNullOrEmpty(summary)) summary += Services.Agent.HistoryCompaction.CutSummaryMarker;
             if (!string.IsNullOrEmpty(summary))
             {
                 await RunOnVMContextAsync(() =>

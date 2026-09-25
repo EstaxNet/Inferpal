@@ -54,6 +54,8 @@ internal static class SessionTitleGenerator
                 onToken: null,
                 ct:      cts.Token);
 
+            // A failed run returns its error as the reply: the session would be named after the refusal.
+            if (result.Failed) return fallback;
             // The basic loop returns the reply whole: a reasoning model's chain of thought is not the title.
             return SessionManager.SanitizeTitle(MarkdownParser.StripThinkTags(result.FinalResponse), fallback);
         }

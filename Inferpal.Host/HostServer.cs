@@ -446,9 +446,17 @@ internal sealed partial class HostServer : IDisposable
                 onToken: null,
                 ct:      ct);
 
+            // ⚠ A failed run returns its error as the reply — and this summary joins the system prompt of every following
+            // question. The request that fails is the likely one: it carries the whole conversation.
+            if (result.Failed)
+            {
+                Diagnostics.Record("Ooda.Summary", "The session summary was not written: " + result.FinalResponse);
+                return;
+            }
             // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
             var summary = MarkdownParser.StripThinkTags(result.FinalResponse);
             if (string.IsNullOrEmpty(summary)) return;
+            if (result.AnswerCut) summary += HistoryCompaction.CutSummaryMarker;
 
             s.OodaSummary = summary;
             RefreshSystemPrompt(s);
