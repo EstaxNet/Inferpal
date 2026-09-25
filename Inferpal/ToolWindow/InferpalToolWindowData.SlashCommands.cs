@@ -500,7 +500,7 @@ internal partial class InferpalToolWindowData
                 {
                     var visible = Services.Presentation.MarkdownParser.StripThinkTags(text);
                     if (!Services.Presentation.MarkdownParser.HasPrintableText(visible)) return;
-                    var msg = ChatMessageItem.AssistantMsg(visible);
+                    var msg = ChatMessageItem.NoticeMsg(visible);
                     ApplyItemTheme(msg);
                     Messages.Insert(Messages.Count - 2, msg);
                     ScrollToBottom();

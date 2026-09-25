@@ -13,6 +13,9 @@ export interface WvTranscriptItem {
   hasErrors?: boolean;
   /** Pre-formatted local time (HH:MM), stamped when the entry was pushed. */
   timestamp?: string;
+  /** An 'assistant' entry that is a NOTICE (an end notice, a slash command's output, a failed save), not an answer
+   *  the model gave: same bubble, but a restored conversation must not hand it back to the model as one. */
+  notice?: boolean;
 }
 
 /** Header connection badge (mirror of `backend/status`). */

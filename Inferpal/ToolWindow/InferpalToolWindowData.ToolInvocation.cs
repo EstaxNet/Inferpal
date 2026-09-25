@@ -68,7 +68,7 @@ internal partial class InferpalToolWindowData
                 var errorCount = result
                     .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                     .Count(l => GetDiagnosticsTool.ErrorLineRegex.IsMatch(l));
-                var proposal = ChatMessageItem.AssistantMsg(Strings.BuildFailedProposal(errorCount));
+                var proposal = ChatMessageItem.NoticeMsg(Strings.BuildFailedProposal(errorCount));
                 proposal.InitFixCallback(result, _ => Post(() => Prompt = "/fix-build"));
                 ApplyItemTheme(proposal);
                 Messages.Insert(Messages.Count - 2, proposal);
@@ -119,7 +119,7 @@ internal partial class InferpalToolWindowData
         // SendCoreAsync's pre-flight, and the question it was about to resend was already gone.
         if (!_isBackendReachable)
         {
-            InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgConnectionGuardFailed(
+            InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgConnectionGuardFailed(
                 _config.BaseUrl, InferenceProviderFactory.DisplayName(_config.Provider))));
             ScrollToBottom();
             return;
@@ -174,7 +174,7 @@ internal partial class InferpalToolWindowData
     private Task ShowInfoAsync(string markdown) =>
         RunOnVMContextAsync(() =>
         {
-            var item = ChatMessageItem.AssistantMsg(markdown);
+            var item = ChatMessageItem.NoticeMsg(markdown);
             ApplyItemTheme(item);
             Messages.Insert(Messages.Count - 2, item);
         });

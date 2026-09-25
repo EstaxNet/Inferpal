@@ -16,6 +16,14 @@ internal sealed record SessionTemplate(string Id, string Label, string SystemSuf
 /// </summary>
 internal static class SessionManager
 {
+    /// <summary>
+    /// The <c>toolName</c> a saved <c>assistant</c> message carries when it is a NOTICE — shown in the thread, never
+    /// an answer the model gave: an end notice, a slash command's output, a failed save, a lost connection. Live, a
+    /// turn keeps one answer; restored, a notice came back as another one. Carried in <c>toolName</c> because both
+    /// editors render by role: a notice stays an assistant bubble on screen.
+    /// </summary>
+    public const string NoticeMarker = "notice";
+
     // ── /template presets ─────────────────────────────────────────────────────
 
     // A property, not a field: labels and greetings are read in the interface language of the moment.
@@ -96,7 +104,8 @@ internal static class SessionManager
         {
             if (m.Role == "user")
                 history.Add(new ChatMessageDto(m.Role, m.Content));
-            else if (m.Role == "assistant")
+            // A notice is an assistant bubble on screen, never an answer: live, a turn keeps one (see NoticeMarker).
+            else if (m.Role == "assistant" && m.ToolName != NoticeMarker)
             {
                 // The rule of the live history: a streamed bubble is saved with the model's inline reasoning, and
                 // restored as is it handed the model its old chain of thought back.

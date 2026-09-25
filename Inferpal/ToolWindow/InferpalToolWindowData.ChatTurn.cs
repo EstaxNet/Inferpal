@@ -126,7 +126,7 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 var url = _config.BaseUrl;
-                var msg = ChatMessageItem.AssistantMsg(Strings.MsgConnectionGuardFailed(
+                var msg = ChatMessageItem.NoticeMsg(Strings.MsgConnectionGuardFailed(
                     url, InferenceProviderFactory.DisplayName(_config.Provider)));
                 ApplyItemTheme(msg);
                 Messages.Insert(Messages.Count - 2, msg);
@@ -228,7 +228,7 @@ internal partial class InferpalToolWindowData
         {
             await RunOnVMContextAsync(() =>
             {
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgCancelled));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgCancelled));
                 ScrollToBottom();
                 EndOwnedTurn(localCts);
             });
@@ -243,7 +243,7 @@ internal partial class InferpalToolWindowData
             {
                 _sendStarting = false;
                 EndOwnedTurn(localCts);
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgError(msg)));
             });
             return;
         }
@@ -551,7 +551,7 @@ internal partial class InferpalToolWindowData
                 {
                     var fileNames    = modifiedPaths.Select(Path.GetFileName).ToList();
                     var recapContent = Strings.MultiFileRecapTitle(modifiedPaths.Count, string.Join(", ", fileNames));
-                    var recapItem    = ChatMessageItem.AssistantMsg(recapContent);
+                    var recapItem    = ChatMessageItem.NoticeMsg(recapContent);
                     var capturedPaths = modifiedPaths;
                     recapItem.InitRestoreCallback(() => Post(() => _ = RestoreAllFilesAsync(capturedPaths)));
                     ApplyItemTheme(recapItem);
@@ -613,7 +613,7 @@ internal partial class InferpalToolWindowData
                 // difference between "I finished" and "I was cut short" lived in a boolean nothing
                 // read.
                 if (agentEndNotice.Length > 0)
-                    InsertThemed(ChatMessageItem.AssistantMsg(agentEndNotice));
+                    InsertThemed(ChatMessageItem.NoticeMsg(agentEndNotice));
 
                 if (lastAssistant is not null)
                     MarkRegeneratable(lastAssistant);
@@ -656,7 +656,7 @@ internal partial class InferpalToolWindowData
                 // Finalize and discard any empty/invisible streaming bubble that was started
                 // before the cancellation arrived (a visible partial response stays).
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
-                var cancelItem = ChatMessageItem.AssistantMsg(Strings.MsgCancelled);
+                var cancelItem = ChatMessageItem.NoticeMsg(Strings.MsgCancelled);
                 ApplyItemTheme(cancelItem);
                 Messages.Insert(Messages.Count - 2, cancelItem);
                 ScrollToBottom();
@@ -670,7 +670,7 @@ internal partial class InferpalToolWindowData
                 // Remove the live-status bubble (if any) before showing the error message.
                 RemoveStatusBubble();
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
-                var errItem = ChatMessageItem.AssistantMsg(Strings.MsgError(msg));
+                var errItem = ChatMessageItem.NoticeMsg(Strings.MsgError(msg));
                 ApplyItemTheme(errItem);
                 Messages.Insert(Messages.Count - 2, errItem);
                 ScrollToBottom();

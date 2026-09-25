@@ -136,7 +136,7 @@ internal partial class InferpalToolWindowData
     /// <summary>Presenter used by the automatic first-run path: inserts a themed assistant bubble.</summary>
     private Task FirstRunPresentAsync(string text) => RunOnVMContextAsync(() =>
     {
-        var msg = ChatMessageItem.AssistantMsg(text);
+        var msg = ChatMessageItem.NoticeMsg(text);
         ApplyItemTheme(msg);
         Messages.Insert(Messages.Count - 2, msg);
         ScrollToBottom();
@@ -357,7 +357,7 @@ internal partial class InferpalToolWindowData
             // READ from ContextDecision, never rewritten here: both front-ends must answer the
             // same way.
             InsertThemed(decision.IsDegraded
-                ? ChatMessageItem.AssistantMsg(decision.Notice)
+                ? ChatMessageItem.NoticeMsg(decision.Notice)
                 : ChatMessageItem.ToolMsg("context_compact", decision.Notice, _config.ToolBubblesExpanded));
             ScrollToBottom();
         });

@@ -160,6 +160,35 @@ public class SessionManagerTests : IDisposable
         Assert.Contains(history, m => m.Role == "assistant" && m.Content == "Foo is a widget.");
     }
 
+    /// <summary>
+    /// A notice — an end notice, a slash command's output, a failed save — is an assistant bubble on screen and never
+    /// an answer: live, a turn keeps ONE answer. Restored, every notice came back as another answer the model gave.
+    /// </summary>
+    [Fact]
+    public void RestoredHistory_LeavesNoticesOnScreen()
+    {
+        var history = SessionManager.BuildRestoredHistory("SYS",
+        [
+            new("user",      "q1"),
+            new("assistant", "a1"),
+            new("assistant", "⚠ The answer above stopped at the model's length limit.", SessionManager.NoticeMarker),
+            new("assistant", "## Help\n/clear — new conversation", SessionManager.NoticeMarker),
+            new("user",      "q2"),
+            new("assistant", "a2"),
+        ]);
+
+        Assert.Equal(["SYS", "q1", "a1", "q2", "a2"], history.Select(m => m.Content));
+    }
+
+    [Fact]
+    public void AnAssistantMessageWithoutTheMarker_IsStillAnAnswer()
+    {
+        // Reference arm: sessions saved before the marker existed keep every assistant message.
+        var history = SessionManager.BuildRestoredHistory("SYS", [new("user", "q"), new("assistant", "a")]);
+
+        Assert.Equal(["SYS", "q", "a"], history.Select(m => m.Content));
+    }
+
     [Fact]
     public void RestoredHistory_IsTheLiveHistory_QuestionAndAnswerPerTurn()
     {

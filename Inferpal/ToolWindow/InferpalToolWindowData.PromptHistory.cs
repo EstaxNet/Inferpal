@@ -259,7 +259,7 @@ internal partial class InferpalToolWindowData
         {
             await RunOnVMContextAsync(() =>
             {
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgCancelled));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgCancelled));
                 ScrollToBottom();
             });
         }
@@ -268,7 +268,7 @@ internal partial class InferpalToolWindowData
             var msg = ex.Message;
             await RunOnVMContextAsync(() =>
             {
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgError(msg)));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgError(msg)));
                 ScrollToBottom();
             });
         }
@@ -347,7 +347,7 @@ internal partial class InferpalToolWindowData
                 var visibleFinal = Services.Presentation.MarkdownParser.StripThinkTags(result.FinalResponse);
                 if (Services.Presentation.MarkdownParser.HasPrintableText(visibleFinal))
                 {
-                    var msg = ChatMessageItem.AssistantMsg(visibleFinal);
+                    var msg = ChatMessageItem.NoticeMsg(visibleFinal);
                     ApplyItemTheme(msg);
                     Messages.Insert(Messages.Count - 2, msg);
                 }
@@ -414,21 +414,21 @@ internal partial class InferpalToolWindowData
         {
             if (!gotProposal)
             {
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgCancelled));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgCancelled));
                 ScrollToBottom();
                 return;
             }
 
             if (proposal.Notice is { } notice)
-                InsertThemed(ChatMessageItem.AssistantMsg(notice));
+                InsertThemed(ChatMessageItem.NoticeMsg(notice));
 
             if (proposal.Message is { } message)
-                InsertThemed(ChatMessageItem.AssistantMsg(message));
+                InsertThemed(ChatMessageItem.NoticeMsg(message));
 
             if (proposal.Proposal is { } proposed)
             {
                 Prompt = $"/commit-exec {proposed}";
-                var hint = ChatMessageItem.AssistantMsg(Strings.CommitConfirmHint);
+                var hint = ChatMessageItem.NoticeMsg(Strings.CommitConfirmHint);
                 ApplyItemTheme(hint);
                 Messages.Insert(Messages.Count - 2, hint);
             }

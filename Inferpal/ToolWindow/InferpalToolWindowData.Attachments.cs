@@ -147,14 +147,14 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachError(m))));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.AttachError(m))));
             return;
         }
 
         if (view is null)
         {
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachNoActiveFile)));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.AttachNoActiveFile)));
             return;
         }
 
@@ -169,7 +169,7 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachReadError(m))));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.AttachReadError(m))));
         }
     }
 
@@ -185,14 +185,14 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachSelectionError(m))));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.AttachSelectionError(m))));
             return;
         }
 
         if (view is null)
         {
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachNoActiveFile)));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.AttachNoActiveFile)));
             return;
         }
 
@@ -217,7 +217,7 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachSelectionReadError(m))));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.AttachSelectionReadError(m))));
         }
     }
 
@@ -232,7 +232,7 @@ internal partial class InferpalToolWindowData
             if (new FileInfo(filePath).Length > 512_000)
             {
                 await RunOnVMContextAsync(() =>
-                    InsertThemed(ChatMessageItem.AssistantMsg(Strings.AttachFileTooLarge)));
+                    InsertThemed(ChatMessageItem.NoticeMsg(Strings.AttachFileTooLarge)));
                 return;
             }
 
@@ -244,7 +244,7 @@ internal partial class InferpalToolWindowData
         {
             var m = ex.Message;
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.BrowseError(m))));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.BrowseError(m))));
         }
     }
 
@@ -325,7 +325,7 @@ internal partial class InferpalToolWindowData
         switch (PinnedFilesPolicy.Decide(current, path))
         {
             case PinDecision.CapReached:
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.PinLimitReached(PinnedFilesPolicy.MaxPinned)));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.PinLimitReached(PinnedFilesPolicy.MaxPinned)));
                 return;
             case PinDecision.Duplicate:
             case PinDecision.Invalid:
@@ -366,7 +366,7 @@ internal partial class InferpalToolWindowData
             // A locked or read-only config: the chip changed, the file did not — after a reload the pin would be
             // back, or gone, with nothing saying why.
             Diagnostics.Swallow("Chat.SavePinnedFiles", ex);
-            InsertThemed(ChatMessageItem.AssistantMsg(Strings.SettingsSaveFailed(ex.Message)));
+            InsertThemed(ChatMessageItem.NoticeMsg(Strings.SettingsSaveFailed(ex.Message)));
         }
     }
 

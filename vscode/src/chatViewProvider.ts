@@ -250,7 +250,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       onTaskFinished: (text) => {
         // A persistent assistant bubble, like the VS front-end — not an ephemeral status line
         // wiped by the next setBusy.
-        const item: WvTranscriptItem = { role: 'assistant', text, timestamp: ChatViewProvider.now() };
+        const item: WvTranscriptItem = { role: 'assistant', text, timestamp: ChatViewProvider.now(), notice: true };
         this.append(item);
         this.post({ type: 'assistant', text, timestamp: item.timestamp! });
       },
@@ -331,6 +331,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           rebuildFailure,
         ),
         timestamp: ChatViewProvider.now(),
+        notice: true,
       });
     }
 
@@ -442,7 +443,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // the sentence in the thread. The Core says WHEN (edge crossed, first successful check silent);
     // the adapter only renders it.
     if (edgeNotice) {
-      this.append({ role: 'assistant', text: edgeNotice, timestamp: ChatViewProvider.now() });
+      this.append({ role: 'assistant', text: edgeNotice, timestamp: ChatViewProvider.now(), notice: true });
       this.hydrate();
     }
   }
@@ -499,6 +500,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             ChatViewProvider.errorText(err),
           ),
           timestamp: ChatViewProvider.now(),
+          notice: true,
         });
         this.hydrate();
       },
@@ -1638,7 +1640,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // limit returned fluent text, indistinguishable from a task carried to its end - the fact
       // lived in OrchestratorResult and was read by nobody, on either side.
       if (!result.error && result.endNotice) {
-        this.append({ role: 'assistant', text: result.endNotice, timestamp: ChatViewProvider.now() });
+        this.append({ role: 'assistant', text: result.endNotice, timestamp: ChatViewProvider.now(), notice: true });
       }
       this.busy = false;
       this.lastTokens = result.tokensUsed;
@@ -1833,7 +1835,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (error) {
       this.append({ role: 'error', text: error, timestamp });
     } else if (text) {
-      this.append({ role: 'assistant', text, timestamp });
+      // A slash command's or a code action's result: shown as an assistant bubble, never an answer the model gave.
+      this.append({ role: 'assistant', text, timestamp, notice: true });
     }
     this.busy = false;
     this.flushPendingModelPush();

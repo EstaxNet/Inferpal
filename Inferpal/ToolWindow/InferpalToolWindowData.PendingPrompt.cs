@@ -140,7 +140,7 @@ internal partial class InferpalToolWindowData
             Diagnostics.Swallow("Session.SaveNamed", ex);
             var reason = ex.Message;
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.SessionArchiveFailed(reason))));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.SessionArchiveFailed(reason))));
         }
     }
 
@@ -179,7 +179,7 @@ internal partial class InferpalToolWindowData
             _autoSaveFailureTold = true;
             var reason = ex.Message;
             await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.AssistantMsg(Strings.SessionAutoSaveFailed(reason))));
+                InsertThemed(ChatMessageItem.NoticeMsg(Strings.SessionAutoSaveFailed(reason))));
         }
     }
 
@@ -201,7 +201,7 @@ internal partial class InferpalToolWindowData
             // A locked or read-only session file: confirmed, and nothing happened, with nothing said.
             Diagnostics.Swallow("Session.Delete", ex);
             var message = ex.Message;
-            await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.AssistantMsg(Strings.MsgError(message))));
+            await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgError(message))));
             return;
         }
         await RunOnVMContextAsync(() =>

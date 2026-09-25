@@ -434,6 +434,9 @@ public class ConventionCoverageTests
         [
             ("ShowInfoAsync(",                 0),
             ("ChatMessageItem.AssistantMsg(",  0),
+            // The same bubble marked as a notice (it stays out of a restored history) — renamed, it would
+            // otherwise leave this rule with the 38 sites the rename touched.
+            ("ChatMessageItem.NoticeMsg(",     0),
             ("ChatMessageItem.UserMsg(",       0),
             ("ChatMessageItem.StatusMsg(",     0),
             ("ChatMessageItem.ToolMsg(",       1),   // arg 0 = tool name: an identifier, not prose

@@ -12,9 +12,15 @@ export function toSavedMessages(transcript: readonly WvTranscriptItem[]): SavedM
   return transcript.map((item) =>
     item.role === 'tool'
       ? { role: 'tool', content: item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }
-      : { role: item.role, content: item.text, timestamp: item.timestamp },
+      : item.notice
+        // The Core's SessionManager.NoticeMarker: the restore leaves a notice on screen, out of the model's history.
+        ? { role: item.role, content: item.text, toolName: NOTICE_MARKER, timestamp: item.timestamp }
+        : { role: item.role, content: item.text, timestamp: item.timestamp },
   );
 }
+
+/** Mirror of SessionManager.NoticeMarker (Core): the toolName a saved notice carries. */
+export const NOTICE_MARKER = 'notice';
 
 /** The inverse: a restored session rendered back into transcript items. */
 export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptItem[] {
@@ -28,7 +34,13 @@ export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptIte
         timestamp: m.timestamp ?? undefined,
       });
     } else if (m.role === 'user' || m.role === 'assistant' || m.role === 'error') {
-      items.push({ role: m.role, text: m.content, timestamp: m.timestamp ?? undefined });
+      items.push({
+        role: m.role,
+        text: m.content,
+        timestamp: m.timestamp ?? undefined,
+        // Kept across a reload, or the next save would turn the notice back into an answer.
+        ...(m.role === 'assistant' && m.toolName === NOTICE_MARKER ? { notice: true } : {}),
+      });
     }
   }
   return items;

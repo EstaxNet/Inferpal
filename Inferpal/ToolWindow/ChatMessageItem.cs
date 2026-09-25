@@ -215,6 +215,18 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         return item;
     }
 
+    /// <summary>
+    /// An assistant bubble that is a NOTICE, not an answer the model gave: an end notice, a slash command's output, a
+    /// failed save. Same bubble on screen; marked so a restored conversation does not hand it back to the model as
+    /// another answer — live, a turn keeps one (<c>SessionManager.NoticeMarker</c>).
+    /// </summary>
+    internal static ChatMessageItem NoticeMsg(string content)
+    {
+        var item = AssistantMsg(content);
+        item.ToolName = Services.Persistence.SessionManager.NoticeMarker;
+        return item;
+    }
+
     internal static ChatMessageItem StreamingMsg(string? modelName = null) =>
         new() { Role = "assistant", Label = ConversationExporter.RoleLabel("assistant", modelName), IsStreaming = true, Timestamp = Now() };
 

@@ -108,7 +108,7 @@ internal partial class InferpalToolWindowData
                     };
                     if (edgeMessage is not null)
                     {
-                        var msg = ChatMessageItem.AssistantMsg(edgeMessage);
+                        var msg = ChatMessageItem.NoticeMsg(edgeMessage);
                         ApplyItemTheme(msg);
                         Messages.Insert(Messages.Count - 2, msg);
                         ScrollToBottom();
@@ -203,7 +203,7 @@ internal partial class InferpalToolWindowData
             {
                 Diagnostics.Swallow($"Session.Load({name})", ex);
                 await RunOnVMContextAsync(() => InsertThemed(
-                    ChatMessageItem.AssistantMsg(Strings.SessionLoadFailed(name))));
+                    ChatMessageItem.NoticeMsg(Strings.SessionLoadFailed(name))));
                 return;
             }
 
@@ -221,7 +221,7 @@ internal partial class InferpalToolWindowData
                     // A session that is listed but empty or gone: say so. The only legitimately
                     // silent case is "no saved session", where there is nothing to load.
                     if (!string.IsNullOrEmpty(name) && name != "last_session")
-                        InsertThemed(ChatMessageItem.AssistantMsg(Strings.SessionLoadFailed(name)));
+                        InsertThemed(ChatMessageItem.NoticeMsg(Strings.SessionLoadFailed(name)));
                 });
                 return;
             }
@@ -377,7 +377,7 @@ internal partial class InferpalToolWindowData
 
         await RunOnVMContextAsync(() =>
         {
-            pauseBubble = ChatMessageItem.AssistantMsg(Strings.AgentPausedForStep);
+            pauseBubble = ChatMessageItem.NoticeMsg(Strings.AgentPausedForStep);
             pauseBubble.InitResumeCallback(() => Post(() => ResumeStep()));
             ApplyItemTheme(pauseBubble);
             Messages.Insert(Messages.Count - 2, pauseBubble);
