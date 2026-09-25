@@ -77,6 +77,33 @@ internal static class TextFileEncoding
     }
 
     /// <summary>
+    /// <c>true</c> when <paramref name="bytes"/> are not text: a NUL in the first 8 000 bytes, as git judges it — unless
+    /// a UTF-16/32 byte order mark says the NULs are half of every character.
+    /// </summary>
+    /// <remarks>⚠ Read as text, a .dll reached the model as 7 676 characters of which 2 426 were NULs — noise read as
+    /// content — and a search listed lines of it as "matches".</remarks>
+    internal static bool IsBinary(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes is [0xFF, 0xFE, ..] or [0xFE, 0xFF, ..] or [0x00, 0x00, 0xFE, 0xFF, ..]) return false;
+        return bytes[..Math.Min(bytes.Length, BinarySniffBytes)].Contains((byte)0);
+    }
+
+    /// <summary><see cref="IsBinary"/> of a file's head; a file that cannot be read is judged by the read that follows.</summary>
+    internal static bool IsBinaryFile(string path)
+    {
+        try
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var head = new byte[Math.Min(fs.Length, BinarySniffBytes)];
+            fs.ReadExactly(head);
+            return IsBinary(head);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    private const int BinarySniffBytes = 8000;
+
+    /// <summary>
     /// Reads a text file in the encoding <see cref="SafeFileWriter.WritePreservingAsync"/> will write it back in — the
     /// read every edit starts from, and the one the model quotes from.
     /// </summary>

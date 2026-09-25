@@ -82,6 +82,13 @@ internal class SearchInFilesTool : ITool
                 // Decoded like the file an edit will rewrite: a line shown with "�" could not be quoted back.
                 var lines = TextFileEncoding.ReadLines(file);
                 var relPath = file[path.Length..].TrimStart('\\', '/');
+                // A binary file's "lines" are noise, NULs included: said once, as grep does, never shown.
+                if (TextFileEncoding.IsBinaryFile(file))
+                {
+                    if (lines.Any(l => regex.IsMatch(l) || literal?.IsMatch(l) == true))
+                        results.Add($"{relPath}: binary file matches");
+                    continue;
+                }
                 for (int i = 0; i < lines.Count && results.Count < MaxResults; i++)
                 {
                     if (!regex.IsMatch(lines[i]) && literal?.IsMatch(lines[i]) != true) continue;

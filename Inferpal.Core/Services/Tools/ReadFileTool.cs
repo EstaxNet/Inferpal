@@ -44,8 +44,15 @@ internal class ReadFileTool : ITool
         string content;
         if (_overlay is not null && _overlay.TryGetUnsaved(path, out var buffered))
             content = buffered;
+        // ⚠ A directory is not a missing file: "not found" sent the model looking for a path that is correct.
+        else if (Directory.Exists(path))
+            return $"'{path}' is a directory, not a file — list what it holds with list_files.";
         else if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);
+        // Named, not dumped: read as text, a .dll was thousands of characters of NULs and noise read as content.
+        else if (TextFileEncoding.IsBinaryFile(path))
+            return $"'{Path.GetFileName(path)}' is a binary file ({new FileInfo(path).Length} bytes): its content is not "
+                 + "shown as text.";
         else
             content = Cap(await TextFileEncoding.ReadTextAsync(path, ct), path);
 
