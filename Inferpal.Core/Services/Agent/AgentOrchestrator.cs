@@ -119,7 +119,13 @@ internal sealed class AgentOrchestrator
     /// <summary>Runs one model-requested call — or refuses it, unexecuted, when its arguments never
     /// parsed (<see cref="ToolCallFunction.UnparsedArguments"/>): running it with default arguments
     /// turns a truncated <c>run_tests {"filter":"Foo…</c> into the whole suite.</summary>
-    internal static Task<string> ExecuteToolSafeAsync(IToolRegistry tools, ToolCallFunction call, CancellationToken ct)
+    /// <param name="replyCut">The reply carrying the call stopped at the length limit
+    /// (<see cref="ChatTurnResult.CutAtLimit"/>). ⚠ Required, not defaulted: it decides what the refusal
+    /// tells the model. "Resend with complete JSON" is the one remedy that cannot work on a cut reply —
+    /// the same call is cut at the same point, and a long <c>write_file</c> near a full window is
+    /// refused round after round.</param>
+    internal static Task<string> ExecuteToolSafeAsync(
+        IToolRegistry tools, ToolCallFunction call, bool replyCut, CancellationToken ct)
     {
         // ⚠ The judgement lives HERE and not in the providers: `arguments` is deserialized as it
         // comes, so a payload where it is neither an object, nor absent, nor `null` travelled through
@@ -131,11 +137,15 @@ internal sealed class AgentOrchestrator
         if (call.UnparsedArguments is not { } raw)
             return ExecuteToolSafeAsync(tools, call.Name, call.Arguments, ct);
 
-        Diagnostics.Record("Agent", $"Refused a '{call.Name}' call: its arguments were not a JSON object.");
-        return Task.FromResult(
-            $"Error: the arguments of this '{call.Name}' call are not a valid JSON object, so it was NOT executed "
-            + $"(received: {SafeTruncate.Truncate(raw, 300)}). The output may have been cut off — resend the "
-            + "call with complete JSON arguments matching the tool's schema.");
+        Diagnostics.Record("Agent", $"Refused a '{call.Name}' call: its arguments were not a JSON object"
+                                    + (replyCut ? " (the reply stopped at the length limit)." : "."));
+        return Task.FromResult(replyCut
+            ? $"Error: your reply stopped at the length limit before the arguments of this '{call.Name}' call were "
+              + "complete, so it was NOT executed. Sending the same call again would be cut at the same point: split "
+              + "the work into smaller calls — for a long file, write a first part, then add the rest in later edits."
+            : $"Error: the arguments of this '{call.Name}' call are not a valid JSON object, so it was NOT executed "
+              + $"(received: {SafeTruncate.Truncate(raw, 300)}). The output may have been cut off — resend the "
+              + "call with complete JSON arguments matching the tool's schema.");
     }
 
     internal static async Task<string> ExecuteToolSafeAsync(
@@ -774,7 +784,7 @@ internal sealed class AgentOrchestrator
                 {
                     onStep(Strings.StatusCallingTool(string.Join(", ", calls.Select(c => c.Function.Name).Distinct())));
                     var results = await Task.WhenAll(
-                        calls.Select(c => ExecuteToolSafeAsync(tools, c.Function, ct)));
+                        calls.Select(c => ExecuteToolSafeAsync(tools, c.Function, turn.CutAtLimit, ct)));
                     for (int i = 0; i < calls.Count; i++)
                     {
                         var toolName  = calls[i].Function.Name;
@@ -814,7 +824,7 @@ internal sealed class AgentOrchestrator
                     }
                     else
                     {
-                        result = await ExecuteToolSafeAsync(tools, call.Function, ct);
+                        result = await ExecuteToolSafeAsync(tools, call.Function, turn.CutAtLimit, ct);
                         diff   = tools.ConsumeDiff();
                         if (cacheable)
                             toolCache[cacheKey] = result;

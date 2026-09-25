@@ -147,7 +147,9 @@ public class InferenceClientRegressionTests
         Assert.Equal(0, tools.ExecuteCount);
         var toolMsg = Assert.Single(result.UpdatedHistory, m => m.Role == "tool");
         Assert.Contains("run_tests", toolMsg.Content, StringComparison.Ordinal);
-        Assert.Contains("JSON", toolMsg.Content, StringComparison.Ordinal);
+        Assert.Contains("NOT executed", toolMsg.Content, StringComparison.Ordinal);
+        // The turn stopped at finish_reason "length": the refusal names that cause (CutToolCallTests).
+        Assert.Contains("length limit", toolMsg.Content, StringComparison.Ordinal);
     }
 
     /// <summary>

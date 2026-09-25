@@ -271,7 +271,7 @@ public class InlineToolCallParserTests
         var call = Assert.Single(Assert.IsAssignableFrom<System.Collections.Generic.List<ToolCallDto>>(calls));
 
         var result = await AgentOrchestrator.ExecuteToolSafeAsync(
-            EmptyToolRegistry.Instance, call.Function, CancellationToken.None);
+            EmptyToolRegistry.Instance, call.Function, replyCut: false, CancellationToken.None);
 
         Assert.Contains("not a valid JSON object", result);
         Assert.Contains("MyFilter", result);     // the cause is returned to the model, which can resend
@@ -291,7 +291,7 @@ public class InlineToolCallParserTests
         Assert.Null(call.Function.UnparsedArguments);
 
         var result = await AgentOrchestrator.ExecuteToolSafeAsync(
-            EmptyToolRegistry.Instance, call.Function, CancellationToken.None);
+            EmptyToolRegistry.Instance, call.Function, replyCut: false, CancellationToken.None);
 
         Assert.DoesNotContain("not a valid JSON object", result);
     }
@@ -316,7 +316,7 @@ public class InlineToolCallParserTests
         Assert.Null(call.Arguments.Str("filter"));
 
         var result = await AgentOrchestrator.ExecuteToolSafeAsync(
-            EmptyToolRegistry.Instance, call, CancellationToken.None);
+            EmptyToolRegistry.Instance, call, replyCut: false, CancellationToken.None);
 
         Assert.Contains("not a valid JSON object", result);
         Assert.Contains("MyFilter", result);
@@ -326,7 +326,7 @@ public class InlineToolCallParserTests
     /// ⚠ Reference arm: the three shapes that mean "no arguments" stay executable — the missing
     /// property (<see cref="JsonValueKind.Undefined"/>), <c>null</c>, and the empty object. That is
     /// <c>ParseArguments</c>'s contract, and its readers must not
-    /// diverger.
+    /// diverge.
     /// </summary>
     [Theory]
     [InlineData(""""{"done":true,"message":{"role":"assistant","tool_calls":[{"function":{"name":"get_git_status"}}]}}"""")]
@@ -337,7 +337,7 @@ public class InlineToolCallParserTests
         var call = JsonSerializer.Deserialize<ChatResponse>(wire)!.Message!.ToolCalls![0].Function;
 
         var result = await AgentOrchestrator.ExecuteToolSafeAsync(
-            EmptyToolRegistry.Instance, call, CancellationToken.None);
+            EmptyToolRegistry.Instance, call, replyCut: false, CancellationToken.None);
 
         Assert.DoesNotContain("not a valid JSON object", result);
     }
