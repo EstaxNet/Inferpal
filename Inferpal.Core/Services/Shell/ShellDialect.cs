@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace Inferpal.Services.Shell;
 
@@ -95,11 +96,15 @@ internal static class ShellLauncher
             RedirectStandardError  = true,
             UseShellExecute        = false,
             CreateNoWindow         = true,
+            // What the child writes is UTF-8 end to end (see Utf8Console): decoded as the host's console code page
+            // otherwise, which a process without a console does not even have.
+            StandardOutputEncoding = Utf8,
+            StandardErrorEncoding  = Utf8,
         };
 
         if (dialect == ShellDialect.PowerShell)
         {
-            psi.Arguments = $"-NoProfile -NonInteractive -EncodedCommand {ShellSession.Encode(script)}";
+            psi.Arguments = $"-NoProfile -NonInteractive -EncodedCommand {ShellSession.Encode(Utf8Console + script)}";
         }
         else
         {
@@ -108,6 +113,23 @@ internal static class ShellLauncher
         }
         return psi;
     }
+
+    private static readonly Encoding Utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
+    /// <summary>
+    /// Puts the child's console in UTF-8 before the command runs.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Windows PowerShell reads and writes a console in its OEM code page (850 on a French machine), while git
+    /// (commit messages, the lines of a diff) and dotnet's localized messages write UTF-8: "entières" came back
+    /// "enti├¿res", "exécution" "ex├®cution" — and a mangled line from <c>git diff</c> is what the model then quotes
+    /// into an edit. With the console in UTF-8, PowerShell decodes a native tool's output as UTF-8, cmd's own output
+    /// follows the console, and PowerShell writes UTF-8 to our pipe. <c>$OutputEncoding</c> is what PowerShell pipes
+    /// INTO a native tool. Best-effort: a host without a console keeps its defaults.
+    /// </remarks>
+    private const string Utf8Console =
+        "try { $__u = New-Object System.Text.UTF8Encoding $false; [Console]::OutputEncoding = $__u; "
+      + "[Console]::InputEncoding = $__u; $OutputEncoding = $__u } catch { }\n";
 
     private static string? FindOnPath(string name)
     {

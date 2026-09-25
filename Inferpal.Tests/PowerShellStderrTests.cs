@@ -116,6 +116,33 @@ public class PowerShellStderrTests
         Assert.Contains("kept", state);
     }
 
+    /// <summary>
+    /// A native tool that writes UTF-8 — git (commit messages, <c>git diff</c> of an accented line), dotnet's localized
+    /// messages — came back decoded in the console's OEM code page: "entières" read "enti├¿res", "exécution"
+    /// "ex├®cution" (measured on this machine). The model then quotes the mangled line into an edit.
+    /// </summary>
+    [Fact]
+    public async Task ANativeToolWritingUtf8_ReadsAsItWrote_AndPowerShellsOwnTextStillDoes()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var dir  = Directory.CreateTempSubdirectory("inferpal-utf8-").FullName;
+        var file = Path.Combine(dir, "utf8.txt");
+        File.WriteAllBytes(file, [.. "café crème"u8, (byte)'\r', (byte)'\n']);
+        var shell = new ShellSession(() => dir, new InferpalConfig());
+        try
+        {
+            // cmd's `type` writes the file's bytes as they are: UTF-8 straight through, then through a pipeline.
+            Assert.Contains("café crème", await shell.RunAsync($"cmd /c type \"{file}\"", null, CancellationToken.None));
+            Assert.Contains("café crème",
+                await shell.RunAsync($"cmd /c type \"{file}\" | Select-Object -First 1", null, CancellationToken.None));
+
+            // Reference arms: what reads right today must still.
+            Assert.Contains("café", await shell.RunAsync("Write-Output 'café'", null, CancellationToken.None));
+            Assert.Contains("café", await shell.RunAsync("cmd /c echo café", null, CancellationToken.None));
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ } }
+    }
+
     [Fact]
     public async Task ASucceedingCommand_HasNoStderrSection_AndAFailingOneReadsPlainly()
     {
