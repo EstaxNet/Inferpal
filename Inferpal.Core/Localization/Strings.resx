@@ -197,6 +197,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="StatusCompacting" xml:space="preserve"><value>Compacting context…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Context compacted: {0} message(s) summarized — keeping last {1} turn(s).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Context compaction timed out — fell back to hard truncation.</value></data>
+  <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Context compaction failed — fell back to hard truncation. Cause: {0}</value></data>
+  <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ The model returned an empty summary — fell back to hard truncation.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ The summary stopped at the model's length limit: part of the earlier conversation is missing from it.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ The earlier conversation was too long to summarize in one request: its first {0} of {1} messages are missing from the summary.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>The following is the beginning of our conversation. Summarize it densely, preserving all key decisions, facts, modified files, and context needed for future messages. Be concise but complete — this summary will replace the original messages:

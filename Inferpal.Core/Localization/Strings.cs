@@ -351,6 +351,9 @@ internal static class Strings
         string.Format(Get(nameof(MsgKvCacheAnchorNote)), count);
 
     public static string MsgContextCompactionFallback => Get(nameof(MsgContextCompactionFallback));
+    public static string MsgContextCompactionFailed(string cause) =>
+        string.Format(Get(nameof(MsgContextCompactionFailed)), cause);
+    public static string MsgContextCompactionEmpty => Get(nameof(MsgContextCompactionEmpty));
     public static string MsgContextSummaryCut => Get(nameof(MsgContextSummaryCut));
     public static string MsgContextSummaryPartial(int omitted, int total) =>
         string.Format(Get(nameof(MsgContextSummaryPartial)), omitted, total);

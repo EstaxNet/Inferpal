@@ -98,13 +98,17 @@ internal static class ContextManager
 
         onStep?.Invoke(Strings.StatusCompacting);
 
-        var (summary, cut, omitted) = await SummarizeAsync(history, plan, config, client, ct).ConfigureAwait(false);
+        var (summary, cut, omitted, failure) =
+            await SummarizeAsync(history, plan, config, client, ct).ConfigureAwait(false);
 
-        // ⚠ The fuse blew: we truncate, and we SAY so — that is a degraded result, not the one that
-        // was asked for. The two look alike on the history and not at all to the user.
+        // ⚠ No summary: we truncate, and we SAY so — that is a degraded result, not the one that
+        // was asked for. The two look alike on the history and not at all to the user. And the
+        // sentence names the cause: "timed out" sends the user to compactionTimeoutSeconds, which
+        // does nothing for a server that refused the request (a misspelled utilityModel fails every
+        // compaction the same way).
         if (string.IsNullOrEmpty(summary))
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
-                                       Strings.MsgContextCompactionFallback, window);
+                                       failure ?? Strings.MsgContextCompactionEmpty, window);
 
         var notice = Strings.MsgContextCompacted(plan.Count, plan.KeepTurns)
                    + (plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty);
@@ -151,9 +155,10 @@ internal static class ContextManager
         return loaded is > 0 && loaded < configured ? loaded.Value : configured;
     }
 
-    /// <summary>The summarising call, with its own deadline. <c>null</c> on any failure; <c>Cut</c> when the reply
-    /// stopped at the model's length limit; <c>Omitted</c> the oldest messages that did not fit in the request.</summary>
-    private static async Task<(string? Text, bool Cut, int Omitted)> SummarizeAsync(
+    /// <summary>The summarising call, with its own deadline. <c>Text</c> null on any failure, with <c>Failure</c> the
+    /// sentence that names it (null when the model merely answered nothing); <c>Cut</c> when the reply stopped at the
+    /// model's length limit; <c>Omitted</c> the oldest messages that did not fit in the request.</summary>
+    private static async Task<(string? Text, bool Cut, int Omitted, string? Failure)> SummarizeAsync(
         IReadOnlyList<ChatMessageDto> history, CompactionPlan plan,
         InferpalConfig config, IInferenceProvider client, CancellationToken ct)
     {
@@ -174,15 +179,22 @@ internal static class ContextManager
             var turn = await client.SendChatAsync(
                 model, request.Messages, EmptyToolRegistry.Instance, onToken: null, cts.Token).ConfigureAwait(false);
 
-            return (MarkdownParser.StripThinkTags(turn.TextContent).Trim(), turn.CutAtLimit, request.Omitted);
+            return (MarkdownParser.StripThinkTags(turn.TextContent).Trim(), turn.CutAtLimit, request.Omitted, null);
         }
         // A cancellation by the USER propagates; the fuse's own is a fallback, not an error.
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { return (null, false, 0); }
+        catch (OperationCanceledException) { return (null, false, 0, Strings.MsgContextCompactionFallback); }
+        catch (AgentHttpException ex)
+        {
+            // The client's message is already the user-facing cause (refusal, unreachable server, open breaker).
+            Diagnostics.Swallow("ContextManager.Summarize", ex);
+            return (null, false, 0, ex.IsTimeout ? Strings.MsgContextCompactionFallback
+                                                 : Strings.MsgContextCompactionFailed(ex.Message));
+        }
         catch (Exception ex)
         {
             Diagnostics.Swallow("ContextManager.Summarize", ex);
-            return (null, false, 0);
+            return (null, false, 0, Strings.MsgContextCompactionFailed(Diagnostics.RootMessage(ex)));
         }
     }
 }

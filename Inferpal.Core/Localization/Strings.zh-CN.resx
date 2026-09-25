@@ -196,6 +196,8 @@
   <data name="StatusCompacting" xml:space="preserve"><value>正在压缩上下文…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 上下文已压缩：{0} 条消息已摘要 — 保留最后 {1} 轮。</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 上下文压缩超时 — 已回退到硬截断。</value></data>
+  <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ 上下文压缩失败 — 已回退到强制截断。原因：{0}</value></data>
+  <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ 模型返回了空摘要 — 已回退到强制截断。</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 摘要在模型的长度限制处中断：其中缺少部分先前的对话。</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ 先前的对话太长，无法在一次请求中摘要：摘要中缺少其 {1} 条消息中的前 {0} 条。</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>以下是我们对话的开头。请密集地总结它，保留所有关键决定、事实、修改的文件以及未来消息所需的上下文。简洁但完整 — 此摘要将替换原始消息：
