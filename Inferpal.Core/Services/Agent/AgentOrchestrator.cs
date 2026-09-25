@@ -356,6 +356,7 @@ internal sealed class AgentOrchestrator
         var summarizeMessages = HistoryCompaction.BuildSummarizeRequest(messages, range);
 
         string summary;
+        bool   cut;
         try
         {
             var timeoutSec = Math.Max(10, _config.CompactionTimeoutSeconds);
@@ -369,6 +370,7 @@ internal sealed class AgentOrchestrator
                 await ModelRouter.ResolveUtilityAsync(_config, _client, cts.Token), summarizeMessages,
                 EmptyToolRegistry.Instance, null, cts.Token, TaskComplexity.Quick);
             summary = MarkdownParser.StripThinkTags(turn.TextContent);
+            cut     = turn.CutAtLimit;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } // user cancelled
         catch (OperationCanceledException) { return RunSummaryOutcome.Failed; }         // summary timed out
@@ -379,6 +381,9 @@ internal sealed class AgentOrchestrator
         }
 
         if (string.IsNullOrWhiteSpace(summary)) return RunSummaryOutcome.Failed;
+        // Kept, but said: read as whole, a summary cut at the length limit makes the model redo — or deny — the work
+        // described past the cut.
+        if (cut) summary += HistoryCompaction.CutSummaryMarker;
 
         // Replace the summarised range with a single [summary] pair.
         messages.RemoveRange(start, rangeLen);

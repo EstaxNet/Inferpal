@@ -32,20 +32,20 @@ internal enum ContextOutcome
 /// — what the context gauges must show too, or they announce room a smaller loaded window does not have.
 /// </param>
 internal sealed record ContextDecision(
-    ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0)
+    ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0, bool SummaryCut = false)
 {
     /// <summary>
-    /// The conversation lost turns with nothing put in their place — a degraded result, not the one
-    /// that was asked for.
+    /// The conversation lost turns with nothing — or only part of a summary — put in their place: a degraded
+    /// result, not the one that was asked for.
     /// </summary>
     /// <remarks>
     /// ⚠ The rule lives here because BOTH front-ends read it: a successful compaction is a
-    /// collapsible tool bubble, the two fallbacks are plain warnings — the conversation lost turns,
+    /// collapsible tool bubble, the fallbacks are plain warnings — the conversation lost turns,
     /// and that is read in plain text. Rendered the same way, the degraded result is the one that
-    /// looks routine.
+    /// looks routine. A summary cut at the length limit is one of them (<see cref="SummaryCut"/>).
     /// </remarks>
     public bool IsDegraded =>
-        Outcome is ContextOutcome.Truncated or ContextOutcome.CompactionFellBack;
+        Outcome is ContextOutcome.Truncated or ContextOutcome.CompactionFellBack || SummaryCut;
 }
 
 /// <summary>
@@ -96,7 +96,7 @@ internal static class ContextManager
 
         onStep?.Invoke(Strings.StatusCompacting);
 
-        var summary = await SummarizeAsync(history, plan, config, client, ct).ConfigureAwait(false);
+        var (summary, cut) = await SummarizeAsync(history, plan, config, client, ct).ConfigureAwait(false);
 
         // ⚠ The fuse blew: we truncate, and we SAY so — that is a degraded result, not the one that
         // was asked for. The two look alike on the history and not at all to the user.
@@ -105,6 +105,13 @@ internal static class ContextManager
                                        Strings.MsgContextCompactionFallback, window);
 
         var note = plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty;
+        // ⚠ A summary that stopped at the length limit is KEPT — dropping it would lose the turns entirely, and the
+        // window is fullest exactly when compaction runs — but it is said to both readers: read as whole, the model
+        // denies what was said past the cut, and the user reads "compacted".
+        if (cut)
+            return new ContextDecision(ContextOutcome.Compacted, plan, summary + HistoryCompaction.CutSummaryMarker,
+                                       Strings.MsgContextCompacted(plan.Count, plan.KeepTurns) + note
+                                       + "\n\n" + Strings.MsgContextSummaryCut, window, SummaryCut: true);
         return new ContextDecision(ContextOutcome.Compacted, plan, summary,
                                    Strings.MsgContextCompacted(plan.Count, plan.KeepTurns) + note, window);
     }
@@ -134,8 +141,9 @@ internal static class ContextManager
         return loaded is > 0 && loaded < configured ? loaded.Value : configured;
     }
 
-    /// <summary>The summarising call, with its own deadline. <c>null</c> on any failure.</summary>
-    private static async Task<string?> SummarizeAsync(
+    /// <summary>The summarising call, with its own deadline. <c>null</c> on any failure; <c>Cut</c> when the reply
+    /// stopped at the model's length limit.</summary>
+    private static async Task<(string? Text, bool Cut)> SummarizeAsync(
         IReadOnlyList<ChatMessageDto> history, CompactionPlan plan,
         InferpalConfig config, IInferenceProvider client, CancellationToken ct)
     {
@@ -153,15 +161,15 @@ internal static class ContextManager
                 await ModelRouter.ResolveUtilityAsync(config, client, cts.Token).ConfigureAwait(false),
                 request, EmptyToolRegistry.Instance, onToken: null, cts.Token).ConfigureAwait(false);
 
-            return MarkdownParser.StripThinkTags(turn.TextContent).Trim();
+            return (MarkdownParser.StripThinkTags(turn.TextContent).Trim(), turn.CutAtLimit);
         }
         // A cancellation by the USER propagates; the fuse's own is a fallback, not an error.
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { return null; }
+        catch (OperationCanceledException) { return (null, false); }
         catch (Exception ex)
         {
             Diagnostics.Swallow("ContextManager.Summarize", ex);
-            return null;
+            return (null, false);
         }
     }
 }

@@ -193,6 +193,7 @@
   <data name="StatusCompacting" xml:space="preserve"><value>コンテキストを圧縮中…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 コンテキストを圧縮しました：{0} 件のメッセージを要約 — 最後の {1} ターンを保持。</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ コンテキスト圧縮がタイムアウトしました — ハードトランケーションにフォールバック。</value></data>
+  <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 要約がモデルの長さ制限で止まりました。以前の会話の一部が含まれていません。</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>以下は私たちの会話の冒頭です。主要な決定事項、事実、修正したファイル、今後のメッセージに必要なコンテキストをすべて保持しながら、密に要約してください。簡潔でありながら完全に — この要約が元のメッセージを置き換えます：
 
 {0}</value></data>

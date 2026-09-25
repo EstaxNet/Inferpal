@@ -193,6 +193,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="StatusCompacting" xml:space="preserve"><value>Kontext wird komprimiert…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Kontext komprimiert: {0} Nachricht(en) zusammengefasst – letzte {1} Runde(n) behalten.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kontextkomprimierung abgelaufen – auf harte Kürzung zurückgefallen.</value></data>
+  <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Die Zusammenfassung endete an der Längengrenze des Modells: Ein Teil des früheren Gesprächs fehlt darin.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Folgendes ist der Anfang unseres Gesprächs. Fasse es dicht zusammen und bewahre alle wichtigen Entscheidungen, Fakten, geänderten Dateien und den Kontext für zukünftige Nachrichten. Sei prägnant aber vollständig — diese Zusammenfassung ersetzt die ursprünglichen Nachrichten:
 
 {0}</value></data>

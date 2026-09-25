@@ -294,7 +294,8 @@ internal sealed partial class HostServer
                         BackendStatus: backend,
                         WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
                         InProcHalf: InProcAliveSignal.DescribeForBundle(),
-                        McpServers: s.Mcp.DescribeForBundle()),
+                        McpServers: s.Mcp.DescribeForBundle(),
+                        WindowInUse: s.ContextWindowInUse),
                         InProcAliveSignal.IsLoadedOrNull());
                     return result.CopyToClipboard is { } bundle
                         ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("copyToClipboard", bundle)])

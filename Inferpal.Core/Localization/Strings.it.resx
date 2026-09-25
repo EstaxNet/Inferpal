@@ -193,6 +193,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="StatusCompacting" xml:space="preserve"><value>Compattazione del contesto…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contesto compattato: {0} messaggio/i riassunto/i — mantenuti gli ultimi {1} turno/i.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Timeout compattazione contesto — ripristino al troncamento forzato.</value></data>
+  <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Il riepilogo si è interrotto al limite di lunghezza del modello: manca una parte della conversazione precedente.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Di seguito è l'inizio della nostra conversazione. Riassumilo in modo denso, preservando tutte le decisioni chiave, i fatti, i file modificati e il contesto necessario per i messaggi futuri. Sii conciso ma completo — questo riepilogo sostituirà i messaggi originali:
 
 {0}</value></data>

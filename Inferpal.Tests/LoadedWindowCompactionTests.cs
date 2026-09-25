@@ -213,3 +213,23 @@ public class XRayWindowSourceTests
         return dir!.FullName;
     }
 }
+
+public partial class HostServerTests
+{
+    /// <summary>The support bundle names the window the server loaded, measured by the last turn.</summary>
+    [Fact]
+    public async Task DiagnosticsExport_NamesTheLoadedWindow_AfterATurn()
+    {
+        using var h = CreateHarness(cfg => cfg.ContextWindowSize = 100_000);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.LoadedContextWindow = 4_096;
+        h.Fake.ChatResult = new ChatTurnResult("ok", null, 0, 0);
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var export = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/diagnostics export" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Contains("4096 loaded by the server", export.Markdown);
+    }
+}

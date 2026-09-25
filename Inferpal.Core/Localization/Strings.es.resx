@@ -196,6 +196,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="StatusCompacting" xml:space="preserve"><value>Compactando contexto…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contexto compactado: {0} mensaje(s) resumido(s) — conservando los últimos {1} turno(s).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ La compactación de contexto superó el tiempo límite — se usa el truncado forzado.</value></data>
+  <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ El resumen se detuvo en el límite de longitud del modelo: falta una parte de la conversación anterior.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>El siguiente es el comienzo de nuestra conversación. Resúmelo de forma densa, conservando todas las decisiones clave, hechos, archivos modificados y contexto necesario para mensajes futuros. Sé conciso pero completo — este resumen reemplazará los mensajes originales:
 
 {0}</value></data>

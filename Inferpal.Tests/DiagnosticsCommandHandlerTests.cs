@@ -167,6 +167,34 @@ public class DiagnosticsCommandHandlerTests : IDisposable
         Assert.Contains(Strings.DiagnosticsEmpty, msg);
     }
 
+    /// <summary>
+    /// The bundle names the window the server REALLY loaded when it is the smaller one. Configured at 100 000 under
+    /// LM Studio loading 4 096 (issue #8), a bundle saying "Context window: 100000 tokens" pointed whoever read the
+    /// report away from the one number that explained it.
+    /// </summary>
+    [Fact]
+    public void Export_NamesTheLoadedWindow_WhenItIsSmallerThanTheConfiguredOne()
+    {
+        var ctx = Ctx(new Inferpal.Config.InferpalConfig { ContextWindowSize = 100_000 }) with { WindowInUse = 4_096 };
+
+        var bundle = DiagnosticsCommandHandler.Handle(Cmd("export"), ctx).CopyToClipboard!;
+
+        Assert.Contains("100000 tokens configured", bundle);
+        Assert.Contains("4096 loaded by the server", bundle);
+    }
+
+    [Theory]
+    [InlineData(0)]         // no turn has measured it yet
+    [InlineData(8_192)]     // the configured one: nothing more to say
+    public void Export_SaysNothingMore_WhenTheLoadedWindowIsUnknownOrTheSame(int inUse)
+    {
+        // Reference arm: an ordinary report keeps its ordinary line.
+        var bundle = DiagnosticsCommandHandler.Handle(Cmd("export"), Ctx() with { WindowInUse = inUse }).CopyToClipboard!;
+
+        Assert.Contains("8192 tokens configured", bundle);
+        Assert.DoesNotContain("loaded by the server", bundle);
+    }
+
     [Fact]
     public void Export_ReportsTheInProcHalf_WhenTheCallerKnowsIt()
     {

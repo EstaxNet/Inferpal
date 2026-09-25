@@ -64,7 +64,7 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
             await Task.Delay(50);
         }
         var suffix = state is null ? string.Empty : $" (state: {state()})";
-        Assert.Fail($"timeout en attendant : {what}{suffix}");
+        Assert.Fail($"timed out waiting for: {what}{suffix}");
     }
 
     [Fact]

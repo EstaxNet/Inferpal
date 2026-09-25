@@ -193,6 +193,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="StatusCompacting" xml:space="preserve"><value>Kompaktowanie kontekstu…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Kontekst skompaktowany: podsumowano {0} wiadomość(ci) — zachowano ostatnie {1} tur(y).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kompaktacja kontekstu przekroczyła limit czasu — powrót do twardego obcinania.</value></data>
+  <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Podsumowanie zatrzymało się na limicie długości modelu: brakuje w nim części wcześniejszej rozmowy.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Poniżej jest początek naszej rozmowy. Streszcz go gęsto, zachowując wszystkie kluczowe decyzje, fakty, zmodyfikowane pliki i kontekst potrzebny do przyszłych wiadomości. Bądź zwięzły, ale kompletny — to podsumowanie zastąpi oryginalne wiadomości:
 
 {0}</value></data>

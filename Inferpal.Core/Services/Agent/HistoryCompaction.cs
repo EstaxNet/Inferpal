@@ -144,6 +144,16 @@ internal static class HistoryCompaction
       + "there, say you no longer have it rather than treating it as never said.";
 
     /// <summary>
+    /// Appended to a summary that stopped at the model's length limit: the summary is kept — better than dropping the
+    /// turns — but read as whole it makes the model deny what was said past the cut. Not localized, like
+    /// <see cref="TruncationMarker"/>: a structural marker in the transcript.
+    /// </summary>
+    public const string CutSummaryMarker =
+        "\n\n[Context Note] This summary stopped at the model's length limit: part of the earlier conversation is "
+      + "missing from it. If the user refers to something you cannot find here, say you no longer have it rather "
+      + "than treating it as never said.";
+
+    /// <summary>
     /// Drops the planned range, leaving the model a marker in its place (hard truncation / safety
     /// fallback).
     /// </summary>

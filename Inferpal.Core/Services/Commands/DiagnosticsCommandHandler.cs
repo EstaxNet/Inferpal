@@ -28,7 +28,7 @@ internal readonly record struct DiagnosticsCommandResult(string Message, string?
 /// (this handler is pure by doctrine and never reads a service). Null when MCP is off.</param>
 internal sealed record DiagnosticsExportContext(
     InferpalConfig Config, string FrontEnd, string? BackendStatus = null, string? WorkspaceRoot = null,
-    string? InProcHalf = null, IReadOnlyList<string>? McpServers = null);
+    string? InProcHalf = null, IReadOnlyList<string>? McpServers = null, int WindowInUse = 0);
 
 /// <summary>
 /// Execution logic for <c>/diagnostics</c> — surfaces the in-memory <see cref="Diagnostics"/> ring so
@@ -160,8 +160,12 @@ internal static class DiagnosticsCommandHandler
           .Append(Role("agent", c.AgentModel)).Append(Role("utility", c.UtilityModel))
           .Append(Role("FIM", c.InlineCompletionModel)).Append(Role("embedding", c.RagEmbeddingModel))
           .Append('\n');
-        sb.Append("- **Context window**: ").Append(c.ContextWindowSize)
-          .Append(" tokens (keep ").Append(c.ContextWindowKeepTurns).Append(" turns)\n");
+        // ⚠ The loaded window is the one requests must fit: configured at 100 000 under LM Studio loading 4 096, a line
+        // naming only the setting pointed whoever read the report away from the number that explained it.
+        sb.Append("- **Context window**: ").Append(c.ContextWindowSize).Append(" tokens configured");
+        if (ctx.WindowInUse > 0 && ctx.WindowInUse < c.ContextWindowSize)
+            sb.Append(", **").Append(ctx.WindowInUse).Append(" loaded by the server** (the window requests must fit)");
+        sb.Append(" (keep ").Append(c.ContextWindowKeepTurns).Append(" turns)\n");
 
         sb.Append("- **Toggles**: ")
           .Append(Toggle("RAG", c.RagEnabled)).Append(Toggle("RAG auto-context", c.RagAutoContextEnabled))

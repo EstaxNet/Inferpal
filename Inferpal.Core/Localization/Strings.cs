@@ -351,6 +351,7 @@ internal static class Strings
         string.Format(Get(nameof(MsgKvCacheAnchorNote)), count);
 
     public static string MsgContextCompactionFallback => Get(nameof(MsgContextCompactionFallback));
+    public static string MsgContextSummaryCut => Get(nameof(MsgContextSummaryCut));
     public static string MsgOodaRecap(int turn, string summary) =>
         string.Format(Get(nameof(MsgOodaRecap)), turn) + "\n\n" + summary;
 

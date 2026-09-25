@@ -193,6 +193,7 @@
   <data name="StatusCompacting" xml:space="preserve"><value>Компактизация контекста…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Контекст сжат: суммировано {0} сообщений — сохранены последние {1} ход(а/ов).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Компактизация контекста истекла — выполнен откат к жёсткому усечению.</value></data>
+  <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Сводка остановилась на ограничении длины модели: часть предыдущего разговора в ней отсутствует.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Ниже представлено начало нашего разговора. Сожми его плотно, сохранив все ключевые решения, факты, изменённые файлы и контекст, необходимый для будущих сообщений. Будь краток, но полон — это резюме заменит исходные сообщения:
 
 {0}</value></data>
