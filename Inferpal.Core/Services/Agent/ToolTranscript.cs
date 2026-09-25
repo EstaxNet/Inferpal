@@ -12,12 +12,11 @@ namespace Inferpal.Services.Agent;
 /// ⚠ A history carrying a tool result <b>without the call that produced it</b> is orphaned in the
 /// sense of <see cref="ToolBlockBoundary"/>: Ollama tolerates it, every OpenAI-compatible server
 /// rejects it — hence the net in <c>OpenAiCompatibleClient.MapMessages</c>, which <b>drops</b> the
-/// result to keep the request valid. Two paths built exactly that shape, and therefore lost every
-/// one of their tool results, silently, on one of the two backends: restoring a session or a branch
-/// (a saved transcript has no <c>tool_calls</c> — see
-/// <see cref="Persistence.SessionManager.BuildRestoredHistory"/>) and the head of the final
-/// synthesis (which strips the <c>tool_calls</c> to talk to an empty registry, and left the answers
-/// behind it).
+/// result to keep the request valid. The head of the final synthesis builds exactly that shape (it
+/// strips the <c>tool_calls</c> to talk to an empty registry, and leaves the answers behind it).
+/// A restored session no longer carries tool results at all: the live history does not keep them
+/// past their run, and the restore rebuilds the live history
+/// (<see cref="Persistence.SessionManager.BuildRestoredHistory"/>).
 /// </para>
 /// <para>
 /// The content is not lost for that: it becomes a labelled <c>user</c> turn, which both backends
@@ -33,9 +32,8 @@ internal static class ToolTranscript
     /// or empty — a restored transcript does not always record which tool answered.
     /// </summary>
     /// <remarks>
-    /// ⚠ Capped exactly as the live loop caps a result entering the context: the chat keeps — and a
-    /// session saves — the WHOLE output, so a reloaded or branched conversation otherwise came back
-    /// many times larger than anything the model saw, and its first question overflowed the window.
+    /// ⚠ Capped exactly as the live loop caps a result entering the context: flattened, a result must not come back
+    /// larger than the model saw it.
     /// </remarks>
     internal static string Render(string? toolName, string? content)
     {

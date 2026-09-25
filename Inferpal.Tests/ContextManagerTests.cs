@@ -210,10 +210,12 @@ public class ContextManagerTests
     /// hence a model call for nothing and turns thrown away.
     ///
     /// The rule is carried by the <b>setter</b> rather than by three calls: one can no longer
-    /// replace the history and forget the counter.
+    /// replace the history and forget the counter. ⚠ And the counter becomes the NEW conversation's own
+    /// measure, not zero: zero is a first turn's state, so the first question after a reload went out
+    /// uncompacted however large the reload.
     /// </summary>
     [Fact]
-    public void ReplacingTheHistory_ResetsThePromptTokenCount()
+    public void ReplacingTheHistory_MeasuresTheNewConversation()
     {
         var session = typeof(HostSession);
         var history = session.GetProperty("History");
@@ -225,6 +227,7 @@ public class ContextManagerTests
         // Witness: the setter exists and is not auto-implemented (an auto-property cannot carry the
         // rule). The backing field named _history is the direct proof.
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Host", "HostSession.cs"));
-        Assert.Contains("set { _history = value; LastPromptTokens = 0; }", host, StringComparison.Ordinal);
+        Assert.Contains("set { _history = value; LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(value); }",
+                        host, StringComparison.Ordinal);
     }
 }

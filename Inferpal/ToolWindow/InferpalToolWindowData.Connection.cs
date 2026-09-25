@@ -255,6 +255,11 @@ internal partial class InferpalToolWindowData
         _conversationTurnCount    = 0;
         _currentSessionName       = sessionName == "last_session" ? string.Empty : sessionName;
         ResetTurnAccounting();
+        // ⚠ Then measured — its OWN measure, never the one of the conversation left: zero is a first turn's state, and
+        // the first question after a reload (Visual Studio reloads the last session every time it opens) went out
+        // uncompacted however large the reload — every turn and tool output the screen kept.
+        _lastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(_history);
+        UpdateContextBudget();
 
         foreach (var m in messages)
         {

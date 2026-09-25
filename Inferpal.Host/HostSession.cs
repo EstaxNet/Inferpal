@@ -62,10 +62,15 @@ internal sealed class HostSession : IDisposable
     /// The ordinary turn reassigns both in the right order (history then counter), so it is not
     /// affected.
     /// </summary>
+    /// <remarks>
+    /// ⚠ The NEW conversation's own measure, not zero: zero is a first turn's state, so the pre-send check let the
+    /// first question after a reload go out uncompacted — and a reload is large (every turn and tool output the screen
+    /// kept, 1.9× to 8.9× the history the model had live on real sessions). Estimated like the ordinary turn does.
+    /// </remarks>
     public List<ChatMessageDto> History
     {
         get => _history;
-        set { _history = value; LastPromptTokens = 0; }
+        set { _history = value; LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(value); }
     }
 
     private List<ChatMessageDto> _history = [];

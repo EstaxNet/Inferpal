@@ -75,20 +75,18 @@ internal static class SessionManager
             .ToList();
 
     /// <summary>
-    /// Rebuilds the API history for a restored session: fresh system prompt, then every
-    /// conversational message. Tool results are included so the model has the full context
-    /// required to continue reasoning after the restore; UI-only roles are dropped.
+    /// Rebuilds the API history for a restored session: fresh system prompt, then the questions and the answers —
+    /// the history the model had LIVE. Tool bubbles and UI-only roles stay on screen and out of it.
     /// </summary>
     /// <remarks>
-    /// ⚠ They are included <b>as plain text</b>, not as <c>tool</c> messages. A saved transcript
-    /// carries no <c>tool_calls</c> — <see cref="SavedMessage"/> only has the role, the text and the
-    /// tool name — so restoring them with the <c>tool</c> role built a history orphaned from end to
-    /// end: Ollama tolerated it, and every OpenAI-compatible backend had its tool results
-    /// <b>dropped</b> one by one by the net in <c>MapMessages</c>. An LM Studio user therefore
-    /// reloaded a conversation whose model could no longer see anything the tools had found, while
-    /// this very sentence claimed the opposite. They are folded into the <c>user</c> turn that
-    /// produced them and never open a new one — see <see cref="ToolTranscript.Append"/> for what one
-    /// extra turn would count wrong.
+    /// ⚠ Live, both front-ends keep a durable history of the question and the one answer shown: a run's tool results
+    /// do not outlive the run (they bloat every following prompt, and a model shown its previous transcript replays
+    /// its previous answer). The restore folded every saved tool output back in, so a reloaded conversation came back
+    /// larger than anything the model had — measured on real sessions, 1.9× to 8.9× the live history, 31 359
+    /// characters against 16 269 for the one Visual Studio reloads each time it opens — and compaction, which keeps
+    /// the last turns WHOLE, kept their tool outputs too. The restored history is now the live one.
+    /// ⚠ No tool result means no orphaned one either (<see cref="Agent.ToolBlockBoundary"/>): a saved transcript has no
+    /// <c>tool_calls</c>, and a <c>tool</c> message without them is refused by every OpenAI-compatible server.
     /// </remarks>
     public static List<ChatMessageDto> BuildRestoredHistory(
         string systemPrompt, IEnumerable<SavedMessage> messages)
@@ -106,8 +104,7 @@ internal static class SessionManager
                 if (answer.Length > 0)
                     history.Add(new ChatMessageDto("assistant", answer));
             }
-            else if (m.Role == "tool")
-                ToolTranscript.Append(history, m.ToolName, m.Content);
+            // Tool bubbles (and every UI-only role) are not part of the live history: see the remarks.
         }
         return history;
     }

@@ -5,18 +5,18 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// ⚠ A tool result enters the live context cut to <see cref="AgentOrchestrator.MaxToolResultCharsInContext"/>,
-/// while the chat keeps — and saves — the WHOLE output. Reloading a session (or branching one) rebuilt the
-/// history from what was saved, so a conversation in which the agent read a large file or ran a verbose
-/// command came back many times larger than anything the model had seen: the first question after the
-/// reload overflowed the context window, and nothing trims a restored turn before it is sent.
+/// ⚠ A reloaded (or branched) conversation is the history the model had LIVE — the question and the answer of each
+/// turn. The chat keeps, and a session saves, every tool output WHOLE; the restore folded them back in (capped), so a
+/// conversation came back larger than anything the model had: live, a run's tool results do not outlive the run.
+/// Measured on real sessions, 1.9× to 8.9× the live history — 31 359 characters against 16 269 for the session
+/// Visual Studio reloads each time it opens, a whole default window before the first question.
 /// </summary>
 public class RestoredToolOutputCapTests
 {
     private static readonly string Huge = new('x', AgentOrchestrator.MaxToolResultCharsInContext * 6);
 
     [Fact]
-    public void ARestoredToolResult_IsNoLargerThanTheModelSawItLive()
+    public void ARestoredConversation_CarriesNoToolOutput()
     {
         var history = SessionManager.BuildRestoredHistory("system",
         [
@@ -25,23 +25,23 @@ public class RestoredToolOutputCapTests
             new SavedMessage("assistant", "done"),
         ]);
 
-        var turn = Assert.Single(history, m => m.Content!.Contains("[Tool result — read_file]"));
-        Assert.True(turn.Content!.Length <= "read the big file".Length + AgentOrchestrator.MaxToolResultCharsInContext + 400,
-            $"restored turn is {turn.Content.Length} characters");
-        Assert.Contains("truncated", turn.Content);                 // the cut is said, as it was live
+        Assert.DoesNotContain(history, m => m.Content!.Contains("[Tool result"));
+        Assert.True(history.Sum(m => m.Content!.Length) < 200,
+                    $"restored history is {history.Sum(m => m.Content!.Length)} characters");
     }
 
     [Fact]
-    public void ASmallToolResult_IsRestoredWhole()
+    public void TheQuestionAndTheAnswer_AreRestoredWhole()
     {
-        // Reference arm.
+        // Reference arm: what the model had live comes back, untouched.
         var history = SessionManager.BuildRestoredHistory("system",
         [
             new SavedMessage("user", "list"),
             new SavedMessage("tool", "a.cs\nb.cs", "list_files"),
+            new SavedMessage("assistant", "Two files: a.cs and b.cs."),
         ]);
 
-        Assert.Contains("a.cs\nb.cs", history[^1].Content);
-        Assert.DoesNotContain("truncated", history[^1].Content);
+        Assert.Equal("list", history[1].Content);
+        Assert.Equal("Two files: a.cs and b.cs.", history[2].Content);
     }
 }

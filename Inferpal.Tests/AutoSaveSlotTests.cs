@@ -10,7 +10,7 @@ namespace Inferpal.Tests;
 /// <remarks>
 /// It is ONE file under <c>%AppData%</c>, shared by both editors and every project, and both
 /// front-ends reload it at start-up. Opening project B after working on A brought A's conversation
-/// back — and, through <c>BuildRestoredHistory</c>, its tool results into the model's history, which
+/// back — and, through <c>BuildRestoredHistory</c>, its questions and answers into the model's history, which
 /// then answered about B with A's context.
 /// </remarks>
 public class AutoSaveSlotTests

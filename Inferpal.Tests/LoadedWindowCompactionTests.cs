@@ -298,3 +298,65 @@ public class SettingsSaveWindowTests
         Assert.Contains("_contextWindowInUse = window", body);
     }
 }
+
+public partial class HostServerTests
+{
+    /// <summary>
+    /// A reloaded conversation is measured before its first question. Replacing the conversation zeroed the counter the
+    /// pre-send check decides on — right against the measure of ANOTHER conversation, wrong as "nothing to measure":
+    /// zero is a first turn's state, so the first question after a reload went out uncompacted, however large the
+    /// reload — and the transcript on screen keeps every turn, including those compaction had already summarised
+    /// away live. Visual Studio reloads the last session every time it opens.
+    /// </summary>
+    [Fact]
+    public async Task AReloadedConversation_IsCompactedBeforeItsFirstQuestion_WhenItDoesNotFit()
+    {
+        using var h = CreateHarness(cfg => { cfg.ContextWindowSize = 8_192; cfg.CompactionEnabled = true; });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var saved = new List<object>();
+        for (var turn = 0; turn < 10; turn++)
+        {
+            saved.Add(new { role = "user",      content = $"question {turn}" });
+            saved.Add(new { role = "assistant", content = $"answer {turn} " + new string('a', 4_000) });
+        }
+        await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name = "big", messages = saved })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await h.Client.InvokeWithParameterObjectAsync<object?>("session/load", new { name = "big" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var restoredChars = h.Server.CurrentSession!.History.Sum(m => (m.Content ?? string.Empty).Length);
+
+        var sentChars = 0;
+        h.Fake.OnChatRequest = (_, history, _, _) =>
+        {
+            sentChars = history.Sum(m => (m.Content ?? string.Empty).Length);
+            return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
+        };
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "next", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.True(restoredChars > 8_192 * 4, $"the reload is only {restoredChars} characters: nothing to measure");   // witness
+        Assert.True(sentChars < restoredChars / 2,
+            $"the first question after the reload carried {sentChars} of the {restoredChars} restored characters");
+    }
+}
+
+/// <summary>The Visual Studio half of "a reloaded conversation is measured": the view model is not executable from
+/// this suite, so its restore is read in the source (the host half is executed above).</summary>
+public class ReloadMeasureSourceTests
+{
+    [Fact]
+    public void TheViewModelsRestore_MeasuresTheConversationItLoaded()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(dir!.FullName, "Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs"));
+
+        var restore = code.IndexOf("void RestoreConversation(", StringComparison.Ordinal);
+        var reset   = code.IndexOf("ResetTurnAccounting();", restore, StringComparison.Ordinal);
+        Assert.True(restore >= 0 && reset > restore, "the restore moved: the scan reads nothing");          // WITNESS
+        var after = code[reset..code.IndexOf("foreach", reset, StringComparison.Ordinal)];
+        Assert.Contains("_lastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(_history)", after);
+    }
+}

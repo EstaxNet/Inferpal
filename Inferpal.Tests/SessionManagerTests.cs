@@ -65,14 +65,13 @@ public class SessionManagerTests : IDisposable
             new("tool",      "result", "read_file"),
         ]);
 
-        Assert.Equal(4, history.Count);
+        Assert.Equal(3, history.Count);
         Assert.Equal("system", history[0].Role);
         Assert.Equal("SYS",    history[0].Content);
-        // The tool result comes back as a labelled `user` turn: a saved transcript has no
-        // tool_calls, and the `tool` role without its call is what MapMessages drops.
-        Assert.Equal(["user", "assistant", "user"], history.Skip(1).Select(m => m.Role));
-        Assert.Contains("read_file", history[3].Content);
-        Assert.Contains("result",    history[3].Content);
+        // The tool bubble stays on screen and out of the model's history: live, a run's tool results do not
+        // outlive the run, and the restore rebuilds the live history.
+        Assert.Equal(["user", "assistant"], history.Skip(1).Select(m => m.Role));
+        Assert.DoesNotContain(history, m => (m.Content ?? "").Contains("result"));
     }
 
     [Fact]
@@ -130,11 +129,11 @@ public class SessionManagerTests : IDisposable
         Assert.DoesNotContain(history, m => m.Role == "assistant" && string.IsNullOrWhiteSpace(m.Content));
     }
 
-    // ── Restore × backend: what the server actually receives ───────────────────
+    // ── Restore = the history the model had live ───────────────────────────────
 
-    // The saved transcript carries the tool bubbles (role "tool") WITHOUT the assistant that called
-    // them — SavedMessage has no tool_calls. The restored history is therefore orphaned from end to
-    // end in the sense of ToolBlockBoundary: what MapMessages drops.
+    // The saved transcript keeps every tool bubble (role "tool") the screen showed. Live, both front-ends keep a
+    // durable history of the question and the one answer shown: a run's tool results do not outlive it. Folded back
+    // in, they made a reloaded conversation 1.9× to 8.9× the live one on real sessions.
     private const string ToolBubble = """
         [input]
         {"path":"Foo.cs"}
@@ -151,22 +150,19 @@ public class SessionManagerTests : IDisposable
     ];
 
     [Fact]
-    public void RestoredHistory_HasNoOrphanedToolMessage()
+    public void RestoredHistory_HasNoToolResult_AndSoNoOrphanedOne()
     {
         var history = SessionManager.BuildRestoredHistory("SYS", RestoredTranscript);
 
         Assert.False(ToolBlockBoundary.HasOrphanedToolMessage(history));
-        // Witness: "no orphan" is also true of a history its results were removed from.
-        Assert.Contains(history, m => (m.Content ?? "").Contains("class Foo { }"));
+        Assert.DoesNotContain(history, m => (m.Content ?? "").Contains("class Foo { }"));
+        // Witness: the conversation itself is there.
+        Assert.Contains(history, m => m.Role == "assistant" && m.Content == "Foo is a widget.");
     }
 
     [Fact]
-    public void RestoredHistory_FoldsToolResultsIntoTheirTurn_SoTurnCountingStaysRight()
+    public void RestoredHistory_IsTheLiveHistory_QuestionAndAnswerPerTurn()
     {
-        // A `user` turn is the product's unit of counting (contextWindowKeepTurns, /branch
-        // numbering, the rollback of regeneration). A restored tool result must not open one:
-        // otherwise a reloaded session sees its memory shortened and its last question replayed
-        // twice.
         var history = SessionManager.BuildRestoredHistory("SYS",
         [
             new("user",      "q1"),
@@ -177,22 +173,8 @@ public class SessionManagerTests : IDisposable
             new("assistant", "a2"),
         ]);
 
-        Assert.Equal(2, history.Count(m => m.Role == "user"));
-        // Witness: both results are there, in the turn that produced them.
-        Assert.Contains("r1", history[1].Content);
-        Assert.Contains("r2", history[1].Content);
-        Assert.Contains("q1", history[1].Content);
-    }
-
-    [Fact]
-    public void RestoredHistory_KeepsToolResults_OnOpenAiCompatibleBackends()
-    {
-        var wire = OpenAiCompatibleClient.MapMessages(
-            SessionManager.BuildRestoredHistory("SYS", RestoredTranscript));
-
-        Assert.Contains(wire, m => (m.Content ?? "").Contains("class Foo { }"));
-        // Witness: the mapping did run over the rest of the transcript.
-        Assert.Contains(wire, m => (m.Content ?? "").Contains("Foo is a widget."));
+        Assert.Equal(["system", "user", "assistant", "user", "assistant"], history.Select(m => m.Role));
+        Assert.Equal(["SYS", "q1", "a1", "q2", "a2"], history.Select(m => m.Content));
     }
 
     // ── Title & file naming ────────────────────────────────────────────────────
