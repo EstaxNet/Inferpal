@@ -87,4 +87,55 @@ internal static class RagAutoContext
 
         return Header + "\n" + note + "\n\n" + sb.ToString().TrimEnd();
     }
+
+    /// <summary>Most chunks of one file that a Visual Studio auto-attach chip carries.</summary>
+    public const int ChipMaxChunks = 3;
+
+    /// <summary>
+    /// The content of a Visual Studio auto-attach chip (<c>🔮 File.cs</c>): the file's best chunks, in the order
+    /// given, preceded by what they are when they do not cover the whole file.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The chip reaches the model as <c>[Attached: 🔮 File.cs]</c>, which reads as the file. Without the line
+    /// that names the excerpts, the model lists the methods it was shown as everything the file defines — "the
+    /// class defines two static methods" — and the user writes again what the rest of the file already holds;
+    /// with it, the same model answers "at least". A file the chunks cover entirely says nothing: it IS whole.
+    /// </remarks>
+    /// <param name="totalLines">The file's line count, or <c>null</c> when unknown — then the note is kept,
+    /// since nothing proves the file is whole.</param>
+    public static string ChipContent(string fileName, IReadOnlyList<RagChunk> chunks, int? totalLines)
+    {
+        var joined = string.Join("\n\n...\n\n", chunks.Select(c => c.Content));
+        if (chunks.Count == 0 || Covers(chunks, totalLines)) return joined;
+
+        var ranges = string.Join(", ", chunks.Select(c => $"{c.StartLine}-{c.EndLine}"));
+        return $"Excerpts of {fileName} picked by semantic search (lines {ranges}), not the whole file: "
+             + "what is not shown here may still be in it — read_file reads it all.\n\n" + joined;
+    }
+
+    /// <summary><see cref="ChipContent(string, IReadOnlyList{RagChunk}, int?)"/>, the line count read from disk.</summary>
+    public static string ChipContent(string path, IReadOnlyList<RagChunk> chunks)
+    {
+        int? lines;
+        try { lines = Tools.TextFileEncoding.ReadLines(path).Count; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("RagAutoContext.ChipContent", ex);
+            lines = null;
+        }
+        return ChipContent(Path.GetFileName(path), chunks, lines);
+    }
+
+    /// <summary>Whether the chunks, overlaps allowed, span every line from 1 to <paramref name="totalLines"/>.</summary>
+    private static bool Covers(IReadOnlyList<RagChunk> chunks, int? totalLines)
+    {
+        if (totalLines is not { } total) return false;
+        var next = 1;
+        foreach (var c in chunks.OrderBy(c => c.StartLine))
+        {
+            if (c.StartLine > next) return false;
+            next = Math.Max(next, c.EndLine + 1);
+        }
+        return next > total;
+    }
 }

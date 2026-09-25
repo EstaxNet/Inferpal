@@ -27,6 +27,28 @@ public class DocSiteTests
         Assert.Equal("net-tokio-docs", site.Id);
     }
 
+    [Theory]
+    [InlineData("\"React Router\"")]
+    [InlineData("'React Router'")]
+    [InlineData("“React Router”")]
+    public void Create_QuotedTitle_IsNamedWithoutItsQuotes(string typed)
+    {
+        // The documented form: `/docs add <url> "React Router"` — the command line keeps the quotes.
+        var site = DocSite.Create("https://reactrouter.com/start", typed);
+
+        Assert.Equal("React Router", site.Title);
+        Assert.Equal("react-router", site.Id);
+    }
+
+    [Fact]
+    public void Create_QuotesInsideATitle_AreKept()
+    {
+        // Reference arm: only a pair that wraps the whole title is the command line's.
+        var site = DocSite.Create("https://docs.rs/serde", "The \"serde\" book");
+
+        Assert.Equal("The \"serde\" book", site.Title);
+    }
+
     [Fact]
     public void Parse_MalformedJson_ReturnsEmpty()
     {

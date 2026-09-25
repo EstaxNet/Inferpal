@@ -11,7 +11,7 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `write_file` | `path`, `content` | Write/overwrite a file. **Approval** + snapshot + Smart Fix |
 | `list_files` | `path`, `pattern?` | List files (glob, max 300, recursive) |
 | `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (max 100 results) |
-| `run_command` | `command`, `working_directory?` | Run a shell command — PowerShell on Windows, bash on Linux/macOS (`sh` on a host without bash) ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout |
+| `run_command` | `command`, `working_directory?` | Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout |
 | `apply_diff` | `path`, `old_content`, `new_content`, `occurrence?` | Find-and-replace (exact, then whitespace-tolerant fuzzy fallback). `occurrence`: `unique` (default) / `first` / `all`. **Approval** (shows the diff) + snapshot + Smart Fix |
 | `apply_edits` | `edits[]` (`path`, `old_content`, `new_content`, `occurrence?`) | **Atomic** multi-file edit — all edits resolved first; nothing is written unless every edit matches. One approval (combined diff) + snapshot per file + Smart Fix |
 | `restore_file` | `path`, `snapshot_path?` | Restore a file from `.inferpal/history/` |

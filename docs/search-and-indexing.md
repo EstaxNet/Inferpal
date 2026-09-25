@@ -100,8 +100,9 @@ the docs themselves, citing the source page and URL.
   remedy (`/docs reindex <id>`).
 - **Storage**: a single **global** SQLite database at `%AppData%/Inferpal/docs/docs.db`, so a
   site you index once is available across every solution.
-- **Retrieve**: the `search_docs` tool runs cosine search (keyword fallback) and cites the
-  page title and URL.
+- **Retrieve**: the `search_docs` tool runs the same hybrid search as the code index (cosine ⊕
+  BM25 over the text, the page title and the URL, fused by RRF — BM25 alone when embeddings are
+  unavailable) and cites the page title and URL.
 
 Embeddings reuse the configured `ragEmbeddingModel`. `@Docs` has no Settings section — it is
 managed entirely through `/docs` (sources persist in `docSitesJson`).

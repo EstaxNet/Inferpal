@@ -30,8 +30,22 @@ internal sealed record DocSite(
             ? uri.Host
             : startUrl;
 
-        var label = string.IsNullOrWhiteSpace(title) ? host : title.Trim();
+        var label = Unquoted(title);
+        if (string.IsNullOrWhiteSpace(label)) label = host;
         return new DocSite(Slugify(label), label, startUrl.Trim());
+    }
+
+    /// <summary>
+    /// The title as the user meant it. <c>/docs add &lt;url&gt; "React Router"</c> is the documented way to give a
+    /// title of several words, and the command line keeps the quotes: without this the source is named
+    /// <c>"React Router"</c>, quotes included, everywhere it is shown.
+    /// </summary>
+    private static string Unquoted(string? title)
+    {
+        var t = title?.Trim() ?? string.Empty;
+        if (t.Length >= 2 && ((t[0] == '"' && t[^1] == '"') || (t[0] == '\'' && t[^1] == '\'') || (t[0] == '“' && t[^1] == '”')))
+            t = t[1..^1].Trim();
+        return t;
     }
 
     /// <summary>

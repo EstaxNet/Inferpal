@@ -77,7 +77,11 @@ internal partial class InferpalToolWindowData
                         .Distinct()
                         .Take(2)
                         .ToList();
-                    Post(() => UpdateAutoRagAttachments(topPaths, results));
+                    // Built here, off the UI thread: whether the excerpts cover the file is read from disk.
+                    var contents = topPaths.ToDictionary(p => p, p => Services.Rag.RagAutoContext.ChipContent(p,
+                        results.Where(r => r.Chunk.FilePath == p).Take(Services.Rag.RagAutoContext.ChipMaxChunks)
+                               .Select(r => r.Chunk).ToList()));
+                    Post(() => UpdateAutoRagAttachments(topPaths, contents));
                 }
             }
             catch (OperationCanceledException) { }         // user kept typing
@@ -87,7 +91,7 @@ internal partial class InferpalToolWindowData
 
     private void UpdateAutoRagAttachments(
         List<string> paths,
-        List<RagHit> results)
+        Dictionary<string, string> contents)
     {
         // Remove existing auto-attach chips
         var toRemove = Attachments.Where(a => a.IsAutoAttach).ToList();
@@ -99,9 +103,8 @@ internal partial class InferpalToolWindowData
             var fileName = Path.GetFileName(path);
             if (Attachments.Any(a => !a.IsAutoAttach && a.Label == fileName)) continue;
 
-            // Use the best chunk content for the file (most relevant)
-            var chunks    = results.Where(r => r.Chunk.FilePath == path).Take(3).ToList();
-            var content   = string.Join("\n\n...\n\n", chunks.Select(r => r.Chunk.Content));
+            // The file's best chunks, said to be excerpts when they are (RagAutoContext.ChipContent).
+            var content = contents[path];
 
             AttachmentItem? item = null;
             item = new AttachmentItem($"🔮 {fileName}", content, () =>
