@@ -288,6 +288,7 @@ internal sealed class SmartFixValidator
         psi.WorkingDirectory = workDir;
 
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(60), ct);
+        run = run with { Stderr = Shell.PowerShellStderr.Decode(run.Stderr) };   // CLIXML → text
 
         // A validator that hangs is a failed validation, not a cancelled edit: -1 with the partial
         // output lets the caller reject the write and show why, where a thrown cancellation reads

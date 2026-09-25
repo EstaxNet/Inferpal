@@ -107,7 +107,7 @@ internal sealed class ShellSession
         ApplyState(state);
 
         var output     = state.Output;
-        var stderrText = stderr.Snapshot();
+        var stderrText = PowerShellStderr.Decode(stderr.Snapshot());
         if (!string.IsNullOrWhiteSpace(stderrText))
             output += $"\n[stderr]\n{stderrText.Trim()}";
         // The wrapper's own shell always exits 0 (a finally, a trailing printf): the command's code

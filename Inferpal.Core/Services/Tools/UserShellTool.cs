@@ -42,6 +42,7 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
             // ChildProcess, shared with every other child this product starts.
             var run = await ChildProcess.RunAsync(
                 psi, TimeSpan.FromSeconds(config.CommandTimeoutSeconds), ct);
+            run = run with { Stderr = Shell.PowerShellStderr.Decode(run.Stderr) };   // CLIXML → text
 
             // Timeout is reported to the model, not thrown: it must not abort the whole agent run —
             // and it carries what the command had printed, like the persistent shell. ChildProcess
