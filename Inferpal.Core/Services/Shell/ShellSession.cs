@@ -113,7 +113,7 @@ internal sealed class ShellSession
         // The wrapper's own shell always exits 0 (a finally, a trailing printf): the command's code
         // travels in the state block, and a silent failure (`git diff --quiet`) must not read as success.
         if (state.ExitCode is { } rc and not 0)
-            output += $"\n[exit code {rc}]";
+            output += ShellStateProtocol.ExitNote(dialect, command, rc);
         if (!drained)
             output += ChildProcess.OutputHeldOpenNote;
         return output;

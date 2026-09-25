@@ -109,7 +109,7 @@ public class PowerShellStderrTests
         Assert.True(listing.Split('\n').Max(l => l.TrimEnd('\r').Length) < 300,
                     $"a line of {listing.Split('\n').Max(l => l.Length)} characters: the table is padded to the buffer");
 
-        // Reference arm: the wrapper's pipeline must not cost the session its state.
+        // Reference arm: widening the console must not cost the session its state.
         await shell.RunAsync("cd C:\\Windows; $env:INFERPAL_PROBE = 'kept'", null, CancellationToken.None);
         var state = await shell.RunAsync("(Get-Location).Path; $env:INFERPAL_PROBE", null, CancellationToken.None);
         Assert.Contains("C:\\Windows", state);
@@ -141,6 +141,44 @@ public class PowerShellStderrTests
             Assert.Contains("café", await shell.RunAsync("cmd /c echo café", null, CancellationToken.None));
         }
         finally { try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ } }
+    }
+
+    /// <summary>
+    /// <c>Select-Object -First</c> STOPS the native command upstream once it has its lines, and PowerShell then reports
+    /// its exit code as -1: <c>dotnet --info | Select-Object -First 8</c> came back "[exit code -1]" — read as a failure —
+    /// and <c>dotnet test | Select-Object -First 50</c> kills the test run after fifty lines, with that -1 as the only
+    /// trace. The model is told what happened: stopped, not run to completion.
+    /// </summary>
+    [Fact]
+    public async Task ACommandStoppedBySelectFirst_SaysSo_InsteadOfAFailureCode()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var shell = new ShellSession(() => Path.GetTempPath(), new InferpalConfig());
+
+        var cut = await shell.RunAsync("ping -n 5 127.0.0.1 | Select-Object -First 2", null, CancellationToken.None);
+        Assert.Contains("127.0.0.1", cut);                                                        // witness: it ran
+        Assert.Contains("did not run to completion", cut);
+        Assert.DoesNotContain("[exit code -1]", cut);
+
+        // Reference arm: a real -1, with no Select-Object in sight, is reported as it is.
+        var real = await shell.RunAsync("cmd /c exit -1", null, CancellationToken.None);
+        Assert.Contains("[exit code -1]", real);
+    }
+
+    [Theory]
+    [InlineData(true, "git log | Select-Object -First 5", -1, true)]
+    [InlineData(true, "dotnet test | select -first 50", -1, true)]
+    [InlineData(true, "Get-ChildItem | Select-Object Name -f 3", -1, true)]
+    [InlineData(true, "cmd /c exit -1", -1, false)]                          // a real -1
+    [InlineData(true, "git log | Select-Object -First 5", 3, false)]          // another code
+    [InlineData(true, "git log | Select-Object -Last 5", -1, false)]         // -Last waits
+    [InlineData(false, "git log | Select-Object -First 5", -1, false)]
+    public void TheExitNote_NamesAStopOnlyWhereSelectFirstCausedIt(bool powerShell, string command, int code, bool stopped)
+    {
+        var note = ShellStateProtocol.ExitNote(powerShell ? ShellDialect.PowerShell : ShellDialect.Posix, command, code);
+
+        Assert.Equal(stopped, note.Contains("did not run to completion", StringComparison.Ordinal));
+        if (!stopped) Assert.Equal($"\n[exit code {code}]", note);
     }
 
     [Fact]

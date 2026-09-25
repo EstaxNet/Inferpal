@@ -107,6 +107,27 @@ internal static class ShellStateProtocol
     /// console to widen, formatting keeps its default width.
     /// </remarks>
     /// <summary>
+    /// The note that follows a command's output for a non-zero exit code.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>Select-Object -First</c> STOPS the native command upstream once it has its lines, and PowerShell then reports
+    /// its exit code as -1: <c>dotnet --info | Select-Object -First 8</c> read "[exit code -1]" — a failure — and
+    /// <c>dotnet test | Select-Object -First 50</c> kills the run after fifty lines with that -1 as the only trace.
+    /// PowerShell exposes nothing else (<c>$?</c> is true either way, measured), so the command text decides: a -1
+    /// from a command with no <c>-First</c> select is reported as it is.
+    /// </remarks>
+    internal static string ExitNote(ShellDialect dialect, string command, int exitCode) =>
+        dialect == ShellDialect.PowerShell && exitCode == -1 && StoppedBySelectFirst.IsMatch(command)
+            ? "\n[exit code -1: Select-Object -First stopped the command once it had its lines — the command did not "
+              + "run to completion]"
+            : $"\n[exit code {exitCode}]";
+
+    private static readonly System.Text.RegularExpressions.Regex StoppedBySelectFirst = new(
+        @"\bselect(?:-object)?\b[^|;\r\n]*\s-f(?:i(?:r(?:s(?:t)?)?)?)?\b",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(200));
+
+    /// <summary>
     /// <paramref name="text"/> without the blanks that end its lines. ⚠ Required by <see cref="WidenConsole"/>: the
     /// default table views pad every line to the buffer's width — four files of <c>Get-ChildItem</c> came back as
     /// 20 570 characters, nearly all spaces, in the model's context.
