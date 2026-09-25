@@ -139,7 +139,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            cts.CancelAfter(LoadedWindowProbeBudget);
             window = await ServedModelLengthAsync(model, cts.Token) ?? await SlotContextLengthAsync(cts.Token);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
@@ -159,6 +159,13 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     // The loaded window changes only on (un)load: cached briefly per model, so the probe does not run on every agent
     // iteration — and a server that has neither endpoint costs two GETs per half-minute, not two per request.
     private static readonly TimeSpan LoadedWindowCacheLife = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Budget of the whole probe (both endpoints). Short, because it runs ahead of a request the user is waiting for
+    /// and unknown is a safe answer. ⚠ Per instance, so a test can widen it: on a loaded runner that compiles and
+    /// runs two test series at once, 5 s is not 5 s, and a probe cut short reads as "the server did not say".
+    /// </summary>
+    internal TimeSpan LoadedWindowProbeBudget { get; set; } = TimeSpan.FromSeconds(5);
     private readonly object _loadedWindowLock = new();
     private (string Model, int? Window, DateTime At) _loadedWindowCache;
 

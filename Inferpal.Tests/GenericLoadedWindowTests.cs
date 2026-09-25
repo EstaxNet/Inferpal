@@ -15,8 +15,13 @@ namespace Inferpal.Tests;
 /// </summary>
 public class GenericLoadedWindowTests
 {
+    // ⚠ The probe's production budget is 5 s for BOTH endpoints; on a loaded CI runner that is not 5 s, and a probe cut
+    // short answers "unknown" — the llama-server case failed exactly so, in exactly 5 s. A test that waits gets 30.
     private static OpenAiCompatibleClient ClientFor(LoopbackHttpServer server) =>
-        new(new InferpalConfig { Provider = "openai-compatible", BaseUrl = server.BaseUrl + "/v1" });
+        new(new InferpalConfig { Provider = "openai-compatible", BaseUrl = server.BaseUrl + "/v1" })
+        {
+            LoadedWindowProbeBudget = TimeSpan.FromSeconds(30),
+        };
 
     [Fact]
     public async Task AVllmServer_ItsModelsMaxLength_IsTheLoadedWindow()
