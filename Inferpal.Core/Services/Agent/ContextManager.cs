@@ -32,7 +32,8 @@ internal enum ContextOutcome
 /// — what the context gauges must show too, or they announce room a smaller loaded window does not have.
 /// </param>
 internal sealed record ContextDecision(
-    ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0, bool SummaryCut = false)
+    ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0,
+    bool SummaryIncomplete = false)
 {
     /// <summary>
     /// The conversation lost turns with nothing — or only part of a summary — put in their place: a degraded
@@ -42,10 +43,11 @@ internal sealed record ContextDecision(
     /// ⚠ The rule lives here because BOTH front-ends read it: a successful compaction is a
     /// collapsible tool bubble, the fallbacks are plain warnings — the conversation lost turns,
     /// and that is read in plain text. Rendered the same way, the degraded result is the one that
-    /// looks routine. A summary cut at the length limit is one of them (<see cref="SummaryCut"/>).
+    /// looks routine. A summary that covers only part of the dropped turns is one of them
+    /// (<see cref="SummaryIncomplete"/>: cut at the length limit, or written from the newest part only).
     /// </remarks>
     public bool IsDegraded =>
-        Outcome is ContextOutcome.Truncated or ContextOutcome.CompactionFellBack || SummaryCut;
+        Outcome is ContextOutcome.Truncated or ContextOutcome.CompactionFellBack || SummaryIncomplete;
 }
 
 /// <summary>
@@ -96,7 +98,7 @@ internal static class ContextManager
 
         onStep?.Invoke(Strings.StatusCompacting);
 
-        var (summary, cut) = await SummarizeAsync(history, plan, config, client, ct).ConfigureAwait(false);
+        var (summary, cut, omitted) = await SummarizeAsync(history, plan, config, client, ct).ConfigureAwait(false);
 
         // ⚠ The fuse blew: we truncate, and we SAY so — that is a degraded result, not the one that
         // was asked for. The two look alike on the history and not at all to the user.
@@ -104,16 +106,24 @@ internal static class ContextManager
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
                                        Strings.MsgContextCompactionFallback, window);
 
-        var note = plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty;
-        // ⚠ A summary that stopped at the length limit is KEPT — dropping it would lose the turns entirely, and the
-        // window is fullest exactly when compaction runs — but it is said to both readers: read as whole, the model
-        // denies what was said past the cut, and the user reads "compacted".
+        var notice = Strings.MsgContextCompacted(plan.Count, plan.KeepTurns)
+                   + (plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty);
+        // ⚠ An incomplete summary is KEPT — dropping it would lose the turns entirely, and the window is fullest
+        // exactly when compaction runs — but it is said to both readers: read as whole, the model denies what was said
+        // in the part it misses, and the user reads "compacted". Two causes, two sentences: the summary stopped at the
+        // length limit, or the oldest turns never reached the summarizer.
+        if (omitted > 0)
+        {
+            summary += HistoryCompaction.PartialSummaryMarker(omitted);
+            notice  += "\n\n" + Strings.MsgContextSummaryPartial(omitted, plan.Count);
+        }
         if (cut)
-            return new ContextDecision(ContextOutcome.Compacted, plan, summary + HistoryCompaction.CutSummaryMarker,
-                                       Strings.MsgContextCompacted(plan.Count, plan.KeepTurns) + note
-                                       + "\n\n" + Strings.MsgContextSummaryCut, window, SummaryCut: true);
-        return new ContextDecision(ContextOutcome.Compacted, plan, summary,
-                                   Strings.MsgContextCompacted(plan.Count, plan.KeepTurns) + note, window);
+        {
+            summary += HistoryCompaction.CutSummaryMarker;
+            notice  += "\n\n" + Strings.MsgContextSummaryCut;
+        }
+        return new ContextDecision(ContextOutcome.Compacted, plan, summary, notice, window,
+                                   SummaryIncomplete: cut || omitted > 0);
     }
 
     /// <summary>
@@ -142,34 +152,37 @@ internal static class ContextManager
     }
 
     /// <summary>The summarising call, with its own deadline. <c>null</c> on any failure; <c>Cut</c> when the reply
-    /// stopped at the model's length limit.</summary>
-    private static async Task<(string? Text, bool Cut)> SummarizeAsync(
+    /// stopped at the model's length limit; <c>Omitted</c> the oldest messages that did not fit in the request.</summary>
+    private static async Task<(string? Text, bool Cut, int Omitted)> SummarizeAsync(
         IReadOnlyList<ChatMessageDto> history, CompactionPlan plan,
         InferpalConfig config, IInferenceProvider client, CancellationToken ct)
     {
         try
         {
-            var toCompact = HistoryCompaction.SliceToCompact(history, plan);
-            var request   = HistoryCompaction.BuildSummarizeRequest(history, toCompact);
-
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(Math.Max(10, config.CompactionTimeoutSeconds)));
+
+            // The request is bounded by the SUMMARIZER's window: the utility model is not the chat model, and a server
+            // may have loaded it with a smaller one.
+            var model   = await ModelRouter.ResolveUtilityAsync(config, client, cts.Token).ConfigureAwait(false);
+            var window  = await EffectiveWindowAsync(config, client, model, cts.Token).ConfigureAwait(false);
+            var request = HistoryCompaction.BuildSummarizeRequest(
+                HistoryCompaction.SliceToCompact(history, plan), HistoryCompaction.SummaryInputBudgetChars(window));
 
             // ⚠ SendChatAsync, never RunAgentAsync: the agent loop reports a network failure as its
             // FinalResponse, and the error text would become the "summary" that replaces the turns.
             var turn = await client.SendChatAsync(
-                await ModelRouter.ResolveUtilityAsync(config, client, cts.Token).ConfigureAwait(false),
-                request, EmptyToolRegistry.Instance, onToken: null, cts.Token).ConfigureAwait(false);
+                model, request.Messages, EmptyToolRegistry.Instance, onToken: null, cts.Token).ConfigureAwait(false);
 
-            return (MarkdownParser.StripThinkTags(turn.TextContent).Trim(), turn.CutAtLimit);
+            return (MarkdownParser.StripThinkTags(turn.TextContent).Trim(), turn.CutAtLimit, request.Omitted);
         }
         // A cancellation by the USER propagates; the fuse's own is a fallback, not an error.
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { return (null, false); }
+        catch (OperationCanceledException) { return (null, false, 0); }
         catch (Exception ex)
         {
             Diagnostics.Swallow("ContextManager.Summarize", ex);
-            return (null, false);
+            return (null, false, 0);
         }
     }
 }

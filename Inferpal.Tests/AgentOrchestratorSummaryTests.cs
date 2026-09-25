@@ -68,7 +68,9 @@ public class AgentOrchestratorSummaryTests
         Assert.Equal("user", msgs[2].Role);
         Assert.Contains("Summary", msgs[2].Content);
         Assert.Equal("assistant", msgs[3].Role);
-        Assert.Equal("SUMMARY OF OLD TURNS", msgs[3].Content);
+        // The old range (5 × 8 000 characters) does not fit an 8 192-token summarizer: the summary is written from
+        // its newest part and says so (SummarizeRequestBudgetTests).
+        Assert.StartsWith("SUMMARY OF OLD TURNS", msgs[3].Content);
 
         // The recent tail (5) survives verbatim.
         for (int i = msgs.Count - 5; i < msgs.Count; i++)

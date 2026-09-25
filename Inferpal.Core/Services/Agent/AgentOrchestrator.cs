@@ -353,10 +353,10 @@ internal sealed class AgentOrchestrator
             return RunSummaryOutcome.NothingToSummarize;
 
         onStep(Strings.StatusCompacting);
-        var summarizeMessages = HistoryCompaction.BuildSummarizeRequest(messages, range);
 
         string summary;
         bool   cut;
+        int    omitted;
         try
         {
             var timeoutSec = Math.Max(10, _config.CompactionTimeoutSeconds);
@@ -365,12 +365,16 @@ internal sealed class AgentOrchestrator
 
             // Model Router: the summary is an auxiliary task — a small utility model (explicit or
             // auto-picked from the /bench recommendation when already warm) answers in seconds
-            // where the agent model would burn its own GPU time.
+            // where the agent model would burn its own GPU time. Its request is bounded by ITS window.
+            var utility = await ModelRouter.ResolveUtilityAsync(_config, _client, cts.Token);
+            var window  = await RunWindowAsync(utility, cts.Token);
+            var request = HistoryCompaction.BuildSummarizeRequest(range, HistoryCompaction.SummaryInputBudgetChars(window));
+
             var turn = await _client.SendChatAsync(
-                await ModelRouter.ResolveUtilityAsync(_config, _client, cts.Token), summarizeMessages,
-                EmptyToolRegistry.Instance, null, cts.Token, TaskComplexity.Quick);
+                utility, request.Messages, EmptyToolRegistry.Instance, null, cts.Token, TaskComplexity.Quick);
             summary = MarkdownParser.StripThinkTags(turn.TextContent);
             cut     = turn.CutAtLimit;
+            omitted = request.Omitted;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } // user cancelled
         catch (OperationCanceledException) { return RunSummaryOutcome.Failed; }         // summary timed out
@@ -381,9 +385,9 @@ internal sealed class AgentOrchestrator
         }
 
         if (string.IsNullOrWhiteSpace(summary)) return RunSummaryOutcome.Failed;
-        // Kept, but said: read as whole, a summary cut at the length limit makes the model redo — or deny — the work
-        // described past the cut.
-        if (cut) summary += HistoryCompaction.CutSummaryMarker;
+        // Kept, but said: read as whole, an incomplete summary makes the model redo — or deny — the work it misses.
+        if (omitted > 0) summary += HistoryCompaction.PartialSummaryMarker(omitted);
+        if (cut)         summary += HistoryCompaction.CutSummaryMarker;
 
         // Replace the summarised range with a single [summary] pair.
         messages.RemoveRange(start, rangeLen);

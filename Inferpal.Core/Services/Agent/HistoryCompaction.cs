@@ -22,6 +22,12 @@ internal enum CompactionAction
 /// kept verbatim after system[0], and <c>KeepTurns</c> is the number of trailing user
 /// turns preserved (both echoed in the chat notices).
 /// </summary>
+/// <summary>
+/// The summarizing request, and how many messages of the slice did not fit in it — the oldest ones, which the summary
+/// then cannot cover.
+/// </summary>
+internal sealed record SummarizeRequest(List<ChatMessageDto> Messages, int Omitted);
+
 internal sealed record CompactionPlan(
     CompactionAction Action,
     int Start,
@@ -101,33 +107,80 @@ internal static class HistoryCompaction
         history.Skip(plan.Start).Take(plan.Count).ToList();
 
     /// <summary>
-    /// The two-message request that asks the model for a summary: the original system
-    /// prompt plus the labelled transcript ("User:"/"Assistant:"/"Tool:", empty messages
-    /// skipped) wrapped in the localized summarize instruction.
+    /// The characters of transcript a summarizing request may carry into a window of <paramref name="windowTokens"/>:
+    /// two per token, so half the window at the usual four characters per token, and still two thirds of it for code,
+    /// which runs closer to three. The rest is the instruction's and the summary's. No window known → no bound.
     /// </summary>
-    public static List<ChatMessageDto> BuildSummarizeRequest(
-        IReadOnlyList<ChatMessageDto> history, IEnumerable<ChatMessageDto> toCompact)
+    public static int SummaryInputBudgetChars(int windowTokens) =>
+        windowTokens <= 0 ? int.MaxValue : (int)Math.Min(int.MaxValue, 2L * windowTokens);
+
+    /// <summary>
+    /// The request that asks the model for a summary: the labelled transcript ("User:"/"Assistant:"/"Tool:", empty
+    /// messages skipped) wrapped in the localized summarize instruction, within <paramref name="budgetChars"/>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Bounded, because the slice to compact is largest exactly when a summary is needed most — a long conversation
+    /// reopened is measured and compacted at its first question, and an agent run's slice is full of tool output. Past
+    /// the summarizer's window LM Studio refuses the request (the turns are then dropped with no summary at all) and
+    /// Ollama cuts its head in silence, so the "summary" covers only the end of what it claims to. What does not fit
+    /// is the OLDEST part: the newest is what the kept turns continue from. The loss is counted in
+    /// <see cref="SummarizeRequest.Omitted"/>, and the caller says it to both readers (<see cref="PartialSummaryMarker"/>).
+    /// ⚠ No system prompt: the summarizer needs the conversation, not the pinned files, rules and memory the chat
+    /// prompt carries — which can fill a quarter of the window on their own. The price is that Ollama, when the
+    /// utility model is the chat model, re-reads the system prompt once on the next question.
+    /// </remarks>
+    public static SummarizeRequest BuildSummarizeRequest(
+        IReadOnlyList<ChatMessageDto> toCompact, int budgetChars = int.MaxValue)
     {
-        var sb = new StringBuilder();
-        foreach (var msg in toCompact)
+        // Newest first, until the budget is spent. A newest message larger than the whole budget is sent cut rather
+        // than not at all: it is the one the kept turns continue from. Omitted counts messages of the SLICE, as the
+        // notice's total does — empty ones included.
+        var kept    = new List<string>();
+        var used    = 0;
+        var omitted = 0;
+        for (var i = toCompact.Count - 1; i >= 0; i--)
         {
-            if (string.IsNullOrEmpty(msg.Content)) continue;
-            var label = msg.Role switch
+            var content = toCompact[i].Content;
+            if (string.IsNullOrEmpty(content)) continue;
+            var entry = $"{Label(toCompact[i].Role)}: {content}";
+            if (used + entry.Length + 2 <= budgetChars) { kept.Insert(0, entry); used += entry.Length + 2; continue; }
+            if (kept.Count == 0 && budgetChars > 0)
             {
-                "user"      => "User",
-                "assistant" => "Assistant",
-                "tool"      => "Tool",
-                _           => msg.Role
-            };
-            sb.AppendLine($"{label}: {msg.Content}");
-            sb.AppendLine();
+                kept.Add(SafeTruncate.Truncate(entry, budgetChars) + "\n…(truncated)");
+                omitted = i;
+            }
+            else omitted = i + 1;
+            break;
         }
-        return
-        [
-            history[0],
-            new("user", Strings.CompactionSummarizePrompt(sb.ToString()))
-        ];
+
+        var sb = new StringBuilder();
+        // Model-facing and structural: not localized. Without it the instruction ("the beginning of our conversation")
+        // presents a middle as a beginning.
+        if (omitted > 0)
+            sb.AppendLine($"[The first {omitted} message(s) did not fit in this request and are not shown.]").AppendLine();
+        foreach (var entry in kept) sb.AppendLine(entry).AppendLine();
+
+        return new SummarizeRequest(
+            [new ChatMessageDto("user", Strings.CompactionSummarizePrompt(sb.ToString()))], omitted);
+
+        static string Label(string role) => role switch
+        {
+            "user"      => "User",
+            "assistant" => "Assistant",
+            "tool"      => "Tool",
+            _           => role
+        };
     }
+
+    /// <summary>
+    /// Appended to a summary written from only the newest part of the slice (<see cref="SummarizeRequest.Omitted"/>):
+    /// read as whole, it makes the model deny what was said in the part it never saw. Not localized, like
+    /// <see cref="TruncationMarker"/>: a structural marker in the transcript.
+    /// </summary>
+    public static string PartialSummaryMarker(int omitted) =>
+        $"\n\n[Context Note] This summary covers only the most recent part of the earlier conversation: its first "
+      + $"{omitted} message(s) did not fit in the summarizing request and are missing from it. If the user refers to "
+      + "something you cannot find here, say you no longer have it rather than treating it as never said.";
 
     /// <summary>
     /// What the model is told in place of the turns that were dropped without a summary.

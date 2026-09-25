@@ -128,9 +128,8 @@ public class HistoryCompactionTests
     }
 
     [Fact]
-    public void BuildSummarizeRequest_KeepsSystemPromptAndLabelsRoles()
+    public void BuildSummarizeRequest_LabelsRoles()
     {
-        var history = History(3);
         var slice = new List<ChatMessageDto>
         {
             new("user", "q"),
@@ -139,15 +138,43 @@ public class HistoryCompactionTests
             new("assistant", null),      // empty content is skipped
             new("custom-role", "c"),     // unknown roles pass through verbatim
         };
-        var request = HistoryCompaction.BuildSummarizeRequest(history, slice);
+        var request = HistoryCompaction.BuildSummarizeRequest(slice);
 
-        Assert.Equal(2, request.Count);
-        Assert.Same(history[0], request[0]); // original system prompt, untouched
-        Assert.Equal("user", request[1].Role);
-        Assert.Contains("User: q", request[1].Content);
-        Assert.Contains("Assistant: a", request[1].Content);
-        Assert.Contains("Tool: t", request[1].Content);
-        Assert.Contains("custom-role: c", request[1].Content);
+        var message = Assert.Single(request.Messages);   // no system prompt: see SummarizeRequestBudgetTests
+        Assert.Equal("user", message.Role);
+        Assert.Contains("User: q", message.Content);
+        Assert.Contains("Assistant: a", message.Content);
+        Assert.Contains("Tool: t", message.Content);
+        Assert.Contains("custom-role: c", message.Content);
+        Assert.Equal(0, request.Omitted);
+    }
+
+    [Fact]
+    public void BuildSummarizeRequest_KeepsTheNewestThatFit_AndCountsTheSliceMessagesLeftOut()
+    {
+        var slice = new List<ChatMessageDto>
+        {
+            new("assistant", null),                         // empty: counted in the slice, as the notice's total is
+            new("user", "old " + new string('o', 100)),
+            new("user", "new " + new string('n', 100)),
+        };
+        var request = HistoryCompaction.BuildSummarizeRequest(slice, budgetChars: 150);
+
+        Assert.Contains("User: new", request.Messages[0].Content);
+        Assert.DoesNotContain("User: old", request.Messages[0].Content);
+        Assert.Equal(2, request.Omitted);
+        Assert.Contains("[The first 2 message(s) did not fit", request.Messages[0].Content);
+    }
+
+    [Fact]
+    public void BuildSummarizeRequest_SendsANewestMessageLargerThanTheBudget_Cut()
+    {
+        var slice = new List<ChatMessageDto> { new("user", "old"), new("tool", new string('t', 1_000)) };
+        var request = HistoryCompaction.BuildSummarizeRequest(slice, budgetChars: 200);
+
+        Assert.Contains("Tool: ttt", request.Messages[0].Content);
+        Assert.Contains("…(truncated)", request.Messages[0].Content);
+        Assert.Equal(1, request.Omitted);
     }
 
     // ── ApplyTruncation / ApplySummary ─────────────────────────────────────────

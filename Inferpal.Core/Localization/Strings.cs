@@ -352,6 +352,8 @@ internal static class Strings
 
     public static string MsgContextCompactionFallback => Get(nameof(MsgContextCompactionFallback));
     public static string MsgContextSummaryCut => Get(nameof(MsgContextSummaryCut));
+    public static string MsgContextSummaryPartial(int omitted, int total) =>
+        string.Format(Get(nameof(MsgContextSummaryPartial)), omitted, total);
     public static string MsgOodaRecap(int turn, string summary) =>
         string.Format(Get(nameof(MsgOodaRecap)), turn) + "\n\n" + summary;
 

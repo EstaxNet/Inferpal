@@ -151,7 +151,9 @@ exists.
   chip).
 - **Context compaction** — old messages are summarized by the LLM instead of being
   hard-truncated, triggered at ~80 % of the context budget; **KV-cache anchor** preserves
-  the first N messages verbatim.
+  the first N messages verbatim. The summary request is sized to the window of the model
+  that writes it: when the oldest messages don't fit, the summary covers the most recent
+  ones and says how many it misses.
 - **Workspace auto-context** — the first message of every session silently attaches solution
   info + open editors.
 - **Context X-Ray** — `/xray` (or a click on the context gauge) opens an interactive panel

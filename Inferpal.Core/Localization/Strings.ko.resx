@@ -194,6 +194,7 @@
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 컨텍스트 압축됨: {0}개 메시지 요약 — 마지막 {1}턴 유지.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 컨텍스트 압축 타임아웃 — 하드 자르기로 폴백.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 요약이 모델의 길이 제한에서 멈췄습니다. 이전 대화의 일부가 빠져 있습니다.</value></data>
+  <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ 이전 대화가 너무 길어 한 번의 요청으로 요약할 수 없었습니다. {1}개 중 처음 {0}개 메시지가 요약에서 빠졌습니다.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>다음은 우리 대화의 시작 부분입니다. 향후 메시지에 필요한 모든 주요 결정, 사실, 수정된 파일 및 컨텍스트를 보존하면서 밀도 있게 요약하세요. 간결하지만 완전하게 — 이 요약이 원본 메시지를 대체합니다:
 
 {0}</value></data>

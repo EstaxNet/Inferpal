@@ -197,6 +197,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contexte compacté : {0} message(s) résumé(s) — conservation des {1} derniers tours.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ La compaction du contexte a expiré — retour à la troncature forcée.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Le résumé s'est arrêté à la limite de longueur du modèle : une partie de la conversation antérieure y manque.</value></data>
+  <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ La conversation antérieure était trop longue pour être résumée en une requête : ses {0} premiers messages sur {1} manquent au résumé.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Voici le début de notre conversation. Résume-le de façon dense, en préservant toutes les décisions clés, les faits, les fichiers modifiés et le contexte nécessaire pour les prochains messages. Sois concis mais complet — ce résumé remplacera les messages d'origine :
 
 {0}</value></data>
