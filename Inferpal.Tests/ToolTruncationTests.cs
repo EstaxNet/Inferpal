@@ -97,7 +97,7 @@ public class ToolTruncationTests : IDisposable
     public void WorkspaceScan_AWalkThatCannotStart_SaysSoInsteadOfAnsweringEmpty()
     {
         var files = Inferpal.Services.WorkspaceScan
-            .EnumerateFiles(Path.Combine(_ws, "no-such-directory"), "*.cs", _ws, out var failed)
+            .EnumerateFiles(Path.Combine(_ws, "no-such-directory"), "*.cs", out var failed)
             .ToList();
 
         Assert.True(failed, "a walk that cannot start must say so, not answer an empty list.");
@@ -110,7 +110,7 @@ public class ToolTruncationTests : IDisposable
         // Witness: the flag must mean "could not look", not "found nothing". An existing directory
         // with no match is an ordinary empty answer.
         var files = Inferpal.Services.WorkspaceScan
-            .EnumerateFiles(_ws, "*.nothing-matches-this", _ws, out var failed)
+            .EnumerateFiles(_ws, "*.nothing-matches-this", out var failed)
             .ToList();
 
         Assert.False(failed);

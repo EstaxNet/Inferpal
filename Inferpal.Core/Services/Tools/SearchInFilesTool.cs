@@ -60,7 +60,7 @@ internal class SearchInFilesTool : ITool
         // file add tens of thousands of lines.
         // ⚠ "No results" is a CONCLUSION the model acts on — it stops looking. A walk that could
         // not start is not that answer, so this catch must not return it.
-        var files = WorkspaceScan.EnumerateFiles(path, filePattern, root, out var walkFailed);
+        var files = WorkspaceScan.EnumerateFiles(path, filePattern, out var walkFailed);
         if (walkFailed)
             return Task.FromResult(
                 $"Could not search '{path}': the directory could not be walked (permissions, or a "

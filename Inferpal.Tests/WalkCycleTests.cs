@@ -95,7 +95,7 @@ public sealed class WalkCycleTests : IDisposable
 
         // A POSITIVE assertion on the count: "it does not crash" would also pass on a walk that
         // returns 43 paths for 2 files, which is the fix that was rejected.
-        var files = WorkspaceScan.EnumerateFiles(_root, "*.cs", _root).ToList();
+        var files = WorkspaceScan.EnumerateFiles(_root, "*.cs").ToList();
 
         Assert.Equal(1, files.Count(f => Path.GetFileName(f) == "A.cs"));
         Assert.Equal(1, files.Count(f => Path.GetFileName(f) == "B.cs"));
@@ -114,7 +114,7 @@ public sealed class WalkCycleTests : IDisposable
     {
         Assert.True(File.Exists(_fileLink), "file link not created: test UNDECIDED");
 
-        var files = WorkspaceScan.EnumerateFiles(_root, "*.cs", _root).ToList();
+        var files = WorkspaceScan.EnumerateFiles(_root, "*.cs").ToList();
 
         Assert.Contains(files, f => Path.GetFileName(f) == "Linked.cs");
         // The sandbox's full count: A.cs, B.cs and the linked file — and NOTHING else, so neither
@@ -159,7 +159,7 @@ public sealed class WalkCycleTests : IDisposable
         Assert.True(Directory.Exists(_legitLink), "legitimate link not created: test UNDECIDED");
         Assert.True(File.Exists(Path.Combine(_legitLink, "Shared.cs")), "the legitimate link does not point at the share");
 
-        var files = WorkspaceScan.EnumerateFiles(_root, "*.cs", _root).ToList();
+        var files = WorkspaceScan.EnumerateFiles(_root, "*.cs").ToList();
 
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "Shared.cs");
 

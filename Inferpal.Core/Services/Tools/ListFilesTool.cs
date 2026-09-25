@@ -43,7 +43,7 @@ internal class ListFilesTool : ITool
         // The walk is checked BEFORE it is consumed: "the directory does not exist" was answered
         // for a directory that exists and could not be opened, which sends the reader to verify a
         // path that is perfectly correct.
-        var walk = WorkspaceScan.EnumerateFiles(path, pattern, root, out var walkFailed);
+        var walk = WorkspaceScan.EnumerateFiles(path, pattern, out var walkFailed);
         if (walkFailed)
             return Task.FromResult($"Could not list '{path}': the directory exists but could not be "
                                  + "walked (permissions, or a path the file system refused).");
@@ -67,7 +67,8 @@ internal class ListFilesTool : ITool
 
         var truncated = files.Count > limit;
         if (truncated) files.RemoveAt(files.Count - 1);
-        var result = string.Join("\n", files);
+        // An empty listing is SAID: an empty tool result tells the model nothing, not even that nothing matched.
+        var result = files.Count == 0 ? Strings.NoResults : string.Join("\n", files);
         if (truncated)
             result += $"\n(showing first {limit} files — narrow the path or pattern for the rest)";
         // ⚠ The cap is not the only reason this listing is partial. A folder the walk could not list,

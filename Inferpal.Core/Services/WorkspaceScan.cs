@@ -175,8 +175,8 @@ internal static class WorkspaceScan
     /// skips it at the source; the other options keep what <c>SearchOption.AllDirectories</c> did
     /// (no attribute skipped, Win32 wildcards).
     /// </remarks>
-    public static IEnumerable<string> EnumerateFiles(string start, string pattern = "*.cs", string? root = null) =>
-        EnumerateFiles(start, pattern, root, out _);
+    public static IEnumerable<string> EnumerateFiles(string start, string pattern = "*.cs") =>
+        EnumerateFiles(start, pattern, out _);
 
     /// <summary>
     /// The same walk, plus whether it <b>could not even start</b>.
@@ -199,10 +199,16 @@ internal static class WorkspaceScan
     /// overload; the others keep the short one.
     /// </para>
     /// </remarks>
-    public static IEnumerable<string> EnumerateFiles(string start, string pattern, string? root, out bool failed)
+    public static IEnumerable<string> EnumerateFiles(string start, string pattern, out bool failed)
     {
         failed = false;
-        var judgedBelow = string.IsNullOrEmpty(root) ? start : root;
+        // ⚠ Judged below the START, not below the root: the exclusions keep build output and third-party code out
+        // of a walk started ABOVE them. A folder the caller named itself — `node_modules/left-pad` to read a
+        // library, `bin/Debug` to check an output — is the target, and judged below the root it came back empty:
+        // "this folder is empty", about one that is not. Below it, the exclusions still apply (its own
+        // node_modules), and a walk from the root is judged exactly as before — nor are the folders above the
+        // workspace, which is where the user keeps it.
+        var judgedBelow = start;
         // Defence in depth: a pattern with a directory part never reaches the walk (see NormalizeFilePattern).
         if (NormalizeFilePattern(pattern) is not { } safePattern) { failed = true; return []; }
         try

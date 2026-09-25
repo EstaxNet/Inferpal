@@ -111,7 +111,7 @@ public sealed class UnlistableFolderCoverageTests : IDisposable
     {
         Assert.ThrowsAny<UnauthorizedAccessException>(() => Directory.EnumerateFiles(_lockedDir).ToList());
 
-        var walk = WorkspaceScan.EnumerateFiles(_root, "*.cs", _root, out var failed).ToList();
+        var walk = WorkspaceScan.EnumerateFiles(_root, "*.cs", out var failed).ToList();
         Assert.False(failed);                                   // the walk believes it succeeded
         Assert.DoesNotContain(walk, f => Path.GetFileName(f) == "Caller.cs");
         Assert.Contains(walk, f => Path.GetFileName(f) == "Target.cs");

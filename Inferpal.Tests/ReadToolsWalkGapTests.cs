@@ -127,7 +127,7 @@ public sealed class ReadToolsWalkGapTests : IDisposable
     {
         Assert.ThrowsAny<UnauthorizedAccessException>(() => Directory.EnumerateFiles(_lockedDir).ToList());
 
-        var walk = WorkspaceScan.EnumerateFiles(_root, "*", _root, out var failed).ToList();
+        var walk = WorkspaceScan.EnumerateFiles(_root, "*", out var failed).ToList();
         Assert.False(failed);                                            // the walk believes it succeeded
         Assert.DoesNotContain(walk, f => Path.GetFileName(f) == "Hidden.cs");
         Assert.Contains(walk, f => Path.GetFileName(f) == "Visible.cs");

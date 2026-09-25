@@ -182,7 +182,7 @@ public class WorkspaceScanTests
         var root = NewTree(("src/A.cs", "x"), ("src/Makefile", "x"), ("src/note.txt", "x"));
         try
         {
-            var got = WorkspaceScan.EnumerateFiles(root, pattern, root)
+            var got = WorkspaceScan.EnumerateFiles(root, pattern)
                                    .Select(Path.GetFileName).OrderBy(f => f, StringComparer.Ordinal);
             Assert.Equal(expected, string.Join(" ", got));
         }
@@ -201,7 +201,7 @@ public class WorkspaceScanTests
         try
         {
             Assert.Equal("*", WorkspaceScan.NormalizeFilePattern("."));
-            Assert.Equal(3, WorkspaceScan.EnumerateFiles(root, ".", root).Count());
+            Assert.Equal(3, WorkspaceScan.EnumerateFiles(root, ".").Count());
         }
         finally { DeleteTree(root); }
     }
