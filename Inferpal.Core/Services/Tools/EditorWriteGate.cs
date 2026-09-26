@@ -36,8 +36,16 @@ namespace Inferpal.Services.Tools;
 /// </remarks>
 internal static class EditorWriteGate
 {
-    /// <summary>Outcome of the gate: the document to edit, or the message to return instead.</summary>
-    internal readonly record struct Decision(ActiveDocument? Document, string? Refusal)
+    /// <summary>
+    /// Outcome of the gate: the document to edit and the text to write into it, or the message to return instead.
+    /// </summary>
+    /// <param name="Text">
+    /// The text in the document's own line endings. ⚠ Model output is LF and Visual Studio's editor inserts a text
+    /// exactly as given: a CRLF document (its default on Windows) otherwise gets LF lines in the middle — the mixed
+    /// endings <c>apply_diff</c>, <c>write_file</c> and the code actions convert away. A document without a line
+    /// break says nothing about its convention: the text is kept as given.
+    /// </param>
+    internal readonly record struct Decision(ActiveDocument? Document, string? Refusal, string? Text = null)
     {
         internal bool MayProceed => Document is not null;
     }
@@ -65,6 +73,7 @@ internal static class EditorWriteGate
         // lives in the editor's own undo stack, which is where the user looks for it. What the
         // snapshot buys is /undo-run, which reads the disk copy.
         await history.SnapshotAsync(document.Path, ct);
-        return new(document, null);
+        return new(document, null,
+            document.Text.Contains('\n') ? LineEndings.ToEol(text, LineEndings.Dominant(document.Text)) : text);
     }
 }

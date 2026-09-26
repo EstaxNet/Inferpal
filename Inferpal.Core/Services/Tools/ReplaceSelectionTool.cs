@@ -44,6 +44,7 @@ internal class ReplaceSelectionTool : ITool
         var gate = await EditorWriteGate.AuthorizeAsync(_editor, _approval, _history, Name, text, ct);
         if (!gate.MayProceed) return gate.Refusal!;
 
+        text = gate.Text!;
         var result = await _editor.ReplaceSelectionAsync(text, ct);
         // ⚠ See InsertAtCursorTool: past the gate, null means "the edit did not apply".
         if (result is null)
