@@ -69,7 +69,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         _http.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
     }
 
-    public string ServerName => _config.Name;
+    public override string ServerName => _config.Name;
 
     /// <summary>Set when the server rejected the request with 401 and OAuth is configured — the user
     /// must (re-)authorize via the settings UI. Surfaced as a distinct connection status.</summary>

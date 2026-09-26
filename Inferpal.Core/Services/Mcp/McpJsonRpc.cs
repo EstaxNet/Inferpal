@@ -130,6 +130,12 @@ internal static class McpJsonRpc
     internal const string UnknownError = "unknown error";
 
     /// <summary>A string member of an object; null when the element is not an object or the member not a string.</summary>
+    /// <summary>The cursor of the next page of a paginated listing; <c>null</c> when this page is the last.</summary>
+    public static string? NextCursor(JsonElement result) =>
+        result.ValueKind == JsonValueKind.Object && StringProperty(result, "nextCursor") is { Length: > 0 } cursor
+            ? cursor
+            : null;
+
     private static string? StringProperty(JsonElement element, string name) =>
         element.ValueKind == JsonValueKind.Object
         && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String

@@ -39,7 +39,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     public McpStdioClient(McpServerConfig config) => _config = config;
 
     /// <summary>The server name this client is bound to (for tool namespacing and diagnostics).</summary>
-    public string ServerName => _config.Name;
+    public override string ServerName => _config.Name;
 
     /// <summary>Last connection error, if <see cref="StartAsync"/> returned <c>false</c>.</summary>
 

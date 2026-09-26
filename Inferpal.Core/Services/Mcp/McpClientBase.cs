@@ -33,6 +33,12 @@ internal abstract class McpClientBase
     /// <summary>Budget for a tool invocation, which may legitimately do real work.</summary>
     private protected static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(120);
 
+    /// <summary>The server name this client is bound to (for tool namespacing and diagnostics).</summary>
+    public abstract string ServerName { get; }
+
+    /// <summary>Pages of a tools/list followed before the listing stops and says so.</summary>
+    private const int MaxToolPages = 50;
+
     /// <summary>Transport-specific request/response exchange.</summary>
     private protected abstract Task<JsonElement> SendRequestAsync(
         string method, JsonNode @params, CancellationToken ct);
@@ -46,6 +52,10 @@ internal abstract class McpClientBase
     /// Never an exception: an MCP server that is down must cost the user a missing tool, not a broken turn.
     /// But never an empty list either: read as one, a slow reply to a list-changed notice removed every tool
     /// of the server, and a server that did not answer showed as connected with nothing to offer.
+    /// ⚠ The listing is PAGINATED by the protocol: a server may answer one page and a <c>nextCursor</c>. Reading
+    /// the first page only, every tool after it is missing without a word — and the model reads a missing tool as
+    /// one the server does not have. A cursor that repeats, or pages beyond the bound, stop the listing with what it
+    /// has, and say so.
     /// </remarks>
     public async Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct)
     {
@@ -53,8 +63,27 @@ internal abstract class McpClientBase
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(HandshakeTimeout);
-            var result = await SendRequestAsync("tools/list", new JsonObject(), cts.Token).ConfigureAwait(false);
-            return McpJsonRpc.ParseTools(result);
+            var tools = new List<McpToolInfo>();
+            string? cursor = null;
+            for (var page = 1; ; page++)
+            {
+                var @params = new JsonObject();
+                if (cursor is not null) @params["cursor"] = cursor;
+                var result = await SendRequestAsync("tools/list", @params, cts.Token).ConfigureAwait(false);
+                tools.AddRange(McpJsonRpc.ParseTools(result));
+
+                var next = McpJsonRpc.NextCursor(result);
+                if (next is null) return tools;
+                if (next == cursor || page >= MaxToolPages)
+                {
+                    Diagnostics.Record("Mcp",
+                        $"'{ServerName}' tools/list: stopped after {page} page(s) ({tools.Count} tools) — " +
+                        (next == cursor ? "the server repeated its cursor" : $"more than {MaxToolPages} pages") +
+                        "; any tool listed after that is not offered.");
+                    return tools;
+                }
+                cursor = next;
+            }
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {

@@ -380,4 +380,54 @@ public class McpHttpClientTests
             Environment.SetEnvironmentVariable("INFERPAL_EXP_A", null);
         }
     }
+    private static string? CursorOf(string body) =>
+        JsonDocument.Parse(body).RootElement.TryGetProperty("params", out var p)
+        && p.ValueKind == JsonValueKind.Object && p.TryGetProperty("cursor", out var c) ? c.GetString() : null;
+
+    /// <summary>
+    /// MCP paginates tools/list: a server may answer one page and a <c>nextCursor</c>. Only the first page was read,
+    /// so every tool after it was missing without a word — the model reads a missing tool as one the server does not
+    /// have.
+    /// </summary>
+    [Fact]
+    public async Task ListTools_FollowsTheCursor_ToEveryPage()
+    {
+        var handler = new StubHandler
+        {
+            Respond = Responder(toolsList: b => CursorOf(b) switch
+            {
+                null     => Result(b, """{ "tools": [ { "name": "first" } ], "nextCursor": "page-2" }"""),
+                "page-2" => Result(b, """{ "tools": [ { "name": "second" } ], "nextCursor": "page-3" }"""),
+                _        => Result(b, """{ "tools": [ { "name": "third" } ] }"""),
+            }),
+        };
+        await using var client = Client(handler);
+        await client.StartAsync(CancellationToken.None);
+
+        var tools = await client.ListToolsAsync(CancellationToken.None);
+
+        Assert.Equal(["first", "second", "third"], tools!.Select(t => t.Name));
+    }
+
+    [Fact]
+    public async Task ListTools_ACursorThatRepeats_DoesNotHoldTheListing()
+    {
+        // A server that answers the same cursor forever: the listing ends, with what it got.
+        var lists = 0;
+        var handler = new StubHandler
+        {
+            Respond = Responder(toolsList: b =>
+            {
+                lists++;
+                return Result(b, """{ "tools": [ { "name": "again" } ], "nextCursor": "same" }""");
+            }),
+        };
+        await using var client = Client(handler);
+        await client.StartAsync(CancellationToken.None);
+
+        var tools = await client.ListToolsAsync(CancellationToken.None);
+
+        Assert.NotNull(tools);
+        Assert.InRange(lists, 1, 3);
+    }
 }
