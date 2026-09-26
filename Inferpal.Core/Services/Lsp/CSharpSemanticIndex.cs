@@ -186,7 +186,10 @@ internal sealed class CSharpSemanticIndex
         {
             try
             {
-                var text = File.ReadAllText(path);
+                // ⚠ Through the shared reader: rename_symbol applies these spans to the text TextFileEncoding
+                // decodes, and a legacy-encoded file read as UTF-8 does not keep one character per byte (é + NBSP +
+                // » is valid UTF-8, one character for three) — every later offset was off, and the rename refused.
+                var text = Tools.TextFileEncoding.ReadText(path);
                 _treesByPath[path] = CSharpSyntaxTree.ParseText(text, path: path);
             }
             catch (Exception ex) { Diagnostics.Swallow($"CSharpSemanticIndex.Parse({Path.GetFileName(path)})", ex); }
@@ -231,7 +234,7 @@ internal sealed class CSharpSemanticIndex
         }
 
         SyntaxTree newTree;
-        try { newTree = CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path); }
+        try { newTree = CSharpSyntaxTree.ParseText(Tools.TextFileEncoding.ReadText(path), path: path); }
         catch (Exception ex)
         {
             // A file being written to is transiently unreadable; keeping the previous tree is a

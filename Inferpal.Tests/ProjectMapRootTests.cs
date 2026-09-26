@@ -57,6 +57,24 @@ public class ProjectMapRootTests : IDisposable
     }
 
     [Fact]
+    public async Task ALegacyEncodedFile_IsMappedWithTheNamesItDeclares()
+    {
+        // Accented identifiers are C#; in a Windows-1252 file read raw as UTF-8, "Élève" became "\uFFFDl\uFFFDve" — a
+        // name the model cannot search for.
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        var root = Directory.CreateDirectory(Path.Combine(_base, "legacy")).FullName;
+        File.WriteAllBytes(Path.Combine(root, "Eleve.cs"),
+            System.Text.Encoding.GetEncoding(1252).GetBytes("namespace École;\r\npublic class Élève { }\r\n"));
+        var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        index.SetRoot(root);
+
+        var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
+
+        Assert.Contains("École", map, StringComparison.Ordinal);
+        Assert.DoesNotContain("\uFFFD", map, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TheHost_GivesTheMapServiceTheIndex()
     {
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Host", "HostServer.cs"));

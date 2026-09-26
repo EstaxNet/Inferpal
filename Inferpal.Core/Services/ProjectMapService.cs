@@ -82,7 +82,8 @@ internal sealed class ProjectMapService
             ct.ThrowIfCancellationRequested();
             try
             {
-                var src = await File.ReadAllTextAsync(file, ct);
+                // The map cites the names a file declares; a legacy-encoded file read as UTF-8 cited a replacement character for each accent.
+                var src = await Tools.TextFileEncoding.ReadTextAsync(file, ct);
                 contents[file] = src;
                 var rel = Path.GetRelativePath(root, file);
                 var ns  = ExtractNamespace(src) ?? "global";

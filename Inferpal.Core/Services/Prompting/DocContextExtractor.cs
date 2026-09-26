@@ -309,7 +309,8 @@ internal static class DocContextExtractor
                         continue;
                     }
 
-                    var src = await File.ReadAllTextAsync(candidate, ct);
+                    // The summaries below are quoted to the model, which writes its doc comment from them.
+                    var src = await Tools.TextFileEncoding.ReadTextAsync(candidate, ct);
                     filesScanned++;
 
                     foreach (var ifaceName in interfaceNames)
