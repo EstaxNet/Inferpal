@@ -776,6 +776,7 @@ ollama serve
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать библиотеку фрагментов ({0}) — это НЕ «фрагменты не сохранены». Ваши фрагменты по-прежнему в этом файле; Inferpal откладывает его перед записью нового. Причина — в /diagnostics.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Использование: `/note &lt;текст&gt;` — добавляет заметку с отметкой времени в `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Заметка сохранена: *{0}*</value></data>
+  <data name="NoteCannotHold" xml:space="preserve"><value>⚠ Заметка не сохранена: .inferpal/notes.md сохранён в {1} — устаревшей кодовой странице без «{0}»; при записи этот символ превратился бы в другой. Уберите его или преобразуйте файл в UTF-8 в редакторе.</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Заметки проекта очищены.</value></data>
   <data name="NotesNoneYet" xml:space="preserve"><value>Заметок проекта пока нет. Используйте `/note &lt;текст&gt;`, чтобы добавить.</value></data>
   <data name="NotesEmpty" xml:space="preserve"><value>Файл заметок проекта пуст.</value></data>

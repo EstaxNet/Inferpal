@@ -778,6 +778,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ スニペットライブラリを読み取れませんでした ({0})。「保存済みのスニペットなし」という意味ではありません。スニペットはそのファイルに残っており、Inferpal は新しく書き込む前に退避します。原因は /diagnostics をご覧ください。</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>使い方: `/note &lt;テキスト&gt;` — タイムスタンプ付きのメモを `.inferpal/notes.md` に追加します。</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>メモを保存しました: *{0}*</value></data>
+  <data name="NoteCannotHold" xml:space="preserve"><value>⚠ メモは保存されませんでした: .inferpal/notes.md は {1}（従来のコードページ）で保存されており、「{0}」を表せません。そのまま書き込むと別の文字に変わります。その文字を除くか、エディターでファイルを UTF-8 に変換してください。</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>プロジェクトのメモをクリアしました。</value></data>
   <data name="NotesNoneYet" xml:space="preserve"><value>プロジェクトのメモはまだありません。`/note &lt;テキスト&gt;` で追加できます。</value></data>
   <data name="NotesEmpty" xml:space="preserve"><value>プロジェクトのメモファイルは空です。</value></data>

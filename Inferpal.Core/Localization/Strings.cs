@@ -1018,6 +1018,8 @@ internal static class Strings
 
     public static string NoteUsage                           => Get(nameof(NoteUsage));
     public static string NoteSaved(string text)              => string.Format(Get(nameof(NoteSaved)), text);
+    public static string NoteCannotHold(string character, string encoding) =>
+        string.Format(Get(nameof(NoteCannotHold)), character, encoding);
     public static string NotesCleared                        => Get(nameof(NotesCleared));
     public static string NotesNoneYet                        => Get(nameof(NotesNoneYet));
     public static string NotesEmpty                          => Get(nameof(NotesEmpty));

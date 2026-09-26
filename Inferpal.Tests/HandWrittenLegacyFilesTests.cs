@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using Inferpal.Config;
+using Inferpal.Services.Commands;
 using Inferpal.Services.Governance;
 using Inferpal.Services.Persistence;
 using Inferpal.Services.Prompting;
@@ -88,5 +89,47 @@ public sealed class HandWrittenLegacyFilesTests : IDisposable
         var rule = Assert.Single(RulesService.Load(Inferpal("rules")));
 
         Assert.Contains("Toujours répondre en français.", rule.Body);
+    }
+
+    [Fact]
+    public async Task Note_AppendedToAHandWrittenLegacyNotesFile_KeepsBothTheirAccents()
+    {
+        // Appended in UTF-8, the note made the file valid in neither encoding: read back in the legacy code page (the
+        // bytes the user wrote are not UTF-8), the new note reached the prompt as "dÃ©cision".
+        File.WriteAllBytes(Inferpal("notes.md"), [.. "- [2026-09-01 10:00] caf"u8, 0xE9, .. " au lait\n"u8]);
+
+        await NotesCommandHandler.HandleNoteAsync(_root, ["/note", "décision", "prise"], new DateTime(2026, 9, 26, 12, 0, 0), CancellationToken.None);
+
+        var notes = await NotesStore.ReadAsync(_root, CancellationToken.None);
+        Assert.Contains("décision prise", notes);                                              // witness: appended
+        Assert.Contains("café au lait", notes);
+    }
+
+    [Fact]
+    public async Task Note_ACharacterTheLegacyFileCannotHold_IsRefusedByName_AndTheFileIsUntouched()
+    {
+        // No single-byte code page holds an emoji: encoded anyway, the fallback writes "?" in its place.
+        byte[] before = [.. "- [2026-09-01 10:00] caf"u8, 0xE9, .. " au lait\n"u8];
+        File.WriteAllBytes(Inferpal("notes.md"), before);
+
+        var result = await NotesCommandHandler.HandleNoteAsync(_root, ["/note", "déployé", "🚀"], DateTime.Now, CancellationToken.None);
+
+        Assert.Contains("🚀", result.Message);                                              // named: the character…
+        Assert.Contains(TextFileEncoding.LegacyEncoding.WebName, result.Message);            // …and the code page
+        Assert.False(result.RefreshSystemPrompt);
+        Assert.Equal(before, File.ReadAllBytes(Inferpal("notes.md")));
+    }
+
+    [Fact]
+    public async Task Note_OnAUtf8NotesFile_AppendsAsBefore()
+    {
+        // Reference arm: the ordinary file, UTF-8 — the emoji a legacy file refuses is written, the first note kept.
+        await NotesCommandHandler.HandleNoteAsync(_root, ["/note", "première"], DateTime.Now, CancellationToken.None);
+        var result = await NotesCommandHandler.HandleNoteAsync(_root, ["/note", "déployé", "🚀"], DateTime.Now, CancellationToken.None);
+
+        var notes = await NotesStore.ReadAsync(_root, CancellationToken.None);
+        Assert.True(result.RefreshSystemPrompt);
+        Assert.Contains("première", notes);
+        Assert.Contains("déployé 🚀", notes);
     }
 }

@@ -778,6 +778,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ 스니펙 라이브러리를 읽지 못했습니다 ({0}). “저장된 스니펙 없음”이 아닙니다. 스니펙은 그 파일에 그대로 있으며, Inferpal은 새로 쓰기 전에 파일을 따로 보관합니다. 원인은 /diagnostics를 보세요.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>사용법: `/note &lt;텍스트&gt;` — 타임스탬프가 있는 메모를 `.inferpal/notes.md`에 추가합니다.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>메모를 저장했습니다: *{0}*</value></data>
+  <data name="NoteCannotHold" xml:space="preserve"><value>⚠ 메모를 저장하지 않았습니다: .inferpal/notes.md는 {1}(레거시 코드 페이지)로 저장되어 있어 '{0}' 문자를 담을 수 없습니다. 그대로 쓰면 다른 문자로 바뀝니다. 해당 문자를 빼거나 편집기에서 파일을 UTF-8로 변환하세요.</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>프로젝트 메모를 지웠습니다.</value></data>
   <data name="NotesNoneYet" xml:space="preserve"><value>프로젝트 메모가 아직 없습니다. `/note &lt;텍스트&gt;`로 추가하세요.</value></data>
   <data name="NotesEmpty" xml:space="preserve"><value>프로젝트 메모 파일이 비어 있습니다.</value></data>

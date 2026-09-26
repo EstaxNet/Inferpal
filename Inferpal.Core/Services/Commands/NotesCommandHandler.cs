@@ -36,8 +36,9 @@ internal static class NotesCommandHandler
             return new(Strings.NoteUsage);
 
         var text = string.Join(" ", parts[1..]);
-        await NotesStore.AppendAsync(projectRoot, text, now, ct);
-        return new(Strings.NoteSaved(text), RefreshSystemPrompt: true);
+        return await NotesStore.AppendAsync(projectRoot, text, now, ct) is { } refused
+            ? new(Strings.NoteCannotHold(refused.Character, refused.Encoding))
+            : new(Strings.NoteSaved(text), RefreshSystemPrompt: true);
     }
 
     /// <summary>Handles <c>/notes</c> (show all) and <c>/notes clear</c>.</summary>

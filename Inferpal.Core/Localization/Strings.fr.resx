@@ -786,6 +786,7 @@ Rédigez maintenant la réponse finale complète à ma demande la plus récente,
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ La bibliothèque d'extraits n'a pas pu être lue ({0}) — ce n'est PAS « aucun extrait enregistré ». Vos extraits sont toujours dans ce fichier ; Inferpal le met de côté avant d'écrire quoi que ce soit. Voir /diagnostics pour la cause.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Utilisation : `/note &lt;texte&gt;` — ajoute une note horodatée à `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Note enregistrée : *{0}*</value></data>
+  <data name="NoteCannotHold" xml:space="preserve"><value>⚠ Note non enregistrée : .inferpal/notes.md est enregistré en {1}, une page de code héritée sans « {0} » — écrit quand même, ce caractère en deviendrait un autre. Retirez-le, ou convertissez le fichier en UTF-8 dans votre éditeur.</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Notes de projet effacées.</value></data>
   <data name="NotesNoneYet" xml:space="preserve"><value>Aucune note de projet pour l'instant. Utilisez `/note &lt;texte&gt;` pour en ajouter une.</value></data>
   <data name="NotesEmpty" xml:space="preserve"><value>Le fichier de notes de projet est vide.</value></data>

@@ -790,6 +790,7 @@ ollama serve
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ The snippet library could not be read ({0}) — this is NOT "no snippets saved". Your snippets are still in that file; Inferpal sets it aside before writing anything new. See /diagnostics for the reason.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Usage: `/note &lt;text&gt;` — appends a timestamped note to `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Note saved: *{0}*</value></data>
+  <data name="NoteCannotHold" xml:space="preserve"><value>⚠ Note not saved: .inferpal/notes.md is saved in {1}, a legacy code page with no '{0}' — written anyway, it would turn into another character. Leave that character out, or convert the file to UTF-8 in your editor.</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Project notes cleared.</value></data>
   <data name="NotesNoneYet" xml:space="preserve"><value>No project notes yet. Use `/note &lt;text&gt;` to add one.</value></data>
   <data name="NotesEmpty" xml:space="preserve"><value>Project notes file is empty.</value></data>

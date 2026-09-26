@@ -778,6 +778,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać biblioteki fragmentów ({0}) — to NIE znaczy „brak zapisanych fragmentów”. Twoje fragmenty nadal są w tym pliku; Inferpal odkłada go na bok przed zapisaniem czegokolwiek nowego. Przyczynę zobaczysz w /diagnostics.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Użycie: `/note &lt;tekst&gt;` — dodaje notatkę ze znacznikiem czasu do `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Zapisano notatkę: *{0}*</value></data>
+  <data name="NoteCannotHold" xml:space="preserve"><value>⚠ Notatka nie została zapisana: .inferpal/notes.md jest zapisany w {1}, starszej stronie kodowej bez „{0}” — zapisany mimo to, ten znak zmieniłby się w inny. Usuń ten znak albo przekonwertuj plik na UTF-8 w edytorze.</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Wyczyszczono notatki projektu.</value></data>
   <data name="NotesNoneYet" xml:space="preserve"><value>Brak notatek projektu. Użyj `/note &lt;tekst&gt;`, aby dodać.</value></data>
   <data name="NotesEmpty" xml:space="preserve"><value>Plik notatek projektu jest pusty.</value></data>

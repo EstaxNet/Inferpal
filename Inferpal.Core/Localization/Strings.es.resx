@@ -778,6 +778,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ No se pudo leer la biblioteca de fragmentos ({0}): esto NO significa «ningún fragmento guardado». Sus fragmentos siguen en ese archivo; Inferpal lo aparta antes de escribir nada nuevo. Consulte /diagnostics para ver la causa.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Uso: `/note &lt;texto&gt;` — añade una nota con marca de tiempo a `.inferpal/notes.md`.</value></data>
   <data name="NoteSaved" xml:space="preserve"><value>Nota guardada: *{0}*</value></data>
+  <data name="NoteCannotHold" xml:space="preserve"><value>⚠ Nota no guardada: .inferpal/notes.md está guardado en {1}, una página de códigos heredada sin «{0}»; escrito de todos modos, se convertiría en otro carácter. Quite ese carácter o convierta el archivo a UTF-8 en su editor.</value></data>
   <data name="NotesCleared" xml:space="preserve"><value>Notas del proyecto borradas.</value></data>
   <data name="NotesNoneYet" xml:space="preserve"><value>Aún no hay notas del proyecto. Usa `/note &lt;texto&gt;` para añadir una.</value></data>
   <data name="NotesEmpty" xml:space="preserve"><value>El archivo de notas del proyecto está vacío.</value></data>
