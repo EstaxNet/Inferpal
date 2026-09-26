@@ -237,16 +237,62 @@ internal class RunTestsTool : ITool
         workDir = NearestWith(workDir, root, File.Exists, "package.json") ?? workDir;
         var args = new List<string>(npm.Prefix) { "test" };
         Dictionary<string, string>? env = null;
+        string? note = null;
         if (!string.IsNullOrWhiteSpace(filter))
         {
             // Unreadable, the script says nothing: the filter goes out in jest's form.
-            var (extra, nodeOptions) = NpmFilter(PackageJson.TestScript(workDir), filter,
-                                                 Environment.GetEnvironmentVariable("NODE_OPTIONS"));
-            args.AddRange(extra);
-            if (nodeOptions is not null) env = new() { ["NODE_OPTIONS"] = nodeOptions };
+            var script = PackageJson.TestScript(workDir);
+            // On Windows npm runs through the node.exe beside it — the node its test script will get.
+            var takesFlags = !IsNodeTestRunner(script)
+                || await NodeOptionsTakeTestFlagsAsync(OperatingSystem.IsWindows() ? npm.FileName : "node", ct);
+            var plan = NpmFilter(script, filter, Environment.GetEnvironmentVariable("NODE_OPTIONS"), takesFlags);
+            args.AddRange(plan.Args);
+            if (plan.NodeOptions is not null) env = new() { ["NODE_OPTIONS"] = plan.NodeOptions };
+            note = plan.Note;
         }
         var (output, exitCode) = await RunProcessAsync(npm.FileName, string.Empty, workDir, budget, ct, args, env);
-        return PathDoesNotNarrow("npm", path, workDir) + ParseNpmOutput(output, exitCode, filter);
+        return note + PathDoesNotNarrow("npm", path, workDir) + ParseNpmOutput(output, exitCode, filter);
+    }
+
+    private static bool IsNodeTestRunner(string? testScript) =>
+        testScript is not null && Regex.IsMatch(testScript, @"(?<!\S)--test(?!\S)", RegexOptions.None, RegexBudget.Default);
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _nodeTakesTestFlags = new();
+
+    /// <summary>Whether this Node accepts <c>--test-name-pattern</c> in <c>NODE_OPTIONS</c> — asked of the Node itself.</summary>
+    /// <remarks>
+    /// ⚠ Node 20, 21 and early 22 refuse it ("is not allowed in NODE_OPTIONS", exit 9): the whole run failed on the
+    /// filter's account, and /tdd read that as a red suite. The boundary is a 22.x minor, so the Node is asked, once.
+    /// </remarks>
+    private static async Task<bool> NodeOptionsTakeTestFlagsAsync(string node, CancellationToken ct)
+    {
+        if (_nodeTakesTestFlags.TryGetValue(node, out var known)) return known;
+        try
+        {
+            var psi = new ProcessStartInfo(node) { UseShellExecute = false, CreateNoWindow = true };
+            psi.ArgumentList.Add("-e");
+            psi.ArgumentList.Add("");
+            psi.Environment["NODE_OPTIONS"] = "--test-name-pattern=probe";
+            var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(15), ct);
+            return _nodeTakesTestFlags[node] = !run.TimedOut && run.ExitCode == 0;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("RunTestsTool.NodeOptionsTakeTestFlags", ex);
+            return false;
+        }
+    }
+
+    /// <summary>Where a filter goes: arguments after <c>--</c>, the <c>NODE_OPTIONS</c> to run with, and what to say
+    /// when it cannot go anywhere.</summary>
+    internal readonly record struct NpmFilterPlan(IReadOnlyList<string> Args, string? NodeOptions, string? Note = null)
+    {
+        public void Deconstruct(out IReadOnlyList<string> args, out string? nodeOptions)
+        {
+            args        = Args;
+            nodeOptions = NodeOptions;
+        }
     }
 
     /// <summary>
@@ -261,17 +307,40 @@ internal class RunTestsTool : ITool
     /// runs, without a word. <c>NODE_OPTIONS</c> reaches it whatever the script's shape; its quotes keep a filter
     /// with spaces in one piece. mocha reads options anywhere on its command line.
     /// </remarks>
-    internal static (IReadOnlyList<string> Args, string? NodeOptions) NpmFilter(string? testScript, string filter, string? inheritedNodeOptions)
+    /// <param name="nodeOptionsTakeTestFlags">
+    /// Whether the Node that runs the script accepts the flag in <c>NODE_OPTIONS</c>. When it does not, a script that
+    /// names no test file takes the flag as an argument (after <c>--test</c>, still an option there); a script that
+    /// names its files cannot take it at all, and the whole suite runs — said, never silent.
+    /// </param>
+    internal static NpmFilterPlan NpmFilter(string? testScript, string filter, string? inheritedNodeOptions,
+                                            bool nodeOptionsTakeTestFlags = true)
     {
-        if (testScript is not null && Regex.IsMatch(testScript, @"(?<!\S)--test(?!\S)", RegexOptions.None, RegexBudget.Default))
+        if (IsNodeTestRunner(testScript))
         {
-            var quoted = "--test-name-pattern=\"" + filter.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
-            return ([], string.IsNullOrWhiteSpace(inheritedNodeOptions) ? quoted : inheritedNodeOptions + " " + quoted);
+            if (nodeOptionsTakeTestFlags)
+            {
+                var quoted = "--test-name-pattern=\"" + filter.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+                return new([], string.IsNullOrWhiteSpace(inheritedNodeOptions) ? quoted : inheritedNodeOptions + " " + quoted);
+            }
+            if (!NamesAnOperandAfterTest(testScript!))
+                return new(["--", $"--test-name-pattern={filter}"], null);
+            return new([], null,
+                $"⚠ The filter '{filter}' was NOT applied: this Node does not accept --test-name-pattern in NODE_OPTIONS, and " +
+                "the test script names its test files, after which an argument goes to the tests instead of Node. The " +
+                "whole suite ran; its result is below.\n\n");
         }
         var flag = testScript is not null && Regex.IsMatch(testScript, @"\bmocha\b", RegexOptions.None, RegexBudget.Default)
             ? $"--grep={filter}"
             : $"--testNamePattern={filter}";   // jest and vitest — and the default when the script says nothing
-        return (["--", flag], null);
+        return new(["--", flag], null);
+    }
+
+    /// <summary>Whether anything but options follows <c>--test</c> in the script — a file, a glob, another command.</summary>
+    private static bool NamesAnOperandAfterTest(string testScript)
+    {
+        var tokens = testScript.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var at = Array.IndexOf(tokens, "--test");
+        return at < 0 || tokens.Skip(at + 1).Any(t => !t.StartsWith('-'));
     }
 
 

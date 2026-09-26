@@ -66,6 +66,39 @@ public sealed class NpmTestFilterTests : IDisposable
         Assert.Null(nodeOptions);
     }
 
+    [Fact]
+    public void ANodeThatRefusesTheFlagInNodeOptions_TakesItAsAnArgument_WhenTheScriptNamesNoFile()
+    {
+        // Node 20, 21 and early 22: "--test-name-pattern= is not allowed in NODE_OPTIONS", exit 9 — the whole run failed.
+        var plan = RunTestsTool.NpmFilter("node --test", "alpha works", null, nodeOptionsTakeTestFlags: false);
+
+        Assert.Equal(["--", "--test-name-pattern=alpha works"], plan.Args);
+        Assert.Null(plan.NodeOptions);
+        Assert.Null(plan.Note);
+    }
+
+    [Fact]
+    public void ANodeThatRefusesTheFlag_AndAScriptThatNamesItsFiles_RunsTheSuite_AndSaysTheFilterWasNotApplied()
+    {
+        // After a named file an argument goes to the tests, not to Node: nothing can carry the filter there.
+        var plan = RunTestsTool.NpmFilter("node --test test/a.test.js", "alpha", null, nodeOptionsTakeTestFlags: false);
+
+        Assert.Empty(plan.Args);
+        Assert.Null(plan.NodeOptions);
+        Assert.StartsWith("⚠ The filter 'alpha' was NOT applied", plan.Note);
+    }
+
+    /// <summary>Whether the machine's Node takes the flag in NODE_OPTIONS — asked independently of the product's probe.</summary>
+    private static bool NodeTakesTestFlagsInNodeOptions()
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo(OperatingSystem.IsWindows() ? "node.exe" : "node", "-e \"\"")
+            { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        psi.Environment["NODE_OPTIONS"] = "--test-name-pattern=x";
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        p.WaitForExit(30_000);
+        return p.ExitCode == 0;
+    }
+
     [Theory]
     [InlineData("node --test")]
     [InlineData("node --test test/a.test.js")]
@@ -85,6 +118,11 @@ public sealed class NpmTestFilterTests : IDisposable
         using var args = JsonDocument.Parse(JsonSerializer.Serialize(new { path = _dir, runner = "npm", filter = "alpha" }));
         var report = await new RunTestsTool(() => _dir).ExecuteAsync(args.RootElement, CancellationToken.None);
 
-        Assert.StartsWith("✓ PASSED — Failed: 0, Passed: 1", report);
+        // A Node that refuses the flag in NODE_OPTIONS cannot filter a script that names its files: the suite runs,
+        // and the report says so first. Every other case runs exactly the matching test.
+        if (script.EndsWith(".js", StringComparison.Ordinal) && !NodeTakesTestFlagsInNodeOptions())
+            Assert.StartsWith("⚠ The filter 'alpha' was NOT applied", report);
+        else
+            Assert.StartsWith("✓ PASSED — Failed: 0, Passed: 1", report);
     }
 }
