@@ -101,6 +101,24 @@ public class RunnerNoTestFoundTests
         Assert.Contains(RunTestsTool.NoTestFound, report);
     }
 
+    [Fact]
+    public void Pytest_AFilterItCannotParse_SaysWhy_AndIsNothingRan()
+    {
+        // Exit 4 is pytest's usage error. The report kept only "no tests ran" — the reason, on the first line of the
+        // output, never reached the model — and /tdd, reading red, patched code against a malformed -k.
+        var report = RunTestsTool.ParsePytestOutput("""
+            ERROR: Wrong expression passed to '-k': test_a and: at column 11: expected not OR left parenthesis OR identifier; got end of input
+
+            ============================= test session starts =============================
+            collected 3 items
+
+            ============================ no tests ran in 0.01s ============================
+            """, 4);
+
+        AssertNothingRan(report);
+        Assert.Contains("Wrong expression passed to '-k'", report);
+    }
+
     // ── Reference arms: a run where a test DID run keeps its verdict ─────────────
 
     [Fact]

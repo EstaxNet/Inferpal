@@ -442,6 +442,10 @@ internal class RunTestsTool : ITool
     /// a summary parser reads as green. And skipping the failing test is exactly the dishonest way for
     /// a fix loop to go green: <c>/tdd</c> declared victory on the round that added <c>Skip = "…"</c>.
     /// </remarks>
+    /// <summary>pytest refused its own command line (exit 4): nothing ran. Followed by its <c>ERROR:</c> lines.</summary>
+    internal const string PytestUsageError =
+        "⚠ pytest refused its command line (usage error) — nothing ran, so nothing was proven. Its reason:";
+
     internal const string OnlySkipped =
         "⚠ Every test this run selected was skipped — none executed, so nothing was proven; " +
         "that is not a pass.";
@@ -658,6 +662,16 @@ internal class RunTestsTool : ITool
         // "1 skipped, 2 deselected" exits 0: collected, then not one executed.
         else if (summaryMatch.Success && OnlySkippedRx.IsMatch(summaryMatch.Groups[1].Value))
             sb.AppendLine(OnlySkipped);
+
+        // Exit 4 is pytest's usage error — a -k it cannot parse, an option it does not know. Its reason is on the
+        // "ERROR:" lines at the top, which the summary ("no tests ran") drops: read as red, /tdd patched code
+        // against a malformed filter.
+        if (exitCode == 4)
+        {
+            var errors = raw.Split('\n').Select(l => l.Trim())
+                .Where(l => l.StartsWith("ERROR:", StringComparison.Ordinal)).Take(5).ToList();
+            return PytestUsageError + "\n" + (errors.Count > 0 ? string.Join("\n", errors) : Truncate(raw.Trim(), MaxRawChars));
+        }
 
         if (summaryMatch.Success)
             sb.AppendLine(summaryMatch.Groups[1].Value.Trim());
