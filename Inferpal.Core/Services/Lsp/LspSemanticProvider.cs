@@ -80,7 +80,7 @@ internal sealed class LspSemanticProvider : IDisposable
 
     // ── Inner class: one language server instance ──────────────────────────────
 
-    private sealed class LspServerSession : IDisposable
+    internal sealed class LspServerSession : IDisposable
     {
         private readonly string     _languageId;
         private readonly string     _rootDir;
@@ -91,14 +91,21 @@ internal sealed class LspSemanticProvider : IDisposable
         private bool         _failed;           // permanently unavailable
         private int          _initFailures;     // consecutive init attempts that failed transiently
         private int          _channelBreaks;    // sessions whose output channel broke while the server lived
+        private readonly Func<(string name, string args)?>? _findServer;   // tests: the server to launch
+        private Shell.StderrEdges _stderr = new();     // what the current server process wrote on stderr
+        private Task?        _stderrDrain;
 
         private static readonly TimeSpan InitTimeout    = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 
-        internal LspServerSession(string languageId, string rootDir)
+        /// <summary>How long a failed start waits for the server to finish exiting, for its code and last words.</summary>
+        private static readonly TimeSpan ExitGrace = TimeSpan.FromSeconds(2);
+
+        internal LspServerSession(string languageId, string rootDir, Func<(string name, string args)?>? findServer = null)
         {
             _languageId = languageId;
             _rootDir    = rootDir;
+            _findServer = findServer;
         }
 
         // ── Public ─────────────────────────────────────────────────────────────
@@ -183,7 +190,7 @@ internal sealed class LspSemanticProvider : IDisposable
                 }
 
                 // Discover and launch the server
-                var cmd = FindServerCommand(_languageId);
+                var cmd = _findServer is null ? FindServerCommand(_languageId) : _findServer();
                 if (cmd is null)
                 {
                     MarkFailed($"no language server for {_languageId} was found on PATH " +
@@ -199,8 +206,9 @@ internal sealed class LspSemanticProvider : IDisposable
                     return false;
                 }
 
-                // Drain stderr to prevent pipe deadlocks
-                _ = DrainStreamAsync(_process.StandardError.BaseStream);
+                // Drain stderr so a chatty server never blocks on a full pipe — keeping its edges for a failed start.
+                _stderr      = new();
+                _stderrDrain = _stderr.DrainAsync(_process.StandardError);
 
                 _rpc = new LspJsonRpc(_process.StandardInput.BaseStream,
                                        _process.StandardOutput.BaseStream);
@@ -213,9 +221,10 @@ internal sealed class LspSemanticProvider : IDisposable
                 if (initResult is null)
                 {
                     // Null response means the server timed out — transient: allow up to 3 retries.
-                    CleanupProcess();
                     if (++_initFailures >= 3)
-                        MarkFailed($"the {_languageId} language server did not answer 'initialize' three times");
+                        MarkFailed(await WithWhatItSaidAsync(
+                            $"the {_languageId} language server did not answer 'initialize' three times"));
+                    CleanupProcess();
                     return false;
                 }
 
@@ -227,18 +236,51 @@ internal sealed class LspSemanticProvider : IDisposable
             catch (Exception ex)
             {
                 // Transient crash / pipe error - allow up to 3 retries before giving up.
-                CleanupProcess();
                 if (++_initFailures >= 3)
-                    MarkFailed($"the {_languageId} language server failed to start three times " +
-                               $"({ex.GetType().Name}: {ex.Message})");
+                    MarkFailed(await WithWhatItSaidAsync(
+                        $"the {_languageId} language server failed to start three times ({ex.GetType().Name}: {ex.Message})"));
                 else
                     Diagnostics.Swallow($"LspSemanticProvider.Init({_languageId})", ex);
+                CleanupProcess();
                 return false;
             }
             finally
             {
                 _initLock.Release();
             }
+        }
+
+        /// <summary>
+        /// A failure reason completed with what the server itself said: its exit code and the edges of its stderr.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ The failure seen from here is the pipe's — "a task was canceled", "no answer to 'initialize'" — while the
+        /// cause is in what the server wrote on stderr (a module it cannot import, a runtime it cannot find). That is
+        /// the sentence the user needs to repair it, and the only place it exists.
+        /// </remarks>
+        private async Task<string> WithWhatItSaidAsync(string reason)
+        {
+            string? exit = null;
+            if (_process is { } p)
+            {
+                using (var grace = new CancellationTokenSource(ExitGrace))
+                {
+                    try { await p.WaitForExitAsync(grace.Token); }
+                    catch (OperationCanceledException) { /* still alive: it did not answer, it did not die */ }
+                    catch (InvalidOperationException) { /* no process behind the handle */ }
+                }
+                try { if (p.HasExited) exit = $"it exited with code {p.ExitCode}"; }
+                catch (InvalidOperationException) { }
+            }
+            if (_stderrDrain is { } drain)
+            {
+                try { await drain.WaitAsync(ExitGrace); }
+                catch (TimeoutException) { }
+            }
+            var said = _stderr.ToString();
+            return reason
+                 + (exit is null ? "" : "; " + exit)
+                 + (said.Length == 0 ? "" : "; stderr: " + said);
         }
 
         private object BuildInitParams() => new
@@ -397,17 +439,6 @@ internal sealed class LspSemanticProvider : IDisposable
         // ── Helpers ────────────────────────────────────────────────────────────
 
         private static string PathToUri(string path) => new Uri(path).AbsoluteUri;
-
-        private static async Task DrainStreamAsync(Stream stream)
-        {
-            try
-            {
-                var buf = new byte[4096];
-                while (await stream.ReadAsync(buf) > 0) { }
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { Diagnostics.Swallow("LspSemanticProvider.DrainStderr", ex); }
-        }
 
         private void CleanupProcess()
         {
