@@ -200,6 +200,47 @@ public sealed class TestFileLocationTests : IDisposable
         Assert.Equal(existing, TestFilePathResolver.Resolve(source));
     }
 
+    // ── Rust: what cargo compiles ────────────────────────────────────────────────
+    //
+    // A file in src/ is compiled only when a `mod` declares it: the src/parser_test.rs /test wrote was compiled by
+    // nobody — measured with cargo 1.98, `cargo test` stayed green with a failing test in it. Integration tests in
+    // tests/ are found by cargo, and see the library's public API.
+
+    [Fact]
+    public void ARustLibrarySource_GetsItsTestInTheCratesTestsFolder()
+    {
+        Write("Cargo.toml", "[package]\nname = \"my-shop\"\nversion = \"0.1.0\"\n");
+        Write("src/lib.rs", "pub mod parser;");
+        var source = Write("src/parser.rs", "pub fn parse(s: &str) -> i32 { s.parse().unwrap() }");
+
+        var testPath = TestFilePathResolver.Resolve(source);
+
+        Assert.Equal(Path.Combine(_root, "tests", "parser_test.rs"), testPath);
+        // It is its own crate: the model is told how to reach the code, and what it can see.
+        Assert.Contains("use my_shop::", TestGenerationPlanner.FrameworkLine(testPath));
+    }
+
+    [Fact]
+    public void ARustLibNameOverride_IsTheCrateToImport()
+    {
+        Write("Cargo.toml", "[package]\nname = \"my-shop\"\n\n[lib]\nname = \"shop\"\n");
+        Write("src/lib.rs");
+        var source = Write("src/cart.rs");
+
+        Assert.Contains("use shop::", TestGenerationPlanner.FrameworkLine(TestFilePathResolver.Resolve(source)));
+    }
+
+    [Fact]
+    public void AnExistingRustIntegrationTest_IsTheOneExtended()
+    {
+        Write("Cargo.toml", "[package]\nname = \"shop\"\n");
+        Write("src/lib.rs");
+        var existing = Write("tests/parsing/parser_test.rs", "#[test] fn old() {}");
+        var source = Write("src/parser.rs");
+
+        Assert.Equal(existing, TestFilePathResolver.Resolve(source));
+    }
+
     [Fact]
     public void APythonProjectThatKeepsTestsBesideTheSource_StaysThatWay()
     {

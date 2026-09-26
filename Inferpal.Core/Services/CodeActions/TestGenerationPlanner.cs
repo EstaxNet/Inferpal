@@ -70,6 +70,10 @@ internal static class TestGenerationPlanner
     internal static string FrameworkLine(string testPath) =>
         TestFilePathResolver.FrameworkFor(testPath) is { } framework
             ? $"\nThe test project uses {framework}: write the tests for {framework}."
+        // A Rust integration test is a crate of its own: written like a unit test (`use super::*`), it does not compile.
+        : TestFilePathResolver.CargoLibraryName(testPath) is { } crate
+            ? $"\nThis file is a Rust integration test in the crate's tests/ folder: it is compiled as its own crate, so "
+            + $"reach the code with `use {crate}::…` — only the library's public items are visible."
             : string.Empty;
 
     /// <param name="sourcePath">Path of the file under test — decides where the tests go.</param>

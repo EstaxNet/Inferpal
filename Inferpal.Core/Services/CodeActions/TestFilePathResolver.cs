@@ -45,8 +45,78 @@ internal static class TestFilePathResolver
             ".cs"             => InDotnetTestProject(sourcePath, testFile) ?? besideTheSource,
             ".java" or ".kt"  => InMavenTestTree(sourcePath, testFile) ?? besideTheSource,
             ".py"             => InPythonTestTree(sourcePath, testFile) ?? besideTheSource,
+            ".rs"             => InCargoTestsFolder(sourcePath, testFile) ?? besideTheSource,
             _                 => besideTheSource,
         };
+    }
+
+    /// <summary>
+    /// A library crate's integration tests: <c>tests/</c> beside <c>Cargo.toml</c> — an existing test file of that name
+    /// in it first. <c>null</c> for a crate with no library (<c>src/lib.rs</c>), whose code an integration test cannot
+    /// import, and for a source already under <c>tests/</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A file in <c>src/</c> is compiled only when a <c>mod</c> declares it: a test written beside the source was
+    /// compiled by nobody, and <c>cargo test</c> stayed green with a failing test in it.
+    /// </remarks>
+    private static string? InCargoTestsFolder(string sourcePath, string testFile)
+    {
+        try
+        {
+            if (CargoCrateRoot(sourcePath) is not { } crateRoot || !File.Exists(Path.Combine(crateRoot, "src", "lib.rs")))
+                return null;
+            var testsDir = Path.Combine(crateRoot, "tests");
+            var relative = Path.GetRelativePath(testsDir, sourcePath);
+            if (!relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative)) return null;
+
+            var existing = Directory.Exists(testsDir)
+                ? WorkspaceScan.EnumerateFiles(testsDir, testFile).FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileName(f), testFile))
+                : null;
+            return existing ?? Path.Combine(testsDir, testFile);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("TestFilePathResolver.InCargoTestsFolder", ex);
+            return null;
+        }
+    }
+
+    private static string? CargoCrateRoot(string path) =>
+        FindUp(Path.GetDirectoryName(path), f => Path.GetFileName(f).Equals("Cargo.toml", StringComparison.Ordinal), levels: 8)
+            is { } manifest ? Path.GetDirectoryName(manifest) : null;
+
+    /// <summary>
+    /// The name an integration test imports the library by: <c>[lib] name</c>, else <c>[package] name</c> with its
+    /// dashes turned into underscores, as cargo does. <c>null</c> when the path is not a crate's integration test.
+    /// </summary>
+    internal static string? CargoLibraryName(string testPath)
+    {
+        try
+        {
+            if (!Path.GetExtension(testPath).Equals(".rs", StringComparison.OrdinalIgnoreCase)
+                || CargoCrateRoot(testPath) is not { } crateRoot
+                || Path.GetRelativePath(Path.Combine(crateRoot, "tests"), testPath).StartsWith("..", StringComparison.Ordinal))
+                return null;
+
+            string? section = null, package = null, lib = null;
+            foreach (var raw in Tools.TextFileEncoding.ReadLines(Path.Combine(crateRoot, "Cargo.toml")))
+            {
+                var line = raw.Trim();
+                if (line.StartsWith('[')) { section = line; continue; }
+                if (!line.StartsWith("name", StringComparison.Ordinal)) continue;
+                var eq = line.IndexOf('=');
+                if (eq < 0) continue;
+                var value = line[(eq + 1)..].Trim().Trim('"', '\'');
+                if (section == "[package]") package = value;
+                else if (section == "[lib]") lib = value;
+            }
+            return (lib ?? package)?.Replace('-', '_');
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("TestFilePathResolver.CargoLibraryName", ex);
+            return null;
+        }
     }
 
     private static readonly string[] PythonProjectFiles = ["pyproject.toml", "pytest.ini", "setup.cfg", "tox.ini", "setup.py"];
