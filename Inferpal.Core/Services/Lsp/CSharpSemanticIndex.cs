@@ -123,8 +123,9 @@ internal sealed class CSharpSemanticIndex
     /// remove.
     /// </para>
     /// <para>
-    /// ⚠ With RAG disabled there is no watcher, so the index would go stale. <see cref="ForWorkspace"/>
-    /// is therefore only used by callers that can accept a rebuild otherwise; see the tools.
+    /// ⚠ The watcher is armed by <c>ProjectIndexService.SetRoot</c>, which both front-ends call with RAG on
+    /// <b>or</b> off — armed by the indexing pass alone, it would not exist with RAG off and this cache would
+    /// answer from a compilation frozen at its first use.
     /// </para>
     /// </remarks>
     public static CSharpSemanticIndex ForWorkspace(string root)

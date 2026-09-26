@@ -177,8 +177,8 @@ internal sealed class RenameSymbolTool : ITool
         }
 
         // ⚠ The compiler's spans are offsets into each file as the index last parsed it. A file edited
-        // since (the index refreshes after a delay, and not at all with RAG off) would take the rename
-        // at the wrong offsets — corrupted code. Refuse rather than guess.
+        // since (the file watcher refreshes the index after its debounce) would take the rename at the
+        // wrong offsets — corrupted code. Refuse rather than guess.
         if (stale.Count > 0)
             return $"Error: the C# index is out of date for {stale.Count} file(s) changed in the last seconds ("
                  + string.Join(", ", stale.Take(5).Select(f => Path.GetRelativePath(root, f)))
