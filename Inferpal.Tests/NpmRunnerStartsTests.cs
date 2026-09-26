@@ -36,20 +36,25 @@ public sealed class NpmRunnerStartsTests : IDisposable
     public void OnWindows_NpmRunsThroughNode_NeverThroughCmd()
     {
         // No shell between the model's filter and the runner: cmd.exe would read "&", "|" or "%" in it as commands.
+        // Paths built for the HOST: a literal "C:\…" has no directory part under Linux, where this test runs too.
+        var dir  = Path.Combine(Path.GetTempPath(), "nodejs");
+        var node = Path.Combine(dir, "node.exe");
+        var cli  = Path.Combine(dir, "node_modules", "npm", "bin", "npm-cli.js");
         var npm = RunTestsTool.ResolveNpm(isWindows: true,
-            onPath: name => name == "npm.cmd" ? @"C:\nodejs\npm.cmd" : null,
-            exists: path => path is @"C:\nodejs\node.exe" or @"C:\nodejs\node_modules\npm\bin\npm-cli.js");
+            onPath: name => name == "npm.cmd" ? Path.Combine(dir, "npm.cmd") : null,
+            exists: path => path == node || path == cli);
 
         Assert.NotNull(npm);
-        Assert.Equal(@"C:\nodejs\node.exe", npm!.Value.FileName);
-        Assert.Equal([@"C:\nodejs\node_modules\npm\bin\npm-cli.js"], npm.Value.Prefix);
+        Assert.Equal(node, npm!.Value.FileName);
+        Assert.Equal([cli], npm.Value.Prefix);
     }
 
     [Fact]
     public void OnWindows_WithoutNpmsCliBesideIt_ThereIsNoShellFallback()
     {
+        var dir = Path.Combine(Path.GetTempPath(), "nodejs");
         Assert.Null(RunTestsTool.ResolveNpm(isWindows: true,
-            onPath: name => name == "npm.cmd" ? @"C:\nodejs\npm.cmd" : null, exists: _ => false));
+            onPath: name => name == "npm.cmd" ? Path.Combine(dir, "npm.cmd") : null, exists: _ => false));
     }
 
     [Fact]
