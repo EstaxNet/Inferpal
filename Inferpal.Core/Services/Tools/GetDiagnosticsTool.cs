@@ -30,7 +30,8 @@ internal class GetDiagnosticsTool : ITool
     public string Description =>
         "Returns current errors and warnings. When the editor's live diagnostics report an " +
         "error, returns those instead (instant, but only the files the editor has analyzed, " +
-        "and nothing is compiled); otherwise compiles the project or solution. " +
+        "and nothing is compiled); otherwise compiles the .NET project or solution — .NET only: for another " +
+        "language, call it without path for the editor's diagnostics, or run that language's checker with run_command. " +
         "If path is omitted, looks for the first .sln or .csproj in the workspace root. " +
         "Timeout: 90 seconds.";
 
@@ -42,7 +43,7 @@ internal class GetDiagnosticsTool : ITool
             path = new
             {
                 type        = "string",
-                description = "Path to the .sln or .csproj file (optional)."
+                description = "Path to the .sln/.slnx or project file, or a folder holding one (optional)."
             }
         },
         required = Array.Empty<string>(),
@@ -156,8 +157,17 @@ internal class GetDiagnosticsTool : ITool
                                : $"{Strings.DiagNoProject}\n({gap.Value.Sentence()})";
         }
 
-        if (!File.Exists(path))
+        // A folder is what `dotnet build` resolves itself — the project it holds, or an error naming the ambiguity.
+        if (!File.Exists(path) && !Directory.Exists(path))
             return Strings.ToolFileNotFound(path);
+
+        // ⚠ `dotnet build` of anything but a solution or a project answers MSB4025 AT LINE 1 OF THAT FILE: given a
+        // package.json or a pyproject.toml, the report reads "1 error(s) — package.json", an invitation to "fix" a file
+        // that is fine.
+        if (File.Exists(path) && !SolutionFiles.IsSolution(path) && !IsProjectFile(path))
+            return $"{NotADotnetProject}: {Path.GetFileName(path)}. It compiles .sln, .slnx and project files only. " +
+                   "For another language, call it without 'path' for the editor's live diagnostics, or run that " +
+                   "language's own checker with run_command (tsc, mypy, cargo check, go vet…).";
 
         var psi = new ProcessStartInfo
         {
@@ -175,6 +185,12 @@ internal class GetDiagnosticsTool : ITool
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(BudgetSeconds), ct);
         return Interpret(run, Path.GetFileName(path), BudgetSeconds);
     }
+
+    /// <summary>What the tool answers for a path that is not a .NET solution or project: nothing was built.</summary>
+    internal const string NotADotnetProject = "Error: get_diagnostics builds .NET solutions and projects, and this is neither";
+
+    private static bool IsProjectFile(string path) =>
+        Path.GetExtension(path).ToLowerInvariant() is ".csproj" or ".fsproj" or ".vbproj" or ".proj";
 
     /// <summary>The budget of one build, after which the tree is killed.</summary>
     private const int BudgetSeconds = 90;
