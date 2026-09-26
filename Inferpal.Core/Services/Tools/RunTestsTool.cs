@@ -41,7 +41,7 @@ internal class RunTestsTool : ITool
             filter = new
             {
                 type        = "string",
-                description = "Test name filter. dotnet: --filter expression (e.g. 'FullyQualifiedName~MyTest'). pytest: -k expression. npm/jest: --testNamePattern. cargo: substring filter. go: -run regexp."
+                description = "Test name filter. dotnet: --filter expression (e.g. 'FullyQualifiedName~MyTest'). pytest: -k expression. npm: a test name pattern, passed to whichever of jest, vitest, mocha or node --test the test script runs. cargo: substring filter. go: -run regexp."
             },
             runner = new
             {
@@ -116,14 +116,44 @@ internal class RunTestsTool : ITool
             return NpmNotRunnable;
 
         var args = new List<string>(npm.Prefix) { "test" };
+        Dictionary<string, string>? env = null;
         if (!string.IsNullOrWhiteSpace(filter))
         {
-            args.Add("--");
-            args.Add($"--testNamePattern={filter}");
+            // Unreadable, the script says nothing: the filter goes out in jest's form.
+            var (extra, nodeOptions) = NpmFilter(PackageJson.TestScript(workDir), filter,
+                                                 Environment.GetEnvironmentVariable("NODE_OPTIONS"));
+            args.AddRange(extra);
+            if (nodeOptions is not null) env = new() { ["NODE_OPTIONS"] = nodeOptions };
         }
-        var (output, exitCode) = await RunProcessAsync(npm.FileName, string.Empty, workDir, budget, ct, args);
+        var (output, exitCode) = await RunProcessAsync(npm.FileName, string.Empty, workDir, budget, ct, args, env);
         return ParseNpmOutput(output, exitCode);
     }
+
+    /// <summary>
+    /// Where a test-name filter goes for the framework the <c>test</c> script runs: arguments after <c>--</c>, or
+    /// the <c>NODE_OPTIONS</c> value to run with.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The flag is the framework's, not npm's: jest's <c>--testNamePattern</c> made <c>node --test</c> answer
+    /// "bad option" and run nothing, which a repair loop reads as a red suite. And Node's own runner cannot take it
+    /// as an argument at all: npm appends arguments to the END of the script, and after a positional file
+    /// (<c>node --test test/a.test.js</c>) Node hands them to the test file — the filter is ignored, every test
+    /// runs, without a word. <c>NODE_OPTIONS</c> reaches it whatever the script's shape; its quotes keep a filter
+    /// with spaces in one piece. mocha reads options anywhere on its command line.
+    /// </remarks>
+    internal static (IReadOnlyList<string> Args, string? NodeOptions) NpmFilter(string? testScript, string filter, string? inheritedNodeOptions)
+    {
+        if (testScript is not null && Regex.IsMatch(testScript, @"(?<!\S)--test(?!\S)", RegexOptions.None, RegexBudget.Default))
+        {
+            var quoted = "--test-name-pattern=\"" + filter.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+            return ([], string.IsNullOrWhiteSpace(inheritedNodeOptions) ? quoted : inheritedNodeOptions + " " + quoted);
+        }
+        var flag = testScript is not null && Regex.IsMatch(testScript, @"\bmocha\b", RegexOptions.None, RegexBudget.Default)
+            ? $"--grep={filter}"
+            : $"--testNamePattern={filter}";   // jest and vitest — and the default when the script says nothing
+        return (["--", flag], null);
+    }
+
 
     /// <summary>What the npm runner answers when npm cannot be launched without a shell.</summary>
     internal const string NpmNotRunnable =
@@ -204,13 +234,14 @@ internal class RunTestsTool : ITool
             return new(Num(failing), Num(passing), pending, Num(failing) + Num(passing) + pending);
         }
 
-        // node --test: "# pass 3", "# fail 0", "# skipped 0", "# tests 3"
-        var pass = Last(raw, @"^# pass (\d+)");
-        var fail = Last(raw, @"^# fail (\d+)");
+        // node --test: "# pass 3" (tap reporter) or "ℹ pass 3" (spec reporter — the default from Node 23 on, even when
+        // the output is not a terminal). Read only in its tap form, every green run on a current Node was "no summary".
+        var pass = Last(raw, @"^(?:#|ℹ) pass (\d+)");
+        var fail = Last(raw, @"^(?:#|ℹ) fail (\d+)");
         if (pass.Success || fail.Success)
         {
-            var skip = Num(Last(raw, @"^# skipped (\d+)"));
-            var all  = Last(raw, @"^# tests (\d+)");
+            var skip = Num(Last(raw, @"^(?:#|ℹ) skipped (\d+)"));
+            var all  = Last(raw, @"^(?:#|ℹ) tests (\d+)");
             return new(Num(fail), Num(pass), skip, all.Success ? Num(all) : Num(fail) + Num(pass) + skip);
         }
         return null;
@@ -612,7 +643,7 @@ internal class RunTestsTool : ITool
 
     private static async Task<(string Output, int ExitCode)> RunProcessAsync(
         string fileName, string arguments, string workDir, RunBudget budget, CancellationToken ct,
-        IReadOnlyList<string>? argumentList = null)
+        IReadOnlyList<string>? argumentList = null, IReadOnlyDictionary<string, string>? environment = null)
     {
         try
         {
@@ -634,6 +665,7 @@ internal class RunTestsTool : ITool
             // input deterministic on every locale.
             psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
             psi.EnvironmentVariables["VSLANG"]                 = "1033";
+            foreach (var kv in environment ?? new Dictionary<string, string>()) psi.EnvironmentVariables[kv.Key] = kv.Value;
 
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(budget.Seconds), ct);
 

@@ -34,6 +34,16 @@ public class NpmTestVerdictTests
 
     private const string NodeTestPass = "> demo@1.0.0 test\n> node --test\n\n# tests 3\n# suites 0\n# pass 3\n# fail 0\n";
 
+    // Node 24, output piped: the spec reporter is the default from Node 23 on, terminal or not.
+    private const string NodeSpecPass =
+        "> demo@1.0.0 test\n> node --test\n\n✔ alpha works (0.4833ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\n" +
+        "ℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 66.8417\n";
+
+    private const string NodeSpecFail =
+        "> demo@1.0.0 test\n> node --test\n\n✔ alpha works (0.5723ms)\n✖ beta fails (0.4583ms)\nℹ tests 2\nℹ suites 0\n" +
+        "ℹ pass 1\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 60.9961\n\n✖ failing tests:\n\n" +
+        "test at test\\a.test.js:4:1\n✖ beta fails (0.4583ms)\n  AssertionError [ERR_ASSERTION]: 1 == 2\n";
+
     private const string NoTestScript =
         "> demo@1.0.0 test\n> echo \"Error: no test specified\" && exit 1\n\n\"Error: no test specified\"\n";
 
@@ -49,6 +59,7 @@ public class NpmTestVerdictTests
     [InlineData(VitestPass, 0)]
     [InlineData(MochaPass, 0)]
     [InlineData(NodeTestPass, 0)]
+    [InlineData(NodeSpecPass, 0)]
     public void APassingRun_IsGreen(string raw, int exitCode)
     {
         var report = RunTestsTool.ParseNpmOutput(raw, exitCode);
@@ -61,6 +72,7 @@ public class NpmTestVerdictTests
     [InlineData(JestFail, 1, "Failed: 1, Passed: 2")]
     [InlineData(VitestFail, 1, "Failed: 1, Passed: 1")]
     [InlineData(MochaFail, 1, "Failed: 1, Passed: 1")]
+    [InlineData(NodeSpecFail, 1, "Failed: 1, Passed: 1")]
     public void AFailingRun_IsRed_WithItsCounts_AndItsDetails(string raw, int exitCode, string counts)
     {
         var report = RunTestsTool.ParseNpmOutput(raw, exitCode);
