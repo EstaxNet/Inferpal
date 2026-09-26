@@ -27,6 +27,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     private Task?    _readLoop;
     private Task?    _stderrDrain;
     private long     _nextId;
+    private bool     _started;
     private volatile bool _disposed;
 
     // ⚠ stderr is where a server writes WHY it cannot start — a missing token, a bad path, a package npm cannot
@@ -75,9 +76,12 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     {
         try
         {
+            // `"command": "npx"` — most server READMEs — is a batch script on Windows: run by node, never by cmd.exe.
+            var shim = Shell.NodeShim.Resolve(_config.Command ?? string.Empty, OperatingSystem.IsWindows(),
+                                              Shell.ShellLauncher.FindOnPath, File.Exists);
             var psi = new ProcessStartInfo
             {
-                FileName               = _config.Command,
+                FileName               = shim?.FileName ?? _config.Command,
                 RedirectStandardInput  = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
@@ -86,6 +90,8 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
                 StandardInputEncoding  = new UTF8Encoding(false),
                 StandardOutputEncoding = new UTF8Encoding(false),
             };
+            foreach (var arg in shim?.Prefix ?? [])
+                psi.ArgumentList.Add(arg);
             foreach (var arg in _config.Args)
                 psi.ArgumentList.Add(arg);
             foreach (var kv in _config.Env)
@@ -97,6 +103,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
                 LastError = "Process failed to start.";
                 return false;
             }
+            _started = true;
 
             // Drain stderr so a chatty server never blocks on a full pipe — keeping its edges for a failed start.
             var stderr = _process.StandardError;
@@ -139,7 +146,8 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     /// </summary>
     private async Task<string> DescribeStartFailureAsync(Exception ex, CancellationToken ct)
     {
-        if (ct.IsCancellationRequested || _process is not { } p) return ex.Message;
+        // A process that never started has no exit to wait for — asking throws. Its message names the command.
+        if (ct.IsCancellationRequested || !_started || _process is not { } p) return ex.Message;
 
         // The handshake fails on the closed pipe a moment before the process is reaped: wait for its code.
         using (var grace = new CancellationTokenSource(ExitGrace))

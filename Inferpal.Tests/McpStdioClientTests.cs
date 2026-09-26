@@ -63,6 +63,31 @@ public class McpStdioClientTests
     }
 
     [Fact]
+    public async Task ACommandThatDoesNotExist_ReturnsFalse_AndNamesIt_NeverThrows()
+    {
+        // StartAsync's contract: false and a cause, never an exception. Describing a failed start asked a process that
+        // had never started for its exit — which throws — so a mistyped command escaped as an exception.
+        var client = new McpStdioClient(new("typo", "inferpal-no-such-command-xyz", [], new Dictionary<string, string>()));
+
+        Assert.False(await client.StartAsync(CancellationToken.None));
+        Assert.Contains("inferpal-no-such-command-xyz", client.LastError);
+        await client.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AnNpxServer_Starts_OnEveryPlatform()
+    {
+        // `"command": "npx"` is the MCP configuration of most server READMEs, and of docs/mcp.md. On Windows npx is a
+        // batch script (npx.cmd), which CreateProcess does not resolve: the server never started.
+        if (!NpmTools.Installed()) return;   // UNDECIDED without Node on the machine — never read as a pass
+        var client = new McpStdioClient(new("npx", "npx", ["--version"], new Dictionary<string, string>()));
+
+        Assert.False(await client.StartAsync(CancellationToken.None));   // it is not an MCP server: the handshake fails
+        Assert.Contains("exited", client.LastError);                      // …but it RAN
+        await client.DisposeAsync();
+    }
+
+    [Fact]
     public async Task Dispose_DoesNotRaiseASecondClose()
     {
         // After an unexpected exit (one Closed), disposing the already-dead client must not report

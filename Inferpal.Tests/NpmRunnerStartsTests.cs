@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using Inferpal.Services.Tools;
@@ -17,19 +16,6 @@ public sealed class NpmRunnerStartsTests : IDisposable
     public void Dispose()
     {
         try { Directory.Delete(_dir, recursive: true); } catch { /* best-effort cleanup */ }
-    }
-
-    private static bool NpmIsInstalled()
-    {
-        try
-        {
-            using var p = Process.Start(new ProcessStartInfo(OperatingSystem.IsWindows() ? "cmd.exe" : "sh",
-                OperatingSystem.IsWindows() ? "/c npm --version" : "-c \"npm --version\"")
-                { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false })!;
-            p.WaitForExit(30_000);
-            return p.ExitCode == 0;
-        }
-        catch { return false; }
     }
 
     [Fact]
@@ -67,7 +53,7 @@ public sealed class NpmRunnerStartsTests : IDisposable
     [Fact]
     public async Task TheNpmRunner_Starts()
     {
-        if (!NpmIsInstalled()) return;   // UNDECIDED without npm on the machine — never read as a pass of the product
+        if (!NpmTools.Installed()) return;   // UNDECIDED without npm on the machine — never read as a pass of the product
         File.WriteAllText(Path.Combine(_dir, "package.json"),
             """{ "name": "demo", "version": "1.0.0", "scripts": { "test": "echo \"Error: no test specified\" && exit 1" } }""");
 

@@ -24,6 +24,9 @@ server** and expose its tools to the agent — the same servers used by Claude D
 ```
 
    A server with a `command` uses the **stdio** transport; one with a `url` uses **Streamable HTTP**.
+   `"command": "npx"` (or `"npm"`) works as written on every OS: on Windows, where both are batch
+   scripts, Inferpal runs them through the `node.exe` installed beside them — never through `cmd.exe`,
+   so no `"cmd", "/c"` wrapper is needed.
    Header values support `${ENV_VAR}` expansion (resolved at connection time), so tokens stay out of
    the stored config. The list editor handles both: tick **“HTTP server”** to switch a row between
    the command/args/env fields and the url/headers fields (or edit the raw map in the **JSON** view).

@@ -137,14 +137,9 @@ internal class RunTestsTool : ITool
     /// written by the model, in a tool that asks no approval — so "&amp;", "|" or "%" in it would become commands. npm's
     /// own CLI, run by the node.exe that sits beside npm.cmd in every Node install, takes its arguments as a list.
     /// </remarks>
-    internal static (string FileName, string[] Prefix)? ResolveNpm(bool isWindows, Func<string, string?> onPath, Func<string, bool> exists)
-    {
-        if (!isWindows) return ("npm", []);   // a script with a shebang: exec runs it, no shell in between
-        if (onPath("npm.cmd") is not { } cmd || Path.GetDirectoryName(cmd) is not { } dir) return null;
-        var node = Path.Combine(dir, "node.exe");
-        var cli  = Path.Combine(dir, "node_modules", "npm", "bin", "npm-cli.js");
-        return exists(node) && exists(cli) ? (node, [cli]) : null;
-    }
+    internal static (string FileName, string[] Prefix)? ResolveNpm(bool isWindows, Func<string, string?> onPath, Func<string, bool> exists) =>
+        !isWindows ? ("npm", [])   // a script with a shebang: exec runs it, no shell in between
+                   : Shell.NodeShim.Resolve("npm", isWindows, onPath, exists);
 
     /// <summary>npm's placeholder "test" script ran — the one <c>npm init</c> writes. Nothing to fix.</summary>
     internal const string NoTestScript =
