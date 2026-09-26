@@ -50,9 +50,13 @@ internal static class GitProcess
             // Zażółć.cs becomes "Za\305\274\303\263\305\202\304\207.cs", a Chinese name nothing but octal — the name the
             // model reads in get_git_status, /commit and /check, and cannot pass back to read_file. Off, git writes
             // the name in UTF-8, which is how its output is decoded here.
+            // ⚠ stdout is captured BYTE-EXACT (Latin-1 maps each byte to one char) and decoded line by line below: git
+            // prints a file's content as the bytes the file holds, so a diff of a source saved in a legacy code page,
+            // decoded as UTF-8 whole, reached /commit, /check and get_git_status as "caf�" — a line the model
+            // cannot quote back into an edit, and that a review reads as corruption.
             var psi = new ProcessStartInfo("git", "-c core.quotePath=false " + args)
             {
-                StandardOutputEncoding = Encoding.UTF8,
+                StandardOutputEncoding = Encoding.Latin1,
                 StandardErrorEncoding  = Encoding.UTF8,
             };
             if (!string.IsNullOrEmpty(workDir)) psi.WorkingDirectory = workDir;
@@ -64,7 +68,8 @@ internal static class GitProcess
             // JSON-RPC pipe in VS Code — allocates a console and hangs at 0 % CPU forever, on a
             // call that takes 31 ms elsewhere. It also drains both pipes concurrently, without
             // which a chatty repository deadlocks git. See ChildProcess.
-            return await ChildProcess.RunAsync(psi, Timeout, ct);
+            var run = await ChildProcess.RunAsync(psi, Timeout, ct);
+            return run with { Stdout = DecodeCaptured(run.Stdout) };
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -72,6 +77,24 @@ internal static class GitProcess
             Diagnostics.Swallow($"GitProcess({args})", ex);
             return new ChildProcessResult(-1, string.Empty, ex.Message, TimedOut: false);
         }
+    }
+
+    /// <summary>
+    /// stdout captured as Latin-1 — one char per byte — decoded line by line; a char above U+00FF can only be the
+    /// capture's own truncation marker, and passes through (turned back into a byte it would become "?").
+    /// </summary>
+    internal static string DecodeCaptured(string latin1)
+    {
+        var text  = new StringBuilder(latin1.Length);
+        var start = 0;
+        for (var i = 0; i <= latin1.Length; i++)
+        {
+            if (i < latin1.Length && latin1[i] <= '\u00FF') continue;
+            if (i > start) text.Append(Tools.TextFileEncoding.DecodeLines(Encoding.Latin1.GetBytes(latin1, start, i - start)));
+            if (i < latin1.Length) text.Append(latin1[i]);
+            start = i + 1;
+        }
+        return text.ToString();
     }
 
     /// <param name="args">Arguments after <c>git</c>.</param>

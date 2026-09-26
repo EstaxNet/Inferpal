@@ -158,6 +158,29 @@ internal static class TextFileEncoding
     /// as "caf�" by one reader does not match the "café" another decoded, and the edit answers "not found".</remarks>
     internal static string ReadText(string path) => Decode(File.ReadAllBytes(path));
 
+    /// <summary>
+    /// Text in which each LINE may be in its own encoding: UTF-8 when the line's bytes are UTF-8, the legacy code page
+    /// otherwise.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ For output that quotes files: a git diff prints each file's content as the bytes it holds, between header
+    /// lines in UTF-8 — one decoding for the whole output turns either half to mojibake. A line is the unit because
+    /// 0x0A never occurs inside a character of an ASCII-compatible code page, the double-byte ones (GBK, Shift_JIS)
+    /// included — a split by byte would cut their characters in two.
+    /// </remarks>
+    internal static string DecodeLines(ReadOnlySpan<byte> bytes)
+    {
+        var text = new StringBuilder(bytes.Length);
+        while (!bytes.IsEmpty)
+        {
+            var end  = bytes.IndexOf((byte)'\n');
+            var line = end < 0 ? bytes : bytes[..(end + 1)];
+            text.Append((System.Text.Unicode.Utf8.IsValid(line) ? Utf8NoBom : LegacyEncoding).GetString(line));
+            bytes = bytes[line.Length..];
+        }
+        return text.ToString();
+    }
+
     /// <summary>The file's lines, split like <see cref="File.ReadAllLines(string)"/> (CR, LF or CRLF).</summary>
     internal static List<string> ReadLines(string path)
     {
