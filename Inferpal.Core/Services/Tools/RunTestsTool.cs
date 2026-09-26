@@ -112,12 +112,38 @@ internal class RunTestsTool : ITool
 
     private static async Task<string> RunNpmAsync(string workDir, string? filter, RunBudget budget, CancellationToken ct)
     {
-        var args = "test";
-        if (!string.IsNullOrWhiteSpace(filter))
-            args += $" -- --testNamePattern=\"{filter}\"";
+        if (ResolveNpm(OperatingSystem.IsWindows(), Shell.ShellLauncher.FindOnPath, File.Exists) is not { } npm)
+            return NpmNotRunnable;
 
-        var (output, exitCode) = await RunProcessAsync("npm", args, workDir, budget, ct);
+        var args = new List<string>(npm.Prefix) { "test" };
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            args.Add("--");
+            args.Add($"--testNamePattern={filter}");
+        }
+        var (output, exitCode) = await RunProcessAsync(npm.FileName, string.Empty, workDir, budget, ct, args);
         return ParseNpmOutput(output, exitCode);
+    }
+
+    /// <summary>What the npm runner answers when npm cannot be launched without a shell.</summary>
+    internal const string NpmNotRunnable =
+        "npm could not be run without a shell: npm.cmd was not found on PATH with node.exe and " +
+        "node_modules\\npm\\bin\\npm-cli.js beside it. Run the tests with run_command instead.";
+
+    /// <summary>The program and leading arguments that run npm WITHOUT a shell; <c>null</c> when that is not possible.</summary>
+    /// <remarks>
+    /// ⚠ On Windows npm is a batch script (npm.cmd) and CreateProcess only resolves an executable: launched as "npm", the
+    /// runner never started there. And launched as npm.cmd it would go through cmd.exe, which interprets the filter —
+    /// written by the model, in a tool that asks no approval — so "&amp;", "|" or "%" in it would become commands. npm's
+    /// own CLI, run by the node.exe that sits beside npm.cmd in every Node install, takes its arguments as a list.
+    /// </remarks>
+    internal static (string FileName, string[] Prefix)? ResolveNpm(bool isWindows, Func<string, string?> onPath, Func<string, bool> exists)
+    {
+        if (!isWindows) return ("npm", []);   // a script with a shebang: exec runs it, no shell in between
+        if (onPath("npm.cmd") is not { } cmd || Path.GetDirectoryName(cmd) is not { } dir) return null;
+        var node = Path.Combine(dir, "node.exe");
+        var cli  = Path.Combine(dir, "node_modules", "npm", "bin", "npm-cli.js");
+        return exists(node) && exists(cli) ? (node, [cli]) : null;
     }
 
     /// <summary>npm's placeholder "test" script ran — the one <c>npm init</c> writes. Nothing to fix.</summary>
@@ -590,7 +616,8 @@ internal class RunTestsTool : ITool
     }
 
     private static async Task<(string Output, int ExitCode)> RunProcessAsync(
-        string fileName, string arguments, string workDir, RunBudget budget, CancellationToken ct)
+        string fileName, string arguments, string workDir, RunBudget budget, CancellationToken ct,
+        IReadOnlyList<string>? argumentList = null)
     {
         try
         {
@@ -602,6 +629,8 @@ internal class RunTestsTool : ITool
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding  = Encoding.UTF8,
             };
+            // A list, when given, is passed as such: each element one argument, no quoting to get wrong.
+            foreach (var a in argumentList ?? []) psi.ArgumentList.Add(a);
 
             // The dotnet/vstest summary lines this tool parses ("Passed! - Failed: …",
             // "Failed X [10 ms]", "Error Message:") are localized by the SDK: on a French machine

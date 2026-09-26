@@ -131,7 +131,7 @@ internal static class ShellLauncher
         "try { $__u = New-Object System.Text.UTF8Encoding $false; [Console]::OutputEncoding = $__u; "
       + "[Console]::InputEncoding = $__u; $OutputEncoding = $__u } catch { }\n";
 
-    private static string? FindOnPath(string name)
+    internal static string? FindOnPath(string name)
     {
         try
         {
