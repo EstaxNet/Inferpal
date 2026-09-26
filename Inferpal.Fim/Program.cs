@@ -2,6 +2,7 @@
 using Inferpal.Config;
 using Inferpal.Fim;
 using Inferpal.Services;
+using Inferpal.Services.CodeActions;
 using Inferpal.Services.Signals;
 
 // ── Discipline de stdout ──────────────────────────────────────────────────────
@@ -49,7 +50,8 @@ var loop = new FimRpcLoop(stdin, stdout, async (request, ct) =>
         onToken:     token => sb.Append(token),
         ct:          ct,
         model:       request.Model);
-    return sb.ToString();
+    // Without what already follows the caret: models repeat it, and accepted it is doubled.
+    return FimCompletion.Finish(sb.ToString(), request.Suffix);
 });
 
 await loop.RunAsync(lifetime.Token);

@@ -244,6 +244,24 @@ public partial class HostServerTests
         Assert.Equal(("qwen2.5-coder:1.5b", preset.MaxTokens, preset.Temperature), h.Fake.LastFim);
     }
 
+    /// <summary>
+    /// A completion that repeats the rest of the line the editor already has is returned without it: accepted as
+    /// is, <c>Console.WriteLine(|);</c> became <c>…));</c>.
+    /// </summary>
+    [Fact]
+    public async Task FimComplete_DropsWhatTheEditorAlreadyHasAfterTheCaret()
+    {
+        using var h = CreateHarness(_ => { });
+        h.Fake.OnFim = (_, _) => "\"Items: \" + string.Join(\", \", items));";
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var text = await h.Client.InvokeWithParameterObjectAsync<string>("fim/complete",
+                new { prefix = "Console.WriteLine(", suffix = ");\n    }\n}" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal("\"Items: \" + string.Join(\", \", items)", text);
+    }
+
     /// <summary>Inline completion unchecked: the backend is not called, as in Visual Studio.</summary>
     [Fact]
     public async Task FimComplete_WhenInlineCompletionIsOff_DoesNotCallTheBackend()

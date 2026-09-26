@@ -126,7 +126,10 @@ internal sealed class GhostTextController
                 configStamp: config.Stamp,
                 ct:          token).ConfigureAwait(false);
 
-            if (completion is null || token.IsCancellationRequested) return;
+            // ⚠ Nothing to show is not an empty suggestion: a pending "" is not null, so the next Tab was ACCEPTED —
+            // swallowed, inserting nothing, instead of indenting. A backend without FIM answers "" after every pause,
+            // and so does a completion that only repeated the text after the caret.
+            if (completion is null || string.IsNullOrWhiteSpace(completion) || token.IsCancellationRequested) return;
 
             // Fire-and-forget UI dispatch — result intentionally discarded (VSTHRD110: _ =).
             _ = _dispatcher.InvokeAsync(() =>

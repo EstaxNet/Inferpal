@@ -808,7 +808,8 @@ internal sealed partial class HostServer : IDisposable
         var sb = new StringBuilder();
         await s.Client.StreamFimAsync(p.Prefix, p.Suffix, p.MaxTokens ?? preset.MaxTokens,
                                       p.Temperature ?? preset.Temperature, t => sb.Append(t), ct, model);
-        return sb.ToString();
+        // Without what already follows the caret: models repeat it, and accepted it is doubled.
+        return Services.CodeActions.FimCompletion.Finish(sb.ToString(), p.Suffix);
     }
 
     /// <summary>
