@@ -421,6 +421,21 @@ internal class RunTestsTool : ITool
         "⚠ No test matched the filter — nothing ran. " +
         "The tests may have been renamed or removed; that is not a pass.";
 
+    /// <summary>
+    /// The runner ran and found no test to execute, without saying whether a filter is why (go's
+    /// <c>[no tests to run]</c> and <c>[no test files]</c>, cargo and pytest with nothing collected).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ These runners SAY so, and each says it in a form a summary parser takes for a verdict:
+    /// cargo writes <c>test result: ok. 0 passed; 0 failed</c> and go an <c>ok</c> line — read as
+    /// green, <c>/tdd</c> declares victory on a run where nothing ran, including the round where the
+    /// failing test was renamed away; pytest exits 5 with <c>2 deselected</c>, read as red, and the
+    /// loop spends five rounds fixing code against a filter.
+    /// </remarks>
+    internal const string NoTestFound =
+        "⚠ The runner found no test to run — nothing ran, so nothing was proven. " +
+        "If a filter was given, it matched nothing; that is not a pass.";
+
     /// <summary>The run was killed at its budget — the fourth state, and the only one that can
     /// carry a <b>green</b> summary while being worthless.</summary>
     /// <remarks>
@@ -616,6 +631,11 @@ internal class RunTestsTool : ITool
                    "(.venv or venv — this runner uses it when it exists) or run the tests with run_command. Nothing ran." +
                    "\n\n" + Truncate(raw.Trim(), MaxRawChars);
 
+        // Exit 5 is pytest's own "no tests collected" — a -k that deselects everything included.
+        if (exitCode == 5)
+            sb.AppendLine(Regex.IsMatch(raw, @"\b\d+ deselected\b", RegexOptions.None, RegexBudget.Default)
+                ? NoTestMatchedFilter : NoTestFound);
+
         if (summaryMatch.Success)
             sb.AppendLine(summaryMatch.Groups[1].Value.Trim());
         else if (exitCode == 0)
@@ -649,10 +669,10 @@ internal class RunTestsTool : ITool
         var sb = new StringBuilder();
 
         var summaryRx = new Regex(
-            @"test result:\s*(?:ok|FAILED)\.\s*(\d+) passed;\s*(\d+) failed;\s*(\d+) ignored",
+            @"test result:\s*(?:ok|FAILED)\.\s*(\d+) passed;\s*(\d+) failed;\s*(\d+) ignored(?:;\s*\d+ measured;\s*(\d+) filtered out)?",
             RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
 
-        int passed = 0, failed = 0, ignored = 0;
+        int passed = 0, failed = 0, ignored = 0, filteredOut = 0;
         bool any = false;
         foreach (Match m in summaryRx.Matches(raw))
         {
@@ -660,9 +680,14 @@ internal class RunTestsTool : ITool
             passed  += int.Parse(m.Groups[1].Value);
             failed  += int.Parse(m.Groups[2].Value);
             ignored += int.Parse(m.Groups[3].Value);
+            if (m.Groups[4].Success) filteredOut += int.Parse(m.Groups[4].Value);
         }
 
-        if (any)
+        // "test result: ok. 0 passed; 0 failed" is cargo's report of a run in which nothing ran.
+        if (any && passed + failed == 0)
+            sb.AppendLine($"{(filteredOut > 0 ? NoTestMatchedFilter : NoTestFound)}\n" +
+                          $"Passed: 0, Failed: 0, Ignored: {ignored}, Filtered out: {filteredOut}");
+        else if (any)
             sb.AppendLine($"{(failed == 0 ? "✓ PASSED" : "✗ FAILED")} — Failed: {failed}, Passed: {passed}, Ignored: {ignored}, Total: {passed + failed + ignored}");
         else if (exitCode == 0)
             sb.AppendLine(NothingProven);
@@ -710,12 +735,12 @@ internal class RunTestsTool : ITool
             // runner where reading it is legitimate. What is not legitimate is reading it when
             // nothing ran: exit 0 without a single "ok <package>" line means every package was
             // "[no test files]" or matched nothing, and calling that a pass is the same silent
-            // green as the three parsers above.
-            var ranAPackage = Regex.IsMatch(raw, @"^ok\s+\S", RegexOptions.Multiline, RegexBudget.Default);
+            // green as the three parsers above. And an "ok" line that ends in "[no tests to run]"
+            // is go saying nothing ran in that package — a -run that matched nothing prints only those.
+            var ranAPackage = Regex.IsMatch(raw, @"^ok\s+\S(?!.*\[no tests to run\]).*$", RegexOptions.Multiline, RegexBudget.Default);
             sb.AppendLine(ranAPackage
                 ? "✓ Tests passed (verdict from go's exit code — go test prints no summary)."
-                : "⚠ go test exited 0 but no package reported \"ok\" — no test ran, so nothing " +
-                  "was proven. Read the raw output below; do not treat this as a pass.");
+                : NoTestFound);
         }
         else
             sb.AppendLine($"✗ FAILED — {(allFailing.Count > 0 ? $"{allFailing.Count} failing test(s)" : "see output")}");
