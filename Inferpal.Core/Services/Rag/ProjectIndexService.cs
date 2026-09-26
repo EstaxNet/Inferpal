@@ -226,16 +226,17 @@ internal sealed class ProjectIndexService : IDisposable
             var gitIgnorePath = Path.Combine(rootDir, ".gitignore");
 
             // Only the snapshots: the rest of .inferpal/ is meant to be committed (see GitIgnorePatch).
-            // The file's BOM, if any, is kept: this is the user's file, not ours.
-            var bytes    = File.Exists(gitIgnorePath) ? File.ReadAllBytes(gitIgnorePath) : Array.Empty<byte>();
-            var hasBom   = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
-            var skip     = hasBom ? 3 : 0;
-            var existing = new System.Text.UTF8Encoding(false).GetString(bytes, skip, bytes.Length - skip);
+            // ⚠ This is the user's file, rewritten unasked: its encoding and BOM are kept. Decoded as UTF-8, a
+            // .gitignore saved in a legacy code page lost every accented pattern to "�" — "Données/" no longer
+            // matched, and git stopped ignoring that folder. The block added is ASCII, which every code page holds.
+            var exists   = File.Exists(gitIgnorePath);
+            var existing = exists ? Tools.TextFileEncoding.ReadText(gitIgnorePath) : string.Empty;
 
             var patched = GitIgnorePatch.Apply(existing);
             if (patched is null) return;
 
-            File.WriteAllText(gitIgnorePath, patched, new System.Text.UTF8Encoding(hasBom));
+            File.WriteAllText(gitIgnorePath, patched,
+                exists ? Tools.TextFileEncoding.Detect(gitIgnorePath) : Tools.TextFileEncoding.Utf8NoBom);
         }
         catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.PatchGitIgnore", ex); }
     }

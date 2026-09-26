@@ -78,4 +78,63 @@ public class GitIgnorePatchTests
             try { Directory.Delete(root, recursive: true); } catch { }
         }
     }
+
+    /// <summary>Indexes a fresh repository holding <paramref name="gitIgnore"/>; returns the bytes it leaves there.</summary>
+    private static byte[] IndexWith(byte[] gitIgnore)
+    {
+        TestRagStore.Redirect();
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"gitignore-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, ".git"));
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root, ".gitignore"), gitIgnore);
+            using (var lsp = new LspSemanticProvider())
+            using (var svc = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig { RagEnabled = true }, lsp))
+                svc.StartIndexing(root);
+            return File.ReadAllBytes(Path.Combine(root, ".gitignore"));
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// The user's .gitignore, saved in the machine's legacy code page, was decoded as UTF-8 and written back: "Données/"
+    /// became "Donn�es/" — a pattern that no longer matches, so git stops ignoring that folder. Indexing does this
+    /// on its own, unasked.
+    /// </summary>
+    [Fact]
+    public void ALegacyEncodedGitIgnore_KeepsItsPatterns_ByteForByte()
+    {
+        byte[] legacy = [.. "bin/\r\nDonn"u8, 0xE9, .. "es/\r\n"u8];   // "é" is 0xE9 in Windows-1252 and Latin-1
+
+        var after = IndexWith(legacy);
+
+        Assert.Equal(legacy, after[..legacy.Length]);
+        Assert.Contains(".inferpal/history/", System.Text.Encoding.ASCII.GetString(after));   // witness: patched
+    }
+
+    [Fact]
+    public void AUtf8GitIgnore_StaysUtf8()
+    {
+        // Reference arm: the ordinary file is left in its encoding too.
+        var utf8 = "bin/\nDonnées/\n"u8.ToArray();
+
+        var after = IndexWith(utf8);
+
+        Assert.Equal(utf8, after[..utf8.Length]);
+        Assert.Contains(".inferpal/history/", System.Text.Encoding.UTF8.GetString(after));
+    }
+
+    [Fact]
+    public void AGitIgnoreWithABom_KeepsIt()
+    {
+        byte[] withBom = [0xEF, 0xBB, 0xBF, .. "bin/\n"u8];
+
+        var after = IndexWith(withBom);
+
+        Assert.Equal(withBom, after[..withBom.Length]);
+        Assert.Equal(1, System.Text.Encoding.UTF8.GetString(after).Split('﻿').Length - 1);   // one BOM, not two
+    }
 }
