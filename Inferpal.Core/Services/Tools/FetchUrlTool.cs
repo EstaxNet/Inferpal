@@ -265,8 +265,11 @@ internal class FetchUrlTool : ITool
 
             // Block-level elements → newlines before content collapses
             html = ReplaceBounded(html, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
+            // A table cell ends in a separator, a ROW in a newline: with both in newlines a parameter table became one
+            // cell per line, nothing saying which description belongs to which parameter.
+            html = ReplaceBounded(html, @"</(td|th)>", " | ", RegexOptions.IgnoreCase);
             html = ReplaceBounded(html,
-                @"</(p|div|li|dt|dd|tr|th|td|h[1-6]|blockquote|pre|article|section|figure)>",
+                @"</(p|div|li|dt|dd|tr|h[1-6]|blockquote|pre|article|section|figure)>",
                 "\n", RegexOptions.IgnoreCase);
 
             // Strip all remaining tags
@@ -278,6 +281,7 @@ internal class FetchUrlTool : ITool
             // Normalize whitespace
             html = ReplaceBounded(html, @"[^\S\n]+", " ",    RegexOptions.None); // tabs/spaces → single space
             html = ReplaceBounded(html, @"\n[ \t]+", "\n",   RegexOptions.None); // trim leading spaces on lines
+            html = ReplaceBounded(html, @"[ \t]*\|[ \t]*\n", "\n", RegexOptions.None); // the last cell's separator
             html = ReplaceBounded(html, @"\n{3,}",   "\n\n", RegexOptions.None); // 3+ blank lines → 2
 
             if (codeBlocks.Count > 0)

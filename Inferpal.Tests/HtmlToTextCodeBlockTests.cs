@@ -48,6 +48,21 @@ public class HtmlToTextCodeBlockTests
     }
 
     [Fact]
+    public void ATableRow_StaysOneLine()
+    {
+        // A parameter table — the core of an API reference page. Every cell ended in a newline, rows included: nine
+        // lines with nothing to say which description belongs to which parameter.
+        var text = FetchUrlTool.HtmlToText(
+            "<table><tr><th>Name</th><th>Type</th><th>Description</th></tr>" +
+            "<tr><td>timeout</td><td>int</td><td>Seconds to wait</td></tr>" +
+            "<tr><td>retries</td><td>int</td><td>How many times</td></tr></table>");
+
+        Assert.Contains("timeout | int | Seconds to wait\n", text + "\n");
+        Assert.Contains("retries | int | How many times\n", text + "\n");
+        Assert.Contains("Name | Type | Description\n", text + "\n");
+    }
+
+    [Fact]
     public void EntitiesInsideACodeBlock_AreDecoded()
     {
         var text = FetchUrlTool.HtmlToText("<pre>if a &lt; b &amp;&amp; c:\n    pass</pre>");
