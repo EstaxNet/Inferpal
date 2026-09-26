@@ -71,8 +71,8 @@ internal class FetchUrlTool : ITool
         if (!await _approval.RequestApprovalAsync("fetch_url", url, ct))
             return "Cancelled by user.";
 
-        var html = await GetStringCheckingRedirectsAsync(url, ct);
-        return Window(HtmlToText(html), start, maxChars);
+        var page = await GetStringCheckingRedirectsAsync(url, ct);
+        return Window(Readable(page), start, maxChars);
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ internal class FetchUrlTool : ITool
     /// GETs <paramref name="url"/>, following up to <see cref="MaxRedirects"/> redirects
     /// manually and re-validating EVERY hop against <see cref="IsPrivateOrLoopback"/>.
     /// </summary>
-    private static async Task<string> GetStringCheckingRedirectsAsync(string url, CancellationToken ct)
+    private static async Task<WebPage.WebText> GetStringCheckingRedirectsAsync(string url, CancellationToken ct)
     {
         var current = url;
         for (int hop = 0; ; hop++)
@@ -142,7 +142,7 @@ internal class FetchUrlTool : ITool
             }
 
             response.EnsureSuccessStatusCode();
-            return await WebPage.ReadTextAsync(response.Content, ct);
+            return await WebPage.ReadAsync(response.Content, ct);
         }
     }
 
@@ -240,6 +240,15 @@ internal class FetchUrlTool : ITool
 
     private static string ReplaceBounded(string input, string pattern, string replacement, RegexOptions options) =>
         Regex.Replace(input, pattern, replacement, options, RegexTimeout);
+
+    /// <summary>What the model reads of a response: a web page as its text, anything else as the server sent it.</summary>
+    /// <remarks>
+    /// ⚠ A raw source file is one of the most common things an agent fetches (raw.githubusercontent.com): run through
+    /// the HTML conversion, anything between '&lt;' and '&gt;' goes as a tag and every indent is trimmed —
+    /// <c>List&lt;string&gt;</c> comes back <c>List</c>, <c>a &lt; b &amp;&amp; c &gt; d</c> comes back <c>a  d</c>.
+    /// </remarks>
+    internal static string Readable(WebPage.WebText page) =>
+        WebPage.IsHtml(page) ? HtmlToText(page.Text) : page.Text.Replace("\r\n", "\n").TrimEnd();
 
     internal static string HtmlToText(string html)
     {

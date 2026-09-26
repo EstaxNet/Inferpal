@@ -101,7 +101,7 @@ public class WebPageCharsetTests
         // to its search engine).
         var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), Path.Combine(parts)));
 
-        Assert.Contains("WebPage.ReadTextAsync(", code);
+        Assert.Matches(@"WebPage\.Read(Text)?Async\(", code);
         Assert.DoesNotContain("ReadAsStringAsync(", code);
     }
 }

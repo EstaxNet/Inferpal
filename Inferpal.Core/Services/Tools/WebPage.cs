@@ -25,10 +25,30 @@ internal static class WebPage
         @"<meta\b[^>]*?charset\s*=\s*[""']?\s*([A-Za-z0-9_.:\-]+)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexBudget.Default);
 
-    internal static async Task<string> ReadTextAsync(HttpContent content, CancellationToken ct)
+    /// <summary>A response's text and the media type the server gave it (<c>null</c> when it gave none).</summary>
+    internal readonly record struct WebText(string Text, string? MediaType);
+
+    internal static async Task<string> ReadTextAsync(HttpContent content, CancellationToken ct) =>
+        (await ReadAsync(content, ct)).Text;
+
+    internal static async Task<WebText> ReadAsync(HttpContent content, CancellationToken ct)
     {
         var bytes = await content.ReadAsByteArrayAsync(ct);
-        return Decode(bytes, content.Headers.ContentType?.CharSet);
+        return new WebText(Decode(bytes, content.Headers.ContentType?.CharSet), content.Headers.ContentType?.MediaType);
+    }
+
+    /// <summary>
+    /// Whether a response is a web PAGE: its media type says so, or — when it says nothing — its first characters do.
+    /// </summary>
+    internal static bool IsHtml(WebText page)
+    {
+        if (page.MediaType is { Length: > 0 } type && !type.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase))
+            return type.Equals("text/html", StringComparison.OrdinalIgnoreCase)
+                || type.Equals("application/xhtml+xml", StringComparison.OrdinalIgnoreCase);
+        var head = page.Text.AsSpan(0, Math.Min(page.Text.Length, 1024)).TrimStart();
+        return head.StartsWith("<!doctype html", StringComparison.OrdinalIgnoreCase)
+            || head.StartsWith("<html", StringComparison.OrdinalIgnoreCase)
+            || head.Contains("<body", StringComparison.OrdinalIgnoreCase);
     }
 
     internal static string Decode(byte[] bytes, string? headerCharset)
