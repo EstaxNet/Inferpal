@@ -1791,6 +1791,50 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task ASearch_FindsWhatReadFileShows_InAFileWithUnsavedChanges()
+    {
+        // read_file shows the unsaved buffer; the search read the disk — the symbol the user just typed was "not
+        // found", which the model reads as "not defined", while read_file on the same file showed it.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var path = Path.Combine(h.RootDir, "Calc.cs");
+        File.WriteAllText(path, "class Calc\n{\n}\n");
+        await h.Client.NotifyWithParameterObjectAsync("textDocument/didOpen", new
+        {
+            path, dirty = true, text = "class Calc\n{\n    bool OverflowGuard(int a) => a > 0;\n}\n",
+        });
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var found = await h.Server.CurrentSession!.Tools.ExecuteAsync("search_in_files",
+            System.Text.Json.JsonSerializer.SerializeToElement(new { path = h.RootDir, pattern = "OverflowGuard" }),
+            CancellationToken.None);
+
+        Assert.Contains("Calc.cs", found);
+        Assert.Contains("bool OverflowGuard(int a)", found);
+    }
+
+    [Fact]
+    public async Task AFolderMention_ShowsTheUnsavedVersionOfItsOpenFiles()
+    {
+        // The same rule for the other reader the model is handed: @folder read the disk.
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var path = Path.Combine(h.RootDir, "Calc.cs");
+        File.WriteAllText(path, "class Calc\n{\n}\n");
+        await h.Client.NotifyWithParameterObjectAsync("textDocument/didOpen", new
+        {
+            path, dirty = true, text = "class Calc\n{\n    bool OverflowGuard(int a) => a > 0;\n}\n",
+        });
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<MentionResolveResult>("mention/resolve",
+                new { category = "folder", value = h.RootDir })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Contains("class Calc", result.Content);                                        // witness: the file is in
+        Assert.Contains("OverflowGuard", result.Content);
+    }
+
+    [Fact]
     public async Task AnOpenButSavedFile_IsEditedAsUsual()
     {
         // Reference arm: an open document whose buffer matches the disk is not in the way.

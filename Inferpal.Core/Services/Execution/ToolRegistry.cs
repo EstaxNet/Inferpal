@@ -83,7 +83,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new ReadFileTool(() => indexService.RootDir, overlay));
         Register(new WriteFileTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
         Register(new ListFilesTool(() => indexService.RootDir));
-        Register(new SearchInFilesTool(() => indexService.RootDir));
+        Register(new SearchInFilesTool(() => indexService.RootDir, overlay));
         Register(new RunCommandTool(approval, config, () => indexService.RootDir));
         Register(new ApplyDiffTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
         Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix, overlay));

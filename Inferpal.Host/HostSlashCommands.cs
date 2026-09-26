@@ -770,7 +770,7 @@ internal sealed partial class HostServer
                 }
                 case "folder" when !string.IsNullOrEmpty(p.Value):
                 {
-                    var content = MentionController.BuildFolderContext(p.Value!, ct);
+                    var content = MentionController.BuildFolderContext(p.Value!, ct, s.Overlay);
                     return new MentionResolveResult("📁 " + Path.GetFileName(p.Value!.TrimEnd('\\', '/')), content);
                 }
                 case "code" when !string.IsNullOrWhiteSpace(p.Value):

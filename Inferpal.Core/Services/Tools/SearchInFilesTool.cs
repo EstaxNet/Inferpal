@@ -8,8 +8,13 @@ namespace Inferpal.Services.Tools;
 internal class SearchInFilesTool : ITool
 {
     private readonly Func<string?> _getWorkspaceRoot;
+    private readonly Editor.OpenDocumentOverlay? _overlay;
 
-    public SearchInFilesTool(Func<string?> getWorkspaceRoot) => _getWorkspaceRoot = getWorkspaceRoot;
+    public SearchInFilesTool(Func<string?> getWorkspaceRoot, Editor.OpenDocumentOverlay? overlay = null)
+    {
+        _getWorkspaceRoot = getWorkspaceRoot;
+        _overlay          = overlay;
+    }
 
     public string Name => "search_in_files";
     public string Description => "Searches for text or a regex pattern in files. Returns file:line:content.";
@@ -81,18 +86,30 @@ internal class SearchInFilesTool : ITool
 
             try
             {
-                // A multi-megabyte file (a dump, a bundle) was loaded whole for a few truncated matches
-                // at best. Skipped — and said, since a silent skip reads as "not in the code".
-                if (new FileInfo(file).Length > MaxSearchFileBytes) { skippedLarge++; continue; }
-                // Decoded like the file an edit will rewrite: a line shown with "�" could not be quoted back.
-                var lines = TextFileEncoding.ReadLines(file);
                 var relPath = file[searchRoot.Length..].TrimStart('\\', '/');
-                // A binary file's "lines" are noise, NULs included: said once, as grep does, never shown.
-                if (TextFileEncoding.IsBinaryFile(file))
+                List<string> lines;
+                // ⚠ The unsaved buffer when the editor holds one, as read_file shows it: searched on disk only, a
+                // symbol the user just typed came back "no results" — read "not defined" — from the very file
+                // read_file showed it in.
+                if (_overlay is not null && _overlay.TryGetUnsaved(file, out var buffered))
                 {
-                    if (lines.Any(l => regex.IsMatch(l) || literal?.IsMatch(l) == true))
-                        results.Add($"{relPath}: binary file matches");
-                    continue;
+                    lines = [.. buffered.ReplaceLineEndings("\n").Split('\n')];
+                    if (lines.Count > 0 && lines[^1].Length == 0) lines.RemoveAt(lines.Count - 1);
+                }
+                else
+                {
+                    // A multi-megabyte file (a dump, a bundle) was loaded whole for a few truncated matches
+                    // at best. Skipped — and said, since a silent skip reads as "not in the code".
+                    if (new FileInfo(file).Length > MaxSearchFileBytes) { skippedLarge++; continue; }
+                    // Decoded like the file an edit will rewrite: a line shown with "�" could not be quoted back.
+                    lines = TextFileEncoding.ReadLines(file);
+                    // A binary file's "lines" are noise, NULs included: said once, as grep does, never shown.
+                    if (TextFileEncoding.IsBinaryFile(file))
+                    {
+                        if (lines.Any(l => regex.IsMatch(l) || literal?.IsMatch(l) == true))
+                            results.Add($"{relPath}: binary file matches");
+                        continue;
+                    }
                 }
                 for (int i = 0; i < lines.Count && results.Count < MaxResults; i++)
                 {

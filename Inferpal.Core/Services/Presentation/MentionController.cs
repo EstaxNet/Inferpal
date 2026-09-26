@@ -227,7 +227,9 @@ internal static class MentionController
     /// rule was known; it was applied to the one cut that is visible in the text, and to none of the
     /// four that are not.
     /// </remarks>
-    public static string BuildFolderContext(string folderPath, CancellationToken ct)
+    /// <param name="overlay">The editor's unsaved buffers (VS Code), read instead of the disk for the files they hold —
+    /// as read_file shows them; null when the editor mirrors none.</param>
+    public static string BuildFolderContext(string folderPath, CancellationToken ct, Editor.OpenDocumentOverlay? overlay = null)
     {
         var sb = new StringBuilder();
         sb.Append("Folder: ").AppendLine(folderPath).AppendLine();
@@ -253,7 +255,13 @@ internal static class MentionController
             // Counted, not traced: one ring entry per unreadable file, on a folder the user may
             // attach repeatedly, is the noise RecordOnce exists to prevent. The count below is the
             // channel, and it goes where the reader of this context will see it.
-            try { body = Tools.TextFileEncoding.ReadText(f); } catch { unreadable++; continue; }
+            try
+            {
+                body = overlay is not null && overlay.TryGetUnsaved(f, out var buffered)
+                    ? buffered
+                    : Tools.TextFileEncoding.ReadText(f);
+            }
+            catch { unreadable++; continue; }
 
             var header = $"\n----- {Path.GetRelativePath(folderPath, f)} -----\n";
             if (sb.Length + header.Length + body.Length > MaxTotalChars)
