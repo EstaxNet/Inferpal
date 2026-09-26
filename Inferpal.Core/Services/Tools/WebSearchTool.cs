@@ -112,7 +112,7 @@ internal class WebSearchTool : ITool
             if ((int)response.StatusCode is < 300 or > 399 || response.Headers.Location is null)
             {
                 response.EnsureSuccessStatusCode();
-                return ((int)response.StatusCode, await response.Content.ReadAsStringAsync(ct));
+                return ((int)response.StatusCode, await WebPage.ReadTextAsync(response.Content, ct));
             }
 
             var next = response.Headers.Location.IsAbsoluteUri

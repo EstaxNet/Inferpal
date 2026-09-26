@@ -141,7 +141,7 @@ internal class FetchUrlTool : ITool
             }
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync(ct);
+            return await WebPage.ReadTextAsync(response.Content, ct);
         }
     }
 

@@ -142,7 +142,7 @@ internal sealed class DocCrawler
             if (mediaType.Length > 0 && !mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            return (await resp.Content.ReadAsStringAsync(ct), current);
+            return (await Tools.WebPage.ReadTextAsync(resp.Content, ct), current);
         }
         return null;   // redirect budget exhausted
     }
