@@ -63,6 +63,15 @@ internal sealed record TestGenerationPlan(
 /// </remarks>
 internal static class TestGenerationPlanner
 {
+    /// <summary>
+    /// The sentence naming the framework the test project uses, for a NEW test file — an existing one shows its own.
+    /// Empty when nothing says; the instruction then asks the model to infer it, as before.
+    /// </summary>
+    internal static string FrameworkLine(string testPath) =>
+        TestFilePathResolver.FrameworkFor(testPath) is { } framework
+            ? $"\nThe test project uses {framework}: write the tests for {framework}."
+            : string.Empty;
+
     /// <param name="sourcePath">Path of the file under test — decides where the tests go.</param>
     /// <param name="sourceCode">Selection if the editor has one, otherwise the whole file.</param>
     public static async Task<TestGenerationPlan> PlanAsync(
@@ -95,7 +104,7 @@ internal static class TestGenerationPlanner
         var system = extend ? TestGenerationPrompts.ExtendFileSystem : TestGenerationPrompts.NewFileSystem;
         var user   = extend
             ? $"Existing test file ({testName}):\n\n{existing}\n\nSource under test ({sourceName}):\n\n{sourceCode}"
-            : $"{TestGenerationPrompts.Instruction}\n\nSource file: {sourceName}\n\n{sourceCode}";
+            : $"{TestGenerationPrompts.Instruction}{FrameworkLine(testPath)}\n\nSource file: {sourceName}\n\n{sourceCode}";
 
         ChatTurnResult result;
         try

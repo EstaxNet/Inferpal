@@ -96,6 +96,55 @@ public sealed class TestFileLocationTests : IDisposable
         Assert.Equal(Path.Combine(_root, "Lib.Tests", "Fakes", "FakeClockTests.cs"), TestFilePathResolver.Resolve(source));
     }
 
+    /// <summary>
+    /// A NEW test file had to "infer the test framework from the source (e.g. xUnit for C#)" — but the source is
+    /// production code and names no framework: in an NUnit or MSTest project the model wrote xUnit, and the file did
+    /// not compile there either. The test project's own references say which.
+    /// </summary>
+    [Theory]
+    [InlineData("NUnit", "NUnit")]
+    [InlineData("MSTest.TestFramework", "MSTest")]
+    [InlineData("xunit", "xUnit")]
+    public async Task ANewTestFile_IsAskedInTheFrameworkTheTestProjectUses(string package, string framework)
+    {
+        Write("App.sln");
+        Write("Lib/Lib.csproj", """<Project Sdk="Microsoft.NET.Sdk" />""");
+        Write("Lib.Tests/Lib.Tests.csproj", TestProject.Replace("xunit", package));
+        var source = Write("Lib/Parser.cs", "public class Parser { public int Parse(string s) => int.Parse(s); }");
+
+        List<Inferpal.Models.ChatMessageDto> sent = [];
+        var provider = new FakeInferenceProvider
+        {
+            OnChatRequest = (_, messages, _, _) =>
+            {
+                sent = messages;
+                return Task.FromResult(new Inferpal.Models.ChatTurnResult("public class ParserTests { }", null, 0, 0));
+            },
+        };
+
+        await TestGenerationPlanner.PlanAsync(provider, "m", source, File.ReadAllText(source), CancellationToken.None);
+
+        Assert.Contains($"The test project uses {framework}", string.Join("\n", sent.Select(m => m.Content)));
+    }
+
+    [Fact]
+    public void AJsTestFile_IsWrittenForTheRunnerTheTestScriptUses()
+    {
+        Write("web/package.json", """{ "scripts": { "test": "vitest run" } }""");
+        var source = Write("web/src/sum.ts", "export const sum = (a: number, b: number) => a + b;");
+
+        Assert.Contains("The test project uses Vitest", TestGenerationPlanner.FrameworkLine(TestFilePathResolver.Resolve(source)));
+    }
+
+    [Fact]
+    public void WhenNothingSaysTheFramework_NothingIsAdded()
+    {
+        // Reference arm: no project file anywhere — the instruction stays as it was.
+        var source = Write("loose/parser.py", "def parse(s): return int(s)");
+
+        Assert.Equal(string.Empty, TestGenerationPlanner.FrameworkLine(TestFilePathResolver.Resolve(source)));
+    }
+
     [Fact]
     public void AMavenSource_GetsItsTestUnderSrcTestJava()
     {

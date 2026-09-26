@@ -112,6 +112,50 @@ internal static class TestFilePathResolver
         return null;
     }
 
+    /// <summary>
+    /// The test framework the project around <paramref name="testPath"/> uses — read from its <c>.csproj</c>, or from the
+    /// <c>test</c> script of its <c>package.json</c> — or <c>null</c> when nothing says.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A new test file was asked to "infer the framework from the source", and production code names none: the model
+    /// wrote xUnit in an NUnit or MSTest project, Jest in a Vitest one, and the file did not compile or run there.
+    /// </remarks>
+    internal static string? FrameworkFor(string testPath)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(testPath);
+            if (Path.GetExtension(testPath).Equals(".cs", StringComparison.OrdinalIgnoreCase))
+            {
+                var csproj = FindUp(dir, f => f.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase), levels: 8);
+                if (csproj is null) return null;
+                var text = File.ReadAllText(csproj);
+                return text.Contains("nunit",  StringComparison.OrdinalIgnoreCase) ? "NUnit"
+                     : text.Contains("mstest", StringComparison.OrdinalIgnoreCase) ? "MSTest"
+                     : text.Contains("xunit",  StringComparison.OrdinalIgnoreCase) ? "xUnit"
+                     : null;
+            }
+            if (Path.GetExtension(testPath).ToLowerInvariant() is ".ts" or ".tsx" or ".js" or ".jsx" or ".mjs" or ".cjs")
+            {
+                var package = FindUp(dir, f => Path.GetFileName(f).Equals("package.json", StringComparison.OrdinalIgnoreCase), levels: 8);
+                var script  = package is null ? null : PackageJson.TestScript(Path.GetDirectoryName(package)!);
+                return script is null ? null
+                     : script.Contains("vitest", StringComparison.OrdinalIgnoreCase) ? "Vitest"
+                     : script.Contains("jest",   StringComparison.OrdinalIgnoreCase) ? "Jest"
+                     : script.Contains("mocha",  StringComparison.OrdinalIgnoreCase) ? "Mocha"
+                     : System.Text.RegularExpressions.Regex.IsMatch(script, @"(?<!\S)--test(?!\S)",
+                           System.Text.RegularExpressions.RegexOptions.None, RegexBudget.Default) ? "the node:test runner"
+                     : null;
+            }
+            return null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("TestFilePathResolver.FrameworkFor", ex);
+            return null;
+        }
+    }
+
     private static bool IsTestProject(string csproj)
     {
         var text = File.ReadAllText(csproj);
