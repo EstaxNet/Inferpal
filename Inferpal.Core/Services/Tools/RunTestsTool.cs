@@ -436,6 +436,16 @@ internal class RunTestsTool : ITool
         "⚠ The runner found no test to run — nothing ran, so nothing was proven. " +
         "If a filter was given, it matched nothing; that is not a pass.";
 
+    /// <summary>Every test the run selected was skipped (or ignored): none executed.</summary>
+    /// <remarks>
+    /// ⚠ The report of such a run has a total and no failure — <c>Total tests: 1, Skipped: 1</c> — which
+    /// a summary parser reads as green. And skipping the failing test is exactly the dishonest way for
+    /// a fix loop to go green: <c>/tdd</c> declared victory on the round that added <c>Skip = "…"</c>.
+    /// </remarks>
+    internal const string OnlySkipped =
+        "⚠ Every test this run selected was skipped — none executed, so nothing was proven; " +
+        "that is not a pass.";
+
     /// <summary>The run was killed at its budget — the fourth state, and the only one that can
     /// carry a <b>green</b> summary while being worthless.</summary>
     /// <remarks>
@@ -468,7 +478,7 @@ internal class RunTestsTool : ITool
         // Aggregate summary across all test projects
         // Format: "Passed! - Failed:     0, Passed:     5, Skipped:     0, Total:     5"
         var summaryRx = new Regex(
-            @"(?:Passed|Failed)!\s*-\s*Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)",
+            @"(?:Passed|Failed|Skipped)!\s*-\s*Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)",
             RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
 
         int totalFailed = 0, totalPassed = 0, totalSkipped = 0, totalTotal = 0;
@@ -501,7 +511,12 @@ internal class RunTestsTool : ITool
             }
         }
 
-        if (totalTotal > 0)
+        if (totalTotal > 0 && totalPassed + totalFailed == 0)
+        {
+            sb.AppendLine(OnlySkipped);
+            sb.AppendLine($"Failed: 0, Passed: 0, Skipped: {totalSkipped}, Total: {totalTotal}");
+        }
+        else if (totalTotal > 0)
         {
             var status = totalFailed == 0 ? "✓ PASSED" : "✗ FAILED";
             sb.AppendLine($"{status} — Failed: {totalFailed}, Passed: {totalPassed}, Skipped: {totalSkipped}, Total: {totalTotal}");
@@ -617,6 +632,11 @@ internal class RunTestsTool : ITool
             sb.AppendLine($"  … +{total - listed} more failing test(s) not listed");
     }
 
+    /// <summary>A pytest summary with skipped tests and not one that executed.</summary>
+    private static readonly Regex OnlySkippedRx = new(
+        @"^(?!.*\b\d+ (?:passed|failed|errors?|xfailed|xpassed)\b).*\b\d+ skipped\b",
+        RegexOptions.None, RegexBudget.Default);
+
     internal static string ParsePytestOutput(string raw, int exitCode, string? interpreter = null)
     {
         var sb = new StringBuilder();
@@ -635,6 +655,9 @@ internal class RunTestsTool : ITool
         if (exitCode == 5)
             sb.AppendLine(Regex.IsMatch(raw, @"\b\d+ deselected\b", RegexOptions.None, RegexBudget.Default)
                 ? NoTestMatchedFilter : NoTestFound);
+        // "1 skipped, 2 deselected" exits 0: collected, then not one executed.
+        else if (summaryMatch.Success && OnlySkippedRx.IsMatch(summaryMatch.Groups[1].Value))
+            sb.AppendLine(OnlySkipped);
 
         if (summaryMatch.Success)
             sb.AppendLine(summaryMatch.Groups[1].Value.Trim());
@@ -685,7 +708,7 @@ internal class RunTestsTool : ITool
 
         // "test result: ok. 0 passed; 0 failed" is cargo's report of a run in which nothing ran.
         if (any && passed + failed == 0)
-            sb.AppendLine($"{(filteredOut > 0 ? NoTestMatchedFilter : NoTestFound)}\n" +
+            sb.AppendLine($"{(ignored > 0 ? OnlySkipped : filteredOut > 0 ? NoTestMatchedFilter : NoTestFound)}\n" +
                           $"Passed: 0, Failed: 0, Ignored: {ignored}, Filtered out: {filteredOut}");
         else if (any)
             sb.AppendLine($"{(failed == 0 ? "✓ PASSED" : "✗ FAILED")} — Failed: {failed}, Passed: {passed}, Ignored: {ignored}, Total: {passed + failed + ignored}");
