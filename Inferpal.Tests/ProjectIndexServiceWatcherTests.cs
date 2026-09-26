@@ -205,6 +205,10 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
                                  .Any(c => c.Content.Contains("SavedAgain", StringComparison.Ordinal)),
                              "the saved file is re-indexed", () => svc.Status);
 
+        // The chunks are published before the status is recounted, at the end of the re-index: wait for the status
+        // itself — reading it as soon as the chunks changed raced that last step (seen once on the Windows CI leg).
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains("without embedding", StringComparison.Ordinal)),
+                             "the status recounts the hole", () => svc.Status);
         var missing = (await svc.GetFileChunksAsync(saved, _root, CancellationToken.None)).Count;
         Assert.Contains($"{missing} of {svc.ChunkCount} chunks without embedding", svc.Status, StringComparison.Ordinal);
     }
@@ -227,8 +231,10 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
                                  .Any(c => c.Content.Contains("HoleFilled", StringComparison.Ordinal)),
                              "the saved file is re-indexed", () => svc.Status);
 
-        Assert.DoesNotContain("without embedding", svc.Status, StringComparison.Ordinal);
-        Assert.Contains('✅', svc.Status);
+        // Same race as above, other direction: the wait IS the assertion, and it fails at its deadline naming the status.
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅') &&
+                                                   !svc.Status.Contains("without embedding", StringComparison.Ordinal)),
+                             "the status stops counting the filled hole", () => svc.Status);
     }
 
     [Fact]
