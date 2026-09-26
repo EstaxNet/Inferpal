@@ -11,11 +11,14 @@ internal class DeleteFileTool : ITool
     private readonly FileHistoryService _history;
     private readonly Func<string?>      _getWorkspaceRoot;
 
-    public DeleteFileTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot)
+    private readonly Editor.OpenDocumentOverlay? _overlay;
+
+    public DeleteFileTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot, Editor.OpenDocumentOverlay? overlay = null)
     {
         _approval         = approval;
         _history          = history;
         _getWorkspaceRoot = getWorkspaceRoot;
+        _overlay         = overlay;
     }
 
     public string Name        => "delete_file";
@@ -36,6 +39,7 @@ internal class DeleteFileTool : ITool
         var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
         if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
+        if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return unsaved;
 
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);

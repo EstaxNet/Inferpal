@@ -10,11 +10,14 @@ internal class RestoreFileTool : ITool
     private readonly FileHistoryService _history;
     private readonly Func<string?>      _getWorkspaceRoot;
 
-    public RestoreFileTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot)
+    private readonly Editor.OpenDocumentOverlay? _overlay;
+
+    public RestoreFileTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot, Editor.OpenDocumentOverlay? overlay = null)
     {
         _approval         = approval;
         _history          = history;
         _getWorkspaceRoot = getWorkspaceRoot;
+        _overlay         = overlay;
     }
 
     public string Name        => "restore_file";
@@ -43,6 +46,7 @@ internal class RestoreFileTool : ITool
         var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
         if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
+        if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return unsaved;
 
         string? snapPath = null;
         if (args.Str("snapshot") is { } snapRaw)

@@ -19,11 +19,15 @@ internal sealed class RenameSymbolTool : ITool
     private readonly FileHistoryService _history;
     private readonly Func<string?>      _getRoot;
 
-    public RenameSymbolTool(IApprovalService approval, FileHistoryService history, Func<string?> getRoot)
+    private readonly Editor.OpenDocumentOverlay? _overlay;
+
+    public RenameSymbolTool(IApprovalService approval, FileHistoryService history, Func<string?> getRoot,
+                            Editor.OpenDocumentOverlay? overlay = null)
     {
         _approval = approval;
         _history  = history;
         _getRoot  = getRoot;
+        _overlay  = overlay;
     }
 
     public string Name => "rename_symbol";
@@ -201,7 +205,10 @@ internal sealed class RenameSymbolTool : ITool
         // A name one of the files cannot hold in its own encoding is said now, the dry run included: applied, it would
         // be written as another character.
         foreach (var (f, _, _, newContent) in hits)
+        {
+            if (FileTarget.UnsavedRefusal(_overlay, f) is { } unsaved) return unsaved;
             if (FileTarget.EncodingRefusal(f, newContent) is { } cannotHold) return cannotHold;
+        }
 
         if (dryRun)
         {

@@ -12,13 +12,16 @@ internal class ApplyDiffTool : ITool
     private readonly Action<DiffInfo?>?  _setDiff;
     private readonly Func<string?>       _getWorkspaceRoot;
 
-    public ApplyDiffTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot, SmartFixValidator? smartFix = null, Action<DiffInfo?>? setDiff = null)
+    private readonly Editor.OpenDocumentOverlay? _overlay;
+
+    public ApplyDiffTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot, SmartFixValidator? smartFix = null, Action<DiffInfo?>? setDiff = null, Editor.OpenDocumentOverlay? overlay = null)
     {
         _approval         = approval;
         _history          = history;
         _getWorkspaceRoot = getWorkspaceRoot;
         _smartFix         = smartFix;
         _setDiff          = setDiff;
+        _overlay         = overlay;
     }
 
     public string Name => "apply_diff";
@@ -48,6 +51,7 @@ internal class ApplyDiffTool : ITool
         var path       = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
         if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
+        if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return unsaved;
         var oldContent = args.Str("old_content") ?? throw new ArgumentException("old_content is required.");
         // ⚠ Was `?? ""`, on an argument the schema declares REQUIRED: omitting it therefore
         // became a DELETION of the matched block, and the answer said "diff applied". The model

@@ -21,6 +21,23 @@ internal static class FileTarget
             : null;
 
     /// <summary>
+    /// The refusal for writing <paramref name="path"/> while the editor holds unsaved changes to it; <c>null</c>
+    /// otherwise, and always when the editor mirrors no buffer (<paramref name="overlay"/> null: Visual Studio).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ read_file shows the unsaved buffer, and every writing tool reads and writes the DISK: the model quoted a line
+    /// it had just read and was told "old_content not found", and an edit that did apply landed under a dirty buffer
+    /// that the user's next save overwrote. Writing the buffer to disk instead would save the user's changes without
+    /// asking — so the file is named, and saving it stays the user's gesture.
+    /// </remarks>
+    public static string? UnsavedRefusal(Editor.OpenDocumentOverlay? overlay, string path) =>
+        overlay is not null && overlay.TryGetUnsaved(path, out _)
+            ? $"'{path}' has unsaved changes in the editor. read_file shows them, but this tool works on the file on " +
+              "disk, which does not have them: the edit would miss them, or the user's next save would undo it. " +
+              "Ask the user to save the file, then try again."
+            : null;
+
+    /// <summary>
     /// The refusal for writing <paramref name="content"/> to <paramref name="path"/> when the file's own encoding — a
     /// legacy code page, kept on rewrite — cannot hold one of its characters; <c>null</c> otherwise.
     /// </summary>

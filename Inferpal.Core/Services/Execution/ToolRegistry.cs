@@ -81,14 +81,14 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         var setDiff  = (DiffInfo? d) => { _pendingDiff = d; };
 
         Register(new ReadFileTool(() => indexService.RootDir, overlay));
-        Register(new WriteFileTool(approval, history, () => indexService.RootDir, smartFix, setDiff));
+        Register(new WriteFileTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
         Register(new ListFilesTool(() => indexService.RootDir));
         Register(new SearchInFilesTool(() => indexService.RootDir));
         Register(new RunCommandTool(approval, config, () => indexService.RootDir));
-        Register(new ApplyDiffTool(approval, history, () => indexService.RootDir, smartFix, setDiff));
-        Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix));
-        Register(new RestoreFileTool(approval, history, () => indexService.RootDir));
-        Register(new DeleteFileTool(approval, history, () => indexService.RootDir));
+        Register(new ApplyDiffTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
+        Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix, overlay));
+        Register(new RestoreFileTool(approval, history, () => indexService.RootDir, overlay));
+        Register(new DeleteFileTool(approval, history, () => indexService.RootDir, overlay));
         Register(new GetDiagnosticsTool(editor, () => indexService.RootDir));
         Register(new GetActiveDocumentTool(editor));
         Register(new FetchUrlTool(approval));
@@ -103,7 +103,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // trace_dependency / analyze_impact / trace_nexus are unified behind one analyze_code(mode=…)
         // facade to keep the per-request tool list small (the three strategies live inside it).
         Register(new AnalyzeCodeTool(() => indexService.RootDir));
-        Register(new RenameSymbolTool(approval, history, () => indexService.RootDir));
+        Register(new RenameSymbolTool(approval, history, () => indexService.RootDir, overlay));
         Register(new SemanticSearchTool(indexService, client, config));
         Register(new SearchDocsTool(docsIndex, client, config));
         Register(new GenerateProjectMapTool(mapService));

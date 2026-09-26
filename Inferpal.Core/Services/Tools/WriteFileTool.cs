@@ -13,13 +13,16 @@ internal class WriteFileTool : ITool
     private readonly Action<DiffInfo?>?     _setDiff;
     private readonly Func<string?>          _getWorkspaceRoot;
 
-    public WriteFileTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot, SmartFixValidator? smartFix = null, Action<DiffInfo?>? setDiff = null)
+    private readonly Editor.OpenDocumentOverlay? _overlay;
+
+    public WriteFileTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot, SmartFixValidator? smartFix = null, Action<DiffInfo?>? setDiff = null, Editor.OpenDocumentOverlay? overlay = null)
     {
         _approval         = approval;
         _history          = history;
         _getWorkspaceRoot = getWorkspaceRoot;
         _smartFix         = smartFix;
         _setDiff          = setDiff;
+        _overlay         = overlay;
     }
 
     public string Name => "write_file";
@@ -41,6 +44,7 @@ internal class WriteFileTool : ITool
         var path    = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
         if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
+        if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return unsaved;
         var content = args.Str("content") ?? throw new ArgumentException("content is required.");
 
         var exists     = File.Exists(path);

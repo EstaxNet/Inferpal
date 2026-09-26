@@ -19,12 +19,15 @@ internal sealed class ApplyEditsTool : ITool
     private readonly SmartFixValidator? _smartFix;
     private readonly Func<string?>      _getWorkspaceRoot;
 
-    public ApplyEditsTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot, SmartFixValidator? smartFix = null)
+    private readonly Editor.OpenDocumentOverlay? _overlay;
+
+    public ApplyEditsTool(IApprovalService approval, FileHistoryService history, Func<string?> getWorkspaceRoot, SmartFixValidator? smartFix = null, Editor.OpenDocumentOverlay? overlay = null)
     {
         _approval         = approval;
         _history          = history;
         _getWorkspaceRoot = getWorkspaceRoot;
         _smartFix         = smartFix;
+        _overlay         = overlay;
     }
 
     public string Name => "apply_edits";
@@ -129,6 +132,7 @@ internal sealed class ApplyEditsTool : ITool
             if (!current.ContainsKey(edit.Path))
             {
                 if (FileTarget.DirectoryRefusal(edit.Path) is { } isDirectory) return isDirectory;
+                if (FileTarget.UnsavedRefusal(_overlay, edit.Path) is { } unsaved) return unsaved;
                 if (!File.Exists(edit.Path)) return Strings.ToolFileNotFound(edit.Path);
                 var content = await TextFileEncoding.ReadTextAsync(edit.Path, ct);
                 current[edit.Path]  = content;

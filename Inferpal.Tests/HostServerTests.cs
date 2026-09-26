@@ -1755,6 +1755,76 @@ public partial class HostServerTests
         Assert.True(overlay.TryGetUnsaved(@"C:\proj\b.cs", out _));    // an adapter that does not say keeps the buffer
     }
 
+    /// <summary>
+    /// VS Code mirrors unsaved buffers, and read_file shows them — but the writing tools edit the file on DISK. The
+    /// model quoted a line it had just read and was told "not found"; an edit that did apply landed under a dirty
+    /// buffer, which the user's next save overwrote.
+    /// </summary>
+    [Fact]
+    public async Task AFileWithUnsavedChanges_IsNotEditedFromItsDiskVersion()
+    {
+        using var h = CreateHarness();
+        h.Target.ApprovalAnswer = 1;
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var path   = Path.Combine(h.RootDir, "Calc.cs");
+        var onDisk = "int Add(int a, int b)\n{\n    return a + b;\n}\n";
+        File.WriteAllText(path, onDisk);
+        await h.Client.NotifyWithParameterObjectAsync("textDocument/didOpen", new
+        {
+            path, dirty = true,
+            text = "int Add(int a, int b)\n{\n    // TODO: overflow\n    return a + b;\n}\n",
+        });
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var tools = h.Server.CurrentSession!.Tools;
+
+        var read = await tools.ExecuteAsync("read_file",
+            System.Text.Json.JsonSerializer.SerializeToElement(new { path }), CancellationToken.None);
+        Assert.Contains("TODO: overflow", read);                                              // witness: the buffer is shown
+
+        var edit = await tools.ExecuteAsync("apply_diff", System.Text.Json.JsonSerializer.SerializeToElement(new
+        {
+            path, old_content = "    // TODO: overflow", new_content = "    // checked below",
+        }), CancellationToken.None);
+
+        Assert.Equal(onDisk, File.ReadAllText(path));
+        Assert.Contains("unsaved changes", edit);
+    }
+
+    [Fact]
+    public async Task AnOpenButSavedFile_IsEditedAsUsual()
+    {
+        // Reference arm: an open document whose buffer matches the disk is not in the way.
+        using var h = CreateHarness();
+        h.Target.ApprovalAnswer = 1;
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var path = Path.Combine(h.RootDir, "Calc.cs");
+        File.WriteAllText(path, "int x = 1;\n");
+        await h.Client.NotifyWithParameterObjectAsync("textDocument/didOpen", new { path, text = "int x = 1;\n", dirty = false });
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        await h.Server.CurrentSession!.Tools.ExecuteAsync("apply_diff", System.Text.Json.JsonSerializer.SerializeToElement(new
+        {
+            path, old_content = "int x = 1;", new_content = "int x = 2;",
+        }), CancellationToken.None);
+
+        Assert.Equal("int x = 2;\n", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void EveryToolThatWritesAPath_RefusesAFileWithUnsavedChanges()
+    {
+        // A property of the tools, not a list of them: whoever refuses a directory as its target (every tool that
+        // writes a path given in its arguments) refuses a buffer with unsaved changes too, before its prompt.
+        var writers = ConventionCoverageTests.ProjectSources("Inferpal.Core")
+            .Select(f => (File: Path.GetFileName(f), Code: ConventionCoverageTests.CodeOnly(f)))
+            .Where(s => s.Code.Contains("FileTarget.DirectoryRefusal(", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.True(writers.Count >= 5, $"the scan found {writers.Count} writing tools: it reads nothing any more");   // WITNESS
+        Assert.Empty(writers.Where(s => !s.Code.Contains("FileTarget.UnsavedRefusal(", StringComparison.Ordinal))
+                            .Select(s => s.File));
+    }
+
     // ── command/slash ──────────────────────────────────────────────────────────
 
     /// <summary>
