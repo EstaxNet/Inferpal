@@ -37,13 +37,9 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
             // carry either flavour on either platform - it comes from a model, and from MCP tools.
             var path = token.Trim().Replace('\\', '/');
             if (path.Length == 0) continue;
-            var name = Path.GetFileNameWithoutExtension(path);
-            // Case-sensitive on purpose: "CalculatorTests" is the convention, "Contest" is a word.
-            if (name.EndsWith("Test", StringComparison.Ordinal) ||
-                name.EndsWith("Tests", StringComparison.Ordinal) ||
-                name.EndsWith(".spec", StringComparison.OrdinalIgnoreCase) ||
-                name.EndsWith(".test", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("test_", StringComparison.OrdinalIgnoreCase))
+            // ⚠ The ONE reader of the naming conventions, shared with the resolver that names the files /test writes: a
+            // list of its own here missed Go's only convention (parser_test.go) while the resolver knew it.
+            if (CodeActions.TestFilePathResolver.IsTestFileName(Path.GetFileNameWithoutExtension(path)))
                 return true;
 
             foreach (var segment in path.Split('/'))

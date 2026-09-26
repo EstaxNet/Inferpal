@@ -374,6 +374,9 @@ public class TddTests
     [InlineData(@"C:\proj\src\__tests__\app.js", true)]
     [InlineData(@"C:\proj\src\app.spec.ts", true)]
     [InlineData(@"C:\proj\src\test_parser.py", true)]
+    [InlineData(@"C:\proj\pkg\parser_test.go", true)]                // Go's ONLY convention — the resolver knew it, the guard did not
+    [InlineData(@"C:\proj\src\parser_test.py", true)]                // pytest's other pattern
+    [InlineData(@"C:\proj\lib\parser_spec.rb", true)]                // RSpec
     [InlineData(@"C:\proj\Inferpal.Tests\FakeProvider.cs", true)]  // .NET "<Project>.Tests" folder — this repo's own convention (revue lot 4)
     [InlineData(@"C:\proj\App.Test\Fixtures\data.json", true)]
     [InlineData(@"C:\proj\src\Calculator.cs", false)]

@@ -117,8 +117,9 @@ internal static class TestFilePathResolver
     /// <c>test</c> script of its <c>package.json</c> — or <c>null</c> when nothing says.
     /// </summary>
     /// <remarks>
-    /// ⚠ A new test file was asked to "infer the framework from the source", and production code names none: the model
-    /// wrote xUnit in an NUnit or MSTest project, Jest in a Vitest one, and the file did not compile or run there.
+    /// ⚠ Asked to "infer the framework from the source", a new test file gets none — production code names no test
+    /// framework: the model writes xUnit in an NUnit or MSTest project, Jest in a Vitest one, and the file does not
+    /// compile or run there.
     /// </remarks>
     internal static string? FrameworkFor(string testPath)
     {
@@ -179,7 +180,8 @@ internal static class TestFilePathResolver
 
     /// <summary>
     /// True when <paramref name="nameWithoutExt"/> already follows a common test-file convention
-    /// (<c>FooTests</c>, <c>FooTest</c>, <c>foo_test</c>, <c>test_foo</c>, <c>foo.test</c>, <c>foo.spec</c>).
+    /// (<c>FooTests</c>, <c>FooTest</c>, <c>foo_test</c>, <c>foo_spec</c>, <c>test_foo</c>, <c>foo.test</c>, <c>foo.spec</c>).
+    /// Case-sensitive for the <c>Test</c>/<c>Tests</c> suffix: "CalculatorTests" is the convention, "Contest" is a word.
     /// </summary>
     public static bool IsTestFileName(string nameWithoutExt)
     {
@@ -187,6 +189,7 @@ internal static class TestFilePathResolver
         return n.EndsWith("Tests", System.StringComparison.Ordinal)
             || n.EndsWith("Test",  System.StringComparison.Ordinal)
             || n.EndsWith("_test", System.StringComparison.OrdinalIgnoreCase)
+            || n.EndsWith("_spec", System.StringComparison.OrdinalIgnoreCase)
             || n.StartsWith("test_", System.StringComparison.OrdinalIgnoreCase)
             || n.EndsWith(".test", System.StringComparison.OrdinalIgnoreCase)
             || n.EndsWith(".spec", System.StringComparison.OrdinalIgnoreCase);
