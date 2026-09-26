@@ -345,7 +345,8 @@ internal class RunTestsTool : ITool
             Regex.Matches(text, pattern, RegexOptions.Multiline, RegexBudget.Default) is { Count: > 0 } all ? all[^1] : Match.Empty;
 
         // jest: "Tests:       1 failed, 2 passed, 3 total" — vitest: "      Tests  1 failed | 1 passed (2)"
-        var tests = Last(raw, @"^\s*Tests:?[ \t]+([^\r\n]*\b(?:passed|failed|skipped|total)\b[^\r\n]*)$");
+        // ⚠ "\r?$": under Multiline "$" matches before "\n" only, so a CRLF report left every summary line unread.
+        var tests = Last(raw, @"^\s*Tests:?[ \t]+([^\r\n]*\b(?:passed|failed|skipped|total)\b[^\r\n]*)\r?$");
         if (tests.Success)
         {
             var body    = tests.Groups[1].Value;
@@ -356,7 +357,7 @@ internal class RunTestsTool : ITool
                 ? int.Parse(t.Groups[1].Success ? t.Groups[1].Value : t.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture)
                 : failed + passed + skipped;
             // jest: "Test Suites: 1 failed, 1 total" — vitest: " Test Files  1 failed (1)"
-            var suites = Last(raw, @"^\s*Test (?:Suites:|Files)[ \t]+([^\r\n]*)$");
+            var suites = Last(raw, @"^\s*Test (?:Suites:|Files)[ \t]+([^\r\n]*)\r?$");
             var suitesFailed = suites.Success ? Num(Regex.Match(suites.Groups[1].Value, @"(\d+) failed", RegexOptions.None, RegexBudget.Default)) : 0;
             return new(failed, passed, skipped, total, suitesFailed);
         }

@@ -120,6 +120,18 @@ public class RunnerFilterRejectedTests
         Assert.True(TddCommandHandler.NothingRan(report), report);
     }
 
+    [Theory]
+    [InlineData("Test Suites: 1 failed, 1 total\nTests:       0 total\n", 1, "✗ FAILED — 1 test file(s) failed to run")]
+    [InlineData("Test Suites: 1 skipped, 0 of 1 total\nTests:       2 skipped, 2 total\n", 0, "⚠ No test matched the filter")]
+    [InlineData("Tests:       1 failed, 2 passed, 3 total\n", 1, "✗ FAILED — Failed: 1, Passed: 2")]
+    public void AJestReportWithWindowsLineEndings_IsReadTheSame(string report, int exitCode, string head)
+    {
+        // A summary line read up to "$" stopped at the "\r" of a CRLF line and went unread: the Windows CI leg, whose
+        // checkout turns the fixtures to CRLF, saw it before anyone's jest did.
+        Assert.StartsWith(head, RunTestsTool.ParseNpmOutput(report, exitCode));
+        Assert.StartsWith(head, RunTestsTool.ParseNpmOutput(report.Replace("\n", "\r\n"), exitCode));
+    }
+
     [Fact]
     public void AWellFormedFilterThatMatchesNothing_KeepsItsOwnSentence()
     {
