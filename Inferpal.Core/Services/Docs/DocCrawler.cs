@@ -36,8 +36,11 @@ internal sealed class DocCrawler
     // one: a page that opens <title> and never closes it makes the lazy group scan to end of
     // document, once per starting position. Without the budget the failure mode is the worst
     // available - the crawl never returns and the turn hangs with no error.
+    // ⚠ The whole value, anchor included, then the anchor cut in ExtractLinks: a pattern that stops at '#' and demands
+    // the closing quote there matches nothing on "retries.html#options" — the shape of every Sphinx cross-reference —
+    // and a page reached only through its sections is never indexed.
     private static readonly Regex _hrefRegex = new(
-        "href\\s*=\\s*[\"']([^\"'#]+)[\"']",
+        "href\\s*=\\s*[\"']([^\"']+)[\"']",
         RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     private static readonly Regex _titleRegex = new(
@@ -236,6 +239,8 @@ internal sealed class DocCrawler
         foreach (Match m in matches)
         {
             var raw = m.Groups[1].Value.Trim();
+            var hash = raw.IndexOf('#');
+            if (hash >= 0) raw = raw[..hash];   // a section of a page is that page; "#top" alone is this one
             if (raw.Length == 0 ||
                 raw.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase) ||
                 raw.StartsWith("javascript:", StringComparison.OrdinalIgnoreCase) ||
