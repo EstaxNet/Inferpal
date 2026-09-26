@@ -71,7 +71,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         _mapService   = mapService;
         _docsIndex    = docsIndex;
         _overlay      = overlay;
-        _debug        = debug;
+        // Stopping through the registry — the tool's `stop` and `/debug stop` alike — removes the breakpoints the
+        // assistant set; the ones it did not set are never touched.
+        _debug        = debug is null ? null : debug as AgentCleaningDebugSession ?? new AgentCleaningDebugSession(debug, new AgentBreakpoints());
 
         var history  = _fileHistory;
         // The approval service is passed so a build command coming from the workspace's
@@ -112,15 +114,15 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // answer is "unavailable here" costs prompt tokens on every turn and teaches a small model
         // to keep trying. The step budget is per registry, i.e. per editor session, and is reset by
         // each `start`.
-        if (debug is not null)
+        if (_debug is not null)
         {
             var budget = new DebugStepBudget();
-            Register(new DebugControlTool(debug, approval, budget, () => indexService.RootDir));
-            Register(new DebugInspectTool(debug, () => indexService.RootDir));
+            Register(new DebugControlTool(_debug, approval, budget, () => indexService.RootDir));
+            Register(new DebugInspectTool(_debug, () => indexService.RootDir));
             // Same gate, and it was missing here. `get_debugger_state` was registered
             // unconditionally, ten lines above the comment forbidding exactly that: with no
             // debugger of any kind its every answer is "no paused debug session".
-            Register(new GetDebuggerStateTool(debug, () => indexService.RootDir));
+            Register(new GetDebuggerStateTool(_debug, () => indexService.RootDir));
         }
 
         // ⚠ There is deliberately no sub-agent `delegate` tool, and its absence is a decision, not

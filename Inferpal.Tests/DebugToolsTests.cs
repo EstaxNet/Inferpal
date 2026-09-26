@@ -568,4 +568,87 @@ public class DebugToolsTests
         Assert.False(Services.Tasks.BackgroundTaskToolRegistry.IsAllowed(DebugControlTool.ToolName));
         Assert.False(Services.Tasks.BackgroundTaskToolRegistry.IsProposable(DebugControlTool.ToolName));
     }
+
+    // ── The breakpoints the assistant sets are its own to remove, and only those ─────
+    //
+    // A breakpoint lives in the editor's list, saved with the workspace, whoever set it: left behind, the user's next
+    // debugging session stopped on lines they never chose — and "clear the breakpoint at this line" removed the user's
+    // own, its condition with it.
+
+    private static readonly string WsRoot = TestPaths.P(@"C:\ws");
+    private static string At(string relative) => PathSanitizer.Sanitize(TestPaths.P(@"C:\ws\" + relative), WsRoot);
+
+    /// <summary>The session as the tool registry hands it out, with the user's breakpoint already in the editor.</summary>
+    private static (FakeDebugSession Editor, AgentCleaningDebugSession Session, DebugControlTool Tool) WithUsersBreakpoint()
+    {
+        var editor = new FakeDebugSession();
+        editor.Breakpoints.Add(new DebugBreakpointInfo(At(@"src\A.cs"), 5, true));
+        var session = new AgentCleaningDebugSession(editor, new AgentBreakpoints());
+        return (editor, session, new DebugControlTool(session, new StubApproval(true), new DebugStepBudget(), () => WsRoot));
+    }
+
+    private static JsonElement Location(string action, string relative, int line) =>
+        Args(JsonSerializer.Serialize(new { action, file = TestPaths.P(@"C:\ws\" + relative), line }));
+
+    [Fact]
+    public async Task StoppingTheSession_RemovesTheBreakpointsTheAssistantSet_AndOnlyThose()
+    {
+        var (editor, _, tool) = WithUsersBreakpoint();
+        await tool.ExecuteAsync(Location("set_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+        Assert.Equal(2, editor.Breakpoints.Count);                       // witness: it was set
+
+        var reply = await tool.ExecuteAsync(Args("""{"action":"stop"}"""), CancellationToken.None);
+
+        var left = Assert.Single(editor.Breakpoints);
+        Assert.Equal((At(@"src\A.cs"), 5), (left.File, left.Line));      // the user's stays
+        Assert.Contains("1 breakpoint(s) you set were removed", reply);
+        Assert.Equal(1, editor.Stops);
+    }
+
+    [Fact]
+    public async Task SlashDebugStop_RemovesThemToo()
+    {
+        var (editor, session, tool) = WithUsersBreakpoint();
+        await tool.ExecuteAsync(Location("set_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+
+        await Services.Commands.DebugCommandHandler.HandleAsync(session, ["/debug", "stop"], CancellationToken.None);
+
+        Assert.Equal(5, Assert.Single(editor.Breakpoints).Line);
+    }
+
+    [Fact]
+    public async Task ClearingTheUsersBreakpoint_LeavesItInPlace()
+    {
+        var (editor, _, tool) = WithUsersBreakpoint();
+
+        var reply = await tool.ExecuteAsync(Location("clear_breakpoint", @"src\A.cs", 5), CancellationToken.None);
+
+        Assert.Single(editor.Breakpoints);
+        Assert.Contains("it is the user's, and it stays", reply);
+    }
+
+    [Fact]
+    public async Task SettingABreakpointWhereTheUserHasOne_NeitherDuplicatesNorAdoptsIt()
+    {
+        var (editor, _, tool) = WithUsersBreakpoint();
+
+        var reply = await tool.ExecuteAsync(Location("set_breakpoint", @"src\A.cs", 5), CancellationToken.None);
+        await tool.ExecuteAsync(Args("""{"action":"stop"}"""), CancellationToken.None);
+
+        Assert.Single(editor.Breakpoints);                                // not added twice, not removed at stop
+        Assert.Contains("already set", reply);
+    }
+
+    [Fact]
+    public async Task ClearingItsOwnBreakpoint_Works()
+    {
+        // Reference arm: the assistant's own breakpoint is still its to clear.
+        var (editor, _, tool) = WithUsersBreakpoint();
+        await tool.ExecuteAsync(Location("set_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+
+        var reply = await tool.ExecuteAsync(Location("clear_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+
+        Assert.Equal(5, Assert.Single(editor.Breakpoints).Line);
+        Assert.Contains("Breakpoint cleared", reply);
+    }
 }

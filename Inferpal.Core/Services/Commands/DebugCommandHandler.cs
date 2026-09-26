@@ -122,5 +122,5 @@ internal static class DebugCommandHandler
       + "- If the step budget runs out, report what you established and what is still open — an "
       + "unfinished investigation is a result, an invented conclusion is not.\n"
       + "- Stop the session with debug_control action='stop' when you are done, so the user's IDE "
-      + "is not left paused.";
+      + "is not left paused — stopping also removes the breakpoints you set, and only those.";
 }

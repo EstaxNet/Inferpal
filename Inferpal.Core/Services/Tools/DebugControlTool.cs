@@ -25,14 +25,19 @@ internal sealed class DebugControlTool(
     IDebugSession session,
     IApprovalService approval,
     DebugStepBudget budget,
-    Func<string> root) : ITool
+    Func<string> root,
+    AgentBreakpoints? agentBreakpoints = null) : ITool
 {
+    /// <summary>What this tool added; a breakpoint it did not add is the user's, and it stays.</summary>
+    private readonly AgentBreakpoints _agent = agentBreakpoints ?? (session as AgentCleaningDebugSession)?.Agent ?? new();
+
     public const string ToolName = "debug_control";
 
     public string Name => ToolName;
 
     public string Description =>
         "Drives the debugger: set or clear breakpoints, start a debugging session, resume, and step. "
+        + "Breakpoints you set are removed when the session stops; the user's own are never removed. "
         + "Starting a session runs the user's program and asks them for confirmation first. "
         + "Use this to test a hypothesis about runtime behaviour instead of guessing from the source: "
         + "set a breakpoint where the state matters, start, then read the state with debug_inspect. "
@@ -106,11 +111,17 @@ internal sealed class DebugControlTool(
         var (file, line, error) = ReadLocation(args);
         if (error is not null) return error;
 
+        // A breakpoint already there is used as it is: added again it is a duplicate, and adopted it would be removed
+        // with the assistant's own when the session stops.
+        if (await ExistingAtAsync(file!, line, ct))
+            return $"A breakpoint is already set at {file}:{line}; it will be hit as it is, and it stays when the session stops.";
+
         var bp = await session.AddBreakpointAsync(file!, line, ct);
-        return bp is null
-            ? $"The debugger refused a breakpoint at {file}:{line} (no executable code on that line?). "
-            + "Try the first executable line of the statement."
-            : $"Breakpoint set at {bp.File}:{bp.Line}.";
+        if (bp is null)
+            return $"The debugger refused a breakpoint at {file}:{line} (no executable code on that line?). "
+                 + "Try the first executable line of the statement.";
+        _agent.Track(bp.File, bp.Line);
+        return $"Breakpoint set at {bp.File}:{bp.Line}. It is removed when the session stops.";
     }
 
     private async Task<string> ClearBreakpointAsync(JsonElement args, CancellationToken ct)
@@ -118,10 +129,19 @@ internal sealed class DebugControlTool(
         var (file, line, error) = ReadLocation(args);
         if (error is not null) return error;
 
+        if (!_agent.Owns(file!, line))
+            return await ExistingAtAsync(file!, line, ct)
+                ? $"The breakpoint at {file}:{line} was not set by you — it is the user's, and it stays."
+                : $"No breakpoint at {file}:{line}.";
+
+        _agent.Untrack(file!, line);
         return await session.RemoveBreakpointAsync(file!, line, ct)
             ? $"Breakpoint cleared at {file}:{line}."
             : $"No breakpoint at {file}:{line}.";
     }
+
+    private async Task<bool> ExistingAtAsync(string file, int line, CancellationToken ct) =>
+        (await session.ListBreakpointsAsync(ct)).Any(b => AgentBreakpoints.Same(b.File, b.Line, file, line));
 
     private async Task<string> ListBreakpointsAsync(CancellationToken ct)
     {
@@ -174,7 +194,12 @@ internal sealed class DebugControlTool(
 
     private async Task<string> StopAsync(CancellationToken ct)
     {
+        // Through the registry's session, stopping also removes the breakpoints set here; a bare session (a test,
+        // a front-end wired without the registry) gets the same cleanup from the tool itself.
+        var removed = session is AgentCleaningDebugSession ? _agent.Snapshot().Count : await _agent.RemoveAllAsync(session, ct);
         await session.StopAsync(ct);
-        return "Debugging session stopped.";
+        return removed == 0
+            ? "Debugging session stopped."
+            : $"Debugging session stopped, and the {removed} breakpoint(s) you set were removed.";
     }
 }
