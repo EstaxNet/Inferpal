@@ -212,7 +212,8 @@ internal static class TddCommandHandler
     /// </remarks>
     internal static bool NothingRan(string output) =>
         output.Contains(Tools.RunTestsTool.NoTestMatchedFilter, StringComparison.Ordinal)
-     || output.Contains(Tools.RunTestsTool.NothingProven,       StringComparison.Ordinal);
+     || output.Contains(Tools.RunTestsTool.NothingProven,       StringComparison.Ordinal)
+     || output.Contains(Tools.RunTestsTool.NoTestScript,        StringComparison.Ordinal);
 
     /// <summary>
     /// The runner was <b>killed at its budget</b> — the state that can carry a green summary and

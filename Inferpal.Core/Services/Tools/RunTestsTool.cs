@@ -116,8 +116,83 @@ internal class RunTestsTool : ITool
         if (!string.IsNullOrWhiteSpace(filter))
             args += $" -- --testNamePattern=\"{filter}\"";
 
-        var (output, _) = await RunProcessAsync("npm", args, workDir, budget, ct);
-        return Truncate(output.Trim(), MaxRawChars);
+        var (output, exitCode) = await RunProcessAsync("npm", args, workDir, budget, ct);
+        return ParseNpmOutput(output, exitCode);
+    }
+
+    /// <summary>npm's placeholder "test" script ran — the one <c>npm init</c> writes. Nothing to fix.</summary>
+    internal const string NoTestScript =
+        "⚠ The project's \"test\" script is npm's placeholder (\"no test specified\") — nothing ran. " +
+        "That is not a failure to fix.";
+
+    /// <summary>
+    /// A verdict line for <c>npm test</c>, from the summary its runner prints — jest, vitest, mocha or node --test — then
+    /// the raw output, which carries the failures.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The output used to be returned raw, its exit code discarded: it starts with "&gt; project@1.0.0 test", so
+    /// /tdd — which reads green only from a verdict line — never saw a Node suite pass, and ran its fix rounds on a
+    /// suite that passed. A green summary with a failing exit is not green: <c>npm test</c> can chain a linter or a
+    /// coverage gate after the tests. And no summary is never green, the rule of every other parser here.
+    /// </remarks>
+    internal static string ParseNpmOutput(string raw, int exitCode)
+    {
+        var rawTail = Truncate(raw.Trim(), MaxRawChars);
+        if (raw.Contains("Error: no test specified", StringComparison.Ordinal))
+            return NoTestScript + "\n\n" + rawTail;
+
+        if (NpmSummary(raw) is not { } s)
+            return exitCode == 0 ? NothingProven + "\n\n" + rawTail : rawTail;
+
+        var counts = $"Failed: {s.Failed}, Passed: {s.Passed}, Skipped: {s.Skipped}, Total: {s.Total}";
+        var head = s.Failed == 0 && s.Passed == 0 ? NoTestMatchedFilter
+                 : s.Failed > 0                   ? $"✗ FAILED — {counts}"
+                 : exitCode != 0                  ? $"✗ FAILED — npm test exited with code {exitCode} although its test summary passed ({counts})"
+                 :                                  $"✓ PASSED — {counts}";
+        return head + "\n\n" + rawTail;
+    }
+
+    private readonly record struct NpmCounts(int Failed, int Passed, int Skipped, int Total);
+
+    private static NpmCounts? NpmSummary(string raw)
+    {
+        static int Num(Match m) => m.Success ? int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : 0;
+        static Match Last(string text, string pattern) =>
+            Regex.Matches(text, pattern, RegexOptions.Multiline, RegexBudget.Default) is { Count: > 0 } all ? all[^1] : Match.Empty;
+
+        // jest: "Tests:       1 failed, 2 passed, 3 total" — vitest: "      Tests  1 failed | 1 passed (2)"
+        var tests = Last(raw, @"^\s*Tests:?[ \t]+([^\r\n]*\b(?:passed|failed|skipped|total)\b[^\r\n]*)$");
+        if (tests.Success)
+        {
+            var body    = tests.Groups[1].Value;
+            var failed  = Num(Regex.Match(body, @"(\d+) failed", RegexOptions.None, RegexBudget.Default));
+            var passed  = Num(Regex.Match(body, @"(\d+) passed", RegexOptions.None, RegexBudget.Default));
+            var skipped = Num(Regex.Match(body, @"(\d+) (?:skipped|todo)", RegexOptions.None, RegexBudget.Default));
+            var total   = Regex.Match(body, @"(\d+) total|\((\d+)\)", RegexOptions.None, RegexBudget.Default) is { Success: true } t
+                ? int.Parse(t.Groups[1].Success ? t.Groups[1].Value : t.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture)
+                : failed + passed + skipped;
+            return new(failed, passed, skipped, total);
+        }
+
+        // mocha: "  5 passing (12ms)", "  1 failing", "  2 pending"
+        var passing = Last(raw, @"^\s*(\d+) passing\b");
+        var failing = Last(raw, @"^\s*(\d+) failing\b");
+        if (passing.Success || failing.Success)
+        {
+            var pending = Num(Last(raw, @"^\s*(\d+) pending\b"));
+            return new(Num(failing), Num(passing), pending, Num(failing) + Num(passing) + pending);
+        }
+
+        // node --test: "# pass 3", "# fail 0", "# skipped 0", "# tests 3"
+        var pass = Last(raw, @"^# pass (\d+)");
+        var fail = Last(raw, @"^# fail (\d+)");
+        if (pass.Success || fail.Success)
+        {
+            var skip = Num(Last(raw, @"^# skipped (\d+)"));
+            var all  = Last(raw, @"^# tests (\d+)");
+            return new(Num(fail), Num(pass), skip, all.Success ? Num(all) : Num(fail) + Num(pass) + skip);
+        }
+        return null;
     }
 
     private static async Task<string> RunCargoAsync(string workDir, string? filter, RunBudget budget, CancellationToken ct)
