@@ -3,6 +3,43 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.22
+
+Forty-six fixes. The largest group is about running tests: on Windows, a Node.js project's tests
+and MCP servers started with `npx` did not start at all, and `/tdd` could declare "all tests pass"
+on a run where no test had run. Most of the rest is about files and pages saved in older encodings,
+in every language, and about MCP servers.
+
+- **On Windows, a Node.js project's tests failed to start at all**, and **MCP servers configured
+  with `"command": "npx"` never started** — the configuration most server READMEs give.
+- **`/tdd` never saw a Node.js suite pass** (jest, vitest, mocha, `node --test` on any Node).
+- **`/tdd` could declare victory on a run where no test had run** — a test name that matched
+  nothing, or a failing test that had been skipped — and **stopped with "nothing to fix" when a
+  JavaScript test could not load**, the first step of writing the test before the code.
+- **A test filter the runner could not read was reported without the reason**, and `/tdd` spent its
+  rounds changing code. Each report now gives the runner's own reason.
+- **Python tests did not run on macOS or a current Linux**; they now use the project's `.venv`.
+- **After an edit, the build check could hide a real error**, and report a missing toolchain as a
+  failed build on systems in languages other than English or French.
+- **macOS and Linux: signing in to an MCP server could fail after you had approved it**; **a server
+  listing its tools over several pages lost all but the first**; **a server that could not start
+  now says why**.
+- **The assistant could not edit a file you had changed without saving — or your next save undid
+  its edit.** It now asks you to save first; search and `@folder` now see unsaved changes.
+- **Accepting an inline suggestion in the middle of a line doubled what came after the cursor.**
+- **Files saved in an older encoding**: writing characters the encoding does not have (Polish,
+  Chinese, emoji) is now refused instead of silently changed; `.inferpal/` files, `/note`, the
+  `.gitignore`, git diffs (Chinese, Japanese and Korean encodings included) and renaming a C#
+  symbol all keep or show their text as written.
+- **`/test` on a C# or Java file put the tests where they break the build**; they now go into the
+  test project, written for the framework it uses.
+- **Renaming a name shared by several C# symbols renamed one of them, chosen arbitrarily.** It now
+  asks which.
+- **Web pages in older encodings came back garbled**, **`fetch_url` mangled raw source files**, and
+  **code examples lost their indentation**; **`@Docs` skipped pages linked by section**.
+- **A file saved while the embedding model did not answer dropped out of semantic search** while
+  the index still said ✅.
+
 ## 1.6.21
 
 Forty-three fixes, and most of them are the same story: the assistant was told something that was
