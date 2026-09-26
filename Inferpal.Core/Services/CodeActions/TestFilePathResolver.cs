@@ -7,8 +7,8 @@ namespace Inferpal.Services.CodeActions;
 /// <para>
 /// The idiomatic name of the detected language (<c>Foo.cs → FooTests.cs</c>, <c>foo.py → test_foo.py</c>,
 /// <c>foo.ts → foo.test.ts</c>, <c>foo.go → foo_test.go</c>, <c>Foo.java → FooTest.java</c>…), where that language
-/// keeps its tests: the C# test project that references the source's project, Maven's <c>src/test</c> tree, and next
-/// to the source otherwise.
+/// keeps its tests: the C# test project that references the source's project, Maven's <c>src/test</c> tree, the
+/// folder pytest collects, and next to the source otherwise.
 /// </para>
 /// <para>
 /// If the source file already looks like a test file, its own path is returned so <c>/test</c>
@@ -44,13 +44,80 @@ internal static class TestFilePathResolver
         {
             ".cs"             => InDotnetTestProject(sourcePath, testFile) ?? besideTheSource,
             ".java" or ".kt"  => InMavenTestTree(sourcePath, testFile) ?? besideTheSource,
+            ".py"             => InPythonTestTree(sourcePath, testFile) ?? besideTheSource,
             _                 => besideTheSource,
         };
     }
 
+    private static readonly string[] PythonProjectFiles = ["pyproject.toml", "pytest.ini", "setup.cfg", "tox.ini", "setup.py"];
+
+    /// <summary>
+    /// Where pytest collects: the first folder its configuration names (<c>testpaths</c>), else a <c>tests</c> or
+    /// <c>test</c> folder at the project root — an existing test file of that name in it first. <c>null</c> when the
+    /// project names none (pytest then looks everywhere, beside the source included).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A project that names its test folder never collects a test written beside the source: the new file silently
+    /// never runs, and <c>/tdd</c> on it answers "no test matched".
+    /// </remarks>
+    private static string? InPythonTestTree(string sourcePath, string testFile)
+    {
+        try
+        {
+            var marker = FindUp(Path.GetDirectoryName(sourcePath),
+                                f => PythonProjectFiles.Contains(Path.GetFileName(f), StringComparer.OrdinalIgnoreCase), levels: 8);
+            if (marker is null) return null;
+            var projectRoot = Path.GetDirectoryName(marker)!;
+
+            var testDir = PytestTestpaths(projectRoot)
+                .Select(p => Path.GetFullPath(Path.Combine(projectRoot, p)))
+                .FirstOrDefault(Directory.Exists)
+                ?? new[] { "tests", "test" }.Select(d => Path.Combine(projectRoot, d)).FirstOrDefault(Directory.Exists);
+            if (testDir is null) return null;
+
+            var existing = WorkspaceScan.EnumerateFiles(testDir, testFile)
+                .FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileName(f), testFile));
+            return existing ?? Path.Combine(testDir, testFile);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("TestFilePathResolver.InPythonTestTree", ex);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// The <c>testpaths</c> pytest reads, from the first config file that sets them, in pytest's own order of precedence:
+    /// <c>pytest.ini</c>, <c>pyproject.toml</c> (<c>[tool.pytest.ini_options]</c>), <c>tox.ini</c>, <c>setup.cfg</c>
+    /// (<c>[tool:pytest]</c>).
+    /// </summary>
+    private static IReadOnlyList<string> PytestTestpaths(string projectRoot)
+    {
+        foreach (var (file, section) in (ReadOnlySpan<(string, string)>)
+                 [("pytest.ini", "[pytest]"), ("pyproject.toml", "[tool.pytest.ini_options]"),
+                  ("tox.ini", "[pytest]"), ("setup.cfg", "[tool:pytest]")])
+        {
+            var path = Path.Combine(projectRoot, file);
+            if (!File.Exists(path)) continue;
+            var inSection = false;
+            foreach (var raw in Tools.TextFileEncoding.ReadLines(path))
+            {
+                var line = raw.Trim();
+                if (line.StartsWith('[')) { inSection = line.Equals(section, StringComparison.OrdinalIgnoreCase); continue; }
+                if (!inSection || !line.StartsWith("testpaths", StringComparison.Ordinal)) continue;
+                var eq = line.IndexOf('=');
+                if (eq < 0) continue;
+                // `testpaths = tests integration` (ini) or `testpaths = ["tests", "integration"]` (toml).
+                return line[(eq + 1)..].Split([' ', '\t', ',', '[', ']', '"', '\''], StringSplitOptions.RemoveEmptyEntries);
+            }
+        }
+        return [];
+    }
+
     // ── Where the language puts its tests ─────────────────────────────────────────
     //
-    // ⚠ "Next to the source" is right for Python, JS/TS and Go, whose runners find a test anywhere. In C# and under
+    // ⚠ "Next to the source" is right for JS/TS and Go, whose runners find a test anywhere — and for Python only when
+    // pytest looks everywhere (see InPythonTestTree). In C# and under
     // Maven it is the PRODUCTION project/source set, which references no test framework: the new FooTests.cs is
     // compiled into it and the build breaks ("'Fact' could not be found") — and the FooTests.cs that already exists
     // in the test project is never found, so a second one is created instead of that one being extended.

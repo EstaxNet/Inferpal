@@ -153,4 +153,60 @@ public sealed class TestFileLocationTests : IDisposable
         Assert.Equal(Path.Combine(_root, "app", "src", "test", "java", "com", "acme", "ParserTest.java"),
                      TestFilePathResolver.Resolve(source));
     }
+
+    // ── Python: where pytest collects ────────────────────────────────────────────
+    //
+    // "Next to the source" is collected only when pytest looks everywhere. A project that names its test folder —
+    // `testpaths`, the common setup — never collects a test written beside the source: measured with pytest 9.1,
+    // `testpaths = ["tests"]` runs tests/ and nothing in src/. The new test silently never runs.
+
+    [Fact]
+    public void APythonProjectWithTestpaths_GetsItsTestThere()
+    {
+        Write("pyproject.toml", "[project]\nname = \"shop\"\n\n[tool.pytest.ini_options]\ntestpaths = [\"tests\"]\npythonpath = [\"src\"]\n");
+        Write("tests/test_existing.py");
+        var source = Write("src/shop/cart.py", "def total(xs): return sum(xs)");
+
+        Assert.Equal(Path.Combine(_root, "tests", "test_cart.py"), TestFilePathResolver.Resolve(source));
+    }
+
+    [Fact]
+    public void APytestIniTestpath_IsFollowed_InItsSpaceSeparatedForm()
+    {
+        Write("pytest.ini", "[pytest]\ntestpaths = integration checks\n");
+        Directory.CreateDirectory(Path.Combine(_root, "integration"));
+        var source = Write("shop/cart.py");
+
+        Assert.Equal(Path.Combine(_root, "integration", "test_cart.py"), TestFilePathResolver.Resolve(source));
+    }
+
+    [Fact]
+    public void APythonProjectWithATestsFolder_GetsItsTestThere()
+    {
+        Write("setup.py", "from setuptools import setup\nsetup(name='shop')\n");
+        Write("tests/test_existing.py");
+        var source = Write("shop/cart.py");
+
+        Assert.Equal(Path.Combine(_root, "tests", "test_cart.py"), TestFilePathResolver.Resolve(source));
+    }
+
+    [Fact]
+    public void AnExistingPythonTestFile_IsTheOneExtended()
+    {
+        Write("pyproject.toml", "[tool.pytest.ini_options]\ntestpaths = [\"tests\"]\n");
+        var existing = Write("tests/unit/test_cart.py", "def test_old(): pass");
+        var source = Write("src/shop/cart.py");
+
+        Assert.Equal(existing, TestFilePathResolver.Resolve(source));
+    }
+
+    [Fact]
+    public void APythonProjectThatKeepsTestsBesideTheSource_StaysThatWay()
+    {
+        // Reference arm: no test folder named anywhere, none at the root — pytest looks everywhere.
+        Write("pyproject.toml", "[project]\nname = \"shop\"\n");
+        var source = Write("shop/cart.py");
+
+        Assert.Equal(Path.Combine(_root, "shop", "test_cart.py"), TestFilePathResolver.Resolve(source));
+    }
 }
