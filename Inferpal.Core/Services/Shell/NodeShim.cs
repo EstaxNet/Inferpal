@@ -7,7 +7,7 @@ namespace Inferpal.Services.Shell;
 /// </summary>
 /// <remarks>
 /// ⚠ On Windows both are batch scripts (npm.cmd, npx.cmd) and CreateProcess only resolves an executable: launched by
-/// name, they never started — the test runner of every Node project, and the <c>"command": "npx"</c> of most MCP
+/// name, they do not start — the test runner of every Node project, and the <c>"command": "npx"</c> of most MCP
 /// server READMEs. Launched as .cmd they would go through cmd.exe, which interprets "&amp;", "|" or "%" in their
 /// arguments. Every Node install keeps node.exe and <c>node_modules\npm\bin\npm-cli.js</c> / <c>npx-cli.js</c> beside
 /// the .cmd files; a script run by node takes its arguments as a list.

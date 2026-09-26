@@ -23,7 +23,7 @@ internal class RunTestsTool : ITool
 
     public string Description =>
         "Runs the test suite and returns a summary (passed/failed/skipped) with error details for each failure. " +
-        "Supports dotnet test (.sln/.csproj), pytest (Python), npm test (Node.js), cargo test (Rust), and go test (Go). " +
+        "Supports dotnet test (.sln/.csproj), pytest (Python, under the project's .venv or venv when there is one), npm test (Node.js), cargo test (Rust), and go test (Go). " +
         "The runner is auto-detected from project files; set 'runner' to force one. " +
         "Use 'filter' to run a specific test or class. " +
         "Typical workflow: fix code with apply_diff, then call run_tests to verify.";
@@ -76,7 +76,7 @@ internal class RunTestsTool : ITool
         var report = runner switch
         {
             "dotnet" => await RunDotnetAsync(workDir, path, filter, budget, ct),
-            "pytest" => await RunPytestAsync(workDir, filter, budget, ct),
+            "pytest" => await RunPytestAsync(workDir, root, filter, budget, ct),
             "npm"    => await RunNpmAsync(workDir, filter, budget, ct),
             "cargo"  => await RunCargoAsync(workDir, filter, budget, ct),
             "go"     => await RunGoAsync(workDir, filter, budget, ct),
@@ -100,15 +100,62 @@ internal class RunTestsTool : ITool
         return ParseDotnetOutput(output, exitCode);
     }
 
-    private static async Task<string> RunPytestAsync(string workDir, string? filter, RunBudget budget, CancellationToken ct)
+    private static async Task<string> RunPytestAsync(string workDir, string? root, string? filter, RunBudget budget, CancellationToken ct)
     {
+        var python = ResolvePython(workDir, root, OperatingSystem.IsWindows(), Shell.ShellLauncher.FindOnPath, File.Exists,
+                                   Environment.GetEnvironmentVariable("VIRTUAL_ENV"));
         var args = "-m pytest -v --tb=short -q";
         if (!string.IsNullOrWhiteSpace(filter))
             args += $" -k \"{filter}\"";
 
-        var (output, exitCode) = await RunProcessAsync("python", args, workDir, budget, ct);
-        return ParsePytestOutput(output, exitCode);
+        var (output, exitCode) = await RunProcessAsync(python, args, workDir, budget, ct);
+        return ParsePytestOutput(output, exitCode, python);
     }
+
+    /// <summary>
+    /// The interpreter pytest runs under: the project's virtual environment (<c>.venv</c> or <c>venv</c>, from the
+    /// run's folder up to the workspace root), then the activated one, then the PATH's.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ macOS and current Debian and Ubuntu have no "python", only python3 — and they refuse installs into the
+    /// system Python (PEP 668), so pytest lives in the project's environment: run under the PATH's Python, the answer
+    /// is "No module named pytest". A venv ABOVE the workspace root is not the project's: it is not looked at.
+    /// </remarks>
+    internal static string ResolvePython(string workDir, string? root, bool isWindows,
+        Func<string, string?> onPath, Func<string, bool> exists, string? virtualEnv)
+    {
+        var inEnv = isWindows ? Path.Combine("Scripts", "python.exe") : Path.Combine("bin", "python");
+        foreach (var dir in ProjectDirs(workDir, root))
+            foreach (var name in (string[])[".venv", "venv"])
+                if (Path.Combine(dir, name, inEnv) is var candidate && exists(candidate))
+                    return candidate;
+
+        if (!string.IsNullOrWhiteSpace(virtualEnv) && Path.Combine(virtualEnv, inEnv) is var active && exists(active))
+            return active;
+        if (isWindows) return "python";
+        // Neither on the PATH: python3, so the start failure names the name these systems use.
+        return onPath("python3") is null && onPath("python") is not null ? "python" : "python3";
+    }
+
+    /// <summary>The run's folder and its parents up to the workspace root; the folder alone when it is not under it.</summary>
+    private static IEnumerable<string> ProjectDirs(string workDir, string? root)
+    {
+        yield return workDir;
+        if (string.IsNullOrEmpty(root)) yield break;
+        var rel = Path.GetRelativePath(root, workDir);
+        if (rel == "." || rel == ".." || rel.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+            || Path.IsPathRooted(rel))
+            yield break;
+        var top = Path.TrimEndingDirectorySeparator(root);
+        for (var dir = Path.GetDirectoryName(workDir); dir is not null; dir = Path.GetDirectoryName(dir))
+        {
+            yield return dir;
+            if (PathComparer.Default.Equals(Path.TrimEndingDirectorySeparator(dir), top)) yield break;
+        }
+    }
+
+    /// <summary>What the pytest runner answers when the interpreter it ran has no pytest: nothing ran.</summary>
+    internal const string PytestNotInstalled = "⚠ pytest is not installed for the Python interpreter that ran";
 
     private static async Task<string> RunNpmAsync(string workDir, string? filter, RunBudget budget, CancellationToken ct)
     {
@@ -134,7 +181,7 @@ internal class RunTestsTool : ITool
     /// the <c>NODE_OPTIONS</c> value to run with.
     /// </summary>
     /// <remarks>
-    /// ⚠ The flag is the framework's, not npm's: jest's <c>--testNamePattern</c> made <c>node --test</c> answer
+    /// ⚠ The flag is the framework's, not npm's: jest's <c>--testNamePattern</c> makes <c>node --test</c> answer
     /// "bad option" and run nothing, which a repair loop reads as a red suite. And Node's own runner cannot take it
     /// as an argument at all: npm appends arguments to the END of the script, and after a positional file
     /// (<c>node --test test/a.test.js</c>) Node hands them to the test file — the filter is ignored, every test
@@ -163,7 +210,7 @@ internal class RunTestsTool : ITool
     /// <summary>The program and leading arguments that run npm WITHOUT a shell; <c>null</c> when that is not possible.</summary>
     /// <remarks>
     /// ⚠ On Windows npm is a batch script (npm.cmd) and CreateProcess only resolves an executable: launched as "npm", the
-    /// runner never started there. And launched as npm.cmd it would go through cmd.exe, which interprets the filter —
+    /// runner does not start there. And launched as npm.cmd it would go through cmd.exe, which interprets the filter —
     /// written by the model, in a tool that asks no approval — so "&amp;", "|" or "%" in it would become commands. npm's
     /// own CLI, run by the node.exe that sits beside npm.cmd in every Node install, takes its arguments as a list.
     /// </remarks>
@@ -181,9 +228,8 @@ internal class RunTestsTool : ITool
     /// the raw output, which carries the failures.
     /// </summary>
     /// <remarks>
-    /// ⚠ The output used to be returned raw, its exit code discarded: it starts with "&gt; project@1.0.0 test", so
-    /// /tdd — which reads green only from a verdict line — never saw a Node suite pass, and ran its fix rounds on a
-    /// suite that passed. A green summary with a failing exit is not green: <c>npm test</c> can chain a linter or a
+    /// ⚠ The raw output is never a verdict: it starts with "&gt; project@1.0.0 test", and /tdd reads green only from a
+    /// verdict line — handed over raw, a passing Node suite gets its fix rounds. A green summary with a failing exit is not green: <c>npm test</c> can chain a linter or a
     /// coverage gate after the tests. And no summary is never green, the rule of every other parser here.
     /// </remarks>
     internal static string ParseNpmOutput(string raw, int exitCode)
@@ -235,7 +281,7 @@ internal class RunTestsTool : ITool
         }
 
         // node --test: "# pass 3" (tap reporter) or "ℹ pass 3" (spec reporter — the default from Node 23 on, even when
-        // the output is not a terminal). Read only in its tap form, every green run on a current Node was "no summary".
+        // the output is not a terminal). Read only in its tap form, every green run on a current Node is "no summary".
         var pass = Last(raw, @"^(?:#|ℹ) pass (\d+)");
         var fail = Last(raw, @"^(?:#|ℹ) fail (\d+)");
         if (pass.Success || fail.Success)
@@ -483,12 +529,20 @@ internal class RunTestsTool : ITool
             sb.AppendLine($"  … +{total - listed} more failing test(s) not listed");
     }
 
-    internal static string ParsePytestOutput(string raw, int exitCode)
+    internal static string ParsePytestOutput(string raw, int exitCode, string? interpreter = null)
     {
         var sb = new StringBuilder();
 
         // Summary: "= 1 failed, 5 passed in 1.23s ="
         var summaryMatch = Regex.Match(raw, @"=+\s*(.+?in\s+[\d.]+\s*s)\s*=+", RegexOptions.Multiline, RegexBudget.Default);
+
+        // "…python3: No module named pytest" (unquoted: `python -m`'s own line, not a test's ModuleNotFoundError).
+        // Read raw, it is a red suite, and /tdd spends its rounds patching code against a runner that never ran.
+        if (!summaryMatch.Success && raw.Contains("No module named pytest", StringComparison.Ordinal))
+            return $"{PytestNotInstalled}: {interpreter ?? "python"}. Install it in the project's virtual environment " +
+                   "(.venv or venv — this runner uses it when it exists) or run the tests with run_command. Nothing ran." +
+                   "\n\n" + Truncate(raw.Trim(), MaxRawChars);
+
         if (summaryMatch.Success)
             sb.AppendLine(summaryMatch.Groups[1].Value.Trim());
         else if (exitCode == 0)
