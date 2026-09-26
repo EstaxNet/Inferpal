@@ -29,7 +29,7 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
 
     public async Task<(string Code, string State)> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct)
     {
-        using var listener = new HttpListener();
+        var listener = new HttpListener();
         listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
         try
         {
@@ -37,6 +37,7 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
         }
         catch (HttpListenerException ex)
         {
+            Release(listener);
             // ⚠ The FOURTH outcome, and not a kind of interrupted wait: there was never a wait.
             // FreeLoopbackPort probes a port and releases it, so between the probe and this Start
             // another process can take it — and the operating system's own sentence, in the
@@ -52,7 +53,9 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(_timeout);
             var contextTask = listener.GetContextAsync();
-            using (cts.Token.Register(listener.Stop))
+            // Stopping is how the wait is interrupted. Guarded: this runs on the deadline's timer thread, where an
+            // exception is not the caller's to catch.
+            using (cts.Token.Register(() => { try { listener.Stop(); } catch { /* the wait is ending anyway */ } }))
             {
                 var context = await AwaitCallbackAsync(contextTask, ct, cts.Token).ConfigureAwait(false);
                 var query   = context.Request.QueryString;
@@ -71,8 +74,21 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
         }
         finally
         {
-            if (listener.IsListening) listener.Stop();
+            Release(listener);
         }
+    }
+
+    /// <summary>Closes the listener, once; cleanup, which never replaces the outcome.</summary>
+    /// <remarks>
+    /// ⚠ The managed <c>HttpListener</c> (macOS, Linux) re-resolves its endpoint when it closes, and raises "Address
+    /// already in use" — from <c>Dispose</c>, AFTER the code has arrived. Left to a <c>using</c>, that exception
+    /// replaces the code the user has just granted: the sign-in fails at its last step. It is the SECOND close that
+    /// re-binds (<c>Stop</c> then <c>Dispose</c> unregister the endpoint twice), so the listener is closed once, by
+    /// <c>Dispose</c> alone — and guarded, since a <c>Stop</c> may already have run from the cancellation callback.
+    /// </remarks>
+    private static void Release(HttpListener listener)
+    {
+        try { ((IDisposable)listener).Dispose(); } catch { /* cleanup: the outcome is already decided */ }
     }
 
     /// <summary>

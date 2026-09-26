@@ -86,6 +86,29 @@ public class TeardownDoesNotThrowTests
         }
     }
 
+    /// <summary>
+    /// The same class, in the PRODUCT: the OAuth sign-in's own listener, released by a <c>using</c> — so its
+    /// <c>Dispose</c> ran after the code had arrived, and on the managed <c>HttpListener</c> its "Address already in
+    /// use" replaced the code the user had just granted (macOS CI, <c>ACompletedRedirect_YieldsTheCodeAndState</c>).
+    /// Not reproducible where the suite is written — Windows uses http.sys — hence a source assertion.
+    /// </summary>
+    [Fact]
+    public void TheSignInListener_IsClosedOnce_AndEveryCloseIsGuarded()
+    {
+        var path = Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "Mcp", "OAuth", "LoopbackAuthCodeReceiver.cs");
+        var code = ConventionCoverageTests.CodeOnly(path);
+
+        Assert.Contains("new HttpListener()", code);                                    // WITNESS: the listener is there
+        Assert.DoesNotContain("using var listener", code);
+        Assert.DoesNotContain("using (var listener", code);
+        Assert.DoesNotContain("Register(listener.Stop)", code);                         // the timer thread's call, bare
+
+        var closes = code.Split('\n').Where(l => l.Contains("listener.Stop()") || l.Contains("listener).Dispose()")
+                                               || l.Contains("listener.Dispose()") || l.Contains("listener.Close()")).ToList();
+        Assert.NotEmpty(closes);                                                          // WITNESS: the closes are found
+        Assert.All(closes, l => Assert.Contains("try {", l));
+    }
+
     private static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
