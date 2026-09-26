@@ -74,12 +74,24 @@ internal sealed class SmartFixValidator
         return approved;
     }
 
-    // Output patterns that mean the toolchain itself is missing (npx/cargo/go/tsc not on PATH), as
-    // opposed to genuine compilation errors. Reported silently (null) so an unconfigured machine
-    // doesn't get spammed with "errors" that are really "tool not installed".
-    private static readonly Regex ToolMissingRegex = new(
-        @"is not recognized as|n'est pas reconnu|command not found|No such file|cannot find the path|could not be found|ENOENT",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+    /// <summary>
+    /// The toolchain itself could not start (npx/cargo/go/tsc not installed), as opposed to a build that failed —
+    /// reported silently (null), so an unconfigured machine is not told of "errors" that are "tool not installed".
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Judged on what the SHELL says about the command, never on words a build may print: "No such file", "could not
+    /// be found", "ENOENT" are how a C compiler reports a missing header, rustc a missing include_str!, a build script
+    /// a missing file — real errors, silenced as "tool not installed". And the shell's own sentence is translated
+    /// ("n'est pas reconnu", "wurde nicht … erkannt", "Befehl nicht gefunden"): a list of English and French words
+    /// reported a missing toolchain as a failed build after every write, in every other language. Kept: exit 127
+    /// (POSIX shells) and 9009 (cmd), PowerShell's error id — never translated, printed under the NormalView that
+    /// <see cref="ValidatorScript"/> asks for — and npm's own sentences, which npm writes in English only.
+    /// </remarks>
+    internal static bool IsToolMissing(int exitCode, string output) =>
+        exitCode is 127 or 9009
+        || output.Contains("CommandNotFoundException", StringComparison.Ordinal)
+        || output.Contains("npx canceled due to missing packages", StringComparison.Ordinal)
+        || output.Contains("could not determine executable to run", StringComparison.Ordinal);
 
     public Task<string?> ValidateAsync(string writtenFilePath, CancellationToken ct) =>
         ResolveTarget(writtenFilePath) is { } target
@@ -203,7 +215,7 @@ internal sealed class SmartFixValidator
 
         // The exit code is the reliable failure signal across toolchains.
         if (exitCode == 0) return Strings.SmartFixBuildOk;
-        if (ToolMissingRegex.IsMatch(output)) return null;   // toolchain absent → stay silent
+        if (IsToolMissing(exitCode, output)) return null;   // toolchain absent → stay silent
 
         var lines = ExtractErrorLines(output);
         // ⚠ "0 compilation error(s) detected — please fix before continuing" is not a sentence:
@@ -281,10 +293,15 @@ internal sealed class SmartFixValidator
     // Runs the command line under the machine's shell (resolved like run_command — powershell.exe
     // was hard-coded, so validators silently failed on the published Linux/macOS hosts), in the
     // project directory, with a 60s fuse. Returns (exit code, output).
+    /// <summary>The script a validator runs: under PowerShell, with the error view that prints the error id.</summary>
+    /// <remarks>pwsh 7's default ConciseView prints a missing command as a translated sentence and no id.</remarks>
+    internal static string ValidatorScript(Shell.ShellDialect dialect, string command) =>
+        dialect == Shell.ShellDialect.PowerShell ? "$ErrorView = 'NormalView'\n" + command : command;
+
     private static async Task<(int ExitCode, string Output, bool TimedOut)> RunAsync(string command, string workDir, CancellationToken ct)
     {
         var (dialect, shell) = Shell.ShellLauncher.Resolve();
-        var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, command);
+        var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, ValidatorScript(dialect, command));
         psi.WorkingDirectory = workDir;
 
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(60), ct);

@@ -49,7 +49,10 @@ public class SmartFixInterpretTests
     [Fact]
     public void AMissingDotnet_StaysSilent_LikeEveryOtherToolchain()
     {
-        const string output = "dotnet : The term 'dotnet' is not recognized as the name of a cmdlet";
+        // What Windows PowerShell prints — the sentence (translated elsewhere) and the error id (never translated).
+        const string output = "dotnet : The term 'dotnet' is not recognized as the name of a cmdlet, function, script file, or operable program.\n" +
+                              "    + CategoryInfo          : ObjectNotFound: (dotnet:String) [], CommandNotFoundException\n" +
+                              "    + FullyQualifiedErrorId : CommandNotFoundException\n";
 
         Assert.Null(SmartFixValidator.Interpret(1, output, dotnetFilter: true));
     }

@@ -72,7 +72,8 @@ exists.
   on a build-relevant file, a quick build/typecheck runs automatically and any compilation
   errors are fed back inline so the agent fixes them in the same loop. The ecosystem is picked
   from the file extension — **.NET / TypeScript / Rust / Go** built in, extendable via
-  `.inferpal/validators.json`.
+  `.inferpal/validators.json`. When the toolchain is not installed, Smart Fix stays silent — told
+  apart from a failed build by the shell's own signal, whatever the system's language.
 - **Fix with AI** — when a build fails (agent, `/build`, or a VS solution build), a button
   pre-fills the prompt with the MSBuild errors **and the content of each affected file** (up
   to 5 files × 4 000 chars).
