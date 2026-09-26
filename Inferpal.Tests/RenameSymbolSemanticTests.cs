@@ -31,14 +31,15 @@ public class RenameSymbolSemanticTests : IDisposable
 
     private string Read(string rel) => File.ReadAllText(Path.Combine(_root, rel));
 
-    private async Task<string> RunAsync(string oldName, string newName, bool dryRun)
+    private async Task<string> RunAsync(string oldName, string newName, bool dryRun, string? declaringFile = null)
     {
         var approval = new AlwaysApprove();
         var tool = new RenameSymbolTool(approval, new FileHistoryService(), () => _root);
         var json = $$"""
             {"old_name": {{JsonSerializer.Serialize(oldName)}},
              "new_name": {{JsonSerializer.Serialize(newName)}},
-             "dry_run": {{(dryRun ? "true" : "false")}}}
+             "dry_run": {{(dryRun ? "true" : "false")}}
+             {{(declaringFile is null ? "" : $", \"declaring_file\": {JsonSerializer.Serialize(declaringFile)}")}}}
             """;
         return await tool.ExecuteAsync(JsonDocument.Parse(json).RootElement, CancellationToken.None);
     }
@@ -72,12 +73,59 @@ public class RenameSymbolSemanticTests : IDisposable
             }
             """);
 
-        await RunAsync("Handle", "Process", dryRun: false);
+        // Which Handle is SAID: with two declared, the name alone designates neither (see the next test).
+        await RunAsync("Handle", "Process", dryRun: false, declaringFile: "Alpha.cs");
 
         Assert.Contains("public void Process()", Read("Alpha.cs"));
         Assert.Contains("public void Handle()", Read("Beta.cs"));   // untouched
         Assert.Contains("new Alpha().Process()", Read("Caller.cs"));
         Assert.Contains("new Beta().Handle()", Read("Caller.cs"));  // untouched
+    }
+
+    /// <summary>
+    /// Two classes declaring <c>Handle</c>: the name alone designates neither. The first declaration scanned was
+    /// renamed — Alpha's, by file order — under "Applied", Beta's left untouched, whichever the model meant.
+    /// </summary>
+    [Fact]
+    public async Task AnAmbiguousName_IsRefused_WithItsCandidates_AndNothingWritten()
+    {
+        Write("Alpha.cs", """
+            namespace App;
+            public class Alpha { public void Handle() { } }
+            """);
+        Write("Beta.cs", """
+            namespace App;
+            public class Beta { public void Handle() { } }
+            """);
+
+        var report = await RunAsync("Handle", "Process", dryRun: false);
+
+        Assert.Contains("nothing was renamed", report);
+        Assert.Contains("App.Alpha.Handle()", report);
+        Assert.Contains("App.Beta.Handle()", report);
+        Assert.Contains("declaring_file", report);
+        Assert.Contains("public void Handle()", Read("Alpha.cs"));
+        Assert.Contains("public void Handle()", Read("Beta.cs"));
+    }
+
+    [Fact]
+    public async Task APartialTypeDeclaredInTwoFiles_IsOneSymbol()
+    {
+        // Reference arm: one symbol, two declarations — not an ambiguity.
+        Write("Part1.cs", """
+            namespace App;
+            public partial class Widget { public void A() { } }
+            """);
+        Write("Part2.cs", """
+            namespace App;
+            public partial class Widget { public void B() { } }
+            """);
+
+        var report = await RunAsync("Widget", "Gadget", dryRun: false);
+
+        Assert.DoesNotContain("nothing was renamed", report);
+        Assert.Contains("partial class Gadget", Read("Part1.cs"));
+        Assert.Contains("partial class Gadget", Read("Part2.cs"));
     }
 
     [Fact]

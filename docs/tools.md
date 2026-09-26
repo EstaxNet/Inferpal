@@ -34,7 +34,7 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `search_codebase` | `query`, `top_k?` | Semantic search over the indexed project |
 | `search_docs` | `query`, `top_k?` | Semantic search over `@Docs` external documentation |
 | `generate_project_map` | — | Namespace tree, types, dependencies, hotspots (TTL-cached) |
-| `rename_symbol` | `old_name`, `new_name`, `root?`, `file_pattern?`, `dry_run?` | Project-wide rename. On C# it renames the **symbol**, not the spelling: a method called `Handle` is renamed without touching the dozen unrelated `Handle` methods that share the name (compiler-resolved; falls back to syntax when no workspace is known). Other languages use a word-boundary regex. All-or-nothing: a file that cannot be written puts every other one back unchanged. **Approval** + snapshot; `dry_run=true` by default |
+| `rename_symbol` | `old_name`, `new_name`, `root?`, `file_pattern?`, `dry_run?`, `declaring_file?`, `declaring_line?` | Project-wide rename. On C# it renames the **symbol**, not the spelling: a method called `Handle` is renamed without touching the dozen unrelated `Handle` methods that share the name (compiler-resolved; falls back to syntax when no workspace is known). When the name designates several symbols, it lists them and renames nothing until `declaring_file` (and `declaring_line`) says which one. Other languages use a word-boundary regex. All-or-nothing: a file that cannot be written puts every other one back unchanged. **Approval** + snapshot; `dry_run=true` by default |
 
 ### `analyze_code` modes
 

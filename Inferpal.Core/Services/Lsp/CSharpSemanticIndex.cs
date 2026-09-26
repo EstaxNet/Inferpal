@@ -15,6 +15,13 @@ internal sealed record SymbolLocation(string RelPath, int Line, string Snippet)
     public override string ToString() => $"{RelPath}:{Line}  {Snippet}";
 }
 
+/// <summary>A rename's rewrites, or — when the name designates several symbols — the candidates, and nothing to rewrite.</summary>
+/// <param name="Spans">Tokens to rewrite per file; empty when ambiguous or unresolved.</param>
+/// <param name="Candidates">Each symbol the name designates, when there is more than one.</param>
+internal sealed record RenamePlan(
+    IReadOnlyDictionary<string, IReadOnlyList<Microsoft.CodeAnalysis.Text.TextSpan>> Spans,
+    IReadOnlyList<(string Symbol, SymbolLocation Location)> Candidates);
+
 /// <summary>Answer to a reference query — including which declaration it is about.</summary>
 /// <param name="Declaration">The declaration the references belong to; null when nothing resolved.</param>
 /// <param name="References">Uses of that exact symbol.</param>
@@ -312,13 +319,39 @@ internal sealed class CSharpSemanticIndex
     /// keeps the file byte-identical everywhere else.
     /// </remarks>
     public IReadOnlyDictionary<string, IReadOnlyList<TextSpan>> FindRenameSpans(
-        string symbolName, string? declaringFile = null, CancellationToken ct = default)
+        string symbolName, string? declaringFile = null, CancellationToken ct = default) =>
+        PlanRename(symbolName, declaringFile, null, ct).Spans;
+
+    /// <summary>
+    /// What renaming <paramref name="symbolName"/> would rewrite — or, when the name designates SEVERAL symbols, those
+    /// candidates and nothing to rewrite.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The rule <see cref="ReferenceResult"/> states — answering silently about whichever declaration was scanned first
+    /// is plausible and wrong — matters most HERE, where the answer is written: renaming <c>Handle</c> with two
+    /// classes declaring one rewrote the first class's method and reported "✅ Applied", the other untouched. A
+    /// partial type declared in several files is ONE symbol, and not a candidate twice.
+    /// </remarks>
+    public RenamePlan PlanRename(string symbolName, string? declaringFile, int? declaringLine, CancellationToken ct = default)
     {
         var snap = Current();
-        var declarations = ResolveDeclarations(snap, symbolName, declaringFile, ct);
-        if (declarations.Count == 0) return new Dictionary<string, IReadOnlyList<TextSpan>>();
-        var target = declarations[0].Symbol;
+        var declarations = ResolveDeclarations(snap, symbolName, declaringFile, ct)
+            .Where(d => declaringLine is null || d.Location.Line == declaringLine)
+            .ToList();
+        var symbols = declarations
+            .GroupBy(d => d.Symbol, SymbolEqualityComparer.Default)
+            .Select(g => (Symbol: g.Key!, g.First().Location))
+            .ToList();
+        if (symbols.Count == 0) return new RenamePlan(new Dictionary<string, IReadOnlyList<TextSpan>>(), []);
+        if (symbols.Count > 1)
+            return new RenamePlan(new Dictionary<string, IReadOnlyList<TextSpan>>(),
+                [.. symbols.Select(s => (s.Symbol.ToDisplayString(), s.Location))]);
+        return new RenamePlan(RenameSpans(snap, symbolName, symbols[0].Symbol, ct), []);
+    }
 
+    private static IReadOnlyDictionary<string, IReadOnlyList<TextSpan>> RenameSpans(
+        Snapshot snap, string symbolName, ISymbol target, CancellationToken ct)
+    {
         var byFile = new Dictionary<string, IReadOnlyList<TextSpan>>(Services.PathComparer.Default);
         // ⚠ The snapshot, never the live fields: a save during a rename (the watcher calls Update) made
         // this loop throw "collection modified" — falling back to the text rename, homonyms included —

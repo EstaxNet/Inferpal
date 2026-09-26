@@ -39,7 +39,8 @@ internal sealed class RenameSymbolTool : ITool
     // which is a fact about this tool; how much of the tree was reached is a fact about the world.
     public string Description =>
         "Renames an identifier across the source files found under 'root'. Uses Roslyn for C# (no false " +
-        "matches in strings or comments) and word-boundary regex for other languages. The report states " +
+        "matches in strings or comments; when the name designates several symbols it lists them and renames nothing " +
+        "until declaring_file says which) and word-boundary regex for other languages. The report states " +
         "what was actually scanned — files it could not read, folders it could not list — and the write " +
         "is all-or-nothing: nothing is changed if any file cannot be. Always call with dry_run=true " +
         "first to preview, then dry_run=false to apply.";
@@ -73,6 +74,16 @@ internal sealed class RenameSymbolTool : ITool
             {
                 type        = "boolean",
                 description = "true (default) = preview only, no changes written. false = apply after approval."
+            },
+            declaring_file = new
+            {
+                type        = "string",
+                description = "C#: when old_name names several symbols (the tool lists them and renames nothing), the file declaring the one to rename."
+            },
+            declaring_line = new
+            {
+                type        = "integer",
+                description = "C#: with declaring_file, the line of that declaration — when one file declares several symbols of that name."
             }
         },
         required = new[] { "old_name", "new_name" }
@@ -90,6 +101,8 @@ internal sealed class RenameSymbolTool : ITool
         var newName     = args.Trimmed("new_name") ?? string.Empty;
         var filePattern = args.Str("file_pattern");
         var dryRun      = args.Bool("dry_run", true);
+        var declaringFile = args.Trimmed("declaring_file");
+        int? declaringLine = args.Has("declaring_line") ? args.Int("declaring_line", 0) : null;
 
         if (string.IsNullOrEmpty(oldName) || string.IsNullOrEmpty(newName))
             return "old_name and new_name are required.";
@@ -118,7 +131,10 @@ internal sealed class RenameSymbolTool : ITool
         // below rewrites EVERY identifier token spelled like the target, so renaming a method
         // called `Handle` would also rewrite the dozen unrelated `Handle` methods of other types —
         // and this tool writes files. Semantics narrows that to the symbol actually asked for.
-        var semanticSpans = TryResolveRenameSpans(oldName, root, ct);
+        var plan          = TryPlanRename(oldName, root, declaringFile, declaringLine, ct);
+        if (plan is { Candidates.Count: > 1 })
+            return Ambiguous(oldName, plan.Candidates);
+        var semanticSpans = plan is { Spans.Count: > 0 } ? plan.Spans : null;
 
         var hits            = new List<(string FilePath, int Count, string OldContent, string NewContent)>();
         var stale           = new List<string>();
@@ -279,15 +295,13 @@ internal sealed class RenameSymbolTool : ITool
     /// (no workspace, symbol unresolved, index failure), in which case the caller falls back to
     /// the syntactic path.
     /// </summary>
-    private static IReadOnlyDictionary<string, IReadOnlyList<Microsoft.CodeAnalysis.Text.TextSpan>>?
-        TryResolveRenameSpans(string oldName, string root, CancellationToken ct)
+    private static Lsp.RenamePlan? TryPlanRename(
+        string oldName, string root, string? declaringFile, int? declaringLine, CancellationToken ct)
     {
         try
         {
-            var spans = Lsp.CSharpSemanticIndex.ForWorkspace(root)
-                .FindRenameSpans(oldName, declaringFile: null, ct);
-            // Nothing resolved: better to fall back than to silently rename nothing at all.
-            return spans.Count > 0 ? spans : null;
+            // Nothing resolved (empty spans): the caller falls back rather than silently rename nothing at all.
+            return Lsp.CSharpSemanticIndex.ForWorkspace(root).PlanRename(oldName, declaringFile, declaringLine, ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -295,6 +309,25 @@ internal sealed class RenameSymbolTool : ITool
             Diagnostics.Swallow("RenameSymbolTool.Semantic", ex);
             return null;
         }
+    }
+
+    /// <summary>Candidates listed in an ambiguity refusal before the rest is counted.</summary>
+    private const int MaxListedCandidates = 20;
+
+    /// <summary>
+    /// The refusal when <paramref name="oldName"/> names several symbols: each one, and how to say which — nothing
+    /// renamed.
+    /// </summary>
+    internal static string Ambiguous(string oldName, IReadOnlyList<(string Symbol, Lsp.SymbolLocation Location)> candidates)
+    {
+        var sb = new StringBuilder(
+            $"'{oldName}' names {candidates.Count} different symbols — nothing was renamed. Say which one with " +
+            "declaring_file (and declaring_line when one file declares several):\n");
+        foreach (var (symbol, location) in candidates.Take(MaxListedCandidates))
+            sb.Append($"- {symbol} — {location.RelPath}:{location.Line}\n");
+        if (candidates.Count > MaxListedCandidates)
+            sb.Append($"- … and {candidates.Count - MaxListedCandidates} more\n");
+        return sb.ToString().TrimEnd();
     }
 
     /// <summary>Files whose changed lines the approval prompt shows; the rest are counted.</summary>
