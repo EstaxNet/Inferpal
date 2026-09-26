@@ -209,7 +209,7 @@ internal static class TddCommandHandler
     /// here: a copy keeps matching right up to the day the writing end is reworded, and then stops
     /// without a sign. Every spelling of the state is covered — a filter that matched nothing, a
     /// runner that said it found no test (cargo, go, pytest), a run whose every selected test was
-    /// skipped (dotnet, cargo, pytest), a command line pytest refused, a runner that exited 0 with no
+    /// skipped (dotnet, cargo, go, pytest), a filter or command line the runner refused, a runner that exited 0 with no
     /// parsable summary, no test script, no pytest.
     /// </remarks>
     internal static bool NothingRan(string output) =>
@@ -217,6 +217,7 @@ internal static class TddCommandHandler
      || output.Contains(Tools.RunTestsTool.NoTestFound,         StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.OnlySkipped,         StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.PytestUsageError,    StringComparison.Ordinal)
+     || output.Contains(Tools.RunTestsTool.FilterRejected,      StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.NothingProven,       StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.NoTestScript,        StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.PytestNotInstalled,  StringComparison.Ordinal);

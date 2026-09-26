@@ -81,6 +81,44 @@ public class RunnerOnlySkippedTests
         Assert.Contains("1 skipped, 2 deselected", report);
     }
 
+    [Fact]
+    public void Go_AFilteredRunWhoseTestWasSkipped_IsNotAPass()
+    {
+        // Without -v, go prints the same "ok <package>" for a skip as for a pass: a filtered run asks for -v.
+        Assert.Contains("-v", RunTestsTool.GoTestArguments("TestSkip"));
+        AssertNothingRan(RunTestsTool.ParseGoOutput("""
+            ?   	example.com/app/cmd	[no test files]
+            === RUN   TestSkip
+                parser_test.go:6: flaky
+            --- SKIP: TestSkip (0.00s)
+            PASS
+            ok  	example.com/app/parser	0.002s
+            """, 0));
+    }
+
+    [Fact]
+    public void Go_TheVerboseOutputOfAPassAndOfAFailure_KeepsItsVerdict()
+    {
+        // Reference arm for -v: the parser still reads a pass as a pass and names the failing test.
+        var pass = RunTestsTool.ParseGoOutput("=== RUN   TestAdd\n--- PASS: TestAdd (0.00s)\nPASS\nok  \texample.com/app/parser\t0.002s\n", 0);
+        var fail = RunTestsTool.ParseGoOutput("""
+            === RUN   TestFail
+                parser_test.go:7: parser_test.go: want 4, got 3
+            --- FAIL: TestFail (0.00s)
+            FAIL
+            FAIL	example.com/app/parser	0.002s
+            FAIL
+            """, 1);
+
+        Assert.True(TddCommandHandler.TestsPassed(pass), pass);
+        Assert.False(TddCommandHandler.NothingRan(pass), pass);
+        Assert.Contains("TestFail", fail);
+        Assert.False(TddCommandHandler.TestsPassed(fail), fail);
+        Assert.False(TddCommandHandler.NothingRan(fail), fail);
+        // A whole-suite run stays without -v: its failures must not be pushed out of a bounded capture by passes.
+        Assert.DoesNotContain("-v", RunTestsTool.GoTestArguments(null));
+    }
+
     // ── Reference arm: a skip next to tests that ran keeps its verdict ───────────
 
     [Fact]

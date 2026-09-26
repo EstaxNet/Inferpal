@@ -246,7 +246,7 @@ internal class RunTestsTool : ITool
             if (nodeOptions is not null) env = new() { ["NODE_OPTIONS"] = nodeOptions };
         }
         var (output, exitCode) = await RunProcessAsync(npm.FileName, string.Empty, workDir, budget, ct, args, env);
-        return PathDoesNotNarrow("npm", path, workDir) + ParseNpmOutput(output, exitCode);
+        return PathDoesNotNarrow("npm", path, workDir) + ParseNpmOutput(output, exitCode, filter);
     }
 
     /// <summary>
@@ -305,24 +305,38 @@ internal class RunTestsTool : ITool
     /// verdict line — handed over raw, a passing Node suite gets its fix rounds. A green summary with a failing exit is not green: <c>npm test</c> can chain a linter or a
     /// coverage gate after the tests. And no summary is never green, the rule of every other parser here.
     /// </remarks>
-    internal static string ParseNpmOutput(string raw, int exitCode)
+    internal static string ParseNpmOutput(string raw, int exitCode, string? filter = null)
     {
         var rawTail = Truncate(raw.Trim(), MaxRawChars);
         if (raw.Contains("Error: no test specified", StringComparison.Ordinal))
             return NoTestScript + "\n\n" + rawTail;
 
+        // A pattern the framework cannot compile: jest and mocha name it in their error, the pattern included.
+        if (!string.IsNullOrEmpty(filter)
+            && raw.IndexOf("Invalid regular expression: /" + filter + "/", StringComparison.Ordinal) is var at and >= 0)
+        {
+            var end = raw.IndexOf('\n', at);
+            return FilterRejected + "\n" + raw[at..(end < 0 ? raw.Length : end)].Trim() + "\n\n" + rawTail;
+        }
+
         if (NpmSummary(raw) is not { } s)
             return exitCode == 0 ? NothingProven + "\n\n" + rawTail : rawTail;
 
         var counts = $"Failed: {s.Failed}, Passed: {s.Passed}, Skipped: {s.Skipped}, Total: {s.Total}";
-        var head = s.Failed == 0 && s.Passed == 0 ? NoTestMatchedFilter
+        // ⚠ "Tests: 0 total" is ALSO what a test file that failed to load looks like — the test imports a module that
+        // does not exist yet, the red state of test-first work. Only the suite count tells it from a filter that matched
+        // nothing, and read as "nothing ran", /tdd stopped on "nothing to fix" before writing that module.
+        var head = s.Failed == 0 && s.Passed == 0 && s.SuitesFailed > 0
+                     ? $"✗ FAILED — {s.SuitesFailed} test file(s) failed to run before any test did; the error is below"
+                 : s.Failed == 0 && s.Passed == 0 ? NoTestMatchedFilter
                  : s.Failed > 0                   ? $"✗ FAILED — {counts}"
+                 : s.SuitesFailed > 0             ? $"✗ FAILED — {counts}, and {s.SuitesFailed} test file(s) failed to run; the error is below"
                  : exitCode != 0                  ? $"✗ FAILED — npm test exited with code {exitCode} although its test summary passed ({counts})"
                  :                                  $"✓ PASSED — {counts}";
         return head + "\n\n" + rawTail;
     }
 
-    private readonly record struct NpmCounts(int Failed, int Passed, int Skipped, int Total);
+    private readonly record struct NpmCounts(int Failed, int Passed, int Skipped, int Total, int SuitesFailed = 0);
 
     private static NpmCounts? NpmSummary(string raw)
     {
@@ -341,7 +355,10 @@ internal class RunTestsTool : ITool
             var total   = Regex.Match(body, @"(\d+) total|\((\d+)\)", RegexOptions.None, RegexBudget.Default) is { Success: true } t
                 ? int.Parse(t.Groups[1].Success ? t.Groups[1].Value : t.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture)
                 : failed + passed + skipped;
-            return new(failed, passed, skipped, total);
+            // jest: "Test Suites: 1 failed, 1 total" — vitest: " Test Files  1 failed (1)"
+            var suites = Last(raw, @"^\s*Test (?:Suites:|Files)[ \t]+([^\r\n]*)$");
+            var suitesFailed = suites.Success ? Num(Regex.Match(suites.Groups[1].Value, @"(\d+) failed", RegexOptions.None, RegexBudget.Default)) : 0;
+            return new(failed, passed, skipped, total, suitesFailed);
         }
 
         // mocha: "  5 passing (12ms)", "  1 failing", "  2 pending"
@@ -381,13 +398,17 @@ internal class RunTestsTool : ITool
     private static async Task<string> RunGoAsync(string workDir, string? path, string? filter, RunBudget budget, CancellationToken ct)
     {
         var root = FindUp(workDir, "go.mod") ?? workDir;
-        var args = "test ./...";
-        if (!string.IsNullOrWhiteSpace(filter))
-            args += $" -run \"{filter}\"";
-
-        var (output, exitCode) = await RunProcessAsync("go", args, root, budget, ct);
+        var (output, exitCode) = await RunProcessAsync("go", GoTestArguments(filter), root, budget, ct);
         return PathDoesNotNarrow("go", path, root) + ParseGoOutput(output, exitCode);
     }
+
+    /// <remarks>
+    /// ⚠ A filtered run asks for -v: without it go prints the same "ok <package>" line for a skipped test as for a
+    /// passing one, and a /tdd round that skips the failing test reads as green. Only a filtered run — a whole suite
+    /// in -v is every passing test, which pushes failures out of a bounded capture.
+    /// </remarks>
+    internal static string GoTestArguments(string? filter) =>
+        string.IsNullOrWhiteSpace(filter) ? "test ./..." : $"test ./... -v -run \"{filter}\"";
 
     // ── Output parsers ─────────────────────────────────────────────────────────
 
@@ -442,6 +463,10 @@ internal class RunTestsTool : ITool
     /// a summary parser reads as green. And skipping the failing test is exactly the dishonest way for
     /// a fix loop to go green: <c>/tdd</c> declared victory on the round that added <c>Skip = "…"</c>.
     /// </remarks>
+    /// <summary>The runner could not parse the test filter: nothing ran. Followed by the runner's own reason.</summary>
+    internal const string FilterRejected =
+        "⚠ The runner rejected the test filter — nothing ran, so nothing was proven. Its reason:";
+
     /// <summary>pytest refused its own command line (exit 4): nothing ran. Followed by its <c>ERROR:</c> lines.</summary>
     internal const string PytestUsageError =
         "⚠ pytest refused its command line (usage error) — nothing ran, so nothing was proven. Its reason:";
@@ -530,6 +555,14 @@ internal class RunTestsTool : ITool
         // message is reliably English here because this tool forces the child's UI language.
         // No ✓/✗ prefix on purpose: callers' verdict parsing reads it as not-green and the loop
         // keeps working.
+        // A filter vstest cannot parse also ends in "No test matches": its reason is on its own line, and it is not
+        // "the tests were renamed".
+        else if (raw.IndexOf("Incorrect format for TestCaseFilter", StringComparison.Ordinal) is var at and >= 0)
+        {
+            var end = raw.IndexOf('\n', at);
+            sb.AppendLine(FilterRejected);
+            sb.AppendLine(raw[at..(end < 0 ? raw.Length : end)].Trim());
+        }
         else if (raw.Contains("No test matches the given testcase filter", StringComparison.Ordinal))
         {
             sb.AppendLine(NoTestMatchedFilter);
@@ -754,6 +787,13 @@ internal class RunTestsTool : ITool
     // "ok|FAIL  import/path  0.0s" lines. The exit code is the overall pass/fail signal.
     internal static string ParseGoOutput(string raw, int exitCode)
     {
+        // A -run the test binary cannot parse: it says so on a "testing: invalid regexp" line and fails without a single
+        // "--- FAIL:" — the report was "see output" without the output, read as red by /tdd.
+        var rejected = raw.Split('\n').Select(l => l.Trim())
+            .Where(l => l.StartsWith("testing: invalid regexp", StringComparison.Ordinal)).Distinct().Take(3).ToList();
+        if (rejected.Count > 0)
+            return FilterRejected + "\n" + string.Join("\n", rejected);
+
         var sb = new StringBuilder();
 
         // ⚠ Count BEFORE capping. Read off the capped list, a suite with eighty failures reports
@@ -775,9 +815,13 @@ internal class RunTestsTool : ITool
             // green as the three parsers above. And an "ok" line that ends in "[no tests to run]"
             // is go saying nothing ran in that package — a -run that matched nothing prints only those.
             var ranAPackage = Regex.IsMatch(raw, @"^ok\s+\S(?!.*\[no tests to run\]).*$", RegexOptions.Multiline, RegexBudget.Default);
-            sb.AppendLine(ranAPackage
-                ? "✓ Tests passed (verdict from go's exit code — go test prints no summary)."
-                : NoTestFound);
+            // Under -v (a filtered run), a skip prints "--- SKIP:" where a pass prints "--- PASS:"; the package line is
+            // "ok" for both.
+            var passes = Regex.Matches(raw, @"^\s*--- PASS:", RegexOptions.Multiline, RegexBudget.Default).Count;
+            var skips  = Regex.Matches(raw, @"^\s*--- SKIP:", RegexOptions.Multiline, RegexBudget.Default).Count;
+            sb.AppendLine(!ranAPackage              ? NoTestFound
+                        : passes == 0 && skips > 0  ? OnlySkipped
+                        : "✓ Tests passed (verdict from go's exit code — go test prints no summary).");
         }
         else
             sb.AppendLine($"✗ FAILED — {(allFailing.Count > 0 ? $"{allFailing.Count} failing test(s)" : "see output")}");
