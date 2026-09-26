@@ -147,5 +147,5 @@ These run against the active editor selection with tool calling disabled (see
 | `/fix` | Fix bugs in the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
 | `/review` | Review the active code — read-only, answers in the chat |
 | `/refactor` | Refactor the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
-| `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists). In VS Code the whole file is the input (the host's editor port exposes no selection) and an existing test file is rewritten on disk rather than through an undoable editor edit |
+| `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists) — for C#, in the test project that references the source's project (the source's folder mirrored there); under Maven/Gradle, in `src/test`; next to the source otherwise. In VS Code the whole file is the input (the host's editor port exposes no selection) and an existing test file is rewritten on disk rather than through an undoable editor edit |
 | `/doc` | Add an XML documentation comment to the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
