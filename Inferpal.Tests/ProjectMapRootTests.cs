@@ -74,6 +74,27 @@ public class ProjectMapRootTests : IDisposable
         Assert.DoesNotContain("\uFFFD", map, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("utf-16LE")]
+    [InlineData("utf-16BE")]
+    [InlineData("utf-32LE")]
+    public async Task AUnicodeFile_IsMappedWithTheNamesItDeclares(string name)
+    {
+        var root = Directory.CreateDirectory(Path.Combine(_base, "unicode-" + name)).FullName;
+        File.WriteAllBytes(Path.Combine(root, "User.cs"), UnicodeEncodedFilesTests.Saved(
+            UnicodeEncodedFilesTests.EncodingNamed(name),
+            "namespace 上层;\r\npublic interface I用户 { }\r\npublic class 用户 : I用户 { }\r\n"));
+        var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        index.SetRoot(root);
+
+        var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
+
+        Assert.Contains("classes: 1  interfaces: 1", map, StringComparison.Ordinal);   // witness: both parsed
+        Assert.Contains("上层", map, StringComparison.Ordinal);
+        Assert.Contains("I用户", map, StringComparison.Ordinal);
+        Assert.Contains("← 用户", map, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheHost_GivesTheMapServiceTheIndex()
     {

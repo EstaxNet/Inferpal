@@ -79,6 +79,34 @@ public sealed class GitLegacyContentTests : IDisposable
     }
 
     [Fact]
+    public async Task AUtf16File_IsADiffOfABinaryFile_NeverOfCutCharacters()
+    {
+        // git prints no UTF-16 content — whose "上" holds a 0x0A byte — so no line split can cut one in two.
+        var utf16 = UnicodeEncodedFilesTests.EncodingNamed("utf-16LE");
+        var diff = await DiffAfter("a.cs",
+            UnicodeEncodedFilesTests.Saved(utf16, "// 上下文\r\n"),
+            UnicodeEncodedFilesTests.Saved(utf16, "// 上下文 已修改\r\n"));
+
+        Assert.Contains("Binary files a/a.cs and b/a.cs differ", diff);
+        Assert.DoesNotContain("\uFFFD", diff);
+    }
+
+    [Fact]
+    public async Task AUtf16FileWithAWorkingTreeEncoding_ArrivesAsUtf8_Intact()
+    {
+        // With working-tree-encoding git converts to UTF-8 before printing: the characters come through whole.
+        File.WriteAllText(Path.Combine(_root, ".gitattributes"), "*.cs text working-tree-encoding=UTF-16LE-BOM eol=crlf\n");
+        var utf16 = UnicodeEncodedFilesTests.EncodingNamed("utf-16LE");
+        var diff = await DiffAfter("a.cs",
+            UnicodeEncodedFilesTests.Saved(utf16, "// 上下文\r\n"),
+            UnicodeEncodedFilesTests.Saved(utf16, "// 上下文 已修改\r\n"));
+
+        Assert.Contains("-// 上下文", diff);
+        Assert.Contains("+// 上下文 已修改", diff);
+        Assert.DoesNotContain("\uFFFD", diff);
+    }
+
+    [Fact]
     public void TheCapturesOwnTruncationMarker_SurvivesTheByteRoundTrip()
     {
         // A git output over the capture's bound carries its "[… dropped …]" marker, the only text above U+00FF there.

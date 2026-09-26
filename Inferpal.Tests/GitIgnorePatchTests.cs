@@ -128,6 +128,17 @@ public class GitIgnorePatchTests
     }
 
     [Fact]
+    public void AUtf16GitIgnore_KeepsItsEncoding()
+    {
+        var utf16 = UnicodeEncodedFilesTests.Saved(UnicodeEncodedFilesTests.EncodingNamed("utf-16LE"), "bin/\r\n上传/\r\n");
+
+        var after = IndexWith(utf16);
+
+        Assert.Equal(utf16, after[..utf16.Length]);
+        Assert.Contains(".inferpal/history/", System.Text.Encoding.Unicode.GetString(after));   // patched, in UTF-16
+    }
+
+    [Fact]
     public void AGitIgnoreWithABom_KeepsIt()
     {
         byte[] withBom = [0xEF, 0xBB, 0xBF, .. "bin/\n"u8];
