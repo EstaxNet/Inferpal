@@ -40,7 +40,9 @@ internal static class DocChunker
             int end = Math.Min(j - 1, lines.Length - 1);
 
             var slice   = lines[start..(end + 1)];
-            var content = string.Join('\n', slice).Trim();
+            // Blank lines off the edges, never the first line's indent: a chunk that starts inside a code block
+            // would show its first line dedented — in Python, a different program.
+            var content = string.Join('\n', slice).Trim('\n').TrimEnd();
 
             if (content.Length >= MinChunkChars)
             {

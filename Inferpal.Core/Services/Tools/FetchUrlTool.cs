@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
@@ -233,6 +234,10 @@ internal class FetchUrlTool : ITool
     // turns a pathological backtracking input (ReDoS) into a caught exception instead of a hang.
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(2);
 
+    /// <summary>Brackets the placeholder of a code block while the rest of the page is normalized: a
+    /// private-use character, which no page text contains and no step below touches.</summary>
+    private const string CodeBlockMark = "\uE000";
+
     private static string ReplaceBounded(string input, string pattern, string replacement, RegexOptions options) =>
         Regex.Replace(input, pattern, replacement, options, RegexTimeout);
 
@@ -244,6 +249,19 @@ internal class FetchUrlTool : ITool
             html = ReplaceBounded(html,
                 @"<(script|style|noscript|head|nav|footer|header|aside|iframe)[^>]*>[\s\S]*?</\1>",
                 "", RegexOptions.IgnoreCase);
+
+            // ⚠ The whitespace of a <pre> is CONTENT: the normalization below collapses every run of spaces and trims
+            // every indent, and a documentation page's code sample — its most useful part — reached the model flat;
+            // in Python the indent is the syntax. Each block is taken out before and put back after, its own tags
+            // (syntax highlighting) stripped and its entities decoded.
+            var codeBlocks = new List<string>();
+            html = Regex.Replace(html, @"<pre\b[^>]*>([\s\S]*?)</pre>", m =>
+            {
+                var inner = Regex.Replace(m.Groups[1].Value, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase, RegexTimeout);
+                inner = WebUtility.HtmlDecode(Regex.Replace(inner, @"<[^>]+>", "", RegexOptions.None, RegexTimeout));
+                codeBlocks.Add(inner.Replace("\r\n", "\n").Trim('\n'));
+                return $"\n{CodeBlockMark}{codeBlocks.Count - 1}{CodeBlockMark}\n";
+            }, RegexOptions.IgnoreCase, RegexTimeout);
 
             // Block-level elements → newlines before content collapses
             html = ReplaceBounded(html, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
@@ -261,6 +279,11 @@ internal class FetchUrlTool : ITool
             html = ReplaceBounded(html, @"[^\S\n]+", " ",    RegexOptions.None); // tabs/spaces → single space
             html = ReplaceBounded(html, @"\n[ \t]+", "\n",   RegexOptions.None); // trim leading spaces on lines
             html = ReplaceBounded(html, @"\n{3,}",   "\n\n", RegexOptions.None); // 3+ blank lines → 2
+
+            if (codeBlocks.Count > 0)
+                html = Regex.Replace(html, CodeBlockMark + @"(\d+)" + CodeBlockMark,
+                    m => codeBlocks[int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture)],
+                    RegexOptions.None, RegexTimeout);
 
             return html.Trim();
         }
