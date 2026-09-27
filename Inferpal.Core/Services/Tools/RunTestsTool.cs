@@ -570,6 +570,29 @@ internal class RunTestsTool : ITool
         "included; anything below describes only the part that ran. Raise 'timeout_seconds', or " +
         "narrow 'filter' to the tests you are working on.";
 
+    /// <summary>The heading of a run whose code did not compile: red, and no test ran.</summary>
+    internal const string BuildFailed = "✗ BUILD FAILED — the code did not compile, so no test ran. Compiler errors:";
+
+    private const int MaxCompileErrorsListed = 20;
+
+    /// <summary>
+    /// The distinct compiler errors of a build log (<c>File.cs(12,31): error CS1061: …</c>, <c>error MSB1009: …</c>),
+    /// without MSBuild's node prefix and project suffix — each is printed twice, inline and in the final summary.
+    /// </summary>
+    internal static List<string> CompileErrors(string raw)
+    {
+        var seen   = new HashSet<string>(StringComparer.Ordinal);
+        var errors = new List<string>();
+        foreach (Match m in Regex.Matches(raw,
+                     @"^\s*(?:\d+>)?(?<body>\S.*?\berror [A-Z]{2,}\d+:.*?)(?:\s+\[[^\]\r\n]*\])?\s*$",
+                     RegexOptions.Multiline, RegexBudget.Default))
+        {
+            var body = m.Groups["body"].Value.Trim();
+            if (seen.Add(body)) errors.Add(body);
+        }
+        return errors;
+    }
+
     internal static string ParseDotnetOutput(string raw, int exitCode)
     {
         var sb = new StringBuilder();
@@ -619,6 +642,17 @@ internal class RunTestsTool : ITool
         {
             var status = totalFailed == 0 ? "✓ PASSED" : "✗ FAILED";
             sb.AppendLine($"{status} — Failed: {totalFailed}, Passed: {totalPassed}, Skipped: {totalSkipped}, Total: {totalTotal}");
+        }
+        // No test summary and compiler errors: the code did not build, so no test ran — and the errors ARE the
+        // verdict. Red (a test written before its code does not compile: that is TDD's first step, not "nothing to
+        // fix"), and never inferred from "Build FAILED.", which `dotnet test` also prints when a test merely fails.
+        else if (CompileErrors(raw) is { Count: > 0 } errors)
+        {
+            sb.AppendLine(BuildFailed);
+            foreach (var e in errors.Take(MaxCompileErrorsListed))
+                sb.AppendLine($"  {e}");
+            if (errors.Count > MaxCompileErrorsListed)
+                sb.AppendLine($"  … +{errors.Count - MaxCompileErrorsListed} more error(s) not listed");
         }
         // A filter matching zero tests exits 0: read as a pass, an agent that renamed or deleted
         // the failing test makes `/tdd` declare victory on a run where nothing ran. The vstest
@@ -680,8 +714,11 @@ internal class RunTestsTool : ITool
         {
             var line = rawLine.TrimEnd('\r').Trim();
 
-            // Start of a failed test: "Failed SomeName [10 ms]"
-            if (Regex.IsMatch(line, @"^Failed\s+\S", RegexOptions.None, RegexBudget.Default))
+            // Start of a failed test: "Failed SomeName [10 ms]" — the duration is part of the shape. ⚠ Under
+            // --verbosity normal the SDK logs "Failed to load prune package data from PrunePackageData folder…" once
+            // per project: read as a test named "to load prune package data", it was the whole report of a build that
+            // did not compile.
+            if (Regex.IsMatch(line, @"^Failed\s+\S.*\[[^\]]+\]$", RegexOptions.None, RegexBudget.Default))
             {
                 if (currentName is not null)
                     failures.Add((currentName, currentDetails));

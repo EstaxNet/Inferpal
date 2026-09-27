@@ -5,7 +5,7 @@ extension share one engine and one version number.
 
 ## 1.6.23
 
-Eleven fixes. Most of them change what happens with small local models, which could get stuck,
+Twelve fixes. Most of them change what happens with small local models, which could get stuck,
 rewrite a file they had never read, or say they had changed a file when nothing had changed.
 
 - **A reasoning model could leave you watching "Thinking…" for as long as you waited.** A model
@@ -15,6 +15,8 @@ rewrite a file they had never read, or say they had changed a file when nothing 
 - **The assistant could say it had changed a file when nothing had changed.** A line after the
   answer now says so.
 - **A tool name the assistant invented got no help**; the answer now lists the tools that exist.
+- **Running the tests of a .NET 10 project listed two failing tests that did not exist** — and,
+  when the code did not compile, hid the compiler errors behind them.
 - **The breakpoints `/debug` set stayed in your project, and it could remove yours.**
 - **`/test` on a Python or Rust file could write tests that never run.**
 - **With LM Studio, `/hardware` said your model was running on the CPU**, and `/models delete`
