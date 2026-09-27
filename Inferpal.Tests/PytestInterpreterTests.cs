@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using Inferpal.Services.Commands;
@@ -108,28 +107,11 @@ public sealed class PytestInterpreterTests : IDisposable
         Assert.False(TddCommandHandler.TestsPassed(report));
     }
 
-    private static bool PythonIsInstalled()
-    {
-        try
-        {
-            using var p = Process.Start(new ProcessStartInfo(OperatingSystem.IsWindows() ? "python" : "python3", "--version")
-                { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false })!;
-            p.WaitForExit(30_000);
-            return p.ExitCode == 0;
-        }
-        catch { return false; }
-    }
-
     [Fact]
     public async Task APythonProject_RunsWithItsOwnVenv()
     {
-        if (!PythonIsInstalled()) return;   // UNDECIDED without Python on the machine — never read as a pass
-        using (var venv = Process.Start(new ProcessStartInfo(OperatingSystem.IsWindows() ? "python" : "python3",
-                   $"-m venv --without-pip \"{Path.Combine(_dir, ".venv")}\"") { UseShellExecute = false })!)
-        {
-            await venv.WaitForExitAsync();
-            if (venv.ExitCode != 0) return;   // no venv module (Debian without python3-venv): UNDECIDED
-        }
+        if (!await PythonForTests.IsInstalledAsync()) return;   // UNDECIDED without Python on the machine — never read as a pass
+        if (!await PythonForTests.MakeVenvAsync(Path.Combine(_dir, ".venv"))) return;   // no venv module, or no answer: UNDECIDED
         File.WriteAllText(Path.Combine(_dir, "pytest.ini"), "[pytest]\n");
 
         using var args = JsonDocument.Parse(JsonSerializer.Serialize(new { path = _dir, runner = "pytest" }));

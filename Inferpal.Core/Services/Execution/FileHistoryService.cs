@@ -9,11 +9,11 @@ namespace Inferpal.Services.Execution;
 /// <remarks>
 /// Backups are stored in <c>.inferpal/history/</c> at the git repository root
 /// (falls back to the file's directory when no git root is found).
-/// Snapshot filename format: <c>yyyy-MM-dd_HH-mm-ss-fff_&lt;pathHash8&gt;_&lt;originalFilename&gt;</c>.
+/// Snapshot filename format: <c>yyyy-MM-dd_HH-mm-ss-fff_&lt;pathHash8&gt;_&lt;originalFilename&gt;.bak</c>.
 /// The 8-hex-char hash of the <em>full</em> path disambiguates same-named files: on the bare file
 /// name, <c>restore_file</c> on <c>A\Config.cs</c> silently restores the content of a more recently
 /// touched <c>B\Config.cs</c>, and homonyms prune each other's retention slots. Snapshots written
-/// before this format are no longer found by name-matching — deliberate: that matching is the bug —
+/// before the hash are no longer found by name-matching — deliberate: that matching is the bug —
 /// but stay on disk and remain restorable via <c>/undo-run</c>, which keeps exact snapshot paths.
 /// </remarks>
 internal class FileHistoryService
@@ -35,12 +35,68 @@ internal class FileHistoryService
     private static string SnapshotSuffix(string filePath) =>
         $"{PathHash(filePath)}_{Path.GetFileName(filePath)}";
 
+    /// <summary>The extension every snapshot name ends with, after the original file name.</summary>
+    /// <remarks>
+    /// ⚠ The history folder lives INSIDE the project tree (the git root, or the file's own folder), and a
+    /// snapshot that ends like its original is picked up by every tool that finds files by their name:
+    /// jest, vitest and <c>node --test</c> (Node 20) run a backup of <c>sum.test.js</c> as a test — red,
+    /// its relative imports no longer resolving and its assertions stale — so every test file the agent
+    /// edits would add a failing suite to <c>npm test</c>, <c>run_tests</c> and <c>/tdd</c>. No runner,
+    /// compiler or linter globs <c>*.bak</c>.
+    /// </remarks>
+    internal const string SnapshotExtension = ".bak";
+
+    /// <summary>Whether <paramref name="snapshotPath"/> is a snapshot carrying <paramref name="suffix"/> —
+    /// in the current format, or in the one before <see cref="SnapshotExtension"/>, still on users' disks.</summary>
     private static bool MatchesSuffix(string snapshotPath, string suffix)
     {
         var bn = Path.GetFileName(snapshotPath);
-        return bn.Length > TimestampPrefixLength &&
-               bn[TimestampPrefixLength..].Equals(suffix, StringComparison.OrdinalIgnoreCase);
+        if (bn.Length <= TimestampPrefixLength) return false;
+        var rest = bn.AsSpan(TimestampPrefixLength);
+        return rest.Equals(suffix + SnapshotExtension, StringComparison.OrdinalIgnoreCase)
+            || rest.Equals(suffix, StringComparison.OrdinalIgnoreCase);
     }
+
+    // History folders whose snapshots from before SnapshotExtension were renamed in this process.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> RenamedFolders =
+        new(PathComparer.Default);
+
+    /// <summary>
+    /// Gives the <see cref="SnapshotExtension"/> to snapshots written before it, once per folder and process.
+    /// </summary>
+    /// <remarks>Without it, a backup of a test file taken by an earlier version keeps failing the user's
+    /// <c>npm test</c> until twenty newer snapshots of that same file prune it. The folder is Inferpal's
+    /// own, and every name in it that starts with a date is a snapshot; renaming keeps it restorable
+    /// (<see cref="MatchesSuffix"/> reads both forms). Best-effort: a failed rename leaves the file as it was.</remarks>
+    private static void RenameOlderSnapshots(string historyDir)
+    {
+        if (!RenamedFolders.TryAdd(Path.GetFullPath(historyDir), 0)) return;
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(historyDir).ToList())
+            {
+                var name = Path.GetFileName(file);
+                if (name.EndsWith(SnapshotExtension, StringComparison.OrdinalIgnoreCase) || !StartsWithDate(name)) continue;
+                try { File.Move(file, file + SnapshotExtension); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Diagnostics.Swallow("FileHistoryService.RenameOlderSnapshots", ex);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("FileHistoryService.RenameOlderSnapshots", ex);
+        }
+    }
+
+    /// <summary><c>yyyy-MM-dd_</c> — how every snapshot name, in every format, begins.</summary>
+    private static bool StartsWithDate(string name) =>
+        name.Length > 11
+        && char.IsAsciiDigit(name[0]) && char.IsAsciiDigit(name[1]) && char.IsAsciiDigit(name[2]) && char.IsAsciiDigit(name[3])
+        && name[4] == '-' && char.IsAsciiDigit(name[5]) && char.IsAsciiDigit(name[6])
+        && name[7] == '-' && char.IsAsciiDigit(name[8]) && char.IsAsciiDigit(name[9])
+        && name[10] == '_';
 
     // Cap on retained snapshots per original file. Older ones are pruned after each
     // new snapshot so .inferpal/history/ cannot grow without bound.
@@ -57,6 +113,7 @@ internal class FileHistoryService
 
             var historyDir = GetHistoryDir(filePath);
             Directory.CreateDirectory(historyDir);
+            RenameOlderSnapshots(historyDir);
 
             // UTC + invariant. Local time repeats an hour every autumn, and the name is not just a
             // label: it is what the lookup below sorts on. A Buddhist or Umm al-Qura default calendar
@@ -77,7 +134,7 @@ internal class FileHistoryService
             {
                 var timestamp = stamp.AddMilliseconds(attempt).ToString("yyyy-MM-dd_HH-mm-ss-fff",
                                                                          System.Globalization.CultureInfo.InvariantCulture);
-                snapPath = Path.Combine(historyDir, $"{timestamp}_{suffix}");
+                snapPath = Path.Combine(historyDir, $"{timestamp}_{suffix}{SnapshotExtension}");
 
                 FileStream stream;
                 try { stream = new FileStream(snapPath, FileMode.CreateNew, FileAccess.Write, FileShare.None); }

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using Inferpal.Services.Commands;
@@ -80,28 +79,11 @@ public sealed class RunTestsPathTests : IDisposable
         Assert.Equal(["-m", "pytest", "-v", "--tb=short", "-q", "-k", "name with \"quotes\""], args);
     }
 
-    private static bool PythonIsInstalled()
-    {
-        try
-        {
-            using var p = Process.Start(new ProcessStartInfo(OperatingSystem.IsWindows() ? "python" : "python3", "--version")
-                { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false })!;
-            p.WaitForExit(30_000);
-            return p.ExitCode == 0;
-        }
-        catch { return false; }
-    }
-
     [Fact]
     public async Task APythonTestFile_BelowItsProject_IsRunByPytest_NotReportedAsNoRunner()
     {
-        if (!PythonIsInstalled()) return;   // UNDECIDED without Python on the machine — never read as a pass
-        using (var venv = Process.Start(new ProcessStartInfo(OperatingSystem.IsWindows() ? "python" : "python3",
-                   $"-m venv --without-pip \"{Path.Combine(_root, ".venv")}\"") { UseShellExecute = false })!)
-        {
-            await venv.WaitForExitAsync();
-            if (venv.ExitCode != 0) return;   // no venv module: UNDECIDED
-        }
+        if (!await PythonForTests.IsInstalledAsync()) return;   // UNDECIDED without Python on the machine — never read as a pass
+        if (!await PythonForTests.MakeVenvAsync(Path.Combine(_root, ".venv"))) return;   // no venv module, or no answer: UNDECIDED
         Directory.CreateDirectory(Path.Combine(_root, "tests"));
         File.WriteAllText(Path.Combine(_root, "tests", "test_add.py"), "def test_add():\n    assert 1 + 1 == 2\n");
 
