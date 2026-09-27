@@ -61,11 +61,10 @@ internal static class ModelCatalog
     internal static string ModelKey(string name) =>
         name.EndsWith(":latest", StringComparison.OrdinalIgnoreCase) ? name[..^":latest".Length] : name;
 
-    // Priority: specialized code models first, then popular general models.
-    private static readonly string[] ChatPriority =
+    // General families with no profile, never measured by the battery: after every family that was, before those
+    // measured to fail as the agent. Their order is the one the first-run choice has always had.
+    private static readonly string[] UnprofiledChatPreference =
     [
-        "qwen2.5-coder", "qwen2-coder", "deepseek-coder", "codellama",
-        "starcoder2",    "starcoder",   "codegemma",
         "llama3.1",      "llama3.2",    "llama3",
         "mistral-nemo",  "mistral",
         "phi4",          "phi3",
@@ -201,19 +200,33 @@ internal static class ModelCatalog
         EmbeddingKeywords.Any(kw => name.Contains(kw, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
-    /// First-run default-model choice: the first priority entry found as a substring
-    /// (code models first), the first available model otherwise. The list must be
-    /// non-empty — callers guard the "no chat models" case with their own message.
+    /// First-run default-model choice — the model the chat AND the agent start with. The list must be non-empty —
+    /// callers guard the "no chat models" case with their own message.
     /// </summary>
+    /// <remarks>
+    /// A family Inferpal's battery measured first, best fit first (<see cref="ModelProfiles"/>); then the general
+    /// families it never measured, then any other model it does not know; a family measured to fail as the agent comes
+    /// last — a code model trained for completion and not for tool calls completes 2 tasks in 8.
+    /// </remarks>
     public static string PickBestChatModel(IReadOnlyList<string> models)
     {
-        foreach (var pref in ChatPriority)
+        var profiled = models
+            .Select((model, index) => (Model: model, Index: index, Profile: ModelProfiles.For(model)))
+            .Where(m => m.Profile is { Agent: not AgentFit.NotRecommended, ToolCalls: not null })
+            .OrderBy(m => m.Profile!.Agent).ThenBy(m => m.Profile!.Rank).ThenBy(m => m.Index)
+            .Select(m => m.Model)
+            .FirstOrDefault();
+        if (profiled is not null) return profiled;
+
+        foreach (var pref in UnprofiledChatPreference)
         {
             var match = models.FirstOrDefault(m =>
-                m.Contains(pref, StringComparison.OrdinalIgnoreCase));
+                ModelProfiles.For(m) is null && m.Contains(pref, StringComparison.OrdinalIgnoreCase));
             if (match is not null) return match;
         }
-        return models[0]; // fallback: first available
+        return models.FirstOrDefault(m => ModelProfiles.For(m) is null)
+            ?? models.FirstOrDefault(m => ModelProfiles.For(m) is { ToolCalls: not null })
+            ?? models[0];
     }
 
     /// <summary>

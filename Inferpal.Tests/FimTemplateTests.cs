@@ -9,6 +9,7 @@ public class FimTemplateTests
 {
     [Theory]
     [InlineData("qwen2.5-coder-7b-instruct")]
+    [InlineData("qwen3-coder-30b-a3b-instruct")]
     [InlineData("codegemma-7b")]
     public void Qwen_And_CodeGemma_UsePipeFimTokens(string model)
     {

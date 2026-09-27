@@ -34,9 +34,27 @@ public class ModelCatalogTests
     // ── PickBestChatModel ──────────────────────────────────────────────────────
 
     [Fact]
-    public void PickBestChatModel_PrefersCodeModels_OverGeneralOnes() =>
-        Assert.Equal("qwen2.5-coder:14b", ModelCatalog.PickBestChatModel(
-            ["llama3.1:8b", "qwen2.5-coder:14b", "mistral:7b"]));
+    public void PickBestChatModel_PrefersTheBestMeasuredAgent_WhateverTheListOrder() =>
+        Assert.Equal("qwen3.8:27b", ModelCatalog.PickBestChatModel(
+            ["llama3.1:8b", "qwen2.5-coder:14b", "qwen3:8b", "devstral:24b", "qwen3.8:27b"]));
+
+    [Fact]
+    public void PickBestChatModel_TakesAModelMeasuredAsAnAgent_BeforeOneNeverMeasured() =>
+        Assert.Equal("qwen3:8b", ModelCatalog.PickBestChatModel(["llama3.1:8b", "qwen3:8b"]));
+
+    [Fact]
+    public void PickBestChatModel_PutsACodeModelMeasuredToFailAsTheAgent_AfterAGeneralOne() =>
+        // The first-run model is the agent's too, and Qwen2.5 Coder completes 2 agent tasks in 8.
+        Assert.Equal("llama3.1:8b", ModelCatalog.PickBestChatModel(
+            ["qwen2.5-coder:14b", "llama3.1:8b", "mistral:7b"]));
+
+    [Fact]
+    public void PickBestChatModel_PutsACodeModelMeasuredToFailAsTheAgent_AfterAnUnknownOne() =>
+        Assert.Equal("some-new-model", ModelCatalog.PickBestChatModel(["qwen2.5-coder:14b", "some-new-model"]));
+
+    [Fact]
+    public void PickBestChatModel_AmongModelsMeasuredToFail_TakesOneThatCallsTools() =>
+        Assert.Equal("qwen2.5-coder:14b", ModelCatalog.PickBestChatModel(["codellama:13b", "qwen2.5-coder:14b"]));
 
     [Fact]
     public void PickBestChatModel_MatchesTagSuffixesCaseInsensitively() =>

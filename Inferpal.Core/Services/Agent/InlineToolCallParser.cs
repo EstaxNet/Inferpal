@@ -25,6 +25,11 @@ namespace Inferpal.Services.Agent;
 ///   <item><description><c>&lt;tool_call&gt;{…}&lt;/tool_call&gt;</c> blocks (one or more).</description></item>
 ///   <item><description>The Qwen/GLM XML shape
 ///     <c>&lt;tool_call&gt;&lt;function=name&gt;&lt;parameter=key&gt;value&lt;/parameter&gt;…&lt;/function&gt;&lt;/tool_call&gt;</c>.</description></item>
+///   <item><description>Meta Muse Glimmer's ATEM shape
+///     <c>&lt;atem:function_calls&gt;&lt;atem:invoke name="name"&gt;&lt;atem:parameter name="key"&gt;value&lt;/atem:parameter&gt;…&lt;/atem:invoke&gt;&lt;/atem:function_calls&gt;</c>.</description></item>
+///   <item><description>GLM's shape <c>&lt;tool_call&gt;name&lt;arg_key&gt;key&lt;/arg_key&gt;&lt;arg_value&gt;value&lt;/arg_value&gt;&lt;/tool_call&gt;</c>.</description></item>
+///   <item><description>Gemma 4's shape <c>&lt;|tool_call&gt;call:name{key:&lt;|"|&gt;value&lt;|"|&gt;}&lt;tool_call|&gt;</c>.</description></item>
+///   <item><description>Mistral's shape <c>[TOOL_CALLS]name[ARGS]{json}</c> (Devstral), and the older <c>[TOOL_CALLS][{…}]</c> list.</description></item>
 ///   <item><description>A bare object <c>{"name":…,"arguments":{…}}</c> (optionally with an <c>id</c>).</description></item>
 ///   <item><description>An array <c>[{…},{…}]</c> of such objects.</description></item>
 ///   <item><description>The Ollama-nested shape <c>{"function":{"name":…,"arguments":…}}</c>.</description></item>
@@ -46,6 +51,37 @@ internal static class InlineToolCallParser
     // One <parameter=KEY>VALUE</parameter> pair inside a function block.
     private static readonly Regex ParameterXmlRegex =
         new(@"<parameter=([^>]+?)>(.*?)</parameter>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+
+    // Meta Muse Glimmer's ATEM call: <atem:function_calls><atem:invoke name="NAME">…</atem:invoke></atem:function_calls>.
+    // A server that parses the model's format turns it into structured calls; LM Studio does so only when a call is
+    // forced (tool_choice "required"), and otherwise streams it as text inside the model's addressed message.
+    private static readonly Regex AtemBlockRegex =
+        new(@"<atem:function_calls>(.*?)</atem:function_calls>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+
+    private static readonly Regex AtemInvokeRegex =
+        new(@"<atem:invoke\s+name=""([^""]+)""\s*>(.*?)</atem:invoke>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+
+    // One <atem:parameter name="KEY">VALUE</atem:parameter> pair inside an invoke.
+    private static readonly Regex AtemParameterRegex =
+        new(@"<atem:parameter\s+name=""([^""]+)""\s*>(.*?)</atem:parameter>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+
+    // GLM-4.5/4.6/4.7: <tool_call>NAME<arg_key>K</arg_key><arg_value>V</arg_value>…</tool_call> — the name bare (a newline
+    // after it on 4.5 and 4.6, none on 4.7), string values raw, other types JSON.
+    private static readonly Regex GlmCallRegex =
+        new(@"<tool_call>\s*([^\s<{][^<]*?)\s*((?:<arg_key>.*?</arg_key>\s*<arg_value>.*?</arg_value>\s*)*)</tool_call>",
+            RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+
+    // One <arg_key>KEY</arg_key><arg_value>VALUE</arg_value> pair inside a GLM call.
+    private static readonly Regex GlmArgRegex =
+        new(@"<arg_key>(.*?)</arg_key>\s*<arg_value>(.*?)</arg_value>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+
+    // Gemma 4: <|tool_call>call:NAME{…}<tool_call|>, the arguments in Gemma's own syntax (GemmaCallArguments).
+    private static readonly Regex GemmaCallRegex =
+        new(@"<\|tool_call>\s*call:([^\s{]+?)\s*(\{.*?\})\s*<tool_call\|>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+
+    // Mistral (Devstral, tokenizer v11 and later): [TOOL_CALLS]name[ARGS]{json}, repeated for parallel calls.
+    private const string MistralCallsToken = "[TOOL_CALLS]";
+    private const string MistralArgsToken  = "[ARGS]";
 
     private static readonly Regex CodeFenceRegex =
         new(@"^```(?:json)?\s*\n?(.*?)\n?```$", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
@@ -103,6 +139,56 @@ internal static class InlineToolCallParser
             }
         }
         if (xmlMatched && calls.Count > 0)
+            return (calls, cleaned.Trim());
+
+        // (1c) Meta Muse Glimmer's ATEM shape:
+        //   <atem:function_calls><atem:invoke name="name"><atem:parameter name="key">value</atem:parameter></atem:invoke></atem:function_calls>
+        var atemMatched = false;
+        foreach (Match block in AtemBlockRegex.Matches(content))
+        {
+            var before = calls.Count;
+            foreach (Match invoke in AtemInvokeRegex.Matches(block.Groups[1].Value))
+                TryAddFromXmlParameters(invoke.Groups[1].Value, invoke.Groups[2].Value, AtemParameterRegex, calls);
+            if (calls.Count > before)
+            {
+                cleaned     = cleaned.Replace(block.Value, string.Empty);
+                atemMatched = true;
+            }
+        }
+        if (atemMatched && calls.Count > 0)
+            return (calls, cleaned.Trim());
+
+        // (1d) GLM's shape: <tool_call>name<arg_key>key</arg_key><arg_value>value</arg_value></tool_call>
+        var glmMatched = false;
+        foreach (Match m in GlmCallRegex.Matches(content))
+        {
+            if (TryAddFromXmlParameters(m.Groups[1].Value, m.Groups[2].Value, GlmArgRegex, calls))
+            {
+                cleaned    = cleaned.Replace(m.Value, string.Empty);
+                glmMatched = true;
+            }
+        }
+        if (glmMatched && calls.Count > 0)
+            return (calls, cleaned.Trim());
+
+        // (1e) Gemma 4's shape: <|tool_call>call:name{key:<|"|>value<|"|>}<tool_call|>
+        var gemmaMatched = false;
+        foreach (Match m in GemmaCallRegex.Matches(content))
+        {
+            var name = m.Groups[1].Value.Trim();
+            if (name.Length == 0) continue;
+            var json = GemmaCallArguments.ToJson(m.Groups[2].Value);
+            calls.Add(json is null
+                ? new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = m.Groups[2].Value })
+                : new ToolCallDto(new ToolCallFunction(name, ParseObject(json))));
+            cleaned      = cleaned.Replace(m.Value, string.Empty);
+            gemmaMatched = true;
+        }
+        if (gemmaMatched)
+            return (calls, cleaned.Trim());
+
+        // (1f) Mistral's shape: [TOOL_CALLS]name[ARGS]{json}
+        if (TryAddMistralCalls(content, calls, ref cleaned))
             return (calls, cleaned.Trim());
 
         // (2) The whole content is a JSON payload (optionally fenced in ```json … ```).
@@ -196,14 +282,19 @@ internal static class InlineToolCallParser
 
     /// <summary>Builds a tool call from the Qwen/GLM XML shape: a function name plus a block of
     /// <c>&lt;parameter=key&gt;value&lt;/parameter&gt;</c> pairs, assembled into a JSON arguments object.</summary>
-    private static bool TryAddFromFunctionXml(string name, string paramsBlock, List<ToolCallDto> calls)
+    private static bool TryAddFromFunctionXml(string name, string paramsBlock, List<ToolCallDto> calls) =>
+        TryAddFromXmlParameters(name, paramsBlock, ParameterXmlRegex, calls);
+
+    /// <summary>A call from a name and a block of key/value parameter elements matched by <paramref name="parameter"/>
+    /// (group 1 the key, group 2 the value) — the shape the Qwen/GLM XML and the ATEM calls share.</summary>
+    private static bool TryAddFromXmlParameters(string name, string paramsBlock, Regex parameter, List<ToolCallDto> calls)
     {
         name = name.Trim();
         if (string.IsNullOrEmpty(name)) return false;
 
         var sb    = new System.Text.StringBuilder("{");
         var first = true;
-        foreach (Match pm in ParameterXmlRegex.Matches(paramsBlock))
+        foreach (Match pm in parameter.Matches(paramsBlock))
         {
             var key = pm.Groups[1].Value.Trim();
             if (key.Length == 0) continue;
@@ -268,6 +359,83 @@ internal static class InlineToolCallParser
             }
         }
         return false;
+    }
+
+    /// <summary>
+    /// Mistral's calls, <c>[TOOL_CALLS]name[ARGS]{json}</c> (and the older <c>[TOOL_CALLS][{"name":…}]</c> list); each
+    /// one read is removed from <paramref name="cleaned"/>.
+    /// </summary>
+    private static bool TryAddMistralCalls(string content, List<ToolCallDto> calls, ref string cleaned)
+    {
+        var found = false;
+        var i     = content.IndexOf(MistralCallsToken, StringComparison.Ordinal);
+        while (i >= 0)
+        {
+            var p = SkipBlanks(content, i + MistralCallsToken.Length);
+            int end;
+            if (p < content.Length && content[p] == '[')
+            {
+                end = ClosingBracket(content, p);
+                if (end < 0 || !TryAddFromJson(content[p..(end + 1)], calls)) break;
+            }
+            else
+            {
+                var args = content.IndexOf(MistralArgsToken, p, StringComparison.Ordinal);
+                if (args < 0) break;
+                var name = content[p..args].Trim();
+                var q    = SkipBlanks(content, args + MistralArgsToken.Length);
+                end = q < content.Length && content[q] == '{' ? ClosingBracket(content, q) : -1;
+                if (name.Length == 0 || name.Any(char.IsWhiteSpace) || end < 0) break;
+                var raw = content[q..(end + 1)];
+                try
+                {
+                    using var doc = JsonDocument.Parse(raw);
+                    calls.Add(new ToolCallDto(new ToolCallFunction(name, doc.RootElement.Clone())));
+                }
+                catch (JsonException)
+                {
+                    calls.Add(new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = raw }));
+                }
+            }
+            cleaned = cleaned.Replace(content[i..(end + 1)], string.Empty);
+            found   = true;
+            i       = content.IndexOf(MistralCallsToken, end + 1, StringComparison.Ordinal);
+        }
+        return found;
+    }
+
+    /// <summary>The index of the bracket that closes the one at <paramref name="open"/>, strings and escapes respected;
+    /// -1 when it never closes.</summary>
+    private static int ClosingBracket(string s, int open)
+    {
+        var depth    = 0;
+        var inString = false;
+        for (var k = open; k < s.Length; k++)
+        {
+            var c = s[k];
+            if (inString)
+            {
+                if (c == '\\') k++;
+                else if (c == '"') inString = false;
+                continue;
+            }
+            if (c == '"') inString = true;
+            else if (c is '{' or '[') depth++;
+            else if (c is '}' or ']' && --depth == 0) return k;
+        }
+        return -1;
+    }
+
+    private static int SkipBlanks(string s, int i)
+    {
+        while (i < s.Length && char.IsWhiteSpace(s[i])) i++;
+        return i;
+    }
+
+    private static JsonElement ParseObject(string json)
+    {
+        using var d = JsonDocument.Parse(json);
+        return d.RootElement.Clone();
     }
 
     private static JsonElement EmptyObject()

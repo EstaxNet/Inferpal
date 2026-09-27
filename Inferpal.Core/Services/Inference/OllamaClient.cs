@@ -137,6 +137,8 @@ internal class OllamaClient : InferenceProviderBase
         var thinkingLoop = new TextLoopDetector();
         var contentLoop  = new TextLoopDetector();
         var looping      = false;
+        // A model whose channel envelope the server leaves in the content (Muse Glimmer, Gemma 4): reasoning split out.
+        var envelope     = new ChannelEnvelope();
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -181,8 +183,13 @@ internal class OllamaClient : InferenceProviderBase
                     var token = chunk.Message.Content;
                     if (!string.IsNullOrEmpty(token))
                     {
-                        contentBuilder.Append(token);
-                        onToken?.Invoke(token);
+                        var (answerPart, thoughtPart) = envelope.Push(token);
+                        if (thoughtPart.Length > 0) onThinking?.Invoke(thoughtPart);
+                        if (answerPart.Length > 0)
+                        {
+                            contentBuilder.Append(answerPart);
+                            onToken?.Invoke(answerPart);
+                        }
                         received += token.Length;
                         looping |= contentLoop.Repeats(token);
                     }
@@ -228,6 +235,15 @@ internal class OllamaClient : InferenceProviderBase
             // Mid-stream network failure (connection reset, Ollama crash…).
             RecordFailure();
             throw new AgentHttpException(Strings.MsgUnreachable(base_) + "\n" + ex.Message, isTimeout: false);
+        }
+
+        // What the envelope held back — a marker the end of the stream cut in two — is released now.
+        var (lastAnswer, lastThought) = envelope.Flush();
+        if (lastThought.Length > 0) onThinking?.Invoke(lastThought);
+        if (lastAnswer.Length > 0)
+        {
+            contentBuilder.Append(lastAnswer);
+            onToken?.Invoke(lastAnswer);
         }
 
         // Some models emit their tool call as plain-text JSON in the content instead of in the

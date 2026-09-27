@@ -36,6 +36,7 @@ flowchart LR
 |---|---|
 | [Getting Started](getting-started.md) | Install a backend, build & install the extension, first run |
 | [Providers](providers.md) | Ollama / LM Studio / OpenAI-compatible — capabilities and setup |
+| [Models](models.md) | Which model for which job, what Inferpal does for each, and how to set it up |
 | [Configuration](configuration.md) | Every setting and config key, with defaults |
 | [Features](features.md) | Functional tour of everything Inferpal does |
 | [Slash Commands](slash-commands.md) | The full `/command` reference |

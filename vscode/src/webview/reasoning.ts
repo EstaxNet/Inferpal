@@ -16,9 +16,13 @@ const THINK_CLOSE = '</think>';
  *
  * ⚠ The content of a block is skipped whole, never scanned: reasoning writes code too, and a fence it
  * opens and never closes must not turn the answer that follows into a code block.
+ *
+ * ⚠ A lone `</think>` before any opening tag closes reasoning whose opening tag the chat template wrote
+ * itself (Qwen3, Qwen3.6/3.8, GLM): a server that does not separate reasoning sends everything before it,
+ * and all of that is reasoning. Found outside code only — the same protection as the paired tags.
  */
 export function stripThinkTags(text: string): string {
-  if (!text || indexOfTag(text, THINK_OPEN, 0) < 0) {
+  if (!text || (indexOfTag(text, THINK_OPEN, 0) < 0 && indexOfTag(text, THINK_CLOSE, 0) < 0)) {
     return text ?? '';
   }
 
@@ -35,6 +39,7 @@ export function stripThinkTags(text: string): string {
 
   let fenceChar = '';
   let fenceLength = 0; // > 0 while inside a fenced block
+  let sawTag = false; // a reasoning tag has been read: a later lone </think> is text
   let i = 0;
   while (i < text.length) {
     // Line structure follows what is KEPT: a block removed at the head of a line leaves that line's start.
@@ -68,7 +73,17 @@ export function stripThinkTags(text: string): string {
       continue;
     }
 
+    if (!sawTag && tagAt(text, THINK_CLOSE, i)) {
+      // The template opened the block: everything kept so far was reasoning.
+      kept.length = 0;
+      lastKept = '';
+      sawTag = true;
+      i += THINK_CLOSE.length;
+      continue;
+    }
+
     if (tagAt(text, THINK_OPEN, i)) {
+      sawTag = true;
       const close = indexOfTag(text, THINK_CLOSE, i + THINK_OPEN.length);
       if (close < 0) {
         break;

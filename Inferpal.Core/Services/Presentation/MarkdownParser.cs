@@ -36,15 +36,22 @@ internal static class MarkdownParser
     /// ⚠ The content of a block is skipped whole, never scanned: reasoning writes code too, and a fence
     /// it opens and never closes must not turn the answer that follows into a code block.
     /// </para>
+    /// <para>
+    /// ⚠ A lone <c>&lt;/think&gt;</c> before any opening tag closes reasoning whose opening tag the chat template
+    /// wrote itself (Qwen3, Qwen3.6/3.8, GLM): a server that does not separate reasoning sends everything before it,
+    /// and all of that is reasoning. Found outside code only — the same protection as the paired tags.
+    /// </para>
     /// </remarks>
     public static string StripThinkTags(string? content)
     {
         if (string.IsNullOrEmpty(content)) return string.Empty;
-        if (content.IndexOf(ThinkOpen, StringComparison.OrdinalIgnoreCase) < 0) return content.Trim();
+        if (content.IndexOf(ThinkOpen, StringComparison.OrdinalIgnoreCase) < 0
+            && content.IndexOf(ThinkClose, StringComparison.OrdinalIgnoreCase) < 0) return content.Trim();
 
         var kept = new StringBuilder(content.Length);
         var fenceChar = '\0';
         var fenceLength = 0; // > 0 while inside a fenced block
+        var sawTag = false;  // a reasoning tag has been read: a later lone </think> is text
         var i = 0;
         while (i < content.Length)
         {
@@ -74,8 +81,19 @@ internal static class MarkdownParser
                 continue;
             }
 
+            if (!sawTag && content[i] == '<'
+                && string.Compare(content, i, ThinkClose, 0, ThinkClose.Length, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                // The template opened the block: everything kept so far was reasoning.
+                kept.Clear();
+                sawTag = true;
+                i += ThinkClose.Length;
+                continue;
+            }
+
             if (content[i] == '<' && string.Compare(content, i, ThinkOpen, 0, ThinkOpen.Length, StringComparison.OrdinalIgnoreCase) == 0)
             {
+                sawTag = true;
                 var close = content.IndexOf(ThinkClose, i + ThinkOpen.Length, StringComparison.OrdinalIgnoreCase);
                 if (close < 0) break;
                 i = close + ThinkClose.Length;
@@ -105,11 +123,16 @@ internal static class MarkdownParser
     /// two tags would vanish from the edit. Reasoning comes before the answer; a tag after the first line of answer is
     /// the answer's. Nothing else is trimmed: the caller's own cleanup reads the leading indentation.
     /// </para>
+    /// <para>
+    /// ⚠ A lone <c>&lt;/think&gt;</c> (the template opened the block — Qwen3, Qwen3.6/3.8) ends the reasoning only when
+    /// it stands alone on its line, the way those models write it: bare code can hold the tag in a string
+    /// (<c>Split("&lt;/think&gt;")</c>), and there no fence protects it.
+    /// </para>
     /// </remarks>
     public static string WithoutLeadingReasoning(string? reply)
     {
         if (string.IsNullOrEmpty(reply)) return string.Empty;
-        var rest = reply;
+        var rest = WithoutOrphanClose(reply);
         while (true)
         {
             var start = 0;
@@ -120,6 +143,23 @@ internal static class MarkdownParser
             if (close < 0) return string.Empty;
             rest = rest[(close + ThinkClose.Length)..];
         }
+    }
+
+    /// <summary>The reply after a lone <c>&lt;/think&gt;</c> line that comes before any opening tag; the reply otherwise.</summary>
+    private static string WithoutOrphanClose(string reply)
+    {
+        var close = reply.IndexOf(ThinkClose, StringComparison.OrdinalIgnoreCase);
+        if (close < 0) return reply;
+        var open = reply.IndexOf(ThinkOpen, StringComparison.OrdinalIgnoreCase);
+        if (open >= 0 && open < close) return reply;
+
+        var lineStart = reply.LastIndexOf('\n', Math.Max(0, close - 1)) + 1;
+        if (close == 0) lineStart = 0;
+        var lineEnd = reply.IndexOf('\n', close);
+        var line    = reply[lineStart..(lineEnd < 0 ? reply.Length : lineEnd)];
+        return line.Trim().Equals(ThinkClose, StringComparison.OrdinalIgnoreCase)
+            ? reply[(close + ThinkClose.Length)..]
+            : reply;
     }
 
     // A fence line: up to three spaces, then three or more backticks or tildes. `Bare` = nothing after the

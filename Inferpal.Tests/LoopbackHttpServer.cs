@@ -26,15 +26,24 @@ internal sealed class LoopbackHttpServer : IDisposable
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _cts = new();
     private readonly List<string> _paths = [];
+    private readonly List<string> _bodies = [];
 
     /// <summary>Paths actually probed — the witness that the stand-in was really called.</summary>
     public IReadOnlyList<string> Paths { get { lock (_paths) return _paths.ToList(); } }
+
+    /// <summary>The request bodies received, in order (ASCII-decoded: enough to read JSON field names).</summary>
+    public IReadOnlyList<string> Bodies { get { lock (_bodies) return _bodies.ToList(); } }
 
     public string BaseUrl => $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}";
 
     /// <param name="body">The body answered for a path; <c>null</c> answers 404.</param>
     /// <param name="status">The status of a non-null body (default 200): how a test stands in for a server that refuses.</param>
     public LoopbackHttpServer(Func<string, string?> body, Func<string, int>? status = null)
+        : this((path, _) => body(path), status is null ? null : (path, _) => status(path)) { }
+
+    /// <param name="body">The body answered for a path and the request's body; <c>null</c> answers 404.</param>
+    /// <param name="status">The status of a non-null body, from the path and the request's body (default 200).</param>
+    public LoopbackHttpServer(Func<string, string, string?> body, Func<string, string, int>? status = null)
     {
         _listener = new TcpListener(IPAddress.Loopback, 0);
         _listener.Start();
@@ -70,6 +79,7 @@ internal sealed class LoopbackHttpServer : IDisposable
                         // data sends a reset, and the client reads "connection closed by the remote
                         // host" instead of the response. JsonContent streams its body CHUNKED (no
                         // Content-Length), so both framings are read. ASCII decoding: one char per byte.
+                        var request = new StringBuilder();
                         if (chunked)
                         {
                             while (await reader.ReadLineAsync() is { } sizeLine
@@ -77,16 +87,24 @@ internal sealed class LoopbackHttpServer : IDisposable
                                                    System.Globalization.NumberStyles.HexNumber, null, out var size)
                                    && size > 0)
                             {
-                                await reader.ReadBlockAsync(new char[size], 0, size);
+                                var block = new char[size];
+                                await reader.ReadBlockAsync(block, 0, size);
+                                request.Append(block);
                                 await reader.ReadLineAsync(); // CRLF closing the chunk
                             }
                             await reader.ReadLineAsync();     // CRLF closing the (empty) trailer
                         }
                         else if (contentLength > 0)
-                            await reader.ReadBlockAsync(new char[contentLength], 0, contentLength);
-                        var payload = body(path);
+                        {
+                            var block = new char[contentLength];
+                            await reader.ReadBlockAsync(block, 0, contentLength);
+                            request.Append(block);
+                        }
+                        var requestBody = request.ToString();
+                        lock (_bodies) _bodies.Add(requestBody);
+                        var payload = body(path, requestBody);
                         var bytes = Encoding.UTF8.GetBytes(payload ?? "{}");
-                        var code   = payload is null ? 404 : status?.Invoke(path) ?? 200;
+                        var code   = payload is null ? 404 : status?.Invoke(path, requestBody) ?? 200;
                         var statusLine = code switch { 200 => "200 OK", 404 => "404 Not Found", 400 => "400 Bad Request", _ => $"{code} Status" };
                         // Explicit CRLF: the HTTP grammar requires it, Environment.NewLine is not CRLF
                         // everywhere, and this test also runs on a Linux runner.

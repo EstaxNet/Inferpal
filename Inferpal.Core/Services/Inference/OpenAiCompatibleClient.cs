@@ -53,6 +53,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             foreach (var kv in headers) req.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
     }
 
+    /// <summary>"server|model" pairs whose chat template cannot be rendered with tools: their tools go in the prompt.</summary>
+    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> PromptedToolModels = new();
+
     // ── Message mapping (internal ChatMessageDto → OpenAI wire shape) ───────────
     // OpenAI requires: each assistant tool_call carries an id + type; arguments are a JSON *string*;
     // each tool result carries the matching tool_call_id. The agent loop emits tool results in the
@@ -273,13 +276,16 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var window   = loadedCtx is > 0 ? loadedCtx.Value : _config.ContextWindowSize;
         var maxChars = OutputBound.MaxChars(window, size.Total);
 
+        // A model whose chat template the server cannot render with tools gets them in its system prompt (PromptedTools).
+        var promptedKey = base_ + "|" + model;
+        var prompted    = defs is not null && PromptedToolModels.ContainsKey(promptedKey);
         var request = new OpenAiChatRequest(
             model,
-            MapMessages(messages),
-            defs,
+            prompted ? PromptedTools.Rewrite(MapMessages(messages), defs!) : MapMessages(messages),
+            prompted ? null : defs,
             Stream: true,
             StreamOptions: new OpenAiStreamOptions(IncludeUsage: true),
-            ToolChoice: defs is not null ? toolChoice : null);
+            ToolChoice: defs is not null && !prompted ? toolChoice : null);
 
         var deadline = TimeSpan.FromSeconds(TimeoutFor(complexity));
 
@@ -296,6 +302,17 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         {
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
+        }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
+                                              && defs is not null && !prompted && PromptedTools.IsTemplateRefusal(ex.Message))
+        {
+            // The server cannot write this model's prompt with tools in it — its chat template fails on them. Asked
+            // again with the tools in the system prompt, for this request and every later one to this model.
+            PromptedToolModels.TryAdd(promptedKey, 0);
+            Diagnostics.Record("OpenAiCompatible.PromptedTools",
+                $"The chat template of \"{model}\" could not be rendered with tools by {base_}: its tools are described "
+                + "in the system prompt instead, for the rest of this session.");
+            return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
@@ -333,6 +350,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var  reasoningLoop = new TextLoopDetector();
         var  contentLoop   = new TextLoopDetector();
         var  looping       = false;
+        // A model whose addressed messages the server streams as content (Muse Glimmer): reasoning split from answer.
+        var  envelope      = new ChannelEnvelope();
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -421,8 +440,17 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
                 if (!string.IsNullOrEmpty(delta.Content))
                 {
-                    contentBuilder.Append(delta.Content);
-                    onToken?.Invoke(delta.Content);
+                    var (answerPart, thoughtPart) = envelope.Push(delta.Content);
+                    if (thoughtPart.Length > 0)
+                    {
+                        reasoningBuilder.Append(thoughtPart);
+                        onThinking?.Invoke(thoughtPart);
+                    }
+                    if (answerPart.Length > 0)
+                    {
+                        contentBuilder.Append(answerPart);
+                        onToken?.Invoke(answerPart);
+                    }
                     received += delta.Content.Length;
                     if (contentLoop.Repeats(delta.Content))
                     {
@@ -469,6 +497,19 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         {
             RecordFailure();
             throw new AgentHttpException(Strings.MsgUnreachable(base_) + "\n" + ex.Message, isTimeout: false);
+        }
+
+        // What the envelope held back — a marker the end of the stream cut in two — is released now.
+        var (lastAnswer, lastThought) = envelope.Flush();
+        if (lastThought.Length > 0)
+        {
+            reasoningBuilder.Append(lastThought);
+            onThinking?.Invoke(lastThought);
+        }
+        if (lastAnswer.Length > 0)
+        {
+            contentBuilder.Append(lastAnswer);
+            onToken?.Invoke(lastAnswer);
         }
 
         var toolCalls   = toolAcc.Build();

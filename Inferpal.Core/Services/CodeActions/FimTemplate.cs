@@ -19,35 +19,33 @@ internal static class FimTemplate
     // Generic stop for the prefix-only fallback: three blank lines (mirrors the Ollama FIM path).
     private static readonly string[] FallbackStop = ["\n\n\n"];
 
-    public static FimSpec Build(string? modelId, string prefix, string suffix)
-    {
-        var id = (modelId ?? string.Empty).ToLowerInvariant();
-
-        // DeepSeek-Coder — check before "coder"/generic matches.
-        if (id.Contains("deepseek"))
-            return new FimSpec(
+    /// <remarks>⚠ The family's tokens come from its profile (<see cref="Inference.ModelProfiles"/>), which gives them
+    /// only to the families trained to fill in the middle: every Qwen model has <c>&lt;|fim_prefix|&gt;</c> in its
+    /// vocabulary, and only the Coder models are trained on the task — a token in the vocabulary is not a task the
+    /// model knows.</remarks>
+    public static FimSpec Build(string? modelId, string prefix, string suffix) =>
+        Inference.ModelProfiles.For(modelId)?.Fim switch
+        {
+            Inference.FimForm.DeepSeekCoder => new FimSpec(
                 $"<｜fim▁begin｜>{prefix}<｜fim▁hole｜>{suffix}<｜fim▁end｜>",
-                ["<｜end▁of▁sentence｜>"], IsFim: true);
+                ["<｜end▁of▁sentence｜>"], IsFim: true),
 
-        // StarCoder / StarCoder2 — bare <fim_*> tokens (no pipes).
-        if (id.Contains("starcoder"))
-            return new FimSpec(
+            // StarCoder / StarCoder2 — bare <fim_*> tokens (no pipes).
+            Inference.FimForm.StarCoder => new FimSpec(
                 $"<fim_prefix>{prefix}<fim_suffix>{suffix}<fim_middle>",
-                ["<|endoftext|>", "<file_sep>"], IsFim: true);
+                ["<|endoftext|>", "<file_sep>"], IsFim: true),
 
-        // CodeLlama — <PRE>/<SUF>/<MID> with spaces.
-        if (id.Contains("codellama") || id.Contains("code-llama"))
-            return new FimSpec(
+            // CodeLlama — <PRE>/<SUF>/<MID> with spaces.
+            Inference.FimForm.CodeLlama => new FimSpec(
                 $"<PRE> {prefix} <SUF>{suffix} <MID>",
-                ["<EOT>", "</s>"], IsFim: true);
+                ["<EOT>", "</s>"], IsFim: true),
 
-        // Qwen coder family + CodeGemma — <|fim_*|> tokens.
-        if (id.Contains("qwen") || id.Contains("codegemma"))
-            return new FimSpec(
+            // Qwen coder family + CodeGemma — <|fim_*|> tokens.
+            Inference.FimForm.QwenCoder => new FimSpec(
                 $"<|fim_prefix|>{prefix}<|fim_suffix|>{suffix}<|fim_middle|>",
-                ["<|endoftext|>", "<|fim_pad|>", "<|file_sep|>"], IsFim: true);
+                ["<|endoftext|>", "<|fim_pad|>", "<|file_sep|>"], IsFim: true),
 
-        // Unknown family → prefix-only completion (suffix is dropped, but ghost text still works).
-        return new FimSpec(prefix, FallbackStop, IsFim: false);
-    }
+            // Unknown family, or one not trained for it → prefix-only completion (suffix is dropped, but ghost text still works).
+            _ => new FimSpec(prefix, FallbackStop, IsFim: false),
+        };
 }
