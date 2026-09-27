@@ -258,6 +258,16 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
             .ToList();
 
+    /// <summary>What a call to an invented name answers: the names that exist.</summary>
+    /// <remarks>
+    /// ⚠ An invented name is recoverable only if the answer says what to call instead. Bare, it is a dead end for a
+    /// small model reaching for a name from another assistant (<c>edit_file</c>): it re-reads the file, then says it
+    /// changed it — with no write. Only this registry's own list: the decorators (plan mode, background tasks)
+    /// answer the names they do not expose before a call reaches here.
+    /// </remarks>
+    private string UnknownTool(string name) =>
+        $"Unknown tool: {name}. The tools you can call are: {string.Join(", ", Definitions.Select(d => d.Function.Name))}.";
+
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
         if (!_tools.TryGetValue(name, out var tool))
@@ -270,7 +280,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // ⚠ "Unknown tool" means "you invented this name". A tool served by an MCP server that
             // went away mid-run was not invented: the model READ it in its own tool list, and the
             // reason it is gone sits one field away from here.
-            return _mcp.DescribeMissingTool(name) ?? $"Unknown tool: {name}";
+            return _mcp.DescribeMissingTool(name) ?? UnknownTool(name);
         }
 
         var sw = System.Diagnostics.Stopwatch.StartNew();

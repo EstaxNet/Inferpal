@@ -326,6 +326,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // What the response has streamed so far, every channel counted; past OutputBound the client stops reading.
         long received = 0;
         var  bounded  = false;
+        // A call written twice in the reasoning: the model has decided and is looping — stop at the repeat.
+        var  loop     = new RepeatedCallDetector();
+        var  repeated = false;
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -392,6 +395,16 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     reasoningBuilder.Append(reasoning);
                     onThinking?.Invoke(reasoning);
                     received += reasoning.Length;
+                    // Only while nothing else has come: a structured call or printable content is a model that
+                    // got out of its reasoning, and the recovery below would not read the reasoning anyway.
+                    if (toolAcc.IsEmpty && contentBuilder.Length == 0 && loop.Repeats(reasoningBuilder))
+                    {
+                        repeated = true;
+                        Diagnostics.Record("OpenAiCompatibleClient.SendChat",
+                            $"Response from \"{model}\" stopped by Inferpal after {received} characters of reasoning: it "
+                            + "had written the same tool call twice there. The first call is run.");
+                        break;
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(delta.Content))
@@ -469,9 +482,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (toolCalls is null && !contentPrintable && reasoningBuilder.Length > 0)
         {
             var (reasoningCalls, _) = InlineToolCallParser.TryParse(reasoningBuilder.ToString());
-            // Stopped by the bound, the reasoning is a model going round in circles: the first call it wrote is its
-            // intent, and every later one is the loop — or its decay (a path it no longer spells right).
-            if (bounded && reasoningCalls is { Count: > 1 })
+            // Stopped by the bound or at a repeat, the reasoning is a model going round in circles: the first call it
+            // wrote is its intent, and every later one is the loop — or its decay (a path it no longer spells right).
+            if ((bounded || repeated) && reasoningCalls is { Count: > 1 })
                 reasoningCalls = reasoningCalls.Take(1).ToList();
             if (reasoningCalls is { Count: > 0 })
                 return new ChatTurnResult(string.Empty, reasoningCalls, tokensUsed, promptTokens, cut);
@@ -561,6 +574,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         private readonly Dictionary<int, int>    _slotByIndex = new();
         private readonly Dictionary<int, string> _idBySlot    = new();
         private readonly Dictionary<int, int>    _indexBySlot = new();
+
+        /// <summary>No structured call has started streaming yet.</summary>
+        public bool IsEmpty => _slots.Count == 0;
 
         public void Add(int index, string? id, string? name, string? arguments)
         {

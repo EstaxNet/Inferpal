@@ -19,7 +19,9 @@ namespace Inferpal.Tests;
 //  cut, and keeps the first call the model wrote — the rest is the loop.
 //
 //  The stand-in server serves a long but FINITE loop: without the bound the client reads all of it,
-//  recovers hundreds of identical calls and calls the response complete — the discriminator.
+//  recovers hundreds of calls and calls the response complete — the discriminator. Its calls DIFFER
+//  from one another, as a decaying loop's do: an identical repeat is stopped earlier, at the repeat
+//  (RepeatedReasoningCallTests), and would hide the bound.
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 public class OutputBoundTests
 {
@@ -48,9 +50,12 @@ public class OutputBoundTests
     {
         var sb = new StringBuilder();
         for (var i = 0; i < Repeats; i++)
+        {
+            var call = $"<tool_call> {{\"name\": \"get_diagnostics\", \"arguments\": {{\"attempt\": {i}}}}} </tool_call> ";
             sb.Append("data: ")
-              .Append(JsonSerializer.Serialize(new { choices = new[] { new { index = 0, delta = new { reasoning_content = LoopedCall } } } }))
+              .Append(JsonSerializer.Serialize(new { choices = new[] { new { index = 0, delta = new { reasoning_content = call } } } }))
               .Append("\n\n");
+        }
         return sb.Append("data: [DONE]\n\n").ToString();
     }
 

@@ -157,6 +157,22 @@ public class VanishedMcpToolTests
     }
 
     [Fact]
+    public async Task AnInventedName_IsAnsweredWithTheNamesThatExist()
+    {
+        // A small model reaching for another assistant's tool name (`edit_file`) got a bare "Unknown tool" and could
+        // not recover: it re-read the file, then said it had changed it, with no write.
+        var (tools, mcp) = await BuildAsync(OneServer, _ => new DeadClient("github"));
+        await using var _ = mcp;
+
+        var said = await Call(tools, "edit_file");
+
+        Assert.StartsWith("Unknown tool: edit_file", said, StringComparison.Ordinal);
+        Assert.Contains("apply_diff", said, StringComparison.Ordinal);
+        Assert.Contains("write_file", said, StringComparison.Ordinal);
+        Assert.Contains("read_file", said, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AConnectedServerThatSimplyHasNoSuchTool_SaysThat()
     {
         var (tools, mcp) = await BuildAsync(OneServer, _ => new LiveClient("github"));
