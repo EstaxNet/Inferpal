@@ -57,14 +57,34 @@ internal static class ChatTurnPolicy
     /// limit can itself stop at the length limit, and the reader must learn both — the text is
     /// incomplete AND the task was not carried through.
     /// </remarks>
-    public static string EndNotice(bool reachedIterationLimit, bool loopDetected, bool answerCut)
+    public static string EndNotice(bool reachedIterationLimit, bool loopDetected, bool answerCut,
+                                   bool editsWithoutEffect = false)
     {
-        var notices = new List<string>(2);
+        var notices = new List<string>(3);
         if (reachedIterationLimit) notices.Add(Strings.AgentEndedAtIterationLimit);
         else if (loopDetected)     notices.Add(Strings.AgentEndedOnRepeat);
         if (answerCut)             notices.Add(Strings.AnswerCutAtLimit);
+        if (editsWithoutEffect)    notices.Add(Strings.AgentEditsNotApplied);
         return string.Join("\n\n", notices);
     }
+
+    /// <summary>The tools the model edits a file's content with.</summary>
+    private static readonly HashSet<string> FileEditTools = new(StringComparer.Ordinal)
+        { "write_file", "apply_diff", "apply_edits" };
+
+    /// <summary>
+    /// Whether the run tried to edit a file and changed none — read from what happened, never from the answer.
+    /// </summary>
+    /// <param name="filesChangedInRun"><see cref="Execution.FileHistoryService.CurrentRunFileCount"/>: every write
+    /// that lands is entered in the run, so 0 means none did; <c>null</c> (no run) says nothing.</param>
+    /// <remarks>
+    /// ⚠ A small model whose write was refused (not read first, declined at the prompt, old_content not found) goes on
+    /// to answer "the page has been updated" — the answer is the part the user reads, and it is false. Whether it
+    /// CLAIMS a change is a question about its wording in ten languages; whether a change LANDED is a fact of the run.
+    /// A background task (<c>/task</c>) does not ask: its edits are proposals by construction.
+    /// </remarks>
+    public static bool EditsWithoutEffect(IEnumerable<ToolExecution> executions, int? filesChangedInRun) =>
+        filesChangedInRun == 0 && executions.Any(e => FileEditTools.Contains(e.Name));
 
     /// <summary>
     /// Picks what the final render pass should show. <paramref name="finalResponse"/> is

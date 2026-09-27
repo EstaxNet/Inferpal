@@ -262,6 +262,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agent s'est arrêté à sa limite d'itérations : la réponse ci-dessus résume ce qu'il avait rassemblé, pas une tâche terminée.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agent répétait les mêmes appels d'outils et a été arrêté : la réponse ci-dessus résume ce qu'il avait rassemblé.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La réponse ci-dessus s'est arrêtée à la limite de longueur du modèle : elle est incomplète. Demandez-lui de continuer, ou augmentez la longueur de contexte.</value></data>
+  <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Aucun fichier n'a été modifié : les éditions tentées ci-dessus ont été refusées ou n'ont pas abouti — quoi qu'en dise la réponse.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ La réponse du modèle s'est arrêtée à sa limite de longueur : le message proposé est peut-être incomplet. Relisez-le avant de commiter.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Cette réponse s'est arrêtée à la limite de longueur du modèle — elle est incomplète.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Cette relecture s'est arrêtée à la limite de longueur du modèle : les constats au-delà manquent, donc l'absence d'un constat ne prouve rien. Augmentez la longueur de contexte, ou relisez moins de changements à la fois (indexez-en une partie).</value></data>
@@ -451,14 +452,14 @@ Sauvegarde : {0}</value></data>
 
 Créez `{0}` pour documenter les conventions de votre projet (style de code, décisions d'architecture, etc.). Il sera automatiquement injecté dans chaque system prompt.
 
-Utilisez `/clear` après création ou modification du fichier pour le recharger.</value></data>
+Il est relu avant chaque question : une modification s'applique dès la suivante, sans effacer la conversation.</value></data>
   <data name="SlashContextLoaded" xml:space="preserve"><value>**Contexte de projet** — `{0}` ({1} caractères)
 
 ```
 {2}
 ```
 
-Utilisez `/clear` après modification du fichier pour le recharger.</value></data>
+Il est relu avant chaque question : une modification s'applique dès la suivante, sans effacer la conversation.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>Dépôt git introuvable (dossier .git absent).</value></data>
@@ -576,7 +577,7 @@ Chemin attendu : `{0}`</value></data>
 {2}
 ```
 
-Modifiez le fichier ou demandez à l'agent d'utiliser `update_memory`. Utilisez `/clear` pour recharger.</value></data>
+Modifiez le fichier ou demandez à l'agent d'utiliser `update_memory`. Il est relu avant chaque question.</value></data>
 
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Premier lancement** — {0} disponible(s). Modèle **{1}** sélectionné automatiquement.
 

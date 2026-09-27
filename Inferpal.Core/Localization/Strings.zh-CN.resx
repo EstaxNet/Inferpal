@@ -262,6 +262,7 @@
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ 智能体在迭代上限处停止：上面的回答是它已收集内容的摘要，并非已完成的任务。</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ 智能体反复发出相同的工具调用而被停止：上面的回答是它已收集内容的摘要。</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上面的回答在模型的长度限制处中断，内容不完整。请让它继续，或增大上下文长度。</value></data>
+  <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ 没有任何文件被修改：上面尝试的编辑被拒绝或未能应用——无论回答怎么说。</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ 模型的回复在其长度限制处中断：建议的提交信息可能不完整。提交前请先阅读。</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ 此回答在模型的长度限制处中断——内容不完整。*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ 本次审查在模型的长度限制处中断：之后的问题缺失，因此没有发现问题并不能证明什么。请增大上下文长度，或一次审查更少的更改（只暂存其中一部分）。</value></data>
@@ -451,14 +452,14 @@
 
 请创建 `{0}` 来记录项目约定（代码风格、架构决策等）。它将自动注入每个系统提示中。
 
-创建或编辑文件后，使用 `/clear` 重新加载。</value></data>
+每次提问前都会重新读取该文件：修改从下一个问题起生效，无需清空对话。</value></data>
   <data name="SlashContextLoaded" xml:space="preserve"><value>**项目上下文** — `{0}`（{1} 字符）
 
 ```
 {2}
 ```
 
-编辑文件后，使用 `/clear` 重新加载。</value></data>
+每次提问前都会重新读取该文件：修改从下一个问题起生效，无需清空对话。</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>不是 git 仓库（未找到 .git 文件夹）。</value></data>
@@ -576,7 +577,7 @@
 {2}
 ```
 
-编辑文件或让代理使用 `update_memory`。使用 `/clear` 重新加载。</value></data>
+编辑文件或让代理使用 `update_memory`。每次提问前都会重新读取该文件。</value></data>
 
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **首次启动** — 共 {0} 个可用模型。已自动选择 **{1}** 作为默认模型。
 

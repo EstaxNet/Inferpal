@@ -55,6 +55,21 @@ public class OnboardCommandHandlerTests : IDisposable
         Assert.Null(result.Write);
     }
 
+    // The context line is its own paragraph whatever the profile branch: the two branches that
+    // print one sentence glued it on ("…a commented example.No `.inferpal/context.md` yet…").
+    [Fact]
+    public async Task TheContextLine_IsItsOwnParagraph_AfterEveryProfileBranch()
+    {
+        var path = Path.Combine(_root, ".inferpal", "project.json");
+        Assert.Contains(Strings.OnboardNoProfile(path) + "\n\n" + Strings.OnboardContextMissing,
+            (await Run(new InferpalConfig())).Message!);
+
+        WriteProfile("""{ "indexExclude": ["vendor" }""");
+        var unusable = (await Run(new InferpalConfig())).Message!;
+        Assert.Contains(Strings.OnboardProfileUnusable(path, string.Empty).TrimEnd(), unusable);   // WITNESS: that branch ran
+        Assert.Contains("\n\n" + Strings.OnboardContextMissing, unusable);
+    }
+
     [Fact]
     public async Task Report_ShowsAppliedRecommendedAndRefused()
     {

@@ -263,6 +263,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ The agent stopped at its iteration limit: the answer above summarises what it had gathered, not a finished task.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ The agent was repeating the same tool calls and was stopped: the answer above summarises what it had gathered.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ The answer above stopped at the model's length limit: it is incomplete. Ask it to continue, or increase the context length.</value></data>
+  <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ No file was changed: the edits attempted above were refused or did not apply — whatever the answer says.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ The model's reply stopped at its length limit: the proposed message may be incomplete. Read it before you commit.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ This answer stopped at the model's length limit — it is incomplete.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ This review stopped at the model's length limit: the findings past that point are missing, so the absence of a finding proves nothing. Increase the context length, or review fewer changes at once (stage part of them).</value></data>
@@ -452,14 +453,14 @@ Backup: {0}</value></data>
 
 Create `{0}` to document your project conventions (coding style, architecture decisions, etc.). It will be injected automatically into every system prompt.
 
-Use `/clear` after creating or editing the file to reload it.</value></data>
+It is read again before every question: an edit applies from the next one, without clearing the conversation.</value></data>
   <data name="SlashContextLoaded" xml:space="preserve"><value>**Project context** — `{0}` ({1} chars)
 
 ```
 {2}
 ```
 
-Use `/clear` after editing the file to reload it.</value></data>
+It is read again before every question: an edit applies from the next one, without clearing the conversation.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>Not a git repository (no .git folder found).</value></data>
@@ -577,7 +578,7 @@ Expected path: `{0}`</value></data>
 {2}
 ```
 
-Edit the file or ask the agent to use `update_memory`. Use `/clear` to reload.</value></data>
+Edit the file or ask the agent to use `update_memory`. It is read again before every question.</value></data>
 
   <!-- Agent Mode -->
   <data name="LabelAgentModeEnabled" xml:space="preserve"><value>Enable autonomous agent mode (Plan → Act → Observe)</value></data>

@@ -129,13 +129,14 @@ internal static class OnboardCommandHandler
 
         sb.Append(Strings.OnboardHeading).Append("\n\n");
 
+        // Every branch ends on a blank line: the context line below is a paragraph of its own.
         if (profile.Problem is { } problem)
         {
-            sb.Append(Strings.OnboardProfileUnusable(ProjectProfile.PathIn(root), problem));
+            sb.Append(Strings.OnboardProfileUnusable(ProjectProfile.PathIn(root), problem)).Append("\n\n");
         }
         else if (profile.IsEmpty)
         {
-            sb.Append(Strings.OnboardNoProfile(ProjectProfile.PathIn(root)));
+            sb.Append(Strings.OnboardNoProfile(ProjectProfile.PathIn(root))).Append("\n\n");
         }
         else
         {

@@ -286,6 +286,15 @@ internal class FileHistoryService
         return run.Id;
     }
 
+    /// <summary>
+    /// How many files the current run has changed — every write goes through <see cref="BackUpBeforeChangeAsync"/>,
+    /// which enters the file in the run; <c>null</c> when no run is active.
+    /// </summary>
+    internal int? CurrentRunFileCount
+    {
+        get { lock (_runLock) return _currentRun?.FileCount; }
+    }
+
     /// <summary>Records that the model has seen the content of <paramref name="filePath"/> in the current run.</summary>
     internal void NoteRead(string filePath)
     {

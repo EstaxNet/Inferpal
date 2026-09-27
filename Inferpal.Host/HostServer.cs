@@ -319,9 +319,10 @@ internal sealed partial class HostServer : IDisposable
                 // compaction decides on the durable history instead.
                 s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
                 // How the run ended, when not because the model had finished — iteration limit, repeat,
-                // or an answer cut at the length limit. One policy for both front-ends.
+                // an answer cut at the length limit, or edits that changed nothing. One policy for both front-ends.
                 var endNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(
-                    result.ReachedIterationLimit, result.WasLoopDetected, result.AnswerCut));
+                    result.ReachedIterationLimit, result.WasLoopDetected, result.AnswerCut,
+                    ChatTurnPolicy.EditsWithoutEffect(result.Executions, s.Tools.History.CurrentRunFileCount)));
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
@@ -365,7 +366,8 @@ internal sealed partial class HostServer : IDisposable
                 return new ChatSendResult(
                     FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, model, s),
                     false, run.TokensUsed, run.PromptTokens,
-                    EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut)),
+                    EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut,
+                        ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount))),
                     ContextWindow: ctxDecision.Window);
             }
 

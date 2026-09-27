@@ -262,6 +262,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Der Agent hat sein Iterationslimit erreicht: Die Antwort oben fasst zusammen, was er gesammelt hatte — keine abgeschlossene Aufgabe.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Der Agent wiederholte dieselben Werkzeugaufrufe und wurde gestoppt: Die Antwort oben fasst zusammen, was er gesammelt hatte.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Die Antwort oben endete an der Längengrenze des Modells: Sie ist unvollständig. Bitten Sie um Fortsetzung oder erhöhen Sie die Kontextlänge.</value></data>
+  <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Keine Datei wurde geändert: Die oben versuchten Bearbeitungen wurden abgelehnt oder nicht angewendet – unabhängig davon, was die Antwort sagt.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ Die Antwort des Modells endete an seiner Längengrenze: Die vorgeschlagene Nachricht ist möglicherweise unvollständig. Lesen Sie sie vor dem Commit.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Diese Antwort endete an der Längengrenze des Modells — sie ist unvollständig.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Diese Prüfung endete an der Längengrenze des Modells: Befunde danach fehlen, das Fehlen eines Befunds beweist also nichts. Erhöhen Sie die Kontextlänge oder prüfen Sie weniger Änderungen auf einmal (stagen Sie einen Teil davon).</value></data>
@@ -451,14 +452,14 @@ Sicherung: {0}</value></data>
 
 Erstellen Sie `{0}`, um Ihre Projektkonventionen zu dokumentieren (Codierungsstil, Architekturentscheidungen usw.). Sie wird automatisch in jeden System-Prompt eingefügt.
 
-Verwenden Sie `/clear` nach dem Erstellen oder Bearbeiten der Datei, um sie neu zu laden.</value></data>
+Sie wird vor jeder Frage neu gelesen: Eine Änderung gilt ab der nächsten, ohne die Unterhaltung zu löschen.</value></data>
   <data name="SlashContextLoaded" xml:space="preserve"><value>**Projektkontext** — `{0}` ({1} Zeichen)
 
 ```
 {2}
 ```
 
-Verwenden Sie `/clear` nach dem Bearbeiten der Datei, um sie neu zu laden.</value></data>
+Sie wird vor jeder Frage neu gelesen: Eine Änderung gilt ab der nächsten, ohne die Unterhaltung zu löschen.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>Kein Git-Repository (kein .git-Ordner gefunden).</value></data>
@@ -576,7 +577,7 @@ Erwarteter Pfad: `{0}`</value></data>
 {2}
 ```
 
-Bearbeiten Sie die Datei oder bitten Sie den Agenten, `update_memory` zu verwenden. Verwenden Sie `/clear` zum Neuladen.</value></data>
+Bearbeiten Sie die Datei oder bitten Sie den Agenten, `update_memory` zu verwenden. Sie wird vor jeder Frage neu gelesen.</value></data>
 
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Erster Start** — {0} verfügbar. **{1}** automatisch als Standardmodell ausgewählt.
 

@@ -262,6 +262,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Agent zatrzymał się na limicie iteracji: powyższa odpowiedź podsumowuje to, co zebrał, a nie ukończone zadanie.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Agent powtarzał te same wywołania narzędzi i został zatrzymany: powyższa odpowiedź podsumowuje to, co zebrał.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Powyższa odpowiedź zatrzymała się na limicie długości modelu: jest niepełna. Poproś o kontynuację albo zwiększ długość kontekstu.</value></data>
+  <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Żaden plik nie został zmieniony: powyższe próby edycji zostały odrzucone lub nie zostały zastosowane — niezależnie od tego, co mówi odpowiedź.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ Odpowiedź modelu zatrzymała się na limicie długości: proponowany komunikat może być niekompletny. Przeczytaj go przed commitem.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Ta odpowiedź zatrzymała się na limicie długości modelu — jest niekompletna.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Ten przegląd zatrzymał się na limicie długości modelu: brakuje uwag dalej, więc brak uwagi niczego nie dowodzi. Zwiększ długość kontekstu albo przeglądaj mniej zmian naraz (dodaj do indeksu tylko ich część).</value></data>
@@ -451,14 +452,14 @@ Kopia zapasowa: {0}</value></data>
 
 Utwórz `{0}`, aby udokumentować konwencje projektu (styl kodu, decyzje architektoniczne itp.). Będzie automatycznie wstrzykiwany do każdego monitu systemowego.
 
-Użyj `/clear` po utworzeniu lub edytowaniu pliku, aby go przeładować.</value></data>
+Plik jest wczytywany ponownie przed każdym pytaniem: zmiana obowiązuje od następnego, bez czyszczenia rozmowy.</value></data>
   <data name="SlashContextLoaded" xml:space="preserve"><value>**Kontekst projektu** — `{0}` ({1} znaków)
 
 ```
 {2}
 ```
 
-Użyj `/clear` po edytowaniu pliku, aby go przeładować.</value></data>
+Plik jest wczytywany ponownie przed każdym pytaniem: zmiana obowiązuje od następnego, bez czyszczenia rozmowy.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>To nie jest repozytorium git (nie znaleziono folderu .git).</value></data>
@@ -576,7 +577,7 @@ Oczekiwana ścieżka: `{0}`</value></data>
 {2}
 ```
 
-Edytuj plik lub poproś agenta o użycie `update_memory`. Użyj `/clear`, aby przeładować.</value></data>
+Edytuj plik lub poproś agenta o użycie `update_memory`. Plik jest wczytywany ponownie przed każdym pytaniem.</value></data>
 
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Pierwsze uruchomienie** — {0} dostępnych modeli. Automatycznie wybrano **{1}** jako domyślny model.
 

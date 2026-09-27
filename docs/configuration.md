@@ -22,8 +22,8 @@ The Settings window is organized into collapsible sections:
 Language is selected at the top, independently of Visual Studio's UI language.
 
 > [!TIP]
-> After editing the custom system prompt or `.inferpal/context.md`, run `/clear` to rebuild
-> the system prompt.
+> The system prompt is rebuilt before every question: an edit to the custom system prompt or to
+> `.inferpal/context.md` applies from the next one — no need to clear the conversation.
 
 ## Config key reference
 

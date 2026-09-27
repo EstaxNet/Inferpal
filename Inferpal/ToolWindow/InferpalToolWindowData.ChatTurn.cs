@@ -501,7 +501,8 @@ internal partial class InferpalToolWindowData
                 agentExecutions    = orchResult.Executions;
                 agentTokensUsed    = orchResult.TokensUsed;
                 agentEndNotice     = ChatTurnPolicy.EndNotice(
-                    orchResult.ReachedIterationLimit, orchResult.WasLoopDetected, orchResult.AnswerCut);
+                    orchResult.ReachedIterationLimit, orchResult.WasLoopDetected, orchResult.AnswerCut,
+                    ChatTurnPolicy.EditsWithoutEffect(orchResult.Executions, _tools.History.CurrentRunFileCount));
             }
             else
             {
@@ -523,7 +524,8 @@ internal partial class InferpalToolWindowData
 
                 agentFinalResponse = result.FinalResponse;
                 agentFailed        = result.Failed;
-                agentEndNotice     = ChatTurnPolicy.EndNotice(false, result.WasLoopDetected, result.AnswerCut);
+                agentEndNotice     = ChatTurnPolicy.EndNotice(false, result.WasLoopDetected, result.AnswerCut,
+                    ChatTurnPolicy.EditsWithoutEffect(result.Executions, _tools.History.CurrentRunFileCount));
                 agentExecutions    = result.Executions;
                 agentTokensUsed    = result.TokensUsed;
             }

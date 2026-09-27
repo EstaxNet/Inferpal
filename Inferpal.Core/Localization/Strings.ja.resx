@@ -262,6 +262,7 @@
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ エージェントは反復回数の上限で停止しました。上の回答はそれまでに集めた内容の要約であり、完了したタスクではありません。</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ エージェントが同じツール呼び出しを繰り返したため停止しました。上の回答はそれまでに集めた内容の要約です。</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上の回答はモデルの長さ制限で止まっており、不完全です。続きを依頼するか、コンテキスト長を増やしてください。</value></data>
+  <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ ファイルは変更されていません。上で試みた編集は拒否されたか、適用されませんでした（回答の内容にかかわらず）。</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ モデルの応答が長さ制限で止まりました。提案されたメッセージは不完全な可能性があります。コミットする前に確認してください。</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ この回答はモデルの長さ制限で止まりました。不完全です。*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ このレビューはモデルの長さ制限で止まりました。それ以降の指摘は欠けているため、指摘がないことは何も証明しません。コンテキスト長を増やすか、一度にレビューする変更を減らしてください（一部だけをステージします）。</value></data>
@@ -451,14 +452,14 @@
 
 `{0}` を作成してプロジェクトの規約（コーディングスタイル、アーキテクチャの決定など）を記述してください。各システムプロンプトに自動的に注入されます。
 
-ファイルの作成または編集後、`/clear` を使用して再読み込みしてください。</value></data>
+このファイルは質問のたびに読み直されます。編集は次の質問から反映され、会話を消去する必要はありません。</value></data>
   <data name="SlashContextLoaded" xml:space="preserve"><value>**プロジェクトコンテキスト** — `{0}`（{1} 文字）
 
 ```
 {2}
 ```
 
-ファイルの編集後、`/clear` を使用して再読み込みしてください。</value></data>
+このファイルは質問のたびに読み直されます。編集は次の質問から反映され、会話を消去する必要はありません。</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>git リポジトリではありません（.git フォルダが見つかりません）。</value></data>
@@ -576,7 +577,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
 {2}
 ```
 
-ファイルを編集するか、エージェントに `update_memory` を使うよう依頼してください。`/clear` で再読み込みできます。</value></data>
+ファイルを編集するか、エージェントに `update_memory` を使うよう依頼してください。質問のたびに読み直されます。</value></data>
 
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **初回起動** — {0} 個のモデルが利用可能です。**{1}** をデフォルトモデルとして自動選択しました。
 

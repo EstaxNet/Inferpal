@@ -262,6 +262,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agente si è fermato al limite di iterazioni: la risposta qui sopra riassume ciò che aveva raccolto, non un compito completato.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agente ripeteva le stesse chiamate agli strumenti ed è stato fermato: la risposta qui sopra riassume ciò che aveva raccolto.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La risposta qui sopra si è interrotta al limite di lunghezza del modello: è incompleta. Chiedigli di continuare oppure aumenta la lunghezza del contesto.</value></data>
+  <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Nessun file è stato modificato: le modifiche tentate qui sopra sono state rifiutate o non sono state applicate, qualunque cosa dica la risposta.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ La risposta del modello si è interrotta al suo limite di lunghezza: il messaggio proposto potrebbe essere incompleto. Rileggilo prima del commit.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Questa risposta si è interrotta al limite di lunghezza del modello: è incompleta.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Questa revisione si è interrotta al limite di lunghezza del modello: mancano i rilievi successivi, quindi l'assenza di un rilievo non prova nulla. Aumenta la lunghezza del contesto oppure rivedi meno modifiche alla volta (mettine in stage solo una parte).</value></data>
@@ -451,14 +452,14 @@ Backup: {0}</value></data>
 
 Crea `{0}` per documentare le convenzioni del progetto (stile del codice, decisioni architetturali, ecc.). Verrà iniettato automaticamente in ogni prompt di sistema.
 
-Usa `/clear` dopo aver creato o modificato il file per ricaricarlo.</value></data>
+Viene riletto prima di ogni domanda: una modifica si applica dalla successiva, senza cancellare la conversazione.</value></data>
   <data name="SlashContextLoaded" xml:space="preserve"><value>**Contesto progetto** — `{0}` ({1} caratteri)
 
 ```
 {2}
 ```
 
-Usa `/clear` dopo aver modificato il file per ricaricarlo.</value></data>
+Viene riletto prima di ogni domanda: una modifica si applica dalla successiva, senza cancellare la conversazione.</value></data>
 
   <!-- Git / Solution tool outputs -->
   <data name="GitNotRepo" xml:space="preserve"><value>Non è un repository git (nessuna cartella .git trovata).</value></data>
@@ -576,7 +577,7 @@ Percorso atteso: `{0}`</value></data>
 {2}
 ```
 
-Modifica il file o chiedi all'agente di usare `update_memory`. Usa `/clear` per ricaricare.</value></data>
+Modifica il file o chiedi all'agente di usare `update_memory`. Viene riletto prima di ogni domanda.</value></data>
 
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Primo avvio** — {0} disponibile/i. **{1}** selezionato automaticamente come modello predefinito.
 

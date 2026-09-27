@@ -18,7 +18,7 @@ editor with tools disabled).
 
 | Command | Description |
 |---|---|
-| `/clear` | Save and clear the conversation (reloads the system prompt) |
+| `/clear` | Save and clear the conversation |
 | `/model <name>` | Switch the active chat model |
 | `/tools on\|off` | Enable or disable tool calling |
 | `/export` | Export the conversation to `.md` or `.txt` |

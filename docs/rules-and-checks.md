@@ -27,8 +27,8 @@ alwaysApply: false
   character in a segment, `**/` any number of whole segments — including none, so `**/Program.cs`
   matches `Program.cs` and `src/Program.cs` but **not** `src/MyProgram.cs` — and a trailing `**`
   matches everything below. A pattern with no `/` is matched against the file name at any depth.
-- **Re-scoping**: when you switch the active file, the system prompt is rebuilt and rules are
-  re-evaluated automatically.
+- **Re-scoping**: the system prompt is rebuilt before every question, so rules are re-evaluated
+  against the file active at that moment, and an edited rule applies from the next question.
 
 Commands: `/rules` lists them; `/rules init` scaffolds an example (never overwrites).
 

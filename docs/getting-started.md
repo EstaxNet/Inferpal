@@ -128,7 +128,7 @@ Create `.inferpal/context.md` at the root of your solution. Anything you write t
 conventions, architecture decisions, team rules — is injected into every system prompt.
 
 - `/context` shows what is currently loaded.
-- `/clear` reloads the prompt after you edit the file.
+- An edit applies from your next question: the file is read again before every one.
 
 See **[Architecture → System prompt layering](architecture.md#system-prompt-layering)** for
 the full injection order.
