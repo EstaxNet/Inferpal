@@ -802,6 +802,7 @@ ollama serve
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Usage: `/models delete &lt;model-name&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` deleted.</value></data>
   <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ Failed to delete `{0}`.</value></data>
+  <data name="ModelsDeleteUnsupported" xml:space="preserve"><value>ℹ️ This backend cannot delete a model through its API — delete it from the server's own interface (in LM Studio, its model list).</value></data>
   <data name="ModelsNoneRunning" xml:space="preserve"><value>No models currently loaded in VRAM.</value></data>
   <data name="ModelsNoneInstalled" xml:space="preserve"><value>No models installed. Use `/models pull &lt;name&gt;` to download one.</value></data>
   <data name="ModelsPullUsage" xml:space="preserve"><value>Usage: `/models pull &lt;model-name&gt;`</value></data>

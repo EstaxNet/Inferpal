@@ -790,6 +790,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Użycie: `/models delete &lt;nazwa-modelu&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ Usunięto `{0}`.</value></data>
   <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ Nie udało się usunąć `{0}`.</value></data>
+  <data name="ModelsDeleteUnsupported" xml:space="preserve"><value>ℹ️ Ten backend nie pozwala usunąć modelu przez swoje API — usuń go w interfejsie samego serwera (w LM Studio na liście modeli).</value></data>
   <data name="ModelsNoneRunning" xml:space="preserve"><value>Obecnie w pamięci VRAM nie załadowano żadnych modeli.</value></data>
   <data name="ModelsNoneInstalled" xml:space="preserve"><value>Brak zainstalowanych modeli. Użyj `/models pull &lt;nazwa&gt;`, aby pobrać.</value></data>
   <data name="ModelsPullUsage" xml:space="preserve"><value>Użycie: `/models pull &lt;nazwa-modelu&gt;`</value></data>

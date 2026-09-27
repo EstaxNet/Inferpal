@@ -112,7 +112,11 @@ internal sealed class ShellSession
             output += $"\n[stderr]\n{stderrText.Trim()}";
         // The wrapper's own shell always exits 0 (a finally, a trailing printf): the command's code
         // travels in the state block, and a silent failure (`git diff --quiet`) must not read as success.
-        if (state.ExitCode is { } rc and not 0)
+        // ⚠ Except when the command calls `exit` (`test -f x || exit 1`, `exec ./server`): that ends
+        // the wrapper before its state block (POSIX) or without $LASTEXITCODE seeing it (PowerShell),
+        // and the shell's own exit code is then the only place the command's code is left.
+        var rc = state.ExitCode is { } reported and not 0 ? reported : process.ExitCode;
+        if (rc != 0)
             output += ShellStateProtocol.ExitNote(dialect, command, rc);
         if (!drained)
             output += ChildProcess.OutputHeldOpenNote;

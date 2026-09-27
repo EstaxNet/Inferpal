@@ -1034,6 +1034,7 @@ internal static class Strings
     public static string ModelsDeleteUsage                   => Get(nameof(ModelsDeleteUsage));
     public static string ModelsDeleted(string model)         => string.Format(Get(nameof(ModelsDeleted)), model);
     public static string ModelsDeleteFailed(string model)    => string.Format(Get(nameof(ModelsDeleteFailed)), model);
+    public static string ModelsDeleteUnsupported => Get(nameof(ModelsDeleteUnsupported));
     public static string ModelsNoneRunning                   => Get(nameof(ModelsNoneRunning));
     public static string ModelsNoneInstalled                 => Get(nameof(ModelsNoneInstalled));
     public static string ModelsPullUsage                     => Get(nameof(ModelsPullUsage));

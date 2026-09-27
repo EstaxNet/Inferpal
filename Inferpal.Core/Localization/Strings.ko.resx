@@ -790,6 +790,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>사용법: `/models delete &lt;모델-이름&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}`을(를) 삭제했습니다.</value></data>
   <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ `{0}` 삭제에 실패했습니다.</value></data>
+  <data name="ModelsDeleteUnsupported" xml:space="preserve"><value>ℹ️ 이 백엔드는 API로 모델을 삭제할 수 없습니다 — 서버 자체 화면에서 삭제하세요(LM Studio는 모델 목록에서).</value></data>
   <data name="ModelsNoneRunning" xml:space="preserve"><value>현재 VRAM에 로드된 모델이 없습니다.</value></data>
   <data name="ModelsNoneInstalled" xml:space="preserve"><value>설치된 모델이 없습니다. `/models pull &lt;이름&gt;`으로 다운로드하세요.</value></data>
   <data name="ModelsPullUsage" xml:space="preserve"><value>사용법: `/models pull &lt;모델-이름&gt;`</value></data>

@@ -788,6 +788,7 @@ ollama serve
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>Использование: `/models delete &lt;имя-модели&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` удалена.</value></data>
   <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ Не удалось удалить `{0}`.</value></data>
+  <data name="ModelsDeleteUnsupported" xml:space="preserve"><value>ℹ️ Этот бэкенд не позволяет удалить модель через свой API — удалите её в интерфейсе самого сервера (в LM Studio — в списке моделей).</value></data>
   <data name="ModelsNoneRunning" xml:space="preserve"><value>Сейчас в VRAM не загружено ни одной модели.</value></data>
   <data name="ModelsNoneInstalled" xml:space="preserve"><value>Модели не установлены. Используйте `/models pull &lt;имя&gt;`, чтобы загрузить.</value></data>
   <data name="ModelsPullUsage" xml:space="preserve"><value>Использование: `/models pull &lt;имя-модели&gt;`</value></data>

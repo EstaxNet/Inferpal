@@ -22,8 +22,10 @@ capability is missing.
 | Chat + tool calling | ✅ | ✅ | ✅ |
 | Embeddings (semantic search) | ✅ | ✅ | ✅ |
 | Inline completions (FIM) | ✅ | ✅ | ❌ |
-| Model management (`/models` list/pull/delete) | ✅ | ✅ | ❌ |
-| Live VRAM monitoring (`/api/ps`) | ✅ | ✅ | ❌ |
+| Model management (`/models` list/pull) | ✅ | ✅ | ❌ |
+| `/models delete` | ✅ | ❌ (delete it in LM Studio) | ❌ |
+| Loaded models (`/models running`, `/hardware`) | ✅ | ✅ | ❌ |
+| Per-model VRAM figure (`/api/ps`) | ✅ | ❌ | ❌ |
 | `keep_alive` (auto-unload) | ✅ | ❌ | ❌ |
 
 > [!NOTE]

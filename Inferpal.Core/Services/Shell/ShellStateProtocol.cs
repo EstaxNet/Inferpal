@@ -145,7 +145,8 @@ internal static class ShellStateProtocol
     // the decoded command mirrors Invoke-Expression: cd/export run in the current shell, so they
     // persist into the state emit. There is no try/finally in sh — statements simply run in
     // sequence, and a command that calls `exit` skips the emit, which ParseForeground already
-    // treats as "no state captured" (the exact PowerShell caveat).
+    // treats as "no state captured" (the exact PowerShell caveat) — its exit code is then the
+    // shell's own, which ShellSession reads.
 
     private static string BuildForegroundScriptPosix(string cwd, IReadOnlyDictionary<string, string> env, string command, string marker)
     {

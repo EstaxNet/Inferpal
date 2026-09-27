@@ -66,6 +66,11 @@ internal class FetchUrlTool : ITool
         maxChars     = Math.Clamp(maxChars, 500, MaxWindow);
         var start    = Math.Max(0, args.Int("start_char", 0));
 
+        // What the text alone refuses is refused before the question: asking the user to allow a
+        // fetch that cannot happen is a prompt with no decision in it.
+        if (Refusal(url) is { } refused)
+            return refused;
+
         // Outbound network = exfiltration channel. Gate it like the other side-effecting tools so a
         // prompt-injected model can't silently ship workspace data off-machine (session "always allow").
         if (!await _approval.RequestApprovalAsync("fetch_url", url, ct))
@@ -121,13 +126,21 @@ internal class FetchUrlTool : ITool
             // so a TTL≈0 attacker can answer public here and private there (classic rebinding).
             // Pinning the validated IP via ConnectCallback would close it; today the approval
             // prompt upstream is the real boundary.
-            if (IsPrivateOrLoopback(current) || await ResolvesToPrivateAsync(current, ct))
+            var check = IsPrivateOrLoopback(current) ? HostCheck.Private : await CheckHostAsync(current, ct);
+            if (check == HostCheck.Private)
                 throw new ArgumentException(
                     hop == 0
-                        ? "Access denied: fetching private/loopback addresses is not allowed. " +
-                          "Only public internet URLs are permitted."
+                        ? PrivateRefusal
                         : $"Access denied: the page redirected to a private/loopback address ({current}), " +
                           "which is not allowed.");
+            // ⚠ Still refused — an unresolved name was not validated — but named for what it is: said
+            // "private", a mistyped host or a machine without network read as a site that is blocked.
+            // Not an ArgumentException: the name may be right, and the network the missing part.
+            if (check == HostCheck.Unresolved)
+                throw new HttpRequestException(
+                    (hop == 0 ? "" : $"The page redirected to {current}, and ")
+                    + $"the host '{HostOf(current)}' could not be resolved — the name does not exist, or this "
+                    + "machine has no DNS or network access. Nothing was fetched.");
 
             using var response = await _http.GetAsync(current, ct);
 
@@ -144,6 +157,30 @@ internal class FetchUrlTool : ITool
             response.EnsureSuccessStatusCode();
             return await WebPage.ReadAsync(response.Content, ct);
         }
+    }
+
+    private const string PrivateRefusal =
+        "Access denied: fetching private/loopback addresses is not allowed. Only public internet URLs are permitted.";
+
+    /// <summary>
+    /// Why <paramref name="url"/> is refused from its text alone, or <c>null</c>. One sentence per
+    /// cause: <see cref="IsPrivateOrLoopback"/> answers <c>true</c> for all three — rightly, it fails
+    /// closed — and a model told "private" about <c>docs.python.org/…</c> without its scheme concludes
+    /// the site is blocked instead of adding <c>https://</c>.
+    /// </summary>
+    internal static string? Refusal(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.IsUnc)
+        {
+            // A bare host with a path is the common slip; anything else gets no guessed fix.
+            var looksLikeHost = Regex.IsMatch(url, @"^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(:\d+)?(/\S*)?$",
+                RegexOptions.CultureInvariant, RegexTimeout);
+            return $"Error: 'url' must be a full address starting with http:// or https:// — got '{url}'."
+                 + (looksLikeHost ? $" Did you mean https://{url}?" : "");
+        }
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            return $"Error: fetch_url reads http:// and https:// pages only — got a {uri.Scheme}:// address.";
+        return IsPrivateOrLoopback(url) ? PrivateRefusal : null;
     }
 
     /// <summary>
@@ -212,23 +249,34 @@ internal class FetchUrlTool : ITool
     /// private/loopback. Closes the DNS-rebinding gap that <see cref="IsPrivateOrLoopback"/>
     /// (IP-literal only) leaves open. IP literals are already covered, so they are skipped here.
     /// </summary>
-    internal static async Task<bool> ResolvesToPrivateAsync(string url, CancellationToken ct)
+    internal static async Task<bool> ResolvesToPrivateAsync(string url, CancellationToken ct) =>
+        // DNS failure / malformed URI: block rather than risk an unvalidated request.
+        await CheckHostAsync(url, ct) != HostCheck.Public;
+
+    /// <summary>What the DNS check found — kept apart so a refusal names its cause.</summary>
+    internal enum HostCheck { Public, Private, Unresolved }
+
+    internal static async Task<HostCheck> CheckHostAsync(string url, CancellationToken ct)
     {
         try
         {
             var host = new Uri(url).Host;
-            if (IPAddress.TryParse(host, out _)) return false; // literal — already validated
+            if (IPAddress.TryParse(host, out _)) return HostCheck.Public; // literal — already validated
 
             var addresses = await Dns.GetHostAddressesAsync(host, ct);
-            return addresses.Length == 0 || addresses.Any(IsPrivateIp);
+            return addresses.Length == 0 ? HostCheck.Unresolved
+                 : addresses.Any(IsPrivateIp) ? HostCheck.Private
+                 : HostCheck.Public;
         }
         catch (OperationCanceledException) { throw; }
         catch
         {
-            // DNS failure / malformed URI: block rather than risk an unvalidated request.
-            return true;
+            return HostCheck.Unresolved;
         }
     }
+
+    private static string HostOf(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host : url;
 
     // fetch_url runs these regexes over attacker-controlled HTML. A bounded match timeout
     // turns a pathological backtracking input (ReDoS) into a caught exception instead of a hang.

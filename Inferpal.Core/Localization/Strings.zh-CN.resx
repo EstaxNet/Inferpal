@@ -790,6 +790,7 @@ ollama serve
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>用法：`/models delete &lt;模型名&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ 已删除 `{0}`。</value></data>
   <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ 删除 `{0}` 失败。</value></data>
+  <data name="ModelsDeleteUnsupported" xml:space="preserve"><value>ℹ️ 此后端无法通过其 API 删除模型 — 请在服务器自身的界面中删除（LM Studio 中为其模型列表）。</value></data>
   <data name="ModelsNoneRunning" xml:space="preserve"><value>当前 VRAM 中未加载任何模型。</value></data>
   <data name="ModelsNoneInstalled" xml:space="preserve"><value>未安装任何模型。使用 `/models pull &lt;名称&gt;` 下载一个。</value></data>
   <data name="ModelsPullUsage" xml:space="preserve"><value>用法：`/models pull &lt;模型名&gt;`</value></data>

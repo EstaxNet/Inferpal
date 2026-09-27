@@ -31,6 +31,8 @@ internal static class ModelsCommandHandler
         if ((sub == "delete"  && !client.Capabilities.ModelManagement) ||
             (sub == "running" && !client.Capabilities.VramMonitoring))
             return new(Strings.ModelsBackendUnsupported);
+        if (sub == "delete" && !client.Capabilities.ModelDeletion)
+            return new(Strings.ModelsDeleteUnsupported);
 
         if (sub == "delete")
         {

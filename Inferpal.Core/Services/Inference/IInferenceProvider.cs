@@ -111,6 +111,14 @@ internal record ProviderCapabilities(
     bool Fim,
     bool KeepAlive)
 {
+    /// <summary>
+    /// A model can be deleted through the API. ⚠ Not implied by <see cref="ModelManagement"/>: LM
+    /// Studio downloads, loads and unloads through its native API but has no delete, so
+    /// <c>/models delete</c> answered "failed to delete" for every model — a gesture that could not
+    /// succeed, with no cause.
+    /// </summary>
+    public bool ModelDeletion { get; init; } = ModelManagement;
+
     /// <summary>Full Ollama feature set.</summary>
     public static readonly ProviderCapabilities Ollama = new(true, true, true, true);
 
@@ -120,7 +128,7 @@ internal record ProviderCapabilities(
     /// the OpenAI <c>/v1/chat/completions</c> wire, which has no such field (context and idle-unload
     /// are configured at model load), so the keep_alive-driven auto-unload setting is hidden for it.
     /// </summary>
-    public static readonly ProviderCapabilities LmStudio = new(true, true, true, false);
+    public static readonly ProviderCapabilities LmStudio = new(true, true, true, false) { ModelDeletion = false };
 
     /// <summary>Generic OpenAI-compatible server (llama.cpp, vLLM, Jan…): chat + embeddings only in v1.</summary>
     public static readonly ProviderCapabilities OpenAiCompatible = new(false, false, false, false);

@@ -98,6 +98,33 @@ public class UnreportedVramTests
         }
     }
 
+    // ── The same backend, the same kind of gap: /models delete ─────────────────────────────────
+    // LM Studio's API downloads, loads and unloads, and has no delete: every `/models delete`
+    // answered "failed to delete", for a model that exists as much as for one that does not.
+
+    [Fact]
+    public async Task ModelsDelete_OnLmStudio_SaysTheApiCannotDelete_AndSendsNothing()
+    {
+        var (server, client, config) = LmStudio();
+        using (server)
+        {
+            var message = (await ModelsCommandHandler.HandleAsync(
+                client, config, ["/models", "delete", "qwen/qwen3.6-27b"], CancellationToken.None)).Message;
+
+            Assert.Equal(Strings.ModelsDeleteUnsupported, message);
+            Assert.Empty(server.Paths);
+        }
+    }
+
+    [Fact]
+    public async Task ModelsDelete_OnOllama_StillDeletes()
+    {
+        // Reference arm: the backend that has a delete keeps it.
+        var fake = new FakeInferenceProvider { Capabilities = ProviderCapabilities.Ollama };
+        await ModelsCommandHandler.HandleAsync(fake, new InferpalConfig(), ["/models", "delete", "llama3.1"], CancellationToken.None);
+        Assert.Equal(["llama3.1"], fake.Deleted);
+    }
+
     [Fact]
     public void AReportedZero_StillReadsAsCpu_AndAReportedFigureAsGpu()
     {

@@ -790,6 +790,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="ModelsDeleteUsage" xml:space="preserve"><value>使い方: `/models delete &lt;モデル名&gt;`</value></data>
   <data name="ModelsDeleted" xml:space="preserve"><value>✅ `{0}` を削除しました。</value></data>
   <data name="ModelsDeleteFailed" xml:space="preserve"><value>❌ `{0}` の削除に失敗しました。</value></data>
+  <data name="ModelsDeleteUnsupported" xml:space="preserve"><value>ℹ️ このバックエンドは API でモデルを削除できません — サーバー自身の画面から削除してください（LM Studio ではモデル一覧から）。</value></data>
   <data name="ModelsNoneRunning" xml:space="preserve"><value>現在 VRAM に読み込まれているモデルはありません。</value></data>
   <data name="ModelsNoneInstalled" xml:space="preserve"><value>インストール済みのモデルはありません。`/models pull &lt;名前&gt;` でダウンロードできます。</value></data>
   <data name="ModelsPullUsage" xml:space="preserve"><value>使い方: `/models pull &lt;モデル名&gt;`</value></data>
