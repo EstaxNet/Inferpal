@@ -3,6 +3,27 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.23
+
+Eleven fixes. Most of them change what happens with small local models, which could get stuck,
+rewrite a file they had never read, or say they had changed a file when nothing had changed.
+
+- **A reasoning model could leave you watching "Thinking…" for as long as you waited.** A model
+  repeating the same tool call inside its reasoning is now stopped at the repeat, and that call runs.
+- **The assistant could rewrite a whole file it had never read**, dropping the lines it did not
+  know about. It now has to read an existing file before replacing it.
+- **The assistant could say it had changed a file when nothing had changed.** A line after the
+  answer now says so.
+- **A tool name the assistant invented got no help**; the answer now lists the tools that exist.
+- **The breakpoints `/debug` set stayed in your project, and it could remove yours.**
+- **`/test` on a Python or Rust file could write tests that never run.**
+- **With LM Studio, `/hardware` said your model was running on the CPU**, and `/models delete`
+  could never succeed.
+- **A command that ended with `exit`, or a custom tool that failed, came back as a success.**
+- **Fetching a web page could blame a "private address" that wasn't one.**
+- **`/context` and `/memory` told you to clear the conversation to apply an edit** — an edit
+  applies from your next question.
+
 ## 1.6.22
 
 Forty-six fixes. The largest group is about running tests: on Windows, a Node.js project's tests
