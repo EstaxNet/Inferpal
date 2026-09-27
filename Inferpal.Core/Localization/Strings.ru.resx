@@ -902,6 +902,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · запас {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Вычисление:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Сейчас загружено:** нет</value></data>
+  <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Сейчас загружено:** моделей: {0} — этот бэкенд не сообщает, сколько VRAM они занимают (нет итога, запаса и данных GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Загруженные модели
 
 | Модель | VRAM |

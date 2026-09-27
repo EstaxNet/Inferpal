@@ -219,7 +219,8 @@ internal static class ModelCatalog
     /// <summary>
     /// Compact one-line VRAM badge for the window header: <c>name · X.X GB │ name2 · Y.Y GB</c>.
     /// The tag suffix is dropped (<c>llama3.1:8b</c> → <c>llama3.1</c>); a model loaded on CPU
-    /// (<see cref="RunningModelInfo.SizeVram"/> == 0) shows just its name; an empty list → "".
+    /// (<see cref="RunningModelInfo.SizeVram"/> == 0) or whose backend does not report it shows just
+    /// its name; an empty list → "".
     /// </summary>
     public static string FormatVramBadge(IReadOnlyList<RunningModelInfo> running) =>
         string.Join(" │ ", running.Select(m =>
@@ -238,7 +239,7 @@ internal static class ModelCatalog
     {
         var sb = new StringBuilder($"{Strings.ModelsRunningHeader}\n\n| {Strings.ModelsTableModel} | {Strings.ModelsTableVram} |\n|---|---|\n");
         foreach (var m in running)
-            sb.AppendLine($"| `{m.Name}` | {m.SizeVram / 1024 / 1024:N0} MB |");
+            sb.AppendLine(m.ReportsVram ? $"| `{m.Name}` | {m.SizeVram / 1024 / 1024:N0} MB |" : $"| `{m.Name}` | — |");
         return sb.ToString().TrimEnd();
     }
 
@@ -249,11 +250,14 @@ internal static class ModelCatalog
     public static string FormatInstalledModels(
         IReadOnlyList<string> models, IReadOnlyList<RunningModelInfo> running)
     {
-        var vramMap = running.ToDictionary(m => m.Name, m => m.SizeVram / 1024 / 1024);
+        var loaded = running.ToDictionary(m => m.Name);
         var sb = new StringBuilder($"{Strings.ModelsInstalledHeader}\n\n| {Strings.ModelsTableModel} | {Strings.ModelsTableVram} |\n|---|---|\n");
         foreach (var m in models)
         {
-            var vram = vramMap.TryGetValue(m, out var v) ? $"{v:N0} MB 🟢" : "—";
+            // A loaded model whose backend does not report its VRAM keeps its 🟢, without a "0 MB".
+            var vram = !loaded.TryGetValue(m, out var r) ? "—"
+                     : r.ReportsVram                    ? $"{r.SizeVram / 1024 / 1024:N0} MB 🟢"
+                     : "🟢";
             sb.AppendLine($"| `{m}` | {vram} |");
         }
         sb.AppendLine($"\n`/models pull <name>` · `/models delete <name>` · `/models running`");

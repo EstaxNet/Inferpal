@@ -902,6 +902,7 @@ Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, d
   <data name="HardwareHeadroom" xml:space="preserve"><value> · Reserve {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Berechnung:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Aktuell geladen:** keine</value></data>
+  <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Aktuell geladen:** {0} Modell(e) — dieses Backend meldet nicht, wie viel VRAM sie belegen (keine Summe, kein Spielraum, keine GPU/CPU-Angabe)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Geladene Modelle
 
 | Modell | VRAM |

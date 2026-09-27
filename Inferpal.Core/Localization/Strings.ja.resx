@@ -902,6 +902,7 @@ JSONを出力したら停止してください — まだツールを呼び出�
   <data name="HardwareHeadroom" xml:space="preserve"><value> · 余裕 {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**計算:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**現在ロード中:** なし</value></data>
+  <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**現在ロード中:** {0} 個のモデル — このバックエンドは使用中の VRAM を報告しません（合計・空き容量・GPU/CPU は表示できません）</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### ロード済みモデル
 
 | モデル | VRAM |

@@ -19,8 +19,9 @@ namespace Inferpal.Services.Inference;
 /// <c>"size_bytes"</c>) and the legacy <c>/api/v0/models</c> (list under <c>"data"</c>, id is <c>"id"</c>,
 /// <c>"state"</c>). <see cref="GetNativeModelsAsync"/> tries v1 first and falls back to v0, normalizing both.
 /// The one figure neither exposes is the live per-model VRAM byte count (size_bytes is the on-disk weight,
-/// not resident VRAM), so running-model entries carry <c>SizeVram = 0</c> and the header badge shows the
-/// name without a GB figure. The manual VRAM budget (<c>/hardware &lt;gb&gt;</c>) and local auto-seed are unaffected.
+/// not resident VRAM), so running-model entries carry <see cref="RunningModelInfo.VramNotReported"/> and
+/// every reader prints no figure: the header badge shows the name, <c>/hardware</c> and <c>/models</c> say
+/// the backend does not report it (a 0 there would read as "runs on the CPU"). The manual VRAM budget (<c>/hardware &lt;gb&gt;</c>) and local auto-seed are unaffected.
 /// </remarks>
 internal sealed class LmStudioClient : OpenAiCompatibleClient
 {
@@ -182,10 +183,10 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         try
         {
             var models = await GetNativeModelsAsync(ct);
-            // Resident VRAM bytes aren't exposed (size_bytes is the on-disk weight) → 0; no expiry timestamp.
+            // Resident VRAM bytes aren't exposed (size_bytes is the on-disk weight); no expiry timestamp.
             return models
                 .Where(m => m.Loaded)
-                .Select(m => new RunningModelInfo(m.Id, 0, string.Empty))
+                .Select(m => new RunningModelInfo(m.Id, RunningModelInfo.VramNotReported, string.Empty))
                 .ToList();
         }
         catch { return []; }

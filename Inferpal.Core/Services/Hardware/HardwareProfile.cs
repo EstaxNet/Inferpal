@@ -30,16 +30,21 @@ internal sealed class HardwareProfile
         CtxAdvice = ctxAdvice;
     }
 
-    /// <summary>Total VRAM currently held by loaded models, in bytes.</summary>
-    public long LoadedVramBytes => Running.Sum(m => m.SizeVram);
+    /// <summary>False when the backend lists a loaded model without saying what it occupies (LM
+    /// Studio): the total, the headroom and the compute line are then unknown, not zero.</summary>
+    public bool VramReported => Running.All(m => m.ReportsVram);
+
+    /// <summary>Total VRAM currently held by loaded models, in bytes (reported figures only).</summary>
+    public long LoadedVramBytes => Running.Where(m => m.ReportsVram).Sum(m => m.SizeVram);
 
     /// <summary>Loaded VRAM in GB.</summary>
     public double LoadedGb => LoadedVramBytes / ModelCatalog.BytesPerGb;
 
-    /// <summary>Remaining VRAM (GB) under a known budget, else <c>null</c>.</summary>
-    public double? HeadroomGb => BudgetGb > 0 ? BudgetGb - LoadedGb : null;
+    /// <summary>Remaining VRAM (GB) under a known budget and a reported load, else <c>null</c>.</summary>
+    public double? HeadroomGb => BudgetGb > 0 && VramReported ? BudgetGb - LoadedGb : null;
 
-    /// <summary>True when at least one loaded model occupies VRAM (GPU offload), else false/unknown.</summary>
+    /// <summary>True when at least one loaded model occupies VRAM (GPU offload); meaningful only
+    /// when <see cref="VramReported"/>.</summary>
     public bool IsGpu => Running.Any(m => m.SizeVram > 0);
 
     // ── Budget auto-seed ────────────────────────────────────────────────────────
@@ -70,7 +75,14 @@ internal sealed class HardwareProfile
             ? Strings.HardwareBudgetLine($"{BudgetGb:0.#}")
             : Strings.HardwareBudgetNotSet);
 
-        if (Running.Count > 0)
+        // ⚠ An unreported load is not an empty one: "0 GB · Compute: CPU" sends a user whose model
+        // runs on the GPU to look for a GPU problem, and a headroom equal to the whole budget is a
+        // figure nobody measured.
+        if (Running.Count > 0 && !VramReported)
+        {
+            sb.AppendLine(Strings.HardwareLoadedUnreported(Running.Count));
+        }
+        else if (Running.Count > 0)
         {
             var headroom = HeadroomGb is { } h ? Strings.HardwareHeadroom($"{h:0.#}") : "";
             var ofBudget = BudgetGb > 0 ? Strings.HardwareOfBudget($"{BudgetGb:0.#}") : "";
@@ -86,7 +98,9 @@ internal sealed class HardwareProfile
         {
             sb.AppendLine("\n" + Strings.HardwareLoadedModelsTable);
             foreach (var m in Running)
-                sb.AppendLine($"| `{m.Name}` | {m.SizeVram / ModelCatalog.BytesPerGb:0.#} GB |");
+                sb.AppendLine(m.ReportsVram
+                    ? $"| `{m.Name}` | {m.SizeVram / ModelCatalog.BytesPerGb:0.#} GB |"
+                    : $"| `{m.Name}` | — |");
         }
 
         if (Installed.Count > 0)

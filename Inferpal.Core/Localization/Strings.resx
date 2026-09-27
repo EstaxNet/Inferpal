@@ -914,6 +914,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · headroom {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Compute:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Currently loaded:** none</value></data>
+  <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Currently loaded:** {0} model(s) — this backend does not report the VRAM they occupy (no total, headroom or GPU/CPU figure)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Loaded models
 
 | Model | VRAM |

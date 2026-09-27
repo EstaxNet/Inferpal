@@ -160,10 +160,22 @@ record GenerateResponse(
 /// <summary>One entry from <c>GET /api/ps</c> — a currently loaded model.</summary>
 record RunningModelInfo(
     [property: JsonPropertyName("name")]       string Name,
-    /// <summary>VRAM used by this model in bytes (0 if running on CPU).</summary>
+    /// <summary>VRAM used by this model in bytes (0 if running on CPU), or
+    /// <see cref="RunningModelInfo.VramNotReported"/> when the backend does not say.</summary>
     [property: JsonPropertyName("size_vram")]  long   SizeVram,
     /// <summary>ISO-8601 UTC timestamp when Ollama will unload this model.</summary>
-    [property: JsonPropertyName("expires_at")] string ExpiresAt);
+    [property: JsonPropertyName("expires_at")] string ExpiresAt)
+{
+    /// <summary>
+    /// <see cref="SizeVram"/> of a model whose backend lists it as loaded without saying what it
+    /// occupies (LM Studio). ⚠ Never 0: Ollama's 0 is a measurement — the model runs on the CPU —
+    /// and every reader would repeat it as one ("0 GB loaded", "Compute: CPU", "0 MB").
+    /// </summary>
+    public const long VramNotReported = -1;
+
+    /// <summary>False when <see cref="SizeVram"/> is <see cref="VramNotReported"/>: print no figure.</summary>
+    [JsonIgnore] public bool ReportsVram => SizeVram >= 0;
+}
 
 /// <summary>Response from <c>GET /api/ps</c>.</summary>
 record RunningModelsResponse(

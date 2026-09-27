@@ -1244,6 +1244,7 @@ internal static class Strings
     public static string HardwareHeadroom(string gb)         => string.Format(Get(nameof(HardwareHeadroom)), gb);
     public static string HardwareCompute(string kind)        => string.Format(Get(nameof(HardwareCompute)), kind);
     public static string HardwareLoadedNone                  => Get(nameof(HardwareLoadedNone));
+    public static string HardwareLoadedUnreported(int count) => string.Format(Get(nameof(HardwareLoadedUnreported)), count);
     public static string HardwareLoadedModelsTable           => Get(nameof(HardwareLoadedModelsTable));
     public static string HardwareInstalledModelsTable        => Get(nameof(HardwareInstalledModelsTable));
     public static string HardwareInstalledNote               => Get(nameof(HardwareInstalledNote));

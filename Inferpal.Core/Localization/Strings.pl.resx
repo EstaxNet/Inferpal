@@ -902,6 +902,7 @@ Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym b
   <data name="HardwareHeadroom" xml:space="preserve"><value> · zapas {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Obliczenia:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Aktualnie załadowane:** brak</value></data>
+  <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Aktualnie załadowane:** modele: {0} — ten backend nie podaje zajmowanej przez nie pamięci VRAM (brak sumy, zapasu i informacji GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Załadowane modele
 
 | Model | VRAM |

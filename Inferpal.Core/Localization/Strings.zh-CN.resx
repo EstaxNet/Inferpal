@@ -902,6 +902,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · 余量 {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**计算：** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**当前已加载：** 无</value></data>
+  <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**当前已加载：** {0} 个模型 — 此后端不报告其占用的显存（无法显示总量、余量或 GPU/CPU）</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### 已加载模型
 
 | 模型 | VRAM |

@@ -902,6 +902,7 @@ Redacta ahora la respuesta final completa a mi solicitud más reciente, que era:
   <data name="HardwareHeadroom" xml:space="preserve"><value> · margen {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Cómputo:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Cargado actualmente:** ninguno</value></data>
+  <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Cargado actualmente:** {0} modelo(s) — este backend no informa de la VRAM que ocupan (sin total, margen ni GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Modelos cargados
 
 | Modelo | VRAM |

@@ -9,7 +9,7 @@ provider in **Settings → Connection**.
 | Provider | `provider` value | Endpoint style | Notes |
 |---|---|---|---|
 | **Ollama** | `ollama` | `POST /api/chat` (NDJSON) | Default. Full hardware-aware features. |
-| **LM Studio** | `lmstudio` | OpenAI `/v1` | Local server; per-model resident VRAM is not reported, so the VRAM badge shows the model name without a GB figure. |
+| **LM Studio** | `lmstudio` | OpenAI `/v1` | Local server; per-model resident VRAM is not reported, so the VRAM badge shows the model name without a GB figure, and `/hardware`, `/models` and `/bench` say so instead of printing a figure. |
 | **OpenAI-compatible** | `openai-compatible` | `POST /v1/chat/completions` (SSE) | Generic servers (llama.cpp, vLLM, …). Supports an optional **API key** (sent as `Authorization: Bearer …`). |
 
 ## Capability matrix

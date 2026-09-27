@@ -902,6 +902,7 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
   <data name="HardwareHeadroom" xml:space="preserve"><value> · 여유 {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**연산:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**현재 로드됨:** 없음</value></data>
+  <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**현재 로드됨:** 모델 {0}개 — 이 백엔드는 사용 중인 VRAM을 보고하지 않습니다(합계, 여유 공간, GPU/CPU 표시 불가)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### 로드된 모델
 
 | 모델 | VRAM |
