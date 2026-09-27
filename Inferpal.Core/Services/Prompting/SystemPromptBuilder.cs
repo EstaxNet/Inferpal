@@ -28,7 +28,11 @@ internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, str
 /// </summary>
 /// <param name="contextWindow">The window the prompt is sent into, when the front-end knows a smaller one than the
 /// configured window — the one the server really loaded (<c>ContextWindowInUse</c>). 0 = the configured one.</param>
-internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorName = null, int contextWindow = 0)
+/// <param name="workspaceRoot">The root the file tools confine to, stated to the model; null or empty when none is
+/// pinned. ⚠ Never a guessed root (the view model's <c>FindProjectRoot</c> falls back to the process's directory):
+/// a root the tools refuse is worse than none.</param>
+internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorName = null, int contextWindow = 0,
+                                          string? workspaceRoot = null)
 {
     /// <summary>
     /// The editor and the shell, stated from what this process can actually observe — appended to
@@ -47,14 +51,21 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// its own role guesses wrong the day a third front-end appears. When no name is declared the
     /// line simply omits it rather than naming an editor at random.
     /// </para>
+    /// <para>
+    /// ⚠ The workspace root is a fact of the same kind. Without it, a workspace with no .NET solution gives the
+    /// model no absolute path anywhere — the solution block is the only other place one appears — and a model
+    /// that wants one invents it (<c>/home/user/…</c>): refused as outside the workspace, then found again with
+    /// <c>pwd</c>, a round or more lost on every such task.
+    /// </para>
     /// </remarks>
     internal string EnvironmentFacts()
     {
         var (dialect, fileName) = Shell.ShellLauncher.Resolve();
         var shell = Shell.ShellLauncher.SpokenName(dialect, fileName);
         var editor = string.IsNullOrWhiteSpace(editorName) ? string.Empty : $"Editor: {editorName}. ";
+        var root = string.IsNullOrWhiteSpace(workspaceRoot) ? string.Empty : $" The workspace root is {workspaceRoot}.";
         return $"\n\n{editor}Operating system: {RuntimeInformation.OSDescription}. "
-             + $"The run_command shell is {shell}.";
+             + $"The run_command shell is {shell}.{root}";
     }
 
     /// <summary>
