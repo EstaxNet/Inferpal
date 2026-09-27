@@ -57,13 +57,15 @@ internal static class ChatTurnPolicy
     /// limit can itself stop at the length limit, and the reader must learn both — the text is
     /// incomplete AND the task was not carried through.
     /// </remarks>
+    /// <param name="answerRepeating">The cut answer was stopped because the model was repeating itself: "increase the
+    /// context length" is then the one remedy that does not help, and the notice names the ones that do.</param>
     public static string EndNotice(bool reachedIterationLimit, bool loopDetected, bool answerCut,
-                                   bool editsWithoutEffect = false)
+                                   bool editsWithoutEffect = false, bool answerRepeating = false)
     {
         var notices = new List<string>(3);
         if (reachedIterationLimit) notices.Add(Strings.AgentEndedAtIterationLimit);
         else if (loopDetected)     notices.Add(Strings.AgentEndedOnRepeat);
-        if (answerCut)             notices.Add(Strings.AnswerCutAtLimit);
+        if (answerCut)             notices.Add(answerRepeating ? Strings.AnswerStoppedRepeating : Strings.AnswerCutAtLimit);
         if (editsWithoutEffect)    notices.Add(Strings.AgentEditsNotApplied);
         return string.Join("\n\n", notices);
     }

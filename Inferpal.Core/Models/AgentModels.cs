@@ -138,7 +138,9 @@ internal record OrchestratorResult(
     bool                 AnswerCut = false,
     /// <summary>The run FAILED and <see cref="FinalResponse"/> is the message that says so — see
     /// <c>AgentResult.Failed</c>: shown, never kept as the answer the model gave.</summary>
-    bool                 Failed    = false)
+    bool                 Failed    = false,
+    /// <summary>The cut answer was stopped because the model was repeating itself (<see cref="ChatTurnResult.StoppedRepeating"/>).</summary>
+    bool                 AnswerRepeating = false)
 {
     /// <summary>Creates an error result (no plan, no executions).</summary>
     internal static OrchestratorResult Error(string message, List<ChatMessageDto> history) =>
@@ -157,7 +159,11 @@ internal record ChatTurnResult(
     List<ToolCallDto>? ToolCalls,
     int                TokensUsed,
     int                PromptTokens,
-    bool               CutAtLimit = false);
+    bool               CutAtLimit = false,
+    /// <summary>The client stopped the response because the model was repeating itself. <see cref="CutAtLimit"/> is
+    /// then true too — the text is incomplete, and every reader that refuses a cut answer must refuse this one — and
+    /// this says why, so the notice names the remedy that works instead of "increase the context length".</summary>
+    bool               StoppedRepeating = false);
 
 /// <summary>Thrown by <c>OllamaClient.SendChatAsync</c> on HTTP / network failure.</summary>
 internal sealed class AgentHttpException(string message, bool isTimeout)

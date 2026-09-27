@@ -930,19 +930,23 @@ internal sealed class AgentOrchestrator
                 // turn — either no printable text (think-only / empty) OR a degenerate "I don't have
                 // the tools" refusal (tool-oriented models choke on the prose-now turn). Synthesise the
                 // answer from the gathered results rather than ending on an empty bubble / a refusal.
-                var finalText  = turn.TextContent;
-                var finalCut   = turn.CutAtLimit;
-                var degenerate = LooksLikeToolRefusal(turn.TextContent);
+                var finalText      = turn.TextContent;
+                var finalCut       = turn.CutAtLimit;
+                var finalRepeating = turn.StoppedRepeating;
+                var degenerate     = LooksLikeToolRefusal(turn.TextContent);
                 if ((!visible || degenerate) && executions.Count > 0)
+                {
                     (finalText, finalCut) = await SynthesizeFinalAnswerAsync(
                         model, messages, anchorCount, executions, userTask,
                         degenerate ? string.Empty : finalText,   // never keep a refusal as the fallback
                         onToken, onStreamReset, onStep, ct, onThinking);
+                    finalRepeating = false;   // the synthesis replaced the answer that repeated itself
+                }
 
                 return new OrchestratorResult(
                     finalText,
                     plan, executions, messages,
-                    totalTokens, lastPromptTokens, false, false, finalCut);
+                    totalTokens, lastPromptTokens, false, false, finalCut, AnswerRepeating: finalRepeating);
             }
         }
 

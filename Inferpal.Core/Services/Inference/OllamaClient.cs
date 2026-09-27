@@ -133,6 +133,10 @@ internal class OllamaClient : InferenceProviderBase
         var size     = RequestSize.Of(messages, defs);
         var maxChars = OutputBound.MaxChars(_config.ContextWindowSize, size.Total);
         long received = 0;
+        // Text going round in circles, in either channel: stopped, and said to be (StoppedRepeating).
+        var thinkingLoop = new TextLoopDetector();
+        var contentLoop  = new TextLoopDetector();
+        var looping      = false;
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -172,6 +176,7 @@ internal class OllamaClient : InferenceProviderBase
                     {
                         onThinking?.Invoke(think);
                         received += think.Length;
+                        looping = thinkingLoop.Repeats(think);
                     }
                     var token = chunk.Message.Content;
                     if (!string.IsNullOrEmpty(token))
@@ -179,7 +184,18 @@ internal class OllamaClient : InferenceProviderBase
                         contentBuilder.Append(token);
                         onToken?.Invoke(token);
                         received += token.Length;
+                        looping |= contentLoop.Repeats(token);
                     }
+                }
+
+                // Leaving the loop disposes the stream: the connection closes, and Ollama stops generating.
+                if (looping)
+                {
+                    cut = true;
+                    Diagnostics.Record("OllamaClient.SendChat",
+                        $"Response from \"{model}\" stopped by Inferpal after {received} characters: it was repeating the "
+                        + "same passage. Treated as incomplete.");
+                    break;
                 }
 
                 // Leaving the loop disposes the stream: the connection closes, and Ollama stops generating.
@@ -222,10 +238,10 @@ internal class OllamaClient : InferenceProviderBase
             var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
             var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentBuilder.ToString(), known.Contains);
             if (inlineCalls is { Count: > 0 })
-                return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut);
+                return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }
 
-        return new ChatTurnResult(contentBuilder.ToString(), toolCalls, tokensUsed, promptTokens, cut);
+        return new ChatTurnResult(contentBuilder.ToString(), toolCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
     }
 
     /// <summary>Pings <c>/api/tags</c> with a 5-second timeout to verify Ollama is reachable.
@@ -295,18 +311,21 @@ internal class OllamaClient : InferenceProviderBase
                 foreach (var el in embEl.EnumerateArray())
                     arr[i++] = el.GetSingle();
                 RecordEmbeddingSuccess();
+                NoteEmbeddingRecovered(model);
                 return arr;
             }
             // Unexpected response shape — count as a soft failure
             RecordEmbeddingFailure();
+            NoteEmbeddingFailure(model, "the response held no vector");
             return null;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch
+        catch (Exception ex)
         {
             // Network error, HTTP error, JSON parse error, 30-s inner timeout, etc.
             // Record failure against the embedding breaker only — do NOT touch the chat breaker.
             RecordEmbeddingFailure();
+            NoteEmbeddingFailure(model, ex is OperationCanceledException ? "no answer within 30 s" : Diagnostics.RootMessage(ex));
             return null;
         }
     }
@@ -600,7 +619,9 @@ internal record AgentResult(
     /// answer, the error became the session summary in every following system prompt, the commit message pre-filled
     /// into <c>/commit-exec</c>, and the session's name.
     /// </summary>
-    bool                 Failed          = false);
+    bool                 Failed          = false,
+    /// <summary>The cut answer was stopped because the model was repeating itself (<see cref="ChatTurnResult.StoppedRepeating"/>).</summary>
+    bool                 AnswerRepeating = false);
 
 /// <summary>A single tool invocation within an agentic loop run.</summary>
 internal record ToolExecution(

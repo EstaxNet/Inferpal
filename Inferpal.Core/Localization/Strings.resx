@@ -263,6 +263,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ The agent stopped at its iteration limit: the answer above summarises what it had gathered, not a finished task.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ The agent was repeating the same tool calls and was stopped: the answer above summarises what it had gathered.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ The answer above stopped at the model's length limit: it is incomplete. Ask it to continue, or increase the context length.</value></data>
+  <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ The model was repeating itself and was stopped: the answer above is incomplete. Rephrasing the request, or another model, usually gets past it.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ No file was changed: the edits attempted above were refused or did not apply — whatever the answer says.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ The model's reply stopped at its length limit: the proposed message may be incomplete. Read it before you commit.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ This answer stopped at the model's length limit — it is incomplete.*</value></data>

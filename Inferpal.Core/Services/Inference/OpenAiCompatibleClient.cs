@@ -329,6 +329,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // A call written twice in the reasoning: the model has decided and is looping — stop at the repeat.
         var  loop     = new RepeatedCallDetector();
         var  repeated = false;
+        // Text going round in circles, in either channel: stopped, and said to be (StoppedRepeating).
+        var  reasoningLoop = new TextLoopDetector();
+        var  contentLoop   = new TextLoopDetector();
+        var  looping       = false;
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -405,6 +409,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                             + "had written the same tool call twice there. The first call is run.");
                         break;
                     }
+                    if (reasoningLoop.Repeats(reasoning))
+                    {
+                        looping = true;
+                        Diagnostics.Record("OpenAiCompatibleClient.SendChat",
+                            $"Response from \"{model}\" stopped by Inferpal after {received} characters: its reasoning was "
+                            + "repeating the same passage. Treated as incomplete.");
+                        break;
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(delta.Content))
@@ -412,6 +424,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     contentBuilder.Append(delta.Content);
                     onToken?.Invoke(delta.Content);
                     received += delta.Content.Length;
+                    if (contentLoop.Repeats(delta.Content))
+                    {
+                        looping = true;
+                        Diagnostics.Record("OpenAiCompatibleClient.SendChat",
+                            $"Response from \"{model}\" stopped by Inferpal after {received} characters: its answer was "
+                            + "repeating the same passage. Treated as incomplete.");
+                        break;
+                    }
                 }
 
                 if (delta.ToolCalls is { Count: > 0 } tcs)
@@ -455,7 +475,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var contentText = contentBuilder.ToString();
         // The answer stopped at the length limit, not where the model meant to end: a caller that turns it
         // into an edit must not apply it (CodeActionPipeline.Finish).
-        var cut         = finishReason == "length" || bounded;
+        var cut         = finishReason == "length" || bounded || looping;
         // A reasoning model routes its real turn (tool call or final answer) into the reasoning
         // channel and can leak only stray, non-printable bytes into the content channel — qwen3.6 on
         // LM Studio prefixes every turn with "\n\n". Gate the reasoning-recovery on *printable*
@@ -470,7 +490,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
             var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentText, known.Contains);
             if (inlineCalls is { Count: > 0 })
-                return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut);
+                return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }
 
         // Last-resort: a reasoning model under tool_choice:"required" (e.g. Qwen3 on LM Studio) can
@@ -484,17 +504,17 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var (reasoningCalls, _) = InlineToolCallParser.TryParse(reasoningBuilder.ToString());
             // Stopped by the bound or at a repeat, the reasoning is a model going round in circles: the first call it
             // wrote is its intent, and every later one is the loop — or its decay (a path it no longer spells right).
-            if ((bounded || repeated) && reasoningCalls is { Count: > 1 })
+            if ((bounded || repeated || looping) && reasoningCalls is { Count: > 1 })
                 reasoningCalls = reasoningCalls.Take(1).ToList();
             if (reasoningCalls is { Count: > 0 })
-                return new ChatTurnResult(string.Empty, reasoningCalls, tokensUsed, promptTokens, cut);
+                return new ChatTurnResult(string.Empty, reasoningCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
 
             // No tool call either: a reasoning model (e.g. Qwen3 on LM Studio) can route its whole
             // turn — final answer included — into the reasoning channel, leaving content empty. Without
             // this the answer is dropped: the UI streamed it as a live "💭" thinking preview, but the
             // turn returns "" → an empty answer bubble. Surface the reasoning text as the answer so the
             // user keeps what they already saw, rather than dead-ending on an empty turn.
-            return new ChatTurnResult(reasoningBuilder.ToString().Trim(), null, tokensUsed, promptTokens, cut);
+            return new ChatTurnResult(reasoningBuilder.ToString().Trim(), null, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }
 
         // Empty turn under tool_choice:"required": some models/runtimes (e.g. devstral/Mistral on
@@ -530,7 +550,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 new InvalidOperationException("no content, no tool call, no server error"));
         }
 
-        return new ChatTurnResult(contentText, toolCalls, tokensUsed, promptTokens, cut);
+        return new ChatTurnResult(contentText, toolCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
     }
 
     /// <summary>Turns the accumulated streamed fragments into structured tool calls (arguments parsed as JSON).</summary>
@@ -622,12 +642,49 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
     // ── Embeddings ─────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// The waits before re-sending an embedding the server refused with a 5xx — one per retry.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ LM Studio, loading a model on demand, answers a SECOND concurrent request at once with HTTP 500 while the
+    /// first waits for the load (about three seconds): the indexing pass, the re-indexing of a saved file and a query
+    /// can all be in flight, and three quick 500s open the embedding breaker — an index built while the embedding model
+    /// is not yet loaded comes out without a single vector. A 5xx is retried; a 4xx (a model the server does not have)
+    /// never is, waiting does not change it.
+    /// </remarks>
+    internal TimeSpan[] EmbeddingRetryDelays { get; init; } =
+        [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4)];
+
     /// <inheritdoc/>
     public override async Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct)
     {
         var base_ = BaseV1;
         if (string.IsNullOrWhiteSpace(base_) || IsEmbeddingInCooldown()) return null;
 
+        for (var attempt = 0; ; attempt++)
+        {
+            var (emb, cause, retryable) = await SendEmbeddingAsync(base_, text, model, ct);
+            if (emb is not null)
+            {
+                RecordEmbeddingSuccess();
+                NoteEmbeddingRecovered(model);
+                return emb;
+            }
+            if (retryable && attempt < EmbeddingRetryDelays.Length)
+            {
+                await Task.Delay(EmbeddingRetryDelays[attempt], ct);
+                continue;
+            }
+            RecordEmbeddingFailure();
+            NoteEmbeddingFailure(model, cause);
+            return null;
+        }
+    }
+
+    /// <summary>One embedding request: the vector, or why there is none and whether waiting can change it.</summary>
+    private async Task<(float[]? Embedding, string Cause, bool Retryable)> SendEmbeddingAsync(
+        string base_, string text, string model, CancellationToken ct)
+    {
         try
         {
             using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -639,24 +696,16 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             };
             AddAuth(req);
             using var http = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, sendCts.Token);
-            http.EnsureSuccessStatusCode();
+            if (!http.IsSuccessStatusCode)
+                return (null, $"HTTP {(int)http.StatusCode}", (int)http.StatusCode >= 500);
 
             var result = await http.Content.ReadFromJsonAsync<OpenAiEmbeddingResponse>(_jsonOpts, sendCts.Token);
             var emb    = result?.Data is { Count: > 0 } d ? d[0].Embedding : null;
-            if (emb is { Length: > 0 })
-            {
-                RecordEmbeddingSuccess();
-                return emb;
-            }
-            RecordEmbeddingFailure();
-            return null;
+            return emb is { Length: > 0 } ? (emb, string.Empty, false) : (null, "the response held no vector", false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch
-        {
-            RecordEmbeddingFailure();
-            return null;
-        }
+        catch (OperationCanceledException) { return (null, "no answer within 30 s", false); }
+        catch (Exception ex) { return (null, Diagnostics.RootMessage(ex), false); }
     }
 
     // ── Connection / model listing ─────────────────────────────────────────────

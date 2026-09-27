@@ -262,6 +262,7 @@
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Агент остановился на пределе итераций: ответ выше — сводка собранного, а не завершённая задача.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Агент повторял одни и те же вызовы инструментов и был остановлен: ответ выше — сводка собранного.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Ответ выше остановился на ограничении длины модели: он неполон. Попросите продолжить или увеличьте длину контекста.</value></data>
+  <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Модель начала повторяться и была остановлена: ответ выше неполный. Обычно помогает переформулировать запрос или выбрать другую модель.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Ни один файл не изменён: попытки правок выше были отклонены или не применились — что бы ни говорилось в ответе.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ Ответ модели остановился на ограничении длины: предложенное сообщение может быть неполным. Прочитайте его перед коммитом.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Этот ответ остановился на ограничении длины модели — он неполный.*</value></data>

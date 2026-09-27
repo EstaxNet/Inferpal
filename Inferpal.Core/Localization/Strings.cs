@@ -470,6 +470,7 @@ internal static class Strings
     public static string AgentEndedOnRepeat         => Get(nameof(AgentEndedOnRepeat));
     public static string AnswerCutAtLimit           => Get(nameof(AnswerCutAtLimit));
     public static string AgentEditsNotApplied       => Get(nameof(AgentEditsNotApplied));
+    public static string AnswerStoppedRepeating     => Get(nameof(AnswerStoppedRepeating));
     public static string CheckReviewCut             => Get(nameof(CheckReviewCut));
     public static string CommitProposalCut          => Get(nameof(CommitProposalCut));
     public static string ArenaAnswerCut             => Get(nameof(ArenaAnswerCut));

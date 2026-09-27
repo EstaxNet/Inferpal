@@ -262,6 +262,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Agent zatrzymał się na limicie iteracji: powyższa odpowiedź podsumowuje to, co zebrał, a nie ukończone zadanie.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Agent powtarzał te same wywołania narzędzi i został zatrzymany: powyższa odpowiedź podsumowuje to, co zebrał.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Powyższa odpowiedź zatrzymała się na limicie długości modelu: jest niepełna. Poproś o kontynuację albo zwiększ długość kontekstu.</value></data>
+  <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Model zaczął się powtarzać i został zatrzymany: powyższa odpowiedź jest niepełna. Zwykle pomaga przeformułowanie prośby albo inny model.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Żaden plik nie został zmieniony: powyższe próby edycji zostały odrzucone lub nie zostały zastosowane — niezależnie od tego, co mówi odpowiedź.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ Odpowiedź modelu zatrzymała się na limicie długości: proponowany komunikat może być niekompletny. Przeczytaj go przed commitem.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Ta odpowiedź zatrzymała się na limicie długości modelu — jest niekompletna.*</value></data>

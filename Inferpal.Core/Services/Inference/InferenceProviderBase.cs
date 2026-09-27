@@ -107,6 +107,22 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     private int  _embConsecutiveFailures = 0;
     private long _embCooldownUntilTicks  = 0; // UTC ticks; 0 = no cooldown
 
+    /// <summary>
+    /// An embedding call that failed, said once per model until one succeeds again (<see cref="NoteEmbeddingRecovered"/>).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The failure used to be swallowed by a bare <c>catch</c>: an index built without vectors said how many chunks
+    /// had none, and nothing said why — a refused request, a wrong model name and a server that was loading the model
+    /// all read the same. Once per model, because the indexing loop calls this per chunk.
+    /// </remarks>
+    protected static void NoteEmbeddingFailure(string model, string cause) =>
+        Diagnostics.RecordOnce("Embedding",
+            $"Embedding with \"{model}\" failed: {cause}. Chunks indexed meanwhile have no vector — keyword search " +
+            "still finds them; /index rebuild fills the gap.", model);
+
+    /// <summary>The next failure of <paramref name="model"/> is said again.</summary>
+    protected static void NoteEmbeddingRecovered(string model) => Diagnostics.Forget("Embedding", model);
+
     protected bool IsEmbeddingInCooldown()  => DateTime.UtcNow.Ticks < Interlocked.Read(ref _embCooldownUntilTicks);
     protected void RecordEmbeddingSuccess() => Interlocked.Exchange(ref _embConsecutiveFailures, 0);
 
@@ -525,7 +541,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             else
             {
                 return new AgentResult(turn.TextContent, executions, messages, totalTokens, lastPromptEval,
-                                       AnswerCut: turn.CutAtLimit);
+                                       AnswerCut: turn.CutAtLimit, AnswerRepeating: turn.StoppedRepeating);
             }
         }
 

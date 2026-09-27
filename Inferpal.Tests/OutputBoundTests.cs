@@ -36,6 +36,15 @@ public class OutputBoundTests
     private const string LoopedCall = "<tool_call> {\"name\": \"get_diagnostics\", \"arguments\": {}} </tool_call> ";
     private const int    Repeats    = 2000;   // ~140 000 characters: far past a 2 048-token window
 
+    /// <summary>About <paramref name="chars"/> characters of words that never repeat — an ordinary answer. A run of one
+    /// letter would be a model repeating itself, which TextLoopDetector stops (TextLoopTests).</summary>
+    private static string Prose(int chars)
+    {
+        var sb = new StringBuilder();
+        for (var i = 0; sb.Length < chars; i++) sb.Append("word").Append(i * 7919 % 100003).Append(' ');
+        return sb.ToString();
+    }
+
     [Fact]
     public void TheBound_IsTheRoomTheWindowLeaves_NeverLessThanAFloor()
     {
@@ -96,7 +105,7 @@ public class OutputBoundTests
     public async Task AnAnswerThatFits_IsNeitherStoppedNorCut()
     {
         // Reference arm: 6 000 characters of answer, under the ~10 000 a 2 048-token window leaves.
-        var text   = new string('a', 6000);
+        var text   = Prose(6000);
         var result = await SendAsync(AnswerStream(text));
 
         Assert.False(result.CutAtLimit);
@@ -137,7 +146,7 @@ public class OutputBoundTests
     [Fact]
     public async Task Ollama_AnAnswerThatFits_IsNotCut()
     {
-        var text   = new string('a', 6000);
+        var text   = Prose(6000);
         var result = await SendOllamaAsync(OllamaAnswer(text));
 
         Assert.False(result.CutAtLimit);

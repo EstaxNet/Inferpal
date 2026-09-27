@@ -262,6 +262,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agent s'est arrêté à sa limite d'itérations : la réponse ci-dessus résume ce qu'il avait rassemblé, pas une tâche terminée.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agent répétait les mêmes appels d'outils et a été arrêté : la réponse ci-dessus résume ce qu'il avait rassemblé.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La réponse ci-dessus s'est arrêtée à la limite de longueur du modèle : elle est incomplète. Demandez-lui de continuer, ou augmentez la longueur de contexte.</value></data>
+  <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Le modèle se répétait et a été arrêté : la réponse ci-dessus est incomplète. Reformuler la demande, ou changer de modèle, permet en général d'en sortir.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Aucun fichier n'a été modifié : les éditions tentées ci-dessus ont été refusées ou n'ont pas abouti — quoi qu'en dise la réponse.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ La réponse du modèle s'est arrêtée à sa limite de longueur : le message proposé est peut-être incomplet. Relisez-le avant de commiter.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Cette réponse s'est arrêtée à la limite de longueur du modèle — elle est incomplète.*</value></data>

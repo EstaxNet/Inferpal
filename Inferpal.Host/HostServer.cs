@@ -322,7 +322,8 @@ internal sealed partial class HostServer : IDisposable
                 // an answer cut at the length limit, or edits that changed nothing. One policy for both front-ends.
                 var endNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(
                     result.ReachedIterationLimit, result.WasLoopDetected, result.AnswerCut,
-                    ChatTurnPolicy.EditsWithoutEffect(result.Executions, s.Tools.History.CurrentRunFileCount)));
+                    ChatTurnPolicy.EditsWithoutEffect(result.Executions, s.Tools.History.CurrentRunFileCount),
+                    answerRepeating: result.AnswerRepeating));
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
@@ -367,7 +368,8 @@ internal sealed partial class HostServer : IDisposable
                     FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, model, s),
                     false, run.TokensUsed, run.PromptTokens,
                     EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut,
-                        ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount))),
+                        ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount),
+                        answerRepeating: run.AnswerRepeating)),
                     ContextWindow: ctxDecision.Window);
             }
 
@@ -383,7 +385,8 @@ internal sealed partial class HostServer : IDisposable
             return new ChatSendResult(
                 FinalAnswer(turn.TextContent, streamed.ToString(), [], model, s),
                 false, turn.TokensUsed, turn.PromptTokens,
-                EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit)),
+                EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit,
+                                                                 answerRepeating: turn.StoppedRepeating)),
                 ContextWindow: ctxDecision.Window);
         }
         catch (OperationCanceledException)
