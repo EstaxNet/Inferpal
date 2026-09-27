@@ -140,7 +140,10 @@ They layer on top of the per-machine settings above.
 When it indexes a git repository, Inferpal adds only `.inferpal/history/` — its local snapshots of
 the files the agent overwrote — to `.gitignore`, so these overlays (and `rules/`, `checks/`,
 `prompts/`) stay committable. Earlier versions ignored the whole folder; that block is narrowed the
-next time the repository is indexed. A rule you wrote yourself is never changed.
+next time the repository is indexed. A rule you wrote yourself is never changed. The history folder
+also carries its own `.gitignore`, so its snapshots stay out of `git status` whatever the layout — a
+solution below the repository root, or indexing turned off. Snapshot names end in `.bak`, so no test
+runner or compiler mistakes a backup for the file it copies.
 
 ### The project profile (`.inferpal/project.json`)
 

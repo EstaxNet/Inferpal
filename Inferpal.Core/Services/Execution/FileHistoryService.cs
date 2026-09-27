@@ -90,6 +90,34 @@ internal class FileHistoryService
         }
     }
 
+    /// <summary>The ignore file the history folder carries, so git never lists a snapshot.</summary>
+    internal const string GitIgnoreContent =
+        "# Inferpal file history: local copies of files the assistant changed. Never committed.\n*\n";
+
+    /// <summary>Makes git ignore <paramref name="historyDir"/> from inside it, whatever the repository looks like.</summary>
+    /// <remarks>
+    /// ⚠ A snapshot is a copy of whatever was overwritten, secrets included, and the history sits at the git
+    /// ROOT. The line indexing adds to the WORKSPACE root's <c>.gitignore</c> only exists when that root holds
+    /// the <c>.git</c> and indexing runs: a solution below the repository root, or RAG off, and every snapshot
+    /// is an untracked file — what "Stage All" commits. A rule inside the folder travels with it (<c>*</c>
+    /// ignores the rule itself too). Best-effort: the snapshot is still taken if this cannot be written.
+    /// </remarks>
+    private static void IgnoreInGit(string historyDir)
+    {
+        var path = Path.Combine(historyDir, ".gitignore");
+        if (File.Exists(path)) return;
+        try
+        {
+            using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            stream.Write(System.Text.Encoding.ASCII.GetBytes(GitIgnoreContent));
+        }
+        catch (IOException) when (File.Exists(path)) { }   // written meanwhile by another snapshot
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("FileHistoryService.IgnoreInGit", ex);
+        }
+    }
+
     /// <summary><c>yyyy-MM-dd_</c> — how every snapshot name, in every format, begins.</summary>
     private static bool StartsWithDate(string name) =>
         name.Length > 11
@@ -113,6 +141,7 @@ internal class FileHistoryService
 
             var historyDir = GetHistoryDir(filePath);
             Directory.CreateDirectory(historyDir);
+            IgnoreInGit(historyDir);
             RenameOlderSnapshots(historyDir);
 
             // UTC + invariant. Local time repeats an hour every autumn, and the name is not just a
