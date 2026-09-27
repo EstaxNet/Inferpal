@@ -14,6 +14,23 @@ namespace Inferpal.Services.Tools;
 /// </remarks>
 internal static class FileTarget
 {
+    /// <summary>
+    /// The refusal for replacing an existing, non-empty file the model has not read in the current run; <c>null</c>
+    /// otherwise, and always outside a run (nobody tracks reads there).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A whole-file write is the one edit that does not have to quote what it changes: <c>apply_diff</c> must match
+    /// its <c>old_content</c>, <c>write_file</c> replaces everything. Without this, a model asked to change a file it
+    /// has not opened writes the file from its idea of one: what it did not know was there is gone, and the project
+    /// may well still build. Refused before the approval prompt, with the gesture that works.
+    /// </remarks>
+    public static string? UnreadRefusal(FileHistoryService history, string path) =>
+        File.Exists(path) && new FileInfo(path).Length > 0 && history.WasRead(path) == false
+            ? $"'{path}' already exists and has not been read in this run: write_file replaces the whole file, "
+            + "including every line you have not seen. Read it with read_file first, or change only part of it "
+            + "with apply_diff."
+            : null;
+
     /// <summary>The refusal for <paramref name="path"/> when it is a directory, else <c>null</c>.</summary>
     public static string? DirectoryRefusal(string path) =>
         Directory.Exists(path)

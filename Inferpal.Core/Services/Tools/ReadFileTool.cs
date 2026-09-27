@@ -8,13 +8,18 @@ internal class ReadFileTool : ITool
 {
     private readonly Func<string?> _getWorkspaceRoot;
     private readonly Editor.OpenDocumentOverlay? _overlay;
+    private readonly FileHistoryService? _history;
 
     /// <param name="overlay">Open-document mirror consulted before disk so unsaved buffer
     /// content wins; null when the editor feeds no overlay (VS in-proc today).</param>
-    public ReadFileTool(Func<string?> getWorkspaceRoot, Editor.OpenDocumentOverlay? overlay = null)
+    /// <param name="history">Told which files the model has read in the current run — what lets
+    /// write_file replace an existing file (<see cref="FileTarget.UnreadRefusal"/>).</param>
+    public ReadFileTool(Func<string?> getWorkspaceRoot, Editor.OpenDocumentOverlay? overlay = null,
+                        FileHistoryService? history = null)
     {
         _getWorkspaceRoot = getWorkspaceRoot;
         _overlay          = overlay;
+        _history          = history;
     }
 
     public string Name => "read_file";
@@ -55,6 +60,8 @@ internal class ReadFileTool : ITool
                  + "shown as text.";
         else
             content = Cap(await TextFileEncoding.ReadTextAsync(path, ct), path);
+
+        _history?.NoteRead(path);
 
         // An empty tool result says nothing — not even "empty": the model cannot tell it from a call that did nothing.
         if (content.Length == 0)

@@ -378,7 +378,7 @@ internal sealed partial class HostServer
                             return new SlashCommandResult(true,
                                 await TaskProposalApplication.ApplyAsync(
                                     proposal, s.Tools, TaskProposalApplication.ReadCurrent, cts.Token,
-                                    beginRun: () => s.Tools.History.BeginRun()));
+                                    beginRun: path => s.Tools.History.BeginRun(alreadyRead: path)));
                         }
                         finally
                         {

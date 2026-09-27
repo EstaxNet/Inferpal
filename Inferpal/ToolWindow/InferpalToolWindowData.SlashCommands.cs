@@ -371,7 +371,7 @@ internal partial class InferpalToolWindowData
             {
                 await ShowInfoAsync(await Services.Tasks.TaskProposalApplication.ApplyAsync(
                     proposal, _tools, Services.Tasks.TaskProposalApplication.ReadCurrent, CancellationToken.None,
-                    beginRun: () => _tools.History.BeginRun()));
+                    beginRun: path => _tools.History.BeginRun(alreadyRead: path)));
             }
             finally
             {

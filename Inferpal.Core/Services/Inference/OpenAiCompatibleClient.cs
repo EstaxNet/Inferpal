@@ -266,9 +266,12 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // server does not say (null), and only fires when the prompt estimate alone already overflows, so it can't
         // false-positive a request that would have fit. Ollama is a separate class, unaffected.
         var loadedCtx = await GetLoadedContextLengthAsync(model, ct);
-        // The estimate serializes every tool schema: only pay for it when there is a window to check.
-        if (loadedCtx is > 0 && CheckContextFit(RequestSize.Of(messages, defs), loadedCtx) is { } overflowMsg)
+        var size      = RequestSize.Of(messages, defs);
+        if (loadedCtx is > 0 && CheckContextFit(size, loadedCtx) is { } overflowMsg)
             throw new AgentHttpException(overflowMsg, isTimeout: false);
+        // The window the server serves this request in: the loaded one when it says, the configured one otherwise.
+        var window   = loadedCtx is > 0 ? loadedCtx.Value : _config.ContextWindowSize;
+        var maxChars = OutputBound.MaxChars(window, size.Total);
 
         var request = new OpenAiChatRequest(
             model,
@@ -320,6 +323,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // What the stream contained: the one thing missing to diagnose an empty turn.
         var chunkCount   = 0;
         string? finishReason = null;
+        // What the response has streamed so far, every channel counted; past OutputBound the client stops reading.
+        long received = 0;
+        var  bounded  = false;
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -385,17 +391,30 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 {
                     reasoningBuilder.Append(reasoning);
                     onThinking?.Invoke(reasoning);
+                    received += reasoning.Length;
                 }
 
                 if (!string.IsNullOrEmpty(delta.Content))
                 {
                     contentBuilder.Append(delta.Content);
                     onToken?.Invoke(delta.Content);
+                    received += delta.Content.Length;
                 }
 
                 if (delta.ToolCalls is { Count: > 0 } tcs)
                     foreach (var tc in tcs)
+                    {
                         toolAcc.Add(tc.Index, tc.Id, tc.Function?.Name, tc.Function?.Arguments);
+                        received += tc.Function?.Arguments?.Length ?? 0;
+                    }
+
+                // Leaving the loop disposes the stream: the connection closes, and the server stops generating.
+                if (received > maxChars)
+                {
+                    bounded = true;
+                    Diagnostics.Record("OpenAiCompatibleClient.SendChat", OutputBound.Note(model, received, window, size.Total));
+                    break;
+                }
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
@@ -423,7 +442,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var contentText = contentBuilder.ToString();
         // The answer stopped at the length limit, not where the model meant to end: a caller that turns it
         // into an edit must not apply it (CodeActionPipeline.Finish).
-        var cut         = finishReason == "length";
+        var cut         = finishReason == "length" || bounded;
         // A reasoning model routes its real turn (tool call or final answer) into the reasoning
         // channel and can leak only stray, non-printable bytes into the content channel — qwen3.6 on
         // LM Studio prefixes every turn with "\n\n". Gate the reasoning-recovery on *printable*
@@ -450,6 +469,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (toolCalls is null && !contentPrintable && reasoningBuilder.Length > 0)
         {
             var (reasoningCalls, _) = InlineToolCallParser.TryParse(reasoningBuilder.ToString());
+            // Stopped by the bound, the reasoning is a model going round in circles: the first call it wrote is its
+            // intent, and every later one is the loop — or its decay (a path it no longer spells right).
+            if (bounded && reasoningCalls is { Count: > 1 })
+                reasoningCalls = reasoningCalls.Take(1).ToList();
             if (reasoningCalls is { Count: > 0 })
                 return new ChatTurnResult(string.Empty, reasoningCalls, tokensUsed, promptTokens, cut);
 

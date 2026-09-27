@@ -264,7 +264,11 @@ internal class FileHistoryService
     private readonly object _runLock = new();
 
     /// <summary>Starts a new change-tracking run; subsequent snapshots/creations attach to it.</summary>
-    internal string BeginRun()
+    /// <param name="alreadyRead">
+    /// A file the run starts with as read — for a write whose content a person reviewed as a diff (a <c>/task</c>
+    /// proposal applied through the ordinary prompt), which is not a blind rewrite. See <see cref="WasRead"/>.
+    /// </param>
+    internal string BeginRun(string? alreadyRead = null)
     {
         // UTC, and invariant formatting. Local time repeats an hour every autumn, so two runs can
         // be handed the same identifier and the lexicographic order of identifiers lies for that
@@ -274,11 +278,31 @@ internal class FileHistoryService
                                                           System.Globalization.CultureInfo.InvariantCulture));
         lock (_runLock)
         {
+            if (alreadyRead is not null) run.NoteRead(alreadyRead);
             _runs.Add(run);
             if (_runs.Count > MaxRetainedRuns) _runs.RemoveRange(0, _runs.Count - MaxRetainedRuns);
             _currentRun = run;
         }
         return run.Id;
+    }
+
+    /// <summary>Records that the model has seen the content of <paramref name="filePath"/> in the current run.</summary>
+    internal void NoteRead(string filePath)
+    {
+        lock (_runLock) _currentRun?.NoteRead(filePath);
+    }
+
+    /// <summary>
+    /// Whether the model has seen <paramref name="filePath"/> in the current run; <c>null</c> when no run is active.
+    /// </summary>
+    /// <remarks>
+    /// Per run, because a run is what the model still has in front of it: only the question and the answer outlive
+    /// one, so a file read in an earlier turn is no longer in its context. <c>null</c> is not "no": outside a run
+    /// (a code action, a tool a slash command calls) nobody is tracking reads, and a guard must not refuse on that.
+    /// </remarks>
+    internal bool? WasRead(string filePath)
+    {
+        lock (_runLock) return _currentRun?.WasRead(filePath);
     }
 
     /// <summary>
@@ -446,7 +470,14 @@ internal sealed class HistoryRun
     private readonly List<ToolCallRecord> _toolCalls = [];
     private readonly object _toolCallLock = new();
 
+    // Files the model has read during this run (see FileHistoryService.WasRead). Mutated under
+    // FileHistoryService's run lock, like _firstByPath.
+    private readonly HashSet<string> _read = new(PathComparer.Default);
+
     public HistoryRun(string id) { Id = id; StartedAt = DateTime.Now; }
+
+    public void NoteRead(string path) => _read.Add(path);
+    public bool WasRead(string path) => _read.Contains(path);
 
     public void RecordFirst(string originalPath, string? snapshot, bool snapshotFailed = false)
     {

@@ -135,7 +135,7 @@ public class TaskProposalApplyTests
         await TaskProposalApplication.ApplyAsync(
             Write("a.cs", "old\n", "new\n"), registry,
             readFile: _ => content is "old\n" ? Interlocked.Exchange(ref content, "new\n") : content,
-            ct: default, beginRun: () => runs++);
+            ct: default, beginRun: _ => runs++);
 
         Assert.Equal(1, runs);
     }
@@ -149,7 +149,7 @@ public class TaskProposalApplyTests
 
         await TaskProposalApplication.ApplyAsync(
             Write("a.cs", "old\n", "new\n"), registry, readFile: _ => "edited\n",
-            ct: default, beginRun: () => runs++);
+            ct: default, beginRun: _ => runs++);
 
         Assert.Equal(0, runs);
     }

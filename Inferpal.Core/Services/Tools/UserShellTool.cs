@@ -51,7 +51,12 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
                 return ChildProcess.TimedOutMessage(config.CommandTimeoutSeconds,
                                                     (run.Stdout + run.Stderr).Trim());
 
+            // ⚠ The exit code is the whole answer of a custom tool as often as its output
+            // (`git diff --quiet`, a linter that only sets it): the persistent shell's rule — a
+            // silent failure must not read as success — holds here too, with the same note.
             var result = (run.Stdout + run.Stderr).Trim();
+            if (run.ExitCode != 0)
+                result = (result + Shell.ShellStateProtocol.ExitNote(dialect, fullCmd, run.ExitCode)).TrimStart('\n');
             return string.IsNullOrEmpty(result) ? "(no output)" : result;
         }
         catch (OperationCanceledException) { throw; } // user cancelled

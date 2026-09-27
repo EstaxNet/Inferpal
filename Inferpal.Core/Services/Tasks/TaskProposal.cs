@@ -286,10 +286,11 @@ internal static class TaskProposalApplication
     /// <param name="tools">The session's own registry — the one whose approval service prompts.</param>
     /// <param name="readFile">Current content of a path, or null when it does not exist; throws when it exists but cannot be read.</param>
     /// <param name="beginRun">
-    /// Opens a change-tracking run around the write, exactly as a chat turn does. Without it the
-    /// snapshot is taken but attaches to no run, so <c>/undo-run</c> answers "nothing to undo" while
-    /// the message promises the opposite — verified live, and the promise was the part
-    /// that was wrong.
+    /// Opens a change-tracking run around the write, exactly as a chat turn does, and is given the proposal's path:
+    /// the run starts with it as read (<see cref="Execution.FileHistoryService.BeginRun"/>). Without the run the
+    /// snapshot is taken but attaches to no run, so <c>/undo-run</c> answers "nothing to undo" while the message
+    /// promises the opposite. Without the path, the write is refused as a blind rewrite of a file nobody read — when
+    /// the person applying it reviews its diff in the approval prompt.
     /// </param>
     /// <remarks>
     /// Shared by both front-ends rather than written twice: the interesting part is which tool is
@@ -310,7 +311,7 @@ internal static class TaskProposalApplication
 
     public static async Task<string> ApplyAsync(
         TaskProposal proposal, IToolRegistry tools, Func<string, string?> readFile,
-        CancellationToken ct, Action? beginRun = null)
+        CancellationToken ct, Action<string>? beginRun = null)
     {
         string? current;
         try { current = readFile(proposal.Subject); }
@@ -338,7 +339,7 @@ internal static class TaskProposalApplication
 
         // One run per applied proposal: they are approved one at a time, so grouping them together
         // would make a single /undo-run revert changes the user accepted separately.
-        beginRun?.Invoke();
+        beginRun?.Invoke(plan.Path);
 
         var output = await tools.ExecuteAsync(plan.Delete ? "delete_file" : "write_file", args, ct);
 

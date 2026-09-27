@@ -128,6 +128,11 @@ internal class OllamaClient : InferenceProviderBase
         List<ToolCallDto>? toolCalls = null;
         int tokensUsed = 0, promptTokens = 0;
         var cut = false;   // the answer stopped at the length limit (done_reason "length")
+        // Ollama is loaded with num_ctx = the configured window (ComputeOptions); past OutputBound the client stops
+        // reading — its context shift would otherwise let a looping model generate for as long as it likes.
+        var size     = RequestSize.Of(messages, defs);
+        var maxChars = OutputBound.MaxChars(_config.ContextWindowSize, size.Total);
+        long received = 0;
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
@@ -164,13 +169,25 @@ internal class OllamaClient : InferenceProviderBase
                     // Surface it live so the UI shows the model is working instead of a blank bubble.
                     var think = chunk.Message.Thinking;
                     if (!string.IsNullOrEmpty(think))
+                    {
                         onThinking?.Invoke(think);
+                        received += think.Length;
+                    }
                     var token = chunk.Message.Content;
                     if (!string.IsNullOrEmpty(token))
                     {
                         contentBuilder.Append(token);
                         onToken?.Invoke(token);
+                        received += token.Length;
                     }
+                }
+
+                // Leaving the loop disposes the stream: the connection closes, and Ollama stops generating.
+                if (received > maxChars)
+                {
+                    cut = true;
+                    Diagnostics.Record("OllamaClient.SendChat", OutputBound.Note(model, received, _config.ContextWindowSize, size.Total));
+                    break;
                 }
 
                 if (chunk.Done)

@@ -26,7 +26,9 @@ internal class WriteFileTool : ITool
     }
 
     public string Name => "write_file";
-    public string Description => "Writes or replaces the content of a file. Creates the file if absent.";
+    public string Description =>
+        "Writes or replaces the whole content of a file. Creates the file if absent. To replace a file that exists, " +
+        "read it first with read_file; to change part of it, use apply_diff.";
     public object Parameters => new
     {
         type = "object",
@@ -45,6 +47,7 @@ internal class WriteFileTool : ITool
         PathSanitizer.AssertUnderRoot(path, root);
         if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
         if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return unsaved;
+        if (FileTarget.UnreadRefusal(_history, path) is { } unread) return unread;
         var content = args.Str("content") ?? throw new ArgumentException("content is required.");
 
         var exists     = File.Exists(path);
@@ -81,6 +84,8 @@ internal class WriteFileTool : ITool
             Directory.CreateDirectory(dir);
 
         await SafeFileWriter.WritePreservingAsync(path, content, ct);
+        // The model wrote every line of it: rewriting it again later in the run is not blind.
+        _history.NoteRead(path);
 
         _setDiff?.Invoke(new DiffInfo(oldContent, content, path));
 
