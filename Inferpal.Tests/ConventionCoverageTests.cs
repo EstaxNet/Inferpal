@@ -752,36 +752,19 @@ public class ConventionCoverageTests
     [Fact]
     public void TheBaseSystemPrompt_AssertsNeitherEditorNorShell()
     {
-        // The SAME resource is served to both front-ends: Inferpal.Host passes it to VS Code as is.
-        // "integrated into Visual Studio 2026" was therefore false for every VS Code user, in all
-        // ten languages, and "PowerShell commands" false for every Linux/macOS machine. Both facts
-        // are now built at run time by SystemPromptBuilder.EnvironmentFacts, where they are true.
-        var dir      = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization");
-        var files    = Directory.EnumerateFiles(dir, "Strings*.resx").ToList();
-        var checkedd = 0;
-        var offenders = new List<string>();
+        // The SAME text is served to both front-ends: Inferpal.Host passes it to VS Code as is.
+        // "integrated into Visual Studio 2026" was therefore false for every VS Code user, and
+        // "PowerShell commands" false for every Linux/macOS machine. Both facts are built at run
+        // time by SystemPromptBuilder.EnvironmentFacts, where they are true.
+        var prompt    = ModelPrompts.SystemPrompt;
+        var offenders = VariableFacts.Where(f => prompt.Contains(f, StringComparison.Ordinal)).ToList();
 
-        foreach (var file in files)
-        {
-            var m = Regex.Match(File.ReadAllText(file),
-                                @"<data name=""SystemPrompt""[^>]*>\s*<value>(.*?)</value>",
-                                RegexOptions.Singleline);
-            if (!m.Success) continue;
-
-            checkedd++;
-            foreach (var fact in VariableFacts)
-                if (m.Groups[1].Value.Contains(fact, StringComparison.Ordinal))
-                    offenders.Add($"{Path.GetFileName(file)} : « {fact} »");
-        }
-
-        // Witness: all ten languages, otherwise a broken pattern would green the rule on zero files.
-        Assert.True(checkedd == 10,
-            $"The scan read {checkedd} SystemPrompt value(s) out of the 10 expected in {dir}: the rule checks nothing any more.");
+        Assert.False(string.IsNullOrWhiteSpace(prompt));   // witness: the rule reads a real prompt
 
         Assert.True(offenders.Count == 0,
             "The base system prompt asserts an editor or a shell. Both facts vary from one "
-            + "front-end and one machine to the next: they belong to EnvironmentFacts, not to a "
-            + "translation:" + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+            + "front-end and one machine to the next: they belong to EnvironmentFacts:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
     // ── 23. What the USER reads does not assert the editor either ─────────────

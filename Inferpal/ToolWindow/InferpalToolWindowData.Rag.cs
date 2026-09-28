@@ -357,7 +357,7 @@ internal partial class InferpalToolWindowData
     {
         var dir = FindProjectRoot();
         var prompt = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir).Build(
-            Strings.SystemPrompt,
+            ModelPrompts.SystemPrompt,
             PersonaLanguage,
             _activeTemplateSuffix,
             dir,

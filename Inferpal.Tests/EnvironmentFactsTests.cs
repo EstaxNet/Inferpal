@@ -12,8 +12,8 @@ namespace Inferpal.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>What it cost.</b> <c>Strings.SystemPrompt</c> said "integrated in Visual Studio 2026 … run
-/// PowerShell commands" — and <c>Inferpal.Host</c> serves the SAME resource to the VS Code
+/// <b>What it cost.</b> The base system prompt said "integrated in Visual Studio 2026 … run
+/// PowerShell commands" — and <c>Inferpal.Host</c> serves the SAME text to the VS Code
 /// front-end. Every VS Code user therefore had a model convinced it lived in Visual Studio (it
 /// answers with Solution Explorer and Rebuild Solution), and every Linux/macOS machine a model
 /// asked for PowerShell against <c>/bin/bash</c> — on packages published for linux-x64 and

@@ -90,8 +90,8 @@ internal sealed class AgentOrchestrator
     /// </remarks>
     internal static string PlanPrompt(IToolRegistry tools) =>
         tools.Definitions.Count == 0
-            ? Strings.AgentPlanPrompt
-            : Strings.AgentPlanPrompt + "\nTools you can call (use these names for \"tool\"): "
+            ? ModelPrompts.AgentPlanPrompt
+            : ModelPrompts.AgentPlanPrompt + "\nTools you can call (use these names for \"tool\"): "
               + string.Join(", ", tools.Definitions.Select(d => d.Function.Name)) + ".";
 
     // Read-only tools safe to run concurrently within one batch: pure filesystem reads, no GPU work,
@@ -495,8 +495,8 @@ internal sealed class AgentOrchestrator
             : 24000;
         var digest = BuildToolDigest(executions, budgetChars);
         var prompt = digest.Length > 0
-            ? digest + "\n\n" + Strings.AgentSynthesizePrompt(TaskSnippet(userTask))
-            : Strings.AgentSynthesizePrompt(TaskSnippet(userTask));
+            ? digest + "\n\n" + ModelPrompts.AgentSynthesizePrompt(TaskSnippet(userTask))
+            : ModelPrompts.AgentSynthesizePrompt(TaskSnippet(userTask));
         synth.Add(new ChatMessageDto("user", prompt));
 
         try
@@ -699,7 +699,7 @@ internal sealed class AgentOrchestrator
         // small models into narrating instead of calling tools in the ACT phase.
         messages.Add(new ChatMessageDto("user",      planPrompt) { IsScaffolding = true });
         messages.Add(new ChatMessageDto("assistant", planTurn.TextContent));
-        messages.Add(new ChatMessageDto("user",      Strings.AgentExecutePlan) { IsScaffolding = true });
+        messages.Add(new ChatMessageDto("user",      ModelPrompts.AgentExecutePlan) { IsScaffolding = true });
 
         // Everything added so far — system prompt (+ tool descriptions), the original conversation
         // history, and the plan trio — is the anchored head. Intra-run compaction (CompactRunContext)
@@ -892,10 +892,10 @@ internal sealed class AgentOrchestrator
                 // the real answer — switch to the answer-now variant anchored on the user task.
                 answerRequested = remaining == 0 && !editChangedNothing;
                 var observeMsg = editChangedNothing
-                    ? Strings.AgentObservePromptEditUnchanged(iteration + 1, maxIter, toolNames)
+                    ? ModelPrompts.AgentObservePromptEditUnchanged(iteration + 1, maxIter, toolNames)
                     : answerRequested
-                        ? Strings.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, TaskSnippet(userTask))
-                        : Strings.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);
+                        ? ModelPrompts.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, TaskSnippet(userTask))
+                        : ModelPrompts.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);
                 messages.Add(new ChatMessageDto("user", observeMsg) { IsScaffolding = true });
 
                 // Signal the UI to clear the streaming bubble so that think-only tokens
@@ -935,7 +935,7 @@ internal sealed class AgentOrchestrator
                 {
                     nudgedOnce = true;
                     // assistantMsg is already appended to messages above.
-                    messages.Add(new ChatMessageDto("user", Strings.AgentNudgeToolCall) { IsScaffolding = true });
+                    messages.Add(new ChatMessageDto("user", ModelPrompts.AgentNudgeToolCall) { IsScaffolding = true });
                     // Clear the streaming bubble — the nudge response will start fresh.
                     onStreamReset?.Invoke();
                     continue;

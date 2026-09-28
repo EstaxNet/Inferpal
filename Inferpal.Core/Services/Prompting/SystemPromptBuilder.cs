@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Inferpal.Config;
+using Inferpal.Localization;
 
 namespace Inferpal.Services.Prompting;
 
@@ -40,7 +41,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⚠ The base prompt is a localised resource shared by both front-ends, so it can assert
+    /// ⚠ The base prompt is one text shared by both front-ends, so it can assert
     /// neither the editor nor the shell: a VS Code user would be told the wrong editor and a
     /// Linux/macOS user the wrong shell. A model told it lives in Visual Studio answers with
     /// Solution Explorer and Rebuild Solution.
@@ -65,7 +66,23 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         var editor = string.IsNullOrWhiteSpace(editorName) ? string.Empty : $"Editor: {editorName}. ";
         var root = string.IsNullOrWhiteSpace(workspaceRoot) ? string.Empty : $" The workspace root is {workspaceRoot}.";
         return $"\n\n{editor}Operating system: {RuntimeInformation.OSDescription}. "
-             + $"The run_command shell is {shell}.{root}";
+             + $"The run_command shell is {shell}.{root}{ReplyLanguage(Strings.UiCulture)}";
+    }
+
+    /// <summary>
+    /// The line that names the reply language when the interface is not in English; empty in English, where the base
+    /// prompt's "respond in the same language as the user" is the whole rule.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The model-facing prompts are English only (<see cref="ModelPrompts"/>): the interface language reaches the
+    /// model through this line, never through a translated prompt. The user writing in another language still wins.
+    /// </remarks>
+    internal static string ReplyLanguage(System.Globalization.CultureInfo culture)
+    {
+        var language = culture.TwoLetterISOLanguageName;
+        if (string.IsNullOrEmpty(language) || language is "en" or "iv") return string.Empty;   // "iv": invariant culture
+        var name = System.Globalization.CultureInfo.GetCultureInfo(language).EnglishName;
+        return $" The user's interface language is {name}: reply in {name} unless the user writes in another language.";
     }
 
     /// <summary>
@@ -132,7 +149,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     };
 
     /// <summary>Assembles the full system prompt.</summary>
-    /// <param name="basePrompt">Localised base system prompt (<c>Strings.SystemPrompt</c>).</param>
+    /// <param name="basePrompt">Base system prompt (<c>ModelPrompts.SystemPrompt</c>, English; the reply language is
+    /// stated by <see cref="EnvironmentFacts"/>).</param>
     /// <param name="language">Active document language for the persona snippet; null/empty to skip.</param>
     /// <param name="templateSuffix">Suffix of the active <c>/template</c>, appended verbatim; null/empty to skip.</param>
     /// <param name="projectRoot">Project root containing <c>.inferpal/</c>; null to skip the project layers.</param>

@@ -1242,7 +1242,7 @@ internal sealed partial class HostServer : IDisposable
         // The /template suffix is a builder layer, as in the Visual Studio view model: appended after the build it
         // had no X-Ray section, so the panel could neither show it nor switch it off.
         var prompt = new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir).Build(
-            Strings.SystemPrompt,
+            ModelPrompts.SystemPrompt,
             language:           s.PersonaLanguage,
             templateSuffix:     s.TemplateSuffix,
             projectRoot:        root,
@@ -1258,7 +1258,7 @@ internal sealed partial class HostServer : IDisposable
     {
         var root = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
         return new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir).BuildSections(
-            Strings.SystemPrompt,
+            ModelPrompts.SystemPrompt,
             language:          s.PersonaLanguage,
             templateSuffix:    s.TemplateSuffix,
             projectRoot:       root,

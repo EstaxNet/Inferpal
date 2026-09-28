@@ -238,7 +238,6 @@
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>你是 Inferpal，一个集成在用户代码编辑器中的本地 AI 开发助手。你可以使用工具读写文件、列出目录、搜索代码并运行 shell 命令。在回复之前请尽可能使用这些工具。请使用用户所使用的语言进行回复。</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
@@ -624,23 +623,10 @@ ollama serve
   <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>为扩展推理任务保留。默认：600 秒。</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 规划中…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 观察中…</value></data>
-  <data name="AgentPlanPrompt" xml:space="preserve"><value>在使用任何工具之前，仅输出以下结构的JSON对象（无散文，无markdown围栏）：
-{"goal":"一句话描述你将要做的事情","steps":[{"i":1,"desc":"此步骤的内容","tool":"预期工具名称或null"},{"i":2,"desc":"..."}]}
-包含2–6个具体步骤。如果不需要特定工具，"tool"使用null。
-输出JSON后停止——暂时不要调用任何工具。</value></data>
-  <data name="AgentExecutePlan" xml:space="preserve"><value>好的。现在从第1步开始逐步执行计划。不要写任何说明文字——立即调用第1步所需的工具。</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>执行请求</value></data>
   <data name="AgentPlanFallbackStep" xml:space="preserve"><value>使用可用工具执行请求</value></data>
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 代理计划</value></data>
-  <data name="AgentObservePrompt" xml:space="preserve"><value>[观察 — {0}/{1}] 已执行工具：{2}。剩余计划步骤：{3}。
-立即调用下一步所需的工具——无需任何前言或解释。如果目标已完全实现，请在不再调用工具的情况下，针对我最近的请求写出最终回答——不要重复本次对话中已给出的回答。</value></data>
-  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[观察 — {0}/{1}] 已执行工具：{2}。计划的所有步骤均已完成。
-现在请针对我最近的请求（即："{3}"）直接、完整地用我的语言写出最终回答——不要再调用任何工具。只有在仍缺少关键信息时才调用额外的工具。不要重复对先前其他问题的回答。</value></data>
-  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[观察 — {0}/{1}] 已执行工具：{2}。此次编辑没有修改任何文件：没有写入任何内容。
-请阅读上面的错误，修正调用（从文件中原样复制 old_content），并连同其中包含的所有编辑一起重新发送：apply_edits 被拒绝时，其中任何编辑都不会写入，包括正确的编辑。不要像修改已经完成那样作答。</value></data>
-  <data name="AgentNudgeToolCall" xml:space="preserve"><value>你描述了你的意图，但没有调用任何工具。不要生成任何文本——立即调用计划中的第一个工具。</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ 正在撰写回答…</value></data>
-  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>你已通过上述工具收集了足够的信息。不要再调用任何工具。请利用这些结果，针对我最近的请求："{0}"，用我的语言、直接而完整地写出最终回答。务必回答这一请求；不要重复本次对话中已给出的回答。</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>MCP 服务器</value></data>
   <data name="LabelMcpEnabled" xml:space="preserve"><value>启用 MCP 服务器</value></data>
   <data name="HintMcpEnabled" xml:space="preserve"><value>启用后，配置的 Model Context Protocol (MCP) 服务器会在启动时运行，其工具将提供给代理使用。服务器命令（如 npx、uvx）必须已安装在本机上。</value></data>

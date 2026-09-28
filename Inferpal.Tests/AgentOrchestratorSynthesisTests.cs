@@ -102,7 +102,7 @@ public class AgentOrchestratorSynthesisTests
         // anchors on THAT question (guards against replaying an earlier turn's answer). The prompt is
         // the tail of the synthesis user turn — the gathered tool digest is prepended to it.
         Assert.Contains(fake.SeenMessages.Last(),
-            m => m.Content != null && m.Content.EndsWith(Strings.AgentSynthesizePrompt("Give me the leek pie recipe")));
+            m => m.Content != null && m.Content.EndsWith(ModelPrompts.AgentSynthesizePrompt("Give me the leek pie recipe")));
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class AgentOrchestratorSynthesisTests
         var synth = fake.SeenMessages.Last();
         // Witness: it really is the synthesis request being inspected.
         Assert.Contains(synth, m => m.Content != null
-                                 && m.Content.EndsWith(Strings.AgentSynthesizePrompt("Give me the leek pie recipe")));
+                                 && m.Content.EndsWith(ModelPrompts.AgentSynthesizePrompt("Give me the leek pie recipe")));
 
         Assert.False(ToolBlockBoundary.HasOrphanedToolMessage(synth));
         Assert.Contains(synth, m => (m.Content ?? "").Contains("class Foo { void Bar() {} }"));
@@ -199,7 +199,7 @@ public class AgentOrchestratorSynthesisTests
 
         Assert.Equal("devstral:24b is …", result.FinalResponse);
         Assert.Contains(fake.SeenMessages.Last(),
-            m => m.Content != null && m.Content.EndsWith(Strings.AgentSynthesizePrompt("What about devstral:24b?")));
+            m => m.Content != null && m.Content.EndsWith(ModelPrompts.AgentSynthesizePrompt("What about devstral:24b?")));
     }
 
     [Fact]
@@ -234,7 +234,7 @@ public class AgentOrchestratorSynthesisTests
         Assert.Equal(answer, result.FinalResponse);
         // No synthesis pass: the model's own printable answer is returned verbatim.
         Assert.DoesNotContain(fake.SeenMessages,
-            set => set.Any(m => m.Content != null && m.Content.EndsWith(Strings.AgentSynthesizePrompt("Give me the leek pie recipe"))));
+            set => set.Any(m => m.Content != null && m.Content.EndsWith(ModelPrompts.AgentSynthesizePrompt("Give me the leek pie recipe"))));
     }
 
     [Fact]

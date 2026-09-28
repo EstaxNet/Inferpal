@@ -21,9 +21,12 @@ internal static class Strings
         catch { OverrideCulture = null; }
     }
 
+    /// <summary>The interface culture: the language chosen in the settings, else the thread's UI culture.</summary>
+    internal static CultureInfo UiCulture => OverrideCulture ?? CultureInfo.CurrentUICulture;
+
     private static string Get(string key)
     {
-        var culture = OverrideCulture ?? CultureInfo.CurrentUICulture;
+        var culture = UiCulture;
         try { return _rm.GetString(key, culture) ?? key; }
         catch { return key; }
     }
@@ -402,7 +405,6 @@ internal static class Strings
     public static string HintTaskTimeoutDeep      => Get(nameof(HintTaskTimeoutDeep));
 
     // ── ViewModel ──────────────────────────────────────────────────────────────
-    public static string SystemPrompt          => Get(nameof(SystemPrompt));
     public static string StatusConnecting      => Get(nameof(StatusConnecting));
     public static string StatusConnected       => Get(nameof(StatusConnected));
     public static string StatusUnreachable     => Get(nameof(StatusUnreachable));
@@ -415,10 +417,6 @@ internal static class Strings
         string.Format(Get(nameof(StatusCallingTool)), toolName);
 
     // ── Agent Mode ─────────────────────────────────────────────────────────────
-    /// <summary>Prompt injected as a user message to ask the model for a JSON plan.</summary>
-    public static string AgentPlanPrompt => Get(nameof(AgentPlanPrompt));
-    /// <summary>User message injected after the plan to start execution.</summary>
-    public static string AgentExecutePlan => Get(nameof(AgentExecutePlan));
     /// <summary>Fallback plan goal when JSON parsing fails.</summary>
     public static string AgentPlanFallbackGoal => Get(nameof(AgentPlanFallbackGoal));
     /// <summary>Single-step description for the fallback plan.</summary>
@@ -426,48 +424,6 @@ internal static class Strings
     /// <summary>Label shown above the live plan bubble.</summary>
     public static string AgentPlanLabel => Get(nameof(AgentPlanLabel));
 
-    /// <summary>OBSERVE injection injected between Act iterations.</summary>
-    /// <param name="iteration">1-based current iteration number.</param>
-    /// <param name="max">Maximum allowed iterations.</param>
-    /// <param name="toolNames">Comma-separated names of tools executed this round.</param>
-    /// <param name="remaining">Steps still left in the plan.</param>
-    public static string AgentObservePrompt(int iteration, int max, string toolNames, int remaining) =>
-        string.Format(Get(nameof(AgentObservePrompt)), iteration, max, toolNames, remaining);
-    /// <summary>
-    /// OBSERVE injection used instead of <see cref="AgentObservePrompt"/> once every plan step is
-    /// done: the generic variant opens with "call the tool for the next step", which pushes the
-    /// model into a gratuitous extra tool call (e.g. read_file on the active document) whose
-    /// result then displaces the real answer. This variant re-anchors on the user's request and
-    /// asks for the final answer instead.
-    /// </summary>
-    /// <param name="iteration">1-based current iteration number.</param>
-    /// <param name="max">Maximum allowed iterations.</param>
-    /// <param name="toolNames">Comma-separated names of tools executed this round.</param>
-    /// <param name="task">Short quote of the user's current request (see AgentOrchestrator.TaskSnippet).</param>
-    public static string AgentObservePromptComplete(int iteration, int max, string toolNames, string task) =>
-        string.Format(Get(nameof(AgentObservePromptComplete)), iteration, max, toolNames, task);
-    /// <summary>
-    /// OBSERVE injection used when an edit among the round's calls wrote nothing: the step stays open, and the model
-    /// is told to correct the call and send every edit again — never that the plan is complete.
-    /// </summary>
-    /// <param name="iteration">1-based current iteration number.</param>
-    /// <param name="max">Maximum allowed iterations.</param>
-    /// <param name="toolNames">Comma-separated names of tools executed this round.</param>
-    public static string AgentObservePromptEditUnchanged(int iteration, int max, string toolNames) =>
-        string.Format(Get(nameof(AgentObservePromptEditUnchanged)), iteration, max, toolNames);
-    /// <summary>
-    /// One-shot nudge injected when the first ACT response contained text but no tool calls.
-    /// Forces the model to invoke a tool instead of narrating its intentions.
-    /// </summary>
-    public static string AgentNudgeToolCall => Get(nameof(AgentNudgeToolCall));
-    /// <summary>
-    /// Final-synthesis prompt injected (no tools) when the loop ended without a printable answer
-    /// but tools ran: asks the model to write the complete answer from the gathered results.
-    /// </summary>
-    /// <param name="task">Short quote of the user's current request (see AgentOrchestrator.TaskSnippet)
-    /// so the model answers the latest question rather than an earlier turn.</param>
-    public static string AgentSynthesizePrompt(string task) =>
-        string.Format(Get(nameof(AgentSynthesizePrompt)), task);
     public static string MsgCancelled          => Get(nameof(MsgCancelled));
     public static string MsgTruncated          => Get(nameof(MsgTruncated));
     public static string DefaultSessionSnippet => Get(nameof(DefaultSessionSnippet));

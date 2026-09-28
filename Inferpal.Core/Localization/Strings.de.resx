@@ -238,7 +238,6 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>Du bist Inferpal, ein lokaler KI-Entwicklungsassistent, der in den Code-Editor des Benutzers integriert ist. Du hast Zugriff auf Werkzeuge zum Lesen/Schreiben von Dateien, Auflisten von Verzeichnissen, Suchen in Code und Ausführen von Shell-Befehlen. Verwende diese Werkzeuge so oft wie nötig, bevor du antwortest. Antworte in derselben Sprache wie der Benutzer.</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
@@ -624,23 +623,10 @@ ollama serve
   <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>Reserviert für erweiterte Denkaufgaben. Standard: 600 s.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planung…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Beobachte…</value></data>
-  <data name="AgentPlanPrompt" xml:space="preserve"><value>Bevor Sie Tools verwenden, geben Sie NUR ein JSON-Objekt mit der folgenden Struktur aus (keine Prosa, keine Markdown-Fences):
-{"goal":"Einzeiler-Beschreibung Ihres Vorhabens","steps":[{"i":1,"desc":"Was dieser Schritt tut","tool":"erwarteter_toolname_oder_null"},{"i":2,"desc":"..."}]}
-Fügen Sie 2–6 konkrete Schritte ein. Verwenden Sie null für "tool" wenn kein spezifisches Tool erwartet wird.
-Nach der JSON-Ausgabe aufhören — noch keine Tools aufrufen.</value></data>
-  <data name="AgentExecutePlan" xml:space="preserve"><value>Gut. Führen Sie nun den Plan Schritt für Schritt aus, beginnend mit Schritt 1. Schreiben Sie keinen erklärenden Text — rufen Sie sofort das passende Tool für Schritt 1 auf.</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Anfrage ausführen</value></data>
   <data name="AgentPlanFallbackStep" xml:space="preserve"><value>Anfrage mit verfügbaren Tools ausführen</value></data>
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 Agentenplan</value></data>
-  <data name="AgentObservePrompt" xml:space="preserve"><value>[BEOBACHTEN — {0}/{1}] Ausgeführte Tools: {2}. Verbleibende Planschritte: {3}.
-Rufen Sie sofort das Tool für den nächsten Schritt auf — ohne Präambel oder Erklärung. Wenn das Ziel vollständig erreicht ist, verfassen Sie die finale Antwort auf meine letzte Anfrage ohne weitere Tool-Aufrufe — wiederholen Sie keine frühere Antwort aus dieser Unterhaltung.</value></data>
-  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[BEOBACHTEN — {0}/{1}] Ausgeführte Tools: {2}. Alle Planschritte sind abgeschlossen.
-Verfassen Sie jetzt die vollständige finale Antwort auf meine letzte Anfrage, die lautete: „{3}" — direkt, vollständig und in meiner Sprache, OHNE weitere Tool-Aufrufe. Rufen Sie nur dann ein weiteres Tool auf, wenn noch wesentliche Informationen fehlen. Wiederholen Sie keine Antwort auf eine frühere, andere Frage.</value></data>
-  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[BEOBACHTEN — {0}/{1}] Ausgeführte Tools: {2}. Die Bearbeitung hat keine Datei geändert: nichts wurde geschrieben.
-Lesen Sie den Fehler oben, korrigieren Sie den Aufruf — übernehmen Sie old_content exakt aus der Datei — und senden Sie ihn erneut mit allen Bearbeitungen, die er enthielt: Wird apply_edits abgelehnt, wird keine seiner Bearbeitungen geschrieben, auch die korrekten nicht. Antworten Sie nicht so, als wäre die Änderung erfolgt.</value></data>
-  <data name="AgentNudgeToolCall" xml:space="preserve"><value>Sie haben Ihre Absichten beschrieben, aber keine Tools aufgerufen. Produzieren Sie keinen Text — rufen Sie sofort das erste Tool Ihres Plans auf.</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ Antwort wird verfasst…</value></data>
-  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>Sie haben mit den obigen Tools genügend Informationen gesammelt. Rufen Sie KEINE weiteren Tools auf. Verfassen Sie anhand dieser Ergebnisse die vollständige finale Antwort auf meine letzte Anfrage, nämlich: „{0}" — direkt, vollständig und in meiner Sprache. Beantworten Sie genau DIESE Anfrage; wiederholen Sie keine frühere Antwort aus dieser Unterhaltung.</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>MCP-Server</value></data>
   <data name="LabelMcpEnabled" xml:space="preserve"><value>MCP-Server aktivieren</value></data>
   <data name="HintMcpEnabled" xml:space="preserve"><value>Wenn aktiviert, werden die konfigurierten Model-Context-Protocol-(MCP-)Server beim Start gestartet und ihre Tools stehen dem Agenten zur Verfügung. Die Server-Befehle (z. B. npx, uvx) müssen auf diesem Rechner installiert sein.</value></data>

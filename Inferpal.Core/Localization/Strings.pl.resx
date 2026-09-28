@@ -238,7 +238,6 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>Jesteś Inferpal, lokalnym asystentem deweloperskim AI zintegrowanym z edytorem kodu użytkownika. Masz dostęp do narzędzi do odczytu/zapisu plików, wyświetlania katalogów, wyszukiwania kodu i uruchamiania poleceń powłoki. Używaj tych narzędzi w razie potrzeby przed odpowiedzią. Odpowiadaj w tym samym języku co użytkownik.</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
@@ -624,23 +623,10 @@ ollama serve
   <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>Zarezerwowane dla zadań rozszerzonego rozumowania. Domyślnie: 600 s.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planowanie…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Obserwacja…</value></data>
-  <data name="AgentPlanPrompt" xml:space="preserve"><value>Przed użyciem narzędzi wyświetl TYLKO obiekt JSON o następującej strukturze (bez prozy, bez znaczników markdown):
-{"goal":"jednozdaniowy opis tego, co zrobisz","steps":[{"i":1,"desc":"co robi ten krok","tool":"oczekiwana_nazwa_narzędzia_lub_null"},{"i":2,"desc":"..."}]}
-Uwzględnij 2–6 konkretnych kroków. Użyj null dla "tool" jeśli nie oczekujesz konkretnego narzędzia.
-Po wyświetleniu JSON zatrzymaj się — jeszcze nie wywołuj narzędzi.</value></data>
-  <data name="AgentExecutePlan" xml:space="preserve"><value>Dobrze. Teraz wykonaj plan krok po kroku, zaczynając od kroku 1. Nie pisz żadnych wyjaśnień — natychmiast wywołaj odpowiednie narzędzie dla kroku 1.</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Wykonaj żądanie</value></data>
   <data name="AgentPlanFallbackStep" xml:space="preserve"><value>Wykonaj żądanie używając dostępnych narzędzi</value></data>
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 Plan agenta</value></data>
-  <data name="AgentObservePrompt" xml:space="preserve"><value>[OBSERWUJ — {0}/{1}] Wykonane narzędzia: {2}. Pozostałe kroki planu: {3}.
-Natychmiast wywołaj narzędzie następnego kroku — bez wstępu ani wyjaśnień. Jeśli cel jest w pełni osiągnięty, napisz końcową odpowiedź na moje najnowsze żądanie bez wywoływania kolejnych narzędzi — nie powtarzaj wcześniejszej odpowiedzi z tej rozmowy.</value></data>
-  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[OBSERWUJ — {0}/{1}] Wykonane narzędzia: {2}. Wszystkie kroki planu zostały ukończone.
-Napisz teraz pełną końcową odpowiedź na moje najnowsze żądanie, którym było: „{3}" — bezpośrednio, w całości i w moim języku, BEZ wywoływania kolejnych narzędzi. Wywołaj kolejne narzędzie tylko wtedy, gdy wciąż brakuje istotnych informacji. Nie powtarzaj odpowiedzi udzielonej na wcześniejsze, inne pytanie.</value></data>
-  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[OBSERWUJ — {0}/{1}] Wykonane narzędzia: {2}. Edycja nie zmieniła żadnego pliku: nic nie zostało zapisane.
-Przeczytaj powyższy błąd, popraw wywołanie — skopiuj old_content dokładnie z pliku — i wyślij je ponownie ze wszystkimi edycjami, które zawierało: gdy apply_edits zostaje odrzucone, żadna z jego edycji nie jest zapisywana, także te poprawne. Nie odpowiadaj tak, jakby zmiana została wprowadzona.</value></data>
-  <data name="AgentNudgeToolCall" xml:space="preserve"><value>Opisałeś swoje zamiary, ale nie wywołałeś żadnego narzędzia. Nie produkuj żadnego tekstu — natychmiast wywołaj pierwsze narzędzie ze swojego planu.</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ Redagowanie odpowiedzi…</value></data>
-  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>Zebrałeś wystarczająco informacji za pomocą powyższych narzędzi. NIE wywołuj już żadnych narzędzi. Na podstawie tych wyników napisz pełną końcową odpowiedź na moje najnowsze żądanie, czyli: „{0}" — bezpośrednio, w całości i w moim języku. Odpowiedz dokładnie na TO żądanie; nie powtarzaj wcześniejszej odpowiedzi z tej rozmowy.</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>Serwery MCP</value></data>
   <data name="LabelMcpEnabled" xml:space="preserve"><value>Włącz serwery MCP</value></data>
   <data name="HintMcpEnabled" xml:space="preserve"><value>Po włączeniu skonfigurowane serwery Model Context Protocol (MCP) są uruchamiane przy starcie, a ich narzędzia stają się dostępne dla agenta. Polecenia serwerów (np. npx, uvx) muszą być zainstalowane na tym komputerze.</value></data>

@@ -69,7 +69,7 @@ public sealed class UpdateMemoryRootTests : IDisposable
         await Tool().ExecuteAsync(Args(new { content = "REMEMBER-THIS-4217" }), CancellationToken.None);
 
         var prompt = new Inferpal.Services.Prompting.SystemPromptBuilder(new InferpalConfig())
-            .Build(Strings.SystemPrompt, projectRoot: _root);
+            .Build(ModelPrompts.SystemPrompt, projectRoot: _root);
 
         Assert.Contains("REMEMBER-THIS-4217", prompt, StringComparison.Ordinal);
     }

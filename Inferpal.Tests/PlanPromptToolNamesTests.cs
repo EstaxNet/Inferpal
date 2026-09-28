@@ -57,7 +57,7 @@ public sealed class PlanPromptToolNamesTests
         var client = await RunAsync(new Registry("read_file", "search_in_files", "rename_symbol"));
 
         var plan = client.Requests[0][^1].Content!;
-        Assert.StartsWith(Strings.AgentPlanPrompt, plan, StringComparison.Ordinal);             // witness: the plan request
+        Assert.StartsWith(ModelPrompts.AgentPlanPrompt, plan, StringComparison.Ordinal);             // witness: the plan request
         Assert.EndsWith("Tools you can call (use these names for \"tool\"): read_file, search_in_files, rename_symbol.",
                         plan, StringComparison.Ordinal);
         Assert.True(client.Requests.Count > 1);
@@ -70,6 +70,6 @@ public sealed class PlanPromptToolNamesTests
         // Reference arm: no "Tools you can call:" line naming nothing.
         var client = await RunAsync(new Registry());
 
-        Assert.Equal(Strings.AgentPlanPrompt, client.Requests[0][^1].Content);
+        Assert.Equal(ModelPrompts.AgentPlanPrompt, client.Requests[0][^1].Content);
     }
 }

@@ -238,7 +238,6 @@
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>あなたは Inferpal です。ユーザーのコードエディターに統合されたローカル AI 開発アシスタントです。ファイルの読み書き、ディレクトリの一覧表示、コードの検索、シェルコマンドの実行などのツールにアクセスできます。返答する前にこれらのツールを必要な限り使用してください。ユーザーと同じ言語で返答してください。</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
@@ -624,23 +623,10 @@ ollama serve
   <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>拡張推論タスク用に予約済み。デフォルト：600秒。</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 計画中…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 観察中…</value></data>
-  <data name="AgentPlanPrompt" xml:space="preserve"><value>ツールを使用する前に、次の構造のJSONオブジェクトのみを出力してください（散文なし、マークダウンフェンスなし）：
-{"goal":"実行内容の一文説明","steps":[{"i":1,"desc":"このステップの内容","tool":"期待するツール名またはnull"},{"i":2,"desc":"..."}]}
-2〜6個の具体的なステップを含めてください。特定のツールが期待されない場合は"tool"にnullを使用してください。
-JSONを出力したら停止してください — まだツールを呼び出さないでください。</value></data>
-  <data name="AgentExecutePlan" xml:space="preserve"><value>良いです。それではステップ1から順番に計画を実行してください。説明文を書かずに、すぐにステップ1の適切なツールを呼び出してください。</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>リクエストを実行する</value></data>
   <data name="AgentPlanFallbackStep" xml:space="preserve"><value>利用可能なツールを使用してリクエストを実行する</value></data>
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 エージェント計画</value></data>
-  <data name="AgentObservePrompt" xml:space="preserve"><value>[観察 — {0}/{1}] 実行したツール: {2}。残りのステップ数: {3}。
-前置きや説明なしに、すぐに次のステップのツールを呼び出してください。目標が完全に達成された場合は、ツールを呼び出さずに、私の直近の要求に対する最終回答を書いてください — この会話で既に行った回答を繰り返さないでください。</value></data>
-  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[観察 — {0}/{1}] 実行したツール: {2}。計画のすべてのステップが完了しました。
-今すぐ、私の直近の要求「{3}」に対する完全な最終回答を、直接・全文・私の言語で書いてください。これ以上ツールを呼び出さないでください。重要な情報がまだ不足している場合にのみ、追加のツールを呼び出してください。以前の別の質問への回答を繰り返さないでください。</value></data>
-  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[観察 — {0}/{1}] 実行したツール: {2}。編集はどのファイルも変更しませんでした。何も書き込まれていません。
-上のエラーを読み、呼び出しを修正して（old_content はファイルから正確にコピーしてください）、含まれていたすべての編集とともに再送してください。apply_edits が拒否された場合、正しい編集も含めて、どの編集も書き込まれません。変更が行われたかのように回答しないでください。</value></data>
-  <data name="AgentNudgeToolCall" xml:space="preserve"><value>あなたは意図を説明しましたが、ツールを呼び出しませんでした。テキストを生成せずに — プランの最初のツールを今すぐ呼び出してください。</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ 回答を作成中…</value></data>
-  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>上記のツールで十分な情報を集めました。これ以上ツールを呼び出さないでください。それらの結果を使って、私の直近の要求「{0}」に対する完全な最終回答を — 直接的に、漏れなく、私の言語で書いてください。必ずこの要求に答えてください。この会話で既に行った回答を繰り返さないでください。</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>MCP サーバー</value></data>
   <data name="LabelMcpEnabled" xml:space="preserve"><value>MCP サーバーを有効にする</value></data>
   <data name="HintMcpEnabled" xml:space="preserve"><value>有効にすると、設定された Model Context Protocol (MCP) サーバーが起動時に実行され、そのツールがエージェントで利用可能になります。サーバーのコマンド（例: npx、uvx）がこのマシンにインストールされている必要があります。</value></data>

@@ -239,7 +239,6 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>You are Inferpal, a local AI developer assistant integrated in the user's code editor. You have access to tools to read/write files, list directories, search code, and run shell commands. Use these tools as much as needed before replying. Respond in the same language as the user.</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
@@ -604,23 +603,10 @@ Edit the file or ask the agent to use `update_memory`. It is read again before e
   <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>Reserved for extended reasoning tasks. Default: 600 s.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planning…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Observing…</value></data>
-  <data name="AgentPlanPrompt" xml:space="preserve"><value>Before using any tools, output ONLY a JSON object with the following structure (no prose, no markdown fences):
-{"goal":"one-sentence description of what you will do","steps":[{"i":1,"desc":"what this step does","tool":"expected_tool_name_or_null"},{"i":2,"desc":"..."}]}
-Include 2–6 concrete steps. Use null for "tool" if no specific tool is expected.
-After outputting the JSON, stop — do not call any tools yet.</value></data>
-  <data name="AgentExecutePlan" xml:space="preserve"><value>Good. Now execute the plan step by step, starting from step 1. Do NOT write any explanatory text — immediately call the appropriate tool for step 1 right now.</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Execute the request</value></data>
   <data name="AgentPlanFallbackStep" xml:space="preserve"><value>Execute the request using available tools</value></data>
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 Agent Plan</value></data>
-  <data name="AgentObservePrompt" xml:space="preserve"><value>[OBSERVE — {0}/{1}] Tools executed: {2}. Remaining plan steps: {3}.
-Immediately call the tool for the next step — no preamble, no explanation. If the goal is fully achieved, write the final answer to my most recent request without calling any more tools — do not repeat an earlier answer from this conversation.</value></data>
-  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[OBSERVE — {0}/{1}] Tools executed: {2}. All plan steps are complete.
-Now write the complete final answer to my most recent request, which was: "{3}" — directly, in full, and in my language, WITHOUT calling any more tools. Only call another tool if essential information is still missing. Do not repeat an answer given to an earlier, different question.</value></data>
-  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[OBSERVE — {0}/{1}] Tools executed: {2}. The edit changed no file: nothing was written.
-Read the error above, correct the call — copy old_content exactly from the file — and send it again with every edit it contained: when apply_edits is refused, none of its edits is written, the correct ones included. Do not answer as if the change had been made.</value></data>
-  <data name="AgentNudgeToolCall" xml:space="preserve"><value>You described your intentions but did not call any tools. Do NOT produce any text — call the first tool from your plan RIGHT NOW.</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ Writing answer…</value></data>
-  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>You have gathered enough information with the tools above. Do NOT call any more tools. Using those results, write the complete final answer to my most recent request, which was: "{0}" — directly, in full, and in my language. Answer THAT request specifically; do not repeat an earlier answer from this conversation.</value></data>
 
   <!-- First-run auto-discovery -->
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **First launch** — {0} available. Auto-selected **{1}** as default model.

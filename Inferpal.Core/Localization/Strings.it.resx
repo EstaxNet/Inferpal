@@ -238,7 +238,6 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>Sei Inferpal, un assistente sviluppatore IA locale integrato nell'editor di codice dell'utente. Hai accesso a strumenti per leggere/scrivere file, elencare directory, cercare nel codice ed eseguire comandi shell. Usa questi strumenti quanto necessario prima di rispondere. Rispondi nella stessa lingua dell'utente.</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
@@ -624,23 +623,10 @@ ollama serve
   <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>Riservato per attività di ragionamento esteso. Predefinito: 600 s.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Pianificazione…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Osservazione…</value></data>
-  <data name="AgentPlanPrompt" xml:space="preserve"><value>Prima di usare qualsiasi strumento, genera SOLO un oggetto JSON con la seguente struttura (senza prosa, senza delimitatori markdown):
-{"goal":"descrizione in una frase di cosa farai","steps":[{"i":1,"desc":"cosa fa questo passaggio","tool":"nome_strumento_atteso_o_null"},{"i":2,"desc":"..."}]}
-Includi 2–6 passaggi concreti. Usa null per "tool" se non si prevede uno strumento specifico.
-Dopo aver generato il JSON, fermati — non chiamare ancora strumenti.</value></data>
-  <data name="AgentExecutePlan" xml:space="preserve"><value>Bene. Ora esegui il piano passo dopo passo, iniziando dal passaggio 1. Non scrivere testo esplicativo — chiama immediatamente lo strumento appropriato per il passaggio 1.</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Eseguire la richiesta</value></data>
   <data name="AgentPlanFallbackStep" xml:space="preserve"><value>Eseguire la richiesta usando gli strumenti disponibili</value></data>
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 Piano agente</value></data>
-  <data name="AgentObservePrompt" xml:space="preserve"><value>[OSSERVA — {0}/{1}] Strumenti eseguiti: {2}. Passaggi rimanenti: {3}.
-Chiama immediatamente lo strumento del prossimo passaggio — senza preambolo né spiegazione. Se l'obiettivo è completamente raggiunto, scrivi la risposta finale alla mia richiesta più recente senza chiamare altri strumenti — non ripetere una risposta precedente di questa conversazione.</value></data>
-  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[OSSERVA — {0}/{1}] Strumenti eseguiti: {2}. Tutti i passaggi del piano sono completati.
-Scrivi ora la risposta finale completa alla mia richiesta più recente, che era: «{3}» — direttamente, per intero e nella mia lingua, SENZA chiamare altri strumenti. Chiama un altro strumento solo se mancano ancora informazioni essenziali. Non ripetere una risposta data a una domanda precedente diversa.</value></data>
-  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[OSSERVA — {0}/{1}] Strumenti eseguiti: {2}. La modifica non ha cambiato alcun file: non è stato scritto nulla.
-Legga l'errore qui sopra, corregga la chiamata — copi old_content esattamente dal file — e la invii di nuovo con tutte le modifiche che conteneva: quando apply_edits viene rifiutato, nessuna delle sue modifiche viene scritta, nemmeno quelle corrette. Non risponda come se la modifica fosse stata fatta.</value></data>
-  <data name="AgentNudgeToolCall" xml:space="preserve"><value>Hai descritto le tue intenzioni ma non hai chiamato nessuno strumento. Non produrre alcun testo — chiama subito il primo strumento del tuo piano.</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ Stesura della risposta…</value></data>
-  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>Hai raccolto abbastanza informazioni con gli strumenti qui sopra. Non chiamare altri strumenti. Usando quei risultati, scrivi la risposta finale completa alla mia richiesta più recente, ovvero: «{0}» — in modo diretto, completo e nella mia lingua. Rispondi esattamente a QUELLA richiesta; non ripetere una risposta precedente di questa conversazione.</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>Server MCP</value></data>
   <data name="LabelMcpEnabled" xml:space="preserve"><value>Abilita i server MCP</value></data>
   <data name="HintMcpEnabled" xml:space="preserve"><value>Se abilitato, i server Model Context Protocol (MCP) configurati vengono avviati all'avvio e i loro strumenti diventano disponibili per l'agente. I comandi dei server (es. npx, uvx) devono essere installati su questa macchina.</value></data>

@@ -238,7 +238,6 @@
 
 
   <!-- System prompt -->
-  <data name="SystemPrompt" xml:space="preserve"><value>Ты — Inferpal, локальный ИИ-помощник разработчика, интегрированный в редактор кода пользователя. У тебя есть доступ к инструментам для чтения/записи файлов, просмотра директорий, поиска по коду и выполнения команд оболочки. Используй эти инструменты по мере необходимости перед ответом. Отвечай на том же языке, что и пользователь.</value></data>
 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
@@ -622,23 +621,10 @@ ollama serve
   <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>Зарезервировано для задач расширенного рассуждения. По умолчанию: 600 с.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Планирование…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Наблюдение…</value></data>
-  <data name="AgentPlanPrompt" xml:space="preserve"><value>Перед использованием инструментов выведите ТОЛЬКО JSON-объект следующей структуры (без текста, без markdown-разделителей):
-{"goal":"описание в одно предложение того, что вы сделаете","steps":[{"i":1,"desc":"что делает этот шаг","tool":"ожидаемое_имя_инструмента_или_null"},{"i":2,"desc":"..."}]}
-Включите 2–6 конкретных шагов. Используйте null для "tool", если конкретный инструмент не ожидается.
-После вывода JSON остановитесь — пока не вызывайте инструменты.</value></data>
-  <data name="AgentExecutePlan" xml:space="preserve"><value>Хорошо. Теперь выполните план шаг за шагом, начиная с шага 1. Не пишите никаких пояснений — немедленно вызовите подходящий инструмент для шага 1.</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Выполнить запрос</value></data>
   <data name="AgentPlanFallbackStep" xml:space="preserve"><value>Выполнить запрос с помощью доступных инструментов</value></data>
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 План агента</value></data>
-  <data name="AgentObservePrompt" xml:space="preserve"><value>[НАБЛЮДЕНИЕ — {0}/{1}] Выполненные инструменты: {2}. Оставшихся шагов: {3}.
-Немедленно вызовите инструмент следующего шага — без преамбулы и пояснений. Если цель полностью достигнута, напишите окончательный ответ на мой последний запрос без вызова дополнительных инструментов — не повторяйте ответ, уже данный в этом разговоре.</value></data>
-  <data name="AgentObservePromptComplete" xml:space="preserve"><value>[НАБЛЮДЕНИЕ — {0}/{1}] Выполненные инструменты: {2}. Все шаги плана выполнены.
-Теперь напишите полный окончательный ответ на мой последний запрос, который был: «{3}» — напрямую, целиком и на моём языке, БЕЗ вызова дополнительных инструментов. Вызывайте другой инструмент только если всё ещё не хватает существенной информации. Не повторяйте ответ, данный на более ранний, другой вопрос.</value></data>
-  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[НАБЛЮДЕНИЕ — {0}/{1}] Выполненные инструменты: {2}. Правка не изменила ни одного файла: ничего не записано.
-Прочитайте ошибку выше, исправьте вызов — скопируйте old_content точно из файла — и отправьте его снова со всеми правками, которые он содержал: если apply_edits отклонён, не записывается ни одна из его правок, даже верные. Не отвечайте так, будто изменение было сделано.</value></data>
-  <data name="AgentNudgeToolCall" xml:space="preserve"><value>Вы описали свои намерения, но не вызвали ни одного инструмента. Не пишите никакого текста — немедленно вызовите первый инструмент из вашего плана.</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ Подготовка ответа…</value></data>
-  <data name="AgentSynthesizePrompt" xml:space="preserve"><value>Вы собрали достаточно информации с помощью инструментов выше. Больше НЕ вызывайте инструменты. На основе этих результатов напишите полный окончательный ответ на мой последний запрос, а именно: «{0}» — прямо, целиком и на моём языке. Ответьте именно на ЭТОТ запрос; не повторяйте ответ, уже данный в этом разговоре.</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>Серверы MCP</value></data>
   <data name="LabelMcpEnabled" xml:space="preserve"><value>Включить серверы MCP</value></data>
   <data name="HintMcpEnabled" xml:space="preserve"><value>Если включено, настроенные серверы Model Context Protocol (MCP) запускаются при старте, и их инструменты становятся доступны агенту. Команды серверов (например, npx, uvx) должны быть установлены на этом компьютере.</value></data>

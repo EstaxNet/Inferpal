@@ -85,11 +85,11 @@ public class AgentOrchestratorObserveTests
         var result = await RunAsync(orch, fake);
 
         Assert.Equal("Here is the apple pie recipe.", result.FinalResponse);
-        var expected = Strings.AgentObservePromptComplete(1, 5, "web_search", "Give me the apple pie recipe");
+        var expected = ModelPrompts.AgentObservePromptComplete(1, 5, "web_search", "Give me the apple pie recipe");
         Assert.Contains(fake.SeenMessages.Last(), m => m.Role == "user" && m.Content == expected);
         // The generic "next step" variant must NOT have been injected.
         Assert.DoesNotContain(fake.SeenMessages.Last(),
-            m => m.Content == Strings.AgentObservePrompt(1, 5, "web_search", 0));
+            m => m.Content == ModelPrompts.AgentObservePrompt(1, 5, "web_search", 0));
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class AgentOrchestratorObserveTests
         Assert.Equal("Here is the apple pie recipe.", result.FinalResponse);
         // Exactly 3 LLM calls: plan, tool batch, final answer — no extra nudge round-trip.
         Assert.Equal(3, fake.SeenMessages.Count);
-        Assert.DoesNotContain(fake.SeenMessages.Last(), m => m.Content == Strings.AgentNudgeToolCall);
+        Assert.DoesNotContain(fake.SeenMessages.Last(), m => m.Content == ModelPrompts.AgentNudgeToolCall);
         // One reset after the tool batch (clears think-only tokens); the answer bubble itself
         // must never be cleared once the prose reply has streamed.
         Assert.Equal(1, resets);
@@ -141,7 +141,7 @@ public class AgentOrchestratorObserveTests
 
         await RunAsync(orch, fake);
 
-        Assert.Contains(fake.SeenMessages.Last(), m => m.Role == "user" && m.Content == Strings.AgentNudgeToolCall);
+        Assert.Contains(fake.SeenMessages.Last(), m => m.Role == "user" && m.Content == ModelPrompts.AgentNudgeToolCall);
     }
 
     /// <summary>
@@ -188,8 +188,8 @@ public class AgentOrchestratorObserveTests
         await RunWithAsync(fake, new EditRegistry(writes: false));
 
         var observe = fake.SeenMessages.Last();
-        Assert.Contains(observe, m => m.Role == "user" && m.Content == Strings.AgentObservePromptEditUnchanged(1, 5, "apply_edits"));
-        Assert.DoesNotContain(observe, m => m.Content == Strings.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
+        Assert.Contains(observe, m => m.Role == "user" && m.Content == ModelPrompts.AgentObservePromptEditUnchanged(1, 5, "apply_edits"));
+        Assert.DoesNotContain(observe, m => m.Content == ModelPrompts.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public class AgentOrchestratorObserveTests
         await RunWithAsync(fake, new EditRegistry(writes: true));
 
         Assert.Contains(fake.SeenMessages.Last(),
-            m => m.Role == "user" && m.Content == Strings.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
+            m => m.Role == "user" && m.Content == ModelPrompts.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
     }
 
     [Fact]
@@ -213,8 +213,8 @@ public class AgentOrchestratorObserveTests
         await RunWithAsync(fake, new EditRegistry(writes: false, countsWrites: false));
 
         Assert.Contains(fake.SeenMessages.Last(),
-            m => m.Role == "user" && m.Content == Strings.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
-        Assert.DoesNotContain(fake.SeenMessages.Last(), m => m.Content == Strings.AgentObservePromptEditUnchanged(1, 5, "apply_edits"));
+            m => m.Role == "user" && m.Content == ModelPrompts.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
+        Assert.DoesNotContain(fake.SeenMessages.Last(), m => m.Content == ModelPrompts.AgentObservePromptEditUnchanged(1, 5, "apply_edits"));
     }
 
     [Fact]
@@ -236,9 +236,9 @@ public class AgentOrchestratorObserveTests
         await RunAsync(orch, fake);
 
         Assert.Contains(fake.SeenMessages.Last(),
-            m => m.Role == "user" && m.Content == Strings.AgentObservePrompt(1, 5, "web_search", 1));
+            m => m.Role == "user" && m.Content == ModelPrompts.AgentObservePrompt(1, 5, "web_search", 1));
         Assert.DoesNotContain(fake.SeenMessages.Last(),
             m => m.Content != null && m.Content.Contains(
-                Strings.AgentObservePromptComplete(1, 5, "web_search", "Give me the apple pie recipe")));
+                ModelPrompts.AgentObservePromptComplete(1, 5, "web_search", "Give me the apple pie recipe")));
     }
 }
