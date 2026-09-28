@@ -324,7 +324,7 @@ internal sealed partial class HostServer : IDisposable
                     result.ReachedIterationLimit, result.WasLoopDetected, result.AnswerCut,
                     ChatTurnPolicy.EditsWithoutEffect(result.Executions, s.Tools.History.CurrentRunFileCount),
                     answerRepeating: result.AnswerRepeating,
-                    lastCheckFailed: ChatTurnPolicy.LastCheckFailed(result.Executions)));
+                    lastCheckFailed: ChatTurnPolicy.LastCheckFailed(result.Executions, s.Tools.History.CurrentRunFileCount)));
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
@@ -371,7 +371,7 @@ internal sealed partial class HostServer : IDisposable
                     EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut,
                         ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount),
                         answerRepeating: run.AnswerRepeating,
-                        lastCheckFailed: ChatTurnPolicy.LastCheckFailed(run.Executions))),
+                        lastCheckFailed: ChatTurnPolicy.LastCheckFailed(run.Executions, s.Tools.History.CurrentRunFileCount))),
                     ContextWindow: ctxDecision.Window);
             }
 

@@ -98,15 +98,21 @@ internal static class ChatTurnPolicy
         filesChangedInRun == 0 && executions.Any(e => FileEditTools.Contains(e.Name));
 
     /// <summary>
-    /// Whether the turn's LAST test or build check failed — read from the tool's own verdict, never from the answer.
+    /// Whether a turn that CHANGED files ended on a failing test or build check — read from the tool's own verdict and
+    /// from the run's writes, never from the answer.
     /// </summary>
     /// <remarks>
     /// ⚠ A model answers "all tests pass" right after a run that said "✗ BUILD FAILED" (measured: gpt-oss, and a
     /// failing test under "the bug is fixed" with Llama 3.1 and Qwen3 Coder). Only the last check counts: a red run the
-    /// model fixed and ran again green says nothing. The verdict readers are <c>/tdd</c>'s and <c>get_diagnostics</c>'s.
+    /// model fixed and ran again green says nothing. And only a turn that changed files: asked "does it compile? do not
+    /// fix anything", a model that reports the error has done the task — the notice would contradict a true answer
+    /// (measured, Devstral). The verdict readers are <c>/tdd</c>'s and <c>get_diagnostics</c>'s.
     /// </remarks>
-    public static bool LastCheckFailed(IEnumerable<ToolExecution> executions)
+    /// <param name="filesChangedInRun"><see cref="Execution.FileHistoryService.CurrentRunFileCount"/>; <c>null</c> (no
+    /// run) or 0 says nothing.</param>
+    public static bool LastCheckFailed(IEnumerable<ToolExecution> executions, int? filesChangedInRun)
     {
+        if (filesChangedInRun is not > 0) return false;
         var last = executions.LastOrDefault(e => e.Name is "run_tests" or "get_diagnostics");
         return last switch
         {

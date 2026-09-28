@@ -34,7 +34,7 @@ public sealed class LastCheckFailedTests
     [InlineData(PytestFailed)]
     public void AFailingLastTestRun_IsSaid(string output)
     {
-        Assert.True(ChatTurnPolicy.LastCheckFailed([Ran("read_file"), Ran("apply_edits"), Ran("run_tests", output)]));
+        Assert.True(ChatTurnPolicy.LastCheckFailed([Ran("read_file"), Ran("apply_edits"), Ran("run_tests", output)], filesChangedInRun: 1));
         Assert.Contains(Strings.AgentLastCheckFailed, ChatTurnPolicy.EndNotice(false, false, false, lastCheckFailed: true));
     }
 
@@ -44,22 +44,27 @@ public sealed class LastCheckFailedTests
         var run = new ChildProcessResult(1, "/ws/src/Cart.cs(9,5): error CS1002: ; expected [/ws/src/Shop.csproj]", "", TimedOut: false);
         var diagnostics = GetDiagnosticsTool.Interpret(run, "Shop.csproj", 90);
 
-        Assert.True(ChatTurnPolicy.LastCheckFailed([Ran("apply_diff"), Ran("get_diagnostics", diagnostics)]));
+        Assert.True(ChatTurnPolicy.LastCheckFailed([Ran("apply_diff"), Ran("get_diagnostics", diagnostics)], filesChangedInRun: 1));
     }
 
     [Fact]
     public void ReferenceArms_SayNothing()
     {
         // Red, fixed, run again green: the last check passed.
-        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", JestFailed), Ran("apply_diff"), Ran("run_tests", Green)]));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", JestFailed), Ran("apply_diff"), Ran("run_tests", Green)], filesChangedInRun: 1));
         // Nothing ran, stopped at the budget, a wrong path: not a failing test — another notice's business, or none.
-        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", RunTestsTool.NoTestFound)]));
-        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", RunTestsTool.StoppedAtBudget + "\n" + JestFailed)]));
-        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", RunTestsTool.PathNotFound)]));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", RunTestsTool.NoTestFound)], filesChangedInRun: 1));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", RunTestsTool.StoppedAtBudget + "\n" + JestFailed)], filesChangedInRun: 1));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", RunTestsTool.PathNotFound)], filesChangedInRun: 1));
         // No check at all, and a clean build.
-        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("read_file"), Ran("write_file")]));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("read_file"), Ran("write_file")], filesChangedInRun: 1));
         var clean = GetDiagnosticsTool.Interpret(new ChildProcessResult(0, "", "", TimedOut: false), "Shop.csproj", 90);
-        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("get_diagnostics", clean)]));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("get_diagnostics", clean)], filesChangedInRun: 1));
+        // A turn that changed nothing — "does it compile? do not fix anything" — reports the state: the answer that
+        // says the build fails is the task done, and a notice would contradict it (measured, Devstral).
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("get_diagnostics", RunTestsTool.BuildFailed)], filesChangedInRun: 0));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", JestFailed)], filesChangedInRun: 0));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("run_tests", JestFailed)], filesChangedInRun: null));
         Assert.Equal(string.Empty, ChatTurnPolicy.EndNotice(false, false, false));
     }
 
