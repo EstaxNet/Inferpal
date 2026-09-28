@@ -51,8 +51,12 @@ transport changes.
 first; Inferpal never sends one elsewhere. A response that loops (the same passage, or the same tool call, again and
 again) is stopped and said to be incomplete, instead of running until the context window is full.
 
-**Sampling.** Inferpal sends no sampling parameters: the server's per-model settings apply. Set the vendor's
-recommended values (given below) in your server — in LM Studio, *My Models → the model → Inference*.
+**Sampling.** For the families on this page, Inferpal sends the sampling settings their vendor recommends — only the
+values the vendor publishes; the **Settings** line of each section says exactly which. A server applies its generic
+defaults to a model it has no preset for, and those can hurt a model badly (GLM's vendor says to disable the repeat
+penalty that llama.cpp applies by default). On LM Studio and Ollama every value is sent; on another OpenAI-compatible
+server only temperature and top_p, the fields the OpenAI API defines. To use your server's per-model settings instead,
+set `"useRecommendedSampling": false` in the configuration.
 
 **The model is recognised by its name, and the name only chooses.** Inferpal recognises a family from the model id
 (`qwen3.8`, `devstral`…) for two decisions: the model it picks on first run — a family measured as a good agent
@@ -70,8 +74,8 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Reasoning.** On by default; the template opens `<think>` itself, so a server that does not separate reasoning
   leaves a lone `</think>` in the answer. LM Studio (0.4.7 and later) separates it.
 - **Inferpal.** Structured calls on LM Studio; the XML form is read when a call arrives as text.
-- **Settings.** Thinking: temperature 1.0, top_p 0.95, top_k 20, min_p 0. Without thinking: temperature 0.7,
-  top_p 0.8, presence penalty 1.5.
+- **Settings.** Inferpal sends the thinking-mode values: temperature 1.0, top_p 0.95, top_k 20, min_p 0.0. Without
+  thinking, Qwen recommends temperature 0.7, top_p 0.8, presence penalty 1.5.
 - **Known issues.** Its template refuses a system message that is not the first one (HTTP 500 "System message must
   be at the beginning"). On LM Studio, the model can occasionally announce an action without emitting the call
   ([#2440](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/2440)).
@@ -86,7 +90,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Tool calls.** `[TOOL_CALLS]name[ARGS]{json}`, several in a row for parallel calls; results go back in
   `[TOOL_RESULTS]` blocks, matched by position.
 - **Inferpal.** Structured calls on LM Studio; the `[TOOL_CALLS]` form is read when a call arrives as text.
-- **Settings.** Temperature **0.15** (the model card's value).
+- **Settings.** Inferpal sends temperature 0.15 (the model card's value).
 - **Known issues.** The template bundled with the lmstudio-community GGUF refuses a system message that is not the
   first one and enforces strict user/assistant alternation. Inside tool-call JSON the model sometimes drops a
   character — measured: the `$` of a C# interpolated string (`$"Total: {…}"`), in one call in five in isolation and
@@ -100,8 +104,8 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Model.** PrismML's 1-bit conversion of Qwen3.6-27B (one sign bit per weight plus a scale per 128 weights,
   about 1.125 bits per weight): 4.7 GB for 27B parameters, same architecture and chat template as Qwen3.6.
 - **Tool calls and reasoning.** Same as [Qwen3.8](#qwen35): XML calls, `<think>` reasoning.
-- **Settings.** Temperature 0.7, top_p 0.95, top_k 20. PrismML advises capping the reasoning (for example 8,192
-  thinking tokens) rather than switching it off.
+- **Settings.** Inferpal sends temperature 0.7, top_p 0.95, top_k 20. PrismML advises capping the reasoning (for
+  example 8,192 thinking tokens) rather than switching it off.
 - **Known issues.** PrismML states that long-horizon agentic coding "is not yet a strong target of this release".
 - **Sources.** [Model card](https://huggingface.co/prism-ml/Bonsai-27B-gguf) ·
   [PrismML docs](https://docs.prismml.com/models/bonsai-27b)
@@ -119,7 +123,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Inferpal.** LM Studio streams the addressed messages as plain text: Inferpal splits them (reasoning shown as
   reasoning, the answer as the answer) and reads the ATEM calls, which LM Studio only parses itself when a call is
   forced.
-- **Settings.** Temperature 1.0, top_p 0.95, top_k 64 (not greedy).
+- **Settings.** Inferpal sends temperature 1.0, top_p 0.95, top_k 64 (not greedy).
 - **Known issues.** Needs a recent llama.cpp runtime (LM Studio runtime 2.28.2 or later), or it fails to load with
   "unknown model architecture". Its template lists tool names without a dot oddly, which can lead the model to invent
   names such as `read.filePath` ([#60](https://huggingface.co/meta-models/Muse-Glimmer-30B/discussions/60)); an
@@ -134,9 +138,11 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Tool calls.** `<|tool_call>call:name{key:<|"|>value<|"|>}<tool_call|>` — strings wrapped in `<|"|>`, numbers and
   booleans bare.
 - **Inferpal.** On LM Studio, the bundled chat template fails whenever a request carries tools (see below): Inferpal
-  describes the tools in the system prompt instead, and reads the calls from the text. Reasoning leaked as
+  describes the tools in the system prompt instead, reads the calls from the text, and stops the model where it opens
+  the tool's response — Gemma's own format ends a call with `<tool_call|><|tool_response>`, and a model nobody stops
+  there writes the result itself, then more calls and more invented results. Reasoning leaked as
   `<|channel>thought…<channel|>` is separated.
-- **Settings.** Temperature 1.0, top_p 0.95, top_k 64.
+- **Settings.** Inferpal sends temperature 1.0, top_p 0.95, top_k 64.
 - **Known issues (LM Studio).** Older lmstudio-community templates call a macro they never define,
   `format_type_argument` ([#2012](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/2012)); newer ones use a
   Jinja test LM Studio does not support, `Unknown test: sequence`
@@ -152,10 +158,13 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Model.** Zhipu AI / Z.ai, 30B mixture of experts (3B active), reasoning on by default.
 - **Tool calls.** `<tool_call>name<arg_key>key</arg_key><arg_value>value</arg_value></tool_call>`.
 - **Inferpal.** Reads that form when a call arrives as text; a lone `</think>` is separated as reasoning.
-- **Known issues.** The lmstudio-community GGUF misses its expert-gating parameter: unless the llama.cpp runtime
-  applies the fallback, the model loops and degrades — measured here: loops of several minutes, 1 task in 8.
-  **Use the Unsloth GGUF instead**, which was re-uploaded with the fix. Z.ai recommends temperature 1.0 (0.7 for
-  coding benchmarks), top_p 0.95.
+- **Settings.** Inferpal sends Z.ai's values for tool calling and agentic coding — temperature 0.7, top_p 1.0 — with
+  min_p 0.01 and repeat penalty 1.0 (no penalty), as Unsloth advises: llama.cpp's defaults (min_p 0.05, repeat
+  penalty 1.1) degrade it. Z.ai's general-purpose values are temperature 1.0, top_p 0.95.
+- **Known issues.** GGUFs made before the llama.cpp fix of January 21 set the model's expert scoring function to
+  softmax instead of sigmoid: the model loops and its output degrades — measured here with the lmstudio-community GGUF:
+  loops of several minutes, invented tool names, 0 tasks in 7. **Use the Unsloth GGUF** (`UD-Q4_K_XL`), re-uploaded
+  with the fix.
 - **Sources.** [Model card](https://huggingface.co/zai-org/GLM-4.7-Flash) ·
   [Unsloth GGUF](https://huggingface.co/unsloth/GLM-4.7-Flash-GGUF)
 
@@ -166,7 +175,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Tool calls.** JSON in `<tool_call>{"name": …, "arguments": …}</tool_call>`.
 - **Inferpal.** A small reasoning model can loop on a tool call inside its reasoning: Inferpal stops at the repeat
   and runs the first call.
-- **Settings.** Temperature 0.6, top_p 0.95, top_k 20.
+- **Settings.** Inferpal sends temperature 0.6, top_p 0.95, top_k 20, min_p 0.0.
 - **Sources.** [Model card](https://huggingface.co/Qwen/Qwen3-4B-Thinking-2507)
 
 <a id="qwen-coder"></a>
@@ -175,6 +184,8 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Model.** Alibaba Qwen, 7B code model, no reasoning, fill-in-the-middle tokens (`<|fim_prefix|>`…).
 - **Use it for** inline completion (ghost text) and chat. It was not trained for tool calling: as the agent it
   often answers with a call written as text, or none — measured here: 2 tasks in 8.
+- **Settings.** Inferpal sends temperature 0.7, top_p 0.8, top_k 20, repeat penalty 1.05 (the model's generation
+  configuration).
 - **Sources.** [Model card](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct)
 
 <a id="qwen3-coder"></a>
@@ -184,6 +195,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   like Qwen2.5 Coder, trained for tool calling.
 - **Tool calls.** The same XML as [Qwen3.8](#qwen35) — Qwen3 Coder introduced it.
 - **Inferpal.** Autocomplete with its fill-in-the-middle tokens; as the agent, *not measured yet*.
+- **Settings.** Inferpal sends temperature 0.7, top_p 0.8, top_k 20, repeat penalty 1.05 (the model card's values).
 - **Sources.** [Qwen3-Coder](https://github.com/QwenLM/Qwen3-Coder)
 
 <a id="fim-models"></a>

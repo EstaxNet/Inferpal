@@ -19,6 +19,31 @@ namespace Inferpal.Services.Inference;
 /// </remarks>
 internal static class PromptedTools
 {
+    /// <summary>
+    /// What a model writes once its call is written: the opening of the tool's response — ours, or Gemma's own token.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A model that calls tools ends its turn by opening the response it waits for (Gemma 4's own format ends a call
+    /// with <c>&lt;tool_call|&gt;&lt;|tool_response&gt;</c>, and the engine stops there). With the tools in the prompt
+    /// nothing stops it: it writes the result itself — an invented file, an invented search — and goes on calling and
+    /// answering until the request's time runs out. The request asks the server to stop there, and the client stops
+    /// reading there for a server that does not.
+    /// </remarks>
+    internal static readonly string[] ResponseMarkers = ["<tool_response>", "<|tool_response>"];
+
+    /// <summary>
+    /// Where the model began a tool response in <paramref name="content"/>, looking only at what the last
+    /// <paramref name="appended"/> characters could have completed; -1 when it has not.
+    /// </summary>
+    internal static int ResponseStart(StringBuilder content, int appended)
+    {
+        var longest = ResponseMarkers.Max(m => m.Length);
+        var from    = Math.Max(0, content.Length - appended - longest + 1);
+        var tail    = content.ToString(from, content.Length - from);
+        var found   = ResponseMarkers.Select(m => tail.IndexOf(m, StringComparison.Ordinal)).Where(i => i >= 0).DefaultIfEmpty(-1).Min();
+        return found < 0 ? -1 : from + found;
+    }
+
     /// <summary>Whether a server refusal says the model's chat template could not be rendered.</summary>
     internal static bool IsTemplateRefusal(string serverMessage) =>
         serverMessage.Contains("Error rendering prompt with jinja template", StringComparison.OrdinalIgnoreCase);

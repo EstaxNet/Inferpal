@@ -635,6 +635,8 @@ ollama serve
 立即调用下一步所需的工具——无需任何前言或解释。如果目标已完全实现，请在不再调用工具的情况下，针对我最近的请求写出最终回答——不要重复本次对话中已给出的回答。</value></data>
   <data name="AgentObservePromptComplete" xml:space="preserve"><value>[观察 — {0}/{1}] 已执行工具：{2}。计划的所有步骤均已完成。
 现在请针对我最近的请求（即："{3}"）直接、完整地用我的语言写出最终回答——不要再调用任何工具。只有在仍缺少关键信息时才调用额外的工具。不要重复对先前其他问题的回答。</value></data>
+  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[观察 — {0}/{1}] 已执行工具：{2}。此次编辑没有修改任何文件：没有写入任何内容。
+请阅读上面的错误，修正调用（从文件中原样复制 old_content），并连同其中包含的所有编辑一起重新发送：apply_edits 被拒绝时，其中任何编辑都不会写入，包括正确的编辑。不要像修改已经完成那样作答。</value></data>
   <data name="AgentNudgeToolCall" xml:space="preserve"><value>你描述了你的意图，但没有调用任何工具。不要生成任何文本——立即调用计划中的第一个工具。</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ 正在撰写回答…</value></data>
   <data name="AgentSynthesizePrompt" xml:space="preserve"><value>你已通过上述工具收集了足够的信息。不要再调用任何工具。请利用这些结果，针对我最近的请求："{0}"，用我的语言、直接而完整地写出最终回答。务必回答这一请求；不要重复本次对话中已给出的回答。</value></data>

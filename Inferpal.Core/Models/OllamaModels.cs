@@ -37,7 +37,12 @@ record ChatRequest(
 /// </summary>
 record ChatOptions(
     /// <summary>Context window size in tokens. Caps the KV-cache footprint to keep the model in VRAM.</summary>
-    [property: JsonPropertyName("num_ctx")] int? NumCtx = null);
+    [property: JsonPropertyName("num_ctx")] int? NumCtx = null,
+    [property: JsonPropertyName("temperature")]    double? Temperature   = null,
+    [property: JsonPropertyName("top_p")]          double? TopP          = null,
+    [property: JsonPropertyName("top_k")]          int?    TopK          = null,
+    [property: JsonPropertyName("min_p")]          double? MinP          = null,
+    [property: JsonPropertyName("repeat_penalty")] double? RepeatPenalty = null);
 
 /// <summary>
 /// A single message in the conversation history.

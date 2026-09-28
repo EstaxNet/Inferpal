@@ -99,6 +99,16 @@ internal class InferpalConfig
     [JsonPropertyName("contextWindowSize")]
     public int ContextWindowSize { get; set; } = 8192;
 
+    /// <summary>
+    /// When <c>true</c>, chat and agent requests carry the sampling settings the model's vendor recommends for a family
+    /// Inferpal knows (<c>ModelProfiles</c>, documented in docs/models.md) — only the values the vendor publishes.
+    /// <c>false</c> sends none, and the server's own per-model settings apply.
+    /// </summary>
+    /// <remarks>⚠ A server applies its generic defaults to a model it has no preset for — LM Studio's include a
+    /// repeat penalty that GLM's vendor says to disable — and the user rarely knows which models have a preset.</remarks>
+    [JsonPropertyName("useRecommendedSampling")]
+    public bool UseRecommendedSampling { get; set; } = true;
+
     /// <summary>Number of most-recent conversation turns to preserve when the context window is trimmed.</summary>
     [JsonPropertyName("contextWindowKeepTurns")]
     public int ContextWindowKeepTurns { get; set; } = 4;

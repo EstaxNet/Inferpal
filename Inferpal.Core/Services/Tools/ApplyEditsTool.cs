@@ -80,6 +80,7 @@ internal sealed class ApplyEditsTool : ITool
         var root  = _getWorkspaceRoot();
         var edits = new List<Edit>();
         var index = 0;
+        var total = editsEl.GetArrayLength();
         foreach (var e in editsEl.EnumerateArray())
         {
             index++;
@@ -90,7 +91,7 @@ internal sealed class ApplyEditsTool : ITool
             // word for word: "If ANY edit cannot be applied, NO file is changed". Same event and
             // same wording as the matching failure below.
             if (e.ValueKind != JsonValueKind.Object)
-                return Strings.ApplyEditsAborted($"edit #{index} is not an object");
+                return Aborted(index, total, $"edit #{index} is not an object");
 
             // No null check on `path`: Sanitize already throws a readable, localised message when
             // it is missing (ToolPathRequired), so a check here could never fire.
@@ -100,10 +101,10 @@ internal sealed class ApplyEditsTool : ITool
             var old = e.Str("old_content");
             var neu = e.Str("new_content");
             if (old is null)
-                return Strings.ApplyEditsAborted(
+                return Aborted(index, total,
                     $"edit #{index} in {RelPath(root, path)}: 'old_content' is missing or is not a string");
             if (neu is null)
-                return Strings.ApplyEditsAborted(
+                return Aborted(index, total,
                     $"edit #{index} in {RelPath(root, path)}: 'new_content' is missing or is not a string "
                     + "(send \"\" to delete the matched block)");
 
@@ -112,7 +113,7 @@ internal sealed class ApplyEditsTool : ITool
             // "ambiguous (N matches)", which blames a perfectly correct old_content.
             var occurrence = e.Keyword("occurrence");
             if (ApplyDiffMatcher.RejectOccurrence(occurrence) is { } badOccurrence)
-                return Strings.ApplyEditsAborted(
+                return Aborted(index, total,
                     $"edit #{index} in {RelPath(root, path)}: {badOccurrence}");
 
             edits.Add(new Edit(path, old, neu, occurrence));
@@ -144,7 +145,7 @@ internal sealed class ApplyEditsTool : ITool
             {
                 var reason = res.Count > 1 ? $"ambiguous ({res.Count} matches)" : "no exact or fuzzy match";
                 var rel    = RelPath(root, edit.Path);
-                return Strings.ApplyEditsAborted($"edit #{i + 1} in {rel}: {reason} for old_content");
+                return Aborted(i + 1, edits.Count, $"edit #{i + 1} in {rel}: {reason} for old_content");
             }
             current[edit.Path] = res.Modified;
         }
@@ -212,4 +213,22 @@ internal sealed class ApplyEditsTool : ITool
 
     private static string RelPath(string? root, string path) =>
         string.IsNullOrEmpty(root) ? path : Path.GetRelativePath(root, path);
+
+    /// <summary>
+    /// The refusal of a batch because of edit #<paramref name="failed"/> — naming, in a batch of several, the edits
+    /// that were not written either and asking for all of them again.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Told only which edit failed, a model corrects that one and sends it alone: the batch's other edits — correct
+    /// ones — are never written, and the model answers that the rename is done. "No changes applied" states the fact;
+    /// naming the edits it covers is what gets them sent again.
+    /// </remarks>
+    private static string Aborted(int failed, int total, string reason)
+    {
+        if (total <= 1) return Strings.ApplyEditsAborted(reason);
+        var others = string.Join(", ", Enumerable.Range(1, total).Where(i => i != failed).Select(i => $"#{i}"));
+        return Strings.ApplyEditsAborted(
+            $"{reason}; the other {total - 1} edit(s) ({others}) were not written either. "
+            + $"Send all {total} edits again in one apply_edits call, with edit #{failed} corrected");
+    }
 }

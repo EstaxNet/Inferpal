@@ -778,6 +778,8 @@ internal sealed class AgentOrchestrator
 
                 // ── Execute tools ─────────────────────────────────────────────
                 var iterExecs = new List<ToolExecution>();
+                // What the run had written before these calls — to know whether an edit among them wrote anything.
+                var writesBefore = tools.WritesInRun;
 
                 // A batch made only of independent, GPU-free, prompt-free read tools runs
                 // concurrently — a real speedup when the model explores several files in one turn.
@@ -849,8 +851,14 @@ internal sealed class AgentOrchestrator
                     messages.Add(new ChatMessageDto("tool", CapForContext(forContext)));
                 }
 
+                // ⚠ An edit that wrote nothing is not a step done: an apply_edits refused whole, an old_content not
+                // found, a write declined. Telling the model its plan is complete then — "answer now, without
+                // calling any more tools" — is what made it end the run, claiming a change no file received.
+                var editChangedNothing = writesBefore is { } before && tools.WritesInRun == before
+                                         && iterExecs.Any(e => ChatTurnPolicy.IsFileEdit(e.Name));
+
                 // ── Mark step done, advance ────────────────────────────────────
-                if (stepIdx < plan.Steps.Count)
+                if (stepIdx < plan.Steps.Count && !editChangedNothing)
                 {
                     plan.Steps[stepIdx].Status = AgentStepStatus.Done;
                     onStepUpdate?.Invoke(stepIdx, AgentStepStatus.Done);
@@ -868,10 +876,12 @@ internal sealed class AgentOrchestrator
                 // Once the plan is exhausted, the generic observe prompt ("call the tool for the
                 // next step") makes the model invent an extra call whose result then displaces
                 // the real answer — switch to the answer-now variant anchored on the user task.
-                answerRequested = remaining == 0;
-                var observeMsg = answerRequested
-                    ? Strings.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, TaskSnippet(userTask))
-                    : Strings.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);
+                answerRequested = remaining == 0 && !editChangedNothing;
+                var observeMsg = editChangedNothing
+                    ? Strings.AgentObservePromptEditUnchanged(iteration + 1, maxIter, toolNames)
+                    : answerRequested
+                        ? Strings.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, TaskSnippet(userTask))
+                        : Strings.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);
                 messages.Add(new ChatMessageDto("user", observeMsg) { IsScaffolding = true });
 
                 // Signal the UI to clear the streaming bubble so that think-only tokens

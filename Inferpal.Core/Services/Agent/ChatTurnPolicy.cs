@@ -74,6 +74,9 @@ internal static class ChatTurnPolicy
     private static readonly HashSet<string> FileEditTools = new(StringComparer.Ordinal)
         { "write_file", "apply_diff", "apply_edits" };
 
+    /// <summary>Whether <paramref name="toolName"/> is one the model edits a file's content with.</summary>
+    internal static bool IsFileEdit(string toolName) => FileEditTools.Contains(toolName);
+
     /// <summary>
     /// Whether the run tried to edit a file and changed none — read from what happened, never from the answer.
     /// </summary>

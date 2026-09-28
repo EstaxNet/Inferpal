@@ -635,6 +635,8 @@ JSON 출력 후 멈추세요 — 아직 도구를 호출하지 마세요.</value
 전문이나 설명 없이 다음 단계의 도구를 즉시 호출하세요. 목표가 완전히 달성된 경우 도구를 더 호출하지 않고 제 가장 최근 요청에 대한 최종 답변을 작성하세요 — 이 대화에서 이미 한 답변을 반복하지 마세요.</value></data>
   <data name="AgentObservePromptComplete" xml:space="preserve"><value>[관찰 — {0}/{1}] 실행된 도구: {2}. 계획의 모든 단계가 완료되었습니다.
 이제 제 가장 최근 요청인 "{3}"에 대한 완전한 최종 답변을 직접, 전체적으로, 제 언어로 작성하세요 — 더 이상 도구를 호출하지 마세요. 필수 정보가 아직 부족한 경우에만 추가 도구를 호출하세요. 이전의 다른 질문에 대한 답변을 반복하지 마세요.</value></data>
+  <data name="AgentObservePromptEditUnchanged" xml:space="preserve"><value>[관찰 — {0}/{1}] 실행된 도구: {2}. 편집으로 변경된 파일이 없습니다. 아무것도 기록되지 않았습니다.
+위의 오류를 읽고 호출을 수정한 뒤(old_content는 파일에서 정확히 복사하세요) 포함되어 있던 모든 편집과 함께 다시 보내세요. apply_edits가 거부되면 올바른 편집을 포함해 어떤 편집도 기록되지 않습니다. 변경이 이루어진 것처럼 답하지 마세요.</value></data>
   <data name="AgentNudgeToolCall" xml:space="preserve"><value>의도를 설명했지만 도구를 호출하지 않았습니다. 텍스트를 생성하지 말고 — 지금 바로 계획의 첫 번째 도구를 호출하세요.</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ 답변 작성 중…</value></data>
   <data name="AgentSynthesizePrompt" xml:space="preserve"><value>위 도구로 충분한 정보를 수집했습니다. 더 이상 도구를 호출하지 마세요. 그 결과를 사용하여 제 가장 최근 요청인 "{0}"에 대한 완전한 최종 답변을 — 직접적으로, 빠짐없이, 제 언어로 작성하세요. 바로 그 요청에 답하세요. 이 대화에서 이미 한 답변을 반복하지 마세요.</value></data>

@@ -435,7 +435,20 @@ internal class FileHistoryService
     /// <summary>Records that a file was created this run (no prior content → undo deletes it).</summary>
     internal void NoteCreated(string filePath)
     {
-        lock (_runLock) _currentRun?.RecordFirst(filePath, snapshot: null);
+        lock (_runLock)
+        {
+            _currentRun?.RecordFirst(filePath, snapshot: null);
+            _currentRun?.CountWrite();
+        }
+    }
+
+    /// <summary>
+    /// How many writes the current run has made, each counted as its backup is taken — every one, where
+    /// <see cref="CurrentRunFileCount"/> counts each file once; <c>null</c> when no run is active.
+    /// </summary>
+    internal int? CurrentRunWriteCount
+    {
+        get { lock (_runLock) return _currentRun?.WriteCount; }
     }
 
     /// <summary>Appends a tool invocation to the current run's journal (for <c>/replay</c>).
@@ -447,7 +460,11 @@ internal class FileHistoryService
 
     private void RecordInRun(string filePath, string snapPath)
     {
-        lock (_runLock) _currentRun?.RecordFirst(filePath, snapPath);
+        lock (_runLock)
+        {
+            _currentRun?.RecordFirst(filePath, snapPath);
+            _currentRun?.CountWrite();
+        }
     }
 
     /// <summary>All tracked runs, most recent first.</summary>
@@ -588,6 +605,10 @@ internal sealed class HistoryRun
 
     public IReadOnlyCollection<RunChange> Changes => _firstByPath.Values;
     public int FileCount => _firstByPath.Count;
+
+    // Every write, where _firstByPath keeps each file once. Mutated under FileHistoryService's run lock.
+    public int WriteCount { get; private set; }
+    public void CountWrite() => WriteCount++;
 
     /// <summary>Snapshot copy — safe to enumerate while the run is still recording.</summary>
     public IReadOnlyList<ToolCallRecord> ToolCalls

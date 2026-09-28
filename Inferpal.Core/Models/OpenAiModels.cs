@@ -17,7 +17,15 @@ record OpenAiChatRequest(
     [property: JsonPropertyName("tools")]         List<ToolDefinition>? Tools = null,
     [property: JsonPropertyName("stream")]        bool Stream = true,
     [property: JsonPropertyName("stream_options")] OpenAiStreamOptions? StreamOptions = null,
-    [property: JsonPropertyName("tool_choice")]   string? ToolChoice = null);
+    [property: JsonPropertyName("tool_choice")]   string? ToolChoice = null,
+    [property: JsonPropertyName("stop")]          string[]? Stop = null,
+    // Sampling: null fields are not sent. top_k, min_p and repeat_penalty are extensions — LM Studio and llama-server
+    // read them; the client sends them only to a server known to (OpenAiCompatibleClient.SendsExtendedSampling).
+    [property: JsonPropertyName("temperature")]    double? Temperature   = null,
+    [property: JsonPropertyName("top_p")]          double? TopP          = null,
+    [property: JsonPropertyName("top_k")]          int?    TopK          = null,
+    [property: JsonPropertyName("min_p")]          double? MinP          = null,
+    [property: JsonPropertyName("repeat_penalty")] double? RepeatPenalty = null);
 
 /// <summary>Asks the server to emit a final <c>usage</c> chunk while streaming.</summary>
 record OpenAiStreamOptions(

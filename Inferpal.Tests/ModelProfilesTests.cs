@@ -149,6 +149,47 @@ public class ModelProfilesTests
         Assert.Empty(anchors.Except(profiles).Except(SectionAnchors));
     }
 
+    /// <summary>The text of the page's section for <paramref name="anchor"/>, up to the next anchor.</summary>
+    private static string Section(string page, string anchor)
+    {
+        var start = page.IndexOf($"<a id=\"{anchor}\"></a>", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"no section {anchor}");
+        var next = page.IndexOf("<a id=", start + 1, StringComparison.Ordinal);
+        return page[start..(next < 0 ? page.Length : next)].Replace("\r\n", " ").Replace("\n  ", " ").Replace('\n', ' ');
+    }
+
+    private static string Number(double value) => value.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture);
+
+    [Fact]
+    public void EveryFamilysSettingsLine_SaysExactlyWhatInferpalSends()
+    {
+        var page = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "models.md"));
+        var checkedValues = 0;
+        foreach (var profile in ModelProfiles.All)
+        {
+            var section = Section(page, profile.Anchor);
+            var says    = section.Contains("Inferpal sends", StringComparison.Ordinal);
+            Assert.True(says == (profile.Sampling is not null),
+                        $"{profile.Name}: the page {(says ? "says" : "does not say")} what Inferpal sends, the profile {(profile.Sampling is null ? "has no" : "has")} sampling");
+            if (profile.Sampling is not { } s) continue;
+            foreach (var (name, value) in new (string, string?)[]
+            {
+                ("temperature",    s.Temperature   is { } t ? Number(t) : null),
+                ("top_p",          s.TopP          is { } p ? Number(p) : null),
+                ("top_k",          s.TopK?.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                ("min_p",          s.MinP          is { } m ? Number(m) : null),
+                ("repeat penalty", s.RepeatPenalty is { } r ? Number(r) : null),
+            })
+            {
+                if (value is null) continue;
+                Assert.True(section.Contains($"{name} {value}", StringComparison.Ordinal),
+                            $"{profile.Name}: the page does not say {name} {value}");
+                checkedValues++;
+            }
+        }
+        Assert.True(checkedValues >= 10, $"only {checkedValues} values checked");   // witness: the sections are read
+    }
+
     [Fact]
     public void EveryFamilyTrainedToFillInTheMiddle_IsInTheAutocompleteTable()
     {

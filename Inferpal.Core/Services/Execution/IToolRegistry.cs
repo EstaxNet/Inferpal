@@ -28,4 +28,10 @@ internal interface IToolRegistry
     /// Returns <c>null</c> if the last tool did not produce a diff.
     /// </summary>
     DiffInfo? ConsumeDiff();
+
+    /// <summary>
+    /// How many writes the current run has made to files — counted before each one lands, when its backup is taken;
+    /// <c>null</c> when this registry does not write files or no run is active, and nothing is to be read from it.
+    /// </summary>
+    int? WritesInRun => null;
 }

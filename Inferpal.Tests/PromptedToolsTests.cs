@@ -9,9 +9,10 @@ namespace Inferpal.Tests;
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 //  A model whose server cannot render tools still gets them — in its system prompt.
 //
-//  Gemma 4's bundled chat template on LM Studio calls a macro it never defines as soon as a request carries
-//  `tools`: every request with tools answered HTTP 400 "Error rendering prompt with jinja template", the same
-//  request without them worked. Gemma 4 went 1/14 in the battery (plain chat only).
+//  Gemma 4's bundled chat template on LM Studio fails as soon as a request carries `tools`: every request with tools
+//  is refused with "Error rendering prompt with jinja template", the same request without them works. LM Studio
+//  answers HTTP 200 and streams the refusal as an error event; another server may send it as a status — the fallback
+//  holds for every door a server refuses by.
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 public class PromptedToolsTests
 {
@@ -117,6 +118,105 @@ public class PromptedToolsTests
         Assert.Equal("Nothing to call.", second.TextContent);
         Assert.Equal(3, Chats(server).Count);                           // refused once, then prompted twice
         Assert.DoesNotContain("\"tools\":[", Chats(server)[2]);
+    }
+
+    /// <summary>The refusal as LM Studio streams it, verbatim: HTTP 200, an error event, the error in its data line.</summary>
+    private const string StreamedTemplateRefusal =
+        "event: error\ndata: {\"error\":{\"message\":\"Error rendering prompt with jinja template: \\\"Cannot call something "
+        + "that is not a function: got UndefinedValue\\\".\\n\\nThis is usually an issue with the model's prompt template.\"}}\n\n";
+
+    /// <summary>The same refusal as a bare error object in the stream, without a data prefix.</summary>
+    private const string BareTemplateRefusal =
+        "{\"error\":\"Error rendering prompt with jinja template: \\\"Cannot call something that is not a function\\\".\"}\n";
+
+    [Theory]
+    [InlineData(StreamedTemplateRefusal)]
+    [InlineData(BareTemplateRefusal)]
+    public async Task ARefusalStreamedAfterA200_IsAskedAgainWithTheToolsInThePrompt(string refusal)
+    {
+        using var server = new LoopbackHttpServer(
+            (path, request) => !path.StartsWith("/v1/chat/completions", StringComparison.Ordinal) ? null
+                             : request.Contains("\"tools\":[", StringComparison.Ordinal) ? refusal
+                             : Sse("<tool_call>\n{\"name\": \"read_file\", \"arguments\": {\"path\": \"a.cs\"}}\n</tool_call>"),
+            (_, _) => 200);
+        var model = "gemma-" + Guid.NewGuid().ToString("N")[..8];
+
+        var turn = await Client(server).SendChatAsync(model, [new ChatMessageDto("user", "Read a.cs")], new Tools(),
+                                                      onToken: null, CancellationToken.None);
+
+        Assert.Equal("read_file", Assert.Single(turn.ToolCalls!).Function.Name);
+        var chats = Chats(server);
+        Assert.Equal(2, chats.Count);
+        Assert.Contains("\"tools\":[", chats[0]);
+        Assert.Contains("Available tools", chats[1]);
+    }
+
+    // Gemma, its tools in the prompt, writes its call and goes on: an invented response, another call, another
+    // invented response — the shape the raw stream showed, cut here to its first steps.
+    private const string InventedResponse =
+        "<tool_call>\n{\"name\": \"read_file\", \"arguments\": {\"path\": \"a.cs\"}}\n</tool_call>\n"
+        + "<tool_response>\n{\"content\": \"class Invented {}\"}\n</tool_response>\n"
+        + "<tool_call>\n{\"name\": \"read_file\", \"arguments\": {\"path\": \"invented.cs\"}}\n</tool_call>";
+    private const string InventedNativeResponse =
+        "<|tool_call>call:read_file{path:<|\"|>a.cs<|\"|>}<tool_call|><|tool_response>response:read_file{content:<|\"|>class Invented {}<|\"|>}<tool_response|>"
+        + "<|tool_call>call:read_file{path:<|\"|>invented.cs<|\"|>}<tool_call|>";
+
+    [Theory]
+    [InlineData(InventedResponse)]
+    [InlineData(InventedNativeResponse)]
+    public async Task AModelThatWritesTheToolsResponseItself_IsStoppedAtItsCall(string reply)
+    {
+        // Streamed in small pieces: the marker arrives cut in two, as a server sends it.
+        var chunks = Enumerable.Range(0, (reply.Length + 6) / 7).Select(i => reply.Substring(i * 7, Math.Min(7, reply.Length - i * 7)));
+        var sse = string.Concat(chunks.Select(c => "data: " + JsonSerializer.Serialize(new { choices = new[] { new { index = 0, delta = new { content = c } } } }) + "\n\n"))
+                  + "data: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n";
+        using var server = new LoopbackHttpServer(
+            (path, request) => !path.StartsWith("/v1/chat/completions", StringComparison.Ordinal) ? null
+                             : request.Contains("\"tools\":[", StringComparison.Ordinal) ? TemplateRefusal : sse,
+            (_, request) => request.Contains("\"tools\":[", StringComparison.Ordinal) ? 400 : 200);
+        var model = "gemma-" + Guid.NewGuid().ToString("N")[..8];
+
+        var turn = await Client(server).SendChatAsync(model, [new ChatMessageDto("user", "Read a.cs")], new Tools(),
+                                                      onToken: null, CancellationToken.None);
+
+        var call = Assert.Single(turn.ToolCalls!);                                   // the real call, not the invented one
+        Assert.Equal("a.cs", call.Function.Arguments.GetProperty("path").GetString());
+        Assert.DoesNotContain("Invented", turn.TextContent);
+        // The server is asked to stop there too.
+        var stop = JsonDocument.Parse(Chats(server)[1]).RootElement.GetProperty("stop");
+        Assert.Equal(["<tool_response>", "<|tool_response>"], stop.EnumerateArray().Select(s => s.GetString()));
+    }
+
+    [Fact]
+    public async Task AnOrdinaryRequest_AsksForNoStop()
+    {
+        // Reference arm: a server that renders tools gets them as tools, and no stop sequence is imposed on the model.
+        using var server = new LoopbackHttpServer(
+            (path, _) => path.StartsWith("/v1/chat/completions", StringComparison.Ordinal) ? Sse("Done.") : null);
+        var model = "plain-" + Guid.NewGuid().ToString("N")[..8];
+
+        var turn = await Client(server).SendChatAsync(model, [new ChatMessageDto("user", "x")], new Tools(), null, CancellationToken.None);
+
+        Assert.Equal("Done.", turn.TextContent);
+        Assert.Contains("\"tools\":[", Assert.Single(Chats(server)));
+        Assert.DoesNotContain("\"stop\"", Chats(server)[0]);
+    }
+
+    [Fact]
+    public async Task AnotherStreamedRefusal_IsNotRetried()
+    {
+        // Reference arm, streamed: an error event that is not a template refusal fails the turn as before.
+        using var server = new LoopbackHttpServer(
+            (path, _) => path.StartsWith("/v1/chat/completions", StringComparison.Ordinal)
+                ? "event: error\ndata: {\"error\":{\"message\":\"request (9000 tokens) exceeds the available context size\"}}\n\n"
+                : null,
+            (_, _) => 200);
+        var model = "other-" + Guid.NewGuid().ToString("N")[..8];
+
+        await Assert.ThrowsAsync<AgentHttpException>(() => Client(server).SendChatAsync(
+            model, [new ChatMessageDto("user", "x")], new Tools(), null, CancellationToken.None));
+
+        Assert.Single(Chats(server));
     }
 
     [Fact]

@@ -144,6 +144,79 @@ public class AgentOrchestratorObserveTests
         Assert.Contains(fake.SeenMessages.Last(), m => m.Role == "user" && m.Content == Strings.AgentNudgeToolCall);
     }
 
+    /// <summary>
+    /// An edit tool whose calls write or not; <see cref="WritesInRun"/> counts the writes like the real registry does
+    /// (<c>null</c> for a registry that does not write files).
+    /// </summary>
+    private sealed class EditRegistry(bool writes, bool countsWrites = true) : IToolRegistry
+    {
+        private int _writes;
+        public IReadOnlyList<ToolDefinition> Definitions { get; } =
+        [
+            new("function", new ToolFunction("apply_edits", "edit files", new { })),
+        ];
+        public DiffInfo? ConsumeDiff() => null;
+        public int? WritesInRun => countsWrites ? _writes : null;
+        public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
+        {
+            if (!writes) return Task.FromResult("No changes applied — edit #2 in tests/cart.test.js: no exact or fuzzy match for old_content.");
+            _writes++;
+            return Task.FromResult("Applied 3 edits to 3 files.");
+        }
+    }
+
+    private static readonly ChatTurnResult[] RenameScript =
+    [
+        new("""{"goal":"rename","steps":[{"i":1,"desc":"edit every file"}]}""", null, 0, 0),
+        ToolCallReply("apply_edits", """{"edits":[]}"""),   // the one step — the plan is exhausted after it
+        new("Done.", null, 0, 0),
+    ];
+
+    private static Task<OrchestratorResult> RunWithAsync(ScriptedChatClient fake, IToolRegistry tools) =>
+        new AgentOrchestrator(fake, Config()).RunAsync(
+            model: "m", history: History(), tools: tools,
+            onStep: _ => { }, onToken: null, onPlanReady: null, onStepUpdate: null,
+            onToolExecuted: null, onStreamReset: null, ct: CancellationToken.None);
+
+    [Fact]
+    public async Task AnEditThatWroteNothing_IsNotAStepDone_AndTheModelIsToldToSendItAgain()
+    {
+        // The plan's only step was an apply_edits refused whole. "All plan steps are complete — answer WITHOUT
+        // calling any more tools" is what made devstral end the run claiming a rename no file received.
+        var fake = new ScriptedChatClient(RenameScript);
+
+        await RunWithAsync(fake, new EditRegistry(writes: false));
+
+        var observe = fake.SeenMessages.Last();
+        Assert.Contains(observe, m => m.Role == "user" && m.Content == Strings.AgentObservePromptEditUnchanged(1, 5, "apply_edits"));
+        Assert.DoesNotContain(observe, m => m.Content == Strings.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
+    }
+
+    [Fact]
+    public async Task AnEditThatWrote_CompletesItsStep_AsBefore()
+    {
+        // Reference arm: an edit that landed is a step done, and the answer-now variant follows.
+        var fake = new ScriptedChatClient(RenameScript);
+
+        await RunWithAsync(fake, new EditRegistry(writes: true));
+
+        Assert.Contains(fake.SeenMessages.Last(),
+            m => m.Role == "user" && m.Content == Strings.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
+    }
+
+    [Fact]
+    public async Task ARegistryThatWritesNoFile_NeverRaisesTheNote()
+    {
+        // /task records its edits as proposals, by construction: nothing is written, and that is not a failure.
+        var fake = new ScriptedChatClient(RenameScript);
+
+        await RunWithAsync(fake, new EditRegistry(writes: false, countsWrites: false));
+
+        Assert.Contains(fake.SeenMessages.Last(),
+            m => m.Role == "user" && m.Content == Strings.AgentObservePromptComplete(1, 5, "apply_edits", "Give me the apple pie recipe"));
+        Assert.DoesNotContain(fake.SeenMessages.Last(), m => m.Content == Strings.AgentObservePromptEditUnchanged(1, 5, "apply_edits"));
+    }
+
     [Fact]
     public async Task PlanStepsRemaining_ObserveKeepsTheNextStepVariant()
     {

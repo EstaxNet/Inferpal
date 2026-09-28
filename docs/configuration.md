@@ -79,6 +79,7 @@ Every persisted setting, its type, and default value.
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `contextWindowSize` | int | `8192` | `num_ctx` + client token budget (0 = model default, trimming off) |
+| `useRecommendedSampling` | bool | `true` | Send the sampling settings the model's vendor recommends, for the families in [Models](models.md) (`false` = the server's own settings) |
 | `contextWindowKeepTurns` | int | `4` | Recent turns to keep when trimming |
 | `compactionEnabled` | bool | `true` | Summarize old messages (LLM) instead of hard truncation |
 | `compactionTimeoutSeconds` | int | `45` | Compaction safety timeout |

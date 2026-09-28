@@ -41,10 +41,15 @@ internal class OllamaClient : InferenceProviderBase
     // Returns the per-request options to send with every /api/chat call. When the
     // user has set a context window size, num_ctx is forwarded so Ollama caps the
     // KV-cache (keeping the model in VRAM); 0 means "let Ollama use the model default".
-    private ChatOptions? ComputeOptions() =>
-        _config.ContextWindowSize > 0
-            ? new ChatOptions(NumCtx: _config.ContextWindowSize)
-            : null;
+    // With it, the sampling the model's vendor recommends (ModelProfiles), when the user leaves that on.
+    private ChatOptions? ComputeOptions(string model)
+    {
+        var numCtx = _config.ContextWindowSize > 0 ? _config.ContextWindowSize : (int?)null;
+        var s      = ModelProfiles.SamplingFor(model, _config);
+        return numCtx is null && s is null
+            ? null
+            : new ChatOptions(numCtx, s?.Temperature, s?.TopP, s?.TopK, s?.MinP, s?.RepeatPenalty);
+    }
 
     /// <summary>
     /// Makes a single <c>POST /api/chat</c> call with streaming and returns the model's response.
@@ -87,7 +92,7 @@ internal class OllamaClient : InferenceProviderBase
         var effectiveToolChoice = defs is not null ? toolChoice : null;
         // Merge consecutive same-role turns. Ollama's Go templates tolerate them, but it keeps the
         // history clean (better KV-cache reuse) and guards any model whose template is strict.
-        var request = new ChatRequest(model, CoalesceConsecutiveRoles(messages), defs, Stream: true, KeepAlive: ComputeKeepAlive(), Options: ComputeOptions(), ToolChoice: effectiveToolChoice);
+        var request = new ChatRequest(model, CoalesceConsecutiveRoles(messages), defs, Stream: true, KeepAlive: ComputeKeepAlive(), Options: ComputeOptions(model), ToolChoice: effectiveToolChoice);
 
         // The complexity deadline bounds time-to-first-byte (connection, queue, model load,
         // prompt eval) and then acts as an INACTIVITY timeout between streamed chunks —

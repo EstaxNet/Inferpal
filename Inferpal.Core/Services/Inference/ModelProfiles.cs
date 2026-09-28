@@ -44,10 +44,22 @@ internal enum AgentFit
     NotRecommended,
 }
 
+/// <summary>
+/// The sampling settings a family's vendor publishes for chat and agent use — only those it publishes: a value left
+/// <c>null</c> is not sent, and the server's own applies.
+/// </summary>
+internal sealed record ModelSampling(
+    double? Temperature   = null,
+    double? TopP          = null,
+    int?    TopK          = null,
+    double? MinP          = null,
+    double? RepeatPenalty = null);
+
 /// <param name="Anchor">The section of <c>docs/models.md</c> that documents the family (<c>&lt;a id="…"&gt;</c>).</param>
 /// <param name="Ids">Lower-case fragments of a model id that name the family.</param>
 /// <param name="Rank">Order among families of the same fit, when choosing a default model (lower first).</param>
 /// <param name="ToolCalls">The form the family writes its calls in as text; <c>null</c> when it is not trained for tools.</param>
+/// <param name="Sampling">What the vendor recommends for tool use and coding; <c>null</c> when it publishes nothing.</param>
 internal sealed record ModelProfile(
     string Anchor,
     string Name,
@@ -56,7 +68,8 @@ internal sealed record ModelProfile(
     int Rank,
     ToolCallForm? ToolCalls,
     ReasoningForm Reasoning,
-    FimForm Fim);
+    FimForm Fim,
+    ModelSampling? Sampling = null);
 
 /// <summary>
 /// What Inferpal knows about each model family it is measured with — one place, documented in <c>docs/models.md</c>.
@@ -80,9 +93,11 @@ internal static class ModelProfiles
     [
         // ── Code models: fill in the middle ──────────────────────────────────
         new("qwen3-coder",    "Qwen3 Coder",              ["qwen3-coder"],
-            AgentFit.Unmeasured,     4, ToolCallForm.QwenXml,       ReasoningForm.None,                FimForm.QwenCoder),
+            AgentFit.Unmeasured,     4, ToolCallForm.QwenXml,       ReasoningForm.None,                FimForm.QwenCoder,
+            new(Temperature: 0.7, TopP: 0.8, TopK: 20, RepeatPenalty: 1.05)),
         new("qwen-coder",     "Qwen2.5 Coder",            ["qwen2.5-coder", "qwen2-coder", "qwen-coder"],
-            AgentFit.NotRecommended, 0, ToolCallForm.JsonTag,       ReasoningForm.None,                FimForm.QwenCoder),
+            AgentFit.NotRecommended, 0, ToolCallForm.JsonTag,       ReasoningForm.None,                FimForm.QwenCoder,
+            new(Temperature: 0.7, TopP: 0.8, TopK: 20, RepeatPenalty: 1.05)),
         new("codegemma",      "CodeGemma",                ["codegemma"],
             AgentFit.NotRecommended, 0, null,                       ReasoningForm.None,                FimForm.QwenCoder),
         new("deepseek-coder", "DeepSeek Coder",           ["deepseek-coder"],
@@ -94,20 +109,36 @@ internal static class ModelProfiles
 
         // ── Agent models ─────────────────────────────────────────────────────
         new("qwen35",         "Qwen3.8 / Qwen3.6",        ["qwen3.8", "qwen3.6", "qwen3.5"],
-            AgentFit.Recommended,    1, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.None),
+            AgentFit.Recommended,    1, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.None,
+            new(Temperature: 1.0, TopP: 0.95, TopK: 20, MinP: 0.0)),
         new("devstral",       "Devstral Small 2",         ["devstral"],
-            AgentFit.Recommended,    2, ToolCallForm.MistralTokens, ReasoningForm.None,                FimForm.None),
+            AgentFit.Recommended,    2, ToolCallForm.MistralTokens, ReasoningForm.None,                FimForm.None,
+            new(Temperature: 0.15)),
         new("bonsai",         "Bonsai 27B",               ["bonsai"],
-            AgentFit.Unmeasured,     1, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.None),
+            AgentFit.Unmeasured,     1, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.None,
+            new(Temperature: 0.7, TopP: 0.95, TopK: 20)),
         new("muse-glimmer",   "Muse Glimmer",             ["muse-glimmer"],
-            AgentFit.Unmeasured,     2, ToolCallForm.Atem,          ReasoningForm.ChannelEnvelope,     FimForm.None),
+            AgentFit.Unmeasured,     2, ToolCallForm.Atem,          ReasoningForm.ChannelEnvelope,     FimForm.None,
+            new(Temperature: 1.0, TopP: 0.95, TopK: 64)),
         new("gemma4",         "Gemma 4",                  ["gemma-4", "gemma4"],
-            AgentFit.Unmeasured,     3, ToolCallForm.GemmaNative,   ReasoningForm.ChannelEnvelope,     FimForm.None),
+            AgentFit.Unmeasured,     3, ToolCallForm.GemmaNative,   ReasoningForm.ChannelEnvelope,     FimForm.None,
+            new(Temperature: 1.0, TopP: 0.95, TopK: 64)),
         new("qwen3",          "Qwen3 4B Thinking 2507",   ["qwen3"],
-            AgentFit.Usable,         1, ToolCallForm.JsonTag,       ReasoningForm.TemplateOpenedThink, FimForm.None),
+            AgentFit.Usable,         1, ToolCallForm.JsonTag,       ReasoningForm.TemplateOpenedThink, FimForm.None,
+            new(Temperature: 0.6, TopP: 0.95, TopK: 20, MinP: 0.0)),
+        // Z.ai's settings for tool calling and agentic coding, not its general ones (1.0 / 0.95); Unsloth adds min_p
+        // 0.01 and no repeat penalty — llama.cpp's defaults are 0.05 and 1.1.
         new("glm47",          "GLM 4.7 Flash",            ["glm-4.7", "glm4.7"],
-            AgentFit.NotRecommended, 1, ToolCallForm.GlmArgs,       ReasoningForm.TemplateOpenedThink, FimForm.None),
+            AgentFit.NotRecommended, 1, ToolCallForm.GlmArgs,       ReasoningForm.TemplateOpenedThink, FimForm.None,
+            new(Temperature: 0.7, TopP: 1.0, MinP: 0.01, RepeatPenalty: 1.0)),
     ];
+
+    /// <summary>
+    /// The sampling to send with a chat or agent request to <paramref name="modelId"/>: its vendor's, when the user
+    /// leaves <see cref="Config.InferpalConfig.UseRecommendedSampling"/> on and the family is known; <c>null</c> otherwise.
+    /// </summary>
+    public static ModelSampling? SamplingFor(string? modelId, Config.InferpalConfig config) =>
+        config.UseRecommendedSampling ? For(modelId)?.Sampling : null;
 
     /// <summary>The profile of the family <paramref name="modelId"/> belongs to, or <c>null</c> for an unknown family
     /// and for an embedding model — <c>text-embedding-qwen3-embedding-0.6b</c> is not a Qwen3 chat model.</summary>

@@ -33,6 +33,9 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     // false: the OpenAI chat wire LM Studio inherits carries no per-request keep_alive hint.
     public override ProviderCapabilities Capabilities => ProviderCapabilities.LmStudio;
 
+    /// <inheritdoc/>
+    private protected override bool SendsExtendedSampling => true;
+
     /// <summary>
     /// Host root (no API suffix), tolerating a <c>/v1</c> suffix — taken from
     /// <paramref name="url"/> when a caller forces one, otherwise from the configuration.

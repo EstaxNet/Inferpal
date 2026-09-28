@@ -110,6 +110,13 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         return mapped;
     }
 
+    /// <summary>
+    /// Whether the server reads the sampling fields the OpenAI API does not define (<c>top_k</c>, <c>min_p</c>,
+    /// <c>repeat_penalty</c>). A generic OpenAI-compatible server gets the standard ones only: a strict one refuses a
+    /// request that carries a field it does not know.
+    /// </summary>
+    private protected virtual bool SendsExtendedSampling => false;
+
     // ── Proactive context-fit guard ────────────────────────────────────────────
 
     /// <summary>
@@ -276,16 +283,39 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var window   = loadedCtx is > 0 ? loadedCtx.Value : _config.ContextWindowSize;
         var maxChars = OutputBound.MaxChars(window, size.Total);
 
+        // The sampling the model's vendor recommends, when the user leaves that on (ModelProfiles).
+        var sampling = ModelProfiles.SamplingFor(model, _config);
+
         // A model whose chat template the server cannot render with tools gets them in its system prompt (PromptedTools).
         var promptedKey = base_ + "|" + model;
         var prompted    = defs is not null && PromptedToolModels.ContainsKey(promptedKey);
+        // ⚠ The refusal comes through any of the three doors a server refuses by — an HTTP status, an error event in
+        // the stream (LM Studio answers 200 and streams "event: error"), a bare error object — and nothing has been
+        // generated yet in any of them, so each one retries.
+        bool FallsBackToPromptedTools(string error)
+        {
+            if (defs is null || prompted || !PromptedTools.IsTemplateRefusal(error)) return false;
+            // The server cannot write this model's prompt with tools in it — its chat template fails on them. Asked
+            // again with the tools in the system prompt, for this request and every later one to this model.
+            PromptedToolModels.TryAdd(promptedKey, 0);
+            Diagnostics.Record("OpenAiCompatible.PromptedTools",
+                $"The chat template of \"{model}\" could not be rendered with tools by {base_}: its tools are described "
+                + "in the system prompt instead, for the rest of this session.");
+            return true;
+        }
         var request = new OpenAiChatRequest(
             model,
             prompted ? PromptedTools.Rewrite(MapMessages(messages), defs!) : MapMessages(messages),
             prompted ? null : defs,
             Stream: true,
             StreamOptions: new OpenAiStreamOptions(IncludeUsage: true),
-            ToolChoice: defs is not null && !prompted ? toolChoice : null);
+            ToolChoice: defs is not null && !prompted ? toolChoice : null,
+            Stop: prompted ? PromptedTools.ResponseMarkers : null,
+            Temperature: sampling?.Temperature,
+            TopP:        sampling?.TopP,
+            TopK:        SendsExtendedSampling ? sampling?.TopK : null,
+            MinP:        SendsExtendedSampling ? sampling?.MinP : null,
+            RepeatPenalty: SendsExtendedSampling ? sampling?.RepeatPenalty : null);
 
         var deadline = TimeSpan.FromSeconds(TimeoutFor(complexity));
 
@@ -304,14 +334,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
-                                              && defs is not null && !prompted && PromptedTools.IsTemplateRefusal(ex.Message))
+                                              && FallsBackToPromptedTools(ex.Message))
         {
-            // The server cannot write this model's prompt with tools in it — its chat template fails on them. Asked
-            // again with the tools in the system prompt, for this request and every later one to this model.
-            PromptedToolModels.TryAdd(promptedKey, 0);
-            Diagnostics.Record("OpenAiCompatible.PromptedTools",
-                $"The chat template of \"{model}\" could not be rendered with tools by {base_}: its tools are described "
-                + "in the system prompt instead, for the rest of this session.");
             return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
@@ -372,6 +396,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     // bare JSON error object here (no "data:" prefix) when it aborts after the 200 headers.
                     if (line.TrimStart().StartsWith('{') && TryExtractError(ParseErrorElement(line)) is { } bareError)
                     {
+                        if (chunkCount == 0 && FallsBackToPromptedTools(bareError))
+                            return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
                         RecordFailure();
                         throw new AgentHttpException(MapServerError(bareError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                     }
@@ -392,6 +418,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 // request in a tight loop, ending on a blank bubble with no explanation for the user.
                 if (TryExtractError(chunk?.Error ?? default) is { } serverError)
                 {
+                    if (chunkCount == 0 && FallsBackToPromptedTools(serverError))
+                        return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
                     RecordFailure();
                     throw new AgentHttpException(MapServerError(serverError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                 }
@@ -450,6 +478,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     {
                         contentBuilder.Append(answerPart);
                         onToken?.Invoke(answerPart);
+                        // Tools in the prompt: a model that opens the tool's response is waiting for it — whatever
+                        // follows is invented. Stops here, for a server that ignored the request's stop.
+                        if (prompted && PromptedTools.ResponseStart(contentBuilder, answerPart.Length) is var at and >= 0)
+                        {
+                            contentBuilder.Length = at;
+                            finishReason = "stop";
+                            break;
+                        }
                     }
                     received += delta.Content.Length;
                     if (contentLoop.Repeats(delta.Content))

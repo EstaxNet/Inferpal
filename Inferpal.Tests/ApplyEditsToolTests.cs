@@ -61,6 +61,38 @@ public class ApplyEditsToolTests
     }
 
     [Fact]
+    public async Task ARefusedBatch_NamesTheEditsThatWereNotWrittenEither_AndAsksForAllOfThem()
+    {
+        // Told only which edit failed, devstral corrected that one and sent it alone in every one of ten replays of a real
+        // refusal — the correct edits were never written; naming them got all three sent again in nine replays of ten.
+        using var tmp = new TempDir();
+        var a = tmp.File("A.cs", "int x = 1;");
+        var b = tmp.File("B.cs", "int y = 2;");
+        var c = tmp.File("C.cs", "int z = 3;");
+
+        var result = await Tool(tmp.Path).ExecuteAsync(
+            Args((a, "x = 1", "x = 10"), (b, "DOES NOT EXIST", "y = 20"), (c, "z = 3", "z = 30")), CancellationToken.None);
+
+        Assert.Contains("edit #2 in B.cs", result);
+        Assert.Contains("the other 2 edit(s) (#1, #3) were not written either", result);
+        Assert.Contains("Send all 3 edits again in one apply_edits call, with edit #2 corrected", result);
+        Assert.Equal("int x = 1;", await File.ReadAllTextAsync(a));   // and indeed: nothing was written
+    }
+
+    [Fact]
+    public async Task ARefusedSingleEdit_SaysNothingAboutOthers()
+    {
+        // Reference arm: a batch of one has no other edit to name.
+        using var tmp = new TempDir();
+        var a = tmp.File("A.cs", "int x = 1;");
+
+        var result = await Tool(tmp.Path).ExecuteAsync(Args((a, "DOES NOT EXIST", "x = 10")), CancellationToken.None);
+
+        Assert.Contains("edit #1 in A.cs", result);
+        Assert.DoesNotContain("were not written either", result);
+    }
+
+    [Fact]
     public async Task MultipleEditsSameFile_AppliedInOrder()
     {
         using var tmp = new TempDir();

@@ -42,6 +42,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// (<see cref="FileHistoryService.BeginRun"/>) and run <c>/undo-run</c>.</summary>
     public FileHistoryService History => _fileHistory;
 
+    /// <inheritdoc/>
+    public int? WritesInRun => _fileHistory.CurrentRunWriteCount;
+
     /// <summary>
     /// The debugger surface the two debug tools were built with, or <c>null</c> on a front-end that
     /// has none. Exposed so <c>/debug</c> reports on the very session the model drives rather than

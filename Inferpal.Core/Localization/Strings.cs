@@ -447,6 +447,15 @@ internal static class Strings
     public static string AgentObservePromptComplete(int iteration, int max, string toolNames, string task) =>
         string.Format(Get(nameof(AgentObservePromptComplete)), iteration, max, toolNames, task);
     /// <summary>
+    /// OBSERVE injection used when an edit among the round's calls wrote nothing: the step stays open, and the model
+    /// is told to correct the call and send every edit again — never that the plan is complete.
+    /// </summary>
+    /// <param name="iteration">1-based current iteration number.</param>
+    /// <param name="max">Maximum allowed iterations.</param>
+    /// <param name="toolNames">Comma-separated names of tools executed this round.</param>
+    public static string AgentObservePromptEditUnchanged(int iteration, int max, string toolNames) =>
+        string.Format(Get(nameof(AgentObservePromptEditUnchanged)), iteration, max, toolNames);
+    /// <summary>
     /// One-shot nudge injected when the first ACT response contained text but no tool calls.
     /// Forces the model to invoke a tool instead of narrating its intentions.
     /// </summary>
