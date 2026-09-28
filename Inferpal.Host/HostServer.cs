@@ -200,23 +200,18 @@ internal sealed partial class HostServer : IDisposable
         {
             // Auto-context: inject the most relevant indexed chunks for this turn (same
             // per-turn RAG block as the VS VM). Runs before the agent takes the GPU lease.
-            var promptText = p.Prompt;
-
             // The first question of a conversation carries the workspace block, as in Visual Studio (which puts
             // the per-turn RAG block ahead of it).
+            string? workspace = null;
             if (!s.WorkspaceContextSent)
             {
-                var workspace = await BuildWorkspaceContextAsync(s, cts.Token);
+                workspace = await BuildWorkspaceContextAsync(s, cts.Token);
                 if (workspace.Length > 0)
-                {
                     s.WorkspaceContextSent = true;
-                    promptText = workspace + "\n\n" + promptText;
-                }
             }
 
             var autoCtx    = await BuildRagAutoContextAsync(s, p.Prompt, p.AttachedPaths, cts.Token);
-            if (!string.IsNullOrEmpty(autoCtx))
-                promptText = autoCtx + "\n\n" + promptText;
+            var promptText = ChatTurnPolicy.WithInjectedContext(p.Prompt, autoCtx, workspace);
 
             // The system prompt follows the active file (glob-scoped rules, persona), which the adapter reports by
             // notification; it is rebuilt here, inside the turn slot, never from the notification itself.

@@ -184,6 +184,7 @@ internal partial class InferpalToolWindowData
                 attachments.Select(a => new Services.Agent.AttachmentContent(a.Label, a.Content)).ToList());
 
             // First-turn workspace context: silently prepend solution + open editors
+            string? workspaceCtx = null;
             if (!_workspaceContextInjected && !userText.StartsWith('/'))
             {
                 // ⚠ The flag is set AFTER success. BuildWorkspaceContextAsync is best-effort —
@@ -192,20 +193,16 @@ internal partial class InferpalToolWindowData
                 // still loading its solution. Set before, a timeout consumes the flag and the model
                 // NEVER AGAIN gets the session's workspace context, with nothing saying so. "No
                 // solution open" is not that case: get_solution_info then returns text.
-                var workspaceCtx = await BuildWorkspaceContextAsync(localCts!.Token);
+                workspaceCtx = await BuildWorkspaceContextAsync(localCts!.Token);
                 if (!string.IsNullOrEmpty(workspaceCtx))
-                {
                     _workspaceContextInjected = true;
-                    historyText = workspaceCtx + "\n\n" + historyText;
-                }
             }
 
             // Auto-context: retrieve and inject the most relevant indexed chunks for this turn,
             // skipping anything already attached. Guarantees per-turn RAG context even when the
             // debounced auto-attach chips did not fire (e.g. the user typed fast and sent).
             var autoCtx = await BuildAutoContextAsync(userText, attachments, localCts!.Token);
-            if (!string.IsNullOrEmpty(autoCtx))
-                historyText = autoCtx + "\n\n" + historyText;
+            historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx);
 
             await RunOnVMContextAsync(() =>
             {

@@ -145,6 +145,28 @@ internal static class ChatTurnPolicy
     public static string BuildToolPreview(string output, int maxLength = 500) =>
         output.Length > maxLength ? output[..maxLength] + Strings.MsgTruncated : output;
 
+    /// <summary>The heading the user's message carries when the product injected blocks ahead of it.</summary>
+    public const string UserRequestHeader = "## User request";
+
+    /// <summary>
+    /// The message the model receives: the blocks the product injected unasked (RAG auto-context, workspace
+    /// context), then the user's message — attachments included — under its own heading. Unchanged when nothing
+    /// was injected.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Every injected block carries a heading ("## Relevant code", "## Workspace context (auto-injected…)") and
+    /// the user's words did not: a one-line request after them reads as one more line of context, and an agent
+    /// asked to remember a fact planned an analysis of the workspace. Structural, like the headings beside it: not
+    /// localized.
+    /// </remarks>
+    public static string WithInjectedContext(string message, params string?[] blocks)
+    {
+        var injected = blocks.Where(b => !string.IsNullOrWhiteSpace(b)).ToList();
+        return injected.Count == 0
+            ? message
+            : string.Join("\n\n", injected) + "\n\n" + UserRequestHeader + "\n\n" + message;
+    }
+
     /// <summary>
     /// Builds the context-enriched history message sent to the model (not shown in the
     /// chat bubble): each attachment as a labelled fenced block, then the user's text.
