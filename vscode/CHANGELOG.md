@@ -3,6 +3,31 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.24
+
+Twenty-three changes, most of them found by running Inferpal's own test battery on eleven local
+models: new models supported, better defaults, and fixes for what the assistant says versus what
+it actually did.
+
+- **Muse Glimmer and Gemma 4 work as the assistant** with LM Studio, and the tool-call formats of
+  GLM, Gemma 4, Mistral/Devstral and gpt-oss are now run instead of shown as text.
+- **Known models get the sampling settings their vendor recommends**, and a new
+  [Models](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md) page says, per model,
+  what it is good for and how it was measured.
+- **"Remember this for future sessions" is saved** in Agent mode, instead of an exploration of the
+  project followed by "Done.".
+- **The agent no longer plans with tools that do not exist**, and a rename written with its class
+  (`Cart.ComputeTotal`) now retries with the right names instead of blaming yours.
+- **A reply that says the tests pass right after they failed is flagged**, and "no file was changed"
+  now covers every tool that writes (a previewed rename included).
+- **Your interface language is passed to the model**: it answers in that language, or in the one you
+  write in — with the interface in French, an English question now gets an English answer.
+- **A file the assistant rewrites keeps its final line break**; outside a git repository, "restore
+  it from the history" finds the backup again; backups no longer show up in `git status` or run as
+  tests.
+- **Indexing with LM Studio no longer ends up without semantic search** when the embedding model is
+  still loading, and a model stuck repeating itself is stopped within seconds.
+
 ## 1.6.23
 
 Twelve fixes. Most of them change what happens with small local models, which could get stuck,
