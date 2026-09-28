@@ -14,10 +14,10 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 
 | Model | Use it for | What Inferpal does for it | Server notes |
 |---|---|---|---|
-| [Qwen3.8 27B](#qwen35) (and Qwen3.6 27B) | ✅ **Agent** — recommended (14/14) | Reads its XML tool calls when the server leaves them as text | Reasoning separated by LM Studio |
+| [Qwen3.8 27B](#qwen35) | ✅ **Agent** — recommended (14/14) | Reads its XML tool calls when the server leaves them as text | Reasoning separated by LM Studio |
 | [Devstral Small 2](#devstral) | ✅ **Agent** — recommended, fastest (13/14) | Reads its `[TOOL_CALLS]` calls when left as text | Temperature **0.15** |
 | [Muse Glimmer](#muse-glimmer) | ✅ **Agent** — recommended (14/14) | Splits its addressed messages (reasoning / answer) and reads its ATEM tool calls | Needs a recent llama.cpp runtime |
-| [Bonsai 27B](#bonsai) (1-bit Qwen3.6) | ✅ **Agent** on small GPUs (13/14, slow) | Same as Qwen3.8 | 4.7 GB for 27B |
+| [Bonsai 27B](#bonsai) (1-bit Qwen) | ✅ **Agent** on small GPUs (13/14, slow) | Same as Qwen3.8 | 4.7 GB for 27B |
 | [GLM 4.7 Flash](#glm47) | Agent — usable with the **Unsloth GGUF** (12/14) | Reads its `<arg_key>` tool calls when left as text | Older GGUFs (lmstudio-community) loop |
 | [Qwen3 Coder 30B](#qwen3-coder) | Autocomplete (FIM); agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
 | [Qwen3 4B Thinking 2507](#qwen3) | Small machines | Reads its JSON tool calls when left as text | Long reasoning |
@@ -67,7 +67,7 @@ complete better with them ([below](#fim-models)). How a reply is *read* never de
 above is read for every model, so a renamed or fine-tuned model keeps working.
 
 <a id="qwen35"></a>
-## Qwen3.8 27B, Qwen3.6 27B
+## Qwen3.8 27B
 
 - **Model.** Alibaba Qwen, 27B, reasoning model (architecture `qwen35` in LM Studio), 262,144-token context.
 - **Tool calls.** XML: `<tool_call><function=name><parameter=key>value</parameter></function></tool_call>`; tool
@@ -103,8 +103,8 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 <a id="bonsai"></a>
 ## Bonsai 27B
 
-- **Model.** PrismML's 1-bit conversion of Qwen3.6-27B (one sign bit per weight plus a scale per 128 weights,
-  about 1.125 bits per weight): 4.7 GB for 27B parameters, same architecture and chat template as Qwen3.6.
+- **Model.** PrismML's 1-bit conversion of a 27B Qwen model (one sign bit per weight plus a scale per 128 weights,
+  about 1.125 bits per weight): 4.7 GB for 27B parameters, same architecture and chat format as Qwen3.8.
 - **Tool calls and reasoning.** Same as [Qwen3.8](#qwen35): XML calls, `<think>` reasoning. Autocomplete, unlike
   Qwen3.8's, completes from the code before the cursor: with the fill-in-the-middle tokens its 1-bit weights got no
   completion right in 36, against 8 without.
@@ -220,13 +220,13 @@ still works, without seeing what follows.
 
 Having the tokens in its vocabulary does not make a model good at the task: every Qwen model has them, and measured on
 what reaches the editor (12 gaps to fill, 3 attempts each), Qwen3.8 fills 27 in 36 with them and 12 without, Qwen2.5
-Coder 31 against 13 — but Qwen3 4B Thinking 3 against 15, and Bonsai, a 1-bit Qwen3.6, 0 against 8. Each family gets
+Coder 31 against 13 — but Qwen3 4B Thinking 3 against 15, and Bonsai, its 1-bit sibling, 0 against 8. Each family gets
 the form measured best. Qwen2.5 Coder, the best at autocomplete, is not an agent model: it is not trained for tool
 calling (3 tasks in 14).
 
 | Family | Tokens |
 |---|---|
-| [Qwen2.5 Coder](#qwen-coder), [Qwen3 Coder](#qwen3-coder), [Qwen3.8 / Qwen3.6](#qwen35) | `<\|fim_prefix\|>…<\|fim_suffix\|>…<\|fim_middle\|>` |
+| [Qwen2.5 Coder](#qwen-coder), [Qwen3 Coder](#qwen3-coder), [Qwen3.8](#qwen35) | `<\|fim_prefix\|>…<\|fim_suffix\|>…<\|fim_middle\|>` |
 | <a id="codegemma"></a>CodeGemma | the same `<\|fim_…\|>` tokens |
 | <a id="deepseek-coder"></a>DeepSeek Coder | `<｜fim▁begin｜>…<｜fim▁hole｜>…<｜fim▁end｜>` |
 | <a id="starcoder"></a>StarCoder, StarCoder2 | `<fim_prefix>…<fim_suffix>…<fim_middle>` |
@@ -244,7 +244,6 @@ Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux 
 | Muse Glimmer | 14/14 | 2026-09-28 |
 | Devstral Small 2 | 13/14 | 2026-09-28 |
 | Bonsai 27B | 13/14 | 2026-09-28 |
-| Qwen3.6 27B | 13/14 | 2026-09-27 |
 | GLM 4.7 Flash (Unsloth GGUF) | 12/14 | 2026-09-28 |
 | Qwen3 Coder 30B | 9/14 | 2026-09-28 |
 | gpt-oss 20B | 8/14 | 2026-09-28 |

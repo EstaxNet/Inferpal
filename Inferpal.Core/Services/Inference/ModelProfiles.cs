@@ -110,7 +110,8 @@ internal static class ModelProfiles
         // ── Agent models ─────────────────────────────────────────────────────
         // Fill in the middle: measured on what reaches the editor, 27 right completions in 36 with the tokens, 12 from
         // the prefix alone — while Qwen3 4B Thinking (3 vs 15) and Bonsai, its 1-bit sibling (0 vs 8), do worse with them.
-        new("qwen35",         "Qwen3.8 / Qwen3.6",        ["qwen3.8", "qwen3.6", "qwen3.5"],
+        // Earlier releases of the same architecture and template keep the profile.
+        new("qwen35",         "Qwen3.8",                  ["qwen3.8", "qwen3.6", "qwen3.5"],
             AgentFit.Recommended,    1, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.QwenCoder,
             new(Temperature: 1.0, TopP: 0.95, TopK: 20, MinP: 0.0)),
         new("devstral",       "Devstral Small 2",         ["devstral"],
