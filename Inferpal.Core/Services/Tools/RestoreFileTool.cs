@@ -22,8 +22,9 @@ internal class RestoreFileTool : ITool
 
     public string Name        => "restore_file";
     public string Description =>
-        "Restores a file from a previously saved backup snapshot in .inferpal/history/. " +
-        "If no snapshot path is provided, uses the most recent backup. " +
+        "Restores a file from a previously saved backup snapshot in .inferpal/history/ (at the git root, or else at " +
+        "the workspace root) — every write takes one and names it in its result. " +
+        "If no snapshot path is provided, uses the most recent backup: you do not need to find it. " +
         "Use this to undo changes made by write_file or apply_diff.";
 
     public object Parameters => new

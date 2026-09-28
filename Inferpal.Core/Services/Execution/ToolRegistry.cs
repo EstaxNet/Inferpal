@@ -67,6 +67,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         _approval    = approval;
         _mcp         = mcp;
         _fileHistory = fileHistory ?? new();
+        // Outside a git repository the history lives at the workspace root — one folder, the one restore_file names.
+        _fileHistory.WorkspaceRoot ??= () => indexService.RootDir;
 
         _editor       = editor;
         _indexService = indexService;

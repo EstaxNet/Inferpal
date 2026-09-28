@@ -139,7 +139,7 @@ internal class FileHistoryService
         {
             if (!File.Exists(filePath)) return string.Empty;
 
-            var historyDir = GetHistoryDir(filePath);
+            var historyDir = HistoryDirOf(filePath);
             Directory.CreateDirectory(historyDir);
             IgnoreInGit(historyDir);
             RenameOlderSnapshots(historyDir);
@@ -248,9 +248,6 @@ internal class FileHistoryService
 
     internal string? FindMostRecentSnapshot(string originalPath)
     {
-        var historyDir = GetHistoryDir(originalPath);
-        if (!Directory.Exists(historyDir)) return null;
-
         var suffix = SnapshotSuffix(originalPath);
 
         // Ordered by WRITE TIME, not by name. The name is written by this class, and trusting it
@@ -258,7 +255,7 @@ internal class FileHistoryService
         // restore_file puts back — depend on the local clock: at the autumn fall-back an hour of
         // snapshots sorts before older ones. It also survives a folder holding both local-named and
         // UTC-named files after an upgrade.
-        return Directory.EnumerateFiles(historyDir)
+        return HistoryDirsToRead(originalPath).SelectMany(Directory.EnumerateFiles)
             .Where(f => MatchesSuffix(f, suffix))
             .OrderByDescending(File.GetLastWriteTimeUtc)
             .ThenByDescending(f => f)
@@ -310,12 +307,9 @@ internal class FileHistoryService
     /// back once more.</remarks>
     internal async Task<string?> FindRestoreCandidateAsync(string originalPath, CancellationToken ct)
     {
-        var historyDir = GetHistoryDir(originalPath);
-        if (!Directory.Exists(historyDir)) return null;
-
         var current = File.Exists(originalPath) ? await File.ReadAllBytesAsync(originalPath, ct) : null;
         var suffix  = SnapshotSuffix(originalPath);
-        var ordered = Directory.EnumerateFiles(historyDir)
+        var ordered = HistoryDirsToRead(originalPath).SelectMany(Directory.EnumerateFiles)
             .Where(f => MatchesSuffix(f, suffix))
             .OrderByDescending(File.GetLastWriteTimeUtc)
             .ThenByDescending(f => f)
@@ -526,11 +520,46 @@ internal class FileHistoryService
         return new RunUndoResult(restored, deleted, failed, savedFirst);
     }
 
-    internal static string GetHistoryDir(string filePath)
+    /// <summary>
+    /// The workspace root: where the history of a file outside any git repository lives. Set by the tool registry;
+    /// <c>null</c> (a bare service) keeps the file's own folder.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Without it a project that is not a git repository got one <c>.inferpal/history/</c> per folder an edit
+    /// touched — and <c>restore_file</c>'s description names one <c>.inferpal/history/</c>: asked to restore from the
+    /// history, a model looked at the workspace root, found nothing, and answered that no backup existed (measured,
+    /// Devstral).
+    /// </remarks>
+    internal Func<string?>? WorkspaceRoot { get; set; }
+
+    /// <summary>Where a new snapshot of <paramref name="filePath"/> goes.</summary>
+    private string HistoryDirOf(string filePath) => GetHistoryDir(filePath, WorkspaceRoot?.Invoke());
+
+    /// <summary>Where snapshots of <paramref name="filePath"/> are looked for: where they go now, then the folder an
+    /// older version put them in (the file's own folder, outside git), so a restore still finds them.</summary>
+    private IEnumerable<string> HistoryDirsToRead(string filePath)
     {
-        var startDir = Path.GetDirectoryName(Path.GetFullPath(filePath)) ?? ".";
-        var root     = FindGitRoot(startDir) ?? startDir;
-        return Path.Combine(root, ".inferpal", "history");
+        var now = HistoryDirOf(filePath);
+        if (Directory.Exists(now)) yield return now;
+        var legacy = GetHistoryDir(filePath);
+        if (!string.Equals(Path.GetFullPath(legacy), Path.GetFullPath(now), PathComparer.Comparison) && Directory.Exists(legacy))
+            yield return legacy;
+    }
+
+    /// <summary>The git root's <c>.inferpal/history</c>; outside git, the workspace root's when the file is under
+    /// <paramref name="workspaceRoot"/>; else the file's own folder.</summary>
+    internal static string GetHistoryDir(string filePath, string? workspaceRoot = null)
+    {
+        var full     = Path.GetFullPath(filePath);
+        var startDir = Path.GetDirectoryName(full) ?? ".";
+        if (FindGitRoot(startDir) is { } git) return Path.Combine(git, ".inferpal", "history");
+        if (!string.IsNullOrWhiteSpace(workspaceRoot))
+        {
+            var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspaceRoot));
+            if (full.StartsWith(root + Path.DirectorySeparatorChar, PathComparer.Comparison))
+                return Path.Combine(root, ".inferpal", "history");
+        }
+        return Path.Combine(startDir, ".inferpal", "history");
     }
 
     private static string? FindGitRoot(string startDir)
