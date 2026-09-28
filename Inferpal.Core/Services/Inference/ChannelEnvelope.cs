@@ -20,21 +20,31 @@ namespace Inferpal.Services.Inference;
 /// even with thinking off); a server whose reasoning parser misses it leaves it in the content the same way.
 /// </para>
 /// <para>
+/// gpt-oss writes OpenAI's Harmony format, the same family with named channels:
+/// <c>&lt;|channel|&gt;analysis&lt;|message|&gt;</c>…reasoning…<c>&lt;|end|&gt;</c>, <c>&lt;|channel|&gt;final&lt;|message|&gt;</c>…the answer…,
+/// and a call as <c>&lt;|channel|&gt;commentary to=functions.NAME &lt;|constrain|&gt;json&lt;|message|&gt;{…}&lt;|call|&gt;</c>. LM Studio
+/// parses it — except sometimes, and then the header was the first thing of the answer on screen, or the call was shown
+/// as text and the turn ended there.
+/// </para>
+/// <para>
 /// Content that does not open that way passes through untouched, as soon as that is certain. A message to another
-/// recipient (a tool name) is kept as answer rather than dropped: the server turns the model's calls into structured
-/// ones, and text that reaches here unparsed is still better shown than lost. A marker split across two chunks is held
+/// recipient (a tool name) is kept, never dropped: a JSON body — Harmony's arguments, the name being in the header — is
+/// rewritten as <c>&lt;tool_call&gt;{"name":…,"arguments":…}&lt;/tool_call&gt;</c>, a form <c>InlineToolCallParser</c> reads for
+/// every model; any other body (Muse Glimmer's ATEM block) is kept as it is. A marker split across two chunks is held
 /// back until the next one says what it is.
 /// </para>
 /// </remarks>
 internal sealed class ChannelEnvelope
 {
-    private const string Start   = "<|start|>";
-    private const string Role    = "assistant";
-    private const string To      = "to=";
-    private const string Message = "<|message|>";
-    private const string Channel = "<|channel>";   // Gemma 4
-    private static readonly string[] Ends   = ["<|eom|>", "<|eot|>", "<|end|>", "<|return|>", "<channel|>"];
-    private static readonly string[] Starts = [Start, Channel];
+    private const string Start     = "<|start|>";
+    private const string Role      = "assistant";
+    private const string To        = "to=";
+    private const string Message   = "<|message|>";
+    private const string Channel   = "<|channel>";    // Gemma 4
+    private const string Harmony   = "<|channel|>";   // gpt-oss
+    private const string Constrain = "<|constrain|>";
+    private static readonly string[] Ends   = ["<|eom|>", "<|eot|>", "<|end|>", "<|return|>", "<|call|>", "<channel|>"];
+    private static readonly string[] Starts = [Start, Channel, Harmony];
 
     /// <summary>Past this many characters without a complete header, the text is not an envelope.</summary>
     private const int MaxHeaderChars = 200;
@@ -42,6 +52,8 @@ internal sealed class ChannelEnvelope
     private enum State { Detect, Passthrough, Body }
 
     private readonly StringBuilder _pending = new();
+    // The body of a message to a tool, held until the message ends: its name is in the header, its arguments here.
+    private readonly StringBuilder _toolBody = new();
     private State   _state = State.Detect;
     private string? _recipient;
 
@@ -101,6 +113,7 @@ internal sealed class ChannelEnvelope
             if (at >= 0)
             {
                 Route(text[..at], answer, thought);
+                CloseToolMessage(answer);
                 var marker = text.Substring(at, length);
                 // An end marker closes the message; a start marker opens the next one, read again as a header.
                 _pending.Remove(0, Starts.Contains(marker) ? at : at + length);
@@ -114,13 +127,46 @@ internal sealed class ChannelEnvelope
             break;
         }
 
+        if (final) CloseToolMessage(answer);   // a call the stream ended in, without its <|call|>
         return (answer.ToString(), thought.ToString());
     }
 
     private void Route(string text, StringBuilder answer, StringBuilder thought)
     {
         if (text.Length == 0) return;
-        (_recipient == "self" ? thought : answer).Append(text);
+        switch (_recipient)
+        {
+            case "self": thought.Append(text); break;
+            case "user" or null: answer.Append(text); break;
+            default: _toolBody.Append(text); break;
+        }
+    }
+
+    /// <summary>Releases a finished message to a tool: a JSON body as a call the parser reads, any other as it is.</summary>
+    private void CloseToolMessage(StringBuilder answer)
+    {
+        if (_toolBody.Length == 0) return;
+        var body = _toolBody.ToString().Trim();
+        _toolBody.Clear();
+        if (!IsJsonObject(body))
+        {
+            answer.Append(body);
+            return;
+        }
+        var name = _recipient!.StartsWith("functions.", StringComparison.Ordinal) ? _recipient["functions.".Length..] : _recipient;
+        answer.Append("<tool_call>\n{\"name\": ").Append(System.Text.Json.JsonSerializer.Serialize(name))
+              .Append(", \"arguments\": ").Append(body).Append("}\n</tool_call>");
+    }
+
+    private static bool IsJsonObject(string text)
+    {
+        if (!text.StartsWith('{')) return false;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(text);
+            return doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object;
+        }
+        catch (System.Text.Json.JsonException) { return false; }
     }
 
     /// <summary>
@@ -144,7 +190,9 @@ internal sealed class ChannelEnvelope
             recipient = text[nameAt..end] == "thought" ? "self" : "user";
             return end;
         }
-        if (Channel.StartsWith(text[i..], StringComparison.Ordinal)) return 0;
+        if (text.AsSpan(i).StartsWith(Harmony, StringComparison.Ordinal)) return ReadHarmonyHeader(text, i, out recipient);
+        if (Channel.StartsWith(text[i..], StringComparison.Ordinal) || Harmony.StartsWith(text[i..], StringComparison.Ordinal))
+            return 0;
 
         if (text.AsSpan(i).StartsWith(Start, StringComparison.Ordinal))
         {
@@ -152,6 +200,8 @@ internal sealed class ChannelEnvelope
             if (text.Length - i < Role.Length) return Role.StartsWith(text[i..], StringComparison.Ordinal) ? 0 : -1;
             if (!text.AsSpan(i).StartsWith(Role, StringComparison.Ordinal)) return -1;
             i = Blanks(text, i + Role.Length);
+            if (text.AsSpan(i).StartsWith(Harmony, StringComparison.Ordinal)) return ReadHarmonyHeader(text, i, out recipient);
+            if (i < text.Length && Harmony.StartsWith(text[i..], StringComparison.Ordinal)) return 0;
         }
         else if (Start.StartsWith(text[i..], StringComparison.Ordinal)) return 0;
 
@@ -170,6 +220,48 @@ internal sealed class ChannelEnvelope
 
         recipient = name;
         return i + Message.Length;
+    }
+
+    /// <summary>
+    /// Harmony: <c>&lt;|channel|&gt;NAME</c>, then any of <c>to=RECIPIENT</c>, <c>&lt;|constrain|&gt;</c> and bare words (a content
+    /// type such as <c>json</c> or <c>code</c>), then <c>&lt;|message|&gt;</c>. <c>analysis</c> is the reasoning, <c>final</c>
+    /// the answer, a message to a recipient a call. Same return convention as <see cref="ReadHeader"/>.
+    /// </summary>
+    private static int ReadHarmonyHeader(string text, int i, out string recipient)
+    {
+        recipient = string.Empty;
+        var j = i + Harmony.Length;
+        var nameAt = j;
+        while (j < text.Length && char.IsAsciiLetter(text[j])) j++;
+        if (j == text.Length) return 0;
+        if (j == nameAt) return -1;
+        var channel = text[nameAt..j];
+        string? to = null;
+        while (true)
+        {
+            j = Blanks(text, j);
+            if (j == text.Length) return 0;
+            var rest = text.AsSpan(j);
+            if (rest.StartsWith(Message, StringComparison.Ordinal)) { j += Message.Length; break; }
+            if (rest.StartsWith(Constrain, StringComparison.Ordinal)) { j += Constrain.Length; continue; }
+            if (Message.StartsWith(text[j..], StringComparison.Ordinal) || Constrain.StartsWith(text[j..], StringComparison.Ordinal))
+                return 0;
+            if (rest.StartsWith(To, StringComparison.Ordinal))
+            {
+                var at = j += To.Length;
+                while (j < text.Length && text[j] != '<' && !char.IsWhiteSpace(text[j])) j++;
+                if (j == text.Length) return 0;
+                if (j == at) return -1;
+                to = text[at..j];
+                continue;
+            }
+            var word = j;
+            while (j < text.Length && char.IsAsciiLetterOrDigit(text[j])) j++;
+            if (j == text.Length) return 0;
+            if (j == word) return -1;
+        }
+        recipient = channel switch { "analysis" => "self", "final" => "user", _ => to ?? "user" };
+        return j;
     }
 
     private static int Blanks(string text, int i)

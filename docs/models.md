@@ -33,13 +33,13 @@ use in *Settings → RAG*.
 needed. When it does not — a server without a parser for that model, or one that only parses when a call is forced —
 the call arrives as text, and Inferpal reads it: JSON in `<tool_call>…</tool_call>` (Qwen3, Hermes style), Qwen's XML
 (`<function=name><parameter=key>…`), GLM's `<arg_key>`/`<arg_value>` pairs, Mistral's `[TOOL_CALLS]name[ARGS]{…}`,
-Gemma's `<|tool_call>call:name{…}<tool_call|>`, and Muse Glimmer's ATEM block. A call Inferpal reads this way runs
-exactly like a structured one.
+Gemma's `<|tool_call>call:name{…}<tool_call|>`, Muse Glimmer's ATEM block, and gpt-oss's Harmony call
+(`<|channel|>commentary to=name<|message|>{…}`). A call Inferpal reads this way runs exactly like a structured one.
 
 **Reasoning.** Most servers put the model's reasoning in a separate field (`reasoning_content`), and Inferpal shows it
 as reasoning. When a server leaves it in the answer, Inferpal separates it: `<think>…</think>` tags (including the
-lone `</think>` Qwen3 and GLM produce when their template opened the tag), Muse Glimmer's `to=self` messages, and
-Gemma's thought channel. The answer you read, the history the model reads back, and every artifact made from a reply
+lone `</think>` Qwen3 and GLM produce when their template opened the tag), Muse Glimmer's `to=self` messages,
+Gemma's thought channel, and gpt-oss's `analysis` and `final` channels. The answer you read, the history the model reads back, and every artifact made from a reply
 (edits, tests, commit messages) carry the answer only.
 
 **Chat templates that cannot write tools.** A model's chat template sometimes fails as soon as a request carries tool

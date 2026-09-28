@@ -133,6 +133,73 @@ public class ChannelEnvelopeTests
         Assert.Equal("The answer.", answer);
     }
 
+    // ── gpt-oss: OpenAI's Harmony channels ──────────────────────────────────
+    // The battery recorded both leaks: a plan whose answer opened on "<|channel|>final <|constrain|>json<|message|>", and
+    // a call left as text — the whole answer was "<|channel|>commentary to=repo_browser.search code<|message|>{…}".
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(7)]
+    [InlineData(1000)]
+    public void GptOssFinalChannel_LeavesTheAnswerOnly_WhereverTheStreamIsCut(int size)
+    {
+        var (answer, thought, envelope) = Split(Recut("<|channel|>final <|constrain|>json<|message|>{\"goal\":\"Rename\",\"steps\":[]}", size));
+
+        Assert.True(envelope);
+        Assert.Equal("{\"goal\":\"Rename\",\"steps\":[]}", answer);
+        Assert.Equal(string.Empty, thought);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(1000)]
+    public void GptOssAnalysisChannel_IsReasoning_AndTheFinalOneTheAnswer(int size)
+    {
+        var (answer, thought, _) = Split(Recut(
+            "<|channel|>analysis<|message|>Need to plan the rename.<|end|><|start|>assistant<|channel|>final<|message|>Done.", size));
+
+        Assert.Equal("Done.", answer);
+        Assert.Equal("Need to plan the rename.", thought);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(1000)]
+    public void GptOssCall_BecomesACallTheParserReads_WithTheNameFromTheHeader(int size)
+    {
+        var (answer, _, _) = Split(Recut(
+            "<|channel|>commentary to=functions.run_command <|constrain|>json<|message|>{\"command\":\"dotnet --list-sdks\"}<|call|>", size));
+
+        var call = Assert.Single(Inferpal.Services.Agent.InlineToolCallParser.TryParse(answer).Calls!);
+        Assert.Equal("run_command", call.Function.Name);
+        Assert.Equal("dotnet --list-sdks", call.Function.Arguments.GetProperty("command").GetString());
+    }
+
+    [Fact]
+    public async Task GptOssCallLeftAsText_ReachesTheRegistry_EvenUnderAnInventedName()
+    {
+        // Verbatim from the battery: the whole answer, no <|call|>, a tool gpt-oss was trained with and Inferpal lacks.
+        // As text it ended the turn; as a call it gets "Unknown tool" and the list of the real ones, and the run goes on.
+        string[] chunks =
+        [
+            "<|channel|>commentary to=repo_browser.search code<|message|>",
+            "{\"path\": \"/ws\",\"query\":\"computeTotal\",\"max_results\":20}\n",
+        ];
+        using var server = new LoopbackHttpServer(path => path.StartsWith("/v1/chat/completions", StringComparison.Ordinal) ? Sse(chunks) : null);
+
+        var turn = await new OpenAiCompatibleClient(new InferpalConfig { Provider = "openai-compatible", BaseUrl = server.BaseUrl })
+            .SendChatAsync("openai/gpt-oss-20b", [new ChatMessageDto("user", "Rename computeTotal")], new ToolsWithRunCommand(),
+                           null, CancellationToken.None);
+
+        var call = Assert.Single(turn.ToolCalls!);
+        Assert.Equal("repo_browser.search", call.Function.Name);
+        Assert.Equal("computeTotal", call.Function.Arguments.GetProperty("query").GetString());
+        Assert.Equal(string.Empty, turn.TextContent.Trim());
+    }
+
     // ── The production client, a real socket ────────────────────────────────
 
     private static string Sse(IEnumerable<string> contents) =>
