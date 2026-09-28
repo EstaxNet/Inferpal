@@ -57,6 +57,30 @@ public sealed class EditsWithoutEffectTests : IDisposable
         Assert.Equal(string.Empty, ChatTurnPolicy.EndNotice(false, false, false));
     }
 
+    [Fact]
+    public void ARenameThatOnlyRehearsed_IsSaid()
+    {
+        // Measured in the battery (Codestral, a Python rename): rename_symbol answered its default dry run, no file
+        // changed, and the answer read "I've renamed the method … and updated its references" — with nothing under it.
+        Assert.True(ChatTurnPolicy.EditsWithoutEffect([Ran("search_in_files"), Ran("rename_symbol")], filesChangedInRun: 0));
+    }
+
+    /// <summary>The property the list must hold: a tool that writes a file backs it up first, and counts as an attempt.</summary>
+    [Fact]
+    public void EveryToolThatWritesAFile_CountsAsAnEditAttempt()
+    {
+        var writers = ConventionCoverageTests.CoreSources(Path.Combine("Services", "Tools"))
+            .Select(ConventionCoverageTests.CodeOnly)
+            .Where(code => code.Contains("BackUpBeforeChangeAsync(", StringComparison.Ordinal))
+            .Select(code => System.Text.RegularExpressions.Regex.Match(code, @"string\s+Name\s*=>\s*""([a-z_]+)""").Groups[1].Value)
+            .ToList();
+
+        Assert.True(writers.Count >= 6, $"only {writers.Count} writing tools read");   // witness: the scan finds them
+        Assert.All(writers, name => Assert.False(string.IsNullOrEmpty(name), "a writing tool whose name was not read"));
+        Assert.All(writers, name => Assert.True(ChatTurnPolicy.IsFileEdit(name),
+            $"{name} writes a file and a run where it changed nothing would say nothing"));
+    }
+
     // ── Both front-ends ask, on both of their tool loops ───────────────────
 
     private static string RepoRoot()

@@ -70,11 +70,15 @@ internal static class ChatTurnPolicy
         return string.Join("\n\n", notices);
     }
 
-    /// <summary>The tools the model edits a file's content with.</summary>
+    /// <summary>The tools that write a file — every one backs the file up first, so a write that lands counts in the run.</summary>
+    /// <remarks>⚠ A property, held by <c>EditsWithoutEffectTests</c>: every tool whose code calls
+    /// <c>BackUpBeforeChangeAsync</c> is here. Kept as a list of the three content edits, it missed
+    /// <c>rename_symbol</c>, whose default dry run writes nothing — and a model answered "renamed everywhere" with no
+    /// notice under it.</remarks>
     private static readonly HashSet<string> FileEditTools = new(StringComparer.Ordinal)
-        { "write_file", "apply_diff", "apply_edits" };
+        { "write_file", "apply_diff", "apply_edits", "rename_symbol", "delete_file", "restore_file", "update_memory" };
 
-    /// <summary>Whether <paramref name="toolName"/> is one the model edits a file's content with.</summary>
+    /// <summary>Whether <paramref name="toolName"/> is one that writes a file.</summary>
     internal static bool IsFileEdit(string toolName) => FileEditTools.Contains(toolName);
 
     /// <summary>
