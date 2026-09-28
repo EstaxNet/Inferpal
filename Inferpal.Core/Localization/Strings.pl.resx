@@ -264,6 +264,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Powyższa odpowiedź zatrzymała się na limicie długości modelu: jest niepełna. Poproś o kontynuację albo zwiększ długość kontekstu.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Model zaczął się powtarzać i został zatrzymany: powyższa odpowiedź jest niepełna. Zwykle pomaga przeformułowanie prośby albo inny model.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Żaden plik nie został zmieniony: powyższe próby edycji zostały odrzucone lub nie zostały zastosowane — niezależnie od tego, co mówi odpowiedź.</value></data>
+  <data name="AgentLastCheckFailed" xml:space="preserve"><value>⚠ Ostatnie uruchomienie testów lub kompilacji w tej turze nie powiodło się — niezależnie od tego, co mówi odpowiedź.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ Odpowiedź modelu zatrzymała się na limicie długości: proponowany komunikat może być niekompletny. Przeczytaj go przed commitem.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Ta odpowiedź zatrzymała się na limicie długości modelu — jest niekompletna.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Ten przegląd zatrzymał się na limicie długości modelu: brakuje uwag dalej, więc brak uwagi niczego nie dowodzi. Zwiększ długość kontekstu albo przeglądaj mniej zmian naraz (dodaj do indeksu tylko ich część).</value></data>

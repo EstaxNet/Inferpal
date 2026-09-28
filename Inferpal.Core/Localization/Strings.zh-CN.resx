@@ -264,6 +264,7 @@
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上面的回答在模型的长度限制处中断，内容不完整。请让它继续，或增大上下文长度。</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ 模型在重复自身内容，已被停止：上面的回答不完整。换一种方式表述请求，或换用其他模型，通常可以解决。</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ 没有任何文件被修改：上面尝试的编辑被拒绝或未能应用——无论回答怎么说。</value></data>
+  <data name="AgentLastCheckFailed" xml:space="preserve"><value>⚠ 本轮最后一次测试或构建运行失败了——无论回答怎么说。</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ 模型的回复在其长度限制处中断：建议的提交信息可能不完整。提交前请先阅读。</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ 此回答在模型的长度限制处中断——内容不完整。*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ 本次审查在模型的长度限制处中断：之后的问题缺失，因此没有发现问题并不能证明什么。请增大上下文长度，或一次审查更少的更改（只暂存其中一部分）。</value></data>

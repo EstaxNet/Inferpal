@@ -60,13 +60,15 @@ internal static class ChatTurnPolicy
     /// <param name="answerRepeating">The cut answer was stopped because the model was repeating itself: "increase the
     /// context length" is then the one remedy that does not help, and the notice names the ones that do.</param>
     public static string EndNotice(bool reachedIterationLimit, bool loopDetected, bool answerCut,
-                                   bool editsWithoutEffect = false, bool answerRepeating = false)
+                                   bool editsWithoutEffect = false, bool answerRepeating = false,
+                                   bool lastCheckFailed = false)
     {
-        var notices = new List<string>(3);
+        var notices = new List<string>(4);
         if (reachedIterationLimit) notices.Add(Strings.AgentEndedAtIterationLimit);
         else if (loopDetected)     notices.Add(Strings.AgentEndedOnRepeat);
         if (answerCut)             notices.Add(answerRepeating ? Strings.AnswerStoppedRepeating : Strings.AnswerCutAtLimit);
         if (editsWithoutEffect)    notices.Add(Strings.AgentEditsNotApplied);
+        if (lastCheckFailed)       notices.Add(Strings.AgentLastCheckFailed);
         return string.Join("\n\n", notices);
     }
 
@@ -94,6 +96,25 @@ internal static class ChatTurnPolicy
     /// </remarks>
     public static bool EditsWithoutEffect(IEnumerable<ToolExecution> executions, int? filesChangedInRun) =>
         filesChangedInRun == 0 && executions.Any(e => FileEditTools.Contains(e.Name));
+
+    /// <summary>
+    /// Whether the turn's LAST test or build check failed — read from the tool's own verdict, never from the answer.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A model answers "all tests pass" right after a run that said "✗ BUILD FAILED" (measured: gpt-oss, and a
+    /// failing test under "the bug is fixed" with Llama 3.1 and Qwen3 Coder). Only the last check counts: a red run the
+    /// model fixed and ran again green says nothing. The verdict readers are <c>/tdd</c>'s and <c>get_diagnostics</c>'s.
+    /// </remarks>
+    public static bool LastCheckFailed(IEnumerable<ToolExecution> executions)
+    {
+        var last = executions.LastOrDefault(e => e.Name is "run_tests" or "get_diagnostics");
+        return last switch
+        {
+            null                            => false,
+            { Name: "get_diagnostics" }     => Tools.GetDiagnosticsTool.ReadVerdict(last.Output) == Tools.GetDiagnosticsTool.BuildVerdict.Errors,
+            _                               => Commands.TddCommandHandler.TestsFailed(last.Output),
+        };
+    }
 
     /// <summary>
     /// Picks what the final render pass should show. <paramref name="finalResponse"/> is

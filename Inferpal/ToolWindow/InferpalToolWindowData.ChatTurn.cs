@@ -503,7 +503,8 @@ internal partial class InferpalToolWindowData
                 agentEndNotice     = ChatTurnPolicy.EndNotice(
                     orchResult.ReachedIterationLimit, orchResult.WasLoopDetected, orchResult.AnswerCut,
                     ChatTurnPolicy.EditsWithoutEffect(orchResult.Executions, _tools.History.CurrentRunFileCount),
-                    answerRepeating: orchResult.AnswerRepeating);
+                    answerRepeating: orchResult.AnswerRepeating,
+                    lastCheckFailed: ChatTurnPolicy.LastCheckFailed(orchResult.Executions));
             }
             else
             {
@@ -527,7 +528,8 @@ internal partial class InferpalToolWindowData
                 agentFailed        = result.Failed;
                 agentEndNotice     = ChatTurnPolicy.EndNotice(false, result.WasLoopDetected, result.AnswerCut,
                     ChatTurnPolicy.EditsWithoutEffect(result.Executions, _tools.History.CurrentRunFileCount),
-                    answerRepeating: result.AnswerRepeating);
+                    answerRepeating: result.AnswerRepeating,
+                    lastCheckFailed: ChatTurnPolicy.LastCheckFailed(result.Executions));
                 agentExecutions    = result.Executions;
                 agentTokensUsed    = result.TokensUsed;
             }

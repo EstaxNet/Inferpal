@@ -196,6 +196,23 @@ internal static class TddCommandHandler
             && !System.Text.RegularExpressions.Regex.IsMatch(verdictLine, @"\b\d+ (failed|error)");
     }
 
+    /// <summary>
+    /// Red iff the report SAYS it failed: <see cref="Tools.RunTestsTool"/>'s "✗ …" verdict (failing tests, a build that
+    /// did not compile), or pytest's own summary counting a failure or an error.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Not <c>!</c><see cref="TestsPassed"/>: for <c>/tdd</c> anything unrecognisable counts as failing (one wasted
+    /// round beats a false green), but a notice shown to the user on "not green" would also fire on a wrong path, a
+    /// run where nothing ran, or a run stopped at its budget — none of which is a failing test.
+    /// </remarks>
+    internal static bool TestsFailed(string output)
+    {
+        if (NothingRan(output) || StoppedAtBudget(output)) return false;
+        var t = output.TrimStart();
+        if (t.StartsWith('✗')) return true;
+        return System.Text.RegularExpressions.Regex.IsMatch(t.Split('\n')[0], @"\b\d+ (failed|error)");
+    }
+
     /// <summary>Only "no runner detected" is a non-report — iterating on it is pointless. The
     /// tool's raw fallback dumps still carry the failure text the agent needs, so they loop.</summary>
     internal static bool LooksLikeTestReport(string output) =>
