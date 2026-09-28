@@ -81,6 +81,19 @@ internal sealed class AgentOrchestrator
     /// <summary>Whether a repeat of <paramref name="toolName"/> may be served from the intra-run cache.</summary>
     internal static bool IsCacheable(string toolName) => CacheableTools.Contains(toolName);
 
+    /// <summary>The plan request, followed by the names of the tools the run can call.</summary>
+    /// <remarks>
+    /// ⚠ The plan's JSON asks for a "tool" per step, and the planning call carries no tools: without the names a
+    /// model plans tools it cannot see — <c>search_code</c>, <c>list_directory</c> — and the ACT phase, which reads
+    /// its own plan, calls them. Names only: the schemas travel with every ACT request. The line is structural,
+    /// like the tool names themselves, so it is not localized.
+    /// </remarks>
+    internal static string PlanPrompt(IToolRegistry tools) =>
+        tools.Definitions.Count == 0
+            ? Strings.AgentPlanPrompt
+            : Strings.AgentPlanPrompt + "\nTools you can call (use these names for \"tool\"): "
+              + string.Join(", ", tools.Definitions.Select(d => d.Function.Name)) + ".";
+
     // Read-only tools safe to run concurrently within one batch: pure filesystem reads, no GPU work,
     // no approval prompt, no VS UI-thread affinity. Deliberately EXCLUDES search_codebase/search_docs
     // (GPU embeddings — must stay serialized on the single shared GPU, see GpuScheduler), the
@@ -641,17 +654,18 @@ internal sealed class AgentOrchestrator
         // backstops a model that narrates instead of calling (tool_choice:"required" on the first
         // ACT + the one-shot nudge below). A prose duplicate only inflated every (cache-missing,
         // multi-turn) reprocess by hundreds of tokens — most painful on large multimodal models that
-        // can't reuse the KV cache — for no functional gain. The PLAN phase decomposes the task into
-        // steps, not tool selections, so it does not need the catalogue either.
+        // can't reuse the KV cache — for no functional gain. The PLAN phase gets the tool NAMES only
+        // (PlanPrompt): its JSON asks for a "tool" per step.
 
         // ── Phase 1: PLAN ────────────────────────────────────────────────────
         onStep(Strings.StatusAgentPlanning);
 
         // Build a separate message list for the planning call: we append the
         // plan-request as a new user message so the original user turn is preserved.
+        var planPrompt   = PlanPrompt(tools);
         var planMessages = new List<ChatMessageDto>(messages)
         {
-            new ChatMessageDto("user", Strings.AgentPlanPrompt),
+            new ChatMessageDto("user", planPrompt),
         };
 
         ChatTurnResult planTurn;
@@ -683,7 +697,7 @@ internal sealed class AgentOrchestrator
         // We also add the AgentPlanPrompt as the user message that triggered the plan —
         // without it the model sees its own JSON with no visible context, which confuses
         // small models into narrating instead of calling tools in the ACT phase.
-        messages.Add(new ChatMessageDto("user",      Strings.AgentPlanPrompt) { IsScaffolding = true });
+        messages.Add(new ChatMessageDto("user",      planPrompt) { IsScaffolding = true });
         messages.Add(new ChatMessageDto("assistant", planTurn.TextContent));
         messages.Add(new ChatMessageDto("user",      Strings.AgentExecutePlan) { IsScaffolding = true });
 

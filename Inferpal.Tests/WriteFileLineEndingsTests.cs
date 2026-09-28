@@ -79,6 +79,47 @@ public sealed class WriteFileLineEndingsTests : IDisposable
         Assert.Equal(2, ChangedLines(diff!));
     }
 
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public async Task AFileThatEndsOnABreak_KeepsIt_WhenTheModelDropsIt(string eol)
+    {
+        // A model rewriting a whole file often drops the final break: without this, the diff shows the last line
+        // changed, and a hand-written "undo" comes out one byte off the original.
+        var path     = Path.Combine(_ws, "Cart.cs");
+        var original = Lines(eol, "    line 5;");
+        File.WriteAllText(path, original);
+
+        var (written, diff) = await WriteAsync(path, original.TrimEnd());
+
+        Assert.Equal(original, written);
+        Assert.Equal(0, ChangedLines(diff!));
+    }
+
+    [Fact]
+    public async Task AFileWithoutAFinalBreak_DoesNotGetOne()
+    {
+        var path = Path.Combine(_ws, "NoFinal.cs");
+        File.WriteAllText(path, "a\nb");
+
+        var (written, _) = await WriteAsync(path, "a\nB\n");
+
+        Assert.Equal("a\nB", written);
+    }
+
+    [Fact]
+    public async Task AnEmptyRewrite_AndASingleLineOriginal_AreWrittenAsGiven()
+    {
+        // Reference arm: nothing to follow.
+        var single = Path.Combine(_ws, "Single.txt");
+        File.WriteAllText(single, "one line");
+        Assert.Equal("two\n", (await WriteAsync(single, "two\n")).Written);
+
+        var emptied = Path.Combine(_ws, "Emptied.cs");
+        File.WriteAllText(emptied, "a\nb\n");
+        Assert.Equal(string.Empty, (await WriteAsync(emptied, string.Empty)).Written);
+    }
+
     [Fact]
     public async Task ANewFile_IsWrittenAsGiven()
     {

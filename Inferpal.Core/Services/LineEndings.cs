@@ -25,4 +25,25 @@ internal static class LineEndings
         var lf = text.Replace("\r\n", "\n", StringComparison.Ordinal);
         return eol == "\n" ? lf : lf.Replace("\n", eol, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// <paramref name="rewrite"/> ending on a line break exactly when <paramref name="original"/> does — the break in
+    /// the original's own convention.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A model rewriting a whole file often drops the final line break: the diff then shows the last line changed
+    /// ("\ No newline at end of file") though it was not, and an "undo" that rewrites the file by hand is off by
+    /// that one byte. The final break is a convention of the file, like its line endings — never the model's decision.
+    /// An empty rewrite stays empty, and an original without any line break says nothing: the rewrite is kept.
+    /// </remarks>
+    public static string WithFinalBreakOf(string original, string rewrite)
+    {
+        if (rewrite.Length == 0 || !original.Contains('\n')) return rewrite;
+        var had = original.EndsWith('\n');
+        var has = rewrite.EndsWith('\n');
+        if (had && !has) return rewrite + (original.EndsWith("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n");
+        if (!had && has)
+            return rewrite[..^(rewrite.EndsWith("\r\n", StringComparison.Ordinal) ? 2 : 1)];
+        return rewrite;
+    }
 }

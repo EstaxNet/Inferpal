@@ -108,6 +108,8 @@ internal sealed class RenameSymbolTool : ITool
             return "old_name and new_name are required.";
         if (oldName == newName)
             return "old_name and new_name are identical — nothing to do.";
+        if (QualifiedRefusal(oldName, newName) is { } qualified)
+            return qualified;
         if (!IsValidIdentifier(newName))
             return $"'{newName}' is not a valid identifier name.";
         if (string.IsNullOrEmpty(root) || !Directory.Exists(root))
@@ -444,4 +446,33 @@ internal sealed class RenameSymbolTool : ITool
         !string.IsNullOrEmpty(name) &&
         (char.IsLetter(name[0]) || name[0] == '_') &&
         name.All(c => char.IsLetterOrDigit(c) || c == '_');
+
+    /// <summary>
+    /// The refusal of a QUALIFIED name (<c>Cart.ComputeTotal</c>, <c>Shop::Cart</c>), naming the bare identifiers to
+    /// send instead; <c>null</c> when neither name is one.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ "'Cart.CalculateTotal' is not a valid identifier name" names no remedy: a model that wrote the member the
+    /// way the user asked for it reads it as a problem with the name the USER chose, blames the request and stops.
+    /// Never renamed on the model's behalf — an ill-written call does not become another operation.
+    /// </remarks>
+    internal static string? QualifiedRefusal(string oldName, string newName)
+    {
+        string oldBare = Bare(oldName), newBare = Bare(newName);
+        if (oldBare == oldName && newBare == newName) return null;
+        if (!IsValidIdentifier(oldBare) || !IsValidIdentifier(newBare)) return null;   // not a qualified name: the checks below speak
+        var qualified = newBare != newName ? newName : oldName;
+        if (oldBare == newBare)
+            return $"'{qualified}' is a qualified name, and both names end on `{oldBare}`: rename_symbol renames an "
+                 + "identifier, it does not move a member to another type. Nothing was renamed.";
+        return $"'{qualified}' is a qualified name: old_name and new_name take the identifier alone — here old_name "
+             + $"`{oldBare}`, new_name `{newBare}`. For C#, the compiler finds which symbol it is (declaring_file picks one "
+             + "when several share the name). Nothing was renamed.";
+
+        static string Bare(string name)
+        {
+            int dot = name.LastIndexOf('.'), colons = name.LastIndexOf("::", StringComparison.Ordinal);
+            return name[Math.Max(dot < 0 ? 0 : dot + 1, colons < 0 ? 0 : colons + 2)..];
+        }
+    }
 }
