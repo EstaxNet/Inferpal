@@ -155,7 +155,7 @@ runner or compiler mistakes a backup for the file it copies.
 
   // Shown by `/onboard`, applied only by `/onboard apply`.
   "recommend": {
-    "agentModel": "qwen2.5-coder:14b",
+    "agentModel": "devstral-small-2:24b",
     "utilityModel": "qwen2.5:3b",
     "contextWindowSize": 16384
   }

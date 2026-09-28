@@ -206,7 +206,7 @@ internal static class ModelCatalog
     /// <remarks>
     /// A family Inferpal's battery measured first, best fit first (<see cref="ModelProfiles"/>); then the general
     /// families it never measured, then any other model it does not know; a family measured to fail as the agent comes
-    /// last — a code model trained for completion and not for tool calls completes 2 tasks in 8.
+    /// last — a code model trained for completion and not for tool calls completes 3 tasks in 14.
     /// </remarks>
     public static string PickBestChatModel(IReadOnlyList<string> models)
     {

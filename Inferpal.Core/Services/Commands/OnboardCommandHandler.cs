@@ -84,7 +84,7 @@ internal static class OnboardCommandHandler
         "  // Shown by `/onboard`, applied only by `/onboard apply`: which model to use and how\n" +
         "  // big a context window to allocate are machine choices, not repository choices.\n" +
         "  \"recommend\": {\n" +
-        "    \"agentModel\": \"qwen2.5-coder:14b\",\n" +
+        "    \"agentModel\": \"devstral-small-2:24b\",\n" +
         "    \"utilityModel\": \"qwen2.5:3b\",\n" +
         "    \"contextWindowSize\": 16384\n" +
         "  }\n" +

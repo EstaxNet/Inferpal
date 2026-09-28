@@ -14,17 +14,19 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 
 | Model | Use it for | What Inferpal does for it | Server notes |
 |---|---|---|---|
-| [Qwen3.8 27B](#qwen35) (and Qwen3.6 27B) | ✅ **Agent** — recommended | Reads its XML tool calls when the server leaves them as text | Reasoning separated by LM Studio |
-| [Devstral Small 2](#devstral) | ✅ **Agent** — recommended, fastest | Reads its `[TOOL_CALLS]` calls when left as text | Temperature **0.15** |
-| [Bonsai 27B](#bonsai) (1-bit Qwen3.6) | Agent on small GPUs — *to be measured* | Same as Qwen3.8 | 4.7 GB for 27B |
-| [Muse Glimmer](#muse-glimmer) | Agent — *to be measured* | Splits its addressed messages (reasoning / answer) and reads its ATEM tool calls | Needs a recent llama.cpp runtime |
-| [Gemma 4 31B](#gemma4) | Agent through a fallback — *to be measured* | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
-| [GLM 4.7 Flash](#glm47) | ❌ Not recommended with the lmstudio-community GGUF | Reads its `<arg_key>` tool calls when left as text | That GGUF misses a parameter: loops |
+| [Qwen3.8 27B](#qwen35) (and Qwen3.6 27B) | ✅ **Agent** — recommended (14/14) | Reads its XML tool calls when the server leaves them as text | Reasoning separated by LM Studio |
+| [Devstral Small 2](#devstral) | ✅ **Agent** — recommended, fastest (13/14) | Reads its `[TOOL_CALLS]` calls when left as text | Temperature **0.15** |
+| [Muse Glimmer](#muse-glimmer) | ✅ **Agent** — recommended (14/14) | Splits its addressed messages (reasoning / answer) and reads its ATEM tool calls | Needs a recent llama.cpp runtime |
+| [Bonsai 27B](#bonsai) (1-bit Qwen3.6) | ✅ **Agent** on small GPUs (13/14, slow) | Same as Qwen3.8 | 4.7 GB for 27B |
+| [GLM 4.7 Flash](#glm47) | Agent — usable with the **Unsloth GGUF** (12/14) | Reads its `<arg_key>` tool calls when left as text | Older GGUFs (lmstudio-community) loop |
+| [Qwen3 Coder 30B](#qwen3-coder) | Autocomplete (FIM); agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
 | [Qwen3 4B Thinking 2507](#qwen3) | Small machines | Reads its JSON tool calls when left as text | Long reasoning |
-| [Qwen2.5 Coder 7B](#qwen-coder) | ✅ **Autocomplete (FIM)** and chat — not the agent | Uses its fill-in-the-middle tokens | Not trained for tool calling |
+| [Gemma 4 31B](#gemma4) | Agent through a fallback — needs the whole GPU | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
+| [Qwen2.5 Coder 7B](#qwen-coder) | ✅ **Autocomplete (FIM)** — not the agent (3/14) | Uses its fill-in-the-middle tokens | Not trained for tool calling |
 
 Embedding models (semantic search): **Qwen3 Embedding 0.6B** and **Nomic Embed Text v1.5** both work; set the one you
-use in *Settings → RAG*.
+use in *Settings → RAG*. The server loads the embedding model next to the chat model: with a chat model that already
+fills the GPU, every prompt becomes much slower (see [Gemma 4](#gemma4)).
 
 ## How Inferpal reads a model
 
@@ -61,8 +63,8 @@ set `"useRecommendedSampling": false` in the configuration.
 **The model is recognised by its name, and the name only chooses.** Inferpal recognises a family from the model id
 (`qwen3.8`, `devstral`…) for two decisions: the model it picks on first run — a family measured as a good agent
 first, in the order of the table above, then a model Inferpal does not know, and a family measured to fail as the
-agent last — and the autocomplete prompt, which uses fill-in-the-middle tokens only for the families trained on that
-task ([below](#fim-models)). How a reply is *read* never depends on the name: every call form and every reasoning form
+agent last — and the autocomplete prompt, which uses fill-in-the-middle tokens only for the families measured to
+complete better with them ([below](#fim-models)). How a reply is *read* never depends on the name: every call form and every reasoning form
 above is read for every model, so a renamed or fine-tuned model keeps working.
 
 <a id="qwen35"></a>
@@ -73,7 +75,8 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   results go back as `<tool_response>` blocks in a user turn.
 - **Reasoning.** On by default; the template opens `<think>` itself, so a server that does not separate reasoning
   leaves a lone `</think>` in the answer. LM Studio (0.4.7 and later) separates it.
-- **Inferpal.** Structured calls on LM Studio; the XML form is read when a call arrives as text.
+- **Inferpal.** Structured calls on LM Studio; the XML form is read when a call arrives as text. Autocomplete uses
+  its fill-in-the-middle tokens: 27 right completions in 36 with them, 12 from the code before the cursor alone.
 - **Settings.** Inferpal sends the thinking-mode values: temperature 1.0, top_p 0.95, top_k 20, min_p 0.0. Without
   thinking, Qwen recommends temperature 0.7, top_p 0.8, presence penalty 1.5.
 - **Known issues.** Its template refuses a system message that is not the first one (HTTP 500 "System message must
@@ -103,10 +106,15 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 
 - **Model.** PrismML's 1-bit conversion of Qwen3.6-27B (one sign bit per weight plus a scale per 128 weights,
   about 1.125 bits per weight): 4.7 GB for 27B parameters, same architecture and chat template as Qwen3.6.
-- **Tool calls and reasoning.** Same as [Qwen3.8](#qwen35): XML calls, `<think>` reasoning.
+- **Tool calls and reasoning.** Same as [Qwen3.8](#qwen35): XML calls, `<think>` reasoning. Autocomplete, unlike
+  Qwen3.8's, completes from the code before the cursor: with the fill-in-the-middle tokens its 1-bit weights got no
+  completion right in 36, against 8 without.
 - **Settings.** Inferpal sends temperature 0.7, top_p 0.95, top_k 20. PrismML advises capping the reasoning (for
   example 8,192 thinking tokens) rather than switching it off.
-- **Known issues.** PrismML states that long-horizon agentic coding "is not yet a strong target of this release".
+- **Measured.** 13 tasks in 14 — the best result for its size — but the slowest of the recommended models: 28 minutes
+  over the battery, against 19 for Qwen3.8 and 5 for Devstral. It reasons at length before each call.
+- **Known issues.** PrismML states that long-horizon agentic coding "is not yet a strong target of this release"; the
+  one task it failed was an edit it repaired by removing a line the page needed.
 - **Sources.** [Model card](https://huggingface.co/prism-ml/Bonsai-27B-gguf) ·
   [PrismML docs](https://docs.prismml.com/models/bonsai-27b)
 
@@ -124,6 +132,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   reasoning, the answer as the answer) and reads the ATEM calls, which LM Studio only parses itself when a call is
   forced.
 - **Settings.** Inferpal sends temperature 1.0, top_p 0.95, top_k 64 (not greedy).
+- **Measured.** 14 tasks in 14.
 - **Known issues.** Needs a recent llama.cpp runtime (LM Studio runtime 2.28.2 or later), or it fails to load with
   "unknown model architecture". Its template lists tool names without a dot oddly, which can lead the model to invent
   names such as `read.filePath` ([#60](https://huggingface.co/meta-models/Muse-Glimmer-30B/discussions/60)); an
@@ -149,6 +158,11 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   ([#2233](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/2233)). Both refuse every request with tools.
   To get Gemma's native tool calling back, fix the template in *My Models → Gemma 4 → Prompt Template* (the fixes are
   in those issues); Inferpal's fallback works either way.
+- **Known issues (GPU).** At a 32K context the 31B model leaves little room on the GPU. With the semantic index on,
+  the server also loads the embedding model, and a 5,000-token prompt then took minutes before its first token instead
+  of about 20 seconds — past the 5-minute inactivity timeout, the turn ends with *"Connection timed out"*. Measured: the same tasks
+  stall with the index on and pass with it off. Turn the semantic index off (*Settings → RAG*), or give Gemma a
+  smaller context. Not yet measured over the whole battery for that reason.
 - **Sources.** [Prompt format](https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4) ·
   [Function calling](https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4)
 
@@ -164,7 +178,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Known issues.** GGUFs made before the llama.cpp fix of January 21 set the model's expert scoring function to
   softmax instead of sigmoid: the model loops and its output degrades — measured here with the lmstudio-community GGUF:
   loops of several minutes, invented tool names, 0 tasks in 7. **Use the Unsloth GGUF** (`UD-Q4_K_XL`), re-uploaded
-  with the fix.
+  with the fix — measured: 12 tasks in 14, fast (3B active parameters).
 - **Sources.** [Model card](https://huggingface.co/zai-org/GLM-4.7-Flash) ·
   [Unsloth GGUF](https://huggingface.co/unsloth/GLM-4.7-Flash-GGUF)
 
@@ -174,7 +188,8 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Model.** Alibaba Qwen, 4B, reasoning only (no switch), 262,144-token context.
 - **Tool calls.** JSON in `<tool_call>{"name": …, "arguments": …}</tool_call>`.
 - **Inferpal.** A small reasoning model can loop on a tool call inside its reasoning: Inferpal stops at the repeat
-  and runs the first call.
+  and runs the first call. Autocomplete completes from the code before the cursor: 15 right completions in 36,
+  against 3 with the fill-in-the-middle tokens.
 - **Settings.** Inferpal sends temperature 0.6, top_p 0.95, top_k 20, min_p 0.0.
 - **Sources.** [Model card](https://huggingface.co/Qwen/Qwen3-4B-Thinking-2507)
 
@@ -183,7 +198,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 
 - **Model.** Alibaba Qwen, 7B code model, no reasoning, fill-in-the-middle tokens (`<|fim_prefix|>`…).
 - **Use it for** inline completion (ghost text) and chat. It was not trained for tool calling: as the agent it
-  often answers with a call written as text, or none — measured here: 2 tasks in 8.
+  often answers with a call written as text, or none — measured here: 3 tasks in 14.
 - **Settings.** Inferpal sends temperature 0.7, top_p 0.8, top_k 20, repeat penalty 1.05 (the model's generation
   configuration).
 - **Sources.** [Model card](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct)
@@ -194,22 +209,29 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Model.** Alibaba Qwen, code models (30B mixture of experts and larger), no reasoning, fill-in-the-middle tokens
   like Qwen2.5 Coder, trained for tool calling.
 - **Tool calls.** The same XML as [Qwen3.8](#qwen35) — Qwen3 Coder introduced it.
-- **Inferpal.** Autocomplete with its fill-in-the-middle tokens; as the agent, *not measured yet*.
+- **Inferpal.** Autocomplete with its fill-in-the-middle tokens. As the agent, 9 tasks in 14 (30B): fast, but it
+  often stops before the task is done — three renames left callers behind, one bug fix ended with the tests still
+  failing.
 - **Settings.** Inferpal sends temperature 0.7, top_p 0.8, top_k 20, repeat penalty 1.05 (the model card's values).
 - **Sources.** [Qwen3-Coder](https://github.com/QwenLM/Qwen3-Coder)
 
 <a id="fim-models"></a>
 ## Autocomplete (FIM) models
 
-Inline completion (ghost text) asks the model to fill the gap between the code before and after the cursor. The
-families below were trained on that task, and Inferpal builds their prompt with their own tokens when the server does
-not (LM Studio and OpenAI-compatible servers; Ollama applies the model's template itself). Any other model completes
-from the code before the cursor only — it still works, without seeing what follows. None of these is an agent model:
-they are not trained for tool calling (Qwen2.5 Coder writes calls as text, 2 tasks in 8).
+Inline completion (ghost text) asks the model to fill the gap between the code before and after the cursor. For the
+families below, Inferpal builds the prompt with their fill-in-the-middle tokens when the server does not (LM Studio;
+Ollama applies the model's template itself). Any other model completes from the code before the cursor only — it
+still works, without seeing what follows.
+
+Having the tokens in its vocabulary does not make a model good at the task: every Qwen model has them, and measured on
+what reaches the editor (12 gaps to fill, 3 attempts each), Qwen3.8 fills 27 in 36 with them and 12 without, Qwen2.5
+Coder 31 against 13 — but Qwen3 4B Thinking 3 against 15, and Bonsai, a 1-bit Qwen3.6, 0 against 8. Each family gets
+the form measured best. Qwen2.5 Coder, the best at autocomplete, is not an agent model: it is not trained for tool
+calling (3 tasks in 14).
 
 | Family | Tokens |
 |---|---|
-| [Qwen2.5 Coder](#qwen-coder), [Qwen3 Coder](#qwen3-coder) | `<\|fim_prefix\|>…<\|fim_suffix\|>…<\|fim_middle\|>` |
+| [Qwen2.5 Coder](#qwen-coder), [Qwen3 Coder](#qwen3-coder), [Qwen3.8 / Qwen3.6](#qwen35) | `<\|fim_prefix\|>…<\|fim_suffix\|>…<\|fim_middle\|>` |
 | <a id="codegemma"></a>CodeGemma | the same `<\|fim_…\|>` tokens |
 | <a id="deepseek-coder"></a>DeepSeek Coder | `<｜fim▁begin｜>…<｜fim▁hole｜>…<｜fim▁end｜>` |
 | <a id="starcoder"></a>StarCoder, StarCoder2 | `<fim_prefix>…<fim_suffix>…<fim_middle>` |
@@ -223,10 +245,17 @@ Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux 
 
 | Model | Result | Measured |
 |---|---|---|
-| Qwen3.8 27B | 14/14 | 2026-09-27 |
-| Devstral Small 2 | 12/14 | 2026-09-27 |
+| Qwen3.8 27B | 14/14 | 2026-09-28 |
+| Muse Glimmer | 14/14 | 2026-09-28 |
+| Devstral Small 2 | 13/14 | 2026-09-28 |
+| Bonsai 27B | 13/14 | 2026-09-28 |
 | Qwen3.6 27B | 13/14 | 2026-09-27 |
+| GLM 4.7 Flash (Unsloth GGUF) | 12/14 | 2026-09-28 |
+| Qwen3 Coder 30B | 9/14 | 2026-09-28 |
+| gpt-oss 20B | 8/14 | 2026-09-28 |
+| Codestral 22B | 7/14 | 2026-09-28 |
 | Qwen3 4B Thinking 2507 | 5/8 (C# only) | 2026-09-27 |
-| Qwen2.5 Coder 7B | 2/8 (C# only) | 2026-09-27 |
+| Llama 3.1 8B Instruct | 4/14 | 2026-09-28 |
+| Qwen2.5 Coder 7B | 3/14 | 2026-09-28 |
 | GLM 4.7 Flash (lmstudio-community GGUF) | 1/8 (C# only) | 2026-09-27 |
-| Gemma 4 31B, Muse Glimmer, Bonsai 27B | to be measured with the model support above | — |
+| Gemma 4 31B | not measured: with the semantic index on, the server of the battery cannot hold it next to the embedding model (see [Gemma 4](#gemma4)); with the index off, the one task tried passed twice in two | 2026-09-28 |

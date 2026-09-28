@@ -44,7 +44,7 @@ public class ModelCatalogTests
 
     [Fact]
     public void PickBestChatModel_PutsACodeModelMeasuredToFailAsTheAgent_AfterAGeneralOne() =>
-        // The first-run model is the agent's too, and Qwen2.5 Coder completes 2 agent tasks in 8.
+        // The first-run model is the agent's too, and Qwen2.5 Coder completes 3 agent tasks in 14.
         Assert.Equal("llama3.1:8b", ModelCatalog.PickBestChatModel(
             ["qwen2.5-coder:14b", "llama3.1:8b", "mistral:7b"]));
 

@@ -20,9 +20,9 @@ internal static class FimTemplate
     private static readonly string[] FallbackStop = ["\n\n\n"];
 
     /// <remarks>⚠ The family's tokens come from its profile (<see cref="Inference.ModelProfiles"/>), which gives them
-    /// only to the families trained to fill in the middle: every Qwen model has <c>&lt;|fim_prefix|&gt;</c> in its
-    /// vocabulary, and only the Coder models are trained on the task — a token in the vocabulary is not a task the
-    /// model knows.</remarks>
+    /// only to the families MEASURED to complete better with them: every Qwen model has <c>&lt;|fim_prefix|&gt;</c> in
+    /// its vocabulary, and neither the name nor the family decides — Qwen3.8 completes far better with the tokens,
+    /// Qwen3 4B Thinking and Bonsai (a 1-bit Qwen3.6) far worse.</remarks>
     public static FimSpec Build(string? modelId, string prefix, string suffix) =>
         Inference.ModelProfiles.For(modelId)?.Fim switch
         {

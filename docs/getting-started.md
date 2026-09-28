@@ -12,8 +12,9 @@ sections cover the **VS Code extension** (at feature parity since 1.2.0).
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 
 > [!IMPORTANT]
-> Tool calling is required for the agent. Any model that supports it works
-> (e.g. `llama3.1`, `qwen2.5-coder`, `mistral-nemo`). `llama3` v1 does **not**.
+> Tool calling is required for the agent. The models measured best at it are `qwen3.8` and
+> `devstral-small-2` — see **[Models](models.md)** for every model's results. A model not trained for
+> tool calling (`qwen2.5-coder`, `llama3` v1) chats but makes a poor agent.
 >
 > - **Inline completions** need a model that supports FIM (e.g. `qwen2.5-coder`, `deepseek-coder`).
 > - **Semantic search** works best with a dedicated embedding model (e.g. `nomic-embed-text`, `mxbai-embed-large`).
@@ -26,14 +27,14 @@ differences.
 - **Ollama** (default `:11434`)
   ```powershell
   ollama serve
-  ollama pull llama3.1
+  ollama pull qwen3.8            # chat and agent (or devstral-small-2: faster)
   # Optional, dedicated models:
   ollama pull qwen2.5-coder:7b   # inline completions
   ollama pull nomic-embed-text   # semantic search
   ```
 - **LM Studio** (default `:1234`)
   1. Open the **Developer** tab (the server view) and **Start** the server.
-  2. **Load** a tool-calling chat model — and, optionally, a FIM model (`qwen2.5-coder`) and
+  2. **Load** a tool-calling chat model (Qwen3.8 27B or Devstral Small 2) — and, optionally, a FIM model (`qwen2.5-coder`) and
      an embedding model for semantic search.
   3. Inferpal uses LM Studio's native `/api/v1/*` API for the model list and load/unload, so
      `/models` works here too. Point the **Server URL** at `http://localhost:1234`.

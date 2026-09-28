@@ -93,7 +93,7 @@ internal static class ModelProfiles
     [
         // ── Code models: fill in the middle ──────────────────────────────────
         new("qwen3-coder",    "Qwen3 Coder",              ["qwen3-coder"],
-            AgentFit.Unmeasured,     4, ToolCallForm.QwenXml,       ReasoningForm.None,                FimForm.QwenCoder,
+            AgentFit.Usable,         2, ToolCallForm.QwenXml,       ReasoningForm.None,                FimForm.QwenCoder,
             new(Temperature: 0.7, TopP: 0.8, TopK: 20, RepeatPenalty: 1.05)),
         new("qwen-coder",     "Qwen2.5 Coder",            ["qwen2.5-coder", "qwen2-coder", "qwen-coder"],
             AgentFit.NotRecommended, 0, ToolCallForm.JsonTag,       ReasoningForm.None,                FimForm.QwenCoder,
@@ -108,28 +108,31 @@ internal static class ModelProfiles
             AgentFit.NotRecommended, 0, null,                       ReasoningForm.None,                FimForm.CodeLlama),
 
         // ── Agent models ─────────────────────────────────────────────────────
+        // Fill in the middle: measured on what reaches the editor, 27 right completions in 36 with the tokens, 12 from
+        // the prefix alone — while Qwen3 4B Thinking (3 vs 15) and Bonsai, its 1-bit sibling (0 vs 8), do worse with them.
         new("qwen35",         "Qwen3.8 / Qwen3.6",        ["qwen3.8", "qwen3.6", "qwen3.5"],
-            AgentFit.Recommended,    1, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.None,
+            AgentFit.Recommended,    1, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.QwenCoder,
             new(Temperature: 1.0, TopP: 0.95, TopK: 20, MinP: 0.0)),
         new("devstral",       "Devstral Small 2",         ["devstral"],
             AgentFit.Recommended,    2, ToolCallForm.MistralTokens, ReasoningForm.None,                FimForm.None,
             new(Temperature: 0.15)),
         new("bonsai",         "Bonsai 27B",               ["bonsai"],
-            AgentFit.Unmeasured,     1, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.None,
+            AgentFit.Recommended,    4, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.None,
             new(Temperature: 0.7, TopP: 0.95, TopK: 20)),
         new("muse-glimmer",   "Muse Glimmer",             ["muse-glimmer"],
-            AgentFit.Unmeasured,     2, ToolCallForm.Atem,          ReasoningForm.ChannelEnvelope,     FimForm.None,
+            AgentFit.Recommended,    3, ToolCallForm.Atem,          ReasoningForm.ChannelEnvelope,     FimForm.None,
             new(Temperature: 1.0, TopP: 0.95, TopK: 64)),
         new("gemma4",         "Gemma 4",                  ["gemma-4", "gemma4"],
             AgentFit.Unmeasured,     3, ToolCallForm.GemmaNative,   ReasoningForm.ChannelEnvelope,     FimForm.None,
             new(Temperature: 1.0, TopP: 0.95, TopK: 64)),
         new("qwen3",          "Qwen3 4B Thinking 2507",   ["qwen3"],
-            AgentFit.Usable,         1, ToolCallForm.JsonTag,       ReasoningForm.TemplateOpenedThink, FimForm.None,
+            AgentFit.Usable,         3, ToolCallForm.JsonTag,       ReasoningForm.TemplateOpenedThink, FimForm.None,
             new(Temperature: 0.6, TopP: 0.95, TopK: 20, MinP: 0.0)),
         // Z.ai's settings for tool calling and agentic coding, not its general ones (1.0 / 0.95); Unsloth adds min_p
-        // 0.01 and no repeat penalty — llama.cpp's defaults are 0.05 and 1.1.
+        // 0.01 and no repeat penalty — llama.cpp's defaults are 0.05 and 1.1. Usable with a GGUF made after the
+        // llama.cpp scoring fix (Unsloth's); an older one loops whatever Inferpal sends.
         new("glm47",          "GLM 4.7 Flash",            ["glm-4.7", "glm4.7"],
-            AgentFit.NotRecommended, 1, ToolCallForm.GlmArgs,       ReasoningForm.TemplateOpenedThink, FimForm.None,
+            AgentFit.Usable,         1, ToolCallForm.GlmArgs,       ReasoningForm.TemplateOpenedThink, FimForm.None,
             new(Temperature: 0.7, TopP: 1.0, MinP: 0.01, RepeatPenalty: 1.0)),
     ];
 

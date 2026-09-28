@@ -162,13 +162,13 @@ Language · Provider (Ollama / LM Studio / OpenAI-compatible) · Server URL · A
 
 ## Quick start
 
-1. Install [Ollama](https://ollama.com) and pull a model: `ollama pull qwen2.5-coder`
+1. Install [Ollama](https://ollama.com) and pull a model that calls tools: `ollama pull qwen3.8` (or `devstral-small-2`, faster)
 2. Install the extension
 3. Open the **Inferpal** icon in the activity bar, or press **Ctrl+Alt+I**
 4. Set the server URL and select your model in Settings
 5. Click **Test** to verify the connection — you're ready
 
-> **Recommended models:** `qwen2.5-coder` for code tasks, `llama3.1` for general-purpose chat, `nomic-embed-text` for semantic search.
+> **Recommended models:** `qwen3.8` or `devstral-small-2` for the chat and the agent, `qwen2.5-coder:7b` for inline completion, `nomic-embed-text` for semantic search. Each model's measured results: [Models](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md).
 
 ---
 

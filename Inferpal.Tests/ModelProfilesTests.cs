@@ -208,17 +208,29 @@ public class ModelProfilesTests
 
     // ── The decisions the profiles feed ─────────────────────────────────────
 
+    // Measured on what reaches the editor (FimCompletion.Finish applied), 36 attempts per form: Qwen3.8 27 right with
+    // its fill-in-the-middle tokens against 12 from the prefix; Qwen3 4B Thinking 3 against 15; Bonsai, a 1-bit
+    // Qwen3.6, 0 against 8. The family does not decide — each gets the form measured best.
     [Theory]
-    [InlineData("qwen/qwen3.8-27b")]
-    [InlineData("qwen/qwen3.6-27b")]
     [InlineData("qwen/qwen3-4b-thinking-2507")]
     [InlineData("prism-ml/bonsai-27b")]
-    public void AQwenChatModel_CompletesFromThePrefix_WithoutTokensItWasNotTrainedOn(string model)
+    public void AQwenChatModelMeasuredWorseWithTheTokens_CompletesFromThePrefix(string model)
     {
         var spec = FimTemplate.Build(model, "PRE", "SUF");
 
         Assert.False(spec.IsFim);
         Assert.Equal("PRE", spec.Prompt);
+    }
+
+    [Theory]
+    [InlineData("qwen/qwen3.8-27b")]
+    [InlineData("qwen/qwen3.6-27b")]
+    public void AQwenChatModelMeasuredBetterWithTheTokens_FillsInTheMiddle(string model)
+    {
+        var spec = FimTemplate.Build(model, "PRE", "SUF");
+
+        Assert.True(spec.IsFim);
+        Assert.Equal("<|fim_prefix|>PRE<|fim_suffix|>SUF<|fim_middle|>", spec.Prompt);
     }
 
     [Fact]

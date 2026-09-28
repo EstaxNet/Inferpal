@@ -85,8 +85,9 @@ two editors.
 | .NET SDK | .NET 8 (building from source only — the VS Code VSIX bundles its own runtime) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 
-> Tool calling is required (e.g. `llama3.1`, `qwen2.5-coder`, `mistral-nemo`; `llama3` v1 does not).
-> Inline completions need a FIM model; semantic search works best with a dedicated embedding model.
+> Tool calling is required: the models measured best as the agent are `qwen3.8` and `devstral-small-2` — every
+> model's results in **[Models](docs/models.md)**. Inline completions need a FIM model (`qwen2.5-coder:7b`); semantic
+> search works best with a dedicated embedding model.
 
 ---
 
@@ -106,7 +107,7 @@ two editors.
 
    ```powershell
    ollama serve          # LM Studio / any OpenAI-compatible server also work
-   ollama pull llama3.1
+   ollama pull qwen3.8   # or devstral-small-2, faster
    ```
 
 3. In Visual Studio open **Tools → Inferpal** (or **Alt+B** / **Alt+O**); in VS Code, open the **Inferpal** view in the Activity Bar.
