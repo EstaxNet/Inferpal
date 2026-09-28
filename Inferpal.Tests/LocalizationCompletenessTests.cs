@@ -408,6 +408,52 @@ public class LocalizationCompletenessTests
             + string.Join(", ", missing.Take(10)));
     }
 
+    /// <summary>
+    /// The last link of the chain: a property of <c>Strings</c> that no code reads is a translation nobody displays,
+    /// kept up in ten languages. The two tests above tie each key to its property, never the property to a reader.
+    /// </summary>
+    /// <remarks>
+    /// Readers are the product's sources — <c>Strings.X</c>, <c>nameof(…X)</c>, and the resource names it serves by
+    /// key (<c>"X"</c>: settings schema, command table, VS Code) — read without their comments. Tests do not count: a
+    /// string only a test reads reaches no user.
+    /// </remarks>
+    [Fact]
+    public void EveryStringsProperty_IsReadBySomeProductCode()
+    {
+        var root = RepoRootDir();
+        var properties = Regex.Matches(ConventionCoverageTests.CodeOnly(Path.Combine(LocalizationDir(), "Strings.cs")),
+                                       @"public static string ([A-Za-z0-9_]+)\b")
+                              .Select(m => m.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
+        Assert.True(properties.Count > 500, $"Only {properties.Count} properties read from Strings.cs — the enumerator is too narrow.");
+
+        var sep = Path.DirectorySeparatorChar;
+        var sources = new[] { "Inferpal.Core", "Inferpal", "Inferpal.Host", "Inferpal.InProc", "Inferpal.Fim", Path.Combine("vscode", "src") }
+            .Select(d => Path.Combine(root, d)).Where(Directory.Exists)
+            .SelectMany(d => Directory.EnumerateFiles(d, "*.*", SearchOption.AllDirectories))
+            .Where(f => f.EndsWith(".cs", StringComparison.Ordinal) || f.EndsWith(".ts", StringComparison.Ordinal)
+                        || f.EndsWith(".xaml", StringComparison.Ordinal) || f.EndsWith(".json", StringComparison.Ordinal))
+            .Where(f => !f.Contains($"{sep}bin{sep}") && !f.Contains($"{sep}obj{sep}") && !f.Contains($"{sep}node_modules{sep}")
+                        && Path.GetFileName(f) != "Strings.cs")
+            .ToList();
+        Assert.True(sources.Count > 300, $"Only {sources.Count} product source files found under {root} — the scan reads nothing.");
+
+        var read = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var file in sources)
+        {
+            var text = file.EndsWith(".cs", StringComparison.Ordinal) ? ConventionCoverageTests.CodeOnly(file)
+                     : file.EndsWith(".ts", StringComparison.Ordinal) ? SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(file))
+                     : File.ReadAllText(file);
+            foreach (Match m in Regex.Matches(text, @"Strings\.([A-Za-z0-9_]+)|nameof\(\s*(?:[A-Za-z0-9_]+\.)*([A-Za-z0-9_]+)\s*\)|[""']([A-Za-z0-9_]+)[""']"))
+                read.Add(m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Success ? m.Groups[2].Value : m.Groups[3].Value);
+        }
+        Assert.Contains("LabelLanguage", read);                                  // witness: a real reader was found
+
+        var unread = properties.Where(p => !read.Contains(p)).Order().ToList();
+        Assert.True(unread.Count == 0,
+            $"{unread.Count} Strings propertie(s) that no product code reads — dead translations in ten languages: "
+            + string.Join(", ", unread));
+    }
+
     // ── Third channel: the VSIX command table ─────────────────────────────────────────────
     //
     // The labels Visual Studio shows for OUR COMMANDS come neither from the .resx files nor from

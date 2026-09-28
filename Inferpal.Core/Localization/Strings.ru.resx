@@ -60,7 +60,6 @@
   <data name="HintModelIdleTimeout" xml:space="preserve"><value>Минуты бездействия до выгрузки модели из VRAM. Меньшие значения быстрее освобождают GPU; большие значения сокращают время повторной загрузки при следующем запросе. Минимум: 1 минута.</value></data>
   <data name="SectionContext" xml:space="preserve"><value>Контекст и память</value></data>
   <data name="SectionPersona" xml:space="preserve"><value>Персона</value></data>
-  <data name="SectionInterface" xml:space="preserve"><value>Интерфейс</value></data>
 
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>Бэкенд вывода:</value></data>
@@ -71,9 +70,7 @@
   <data name="HintUrl" xml:space="preserve"><value>Базовый URL вашего локального экземпляра Ollama. По умолчанию http://localhost:11434. Измените, если Ollama работает на другом хосте или порту.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Модель чата:</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>Модель по умолчанию для всех разговоров. Это поле обязательно. Используйте /model &lt;имя&gt; для смены модели в середине сессии.</value></data>
-  <data name="LabelSession" xml:space="preserve"><value>Сессия:</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Проверить</value></data>
-  <data name="BtnClear" xml:space="preserve"><value>Очистить</value></data>
   <data name="BtnLoadSession" xml:space="preserve"><value>Загрузить ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Отмена</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Сохранить</value></data>
@@ -91,7 +88,6 @@
 Это действие необратимо.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Копировать сообщение</value></data>
   <data name="LabelCopyCode" xml:space="preserve"><value>Копировать</value></data>
-  <data name="BtnDismiss" xml:space="preserve"><value>Закрыть</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Исправить с ИИ</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Восстановить всё</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Повторить</value></data>
@@ -112,54 +108,6 @@
 **АРХИТЕКТУРНАЯ РОЛЬ** — объясни, как этот код вписывается в систему в целом.
 
 {1}</value></data>
-  <data name="PromptRefactorSelection" xml:space="preserve"><value>Рефакторинг кода из `{0}` без изменения поведения:
-
-**ВЫЯВИТЬ** — перечисли, что делает этот код трудным для чтения, сопровождения или расширения.
-**ПЛАН** — опиши целевые улучшения: именование, структуру, паттерны, дублирование.
-**ПРИМЕНИТЬ** — покажи рефакторированный код целиком.
-**ПРОВЕРИТЬ** — подтверди сохранение поведения и перечисли все принятые допущения.
-
-{1}</value></data>
-  <data name="PromptAddTestsSelection" xml:space="preserve"><value>Напиши юнит-тесты для кода из `{0}`, используя существующий тестовый фреймворк проекта:
-
-**КАРТА ПОКРЫТИЯ** — определи все публичные методы и ветви, требующие тестирования.
-**ОСНОВНОЙ ПУТЬ** — тесты для нормальных, ожидаемых входных данных и поведения.
-**ГРАНИЧНЫЕ СЛУЧАИ** — тесты для граничных значений, пустых входных данных и null.
-**РЕЖИМЫ ОТКАЗА** — тесты для некорректных входных данных и ожидаемых исключений.
-
-Предоставь полный готовый к компиляции код тестов.
-
-{1}</value></data>
-  <data name="PromptFixSelection" xml:space="preserve"><value>Проанализируй и исправь код из `{0}`:
-
-**ВОСПРОИЗВЕДЕНИЕ** — точно определи ошибку или проблему и объясни, почему она возникает.
-**ГИПОТЕЗА** — сформулируй диагноз: первопричина и затронутые пути выполнения.
-**ТОЧЕЧНОЕ ИСПРАВЛЕНИЕ** — примени минимальное изменение, устраняющее проблему. Покажи исправленный код.
-**САМОПРОВЕРКА** — подтверди корректность исправления и перечисли оставшиеся риски.
-
-{1}</value></data>
-  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>Добавь XML-комментарии документации ко всем публичным типам, методам, свойствам и параметрам в `{0}`:
-
-- &lt;summary&gt; — одно предложение: ЧТО делает, не КАК. Не повторять имя.
-- &lt;param&gt; / &lt;returns&gt; — опиши контракт: единицы измерения, null-безопасность, допустимые диапазоны.
-- &lt;exception&gt; — документируй все выбрасываемые исключения и условия их возникновения.
-- &lt;remarks&gt; — только если поведение удивит читателя: побочные эффекты, потоки, инварианты.
-
-Покажи полностью задокументированный код.
-
-{1}</value></data>
-  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>Добавь комментарии документации ко всем публичным членам в `{0}`.
-
-**Правила документирования:**
-- Сводка — одно предложение: ЧТО делает, а не КАК. Никогда не повторять имя.
-- Параметры / возвращаемое значение — описывай контракт: единицы, null-безопасность, допустимые диапазоны.
-- Исключения / ошибки — документируй что может пойти не так и точные условия.
-- Примечания — только для неожиданного поведения: побочные эффекты, многопоточность, инварианты.
-- Унаследованные члены и реализации интерфейсов → используй `&lt;inheritdoc/&gt;`, если не добавляешь дополнительных примечаний.
-
-{1}
-
-Выведи **полный исходный файл** со всей добавленной документацией. Сохрани оригинальный код точно — добавляй только документацию, никогда не рефакторинг.</value></data>
   <data name="PromptReviewSelection" xml:space="preserve"><value>Проверь код в `{0}` и дай структурированную критику:
 
 - **Баги и граничные случаи** — логические ошибки, разыменование null, смещения индексов, утечки ресурсов.
@@ -272,7 +220,6 @@
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Готово — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} тк  ·  сессия: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama не настроен. Откройте настройки для его указания.</value></data>
-  <data name="MsgEmptyResponse" xml:space="preserve"><value>Модель не вернула ответ. Настроенная модель может не поддерживать генерацию текста — попробуйте модель чата по умолчанию.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Модель **{0}** не выдала ни одного фрагмента текста. Сервер ({1}) принял запрос и закрыл поток без единого токена и без сообщения об ошибке — значит, дело не в соединении. Подробности о содержимом потока — в `/diagnostics`.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>Ответ остановился на ограничении длины модели до конца кода — ничего не применено. Выделите меньшую часть файла или увеличьте длину контекста.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>Черновик остановился на ограничении длины модели, не дойдя до конца, — .inferpal/context.md не записан. Увеличьте длину контекста или выберите модель с большим окном, затем снова выполните /onboard context.</value></data>

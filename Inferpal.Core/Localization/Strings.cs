@@ -43,9 +43,7 @@ internal static class Strings
     public static string HintUrl              => Get(nameof(HintUrl));
     public static string LabelChatModel       => Get(nameof(LabelChatModel));
     public static string HintChatModel        => Get(nameof(HintChatModel));
-    public static string LabelSession         => Get(nameof(LabelSession));
     public static string BtnTest              => Get(nameof(BtnTest));
-    public static string BtnClear             => Get(nameof(BtnClear));
     public static string BtnLoadSession       => Get(nameof(BtnLoadSession));
     public static string BtnSave              => Get(nameof(BtnSave));
 
@@ -82,7 +80,6 @@ internal static class Strings
     public static string BtnResume                => Get(nameof(BtnResume));
     public static string MultiFileRecapTitle(int count, string files) =>
         string.Format(Get(nameof(MultiFileRecapTitle)), count, files);
-    public static string BtnDismiss               => Get(nameof(BtnDismiss));
 
     public static string PromptFixErrors(string errors) =>
         string.Format(Get(nameof(PromptFixErrors)), errors);
@@ -90,40 +87,14 @@ internal static class Strings
     // ── Editor context menu prompts ────────────────────────────────────────────
     // Legacy two-arg overloads kept for reference; all active call sites use the
     // attachment-based single-arg variants below.
-    public static string PromptExplainSelection(string fileName, string codeBlock) =>
-        string.Format(Get(nameof(PromptExplainSelection)), fileName, codeBlock);
-    public static string PromptRefactorSelection(string fileName, string codeBlock) =>
-        string.Format(Get(nameof(PromptRefactorSelection)), fileName, codeBlock);
-    public static string PromptAddTestsSelection(string fileName, string codeBlock) =>
-        string.Format(Get(nameof(PromptAddTestsSelection)), fileName, codeBlock);
-    public static string PromptFixSelection(string fileName, string codeBlock) =>
-        string.Format(Get(nameof(PromptFixSelection)), fileName, codeBlock);
-    public static string PromptAddDocstringSelection(string fileName, string codeBlock) =>
-        string.Format(Get(nameof(PromptAddDocstringSelection)), fileName, codeBlock);
-    public static string PromptReviewSelection(string fileName, string codeBlock) =>
-        string.Format(Get(nameof(PromptReviewSelection)), fileName, codeBlock);
 
     // ── Code-action prompts — code delivered as AttachmentItem ─────────────────
     // {1} (code block) is intentionally omitted: the file is attached separately so
     // it appears as a chip in the chat and is formatted uniformly by SendCoreAsync.
     public static string PromptExplain(string fileName) =>
-        string.Format(Get(nameof(PromptExplainSelection)), fileName, string.Empty).TrimEnd();
-    public static string PromptFix(string fileName) =>
-        string.Format(Get(nameof(PromptFixSelection)), fileName, string.Empty).TrimEnd();
+        string.Format(Get("PromptExplainSelection"), fileName, string.Empty).TrimEnd();
     public static string PromptReview(string fileName) =>
-        string.Format(Get(nameof(PromptReviewSelection)), fileName, string.Empty).TrimEnd();
-    public static string PromptRefactor(string fileName) =>
-        string.Format(Get(nameof(PromptRefactorSelection)), fileName, string.Empty).TrimEnd();
-    public static string PromptAddTests(string fileName) =>
-        string.Format(Get(nameof(PromptAddTestsSelection)), fileName, string.Empty).TrimEnd();
-    public static string PromptAddDocstring(string fileName) =>
-        string.Format(Get(nameof(PromptAddDocstringSelection)), fileName, string.Empty).TrimEnd();
-    /// <summary>
-    /// Builds the enhanced /doc prompt, injecting the semantic context block
-    /// (namespace, type hierarchy, overrides, interface contracts) as <paramref name="contextBlock"/>.
-    /// </summary>
-    public static string PromptAddDocstringEnhanced(string fileName, string contextBlock) =>
-        string.Format(Get(nameof(PromptAddDocstringEnhanced)), fileName, contextBlock).TrimEnd();
+        string.Format(Get("PromptReviewSelection"), fileName, string.Empty).TrimEnd();
 
     // ── /test — tests generated into a separate file ───────────────────────────
     public static string TestsGenerated(string fileName) =>
@@ -209,7 +180,6 @@ internal static class Strings
     public static string SectionBehavior                => Get(nameof(SectionBehavior));
     public static string SectionContext                 => Get(nameof(SectionContext));
     public static string SectionPersona                 => Get(nameof(SectionPersona));
-    public static string SectionInterface               => Get(nameof(SectionInterface));
     public static string SectionInlineCompletions            => Get(nameof(SectionInlineCompletions));
     public static string LabelInlineCompletionMode           => Get(nameof(LabelInlineCompletionMode));
     // The three choices of that dropdown. They were hardcoded — "Fast", "Default", "High Accuracy"
@@ -449,7 +419,6 @@ internal static class Strings
         string.Format(Get(nameof(MsgAgentDone)), toolSummary);
 
     public static string MsgNoUrl => Get(nameof(MsgNoUrl));
-    public static string MsgEmptyResponse => Get(nameof(MsgEmptyResponse));
 
     /// <summary>
     /// A turn that produced nothing, told by <b>what was observed</b> — {0} = requested model,

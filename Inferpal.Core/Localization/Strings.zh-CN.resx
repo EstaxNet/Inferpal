@@ -60,7 +60,6 @@
   <data name="HintModelIdleTimeout" xml:space="preserve"><value>模型从 VRAM 卸载前的闲置分钟数。较小的值更快释放 GPU 内存；较大的值减少下次请求的重新加载时间。最小值：1 分钟。</value></data>
   <data name="SectionContext" xml:space="preserve"><value>上下文与记忆</value></data>
   <data name="SectionPersona" xml:space="preserve"><value>角色</value></data>
-  <data name="SectionInterface" xml:space="preserve"><value>界面</value></data>
 
   <!-- UI labels -->
   <data name="LabelLanguage" xml:space="preserve"><value>界面语言（覆盖编辑器设置）：</value></data>
@@ -74,9 +73,7 @@
   <data name="HintUrl" xml:space="preserve"><value>本地 Ollama 实例的基础地址。默认为 http://localhost:11434。如果 Ollama 运行在不同的主机或端口，请修改此项。</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>聊天模型：</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>用于所有对话的默认模型。此字段为必填项。使用 /model &lt;名称&gt; 可在会话中随时切换模型。</value></data>
-  <data name="LabelSession" xml:space="preserve"><value>会话：</value></data>
   <data name="BtnTest" xml:space="preserve"><value>测试</value></data>
-  <data name="BtnClear" xml:space="preserve"><value>清除</value></data>
   <data name="BtnLoadSession" xml:space="preserve"><value>加载 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 取消</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
@@ -94,7 +91,6 @@
 此操作无法撤销。</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>复制消息</value></data>
   <data name="LabelCopyCode" xml:space="preserve"><value>复制</value></data>
-  <data name="BtnDismiss" xml:space="preserve"><value>关闭</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>用 AI 修复</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ 全部还原</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ 重新生成</value></data>
@@ -115,54 +111,6 @@
 **架构角色** — 说明此代码在整体系统中的作用。
 
 {1}</value></data>
-  <data name="PromptRefactorSelection" xml:space="preserve"><value>在不改变行为的前提下，重构 `{0}` 中的代码：
-
-**识别** — 列出使此代码难以阅读、维护或扩展的问题。
-**规划** — 描述具体的改进：命名、结构、模式、重复代码。
-**应用** — 完整展示重构后的代码。
-**验证** — 确认行为已保留，并说明所做的假设。
-
-{1}</value></data>
-  <data name="PromptAddTestsSelection" xml:space="preserve"><value>使用项目现有的测试框架，为 `{0}` 中的代码编写单元测试：
-
-**覆盖图** — 识别所有需要测试的公共方法和分支。
-**正常路径** — 针对正常预期输入和行为的测试。
-**边界情况** — 针对边界值、空输入和 null 的测试。
-**失败模式** — 针对无效输入和预期异常的测试。
-
-提供完整的、可直接编译的测试代码。
-
-{1}</value></data>
-  <data name="PromptFixSelection" xml:space="preserve"><value>分析并修复 `{0}` 中的代码：
-
-**复现** — 准确识别 bug、问题或代码异味，并解释其原因。
-**假设** — 陈述诊断：根本原因及受影响的执行路径。
-**精准修复** — 应用解决问题的最小改动，展示修复后的代码。
-**自我验证** — 确认修复的正确性，并列出剩余风险或假设。
-
-{1}</value></data>
-  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>为 `{0}` 中所有公共类型、方法、属性和参数添加 XML 文档注释：
-
-- &lt;summary&gt; — 一句话：做什么（而非如何做）。不要重复名称。
-- &lt;param&gt; / &lt;returns&gt; — 描述契约：单位、null 安全性、有效范围。
-- &lt;exception&gt; — 记录所有抛出的异常及触发条件。
-- &lt;remarks&gt; — 仅在行为会令读者意外时使用：副作用、线程安全、不变量。
-
-展示完整的文档化代码。
-
-{1}</value></data>
-  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>为 `{0}` 中所有公开成员添加文档注释。
-
-**文档规则：**
-- 摘要 — 一句话：做什么（WHAT，而非HOW）。不要重复名称。
-- 参数 / 返回值 — 描述契约：单位、null安全性、有效范围。
-- 异常 / 错误 — 记录可能出错的情况和确切条件。
-- 备注 — 仅用于令人意外的行为：副作用、线程、不变量。
-- 继承成员和接口实现 → 委托给父文档（`&lt;inheritdoc/&gt;`），除非添加额外备注。
-
-{1}
-
-输出包含所有文档注释的**完整源文件**。精确保留原始代码——只添加文档，绝不重构。</value></data>
   <data name="PromptReviewSelection" xml:space="preserve"><value>审查 `{0}` 中的代码并提供结构化评述：
 
 - **Bug 与边界情况** — 逻辑错误、空引用、索引越界、资源泄漏。
@@ -272,7 +220,6 @@
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 完成 — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 令牌 · 会话：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>未配置 Ollama URL，请打开设置进行配置。</value></data>
-  <data name="MsgEmptyResponse" xml:space="preserve"><value>模型未返回任何响应。配置的模型可能不支持文本生成 — 请尝试默认聊天模型。</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>模型 **{0}** 没有生成任何文本。服务器（{1}）接受了请求，未返回任何 token，也没有报告错误就关闭了数据流 —— 因此这不是连接问题。数据流的详情见 `/diagnostics`。</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>回答在代码结束前就达到了模型的长度限制——未应用任何更改。请选择文件中较小的部分，或增大上下文长度。</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>草稿在结束前就达到了模型的长度限制——未写入 .inferpal/context.md。请增大上下文长度，或选择窗口更大的模型，然后重新运行 /onboard context。</value></data>

@@ -60,7 +60,6 @@
   <data name="HintModelIdleTimeout" xml:space="preserve"><value>Ollama가 VRAM에서 모델을 언로드하기 전 비활성 분 수입니다. 낮은 값은 GPU 메모리를 더 빨리 해제하고, 높은 값은 다음 요청 시 재로드 시간을 줄입니다. 최소: 1분.</value></data>
   <data name="SectionContext" xml:space="preserve"><value>컨텍스트 및 메모리</value></data>
   <data name="SectionPersona" xml:space="preserve"><value>페르소나</value></data>
-  <data name="SectionInterface" xml:space="preserve"><value>인터페이스</value></data>
 
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>추론 백엔드:</value></data>
@@ -71,9 +70,7 @@
   <data name="HintUrl" xml:space="preserve"><value>로컬 Ollama 인스턴스의 기본 URL입니다. 기본값은 http://localhost:11434 입니다. Ollama가 다른 호스트나 포트에서 실행 중인 경우 변경하세요.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>채팅 모델:</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>모든 대화에 사용되는 기본 모델입니다. 이 필드는 필수입니다. /model &lt;이름&gt;을 사용하여 세션 중 모델을 전환하세요.</value></data>
-  <data name="LabelSession" xml:space="preserve"><value>세션:</value></data>
   <data name="BtnTest" xml:space="preserve"><value>테스트</value></data>
-  <data name="BtnClear" xml:space="preserve"><value>지우기</value></data>
   <data name="BtnLoadSession" xml:space="preserve"><value>불러오기 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 취소</value></data>
   <data name="BtnSave" xml:space="preserve"><value>저장</value></data>
@@ -91,7 +88,6 @@
 이 작업은 되돌릴 수 없습니다.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>메시지 복사</value></data>
   <data name="LabelCopyCode" xml:space="preserve"><value>복사</value></data>
-  <data name="BtnDismiss" xml:space="preserve"><value>닫기</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>AI로 수정</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ 모두 복원</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ 재생성</value></data>
@@ -112,54 +108,6 @@
 **아키텍처 역할** — 이 코드가 전체 시스템에서 어떤 역할을 하는지 설명하세요.
 
 {1}</value></data>
-  <data name="PromptRefactorSelection" xml:space="preserve"><value>`{0}`의 코드를 동작을 바꾸지 않고 리팩토링해 주세요:
-
-**파악** — 이 코드를 읽기 어렵고 유지보수하기 힘들고 확장하기 어렵게 만드는 것을 나열하세요.
-**계획** — 구체적인 개선 사항을 설명하세요: 명명, 구조, 패턴, 중복.
-**적용** — 리팩토링된 코드 전체를 보여주세요.
-**검증** — 동작이 보존되었음을 확인하고 가정한 사항을 명시하세요.
-
-{1}</value></data>
-  <data name="PromptAddTestsSelection" xml:space="preserve"><value>프로젝트의 기존 테스트 프레임워크를 사용하여 `{0}`의 코드에 대한 단위 테스트를 작성해 주세요:
-
-**커버리지 맵** — 테스트가 필요한 모든 공개 메서드와 분기를 파악하세요.
-**정상 경로** — 정상적이고 예상되는 입력과 동작에 대한 테스트.
-**엣지 케이스** — 경계값, 빈 입력, null에 대한 테스트.
-**실패 모드** — 잘못된 입력과 예상되는 예외에 대한 테스트.
-
-컴파일 가능한 완전한 테스트 코드를 제공해 주세요.
-
-{1}</value></data>
-  <data name="PromptFixSelection" xml:space="preserve"><value>`{0}`의 코드를 분석하고 수정해 주세요:
-
-**재현** — 정확한 버그, 문제, 또는 코드 스멜을 파악하고 왜 발생하는지 설명하세요.
-**가설** — 진단을 제시하세요: 근본 원인과 영향받는 실행 경로.
-**정밀 수정** — 문제를 해결하는 최소한의 변경을 적용하세요. 수정된 코드를 보여주세요.
-**자가 검증** — 수정이 올바른지 확인하고 남은 위험이나 가정을 나열하세요.
-
-{1}</value></data>
-  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>`{0}`의 모든 공개 타입, 메서드, 속성, 매개변수에 XML 문서 주석을 추가해 주세요:
-
-- &lt;summary&gt; — 한 문장: 무엇을 하는지 (어떻게가 아닌 무엇을). 이름을 반복하지 마세요.
-- &lt;param&gt; / &lt;returns&gt; — 계약을 설명하세요: 단위, null 안전성, 유효 범위.
-- &lt;exception&gt; — 발생하는 예외와 트리거 조건을 문서화하세요.
-- &lt;remarks&gt; — 독자를 놀라게 할 동작에만: 부작용, 스레딩, 불변 조건.
-
-완전히 문서화된 코드를 보여주세요.
-
-{1}</value></data>
-  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>`{0}` 의 모든 공개 멤버에 문서 주석을 추가하세요.
-
-**문서화 규칙:**
-- 요약 — 한 문장: 무엇을 하는지 (HOW가 아닌 WHAT). 이름 반복 금지.
-- 매개변수 / 반환값 — 계약을 설명: 단위, null 안전성, 유효한 범위.
-- 예외 / 오류 — 무엇이 잘못될 수 있는지와 정확한 조건을 문서화.
-- 비고 — 놀라운 동작에만: 부수 효과, 스레딩, 불변성.
-- 상속 멤버 및 인터페이스 구현 → 추가 비고가 없으면 부모 문서에 위임 (`&lt;inheritdoc/&gt;`).
-
-{1}
-
-모든 문서가 추가된 **완전한 소스 파일**을 출력하세요. 원본 코드를 정확히 보존하고, 문서만 추가하며, 절대 리팩토링하지 마세요.</value></data>
   <data name="PromptReviewSelection" xml:space="preserve"><value>`{0}`의 코드를 검토하고 구조화된 비평을 제공하세요:
 
 - **버그와 엣지 케이스** — 논리 오류, null 역참조, 인덱스 오류, 리소스 누수.
@@ -272,7 +220,6 @@
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 완료 — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 토큰  ·  세션: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL이 구성되지 않았습니다. 설정을 열어 설정하세요.</value></data>
-  <data name="MsgEmptyResponse" xml:space="preserve"><value>모델이 응답을 반환하지 않았습니다. 구성된 모델이 텍스트 생성을 지원하지 않을 수 있습니다 — 기본 채팅 모델을 사용해 보세요.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>모델 **{0}** 이(가) 텍스트를 생성하지 않았습니다. 서버({1})는 요청을 수락했고, 토큰을 하나도 보내지 않은 채 오류도 알리지 않고 스트림을 닫았습니다 — 연결 문제가 아닙니다. 스트림의 내용은 `/diagnostics`에 있습니다.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>코드가 끝나기 전에 응답이 모델의 길이 제한에서 멈췄습니다. 아무것도 적용되지 않았습니다. 파일의 더 작은 부분을 선택하거나 컨텍스트 길이를 늘리세요.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>초안이 끝나기 전에 모델의 길이 제한에서 멈췄습니다. .inferpal/context.md는 작성되지 않았습니다. 컨텍스트 길이를 늘리거나 더 큰 창의 모델을 선택한 뒤 /onboard context를 다시 실행하세요.</value></data>

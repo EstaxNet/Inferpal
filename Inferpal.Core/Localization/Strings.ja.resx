@@ -60,7 +60,6 @@
   <data name="HintModelIdleTimeout" xml:space="preserve"><value>Ollama が VRAM からモデルをアンロードするまでの非アクティブ分数。低い値は GPU メモリを早く解放し、高い値は次回リクエスト時の再読み込み時間を短縮します。最小：1 分。</value></data>
   <data name="SectionContext" xml:space="preserve"><value>コンテキストとメモリ</value></data>
   <data name="SectionPersona" xml:space="preserve"><value>ペルソナ</value></data>
-  <data name="SectionInterface" xml:space="preserve"><value>インターフェース</value></data>
 
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>推論バックエンド：</value></data>
@@ -71,9 +70,7 @@
   <data name="HintUrl" xml:space="preserve"><value>ローカル Ollama インスタンスのベース URL です。デフォルトは http://localhost:11434 です。Ollama が別のホストやポートで動作している場合は変更してください。</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>チャットモデル：</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>すべての会話に使用するデフォルトモデルです。このフィールドは必須です。セッション中にモデルを切り替えるには /model &lt;名前&gt; を使用してください。</value></data>
-  <data name="LabelSession" xml:space="preserve"><value>セッション：</value></data>
   <data name="BtnTest" xml:space="preserve"><value>テスト</value></data>
-  <data name="BtnClear" xml:space="preserve"><value>クリア</value></data>
   <data name="BtnLoadSession" xml:space="preserve"><value>読込 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ キャンセル</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
@@ -91,7 +88,6 @@
 この操作は元に戻せません。</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>メッセージをコピー</value></data>
   <data name="LabelCopyCode" xml:space="preserve"><value>コピー</value></data>
-  <data name="BtnDismiss" xml:space="preserve"><value>閉じる</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>AIで修正</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ すべて復元</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ 再生成</value></data>
@@ -112,54 +108,6 @@
 **アーキテクチャ上の役割** — このコードがシステム全体においてどのような役割を果たすかを説明する。
 
 {1}</value></data>
-  <data name="PromptRefactorSelection" xml:space="preserve"><value>`{0}` のコードを動作を変えずにリファクタリングしてください：
-
-**特定** — このコードを読みにくく、保守しにくく、拡張しにくくしている点を列挙する。
-**計画** — 具体的な改善を説明する：命名、構造、パターン、重複。
-**適用** — リファクタリングされたコードを全体で示す。
-**検証** — 動作が保持されていることを確認し、行った前提条件を述べる。
-
-{1}</value></data>
-  <data name="PromptAddTestsSelection" xml:space="preserve"><value>プロジェクトの既存テストフレームワークを使って `{0}` のコードのユニットテストを書いてください：
-
-**カバレッジマップ** — テストが必要なすべてのパブリックメソッドとブランチを特定する。
-**正常系** — 通常の期待される入力と動作のテスト。
-**エッジケース** — 境界値、空の入力、nullのテスト。
-**障害モード** — 無効な入力と期待される例外のテスト。
-
-コンパイル可能な完全なテストコードを提供してください。
-
-{1}</value></data>
-  <data name="PromptFixSelection" xml:space="preserve"><value>`{0}` のコードを分析して修正してください：
-
-**再現** — バグ、問題、またはコードスメルを特定し、なぜ発生するかを説明する。
-**仮説** — 診断を述べる：根本原因と影響を受ける実行パス。
-**外科的修正** — 問題を修正する最小限の変更を適用する。修正済みコードを示す。
-**自己検証** — 修正が正しいことを確認し、残存するリスクや前提条件を列挙する。
-
-{1}</value></data>
-  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>`{0}` のすべてのパブリック型、メソッド、プロパティ、パラメータにXMLドキュメントコメントを追加してください：
-
-- &lt;summary&gt; — 1文で：何をするか（HOWではなくWHAT）。名前の繰り返し不可。
-- &lt;param&gt; / &lt;returns&gt; — コントラクトを説明する：単位、null安全性、有効な範囲。
-- &lt;exception&gt; — スローされる例外とそれを引き起こす条件を文書化する。
-- &lt;remarks&gt; — 読者が驚くような動作の場合のみ：副作用、スレッド、不変条件。
-
-完全に文書化されたコードを示してください。
-
-{1}</value></data>
-  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>`{0}` のすべてのパブリックメンバーにドキュメントコメントを追加してください。
-
-**ドキュメントルール：**
-- サマリー — 1文で：何をするか（HOWではなくWHAT）。名前の繰り返し不可。
-- パラメータ / 戻り値 — コントラクトを説明する：単位、null安全性、有効な範囲。
-- 例外 / エラー — 何が問題になりうるか、正確な条件を文書化する。
-- 注記 — 驚くような動作のみ：副作用、スレッド、不変条件。
-- 継承メンバーおよびインターフェース実装 → 追加の注記がない限り親のドキュメントに委ねる（`&lt;inheritdoc/&gt;`）。
-
-{1}
-
-すべてのドキュメントを追加した**完全なソースファイル**を出力してください。元のコードを完全に保持し、ドキュメントのみを追加し、リファクタリングは決して行わないでください。</value></data>
   <data name="PromptReviewSelection" xml:space="preserve"><value>`{0}` のコードをレビューし、構造化された評価を提供してください：
 
 - **バグとエッジケース** — 論理エラー、null 参照、オフバイワン、リソースリーク。
@@ -272,7 +220,6 @@
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 完了 — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} トークン  ·  セッション：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama の URL が設定されていません。設定を開いて設定してください。</value></data>
-  <data name="MsgEmptyResponse" xml:space="preserve"><value>モデルが応答を返しませんでした。設定されたモデルがテキスト生成をサポートしていない可能性があります — デフォルトのチャットモデルをお試しください。</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>モデル **{0}** はテキストを生成しませんでした。サーバー ({1}) はリクエストを受け付け、トークンを 1 つも返さず、エラーも報告せずにストリームを閉じました — 接続の問題ではありません。ストリームの内容は `/diagnostics` にあります。</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>コードの終わりに達する前に、応答がモデルの長さ制限で止まりました。何も適用されていません。ファイルのより小さい部分を選択するか、コンテキスト長を増やしてください。</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>下書きが終わる前にモデルの長さ制限で止まりました。.inferpal/context.md は書き込まれていません。コンテキスト長を増やすか、より大きなウィンドウのモデルを選んでから、/onboard context を再実行してください。</value></data>

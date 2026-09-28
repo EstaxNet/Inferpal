@@ -60,7 +60,6 @@
   <data name="HintModelIdleTimeout" xml:space="preserve"><value>Minuten der Inaktivität, bevor Ollama das Modell aus dem VRAM entlädt. Niedrigere Werte geben GPU-Speicher früher frei; höhere Werte reduzieren die Ladezeit bei der nächsten Anfrage. Minimum: 1 Minute.</value></data>
   <data name="SectionContext" xml:space="preserve"><value>Kontext &amp; Speicher</value></data>
   <data name="SectionPersona" xml:space="preserve"><value>Persona</value></data>
-  <data name="SectionInterface" xml:space="preserve"><value>Oberfläche</value></data>
 
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>Inferenz-Backend:</value></data>
@@ -71,9 +70,7 @@
   <data name="HintUrl" xml:space="preserve"><value>Basis-URL Ihrer lokalen Ollama-Instanz. Standard ist http://localhost:11434. Ändern Sie diesen Wert, wenn Ollama auf einem anderen Host oder Port läuft.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Chat-Modell:</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>Standardmodell für alle Unterhaltungen. Dieses Feld ist erforderlich. Verwenden Sie /model &lt;Name&gt;, um das Modell während einer Sitzung zu wechseln.</value></data>
-  <data name="LabelSession" xml:space="preserve"><value>Sitzung:</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Testen</value></data>
-  <data name="BtnClear" xml:space="preserve"><value>Löschen</value></data>
   <data name="BtnLoadSession" xml:space="preserve"><value>Laden ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Abbrechen</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Speichern</value></data>
@@ -91,7 +88,6 @@
 Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Nachricht kopieren</value></data>
   <data name="LabelCopyCode" xml:space="preserve"><value>Kopieren</value></data>
-  <data name="BtnDismiss" xml:space="preserve"><value>Schließen</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Mit KI reparieren</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Alle wiederherstellen</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Neu generieren</value></data>
@@ -112,54 +108,6 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
 **ARCHITEKTURROLLE** — erkläre, wie dieser Code in das Gesamtsystem passt.
 
 {1}</value></data>
-  <data name="PromptRefactorSelection" xml:space="preserve"><value>Refaktoriere den Code aus `{0}` ohne das Verhalten zu ändern:
-
-**IDENTIFIZIEREN** — liste auf, was diesen Code schwer lesbar, wartbar oder erweiterbar macht.
-**PLANEN** — beschreibe die gezielten Verbesserungen: Benennung, Struktur, Muster, Duplikate.
-**ANWENDEN** — zeige den refaktorierten Code vollständig.
-**VALIDIEREN** — bestätige, dass das Verhalten erhalten bleibt, und nenne alle Annahmen.
-
-{1}</value></data>
-  <data name="PromptAddTestsSelection" xml:space="preserve"><value>Schreibe Unit-Tests für den Code aus `{0}` mit dem vorhandenen Test-Framework des Projekts:
-
-**ABDECKUNGSKARTE** — identifiziere alle öffentlichen Methoden und Verzweigungen, die getestet werden müssen.
-**NORMALFALL** — Tests für normale, erwartete Eingaben und Verhalten.
-**RANDFÄLLE** — Tests für Grenzwerte, leere Eingaben und Nullwerte.
-**FEHLERFÄLLE** — Tests für ungültige Eingaben und erwartete Ausnahmen.
-
-Liefere den vollständigen, kompilierbaren Testcode.
-
-{1}</value></data>
-  <data name="PromptFixSelection" xml:space="preserve"><value>Analysiere und behebe den Code aus `{0}`:
-
-**REPRODUZIEREN** — identifiziere den genauen Fehler oder Code-Geruch und erkläre, warum er auftritt.
-**HYPOTHESE** — formuliere deine Diagnose: Ursache und betroffene Ausführungspfade.
-**CHIRURGISCHE KORREKTUR** — wende die minimale Änderung an, die das Problem behebt. Zeige den korrigierten Code.
-**SELBSTPRÜFUNG** — bestätige, dass die Korrektur korrekt ist, und liste verbleibende Risiken auf.
-
-{1}</value></data>
-  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>Füge XML-Dokumentationskommentare zu allen öffentlichen Typen, Methoden, Eigenschaften und Parametern in `{0}` hinzu:
-
-- &lt;summary&gt; — ein Satz: WAS es tut, nicht WIE. Nicht den Namen wiederholen.
-- &lt;param&gt; / &lt;returns&gt; — beschreibe den Vertrag: Einheiten, Null-Sicherheit, gültige Bereiche.
-- &lt;exception&gt; — dokumentiere alle ausgelösten Ausnahmen und die Bedingungen, die sie auslösen.
-- &lt;remarks&gt; — nur wenn das Verhalten einen Leser überraschen würde: Seiteneffekte, Threading, Invarianten.
-
-Zeige den vollständig dokumentierten Code.
-
-{1}</value></data>
-  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>Füge Dokumentationskommentare zu allen öffentlichen Membern in `{0}` hinzu.
-
-**Dokumentationsregeln:**
-- Zusammenfassung — ein Satz: WAS es tut, nicht WIE. Den Namen nie wiederholen.
-- Parameter / Rückgabewert — beschreibe den Vertrag: Einheiten, Null-Sicherheit, gültige Bereiche.
-- Ausnahmen / Fehler — dokumentiere was schiefgehen kann und die genauen Bedingungen.
-- Hinweise — nur für überraschendes Verhalten: Seiteneffekte, Threading, Invarianten.
-- Geerbte und interface-Implementierungsmember → delegiere an die übergeordnete Doku (`&lt;inheritdoc/&gt;`), außer du fügst zusätzliche Hinweise hinzu.
-
-{1}
-
-Gib die **vollständige Quelldatei** mit allen hinzugefügten Kommentaren zurück. Bewahre den originalen Code exakt — füge nur Dokumentation hinzu, refaktoriere nie.</value></data>
   <data name="PromptReviewSelection" xml:space="preserve"><value>Überprüfe den Code in `{0}` und erstelle eine strukturierte Kritik:
 
 - **Fehler und Grenzfälle** — Logikfehler, Null-Dereferenzierungen, Off-by-One, Ressourcenlecks.
@@ -272,7 +220,6 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Fertig — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} Tok  ·  Sitzung: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama-URL nicht konfiguriert. Öffnen Sie die Einstellungen, um sie festzulegen.</value></data>
-  <data name="MsgEmptyResponse" xml:space="preserve"><value>Das Modell hat keine Antwort zurückgegeben. Das konfigurierte Modell unterstützt möglicherweise keine Textgenerierung — versuchen Sie das Standard-Chat-Modell.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Das Modell **{0}** hat keinen Text erzeugt. Der Server ({1}) hat die Anfrage angenommen und den Stream ohne ein einziges Token und ohne Fehlermeldung beendet — es ist also kein Verbindungsproblem. Details zum Stream stehen in `/diagnostics`.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>Die Antwort endete an der Längengrenze des Modells vor dem Ende des Codes — nichts wurde angewendet. Wählen Sie einen kleineren Teil der Datei aus oder erhöhen Sie die Kontextlänge.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>Der Entwurf endete an der Längengrenze des Modells vor seinem Ende — .inferpal/context.md wurde nicht geschrieben. Erhöhen Sie die Kontextlänge oder wählen Sie ein Modell mit größerem Fenster und führen Sie /onboard context erneut aus.</value></data>

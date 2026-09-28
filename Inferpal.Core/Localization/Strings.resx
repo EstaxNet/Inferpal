@@ -60,7 +60,6 @@
   <data name="HintModelIdleTimeout" xml:space="preserve"><value>Minutes of inactivity before Ollama unloads the model from VRAM. Lower values free GPU memory sooner; higher values reduce reload time on the next request. Minimum: 1 minute.</value></data>
   <data name="SectionContext" xml:space="preserve"><value>Context &amp; Memory</value></data>
   <data name="SectionPersona" xml:space="preserve"><value>Persona</value></data>
-  <data name="SectionInterface" xml:space="preserve"><value>Interface</value></data>
 
   <!-- UI labels -->
   <data name="LabelLanguage" xml:space="preserve"><value>Interface language (overrides the editor's):</value></data>
@@ -74,9 +73,7 @@
   <data name="HintUrl" xml:space="preserve"><value>Base URL of your local Ollama instance. Default is http://localhost:11434. Change this if Ollama runs on a different host or port.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Chat model:</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>Default model used for all conversations. This field is required. Use /model &lt;name&gt; to switch models mid-session.</value></data>
-  <data name="LabelSession" xml:space="preserve"><value>Session:</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Test</value></data>
-  <data name="BtnClear" xml:space="preserve"><value>Clear</value></data>
   <data name="BtnLoadSession" xml:space="preserve"><value>Load ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Cancel</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Save</value></data>
@@ -95,7 +92,6 @@
 This cannot be undone.</value></data>
   <data name="TooltipCopy" xml:space="preserve"><value>Copy message</value></data>
   <data name="LabelCopyCode" xml:space="preserve"><value>Copy</value></data>
-  <data name="BtnDismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Fix with AI</value></data>
   <data name="BtnRestoreAll" xml:space="preserve"><value>↩ Restore All</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Regenerate</value></data>
@@ -116,54 +112,6 @@ This cannot be undone.</value></data>
 **ARCHITECTURAL ROLE** — explain how this fits into the broader system.
 
 {1}</value></data>
-  <data name="PromptRefactorSelection" xml:space="preserve"><value>Refactor the code from `{0}` without changing its behavior:
-
-**IDENTIFY** — list what makes this code hard to read, maintain, or extend.
-**PLAN** — describe the targeted improvements: naming, structure, patterns, duplication.
-**APPLY** — show the refactored code in full.
-**VALIDATE** — confirm the behavior is preserved and state any assumptions made.
-
-{1}</value></data>
-  <data name="PromptAddTestsSelection" xml:space="preserve"><value>Write unit tests for the code from `{0}` using the project's existing test framework:
-
-**COVERAGE MAP** — identify all public methods and branches that need testing.
-**HAPPY PATH** — tests for normal, expected inputs and behavior.
-**EDGE CASES** — tests for boundary values, empty inputs, and nulls.
-**FAILURE MODES** — tests for invalid inputs and expected exceptions.
-
-Provide the complete, ready-to-compile test code.
-
-{1}</value></data>
-  <data name="PromptFixSelection" xml:space="preserve"><value>Analyze and fix the code from `{0}`:
-
-**REPRODUCE** — identify the exact bug, issue, or code smell and explain why it occurs.
-**HYPOTHESIZE** — state your diagnosis: root cause and affected execution paths.
-**SURGICAL FIX** — apply the minimal change that corrects the issue. Show the fixed code.
-**SELF-HEAL** — verify the fix is sound and list any follow-up risks or assumptions.
-
-{1}</value></data>
-  <data name="PromptAddDocstringSelection" xml:space="preserve"><value>Add XML documentation comments to all public types, methods, properties, and parameters in `{0}`:
-
-- &lt;summary&gt; — one sentence: WHAT it does, not HOW. No restating the name.
-- &lt;param&gt; / &lt;returns&gt; — describe the contract: units, null-safety, valid ranges.
-- &lt;exception&gt; — document any thrown exceptions and the conditions that trigger them.
-- &lt;remarks&gt; — only when behavior would surprise a reader: side effects, threading, invariants.
-
-Show the fully documented code.
-
-{1}</value></data>
-  <data name="PromptAddDocstringEnhanced" xml:space="preserve"><value>Add documentation comments to all public members in `{0}`.
-
-**Documentation rules:**
-- Summary — one sentence: WHAT it does, not HOW. Never restate the name.
-- Parameters / return value — describe the contract: units, null-safety, valid ranges.
-- Exceptions / errors — document what can go wrong and the exact triggering conditions.
-- Remarks / notes — only for surprising behavior: side effects, threading, invariants.
-- Inherited and interface-implementation members → defer to the parent doc (`&lt;inheritdoc/&gt;` or `&lt;inheritdoc cref="IFoo.Member"/&gt;`) unless adding extra remarks.
-
-{1}
-
-Output the **complete source file** with all documentation added. Preserve all original code exactly — add documentation only, never refactor.</value></data>
   <data name="PromptReviewSelection" xml:space="preserve"><value>Review the code in `{0}` and provide a structured critique:
 
 - **Bugs and edge cases** — logic errors, null dereferences, off-by-one, resource leaks.
@@ -273,7 +221,6 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Done — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  session : {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL not configured. Open Settings to set it.</value></data>
-  <data name="MsgEmptyResponse" xml:space="preserve"><value>The model returned no response. The configured model may not support text generation — try the default chat model.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>The model **{0}** produced no text. The server ({1}) accepted the request and closed the stream without a single token, and without reporting an error — so this is not a connection problem. `/diagnostics` carries what the stream contained.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>The answer stopped at the model's length limit before the end of the code — nothing was applied. Select a smaller part of the file, or increase the context length.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>The draft stopped at the model's length limit before its end — .inferpal/context.md was not written. Increase the context length, or pick a model with a larger window, then run /onboard context again.</value></data>
