@@ -21,12 +21,11 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 | [GLM 4.7 Flash](#glm47) | Agent — usable with the **Unsloth GGUF** (12/14) | Reads its `<arg_key>` tool calls when left as text | Older GGUFs (lmstudio-community) loop |
 | [Qwen3 Coder 30B](#qwen3-coder) | Autocomplete (FIM); agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
 | [Qwen3 4B Thinking 2507](#qwen3) | Small machines | Reads its JSON tool calls when left as text | Long reasoning |
-| [Gemma 4 31B](#gemma4) | Agent through a fallback — needs the whole GPU | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
+| [Gemma 4 31B](#gemma4) | Agent through a fallback — *to be measured* | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
 | [Qwen2.5 Coder 7B](#qwen-coder) | ✅ **Autocomplete (FIM)** — not the agent (3/14) | Uses its fill-in-the-middle tokens | Not trained for tool calling |
 
 Embedding models (semantic search): **Qwen3 Embedding 0.6B** and **Nomic Embed Text v1.5** both work; set the one you
-use in *Settings → RAG*. The server loads the embedding model next to the chat model: with a chat model that already
-fills the GPU, every prompt becomes much slower (see [Gemma 4](#gemma4)).
+use in *Settings → RAG*.
 
 ## How Inferpal reads a model
 
@@ -158,11 +157,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   ([#2233](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/2233)). Both refuse every request with tools.
   To get Gemma's native tool calling back, fix the template in *My Models → Gemma 4 → Prompt Template* (the fixes are
   in those issues); Inferpal's fallback works either way.
-- **Known issues (GPU).** At a 32K context the 31B model leaves little room on the GPU. With the semantic index on,
-  the server also loads the embedding model, and a 5,000-token prompt then took minutes before its first token instead
-  of about 20 seconds — past the 5-minute inactivity timeout, the turn ends with *"Connection timed out"*. Measured: the same tasks
-  stall with the index on and pass with it off. Turn the semantic index off (*Settings → RAG*), or give Gemma a
-  smaller context. Not yet measured over the whole battery for that reason.
+- **Measured.** Not yet over the whole battery.
 - **Sources.** [Prompt format](https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4) ·
   [Function calling](https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4)
 
@@ -258,4 +253,4 @@ Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux 
 | Llama 3.1 8B Instruct | 4/14 | 2026-09-28 |
 | Qwen2.5 Coder 7B | 3/14 | 2026-09-28 |
 | GLM 4.7 Flash (lmstudio-community GGUF) | 1/8 (C# only) | 2026-09-27 |
-| Gemma 4 31B | not measured: with the semantic index on, the server of the battery cannot hold it next to the embedding model (see [Gemma 4](#gemma4)); with the index off, the one task tried passed twice in two | 2026-09-28 |
+| Gemma 4 31B | to be measured — the test server lacked the memory to run it next to the embedding model | — |
