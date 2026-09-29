@@ -504,7 +504,7 @@ internal sealed class AgentOrchestrator
             var turn   = await _client.SendChatAsync(
                 model, synth, EmptyToolRegistry.Instance, onToken, ct, TaskComplexity.Normal, onThinking: onThinking);
             var answer = MarkdownParser.StripThinkTags(turn.TextContent);
-            return MarkdownParser.HasPrintableText(answer) && !LooksLikeToolRefusal(answer)
+            return MarkdownParser.HasPrintableText(answer) && !LooksLikeToolRefusal(answer) && !LooksLikePlanEcho(answer)
                 ? (turn.TextContent, true, turn.CutAtLimit)
                 : (fallback, false, false);
         }
@@ -564,6 +564,30 @@ internal sealed class AgentOrchestrator
         foreach (var m in ToolRefusalMarkers)
             if (lower.Contains(m)) return true;
         return false;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="answer"/> is, in its WHOLE, a new JSON plan (<c>{"goal":…,"steps":[…]}</c>, optionally
+    /// fenced) rather than a step carried out or an answer.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The plan the model wrote first stays in the thread as its own message, and small models imitate it: after a
+    /// tool result they write another plan instead of the next call, and taken as the final answer it ends the run —
+    /// the task half done and the user reading JSON. Narrow by design: prose around the object, a plan without a step
+    /// or a broken object is left alone, since a legitimate answer may show a JSON example.
+    /// </remarks>
+    internal static bool LooksLikePlanEcho(string? answer)
+    {
+        var s = MarkdownParser.StripThinkTags(answer ?? string.Empty).Trim();
+        if (s.StartsWith("```", StringComparison.Ordinal))
+        {
+            var nl = s.IndexOf('\n');
+            s = nl < 0 ? string.Empty : s[(nl + 1)..];
+            if (s.TrimEnd().EndsWith("```", StringComparison.Ordinal)) s = s.TrimEnd()[..^3];
+            s = s.Trim();
+        }
+        return s.StartsWith('{') && s.EndsWith('}') && s.Contains("\"goal\"", StringComparison.Ordinal)
+            && AgentPlan.TryParse(s) is not null;
     }
 
     // ── Public entry point ────────────────────────────────────────────────────
@@ -644,6 +668,9 @@ internal sealed class AgentOrchestrator
         // Counts bounded ACT retries after an empty / think-only stall (see below).
         int actRetries = 0;
         const int MaxActRetries = 2;
+        // A plan written instead of a step (LooksLikePlanEcho) is sent back at most this many times per run.
+        const int MaxPlanEchoNudges = 2;
+        int planEchoNudges = 0;
         // Set by a stall-retry: forces a tool call on the RETRIED act only. ⚠ Deriving it from
         // actRetries > 0 kept every later act forced for the rest of the run once one stall happened,
         // and the model could no longer finish in prose.
@@ -927,6 +954,17 @@ internal sealed class AgentOrchestrator
                     continue;
                 }
 
+                // (1b) The model wrote a new plan instead of the next call — or of the answer. Not an answer: it is sent
+                //      back, whether or not the plan was declared complete (the nudge offers both ways out).
+                if (visible && tools.Definitions.Count > 0 && planEchoNudges < MaxPlanEchoNudges
+                    && LooksLikePlanEcho(turn.TextContent))
+                {
+                    planEchoNudges++;
+                    messages.Add(new ChatMessageDto("user", ModelPrompts.AgentPlanEchoNudge) { IsScaffolding = true });
+                    onStreamReset?.Invoke();
+                    continue;
+                }
+
                 // (2) The model narrated its intentions in prose instead of calling a tool.
                 //     Inject one firm nudge and retry; we never nudge more than once. Never
                 //     nudge after the observe-complete prompt asked for a prose answer: the
@@ -952,17 +990,18 @@ internal sealed class AgentOrchestrator
 
                 // The model stopped calling tools but gave no usable answer even though tools ran this
                 // turn — either no printable text (think-only / empty) OR a degenerate "I don't have
-                // the tools" refusal (tool-oriented models choke on the prose-now turn). Synthesise the
-                // answer from the gathered results rather than ending on an empty bubble / a refusal.
+                // the tools" refusal (tool-oriented models choke on the prose-now turn) OR one more plan
+                // after the nudges ran out. Synthesise the answer from the gathered results rather than
+                // ending on an empty bubble / a refusal / JSON.
                 var finalText      = turn.TextContent;
                 var finalCut       = turn.CutAtLimit;
                 var finalRepeating = turn.StoppedRepeating;
-                var degenerate     = LooksLikeToolRefusal(turn.TextContent);
+                var degenerate     = LooksLikeToolRefusal(turn.TextContent) || LooksLikePlanEcho(turn.TextContent);
                 if ((!visible || degenerate) && executions.Count > 0)
                 {
                     (finalText, finalCut) = await SynthesizeFinalAnswerAsync(
                         model, messages, anchorCount, executions, userTask,
-                        degenerate ? string.Empty : finalText,   // never keep a refusal as the fallback
+                        degenerate ? string.Empty : finalText,   // never keep a refusal or a plan as the fallback
                         onToken, onStreamReset, onStep, ct, onThinking);
                     finalRepeating = false;   // the synthesis replaced the answer that repeated itself
                 }

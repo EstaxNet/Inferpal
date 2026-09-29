@@ -47,6 +47,11 @@ internal static class ModelPrompts
         + "Read the error above, correct the call — copy old_content exactly from the file — and send it again with every edit it contained: when apply_edits is refused, none of its edits is written, the correct ones included. Do not answer as if the change had been made.",
                       iteration, max, toolNames);
 
+    /// <summary>Nudge when an ACT response is a new JSON plan instead of a tool call or an answer (AgentOrchestrator.LooksLikePlanEcho).</summary>
+    public const string AgentPlanEchoNudge =
+        "That is a plan, not a step carried out. Do not write another plan. Call the tool for the next step now "
+        + "- or, if the task is already complete, write your final answer to my request in plain prose.";
+
     /// <summary>One-shot nudge when the first ACT response narrated instead of calling a tool.</summary>
     public const string AgentNudgeToolCall =
         "You described your intentions but did not call any tools. Do NOT produce any text — call the first tool from your plan RIGHT NOW.";
