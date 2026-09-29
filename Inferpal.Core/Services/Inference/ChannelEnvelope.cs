@@ -27,6 +27,14 @@ namespace Inferpal.Services.Inference;
 /// as text and the turn ended there.
 /// </para>
 /// <para>
+/// Cohere's turn (North Mini Code, Command) is framed by markers: reasoning up to <c>&lt;|END_THINKING|&gt;</c> (the
+/// template writes the opening one), the answer in <c>&lt;|START_TEXT|&gt;</c>…<c>&lt;|END_TEXT|&gt;</c> (<c>&lt;|START_RESPONSE|&gt;</c>
+/// on Command A), calls in <c>&lt;|START_ACTION|&gt;</c>…<c>&lt;|END_ACTION|&gt;</c>. A server that does not know the format
+/// streams it all as content. The thinking markers become <c>&lt;think&gt;</c> / <c>&lt;/think&gt;</c> — a lone close is the
+/// template-opened reasoning every reader already takes out, the webview's own copy included — and the text markers
+/// are dropped; the action block is left for <c>InlineToolCallParser</c>, which reads it for every model.
+/// </para>
+/// <para>
 /// Content that does not open that way passes through untouched, as soon as that is certain. A message to another
 /// recipient (a tool name) is kept, never dropped: a JSON body — Harmony's arguments, the name being in the header — is
 /// rewritten as <c>&lt;tool_call&gt;{"name":…,"arguments":…}&lt;/tool_call&gt;</c>, a form <c>InlineToolCallParser</c> reads for
@@ -49,6 +57,16 @@ internal sealed class ChannelEnvelope
     /// <summary>Past this many characters without a complete header, the text is not an envelope.</summary>
     private const int MaxHeaderChars = 200;
 
+    /// <summary>Cohere's markers and what they become (see the remarks).</summary>
+    private static readonly (string Marker, string Becomes)[] CohereMarkers =
+    [
+        ("<|START_THINKING|>", "<think>"), ("<|END_THINKING|>", "</think>"),
+        ("<|START_TEXT|>", ""), ("<|END_TEXT|>", ""), ("<|START_RESPONSE|>", ""), ("<|END_RESPONSE|>", ""),
+    ];
+
+    // The tail of the last chunk that may be the beginning of a Cohere marker, held until the next chunk says.
+    private string _cohereTail = string.Empty;
+
     private enum State { Detect, Passthrough, Body }
 
     private readonly StringBuilder _pending = new();
@@ -63,12 +81,37 @@ internal sealed class ChannelEnvelope
     /// <summary>Consumes <paramref name="delta"/>; returns what it releases to the answer and to the reasoning.</summary>
     public (string Answer, string Thought) Push(string delta)
     {
-        _pending.Append(delta);
+        _pending.Append(MapCohereMarkers(delta, final: false));
         return Drain(final: false);
     }
 
     /// <summary>Releases what was held back, at the end of the stream.</summary>
-    public (string Answer, string Thought) Flush() => Drain(final: true);
+    public (string Answer, string Thought) Flush()
+    {
+        _pending.Append(MapCohereMarkers(string.Empty, final: true));
+        return Drain(final: true);
+    }
+
+    /// <summary>Rewrites Cohere's markers in <paramref name="delta"/>, holding back a marker split across two chunks.</summary>
+    private string MapCohereMarkers(string delta, bool final)
+    {
+        var text = _cohereTail + delta;
+        _cohereTail = string.Empty;
+        if (text.IndexOf("<|", StringComparison.Ordinal) < 0 && !text.EndsWith('<')) return text;
+
+        foreach (var (marker, becomes) in CohereMarkers)
+            text = text.Replace(marker, becomes, StringComparison.Ordinal);
+        if (final) return text;
+
+        var lt = text.LastIndexOf('<');
+        if (lt >= 0 && CohereMarkers.Any(m => m.Marker.Length > text.Length - lt
+                                              && m.Marker.StartsWith(text[lt..], StringComparison.Ordinal)))
+        {
+            _cohereTail = text[lt..];
+            text        = text[..lt];
+        }
+        return text;
+    }
 
     private (string Answer, string Thought) Drain(bool final)
     {

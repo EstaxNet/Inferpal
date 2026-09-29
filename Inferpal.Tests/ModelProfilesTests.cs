@@ -81,6 +81,7 @@ public class ModelProfilesTests
         [ToolCallForm.MistralTokens] = "[TOOL_CALLS]read_file[ARGS]{\"path\": \"src/a.cs\"}",
         [ToolCallForm.GemmaNative]   = "<|tool_call>call:read_file{path:<|\"|>src/a.cs<|\"|>}<tool_call|>",
         [ToolCallForm.Atem]          = "<atem:function_calls>\n<atem:invoke name=\"read_file\">\n<atem:parameter name=\"path\">src/a.cs</atem:parameter>\n</atem:invoke>\n</atem:function_calls>",
+        [ToolCallForm.CohereAction]  = "<|START_ACTION|>[\n    {\"tool_call_id\": \"0\", \"tool_name\": \"read_file\", \"parameters\": {\"path\": \"src/a.cs\"}}\n]<|END_ACTION|>",
     };
 
     [Fact]
@@ -108,6 +109,12 @@ public class ModelProfilesTests
             var envelope = new ChannelEnvelope();
             var answer   = new StringBuilder(envelope.Push(" to=self<|message|>The user wants a sentence.<|eom|><|start|>assistant to=user<|message|>The answer.").Answer);
             return answer.Append(envelope.Flush().Answer).ToString();
+        },
+        [ReasoningForm.CohereMarkers]       = () =>
+        {
+            var envelope = new ChannelEnvelope();
+            var answer   = new StringBuilder(envelope.Push("The user wants a sentence.<|END_THINKING|><|START_TEXT|>The answer.<|END_TEXT|>").Answer);
+            return MarkdownParser.StripThinkTags(answer.Append(envelope.Flush().Answer).ToString());
         },
     };
 

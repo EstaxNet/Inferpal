@@ -21,7 +21,7 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 | [GLM 4.7 Flash](#glm47) | Agent — usable with the **Unsloth GGUF** (12/14) | Reads its `<arg_key>` tool calls when left as text | Older GGUFs (lmstudio-community) loop |
 | [Qwen3 Coder 30B](#qwen3-coder) | Autocomplete (FIM); agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
 | [Qwen3 4B Thinking 2507](#qwen3) | Small machines | Reads its JSON tool calls when left as text | Long reasoning |
-| [Gemma 4 31B](#gemma4) | Agent through a fallback — *to be measured* | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
+| [Gemma 4](#gemma4) (12B, 26B A4B, 31B) | Agent — usable on small GPUs (12B: 12/14, 7 GB) | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
 | [Qwen2.5 Coder 7B](#qwen-coder) | ✅ **Autocomplete (FIM)** — not the agent (3/14) | Uses its fill-in-the-middle tokens | Not trained for tool calling |
 
 Embedding models (semantic search): **Qwen3 Embedding 0.6B** and **Nomic Embed Text v1.5** both work; set the one you
@@ -33,13 +33,15 @@ use in *Settings → RAG*.
 needed. When it does not — a server without a parser for that model, or one that only parses when a call is forced —
 the call arrives as text, and Inferpal reads it: JSON in `<tool_call>…</tool_call>` (Qwen3, Hermes style), Qwen's XML
 (`<function=name><parameter=key>…`), GLM's `<arg_key>`/`<arg_value>` pairs, Mistral's `[TOOL_CALLS]name[ARGS]{…}`,
-Gemma's `<|tool_call>call:name{…}<tool_call|>`, Muse Glimmer's ATEM block, and gpt-oss's Harmony call
-(`<|channel|>commentary to=name<|message|>{…}`). A call Inferpal reads this way runs exactly like a structured one.
+Gemma's `<|tool_call>call:name{…}<tool_call|>`, Muse Glimmer's ATEM block, gpt-oss's Harmony call
+(`<|channel|>commentary to=name<|message|>{…}`), and Cohere's `<|START_ACTION|>[{"tool_name":…}]<|END_ACTION|>`
+(North Mini Code). A call Inferpal reads this way runs exactly like a structured one.
 
 **Reasoning.** Most servers put the model's reasoning in a separate field (`reasoning_content`), and Inferpal shows it
 as reasoning. When a server leaves it in the answer, Inferpal separates it: `<think>…</think>` tags (including the
 lone `</think>` Qwen3 and GLM produce when their template opened the tag), Muse Glimmer's `to=self` messages,
-Gemma's thought channel, and gpt-oss's `analysis` and `final` channels. The answer you read, the history the model reads back, and every artifact made from a reply
+Gemma's thought channel, gpt-oss's `analysis` and `final` channels, and Cohere's `<|END_THINKING|>` and
+`<|START_TEXT|>…<|END_TEXT|>` markers. The answer you read, the history the model reads back, and every artifact made from a reply
 (edits, tests, commit messages) carry the answer only.
 
 **Chat templates that cannot write tools.** A model's chat template sometimes fails as soon as a request carries tool
@@ -140,9 +142,10 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   [Model card](https://huggingface.co/meta-models/Muse-Glimmer-30B)
 
 <a id="gemma4"></a>
-## Gemma 4 31B (QAT)
+## Gemma 4 (QAT)
 
-- **Model.** Google, 31B, quantization-aware Q4_0, reasoning switchable (thought channel), 262,144-token context.
+- **Model.** Google, three sizes — 12B, 26B A4B (mixture of experts, 4B active) and 31B — quantization-aware Q4_0,
+  reasoning switchable (thought channel), up to 262,144-token context.
 - **Tool calls.** `<|tool_call>call:name{key:<|"|>value<|"|>}<tool_call|>` — strings wrapped in `<|"|>`, numbers and
   booleans bare.
 - **Inferpal.** On LM Studio, the bundled chat template fails whenever a request carries tools (see below): Inferpal
@@ -157,7 +160,7 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   ([#2233](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/2233)). Both refuse every request with tools.
   To get Gemma's native tool calling back, fix the template in *My Models → Gemma 4 → Prompt Template* (the fixes are
   in those issues); Inferpal's fallback works either way.
-- **Measured.** Not yet over the whole battery.
+- **Measured.** 12B (7.2 GB): 12 tasks in 14; 26B A4B: 10 in 14. The 31B is not measured yet.
 - **Sources.** [Prompt format](https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4) ·
   [Function calling](https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4)
 
@@ -245,11 +248,24 @@ Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux 
 | Devstral Small 2 | 13/14 | 2026-09-28 |
 | Bonsai 27B | 13/14 | 2026-09-28 |
 | GLM 4.7 Flash (Unsloth GGUF) | 12/14 | 2026-09-28 |
+| Gemma 4 12B | 12/14 | 2026-09-29 |
+| Laguna XS 2.1 | 12/14 | 2026-09-29 |
+| Gemma 4 26B A4B | 10/14 | 2026-09-29 |
+| Nemotron 3.5 Lightning 30B-A3B | 10/14 | 2026-09-29 |
+| North Mini Code 1.0 | 10/14 — with Inferpal reading Cohere's format (2/14 before) | 2026-09-29 |
 | Qwen3 Coder 30B | 9/14 | 2026-09-28 |
 | gpt-oss 20B | 8/14 | 2026-09-28 |
-| Codestral 22B | 7/14 | 2026-09-28 |
+| Ling 3.0 tiny | 7/14 | 2026-09-29 |
+| LFM2.5 8B-A1B | 6/14 | 2026-09-29 |
 | Qwen3 4B Thinking 2507 | 5/8 (C# only) | 2026-09-27 |
-| Llama 3.1 8B Instruct | 4/14 | 2026-09-28 |
-| Qwen2.5 Coder 7B | 3/14 | 2026-09-28 |
 | GLM 4.7 Flash (lmstudio-community GGUF) | 1/8 (C# only) | 2026-09-27 |
 | Gemma 4 31B | to be measured — the test server lacked the memory to run it next to the embedding model | — |
+| Granite 4.2 30B | to be measured — the test server lacked the memory to run it at 32K context next to the embedding model | — |
+
+A model is scored only when the test server runs it properly: a task that ends because the model was too slow to
+answer in time — it did not fit in the server's graphics memory — is a limit of the test server, not of the model, so
+such a model is listed as *to be measured* rather than given a low score.
+
+Each figure is **one run**, and the same model varies from one run to the next — Gemma 4 12B scored 13/14, then 6/14,
+on two identical runs — so a gap of one or two tasks between two models means nothing. Only recent models are measured:
+the 2024 models once on this list (Llama 3.1 8B, Codestral 22B, Qwen2.5 Coder 7B as an agent) are no longer benched.

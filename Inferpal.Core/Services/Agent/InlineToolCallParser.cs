@@ -30,6 +30,7 @@ namespace Inferpal.Services.Agent;
 ///   <item><description>GLM's shape <c>&lt;tool_call&gt;name&lt;arg_key&gt;key&lt;/arg_key&gt;&lt;arg_value&gt;value&lt;/arg_value&gt;&lt;/tool_call&gt;</c>.</description></item>
 ///   <item><description>Gemma 4's shape <c>&lt;|tool_call&gt;call:name{key:&lt;|"|&gt;value&lt;|"|&gt;}&lt;tool_call|&gt;</c>.</description></item>
 ///   <item><description>Mistral's shape <c>[TOOL_CALLS]name[ARGS]{json}</c> (Devstral), and the older <c>[TOOL_CALLS][{…}]</c> list.</description></item>
+///   <item><description>Cohere's shape <c>&lt;|START_ACTION|&gt;[{"tool_call_id":…,"tool_name":…,"parameters":{…}}]&lt;|END_ACTION|&gt;</c> (North Mini Code).</description></item>
 ///   <item><description>A bare object <c>{"name":…,"arguments":{…}}</c> (optionally with an <c>id</c>).</description></item>
 ///   <item><description>An array <c>[{…},{…}]</c> of such objects.</description></item>
 ///   <item><description>The Ollama-nested shape <c>{"function":{"name":…,"arguments":…}}</c>.</description></item>
@@ -78,6 +79,11 @@ internal static class InlineToolCallParser
     // Gemma 4: <|tool_call>call:NAME{…}<tool_call|>, the arguments in Gemma's own syntax (GemmaCallArguments).
     private static readonly Regex GemmaCallRegex =
         new(@"<\|tool_call>\s*call:([^\s{]+?)\s*(\{.*?\})\s*<tool_call\|>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+
+    // Cohere (North Mini Code, Command): <|START_ACTION|>[{"tool_call_id":…,"tool_name":…,"parameters":{…}},…]<|END_ACTION|>,
+    // written after the reasoning's <|END_THINKING|>. LM Studio leaves it as text for North Mini Code: unread, no call runs.
+    private static readonly Regex CohereActionRegex =
+        new(@"<\|START_ACTION\|>\s*(\[.*?\]|\{.*?\})\s*<\|END_ACTION\|>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
 
     // Mistral (Devstral, tokenizer v11 and later): [TOOL_CALLS]name[ARGS]{json}, repeated for parallel calls.
     private const string MistralCallsToken = "[TOOL_CALLS]";
@@ -191,6 +197,19 @@ internal static class InlineToolCallParser
         if (TryAddMistralCalls(content, calls, ref cleaned))
             return (calls, cleaned.Trim());
 
+        // (1g) Cohere's shape: <|START_ACTION|>[{"tool_name":…,"parameters":{…}}]<|END_ACTION|>
+        var cohereMatched = false;
+        foreach (Match m in CohereActionRegex.Matches(content))
+        {
+            if (TryAddFromJson(m.Groups[1].Value, calls))
+            {
+                cleaned       = cleaned.Replace(m.Value, string.Empty);
+                cohereMatched = true;
+            }
+        }
+        if (cohereMatched && calls.Count > 0)
+            return (calls, cleaned.Trim());
+
         // (2) The whole content is a JSON payload (optionally fenced in ```json … ```).
         var payload = StripCodeFence(content.Trim());
         if ((payload.StartsWith('{') || payload.StartsWith('['))
@@ -234,7 +253,8 @@ internal static class InlineToolCallParser
         if (obj.TryGetProperty("function", out var fn) && fn.ValueKind == JsonValueKind.Object)
             obj = fn;
 
-        if (!obj.TryGetProperty("name", out var nameEl)
+        // Cohere names the tool "tool_name".
+        if ((!obj.TryGetProperty("name", out var nameEl) && !obj.TryGetProperty("tool_name", out nameEl))
             || nameEl.ValueKind != JsonValueKind.String)
             return false;
 

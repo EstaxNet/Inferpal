@@ -15,6 +15,8 @@ internal enum ToolCallForm
     GemmaNative,
     /// <summary><c>&lt;atem:function_calls&gt;…</c> (Muse Glimmer).</summary>
     Atem,
+    /// <summary><c>&lt;|START_ACTION|&gt;[{"tool_name":…,"parameters":…}]&lt;|END_ACTION|&gt;</c> (Cohere: North Mini Code).</summary>
+    CohereAction,
 }
 
 /// <summary>How a model family writes its reasoning when the server leaves it in the answer.</summary>
@@ -26,6 +28,8 @@ internal enum ReasoningForm
     TemplateOpenedThink,
     /// <summary>Addressed messages or a thought channel (Muse Glimmer's <c>to=self</c>, Gemma 4's <c>&lt;|channel&gt;thought</c>).</summary>
     ChannelEnvelope,
+    /// <summary>Reasoning up to <c>&lt;|END_THINKING|&gt;</c>, the answer in <c>&lt;|START_TEXT|&gt;</c>…<c>&lt;|END_TEXT|&gt;</c> (Cohere).</summary>
+    CohereMarkers,
 }
 
 /// <summary>The fill-in-the-middle tokens a family was trained with.</summary>
@@ -123,8 +127,9 @@ internal static class ModelProfiles
         new("muse-glimmer",   "Muse Glimmer",             ["muse-glimmer"],
             AgentFit.Recommended,    3, ToolCallForm.Atem,          ReasoningForm.ChannelEnvelope,     FimForm.None,
             new(Temperature: 1.0, TopP: 0.95, TopK: 64)),
+        // Measured: 12B 12 tasks in 14 (7 GB), 26B A4B 10 in 14 — through the prompted-tools fallback on LM Studio.
         new("gemma4",         "Gemma 4",                  ["gemma-4", "gemma4"],
-            AgentFit.Unmeasured,     3, ToolCallForm.GemmaNative,   ReasoningForm.ChannelEnvelope,     FimForm.None,
+            AgentFit.Usable,         1, ToolCallForm.GemmaNative,   ReasoningForm.ChannelEnvelope,     FimForm.None,
             new(Temperature: 1.0, TopP: 0.95, TopK: 64)),
         new("qwen3",          "Qwen3 4B Thinking 2507",   ["qwen3"],
             AgentFit.Usable,         3, ToolCallForm.JsonTag,       ReasoningForm.TemplateOpenedThink, FimForm.None,
