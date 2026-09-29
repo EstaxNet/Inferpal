@@ -14,18 +14,34 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 
 | Model | Use it for | What Inferpal does for it | Server notes |
 |---|---|---|---|
-| [Qwen3.8 27B](#qwen35) | ✅ **Agent** — recommended (14/14) | Reads its XML tool calls when the server leaves them as text | Reasoning separated by LM Studio |
+| [Qwen3.8 27B](#qwen35) | ✅ **Agent** — recommended (14/14); also autocompletes (27/36, 0.5 s) | Reads its XML tool calls when the server leaves them as text | Reasoning separated by LM Studio |
 | [Devstral Small 2](#devstral) | ✅ **Agent** — recommended, fastest (13/14) | Reads its `[TOOL_CALLS]` calls when left as text | Temperature **0.15** |
 | [Muse Glimmer](#muse-glimmer) | ✅ **Agent** — recommended (14/14) | Splits its addressed messages (reasoning / answer) and reads its ATEM tool calls | Needs a recent llama.cpp runtime |
 | [Bonsai 27B](#bonsai) (1-bit Qwen) | ✅ **Agent** on small GPUs (13/14, slow) | Same as Qwen3.8 | 4.7 GB for 27B |
 | [GLM 4.7 Flash](#glm47) | Agent — usable with the **Unsloth GGUF** (12/14) | Reads its `<arg_key>` tool calls when left as text | Older GGUFs (lmstudio-community) loop |
-| [Qwen3 Coder 30B](#qwen3-coder) | Autocomplete (FIM); agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
+| [Qwen3 Coder 30B](#qwen3-coder) | Agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
 | [Qwen3 4B Thinking 2507](#qwen3) | Small machines | Reads its JSON tool calls when left as text | Long reasoning |
 | [Gemma 4](#gemma4) (12B, 26B A4B, 31B) | Agent — usable on small GPUs (12B: 12/14, 7 GB) | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
-| [Qwen2.5 Coder 7B](#qwen-coder) | ✅ **Autocomplete (FIM)** — not the agent (3/14) | Uses its fill-in-the-middle tokens | Not trained for tool calling |
+| [Mellum2 12B-A2.5B Base](#mellum) (JetBrains) | ✅ **Autocomplete (FIM)** — recommended (29/36, 0.1 s) | Uses its fill-in-the-middle tokens | A completion model: never the chat or the agent |
+| [Qwen2.5 Coder 7B](#qwen-coder) | Superseded for autocomplete by Mellum2; not the agent (3/14) | Uses its fill-in-the-middle tokens | A 2024 model, no longer benched |
 
 Embedding models (semantic search): **Qwen3 Embedding 0.6B** and **Nomic Embed Text v1.5** both work; set the one you
-use in *Settings → RAG*.
+use in *Settings → RAG*. They are not compared yet.
+
+<a id="by-graphics-card"></a>
+## By graphics card
+
+What fits in your card's memory **together** — the agent at a 32K context, the autocomplete model, the embedding model
+for the semantic index — measured on Inferpal's test server (24 GB, LM Studio) with the free memory reduced to about
+11 and 15 GB for the smaller cards (1 GB is left for your display). A setup that did not keep its speed with the memory
+reduced does not fit. The scores are the models' own; the speed on your card will differ. Nothing is recommended above
+24 GB: it could not be verified.
+
+| Card | Agent | Autocomplete | Measured beside it |
+|---|---|---|---|
+| **12 GB** | [Gemma 4 12B](#gemma4) (12/14, fast) or [Bonsai 27B](#bonsai) (13/14, about 3× slower) | none measured fits beside the agent | Qwen3 Embedding 0.6B |
+| **16 GB** | the same | [Mellum2](#mellum) fits only beside a weak agent (Ling 3.0, 7/14): choose between the two | Qwen3 Embedding 0.6B |
+| **24 GB** | [Qwen3.8 27B](#qwen35) (14/14), which also autocompletes (27/36, 0.5 s) — or [Gemma 4 12B](#gemma4) (12/14) with [Mellum2](#mellum) (29/36, 0.1 s) | see the agent column | Qwen3 Embedding 0.6B |
 
 ## How Inferpal reads a model
 
@@ -222,10 +238,21 @@ Ollama applies the model's template itself). Any other model completes from the 
 still works, without seeing what follows.
 
 Having the tokens in its vocabulary does not make a model good at the task: every Qwen model has them, and measured on
-what reaches the editor (12 gaps to fill, 3 attempts each), Qwen3.8 fills 27 in 36 with them and 12 without, Qwen2.5
-Coder 31 against 13 — but Qwen3 4B Thinking 3 against 15, and Bonsai, its 1-bit sibling, 0 against 8. Each family gets
-the form measured best. Qwen2.5 Coder, the best at autocomplete, is not an agent model: it is not trained for tool
-calling (3 tasks in 14).
+what reaches the editor (12 gaps to fill, 3 attempts each), Qwen3.8 fills 27 in 36 with them and 12 without — but
+Qwen3 4B Thinking 3 against 15, and Bonsai, its 1-bit sibling, 0 against 8. Each family gets the form measured best.
+
+Recent models trained for it, measured the same way through Inferpal (right answers in 36, and the time until the
+completion ends, on the test server — a smaller card is slower):
+
+| Model | Right | Time | |
+|---|---|---|---|
+| [Mellum2 12B-A2.5B Base](#mellum) (JetBrains) | 29 | 0.1 s | ✅ recommended |
+| [Qwen3.8 27B](#qwen35) | 27 | 0.5 s | ✅ when it is already your agent |
+| Granite 4.2 3B / 8B | 16–20 / 16 | 1.4 s / 2.5 s | writes the right code, then keeps going |
+| Qwen3.5 2B / 0.8B Base | 15 / 12 | 0.1 s | |
+| Ministral 3 8B / 14B Base | 11–12 | 3–4 s | writes the right code, then keeps going |
+
+Which one fits beside your agent depends on your card: see [By graphics card](#by-graphics-card).
 
 | Family | Tokens |
 |---|---|
@@ -233,6 +260,7 @@ calling (3 tasks in 14).
 | <a id="codegemma"></a>CodeGemma | the same `<\|fim_…\|>` tokens |
 | <a id="deepseek-coder"></a>DeepSeek Coder | `<｜fim▁begin｜>…<｜fim▁hole｜>…<｜fim▁end｜>` |
 | <a id="starcoder"></a>StarCoder, StarCoder2 | `<fim_prefix>…<fim_suffix>…<fim_middle>` |
+| <a id="mellum"></a>Mellum (JetBrains) | StarCoder's `<fim_prefix>…<fim_suffix>…<fim_middle>` |
 | <a id="codellama"></a>Code Llama | `<PRE> … <SUF>… <MID>` |
 
 ## Measured results

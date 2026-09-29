@@ -110,6 +110,10 @@ internal static class ModelProfiles
             AgentFit.NotRecommended, 0, null,                       ReasoningForm.None,                FimForm.StarCoder),
         new("codellama",      "Code Llama",               ["codellama", "code-llama"],
             AgentFit.NotRecommended, 0, null,                       ReasoningForm.None,                FimForm.CodeLlama),
+        // JetBrains' completion model: StarCoder's tokens, 30 right in 36 with them and 21 from the prefix alone (and
+        // 91 ms against 1.4 s: without its tokens it does not stop). A base model: never the chat or the agent.
+        new("mellum",         "Mellum",                   ["mellum"],
+            AgentFit.NotRecommended, 0, null,                       ReasoningForm.None,                FimForm.StarCoder),
 
         // ── Agent models ─────────────────────────────────────────────────────
         // Fill in the middle: measured on what reaches the editor, 27 right completions in 36 with the tokens, 12 from

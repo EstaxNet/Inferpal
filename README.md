@@ -15,7 +15,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-4152%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-4153%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026-5C2D91" alt="Visual Studio 2026">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/visual-studio-marketplace/v/EstaxNet.inferpal-vs?label=VS%20Marketplace" alt="Visual Studio Marketplace"></a>
@@ -86,8 +86,9 @@ two editors.
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 
 > Tool calling is required: the models measured best as the agent are `qwen3.8` and `devstral-small-2` — every
-> model's results in **[Models](docs/models.md)**. Inline completions need a FIM model (`qwen2.5-coder:7b`); semantic
-> search works best with a dedicated embedding model.
+> model's results in **[Models](docs/models.md)**, with the setup that fits a 12, 16 or 24 GB card
+> ([By graphics card](docs/models.md#by-graphics-card)). Inline completions work best with a model trained for them
+> (Mellum2 or Qwen3.8, measured); semantic search works best with a dedicated embedding model.
 
 ---
 

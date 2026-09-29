@@ -44,6 +44,7 @@ public class ModelProfilesTests
     [InlineData("starcoder2:7b",                       "starcoder")]
     [InlineData("CodeLlama:13b-instruct",              "codellama")]
     [InlineData("codegemma:7b",                        "codegemma")]
+    [InlineData("mellum2-12b-a2.5b-base",              "mellum")]
     public void AServedModelId_IsRecognisedAsItsFamily(string modelId, string anchor) =>
         Assert.Equal(anchor, ModelProfiles.For(modelId)?.Anchor);
 
@@ -142,7 +143,7 @@ public class ModelProfilesTests
     }
 
     /// <summary>Anchors of the page that name no family.</summary>
-    private static readonly string[] SectionAnchors = ["fim-models"];
+    private static readonly string[] SectionAnchors = ["fim-models", "by-graphics-card"];
 
     [Fact]
     public void EveryFamily_IsDocumented_AndTheDocumentationNamesNoOtherFamily()
