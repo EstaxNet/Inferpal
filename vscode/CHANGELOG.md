@@ -3,6 +3,21 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.25
+
+Which models to run on your graphics card, two more models that work, and small models that no
+longer stop a task halfway.
+
+- **A recommended setup for 12, 16 and 24 GB cards**: the agent, autocomplete and semantic-search
+  models that fit together in your card's memory, measured —
+  [Models → By graphics card](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card).
+- **Mellum2 (JetBrains) autocompletes with its own tokens** (29 right in 36, in 0.1 s), and replaces
+  Qwen2.5 Coder as the recommended autocomplete model.
+- **North Mini Code (Cohere) works as the assistant**: its tool calls run instead of showing as
+  text, and its reasoning stays out of the answer.
+- **Small models no longer answer with their own plan** instead of carrying out the next step.
+- **A turn the agent had to stop no longer says "✓ Done"** above the notice that says why.
+
 ## 1.6.24
 
 Twenty-three changes, most of them found by running Inferpal's own test battery on eleven local
