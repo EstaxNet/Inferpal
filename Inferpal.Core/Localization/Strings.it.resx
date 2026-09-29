@@ -218,6 +218,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="MsgLoopDetected" xml:space="preserve"><value>(ciclo rilevato — chiamate strumento identiche ripetute, interruzione)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(circuit breaker aperto — tentativi sospesi per 5 min dopo errori ripetuti)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Fatto — {0}</value></data>
+  <data name="MsgAgentToolsCalled" xml:space="preserve"><value>Strumenti chiamati — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  sessione: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama non configurato. Apri le impostazioni per impostarlo.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Il modello **{0}** non ha prodotto alcun testo. Il server ({1}) ha accettato la richiesta e ha chiuso il flusso senza un solo token e senza segnalare errori: non è quindi un problema di connessione. `/diagnostics` riporta cosa conteneva il flusso.</value></data>

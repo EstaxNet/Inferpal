@@ -135,6 +135,22 @@ internal static class ChatTurnPolicy
         return FinalAnswerKind.EmptyFallback;
     }
 
+    /// <summary>
+    /// What stands in for the answer when the model wrote none but tools ran (<see cref="FinalAnswerKind.ToolSummary"/>):
+    /// "✓ Done — &lt;tools&gt;" only for a turn that carried its task to its end, "Tools called — &lt;tools&gt;" when
+    /// <paramref name="endNotice"/> follows it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The basic loop answers EMPTY when it stops a model that repeats its tool calls after work was done, so the
+    /// summary is exactly what a stopped turn shows — and the end notice under it says "the agent was stopped". A check
+    /// mark above that sentence is the product contradicting itself, and the check mark is what the eye reads first.
+    /// Every notice counts, not only the loop: edits that did not land or a failing last check are not "done" either.
+    /// </remarks>
+    public static string ToolSummaryAnswer(IEnumerable<ToolExecution> executions, string? endNotice) =>
+        string.IsNullOrEmpty(endNotice)
+            ? Strings.MsgAgentDone(BuildToolSummary(executions))
+            : Strings.MsgAgentToolsCalled(BuildToolSummary(executions));
+
     /// <summary>"read_file, write_file ×3" — tool names grouped with a ×count when repeated.</summary>
     public static string BuildToolSummary(IEnumerable<ToolExecution> executions) =>
         string.Join(", ", executions

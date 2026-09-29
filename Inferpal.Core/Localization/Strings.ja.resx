@@ -218,6 +218,7 @@
   <data name="MsgLoopDetected" xml:space="preserve"><value>（ループ検出 — 同一のツール呼び出しが繰り返されたため停止します）</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>（サーキットブレーカー開放 — 繰り返し失敗のため 5 分間再試行を停止します）</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 完了 — {0}</value></data>
+  <data name="MsgAgentToolsCalled" xml:space="preserve"><value>呼び出したツール — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} トークン  ·  セッション：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama の URL が設定されていません。設定を開いて設定してください。</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>モデル **{0}** はテキストを生成しませんでした。サーバー ({1}) はリクエストを受け付け、トークンを 1 つも返さず、エラーも報告せずにストリームを閉じました — 接続の問題ではありません。ストリームの内容は `/diagnostics` にあります。</value></data>

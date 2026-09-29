@@ -322,7 +322,7 @@ internal sealed partial class HostServer : IDisposable
                     lastCheckFailed: ChatTurnPolicy.LastCheckFailed(result.Executions, s.Tools.History.CurrentRunFileCount)));
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
-                    FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, model, s),
+                    FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, endNotice, model, s),
                     false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice, ContextWindow: ctxDecision.Window);
             }
 
@@ -359,14 +359,15 @@ internal sealed partial class HostServer : IDisposable
                     durable.Add(new ChatMessageDto("assistant", answer));
                 s.History          = durable;
                 s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
+                var runEndNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut,
+                    ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount),
+                    answerRepeating: run.AnswerRepeating,
+                    lastCheckFailed: ChatTurnPolicy.LastCheckFailed(run.Executions, s.Tools.History.CurrentRunFileCount)));
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
-                    FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, model, s),
+                    FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, runEndNotice, model, s),
                     false, run.TokensUsed, run.PromptTokens,
-                    EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut,
-                        ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount),
-                        answerRepeating: run.AnswerRepeating,
-                        lastCheckFailed: ChatTurnPolicy.LastCheckFailed(run.Executions, s.Tools.History.CurrentRunFileCount))),
+                    EndNotice: runEndNotice,
                     ContextWindow: ctxDecision.Window);
             }
 
@@ -380,7 +381,7 @@ internal sealed partial class HostServer : IDisposable
             s.LastPromptTokens = turn.PromptTokens;
             await CountTurnAsync(s, cts.Token);
             return new ChatSendResult(
-                FinalAnswer(turn.TextContent, streamed.ToString(), [], model, s),
+                FinalAnswer(turn.TextContent, streamed.ToString(), [], endNotice: null, model, s),
                 false, turn.TokensUsed, turn.PromptTokens,
                 EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit,
                                                                  answerRepeating: turn.StoppedRepeating)),
@@ -1379,7 +1380,7 @@ internal sealed partial class HostServer : IDisposable
     /// not a second implementation.
     /// </remarks>
     private static string FinalAnswer(
-        string? finalResponse, string streamed, IReadOnlyList<ToolExecution> executions,
+        string? finalResponse, string streamed, IReadOnlyList<ToolExecution> executions, string? endNotice,
         string model, HostSession s) =>
         ChatTurnPolicy.DecideFinalAnswer(
             // Visual Studio's rule: a stream that shows nothing (reasoning, separators) is no bubble.
@@ -1390,7 +1391,7 @@ internal sealed partial class HostServer : IDisposable
             // The stream already said everything: the adapter renders `text || streamText`.
             FinalAnswerKind.StreamedAnswer => finalResponse ?? string.Empty,
             FinalAnswerKind.FinalText      => finalResponse ?? string.Empty,
-            FinalAnswerKind.ToolSummary    => Strings.MsgAgentDone(ChatTurnPolicy.BuildToolSummary(executions)),
+            FinalAnswerKind.ToolSummary    => ChatTurnPolicy.ToolSummaryAnswer(executions, endNotice),
             _                              => Strings.MsgEmptyResponseFrom(model, s.Client.ServerAddress),
         };
 }

@@ -218,6 +218,7 @@
   <data name="MsgLoopDetected" xml:space="preserve"><value>(루프 감지 — 동일한 도구 호출이 반복되어 중지합니다)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(회로 차단기 열림 — 반복 실패 후 5분간 재시도 일시 중지)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 완료 — {0}</value></data>
+  <data name="MsgAgentToolsCalled" xml:space="preserve"><value>호출한 도구 — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 토큰  ·  세션: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL이 구성되지 않았습니다. 설정을 열어 설정하세요.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>모델 **{0}** 이(가) 텍스트를 생성하지 않았습니다. 서버({1})는 요청을 수락했고, 토큰을 하나도 보내지 않은 채 오류도 알리지 않고 스트림을 닫았습니다 — 연결 문제가 아닙니다. 스트림의 내용은 `/diagnostics`에 있습니다.</value></data>

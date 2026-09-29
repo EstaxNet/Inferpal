@@ -427,8 +427,8 @@ internal sealed class AgentOrchestrator
     /// run (web_search, fetch_url, search_codebase…), the gathered results are sitting unused: the
     /// model looped (re-issued an identical call → loop detection), stalled think-only on its final
     /// turn, or hit the iteration cap before writing its reply. One last no-tools call turns those
-    /// results into the actual answer the user asked for, instead of the bare "✓ Done — &lt;tools&gt;"
-    /// tool summary the UI falls back to for an empty response. Streams via <paramref name="onToken"/>
+    /// results into the actual answer the user asked for, instead of the bare tool summary the UI
+    /// falls back to for an empty response (<see cref="ChatTurnPolicy.ToolSummaryAnswer"/>). Streams via <paramref name="onToken"/>
     /// so the answer appears live in the bubble. Returns <paramref name="fallback"/> unchanged on
     /// failure / empty / refusal output so the existing fallback behaviour still applies. Re-throws on
     /// user cancellation.

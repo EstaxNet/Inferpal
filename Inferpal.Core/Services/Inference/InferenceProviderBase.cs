@@ -490,8 +490,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             {
                 // Detect infinite loops: a repeated tool-call batch → abort (AgentLoopPolicy
                 // tolerates more repeats for read-only batches). When work was already done,
-                // return an empty response so the UI shows its "✓ Done — <tools>" summary
-                // rather than an alarming "loop detected" message.
+                // return an empty response so the UI shows the summary of the tools that ran,
+                // with the end notice under it (ChatTurnPolicy.ToolSummaryAnswer: no "✓ Done"
+                // above "the agent was stopped"), rather than an alarming "loop detected" message.
                 if (AgentLoopPolicy.IsLoop(sigCounts, calls))
                 {
                     // The repeat is never executed: drop the assistant turn that asked for it, or

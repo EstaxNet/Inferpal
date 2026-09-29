@@ -218,6 +218,7 @@
   <data name="MsgLoopDetected" xml:space="preserve"><value>(обнаружена петля — одинаковые вызовы инструментов повторяются, остановка)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(автоматический выключатель открыт — повторные попытки приостановлены на 5 мин)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Готово — {0}</value></data>
+  <data name="MsgAgentToolsCalled" xml:space="preserve"><value>Вызванные инструменты — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} тк  ·  сессия: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama не настроен. Откройте настройки для его указания.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Модель **{0}** не выдала ни одного фрагмента текста. Сервер ({1}) принял запрос и закрыл поток без единого токена и без сообщения об ошибке — значит, дело не в соединении. Подробности о содержимом потока — в `/diagnostics`.</value></data>

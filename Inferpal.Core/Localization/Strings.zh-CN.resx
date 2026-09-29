@@ -218,6 +218,7 @@
   <data name="MsgLoopDetected" xml:space="preserve"><value>（检测到循环 — 重复相同的工具调用，已停止）</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>（熔断器已开启 — 多次连接失败后暂停重试 5 分钟）</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 完成 — {0}</value></data>
+  <data name="MsgAgentToolsCalled" xml:space="preserve"><value>已调用的工具 — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 令牌 · 会话：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>未配置 Ollama URL，请打开设置进行配置。</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>模型 **{0}** 没有生成任何文本。服务器（{1}）接受了请求，未返回任何 token，也没有报告错误就关闭了数据流 —— 因此这不是连接问题。数据流的详情见 `/diagnostics`。</value></data>

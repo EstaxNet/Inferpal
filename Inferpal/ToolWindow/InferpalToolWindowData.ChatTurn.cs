@@ -600,7 +600,7 @@ internal partial class InferpalToolWindowData
 
                     case Services.Agent.FinalAnswerKind.ToolSummary:
                         var summaryMsg = ChatMessageItem.AssistantMsg(
-                            Strings.MsgAgentDone(Services.Agent.ChatTurnPolicy.BuildToolSummary(agentExecutions)));
+                            Services.Agent.ChatTurnPolicy.ToolSummaryAnswer(agentExecutions, agentEndNotice));
                         ApplyItemTheme(summaryMsg);
                         Messages.Insert(Messages.Count - 2, summaryMsg);
                         lastAssistant = summaryMsg;

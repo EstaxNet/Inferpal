@@ -218,6 +218,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="MsgLoopDetected" xml:space="preserve"><value>(boucle détectée — appels d'outils identiques répétés, arrêt)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(disjoncteur ouvert — tentatives suspendues 5 min après des échecs répétés)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Terminé — {0}</value></data>
+  <data name="MsgAgentToolsCalled" xml:space="preserve"><value>Outils appelés — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  session : {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama non configurée. Ouvrez les paramètres pour la renseigner.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Le modèle **{0}** n'a produit aucun texte. Le serveur ({1}) a accepté la requête et fermé le flux sans un seul jeton, sans signaler d'erreur — ce n'est donc pas un problème de connexion. `/diagnostics` porte le détail de ce que le flux contenait.</value></data>

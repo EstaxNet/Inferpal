@@ -196,8 +196,9 @@ public class ContextManagerTests
         {
             // The SAME decision, not a second implementation.
             Assert.Contains("ChatTurnPolicy.DecideFinalAnswer", code, StringComparison.Ordinal);
-            // The two fallbacks that make the difference between "nothing" and "here is what".
-            Assert.Contains("MsgAgentDone",          code, StringComparison.Ordinal);
+            // The two fallbacks that make the difference between "nothing" and "here is what". The tool
+            // summary is the policy's, which knows whether the turn ended cleanly (StoppedTurnSummaryTests).
+            Assert.Contains("ChatTurnPolicy.ToolSummaryAnswer", code, StringComparison.Ordinal);
             Assert.Contains("MsgEmptyResponseFrom",  code, StringComparison.Ordinal);
         }
     }

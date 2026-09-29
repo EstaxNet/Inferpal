@@ -418,6 +418,9 @@ internal static class Strings
     public static string MsgAgentDone(string toolSummary) =>
         string.Format(Get(nameof(MsgAgentDone)), toolSummary);
 
+    public static string MsgAgentToolsCalled(string toolSummary) =>
+        string.Format(Get(nameof(MsgAgentToolsCalled)), toolSummary);
+
     public static string MsgNoUrl => Get(nameof(MsgNoUrl));
 
     /// <summary>

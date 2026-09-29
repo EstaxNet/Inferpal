@@ -218,6 +218,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="MsgLoopDetected" xml:space="preserve"><value>(Schleife erkannt — identische Werkzeugaufrufe wiederholt, Abbruch)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(Sicherungsschalter offen — Versuche nach wiederholten Fehlern für 5 Min. pausiert)</value></data>
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Fertig — {0}</value></data>
+  <data name="MsgAgentToolsCalled" xml:space="preserve"><value>Aufgerufene Tools — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} Tok  ·  Sitzung: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama-URL nicht konfiguriert. Öffnen Sie die Einstellungen, um sie festzulegen.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Das Modell **{0}** hat keinen Text erzeugt. Der Server ({1}) hat die Anfrage angenommen und den Stream ohne ein einziges Token und ohne Fehlermeldung beendet — es ist also kein Verbindungsproblem. Details zum Stream stehen in `/diagnostics`.</value></data>
