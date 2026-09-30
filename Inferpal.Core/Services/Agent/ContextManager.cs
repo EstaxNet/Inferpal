@@ -173,6 +173,8 @@ internal static class ContextManager
             var window  = await EffectiveWindowAsync(config, client, model, cts.Token).ConfigureAwait(false);
             var request = HistoryCompaction.BuildSummarizeRequest(
                 HistoryCompaction.SliceToCompact(history, plan), HistoryCompaction.SummaryInputBudgetChars(window));
+            // The fuse now that the size to READ is known (restarts the countdown).
+            cts.CancelAfter(HistoryCompaction.SummaryTimeout(config.CompactionTimeoutSeconds, request));
 
             // ⚠ SendChatAsync, never RunAgentAsync: the agent loop reports a network failure as its
             // FinalResponse, and the error text would become the "summary" that replaces the turns.

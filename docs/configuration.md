@@ -82,7 +82,7 @@ Every persisted setting, its type, and default value.
 | `useRecommendedSampling` | bool | `true` | Send the sampling settings the model's vendor recommends, for the families in [Models](models.md) (`false` = the server's own settings) |
 | `contextWindowKeepTurns` | int | `4` | Recent turns to keep when trimming |
 | `compactionEnabled` | bool | `true` | Summarize old messages (LLM) instead of hard truncation |
-| `compactionTimeoutSeconds` | int | `45` | Compaction safety timeout |
+| `compactionTimeoutSeconds` | int | `45` | Compaction safety fuse: seconds allowed for writing the summary, on top of the time needed to read what it summarizes (about 1 s per 100 tokens); past it, the older turns are dropped instead |
 | `kvCacheAnchorMessages` | int | `3` | First N messages kept verbatim so the backend can reuse its KV cache |
 | `oodaTurnThreshold` | int | `10` | Turns before an OODA recap (0 = off) |
 | `customSystemPrompt` | string | `""` | Appended to the base system prompt |

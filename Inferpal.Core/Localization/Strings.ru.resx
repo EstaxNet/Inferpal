@@ -134,13 +134,13 @@
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Умная компактизация контекста (сжатие вместо усечения)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Если включено, старые сообщения суммируются моделью перед удалением, сохраняя ключевую информацию. Предохранитель безопасности отменяет вызов суммирования, если он занимает слишком много времени, и возвращается к жёсткому усечению.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Тайм-аут компактизации (предохранитель безопасности):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Максимальное количество секунд ожидания вызова компактизации. Если лимит превышен, предохранитель безопасности срабатывает и вместо него используется жёсткое усечение. По умолчанию: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Секунды, отводимые на резюме, сверх времени на чтение того, что резюмируется (около 1 секунды на 100 токенов). При превышении срабатывает предохранитель безопасности и вместо резюме используется жёсткое усечение. По умолчанию: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>Якорные сообщения KV-кэша:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Количество начальных сообщений (после системного промпта), сохраняемых в неизменном виде в начале каждого сжатого контекста. Ollama может повторно использовать свой KV-кэш для этих токенов, экономя время перерасчёта. 0 = отключено. По умолчанию: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} якорное(ых) сообщение(й) KV сохранено)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Компактизация контекста…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Контекст сжат: суммировано {0} сообщений — сохранены последние {1} ход(а/ов).</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Компактизация контекста истекла — выполнен откат к жёсткому усечению.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Компактизация контекста истекла — выполнен откат к жёсткому усечению. Если модели нужно больше времени, увеличьте «Тайм-аут компактизации» в настройках.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Сжатие контекста не удалось — выполнено принудительное усечение. Причина: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Модель вернула пустую сводку — выполнено принудительное усечение.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Сводка остановилась на ограничении длины модели: часть предыдущего разговора в ней отсутствует.</value></data>

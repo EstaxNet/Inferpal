@@ -134,13 +134,13 @@
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>スマートコンテキスト圧縮（切り捨てではなく要約）</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>有効にすると、古いメッセージは削除前にモデルによって要約され、重要な情報が保持されます。要約の呼び出しが長すぎる場合は安全ヒューズが作動し、ハードトランケーションにフォールバックします。</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>圧縮タイムアウト（安全ヒューズ）：</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>圧縮モデル呼び出しの最大待機秒数。この制限を超えると安全ヒューズが作動し、代わりにハードトランケーションが使用されます。デフォルト：45。</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>要約に与える秒数。要約対象を読み込む時間（100 トークンあたり約 1 秒）に加算されます。超えると安全ヒューズが作動し、代わりにハードトランケーションが使用されます。デフォルト：45。</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KVキャッシュアンカーメッセージ：</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>圧縮後のコンテキストの先頭に変更せず保持する冒頭メッセージ数（システムプロンプト除く）。OllamaはこれらのトークンのKVキャッシュを再利用でき、再計算時間を節約します。0 = 無効。デフォルト：3。</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} 件のKVアンカーメッセージを保持)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>コンテキストを圧縮中…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 コンテキストを圧縮しました：{0} 件のメッセージを要約 — 最後の {1} ターンを保持。</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ コンテキスト圧縮がタイムアウトしました — ハードトランケーションにフォールバック。</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ コンテキスト圧縮がタイムアウトしました — ハードトランケーションにフォールバック。 モデルにもっと時間が必要な場合は、設定の「圧縮タイムアウト」を増やしてください。</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ コンテキストの圧縮に失敗しました — 強制切り捨てにフォールバックしました。原因：{0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ モデルが空の要約を返しました — 強制切り捨てにフォールバックしました。</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 要約がモデルの長さ制限で止まりました。以前の会話の一部が含まれていません。</value></data>

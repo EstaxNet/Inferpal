@@ -137,13 +137,13 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Compactación de contexto inteligente (resumir en lugar de truncar)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Si está activado, los mensajes antiguos son resumidos por el modelo antes de ser eliminados, conservando información clave. Un fusible de seguridad cancela la llamada de resumen si tarda demasiado y vuelve al truncado forzado.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Tiempo límite de compactación (fusible de seguridad):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Segundos máximos para la llamada de compactación. Si supera este límite, el fusible de seguridad se activa y se usa el truncado forzado. Por defecto: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Segundos concedidos al resumen, además del tiempo de lectura de lo que resume (alrededor de 1 segundo por cada 100 tokens). Si se superan, el fusible de seguridad se activa y se usa el truncado forzado. Por defecto: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>Mensajes ancla KV-cache:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Número de mensajes iniciales (después del prompt del sistema) conservados sin cambios al inicio de cada contexto compactado. Ollama puede reutilizar su caché KV para estos tokens, ahorrando tiempo de recálculo. 0 = desactivado. Por defecto: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} mensaje(s) ancla KV conservado(s))</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Compactando contexto…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contexto compactado: {0} mensaje(s) resumido(s) — conservando los últimos {1} turno(s).</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ La compactación de contexto superó el tiempo límite — se usa el truncado forzado.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ La compactación de contexto superó el tiempo límite — se usa el truncado forzado. Si su modelo necesita más tiempo, aumente el «Tiempo límite de compactación» en los ajustes.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ La compactación del contexto falló — se recurrió al truncamiento forzado. Causa: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ El modelo devolvió un resumen vacío — se recurrió al truncamiento forzado.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ El resumen se detuvo en el límite de longitud del modelo: falta una parte de la conversación anterior.</value></data>

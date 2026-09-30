@@ -134,13 +134,13 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Compattazione intelligente del contesto (riassumere invece di troncare)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Se attivo, i vecchi messaggi vengono riassunti dal modello prima di essere rimossi, preservando le informazioni chiave. Un fusibile di sicurezza annulla la chiamata di riepilogo se richiede troppo tempo e ricade sul troncamento forzato.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Timeout compattazione (fusibile di sicurezza):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Secondi massimi per la chiamata di compattazione. Se supera questo limite, il fusibile di sicurezza scatta e viene usato il troncamento forzato. Predefinito: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Secondi concessi al riepilogo, oltre al tempo di lettura di ciò che riassume (circa 1 secondo ogni 100 token). Se superati, il fusibile di sicurezza scatta e viene usato il troncamento forzato. Predefinito: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>Messaggi di ancoraggio KV-cache:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Numero di messaggi di apertura (dopo il prompt di sistema) conservati invariati all'inizio di ogni contesto compattato. Ollama può riutilizzare il suo KV cache per questi token, risparmiando tempo di ricalcolo. 0 = disabilitato. Predefinito: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} messaggio/i di ancoraggio KV conservato/i)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Compattazione del contesto…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contesto compattato: {0} messaggio/i riassunto/i — mantenuti gli ultimi {1} turno/i.</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Timeout compattazione contesto — ripristino al troncamento forzato.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Timeout compattazione contesto — ripristino al troncamento forzato. Se il modello ha bisogno di più tempo, aumentate il «Timeout compattazione» nelle impostazioni.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ La compattazione del contesto non è riuscita — ripiego sul troncamento forzato. Causa: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Il modello ha restituito un riepilogo vuoto — ripiego sul troncamento forzato.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Il riepilogo si è interrotto al limite di lunghezza del modello: manca una parte della conversazione precedente.</value></data>

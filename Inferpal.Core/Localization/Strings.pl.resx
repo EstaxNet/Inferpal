@@ -134,13 +134,13 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Inteligentna kompaktacja kontekstu (podsumowanie zamiast obcinania)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Po włączeniu stare wiadomości są podsumowywane przez model przed usunięciem, zachowując kluczowe informacje. Bezpiecznik zatrzymuje wywołanie podsumowania, jeśli trwa zbyt długo, i cofa się do twardego obcinania.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Limit czasu kompaktacji (bezpiecznik):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Maksymalna liczba sekund oczekiwania na wywołanie kompaktacji. Po przekroczeniu bezpiecznik wyzwala się i zamiast tego używane jest twarde obcinanie. Domyślnie: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Sekundy przeznaczone na podsumowanie, doliczane do czasu odczytu tego, co podsumowuje (około 1 sekundy na 100 tokenów). Po przekroczeniu bezpiecznik wyzwala się i zamiast tego używane jest twarde obcinanie. Domyślnie: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>Wiadomości kotwicy KV-cache:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Liczba wiadomości otwierających (po prompcie systemowym) zachowanych bez zmian na początku każdego skompaktowanego kontekstu. Ollama może ponownie używać swojego KV cache dla tych tokenów, oszczędzając czas przeliczania. 0 = wyłączone. Domyślnie: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} wiadomość(ci) kotwicy KV zachowana(ych))</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Kompaktowanie kontekstu…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Kontekst skompaktowany: podsumowano {0} wiadomość(ci) — zachowano ostatnie {1} tur(y).</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kompaktacja kontekstu przekroczyła limit czasu — powrót do twardego obcinania.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kompaktacja kontekstu przekroczyła limit czasu — powrót do twardego obcinania. Jeśli model potrzebuje więcej czasu, zwiększ „Limit czasu kompaktacji” w ustawieniach.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Kompaktowanie kontekstu nie powiodło się — zastosowano twarde przycięcie. Przyczyna: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Model zwrócił puste podsumowanie — zastosowano twarde przycięcie.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Podsumowanie zatrzymało się na limicie długości modelu: brakuje w nim części wcześniejszej rozmowy.</value></data>

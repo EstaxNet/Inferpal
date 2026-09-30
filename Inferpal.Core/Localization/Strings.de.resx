@@ -134,13 +134,13 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Intelligente Kontextkomprimierung (Zusammenfassen statt Kürzen)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Wenn aktiviert, werden alte Nachrichten vom Modell zusammengefasst, bevor sie entfernt werden, um wichtige Informationen zu bewahren. Eine Sicherheitssicherung bricht den Zusammenfassungsaufruf ab und fällt auf harte Kürzung zurück, wenn er zu lange dauert.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Komprimierungs-Timeout (Sicherheitssicherung):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Maximale Sekunden für den Komprimierungsaufruf. Wenn das Limit überschritten wird, löst die Sicherheitssicherung aus und harte Kürzung wird stattdessen verwendet. Standard: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Sekunden für die Zusammenfassung, zusätzlich zur Zeit, die das Lesen des Zusammengefassten braucht (etwa 1 Sekunde pro 100 Token). Bei Überschreitung löst die Sicherheitssicherung aus und harte Kürzung wird stattdessen verwendet. Standard: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KV-Cache-Ankernachrichten:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Anzahl der Eröffnungsnachrichten (nach dem System-Prompt), die am Anfang jedes komprimierten Kontexts unverändert beibehalten werden. Ollama kann seinen KV-Cache für diese Tokens wiederverwenden und spart Rechenzeit. 0 = deaktiviert. Standard: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} KV-Ankernachricht(en) beibehalten)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Kontext wird komprimiert…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Kontext komprimiert: {0} Nachricht(en) zusammengefasst – letzte {1} Runde(n) behalten.</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kontextkomprimierung abgelaufen – auf harte Kürzung zurückgefallen.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kontextkomprimierung abgelaufen – auf harte Kürzung zurückgefallen. Wenn Ihr Modell länger braucht, erhöhen Sie „Komprimierungs-Timeout“ in den Einstellungen.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Die Kontextkomprimierung ist fehlgeschlagen – Rückfall auf harte Kürzung. Ursache: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Das Modell hat eine leere Zusammenfassung geliefert – Rückfall auf harte Kürzung.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Die Zusammenfassung endete an der Längengrenze des Modells: Ein Teil des früheren Gesprächs fehlt darin.</value></data>

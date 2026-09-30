@@ -115,6 +115,26 @@ internal static class HistoryCompaction
         windowTokens <= 0 ? int.MaxValue : (int)Math.Min(int.MaxValue, 2L * windowTokens);
 
     /// <summary>
+    /// The reading speed the summarizing call's fuse allows for: slower than a 27B model reads on a slow backend
+    /// (~170 tokens/s on Vulkan llama.cpp), so the smaller cards are covered too.
+    /// </summary>
+    internal const int FuseReadTokensPerSecond = 100;
+
+    /// <summary>
+    /// How long a summarizing call may run before the safety fuse falls back to hard truncation: the configured seconds
+    /// (<c>compactionTimeoutSeconds</c>, 10 at least) for WRITING, plus the time a slow reader needs to READ the request.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The fuse guards against a model that never answers, not against a slow one. A fixed one fired on reading alone:
+    /// a model spends its first seconds reading the whole slice before it writes a word, and the slice is largest when a
+    /// conversation outgrows its window — so a summary that would have kept the facts became a truncation that kept none.
+    /// Both summarizing calls (the conversation's and an agent run's) read it once their request is built.
+    /// </remarks>
+    public static TimeSpan SummaryTimeout(int configuredSeconds, SummarizeRequest request) =>
+        TimeSpan.FromSeconds(Math.Max(10, configuredSeconds)
+                             + AgentOrchestrator.EstimateTokens(request.Messages) / FuseReadTokensPerSecond);
+
+    /// <summary>
     /// The request that asks the model for a summary: the labelled transcript ("User:"/"Assistant:"/"Tool:", empty
     /// messages skipped) wrapped in the localized summarize instruction, within <paramref name="budgetChars"/>.
     /// </summary>

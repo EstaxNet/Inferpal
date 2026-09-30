@@ -138,13 +138,13 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Smart context compaction (summarize instead of truncate)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>When checked, old messages are summarized by the model before being removed, preserving key information. A safety fuse cancels the summary call if it takes too long and falls back to hard truncation.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Compaction timeout (safety fuse):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Maximum seconds to wait for the compaction model call. If it exceeds this limit, the safety fuse fires and hard truncation is used instead. Default: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Seconds allowed for the summary, on top of the time needed to read what it summarizes (about 1 second per 100 tokens). If exceeded, the safety fuse fires and hard truncation is used instead. Default: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KV-cache anchor messages:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Number of opening messages (after the system prompt) kept verbatim at the start of every compacted context. Ollama reuses its KV cache for these tokens, saving recalculation time. 0 = disabled. Default: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} KV anchor message(s) preserved)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Compacting context…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Context compacted: {0} message(s) summarized — keeping last {1} turn(s).</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Context compaction timed out — fell back to hard truncation.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Context compaction timed out — fell back to hard truncation. If your model needs longer, raise “Compaction timeout” in the settings.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Context compaction failed — fell back to hard truncation. Cause: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ The model returned an empty summary — fell back to hard truncation.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ The summary stopped at the model's length limit: part of the earlier conversation is missing from it.</value></data>
