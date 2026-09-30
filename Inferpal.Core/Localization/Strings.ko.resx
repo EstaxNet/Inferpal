@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>활성화하면 코드 질문마다 가장 관련 있는 인덱싱된 스니펫을 가져와 프롬프트에 추가합니다(이미 첨부된 항목은 제외). 백그라운드 인덱싱이 필요합니다.</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>활성화하면 Inferpal가 백그라운드에서 솔루션의 모든 소스 파일을 인덱싱하고 의미 검색을 사용하여 AI에 관련 코드 컨텍스트를 제공합니다. 대규모 리포지토리에서 메모리 또는 CPU를 절약하려면 비활성화하세요.</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>임베딩 모델:</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>의미 검색을 위한 임베딩 생성에 사용되는 Ollama 모델입니다. 전용 임베딩 모델만 표시됩니다(nomic-embed-text, mxbai-embed-large, bge-m3 등). 선택하지 않으면 nomic-embed-text로 대체됩니다.</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>의미 검색을 위한 임베딩 생성에 사용되는 Ollama 모델입니다. 전용 임베딩 모델만 표시됩니다(embeddinggemma, qwen3-embedding, nomic-embed-text 등). 선택하지 않으면 embeddinggemma로 대체됩니다.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>쿼리당 결과 수 (top-K):</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>초</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>분</value></data>
@@ -508,6 +508,7 @@
 RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세요.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>"{0}"에 대한 관련 코드를 찾을 수 없습니다</value></data>
   <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ 키워드 검색만 실행되었습니다. 설정에서 의미 기반 검색이 꺼져 있어, 의미로만 일치하는 코드는 확인되지 않았습니다.</value></data>
+  <data name="SearchKeywordOnlyNoEmbeddingModel" xml:space="preserve"><value>⚠ 키워드 검색만 실행되었습니다. 임베딩 모델이 설정되거나 설치되어 있지 않아(선택 사항입니다), 의미로만 일치하는 코드는 확인되지 않았습니다.</value></data>
   <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ 키워드 검색만 실행되었습니다. 임베딩 모델 “{0}”이(가) 응답하지 않아, 의미로만 일치하는 코드는 확인되지 않았습니다. /diagnostics 를 확인하세요.</value></data>
 
   <!-- Agent memory -->

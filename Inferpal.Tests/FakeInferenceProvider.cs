@@ -117,8 +117,14 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
                                AnswerCut: turn.CutAtLimit);
     }
 
-    public Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct) =>
-        Task.FromResult(OnEmbedding is not null ? OnEmbedding(text) : Embedding);
+    /// <summary>Every embedding request, as sent: the exact text and the model it names.</summary>
+    public System.Collections.Concurrent.ConcurrentQueue<(string Text, string Model)> EmbeddingRequests { get; } = new();
+
+    public Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct)
+    {
+        EmbeddingRequests.Enqueue((text, model));
+        return Task.FromResult(OnEmbedding is not null ? OnEmbedding(text) : Embedding);
+    }
 
     public Task<bool> CheckConnectionAsync(string url, CancellationToken ct) => Task.FromResult(ConnectionOk);
 

@@ -1240,6 +1240,7 @@ internal static class Strings
     // sentences an absent capability and an absence of results came out as the same words — and a
     // model reading "nothing found" stops looking. See SearchDegradation.
     public static string SearchKeywordOnlySemanticOff => Get(nameof(SearchKeywordOnlySemanticOff));
+    public static string SearchKeywordOnlyNoEmbeddingModel => Get(nameof(SearchKeywordOnlyNoEmbeddingModel));
     public static string SearchKeywordOnlyEmbeddingUnavailable(string model) =>
         string.Format(Get(nameof(SearchKeywordOnlyEmbeddingUnavailable)), model);
 

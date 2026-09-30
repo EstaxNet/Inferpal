@@ -56,4 +56,22 @@ public class SearchDegradationTests
         Assert.Contains("my-model", down);   // the failure NAMES the model that did not answer
         Assert.NotEqual(off, down);          // and the two causes do not come out as the same words
     }
+
+    /// <summary>
+    /// No embedding model set or installed is allowed, like for every model role: the keyword search is then the
+    /// product working as chosen. Said — the model must not read "nothing" as "absent" — but never as a failure that
+    /// sends the user to /diagnostics.
+    /// </summary>
+    [Fact]
+    public void NoEmbeddingModelAtAll_IsAFourthState_NotAFailure()
+    {
+        Assert.Equal(SemanticSide.NoEmbeddingModel, SearchDegradation.Classify(true, null, modelChosen: false));
+        // The user's own switch still wins: off is off, whatever is installed.
+        Assert.Equal(SemanticSide.DisabledByUser, SearchDegradation.Classify(false, null, modelChosen: false));
+
+        var none = SearchDegradation.Explain("nothing", SemanticSide.NoEmbeddingModel, "");
+        Assert.StartsWith("nothing", none);
+        Assert.Contains(Strings.SearchKeywordOnlyNoEmbeddingModel, none);
+        Assert.DoesNotContain("/diagnostics", none);
+    }
 }

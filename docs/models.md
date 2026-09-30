@@ -25,8 +25,15 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 | [Mellum2 12B-A2.5B Base](#mellum) (JetBrains) | ✅ **Autocomplete (FIM)** — recommended (29/36, 0.1 s) | Uses its fill-in-the-middle tokens | A completion model: never the chat or the agent |
 | [Qwen2.5 Coder 7B](#qwen-coder) | Superseded for autocomplete by Mellum2; not the agent (3/14) | Uses its fill-in-the-middle tokens | A 2024 model, no longer benched |
 
-Embedding models (semantic search): **Qwen3 Embedding 0.6B** and **Nomic Embed Text v1.5** both work; set the one you
-use in *Settings → RAG*. They are not compared yet.
+Embedding models (semantic search) are **optional**: with none installed, the search runs on keywords. With the field
+left empty in *Settings → RAG*, Inferpal uses the best embedding model installed — EmbeddingGemma first. Measured on
+192 change descriptions taken from the history of five open-source projects (C#, Python, TypeScript) — how often the
+right file is among the 5 results: **EmbeddingGemma 300M**, **109** (29 of 50 in French); keyword search alone, 103
+(25); **Nomic Embed Text v1.5**, 96 (21); **Qwen3 Embedding 0.6B**, 92 (20). Inferpal sends EmbeddingGemma and Qwen3
+the query format their authors document (Qwen3 scores 77 without it). EmbeddingGemma is the only one clearly ahead of
+Nomic; on descriptions like these (identifiers, type names) no embedding model adds much to keyword search, and a
+question in plain language was not measured. Granite Embedding R2, pplx-embed and Nemotron-3-Embed are to be
+measured: LM Studio does not serve them as embedding models.
 
 <a id="by-graphics-card"></a>
 ## By graphics card
@@ -35,13 +42,21 @@ What fits in your card's memory **together** — the agent at a 32K context, the
 for the semantic index — measured on Inferpal's test server (24 GB, LM Studio) with the free memory reduced to about
 11 and 15 GB for the smaller cards (1 GB is left for your display). A setup that did not keep its speed with the memory
 reduced does not fit. The scores are the models' own; the speed on your card will differ. Nothing is recommended above
-24 GB: it could not be verified.
+24 GB: it could not be verified. The last column is the embedding model whose **memory** was measured beside the others
+(the lightest ones, EmbeddingGemma 300M and Nomic, take less); for search quality, see the paragraph above.
 
 | Card | Agent | Autocomplete | Measured beside it |
 |---|---|---|---|
 | **12 GB** | [Gemma 4 12B](#gemma4) (12/14, fast) or [Bonsai 27B](#bonsai) (13/14, about 3× slower) | none measured fits beside the agent | Qwen3 Embedding 0.6B |
 | **16 GB** | the same | [Mellum2](#mellum) fits only beside a weak agent (Ling 3.0, 7/14): choose between the two | Qwen3 Embedding 0.6B |
 | **24 GB** | [Qwen3.8 27B](#qwen35) (14/14), which also autocompletes (27/36, 0.5 s) — or [Gemma 4 12B](#gemma4) (12/14) with [Mellum2](#mellum) (29/36, 0.1 s) | see the agent column | Qwen3 Embedding 0.6B |
+
+**Utility model** (session titles, commit messages, and the summary that replaces older turns when a conversation
+outgrows the context): optional, and best left empty — the agent then writes the summaries. Measured on six working
+sessions with 90 facts to keep (a ticket number, a value the user settled on, a file changed…): Qwen3.8 27B keeps 85,
+Gemma 4 12B 77, Qwen3.5 4B 75, Ministral 3 3B 64, Qwen3.5 2B and Gemma 4 E4B 59, Granite 4.2 3B 58, Gemma 4 E2B 51,
+LFM2.5 1.2B 16. Qwen3.5 4B comes close to Gemma 4 12B in a third of the time, but does not fit beside the setups above
+on a 12 or 16 GB card.
 
 ## How Inferpal reads a model
 

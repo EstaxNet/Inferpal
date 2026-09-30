@@ -659,6 +659,13 @@ public class ConventionCoverageTests
 
     // ── 12. A tool that can degrade SAYS so when it returns nothing ───────────
 
+    /// <summary>
+    /// Every call that sends an embedding request: the provider's own, and the code index's reader
+    /// (EmbeddingModels), which wraps it in the model's format. Rules 12 and 20 read this one list —
+    /// a helper they did not know hid the index and search_codebase from both.
+    /// </summary>
+    private static readonly string[] EmbeddingCalls = ["GetEmbeddingAsync", "EmbedCodeQueryAsync", "EmbedCodeDocumentAsync"];
+
     [Fact]
     public void ASearchToolThatEmbeds_ReportsWhenOnlyItsKeywordHalfRan()
     {
@@ -675,7 +682,7 @@ public class ConventionCoverageTests
         foreach (var file in ToolsSources())
         {
             var source = CodeOnly(file);
-            if (!source.Contains("GetEmbeddingAsync", StringComparison.Ordinal)) continue;
+            if (!EmbeddingCalls.Any(c => source.Contains(c, StringComparison.Ordinal))) continue;
 
             sites++;
             if (!source.Contains("SearchDegradation", StringComparison.Ordinal))
@@ -685,7 +692,7 @@ public class ConventionCoverageTests
         // Witness: the rule is worth nothing unless tools that embed remain. Zero sites — a renamed
         // method, a moved file — would turn it green while looking at nothing.
         Assert.True(sites >= 2,
-            $"The scan found only {sites} tool(s) calling GetEmbeddingAsync under Services/Tools: " +
+            $"The scan found only {sites} tool(s) requesting an embedding under Services/Tools: " +
             "the rule checks nothing any more.");
 
         Assert.True(offenders.Count == 0,
@@ -1046,7 +1053,6 @@ public class ConventionCoverageTests
         // The criterion is a SHAPE, not a list of files: embedding inside a loop is background
         // work (it yields); embedding outside a loop is answering someone who is waiting (it never
         // does).
-        const string Embed = "GetEmbeddingAsync";
         const string Yield = "WaitForChatIdleAsync";
 
         var loops = 0;
@@ -1068,7 +1074,7 @@ public class ConventionCoverageTests
             foreach (var call in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
             {
                 if (call.Expression is not MemberAccessExpressionSyntax ma
-                 || ma.Name.Identifier.ValueText != Embed) continue;
+                 || !EmbeddingCalls.Contains(ma.Name.Identifier.ValueText)) continue;
 
                 var line = call.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
                 var loop = call.Ancestors()

@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>启用后，每个代码问题都会静默检索最相关的已索引片段并添加到提示中（跳过已附加的内容）。需要后台索引。</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>启用后，Inferpal 将在后台为解决方案中的所有源文件建立索引，并使用语义搜索为 AI 提供相关代码上下文。在大型存储库上可禁用以节省内存或 CPU。</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>嵌入模型：</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>用于生成语义搜索嵌入的 Ollama 模型。仅列出专用嵌入模型（nomic-embed-text、mxbai-embed-large、bge-m3 等）。未选择时回退到 nomic-embed-text。</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>用于生成语义搜索嵌入的 Ollama 模型。仅列出专用嵌入模型（embeddinggemma、qwen3-embedding、nomic-embed-text 等）。未选择时回退到 embeddinggemma。</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>每次查询结果数 (top-K)：</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>秒</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>分钟</value></data>
@@ -508,6 +508,7 @@
 如果 RAG 已禁用，请在设置中将 `ragEnabled = true`。</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>未找到与"{0}"相关的代码</value></data>
   <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ 只运行了关键词搜索：设置中已关闭语义搜索，因此仅在含义上匹配的代码根本没有被查找。</value></data>
+  <data name="SearchKeywordOnlyNoEmbeddingModel" xml:space="preserve"><value>⚠ 只运行了关键词搜索：未设置也未安装嵌入模型（它是可选的），因此仅在含义上匹配的代码没有被查找。</value></data>
   <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ 只运行了关键词搜索：嵌入模型“{0}”没有响应，因此仅在含义上匹配的代码根本没有被查找。请查看 /diagnostics。</value></data>
 
   <!-- Agent memory -->

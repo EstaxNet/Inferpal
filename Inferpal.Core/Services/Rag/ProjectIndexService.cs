@@ -347,16 +347,16 @@ internal sealed class ProjectIndexService : IDisposable
     /// search in the background while the user is still typing.
     /// Returns immediately (non-blocking) if another pre-warm is already in progress.
     /// </summary>
-    public async Task ShadowPreWarmAsync(string query, string model, CancellationToken ct)
+    public async Task ShadowPreWarmAsync(string query, CancellationToken ct)
     {
-        if (ChunkCount == 0 || _client.IsEmbeddingCircuitOpen) return;
+        if (ChunkCount == 0 || _client.IsEmbeddingCircuitOpen || QueryEmbeddingModel is not { } model) return;
 
         // Non-blocking: skip if another pre-warm is already running
         if (!await _shadowLock.WaitAsync(0, ct)) return;
         try
         {
             var generation = Volatile.Read(ref _indexGeneration);
-            var embedding = await _client.GetEmbeddingAsync(query, model, ct);
+            var embedding = await EmbeddingModels.EmbedCodeQueryAsync(_client, model, query, ct);
             if (embedding is null) return;
 
             var results = await SearchAsync(embedding, query, Math.Max(1, _config.RagTopK), ct);
@@ -417,12 +417,19 @@ internal sealed class ProjectIndexService : IDisposable
             var loaded = await db.LoadAsync(ct);
             // ⚠ Vectors from ANOTHER embedding model are not reusable: other dimensions give a cosine of
             // 0 everywhere, the same dimensions give noise — under a "✅". The model the stored vectors
-            // came from is recorded with them (after SaveAsync below); a different model re-embeds.
-            var embModel    = EmbeddingModel;
+            // came from is recorded with them (after SaveAsync below); a different model re-embeds. So does
+            // another DOCUMENT format for the same model (EmbeddingModels.CodeIndexIdentity). No model at all (none
+            // configured, none installed) is an index on its keyword half: nothing is embedded.
             var storedModel = await db.GetMetaAsync(EmbeddingModelMetaKey, ct);
-            if (storedModel is not null && !string.Equals(storedModel, embModel, StringComparison.Ordinal))
+            // With semantic search off nothing is chosen: the stored vectors stay what they are, for when it is back on.
+            var previous    = EmbeddingModels.ModelOfIdentity(storedModel);
+            var embModel    = _config.RagEnabled
+                ? await EmbeddingModels.ChooseAsync(_config, _client, previous, ct)
+                : EmbeddingModels.Configured(_config) ?? previous;
+            var embIdentity = EmbeddingModels.CodeIndexIdentity(embModel);
+            if (storedModel is not null && !string.Equals(storedModel, embIdentity, StringComparison.Ordinal))
                 foreach (var c in loaded) c.Embedding = null;
-            _indexedEmbeddingModel = embModel;
+            _indexedEmbeddingModel = embIdentity;
             // Replaced even when this root has nothing on disk yet: the service outlives its root,
             // and a first pass on a new workspace would otherwise serve the PREVIOUS workspace's
             // chunks for as long as it runs — and forever when the new one has no source file.
@@ -498,11 +505,11 @@ internal sealed class ProjectIndexService : IDisposable
                         // Skip silently when the embedding circuit breaker is open
                         // (3 consecutive failures → 2-min cooldown) — index continues
                         // without embeddings; keyword fallback still works.
-                        if (_config.RagEnabled && !_client.IsEmbeddingCircuitOpen)
+                        if (_config.RagEnabled && embModel is not null && !_client.IsEmbeddingCircuitOpen)
                         {
                             // Yield the shared Ollama backend to any in-flight interactive request.
                             await GpuScheduler.WaitForChatIdleAsync(ct);
-                            var emb = await _client.GetEmbeddingAsync(chunk.Content, embModel, ct);
+                            var emb = await EmbeddingModels.EmbedCodeDocumentAsync(_client, embModel, chunk.Content, ct);
                             chunk.Embedding = emb; // null if model unavailable
                         }
 
@@ -534,11 +541,11 @@ internal sealed class ProjectIndexService : IDisposable
             // pass, and rewriting every row and vector for the same content cost the whole index in
             // disk writes. A changed embedding model is always saved — with the embedding circuit
             // open, its cleared vectors would compare equal to vectors that were never recomputed.
-            var modelChanged = !string.Equals(storedModel, embModel, StringComparison.Ordinal);
+            var modelChanged = !string.Equals(storedModel, embIdentity, StringComparison.Ordinal);
             if (modelChanged || !SameAsStored(loaded, newChunks))
                 await db.SaveAsync(newChunks, ct);
             if (modelChanged)
-                await db.SetMetaAsync(EmbeddingModelMetaKey, embModel, ct);
+                await db.SetMetaAsync(EmbeddingModelMetaKey, embIdentity, ct);
             // ⚠ Reported even when the pass "succeeds": a full index built on zero files read
             // otherwise reads as normal.
             if (skipped > 0)
@@ -549,7 +556,7 @@ internal sealed class ProjectIndexService : IDisposable
             // (nothing computes it in between): the status that /index and search_codebase show
             // counts them, with the remedy.
             var unembedded = newChunks.Count(c => c.Embedding is not { Length: > 0 });
-            if (unembedded > 0)
+            if (unembedded > 0 && embModel is not null)
                 Diagnostics.Record("ProjectIndexService",
                     $"{unembedded} of {newChunks.Count} chunk(s) without embedding; semantic search misses them until /index rebuild");
 
@@ -768,11 +775,20 @@ internal sealed class ProjectIndexService : IDisposable
         });
     }
 
-    /// <summary>The <c>meta</c> key recording which model produced the stored vectors.</summary>
+    /// <summary>
+    /// The <c>meta</c> key recording which model — and which document format — produced the stored vectors
+    /// (<see cref="EmbeddingModels.CodeIndexIdentity"/>).
+    /// </summary>
     private const string EmbeddingModelMetaKey = "embedding_model";
 
-    /// <summary>The embedding model the in-memory vectors came from (set by the last pass).</summary>
+    /// <summary>The <see cref="EmbeddingModels.CodeIndexIdentity"/> the in-memory vectors came from (set by the last pass).</summary>
     private volatile string _indexedEmbeddingModel = string.Empty;
+
+    /// <summary>
+    /// The model a query is embedded with: the one the index's vectors came from (chosen by the last pass), or
+    /// <c>null</c> — keyword search only, because no embedding model is set or installed, or no pass has run yet.
+    /// </summary>
+    public string? QueryEmbeddingModel => _config.RagEnabled ? EmbeddingModels.ModelOfIdentity(_indexedEmbeddingModel) : null;
 
     /// <summary>Bumped under <see cref="_chunkLock"/> whenever the published chunks change.</summary>
     private int _contentVersion;
@@ -801,7 +817,10 @@ internal sealed class ProjectIndexService : IDisposable
         }
         finally { _chunkLock.Release(); }
 
-        var holeStatus = unembedded > 0
+        // No embedding model is a choice, not a hole: "run /index rebuild" would be a remedy for nothing.
+        var holeStatus = QueryEmbeddingModel is null
+            ? " (keyword search only: no embedding model is set or installed)"
+            : unembedded > 0
             ? $" ({unembedded} of {total} chunks without embedding — semantic search misses them; run /index rebuild)"
             : string.Empty;
         var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
@@ -825,9 +844,11 @@ internal sealed class ProjectIndexService : IDisposable
     private async Task ReIndexFilesCoreAsync(string[] changedFiles, string rootDir, CancellationToken ct)
     {
         var db       = new RagDatabase(rootDir);
-        var embModel = EmbeddingModel;
+        // The field if set, else the model the last pass chose: a re-index never lists the backend's models.
+        var embModel = EmbeddingModels.Configured(_config) ?? EmbeddingModels.ModelOfIdentity(_indexedEmbeddingModel);
         // The vectors in memory came from the last pass's model: a model changed since cannot reuse them.
-        var canReuse = string.Equals(embModel, _indexedEmbeddingModel, StringComparison.Ordinal);
+        var canReuse = string.Equals(EmbeddingModels.CodeIndexIdentity(embModel), _indexedEmbeddingModel,
+                                     StringComparison.Ordinal);
 
         foreach (var file in changedFiles)
         {
@@ -889,10 +910,10 @@ internal sealed class ProjectIndexService : IDisposable
                     // ⚠ Skip only the network call. A `break` here also skipped the REUSE of every later
                     // chunk: with the circuit open (or RAG turned off, the watcher still armed) the
                     // unchanged chunks of a saved file lost their vector, in memory and in SQLite.
-                    if (!_config.RagEnabled || _client.IsEmbeddingCircuitOpen) continue;
+                    if (!_config.RagEnabled || embModel is null || _client.IsEmbeddingCircuitOpen) continue;
                     // Yield the shared Ollama backend to any in-flight interactive request.
                     await GpuScheduler.WaitForChatIdleAsync(ct);
-                    chunk.Embedding = await _client.GetEmbeddingAsync(chunk.Content, embModel, ct);
+                    chunk.Embedding = await EmbeddingModels.EmbedCodeDocumentAsync(_client, embModel, chunk.Content, ct);
                 }
 
                 // Update memory — O(1) dict assignment replaces old chunks for this file
@@ -920,11 +941,6 @@ internal sealed class ProjectIndexService : IDisposable
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
-
-    private string EmbeddingModel =>
-        string.IsNullOrEmpty(_config.RagEmbeddingModel)
-            ? "nomic-embed-text"
-            : _config.RagEmbeddingModel;
 
     /// <param name="chunks">Chunks to publish to the in-memory index.</param>
     /// <param name="replaceAll">

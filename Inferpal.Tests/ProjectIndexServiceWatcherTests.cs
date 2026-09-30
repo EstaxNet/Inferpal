@@ -46,7 +46,7 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
 
     private ProjectIndexService NewService(FakeInferenceProvider provider)
     {
-        var config = new InferpalConfig { RagEnabled = true };
+        var config = new InferpalConfig { RagEnabled = true, RagEmbeddingModel = "embed-model" };
         var svc = new ProjectIndexService(provider, config, new LspSemanticProvider())
         {
             DebounceMs = 100, // the real 5 s debounce would make the tests far too slow

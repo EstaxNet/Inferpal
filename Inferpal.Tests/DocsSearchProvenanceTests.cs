@@ -68,7 +68,7 @@ public sealed class DocsSearchProvenanceTests : IDisposable
             OnEmbedding = _ => served++ < embedFirst ? [1f, 0f] : null,
         };
 
-        var docs = new DocsIndexService(client, new InferpalConfig())
+        var docs = new DocsIndexService(client, new InferpalConfig { RagEmbeddingModel = "embed-model" })
         {
             CrawlForTests = (_, _) => Task.FromResult(new List<DocCrawler.Page>
             {

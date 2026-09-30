@@ -90,11 +90,10 @@ internal sealed class SemanticSearchTool : ITool
         float[]? queryEmbedding = null;
         List<RagHit>? cachedResults = null;
 
-        var model = string.IsNullOrEmpty(_config.RagEmbeddingModel)
-            ? "nomic-embed-text"
-            : _config.RagEmbeddingModel;
+        // The model the index's vectors came from; none = keyword search only, by choice (no model set or installed).
+        var model = _index.QueryEmbeddingModel;
 
-        if (_config.RagEnabled)
+        if (model is not null)
         {
             // Try shadow cache first — free if query matches exactly
             var (shadowEmb, shadowRes) = _index.TryGetShadow(query);
@@ -105,7 +104,7 @@ internal sealed class SemanticSearchTool : ITool
             }
             else
             {
-                queryEmbedding = await _client.GetEmbeddingAsync(query, model, ct);
+                queryEmbedding = await EmbeddingModels.EmbedCodeQueryAsync(_client, model, query, ct);
             }
         }
 
@@ -132,8 +131,8 @@ internal sealed class SemanticSearchTool : ITool
             // does not exist and stops looking.
             return behind + SearchDegradation.Explain(
                 Strings.RagNoResults(query),
-                SearchDegradation.Classify(_config.RagEnabled, queryEmbedding),
-                model);
+                SearchDegradation.Classify(_config.RagEnabled, queryEmbedding, modelChosen: model is not null),
+                model ?? string.Empty);
 
         // ── Format results ────────────────────────────────────────────────────
         var sb     = new StringBuilder();

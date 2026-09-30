@@ -198,9 +198,9 @@ internal partial class InferpalToolWindowData
         _config.DefaultModel = best;
         await RunOnVMContextAsync(() => ActiveModelLabel = best);
 
-        // Auto-pick first embedding model only when nothing is configured yet.
+        // Auto-pick an embedding model only when nothing is configured yet: the default model's family if installed.
         if (string.IsNullOrEmpty(_config.RagEmbeddingModel) && embModels.Count > 0)
-            _config.RagEmbeddingModel = embModels[0];
+            _config.RagEmbeddingModel = Services.Inference.EmbeddingModels.PreferredOf(embModels)!;
 
         _config.IsFirstRun = false;
         _config.Save();

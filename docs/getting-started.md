@@ -17,7 +17,7 @@ sections cover the **VS Code extension** (at feature parity since 1.2.0).
 > tool calling (`qwen2.5-coder`, `llama3` v1) chats but makes a poor agent.
 >
 > - **Inline completions** work with any model; one trained for it completes far better (Mellum2 and Qwen3.8 measured best — see [By graphics card](models.md#by-graphics-card)).
-> - **Semantic search** works best with a dedicated embedding model (e.g. `nomic-embed-text`, `mxbai-embed-large`).
+> - **Semantic search** can add a dedicated embedding model — optional: without one, the search runs on keywords. EmbeddingGemma (`embeddinggemma`) measured best — see [Models](models.md).
 
 ## 2. Start a model server
 
@@ -30,7 +30,7 @@ differences.
   ollama pull qwen3.8            # chat and agent (or devstral-small-2: faster)
   # Optional, dedicated models:
   # inline completions: the model that fits beside the agent depends on your card (docs/models.md#by-graphics-card)
-  ollama pull nomic-embed-text   # semantic search
+  ollama pull embeddinggemma     # semantic search (optional)
   ```
 - **LM Studio** (default `:1234`)
   1. Open the **Developer** tab (the server view) and **Start** the server.

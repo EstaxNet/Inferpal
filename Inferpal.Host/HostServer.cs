@@ -1201,9 +1201,9 @@ internal sealed partial class HostServer : IDisposable
             var (_, results) = s.Index.TryGetShadow(trimmed);
             if (results is null || results.Count == 0)
             {
-                var model = string.IsNullOrEmpty(s.Config.RagEmbeddingModel)
-                    ? "nomic-embed-text" : s.Config.RagEmbeddingModel;
-                var embedding = await s.Client.GetEmbeddingAsync(trimmed, model, ct);
+                // The model the index's vectors came from; none (no embedding model) = no auto-context, as in VS.
+                if (s.Index.QueryEmbeddingModel is not { } model) return string.Empty;
+                var embedding = await EmbeddingModels.EmbedCodeQueryAsync(s.Client, model, trimmed, ct);
                 if (embedding is null) return string.Empty;
                 results = await s.Index.SearchAsync(embedding, trimmed, RagAutoContext.DefaultMaxChunks, ct);
             }

@@ -94,8 +94,13 @@ internal sealed class DocsIndexService
         finally { _chunkLock.Release(); }
     }
 
-    private string EmbeddingModel =>
-        string.IsNullOrEmpty(_config.RagEmbeddingModel) ? "nomic-embed-text" : _config.RagEmbeddingModel;
+    /// <summary>
+    /// The model a <c>search_docs</c> query is embedded with: the one the stored vectors came from, or <c>null</c> — no
+    /// embedding model set or installed, keyword search only (a choice, so no "hole" is counted). Bare text is sent (no
+    /// family format): <see cref="EmbeddingModels"/>' formats are the code index's.
+    /// </summary>
+    public string? QueryEmbeddingModel => _queryModel;
+    private volatile string? _queryModel;
 
     // ── Load ─────────────────────────────────────────────────────────────────
 
@@ -254,7 +259,7 @@ internal sealed class DocsIndexService
             }
             finally { _chunkLock.Release(); }
 
-            var embModel = EmbeddingModel;
+            var embModel = await EmbeddingModels.ChooseAsync(_config, _client, _queryModel, ct);
             for (int i = 0; i < chunks.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
@@ -270,7 +275,7 @@ internal sealed class DocsIndexService
                 // abandoning the loop would persist every later chunk without the vector it already
                 // had — a re-index attempted during an outage would WIDEN the hole it exists to
                 // close. Skipping only the calls leaves it able to narrow it and never widen it.
-                if (_client.IsEmbeddingCircuitOpen) continue; // keyword fallback still works
+                if (embModel is null || _client.IsEmbeddingCircuitOpen) continue; // keyword fallback still works
 
                 // Yield the shared Ollama GPU to any in-flight chat/agent request.
                 await GpuScheduler.WaitForChatIdleAsync(ct);
@@ -289,7 +294,7 @@ internal sealed class DocsIndexService
             await db.SaveSiteAsync(site, pages.Count, chunks, ct);
             // Recorded with the vectors, and BEFORE reading them back: the model these were embedded
             // with is the one thing a later session cannot infer from the numbers themselves.
-            await db.SetMetaAsync(EmbeddingModelMetaKey, embModel, ct);
+            await db.SetMetaAsync(EmbeddingModelMetaKey, embModel ?? string.Empty, ct);
             await ReloadFromDbAsync(db, ct);
 
             // The circuit note says WHY; the hole note says HOW MUCH and what to do about it — and it
@@ -398,9 +403,12 @@ internal sealed class DocsIndexService
         var sites  = await db.LoadSitesAsync(ct);
         var chunks = await db.LoadAllChunksAsync(ct);
 
+        // "" = a corpus embedded with no model; null = one written before the model was recorded (kept as it is).
         var stored = await db.GetMetaAsync(EmbeddingModelMetaKey, ct);
-        if (stored is not null && !string.Equals(stored, EmbeddingModel, StringComparison.Ordinal))
+        var model  = await EmbeddingModels.ChooseAsync(_config, _client, string.IsNullOrEmpty(stored) ? null : stored, ct);
+        if (stored is not null && !string.Equals(stored, model ?? string.Empty, StringComparison.Ordinal))
             foreach (var c in chunks) c.Embedding = null;
+        _queryModel = model;
 
         return (sites, chunks);
     }
@@ -425,9 +433,10 @@ internal sealed class DocsIndexService
             _sites          = sites;
             _chunks         = chunks;
             ChunkCount      = chunks.Count;
-            UnembeddedCount = chunks.Count(c => c.Embedding is not { Length: > 0 });
-            UnembeddedBySite = chunks
-                .Where(c => c.Embedding is not { Length: > 0 })
+            // With no embedding model, a chunk without a vector is the choice, not a hole: "/docs reindex" would fix nothing.
+            var hole = _queryModel is null ? [] : chunks.Where(c => c.Embedding is not { Length: > 0 }).ToList();
+            UnembeddedCount = hole.Count;
+            UnembeddedBySite = hole
                 .GroupBy(c => c.DocId, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
         }

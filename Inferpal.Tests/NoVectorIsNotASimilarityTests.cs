@@ -129,7 +129,7 @@ public sealed class NoVectorIsNotASimilarityTests : IDisposable
 
         var docs = new DocsIndexService(
             client,
-            new InferpalConfig { RagSimilarityThreshold = threshold })
+            new InferpalConfig { RagSimilarityThreshold = threshold, RagEmbeddingModel = "embed-model" })
         {
             CrawlForTests = (_, _) => Task.FromResult(new List<DocCrawler.Page>
             {

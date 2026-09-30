@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>有効にすると、コードに関する質問ごとに最も関連性の高いインデックス済みスニペットを取得してプロンプトに追加します（既に添付済みのものは除外）。バックグラウンド インデックス作成が必要です。</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>有効にすると、Inferpal はバックグラウンドでソリューション内のすべてのソース ファイルにインデックスを付け、セマンティック検索を使用して AI に関連するコード コンテキストを提供します。大規模なリポジトリでメモリや CPU を節約するには無効にしてください。</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>埋め込みモデル：</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>セマンティック検索の埋め込み生成に使用する Ollama モデル。専用の埋め込みモデルのみ表示されます（nomic-embed-text、mxbai-embed-large、bge-m3 など）。未選択の場合は nomic-embed-text にフォールバックします。</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>セマンティック検索の埋め込み生成に使用する Ollama モデル。専用の埋め込みモデルのみ表示されます（embeddinggemma、qwen3-embedding、nomic-embed-text など）。未選択の場合は embeddinggemma にフォールバックします。</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>クエリごとの結果数 (トップ K)：</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>秒</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>分</value></data>
@@ -508,6 +508,7 @@
 RAGが無効な場合は、設定で `ragEnabled = true` に設定してください。</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>「{0}」に関連するコードが見つかりませんでした</value></data>
   <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ キーワード検索のみが実行されました。設定でセマンティック検索が無効になっているため、意味だけで一致するコードは検索されていません。</value></data>
+  <data name="SearchKeywordOnlyNoEmbeddingModel" xml:space="preserve"><value>⚠ キーワード検索のみが実行されました。埋め込みモデルが設定もインストールもされていない（任意です）ため、意味だけで一致するコードは検索されていません。</value></data>
   <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ キーワード検索のみが実行されました。埋め込みモデル「{0}」が応答しなかったため、意味だけで一致するコードは検索されていません。/diagnostics を確認してください。</value></data>
 
   <!-- Agent memory -->

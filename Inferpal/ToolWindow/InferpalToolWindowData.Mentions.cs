@@ -55,17 +55,13 @@ internal partial class InferpalToolWindowData
         var trimmed = prompt.Trim();
         if (trimmed.Length < 12 || trimmed.StartsWith('/')) return;
 
-        var model = string.IsNullOrEmpty(_config.RagEmbeddingModel)
-            ? "nomic-embed-text"
-            : _config.RagEmbeddingModel;
-
         var cts = _shadowSearchCts = new CancellationTokenSource();
         _ = Task.Run(async () =>
         {
             try
             {
                 await Task.Delay(800, cts.Token);          // debounce — wait for pause in typing
-                await _indexService.ShadowPreWarmAsync(trimmed, model, cts.Token);
+                await _indexService.ShadowPreWarmAsync(trimmed, cts.Token);
 
                 // Auto-attach top RAG results as dismissable cyan chips
                 var (_, results) = _indexService.TryGetShadow(trimmed);

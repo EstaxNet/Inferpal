@@ -253,9 +253,8 @@ internal class InferpalConfig
     public bool RagEnabled { get; set; } = true;
 
     /// <summary>
-    /// Ollama model used to generate embedding vectors for RAG indexing.
-    /// Recommended: <c>nomic-embed-text</c> (768 dims) or <c>mxbai-embed-large</c> (1024 dims).
-    /// Empty string falls back to <c>nomic-embed-text</c>.
+    /// Model used to generate embedding vectors for RAG indexing. Empty string falls back to
+    /// <see cref="Services.Inference.EmbeddingModels.Default"/>; read through <c>EmbeddingModels.Resolve</c>, never here.
     /// </summary>
     [JsonPropertyName("ragEmbeddingModel")]
     public string RagEmbeddingModel { get; set; } = string.Empty;

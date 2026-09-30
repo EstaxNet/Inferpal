@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>Gdy włączone, każde pytanie o kod pobiera najbardziej odpowiednie zindeksowane fragmenty i dodaje je do promptu (pomijając już dołączone). Wymaga indeksowania w tle.</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>Gdy włączone, Inferpal indeksuje wszystkie pliki źródłowe rozwiązania w tle i używa wyszukiwania semantycznego, aby dostarczyć istotny kontekst kodu do AI. Wyłącz, aby oszczędzić pamięć lub CPU w dużych repozytoriach.</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Model embeddingów:</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Model Ollama używany do generowania embeddingów wyszukiwania semantycznego. Wyświetlane są tylko dedykowane modele embeddingów (nomic-embed-text, mxbai-embed-large, bge-m3, …). Gdy żaden nie jest wybrany, używany jest nomic-embed-text.</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Model Ollama używany do generowania embeddingów wyszukiwania semantycznego. Wyświetlane są tylko dedykowane modele embeddingów (embeddinggemma, qwen3-embedding, nomic-embed-text, …). Gdy żaden nie jest wybrany, używany jest embeddinggemma.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Wyniki na zapytanie (top-K):</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
@@ -508,6 +508,7 @@ Użyj `/index rebuild` aby rozpocząć indeksowanie lub poczekaj na ukończenie 
 Jeśli RAG jest wyłączony, ustaw `ragEnabled = true` w ustawieniach.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>Nie znaleziono odpowiedniego kodu dla: „{0}"</value></data>
   <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ Uruchomiono wyłącznie wyszukiwanie po słowach kluczowych: wyszukiwanie semantyczne jest wyłączone w ustawieniach, więc kod pasujący tylko znaczeniem nie został sprawdzony.</value></data>
+  <data name="SearchKeywordOnlyNoEmbeddingModel" xml:space="preserve"><value>⚠ Uruchomiono wyłącznie wyszukiwanie po słowach kluczowych: nie ustawiono ani nie zainstalowano modelu embeddingów (jest opcjonalny), więc kod pasujący tylko znaczeniem nie został sprawdzony.</value></data>
   <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ Uruchomiono wyłącznie wyszukiwanie po słowach kluczowych: model osadzeń „{0}” nie odpowiedział, więc kod pasujący tylko znaczeniem nie został sprawdzony. Zobacz /diagnostics.</value></data>
 
   <!-- Agent memory -->

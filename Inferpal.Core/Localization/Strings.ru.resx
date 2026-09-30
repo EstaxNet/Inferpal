@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>Если включено, каждый вопрос по коду извлекает наиболее релевантные проиндексированные фрагменты и добавляет их в запрос (уже прикреплённые пропускаются). Требуется фоновая индексация.</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>При включении Inferpal индексирует все исходные файлы решения в фоновом режиме и использует семантический поиск для предоставления релевантного контекста кода ИИ. Отключите для экономии памяти и ЦП на крупных репозиториях.</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Модель встраивания:</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Модель Ollama для генерации векторных представлений семантического поиска. Отображаются только специализированные модели (nomic-embed-text, mxbai-embed-large, bge-m3, …). При отсутствии выбора используется nomic-embed-text.</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Модель Ollama для генерации векторных представлений семантического поиска. Отображаются только специализированные модели (embeddinggemma, qwen3-embedding, nomic-embed-text, …). При отсутствии выбора используется embeddinggemma.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Результатов на запрос (top-K):</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>с</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>мин</value></data>
@@ -508,6 +508,7 @@
 Если RAG отключён, установите `ragEnabled = true` в настройках.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>Соответствующий код не найден для: «{0}»</value></data>
   <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ Выполнен только поиск по ключевым словам: семантический поиск отключён в настройках, поэтому код, совпадающий лишь по смыслу, не рассматривался.</value></data>
+  <data name="SearchKeywordOnlyNoEmbeddingModel" xml:space="preserve"><value>⚠ Выполнен только поиск по ключевым словам: модель эмбеддингов не задана и не установлена (она необязательна), поэтому код, совпадающий лишь по смыслу, не рассматривался.</value></data>
   <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ Выполнен только поиск по ключевым словам: модель эмбеддингов «{0}» не ответила, поэтому код, совпадающий лишь по смыслу, не рассматривался. См. /diagnostics.</value></data>
 
   <!-- Agent memory -->

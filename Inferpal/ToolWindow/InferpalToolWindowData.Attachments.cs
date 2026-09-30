@@ -78,8 +78,9 @@ internal partial class InferpalToolWindowData
             var (_, results) = _indexService.TryGetShadow(trimmed);
             if (results is null || results.Count == 0)
             {
-                var model = string.IsNullOrEmpty(_config.RagEmbeddingModel) ? "nomic-embed-text" : _config.RagEmbeddingModel;
-                var embedding = await _client.GetEmbeddingAsync(trimmed, model, ct);
+                // The model the index's vectors came from; none (no embedding model) = no auto-context, as before.
+                if (_indexService.QueryEmbeddingModel is not { } model) return string.Empty;
+                var embedding = await Services.Inference.EmbeddingModels.EmbedCodeQueryAsync(_client, model, trimmed, ct);
                 if (embedding is null) return string.Empty;
                 results = await _indexService.SearchAsync(embedding, trimmed, RagAutoContext.DefaultMaxChunks, ct);
             }

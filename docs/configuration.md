@@ -42,9 +42,9 @@ Every persisted setting, its type, and default value.
 | `inlineCompletionModel` | string | `""` | Dedicated FIM model (empty = `defaultModel`) |
 | `inlineEditModel` | string | `""` | Inline Edit model (fallback: `codeActionsModel` → `defaultModel`) |
 | `agentModel` | string | `""` | AgentOrchestrator model (empty = `defaultModel`) |
-| `utilityModel` | string | `""` | Model for background utility tasks — session titles, `/commit` message proposals, compaction summaries (empty = `defaultModel`). A small fast model is ideal; resolution is centralized in `ModelRouter` |
+| `utilityModel` | string | `""` | Model for background utility tasks — session titles, `/commit` message proposals, compaction summaries (empty = `defaultModel`). Optional: the compaction summary replaces the turns it covers, and small models keep fewer of its facts — see [Models](models.md#by-graphics-card). Resolution is centralized in `ModelRouter` |
 | `modelRouterAuto` | bool | `false` | Model Router auto mode: when no `utilityModel` is set, utility tasks use the model `/bench` recommended for the utility role — but only if it is already warm in VRAM (a cold model is never loaded for a title or commit message; falls back to the chat model). An explicit `utilityModel` always wins |
-| `ragEmbeddingModel` | string | `""` | Embedding model (empty = `nomic-embed-text`) |
+| `ragEmbeddingModel` | string | `""` | Embedding model — optional. Empty = the best embedding model installed (EmbeddingGemma first); none installed = keyword search only |
 
 ### Behavior & safety
 
@@ -156,7 +156,7 @@ runner or compiler mistakes a backup for the file it copies.
   // Shown by `/onboard`, applied only by `/onboard apply`.
   "recommend": {
     "agentModel": "devstral-small-2:24b",
-    "utilityModel": "qwen2.5:3b",
+    "ragEmbeddingModel": "embeddinggemma",
     "contextWindowSize": 16384
   }
 }

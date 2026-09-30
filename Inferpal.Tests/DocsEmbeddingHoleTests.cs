@@ -60,7 +60,7 @@ public sealed class DocsEmbeddingHoleTests : IDisposable
         {
             OnEmbedding = _ => served++ < embedFirst ? [0.1f, 0.2f] : null,
         };
-        var docs = new DocsIndexService(client, new InferpalConfig())
+        var docs = new DocsIndexService(client, new InferpalConfig { RagEmbeddingModel = "embed-model" })
         {
             CrawlForTests = (_, _) => Task.FromResult(new List<DocCrawler.Page>
             {
@@ -75,7 +75,7 @@ public sealed class DocsEmbeddingHoleTests : IDisposable
     /// <summary>A second service over the same <c>docs.db</c>: what the next session sees.</summary>
     private static async Task<DocsIndexService> RehydratedAsync()
     {
-        var docs = new DocsIndexService(new FakeInferenceProvider(), new InferpalConfig());
+        var docs = new DocsIndexService(new FakeInferenceProvider(), new InferpalConfig { RagEmbeddingModel = "embed-model" });
         await docs.LoadAsync(CancellationToken.None);
         return docs;
     }
@@ -113,7 +113,7 @@ public sealed class DocsEmbeddingHoleTests : IDisposable
 
     private static async Task<string> DocsListAsync(DocsIndexService docs)
     {
-        var config = new InferpalConfig { DocSitesJson = DocSite.Serialize([Site]) };
+        var config = new InferpalConfig { RagEmbeddingModel = "embed-model", DocSitesJson = DocSite.Serialize([Site]) };
         return await DocsCommandHandler.HandleAsync(
             config, docs, ["/docs"], new Progress<string>(_ => { }), CancellationToken.None);
     }

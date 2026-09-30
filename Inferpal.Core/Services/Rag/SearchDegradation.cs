@@ -13,6 +13,9 @@ internal enum SemanticSide
 
     /// <summary>The embedding never came back: model not pulled, backend down, breaker open.</summary>
     EmbeddingUnavailable,
+
+    /// <summary>No embedding model is set or installed: a keyword-only index, which is a choice, not a failure.</summary>
+    NoEmbeddingModel,
 }
 
 /// <summary>
@@ -41,9 +44,14 @@ internal static class SearchDegradation
     /// it is a failure, and it is reported as one.
     /// </param>
     /// <param name="embedding">What the provider returned for the query.</param>
-    internal static SemanticSide Classify(bool semanticRequested, float[]? embedding) =>
+    /// <param name="modelChosen">
+    /// False when the index has no embedding model (none set, none installed): nothing failed, so nothing sends the
+    /// user to /diagnostics.
+    /// </param>
+    internal static SemanticSide Classify(bool semanticRequested, float[]? embedding, bool modelChosen = true) =>
         embedding is { Length: > 0 } ? SemanticSide.Ran
         : !semanticRequested          ? SemanticSide.DisabledByUser
+        : !modelChosen                ? SemanticSide.NoEmbeddingModel
         : SemanticSide.EmbeddingUnavailable;
 
     /// <summary>
@@ -55,6 +63,7 @@ internal static class SearchDegradation
         {
             SemanticSide.DisabledByUser       => noResults + "\n\n" + Strings.SearchKeywordOnlySemanticOff,
             SemanticSide.EmbeddingUnavailable => noResults + "\n\n" + Strings.SearchKeywordOnlyEmbeddingUnavailable(embeddingModel),
+            SemanticSide.NoEmbeddingModel     => noResults + "\n\n" + Strings.SearchKeywordOnlyNoEmbeddingModel,
             _                                 => noResults,
         };
 }

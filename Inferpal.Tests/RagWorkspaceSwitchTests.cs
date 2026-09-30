@@ -57,7 +57,7 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
 
     private ProjectIndexService NewService(FakeInferenceProvider provider, int debounceMs = 100)
     {
-        var config = new InferpalConfig { RagEnabled = true };
+        var config = new InferpalConfig { RagEnabled = true, RagEmbeddingModel = "embed-model" };
         var svc = new ProjectIndexService(provider, config, new LspSemanticProvider()) { DebounceMs = debounceMs };
         _services.Add(svc);
         return svc;
@@ -133,7 +133,7 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
         await WaitUntilAsync(async () => await Mentions(svc, "AlphaProbe") && !svc.IsIndexing,
             "the pass over A is finished", () => svc.Status);
 
-        await svc.ShadowPreWarmAsync("AlphaProbe", "embed-model", CancellationToken.None);
+        await svc.ShadowPreWarmAsync("AlphaProbe", CancellationToken.None);
 
         // Witness: the precomputed search does carry A's chunks.
         var before = svc.TryGetShadow("AlphaProbe").Results;

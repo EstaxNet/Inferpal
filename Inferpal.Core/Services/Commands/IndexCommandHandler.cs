@@ -12,9 +12,6 @@ namespace Inferpal.Services.Commands;
 /// </summary>
 internal static class IndexCommandHandler
 {
-    /// <summary>Fallback embedding model shown when none is configured.</summary>
-    private const string DefaultEmbeddingModel = "nomic-embed-text";
-
     /// <param name="index">Background index service.</param>
     /// <param name="config">Current configuration (RAG toggle, model, top-K).</param>
     /// <param name="parts">Tokenised command; <c>parts[1] == "rebuild"</c> restarts indexing.</param>
@@ -35,7 +32,8 @@ internal static class IndexCommandHandler
             return Strings.IndexRebuildStarted(root);
         }
 
-        var model = string.IsNullOrEmpty(config.RagEmbeddingModel) ? DefaultEmbeddingModel : config.RagEmbeddingModel;
+        // The model the index's vectors came from — "—" when it has none (the status line says keyword search only).
+        var model = index.QueryEmbeddingModel ?? EmbeddingModels.Configured(config) ?? "—";
         var sb    = new StringBuilder();
 
         sb.AppendLine(Strings.IndexTitle);

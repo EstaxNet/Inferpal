@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>Si activé, chaque question de code récupère silencieusement les extraits indexés les plus pertinents et les ajoute au prompt (en ignorant ce qui est déjà joint). Nécessite l'indexation en arrière-plan.</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>Si activé, Inferpal indexe tous les fichiers source de la solution en arrière-plan et utilise la recherche sémantique pour fournir un contexte de code pertinent à l'IA. Désactivez pour économiser mémoire ou CPU sur les grands dépôts.</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Modèle d'embeddings :</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Modèle Ollama utilisé pour générer les embeddings de recherche sémantique. Seuls les modèles dédiés sont listés (nomic-embed-text, mxbai-embed-large, bge-m3, …). Repli sur nomic-embed-text si aucun n'est sélectionné.</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Modèle Ollama utilisé pour générer les embeddings de recherche sémantique. Seuls les modèles dédiés sont listés (embeddinggemma, qwen3-embedding, nomic-embed-text, …). Repli sur embeddinggemma si aucun n'est sélectionné.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Résultats par requête (top-K) :</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
@@ -509,6 +509,7 @@ Utilisez `/index rebuild` pour lancer l'indexation ou attendez la passe en arri�
 Si le RAG est désactivé, réglez `ragEnabled = true` dans les paramètres.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>Aucun code pertinent trouvé pour : « {0} »</value></data>
   <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ Seule la recherche par mots-clés a tourné : la recherche sémantique est désactivée dans les réglages, donc le code qui ne correspond que par le sens n'a pas été regardé.</value></data>
+  <data name="SearchKeywordOnlyNoEmbeddingModel" xml:space="preserve"><value>⚠ Seule la recherche par mots-clés a tourné : aucun modèle d'embedding n'est réglé ni installé (il est facultatif), donc le code qui ne correspond que par le sens n'a pas été regardé.</value></data>
   <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ Seule la recherche par mots-clés a tourné : le modèle d'embedding « {0} » n'a pas répondu, donc le code qui ne correspond que par le sens n'a pas été regardé. Voir /diagnostics.</value></data>
 
   <data name="UpdateMemoryNoProject" xml:space="preserve"><value>Aucun fichier .sln ou dossier .inferpal trouvé — impossible de localiser le fichier mémoire.</value></data>

@@ -2254,9 +2254,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                 // Only the models recognised as embedding models, plus the configured one.
                 SelectionPreservingList.Sync(AvailableEmbeddingModels, models.Where(IsEmbeddingModel).ToList(),
                                              [RagEmbeddingModel]);
-                // Auto-select first available when nothing is configured yet.
+                // Auto-select when nothing is configured yet: the default model's family if installed, else the first.
                 if (string.IsNullOrEmpty(RagEmbeddingModel) && AvailableEmbeddingModels.Count > 0)
-                    RagEmbeddingModel = AvailableEmbeddingModels[0];
+                    RagEmbeddingModel = Services.Inference.EmbeddingModels.PreferredOf(AvailableEmbeddingModels);
             });
         }
         // ⚠ The context names ITS OWN method, not a neighbour: this catch belongs to the model-list

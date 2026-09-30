@@ -73,7 +73,7 @@ flowchart TD
 
 ### Settings
 
-`ragEnabled`, `ragAutoContextEnabled`, `ragEmbeddingModel` (default `nomic-embed-text`),
+`ragEnabled`, `ragAutoContextEnabled`, `ragEmbeddingModel` (empty = the best embedding model installed, or keywords only),
 `ragTopK`, `ragSimilarityThreshold`, `lspEnabled` — see
 [Configuration](configuration.md#rag--semantic-index).
 

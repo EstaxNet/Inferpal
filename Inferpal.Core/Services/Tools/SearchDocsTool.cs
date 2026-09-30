@@ -73,12 +73,12 @@ internal sealed class SearchDocsTool : ITool
             return Strings.DocsNotReady(_docs.Status);
 
         // Embed the query unless the embedding circuit is open (keyword fallback then).
-        var model = string.IsNullOrEmpty(_config.RagEmbeddingModel)
-            ? "nomic-embed-text"
-            : _config.RagEmbeddingModel;
+        // Bare text, like the documents of this index: the code-search formats of EmbeddingModels are not for prose.
+        // The model the stored vectors came from; none = keyword search only, by choice.
+        var model = _docs.QueryEmbeddingModel;
 
         float[]? queryEmbedding = null;
-        if (!_client.IsEmbeddingCircuitOpen)
+        if (model is not null && !_client.IsEmbeddingCircuitOpen)
             queryEmbedding = await _client.GetEmbeddingAsync(query, model, ct);
 
         var results = await _docs.SearchAsync(queryEmbedding, query, topK, ct);
@@ -87,8 +87,8 @@ internal sealed class SearchDocsTool : ITool
             // setting: an open breaker is a FAILURE, and it is reported as one.
             return SearchDegradation.Explain(
                 Strings.DocsNoResults(query),
-                SearchDegradation.Classify(semanticRequested: true, queryEmbedding),
-                model);
+                SearchDegradation.Classify(semanticRequested: true, queryEmbedding, modelChosen: model is not null),
+                model ?? string.Empty);
 
         var sb = new StringBuilder();
         // ⚠ The label is read from ALL the hits, and each one's provenance from the data. Deduced

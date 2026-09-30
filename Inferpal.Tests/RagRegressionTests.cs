@@ -46,7 +46,7 @@ public sealed class RagRegressionTests : IDisposable
 
     private ProjectIndexService NewService(FakeInferenceProvider provider, InferpalConfig? config = null)
     {
-        var svc = new ProjectIndexService(provider, config ?? new InferpalConfig { RagEnabled = true }, new LspSemanticProvider())
+        var svc = new ProjectIndexService(provider, config ?? new InferpalConfig { RagEnabled = true, RagEmbeddingModel = "embed-model" }, new LspSemanticProvider())
         {
             DebounceMs = 100,
         };

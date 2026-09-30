@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>When enabled, each code question silently retrieves the most relevant indexed snippets and adds them to the prompt (skipping anything already attached). Requires background indexing.</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>When enabled, Inferpal indexes all source files in the solution in the background and uses semantic search to provide relevant code context to the AI. Disable to save memory or CPU on large repositories.</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Embedding model:</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Ollama model used to generate embeddings for semantic search. Only dedicated embedding models are listed (nomic-embed-text, mxbai-embed-large, bge-m3, …). Falls back to nomic-embed-text if none is selected.</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Ollama model used to generate embeddings for semantic search. Only dedicated embedding models are listed (embeddinggemma, qwen3-embedding, nomic-embed-text, …). Falls back to embeddinggemma if none is selected.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Results per query (top-K):</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
@@ -509,6 +509,7 @@ Use `/index rebuild` to start indexing or wait for the background pass to comple
 If RAG is disabled, set `ragEnabled = true` in settings.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>No relevant code found for: "{0}"</value></data>
   <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ Only a keyword search ran: semantic search is turned off in the settings, so code that matches by meaning alone was never looked at.</value></data>
+  <data name="SearchKeywordOnlyNoEmbeddingModel" xml:space="preserve"><value>⚠ Only a keyword search ran: no embedding model is set or installed (one is optional), so code that matches by meaning alone was not looked at.</value></data>
   <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ Only a keyword search ran: the embedding model “{0}” did not answer, so code that matches by meaning alone was never looked at. See /diagnostics.</value></data>
 
   <!-- Agent memory -->

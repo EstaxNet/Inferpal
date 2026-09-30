@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>Se attivato, ogni domanda di codice recupera gli snippet indicizzati più pertinenti e li aggiunge al prompt (saltando quelli già allegati). Richiede l'indicizzazione in background.</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>Se abilitato, Inferpal indicizza tutti i file sorgente della soluzione in background e usa la ricerca semantica per fornire contesto di codice rilevante all'IA. Disabilitare per risparmiare memoria o CPU su repository di grandi dimensioni.</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Modello di embedding:</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Modello Ollama utilizzato per generare embedding per la ricerca semantica. Vengono elencati solo i modelli di embedding dedicati (nomic-embed-text, mxbai-embed-large, bge-m3, …). Ripiego su nomic-embed-text se nessuno è selezionato.</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Modello Ollama utilizzato per generare embedding per la ricerca semantica. Vengono elencati solo i modelli di embedding dedicati (embeddinggemma, qwen3-embedding, nomic-embed-text, …). Ripiego su embeddinggemma se nessuno è selezionato.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Risultati per query (top-K):</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
@@ -508,6 +508,7 @@ Usare `/index rebuild` per avviare l'indicizzazione o attendere il processo in b
 Se RAG è disabilitato, impostare `ragEnabled = true` nelle impostazioni.</value></data>
   <data name="RagNoResults" xml:space="preserve"><value>Nessun codice pertinente trovato per: «{0}»</value></data>
   <data name="SearchKeywordOnlySemanticOff" xml:space="preserve"><value>⚠ È stata eseguita solo la ricerca per parole chiave: la ricerca semantica è disattivata nelle impostazioni, quindi il codice che corrisponde solo per significato non è stato esaminato.</value></data>
+  <data name="SearchKeywordOnlyNoEmbeddingModel" xml:space="preserve"><value>⚠ È stata eseguita solo la ricerca per parole chiave: nessun modello di embedding è impostato o installato (è facoltativo), quindi il codice che corrisponde solo per significato non è stato esaminato.</value></data>
   <data name="SearchKeywordOnlyEmbeddingUnavailable" xml:space="preserve"><value>⚠ È stata eseguita solo la ricerca per parole chiave: il modello di embedding «{0}» non ha risposto, quindi il codice che corrisponde solo per significato non è stato esaminato. Vedi /diagnostics.</value></data>
 
   <!-- Agent memory -->
