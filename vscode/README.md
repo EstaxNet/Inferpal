@@ -168,7 +168,7 @@ Language · Provider (Ollama / LM Studio / OpenAI-compatible) · Server URL · A
 4. Set the server URL and select your model in Settings
 5. Click **Test** to verify the connection — you're ready
 
-> **Recommended models:** `qwen3.8` or `devstral-small-2` for the chat and the agent, Mellum2 or Qwen3.8 for inline completion (which fits beside the agent depends on your card: [By graphics card](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card)), optionally `embeddinggemma` for semantic search. Each model's measured results: [Models](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md).
+> **Recommended models:** `qwen3.8` or `devstral-small-2` for the chat and the agent, Mellum2 or Qwen3.8 for inline completion (which fits beside the agent depends on your card: [By graphics card](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card)), optionally `embeddinggemma` for semantic search. Each model's measured results — on the one 24 GB test server we have; larger models and cards could not be tested: [Models](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md).
 
 ---
 

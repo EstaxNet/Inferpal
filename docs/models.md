@@ -10,6 +10,17 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 > [At a glance](#at-a-glance). Every figure on this page comes from Inferpal's own test battery — real tasks on real
 > projects, judged on their outcome (the project's tests green), never on the model's wording.
 
+> [!NOTE]
+> **These recommendations are bounded by the means we have**: one test server with a **24 GB** graphics card, running
+> LM Studio. Larger models, larger cards and faster hardware could not be tested — not for lack of interest, for lack
+> of budget and infrastructure. A model missing from this page is not a model measured and rejected; a speed quoted
+> here is that server's, and yours will differ.
+>
+> **More capable hardware makes Inferpal better.** On the battery, the best results came from the largest models the
+> server could run (Qwen3.8 27B: 14 tasks in 14; the small models trail at 6 and 7) — although size alone does not
+> decide (Gemma 4 26B scored below Gemma 4 12B). And more memory is more than a larger model: a longer context before
+> compaction, and a separate autocomplete or utility model beside the agent, which the 12 and 16 GB cards could not hold.
+
 ## At a glance
 
 | Model | Use it for | What Inferpal does for it | Server notes |
