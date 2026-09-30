@@ -3,6 +3,23 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.26
+
+Semantic search without asking for a model you may not have, better search with the models you
+do have, and long conversations summarized instead of cut.
+
+- **No embedding model is required**: with the field empty, Inferpal uses the best embedding model
+  you have installed (EmbeddingGemma first); with none, the search runs on keywords, said as a
+  choice rather than as an error.
+- **EmbeddingGemma and Qwen3 Embedding are sent the query format their authors document**: the
+  right file in the top 5 results for 109 queries in 192 with EmbeddingGemma, against 96 with the
+  previous default; Qwen3 Embedding went from 77 to 92.
+- **A long conversation is summarized again instead of cut** on a model that reads slowly: the
+  time allowed grows with what there is to read, and the message shown when it still runs out
+  names the "Compaction timeout" setting.
+- **The model guide says what it could measure**: one 24 GB test server; the utility model is
+  best left empty — [Models](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md).
+
 ## 1.6.25
 
 Which models to run on your graphics card, two more models that work, and small models that no
