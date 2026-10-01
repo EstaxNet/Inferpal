@@ -189,7 +189,8 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Model.** Google, three sizes — 12B, 26B A4B (mixture of experts, 4B active) and 31B — quantization-aware Q4_0,
   reasoning switchable (thought channel), up to 262,144-token context.
 - **Tool calls.** `<|tool_call>call:name{key:<|"|>value<|"|>}<tool_call|>` — strings wrapped in `<|"|>`, numbers and
-  booleans bare.
+  booleans bare. The models also write some strings and keys in plain JSON quotes (`path:"src/a.cs"`, Gemma 4 12B in
+  about one call in eleven on our bench): Inferpal reads those as the string inside the quotes.
 - **Inferpal.** On LM Studio, the bundled chat template fails whenever a request carries tools (see below): Inferpal
   describes the tools in the system prompt instead, reads the calls from the text, and stops the model where it opens
   the tool's response — Gemma's own format ends a call with `<tool_call|><|tool_response>`, and a model nobody stops

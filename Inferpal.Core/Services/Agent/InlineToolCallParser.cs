@@ -22,7 +22,8 @@ namespace Inferpal.Services.Agent;
 /// Supported shapes:
 /// </para>
 /// <list type="bullet">
-///   <item><description><c>&lt;tool_call&gt;{…}&lt;/tool_call&gt;</c> blocks (one or more).</description></item>
+///   <item><description><c>&lt;tool_call&gt;{…}&lt;/tool_call&gt;</c> blocks (one or more) — including a body that stops
+///     short of its closing brackets, or is broken with its name readable (<see cref="TryAddMalformedTagCall"/>).</description></item>
 ///   <item><description>The Qwen/GLM XML shape
 ///     <c>&lt;tool_call&gt;&lt;function=name&gt;&lt;parameter=key&gt;value&lt;/parameter&gt;…&lt;/function&gt;&lt;/tool_call&gt;</c>.</description></item>
 ///   <item><description>Meta Muse Glimmer's ATEM shape
@@ -123,7 +124,7 @@ internal static class InlineToolCallParser
         var tagMatched = false;
         foreach (Match m in ToolCallTagRegex.Matches(content))
         {
-            if (TryAddFromJson(m.Groups[1].Value, calls))
+            if (TryAddFromJson(m.Groups[1].Value, calls) || TryAddMalformedTagCall(m.Groups[1].Value, calls))
             {
                 cleaned    = cleaned.Replace(m.Value, string.Empty);
                 tagMatched = true;
@@ -222,6 +223,58 @@ internal static class InlineToolCallParser
         }
 
         return (null, content);
+    }
+
+    /// <summary>
+    /// A <c>&lt;tool_call&gt;</c> body that is not valid JSON: still the call the model meant to make.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Rejected, the block stays in the content and becomes the final answer: the run ends on raw JSON, nothing
+    /// executed, and the model never learns its call was malformed (Gemma 4 under <c>PromptedTools</c> stops one
+    /// closing bracket short). Two cases, nothing guessed in either:
+    /// <list type="bullet">
+    ///   <item><description>Unfinished — every string closed, brackets still open at the end: the closers are appended
+    ///     and the call is the one the model wrote.</description></item>
+    ///   <item><description>Broken elsewhere, the name written first: an unreadable call, which the funnel
+    ///     (<c>AgentOrchestrator.ExecuteToolSafeAsync</c>) refuses with the cause, so the model can resend it.</description></item>
+    /// </list>
+    /// A body with no readable name names no call and stays text.
+    /// </remarks>
+    private static bool TryAddMalformedTagCall(string body, List<ToolCallDto> calls)
+    {
+        if (Unfinished(body) is { } completed && TryAddFromJson(completed, calls))
+            return true;
+
+        var name = LeadingNameRegex.Match(body);
+        if (!name.Success) return false;
+        calls.Add(new ToolCallDto(new ToolCallFunction(name.Groups[1].Value, EmptyObject()) { UnparsedArguments = body }));
+        return true;
+    }
+
+    // The name written as the first property — the shape every model writes; a "name" further in may be an argument's.
+    private static readonly Regex LeadingNameRegex =
+        new(@"^\{\s*""name""\s*:\s*""([A-Za-z0-9_.\-]+)""", RegexOptions.Compiled, RegexBudget.Default);
+
+    /// <summary><paramref name="json"/> with the closers of the brackets it leaves open appended; <c>null</c> when it
+    /// is not exactly that — a string still open, a closer that does not match, or nothing left open.</summary>
+    private static string? Unfinished(string json)
+    {
+        var open     = new Stack<char>();
+        var inString = false;
+        for (var k = 0; k < json.Length; k++)
+        {
+            var c = json[k];
+            if (inString)
+            {
+                if (c == '\\') k++;
+                else if (c == '"') inString = false;
+                continue;
+            }
+            if (c == '"') inString = true;
+            else if (c is '{' or '[') open.Push(c == '{' ? '}' : ']');
+            else if (c is '}' or ']' && (open.Count == 0 || open.Pop() != c)) return null;
+        }
+        return inString || open.Count == 0 ? null : json + new string(open.ToArray());   // innermost first
     }
 
     /// <summary>Parses a JSON object — or array of objects — appending any valid tool calls.</summary>

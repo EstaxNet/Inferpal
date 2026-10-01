@@ -39,6 +39,11 @@ internal static class GemmaCallArguments
         }
         if (s[i] == '{') return Container(s, ref i, json, '{', '}', keyed: true);
         if (s[i] == '[') return Container(s, ref i, json, '[', ']', keyed: false);
+        if (AsciiQuoted(s, ref i, ",}]") is { } text)
+        {
+            json.Append(JsonSerializer.Serialize(text));
+            return true;
+        }
 
         // A bare scalar: up to the next separator. A number or true/false/null stays as it is; anything else is text.
         var start = i;
@@ -73,6 +78,8 @@ internal static class GemmaCallArguments
                     key = s[(i + Quote.Length)..end];
                     i   = end + Quote.Length;
                 }
+                else if (AsciiQuoted(s, ref i, ":") is { } quotedKey)
+                    key = quotedKey;
                 else
                 {
                     var start = i;
@@ -93,6 +100,33 @@ internal static class GemmaCallArguments
             i++;
             return true;
         }
+    }
+
+    /// <summary>
+    /// A string written in ASCII quotes, JSON-style, at <paramref name="i"/> — the quote that closes it is the first one
+    /// followed by one of <paramref name="followers"/> — or <c>null</c>, <paramref name="i"/> unmoved.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Gemma 4 writes some of its strings this way instead of in its <c>&lt;|"|&gt;</c> token. Read as a bare scalar, the
+    /// value kept its quotes: a path no file has, a command no shell can run, a key no tool reads. Written JSON-style, it
+    /// is read JSON-style — escapes included — unless it is not valid JSON, and then it is the text as written (a
+    /// Windows path: <c>\s</c> is no escape).
+    /// </remarks>
+    private static string? AsciiQuoted(string s, ref int i, string followers)
+    {
+        if (i >= s.Length || s[i] != '"') return null;
+        for (var k = i + 1; k < s.Length; k++)
+        {
+            if (s[k] == '\\') { k++; continue; }
+            if (s[k] != '"') continue;
+            var next = Blanks(s, k + 1);
+            if (next < s.Length && followers.IndexOf(s[next]) < 0) continue;
+            var raw = s[(i + 1)..k];
+            i = k + 1;
+            try   { return JsonSerializer.Deserialize<string>("\"" + raw + "\"") ?? raw; }
+            catch (JsonException) { return raw; }
+        }
+        return null;
     }
 
     private static bool IsJsonScalar(string text)
