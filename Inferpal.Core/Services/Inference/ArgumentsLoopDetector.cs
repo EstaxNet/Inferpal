@@ -19,8 +19,9 @@ namespace Inferpal.Services.Inference;
 /// identical test bodies), and a list of edits on one file repeats its path and keys. Two facts set a model's loop
 /// apart, both required:
 /// <list type="bullet">
-///   <item><description>the repeating block contains a raw quote — JSON STRUCTURE repeating. A file is written inside
-///     one string value, where every quote is escaped (<c>\"</c>), however much the file repeats;</description></item>
+///   <item><description>the repeating block is JSON STRUCTURE: it holds a raw quote, or it is made of JSON punctuation
+///     alone (<c> ]} ]} </c>). A file is written inside one string value, where every quote is escaped (<c>\"</c>),
+///     however much the file repeats;</description></item>
 ///   <item><description>the block repeats EXACTLY, three times in a row. Similar edits differ somewhere in each one (a
 ///     name, a line); a loop does not.</description></item>
 /// </list>
@@ -61,17 +62,35 @@ internal sealed class ArgumentsLoopDetector
         var block = text.AsSpan(text.Length - period);
         for (var k = 2; k <= ExactRepeats; k++)
             if (!text.AsSpan(text.Length - k * period, period).SequenceEqual(block)) return false;
-        return HasRawQuote(block);
+        return HasRawQuote(text, text.Length - period) || IsJsonSyntaxOnly(block);
     }
 
-    /// <summary>A quote that is not escaped: preceded by an even number of backslashes.</summary>
-    private static bool HasRawQuote(ReadOnlySpan<char> s)
+    /// <summary>Made of JSON punctuation and whitespace alone, with some punctuation in it — closing brackets written
+    /// over and over (<c> ]} ]} ]}</c>) repeat structure without a single quote.</summary>
+    /// <remarks>Whitespace alone is not structure: a file's long run of spaces repeats too.</remarks>
+    private static bool IsJsonSyntaxOnly(ReadOnlySpan<char> block)
     {
-        for (var i = 0; i < s.Length; i++)
+        var punctuation = false;
+        foreach (var c in block)
         {
-            if (s[i] != '"') continue;
+            if (c is '[' or ']' or '{' or '}' or ',' or ':') punctuation = true;
+            else if (!char.IsWhiteSpace(c)) return false;
+        }
+        return punctuation;
+    }
+
+    /// <summary>A quote at or after <paramref name="start"/> that is not escaped: preceded by an even number of
+    /// backslashes.</summary>
+    /// <remarks>⚠ The backslashes are counted through the WHOLE text, not from the start of the block: a block that
+    /// begins right after a backslash would otherwise see <c>\\\"</c> as <c>\\"</c> — an escaped quote read as a raw one,
+    /// and a file holding escaped JSON refused as a loop.</remarks>
+    private static bool HasRawQuote(string text, int start)
+    {
+        for (var i = start; i < text.Length; i++)
+        {
+            if (text[i] != '"') continue;
             var backslashes = 0;
-            for (var j = i - 1; j >= 0 && s[j] == '\\'; j--) backslashes++;
+            for (var j = i - 1; j >= 0 && text[j] == '\\'; j--) backslashes++;
             if (backslashes % 2 == 0) return true;
         }
         return false;

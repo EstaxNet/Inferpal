@@ -35,7 +35,7 @@ public class ArgumentsLoopTests
         var loops = JsonSerializer.Deserialize<Loop[]>(
             File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal.Tests", "Fixtures", "devstral-looping-arguments.json")),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
-        Assert.Equal(2, loops.Length);   // witness: both captured shapes are read
+        Assert.Equal(3, loops.Length);   // witness: every captured shape is read
         return loops[index];
     }
 
@@ -73,18 +73,20 @@ public class ArgumentsLoopTests
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
+    [InlineData(2)]
     public async Task ACallThatKeepsRepeatingItsArguments_IsStopped_AndRefusedWithItsCause(int shape)
     {
         var loop = Captured(shape);
-        var text = Text(loop, 100);
+        // At least as long as the captured loops ran — a 4-character block needs thousands of repeats.
+        var text = Text(loop, Math.Max(100, 16_000 / loop.Block.Length));
         var turn = await SendAsync(CallStream("apply_edits", text));
 
         var call = Assert.Single(Assert.IsAssignableFrom<List<ToolCallDto>>(turn.ToolCalls)).Function;
         Assert.True(call.StoppedRepeating, loop.Shape);
         Assert.True(turn.StoppedRepeating);
         Assert.True(turn.CutAtLimit);   // incomplete — every reader that refuses a cut reply refuses this one
-        Assert.True((call.UnparsedArguments ?? call.Arguments.GetRawText()).Length < loop.Head.Length + 20 * loop.Block.Length,
-                    "the client stopped reading within a few repeats");
+        Assert.True((call.UnparsedArguments ?? call.Arguments.GetRawText()).Length < text.Length / 2,
+                    "the client stopped reading long before the end of the loop");
 
         var refusal = await AgentOrchestrator.ExecuteToolSafeAsync(EmptyToolRegistry.Instance, call, turn.CutAtLimit,
                                                                    CancellationToken.None);
@@ -117,6 +119,25 @@ public class ArgumentsLoopTests
         var call = Assert.Single(Assert.IsAssignableFrom<List<ToolCallDto>>(turn.ToolCalls)).Function;
         Assert.False(call.StoppedRepeating);
         Assert.False(turn.StoppedRepeating);
+        Assert.Equal(content, call.Arguments.GetProperty("content").GetString());
+    }
+
+    /// <summary>
+    /// ⚠ Reference arm, at the edge of a block: a file that holds escaped JSON — this test's own fixture, the captured
+    /// loops — written by write_file. A repeating block can start right after a backslash; counted from the block's
+    /// start, <c>\\\"</c> reads as <c>\\"</c> and an escaped quote passes for a raw one.
+    /// </summary>
+    [Fact]
+    public async Task AFileHoldingEscapedJson_IsWrittenUntouched()
+    {
+        var content   = File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal.Tests", "Fixtures", "devstral-looping-arguments.json"));
+        var arguments = JsonSerializer.Serialize(new { path = "Fixtures/devstral-looping-arguments.json", content },
+            new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+
+        var turn = await SendAsync(CallStream("write_file", arguments));
+
+        var call = Assert.Single(Assert.IsAssignableFrom<List<ToolCallDto>>(turn.ToolCalls)).Function;
+        Assert.False(call.StoppedRepeating);
         Assert.Equal(content, call.Arguments.GetProperty("content").GetString());
     }
 
