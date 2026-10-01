@@ -145,6 +145,17 @@ internal sealed class AgentOrchestrator
         // the whole product with nobody judging it — and `ToolArgs`, which never throws by contract,
         // then returned the DEFAULT value of every argument. A `run_tests` whose filter arrived as a
         // string became the whole suite.
+        // ⚠ Before the cut: a reply stopped because its call kept repeating is cut too, and "split the work" is not the
+        // remedy — the model has to write the call once.
+        if (call.StoppedRepeating)
+        {
+            Diagnostics.Record("Agent", $"Refused a '{call.Name}' call: its arguments kept repeating the same text and were stopped.");
+            return Task.FromResult(
+                $"Error: the arguments of this '{call.Name}' call kept repeating the same text, so the reply was stopped "
+                + "and the call was NOT executed. Send the call again, complete and written only once — inside a JSON "
+                + "string, every quote of the code is escaped (\\\").");
+        }
+
         call = ToolCallArguments.Judge(call);
 
         if (call.UnparsedArguments is not { } raw)

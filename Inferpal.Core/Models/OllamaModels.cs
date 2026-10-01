@@ -96,6 +96,11 @@ record ToolCallFunction(
     /// (turn cut off mid-call, malformed output). <see cref="Arguments"/> is then an empty object and
     /// the call must not run with it — see <c>AgentOrchestrator.ExecuteToolSafeAsync</c>.</summary>
     [JsonIgnore] public string? UnparsedArguments { get; init; }
+
+    /// <summary>The arguments of this call kept repeating their own JSON while they streamed, and the client stopped
+    /// reading (<c>ArgumentsLoopDetector</c>). Never executed; refused with that cause by
+    /// <c>AgentOrchestrator.ExecuteToolSafeAsync</c>, whatever <see cref="Arguments"/> parsed into.</summary>
+    [JsonIgnore] public bool StoppedRepeating { get; init; }
 }
 
 // ── Tool schema DTOs ─────────────────────────────────────────────────────────

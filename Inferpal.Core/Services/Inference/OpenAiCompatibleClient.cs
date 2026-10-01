@@ -374,6 +374,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var  reasoningLoop = new TextLoopDetector();
         var  contentLoop   = new TextLoopDetector();
         var  looping       = false;
+        // A structured call whose arguments repeat their own JSON: the third channel a model loops in.
+        var  argumentsLoop = new ArgumentsLoopDetector();
+        var  argsLooping   = false;
         // A model whose addressed messages the server streams as content (Muse Glimmer): reasoning split from answer.
         var  envelope      = new ChannelEnvelope();
 
@@ -499,11 +502,22 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 }
 
                 if (delta.ToolCalls is { Count: > 0 } tcs)
+                {
                     foreach (var tc in tcs)
                     {
                         toolAcc.Add(tc.Index, tc.Id, tc.Function?.Name, tc.Function?.Arguments);
                         received += tc.Function?.Arguments?.Length ?? 0;
+                        argsLooping |= argumentsLoop.Repeats(tc.Function?.Arguments ?? string.Empty);
                     }
+                    if (argsLooping)
+                    {
+                        looping = true;
+                        Diagnostics.Record("OpenAiCompatibleClient.SendChat",
+                            $"Response from \"{model}\" stopped by Inferpal after {received} characters: the arguments of "
+                            + "its tool call kept repeating the same text. The call is refused, not run.");
+                        break;
+                    }
+                }
 
                 // Leaving the loop disposes the stream: the connection closes, and the server stops generating.
                 if (received > maxChars)
@@ -549,6 +563,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         }
 
         var toolCalls   = toolAcc.Build();
+        // Stopped mid-call: whatever its arguments parse into, it is not the call the model meant (the funnel refuses it).
+        if (argsLooping && toolCalls is not null)
+            toolCalls = toolCalls.Select(c => c with { Function = c.Function with { StoppedRepeating = true } }).ToList();
         var contentText = contentBuilder.ToString();
         // The answer stopped at the length limit, not where the model meant to end: a caller that turns it
         // into an edit must not apply it (CodeActionPipeline.Finish).
