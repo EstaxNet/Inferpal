@@ -63,8 +63,8 @@ public class DocCountersTests
     [Fact]
     public void Readme_BuiltInToolCount_MatchesTheRegistry()
     {
-        // Same graph the host builds, with MCP/custom tools left at their empty defaults,
-        // so Definitions is exactly the built-in set.
+        // Same graph the host builds, with MCP/custom tools left at their empty defaults. ⚠ BuiltInNames, not
+        // Definitions: a tool not offered on this request (no index, no documentation) still counts as built in.
         var config   = new InferpalConfig();
         var client   = new FakeInferenceProvider();
         var editor   = new NullEditorSurface();
@@ -75,7 +75,7 @@ public class DocCountersTests
                                         new DocsIndexService(client, config), new OpenDocumentOverlay(),
                                         new NullDebugSession());
 
-        var actual = registry.Definitions.Count;
+        var actual = registry.BuiltInNames.Count;
 
         // ⚠ The claim is NOT written once. It was guarded in one file, then two, then three —
         // and each time the copy left outside the guard was the one that went wrong: the

@@ -256,8 +256,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// thing in both front-ends — so the single reader is delegated from here.</summary>
     public IReadOnlyList<string> DescribeMcpForBundle() => _mcp.DescribeForBundle();
 
+    /// <summary>Every built-in tool this registry holds, offered right now or not — the set the documentation
+    /// counts and lists. <see cref="Definitions"/> is what the model is offered on this request.</summary>
+    internal IReadOnlyCollection<string> BuiltInNames => _tools.Keys;
+
     public IReadOnlyList<ToolDefinition> Definitions =>
         _tools.Values
+            .Where(t => t.IsOffered)
             .Concat(UserTools)
             .Concat(McpTools)
             .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))

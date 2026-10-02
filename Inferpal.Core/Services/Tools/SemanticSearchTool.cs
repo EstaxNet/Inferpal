@@ -29,6 +29,10 @@ internal sealed class SemanticSearchTool : ITool
 
     public string Name => "search_codebase";
 
+    /// <summary>Offered while the index has something to search or is writing it: with semantic search turned off
+    /// and no index, its every answer is "not available" (see <see cref="ITool.IsOffered"/>).</summary>
+    public bool IsOffered => _index.ChunkCount > 0 || _index.IsIndexing;
+
     // ⚠ No "across ALL project files". The index skips what `indexExclude` excludes, folders it
     // could not list and files past the size cap — and it is PERSISTED, so a gap outlives the
     // session. That is exactly why the header below names the index state; claiming exhaustiveness
@@ -81,7 +85,11 @@ internal sealed class SemanticSearchTool : ITool
         if (_index.ChunkCount == 0)
         {
             var status = _index.IsIndexing ? _index.Status : "Index not built.";
-            return Strings.RagIndexNotReady(status);
+            // ⚠ The remedies above are the user's to apply; the model needs the one IT can: without this line it
+            // calls the tool again, or answers without having searched. Model-facing, so English.
+            return Strings.RagIndexNotReady(status)
+                 + "\n\nUntil the index is ready, search_in_files finds exact text or a regex across the project "
+                 + "without it, and read_file reads what it finds.";
         }
 
         // ── Embed the query (shadow cache fast path) ──────────────────────────

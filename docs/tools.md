@@ -31,8 +31,8 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `replace_selection` | `text` | Replace the active selection |
 | `update_memory` | `content`, `mode?` | Update `.inferpal/memory.md` (`append` default / `replace` / `clear`). Writing it changes the system prompt of every later session, so the prompt is **always** shown even if a rule would allow it + snapshot; a snapshot that cannot be saved leaves the memory untouched |
 | `analyze_code` | `mode`, … | Unified analysis facade (see below) |
-| `search_codebase` | `query`, `top_k?` | Semantic search over the indexed project |
-| `search_docs` | `query`, `top_k?` | Semantic search over `@Docs` external documentation |
+| `search_codebase` | `query`, `top_k?` | Semantic search over the indexed project. Offered to the model only while there is an index, or one being built: with semantic search off and no index, the model uses `search_in_files` instead |
+| `search_docs` | `query`, `top_k?` | Semantic search over `@Docs` external documentation. Offered once some documentation is indexed (`/docs add`) |
 | `generate_project_map` | — | Namespace tree, types, dependencies, hotspots (TTL-cached) |
 | `rename_symbol` | `old_name`, `new_name`, `root?`, `file_pattern?`, `dry_run?`, `declaring_file?`, `declaring_line?` | Project-wide rename. On C# it renames the **symbol**, not the spelling: a method called `Handle` is renamed without touching the dozen unrelated `Handle` methods that share the name (compiler-resolved; falls back to syntax when no workspace is known). When the name designates several symbols, it lists them and renames nothing until `declaring_file` (and `declaring_line`) says which one. Other languages use a word-boundary regex. All-or-nothing: a file that cannot be written puts every other one back unchanged. **Approval** + snapshot; `dry_run=true` by default |
 

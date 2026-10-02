@@ -38,6 +38,19 @@ internal interface ITool
     object Parameters { get; }
 
     /// <summary>
+    /// Whether the tool is offered to the model right now. <c>false</c> while every answer it could give is
+    /// "unavailable here".
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A tool whose every answer is "unavailable" costs prompt tokens on every request and teaches a small model
+    /// to keep trying: it calls it, reads a remedy only the user can apply (<c>/index rebuild</c>, a setting),
+    /// then calls it again or answers without having searched. Read on every request by
+    /// <see cref="Inferpal.Services.Execution.ToolRegistry.Definitions"/>, so the tool comes back as soon as it can
+    /// answer. A call made anyway — a name read earlier in the thread — still runs and says why it cannot help.
+    /// </remarks>
+    bool IsOffered => true;
+
+    /// <summary>
     /// Executes the tool and returns a human-readable result string.
     /// The result is appended to the conversation and fed back to the model.
     /// </summary>

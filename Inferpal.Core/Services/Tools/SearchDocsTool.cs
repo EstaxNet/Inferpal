@@ -28,12 +28,16 @@ internal sealed class SearchDocsTool : ITool
 
     public string Name => "search_docs";
 
+    /// <summary>Offered once some documentation is indexed, or being indexed: until the user runs <c>/docs add</c> —
+    /// most users never do — its every answer is "no documentation indexed" (see <see cref="ITool.IsOffered"/>).</summary>
+    public bool IsOffered => _docs.ChunkCount > 0 || _docs.IsIndexing;
+
     public string Description =>
         "Searches indexed external documentation (added by the user via /docs add) for passages " +
         "relevant to a natural-language query. Use this for questions about libraries, frameworks, " +
         "APIs, or product docs whose answer lives in documentation rather than in this project's code. " +
         "Returns ranked passages with their page title and source URL. " +
-        "Use search_codebase instead for questions about this project's own source code.";
+        "For this project's own source code, use search_codebase or search_in_files instead.";
 
     public object Parameters => new
     {

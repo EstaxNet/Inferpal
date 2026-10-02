@@ -149,8 +149,9 @@ public class PublicDocsCoverageTests
     [Fact]
     public void EveryBuiltInTool_IsDocumented()
     {
-        // Same graph the host builds, with MCP and custom tools left empty, so Definitions is
-        // exactly the built-in set. Identical to DocCountersTests, so both count the same thing.
+        // Same graph the host builds, with MCP and custom tools left empty. Identical to DocCountersTests, so both
+        // count the same thing. ⚠ BuiltInNames, not Definitions: a tool not offered right now (no index, no
+        // documentation) is still a built-in tool the pages must describe.
         var config   = new InferpalConfig();
         var client   = new FakeInferenceProvider();
         var editor   = new NullEditorSurface();
@@ -161,7 +162,7 @@ public class PublicDocsCoverageTests
                                         new DocsIndexService(client, config), new OpenDocumentOverlay(),
                                         new NullDebugSession());
 
-        var tools = registry.Definitions.Select(d => d.Function.Name).ToList();
+        var tools = registry.BuiltInNames.ToList();
         Assert.True(tools.Count > 20, $"Only {tools.Count} tool(s) in the registry: the rule compares nothing.");
 
         var doc = Doc("tools.md");
