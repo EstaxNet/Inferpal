@@ -74,7 +74,7 @@ public sealed class ContextFillOverflowTests
         // 2 000 characters ≈ 500 tokens of prompt, plus 4 000 tokens of history, against a window
         // of 1 000: 450 %.
         var md = XRayCommandHandler.Handle(
-            [Section(new string('x', 2_000))], historyTokens: 4_000, contextWindow: 1_000, ragAutoContext: false);
+            [Section(new string('x', 2_000))], historyTokens: 4_000, contextWindow: 1_000, new Inferpal.Config.InferpalConfig { RagAutoContextEnabled = false });
 
         Assert.Contains("450", md, StringComparison.Ordinal);
         Assert.DoesNotContain("100 %", md, StringComparison.Ordinal);
@@ -87,7 +87,7 @@ public sealed class ContextFillOverflowTests
         // width — that is where a clamp genuinely belongs, and it is not the one that was removed.
         var md = XRayCommandHandler.Handle(
             [Section(new string('x', 2_000)), Section(new string('y', 40))],
-            historyTokens: 4_000, contextWindow: 1_000, ragAutoContext: false);
+            historyTokens: 4_000, contextWindow: 1_000, new Inferpal.Config.InferpalConfig { RagAutoContextEnabled = false });
 
         foreach (var line in md.Split('\n').Where(l => l.Contains('█') || l.Contains('░')))
             Assert.Equal(10, line.Count(c => c is '█' or '░'));

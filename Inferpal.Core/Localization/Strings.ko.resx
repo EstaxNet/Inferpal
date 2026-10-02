@@ -824,6 +824,7 @@ ollama serve
   <data name="XrayLabelRules" xml:space="preserve"><value>규칙(적용 {0}개)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>대화 기록: {0} 토큰(추정)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 자동 컨텍스트: {0}</value></data>
+  <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG 자동 컨텍스트: 비활성 — 시맨틱 인덱싱이 꺼져 있습니다 (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>컨텍스트 창: {0} / {1} 토큰({2}%)</value></data>
   <data name="XrayPanelHint" xml:space="preserve"><value>선택 해제된 섹션은 다음 턴에서 제외됩니다.</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ 프로젝트 레이어(규칙, 메모리, 노트)가 컨텍스트의 큰 부분을 차지합니다 — 줄이는 것을 고려하세요.</value></data>

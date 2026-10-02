@@ -824,6 +824,7 @@ ollama serve
   <data name="XrayLabelRules" xml:space="preserve"><value>Regeln ({0} angewendet)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Konversationsverlauf: {0} Token (Schätzung)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG-Auto-Kontext: {0}</value></data>
+  <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG-Auto-Kontext: inaktiv — die semantische Indizierung ist ausgeschaltet (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Kontextfenster: {0} / {1} Token ({2} %)</value></data>
   <data name="XrayPanelHint" xml:space="preserve"><value>Abgewählte Abschnitte werden beim nächsten Zug ausgeschlossen.</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Projektebenen (Regeln, Speicher, Notizen) belegen einen großen Teil des Kontexts — erwägen Sie, sie zu kürzen.</value></data>

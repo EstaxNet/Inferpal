@@ -836,6 +836,7 @@ ollama serve
   <data name="XrayLabelRules" xml:space="preserve"><value>Rules ({0} matched)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Conversation history: {0} tokens (estimate)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG auto-context: {0}</value></data>
+  <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG auto-context: off — semantic indexing is off (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Context window: {0} / {1} tokens ({2}%)</value></data>
   <data name="XrayPanelHint" xml:space="preserve"><value>Unchecked sections are excluded from the next turn.</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.</value></data>

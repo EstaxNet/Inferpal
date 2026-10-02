@@ -19,12 +19,13 @@ internal static class XRayCommandHandler
     /// <param name="sections">System-prompt layers (<see cref="SystemPromptBuilder.BuildSections"/>).</param>
     /// <param name="historyTokens">Estimated tokens of the conversation history (0 when empty).</param>
     /// <param name="contextWindow">Configured context window in tokens; ≤ 0 = no limit configured.</param>
-    /// <param name="ragAutoContext">Whether per-turn RAG auto-context injection is enabled.</param>
+    /// <param name="config">Read for the per-turn RAG auto-context: whether it is injected, through the same reader the
+    /// turn uses (<see cref="Rag.RagAutoContext.IsEnabled"/>), and why not when its own switch is on.</param>
     public static string Handle(
         IReadOnlyList<PromptSection> sections,
         int  historyTokens,
         int  contextWindow,
-        bool ragAutoContext)
+        Config.InferpalConfig config)
     {
         var sized = sections
             .Select(s => (Section: s, Tokens: EstimateTokens(s.Content)))
@@ -49,7 +50,9 @@ internal static class XRayCommandHandler
         sb.AppendLine("```");
         sb.AppendLine();
         sb.AppendLine("- " + Strings.XrayHistory($"~{historyTokens:N0}"));
-        sb.AppendLine("- " + Strings.XrayRag(ragAutoContext ? "on" : "off"));
+        sb.AppendLine("- " + (Rag.RagAutoContext.IsEnabled(config) ? Strings.XrayRag("on")
+                              : config.RagAutoContextEnabled ? Strings.XrayRagNoIndexing
+                              : Strings.XrayRag("off")));
 
         if (contextWindow > 0)
         {

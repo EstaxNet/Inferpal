@@ -832,6 +832,7 @@ ollama serve
   <data name="XrayLabelRules" xml:space="preserve"><value>Règles ({0} appliquée·s)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Historique de conversation : {0} tokens (estimation)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Auto-contexte RAG : {0}</value></data>
+  <data name="XrayRagNoIndexing" xml:space="preserve"><value>Auto-contexte RAG : inactif — l'indexation sémantique est coupée (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Fenêtre de contexte : {0} / {1} tokens ({2} %)</value></data>
   <data name="XrayPanelHint" xml:space="preserve"><value>Les sections décochées sont exclues du prochain tour.</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Les couches projet (règles, mémoire, notes) occupent une grande part du contexte — pensez à les alléger.</value></data>

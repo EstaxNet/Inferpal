@@ -312,7 +312,7 @@ internal sealed partial class HostServer
                         sections,
                         AgentOrchestrator.EstimateConversationTokens(s.History),
                         s.ContextWindowInUse,
-                        s.Config.RagAutoContextEnabled));
+                        s.Config));
                 }
 
                 case SlashCommandId.Bench:

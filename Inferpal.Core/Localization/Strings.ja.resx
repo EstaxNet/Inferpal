@@ -824,6 +824,7 @@ ollama serve
   <data name="XrayLabelRules" xml:space="preserve"><value>ルール（適用 {0} 件）</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>会話履歴: {0} トークン（推定）</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 自動コンテキスト: {0}</value></data>
+  <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG 自動コンテキスト: 無効 — セマンティックインデックスがオフです（`ragEnabled`）</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>コンテキストウィンドウ: {0} / {1} トークン（{2}%）</value></data>
   <data name="XrayPanelHint" xml:space="preserve"><value>チェックを外したセクションは次のターンから除外されます。</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ プロジェクト層（ルール、メモリ、ノート）がコンテキストの大部分を占めています — 削減を検討してください。</value></data>

@@ -68,8 +68,8 @@ Every persisted setting, its type, and default value.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `ragEnabled` | bool | `true` | Hybrid RAG — cosine + BM25 lexical fused with RRF (false = lexical-only) |
-| `ragAutoContextEnabled` | bool | `true` | Silently inject the most relevant indexed chunks into each code-related turn (skips already-attached files) |
+| `ragEnabled` | bool | `true` | Semantic indexing: the workspace is indexed at startup and searched hybrid — cosine + BM25 lexical fused with RRF. `false` = no index at startup (`search_codebase` is then not offered); `/index rebuild` still builds a keyword-only one |
+| `ragAutoContextEnabled` | bool | `true` | Silently inject the most relevant indexed chunks into each code-related turn (skips already-attached files). Needs `ragEnabled`; `/xray` says when it is switched on but cannot run |
 | `ragTopK` | int | `5` | Chunks returned by `search_codebase` (1–10) |
 | `ragSimilarityThreshold` | float | `0.20` | Minimum cosine score to keep a chunk (vector side) |
 | `lspEnabled` | bool | `false` | LSP semantic chunking (TS/JS/Python/Go/Rust) |

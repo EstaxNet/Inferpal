@@ -1094,6 +1094,7 @@ internal static class Strings
     public static string XrayLabelRules(string count)        => string.Format(Get(nameof(XrayLabelRules)), count);
     public static string XrayHistory(string tokens)          => string.Format(Get(nameof(XrayHistory)), tokens);
     public static string XrayRag(string state)               => string.Format(Get(nameof(XrayRag)), state);
+    public static string XrayRagNoIndexing                   => Get(nameof(XrayRagNoIndexing));
     public static string XrayBudget(string used, string limit, string pct) => string.Format(Get(nameof(XrayBudget)), used, limit, pct);
     // Interactive X-Ray panel (V2)
     public static string XrayPanelHint                       => Get(nameof(XrayPanelHint));

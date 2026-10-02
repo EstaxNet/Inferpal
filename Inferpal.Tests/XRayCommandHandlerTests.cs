@@ -40,7 +40,7 @@ public class XRayCommandHandlerTests
             Section(PromptSectionKind.Custom, new string('b', 1000)),          // ~250 tokens
         };
 
-        var text = XRayCommandHandler.Handle(sections, historyTokens: 0, contextWindow: 0, ragAutoContext: true);
+        var text = XRayCommandHandler.Handle(sections, historyTokens: 0, contextWindow: 0, Rag(true));
 
         Assert.Contains(Strings.XrayLabelBase,   text);
         Assert.Contains(Strings.XrayLabelCustom, text);
@@ -59,7 +59,7 @@ public class XRayCommandHandlerTests
             Section(PromptSectionKind.Custom, new string('b', 4000)),          // bigger — must render first
         };
 
-        var text = XRayCommandHandler.Handle(sections, 0, 0, true);
+        var text = XRayCommandHandler.Handle(sections, 0, 0, Rag(true));
 
         Assert.True(text.IndexOf(Strings.XrayLabelCustom, StringComparison.Ordinal)
                   < text.IndexOf(Strings.XrayLabelBase,   StringComparison.Ordinal));
@@ -76,7 +76,7 @@ public class XRayCommandHandlerTests
             Section(PromptSectionKind.Rules,          new string('r', 400), "2"),
         };
 
-        var text = XRayCommandHandler.Handle(sections, 0, 0, true);
+        var text = XRayCommandHandler.Handle(sections, 0, 0, Rag(true));
 
         Assert.Contains(".inferpal/context.md", text);
         Assert.Contains("📌 arch.md", text);
@@ -88,18 +88,39 @@ public class XRayCommandHandlerTests
     {
         var sections = new[] { Section(PromptSectionKind.Base, new string('a', 4000)) };   // ~1000 tokens
 
-        var text = XRayCommandHandler.Handle(sections, historyTokens: 1000, contextWindow: 8000, ragAutoContext: false);
+        var text = XRayCommandHandler.Handle(sections, historyTokens: 1000, contextWindow: 8000, Rag(false));
 
         Assert.Contains(Strings.XrayRag("off"), text);
         Assert.Contains("25", text);                        // (1000 + 1000) / 8000 = 25%
     }
+
+    /// <summary>
+    /// With semantic indexing off there is no index to draw from: the auto-context is not injected whatever its own
+    /// switch says, and the line says so with the cause — "on" announced code extracts that never come.
+    /// </summary>
+    [Fact]
+    public void Handle_AutoContextSwitchedOnWithIndexingOff_SaysItIsNotInjected()
+    {
+        var sections = new[] { Section(PromptSectionKind.Base, "abcd") };
+        var config   = new Inferpal.Config.InferpalConfig { RagAutoContextEnabled = true, RagEnabled = false };
+
+        var text = XRayCommandHandler.Handle(sections, 0, 0, config);
+
+        Assert.Contains(Strings.XrayRagNoIndexing, text);
+        Assert.DoesNotContain(Strings.XrayRag("on"), text);
+        // Reference arm: both switches on, the line reads "on" as before.
+        Assert.Contains(Strings.XrayRag("on"), XRayCommandHandler.Handle(sections, 0, 0, Rag(true)));
+    }
+
+    private static Inferpal.Config.InferpalConfig Rag(bool autoContext) =>
+        new() { RagAutoContextEnabled = autoContext, RagEnabled = true };
 
     [Fact]
     public void Handle_NoContextWindow_OmitsBudgetLine()
     {
         var sections = new[] { Section(PromptSectionKind.Base, "abcd") };
 
-        var text = XRayCommandHandler.Handle(sections, 0, contextWindow: 0, ragAutoContext: true);
+        var text = XRayCommandHandler.Handle(sections, 0, contextWindow: 0, Rag(true));
 
         // Only the history and RAG summary bullets — no context-window line.
         Assert.Equal(2, text.Split('\n').Count(l => l.StartsWith("- ", StringComparison.Ordinal)));

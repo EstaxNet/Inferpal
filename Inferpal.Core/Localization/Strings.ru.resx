@@ -824,6 +824,7 @@ ollama serve
   <data name="XrayLabelRules" xml:space="preserve"><value>Правила (применено: {0})</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>История разговора: {0} токенов (оценка)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Автоконтекст RAG: {0}</value></data>
+  <data name="XrayRagNoIndexing" xml:space="preserve"><value>Автоконтекст RAG: неактивен — семантическая индексация отключена (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Контекстное окно: {0} / {1} токенов ({2} %)</value></data>
   <data name="XrayPanelHint" xml:space="preserve"><value>Снятые с отметки секции исключаются из следующего хода.</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Слои проекта (правила, память, заметки) занимают большую часть контекста — стоит их сократить.</value></data>

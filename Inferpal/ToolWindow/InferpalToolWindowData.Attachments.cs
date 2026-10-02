@@ -66,7 +66,7 @@ internal partial class InferpalToolWindowData
     private async Task<string> BuildAutoContextAsync(
         string userText, IReadOnlyList<AttachmentItem> attachments, CancellationToken ct)
     {
-        if (!_config.RagAutoContextEnabled || !_config.RagEnabled)            return string.Empty;
+        if (!RagAutoContext.IsEnabled(_config))                               return string.Empty;
         if (_indexService.ChunkCount == 0 || _client.IsEmbeddingCircuitOpen) return string.Empty;
 
         var trimmed = userText.Trim();

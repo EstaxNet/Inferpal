@@ -1224,7 +1224,7 @@ internal sealed partial class HostServer : IDisposable
     private static async Task<string> BuildRagAutoContextAsync(
         HostSession s, string userText, List<string>? attachedPaths, CancellationToken ct)
     {
-        if (!s.Config.RagAutoContextEnabled || !s.Config.RagEnabled)   return string.Empty;
+        if (!RagAutoContext.IsEnabled(s.Config))                       return string.Empty;
         if (s.Index.ChunkCount == 0 || s.Client.IsEmbeddingCircuitOpen) return string.Empty;
 
         var trimmed = userText.Trim();

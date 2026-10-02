@@ -22,6 +22,16 @@ internal static class RagAutoContext
 {
     public const int DefaultBudgetChars = 1500;
     public const int DefaultMaxChunks   = 3;
+
+    /// <summary>
+    /// Whether the block can be injected at all: its own switch AND semantic indexing, without which there is no index
+    /// to retrieve from. The one reader of that question — the two front-ends and <c>/xray</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The switch alone is not the answer: read alone, <c>/xray</c> says "on" with indexing off — the report that exists
+    /// to show what the next prompt holds announces code extracts that never come.
+    /// </remarks>
+    internal static bool IsEnabled(Config.InferpalConfig config) => config.RagAutoContextEnabled && config.RagEnabled;
     private const int MaxChunkChars     = 600;
 
     private const string Header = "## Relevant code (auto-retrieved for this question)";

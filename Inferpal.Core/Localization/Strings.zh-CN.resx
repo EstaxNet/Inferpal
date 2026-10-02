@@ -824,6 +824,7 @@ ollama serve
   <data name="XrayLabelRules" xml:space="preserve"><value>规则（应用 {0} 条）</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>会话历史：{0} 个 token（估算）</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 自动上下文：{0}</value></data>
+  <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG 自动上下文：未生效 — 语义索引已关闭（`ragEnabled`）</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>上下文窗口：{0} / {1} 个 token（{2}%）</value></data>
   <data name="XrayPanelHint" xml:space="preserve"><value>取消勾选的部分将从下一轮中排除。</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ 项目层（规则、记忆、笔记）占用了大量上下文 — 建议精简。</value></data>
