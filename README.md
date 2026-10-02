@@ -18,8 +18,8 @@
   <img src="https://img.shields.io/badge/tests-4303%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026-5C2D91" alt="Visual Studio 2026">
-  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/visual-studio-marketplace/v/EstaxNet.inferpal-vs?label=VS%20Marketplace" alt="Visual Studio Marketplace"></a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/visual-studio-marketplace/v/EstaxNet.inferpal-vscode?label=VS%20Code%20Marketplace" alt="VS Code Marketplace"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code%20Marketplace-install-007ACC" alt="VS Code Marketplace"></a>
   <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
   <a href="https://www.paypal.com/donate/?business=HA84FH7JXX9RQ&no_recurring=0&currency_code=EUR"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&amp;logoColor=white" alt="Donate with PayPal"></a>
 </p>
