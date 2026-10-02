@@ -1,6 +1,6 @@
 {
   "name": "inferpal-vscode",
-  "displayName": "Inferpal for VS Code",
+  "displayName": "Inferpal — Local AI Agent for VS Code",
   "description": "%inferpal.description%",
   "l10n": "./l10n",
   "version": "0.0.0-dev",

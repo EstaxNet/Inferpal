@@ -14,7 +14,7 @@
               Version="|Inferpal;GetVsixVersion|"
               Language="en-US"
               Publisher="EstaxNet" />
-    <DisplayName>Inferpal for Visual Studio</DisplayName>
+    <DisplayName>Inferpal — Local AI Agent for Visual Studio</DisplayName>
     <Description xml:space="preserve">AI developer assistant for self-hosted LLMs — Ollama, LM Studio, any OpenAI-compatible server. Agentic loop, 28 built-in tools, and a real debugger on failing tests. 100% local, no telemetry.</Description>
     <MoreInfo>https://github.com/EstaxNet/Inferpal</MoreInfo>
     <!-- The license MUST be a .txt/.rtf file embedded in the VSIX (VSIX 2.0 schema), not a URL

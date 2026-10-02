@@ -191,6 +191,17 @@ Language · Provider (Ollama / LM Studio / OpenAI-compatible) · Server URL · A
 
 ---
 
+## Official sources
+
+Inferpal is an independent open-source project by EstaxNet. It runs on your machine, has no hosted version and no
+account, and is not affiliated with any cloud or API provider. The only official sources are the
+[GitHub releases](https://github.com/EstaxNet/Inferpal/releases) and the two Marketplace listings, for
+[Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs) and
+[VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode). An article that describes
+Inferpal as a cloud service is not about this project.
+
+---
+
 ## License
 
 GPL-3.0 — source at [github.com/EstaxNet/Inferpal](https://github.com/EstaxNet/Inferpal).

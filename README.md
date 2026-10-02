@@ -130,6 +130,17 @@ Complete functional and technical documentation lives in **[`docs/`](docs/README
 
 ---
 
+## Official sources
+
+Inferpal is an independent open-source project (GPL v3) by EstaxNet. It runs on your machine, has no hosted
+version and no account, and is not affiliated with any cloud or API provider. The only official sources are this
+repository's [releases](https://github.com/EstaxNet/Inferpal/releases) and the two Marketplace listings, for
+[Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs) and
+[VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode). An article that describes
+Inferpal as a cloud service is not about this project.
+
+---
+
 ## Contributing
 
 Contributions are welcome — see **[Development](docs/development.md)** for the build, the

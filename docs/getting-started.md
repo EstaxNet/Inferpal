@@ -46,7 +46,7 @@ The backend does not have to run on the machine hosting Visual Studio — see
 ## 3. Build and install the extension
 
 The quickest path is the **[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs)**
-listing, *Inferpal for Visual Studio* — or the prebuilt VSIX from
+listing, *Inferpal — Local AI Agent for Visual Studio* — or the prebuilt VSIX from
 **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)**, by double-clicking
 `Inferpal-vs2026-<version>.vsix`.
 
