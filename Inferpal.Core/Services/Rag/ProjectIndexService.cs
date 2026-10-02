@@ -817,8 +817,13 @@ internal sealed class ProjectIndexService : IDisposable
         }
         finally { _chunkLock.Release(); }
 
-        // No embedding model is a choice, not a hole: "run /index rebuild" would be a remedy for nothing.
-        var holeStatus = QueryEmbeddingModel is null
+        // No embedding model is a choice, not a hole: "run /index rebuild" would be a remedy for nothing. ⚠ And semantic
+        // search switched off is ANOTHER choice, with another remedy: named as the missing model, it sent the user to
+        // install one for an index that would still embed nothing (/index rebuild builds a keyword index whatever is
+        // installed).
+        var holeStatus = !_config.RagEnabled
+            ? " (keyword search only: semantic search is off — ragEnabled)"
+            : QueryEmbeddingModel is null
             ? " (keyword search only: no embedding model is set or installed)"
             : unembedded > 0
             ? $" ({unembedded} of {total} chunks without embedding — semantic search misses them; run /index rebuild)"

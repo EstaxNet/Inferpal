@@ -39,7 +39,10 @@ internal static class IndexCommandHandler
         sb.AppendLine(Strings.IndexTitle);
         sb.AppendLine();
 
-        if (!config.RagEnabled)
+        // ⚠ "Disabled" only when there is NO index: `/index rebuild` builds a keyword index whatever the setting says, and
+        // search_codebase serves it — reported as disabled right after the rebuild, the status contradicted the product.
+        // A built index is reported as it is; its status line says it is keyword-only and why.
+        if (!config.RagEnabled && index.ChunkCount == 0 && !index.IsIndexing)
         {
             sb.AppendLine(Strings.IndexDisabled);
             sb.AppendLine();
