@@ -6,6 +6,7 @@ import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
+import { resolveMention } from './mentionPaths';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import { CodeActionResult, SavedMessage, SlashEffect } from './protocol';
@@ -1024,7 +1025,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           void vscode.window.showInformationMessage(t('No file is open in the editor.'));
           return;
         }
-        this.addChip('📄 ' + vscode.workspace.asRelativePath(editor.document.uri, false), editor.document.getText());
+        this.addChip('📄 ' + vscode.workspace.asRelativePath(editor.document.uri), editor.document.getText());
         return;
       }
       case 'attachSelection': {
@@ -1034,7 +1035,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           void vscode.window.showInformationMessage(t('The selection is empty.'));
           return;
         }
-        this.addChip('✂ ' + vscode.workspace.asRelativePath(editor.document.uri, false), text);
+        this.addChip('✂ ' + vscode.workspace.asRelativePath(editor.document.uri), text);
         return;
       }
       case 'attachBrowse': {
@@ -1160,7 +1161,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (doc.uri.scheme !== 'file') {
         continue;
       }
-      const rel = vscode.workspace.asRelativePath(doc.uri, false).replace(/\\/g, '/');
+      // asRelativePath's default: the folder's name first when the workspace has several — the form
+      // resolveMention reads back. Without it another folder's file of the same name was attached.
+      const rel = vscode.workspace.asRelativePath(doc.uri).replace(/\\/g, '/');
       if (!q || rel.toLowerCase().includes(q)) {
         items.add(rel);
       }
@@ -1173,7 +1176,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           MAX,
         );
         for (const uri of found) {
-          items.add(vscode.workspace.asRelativePath(uri, false).replace(/\\/g, '/'));
+          items.add(vscode.workspace.asRelativePath(uri).replace(/\\/g, '/'));
         }
       } catch {
         // findFiles unavailable (no workspace) — open editors already listed
@@ -1186,8 +1189,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * Reads through `openTextDocument`, so dirty buffers win over disk. Non-file tokens
    * (someone's @handle) simply resolve to nothing and stay as typed. */
   private async expandMentions(prompt: string): Promise<{ text: string; paths: string[] }> {
-    const root = vscode.workspace.workspaceFolders?.[0]?.uri;
-    if (!root || !prompt.includes('@')) {
+    const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => ({ name: f.name, target: f.uri }));
+    if (folders.length === 0 || !prompt.includes('@')) {
       return { text: prompt, paths: [] };
     }
     const MAX_FILES = 5;
@@ -1205,14 +1208,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (paths.length >= MAX_FILES) {
         break;
       }
+      const target = resolveMention(token, folders);
+      if (!target) {
+        break;
+      }
       try {
-        const doc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(root, token));
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(target.folder.target, target.relative));
         let text = doc.getText();
         if (text.length > MAX_CHARS) {
           text = text.slice(0, MAX_CHARS) + '\n… [truncated]';
         }
         attachments += `\n\n## Attached file: ${token}\n\`\`\`\n${text}\n\`\`\``;
-        paths.push(token);
+        // The full path: a folder-qualified token resolved under the host's root would name another file.
+        paths.push(doc.uri.fsPath);
       } catch {
         // not a workspace file — leave the token as plain text
       }
@@ -1588,7 +1596,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const doc = editor.document;
     const selection = !editor.selection.isEmpty;
     const code = selection ? doc.getText(editor.selection) : doc.getText();
-    const file = vscode.workspace.asRelativePath(doc.uri, false);
+    const file = vscode.workspace.asRelativePath(doc.uri);
     // The model the turn below will ask: the excerpt is sized for the window it really loaded.
     const excerpt = await host.codeExcerpt(code, file, selection, this.model || undefined);
     const instruction = kind === 'explain'
@@ -1900,7 +1908,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     const document = editor.document;
     const before = document.getText();
-    this.post({ type: 'status', text: t('Running /{0} on {1}…', kind, vscode.workspace.asRelativePath(document.uri, false)) });
+    this.post({ type: 'status', text: t('Running /{0} on {1}…', kind, vscode.workspace.asRelativePath(document.uri)) });
 
     let result: CodeActionResult;
     try {

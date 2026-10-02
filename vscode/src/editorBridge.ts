@@ -310,7 +310,9 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
       if (uri.scheme !== 'file') {
         continue;
       }
-      const rel = vscode.workspace.asRelativePath(uri, false);
+      // The folder's name first in a multi-root workspace: a path relative to another folder reads as the root's
+      // file, and the model would fix the wrong one.
+      const rel = vscode.workspace.asRelativePath(uri);
       for (const d of diags) {
         if (d.severity !== vscode.DiagnosticSeverity.Error && d.severity !== vscode.DiagnosticSeverity.Warning) {
           continue;

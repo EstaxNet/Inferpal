@@ -83,7 +83,7 @@ internal class GetSolutionInfoTool : ITool
         var root    = _workspaceRoot();
         var outside = string.IsNullOrWhiteSpace(root)
             ? []
-            : contents.Projects.Where(p => !IsUnderRoot(p.AbsolutePath, root)).ToHashSet();
+            : contents.Projects.Where(p => !PathSanitizer.IsUnderRoot(p.AbsolutePath, root)).ToHashSet();
         if (outside.Count > 0)
         {
             sb.AppendLine($"Outside  : {outside.Count} of them sit outside the workspace root ({root}): the tools cannot "
@@ -221,22 +221,7 @@ internal class GetSolutionInfoTool : ITool
     /// that cannot be resolved counts as outside. An unknown root keeps the fallback it exists for.
     /// </remarks>
     internal static bool LastKnownApplies(string solutionPath, string? workspaceRoot) =>
-        string.IsNullOrWhiteSpace(workspaceRoot) || IsUnderRoot(solutionPath, workspaceRoot);
-
-    /// <summary>The sandbox's own answer to "can the tools reach this path?" — links and case included; a path that
-    /// cannot be resolved counts as outside.</summary>
-    private static bool IsUnderRoot(string path, string workspaceRoot)
-    {
-        try
-        {
-            PathSanitizer.AssertUnderRoot(path, workspaceRoot);
-            return true;
-        }
-        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
-    }
+        string.IsNullOrWhiteSpace(workspaceRoot) || PathSanitizer.IsUnderRoot(solutionPath, workspaceRoot);
 
     // ── Types ─────────────────────────────────────────────────────────────────
 

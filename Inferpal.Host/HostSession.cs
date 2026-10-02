@@ -28,6 +28,12 @@ internal sealed class HostSession : IDisposable
     public required LspSemanticProvider  Lsp          { get; init; }
     public required string               RootDir      { get; init; }
 
+    /// <summary>
+    /// Folders open in the editor that <see cref="RootDir"/> does not hold — stated to the model with the root. Replaced
+    /// whole by <c>workspace/folders</c> and read once per prompt build, so the next question already has it.
+    /// </summary>
+    public IReadOnlyList<string> FoldersOutOfReach { get; set; } = [];
+
     /// <summary>Approval pipeline — §25 asks it once per `/tdd` run before any debug capture.</summary>
     public required IApprovalService     Approval     { get; init; }
 

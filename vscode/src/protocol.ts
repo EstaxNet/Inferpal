@@ -11,6 +11,11 @@ export interface InitializeParams {
    * the model would pay for them on every turn.
    */
   debug?: boolean;
+  /**
+   * The workspace's other folders (multi-root). The tools serve `rootDir` only: the folders it does not hold are
+   * stated to the model, which otherwise looks for their code under the root and concludes it does not exist.
+   */
+  otherFolders?: string[];
 }
 
 export interface InitializeResult {

@@ -15,11 +15,20 @@
 /// two debugger tools would then be offered to the model as capabilities that always fail. Absent
 /// (the default) means no debugger, and the tools are simply not registered.
 /// </param>
+/// <param name="OtherFolders">
+/// The editor's other workspace folders (a multi-root VS Code workspace). The tools serve <paramref name="RootDir"/>
+/// only; the ones it does not hold are stated to the model, so that their code is not concluded absent.
+/// </param>
 internal sealed record InitializeParams(
-    string  RootDir,
-    string? Locale     = null,
-    string? ClientName = null,
-    bool    Debug      = false);
+    string    RootDir,
+    string?   Locale       = null,
+    string?   ClientName   = null,
+    bool      Debug        = false,
+    string[]? OtherFolders = null);
+
+/// <summary>`workspace/folders` — the editor's other workspace folders changed (a folder added or removed while the
+/// root stayed): restarting the host for it would kill the turn in flight, its shells and MCP servers.</summary>
+internal sealed record WorkspaceFoldersParams(string[]? OtherFolders = null);
 
 /// <summary>What the adapter learns about the backend at startup (gates UI features).</summary>
 internal sealed record InitializeResult(

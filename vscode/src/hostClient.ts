@@ -85,6 +85,8 @@ export interface HostClientOptions {
   hostPath: string;
   /** Workspace root passed to `initialize`. */
   rootDir: string;
+  /** The workspace's other folders (multi-root), passed to `initialize`. */
+  otherFolders?: string[];
   /** Editor display language (e.g. vscode.env.language). */
   locale?: string;
   clientName?: string;
@@ -313,6 +315,7 @@ export class HostClient {
       locale: this.options.locale,
       clientName: this.options.clientName ?? 'vscode',
       debug: this.debugDelegate !== undefined,
+      otherFolders: this.options.otherFolders,
     };
     try {
       this.info = await conn.sendRequest<InitializeResult>('initialize', params);
@@ -492,6 +495,11 @@ export class HostClient {
   }
 
   /** The files pinned into every request. */
+  /** The workspace's other folders changed while the root stayed — no restart, the next question has them. */
+  setWorkspaceFolders(otherFolders: string[]): Promise<void> {
+    return this.connection().sendRequest('workspace/folders', { otherFolders });
+  }
+
   pinsList(): Promise<{ pins: string[]; notice?: string | null }> {
     return this.connection().sendRequest('pins/list');
   }

@@ -98,6 +98,23 @@ internal static class PathSanitizer
                 $"  Workspace : {workspaceRoot}");
     }
 
+    /// <summary>
+    /// <see cref="AssertUnderRoot"/>'s answer as a boolean — links and case included; a path that cannot be resolved
+    /// counts as outside. For callers that SAY what the tools cannot reach rather than refuse a call.
+    /// </summary>
+    internal static bool IsUnderRoot(string fullPath, string? workspaceRoot)
+    {
+        try
+        {
+            AssertUnderRoot(fullPath, workspaceRoot);
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Windows paths are case-insensitive; Linux/macOS ones are not — and the host now
     /// ships for all three (VS Code publishes linux-* and darwin-* builds).</summary>
     // ⚠ Read from the one place that answers this, never re-derived: a copy claiming macOS is

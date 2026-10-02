@@ -141,6 +141,7 @@ internal sealed partial class HostServer : IDisposable
             TestCapture  = p.Debug ? new RpcTestDebugCapture(rpc) : null,
             Debug        = debug,
         };
+        ApplyFoldersOutOfReach(_session, p.OtherFolders);
         ResetHistory(_session);
 
         // As in Visual Studio: with RAG on, the workspace is indexed without being asked. No adapter
@@ -165,6 +166,39 @@ internal sealed partial class HostServer : IDisposable
     {
         lock (_gate) _chatCts?.Cancel();
         _shutdown.TrySetResult();
+    }
+
+    /// <summary>`workspace/folders` — the editor's other folders changed while the root stayed.</summary>
+    [JsonRpcMethod("workspace/folders", UseSingleObjectParameterDeserialization = true)]
+    public void WorkspaceFolders(WorkspaceFoldersParams p) => ApplyFoldersOutOfReach(Session(), p.OtherFolders);
+
+    private const string FoldersOutOfReachContext = "HostServer.WorkspaceFolders";
+
+    /// <summary>
+    /// Keeps the folders the root does not hold — a folder nested in the root is reachable and not named — and says them
+    /// once in <c>/diagnostics</c>, with the remedy the user has.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The previous note is forgotten when the set changes: it is keyed by the set, and the condition (which folders
+    /// are open) is not — without the forget, a folder removed then added again would never be said again.
+    /// </remarks>
+    private static void ApplyFoldersOutOfReach(HostSession s, string[]? others)
+    {
+        var outside = (others ?? [])
+            .Where(f => !string.IsNullOrWhiteSpace(f) && !Services.Tools.PathSanitizer.IsUnderRoot(Path.GetFullPath(f), s.RootDir))
+            .Select(f => Path.GetFullPath(f))
+            .Distinct(PathComparer.Default)
+            .ToList();
+        var before = s.FoldersOutOfReach;
+        s.FoldersOutOfReach = outside;
+
+        if (before.Count > 0) Diagnostics.Forget(FoldersOutOfReachContext, string.Join("|", before));
+        if (outside.Count == 0) return;
+        Diagnostics.RecordOnce(FoldersOutOfReachContext,
+            $"{outside.Count} folder(s) open in the editor sit outside the workspace root {s.RootDir}, so the tools cannot "
+            + $"read, search or edit them: {string.Join(", ", outside)}. Opening one folder that holds them all gives "
+            + "Inferpal the whole workspace.",
+            string.Join("|", outside));
     }
 
     // ── Chat ───────────────────────────────────────────────────────────────────
@@ -1237,7 +1271,7 @@ internal sealed partial class HostServer : IDisposable
         var root   = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
         // The /template suffix is a builder layer, as in the Visual Studio view model: appended after the build it
         // had no X-Ray section, so the panel could neither show it nor switch it off.
-        var prompt = new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir).Build(
+        var prompt = new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach).Build(
             ModelPrompts.SystemPrompt,
             language:           s.PersonaLanguage,
             templateSuffix:     s.TemplateSuffix,
@@ -1253,7 +1287,7 @@ internal sealed partial class HostServer : IDisposable
     private static IReadOnlyList<PromptSection> BuildPromptSections(HostSession s)
     {
         var root = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
-        return new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir).BuildSections(
+        return new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach).BuildSections(
             ModelPrompts.SystemPrompt,
             language:          s.PersonaLanguage,
             templateSuffix:    s.TemplateSuffix,

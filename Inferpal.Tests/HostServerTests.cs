@@ -985,6 +985,47 @@ public partial class HostServerTests
     }
 
     /// <summary>
+    /// The other folders of a multi-root workspace are named to the model when the root does not hold them, and follow
+    /// the workspace while the host runs: a folder added or removed changes the next question's prompt without a
+    /// restart (which would kill the turn in flight).
+    /// </summary>
+    [Fact]
+    public async Task OtherWorkspaceFolders_AreNamedToTheModel_AndFollowTheWorkspace()
+    {
+        using var h = CreateHarness();
+        var other  = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"other-{Guid.NewGuid():N}");
+        var nested = Path.Combine(h.RootDir, "packages", "api");
+        const string Named = "Other folders open in the editor are outside it";
+
+        await h.Client.InvokeWithParameterObjectAsync<InitializeResult>(
+                "initialize", new { rootDir = h.RootDir, otherFolders = new[] { other, nested } })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        string SystemPrompt() => h.Server.CurrentSession!.History[0].Content;
+
+        Assert.Contains($"{Named}, so the tools cannot read, search or edit them: {Path.GetFullPath(other)}.",
+                        SystemPrompt(), StringComparison.Ordinal);
+        Assert.DoesNotContain(nested, SystemPrompt(), StringComparison.Ordinal);   // nested in the root: reachable
+
+        h.Fake.OnChat = (onToken, _) =>
+        {
+            onToken?.Invoke("ok");
+            return Task.FromResult(new ChatTurnResult("ok", null, 3, 5));
+        };
+        async Task Folders(params string[] others)
+        {
+            await h.Client.InvokeWithParameterObjectAsync("workspace/folders", new { otherFolders = others })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        }
+
+        await Folders();
+        Assert.DoesNotContain(Named, SystemPrompt(), StringComparison.Ordinal);
+        await Folders(other);
+        Assert.Contains(Named, SystemPrompt(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The first question of a conversation carries the workspace context, as in Visual Studio: the solution and
     /// the open editors, once per conversation. VS Code sent none — the model knew neither the solution nor what
     /// was open. Here the solution is the one in the workspace, never the machine-wide state of a running Visual

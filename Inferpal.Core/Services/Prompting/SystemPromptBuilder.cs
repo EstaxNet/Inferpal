@@ -32,8 +32,11 @@ internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, str
 /// <param name="workspaceRoot">The root the file tools confine to, stated to the model; null or empty when none is
 /// pinned. ⚠ Never a guessed root (the view model's <c>FindProjectRoot</c> falls back to the process's directory):
 /// a root the tools refuse is worse than none.</param>
+/// <param name="foldersOutOfReach">Folders open in the editor that the root does not hold — the other folders of a
+/// multi-root VS Code workspace. Stated with the root: unnamed, the model looks for their code under the root, finds
+/// nothing and concludes it does not exist.</param>
 internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorName = null, int contextWindow = 0,
-                                          string? workspaceRoot = null)
+                                          string? workspaceRoot = null, IReadOnlyList<string>? foldersOutOfReach = null)
 {
     /// <summary>
     /// The editor and the shell, stated from what this process can actually observe — appended to
@@ -65,6 +68,9 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         var shell = Shell.ShellLauncher.SpokenName(dialect, fileName);
         var editor = string.IsNullOrWhiteSpace(editorName) ? string.Empty : $"Editor: {editorName}. ";
         var root = string.IsNullOrWhiteSpace(workspaceRoot) ? string.Empty : $" The workspace root is {workspaceRoot}.";
+        if (root.Length > 0 && foldersOutOfReach is { Count: > 0 })
+            root += $" Other folders open in the editor are outside it, so the tools cannot read, search or edit them: "
+                  + $"{string.Join(", ", foldersOutOfReach)}.";
         return $"\n\n{editor}Operating system: {RuntimeInformation.OSDescription}. "
              + $"The run_command shell is {shell}.{root}{ReplyLanguage(Strings.UiCulture)}";
     }

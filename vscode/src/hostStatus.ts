@@ -19,6 +19,11 @@ export function workspaceRoot(): string | undefined {
   return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
+/** The workspace's folders after the root (a multi-root workspace); the host states those it cannot reach. */
+export function otherWorkspaceFolders(): string[] {
+  return (vscode.workspace.workspaceFolders ?? []).slice(1).map((f) => f.uri.fsPath);
+}
+
 /** Inline text (chat bubble, settings panel) naming the remedy that actually applies. */
 export function hostUnavailableMessage(): string {
   return workspaceRoot()

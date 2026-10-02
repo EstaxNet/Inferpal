@@ -8,7 +8,7 @@ import { SettingsPanel } from './settingsPanel';
 import { DebugBridge } from './debugBridge';
 import { EditorBridge } from './editorBridge';
 import { HostClient } from './hostClient';
-import { hostErrorText, promptOpenFolder, workspaceRoot } from './hostStatus';
+import { hostErrorText, otherWorkspaceFolders, promptOpenFolder, workspaceRoot } from './hostStatus';
 import { FimProvider } from './inlineCompletions';
 import { setLanguage, t } from './i18n';
 
@@ -79,6 +79,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // shells and MCP servers.
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       if (host?.isRunning && host.rootDir === workspaceRoot()) {
+        // Same root, other folders changed: the host still states which ones its tools cannot reach.
+        host.setWorkspaceFolders(otherWorkspaceFolders()).catch((err) =>
+          log(`[inferpal] workspace/folders failed: ${hostErrorText(err)}`));
         return;
       }
       void startHost(context, chatView, log, false);
@@ -238,6 +241,7 @@ async function startHostCore(
     {
       hostPath,
       rootDir,
+      otherFolders: otherWorkspaceFolders(),
       locale: vscode.env.language,
       clientName: `vscode/${vscode.version}`,
       log,
