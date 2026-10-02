@@ -3,6 +3,24 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.27
+
+New files written the way your project already writes them, and four ways a model could stall or
+derail a task are gone.
+
+- **A new file follows the conventions of the files next to it**: before creating a file, the
+  agent reads an existing one of the same kind and writes in its style — no more ES `export` in a
+  CommonJS project. New-file tasks succeed 23 times in 27 instead of 18 in our tests.
+- **A model that loops while planning no longer breaks the task**: the loop was kept as the plan
+  and made every following request too large for the model; the agent now keeps the plan it
+  understood and carries on. A summary or session recap that loops is no longer kept either.
+- **A model that loops while writing an edit is stopped** after a few repeats instead of leaving
+  you on "Thinking…" for minutes, and asked to write the edit once.
+- **Gemma 4**: an edit written one bracket short is now made instead of being shown as JSON, and
+  paths written in quotes are found.
+- **The listing is now named *Inferpal — Local AI Agent for VS Code*** and names the only official
+  sources.
+
 ## 1.6.26
 
 Semantic search without asking for a model you may not have, better search with the models you
