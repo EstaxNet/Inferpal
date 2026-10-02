@@ -59,7 +59,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private sessionStart: number | null = null;
   private statusTimer: NodeJS.Timeout | undefined;
   /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
-  private pendingAttachments: { name: string; content: string }[] = [];
+  private pendingAttachments: { name: string; content: string; sourcePath?: string }[] = [];
   /** Files pinned into every request, as the host reports them. */
   private pins: string[] = [];
   /** The question the last model turn carried: the one slash-prefixed entry known to be in the host's history. */
@@ -1025,7 +1025,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           void vscode.window.showInformationMessage(t('No file is open in the editor.'));
           return;
         }
-        this.addChip('📄 ' + vscode.workspace.asRelativePath(editor.document.uri), editor.document.getText());
+        this.addChip('📄 ' + vscode.workspace.asRelativePath(editor.document.uri), editor.document.getText(),
+                     editor.document.uri.fsPath);
         return;
       }
       case 'attachSelection': {
@@ -1045,7 +1046,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         try {
           const doc = await vscode.workspace.openTextDocument(picked[0]);
-          this.addChip('📄 ' + (picked[0].path.split('/').pop() ?? picked[0].fsPath), doc.getText());
+          this.addChip('📄 ' + (picked[0].path.split('/').pop() ?? picked[0].fsPath), doc.getText(), picked[0].fsPath);
         } catch (err) {
           // A binary or unreadable file: the user picked it, and no chip appearing reads as a broken menu.
           this.log(`[chat] attachBrowse failed: ${String(err)}`);
@@ -1067,10 +1068,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private addChip(name: string, content: string): void {
+  /** `sourcePath`: the file a whole-file chip holds, as Visual Studio's `SourcePath` — never for a selection or a
+   * synthetic chip (clipboard, problems), which are not that file. */
+  private addChip(name: string, content: string, sourcePath?: string): void {
     const MAX_CHARS = 60_000;
     this.pendingAttachments.push({
       name,
+      sourcePath,
       content: content.length > MAX_CHARS ? content.slice(0, MAX_CHARS) + '\n…(truncated)' : content,
     });
     this.postChips();
@@ -1617,7 +1621,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (this.pendingAttachments.length > 0) {
         for (const a of this.pendingAttachments) {
           expanded += `\n\n## Attached: ${a.name}\n\`\`\`\n${a.content}\n\`\`\``;
-          attachedPaths.push(a.name);
+          // The file's path, never the chip's label: the host resolves these against the root to skip the RAG
+          // chunks of a file already in the prompt, and "📄 src/x.ts" names no file — the same content went in twice.
+          if (a.sourcePath) {
+            attachedPaths.push(a.sourcePath);
+          }
         }
         this.nameAttachmentsInQuestion(this.pendingAttachments.map((a) => a.name));
         this.pendingAttachments = [];
