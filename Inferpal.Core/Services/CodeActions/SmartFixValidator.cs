@@ -190,6 +190,37 @@ internal sealed class SmartFixValidator
         }
     }
 
+    /// <summary>
+    /// The build verdict an edit tool's answer carries: <c>true</c> when a Smart Fix note there names compilation
+    /// errors, <c>false</c> when the build passed, <c>null</c> when no build ran (no note, a timeout, a missing tool).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ This note is a build check like <c>run_tests</c> and <c>get_diagnostics</c>, and the turn's last check is read
+    /// to warn the user when the answer claims success over a failing build (<c>ChatTurnPolicy.LastCheckFailed</c>):
+    /// a turn that ended on "🔨 Smart Fix: 4 compilation error(s)" after an edit said nothing. Read from the producer's
+    /// own sentences, in the language they were written in — never from a copy.
+    /// </remarks>
+    internal static bool? ReadVerdict(string toolOutput)
+    {
+        if (string.IsNullOrEmpty(toolOutput)) return null;
+        const int CountSentinel = 918273645;
+        var errorsLine = "^" + Regex.Escape(Strings.SmartFixBuildErrors(CountSentinel, string.Empty).Split('\n')[0].TrimEnd('\r'))
+                                    .Replace(CountSentinel.ToString(), @"\d+") + "$";
+        var okLine = Strings.SmartFixBuildOk.Trim();
+        bool? verdict = null;
+        foreach (var raw in toolOutput.Split('\n'))
+        {
+            var line = raw.TrimEnd('\r').Trim();
+            try
+            {
+                if (Regex.IsMatch(line, errorsLine, RegexOptions.None, RegexBudget.Default)) return true;   // one project red: red
+            }
+            catch (RegexMatchTimeoutException) { }
+            if (line == okLine) verdict = false;
+        }
+        return verdict;
+    }
+
     /// <summary>The note for a validator run that ended with <paramref name="exitCode"/>; null stays silent.</summary>
     /// <remarks>
     /// The .NET error lines only NAME the errors; whether the build passed is the exit code's to say, as for

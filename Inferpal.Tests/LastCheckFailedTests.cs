@@ -87,3 +87,49 @@ public sealed class LastCheckFailedTests
         Assert.Equal(2, code.Split("ChatTurnPolicy.LastCheckFailed(").Length - 1);
     }
 }
+
+/// <summary>
+/// ⚠ The build an edit's Smart Fix note reports is a check like the others: turns that ended on "🔨 Smart Fix: N
+/// compilation error(s)" after an edit — the model answering "I have updated the page" over a page that no longer
+/// builds — carried no notice (12 battery runs, every one judged failed). The outputs below come from the producer.
+/// </summary>
+[Collection(CultureSerialCollection.Name)]   // the verdict is read from the producer's localized sentences
+public sealed class SmartFixLastCheckTests
+{
+    private static ToolExecution Ran(string name, string output = "output") => new(name, "{}", output);
+
+    private static string Edit(string? smartFixNote) =>
+        Strings.ApplyEditsOk(1, 1) + (smartFixNote is null ? string.Empty : "\n\n" + smartFixNote);
+
+    private static readonly string Red = Edit(Services.CodeActions.SmartFixValidator.Interpret(1,
+        "/ws/Components/Pages/Counter.razor(13,7): error RZ1006: The code block is missing a closing \"}\" character.",
+        dotnetFilter: true));
+    private static readonly string Clean = Edit(Services.CodeActions.SmartFixValidator.Interpret(0, "", dotnetFilter: true));
+
+    [Fact]
+    public void ATurnThatEndsOnAnEditWhoseBuildFailed_IsSaid()
+    {
+        Assert.Equal(true, Services.CodeActions.SmartFixValidator.ReadVerdict(Red));   // witness: the producer's note is read
+        Assert.True(ChatTurnPolicy.LastCheckFailed([Ran("read_file"), Ran("apply_edits", Red)], filesChangedInRun: 1));
+    }
+
+    [Fact]
+    public void ReferenceArms_SayNothing()
+    {
+        Assert.Equal(false, Services.CodeActions.SmartFixValidator.ReadVerdict(Clean));
+        // Red, fixed by the next edit whose build passed.
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("apply_edits", Red), Ran("apply_edits", Clean)], filesChangedInRun: 1));
+        // Red, then the tests run green.
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("apply_edits", Red), Ran("run_tests", "✓ PASSED — Failed: 0, Passed: 3, Skipped: 0, Total: 3")],
+                                                    filesChangedInRun: 1));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("apply_edits", Clean)], filesChangedInRun: 1));
+        Assert.Null(Services.CodeActions.SmartFixValidator.ReadVerdict(Edit(null)));
+    }
+
+    [Fact]
+    public void AnEditWithNoBuildNote_DoesNotClearAFailedOne()
+    {
+        // No note (Smart Fix off for that file, a missing toolchain) is no check: the red build before it stands.
+        Assert.True(ChatTurnPolicy.LastCheckFailed([Ran("apply_edits", Red), Ran("write_file", Edit(null))], filesChangedInRun: 1));
+    }
+}

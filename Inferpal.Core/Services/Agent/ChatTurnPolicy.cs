@@ -106,19 +106,23 @@ internal static class ChatTurnPolicy
     /// failing test under "the bug is fixed" with Llama 3.1 and Qwen3 Coder). Only the last check counts: a red run the
     /// model fixed and ran again green says nothing. And only a turn that changed files: asked "does it compile? do not
     /// fix anything", a model that reports the error has done the task — the notice would contradict a true answer
-    /// (measured, Devstral). The verdict readers are <c>/tdd</c>'s and <c>get_diagnostics</c>'s.
+    /// (measured, Devstral). The verdict readers are <c>/tdd</c>'s, <c>get_diagnostics</c>'s and Smart Fix's.
     /// </remarks>
     /// <param name="filesChangedInRun"><see cref="Execution.FileHistoryService.CurrentRunFileCount"/>; <c>null</c> (no
     /// run) or 0 says nothing.</param>
     public static bool LastCheckFailed(IEnumerable<ToolExecution> executions, int? filesChangedInRun)
     {
         if (filesChangedInRun is not > 0) return false;
-        var last = executions.LastOrDefault(e => e.Name is "run_tests" or "get_diagnostics");
+        // ⚠ Three checks, not two: an edit's Smart Fix note is a build too, and a turn that ENDED on its compilation
+        // errors — the model answering "updated" over a page that no longer builds — said nothing.
+        var last = executions.LastOrDefault(e => e.Name is "run_tests" or "get_diagnostics"
+                                              || (IsFileEdit(e.Name) && CodeActions.SmartFixValidator.ReadVerdict(e.Output) is not null));
         return last switch
         {
             null                            => false,
             { Name: "get_diagnostics" }     => Tools.GetDiagnosticsTool.ReadVerdict(last.Output) == Tools.GetDiagnosticsTool.BuildVerdict.Errors,
-            _                               => Commands.TddCommandHandler.TestsFailed(last.Output),
+            { Name: "run_tests" }           => Commands.TddCommandHandler.TestsFailed(last.Output),
+            _                               => CodeActions.SmartFixValidator.ReadVerdict(last.Output) == true,
         };
     }
 
