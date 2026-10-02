@@ -3,6 +3,29 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.28
+
+Long conversations keep working on a small context window, a backend that is down is reported in
+seconds, and a dozen places where Inferpal stayed silent now say what happened.
+
+- **Long conversations on a small context window (8K)**: the tool descriptions sent with every
+  question are now counted, so a growing conversation is compacted before the model refuses it
+  (it used to be refused several times in a row); models that think before answering can summarize
+  it again; and long questions — a pasted file — no longer keep it over the limit after compaction.
+- **A backend that does not answer is reported after 15 seconds**, not two minutes — for instance
+  Ollama not started while VS Code runs under WSL. `/hardware` no longer says "nothing loaded" when
+  the backend is down.
+- **Workspaces with several folders**: an `@` mention attaches the file you picked, file names
+  carry their folder, and the agent is told which other folders are open.
+- **A file you attach is sent once**, not a second time as automatic code context.
+- **Fewer silent answers**: `/read` of a missing file, `@folder` and `@code` with nothing to attach,
+  a `/run` with no output, `/index` after a rebuild, `/xray` with semantic search off, an MCP server
+  that crashes mid-session, and an edit that broke the build now say what happened.
+- **The agent searches with what works** when semantic search is off, says when a file filter
+  matched nothing, and no longer stalls on the build check of a JavaScript or Python project.
+- **Support Inferpal**: the listing now has a donation link — it funds graphics cards able to run
+  bigger models.
+
 ## 1.6.27
 
 New files written the way your project already writes them, and four ways a model could stall or

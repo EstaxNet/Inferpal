@@ -21,6 +21,7 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/visual-studio-marketplace/v/EstaxNet.inferpal-vs?label=VS%20Marketplace" alt="Visual Studio Marketplace"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/visual-studio-marketplace/v/EstaxNet.inferpal-vscode?label=VS%20Code%20Marketplace" alt="VS Code Marketplace"></a>
   <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
+  <a href="https://www.paypal.com/donate/?business=HA84FH7JXX9RQ&no_recurring=0&currency_code=EUR"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&amp;logoColor=white" alt="Donate with PayPal"></a>
 </p>
 
 <p align="center">
@@ -127,6 +128,21 @@ Complete functional and technical documentation lives in **[`docs/`](docs/README
 | [Getting Started](docs/getting-started.md) · [Providers](docs/providers.md) · [Models](docs/models.md) · [Configuration](docs/configuration.md) | [Architecture](docs/architecture.md) |
 | [Features](docs/features.md) · [Slash Commands](docs/slash-commands.md) · [Tools](docs/tools.md) · [Mentions](docs/mentions.md) | [Development](docs/development.md) |
 | [Search & Indexing](docs/search-and-indexing.md) · [MCP](docs/mcp.md) · [Rules & Checks](docs/rules-and-checks.md) · [Remote Inference](docs/remote-inference.md) | |
+
+---
+
+## ❤️ Support Inferpal
+
+Inferpal is free and open source, and it is developed and measured on **a single 24 GB graphics card**. Bigger
+models generally make a better agent, but the largest open models need more VRAM than that card has — so today they
+cannot be tested, tuned or benchmarked here. Donations go toward **graphics cards able to run bigger models**, so that
+Inferpal's model recommendations and its agent loop get measured on them too.
+
+<a href="https://www.paypal.com/donate/?business=HA84FH7JXX9RQ&no_recurring=0&currency_code=EUR"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&amp;logoColor=white" alt="Donate with PayPal"></a>
+
+<a href="https://www.paypal.com/donate/?business=HA84FH7JXX9RQ&no_recurring=0&currency_code=EUR"><img src="docs/assets/donate-paypal-qr.png" alt="PayPal donation QR code" width="192" height="192"></a>
+
+Scan the code with your phone or use the button above. Thank you!
 
 ---
 
