@@ -77,11 +77,33 @@ internal class GetSolutionInfoTool : ITool
             ? $"Projects : unknown — the solution file could not be read: {why}"
             : $"Projects : {contents.Projects.Count}");
 
+        // ⚠ A project the tools cannot reach is still listed, and listed alone it reads as one the model can open: every
+        // read is then refused as "outside the workspace root", and the model concludes the code is not there. Said
+        // above the list, which it qualifies, with the cause when the workspace root is the solution's own extent.
+        var root    = _workspaceRoot();
+        var outside = string.IsNullOrWhiteSpace(root)
+            ? []
+            : contents.Projects.Where(p => !IsUnderRoot(p.AbsolutePath, root)).ToHashSet();
+        if (outside.Count > 0)
+        {
+            sb.AppendLine($"Outside  : {outside.Count} of them sit outside the workspace root ({root}): the tools cannot "
+                        + "read, search or edit them.");
+            var extent = SolutionExtent.Of(slnPath);
+            if (string.Equals(extent.Root, Path.TrimEndingDirectorySeparator(Path.GetFullPath(root!)), PathComparer.Comparison)
+                && extent.Reason is { Length: > 0 } cause)
+                sb.AppendLine($"           {cause}");
+        }
+
         foreach (var proj in contents.Projects)
         {
             sb.AppendLine();
             sb.AppendLine($"── {proj.Name}");
             sb.AppendLine($"   File : {proj.RelativePath}");
+            if (outside.Contains(proj))
+            {
+                sb.AppendLine("   [outside the workspace root: the tools cannot read, search or edit it]");
+                continue;
+            }
 
             if (!File.Exists(proj.AbsolutePath))
             {
@@ -198,12 +220,16 @@ internal class GetSolutionInfoTool : ITool
     /// sandbox's own (<see cref="PathSanitizer.AssertUnderRoot"/>, links and case included); a path
     /// that cannot be resolved counts as outside. An unknown root keeps the fallback it exists for.
     /// </remarks>
-    internal static bool LastKnownApplies(string solutionPath, string? workspaceRoot)
+    internal static bool LastKnownApplies(string solutionPath, string? workspaceRoot) =>
+        string.IsNullOrWhiteSpace(workspaceRoot) || IsUnderRoot(solutionPath, workspaceRoot);
+
+    /// <summary>The sandbox's own answer to "can the tools reach this path?" — links and case included; a path that
+    /// cannot be resolved counts as outside.</summary>
+    private static bool IsUnderRoot(string path, string workspaceRoot)
     {
-        if (string.IsNullOrWhiteSpace(workspaceRoot)) return true;
         try
         {
-            PathSanitizer.AssertUnderRoot(solutionPath, workspaceRoot);
+            PathSanitizer.AssertUnderRoot(path, workspaceRoot);
             return true;
         }
         catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)

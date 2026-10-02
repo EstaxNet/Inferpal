@@ -80,7 +80,7 @@ public class SignalScopeTests : IDisposable
         // The file is there and valid — it is simply not ours.
         Assert.True(File.Exists(ActiveSolutionSignal.FilePath));
         Assert.Null(ActiveSolutionSignal.TryReadSolutionPath());
-        Assert.Null(ActiveSolutionSignal.TryReadSolutionDir());
+        Assert.Null(SolutionExtent.OfActiveSolution());
     }
 
     [Fact]

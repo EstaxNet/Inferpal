@@ -20,7 +20,8 @@ internal static class WorkspaceRootPin
 {
     /// <param name="ragEnabled">Whether the root is indexed: on a solution switch, and when it is pinned but was never indexed.</param>
     /// <param name="currentRoot">The root pinned so far (empty = none).</param>
-    /// <param name="activeSolutionDir">The solution the in-process package reports open, if any.</param>
+    /// <param name="activeSolutionDir">The root of the solution the in-process package reports open, if any — the
+    /// folder that holds the solution and its projects (<c>SolutionExtent</c>), not always the <c>.sln</c>'s own.</param>
     /// <param name="reliableRoot">A solution-anchored root (<c>ProjectRootLocator.LocateReliable</c>),
     /// consulted only while nothing is pinned.</param>
     /// <param name="indexedRoot">The root the last indexing pass was started on (empty = never).</param>

@@ -233,7 +233,12 @@ exists.
 ## Safety
 
 - **Workspace-confined file operations** — a single `AssertUnderRoot` sandbox on every
-  path-taking tool.
+  path-taking tool. In Visual Studio the workspace is the folder that holds the whole solution:
+  when a solution lists projects beside its own folder (`UI\UI.sln` naming `..\DAL\DAL.csproj`),
+  the root widens to hold them — within the git repository that holds the solution, never to your
+  home folder or a drive root, and not while the solution's folder keeps its own `.inferpal/`
+  files (move them up to the wider folder to let it widen). Projects still out of reach are
+  marked by `get_solution_info` and named in `/diagnostics`.
 - **Approval prompts** — `write_file`, `apply_diff`, `apply_edits`, `delete_file`,
   `run_command`, `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and MCP calls
   each prompt **Allow once / Always allow this tool / Cancel** (session-scoped, never

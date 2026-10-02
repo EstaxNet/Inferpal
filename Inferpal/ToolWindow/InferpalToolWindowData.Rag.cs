@@ -86,7 +86,8 @@ internal partial class InferpalToolWindowData
             var (action, root) = WorkspaceRootPin.Decide(
                 _config.RagEnabled,
                 current,
-                ActiveSolutionSignal.TryReadSolutionDir(),
+                // The folder that holds the whole solution, not only the .sln's own (SolutionExtent).
+                SolutionExtent.OfActiveSolution()?.Root,
                 // Walks the file system: only worth it while nothing is pinned.
                 string.IsNullOrEmpty(current) ? FindReliableProjectRoot() : null,
                 _indexService.IndexedRoot);
@@ -397,21 +398,27 @@ internal partial class InferpalToolWindowData
     // Returns a .sln-anchored root, or null if none can be found yet.
     // Unlike FindProjectRoot(), never falls back to CWD — callers that need a reliable
     // root (e.g. RAG indexing) should use this and retry later if it returns null.
+    // ⚠ A root, not a solution folder: a solution may list projects beside its own folder, and the
+    // root is the folder that holds them all (SolutionExtent). The locator finds where the solution
+    // is; the extent says what root it needs — on every path, or the tools and the .inferpal/ layers
+    // would be rooted in two different folders.
     private string? FindReliableProjectRoot() =>
-        _rootLocator.LocateReliable(
+        SolutionExtent.OfActiveSolution()?.Root
+        ?? SolutionExtent.RootForDir(_rootLocator.LocateReliable(
             _contextHolder.GetOpenPaths(),
-            ActiveSolutionSignal.TryReadSolutionDir(),
-            Directory.GetCurrentDirectory());
+            activeSolutionDir: null,
+            Directory.GetCurrentDirectory()));
 
     // Resolution order and walk limits live in ProjectRootLocator (unit-tested); the VM
     // only supplies the open editor paths, the authoritative signal, and the CWD.
     private static readonly Services.Signals.ProjectRootLocator _rootLocator = new();
 
     private string FindProjectRoot(IReadOnlyList<string>? openPaths = null) =>
-        _rootLocator.Locate(
+        SolutionExtent.OfActiveSolution()?.Root
+        ?? SolutionExtent.RootForDir(_rootLocator.Locate(
             openPaths ?? _contextHolder.GetOpenPaths(),
-            ActiveSolutionSignal.TryReadSolutionDir(),
-            Directory.GetCurrentDirectory());
+            activeSolutionDir: null,
+            Directory.GetCurrentDirectory()));
 
     #endregion
 }

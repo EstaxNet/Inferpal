@@ -167,8 +167,9 @@ internal class UpdateMemoryTool : ITool
     private string ResolveProjectRoot() =>
         _getWorkspaceRoot() is { Length: > 0 } root
             ? root
-            : new ProjectRootLocator().Locate(
-                _editor.GetOpenDocumentPaths(),
-                ActiveSolutionSignal.TryReadSolutionDir(),
-                Directory.GetCurrentDirectory());
+            : SolutionExtent.OfActiveSolution()?.Root
+              ?? SolutionExtent.RootForDir(new ProjectRootLocator().Locate(
+                  _editor.GetOpenDocumentPaths(),
+                  activeSolutionDir: null,
+                  Directory.GetCurrentDirectory()));
 }

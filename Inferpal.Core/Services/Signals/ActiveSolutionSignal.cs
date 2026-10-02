@@ -21,8 +21,8 @@ namespace Inferpal.Services.Signals;
 /// <list type="bullet">
 ///   <item>In-process: calls <see cref="Write"/> on solution open and <see cref="Clear"/> on
 ///         solution close (see <c>VsSolutionTracker</c>).</item>
-///   <item>Out-of-process: calls <see cref="TryReadSolutionPath"/> /
-///         <see cref="TryReadSolutionDir"/> as the first step of any solution-root lookup.</item>
+///   <item>Out-of-process: calls <see cref="TryReadSolutionPath"/> as the first step of any
+///         solution-root lookup — through <c>SolutionExtent</c> when it is a root that is wanted.</item>
 /// </list>
 /// <para>
 /// Unlike <see cref="BuildSignalFile"/> this signal carries no expiry: it represents persistent
@@ -80,12 +80,6 @@ internal static class ActiveSolutionSignal
         catch { return null; }
     }
 
-    /// <summary>
-    /// Returns the directory containing the currently open <c>.sln</c> file, or <c>null</c>.
-    /// </summary>
-    internal static string? TryReadSolutionDir()
-    {
-        var path = TryReadSolutionPath();
-        return path is null ? null : Path.GetDirectoryName(path);
-    }
+    // ⚠ No "solution directory" accessor: the .sln's folder is not the workspace root when the solution lists projects
+    // beside it (UI\UI.sln naming ..\DAL\DAL.csproj) — the root is SolutionExtent.OfActiveSolution().Root.
 }

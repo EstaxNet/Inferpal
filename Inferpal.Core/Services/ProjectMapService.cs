@@ -311,8 +311,9 @@ internal sealed class ProjectMapService
 
     private string? FindRoot()
     {
-        // 0. Authoritative: the in-process package reports the actually-open solution.
-        var active = ActiveSolutionSignal.TryReadSolutionDir();
+        // 0. Authoritative: the in-process package reports the actually-open solution — mapped to the
+        //    folder that holds all of its projects, which is the workspace root (SolutionExtent).
+        var active = SolutionExtent.OfActiveSolution()?.Root;
         if (active is not null) return active;
 
         // Then the workspace root, as is: it IS the project, with or without a solution file.
@@ -328,12 +329,12 @@ internal sealed class ProjectMapService
             if (!string.IsNullOrEmpty(dir))
             {
                 var r = FindSlnDir(dir);
-                if (r is not null) return r;
+                if (r is not null) return SolutionExtent.RootForDir(r);
             }
         }
 
         // 2. Last resort: CWD.
-        return FindSlnDir(Directory.GetCurrentDirectory());
+        return SolutionExtent.RootForDir(FindSlnDir(Directory.GetCurrentDirectory()));
     }
 
     private static string? FindSlnDir(string start)
