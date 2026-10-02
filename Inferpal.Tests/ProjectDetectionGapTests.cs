@@ -164,6 +164,6 @@ public sealed class ProjectDetectionGapTests : IDisposable
         var answer = await new GetDiagnosticsTool(null, () => _healthy)
             .ExecuteAsync(Args("{}"), CancellationToken.None);
 
-        Assert.Equal(Strings.DiagNoProject, answer);
+        Assert.Equal(GetDiagnosticsTool.NoProject, answer);
     }
 }

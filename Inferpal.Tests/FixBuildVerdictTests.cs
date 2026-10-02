@@ -50,7 +50,7 @@ public class FixBuildVerdictTests
         var output = shape switch
         {
             "file-not-found"                   => Strings.ToolFileNotFound(Path.Combine("proj", "Ap.sln")),
-            "no-project"                       => Strings.DiagNoProject,
+            "no-project"                       => GetDiagnosticsTool.NoProject,
             "build-failed-without-diagnostics" => Strings.DiagBuildFailed(1, "Build FAILED."),
             // ⚠ The sentence comes from the PRODUCER, never copied: a copy at the reading end
             // matches until the day the writing end is reworded, then stops without a sign.

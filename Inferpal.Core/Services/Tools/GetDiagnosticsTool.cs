@@ -153,8 +153,10 @@ internal class GetDiagnosticsTool : ITool
             // this process may open — and the remedy it names ("provide the path parameter") points
             // at a file inside that very folder. Said as a cause, next to the remedy, never instead.
             var gap = WorkspaceScan.FirstWalkGap(SearchStart(root), root);
-            return gap is null ? Strings.DiagNoProject
-                               : $"{Strings.DiagNoProject}\n({gap.Value.Sentence()})";
+            // ⚠ "Provide the path parameter" is the remedy only if a .NET project exists somewhere: in a JavaScript or
+            // Python workspace there is nothing for this tool to build, and a model told to find a path ends its turn
+            // or keeps looking. The remedy that works there is named too (model-facing, so English).
+            return gap is null ? NoProject : $"{NoProject}\n({gap.Value.Sentence()})";
         }
 
         // A folder is what `dotnet build` resolves itself — the project it holds, or an error naming the ambiguity.
@@ -185,6 +187,12 @@ internal class GetDiagnosticsTool : ITool
         var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(BudgetSeconds), ct);
         return Interpret(run, Path.GetFileName(path), BudgetSeconds);
     }
+
+    /// <summary>The answer when no .NET project is found: the user's remedy, then the model's — in a workspace of
+    /// another language this tool has nothing to build.</summary>
+    internal static string NoProject =>
+        Strings.DiagNoProject + "\nget_diagnostics builds .NET projects only. For another language, run its own "
+        + "checker with run_command (tsc, mypy, cargo check, go vet…) or its tests with run_tests.";
 
     /// <summary>What the tool answers for a path that is not a .NET solution or project: nothing was built.</summary>
     internal const string NotADotnetProject = "Error: get_diagnostics builds .NET solutions and projects, and this is neither";

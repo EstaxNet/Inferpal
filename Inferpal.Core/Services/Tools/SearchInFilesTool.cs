@@ -79,10 +79,12 @@ internal class SearchInFilesTool : ITool
 
         var skippedLarge = 0;
         var unreadable   = 0;
+        var seen         = 0;
         foreach (var file in files)
         {
             if (ct.IsCancellationRequested) break;
             if (results.Count >= MaxResults) break;
+            seen++;
 
             try
             {
@@ -121,6 +123,19 @@ internal class SearchInFilesTool : ITool
             }
             catch (OperationCanceledException) { }
             catch (Exception ex) { unreadable++; Diagnostics.Swallow("SearchInFilesTool.ReadFile", ex); }
+        }
+
+        // ⚠ No file searched is not "no match": a filter for a language the project does not hold (`*.cs` in a
+        // JavaScript project) selects nothing, and "No results" read as "the text is not in the code".
+        if (seen == 0 && !ct.IsCancellationRequested)
+        {
+            var none = filePattern == "*"
+                ? $"No file was found under '{path}' — nothing was searched."
+                : $"No file under '{path}' matches file_pattern '{rawPattern}', so nothing was searched — this is NOT "
+                  + "\"the text is absent\". Leave file_pattern out to search every file.";
+            // A folder the walk could not list may be exactly where the files are.
+            if (WorkspaceScan.FirstWalkGap(path, root) is { } noneGap) none += $"\n({noneGap.Sentence()})";
+            return Task.FromResult(none);
         }
 
         // Every reason the answer may be incomplete, said. The size skip already was; the RESULT
