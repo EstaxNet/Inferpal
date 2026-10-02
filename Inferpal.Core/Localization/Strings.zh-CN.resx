@@ -335,6 +335,7 @@
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ 剪贴板为空。</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>无法为 @{0} 附加任何内容。</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>“{0}”是文件，不是文件夹。请使用 @file 附加。</value></data>
+  <data name="SlashToolNoOutput" xml:space="preserve"><value>完成 — 没有输出。</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ 浏览文件时出错：{0}</value></data>
 
   <!-- Export -->

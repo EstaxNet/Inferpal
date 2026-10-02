@@ -24,6 +24,17 @@ internal sealed record SlashToolAction(string Tool, object Args, string? AttachA
     /// question, and the model receives "File not found" as its content — the twin of an @-mention that attaches
     /// nothing, which says so.
     /// </remarks>
+    /// <summary>
+    /// A tool's result as the person who typed the command reads it: an empty one says so.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The agent loop's funnel (<c>AgentOrchestrator.ExecuteToolSafeAsync</c>) already turns an empty result into
+    /// "(no output)" for the model; a slash command reads the same result through another door, and a command that
+    /// printed nothing — <c>/run</c> of a redirect, a <c>cd</c> — left an empty bubble, the look of a call that did not
+    /// happen.
+    /// </remarks>
+    internal static string Shown(string result) => string.IsNullOrWhiteSpace(result) ? Strings.SlashToolNoOutput : result;
+
     internal bool AttachesResult(string? root, Editor.OpenDocumentOverlay? overlay)
     {
         if (AttachAs is null) return false;

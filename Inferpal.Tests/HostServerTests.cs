@@ -1972,6 +1972,25 @@ public partial class HostServerTests
     }
 
     /// <summary>
+    /// A slash command whose tool printed nothing says so, as the agent loop's funnel does for the model: an empty
+    /// bubble reads as a call that did not happen.
+    /// </summary>
+    [Fact]
+    public async Task CommandSlash_ACommandThatPrintsNothing_SaysSo()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Target.ApprovalAnswer = 1;   // allow once
+
+        var silent = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/run cd ." }).WaitAsync(TimeSpan.FromSeconds(60));
+        Assert.Equal(Strings.SlashToolNoOutput, silent.Markdown);
+
+        // Reference arm: a command that prints keeps its output.
+        Assert.Equal("x", Services.SlashToolAction.Shown("x"));
+    }
+
+    /// <summary>
     /// <c>@folder</c> on a typo or on a file, and <c>@code</c> with no index, answer with a notice and no chip
     /// (MentionRefusalTests holds the decision); a folder that is there is still attached.
     /// </summary>

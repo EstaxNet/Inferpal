@@ -335,6 +335,7 @@
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Буфер обмена пуст.</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Для @{0} не удалось ничего прикрепить.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» — это файл, а не папка: прикрепите его через @file.</value></data>
+  <data name="SlashToolNoOutput" xml:space="preserve"><value>Готово — вывода нет.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Ошибка обзора: {0}</value></data>
 
   <!-- Export -->

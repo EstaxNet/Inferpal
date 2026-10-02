@@ -335,6 +335,7 @@ Sicherung: {0}</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Zwischenablage ist leer.</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Für @{0} konnte nichts angehängt werden.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>„{0}“ ist eine Datei, kein Ordner — hänge sie mit @file an.</value></data>
+  <data name="SlashToolNoOutput" xml:space="preserve"><value>Fertig — keine Ausgabe.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Durchsuchungsfehler: {0}</value></data>
 
   <!-- Export -->

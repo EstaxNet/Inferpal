@@ -34,7 +34,7 @@ internal partial class InferpalToolWindowData
         {
             var json = JsonSerializer.Serialize(argsObj);
             var args = JsonDocument.Parse(json).RootElement.Clone();
-            result   = await _tools.ExecuteAsync(toolName, args, ct);
+            result   = SlashToolAction.Shown(await _tools.ExecuteAsync(toolName, args, ct));
             diff     = _tools.ConsumeDiff();
         }
         catch (Exception ex)

@@ -335,6 +335,7 @@
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ クリップボードが空です。</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>@{0} に添付できるものがありませんでした。</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>「{0}」はフォルダーではなくファイルです。@file で添付してください。</value></data>
+  <data name="SlashToolNoOutput" xml:space="preserve"><value>完了 — 出力はありません。</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ 参照エラー：{0}</value></data>
 
   <!-- Export -->

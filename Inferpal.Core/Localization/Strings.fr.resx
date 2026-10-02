@@ -335,6 +335,7 @@ Sauvegarde : {0}</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Presse-papier vide.</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Rien n'a pu être joint pour @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>« {0} » est un fichier, pas un dossier — joins-le avec @file.</value></data>
+  <data name="SlashToolNoOutput" xml:space="preserve"><value>Terminé — aucune sortie.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Erreur lors de la navigation : {0}</value></data>
 
   <!-- Export -->
