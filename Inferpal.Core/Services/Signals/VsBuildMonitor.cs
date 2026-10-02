@@ -29,10 +29,6 @@ namespace Inferpal.Services.Signals;
 /// could not access <c>IVsTaskList</c>), the monitor falls back to running
 /// <c>dotnet build</c> to collect them.
 /// </para>
-/// <para>
-/// Callers (e.g. a build-and-fix slash command) can also invoke <see cref="RunAsync"/>
-/// directly to trigger the same flow on demand.
-/// </para>
 /// </summary>
 internal sealed class VsBuildMonitor : IDisposable
 {
@@ -43,9 +39,6 @@ internal sealed class VsBuildMonitor : IDisposable
     /// <para><c>errorLines</c> — newline-separated error messages.</para>
     /// </summary>
     public event Action<int, string>? BuildFailed;
-
-    /// <summary>Error lines carried in the payload; the count reported alongside is the full one.</summary>
-    private const int MaxErrorLinesListed = 20;
 
     private FileSystemWatcher? _watcher;
 
@@ -132,60 +125,12 @@ internal sealed class VsBuildMonitor : IDisposable
         }
     }
 
-    // ── Explicit build check ───────────────────────────────────────────────────
-
-    /// <summary>
-    /// Runs <c>dotnet build -v minimal</c> on <paramref name="solutionPath"/>
-    /// and fires <see cref="BuildFailed"/> if compilation errors are found.
-    /// </summary>
-    public Task RunAsync(string solutionPath) => RunBuildCheckAsync(solutionPath);
-
     /// <summary>
     /// Testing helper — fires <see cref="BuildFailed"/> with a synthetic payload.
     /// Used by the <c>/test-build-banner</c> slash command to verify the OOP banner pipeline.
     /// </summary>
     internal void FireTestBuildFailed() =>
         BuildFailed?.Invoke(1, "TestFile.cs(1,1): error CS9999: Synthetic test error from /test-build-banner");
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
-    private async Task RunBuildCheckAsync(string solutionPath)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName  = "dotnet",
-                // Note: --no-restore is omitted intentionally.
-                // Using it risks failing with NETSDK1004 (missing assets file) when NuGet
-                // packages have not been restored yet, which produces no lines matching
-                // ErrorLineRegex and silently swallows the failure.
-                Arguments = $"build \"{solutionPath}\" -v minimal",
-            };
-
-            var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(90), CancellationToken.None);
-
-            // ⚠ The count came off the list AFTER `.Take(20)`, and it is the
-            // one the banner shows: "❌ Build failed — 20 compilation error(s) detected" on a build
-            // that has eighty. The user decides whether to run /fix-build on that number. The
-            // count now covers EVERYTHING found; what is not listed is announced in the text.
-            var errorLines = run.Combined
-                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                .Where(l => GetDiagnosticsTool.ErrorLineRegex.IsMatch(l))
-                .Select(l => l.Trim())
-                .Distinct()
-                .ToList();
-
-            if (errorLines.Count > 0)
-            {
-                var text = string.Join("\n", errorLines.Take(MaxErrorLinesListed));
-                if (errorLines.Count > MaxErrorLinesListed)
-                    text += $"\n… +{errorLines.Count - MaxErrorLinesListed} more";
-                BuildFailed?.Invoke(errorLines.Count, text);
-            }
-        }
-        catch { /* non-critical */ }
-    }
 
     // ── IDisposable ────────────────────────────────────────────────────────────
 
