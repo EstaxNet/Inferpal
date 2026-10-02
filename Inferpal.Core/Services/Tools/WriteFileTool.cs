@@ -27,8 +27,10 @@ internal class WriteFileTool : ITool
 
     public string Name => "write_file";
     public string Description =>
-        "Writes or replaces the whole content of a file. Creates the file if absent. To replace a file that exists, " +
-        "read it first with read_file; to change part of it, use apply_diff.";
+        "Writes or replaces the whole content of a file. Creates the file, and any missing folders, if absent. Before " +
+        "creating a new file, read an existing file of the same kind next to it and follow its conventions (module " +
+        "system, imports, style). To replace a file that exists, read it first with read_file; to change part of it, " +
+        "use apply_diff.";
     public object Parameters => new
     {
         type = "object",

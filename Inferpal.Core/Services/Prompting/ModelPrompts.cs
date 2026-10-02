@@ -23,6 +23,7 @@ internal static class ModelPrompts
         "Before using any tools, output ONLY a JSON object with the following structure (no prose, no markdown fences):\n"
         + "{\"goal\":\"one-sentence description of what you will do\",\"steps\":[{\"i\":1,\"desc\":\"what this step does\",\"tool\":\"expected_tool_name_or_null\"},{\"i\":2,\"desc\":\"...\"}]}\n"
         + "Include 1–6 steps — only as many as the request needs. Use null for \"tool\" if no specific tool is expected.\n"
+        + "Before creating a file, plan to read an existing file of the same kind next to it.\n"
         + "After outputting the JSON, stop — do not call any tools yet.";
 
     /// <summary>User message injected after the plan to start execution.</summary>
