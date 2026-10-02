@@ -159,6 +159,24 @@ public class RunTestsParsersTests
         Assert.Contains("✗ FAILED", result);
         Assert.Contains("TestFoo", result);
         Assert.Contains("foo_test.go:10", result);
+        Assert.DoesNotContain("more diagnostic line", result);   // reference arm: nothing left out, nothing said
+    }
+
+    /// <summary>
+    /// The diagnostic lines under a failing Go run are capped, and the cap is COUNTED: the lines left out carry the
+    /// messages of failures listed above, and a model fixing those would not know a message exists.
+    /// </summary>
+    [Fact]
+    public void Go_ManyDiagnosticLines_CountsTheOnesLeftOut()
+    {
+        var lines = Enumerable.Range(1, RunTestsTool.MaxGoDetailLines + 7)
+            .Select(i => $"--- FAIL: TestCase{i} (0.00s)\n    case_test.go:{i}: case {i} failed");
+        var raw    = string.Join("\n", lines) + "\nFAIL\nexit status 1\nFAIL    example.com/pkg  0.012s\n";
+        var result = RunTestsTool.ParseGoOutput(raw, 1);
+
+        Assert.Contains($"case_test.go:{RunTestsTool.MaxGoDetailLines}:", result);
+        Assert.DoesNotContain($"case_test.go:{RunTestsTool.MaxGoDetailLines + 1}:", result);
+        Assert.Contains("… 7 more diagnostic line(s) not shown", result);
     }
 
     // ── "exit 0 = green": the fallback 1.5.2 closed on ONE case ────────────────

@@ -243,6 +243,20 @@ public class SolutionExtentTests : IDisposable
     }
 
     [Fact]
+    public void ASolutionEditedAfterwards_IsReadAgain()
+    {
+        // The parse is cached for the per-keystroke paths; an edited solution must not keep its old extent.
+        var sln = LayeredRepository(git: true);
+        Assert.Equal(P("repo"), SolutionExtent.Of(sln).Root);
+
+        File.WriteAllText(sln,
+            "Microsoft Visual Studio Solution File, Format Version 12.00\n"
+            + "Project(\"{9A19103F-16F7-4668-BE54-9A1E7A4F7556}\") = \"UI\", \"UI.csproj\", \"{11111111-1111-1111-1111-111111111111}\"\n"
+            + "EndProject\n");
+        Assert.Equal(P("repo", "UI"), SolutionExtent.Of(sln).Root);
+    }
+
+    [Fact]
     public void OnlyTheProductsSnapshots_AreNotLayers()
     {
         Directory.CreateDirectory(P("a", ".inferpal", "history"));

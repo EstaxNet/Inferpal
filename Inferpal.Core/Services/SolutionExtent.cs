@@ -118,7 +118,7 @@ internal sealed record SolutionExtent(
         var dir  = Path.GetDirectoryName(full) ?? full;
         try
         {
-            var contents = SolutionFiles.ParseProjects(full, File.ReadAllText(full));
+            var contents = Parsed(full);
             if (contents.Unreadable is not null) return new(Bare(dir), Bare(dir), [], SolutionExtentLimit.None);
             var extent = Decide(dir, contents.Projects, WorkTreeOf(dir),
                                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), HoldsLayers);
@@ -132,6 +132,29 @@ internal sealed record SolutionExtent(
             Diagnostics.RecordOnce("SolutionExtent.Of", $"{full}: {Diagnostics.RootMessage(ex)}", full);
             return new(Bare(dir), Bare(dir), [], SolutionExtentLimit.None);
         }
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime Written, long Length, SolutionContents Contents)>
+        _parsed = new(PathComparer.Default);
+
+    /// <summary>
+    /// The solution's projects, parsed again only when the file changed (its write time or its length).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A root is derived on paths that run per KEYSTROKE (the slash autocomplete reads the project's templates from
+    /// it): without this, every key typed after <c>/</c> read and parsed the whole solution file. The git tree and the
+    /// <c>.inferpal/</c> layers are still probed each time — a few directory checks — because they change without the
+    /// solution file changing.
+    /// </remarks>
+    private static SolutionContents Parsed(string solutionPath)
+    {
+        var info = new FileInfo(solutionPath);
+        var (written, length) = (info.LastWriteTimeUtc, info.Length);   // Length throws on a missing file
+        if (_parsed.TryGetValue(solutionPath, out var cached) && cached.Written == written && cached.Length == length)
+            return cached.Contents;
+        var contents = SolutionFiles.ParseProjects(solutionPath, File.ReadAllText(solutionPath));
+        _parsed[solutionPath] = (written, length, contents);
+        return contents;
     }
 
     private const string OutsideContext = "SolutionExtent";

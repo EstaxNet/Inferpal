@@ -769,6 +769,9 @@ internal class RunTestsTool : ITool
     /// </remarks>
     private const int MaxFailingListed = 30;
 
+    /// <summary>Go's <c>file.go:line:</c> diagnostic lines shown under a failing run; the rest are counted.</summary>
+    internal const int MaxGoDetailLines = 20;
+
     /// <summary>Says what the "Failing tests:" list left out, or nothing when it left out nothing.</summary>
     private static void AppendMoreFailures(StringBuilder sb, int total, int listed)
     {
@@ -943,18 +946,22 @@ internal class RunTestsTool : ITool
         }
 
         // Surface the diagnostic lines Go prints under each failure (file:line: message).
-        var detail = raw.Split('\n')
+        var allDetail = raw.Split('\n')
             .Select(l => l.TrimEnd('\r'))
             .Where(l => Regex.IsMatch(l, @"\.go:\d+:", RegexOptions.None, RegexBudget.Default))
             .Select(l => l.Trim())
             .Distinct()
-            .Take(20)
             .ToList();
+        var detail = allDetail.Take(MaxGoDetailLines).ToList();
         if (exitCode != 0 && detail.Count > 0)
         {
             sb.AppendLine();
             foreach (var l in detail)
                 sb.AppendLine("  " + l);
+            // Counted: the lines left out belong to failures listed above, whose message would otherwise be missing
+            // without a sign that it exists.
+            if (allDetail.Count > detail.Count)
+                sb.AppendLine($"  … {allDetail.Count - detail.Count} more diagnostic line(s) not shown");
         }
 
         var result = sb.ToString().Trim();
