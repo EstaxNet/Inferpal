@@ -303,7 +303,9 @@ internal partial class InferpalToolWindowData
 
             // After the model is known: the context check measures against the window the server
             // really loaded THIS model with, when that is smaller than the configured one.
-            await CompactOrTruncateAsync(effectiveModel, localCts!.Token);
+            // A code action (one-time model) sends no tool; every other turn sends the registry chosen below.
+            await CompactOrTruncateAsync(effectiveModel,
+                oneTimeModel is null ? NextTurnToolTokens() : 0, localCts!.Token);
 
             using var sink = new ThrottledTokenSink(chunk => Post(() =>
             {

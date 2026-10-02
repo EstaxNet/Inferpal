@@ -309,7 +309,12 @@ internal partial class InferpalToolWindowData
     // Range computation, the summarize request, and the history rewrites live in
     // HistoryCompaction (unit-tested); the VM keeps the LLM call, its timeout fuse,
     // and the chat notices.
-    private async Task CompactOrTruncateAsync(string model, CancellationToken ct)
+    /// <summary>The tool definitions the next chat turn carries — added to the conversation by the pre-send check, the
+    /// context gauge and the X-Ray, which otherwise all measured a request half the size of the one sent.</summary>
+    private int NextTurnToolTokens() =>
+        Services.Agent.ContextManager.NextTurnToolTokens(_tools, _toolsEnabled, _planMode);
+
+    private async Task CompactOrTruncateAsync(string model, int toolTokens, CancellationToken ct)
     {
         // The decision, the summarising model call and its fuse lived HERE, so on the VS Code side
         // the history was NEVER bounded and three settings of the panel did nothing there. All of
@@ -319,7 +324,7 @@ internal partial class InferpalToolWindowData
         var decision = await Services.Agent.ContextManager.PrepareAsync(
             _history, _config, _client, _lastPromptTokens,
             onStep: step => Post(() => CurrentStep = step),
-            ct: ct, model: model);
+            ct: ct, model: model, toolTokens: toolTokens);
 
         await RunOnVMContextAsync(() =>
         {

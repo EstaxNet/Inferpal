@@ -129,12 +129,12 @@
   <data name="HintContextWindowSize" xml:space="preserve"><value>モデルの num_ctx 設定と一致させてください。一般的な値：2048（小型 7B）、4096（デフォルト）、8192、16384。会話がこの制限の 80% に達すると、古いメッセージが自動的に削除され警告が表示されます。</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>LM Studio / OpenAI 互換サーバーでは、コンテキスト長はリクエストごとではなくモデルのロード時に固定されます。この値はクライアント側のトリミングのみを制御するため、モデルがロードされているコンテキスト以下に保ってください。会話がこの制限の 80% に達すると、古いメッセージが自動的に削除され警告が表示されます。</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>切り捨て時に常に保持するターン数：</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>切り捨て時に保持する最近のユーザー/アシスタントのやり取りの数です。システムプロンプトは常に保持されます。モデルが一貫性を保つためにより多くの最近のコンテキストが必要な場合は増やしてください。</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>切り捨て時に保持する最近のユーザー/アシスタントのやり取りの数です。システムプロンプトは常に保持されます。モデルが一貫性を保つためにより多くの最近のコンテキストが必要な場合は増やしてください。 これは上限です。ツール定義と一緒に収まらないほど長いやり取りは、残りと一緒に要約されます。</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ コンテキストウィンドウ：古いメッセージ {0} 件を削除 — 最後の {1} ターンを保持。古いコンテキストは失われました。</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>スマートコンテキスト圧縮（切り捨てではなく要約）</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>有効にすると、古いメッセージは削除前にモデルによって要約され、重要な情報が保持されます。要約の呼び出しが長すぎる場合は安全ヒューズが作動し、ハードトランケーションにフォールバックします。</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>圧縮タイムアウト（安全ヒューズ）：</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>要約に与える秒数。要約対象を読み込む時間（100 トークンあたり約 1 秒）に加算されます。超えると安全ヒューズが作動し、代わりにハードトランケーションが使用されます。デフォルト：45。</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>要約が何も出力しないまま待てる秒数（推論の出力も含む）。要約対象を読み込む時間（100 トークンあたり約 1 秒）に加算されます。超えると安全ヒューズが作動し、代わりにハードトランケーションが使用されます。デフォルト：45。</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KVキャッシュアンカーメッセージ：</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>圧縮後のコンテキストの先頭に変更せず保持する冒頭メッセージ数（システムプロンプト除く）。OllamaはこれらのトークンのKVキャッシュを再利用でき、再計算時間を節約します。0 = 無効。デフォルト：3。</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} 件のKVアンカーメッセージを保持)</value></data>
@@ -143,6 +143,7 @@
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ コンテキスト圧縮がタイムアウトしました — ハードトランケーションにフォールバック。 モデルにもっと時間が必要な場合は、設定の「圧縮タイムアウト」を増やしてください。</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ コンテキストの圧縮に失敗しました — 強制切り捨てにフォールバックしました。原因：{0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ モデルが空の要約を返しました — 強制切り捨てにフォールバックしました。</value></data>
+  <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ 要約が長すぎてコンテキストに余裕が残りませんでした — 強制切り捨てにフォールバックしました。</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ モデルが要約中に同じ内容を繰り返したため停止しました — 強制切り捨てにフォールバックしました。</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 要約がモデルの長さ制限で止まりました。以前の会話の一部が含まれていません。</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ 以前の会話が長すぎて 1 回のリクエストで要約できませんでした。{1} 件中、最初の {0} 件のメッセージは要約に含まれていません。</value></data>
@@ -825,6 +826,7 @@ ollama serve
   <data name="XrayLabelTemplate" xml:space="preserve"><value>セッションテンプレート</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>ルール（適用 {0} 件）</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>会話履歴: {0} トークン（推定）</value></data>
+  <data name="XrayTools" xml:space="preserve"><value>各ターンで送信されるツール定義: {0} トークン（推定）</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 自動コンテキスト: {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG 自動コンテキスト: 無効 — セマンティックインデックスがオフです（`ragEnabled`）</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>コンテキストウィンドウ: {0} / {1} トークン（{2}%）</value></data>
@@ -847,6 +849,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · 余裕 {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**計算:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**現在ロード中:** なし</value></data>
+  <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**現在ロード中:** 不明 — {0} のバックエンドに接続できません</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**現在ロード中:** {0} 個のモデル — このバックエンドは使用中の VRAM を報告しません（合計・空き容量・GPU/CPU は表示できません）</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### ロード済みモデル
 

@@ -70,6 +70,7 @@
   "Include in the next turn": "Включить в следующий ход",
   "⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.": "⚠ Слои проекта (правила, память, заметки) занимают большую часть контекста — подумайте о их сокращении.",
   "History: ~{0} tokens": "История: ~{0} токенов",
+  "Tool definitions: ~{0} tokens": "Определения инструментов: ~{0} токенов",
   "window {0}% full": "окно заполнено на {0} %",
   "Unchecked sections are excluded from the next turn.": "Снятые с отметки разделы исключаются из следующего хода.",
   "Nothing to export — the conversation is empty.": "Нечего экспортировать — беседа пуста.",

@@ -33,6 +33,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     ///   <item><b>Infinite timeout</b> — a generation legitimately runs for minutes; the budget is
     ///         per call, via a linked <c>CancellationTokenSource</c>, and re-armed on every chunk.
     ///         A client-level timeout would kill long answers at an arbitrary point.</item>
+    ///   <item><b>Bounded connect</b> — only establishing the connection has a fixed budget
+    ///         (<see cref="ConnectDeadline"/>): a backend that never answers the handshake is
+    ///         "unreachable" in seconds, not after the OS's own retries (127 s on Linux).</item>
     ///   <item><b>Redirects allowed, no response cap</b> — unlike <c>FetchUrlTool</c>,
     ///         <c>DocCrawler</c> and <c>WebSearchTool</c>, which fetch URLs the <em>model</em>
     ///         chose and therefore re-check every hop against the SSRF guard. This client talks to
@@ -42,7 +45,10 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// Do not "align" this with the web clients: they defend against a URL nobody vetted, which is
     /// not the situation here.
     /// </remarks>
-    protected static readonly HttpClient _http = new() { Timeout = Timeout.InfiniteTimeSpan };
+    protected static readonly HttpClient _http = new(ConnectDeadline.Create(ConnectDeadline.Timeout))
+    {
+        Timeout = Timeout.InfiniteTimeSpan,
+    };
 
     protected static readonly JsonSerializerOptions _jsonOpts = new()
     {

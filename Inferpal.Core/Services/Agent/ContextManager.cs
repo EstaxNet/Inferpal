@@ -75,6 +75,11 @@ internal static class ContextManager
     /// Never throws: a failed or timed-out summary degrades to
     /// <see cref="ContextOutcome.CompactionFellBack"/>.
     /// </summary>
+    /// <param name="lastPromptTokens">What the conversation weighs — never the tool definitions (see
+    /// <paramref name="toolTokens"/>); 0 = not measured yet, nothing to decide.</param>
+    /// <param name="toolTokens">The tool definitions the turn about to go will carry (<see cref="NextTurnToolTokens"/>).
+    /// ⚠ Not optional in effect: every turn with tools sends them, and they weigh about half of an 8 192-token window,
+    /// so a decision without them compacts only after the backend has already refused the request.</param>
     internal static async Task<ContextDecision> PrepareAsync(
         IReadOnlyList<ChatMessageDto> history,
         InferpalConfig                config,
@@ -82,12 +87,13 @@ internal static class ContextManager
         int                           lastPromptTokens,
         Action<string>?               onStep,
         CancellationToken             ct,
-        string?                       model = null)
+        string?                       model = null,
+        int                           toolTokens = 0)
     {
         var window = await EffectiveWindowAsync(config, client, model, ct).ConfigureAwait(false);
         var plan   = HistoryCompaction.Decide(
-            history, window, lastPromptTokens,
-            config.ContextWindowKeepTurns, config.KvCacheAnchorMessages, config.CompactionEnabled);
+            history, window, NextTurnLoad(lastPromptTokens, toolTokens),
+            config.ContextWindowKeepTurns, config.KvCacheAnchorMessages, config.CompactionEnabled, toolTokens);
 
         if (plan.Action == CompactionAction.None)
             return new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window);
@@ -110,6 +116,13 @@ internal static class ContextManager
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
                                        failure ?? Strings.MsgContextCompactionEmpty, window);
 
+        // ⚠ A summary is not bounded by anything but the model: asked to keep "every key fact", a model can write as much
+        // as it was given, and each compaction then summarizes the previous summary too. Kept, it leaves the
+        // conversation over the trigger — the next request is refused, larger at every turn. Truncation at least fits.
+        if (!FitsAfterSummary(history, plan, summary, toolTokens, window))
+            return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
+                                       Strings.MsgContextSummaryTooLong, window);
+
         var notice = Strings.MsgContextCompacted(plan.Count, plan.KeepTurns)
                    + (plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty);
         // ⚠ An incomplete summary is KEPT — dropping it would lose the turns entirely, and the window is fullest
@@ -129,6 +142,42 @@ internal static class ContextManager
         return new ContextDecision(ContextOutcome.Compacted, plan, summary, notice, window,
                                    SummaryIncomplete: cut || omitted > 0);
     }
+
+    /// <summary>
+    /// What the next turn sends, in tokens: the conversation plus the tool definitions it carries. Read by the pre-send
+    /// check, the Visual Studio gauge and the X-Ray — one sum, so none of them announces room the request does not have.
+    /// </summary>
+    /// <remarks>
+    /// The conversation measure never includes the tool definitions: after a turn with tools, both front-ends replace the
+    /// server's figure (inflated by the run's own transcript) by an estimate of the history alone. 0 stays 0 — nothing
+    /// measured yet is not "the tools alone".
+    /// </remarks>
+    internal static int NextTurnLoad(int conversationTokens, int toolTokens) =>
+        conversationTokens == 0 ? 0 : conversationTokens + toolTokens;
+
+    /// <summary>False when <paramref name="summary"/>, in place of the planned turns, is what keeps the conversation over
+    /// the compaction trigger (tool definitions of the next turn included) — truncation would be back under it. When
+    /// neither is, the kept turns are the excess, not the summary: it stays. No window known: nothing to fit.</summary>
+    internal static bool FitsAfterSummary(
+        IReadOnlyList<ChatMessageDto> history, CompactionPlan plan, string summary, int toolTokens, int window)
+    {
+        if (window <= 0) return true;
+        var trigger = window * 8 / 10;
+        var summarized = history.ToList();
+        HistoryCompaction.ApplySummary(summarized, plan, summary);
+        if (AgentOrchestrator.EstimateTokens(summarized) + toolTokens <= trigger) return true;
+        var truncated = history.ToList();
+        HistoryCompaction.ApplyTruncation(truncated, plan);
+        return AgentOrchestrator.EstimateTokens(truncated) + toolTokens > trigger;
+    }
+
+    /// <summary>
+    /// The tool definitions the next chat turn carries, in tokens: none with tools off, the read-only subset in plan
+    /// mode, every offered tool otherwise (MCP and custom tools included) — the registry each front-end then sends.
+    /// </summary>
+    internal static int NextTurnToolTokens(IToolRegistry tools, bool toolsEnabled, bool planMode) =>
+        !toolsEnabled ? 0
+        : RequestSize.ToolTokens((planMode ? new PlanModeToolRegistry(tools) : tools).Definitions);
 
     /// <summary>
     /// The window the conversation is measured against: the configured one, or the one the server
@@ -173,13 +222,15 @@ internal static class ContextManager
             var window  = await EffectiveWindowAsync(config, client, model, cts.Token).ConfigureAwait(false);
             var request = HistoryCompaction.BuildSummarizeRequest(
                 HistoryCompaction.SliceToCompact(history, plan), HistoryCompaction.SummaryInputBudgetChars(window));
-            // The fuse now that the size to READ is known (restarts the countdown).
-            cts.CancelAfter(HistoryCompaction.SummaryTimeout(config.CompactionTimeoutSeconds, request));
+            // The fuse now that the size to READ is known (restarts the countdown), rearmed by every streamed chunk.
+            var fuse = new SummaryFuse(cts, config.CompactionTimeoutSeconds);
+            fuse.Arm(request);
 
             // ⚠ SendChatAsync, never RunAgentAsync: the agent loop reports a network failure as its
             // FinalResponse, and the error text would become the "summary" that replaces the turns.
             var turn = await client.SendChatAsync(
-                model, request.Messages, EmptyToolRegistry.Instance, onToken: null, cts.Token).ConfigureAwait(false);
+                model, request.Messages, EmptyToolRegistry.Instance, onToken: fuse.Progress, cts.Token,
+                onThinking: fuse.Progress).ConfigureAwait(false);
 
             // ⚠ Stopped because the model kept repeating itself, the reply is a loop: kept, it would replace the turns
             // it was asked to summarize — and a model shown a loop resumes it. Unlike a reply cut at the length limit,

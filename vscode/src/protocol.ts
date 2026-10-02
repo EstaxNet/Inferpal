@@ -248,6 +248,8 @@ export interface XRayPanel {
   fillPercent: number;
   overheadWarning: boolean;
   rawPrompt: string;
+  /** Tool definitions the next turn carries — counted in fillPercent. */
+  toolTokens: number;
 }
 
 export interface ApprovalNote {

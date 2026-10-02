@@ -41,7 +41,8 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private void UpdateContextBudget()
     {
-        var budget = Services.Presentation.ContextBudgetGauge.Compute(_lastPromptTokens, ContextWindowInUse);
+        var budget = Services.Presentation.ContextBudgetGauge.Compute(
+            Services.Agent.ContextManager.NextTurnLoad(_lastPromptTokens, NextTurnToolTokens()), ContextWindowInUse);
         if (budget is null)
         {
             HasContextBudget = false;

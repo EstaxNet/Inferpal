@@ -70,6 +70,7 @@
   "Include in the next turn": "Inclure dans le prochain tour",
   "⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.": "⚠ Les couches projet (règles, mémoire, notes) occupent une grande part du contexte — pensez à les alléger.",
   "History: ~{0} tokens": "Historique : ~{0} tokens",
+  "Tool definitions: ~{0} tokens": "Définitions d'outils : ~{0} tokens",
   "window {0}% full": "fenêtre remplie à {0} %",
   "Unchecked sections are excluded from the next turn.": "Les sections décochées sont exclues du prochain tour.",
   "Nothing to export — the conversation is empty.": "Rien à exporter — la conversation est vide.",

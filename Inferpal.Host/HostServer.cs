@@ -277,7 +277,8 @@ internal sealed partial class HostServer : IDisposable
             var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
                 s.History, s.Config, s.Client, s.LastPromptTokens,
                 onStep: step => Notify("chat/step", new { text = step }),
-                ct: cts.Token, model: model);
+                ct: cts.Token, model: model,
+                toolTokens: Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
             s.LastContextWindow = ctxDecision.Window;
             // The prompt was built above, against the window known then: when this check reveals another one — the
             // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
@@ -1300,12 +1301,13 @@ internal sealed partial class HostServer : IDisposable
     {
         var model = XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
-            AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse);
+            AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
         return new XRayPanelDto(
             model.Sections.Select(x => new XRaySectionDto(
                 x.Id, x.Label, x.Tokens, x.Percent, x.Content, x.Enabled, x.CanToggle)).ToList(),
             model.TotalTokens, model.HistoryTokens, model.ContextWindow,
-            model.FillPercent, model.OverheadWarning, model.RawPrompt);
+            model.FillPercent, model.OverheadWarning, model.RawPrompt, model.ToolTokens);
     }
 
     /// <summary>Bounded defensive copy of the history: `xray/panel` is a read the webview can ask

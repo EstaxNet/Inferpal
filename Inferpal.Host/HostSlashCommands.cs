@@ -313,7 +313,8 @@ internal sealed partial class HostServer
                         sections,
                         AgentOrchestrator.EstimateConversationTokens(s.History),
                         s.ContextWindowInUse,
-                        s.Config));
+                        s.Config,
+                        toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode)));
                 }
 
                 case SlashCommandId.Bench:

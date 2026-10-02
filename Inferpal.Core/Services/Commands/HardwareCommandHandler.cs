@@ -53,6 +53,14 @@ internal static class HardwareCommandHandler
         await Task.WhenAll(runningTask, installedTask);
         var running   = await runningTask;
         var installed = await installedTask;
+
+        // Both listings read empty on any failure: two empty answers are a fresh backend OR a backend nobody
+        // reached, and only the second must not be reported as "nothing loaded". Asked only then — a backend
+        // that listed something has answered — and the way every empty-list reader asks (ModelCatalog).
+        if (running.Count == 0 && installed.Count == 0
+            && await ModelCatalog.UnreachableBackendAsync(client, config, ct) is { } unreachable)
+            return new(new HardwareProfile(config.VramBudgetGb, running, installed, unreachableAt: unreachable).FormatReport());
+
         var ctxAdvice = await BuildContextWindowAdviceAsync(client, config, installed, ct);
         var profile   = new HardwareProfile(config.VramBudgetGb, running, installed, ctxAdvice);
 

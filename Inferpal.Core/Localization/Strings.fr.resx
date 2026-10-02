@@ -132,12 +132,12 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="HintContextWindowSize" xml:space="preserve"><value>Doit correspondre au paramètre num_ctx de votre modèle. Valeurs courantes : 2048 (petit 7B), 4096 (défaut), 8192, 16384. Quand la conversation atteint 80 % de cette limite, les messages les plus anciens sont supprimés automatiquement et un avertissement s'affiche.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Sur LM Studio / serveurs compatibles OpenAI, la longueur de contexte se règle au chargement du modèle, pas par requête — cette valeur ne pilote que le rognage côté client, gardez-la donc inférieure ou égale au contexte avec lequel le modèle est chargé. Quand la conversation atteint 80 % de cette limite, les messages les plus anciens sont supprimés automatiquement et un avertissement s'affiche.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Tours à toujours conserver lors de la troncature :</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Nombre d'échanges utilisateur/assistant récents à préserver lors de la troncature. Le prompt système est toujours conservé. Augmentez cette valeur si le modèle a besoin de plus de contexte récent pour rester cohérent.</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Nombre d'échanges utilisateur/assistant récents à préserver lors de la troncature. Le prompt système est toujours conservé. Augmentez cette valeur si le modèle a besoin de plus de contexte récent pour rester cohérent. C'est un maximum : les échanges trop longs pour tenir à côté des définitions d'outils sont résumés avec le reste.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Fenêtre de contexte : {0} ancien(s) message(s) supprimé(s) — conservation des {1} derniers tours. Le contexte plus ancien est perdu.</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Compaction intelligente du contexte (résumé au lieu de tronquer)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Quand cette option est activée, les anciens messages sont résumés par le modèle avant d'être supprimés, ce qui préserve les informations clés. Un fusible de sécurité annule l'appel de résumé s'il prend trop de temps et revient à la troncature forcée.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Délai de compaction (fusible de sécurité) :</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Secondes accordées au résumé, en plus du temps de lecture de ce qu'il résume (environ 1 seconde pour 100 jetons). Au-delà, le fusible de sécurité se déclenche et la troncature forcée est utilisée à la place. Défaut : 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Secondes pendant lesquelles le résumé peut ne rien écrire — son raisonnement compte —, en plus du temps de lecture de ce qu'il résume (environ 1 seconde pour 100 jetons). Au-delà, le fusible de sécurité se déclenche et la troncature forcée est utilisée à la place. Défaut : 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>Messages d'ancrage KV-cache :</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Nombre de messages d'ouverture (après le prompt système) conservés tels quels au début de chaque contexte compacté. Ollama peut réutiliser son KV cache pour ces tokens, économisant du temps de recalcul. 0 = désactivé. Défaut : 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} message(s) d'ancrage KV conservé(s))</value></data>
@@ -146,6 +146,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ La compaction du contexte a expiré — retour à la troncature forcée. Si votre modèle a besoin de plus de temps, augmentez le « Délai de compaction » dans les réglages.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ La compaction du contexte a échoué — retour à la troncature forcée. Cause : {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Le modèle a renvoyé un résumé vide — retour à la troncature forcée.</value></data>
+  <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ Le résumé était trop long pour laisser de la place dans le contexte — retour à la troncature forcée.</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Le modèle se répétait en boucle pendant le résumé et a été arrêté — retour à la troncature forcée.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Le résumé s'est arrêté à la limite de longueur du modèle : une partie de la conversation antérieure y manque.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ La conversation antérieure était trop longue pour être résumée en une requête : ses {0} premiers messages sur {1} manquent au résumé.</value></data>
@@ -833,6 +834,7 @@ ollama serve
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Modèle de session</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Règles ({0} appliquée·s)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Historique de conversation : {0} tokens (estimation)</value></data>
+  <data name="XrayTools" xml:space="preserve"><value>Définitions d'outils envoyées à chaque tour : {0} tokens (estimation)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Auto-contexte RAG : {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>Auto-contexte RAG : inactif — l'indexation sémantique est coupée (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Fenêtre de contexte : {0} / {1} tokens ({2} %)</value></data>
@@ -855,6 +857,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · marge {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Calcul :** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Actuellement chargé :** aucun</value></data>
+  <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Actuellement chargé :** inconnu — le backend à {0} est injoignable</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Actuellement chargé :** {0} modèle(s) — ce backend ne publie pas la VRAM qu'ils occupent (ni total, ni marge, ni GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Modèles chargés
 

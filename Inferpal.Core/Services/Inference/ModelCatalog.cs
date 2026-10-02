@@ -32,20 +32,26 @@ internal static class ModelCatalog
     /// </para>
     /// </remarks>
     public static async Task<string> EmptyListMeansAsync(
-        IInferenceProvider client, Config.InferpalConfig config, string nothingInstalled, CancellationToken ct)
+        IInferenceProvider client, Config.InferpalConfig config, string nothingInstalled, CancellationToken ct) =>
+        await UnreachableBackendAsync(client, config, ct) is { } url ? Strings.MsgUnreachable(url) : nothingInstalled;
+
+    /// <summary>The configured backend address when it does not answer, else <c>null</c> — the question behind
+    /// <see cref="EmptyListMeansAsync"/>, for a reader whose empty answer is not a sentence (<c>/hardware</c>).</summary>
+    public static async Task<string?> UnreachableBackendAsync(
+        IInferenceProvider client, Config.InferpalConfig config, CancellationToken ct)
     {
         var url = config.BaseUrl;
-        if (string.IsNullOrWhiteSpace(url)) return nothingInstalled;
+        if (string.IsNullOrWhiteSpace(url)) return null;
 
         try
         {
-            return await client.CheckConnectionAsync(url, ct) ? nothingInstalled : Strings.MsgUnreachable(url);
+            return await client.CheckConnectionAsync(url, ct) ? null : url;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             Diagnostics.Swallow("ModelCatalog.EmptyListMeans", ex);
-            return nothingInstalled;
+            return null;
         }
     }
 

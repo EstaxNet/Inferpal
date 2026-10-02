@@ -422,11 +422,13 @@ internal sealed class AgentOrchestrator
             var utility = await ModelRouter.ResolveUtilityAsync(_config, _client, cts.Token);
             var window  = await RunWindowAsync(utility, cts.Token);
             var request = HistoryCompaction.BuildSummarizeRequest(range, HistoryCompaction.SummaryInputBudgetChars(window));
-            // The fuse now that the size to READ is known (restarts the countdown).
-            cts.CancelAfter(HistoryCompaction.SummaryTimeout(_config.CompactionTimeoutSeconds, request));
+            // The fuse now that the size to READ is known (restarts the countdown), rearmed by every streamed chunk.
+            var fuse = new SummaryFuse(cts, _config.CompactionTimeoutSeconds);
+            fuse.Arm(request);
 
             var turn = await _client.SendChatAsync(
-                utility, request.Messages, EmptyToolRegistry.Instance, null, cts.Token, TaskComplexity.Quick);
+                utility, request.Messages, EmptyToolRegistry.Instance, fuse.Progress, cts.Token, TaskComplexity.Quick,
+                onThinking: fuse.Progress);
             summary   = MarkdownParser.StripThinkTags(turn.TextContent);
             cut       = turn.CutAtLimit;
             repeating = turn.StoppedRepeating;

@@ -70,6 +70,7 @@
   "Include in the next turn": "다음 턴에 포함",
   "⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.": "⚠ 프로젝트 레이어(규칙, 메모리, 노트)가 컨텍스트의 큰 부분을 차지합니다 — 줄이는 것을 고려하세요.",
   "History: ~{0} tokens": "기록: 약 {0} 토큰",
+  "Tool definitions: ~{0} tokens": "도구 정의: 약 {0} 토큰",
   "window {0}% full": "윈도우 {0}% 사용",
   "Unchecked sections are excluded from the next turn.": "선택 해제된 섹션은 다음 턴에서 제외됩니다.",
   "Nothing to export — the conversation is empty.": "내보낼 항목 없음 — 대화가 비어 있습니다.",

@@ -99,6 +99,7 @@ export function renderXray(panel: XRayPanel): void {
   }
   const info = document.createElement('div');
   info.textContent = t('xrayHistory', panel.historyTokens.toLocaleString())
+    + (panel.toolTokens > 0 ? ' · ' + t('xrayTools', panel.toolTokens.toLocaleString()) : '')
     + (panel.contextWindow > 0 ? ' · ' + t('xrayWindow', panel.fillPercent.toFixed(0)) : '');
   footer.appendChild(info);
   const hint = document.createElement('div');

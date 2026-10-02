@@ -45,6 +45,7 @@ export function webviewStrings(): Record<string, string> {
     xrayInclude: t('Include in the next turn'),
     xrayWarning: t('⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.'),
     xrayHistory: t('History: ~{0} tokens'),
+    xrayTools: t('Tool definitions: ~{0} tokens'),
     xrayWindow: t('window {0}% full'),
     xrayHint: t('Unchecked sections are excluded from the next turn.'),
     mentionSearchCode: t('Search the codebase for "{0}"'),

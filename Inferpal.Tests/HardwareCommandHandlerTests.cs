@@ -125,4 +125,33 @@ public class HardwareCommandHandlerTests
         Assert.Contains(Strings.HardwareRecommendedCtx("qwen3", withWeights, ""), result.Message);
         Assert.DoesNotContain(Strings.HardwareRecommendedCtx("qwen3", withoutWeights, ""), result.Message);
     }
+
+    /// <summary>
+    /// A backend nobody reached is not a backend with nothing loaded: both listings read empty on any failure, and
+    /// the report said "Currently loaded: none" to a user whose Ollama is down.
+    /// </summary>
+    [Fact]
+    public async Task Report_BackendUnreachable_SaysTheLoadIsUnknown_NeverNone()
+    {
+        var client = new FakeInferenceProvider { Capabilities = ProviderCapabilities.Ollama, ConnectionOk = false };
+        var config = ConfigWithBudget(16);
+        config.BaseUrl = "http://127.0.0.1:9";
+
+        var result = await HardwareCommandHandler.HandleAsync(config, client, Cmd(), CancellationToken.None);
+
+        Assert.Contains(Strings.HardwareLoadedUnknown("http://127.0.0.1:9"), result.Message);
+        Assert.DoesNotContain(Strings.HardwareLoadedNone, result.Message);
+        Assert.Contains(Strings.HardwareBudgetLine("16"), result.Message);   // the budget is configuration: still known
+    }
+
+    [Fact]
+    public async Task Report_ReachableBackendWithNothingLoaded_StillSaysNone()
+    {
+        // Reference arm: a backend that answers with two empty lists is a fresh one — "none" is then the truth.
+        var client = new FakeInferenceProvider { Capabilities = ProviderCapabilities.Ollama, ConnectionOk = true };
+
+        var result = await HardwareCommandHandler.HandleAsync(ConfigWithBudget(16), client, Cmd(), CancellationToken.None);
+
+        Assert.Contains(Strings.HardwareLoadedNone, result.Message);
+    }
 }

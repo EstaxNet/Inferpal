@@ -132,12 +132,12 @@
   <data name="HintContextWindowSize" xml:space="preserve"><value>应与模型的 num_ctx 参数一致。常见值：2048（小型 7B）、4096（默认）、8192、16384。当对话达到此限制的 80% 时，最旧的消息将自动删除并显示警告。</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>在 LM Studio / 兼容 OpenAI 的服务器上，上下文长度在模型加载时设定，而非按请求设定——此值仅控制客户端裁剪，请将其保持在不超过模型加载时的上下文。当对话达到此限制的 80% 时，最旧的消息将自动删除并显示警告。</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>截断时始终保留的轮次：</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>截断时保留的最近用户/助手交互轮数。系统提示始终保留。如果模型需要更多近期上下文以保持连贯性，请增大此值。</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>截断时保留的最近用户/助手交互轮数。系统提示始终保留。如果模型需要更多近期上下文以保持连贯性，请增大此值。这是上限：过长、无法与工具定义一起放入的交互会与其余内容一起被摘要。</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ 上下文窗口：已删除 {0} 条旧消息 — 保留最近 {1} 轮。更早的上下文已丢失。</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>智能上下文压缩（摘要而非截断）</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>启用后，旧消息在删除前由模型进行摘要，保留关键信息。如果摘要调用耗时过长，安全保险丝会取消该调用并回退到硬截断。</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>压缩超时（安全保险丝）：</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>留给摘要的秒数，另加读取待摘要内容所需的时间（约每 100 个 token 1 秒）。超过后安全保险丝触发，改用硬截断。默认值：45。</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>摘要可以不输出任何内容的秒数（推理输出也算），另加读取待摘要内容所需的时间（约每 100 个 token 1 秒）。超过后安全保险丝触发，改用硬截断。默认值：45。</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KV 缓存锚点消息：</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>在每次压缩后的上下文开头以原文保留的开场消息数（系统提示词之后）。Ollama 可以对这些词元复用其 KV 缓存，节省重新计算时间。0 = 禁用。默认值：3。</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} 条 KV 锚点消息已保留)</value></data>
@@ -146,6 +146,7 @@
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 上下文压缩超时 — 已回退到硬截断。 如果模型需要更长时间，请在设置中调高“压缩超时”。</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ 上下文压缩失败 — 已回退到强制截断。原因：{0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ 模型返回了空摘要 — 已回退到强制截断。</value></data>
+  <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ 摘要过长，上下文中没有剩余空间 — 已回退到强制截断。</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ 模型在生成摘要时不断重复同一内容，已被停止 — 已回退到强制截断。</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 摘要在模型的长度限制处中断：其中缺少部分先前的对话。</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ 先前的对话太长，无法在一次请求中摘要：摘要中缺少其 {1} 条消息中的前 {0} 条。</value></data>
@@ -825,6 +826,7 @@ ollama serve
   <data name="XrayLabelTemplate" xml:space="preserve"><value>会话模板</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>规则（应用 {0} 条）</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>会话历史：{0} 个 token（估算）</value></data>
+  <data name="XrayTools" xml:space="preserve"><value>每轮发送的工具定义：{0} 个 token（估算）</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 自动上下文：{0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG 自动上下文：未生效 — 语义索引已关闭（`ragEnabled`）</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>上下文窗口：{0} / {1} 个 token（{2}%）</value></data>
@@ -847,6 +849,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · 余量 {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**计算：** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**当前已加载：** 无</value></data>
+  <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**当前已加载：** 未知 — 无法连接到 {0} 的后端</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**当前已加载：** {0} 个模型 — 此后端不报告其占用的显存（无法显示总量、余量或 GPU/CPU）</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### 已加载模型
 

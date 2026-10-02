@@ -129,12 +129,12 @@
   <data name="HintContextWindowSize" xml:space="preserve"><value>Должно соответствовать параметру num_ctx вашей модели. Типичные значения: 2048 (небольшая 7B), 4096 (по умолчанию), 8192, 16384. Когда разговор достигает 80% этого лимита, старые сообщения автоматически удаляются и отображается предупреждение.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>На LM Studio / OpenAI-совместимых серверах длина контекста задаётся при загрузке модели, а не в запросе — это значение управляет только обрезкой на стороне клиента, поэтому держите его не выше контекста, с которым загружена модель. Когда разговор достигает 80% этого лимита, старые сообщения автоматически удаляются и отображается предупреждение.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Ходов для сохранения при усечении:</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Количество последних обменов пользователя и ассистента, сохраняемых при усечении. Системный промпт сохраняется всегда. Увеличьте, если модели нужно больше недавнего контекста для сохранения связности.</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Количество последних обменов пользователя и ассистента, сохраняемых при усечении. Системный промпт сохраняется всегда. Увеличьте, если модели нужно больше недавнего контекста для сохранения связности. Это максимум: обмены, слишком длинные, чтобы поместиться рядом с определениями инструментов, резюмируются вместе с остальным.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Контекстное окно: удалено {0} старых сообщений — сохранены последние {1} ход(а/ов). Старый контекст потерян.</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Умная компактизация контекста (сжатие вместо усечения)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Если включено, старые сообщения суммируются моделью перед удалением, сохраняя ключевую информацию. Предохранитель безопасности отменяет вызов суммирования, если он занимает слишком много времени, и возвращается к жёсткому усечению.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Тайм-аут компактизации (предохранитель безопасности):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Секунды, отводимые на резюме, сверх времени на чтение того, что резюмируется (около 1 секунды на 100 токенов). При превышении срабатывает предохранитель безопасности и вместо резюме используется жёсткое усечение. По умолчанию: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Секунды, в течение которых резюме может ничего не писать (рассуждения модели считаются), сверх времени на чтение того, что резюмируется (около 1 секунды на 100 токенов). При превышении срабатывает предохранитель безопасности и вместо резюме используется жёсткое усечение. По умолчанию: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>Якорные сообщения KV-кэша:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Количество начальных сообщений (после системного промпта), сохраняемых в неизменном виде в начале каждого сжатого контекста. Ollama может повторно использовать свой KV-кэш для этих токенов, экономя время перерасчёта. 0 = отключено. По умолчанию: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} якорное(ых) сообщение(й) KV сохранено)</value></data>
@@ -143,6 +143,7 @@
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Компактизация контекста истекла — выполнен откат к жёсткому усечению. Если модели нужно больше времени, увеличьте «Тайм-аут компактизации» в настройках.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Сжатие контекста не удалось — выполнено принудительное усечение. Причина: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Модель вернула пустую сводку — выполнено принудительное усечение.</value></data>
+  <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ Сводка оказалась слишком длинной и не оставляла места в контексте — выполнено принудительное усечение.</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Модель зациклилась при составлении сводки и была остановлена — выполнено принудительное усечение.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Сводка остановилась на ограничении длины модели: часть предыдущего разговора в ней отсутствует.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ Предыдущий разговор был слишком длинным, чтобы сжать его одним запросом: первые {0} из {1} сообщений в сводку не вошли.</value></data>
@@ -825,6 +826,7 @@ ollama serve
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Шаблон сессии</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Правила (применено: {0})</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>История разговора: {0} токенов (оценка)</value></data>
+  <data name="XrayTools" xml:space="preserve"><value>Определения инструментов, отправляемые с каждым ходом: {0} токенов (оценка)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Автоконтекст RAG: {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>Автоконтекст RAG: неактивен — семантическая индексация отключена (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Контекстное окно: {0} / {1} токенов ({2} %)</value></data>
@@ -847,6 +849,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · запас {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Вычисление:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Сейчас загружено:** нет</value></data>
+  <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Сейчас загружено:** неизвестно — бэкенд по адресу {0} недоступен</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Сейчас загружено:** моделей: {0} — этот бэкенд не сообщает, сколько VRAM они занимают (нет итога, запаса и данных GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Загруженные модели
 

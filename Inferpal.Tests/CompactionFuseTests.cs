@@ -1,3 +1,4 @@
+using System.IO;
 using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
@@ -66,6 +67,93 @@ public sealed class CompactionFuseTests
 
         Assert.Equal(ContextOutcome.Compacted, decision.Outcome);
         Assert.DoesNotContain(Strings.MsgContextCompactionFallback, decision.Notice ?? "");
+    }
+
+    private static List<ChatMessageDto> ShortHistory()
+    {
+        // Short turns: the time to read rounds to nothing, so the fuse is the configured 10 s.
+        var h = new List<ChatMessageDto> { new("system", "sys") };
+        for (var i = 0; i < 6; i++)
+        {
+            h.Add(new ChatMessageDto("user", $"question {i}"));
+            h.Add(new ChatMessageDto("assistant", $"answer {i}"));
+        }
+        return h;
+    }
+
+    private static InferpalConfig TenSecondFuse() => new()
+    {
+        ContextWindowSize = 8_192, ContextWindowKeepTurns = 2, CompactionEnabled = true,
+        KvCacheAnchorMessages = 0, CompactionTimeoutSeconds = 10,
+    };
+
+    /// <summary>
+    /// A reasoning model streams its thinking long before the first word of the summary: 50 to 129 s on a 27B model.
+    /// Counted from the start, the fuse fired during that reasoning — every chunk now rearms it.
+    /// </summary>
+    [Fact]
+    public async Task AModelThatKeepsReasoning_PastTheFuse_IsWaitedFor()
+    {
+        Action<string>? think = null;
+        var client = new FakeInferenceProvider
+        {
+            DriveThinking = t => think = t,
+            OnChat = async (_, ct) =>
+            {
+                for (var i = 0; i < 26; i++)        // 13 s of reasoning, a chunk every half second
+                {
+                    await Task.Delay(500, ct);
+                    think?.Invoke("thinking… ");
+                }
+                return new ChatTurnResult("summary of the early turns", null, 0, 0);
+            },
+        };
+
+        var decision = await ContextManager.PrepareAsync(ShortHistory(), TenSecondFuse(), client, lastPromptTokens: 100_000,
+                                                         onStep: null, CancellationToken.None);
+
+        Assert.NotNull(think);                                                         // witness: reasoning was streamed
+        Assert.Equal(ContextOutcome.Compacted, decision.Outcome);
+    }
+
+    [Fact]
+    public async Task AModelThatStaysSilent_PastTheFuse_StillTripsIt()
+    {
+        // Reference arm: the fuse still guards against a model that does not produce anything.
+        var client = new FakeInferenceProvider
+        {
+            OnChat = async (_, ct) =>
+            {
+                await Task.Delay(TimeSpan.FromSeconds(13), ct);
+                return new ChatTurnResult("too late", null, 0, 0);
+            },
+        };
+
+        var decision = await ContextManager.PrepareAsync(ShortHistory(), TenSecondFuse(), client, lastPromptTokens: 100_000,
+                                                         onStep: null, CancellationToken.None);
+
+        Assert.Equal(ContextOutcome.CompactionFellBack, decision.Outcome);
+        Assert.Equal(Strings.MsgContextCompactionFallback, decision.Notice);
+    }
+
+    /// <summary>Both summarizing calls rearm the same fuse on both streams — the agent run's is not executable without
+    /// a whole run, so it is read in the source.</summary>
+    [Theory]
+    [InlineData("ContextManager.cs")]
+    [InlineData("AgentOrchestrator.cs")]
+    public void BothSummarizingCalls_RearmTheFuseOnEveryChunk(string file)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, "Inferpal.Core", "Services", "Agent", file));
+
+        var at = code.IndexOf("new SummaryFuse(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the fuse is gone from this summarizing call");          // WITNESS
+        var send = code.IndexOf("SendChatAsync(", at, StringComparison.Ordinal);
+        var call = code[send..code.IndexOf(';', send)];
+        Assert.Contains("fuse.Progress, cts.Token", call.Replace("onToken: ", ""), StringComparison.Ordinal);
+        Assert.Contains("onThinking: fuse.Progress", call, StringComparison.Ordinal);
     }
 
     [Fact]

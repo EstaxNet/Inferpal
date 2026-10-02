@@ -55,18 +55,25 @@ internal static class HistoryCompaction
     /// <paramref name="kvAnchorMessages"/> messages verbatim so Ollama can reuse its KV
     /// cache for the prefix tokens across requests.
     /// </summary>
+    /// <remarks>
+    /// ⚠ The kept part is sized, not only counted: the kept turns and the anchor messages stay verbatim, and with long
+    /// questions (a pasted file, an attachment) four of them plus the anchors were the whole window before the tool
+    /// definitions — compaction ran and the request was still refused, every turn. The system prompt, the anchors, the
+    /// kept turns and <paramref name="toolTokens"/> must fit in 60 % of the window (the rest is for the summary and the
+    /// answer): the anchors go first — a cache optimisation — then the oldest kept turns, never below one. Ordinary turns
+    /// fit, and keep the configured number.
+    /// </remarks>
     public static CompactionPlan Decide(
         IReadOnlyList<ChatMessageDto> history,
         int contextWindowSize,
         int lastPromptTokens,
         int keepTurnsConfig,
         int kvAnchorMessages,
-        bool compactionEnabled)
+        bool compactionEnabled,
+        int toolTokens = 0)
     {
         if (contextWindowSize <= 0 || lastPromptTokens == 0) return CompactionPlan.None;
         if (lastPromptTokens <= contextWindowSize * 8 / 10)  return CompactionPlan.None;
-
-        var keepTurns = Math.Max(1, keepTurnsConfig);
 
         var userIndices = history
             .Select((m, i) => (m, i))
@@ -75,12 +82,19 @@ internal static class HistoryCompaction
             .Select(x => x.i)
             .ToList();
 
+        var room = contextWindowSize * 6 / 10 - toolTokens - AgentOrchestrator.EstimateTokens(history.Take(1));
+        int Tail(int turns) => AgentOrchestrator.EstimateTokens(history.Skip(userIndices[userIndices.Count - turns]));
+
+        var keepTurns = Math.Min(Math.Max(1, keepTurnsConfig), Math.Max(1, userIndices.Count));
+        while (keepTurns > 1 && Tail(keepTurns) > room) keepTurns--;
+
         if (userIndices.Count <= keepTurns) return CompactionPlan.None;
 
         var keepFromIdx = userIndices[userIndices.Count - keepTurns];
         var removed     = keepFromIdx - 1;
 
-        var kvAnchor = (kvAnchorMessages > 0 && removed > kvAnchorMessages)
+        var kvAnchor = (kvAnchorMessages > 0 && removed > kvAnchorMessages
+                        && Tail(keepTurns) + AgentOrchestrator.EstimateTokens(history.Skip(1).Take(kvAnchorMessages)) <= room)
             ? kvAnchorMessages
             : 0;
 
@@ -265,5 +279,32 @@ internal static class HistoryCompaction
         history.RemoveRange(plan.Start, plan.Count);
         history.Insert(plan.Start, new ChatMessageDto("assistant", summary));
         history.Insert(plan.Start, new ChatMessageDto("user", "[Context Summary]") { IsScaffolding = true });
+    }
+}
+
+/// <summary>
+/// The safety fuse of a summarizing call: <see cref="HistoryCompaction.SummaryTimeout"/> until the first streamed
+/// output, then the configured seconds <b>without any</b> — every chunk, reasoning included, rearms it.
+/// </summary>
+/// <remarks>
+/// ⚠ A reasoning model thinks before it writes a word: on a 27B model, 50 to 129 s of reasoning before the first word of
+/// a summary, streamed all along. A fuse counted from the start fires during that reasoning, and the summary that would
+/// have kept the facts becomes a truncation that keeps none — for a model that was answering. The fuse is for a model
+/// that stops producing; one that keeps repeating itself is stopped by the clients' loop detectors instead.
+/// One fuse for both summarizing calls (the conversation's and an agent run's), so neither counts differently.
+/// </remarks>
+internal sealed class SummaryFuse(CancellationTokenSource cts, int configuredSeconds)
+{
+    private readonly TimeSpan _idle = TimeSpan.FromSeconds(Math.Max(10, configuredSeconds));
+
+    /// <summary>Starts the countdown before the first output: the configured seconds plus the time to read
+    /// <paramref name="request"/>.</summary>
+    public void Arm(SummarizeRequest request) => cts.CancelAfter(HistoryCompaction.SummaryTimeout(configuredSeconds, request));
+
+    /// <summary>A streamed chunk — answer or reasoning: the model is producing, so the countdown restarts.</summary>
+    public void Progress(string _)
+    {
+        try { cts.CancelAfter(_idle); }
+        catch (ObjectDisposedException) { }   // a late chunk after the call returned: nothing left to guard
     }
 }

@@ -133,12 +133,12 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="HintContextWindowSize" xml:space="preserve"><value>Match your model's num_ctx setting. Common values: 2048 (small 7B), 4096 (default), 8192, 16384. When the conversation reaches 80% of this limit, the oldest messages are automatically removed and a warning is shown.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>On LM Studio / OpenAI-compatible servers the context length is fixed at model load, not per request — this value only drives client-side trimming, so keep it at or below the context the model is loaded with. When the conversation reaches 80% of this limit, the oldest messages are automatically removed and a warning is shown.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Turns to always keep when truncating:</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Number of recent user/assistant exchanges to preserve when the context is truncated. The system prompt is always kept regardless. Increase this if the model needs more recent context to stay coherent.</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Number of recent user/assistant exchanges to preserve when the context is truncated. The system prompt is always kept regardless. Increase this if the model needs more recent context to stay coherent. It is a maximum: exchanges too long to fit next to the tool definitions are summarized with the rest.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Context window: removed {0} old message(s) — keeping last {1} turn(s). Older context is lost.</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Smart context compaction (summarize instead of truncate)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>When checked, old messages are summarized by the model before being removed, preserving key information. A safety fuse cancels the summary call if it takes too long and falls back to hard truncation.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Compaction timeout (safety fuse):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Seconds allowed for the summary, on top of the time needed to read what it summarizes (about 1 second per 100 tokens). If exceeded, the safety fuse fires and hard truncation is used instead. Default: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Seconds the summary may go without writing anything — its reasoning counts — on top of the time needed to read what it summarizes (about 1 second per 100 tokens). If exceeded, the safety fuse fires and hard truncation is used instead. Default: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KV-cache anchor messages:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Number of opening messages (after the system prompt) kept verbatim at the start of every compacted context. Ollama reuses its KV cache for these tokens, saving recalculation time. 0 = disabled. Default: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} KV anchor message(s) preserved)</value></data>
@@ -147,6 +147,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Context compaction timed out — fell back to hard truncation. If your model needs longer, raise “Compaction timeout” in the settings.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Context compaction failed — fell back to hard truncation. Cause: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ The model returned an empty summary — fell back to hard truncation.</value></data>
+  <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ The summary was too long to leave room in the context — fell back to hard truncation.</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ The model kept repeating itself while summarizing and was stopped — fell back to hard truncation.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ The summary stopped at the model's length limit: part of the earlier conversation is missing from it.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ The earlier conversation was too long to summarize in one request: its first {0} of {1} messages are missing from the summary.</value></data>
@@ -837,6 +838,7 @@ ollama serve
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Session template</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Rules ({0} matched)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Conversation history: {0} tokens (estimate)</value></data>
+  <data name="XrayTools" xml:space="preserve"><value>Tool definitions sent with each turn: {0} tokens (estimate)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG auto-context: {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG auto-context: off — semantic indexing is off (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Context window: {0} / {1} tokens ({2}%)</value></data>
@@ -859,6 +861,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · headroom {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Compute:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Currently loaded:** none</value></data>
+  <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Currently loaded:** unknown — the backend at {0} cannot be reached</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Currently loaded:** {0} model(s) — this backend does not report the VRAM they occupy (no total, headroom or GPU/CPU figure)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Loaded models
 

@@ -327,6 +327,7 @@ internal static class Strings
     public static string MsgContextCompactionFailed(string cause) =>
         string.Format(Get(nameof(MsgContextCompactionFailed)), cause);
     public static string MsgContextCompactionEmpty => Get(nameof(MsgContextCompactionEmpty));
+    public static string MsgContextSummaryTooLong  => Get(nameof(MsgContextSummaryTooLong));
     public static string MsgContextCompactionRepeating => Get(nameof(MsgContextCompactionRepeating));
     public static string MsgContextSummaryCut => Get(nameof(MsgContextSummaryCut));
     public static string MsgContextSummaryPartial(int omitted, int total) =>
@@ -1096,6 +1097,7 @@ internal static class Strings
     public static string XrayLabelTemplate                   => Get(nameof(XrayLabelTemplate));
     public static string XrayLabelRules(string count)        => string.Format(Get(nameof(XrayLabelRules)), count);
     public static string XrayHistory(string tokens)          => string.Format(Get(nameof(XrayHistory)), tokens);
+    public static string XrayTools(string tokens)            => string.Format(Get(nameof(XrayTools)), tokens);
     public static string XrayRag(string state)               => string.Format(Get(nameof(XrayRag)), state);
     public static string XrayRagNoIndexing                   => Get(nameof(XrayRagNoIndexing));
     public static string XrayBudget(string used, string limit, string pct) => string.Format(Get(nameof(XrayBudget)), used, limit, pct);
@@ -1190,6 +1192,7 @@ internal static class Strings
     public static string HardwareHeadroom(string gb)         => string.Format(Get(nameof(HardwareHeadroom)), gb);
     public static string HardwareCompute(string kind)        => string.Format(Get(nameof(HardwareCompute)), kind);
     public static string HardwareLoadedNone                  => Get(nameof(HardwareLoadedNone));
+    public static string HardwareLoadedUnknown(string url)   => string.Format(Get(nameof(HardwareLoadedUnknown)), url);
     public static string HardwareLoadedUnreported(int count) => string.Format(Get(nameof(HardwareLoadedUnreported)), count);
     public static string HardwareLoadedModelsTable           => Get(nameof(HardwareLoadedModelsTable));
     public static string HardwareInstalledModelsTable        => Get(nameof(HardwareInstalledModelsTable));

@@ -80,9 +80,9 @@ Every persisted setting, its type, and default value.
 |---|---|---|---|
 | `contextWindowSize` | int | `8192` | `num_ctx` + client token budget (0 = model default, trimming off) |
 | `useRecommendedSampling` | bool | `true` | Send the sampling settings the model's vendor recommends, for the families in [Models](models.md) (`false` = the server's own settings) |
-| `contextWindowKeepTurns` | int | `4` | Recent turns to keep when trimming |
+| `contextWindowKeepTurns` | int | `4` | Recent turns to keep when trimming — at most: turns too long to fit next to the tool definitions are summarized with the rest |
 | `compactionEnabled` | bool | `true` | Summarize old messages (LLM) instead of hard truncation |
-| `compactionTimeoutSeconds` | int | `45` | Compaction safety fuse: seconds allowed for writing the summary, on top of the time needed to read what it summarizes (about 1 s per 100 tokens); past it, the older turns are dropped instead |
+| `compactionTimeoutSeconds` | int | `45` | Compaction safety fuse: seconds the summary may go without writing anything (its reasoning counts), on top of the time needed to read what it summarizes (about 1 s per 100 tokens); past it, the older turns are dropped instead. A model that keeps writing, or reasoning, is waited for |
 | `kvCacheAnchorMessages` | int | `3` | First N messages kept verbatim so the backend can reuse its KV cache |
 | `oodaTurnThreshold` | int | `10` | Turns before an OODA recap (0 = off) |
 | `customSystemPrompt` | string | `""` | Appended to the base system prompt |
@@ -103,6 +103,10 @@ Every persisted setting, its type, and default value.
 | `quickTimeoutSeconds` | int | `120` | Quick tasks (explain/fix/doc/inline edit/plan) |
 | `normalTimeoutSeconds` | int | `300` | Per-turn timeout for tooled chat and the orchestrator |
 | `deepTimeoutSeconds` | int | `600` | Extended-reasoning timeout |
+
+These budgets wait for the model. Connecting to the backend has its own fixed budget of 15 s: a backend that never
+answers the connection (machine switched off, firewall, Ollama not started under WSL's mirrored networking) is
+reported as unreachable after 15 s, not after the operating system's own retries (up to two minutes on Linux).
 
 ### Agent orchestrator
 

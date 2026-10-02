@@ -70,6 +70,7 @@
   "Include in the next turn": "包含在下一轮中",
   "⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.": "⚠ 项目层（规则、记忆、笔记）占用了大量上下文——请考虑精简。",
   "History: ~{0} tokens": "历史记录：约 {0} 个令牌",
+  "Tool definitions: ~{0} tokens": "工具定义：约 {0} 个令牌",
   "window {0}% full": "窗口已用 {0}%",
   "Unchecked sections are excluded from the next turn.": "未勾选的部分将从下一轮中排除。",
   "Nothing to export — the conversation is empty.": "没有可导出的内容——对话为空。",

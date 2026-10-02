@@ -21,10 +21,11 @@ internal sealed record XRaySectionModel(
 /// <param name="TotalTokens">Estimated tokens of the ENABLED sections only (what the next turn sends).</param>
 /// <param name="HistoryTokens">Estimated tokens of the conversation history.</param>
 /// <param name="ContextWindow">Configured context window; ≤ 0 = none configured.</param>
-/// <param name="FillPercent">(enabled + history) / window, 0 when no window is configured.</param>
+/// <param name="FillPercent">(enabled + history + tools) / window, 0 when no window is configured.</param>
 /// <param name="OverheadWarning">True when the project layers (context/memory/notes/rules) weigh
 /// enough to deserve a trim (see <see cref="XRayPanelPresenter"/> thresholds).</param>
 /// <param name="RawPrompt">Exact system prompt the next turn will send (enabled sections, in order).</param>
+/// <param name="ToolTokens">Estimated tokens of the tool definitions the next turn carries (0 = none).</param>
 internal sealed record XRayPanelModel(
     IReadOnlyList<XRaySectionModel> Sections,
     int    TotalTokens,
@@ -32,7 +33,8 @@ internal sealed record XRayPanelModel(
     int    ContextWindow,
     double FillPercent,
     bool   OverheadWarning,
-    string RawPrompt);
+    string RawPrompt,
+    int    ToolTokens = 0);
 
 /// <summary>
 /// Builds the interactive Context X-Ray panel model from the same
@@ -88,11 +90,14 @@ internal static class XRayPanelPresenter
     /// <param name="disabledIds">Section ids the user switched off for the next turn (null = none).</param>
     /// <param name="historyTokens">Estimated tokens of the conversation history.</param>
     /// <param name="contextWindow">Configured context window in tokens; ≤ 0 = no limit configured.</param>
+    /// <param name="toolTokens">The tool definitions the next turn carries — counted in the fill, like the
+    /// <c>/xray</c> markdown (<see cref="XRayCommandHandler.Handle"/>).</param>
     public static XRayPanelModel Build(
         IReadOnlyList<PromptSection> sections,
         IReadOnlySet<string>?        disabledIds,
         int                          historyTokens,
-        int                          contextWindow)
+        int                          contextWindow,
+        int                          toolTokens = 0)
     {
         var sized = sections
             .Select(s => (Section: s, Id: SectionId(s), Tokens: XRayCommandHandler.EstimateTokens(s.Content)))
@@ -129,9 +134,9 @@ internal static class XRayPanelPresenter
               && overhead * 100.0 / enabledTokens >= OverheadPromptSharePct;
 
         var fill = contextWindow > 0
-            ? (enabledTokens + historyTokens) * 100.0 / contextWindow
+            ? (enabledTokens + historyTokens + toolTokens) * 100.0 / contextWindow
             : 0;
 
-        return new XRayPanelModel(rows, enabledTokens, historyTokens, contextWindow, fill, warning, rawPrompt);
+        return new XRayPanelModel(rows, enabledTokens, historyTokens, contextWindow, fill, warning, rawPrompt, toolTokens);
     }
 }

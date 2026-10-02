@@ -21,11 +21,15 @@ internal static class XRayCommandHandler
     /// <param name="contextWindow">Configured context window in tokens; ≤ 0 = no limit configured.</param>
     /// <param name="config">Read for the per-turn RAG auto-context: whether it is injected, through the same reader the
     /// turn uses (<see cref="Rag.RagAutoContext.IsEnabled"/>), and why not when its own switch is on.</param>
+    /// <param name="toolTokens">The tool definitions the next turn carries (<see cref="Agent.ContextManager.NextTurnToolTokens"/>).
+    /// ⚠ Counted in the fill: with tools on they are the largest part of a small window, and an X-Ray without them
+    /// read "2 %" of a window the next request filled at 55 %.</param>
     public static string Handle(
         IReadOnlyList<PromptSection> sections,
         int  historyTokens,
         int  contextWindow,
-        Config.InferpalConfig config)
+        Config.InferpalConfig config,
+        int  toolTokens = 0)
     {
         var sized = sections
             .Select(s => (Section: s, Tokens: EstimateTokens(s.Content)))
@@ -50,13 +54,15 @@ internal static class XRayCommandHandler
         sb.AppendLine("```");
         sb.AppendLine();
         sb.AppendLine("- " + Strings.XrayHistory($"~{historyTokens:N0}"));
+        if (toolTokens > 0)
+            sb.AppendLine("- " + Strings.XrayTools($"~{toolTokens:N0}"));
         sb.AppendLine("- " + (Rag.RagAutoContext.IsEnabled(config) ? Strings.XrayRag("on")
                               : config.RagAutoContextEnabled ? Strings.XrayRagNoIndexing
                               : Strings.XrayRag("off")));
 
         if (contextWindow > 0)
         {
-            var used = total + historyTokens;
+            var used = total + historyTokens + toolTokens;
             // ⚠ Not clamped: this line is text, and the clamp belongs to Bar(), which already does
             // its own (on shares of the total, which cannot exceed 100 anyway). Clamped here, a
             // prompt at 450 % of the window read as exactly full.

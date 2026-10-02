@@ -30,7 +30,7 @@ editor with tools disabled).
 | Command | Description |
 |---|---|
 | `/context` | Show the active `.inferpal/context.md` |
-| `/xray` | Context X-Ray: interactive panel breaking down everything composing the system prompt (base, custom, pinned, project files, scoped rules) — token bars, exact content per section, per-section on/off toggle for the next turn, copy of the raw prompt. Also opens by clicking the context gauge. Headless adapters get the markdown breakdown instead |
+| `/xray` | Context X-Ray: interactive panel breaking down everything composing the system prompt (base, custom, pinned, project files, scoped rules) — token bars, exact content per section, per-section on/off toggle for the next turn, copy of the raw prompt; the window fill counts the conversation and the tool definitions each turn carries. Also opens by clicking the context gauge. Headless adapters get the markdown breakdown instead |
 | `/memory` | Show `.inferpal/memory.md` (the agent's persistent memory) |
 | `/onboard` | Report the committed project profile (`.inferpal/project.json`): what it applied, what it recommends, what was refused |
 | `/onboard init` | Write a commented example profile |

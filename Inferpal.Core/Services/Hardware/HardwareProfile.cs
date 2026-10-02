@@ -18,16 +18,22 @@ internal sealed class HardwareProfile
     public IReadOnlyList<InstalledModelInfo> Installed { get; }
     public ContextWindowAdvice? CtxAdvice { get; }
 
+    /// <summary>The backend address when it could not be reached: <see cref="Running"/> is then empty because
+    /// nobody answered, not because nothing is loaded. <c>null</c> when the backend answered.</summary>
+    public string? UnreachableAt { get; }
+
     public HardwareProfile(
         double budgetGb,
         IReadOnlyList<RunningModelInfo> running,
         IReadOnlyList<InstalledModelInfo> installed,
-        ContextWindowAdvice? ctxAdvice = null)
+        ContextWindowAdvice? ctxAdvice = null,
+        string? unreachableAt = null)
     {
-        BudgetGb  = budgetGb;
-        Running   = running;
-        Installed = installed;
-        CtxAdvice = ctxAdvice;
+        BudgetGb      = budgetGb;
+        Running       = running;
+        Installed     = installed;
+        CtxAdvice     = ctxAdvice;
+        UnreachableAt = unreachableAt;
     }
 
     /// <summary>False when the backend lists a loaded model without saying what it occupies (LM
@@ -78,7 +84,13 @@ internal sealed class HardwareProfile
         // ⚠ An unreported load is not an empty one: "0 GB · Compute: CPU" sends a user whose model
         // runs on the GPU to look for a GPU problem, and a headroom equal to the whole budget is a
         // figure nobody measured.
-        if (Running.Count > 0 && !VramReported)
+        // ⚠ Nor is an unanswered one: the running-model listing reads empty on any failure, and "none" told a user
+        // whose backend is down that it is up with nothing loaded.
+        if (UnreachableAt is { } url)
+        {
+            sb.AppendLine(Strings.HardwareLoadedUnknown(url));
+        }
+        else if (Running.Count > 0 && !VramReported)
         {
             sb.AppendLine(Strings.HardwareLoadedUnreported(Running.Count));
         }

@@ -129,12 +129,12 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="HintContextWindowSize" xml:space="preserve"><value>Sollte mit dem num_ctx-Parameter Ihres Modells übereinstimmen. Übliche Werte: 2048 (kleines 7B), 4096 (Standard), 8192, 16384. Wenn die Unterhaltung 80 % dieses Limits erreicht, werden ältere Nachrichten automatisch entfernt und eine Warnung angezeigt.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Bei LM Studio / OpenAI-kompatiblen Servern wird die Kontextlänge beim Laden des Modells festgelegt, nicht pro Anfrage — dieser Wert steuert nur das clientseitige Kürzen, halten Sie ihn also kleiner oder gleich dem geladenen Kontext des Modells. Wenn die Unterhaltung 80 % dieses Limits erreicht, werden ältere Nachrichten automatisch entfernt und eine Warnung angezeigt.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Beim Kürzen immer beizubehaltende Runden:</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Anzahl der letzten Benutzer-/Assistenten-Austausche, die beim Kürzen erhalten bleiben. Der System-Prompt wird immer beibehalten. Erhöhen Sie diesen Wert, wenn das Modell mehr aktuellen Kontext benötigt, um kohärent zu bleiben.</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Anzahl der letzten Benutzer-/Assistenten-Austausche, die beim Kürzen erhalten bleiben. Der System-Prompt wird immer beibehalten. Erhöhen Sie diesen Wert, wenn das Modell mehr aktuellen Kontext benötigt, um kohärent zu bleiben. Es ist ein Höchstwert: Austausche, die zu lang sind, um neben den Tool-Definitionen Platz zu finden, werden mit dem Rest zusammengefasst.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Kontextfenster: {0} alte Nachricht(en) entfernt – letzte {1} Runde(n) behalten. Älterer Kontext ist verloren.</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Intelligente Kontextkomprimierung (Zusammenfassen statt Kürzen)</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Wenn aktiviert, werden alte Nachrichten vom Modell zusammengefasst, bevor sie entfernt werden, um wichtige Informationen zu bewahren. Eine Sicherheitssicherung bricht den Zusammenfassungsaufruf ab und fällt auf harte Kürzung zurück, wenn er zu lange dauert.</value></data>
   <data name="LabelCompactionTimeout" xml:space="preserve"><value>Komprimierungs-Timeout (Sicherheitssicherung):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>Sekunden für die Zusammenfassung, zusätzlich zur Zeit, die das Lesen des Zusammengefassten braucht (etwa 1 Sekunde pro 100 Token). Bei Überschreitung löst die Sicherheitssicherung aus und harte Kürzung wird stattdessen verwendet. Standard: 45.</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>Sekunden, in denen die Zusammenfassung nichts schreiben darf — ihr Nachdenken zählt mit —, zusätzlich zur Zeit, die das Lesen des Zusammengefassten braucht (etwa 1 Sekunde pro 100 Token). Bei Überschreitung löst die Sicherheitssicherung aus und harte Kürzung wird stattdessen verwendet. Standard: 45.</value></data>
   <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KV-Cache-Ankernachrichten:</value></data>
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Anzahl der Eröffnungsnachrichten (nach dem System-Prompt), die am Anfang jedes komprimierten Kontexts unverändert beibehalten werden. Ollama kann seinen KV-Cache für diese Tokens wiederverwenden und spart Rechenzeit. 0 = deaktiviert. Standard: 3.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} KV-Ankernachricht(en) beibehalten)</value></data>
@@ -143,6 +143,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kontextkomprimierung abgelaufen – auf harte Kürzung zurückgefallen. Wenn Ihr Modell länger braucht, erhöhen Sie „Komprimierungs-Timeout“ in den Einstellungen.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Die Kontextkomprimierung ist fehlgeschlagen – Rückfall auf harte Kürzung. Ursache: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Das Modell hat eine leere Zusammenfassung geliefert – Rückfall auf harte Kürzung.</value></data>
+  <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ Die Zusammenfassung war zu lang, um im Kontext Platz zu lassen – Rückfall auf harte Kürzung.</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Das Modell hat sich beim Zusammenfassen ständig wiederholt und wurde gestoppt – Rückfall auf harte Kürzung.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Die Zusammenfassung endete an der Längengrenze des Modells: Ein Teil des früheren Gesprächs fehlt darin.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ Das frühere Gespräch war zu lang für eine einzige Zusammenfassungsanfrage: Die ersten {0} von {1} Nachrichten fehlen in der Zusammenfassung.</value></data>
@@ -825,6 +826,7 @@ ollama serve
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Sitzungsvorlage</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Regeln ({0} angewendet)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Konversationsverlauf: {0} Token (Schätzung)</value></data>
+  <data name="XrayTools" xml:space="preserve"><value>Mit jeder Runde gesendete Tool-Definitionen: {0} Token (Schätzung)</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG-Auto-Kontext: {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG-Auto-Kontext: inaktiv — die semantische Indizierung ist ausgeschaltet (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Kontextfenster: {0} / {1} Token ({2} %)</value></data>
@@ -847,6 +849,7 @@ ollama serve
   <data name="HardwareHeadroom" xml:space="preserve"><value> · Reserve {0} GB</value></data>
   <data name="HardwareCompute" xml:space="preserve"><value>**Berechnung:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Aktuell geladen:** keine</value></data>
+  <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Aktuell geladen:** unbekannt — das Backend unter {0} ist nicht erreichbar</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Aktuell geladen:** {0} Modell(e) — dieses Backend meldet nicht, wie viel VRAM sie belegen (keine Summe, kein Spielraum, keine GPU/CPU-Angabe)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Geladene Modelle
 

@@ -70,6 +70,7 @@
   "Include in the next turn": "次のターンに含める",
   "⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.": "⚠ プロジェクトレイヤー（ルール、メモリ、ノート）がコンテキストの大部分を占めています — 削減を検討してください。",
   "History: ~{0} tokens": "履歴: 約 {0} トークン",
+  "Tool definitions: ~{0} tokens": "ツール定義: 約 {0} トークン",
   "window {0}% full": "ウィンドウ使用率 {0}%",
   "Unchecked sections are excluded from the next turn.": "チェックを外したセクションは次のターンから除外されます。",
   "Nothing to export — the conversation is empty.": "エクスポートするものがありません — 会話が空です。",

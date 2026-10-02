@@ -24,7 +24,7 @@ internal readonly record struct RequestSize(int Tools, int SystemPrompt, int Ear
         var system = messages.Count > 0 && messages[0].Role == "system" ? 1 : 0;
         var last   = messages.Count > system ? 1 : 0;
         return new(
-            ToolChars(defs) / 4,
+            ToolTokens(defs),
             AgentOrchestrator.EstimateChars(messages.Take(system)) / 4,
             AgentOrchestrator.EstimateChars(messages.Skip(system).Take(messages.Count - system - last)) / 4,
             AgentOrchestrator.EstimateChars(messages.Skip(messages.Count - last)) / 4);
@@ -42,6 +42,9 @@ internal readonly record struct RequestSize(int Tools, int SystemPrompt, int Ear
             .Where(p => p.Tokens > 0)
             .OrderByDescending(p => p.Tokens)
             .Select(p => "- " + p.Line(p.Tokens)));
+
+    /// <summary>Estimated tokens of the tool definitions a request carries (their JSON, ~4 characters a token).</summary>
+    public static int ToolTokens(IReadOnlyList<ToolDefinition>? defs) => ToolChars(defs) / 4;
 
     private static int ToolChars(IReadOnlyList<ToolDefinition>? defs)
     {

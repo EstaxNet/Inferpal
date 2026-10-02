@@ -49,11 +49,13 @@ internal partial class InferpalToolWindowData
             _xrayDisabledSections);
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
-            AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse);
+            AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
+            toolTokens: NextTurnToolTokens());
 
         _xrayRawPrompt  = model.RawPrompt;
         XrayTotalText   = Strings.XrayHeader($"~{model.TotalTokens:N0}");
-        XrayHistoryText = Strings.XrayHistory($"~{model.HistoryTokens:N0}");
+        XrayHistoryText = Strings.XrayHistory($"~{model.HistoryTokens:N0}")
+                        + (model.ToolTokens > 0 ? "\n" + Strings.XrayTools($"~{model.ToolTokens:N0}") : "");
         HasXrayWarning  = model.OverheadWarning;
 
         var palette = ThemePalette.For(_isDark);
@@ -83,7 +85,8 @@ internal partial class InferpalToolWindowData
             _xrayDisabledSections);
         var model = XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
-            AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse);
+            AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
+            toolTokens: NextTurnToolTokens());
 
         _xrayRawPrompt  = model.RawPrompt;
         XrayTotalText   = Strings.XrayHeader($"~{model.TotalTokens:N0}");
