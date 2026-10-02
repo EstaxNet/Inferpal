@@ -365,6 +365,13 @@ internal partial class InferpalToolWindowData
     {
         try
         {
+            // A notice, never a chip, when there is no folder to walk (MentionController.FolderRefusal).
+            folderPath = MentionController.FolderPath(folderPath, _indexService.RootDir);
+            if (MentionController.FolderRefusal(folderPath) is { } why)
+            {
+                await NotifyMentionAsync(why);
+                return;
+            }
             var content = await Task.Run(() => MentionController.BuildFolderContext(folderPath, ct), ct);
             var label   = "📁 " + Path.GetFileName(folderPath);
             await RunOnVMContextAsync(() =>
@@ -386,6 +393,12 @@ internal partial class InferpalToolWindowData
         try
         {
             await RunOnVMContextAsync(StripMentionToken);
+            // A notice, never a chip, when there is no index to search (MentionController.CodeRefusal).
+            if (MentionController.CodeRefusal(_indexService) is { } noIndex)
+            {
+                await NotifyMentionAsync(noIndex);
+                return;
+            }
             var result = await _tools.ExecuteAsync(
                 "search_codebase", MentionArgs(new { query }), ct);
             var label = "🔮 " + (query.Length > 40 ? query[..40] + "…" : query);

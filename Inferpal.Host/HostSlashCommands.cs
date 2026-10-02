@@ -771,11 +771,15 @@ internal sealed partial class HostServer
                 }
                 case "folder" when !string.IsNullOrEmpty(p.Value):
                 {
-                    var content = MentionController.BuildFolderContext(p.Value!, ct, s.Overlay);
-                    return new MentionResolveResult("📁 " + Path.GetFileName(p.Value!.TrimEnd('\\', '/')), content);
+                    // A notice, never a chip, when there is no folder to walk (MentionController.FolderRefusal).
+                    var folder = MentionController.FolderPath(p.Value!, s.RootDir);
+                    if (MentionController.FolderRefusal(folder) is { } why) return new MentionResolveResult(null, null, why);
+                    var content = MentionController.BuildFolderContext(folder, ct, s.Overlay);
+                    return new MentionResolveResult("📁 " + Path.GetFileName(folder.TrimEnd('\\', '/')), content);
                 }
                 case "code" when !string.IsNullOrWhiteSpace(p.Value):
                 {
+                    if (MentionController.CodeRefusal(s.Index) is { } noIndex) return new MentionResolveResult(null, null, noIndex);
                     var hits = await s.Tools.ExecuteAsync(
                         "search_codebase", JsonSerializer.SerializeToElement(new { query = p.Value }), ct);
                     return new MentionResolveResult("🔮 " + p.Value, hits);

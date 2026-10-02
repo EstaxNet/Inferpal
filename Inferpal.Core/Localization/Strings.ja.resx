@@ -334,6 +334,7 @@
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 一時停止中のデバッグセッションがありません。まずブレークポイントまたは例外で停止してから @debugger を使用してください。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ クリップボードが空です。</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>@{0} に添付できるものがありませんでした。</value></data>
+  <data name="MentionFolderIsFile" xml:space="preserve"><value>「{0}」はフォルダーではなくファイルです。@file で添付してください。</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ 参照エラー：{0}</value></data>
 
   <!-- Export -->

@@ -1971,6 +1971,37 @@ public partial class HostServerTests
         Assert.Contains("class Pricing", chip.Value, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// <c>@folder</c> on a typo or on a file, and <c>@code</c> with no index, answer with a notice and no chip
+    /// (MentionRefusalTests holds the decision); a folder that is there is still attached.
+    /// </summary>
+    [Fact]
+    public async Task MentionResolve_NothingToAttach_IsANotice_NeverAChip()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        File.WriteAllText(Path.Combine(h.RootDir, "Pricing.cs"), "class Pricing { }\n");
+        Directory.CreateDirectory(Path.Combine(h.RootDir, "src"));
+        File.WriteAllText(Path.Combine(h.RootDir, "src", "Order.cs"), "class Order { }\n");
+
+        Task<Host.MentionResolveResult> Resolve(string category, string value) =>
+            h.Client.InvokeWithParameterObjectAsync<Host.MentionResolveResult>(
+                "mention/resolve", new { category, value }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        foreach (var (category, value) in new[] { ("folder", "srcc"), ("folder", "Pricing.cs"), ("code", "Order") })
+        {
+            var r = await Resolve(category, value);
+            Assert.Null(r.Name);
+            Assert.Null(r.Content);
+            Assert.False(string.IsNullOrEmpty(r.Notice), $"@{category} {value} said nothing");
+        }
+
+        // Reference arm: a folder that is there is walked and attached, relative to the root.
+        var folder = await Resolve("folder", "src");
+        Assert.Equal("📁 src", folder.Name);
+        Assert.Contains("class Order", folder.Content, StringComparison.Ordinal);
+    }
+
     // The bug this locks: /test used to fall through to `Handled = false`, and since the VS Code
     // adapter only intercepts /fix /refactor /doc, the literal string "/test" reached the model,
     // which improvised an answer about a command it knows nothing about. Anything but

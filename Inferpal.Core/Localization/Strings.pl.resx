@@ -334,6 +334,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Brak wstrzymanej sesji debugowania. Najpierw zatrzymaj się na punkcie przerwania lub wyjątku, potem użyj @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Schowek jest pusty.</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Nie udało się niczego dołączyć dla @{0}.</value></data>
+  <data name="MentionFolderIsFile" xml:space="preserve"><value>„{0}” to plik, nie folder — dołącz go przez @file.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Błąd przeglądania: {0}</value></data>
 
   <!-- Export -->

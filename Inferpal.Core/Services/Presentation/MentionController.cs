@@ -215,6 +215,34 @@ internal static class MentionController
     private const int MaxWalkDepth = 4;
 
     /// <summary>
+    /// The folder an <c>@folder</c> value names: resolved against the workspace root, never the process's directory.
+    /// </summary>
+    public static string FolderPath(string value, string? root) =>
+        Path.IsPathFullyQualified(value) || string.IsNullOrEmpty(root) ? Path.GetFullPath(value) : Path.GetFullPath(value, root);
+
+    /// <summary>
+    /// Why <c>@folder</c> attaches nothing — the notice shown in place of a chip — or <c>null</c> when there is a folder
+    /// to walk.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A chip is a claim that something joined the question. Under a 📁 chip, a typo read "this folder could not be
+    /// listed — it may have been removed", and a FILE read the same: the user believes the folder is attached, the model
+    /// receives a note in its place. A folder that exists but cannot be read, or one the walk skips by name, keeps its
+    /// chip — its note is about that folder, and says so (<see cref="BuildFolderContext"/>).
+    /// </remarks>
+    public static string? FolderRefusal(string folderPath) =>
+        File.Exists(folderPath)       ? Strings.MentionFolderIsFile(Path.GetFileName(folderPath))
+        : !Directory.Exists(folderPath) ? Strings.DirNotFound(folderPath)
+        : null;
+
+    /// <summary>
+    /// Why <c>@code</c> attaches nothing — the notice shown in place of a chip — or <c>null</c> when there is an index to
+    /// search. An empty index answers "not available": under a 🔮 chip that sentence passes for the code found.
+    /// </summary>
+    public static string? CodeRefusal(Rag.ProjectIndexService index) =>
+        index.ChunkCount == 0 ? Strings.RagIndexNotReady(index.Status) : null;
+
+    /// <summary>
     /// Concatenates the text files under a folder (tree header + bodies) within a size budget.
     /// </summary>
     /// <remarks>

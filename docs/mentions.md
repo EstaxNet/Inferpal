@@ -27,6 +27,11 @@ replaced with the corresponding attachment.
 > Attach a subfolder to get the rest.
 
 > [!NOTE]
+> **A mention with nothing to attach says why instead of leaving a chip.** `@folder` on a path that does not exist, or
+> on a file (use `@file`), and `@code` while there is no index to search, answer with a short notice — a chip always
+> means something joined your question.
+
+> [!NOTE]
 > **VS Code:** typed mentions work there too (since 1.2.0) — the eight categories from
 > `@file` to `@tree` are offered in a two-level popup, and resolved mentions appear as
 > context chips in the composer, alongside a "+" attach menu (active file, selection, file

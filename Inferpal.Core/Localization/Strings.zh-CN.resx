@@ -334,6 +334,7 @@
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 没有暂停的调试会话。请先在断点或异常处暂停，然后使用 @debugger。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ 剪贴板为空。</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>无法为 @{0} 附加任何内容。</value></data>
+  <data name="MentionFolderIsFile" xml:space="preserve"><value>“{0}”是文件，不是文件夹。请使用 @file 附加。</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ 浏览文件时出错：{0}</value></data>
 
   <!-- Export -->

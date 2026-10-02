@@ -334,6 +334,7 @@ Backup: {0}</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Nessuna sessione di debug in pausa. Raggiungi prima un breakpoint o un'eccezione, poi usa @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Appunti vuoti.</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Non è stato possibile allegare nulla per @{0}.</value></data>
+  <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» è un file, non una cartella: allegalo con @file.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Errore navigazione: {0}</value></data>
 
   <!-- Export -->

@@ -335,6 +335,7 @@ Backup: {0}</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No paused debug session. Hit a breakpoint or exception first, then use @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Clipboard is empty.</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Nothing could be attached for @{0}.</value></data>
+  <data name="MentionFolderIsFile" xml:space="preserve"><value>'{0}' is a file, not a folder — attach it with @file.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Browse error: {0}</value></data>
 
   <!-- Export -->

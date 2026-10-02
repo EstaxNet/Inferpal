@@ -524,6 +524,8 @@ internal static class Strings
     public static string ToolFileNotFound(string path) =>
         string.Format(Get(nameof(ToolFileNotFound)), path);
 
+    public static string MentionFolderIsFile(string name) =>
+        string.Format(Get(nameof(MentionFolderIsFile)), name);
     public static string DirNotFound(string path) =>
         string.Format(Get(nameof(DirNotFound)), path);
 

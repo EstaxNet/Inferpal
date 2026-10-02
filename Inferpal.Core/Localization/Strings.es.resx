@@ -334,6 +334,7 @@ Copia de seguridad: {0}</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No hay sesión de depuración en pausa. Alcanza primero un punto de interrupción o una excepción y luego usa @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ El portapapeles está vacío.</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>No se pudo adjuntar nada para @{0}.</value></data>
+  <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» es un archivo, no una carpeta: adjúntalo con @file.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Error al explorar: {0}</value></data>
 
   <!-- Export -->
