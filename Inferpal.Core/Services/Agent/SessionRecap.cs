@@ -6,7 +6,8 @@ namespace Inferpal.Services.Agent;
 
 /// <summary>What a session recap produced: the recap, or why there is none.</summary>
 /// <param name="Recap">The text to fold into the system prompt and show, or <c>null</c>.</param>
-/// <param name="Failure">The run's error when it failed; <c>null</c> when the model merely answered nothing.</param>
+/// <param name="Failure">The run's error when it failed, or why its reply was not kept; <c>null</c> when the model
+/// merely answered nothing.</param>
 internal sealed record SessionRecapResult(string? Recap, string? Failure);
 
 /// <summary>
@@ -46,6 +47,11 @@ internal static class SessionRecap
         // ⚠ A failed run returns its error as the reply — and the recap joins the system prompt of every following
         // question.
         if (result.Failed) return new SessionRecapResult(null, result.FinalResponse);
+        // ⚠ A reply stopped because the model kept repeating itself is a loop: folded into every following system
+        // prompt — never compacted — it would overflow each request, and show the chat model a loop to resume. The
+        // previous recap stays.
+        if (result.AnswerRepeating)
+            return new SessionRecapResult(null, "the model kept repeating the same passage and was stopped.");
 
         // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
         var recap = MarkdownParser.StripThinkTags(result.FinalResponse);

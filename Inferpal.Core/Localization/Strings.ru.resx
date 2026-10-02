@@ -143,6 +143,7 @@
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Компактизация контекста истекла — выполнен откат к жёсткому усечению. Если модели нужно больше времени, увеличьте «Тайм-аут компактизации» в настройках.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Сжатие контекста не удалось — выполнено принудительное усечение. Причина: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Модель вернула пустую сводку — выполнено принудительное усечение.</value></data>
+  <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Модель зациклилась при составлении сводки и была остановлена — выполнено принудительное усечение.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Сводка остановилась на ограничении длины модели: часть предыдущего разговора в ней отсутствует.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ Предыдущий разговор был слишком длинным, чтобы сжать его одним запросом: первые {0} из {1} сообщений в сводку не вошли.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Ниже представлено начало нашего разговора. Сожми его плотно, сохранив все ключевые решения, факты, изменённые файлы и контекст, необходимый для будущих сообщений. Будь краток, но полон — это резюме заменит исходные сообщения:

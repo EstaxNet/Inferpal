@@ -327,6 +327,7 @@ internal static class Strings
     public static string MsgContextCompactionFailed(string cause) =>
         string.Format(Get(nameof(MsgContextCompactionFailed)), cause);
     public static string MsgContextCompactionEmpty => Get(nameof(MsgContextCompactionEmpty));
+    public static string MsgContextCompactionRepeating => Get(nameof(MsgContextCompactionRepeating));
     public static string MsgContextSummaryCut => Get(nameof(MsgContextSummaryCut));
     public static string MsgContextSummaryPartial(int omitted, int total) =>
         string.Format(Get(nameof(MsgContextSummaryPartial)), omitted, total);

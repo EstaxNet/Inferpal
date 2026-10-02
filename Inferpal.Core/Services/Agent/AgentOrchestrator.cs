@@ -233,6 +233,22 @@ internal sealed class AgentOrchestrator
              + tail;
     }
 
+    /// <summary>
+    /// The plan reply as the anchored head keeps it: the model's own words when they are a complete reply, bounded
+    /// like a tool result; the plan the run follows, as JSON, when the reply was cut.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The anchored head is never compacted, so whatever model output it holds is sent with every request of the
+    /// run. A reasoning model that loops while planning has its reasoning surfaced as the reply (its content is empty),
+    /// stopped by the client after tens of thousands of characters — kept whole, every later request of the run
+    /// overflows the window, and nothing can shrink it. A cut reply is a fragment, a looping one a loop, and a model
+    /// shown its own loop resumes it: the plan the orchestrator parsed — or its fallback — stands in for it.
+    /// A complete reply stays verbatim, and only a long one is capped (head and tail: a plan written after its
+    /// reasoning is at the end).
+    /// </remarks>
+    internal static string AnchoredPlanReply(ChatTurnResult planTurn, AgentPlan plan) =>
+        CapForContext(planTurn.CutAtLimit ? plan.ToJson() : planTurn.TextContent);
+
     // Short quote of the user's current request, embedded in the synthesis prompt so the model
     // anchors on THIS question instead of an earlier turn it answered before (on a long multi-turn
     // context, "my original request" resolves to the FIRST question and the model replays its old
@@ -392,7 +408,7 @@ internal sealed class AgentOrchestrator
         onStep(Strings.StatusCompacting);
 
         string summary;
-        bool   cut;
+        bool   cut, repeating;
         int    omitted;
         try
         {
@@ -411,9 +427,10 @@ internal sealed class AgentOrchestrator
 
             var turn = await _client.SendChatAsync(
                 utility, request.Messages, EmptyToolRegistry.Instance, null, cts.Token, TaskComplexity.Quick);
-            summary = MarkdownParser.StripThinkTags(turn.TextContent);
-            cut     = turn.CutAtLimit;
-            omitted = request.Omitted;
+            summary   = MarkdownParser.StripThinkTags(turn.TextContent);
+            cut       = turn.CutAtLimit;
+            repeating = turn.StoppedRepeating;
+            omitted   = request.Omitted;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } // user cancelled
         catch (OperationCanceledException) { return RunSummaryOutcome.Failed; }         // summary timed out
@@ -424,6 +441,14 @@ internal sealed class AgentOrchestrator
         }
 
         if (string.IsNullOrWhiteSpace(summary)) return RunSummaryOutcome.Failed;
+        // ⚠ A summary stopped because the model kept repeating itself is a loop, not a summary: in place of the turns
+        // it would hold the loop, and a model shown a loop resumes it. Elision instead.
+        if (repeating)
+        {
+            Diagnostics.Record("Agent.RunSummary", "The summary of the run's earlier context kept repeating the same "
+                + "passage and was stopped: the old turns were elided instead.");
+            return RunSummaryOutcome.Failed;
+        }
         // Kept, but said: read as whole, an incomplete summary makes the model redo — or deny — the work it misses.
         if (omitted > 0) summary += HistoryCompaction.PartialSummaryMarker(omitted);
         if (cut)         summary += HistoryCompaction.CutSummaryMarker;
@@ -738,7 +763,7 @@ internal sealed class AgentOrchestrator
         // without it the model sees its own JSON with no visible context, which confuses
         // small models into narrating instead of calling tools in the ACT phase.
         messages.Add(new ChatMessageDto("user",      planPrompt) { IsScaffolding = true });
-        messages.Add(new ChatMessageDto("assistant", planTurn.TextContent));
+        messages.Add(new ChatMessageDto("assistant", AnchoredPlanReply(planTurn, plan)));
         messages.Add(new ChatMessageDto("user",      ModelPrompts.AgentExecutePlan) { IsScaffolding = true });
 
         // Everything added so far — system prompt (+ tool descriptions), the original conversation

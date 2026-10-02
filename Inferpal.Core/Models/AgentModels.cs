@@ -101,6 +101,16 @@ public class AgentPlan
         return null;
     }
 
+    // Non-ASCII text stays readable: the JSON is read by a model, never embedded in HTML.
+    private static readonly JsonSerializerOptions JsonOut = new()
+    {
+        Encoder                = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+
+    /// <summary>The plan in the JSON shape the model is asked to write — what <see cref="TryParse"/> reads back.</summary>
+    public string ToJson() => JsonSerializer.Serialize(this, JsonOut);
+
     /// <summary>Formats the plan as a Markdown block for display in the chat UI.</summary>
     public string ToMarkdown()
     {

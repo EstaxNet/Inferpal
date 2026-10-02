@@ -114,7 +114,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         try { turn = await SendChatAsync(model, history, tools, onToken, ct, complexity, null, onThinking); }
         catch (AgentHttpException ex) { return new AgentResult(ex.Message, [], history, Failed: true); }
         return new AgentResult(turn.TextContent, [], history, turn.TokensUsed, turn.PromptTokens,
-                               AnswerCut: turn.CutAtLimit);
+                               AnswerCut: turn.CutAtLimit, AnswerRepeating: turn.StoppedRepeating);
     }
 
     /// <summary>Every embedding request, as sent: the exact text and the model it names.</summary>

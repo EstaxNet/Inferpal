@@ -181,6 +181,11 @@ internal static class ContextManager
             var turn = await client.SendChatAsync(
                 model, request.Messages, EmptyToolRegistry.Instance, onToken: null, cts.Token).ConfigureAwait(false);
 
+            // ⚠ Stopped because the model kept repeating itself, the reply is a loop: kept, it would replace the turns
+            // it was asked to summarize — and a model shown a loop resumes it. Unlike a reply cut at the length limit,
+            // which is a summary missing its end.
+            if (turn.StoppedRepeating) return (null, false, 0, Strings.MsgContextCompactionRepeating);
+
             return (MarkdownParser.StripThinkTags(turn.TextContent).Trim(), turn.CutAtLimit, request.Omitted, null);
         }
         // A cancellation by the USER propagates; the fuse's own is a fallback, not an error.
