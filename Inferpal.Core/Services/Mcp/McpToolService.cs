@@ -352,10 +352,17 @@ internal sealed class McpToolService : IAsyncDisposable
             try
             {
                 if (_disposed || !_servers.Contains(entry)) return;
+                // Why it died, read before the client is gone: said once per server and cause in /diagnostics (a server
+                // that crashes on every call is restarted every time, and left no trace), and carried by the status the
+                // model reads if it calls a tool of this server before the restart.
+                var why = entry.Client.LastError;
                 await entry.Client.DisposeAsync().ConfigureAwait(false);
                 entry.Tools     = [];
                 entry.Connected = false;
-                entry.Error     = "server exited — reconnecting…";
+                entry.Error     = string.IsNullOrEmpty(why) ? "server exited — reconnecting…" : $"server exited ({why}) — reconnecting…";
+                if (!string.IsNullOrEmpty(why))
+                    Diagnostics.RecordOnce("Mcp", $"Server '{entry.Config.Name}' stopped: {why}. Restarting it.",
+                                           entry.Config.Name + "\u0001" + why);
                 RebuildSnapshot();
             }
             finally { _gate.Release(); }

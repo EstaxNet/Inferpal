@@ -385,6 +385,33 @@ public class McpToolServiceTests
         Assert.Contains("GITHUB_TOKEN is not set", svc.Status.Single().Error);
     }
 
+    /// <summary>
+    /// A server that dies mid-session is restarted — and its death is said: once in /diagnostics with the cause the
+    /// client read (exit code, stderr), and in the status the model reads while the restart is pending.
+    /// </summary>
+    [Fact]
+    public async Task Closed_MidSession_SaysWhyTheServerStopped_WhileRestartingIt()
+    {
+        var name   = $"crashy-{Guid.NewGuid():N}";
+        var config = new InferpalConfig { McpServersJson = OneServer(name) };
+        var why    = "the server exited with code 3 mid-session; stderr: boom";
+        var first  = new FakeMcpClient(name) { ToolList = [Tool("a")] };
+        var second = new FakeMcpClient(name) { ToolList = [Tool("a")] };
+        var queue  = new Queue<FakeMcpClient>([first, second]);
+        // A long backoff: the state between the death and the restart is what is read here.
+        await using var svc = NewService(config, _ => queue.Dequeue(), [TimeSpan.FromSeconds(30)]);
+
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+
+        first.LastError = why;   // what the real client writes on an unexpected close
+        first.RaiseClosed();
+
+        await WaitUntil(() => svc.Status.Single().Error?.Contains(why) == true,
+                        "the status names why the server stopped while it is restarted");
+        Assert.Contains(Diagnostics.Snapshot(), e => e.Context == "Mcp" && e.Detail.Contains(name) && e.Detail.Contains(why));
+    }
+
     [Fact]
     public async Task DisableMcp_RefreshTearsDownServers()
     {

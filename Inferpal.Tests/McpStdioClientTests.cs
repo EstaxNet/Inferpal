@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using Inferpal.Services.Mcp;
 using Xunit;
 
@@ -10,6 +11,49 @@ public class McpStdioClientTests
     private static McpServerConfig ExitsAtOnce() => OperatingSystem.IsWindows()
         ? new("test", "cmd.exe", ["/c", "exit"], new Dictionary<string, string>())
         : new("test", "/bin/sh", ["-c", "exit"], new Dictionary<string, string>());
+
+    /// <summary>
+    /// A server that dies AFTER the handshake is named by its exit code and what it wrote on stderr when the close is
+    /// signalled — the start path did it for a failed start, a death mid-session left nothing to say.
+    /// </summary>
+    [Fact]
+    public async Task AServerThatDiesMidSession_IsNamedWithItsExitCodeAndStderr()
+    {
+        if (!await PythonForTests.IsInstalledAsync()) return;   // UNDECIDED without Python on the machine — never read as a pass
+        var script = Path.Combine(Path.GetTempPath(), $"inferpal-mcp-dies-{Guid.NewGuid():N}.py");
+        File.WriteAllText(script, """
+            import json, sys
+            for line in sys.stdin:
+                msg = json.loads(line)
+                if msg.get("method") == "initialize":
+                    print(json.dumps({"jsonrpc": "2.0", "id": msg["id"], "result": {"protocolVersion": "2024-11-05",
+                          "capabilities": {"tools": {}}, "serverInfo": {"name": "dies", "version": "1"}}}), flush=True)
+                elif msg.get("method") == "tools/list":
+                    print(json.dumps({"jsonrpc": "2.0", "id": msg["id"], "result": {"tools": []}}), flush=True)
+                elif msg.get("method") == "tools/call":
+                    sys.stderr.write("dying on purpose\n"); sys.stderr.flush()
+                    sys.exit(3)
+            """);
+        try
+        {
+            var client = new McpStdioClient(new("dies", OperatingSystem.IsWindows() ? "python" : "python3", [script],
+                                                new Dictionary<string, string>()));
+            var closed = new TaskCompletionSource();
+            client.Closed += () => closed.TrySetResult();
+
+            Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+            Assert.NotNull(await client.ListToolsAsync(CancellationToken.None));
+            try { await client.CallToolAsync("x", System.Text.Json.JsonDocument.Parse("{}").RootElement, CancellationToken.None); }
+            catch (Exception) { /* the call dies with the server — the point is what the close says */ }
+
+            var fired = await Task.WhenAny(closed.Task, Task.Delay(TimeSpan.FromSeconds(30)));
+            Assert.True(ReferenceEquals(fired, closed.Task), "Closed should fire when the server dies mid-session.");
+            Assert.Contains("exited with code 3 mid-session", client.LastError);
+            Assert.Contains("dying on purpose", client.LastError);
+            await client.DisposeAsync();
+        }
+        finally { try { File.Delete(script); } catch { } }
+    }
 
     [Fact]
     public async Task Closed_FiresWhenProcessExitsUnexpectedly()

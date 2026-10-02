@@ -28,6 +28,8 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     private Task?    _stderrDrain;
     private long     _nextId;
     private bool     _started;
+    /// <summary>The handshake completed: from then on, a close is a death mid-session.</summary>
+    private volatile bool _ready;
     private volatile bool _disposed;
 
     // What the server writes on stderr, kept at its edges: the only place it says why it cannot start.
@@ -115,6 +117,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
             await SendRequestAsync("initialize", initParams, initCts.Token).ConfigureAwait(false);
 
             await SendNotificationAsync("notifications/initialized").ConfigureAwait(false);
+            _ready = true;
             return true;
         }
         catch (Exception ex)
@@ -131,18 +134,28 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     private async Task<string> DescribeStartFailureAsync(Exception ex, CancellationToken ct)
     {
         // A process that never started has no exit to wait for — asking throws. Its message names the command.
-        if (ct.IsCancellationRequested || !_started || _process is not { } p) return ex.Message;
+        if (ct.IsCancellationRequested || !_started || _process is null) return ex.Message;
 
-        // The handshake fails on the closed pipe a moment before the process is reaped: wait for its code.
+        return await DescribeExitAsync("before answering").ConfigureAwait(false)
+            ?? (ex is OperationCanceledException
+                ? $"initialize got no answer within {HandshakeTimeout.TotalSeconds:0} s"
+                : ex.Message);
+    }
+
+    /// <summary>
+    /// The server's exit, named with its code and what it wrote on stderr; <c>null</c> while the process still runs.
+    /// </summary>
+    private async Task<string?> DescribeExitAsync(string when)
+    {
+        if (_process is not { } p) return null;
+
+        // The pipe closes a moment before the process is reaped: wait for its code.
         using (var grace = new CancellationTokenSource(ExitGrace))
         {
             try { await p.WaitForExitAsync(grace.Token).ConfigureAwait(false); }
             catch (OperationCanceledException) { }
         }
-        if (!p.HasExited)
-            return ex is OperationCanceledException
-                ? $"initialize got no answer within {HandshakeTimeout.TotalSeconds:0} s"
-                : ex.Message;
+        if (!p.HasExited) return null;
 
         // Its last lines may still be in the pipe when stdout closes.
         if (_stderrDrain is { } drain)
@@ -152,8 +165,8 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         }
         var said = _stderr.ToString();
         return said.Length == 0
-            ? $"the server exited with code {p.ExitCode} before answering (nothing on stderr)"
-            : $"the server exited with code {p.ExitCode} before answering; stderr: {said}";
+            ? $"the server exited with code {p.ExitCode} {when} (nothing on stderr)"
+            : $"the server exited with code {p.ExitCode} {when}; stderr: {said}";
     }
 
     /// <summary>Lists the tools the server advertises; <c>null</c> when the listing failed.</summary>
@@ -232,7 +245,14 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
             FailAllPending(new InvalidOperationException($"MCP server '{_config.Name}' connection closed."));
             // Only an *unexpected* close is a reconnect signal; an intentional Dispose sets _disposed first.
             if (!_disposed)
+            {
+                // ⚠ A server that dies MID-SESSION is restarted without a word unless its exit is named here: the start
+                // path names a failed start's code and stderr, and a server crashing on every call left no trace at all.
+                // Only after the handshake — before it, StartAsync describes the failure itself.
+                if (_ready)
+                    LastError = await DescribeExitAsync("mid-session").ConfigureAwait(false) ?? "the server closed its output";
                 Closed?.Invoke();
+            }
         }
     }
 
