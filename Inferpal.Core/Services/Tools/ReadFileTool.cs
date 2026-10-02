@@ -44,22 +44,25 @@ internal class ReadFileTool : ITool
         var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
 
-        // An unsaved (possibly not-yet-created) buffer must be read as the user sees it, not as the
-        // disk last saved it. A saved one is read from disk: the file may have just been written.
         string content;
-        if (_overlay is not null && _overlay.TryGetUnsaved(path, out var buffered))
-            content = buffered;
-        // ⚠ A directory is not a missing file: "not found" sent the model looking for a path that is correct.
-        else if (Directory.Exists(path))
-            return $"'{path}' is a directory, not a file — list what it holds with list_files.";
-        else if (!File.Exists(path))
-            return Strings.ToolFileNotFound(path);
-        // Named, not dumped: read as text, a .dll was thousands of characters of NULs and noise read as content.
-        else if (TextFileEncoding.IsBinaryFile(path))
-            return $"'{Path.GetFileName(path)}' is a binary file ({new FileInfo(path).Length} bytes): its content is not "
-                 + "shown as text.";
-        else
-            content = Cap(await TextFileEncoding.ReadTextAsync(path, ct), path);
+        switch (Classify(path, _overlay))
+        {
+            // ⚠ A directory is not a missing file: "not found" sent the model looking for a path that is correct.
+            case Target.Directory:
+                return $"'{path}' is a directory, not a file — list what it holds with list_files.";
+            case Target.Missing:
+                return Strings.ToolFileNotFound(path);
+            // Named, not dumped: read as text, a .dll was thousands of characters of NULs and noise read as content.
+            case Target.Binary:
+                return $"'{Path.GetFileName(path)}' is a binary file ({new FileInfo(path).Length} bytes): its content is not "
+                     + "shown as text.";
+            case Target.Unsaved when _overlay!.TryGetUnsaved(path, out var buffered):
+                content = buffered;
+                break;
+            default:
+                content = Cap(await TextFileEncoding.ReadTextAsync(path, ct), path);
+                break;
+        }
 
         _history?.NoteRead(path);
 
@@ -69,6 +72,24 @@ internal class ReadFileTool : ITool
 
         return Page(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
     }
+
+    /// <summary>What a path holds, as this tool reads it.</summary>
+    internal enum Target { File, Unsaved, Directory, Missing, Binary }
+
+    /// <summary>
+    /// What <paramref name="path"/> (sanitised, under the root) holds — the one reading of it, for this tool and for
+    /// <c>/read</c>, which attaches only what it actually read.
+    /// </summary>
+    /// <remarks>
+    /// An unsaved (possibly not-yet-created) buffer is read as the user sees it, not as the disk last saved it; a saved
+    /// one is read from disk, since the file may have just been written.
+    /// </remarks>
+    internal static Target Classify(string path, Editor.OpenDocumentOverlay? overlay) =>
+        overlay is not null && overlay.TryGetUnsaved(path, out _) ? Target.Unsaved
+        : Directory.Exists(path)                                   ? Target.Directory
+        : !File.Exists(path)                                       ? Target.Missing
+        : TextFileEncoding.IsBinaryFile(path)                      ? Target.Binary
+        : Target.File;
 
     /// <summary>
     /// What one page may hold: every tool result enters the context cut to

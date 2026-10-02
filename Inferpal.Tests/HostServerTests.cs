@@ -1946,6 +1946,31 @@ public partial class HostServerTests
         Assert.Contains("/definitely-not-a-command", unknown.Markdown, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// <c>/read</c> of a path that is not a readable file answers with the reason, as a bubble; it never puts that
+    /// sentence under a chip named after the file (SlashReadAttachmentTests holds the decision).
+    /// </summary>
+    [Fact]
+    public async Task CommandSlash_ReadOfAMissingFile_SaysSo_InsteadOfAttachingIt()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        File.WriteAllText(Path.Combine(h.RootDir, "Pricing.cs"), "class Pricing { }\n");
+
+        var missing = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/read Pirce.cs" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.True(missing.Handled);
+        Assert.True(missing.Effects is null or { Count: 0 }, "a missing file must not become a chip");
+        Assert.Contains("Pirce.cs", missing.Markdown, StringComparison.Ordinal);
+
+        // Reference arm: a file that exists is attached, its content under its name.
+        var found = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/read Pricing.cs" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var chip = Assert.Single(found.Effects!);
+        Assert.Equal("attachChip", chip.Kind);
+        Assert.Contains("class Pricing", chip.Value, StringComparison.Ordinal);
+    }
+
     // The bug this locks: /test used to fall through to `Handled = false`, and since the VS Code
     // adapter only intercepts /fix /refactor /doc, the literal string "/test" reached the model,
     // which improvised an answer about a command it knows nothing about. Anything but

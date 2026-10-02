@@ -43,7 +43,9 @@ internal partial class InferpalToolWindowData
                     break;
 
                 case SlashToolAction tool:
-                    await InvokeToolAsync(tool.Tool, tool.Args, ct, attachAs: tool.AttachAs);
+                    // A read that did not happen is a message, never a chip named after the file.
+                    await InvokeToolAsync(tool.Tool, tool.Args, ct,
+                                          attachAs: tool.AttachesResult(_indexService.RootDir, overlay: null) ? tool.AttachAs : null);
                     break;
 
                 case SlashPromptAction expanded:

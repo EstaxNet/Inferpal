@@ -12,7 +12,35 @@ internal abstract record SlashAction;
 internal sealed record SlashInfoAction(string Message) : SlashAction;
 
 /// <summary>Execute a registry tool directly and show its result (optionally attached as a context chip).</summary>
-internal sealed record SlashToolAction(string Tool, object Args, string? AttachAs = null) : SlashAction;
+internal sealed record SlashToolAction(string Tool, object Args, string? AttachAs = null) : SlashAction
+{
+    /// <summary>
+    /// Whether the tool's result goes under the chip <see cref="AttachAs"/> names: <c>/read</c> attaches a file it read,
+    /// never the sentence saying it could not — a missing path, a folder, a binary file or a path outside the workspace
+    /// is shown as a message instead.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Attached, that sentence sits under a 📄 chip named after the file: the user believes the file joined the
+    /// question, and the model receives "File not found" as its content — the twin of an @-mention that attaches
+    /// nothing, which says so.
+    /// </remarks>
+    internal bool AttachesResult(string? root, Editor.OpenDocumentOverlay? overlay)
+    {
+        if (AttachAs is null) return false;
+        if (Tool != "read_file") return true;
+        try
+        {
+            var path = Tools.PathSanitizer.Sanitize(
+                Tools.ToolArgs.Str(System.Text.Json.JsonSerializer.SerializeToElement(Args), "path"), root);
+            Tools.PathSanitizer.AssertUnderRoot(path, root);
+            return Tools.ReadFileTool.Classify(path, overlay) is Tools.ReadFileTool.Target.File or Tools.ReadFileTool.Target.Unsaved;
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+}
 
 /// <summary>Run a code action (/explain, /fix, …) on the active document or selection.</summary>
 internal sealed record SlashCodeAction(SlashCodeActionKind Kind) : SlashAction;

@@ -38,7 +38,7 @@ editor with tools disabled).
 | `/onboard context [force]` | Draft `.inferpal/context.md` from the repository (layout, README, recent commits). Refuses to overwrite an existing file without `force` |
 | `/note <text>` | Append a timestamped note to `.inferpal/notes.md` |
 | `/notes [clear]` | List or clear all project notes |
-| `/read <path>` | Attach a file as context |
+| `/read <path>` | Attach a file as context (a path that is not a readable file — missing, a folder, binary, outside the workspace — is reported, not attached) |
 | `/diff` | Attach the current `git diff` as a context chip |
 
 ## Files & shell

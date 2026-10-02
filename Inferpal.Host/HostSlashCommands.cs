@@ -112,7 +112,8 @@ internal sealed partial class HostServer
             var args   = JsonSerializer.SerializeToElement(tool.Args);
             var result = await s.Tools.ExecuteAsync(tool.Tool, args, cts.Token);
 
-            return tool.AttachAs is not null
+            // A read that did not happen is a message, never a chip named after the file.
+            return tool.AttachesResult(s.RootDir, s.Overlay)
                 ? new SlashCommandResult(true, null, [new SlashEffectDto("attachChip", result, tool.AttachAs)])
                 : new SlashCommandResult(true, result);
         }
