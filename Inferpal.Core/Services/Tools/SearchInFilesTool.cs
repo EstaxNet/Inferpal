@@ -70,7 +70,11 @@ internal class SearchInFilesTool : ITool
         // ⚠ "No results" is a CONCLUSION the model acts on — it stops looking. A walk that could
         // not start is not that answer, so this catch must not return it.
         var walkFailed = false;
-        var files = singleFile ? [path] : WorkspaceScan.EnumerateFiles(path, filePattern, out walkFailed);
+        var walk = singleFile ? [path] : WorkspaceScan.EnumerateFiles(path, filePattern, out walkFailed);
+        // ⚠ Sorted BEFORE the caps, like list_files and ScanCoverage.Take: the walk yields in file-system order —
+        // arbitrary on POSIX — so "the first 100 matches" were a subset chosen by the volume, different between two
+        // identical calls, and the notes below name "the first" of nothing.
+        var files = walkFailed ? walk : walk.OrderBy(f => f, StringComparer.Ordinal);
         if (walkFailed)
             return Task.FromResult(
                 $"Could not search '{path}': the directory could not be walked (permissions, or a "

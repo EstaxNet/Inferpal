@@ -118,6 +118,23 @@ public class ScanSubsetDeterminismTests
                                 + "subset is still the one the file system chose.");
     }
 
+    /// <remarks>
+    /// The same order, for the search: its matches are capped (100, then what fits the context), and walked in
+    /// file-system order the matches kept were a subset chosen by the volume. The macOS leg showed it — the first
+    /// match reported was in <c>File2.cs</c>, not <c>File0.cs</c> — and NTFS, sorted by name, never can.
+    /// </remarks>
+    [Fact]
+    public void SearchInFiles_OrdersBeforeItCaps_NotAfter()
+    {
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(
+            RepoRoot(), "Inferpal.Core", "Services", "Tools", "SearchInFilesTool.cs"));
+
+        var cap   = code.IndexOf("results.Count >= MaxResults", StringComparison.Ordinal);
+        var order = code.IndexOf("OrderBy(f => f, StringComparer.Ordinal)", StringComparison.Ordinal);
+        Assert.True(cap >= 0, "this is no longer the site that caps the matches");                        // WITNESS
+        Assert.True(order >= 0 && order < cap, "the search caps its matches with no defined order of files");
+    }
+
     [Fact]
     public void EveryCappedScanGoesThroughTheFunnel()
     {
