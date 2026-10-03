@@ -119,12 +119,14 @@ public sealed class CompactionFuseTests
     [Fact]
     public async Task AModelThatStaysSilent_PastTheFuse_StillTripsIt()
     {
-        // Reference arm: the fuse still guards against a model that does not produce anything.
+        // Reference arm: the fuse still guards against a model that does not produce anything. ⚠ The model answers only
+        // after two minutes, so the fuse (~11 s) is the only way out: a 13 s answer raced it, and a loaded CI runner,
+        // late on its timers, let the answer win.
         var client = new FakeInferenceProvider
         {
             OnChat = async (_, ct) =>
             {
-                await Task.Delay(TimeSpan.FromSeconds(13), ct);
+                await Task.Delay(TimeSpan.FromMinutes(2), ct);
                 return new ChatTurnResult("too late", null, 0, 0);
             },
         };
