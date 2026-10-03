@@ -23,8 +23,6 @@ seconds, and a dozen places where Inferpal stayed silent now say what happened.
   that crashes mid-session, and an edit that broke the build now say what happened.
 - **The agent searches with what works** when semantic search is off, says when a file filter
   matched nothing, and no longer stalls on the build check of a JavaScript or Python project.
-- **Support Inferpal**: the listing now has a donation link — it funds graphics cards able to run
-  bigger models.
 
 ## 1.6.27
 
