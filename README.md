@@ -131,21 +131,6 @@ Complete functional and technical documentation lives in **[`docs/`](docs/README
 
 ---
 
-## ❤️ Support Inferpal
-
-Inferpal is free and open source, and it is developed and measured on **a single 24 GB graphics card**. Bigger
-models generally make a better agent, but the largest open models need more VRAM than that card has — so today they
-cannot be tested, tuned or benchmarked here. Donations go toward **graphics cards able to run bigger models**, so that
-Inferpal's model recommendations and its agent loop get measured on them too.
-
-<a href="https://www.paypal.com/donate/?business=HA84FH7JXX9RQ&no_recurring=0&currency_code=EUR"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&amp;logoColor=white" alt="Donate with PayPal"></a>
-
-<a href="https://www.paypal.com/donate/?business=HA84FH7JXX9RQ&no_recurring=0&currency_code=EUR"><img src="docs/assets/donate-paypal-qr.png" alt="PayPal donation QR code" width="192" height="192"></a>
-
-Scan the code with your phone or use the button above. Thank you!
-
----
-
 ## Official sources
 
 Inferpal is an independent open-source project (GPL v3) by EstaxNet. It runs on your machine, has no hosted
