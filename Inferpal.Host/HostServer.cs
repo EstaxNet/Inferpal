@@ -787,6 +787,25 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>
+    /// The default chat model, when it was never chosen and the backend does not have it, replaced by the best installed
+    /// one — saved, and said (<see cref="ModelCatalog.FirstModelToAdopt"/>). VS Code has no first run: without this, a
+    /// fresh install asked every question of a model that is not there.
+    /// </summary>
+    [JsonRpcMethod("models/adoptDefault")]
+    public async Task<ModelsAdoptResult> AdoptDefaultModelAsync(CancellationToken ct)
+    {
+        var s = Session();
+        var listed = await s.Client.ListModelsAsync(ct);
+        if (ModelCatalog.FirstModelToAdopt(s.Config, listed) is not { } adopted)
+            return new ModelsAdoptResult(null, null);
+
+        var configured = s.Config.DefaultModel;
+        s.Config.DefaultModel = adopted;
+        s.Config.Save();
+        return new ModelsAdoptResult(adopted, Strings.MsgModelAdopted(configured, adopted));
+    }
+
+    /// <summary>
     /// Probes the url the panel gives it - the form's - and NAMES the backend that answered. Mirror
     /// of the Visual Studio window's Test button.
     /// </summary>

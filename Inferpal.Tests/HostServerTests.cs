@@ -2425,6 +2425,35 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task AdoptDefault_ReplacesAnUnchosenDefaultTheBackendLacks_SavesIt_AndSaysSo()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ModelNames = ["nomic-embed-text", "qwen3:8b"];
+        var configured = h.Server.CurrentSession!.Config.DefaultModel;
+
+        var result = await h.Client.InvokeAsync<Host.ModelsAdoptResult>("models/adoptDefault");
+
+        Assert.Equal("qwen3:8b", result.Model);
+        Assert.Equal("qwen3:8b", h.Server.CurrentSession!.Config.DefaultModel);
+        Assert.Equal(Strings.MsgModelAdopted(configured, "qwen3:8b"), result.Notice);
+    }
+
+    [Fact]
+    public async Task AdoptDefault_LeavesAChosenModelAlone()
+    {
+        using var h = CreateHarness(cfg => cfg.DefaultModel = "my-finetune");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ModelNames = ["qwen3:8b"];
+
+        var result = await h.Client.InvokeAsync<Host.ModelsAdoptResult>("models/adoptDefault");
+
+        Assert.Null(result.Model);
+        Assert.Null(result.Notice);
+        Assert.Equal("my-finetune", h.Server.CurrentSession!.Config.DefaultModel);
+    }
+
+    [Fact]
     public async Task Slash_Model_ChangesDefaultAndEmitsStateChange()
     {
         using var h = CreateHarness();

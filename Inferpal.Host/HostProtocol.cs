@@ -175,6 +175,10 @@ internal sealed record BackendStatusResult(bool Connected, string VramBadge, str
 /// window: read the typed value, pre-select the detected backend, then refresh the models from
 /// that url.
 /// </remarks>
+/// <summary>`models/adoptDefault` — the model now used in place of a default nobody chose and the backend lacks, with
+/// the sentence that says so; both null when nothing changed.</summary>
+internal sealed record ModelsAdoptResult(string? Model, string? Notice);
+
 /// <param name="Refused">When nothing was detected but a server answered with a refusal (a wrong API key: 401), the
 /// status line to show in its place, in the user's language — "unreachable" sends them to check a server that is up.</param>
 internal sealed record ConnectionCheckResult(bool Ok, string? Provider, string? Refused = null);

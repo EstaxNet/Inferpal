@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>Если включено, каждый вопрос по коду извлекает наиболее релевантные проиндексированные фрагменты и добавляет их в запрос (уже прикреплённые пропускаются). Требуется фоновая индексация.</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>При включении Inferpal индексирует все исходные файлы решения в фоновом режиме и использует семантический поиск для предоставления релевантного контекста кода ИИ. Отключите для экономии памяти и ЦП на крупных репозиториях.</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Модель встраивания:</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Модель Ollama для генерации векторных представлений семантического поиска. Отображаются только специализированные модели (embeddinggemma, qwen3-embedding, nomic-embed-text, …). При отсутствии выбора используется embeddinggemma.</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Модель, вычисляющая векторные представления для семантического поиска. Отображаются только специализированные модели (embeddinggemma, qwen3-embedding, nomic-embed-text, …). Если поле пусто, используется лучшая из установленных (сначала embeddinggemma); если их нет, поиск идёт только по ключевым словам.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Результатов на запрос (top-K):</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>с</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>мин</value></data>
@@ -67,7 +67,7 @@
   <data name="LabelApiKey" xml:space="preserve"><value>Ключ API (необязательно):</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Отправляется как токен Bearer на OpenAI-совместимые серверы, требующие аутентификации. Оставьте пустым для Ollama и LM Studio (ключ не нужен).</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>URL сервера:</value></data>
-  <data name="HintUrl" xml:space="preserve"><value>Базовый URL вашего локального экземпляра Ollama. По умолчанию http://localhost:11434. Измените, если Ollama работает на другом хосте или порту.</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>Базовый URL сервера моделей: Ollama (по умолчанию http://localhost:11434), LM Studio (http://localhost:1234) или любой OpenAI-совместимый сервер. Кнопка Test определяет, какой из них отвечает.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Модель чата:</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>Модель по умолчанию для всех разговоров. Это поле обязательно. Используйте /model &lt;имя&gt; для смены модели в середине сессии.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Проверить</value></data>
@@ -126,7 +126,7 @@
   <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>Отключить предупреждения безопасности (автоматически одобрять все вызовы)</value></data>
   <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>Если включено, все вызовы инструментов (запись файлов, команды оболочки и т. д.) одобряются автоматически без запроса подтверждения. Используйте только в доверенных средах.</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>Контекстное окно (токены, 0 = отключено):</value></data>
-  <data name="HintContextWindowSize" xml:space="preserve"><value>Должно соответствовать параметру num_ctx вашей модели. Типичные значения: 2048 (небольшая 7B), 4096 (по умолчанию), 8192, 16384. Когда разговор достигает 80% этого лимита, старые сообщения автоматически удаляются и отображается предупреждение.</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>Окно контекста в токенах. С Ollama Inferpal загружает модель с этим размером (num_ctx); с LM Studio или другим сервером используется меньшее из этого значения и окна, с которым загружена модель. По умолчанию: 8192. Когда разговор достигает 80 %, старые сообщения сжимаются в резюме — или обрезаются, если резюме выключено или не удалось, — и об этом сообщается. 0 = значение модели по умолчанию, ничего не обрезается.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>На LM Studio / OpenAI-совместимых серверах длина контекста задаётся при загрузке модели, а не в запросе — это значение управляет только обрезкой на стороне клиента, поэтому держите его не выше контекста, с которым загружена модель. Когда разговор достигает 80% этого лимита, старые сообщения автоматически удаляются и отображается предупреждение.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Ходов для сохранения при усечении:</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Количество последних обменов пользователя и ассистента, сохраняемых при усечении. Системный промпт сохраняется всегда. Увеличьте, если модели нужно больше недавнего контекста для сохранения связности. Это максимум: обмены, слишком длинные, чтобы поместиться рядом с определениями инструментов, резюмируются вместе с остальным.</value></data>
@@ -548,6 +548,7 @@
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Первый запуск** — {0} доступно. Автоматически выбрана модель **{1}**.
 
 Откройте **Настройки** для смены модели или настройки отдельной модели для действий с кодом и встроенных подсказок.</value></data>
+  <data name="MsgModelAdopted" xml:space="preserve"><value>Модель **{0}** не установлена на этом сервере: Inferpal использует **{1}**, лучшую из установленных. Выберите другую в списке моделей.</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Первый запуск** — {0} запущен, но в нём ещё нет ни одной модели чата.
 
 Загрузите модель — модели, измеренные с Inferpal, по видеокартам перечислены в [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) — затем перезапустите Visual Studio (или откройте Настройки и нажмите **Test**).</value></data>
@@ -708,7 +709,7 @@
   <data name="SlashHintNote" xml:space="preserve"><value>сохранить заметку проекта — /note &lt;текст&gt;</value></data>
   <data name="SlashHintNotes" xml:space="preserve"><value>список заметок проекта — /notes [clear]</value></data>
   <data name="SlashHintPhistory" xml:space="preserve"><value>поиск в истории промптов — /phistory [термин] или /phistory use &lt;n&gt;</value></data>
-  <data name="SlashHintModels" xml:space="preserve"><value>менеджер моделей Ollama — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
+  <data name="SlashHintModels" xml:space="preserve"><value>менеджер моделей — /models [list | pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>переключить пошаговый режим агента — пауза после каждого вызова инструмента</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>возобновить агента после паузы пошагового режима</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>режим плана и сохранённые планы — /plan [list|save|next|done n|&lt;имя&gt;]</value></data>
@@ -716,7 +717,7 @@
   <data name="SlashHintHardware" xml:space="preserve"><value>показать профиль GPU/VRAM — /hardware [gb] для задания бюджета VRAM</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>повторить первичную настройку — заново определить бэкенд и выбрать модели</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ Мониторинг VRAM в реальном времени и по моделям недоступен с этим бэкендом. Ручной бюджет VRAM (`/hardware &lt;gb&gt;`) по-прежнему управляет проверками соответствия.</value></data>
-  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ Управление моделями (pull, delete, running) доступно только с бэкендом Ollama.</value></data>
+  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ Этот сервер не поддерживает управление моделями (pull, delete, running): у Ollama есть все три, у LM Studio — pull и running.</value></data>
   <data name="SnippetsCleared" xml:space="preserve"><value>Библиотека сниппетов очищена.</value></data>
   <data name="SnippetsNoSuch" xml:space="preserve"><value>Нет сниппета №{0}.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>Сниппет №{0} скопирован в буфер обмена.</value></data>

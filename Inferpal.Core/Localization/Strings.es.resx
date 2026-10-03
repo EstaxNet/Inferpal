@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>Si está activado, cada pregunta de código recupera los fragmentos indexados más relevantes y los añade al prompt (omitiendo lo ya adjuntado). Requiere indexación en segundo plano.</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>Cuando está habilitado, Inferpal indexa todos los archivos fuente de la solución en segundo plano y utiliza búsqueda semántica para proporcionar contexto de código relevante. Deshabilitar para ahorrar memoria o CPU en repositorios grandes.</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>Modelo de embeddings:</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Modelo Ollama utilizado para generar embeddings para la búsqueda semántica. Solo se listan modelos de embedding dedicados (embeddinggemma, qwen3-embedding, nomic-embed-text, …). Recurre a embeddinggemma si no se selecciona ninguno.</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>Modelo que calcula los embeddings de la búsqueda semántica. Solo se listan modelos de embedding dedicados (embeddinggemma, qwen3-embedding, nomic-embed-text, …). Si se deja vacío, se usa el mejor instalado (embeddinggemma primero); sin ninguno instalado, la búsqueda es solo por palabras clave.</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>Resultados por consulta (top-K):</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
@@ -70,7 +70,7 @@
   <data name="LabelApiKey" xml:space="preserve"><value>Clave de API (opcional):</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Se envía como token Bearer a servidores compatibles con OpenAI que requieren autenticación. Déjalo vacío para Ollama y LM Studio (no se necesita clave).</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>URL del servidor:</value></data>
-  <data name="HintUrl" xml:space="preserve"><value>URL base de tu instancia local de Ollama. Por defecto http://localhost:11434. Cámbiala si Ollama está en un host o puerto diferente.</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>URL base de tu servidor de modelos: Ollama (por defecto http://localhost:11434), LM Studio (http://localhost:1234) o cualquier servidor compatible con OpenAI. El botón Test detecta cuál responde.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Modelo chat:</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>Modelo predeterminado utilizado en todas las conversaciones. Este campo es obligatorio. Usa /model &lt;nombre&gt; para cambiar de modelo a mitad de sesión.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Probar</value></data>
@@ -129,7 +129,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>Desactivar alertas de seguridad (aprobar todas las llamadas silenciosamente)</value></data>
   <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>Si está marcado, todas las llamadas de herramientas (escritura de archivos, comandos shell, etc.) se aprueban automáticamente sin confirmación. Úsalo solo en entornos de confianza.</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>Ventana de contexto (tokens, 0 = desactivado):</value></data>
-  <data name="HintContextWindowSize" xml:space="preserve"><value>Debe coincidir con el parámetro num_ctx de su modelo. Valores habituales: 2048 (7B pequeño), 4096 (predeterminado), 8192, 16384. Cuando la conversación alcanza el 80% de este límite, los mensajes más antiguos se eliminan automáticamente y se muestra una advertencia.</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>Ventana de contexto, en tokens. Con Ollama, Inferpal carga el modelo con este tamaño (num_ctx); con LM Studio u otro servidor, se usa el menor entre este valor y la ventana con la que se cargó el modelo. Por defecto: 8192. Cuando una conversación alcanza el 80 %, sus mensajes antiguos se resumen —o se recortan si el resumen está desactivado o falla— y un aviso lo indica. 0 = el valor por defecto del modelo, sin recortes.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>En LM Studio / servidores compatibles con OpenAI, la longitud de contexto se fija al cargar el modelo, no por solicitud: este valor solo controla el recorte del lado del cliente, así que manténgalo igual o inferior al contexto con el que se cargó el modelo. Cuando la conversación alcanza el 80% de este límite, los mensajes más antiguos se eliminan automáticamente y se muestra una advertencia.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Turnos a conservar siempre al truncar:</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Número de intercambios usuario/asistente recientes que se preservarán al truncar. El prompt del sistema siempre se conserva. Aumente este valor si el modelo necesita más contexto reciente para mantenerse coherente. Es un máximo: los intercambios demasiado largos para caber junto a las definiciones de herramientas se resumen con el resto.</value></data>
@@ -548,6 +548,7 @@ Edita el archivo o pide al agente que use `update_memory`. Se vuelve a leer ante
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Primer inicio** — {0} disponible(s). **{1}** seleccionado automáticamente como modelo predeterminado.
 
 Abra **Configuración** para cambiar el modelo o configurar un modelo dedicado para acciones de código y completados en línea.</value></data>
+  <data name="MsgModelAdopted" xml:space="preserve"><value>El modelo **{0}** no está instalado en este servidor: Inferpal usa **{1}**, el mejor de los instalados. Elija otro en la lista de modelos.</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Primer inicio** — {0} está en ejecución pero aún no tiene ningún modelo de chat.
 
 Descargue uno — los modelos medidos con Inferpal, por tarjeta gráfica, figuran en [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) — y reinicie Visual Studio (o abra la Configuración y haga clic en **Test**).</value></data>
@@ -710,7 +711,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SlashHintNote" xml:space="preserve"><value>guardar una nota del proyecto — /note &lt;texto&gt;</value></data>
   <data name="SlashHintNotes" xml:space="preserve"><value>listar las notas del proyecto — /notes [clear]</value></data>
   <data name="SlashHintPhistory" xml:space="preserve"><value>buscar en el historial de prompts — /phistory [término] o /phistory use &lt;n&gt;</value></data>
-  <data name="SlashHintModels" xml:space="preserve"><value>gestor de modelos de Ollama — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
+  <data name="SlashHintModels" xml:space="preserve"><value>gestor de modelos — /models [list | pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>alternar el modo paso a paso del agente — pausar tras cada llamada de herramienta</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>reanudar el agente tras una pausa en modo paso a paso</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>modo plan y planes guardados — /plan [list|save|next|done n|&lt;nombre&gt;]</value></data>
@@ -718,7 +719,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SlashHintHardware" xml:space="preserve"><value>mostrar el perfil GPU/VRAM — /hardware [gb] para definir el presupuesto de VRAM</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>volver a ejecutar la configuración inicial — redetectar backend, reelegir modelos</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ La supervisión de VRAM en vivo y por modelo no está disponible con este backend. El presupuesto de VRAM manual (`/hardware &lt;gb&gt;`) sigue controlando las comprobaciones de ajuste.</value></data>
-  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ La gestión de modelos (pull, delete, running) solo está disponible con el backend de Ollama.</value></data>
+  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ Este servidor no ofrece gestión de modelos (pull, delete, running): Ollama tiene las tres, LM Studio pull y running.</value></data>
   <data name="SnippetsCleared" xml:space="preserve"><value>Biblioteca de fragmentos vaciada.</value></data>
   <data name="SnippetsNoSuch" xml:space="preserve"><value>No existe el fragmento n.º {0}.</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>Fragmento n.º {0} copiado al portapapeles.</value></data>

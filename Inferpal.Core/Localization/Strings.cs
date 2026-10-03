@@ -912,6 +912,9 @@ internal static class Strings
     // ── First-Run Auto-Discovery ───────────────────────────────────────────────
     public static string MsgFirstRunWelcome(string models, string selected) =>
         string.Format(Get(nameof(MsgFirstRunWelcome)), models, selected);
+    /// <summary>The default model was never chosen and is not installed: the best installed one is used, and said.</summary>
+    public static string MsgModelAdopted(string configured, string adopted) =>
+        string.Format(Get(nameof(MsgModelAdopted)), configured, adopted);
     /// <summary>The backend answered with no chat model: named (it is not always Ollama), with the slash command that
     /// downloads one when the backend can (<paramref name="canPull"/>), and no model of our own choosing — the measured
     /// ones live in docs/models.md, where they are kept current.</summary>

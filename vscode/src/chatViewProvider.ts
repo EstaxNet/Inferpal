@@ -268,6 +268,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.log(`[chat] models/list failed: ${String(err)}`);
       this.models = this.model ? [this.model] : [];
     }
+    await this.adoptDefaultModel(host);
 
     // Slash autocomplete data + UI-relevant config bits (best-effort, defaults on failure).
     try {
@@ -430,6 +431,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.post({ type: 'backendStatus', status: { connected: false, vramBadge: '' } });
       return;
     }
+    // Known down, not unknown: at start the status is null and the bootstrap has just listed the models itself.
+    const wasDown = this.status !== null && !this.status.connected;
     let edgeNotice: string | null = null;
     try {
       const s = await host.backendStatus();
@@ -446,6 +449,46 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (edgeNotice) {
       this.append({ role: 'assistant', text: edgeNotice, timestamp: ChatViewProvider.now(), notice: true });
       this.hydrate();
+    }
+    // The backend came back: the list read while it was down is empty, and a default nobody chose may now be
+    // replaceable. A server started after the editor — the ordinary order — left the picker on "no model listed"
+    // and every question on the default until a reload.
+    if (wasDown && this.status.connected) {
+      await this.refreshModelsAfterReconnect(host);
+    }
+  }
+
+  private async refreshModelsAfterReconnect(host: HostClient): Promise<void> {
+    try {
+      const listed = await host.modelsList();
+      if (listed.length > 0) {
+        this.models = listed;
+      }
+    } catch (err) {
+      this.log(`[chat] models/list after reconnection failed: ${String(err)}`);
+    }
+    await this.adoptDefaultModel(host);
+    this.hydrate();
+  }
+
+  /** A default nobody chose, which the backend does not have: the host puts the best installed model in its place and
+   *  says so — VS Code has no first run, and every question went to a model that is not there. */
+  private async adoptDefaultModel(host: HostClient): Promise<void> {
+    if (vscode.workspace.getConfiguration('inferpal').get<string>('model', '')
+        || !this.model || this.models.length === 0 || this.models.includes(this.model)) {
+      return;
+    }
+    try {
+      const adopted = await host.modelsAdoptDefault();
+      if (adopted.model) {
+        this.model = adopted.model;
+        this.sharedEcho.defaultModel = adopted.model;
+        if (adopted.notice) {
+          this.append({ role: 'assistant', text: adopted.notice, timestamp: ChatViewProvider.now(), notice: true });
+        }
+      }
+    } catch (err) {
+      this.log(`[chat] models/adoptDefault failed: ${String(err)}`);
     }
   }
 

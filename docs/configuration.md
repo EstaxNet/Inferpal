@@ -37,7 +37,7 @@ Every persisted setting, its type, and default value.
 | `provider` | string | `"ollama"` | Backend: `ollama` / `lmstudio` / `openai-compatible` |
 | `baseUrl` | string | `"http://localhost:11434"` | Model server URL |
 | `apiKey` | string | `""` | API key for OpenAI-compatible servers (Bearer). ⚠ Stored **in clear text** in this file, unlike MCP OAuth tokens, which are encrypted (`mcp-oauth.dat`, DPAPI or the editor's keychain). The file sits under your user profile with the usual ACLs, but anything that can read your `%AppData%` can read this key |
-| `defaultModel` | string | `"llama3.1"` | Main chat model |
+| `defaultModel` | string | `"llama3.1"` | Main chat model. Left at this default when the server does not have it, the best installed chat model is used instead, saved here, and a notice says so; a model you chose is never replaced |
 | `codeActionsModel` | string | `""` | Model for Explain/Fix/Refactor (empty = `defaultModel`) |
 | `inlineCompletionModel` | string | `""` | Dedicated FIM model (empty = `defaultModel`) |
 | `inlineEditModel` | string | `""` | Inline Edit model (fallback: `codeActionsModel` → `defaultModel`) |

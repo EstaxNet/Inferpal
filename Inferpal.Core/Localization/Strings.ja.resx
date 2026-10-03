@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>有効にすると、コードに関する質問ごとに最も関連性の高いインデックス済みスニペットを取得してプロンプトに追加します（既に添付済みのものは除外）。バックグラウンド インデックス作成が必要です。</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>有効にすると、Inferpal はバックグラウンドでソリューション内のすべてのソース ファイルにインデックスを付け、セマンティック検索を使用して AI に関連するコード コンテキストを提供します。大規模なリポジトリでメモリや CPU を節約するには無効にしてください。</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>埋め込みモデル：</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>セマンティック検索の埋め込み生成に使用する Ollama モデル。専用の埋め込みモデルのみ表示されます（embeddinggemma、qwen3-embedding、nomic-embed-text など）。未選択の場合は embeddinggemma にフォールバックします。</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>セマンティック検索の埋め込みを計算するモデル。専用の埋め込みモデルのみ表示されます（embeddinggemma、qwen3-embedding、nomic-embed-text など）。空欄の場合はインストール済みの最適なもの（embeddinggemma が優先）を使い、1 つもなければキーワード検索のみになります。</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>クエリごとの結果数 (トップ K)：</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>秒</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>分</value></data>
@@ -67,7 +67,7 @@
   <data name="LabelApiKey" xml:space="preserve"><value>API キー（任意）：</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>認証が必要な OpenAI 互換サーバーに Bearer トークンとして送信されます。Ollama と LM Studio では空のままにしてください（キー不要）。</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>サーバー URL：</value></data>
-  <data name="HintUrl" xml:space="preserve"><value>ローカル Ollama インスタンスのベース URL です。デフォルトは http://localhost:11434 です。Ollama が別のホストやポートで動作している場合は変更してください。</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>モデルサーバーのベース URL です。Ollama（既定 http://localhost:11434）、LM Studio（http://localhost:1234）、または任意の OpenAI 互換サーバー。Test ボタンで応答するサーバーを検出します。</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>チャットモデル：</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>すべての会話に使用するデフォルトモデルです。このフィールドは必須です。セッション中にモデルを切り替えるには /model &lt;名前&gt; を使用してください。</value></data>
   <data name="BtnTest" xml:space="preserve"><value>テスト</value></data>
@@ -126,7 +126,7 @@
   <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>セキュリティアラートを無効化（全ツール呼び出しを自動承認）</value></data>
   <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>オンにすると、すべてのツール呼び出し（ファイル書き込み、シェルコマンドなど）が確認なしで自動的に承認されます。信頼できる環境でのみ使用してください。</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>コンテキストウィンドウ（トークン数、0 = 無効）：</value></data>
-  <data name="HintContextWindowSize" xml:space="preserve"><value>モデルの num_ctx 設定と一致させてください。一般的な値：2048（小型 7B）、4096（デフォルト）、8192、16384。会話がこの制限の 80% に達すると、古いメッセージが自動的に削除され警告が表示されます。</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>コンテキストウィンドウ（トークン数）。Ollama では Inferpal がこのサイズ（num_ctx）でモデルを読み込みます。LM Studio などのサーバーでは、この値とモデルの読み込み時のウィンドウの小さい方が使われます。既定値：8192。会話がその 80% に達すると、古いメッセージが要約されます（要約がオフまたは失敗した場合は削除）。その旨が通知されます。0 = モデル既定値、削除なし。</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>LM Studio / OpenAI 互換サーバーでは、コンテキスト長はリクエストごとではなくモデルのロード時に固定されます。この値はクライアント側のトリミングのみを制御するため、モデルがロードされているコンテキスト以下に保ってください。会話がこの制限の 80% に達すると、古いメッセージが自動的に削除され警告が表示されます。</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>切り捨て時に常に保持するターン数：</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>切り捨て時に保持する最近のユーザー/アシスタントのやり取りの数です。システムプロンプトは常に保持されます。モデルが一貫性を保つためにより多くの最近のコンテキストが必要な場合は増やしてください。 これは上限です。ツール定義と一緒に収まらないほど長いやり取りは、残りと一緒に要約されます。</value></data>
@@ -548,6 +548,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **初回起動** — {0} 個のモデルが利用可能です。**{1}** をデフォルトモデルとして自動選択しました。
 
 **設定**を開いてモデルを変更するか、コードアクションやインライン補完用の専用モデルを設定してください。</value></data>
+  <data name="MsgModelAdopted" xml:space="preserve"><value>モデル **{0}** はこのサーバーにインストールされていません。Inferpal はインストール済みで最適な **{1}** を使います。モデル一覧で別のモデルを選べます。</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **初回起動** — {0} は起動していますが、チャットモデルがまだありません。
 
 モデルを入手してください — Inferpal で計測したモデルはグラフィックカードごとに [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) にあります — その後 Visual Studio を再起動するか、設定を開いて **Test** をクリックしてください。</value></data>
@@ -710,7 +711,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintNote" xml:space="preserve"><value>プロジェクトメモを保存 — /note &lt;テキスト&gt;</value></data>
   <data name="SlashHintNotes" xml:space="preserve"><value>プロジェクトメモを一覧表示 — /notes [clear]</value></data>
   <data name="SlashHintPhistory" xml:space="preserve"><value>プロンプト履歴を検索 — /phistory [語句] または /phistory use &lt;n&gt;</value></data>
-  <data name="SlashHintModels" xml:space="preserve"><value>Ollama モデルマネージャー — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
+  <data name="SlashHintModels" xml:space="preserve"><value>モデルマネージャー — /models [list | pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>エージェントのステップモードを切り替え — 各ツール呼び出し後に一時停止</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>ステップモードの一時停止後にエージェントを再開</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>プランモードと保存済みプラン — /plan [list|save|next|done n|&lt;名前&gt;]</value></data>
@@ -718,7 +719,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintHardware" xml:space="preserve"><value>GPU/VRAM プロファイルを表示 — /hardware [gb] で VRAM バジェットを設定</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>初回セットアップを再実行 — バックエンド再検出、モデル再選択</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ このバックエンドではリアルタイムの VRAM とモデル別の監視は利用できません。手動の VRAM バジェット（`/hardware &lt;gb&gt;`）は引き続き適合チェックに使用されます。</value></data>
-  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ モデル管理（pull、delete、running）は Ollama バックエンドでのみ利用できます。</value></data>
+  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ このサーバーはモデル管理（pull、delete、running）を提供していません。Ollama は 3 つすべて、LM Studio は pull と running に対応しています。</value></data>
   <data name="SnippetsCleared" xml:space="preserve"><value>スニペットライブラリをクリアしました。</value></data>
   <data name="SnippetsNoSuch" xml:space="preserve"><value>スニペット #{0} はありません。</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>スニペット #{0} をクリップボードにコピーしました。</value></data>

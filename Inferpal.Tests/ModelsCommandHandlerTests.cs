@@ -17,6 +17,45 @@ public class ModelsCommandHandlerTests
 
     private static RunningModelInfo Run(string name, long vramBytes) => new(name, vramBytes, "");
 
+    /// <summary>
+    /// A mistyped sub-command fell back to the listing: `/models delet llama3` answered with the list — the model still
+    /// in it — which reads as a confirmation. It is named with the usage, and the model list is not even asked for.
+    /// </summary>
+    [Theory]
+    [InlineData("delet", "llama3")]
+    [InlineData("remove", "llama3")]
+    [InlineData("runing")]
+    public async Task AnUnknownSubCommand_IsNamed_NotAnsweredWithTheList(params string[] args)
+    {
+        var client = new FakeInferenceProvider { ModelNames = ["llama3"] };
+
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd(args), CancellationToken.None);
+
+        Assert.Equal(Strings.SlashUsage(ModelsCommandHandler.Usage), result.Message);
+        Assert.DoesNotContain("llama3", result.Message);
+    }
+
+    [Theory]
+    [InlineData]
+    [InlineData("list")]
+    [InlineData("LIST")]
+    public async Task TheListing_IsStillWhatItWas(params string[] args)
+    {
+        // Reference arm: the bare command and `list` keep listing — the guard must not break the command it protects.
+        var client = new FakeInferenceProvider { ModelNames = ["llama3"] };
+
+        var result = await ModelsCommandHandler.HandleAsync(client, Cfg, Cmd(args), CancellationToken.None);
+
+        Assert.Contains("llama3", result.Message);
+    }
+
+    [Fact]
+    public void TheUnsupportedNotice_NamesTheBackendsThatOfferIt()
+    {
+        // LM Studio pulls and lists running models: "only available with Ollama" sent its users elsewhere for nothing.
+        Assert.Contains("LM Studio", Strings.ModelsBackendUnsupported);
+    }
+
     [Fact]
     public async Task Delete_BackendWithoutModelManagement_ReturnsUnsupported()
     {

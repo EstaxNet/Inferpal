@@ -103,11 +103,13 @@ internal partial class InferpalToolWindowData
     // the settings VM's embedding dropdown).
 
     /// <summary>
-    /// On first launch: pings Ollama, discovers models, picks the best one,
-    /// and posts a welcome bubble. Clears <see cref="InferpalConfig.IsFirstRun"/> permanently.
+    /// On first launch: pings the backend, discovers models, picks the best one, and posts a welcome bubble. Clears
+    /// <see cref="InferpalConfig.IsFirstRun"/> once a model is chosen — also run again when the connection comes back.
     /// </summary>
     private async Task StartFirstRunDiscoveryAsync()
     {
+        // One run at a time: the window's start and a heartbeat that sees the backend come back can both ask.
+        if (Interlocked.Exchange(ref _firstRunInFlight, 1) == 1) return;
         try
         {
             if (!_config.IsFirstRun) return;
@@ -132,6 +134,7 @@ internal partial class InferpalToolWindowData
             try { await FirstRunPresentAsync(Strings.FirstRunFailed(detail)).ConfigureAwait(false); }
             catch (Exception notice) { Diagnostics.Swallow("Rag.FirstRunNotice", notice); }
         }
+        finally { Interlocked.Exchange(ref _firstRunInFlight, 0); }
     }
 
     /// <summary>Presenter used by the automatic first-run path: inserts a themed assistant bubble.</summary>
@@ -171,10 +174,11 @@ internal partial class InferpalToolWindowData
         var reachable = detected is not null
             || await client.CheckConnectionAsync(url, ct).ConfigureAwait(false);
 
+        // ⚠ Neither this branch nor the next one ENDS the first run: no model has been chosen, and spent here it left
+        // the code's default — a model the backend may not have — for every question to come. It completes when the
+        // connection comes back (heartbeat) or at the next start.
         if (!reachable)
         {
-            _config.IsFirstRun = false;
-            _config.Save();
             // A server that refused the check (a wrong API key) is running: "start it" is the wrong remedy.
             await present(client.ConnectionRefusal is { } refusal
                 ? Strings.MsgBackendRefused(url, refusal)
@@ -192,8 +196,6 @@ internal partial class InferpalToolWindowData
 
         if (chatModels.Count == 0)
         {
-            _config.IsFirstRun = false;
-            _config.Save();
             // The backend DETECTED above, not "Ollama": an LM Studio with nothing downloaded lands here too.
             await present(Strings.MsgFirstRunNoModels(
                 Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider),
@@ -202,7 +204,11 @@ internal partial class InferpalToolWindowData
         }
 
         // ── 3. Auto-configure ─────────────────────────────────────────────────
-        var best = Services.Inference.ModelCatalog.PickBestChatModel(chatModels);
+        // A model the user CHOSE (not the code's default) that the backend has is kept: the first run can now
+        // complete late — after a model was picked in the settings while the backend was down.
+        var chosen = !Services.Inference.ModelCatalog.SameModelName(_config.DefaultModel, new InferpalConfig().DefaultModel)
+                     && chatModels.Any(m => Services.Inference.ModelCatalog.SameModelName(m, _config.DefaultModel));
+        var best = chosen ? _config.DefaultModel : Services.Inference.ModelCatalog.PickBestChatModel(chatModels);
         _config.DefaultModel = best;
         await RunOnVMContextAsync(() => ActiveModelLabel = best);
 

@@ -37,7 +37,7 @@
   <data name="HintRagAutoContext" xml:space="preserve"><value>启用后，每个代码问题都会静默检索最相关的已索引片段并添加到提示中（跳过已附加的内容）。需要后台索引。</value></data>
   <data name="HintRagEnabled" xml:space="preserve"><value>启用后，Inferpal 将在后台为解决方案中的所有源文件建立索引，并使用语义搜索为 AI 提供相关代码上下文。在大型存储库上可禁用以节省内存或 CPU。</value></data>
   <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>嵌入模型：</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>用于生成语义搜索嵌入的 Ollama 模型。仅列出专用嵌入模型（embeddinggemma、qwen3-embedding、nomic-embed-text 等）。未选择时回退到 embeddinggemma。</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>计算语义搜索嵌入的模型。仅列出专用嵌入模型（embeddinggemma、qwen3-embedding、nomic-embed-text 等）。留空时使用已安装中最合适的一个（优先 embeddinggemma）；一个都没有时只按关键词搜索。</value></data>
   <data name="LabelRagTopK" xml:space="preserve"><value>每次查询结果数 (top-K)：</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>秒</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>分钟</value></data>
@@ -70,7 +70,7 @@
   <data name="LabelApiKey" xml:space="preserve"><value>API 密钥（可选）：</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>作为 Bearer 令牌发送到需要身份验证的 OpenAI 兼容服务器。Ollama 和 LM Studio 请留空（无需密钥）。</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>服务器地址：</value></data>
-  <data name="HintUrl" xml:space="preserve"><value>本地 Ollama 实例的基础地址。默认为 http://localhost:11434。如果 Ollama 运行在不同的主机或端口，请修改此项。</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>模型服务器的基础地址：Ollama（默认 http://localhost:11434）、LM Studio（http://localhost:1234）或任何 OpenAI 兼容服务器。Test 按钮会检测哪个在响应。</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>聊天模型：</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>用于所有对话的默认模型。此字段为必填项。使用 /model &lt;名称&gt; 可在会话中随时切换模型。</value></data>
   <data name="BtnTest" xml:space="preserve"><value>测试</value></data>
@@ -129,7 +129,7 @@
   <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>禁用安全提示（静默批准所有工具调用）</value></data>
   <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>勾选后，所有工具调用（文件写入、shell 命令等）将自动批准，无需确认提示。仅在受信任的环境中使用。</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>上下文窗口（token 数，0 = 禁用）：</value></data>
-  <data name="HintContextWindowSize" xml:space="preserve"><value>应与模型的 num_ctx 参数一致。常见值：2048（小型 7B）、4096（默认）、8192、16384。当对话达到此限制的 80% 时，最旧的消息将自动删除并显示警告。</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>上下文窗口（令牌数）。使用 Ollama 时，Inferpal 以此大小（num_ctx）加载模型；使用 LM Studio 或其他服务器时，取此值与模型加载时窗口中的较小者。默认：8192。对话达到其 80% 时，较早的消息会被总结（若总结已关闭或失败则删除），并会给出提示。0 = 使用模型自身的默认值，不做删减。</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>在 LM Studio / 兼容 OpenAI 的服务器上，上下文长度在模型加载时设定，而非按请求设定——此值仅控制客户端裁剪，请将其保持在不超过模型加载时的上下文。当对话达到此限制的 80% 时，最旧的消息将自动删除并显示警告。</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>截断时始终保留的轮次：</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>截断时保留的最近用户/助手交互轮数。系统提示始终保留。如果模型需要更多近期上下文以保持连贯性，请增大此值。这是上限：过长、无法与工具定义一起放入的交互会与其余内容一起被摘要。</value></data>
@@ -548,6 +548,7 @@
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **首次启动** — 共 {0} 个可用模型。已自动选择 **{1}** 作为默认模型。
 
 打开**设置**更改模型，或为代码操作和内联补全配置专用模型。</value></data>
+  <data name="MsgModelAdopted" xml:space="preserve"><value>此服务器上未安装模型 **{0}**：Inferpal 使用已安装模型中最合适的 **{1}**。可在模型列表中选择其他模型。</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **首次启动** — {0} 正在运行，但还没有任何聊天模型。
 
 请获取一个 — 用 Inferpal 测量过的模型按显卡列在 [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) 中 — 然后重启 Visual Studio（或打开设置并点击 **Test**）。</value></data>
@@ -710,7 +711,7 @@
   <data name="SlashHintNote" xml:space="preserve"><value>保存项目笔记 — /note &lt;文本&gt;</value></data>
   <data name="SlashHintNotes" xml:space="preserve"><value>列出项目笔记 — /notes [clear]</value></data>
   <data name="SlashHintPhistory" xml:space="preserve"><value>搜索提示历史 — /phistory [关键词] 或 /phistory use &lt;n&gt;</value></data>
-  <data name="SlashHintModels" xml:space="preserve"><value>Ollama 模型管理器 — /models [pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
+  <data name="SlashHintModels" xml:space="preserve"><value>模型管理器 — /models [list | pull &lt;n&gt; | delete &lt;n&gt; | running]</value></data>
   <data name="SlashHintAgentStep" xml:space="preserve"><value>切换代理单步模式 — 每次工具调用后暂停</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>单步模式暂停后恢复代理</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>计划模式与已保存的计划 — /plan [list|save|next|done n|&lt;名称&gt;]</value></data>
@@ -718,7 +719,7 @@
   <data name="SlashHintHardware" xml:space="preserve"><value>显示 GPU/VRAM 配置 — /hardware [gb] 设置 VRAM 预算</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>重新运行初始设置 — 重新检测后端并重新选择模型</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ 此后端不支持实时 VRAM 和按模型监控。手动 VRAM 预算（`/hardware &lt;gb&gt;`）仍用于适配检查。</value></data>
-  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ 模型管理（pull、delete、running）仅在 Ollama 后端可用。</value></data>
+  <data name="ModelsBackendUnsupported" xml:space="preserve"><value>ℹ️ 此服务器不提供模型管理（pull、delete、running）：Ollama 三者都支持，LM Studio 支持 pull 和 running。</value></data>
   <data name="SnippetsCleared" xml:space="preserve"><value>已清空代码片段库。</value></data>
   <data name="SnippetsNoSuch" xml:space="preserve"><value>没有第 {0} 个代码片段。</value></data>
   <data name="SnippetsCopied" xml:space="preserve"><value>已将第 {0} 个代码片段复制到剪贴板。</value></data>

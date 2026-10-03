@@ -29,6 +29,7 @@ import {
   MentionCategory,
   MentionItem,
   MentionResolveResult,
+  ModelsAdoptResult,
   PlanNotice,
   SavedMessage,
   SessionBranchCommandResult,
@@ -437,6 +438,11 @@ export class HostClient {
    *  lists the previous URL's models is a control that answers about something else. */
   modelsList(overrides?: { baseUrl?: string; provider?: string; apiKey?: string }): Promise<string[]> {
     return this.connection().sendRequest<string[]>('models/list', overrides ?? {});
+  }
+
+  /** The default chat model, when nobody chose it and the backend lacks it, replaced by the best installed one. */
+  modelsAdoptDefault(): Promise<ModelsAdoptResult> {
+    return this.connection().sendRequest<ModelsAdoptResult>('models/adoptDefault');
   }
 
   /** Renders the export document - the same one the Visual Studio window produces, because it is

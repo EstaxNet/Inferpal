@@ -60,6 +60,21 @@ public class ConnectionTextsNameTheBackendTests
         Assert.Contains("/models pull", text);
     });
 
+    /// <summary>
+    /// The settings and command hints are shown whatever the backend: "Base URL of your local Ollama instance (default
+    /// :11434)" to an LM Studio user, "Ollama model manager" for a /models that LM Studio serves too, and "Falls back to
+    /// embeddinggemma" where the code takes the best embedding model INSTALLED — the documentation said it right.
+    /// </summary>
+    [Fact]
+    public void TheSettingsAndCommandHints_HoldForEveryBackend() => InEveryLanguage(culture =>
+    {
+        Assert.True(Strings.HintUrl.Contains(":11434", StringComparison.Ordinal)
+                    && System.Text.RegularExpressions.Regex.IsMatch(Strings.HintUrl, @":1234(?!\d)"), $"{culture}: {Strings.HintUrl}");
+        Assert.False(Strings.SlashHintModels.Contains("Ollama", StringComparison.Ordinal), $"{culture}: {Strings.SlashHintModels}");
+        Assert.False(Strings.HintRagEmbeddingModel.Contains("Ollama", StringComparison.Ordinal),
+                     $"{culture}: {Strings.HintRagEmbeddingModel}");
+    });
+
     [Fact]
     public void TheDownloadHint_IsOnlyGivenWhereTheBackendCanDownload()
     {

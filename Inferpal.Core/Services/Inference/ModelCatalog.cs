@@ -225,6 +225,24 @@ internal static class ModelCatalog
     /// families it never measured, then any other model it does not know; a family measured to fail as the agent comes
     /// last — a code model trained for completion and not for tool calls completes 3 tasks in 14.
     /// </remarks>
+    /// <summary>
+    /// The chat model to adopt in place of the configured one, or <c>null</c>: only when the configured model is still
+    /// the CODE's default — never chosen by anyone — and the backend does not have it, while it lists chat models.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Without it a fresh install asks every question of a model that is not there: VS Code has no first run, and
+    /// the Visual Studio one is spent when the backend is down at that moment — the model picker showed the default
+    /// as selected, and the first question failed on "model not found, try pulling it first", which sends the user to
+    /// download a model the documentation no longer recommends.
+    /// </remarks>
+    public static string? FirstModelToAdopt(Config.InferpalConfig config, IReadOnlyList<string> listed)
+    {
+        if (!SameModelName(config.DefaultModel, new Config.InferpalConfig().DefaultModel)) return null;
+        var chat = listed.Where(m => !IsEmbeddingModel(m)).ToList();
+        if (chat.Count == 0 || chat.Any(m => SameModelName(m, config.DefaultModel))) return null;
+        return PickBestChatModel(chat);
+    }
+
     public static string PickBestChatModel(IReadOnlyList<string> models)
     {
         var profiled = models

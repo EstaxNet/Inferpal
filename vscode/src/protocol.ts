@@ -124,6 +124,13 @@ export interface BackendStatusResult {
   refused?: string | null;
 }
 
+/** `models/adoptDefault` — the model now used in place of a default nobody chose and the backend lacks, with the
+ *  sentence that says so (already localized); both null when nothing changed. */
+export interface ModelsAdoptResult {
+  model: string | null;
+  notice: string | null;
+}
+
 /** `connection/check` — what the Test button found AT THE URL IT WAS GIVEN.
  *  `provider` is the detected backend code (`ollama` | `lmstudio` | `openai-compatible`), so the
  *  panel can pre-select it the way the Visual Studio window does; null when nothing answered. */

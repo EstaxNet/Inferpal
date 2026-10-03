@@ -70,6 +70,32 @@ internal partial class InferpalToolWindowData
         }, null);
     }
 
+    /// <summary>
+    /// The backend answers: an unfinished first run completes, otherwise a default model nobody chose that the backend
+    /// does not have is replaced by the best installed one, and said (<see cref="ModelCatalog.FirstModelToAdopt"/>).
+    /// </summary>
+    private async Task EnsureChatModelAsync()
+    {
+        if (_config.IsFirstRun)
+        {
+            await StartFirstRunDiscoveryAsync().ConfigureAwait(false);
+            return;
+        }
+        try
+        {
+            var listed = await _client.ListModelsAsync(CancellationToken.None).ConfigureAwait(false);
+            if (ModelCatalog.FirstModelToAdopt(_config, listed) is not { } adopted) return;
+
+            var configured = _config.DefaultModel;
+            _config.DefaultModel = adopted;
+            _config.Save();
+            await RunOnVMContextAsync(() => ActiveModelLabel = adopted).ConfigureAwait(false);
+            await FirstRunPresentAsync(Strings.MsgModelAdopted(configured, adopted)).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Diagnostics.Swallow("Connection.AdoptModel", ex); }
+    }
+
     private async Task StartHeartbeatAsync(CancellationToken? token = null)
     {
         var ct = token ?? _heartbeatCts.Token;
@@ -78,7 +104,8 @@ internal partial class InferpalToolWindowData
             // Let the window finish its initial render before the first check.
             await Task.Delay(2_000, ct);
 
-            var presenter = new ConnectionStatusPresenter();
+            var presenter    = new ConnectionStatusPresenter();
+            var modelChecked = false;
 
             while (!ct.IsCancellationRequested)
             {
@@ -116,6 +143,14 @@ internal partial class InferpalToolWindowData
                         ScrollToBottom();
                     }
                 });
+
+                // The first check that reaches the backend, and every return of it: a first run that could not choose
+                // a model completes, and a default nobody chose that the backend lacks is replaced.
+                if (ok && (!modelChecked || status.Transition == ConnectionTransition.Restored))
+                {
+                    modelChecked = true;
+                    _ = EnsureChatModelAsync();
+                }
 
                 // Connected: poll every 20 s (was 60 s) — fast enough to catch a Ollama crash
                 // within one poll cycle without hammering the daemon.

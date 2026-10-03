@@ -22,10 +22,19 @@ internal static class ModelsCommandHandler
     /// <summary>Handles <c>/models</c> (list), <c>/models delete &lt;name&gt;</c> and
     /// <c>/models running</c>. <paramref name="parts"/> is the whitespace-split command line.</summary>
     /// <param name="config">Read for the backend URL only — named when the backend does not answer.</param>
+    /// <summary>The sub-commands of <c>/models</c>, as the usage line names them.</summary>
+    internal const string Usage = "/models [list | pull <name> | delete <name> | running]";
+
     public static async Task<ModelsCommandResult> HandleAsync(
         IInferenceProvider client, Config.InferpalConfig config, string[] parts, CancellationToken ct)
     {
         var sub = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
+
+        // ⚠ An unknown sub-command is NAMED, it does not fall back to the listing: `/models delet llama3` answered
+        // with the list — the model still in it — which reads as a confirmation. `pull` is served by the front-ends
+        // before this handler (it owns a live progress line); reaching here, it is not a gesture this handler makes.
+        if (sub is not ("list" or "delete" or "running"))
+            return new(Strings.SlashUsage(Usage));
 
         // delete needs /api model management; running needs VRAM monitoring — Ollama-only.
         if ((sub == "delete"  && !client.Capabilities.ModelManagement) ||
@@ -50,7 +59,7 @@ internal static class ModelsCommandHandler
                 : ModelCatalog.FormatRunningModels(running));
         }
 
-        // /models (list) and any unknown sub-command.
+        // /models and /models list.
         var models   = await client.ListModelsAsync(ct);
         var running2 = await client.GetRunningModelsAsync(ct);
         return new(models.Count == 0
