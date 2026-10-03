@@ -3,6 +3,25 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.6.29
+
+A fresh install works with the model you already have, the agent reads its tools' answers whole,
+and Ollama models that think, or that have no tool support, work as on LM Studio.
+
+- **A fresh install uses a model you have**: when the default `llama3.1` is not on your server and
+  you never picked a model, the best one installed is used, saved, and announced. A model pulled
+  with `/models pull` is used at once, and starting the server after VS Code fills the model list
+  as soon as it answers.
+- **Ollama**: a model that only thinks no longer ends in "not a single token", models without tool
+  support (Gemma 3) work with tools on, and ghost text no longer blocks the chat.
+- **The agent reads its tools' answers whole**: long files, searches, file listings, build errors,
+  test runs, git status and diffs, the project map, the solution overview and code analysis now
+  fit what the agent can read, keep what matters most, and say what they left out.
+- **Clearer when something goes wrong**: a server that refuses is not called unreachable, messages
+  name your backend, thinking is never written into your files, and `/check` no longer reports
+  "no finding" when no review came back.
+- **The context gauge shows how full the next question will be**, like in Visual Studio.
+
 ## 1.6.28
 
 Long conversations keep working on a small context window, a backend that is down is reported in
