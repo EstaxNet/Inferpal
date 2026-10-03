@@ -21,7 +21,6 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code%20Marketplace-install-007ACC" alt="VS Code Marketplace"></a>
   <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
-  <a href="https://www.paypal.com/donate/?business=HA84FH7JXX9RQ&no_recurring=0&currency_code=EUR"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&amp;logoColor=white" alt="Donate with PayPal"></a>
 </p>
 
 <p align="center">
