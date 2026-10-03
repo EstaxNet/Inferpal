@@ -107,6 +107,9 @@ internal sealed class SearchDocsTool : ITool
         sb.AppendLine($"## Documentation search: \"{query}\" ({modeLabel}, top {results.Count})");
         sb.AppendLine();
 
+        var bodies    = new StringBuilder();
+        var locations = new StringBuilder();
+        var firstByLocation = 0;
         for (int i = 0; i < results.Count; i++)
         {
             var hit   = results[i];
@@ -114,16 +117,27 @@ internal sealed class SearchDocsTool : ITool
 
             var header = $"### [{i + 1}] {chunk.PageTitle}";
             if (RagResultPresentation.ShowsScore(hit.IsCosine, hit.Score)) header += $" · score {hit.Score:F3}";
-            sb.AppendLine(header);
-            sb.AppendLine($"<{chunk.Url}>");
-            sb.AppendLine();
 
             var display = chunk.Content.Length > 900
                 ? SafeTruncate.Truncate(chunk.Content, 900) + "\n…(truncated)"
                 : chunk.Content;
-            sb.AppendLine(display);
-            sb.AppendLine();
+            var entry = $"{header}\n<{chunk.Url}>\n\n{display}\n\n";
+
+            // In rank order: once one body does not fit, the rest go by location (RankedResultBudget).
+            if (firstByLocation == 0 && (i == 0 || bodies.Length + entry.Length <= RankedResultBudget.BodyChars))
+                bodies.Append(entry);
+            else
+            {
+                if (firstByLocation == 0) firstByLocation = i + 1;
+                locations.AppendLine($"- {header[4..]} <{chunk.Url}>");
+            }
         }
+
+        if (firstByLocation > 0)
+            sb.AppendLine(RankedResultBudget.Note(firstByLocation, results.Count,
+                "a narrower query brings them back in full")).AppendLine();
+        sb.Append(bodies);
+        if (locations.Length > 0) sb.Append(locations).AppendLine();
 
         // ⚠ The same footer `search_codebase` prints, for the same reason: the model is the one that
         // will act on "it is not in the documentation", and a corpus with chunks held without a

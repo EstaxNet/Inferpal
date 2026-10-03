@@ -144,12 +144,36 @@ internal class TraceDependencyTool : ITool
         // scanned, nothing to warn about — the callees-only mode reads a single file).
         var coverage = default(ScanCoverage);
 
+        // ⚠ Each section is budgeted, method by method: the report reaches the model as ONE tool result, and the loop
+        // cuts a longer one in its middle — on a file of forty methods, "both" lost the end of the callers and the
+        // start of the callees, unannounced. The methods that do not fit are named, with the way to ask for one.
+        var room = ToolOutputBudget.ListChars - 800;
+        void AppendBlocks(List<(string Name, string Text)> blocks, int budget)
+        {
+            var used  = 0;
+            var shown = 0;
+            foreach (var (_, text) in blocks)
+            {
+                if (shown > 0 && used + text.Length > budget) break;
+                sb.Append(text);
+                used += text.Length;
+                shown++;
+            }
+            if (shown < blocks.Count)
+                sb.AppendLine($"(+{blocks.Count - shown} method(s) not shown here: "
+                            + $"{string.Join(", ", blocks.Skip(shown).Take(20).Select(b => b.Name))}"
+                            + (blocks.Count - shown > 20 ? ", …" : "")
+                            + " — call analyze_code again with symbol=<method> for one)").AppendLine();
+        }
+
         if (showCallers)
         {
             sb.AppendLine();
             sb.AppendLine("### Callers");
             sb.AppendLine();
-            coverage = AppendCallers(sb, methods, rootDir, ext, filePath, ct);
+            var callerBlocks = new List<(string Name, string Text)>();
+            coverage = AppendCallers(callerBlocks, methods, rootDir, ext, filePath, ct);
+            AppendBlocks(callerBlocks, showCallees ? room * 2 / 5 : room);
         }
 
         if (showCallees)
@@ -158,14 +182,18 @@ internal class TraceDependencyTool : ITool
             sb.AppendLine("### Callees");
             sb.AppendLine();
 
+            var calleeBlocks = new List<(string Name, string Text)>();
             foreach (var m in methods)
             {
                 ct.ThrowIfCancellationRequested();
-                sb.AppendLine($"▶ **{m.Name}**{m.Signature}  *(line {m.Line})*");
+                var block = new StringBuilder();
+                block.AppendLine($"▶ **{m.Name}**{m.Signature}  *(line {m.Line})*");
                 var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { m.Name };
-                AppendCalleeTree(sb, m, filePath, index, indexCoverage.IsIncomplete, depth, 1, visited, "  ");
-                sb.AppendLine();
+                AppendCalleeTree(block, m, filePath, index, indexCoverage.IsIncomplete, depth, 1, visited, "  ");
+                block.AppendLine();
+                calleeBlocks.Add((m.Name, block.ToString()));
             }
+            AppendBlocks(calleeBlocks, showCallers ? room * 3 / 5 : room);
         }
 
         // ── Summary ───────────────────────────────────────────────────────────
@@ -256,7 +284,7 @@ internal class TraceDependencyTool : ITool
     /// <summary>Appends the caller section and returns how much of the tree it actually scanned —
     /// a capped scan must be reported, never passed off as exhaustive.</summary>
     private static ScanCoverage AppendCallers(
-        StringBuilder    sb,
+        List<(string Name, string Text)> blocks,
         List<MethodInfo> targets,
         string           rootDir,
         string           ext,
@@ -302,6 +330,7 @@ internal class TraceDependencyTool : ITool
 
         foreach (var t in targets)
         {
+            var sb = new StringBuilder();
             sb.AppendLine($"▶ **{t.Name}**() ← called by:");
             if (callerMap.TryGetValue(t.Name, out var callers) && callers.Count > 0)
                 foreach (var (caller, relFile, line) in callers.OrderBy(x => x.relFile).ThenBy(x => x.line))
@@ -309,6 +338,7 @@ internal class TraceDependencyTool : ITool
             else
                 sb.AppendLine("  *(no callers found in scanned files)*");
             sb.AppendLine();
+            blocks.Add((t.Name, sb.ToString()));
         }
 
         return coverage;

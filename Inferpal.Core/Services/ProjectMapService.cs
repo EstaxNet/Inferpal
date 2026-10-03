@@ -53,6 +53,10 @@ internal sealed class ProjectMapService
     /// <summary>Clears the cache (e.g., after a new file is added).</summary>
     public void Invalidate() => _cache.Clear();
 
+    /// <summary>What each of the two long sections (namespaces, dependencies) may take, so that the whole map fits one
+    /// tool result in the context.</summary>
+    internal const int SectionBudgetChars = 2_400;
+
     // ── Core builder ──────────────────────────────────────────────────────────
 
     private static async Task<string> BuildMapAsync(string root, CancellationToken ct)
@@ -147,14 +151,35 @@ internal sealed class ProjectMapService
         sb.AppendLine($"📦 NAMESPACES  ({nsFiles.Count} total)");
         sb.AppendLine(new string('─', 66));
 
-        foreach (var (ns, flist) in nsFiles.OrderBy(kv => kv.Key))
+        // ⚠ The map reaches the model as ONE tool result, and the loop cuts a longer one in its middle: on a solution
+        // of a hundred namespaces these two sections were forty thousand characters, and the map arrived as its first
+        // and last screens. Each keeps its largest namespaces within a budget, in name order, and says what it left.
+        string NamespaceLine(string ns, List<string> flist)
         {
             var sample = flist
                 .Take(3)
                 .Select(Path.GetFileName)
                 .Aggregate((a, b) => $"{a}, {b}");
             var more = flist.Count > 3 ? $" +{flist.Count - 3} more" : "";
-            sb.AppendLine($"  {ns,-42} {flist.Count,3} file(s)   {sample}{more}");
+            return $"  {ns,-42} {flist.Count,3} file(s)   {sample}{more}";
+        }
+
+        var shownNs = new HashSet<string>(StringComparer.Ordinal);
+        var nsUsed  = 0;
+        foreach (var (ns, flist) in nsFiles.OrderByDescending(kv => kv.Value.Count).ThenBy(kv => kv.Key, StringComparer.Ordinal))
+        {
+            var length = NamespaceLine(ns, flist).Length + 1;
+            if (shownNs.Count > 0 && nsUsed + length > SectionBudgetChars) break;
+            shownNs.Add(ns);
+            nsUsed += length;
+        }
+        foreach (var (ns, flist) in nsFiles.Where(kv => shownNs.Contains(kv.Key)).OrderBy(kv => kv.Key))
+            sb.AppendLine(NamespaceLine(ns, flist));
+        if (shownNs.Count < nsFiles.Count)
+        {
+            var hiddenFiles = nsFiles.Where(kv => !shownNs.Contains(kv.Key)).Sum(kv => kv.Value.Count);
+            sb.AppendLine($"  … +{nsFiles.Count - shownNs.Count} smaller namespace(s) not listed ({hiddenFiles} file(s)) — "
+                        + "list_files on a folder shows its files");
         }
 
         // ── Dependency edges ─────────────────────────────────────────────────
@@ -164,15 +189,25 @@ internal sealed class ProjectMapService
 
         // Filter to project-internal namespaces only
         var knownNs = new HashSet<string>(nsFiles.Keys, StringComparer.Ordinal);
-        foreach (var (ns, usings) in usingsByNs.OrderBy(kv => kv.Key))
+        const int MaxImportsPerLine = 6;
+        var depsUsed = 0;
+        var depsLeft = 0;
+        // The namespaces listed above, and within the same kind of budget.
+        foreach (var (ns, usings) in usingsByNs.Where(kv => shownNs.Contains(kv.Key)).OrderBy(kv => kv.Key))
         {
             var internal_ = usings
                 .Where(u => knownNs.Any(k => u.StartsWith(k, StringComparison.Ordinal)))
                 .OrderBy(u => u)
                 .ToList();
-            if (internal_.Count > 0)
-                sb.AppendLine($"  {ns,-42} → {string.Join(", ", internal_)}");
+            if (internal_.Count == 0) continue;
+            var line = $"  {ns,-42} → {string.Join(", ", internal_.Take(MaxImportsPerLine))}"
+                     + (internal_.Count > MaxImportsPerLine ? $" +{internal_.Count - MaxImportsPerLine} more" : "");
+            if (depsUsed > 0 && depsUsed + line.Length + 1 > SectionBudgetChars) { depsLeft++; continue; }
+            sb.AppendLine(line);
+            depsUsed += line.Length + 1;
         }
+        if (depsLeft > 0)
+            sb.AppendLine($"  … +{depsLeft} namespace(s) not listed — the imports of a file are at its top (read_file)");
 
         // ── Type inventory ───────────────────────────────────────────────────
         sb.AppendLine();

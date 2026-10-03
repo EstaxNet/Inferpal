@@ -142,6 +142,18 @@ internal class SearchInFilesTool : ITool
         // CAP was not, and it is the one that shapes a conclusion — a model asking "where is this
         // used?" reads exactly a hundred lines as the whole list and refactors on it.
         var notes = new System.Text.StringBuilder();
+        // What reaches the model is what fits its context: past that the loop would cut the MIDDLE of the matches.
+        var shown = ToolOutputBudget.LinesThatFit(results);
+        if (shown < results.Count)
+        {
+            // Each result starts with its relative path and a colon ("src/a.cs:12: …", "img.bin: binary file matches").
+            var elsewhere = results.Skip(shown).Select(r => r[..Math.Max(0, r.IndexOf(':'))])
+                                   .Where(f => f.Length > 0).Distinct().ToList();
+            notes.Append($"\n(showing the first {shown} of {results.Count} match(es) found — the rest would not fit the "
+                       + $"context; they are in: {string.Join(", ", elsewhere.Take(20))}"
+                       + (elsewhere.Count > 20 ? $", +{elsewhere.Count - 20} more file(s)" : "")
+                       + " — search those files, or narrow the pattern)");
+        }
         if (results.Count >= MaxResults)
             notes.Append($"\n(stopped at the first {MaxResults} match(es) — narrow the path or the "
                        + "pattern to see the rest; this is NOT the complete list)");
@@ -157,7 +169,7 @@ internal class SearchInFilesTool : ITool
         if (!singleFile && WorkspaceScan.FirstWalkGap(path, root) is { } gap)
             notes.Append($"\n({gap.Sentence()})");
 
-        return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results)) + notes);
+        return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results.Take(shown))) + notes);
     }
 
     /// <summary>Largest file read line by line — past it the file is skipped and counted.</summary>

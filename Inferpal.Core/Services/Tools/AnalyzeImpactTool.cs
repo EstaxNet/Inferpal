@@ -289,6 +289,19 @@ internal class AnalyzeImpactTool : ITool
         if (api.Namespace is not null)
             sb.AppendLine($"  📦 namespace `{api.Namespace}`");
 
+        // ⚠ The lists below are budgeted: the report reaches the model as ONE tool result, and the loop cuts a longer
+        // one in its middle — for a file a hundred others use, Layer 2 and the entry points vanished entirely and the
+        // tests were cut to their last lines. The counts in the headings stay complete; each list says what it left.
+        var semanticText = semantic is not null ? RenderSemantic(semantic, symbol!) : string.Empty;
+        var room   = Math.Max(1_200, ToolOutputBudget.ListChars - sb.Length - semanticText.Length - 1_200);
+        void AppendCapped(List<string> lines, double share)
+        {
+            var shown = ToolOutputBudget.LinesThatFit(lines, (int)(room * share));
+            foreach (var line in lines.Take(shown)) sb.AppendLine(line);
+            if (shown < lines.Count)
+                sb.AppendLine($"  … +{lines.Count - shown} more not listed (the count above is complete)");
+        }
+
         // Layer 1
         sb.AppendLine();
         sb.AppendLine($"## Layer 1 · Direct dependants  ({layer1.Count})");
@@ -298,6 +311,7 @@ internal class AnalyzeImpactTool : ITool
         }
         else
         {
+            var l1Lines = new List<string>();
             foreach (var d in layer1.OrderBy(d => d.Role).ThenBy(d => d.RelPath))
             {
                 var icon  = RoleIcon(d.Role);
@@ -311,8 +325,9 @@ internal class AnalyzeImpactTool : ITool
                 var how   = d.DependencyKind != DependencyKind.Uses
                     ? $"  [{d.DependencyKind}]"
                     : "";
-                sb.AppendLine($"  {icon} {d.RelPath}{badge}{how}{refs}");
+                l1Lines.Add($"  {icon} {d.RelPath}{badge}{how}{refs}");
             }
+            AppendCapped(l1Lines, 0.45);
         }
         if (importersNotMentioning > 0)
             sb.AppendLine($"  *(+{importersNotMentioning} file(s) import {fileName} without mentioning `{symbol}` — not counted at the symbol grain)*");
@@ -340,16 +355,18 @@ internal class AnalyzeImpactTool : ITool
             }
             else
             {
+                var l2Lines = new List<string>();
                 foreach (var d in transitive.Take(MaxTransitiveFiles).OrderBy(d => d.RelPath))
                 {
                     var icon = RoleIcon(d.Role);
                     var via  = d.ViaFile is not null
                         ? $"  via `{Path.GetFileName(d.ViaFile)}`"
                         : "";
-                    sb.AppendLine($"  {icon} {d.RelPath}{via}");
+                    l2Lines.Add($"  {icon} {d.RelPath}{via}");
                 }
                 if (transitive.Count > MaxTransitiveFiles)
-                    sb.AppendLine($"  … and {transitive.Count - MaxTransitiveFiles} more");
+                    l2Lines.Add($"  … and {transitive.Count - MaxTransitiveFiles} more");
+                AppendCapped(l2Lines, 0.2);
             }
         }
 
@@ -362,8 +379,9 @@ internal class AnalyzeImpactTool : ITool
         }
         else
         {
-            foreach (var ep in entryPoints.OrderBy(d => d.RelPath))
-                sb.AppendLine($"  {RoleIcon(ep.Role)} {ep.EntryPointName ?? Path.GetFileNameWithoutExtension(ep.RelPath)}   `{ep.RelPath}`");
+            AppendCapped(entryPoints.OrderBy(d => d.RelPath)
+                .Select(ep => $"  {RoleIcon(ep.Role)} {ep.EntryPointName ?? Path.GetFileNameWithoutExtension(ep.RelPath)}   `{ep.RelPath}`")
+                .ToList(), 0.1);
         }
 
         // Tests
@@ -372,11 +390,10 @@ internal class AnalyzeImpactTool : ITool
         if (tests.Count == 0)
             sb.AppendLine("  ⚠️  No test files detected — refactoring is higher risk");
         else
-            foreach (var t in tests.OrderBy(d => d.RelPath))
-                sb.AppendLine($"  🧪 {t.RelPath}");
+            AppendCapped(tests.OrderBy(d => d.RelPath).Select(t => $"  🧪 {t.RelPath}").ToList(), 0.25);
 
         // Exact references — the only section of this report that is not a heuristic.
-        if (semantic is not null) sb.Append(RenderSemantic(semantic, symbol!));
+        sb.Append(semanticText);
 
         // Blast radius summary
         sb.AppendLine();

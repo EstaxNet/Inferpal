@@ -70,9 +70,14 @@ internal class ListFilesTool : ITool
 
         var truncated = files.Count > limit;
         if (truncated) files.RemoveAt(files.Count - 1);
+        // What reaches the model is what fits its context: past that the loop would cut the MIDDLE of the listing.
+        var shown = ToolOutputBudget.LinesThatFit(files);
         // An empty listing is SAID: an empty tool result tells the model nothing, not even that nothing matched.
-        var result = files.Count == 0 ? Strings.NoResults : string.Join("\n", files);
-        if (truncated)
+        var result = files.Count == 0 ? Strings.NoResults : string.Join("\n", files.Take(shown));
+        if (shown < files.Count)
+            result += $"\n(showing the first {shown} of {files.Count}{(truncated ? "+" : "")} files — the rest would not "
+                    + "fit the context; narrow the path or pattern for them)";
+        else if (truncated)
             result += $"\n(showing first {limit} files — narrow the path or pattern for the rest)";
         // ⚠ The cap is not the only reason this listing is partial. A folder the walk could not list,
         // or one it will not follow because it is a link, contributes NOTHING and is absent from the

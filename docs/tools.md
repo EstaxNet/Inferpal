@@ -9,15 +9,15 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 |---|---|---|
 | `read_file` | `path`, `start_line?`, `end_line?` | Read a file; a long one comes back in pages of whole lines, each naming the `start_line` to read on. A binary file is named, not shown |
 | `write_file` | `path`, `content` | Write/overwrite a file. **Approval** + snapshot + Smart Fix |
-| `list_files` | `path`, `pattern?` | List files (glob, max 300, recursive) |
-| `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (max 100 results) |
+| `list_files` | `path`, `pattern?` | List files (glob, recursive; at most 300, fewer when their paths would not fit the context — the answer says how many it left out) |
+| `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (at most 100 matches, fewer when they would not fit the context — the answer names the files of those it left out) |
 | `run_command` | `command?`, `working_directory?`, `background?`, `action?`, `id?` | Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout. `background=true` starts a detached job and returns its `id`; `action` `poll` / `stop` / `list` reads, ends or lists jobs (`command` is required otherwise) |
 | `apply_diff` | `path`, `old_content`, `new_content`, `occurrence?` | Find-and-replace (exact, then whitespace-tolerant fuzzy fallback). `occurrence`: `unique` (default) / `first` / `all`. **Approval** (shows the diff) + snapshot + Smart Fix |
 | `apply_edits` | `edits[]` (`path`, `old_content`, `new_content`, `occurrence?`) | **Atomic** multi-file edit — all edits resolved first; nothing is written unless every edit matches. One approval (combined diff) + snapshot per file + Smart Fix |
 | `restore_file` | `path`, `snapshot?` | Restore a file from `.inferpal/history/` |
 | `delete_file` | `path` | Delete a file. **Approval** + snapshot before deletion |
 | `get_diagnostics` | `path?` | `dotnet build` → MSBuild errors/warnings (90 s timeout) |
-| `get_active_document` | — | Path + content of the file open in VS |
+| `get_active_document` | — | Path + content of the file open in the editor; a long one comes back as its first page, naming the `start_line` from which `read_file` reads on |
 | `get_open_editors` | — | All open files, active one marked `[active]` |
 | `get_git_status` | `path?`, `include_diff?`, `diff_path?` | `git status`, last 20 commits, branches, diff summary; the full diff is capped, and a cut names the files it left out — `diff_path` reads one of them |
 | `get_debugger_state` | — | Break state when paused: reason, exception, call stack (`file:line`), locals (backs `@debugger`) |
@@ -33,7 +33,7 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `analyze_code` | `mode`, … | Unified analysis facade (see below) |
 | `search_codebase` | `query`, `top_k?` | Semantic search over the indexed project. Offered to the model only while there is an index, or one being built: with semantic search off and no index, the model uses `search_in_files` instead |
 | `search_docs` | `query`, `top_k?` | Semantic search over `@Docs` external documentation. Offered once some documentation is indexed (`/docs add`) |
-| `generate_project_map` | `refresh?` | Namespace tree, types, dependencies, hotspots (cached for two minutes; `refresh=true` rescans) |
+| `generate_project_map` | `refresh?` | Namespace tree, types, dependencies, hotspots — on a large solution the largest namespaces, the rest counted (cached for two minutes; `refresh=true` rescans) |
 | `rename_symbol` | `old_name`, `new_name`, `root?`, `file_pattern?`, `dry_run?`, `declaring_file?`, `declaring_line?` | Project-wide rename. On C# it renames the **symbol**, not the spelling: a method called `Handle` is renamed without touching the dozen unrelated `Handle` methods that share the name (compiler-resolved; falls back to syntax when no workspace is known). When the name designates several symbols, it lists them and renames nothing until `declaring_file` (and `declaring_line`) says which one. Other languages use a word-boundary regex. All-or-nothing: a file that cannot be written puts every other one back unchanged. **Approval** + snapshot; `dry_run=true` by default |
 
 ### `analyze_code` modes

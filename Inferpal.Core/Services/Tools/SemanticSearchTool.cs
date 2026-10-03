@@ -153,6 +153,9 @@ internal sealed class SemanticSearchTool : ITool
         sb.AppendLine($"*Index: {_index.ChunkCount} chunks — {_index.Status}*");
         sb.AppendLine();
 
+        var bodies    = new StringBuilder();
+        var locations = new StringBuilder();
+        var firstByLocation = 0;
         for (int i = 0; i < results.Count; i++)
         {
             var hit = results[i];
@@ -164,17 +167,26 @@ internal sealed class SemanticSearchTool : ITool
             if (RagResultPresentation.ShowsScore(hit.IsCosine, hit.Score))
                 header += $" · score {hit.Score:F3}";
 
-            sb.AppendLine(header);
-            sb.AppendLine("```");
-
             // Truncate very long chunks to avoid overwhelming the context window
             var display = chunk.Content.Length > 900
                 ? SafeTruncate.Truncate(chunk.Content, 900) + "\n…(truncated)"
                 : chunk.Content;
-            sb.AppendLine(display);
-            sb.AppendLine("```");
-            sb.AppendLine();
+            var entry = $"{header}\n```\n{display}\n```\n\n";
+
+            // In rank order: once one body does not fit, the rest go by location.
+            if (firstByLocation == 0 && (i == 0 || bodies.Length + entry.Length <= RankedResultBudget.BodyChars))
+                bodies.Append(entry);
+            else
+            {
+                if (firstByLocation == 0) firstByLocation = i + 1;
+                locations.AppendLine($"- {header[4..]}");
+            }
         }
+
+        if (firstByLocation > 0)
+            sb.AppendLine(RankedResultBudget.Note(firstByLocation, results.Count, "read them with read_file")).AppendLine();
+        sb.Append(bodies);
+        sb.Append(locations);
 
         return ClampedArgument.Above(topKNotice, behind + sb.ToString().TrimEnd());
     }
