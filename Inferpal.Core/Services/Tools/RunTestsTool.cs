@@ -9,6 +9,8 @@ namespace Inferpal.Services.Tools;
 internal class RunTestsTool : ITool
 {
     private const int DefaultTimeoutSeconds = 120;
+    private const int MinTimeoutSeconds     = 1;
+    private const int MaxTimeoutSeconds     = 1_800;
     private const int MaxRawChars           = 6000;
 
     private readonly Func<string?> _getRoot;
@@ -46,12 +48,12 @@ internal class RunTestsTool : ITool
             runner = new
             {
                 type        = "string",
-                description = "Force a runner: 'dotnet', 'pytest', 'npm', 'cargo', or 'go'. Default: 'auto' (detected from project files)."
+                description = "Force a runner: 'dotnet', 'pytest', 'npm' (also 'jest', 'vitest', 'mocha', 'node'), 'cargo', or 'go'. Default: 'auto' (detected from project files)."
             },
             timeout_seconds = new
             {
                 type        = "integer",
-                description = $"Max seconds to wait. Default: {DefaultTimeoutSeconds}."
+                description = $"Max seconds to wait, {MinTimeoutSeconds}-{MaxTimeoutSeconds}. Default: {DefaultTimeoutSeconds}."
             }
         },
         required = Array.Empty<string>(),
@@ -64,7 +66,13 @@ internal class RunTestsTool : ITool
         var path    = string.IsNullOrWhiteSpace(rawPath) ? null : PathSanitizer.Sanitize(rawPath, root);
         var filter  = args.Trimmed("filter");
         var forced  = args.Keyword("runner");
-        var timeout = args.Int("timeout_seconds", DefaultTimeoutSeconds);
+        // ⚠ Bounded, and SAID: 0 — "no limit" to many a model — cancelled the run at once, reported as "stopped at its
+        // budget of 0 s", and a negative value threw. There is no unlimited run: 0 or less takes the maximum.
+        var asked = args.Int("timeout_seconds", DefaultTimeoutSeconds);
+        var (timeout, timeoutNotice) = asked <= 0
+            ? (MaxTimeoutSeconds, (string?)$"Note: 'timeout_seconds' was {asked}; there is no unlimited run, so this one "
+                                          + $"uses the maximum, {MaxTimeoutSeconds}.")
+            : ClampedArgument.Read(args, "timeout_seconds", DefaultTimeoutSeconds, MinTimeoutSeconds, MaxTimeoutSeconds);
 
         // A path that names nothing is a mistyped path, never "no path": falling back to the root runs the whole suite,
         // read as the result for the file that was asked for.
@@ -72,7 +80,12 @@ internal class RunTestsTool : ITool
             return $"{PathNotFound}: {path}. Check the path, or omit it to run the whole suite.";
 
         var workDir = ResolveWorkDir(path, root);
-        var runner  = (forced is null or "auto") ? DetectRunner(workDir, path, root) : forced;
+        // ⚠ A runner the model named and this tool does not know is NAMED, never answered "no test runner detected —
+        // set 'runner' explicitly": that is the remedy it just applied, and it reads "this project has no tests".
+        if (forced is not null and not "auto" && ForcedRunner(forced) is null)
+            return $"Unknown runner '{forced}'. Use one of: auto, dotnet, pytest, npm, cargo, go — jest, vitest, mocha "
+                 + "and node --test run through npm.";
+        var runner  = (forced is null or "auto") ? DetectRunner(workDir, path, root) : ForcedRunner(forced)!;
 
         // ⚠ The budget is decorated HERE, after the parser, never inside the log it reads: the
         // parsers compose their verdict line from summaries, so a sentence buried in the raw text
@@ -87,7 +100,7 @@ internal class RunTestsTool : ITool
             "go"     => await RunGoAsync(workDir, path, filter, budget, ct),
             _        => NoRunnerDetected(workDir, root),
         };
-        return budget.Wrap(report);
+        return ClampedArgument.Above(timeoutNotice, budget.Wrap(report));
     }
 
     // ── Runner implementations ─────────────────────────────────────────────────
@@ -1046,6 +1059,15 @@ internal class RunTestsTool : ITool
     /// ⚠ The detector is only asked on this branch, so a workspace that resolves its runner pays
     /// nothing for it.
     /// </remarks>
+    /// <summary>The runner a forced value names: one of the five, or a JavaScript framework this tool runs through npm
+    /// (the filter's description names them) — <c>null</c> for anything else.</summary>
+    internal static string? ForcedRunner(string forced) => forced switch
+    {
+        "dotnet" or "pytest" or "npm" or "cargo" or "go" => forced,
+        "jest" or "vitest" or "mocha" or "node"          => "npm",
+        _                                                => null,
+    };
+
     private static string NoRunnerDetected(string workDir, string? root)
     {
         const string message = "No test runner detected. Provide 'path' to a project, or set "

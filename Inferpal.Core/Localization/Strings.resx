@@ -509,7 +509,6 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Impact Analysis — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>No public types or exported symbols found in {0}.</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>Symbol '{0}' not found in the public API of {1}.</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 Blast radius: {0} direct · {1} transitive · {2} tests · {3} entry points</value></data>
 
   <!-- trace_dependency tool -->

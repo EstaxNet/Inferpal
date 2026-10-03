@@ -508,7 +508,6 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>영향 분석 — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>{0}에서 공개 타입 또는 내보낸 심볼을 찾을 수 없습니다.</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>심볼 '{0}'이(가) {1}의 공개 API에 없습니다.</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 영향 범위: {0} 직접 · {1} 간접 · {2} 테스트 · {3} 진입점</value></data>
 
   <!-- trace_dependency tool -->

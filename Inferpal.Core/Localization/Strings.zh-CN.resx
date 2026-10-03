@@ -508,7 +508,6 @@
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>影响分析 — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>在 {0} 中未找到公共类型或导出符号。</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>在 {1} 的公共 API 中未找到符号"{0}"。</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 影响范围：{0} 个直接 · {1} 个间接 · {2} 个测试 · {3} 个入口点</value></data>
 
   <!-- trace_dependency tool -->

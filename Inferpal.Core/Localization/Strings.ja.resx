@@ -508,7 +508,6 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>影響分析 — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>{0} に公開型またはエクスポートされたシンボルが見つかりません。</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>シンボル '{0}' が {1} の公開 API に見つかりません。</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 影響範囲: {0} 直接 · {1} 間接 · {2} テスト · {3} エントリポイント</value></data>
 
   <!-- trace_dependency tool -->

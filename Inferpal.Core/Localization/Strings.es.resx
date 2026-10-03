@@ -508,7 +508,6 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Análisis de impacto — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>No se encontraron tipos públicos ni símbolos exportados en {0}.</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>Símbolo '{0}' no encontrado en la API pública de {1}.</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 Radio de impacto: {0} directo(s) · {1} transitivo(s) · {2} test(s) · {3} punto(s) de entrada</value></data>
 
   <!-- trace_dependency tool -->

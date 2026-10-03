@@ -508,7 +508,6 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Analiza wpływu — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Nie znaleziono publicznych typów ani eksportowanych symboli w {0}.</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>Symbol '{0}' nie znaleziono w publicznym API pliku {1}.</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 Zasięg wpływu: {0} bezpośrednich · {1} pośrednich · {2} testów · {3} punktów wejścia</value></data>
 
   <!-- trace_dependency tool -->

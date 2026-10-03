@@ -508,7 +508,6 @@
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Анализ влияния — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Публичные типы или экспортируемые символы в {0} не найдены.</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>Символ '{0}' не найден в публичном API файла {1}.</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 Радиус поражения: {0} прямых · {1} транзитивных · {2} тест(ов) · {3} точек входа</value></data>
 
   <!-- trace_dependency tool -->

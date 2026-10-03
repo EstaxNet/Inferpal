@@ -508,7 +508,6 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Analisi d'impatto — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Nessun tipo pubblico o simbolo esportato trovato in {0}.</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>Simbolo '{0}' non trovato nell'API pubblica di {1}.</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 Raggio di impatto: {0} diretto/i · {1} transitivo/i · {2} test · {3} punto/i di ingresso</value></data>
 
   <!-- trace_dependency tool -->

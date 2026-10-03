@@ -20,6 +20,10 @@ internal class GetSolutionInfoTool : ITool
 
     // Solution folder pseudo-type — not a real project
 
+    /// <summary>What the header and the project blocks may take, and what the names of the projects left out may take.</summary>
+    private const int ProjectBlocksChars = 4_800;
+    private const int NamesChars         = 2_400;
+
     public string Name        => "get_solution_info";
     public string Description =>
         "Returns the structure of the .NET solution open in the workspace: solution name, projects with " +
@@ -94,43 +98,60 @@ internal class GetSolutionInfoTool : ITool
                 sb.AppendLine($"           {cause}");
         }
 
+        // ⚠ One block per project, then only the blocks that fit: the answer reaches the model as ONE tool result, and
+        // the loop cuts a longer one in its MIDDLE — eighty projects were 30 000 characters, and the projects in the
+        // middle of the solution vanished from a list that announced "Projects : 80". The rest are named.
+        var shownBlocks = 0;
+        var notShown    = new List<string>();
         foreach (var proj in contents.Projects)
         {
-            sb.AppendLine();
-            sb.AppendLine($"── {proj.Name}");
-            sb.AppendLine($"   File : {proj.RelativePath}");
+            var block = new StringBuilder();
+            block.AppendLine();
+            block.AppendLine($"── {proj.Name}");
+            block.AppendLine($"   File : {proj.RelativePath}");
             if (outside.Contains(proj))
+                block.AppendLine("   [outside the workspace root: the tools cannot read, search or edit it]");
+            else if (!File.Exists(proj.AbsolutePath))
+                block.AppendLine("   [project file not found]");
+            else
             {
-                sb.AppendLine("   [outside the workspace root: the tools cannot read, search or edit it]");
-                continue;
+                var info = await ReadProjectInfoAsync(proj.AbsolutePath, ct);
+
+                // ⚠ Same reading one level down: every field below is absent both when the project
+                // declares nothing and when the file could not be parsed. The second renders as a
+                // project with no framework and no dependencies at all — which is what the model uses
+                // to decide where code belongs and what it may already reference.
+                if (info.Unreadable is { } cause)
+                    block.AppendLine($"   [project file could not be read: {cause} — framework and references unknown]");
+                else
+                {
+                    if (info.TargetFramework is not null)
+                        block.AppendLine($"   Framework : {info.TargetFramework}");
+                    if (info.OutputType is not null)
+                        block.AppendLine($"   Output    : {info.OutputType}");
+                    if (info.ProjectRefs.Count > 0)
+                        block.AppendLine($"   Refs      : {string.Join(", ", info.ProjectRefs)}");
+                    if (info.Packages.Count > 0)
+                        block.AppendLine($"   Packages  : {string.Join(", ", info.Packages)}");
+                }
             }
 
-            if (!File.Exists(proj.AbsolutePath))
+            if (notShown.Count == 0 && (shownBlocks == 0 || sb.Length + block.Length <= ProjectBlocksChars))
             {
-                sb.AppendLine("   [project file not found]");
-                continue;
+                sb.Append(block);
+                shownBlocks++;
             }
+            else notShown.Add(proj.Name);
+        }
 
-            var info = await ReadProjectInfoAsync(proj.AbsolutePath, ct);
-
-            // ⚠ Same reading one level down: every field below is absent both when the project
-            // declares nothing and when the file could not be parsed. The second renders as a
-            // project with no framework and no dependencies at all — which is what the model uses
-            // to decide where code belongs and what it may already reference.
-            if (info.Unreadable is { } cause)
-            {
-                sb.AppendLine($"   [project file could not be read: {cause} — framework and references unknown]");
-                continue;
-            }
-
-            if (info.TargetFramework is not null)
-                sb.AppendLine($"   Framework : {info.TargetFramework}");
-            if (info.OutputType is not null)
-                sb.AppendLine($"   Output    : {info.OutputType}");
-            if (info.ProjectRefs.Count > 0)
-                sb.AppendLine($"   Refs      : {string.Join(", ", info.ProjectRefs)}");
-            if (info.Packages.Count > 0)
-                sb.AppendLine($"   Packages  : {string.Join(", ", info.Packages)}");
+        if (notShown.Count > 0)
+        {
+            var names = ToolOutputBudget.LinesThatFit(notShown, NamesChars);
+            sb.AppendLine();
+            sb.AppendLine($"(+{notShown.Count} more project(s), named only — read a project file (its path is in the "
+                        + $"solution) with read_file for its framework, references and packages: "
+                        + string.Join(", ", notShown.Take(names))
+                        + (names < notShown.Count ? $", … +{notShown.Count - names} more" : "") + ")");
         }
 
         return sb.ToString().TrimEnd();

@@ -47,7 +47,7 @@ internal sealed class AnalyzeCodeTool : ITool
             mode      = new { type = "string",  description = "Which analysis to run: 'callgraph' | 'impact' | 'nexus'." },
             path      = new { type = "string",  description = "Absolute path to the source file. Required for 'callgraph' and 'impact'." },
             root      = new { type = "string",  description = "Root directory to scan. Used by 'nexus'; defaults to the solution root." },
-            symbol    = new { type = "string",  description = "Focus on a single method/type name. Used by 'callgraph' and 'impact'." },
+            symbol    = new { type = "string",  description = "'callgraph': one method name. 'impact': one type declared in the C# file (a class, interface, record…), not a method — or, in TS/JS/Python, one name the file exports." },
             // ⚠ Interpolated, never written out: this is the ONLY default this repository states
             // to the model whose value lives in another file, and a stated default stops drifting
             // only once it is read from the constant that provides it (the form `run_tests` uses

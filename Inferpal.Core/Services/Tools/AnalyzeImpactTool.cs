@@ -189,6 +189,7 @@ internal class AnalyzeImpactTool : ITool
         // Filter to a specific symbol if requested
         if (!string.IsNullOrWhiteSpace(symbol))
         {
+            var declared = api.Types.Select(t => t.Name).Concat(api.ExportedNames).Distinct().ToList();
             api = api with
             {
                 Types = api.Types
@@ -203,7 +204,7 @@ internal class AnalyzeImpactTool : ITool
                 if (api.ExportedNames.Any(n => n.Equals(symbol, StringComparison.OrdinalIgnoreCase)))
                     api = api with { ExportedNames = [symbol!] };
                 else
-                    return Strings.ImpactSymbolNotFound(symbol!, fileName);
+                    return SymbolNotDeclared(symbol!, fileName, declared);
             }
         }
 
@@ -408,6 +409,19 @@ internal class AnalyzeImpactTool : ITool
 
         return ClampedArgument.Above(depthNotice, sb.ToString().TrimEnd());
     }
+
+    /// <summary>
+    /// The refusal of a <c>symbol</c> the file does not declare: the names it does, and where a method's question goes.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ It corrects the model's call, so it is English, and it names what to call instead: "not found in the public
+    /// API" alone was a dead end — and the name a model reaches for first is a METHOD's, which this mode does not take
+    /// and <c>callgraph</c> does.
+    /// </remarks>
+    internal static string SymbolNotDeclared(string symbol, string fileName, IReadOnlyList<string> declared) =>
+        $"'{symbol}' is not a type declared in {fileName}"
+        + (declared.Count > 0 ? $" — it declares: {string.Join(", ", declared.Take(20))}{(declared.Count > 20 ? ", …" : "")}" : "")
+        + $". 'symbol' takes one of those type names; for the callers of a method, use mode='callgraph' with symbol='{symbol}'.";
 
     // ── Bounded, cached scan regexes ──────────────────────────────────────────
     // The static patterns of this file are carefully budgeted, but the per-candidate × per-type
@@ -638,9 +652,11 @@ internal class AnalyzeImpactTool : ITool
             @"(?m)^\s*namespace\s+([\w\.]+)\s*[;{]",
             RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
-        // Public type declarations
+        // Type declarations visible outside their file: `public`, `internal`, or no access modifier at all — `class
+        // Program`, `static class Extensions`, the second file of a `partial class` are internal by default, and required
+        // here they made the whole report "no public API".
         private static readonly Regex _typeDecl = new(
-            @"(?m)^\s*(?:(?:public|internal)\s+)" +
+            @"(?m)^\s*(?:(?:public|internal)\s+)?" +
             @"(?:(abstract|sealed|static|readonly|partial)\s+)*" +
             @"(class|interface|enum|struct|record)\s+([\w]+)",
             RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);

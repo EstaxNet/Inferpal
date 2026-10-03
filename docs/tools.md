@@ -19,14 +19,14 @@ The agent completes tasks by calling tools. There are **28 built-in tools**, plu
 | `get_diagnostics` | `path?` | `dotnet build` → MSBuild errors/warnings (90 s timeout) |
 | `get_active_document` | — | Path + content of the file open in the editor; a long one comes back as its first page, naming the `start_line` from which `read_file` reads on |
 | `get_open_editors` | — | All open files, active one marked `[active]` |
-| `get_git_status` | `path?`, `include_diff?`, `diff_path?` | `git status`, last 20 commits, branches, diff summary; the full diff is capped, and a cut names the files it left out — `diff_path` reads one of them |
+| `get_git_status` | `path?`, `include_diff?`, `diff_path?` | `git status`, last 20 commits, branches (most recent first, the current one always shown), diff summary with its total; long sections keep what fits and count the rest. The full diff is capped, and a cut names the files it left out — `diff_path` reads one of them |
 | `get_debugger_state` | — | Break state when paused: reason, exception, call stack (`file:line`), locals (backs `@debugger`) |
 | `debug_control` | `action`, `file?`, `line?` | Drives the debugger: `set_breakpoint` / `clear_breakpoint` / `list_breakpoints` / `start` / `continue` / `step_over` / `step_into` / `step_out` / `stop`. **Approval on `start` only** — it runs your program; the steps that follow observe an execution you already consented to. Finite step budget, and running out is reported. The breakpoints it sets are removed when the session stops; yours are never removed |
 | `debug_inspect` | `action?` (`state` \| `evaluate`), `expression?` | Reads a paused debugger: stop reason, user call stack, locals, and arbitrary expression evaluation in the current frame. Values are the debugger's own rendering — read, never parsed |
-| `run_tests` | `path?`, `filter?`, `runner?`, `timeout_seconds?` | `dotnet test` / `pytest` (under the project's `.venv` or `venv` when there is one; a test file runs alone, from its project's root) / `npm test` / `cargo test` / `go test` (auto-detected; a `path` that does not exist is refused) |
+| `run_tests` | `path?`, `filter?`, `runner?`, `timeout_seconds?` | `dotnet test` / `pytest` (under the project's `.venv` or `venv` when there is one; a test file runs alone, from its project's root) / `npm test` / `cargo test` / `go test` (auto-detected; a `path` that does not exist is refused). `runner` also takes `jest`, `vitest`, `mocha`, `node` (run through npm); an unknown one is refused by name. `timeout_seconds` 1–1800 (0 or less = the maximum: there is no unlimited run), the clamp said |
 | `fetch_url` | `url`, `max_chars?`, `start_char?` | Fetch a page as text; a long one comes back in windows, each naming the `start_char` to read on. **Approval**, SSRF-guarded |
 | `web_search` | `query`, `max_results?` | DuckDuckGo search. **Approval** |
-| `get_solution_info` | `path?` | Parse `.sln` / `.csproj` — projects, frameworks, packages |
+| `get_solution_info` | `path?` | Parse `.sln` / `.csproj` — projects, frameworks, packages; a large solution details the projects that fit and names the rest |
 | `insert_at_cursor` | `text` | Insert text at the cursor in the active editor |
 | `replace_selection` | `text` | Replace the active selection |
 | `update_memory` | `content?`, `mode?` | Update `.inferpal/memory.md` (`append` default / `replace` / `clear`, which takes no `content`). Writing it changes the system prompt of every later session, so the prompt is **always** shown even if a rule would allow it + snapshot; a snapshot that cannot be saved leaves the memory untouched |
@@ -44,7 +44,7 @@ selected by `mode`:
 | `mode` | Does |
 |---|---|
 | `callgraph` | Methods in a file and what they call (`direction`: callees / callers / both) |
-| `impact` | Blast radius of changing a file — dependent files, tests, entry points. When you pass `symbol` on a **C#** file, the report adds an **exact references** section resolved by the compiler and labelled as such: the other sections match names, this one resolves them (on this code base a name shared by a dozen types matched 61 places for 3 real uses) |
+| `impact` | Blast radius of changing a file — dependent files, tests, entry points. `symbol` names one **type** the file declares (a method name is refused, naming the types and pointing to `callgraph`). When you pass `symbol` on a **C#** file, the report adds an **exact references** section resolved by the compiler and labelled as such: the other sections match names, this one resolves them (on this code base a name shared by a dozen types matched 61 places for 3 real uses) |
 | `nexus` | Cross-language bridges between C# and TS/JS (REST endpoints, JS interop, SignalR) |
 
 Other parameters, all optional: `path?`, `root?`, `symbol?`, `depth?`, `direction?`, `focus?`, `bridges?`.

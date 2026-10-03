@@ -508,7 +508,6 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Impaktanalyse — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Keine öffentlichen Typen oder exportierten Symbole in {0} gefunden.</value></data>
-  <data name="ImpactSymbolNotFound" xml:space="preserve"><value>Symbol '{0}' in der öffentlichen API von {1} nicht gefunden.</value></data>
   <data name="ImpactFooter"         xml:space="preserve"><value>📊 Blast Radius: {0} direkt · {1} transitiv · {2} Tests · {3} Einstiegspunkte</value></data>
 
   <!-- trace_dependency tool -->

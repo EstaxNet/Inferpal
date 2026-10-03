@@ -20,6 +20,11 @@ internal class GetGitStatusTool : ITool
 
     private const int MaxDiffChars = 6000;
 
+    /// <summary>What the diff may take after the sections above it: the whole report must fit one tool result, or the
+    /// loop cuts the diff in its middle under its own, unnamed marker.</summary>
+    private static int DiffBudget(int reportSoFar) =>
+        Math.Clamp(ToolOutputBudget.ListChars - reportSoFar - 400, 1_500, MaxDiffChars);
+
     public string Name => "get_git_status";
 
     public string Description =>
@@ -105,7 +110,7 @@ internal class GetGitStatusTool : ITool
         sb.AppendLine();
 
         sb.AppendLine("=== git status ===");
-        sb.AppendLine(status.Or("(empty)"));
+        sb.AppendLine(Fit(status.Or("(empty)"), StatusChars, "status line(s)", keepLast: false));
         sb.AppendLine();
 
         // ── log ───────────────────────────────────────────────────────────────
@@ -119,10 +124,20 @@ internal class GetGitStatusTool : ITool
         sb.AppendLine();
 
         // ── branches ─────────────────────────────────────────────────────────
-        var branches = await GitAsync("branch -a", root, ct);
-        sb.AppendLine("=== git branch -a ===");
+        // Most recently committed first: past the budget, the branches left out are the stale ones. The current one
+        // (marked `*`) is always kept, wherever the date puts it.
+        var branches = await GitAsync("branch -a --sort=-committerdate", root, ct);
+        sb.AppendLine("=== git branch -a (most recent first) ===");
         // Gated: unlike `log`, this one answers 0 on a repository without commits.
-        sb.AppendLine(branches.OrFailure("branch -a", "(no branches)"));
+        var branchText = branches.OrFailure("branch -a", "(no branches)");
+        if (branches.Ok && branches.Output.Length > 0)
+        {
+            var lines   = branches.Output.Split('\n').Select(l => l.TrimEnd('\r')).ToList();
+            var current = lines.FindIndex(l => l.StartsWith('*'));
+            if (current > 0) { var line = lines[current]; lines.RemoveAt(current); lines.Insert(0, line); }
+            branchText = Fit(string.Join('\n', lines), BranchChars, "branch(es)", keepLast: false);
+        }
+        sb.AppendLine(branchText);
         sb.AppendLine();
 
         // ── diff stat ─────────────────────────────────────────────────────────
@@ -132,7 +147,10 @@ internal class GetGitStatusTool : ITool
 
         sb.AppendLine("=== diff summary (vs HEAD) ===");
         // The fallback is what covers the missing HEAD, so a failure of BOTH attempts is a real one.
-        sb.AppendLine(diffStat.OrFailure("diff --stat", "(nothing to diff)"));
+        // Its last line is the total ("N files changed, …"): kept whatever the budget drops.
+        sb.AppendLine(diffStat.Ok && diffStat.Output.Length > 0
+            ? Fit(diffStat.Output, DiffStatChars, "changed file(s) in this summary", keepLast: true)
+            : diffStat.OrFailure("diff --stat", "(nothing to diff)"));
 
         // ── full diff (optional) ──────────────────────────────────────────────
         if (includeDiff)
@@ -162,13 +180,36 @@ internal class GetGitStatusTool : ITool
             }
             else
             {
-                var (shown, note) = CutDiff(diff.Output, MaxDiffChars, restricted: diffPath is not null);
+                var (shown, note) = CutDiff(diff.Output, DiffBudget(sb.Length), restricted: diffPath is not null);
                 if (note is not null) sb.AppendLine(note);   // above the diff: it qualifies what follows
                 sb.AppendLine(shown);
             }
         }
 
         return sb.ToString().TrimEnd();
+    }
+
+    // ⚠ The report reaches the model as ONE tool result, and the loop cuts a longer one in its MIDDLE: with three
+    // hundred branches it was 25 000 characters, and the cut fell on the branches and the start of the diff summary —
+    // the section that says what changed. Each long section keeps what fits and counts the rest.
+    private const int StatusChars   = 1_800;
+    private const int BranchChars   = 1_200;
+    private const int DiffStatChars = 1_800;
+
+    /// <summary>The lines of <paramref name="text"/> that fit <paramref name="budget"/>, the rest counted — the last
+    /// line kept apart when it is a total.</summary>
+    internal static string Fit(string text, int budget, string what, bool keepLast)
+    {
+        var lines = text.Split('\n').Select(l => l.TrimEnd('\r')).ToList();
+        var last  = keepLast && lines.Count > 1 ? lines[^1] : null;
+        if (last is not null) lines.RemoveAt(lines.Count - 1);
+        var shown = ToolOutputBudget.LinesThatFit(lines, budget);
+        if (shown >= lines.Count) return text;
+
+        var kept = lines.Take(shown).ToList();
+        kept.Add($"… +{lines.Count - shown} more {what} not listed");
+        if (last is not null) kept.Add(last);
+        return string.Join('\n', kept);
     }
 
     private static readonly System.Text.RegularExpressions.Regex DiffFileHeader = new(

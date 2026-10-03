@@ -899,7 +899,6 @@ internal static class Strings
     // ── analyze_impact tool ───────────────────────────────────────────────────
     public static string ImpactHeader(string fileName)                          => string.Format(Get(nameof(ImpactHeader)),         fileName);
     public static string ImpactNoPublicApi(string fileName)                     => string.Format(Get(nameof(ImpactNoPublicApi)),    fileName);
-    public static string ImpactSymbolNotFound(string symbol, string fileName)   => string.Format(Get(nameof(ImpactSymbolNotFound)), symbol, fileName);
     public static string ImpactFooter(int direct, int transitive, int tests, int entries) =>
         string.Format(Get(nameof(ImpactFooter)), direct, transitive, tests, entries);
 
