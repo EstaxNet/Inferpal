@@ -542,8 +542,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         }
         catch (Exception ex)
         {
+            // The stream broke after the server had answered: it was reached, so not "cannot reach… check the URL".
             RecordFailure();
-            throw new AgentHttpException(Strings.MsgUnreachable(base_) + "\n" + ex.Message, isTimeout: false);
+            throw new AgentHttpException(Strings.MsgStreamDropped(base_) + "\n" + ex.Message, isTimeout: false);
         }
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.

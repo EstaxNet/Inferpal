@@ -194,6 +194,7 @@
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ 接続済み</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ 接続不可</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ 拒否 — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>処理中…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -231,6 +232,8 @@
   <data name="OnboardContextCut" xml:space="preserve"><value>下書きが終わる前にモデルの長さ制限で止まりました。.inferpal/context.md は書き込まれていません。コンテキスト長を増やすか、より大きなウィンドウのモデルを選んでから、/onboard context を再実行してください。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>接続タイムアウト — {0} のバックエンドが応答しなくなりました（無通信タイムアウト）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>{0} のバックエンドに接続できません。設定で URL を確認してください。</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>{0} のバックエンドが回答の途中で接続を閉じました。接続はできていたので URL は正しく、サーバーが停止、クラッシュ、またはメモリ不足になった可能性があります。回答は不完全です。応答するようになったら、もう一度質問してください。</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>{0} のバックエンドは {1} で応答しました。動作していますが、リクエストを拒否しました。設定で API キーと URL を確認してください。</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0} の推論サーバーがエラーを返しました:
 
 {1}</value></data>
@@ -853,6 +856,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="HardwareCompute" xml:space="preserve"><value>**計算:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**現在ロード中:** なし</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**現在ロード中:** 不明 — {0} のバックエンドに接続できません</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**現在ロード中:** 不明 — {0} のバックエンドが確認を拒否しました ({1})</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**現在ロード中:** {0} 個のモデル — このバックエンドは使用中の VRAM を報告しません（合計・空き容量・GPU/CPU は表示できません）</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### ロード済みモデル
 

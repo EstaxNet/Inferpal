@@ -194,6 +194,7 @@
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ 已连接</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ 无法连接</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ 已拒绝 — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>思考中…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -231,6 +232,8 @@
   <data name="OnboardContextCut" xml:space="preserve"><value>草稿在结束前就达到了模型的长度限制——未写入 .inferpal/context.md。请增大上下文长度，或选择窗口更大的模型，然后重新运行 /onboard context。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>连接超时 — {0} 的后端已停止响应（空闲超时）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>无法连接到 {0} 的后端。请在设置中检查 URL。</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>{0} 的后端在回答中途关闭了连接。连接曾经成功，所以 URL 没有问题：服务器可能已停止、崩溃或内存不足。回答不完整——请在它恢复响应后重新提问。</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>{0} 的后端以 {1} 响应：它正在运行，但拒绝了该请求。请在设置中检查 API 密钥和 URL。</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>{0} 的推理服务器返回了错误：
 
 {1}</value></data>
@@ -853,6 +856,7 @@
   <data name="HardwareCompute" xml:space="preserve"><value>**计算：** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**当前已加载：** 无</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**当前已加载：** 未知 — 无法连接到 {0} 的后端</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**当前已加载：** 未知 — {0} 的后端拒绝了检查（{1}）</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**当前已加载：** {0} 个模型 — 此后端不报告其占用的显存（无法显示总量、余量或 GPU/CPU）</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### 已加载模型
 

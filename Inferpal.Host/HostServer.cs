@@ -427,7 +427,13 @@ internal sealed partial class HostServer : IDisposable
                 !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null, turn.TextContent);
             if (said.Length > 0)
                 s.History.Add(new ChatMessageDto("assistant", said));
-            s.LastPromptTokens = turn.PromptTokens;
+            // ⚠ No count is not a zero-token conversation: a stream the client stopped (a loop, the output bound)
+            // ends before the chunk that carries the usage, and some servers never send one. Zero reads as a first
+            // turn — no compaction before the next question, however long the conversation — so it is estimated,
+            // as the two paths above and Visual Studio do.
+            s.LastPromptTokens = turn.PromptTokens > 0
+                ? turn.PromptTokens
+                : Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
             await CountTurnAsync(s, cts.Token);
             return new ChatSendResult(
                 FinalAnswer(turn.TextContent, streamed.ToString(), [], endNotice: null, model, s),
@@ -803,8 +809,9 @@ internal sealed partial class HostServer : IDisposable
 
         // The key in the FORM, like the URL: probing a new server with the saved key answered
         // "unreachable" for a server that only refused that key. Null (not sent) keeps the saved one.
-        var detected = await ProviderProbe.DetectAsync(url, p.ApiKey ?? s.Config.ApiKey, ct);
-        return new ConnectionCheckResult(detected is not null, detected);
+        var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, p.ApiKey ?? s.Config.ApiKey, ct);
+        return new ConnectionCheckResult(detected is not null, detected,
+                                         refusal is null ? null : Strings.StatusRefused(refusal));
     }
 
     /// <summary>Connection badge for the adapter's header: reachability + the compact VRAM line
@@ -831,7 +838,7 @@ internal sealed partial class HostServer : IDisposable
         // does not say "it just dropped", and that sentence is what the Visual Studio window has
         // always put in the thread. The decision belongs to the Core: first check silent if it
         // succeeds, announced if it fails, and nothing at all while nothing moves.
-        var status = s.Connection.Evaluate(connected);
+        var status = s.Connection.Evaluate(connected, s.Client.ConnectionRefusal);
         var notice = status.Transition switch
         {
             ConnectionTransition.Restored => Strings.MsgHeartbeatRestored(
@@ -842,7 +849,8 @@ internal sealed partial class HostServer : IDisposable
                                                  s.Client.ConnectionRefusal),
             _                             => null,
         };
-        return new BackendStatusResult(connected, badge, notice);
+        return new BackendStatusResult(connected, badge, notice,
+                                       !connected && s.Client.ConnectionRefusal is not null ? status.StatusText : null);
     }
 
     [JsonRpcMethod("fim/complete", UseSingleObjectParameterDeserialization = true)]

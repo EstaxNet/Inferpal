@@ -6,6 +6,10 @@ using Inferpal.Models;
 
 namespace Inferpal.Services.Inference;
 
+/// <summary>A backend that did not answer the connection check usefully: its address, and the status it refused the
+/// check with when it answered at all (<c>null</c>: nothing answered).</summary>
+internal sealed record BackendSilence(string Url, string? Refusal);
+
 /// <summary>
 /// Shared model-name classification and first-run model choice. Previously duplicated
 /// between the tool-window VM (first-run discovery) and the settings VM (embedding
@@ -33,11 +37,18 @@ internal static class ModelCatalog
     /// </remarks>
     public static async Task<string> EmptyListMeansAsync(
         IInferenceProvider client, Config.InferpalConfig config, string nothingInstalled, CancellationToken ct) =>
-        await UnreachableBackendAsync(client, config, ct) is { } url ? Strings.MsgUnreachable(url) : nothingInstalled;
+        await UnreachableBackendAsync(client, config, ct) switch
+        {
+            { Refusal: { } refusal } silent => Strings.MsgBackendRefused(silent.Url, refusal),
+            { } silent                      => Strings.MsgUnreachable(silent.Url),
+            null                            => nothingInstalled,
+        };
 
-    /// <summary>The configured backend address when it does not answer, else <c>null</c> — the question behind
-    /// <see cref="EmptyListMeansAsync"/>, for a reader whose empty answer is not a sentence (<c>/hardware</c>).</summary>
-    public static async Task<string?> UnreachableBackendAsync(
+    /// <summary>The configured backend when it does not answer usefully, else <c>null</c> — the question behind
+    /// <see cref="EmptyListMeansAsync"/>, for a reader whose empty answer is not a sentence (<c>/hardware</c>).
+    /// ⚠ With the refusal it answered with, if any: a server that answers 401 is running, and "cannot reach" sends
+    /// its user to start a server that is up.</summary>
+    public static async Task<BackendSilence?> UnreachableBackendAsync(
         IInferenceProvider client, Config.InferpalConfig config, CancellationToken ct)
     {
         var url = config.BaseUrl;
@@ -45,7 +56,7 @@ internal static class ModelCatalog
 
         try
         {
-            return await client.CheckConnectionAsync(url, ct) ? null : url;
+            return await client.CheckConnectionAsync(url, ct) ? null : new BackendSilence(url, client.ConnectionRefusal);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)

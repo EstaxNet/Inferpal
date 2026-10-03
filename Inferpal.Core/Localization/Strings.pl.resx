@@ -194,6 +194,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Połączono</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Niedostępny</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ Odrzucono — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Przetwarzanie…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -231,6 +232,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="OnboardContextCut" xml:space="preserve"><value>Szkic zatrzymał się na limicie długości modelu przed końcem — .inferpal/context.md nie został zapisany. Zwiększ długość kontekstu albo wybierz model z większym oknem, a następnie uruchom ponownie /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Przekroczono limit czasu połączenia — backend pod adresem {0} przestał odpowiadać (limit bezczynności).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Nie można połączyć się z backendem pod adresem {0}. Sprawdź URL w ustawieniach.</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>Backend pod adresem {0} zamknął połączenie w połowie odpowiedzi. Udało się z nim połączyć, więc adres URL jest poprawny: serwer mógł się zatrzymać, ulec awarii lub zabrakło mu pamięci. Odpowiedź jest niepełna — zapytaj ponownie, gdy odpowie.</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>Backend pod adresem {0} odpowiedział {1}: działa, ale odrzucił żądanie. Sprawdź klucz API i adres URL w Ustawieniach.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Serwer inferencji pod adresem {0} zwrócił błąd:
 
 {1}</value></data>
@@ -853,6 +856,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="HardwareCompute" xml:space="preserve"><value>**Obliczenia:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Aktualnie załadowane:** brak</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Aktualnie załadowane:** nieznane — backend pod adresem {0} jest nieosiągalny</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Aktualnie załadowane:** nieznane — backend pod adresem {0} odrzucił sprawdzenie ({1})</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Aktualnie załadowane:** modele: {0} — ten backend nie podaje zajmowanej przez nie pamięci VRAM (brak sumy, zapasu i informacji GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Załadowane modele
 

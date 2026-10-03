@@ -194,6 +194,7 @@
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Подключено</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Недоступно</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ Отклонено — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Обработка…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -231,6 +232,8 @@
   <data name="OnboardContextCut" xml:space="preserve"><value>Черновик остановился на ограничении длины модели, не дойдя до конца, — .inferpal/context.md не записан. Увеличьте длину контекста или выберите модель с большим окном, затем снова выполните /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Таймаут подключения — бэкенд по адресу {0} перестал отвечать (таймаут бездействия).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Не удаётся подключиться к бэкенду по адресу {0}. Проверьте URL в настройках.</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>Бэкенд по адресу {0} закрыл соединение посреди ответа. Соединение было установлено, значит URL верный: сервер мог остановиться, упасть или исчерпать память. Ответ неполный — спросите снова, когда он ответит.</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>Бэкенд по адресу {0} ответил {1}: он работает, но отклонил запрос. Проверьте ключ API и URL в Настройках.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Сервер вывода по адресу {0} вернул ошибку:
 
 {1}</value></data>
@@ -853,6 +856,7 @@
   <data name="HardwareCompute" xml:space="preserve"><value>**Вычисление:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Сейчас загружено:** нет</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Сейчас загружено:** неизвестно — бэкенд по адресу {0} недоступен</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Сейчас загружено:** неизвестно — бэкенд по адресу {0} отклонил проверку ({1})</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Сейчас загружено:** моделей: {0} — этот бэкенд не сообщает, сколько VRAM они занимают (нет итога, запаса и данных GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Загруженные модели
 

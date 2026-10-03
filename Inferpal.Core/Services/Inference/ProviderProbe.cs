@@ -23,24 +23,48 @@ internal static class ProviderProbe
     /// <see cref="InferenceProviderFactory.LmStudio"/>, or
     /// <see cref="InferenceProviderFactory.OpenAiCompatible"/>), or <c>null</c> when nothing answers.
     /// </summary>
-    public static async Task<string?> DetectAsync(string? baseUrl, string? apiKey, CancellationToken ct)
+    public static async Task<string?> DetectAsync(string? baseUrl, string? apiKey, CancellationToken ct) =>
+        (await DetectWithRefusalAsync(baseUrl, apiKey, ct).ConfigureAwait(false)).Provider;
+
+    /// <summary>
+    /// <see cref="DetectAsync"/>, plus — when nothing was detected — the refusal a server answered with.
+    /// ⚠ The Test button is where a user checks an API key: a wrong key answers 401, and "Unreachable" sent them to
+    /// check a server that was up. A 401/403 wins over a 404, which the probes of the OTHER backends' endpoints
+    /// receive legitimately; a 404 alone still says that something answers at that URL.
+    /// </summary>
+    public static async Task<(string? Provider, string? Refusal)> DetectWithRefusalAsync(
+        string? baseUrl, string? apiKey, CancellationToken ct)
     {
         var root = RootOf(baseUrl);
-        if (string.IsNullOrEmpty(root)) return null;
+        if (string.IsNullOrEmpty(root)) return (null, null);
+
+        string? firstRefusal = null, authRefusal = null;
+        async Task<bool> Probe(string url, string property)
+        {
+            var (ok, status, reason) = await ProbeAsync(url, apiKey, property, ct).ConfigureAwait(false);
+            if (status is { } s && (int)s is >= 400 and < 500)
+            {
+                var line = $"HTTP {(int)s} ({reason})";
+                firstRefusal ??= line;
+                if ((int)s is 401 or 403) authRefusal ??= line;
+            }
+            return ok;
+        }
 
         // Ollama answers /api/tags with {"models":[...]}; LM Studio and OpenAI-compatible servers
         // answer their /models endpoints with {"data":[...]}. We require that discriminating root
         // property so a reverse proxy that returns 200 (with an HTML index or a catch-all page) for
         // every path can't be mistaken for a backend — a bare status code is not enough.
-        var ollamaOk = await ProbeAsync($"{root}/api/tags", apiKey, "models", ct).ConfigureAwait(false);
+        var ollamaOk = await Probe($"{root}/api/tags", "models").ConfigureAwait(false);
         // v1 (0.4.0+) wraps the list in "models"; the legacy v0 endpoint uses "data".
         var lmStudioOk = !ollamaOk &&
-            (await ProbeAsync($"{root}/api/v1/models", apiKey, "models", ct).ConfigureAwait(false)
-             || await ProbeAsync($"{root}/api/v0/models", apiKey, "data", ct).ConfigureAwait(false));
+            (await Probe($"{root}/api/v1/models", "models").ConfigureAwait(false)
+             || await Probe($"{root}/api/v0/models", "data").ConfigureAwait(false));
         var openAiOk = !ollamaOk && !lmStudioOk &&
-            await ProbeAsync($"{root}/v1/models", apiKey, "data", ct).ConfigureAwait(false);
+            await Probe($"{root}/v1/models", "data").ConfigureAwait(false);
 
-        return Classify(ollamaOk, lmStudioOk, openAiOk);
+        var provider = Classify(ollamaOk, lmStudioOk, openAiOk);
+        return (provider, provider is not null ? null : authRefusal ?? firstRefusal);
     }
 
     /// <summary>Pure decision from which signature endpoints responded (testable, no network).</summary>
@@ -59,7 +83,9 @@ internal static class ProviderProbe
         return b;
     }
 
-    private static async Task<bool> ProbeAsync(string url, string? apiKey, string requiredRootProperty, CancellationToken ct)
+    /// <returns>Whether the endpoint signs the backend, and the status it answered with (<c>null</c>: no answer).</returns>
+    private static async Task<(bool Ok, System.Net.HttpStatusCode? Status, string? Reason)> ProbeAsync(
+        string url, string? apiKey, string requiredRootProperty, CancellationToken ct)
     {
         try
         {
@@ -69,11 +95,11 @@ internal static class ProviderProbe
             if (!string.IsNullOrWhiteSpace(apiKey))
                 req.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
             using var resp = await _http.SendAsync(req, cts.Token).ConfigureAwait(false);
-            if (!resp.IsSuccessStatusCode) return false;
+            if (!resp.IsSuccessStatusCode) return (false, resp.StatusCode, resp.ReasonPhrase);
             var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-            return HasRootProperty(body, requiredRootProperty);
+            return (HasRootProperty(body, requiredRootProperty), resp.StatusCode, resp.ReasonPhrase);
         }
-        catch { return false; }
+        catch { return (false, null, null); }
     }
 
     /// <summary>

@@ -83,6 +83,58 @@ public class ConnectionRefusedTests
         Assert.Equal(Strings.MsgConnectionGuardFailed("u", "b"), Strings.MsgConnectionLost("u", "b", refusal: null));
     }
 
+    // ── Every other reader of a failed check: the badge, /models, /bench, /hardware, the support bundle ──────────
+
+    private const string Refused = "HTTP 401 (Unauthorized)";
+
+    private static FakeInferenceProvider RefusingBackend() =>
+        new() { ModelNames = [], Running = [], ConnectionOk = false, ConnectionRefusal = Refused,
+                Capabilities = ProviderCapabilities.Ollama };
+
+    private static InferpalConfig AtUrl() => new() { BaseUrl = "http://127.0.0.1:11434", VramBudgetGb = 16 };
+
+    [Fact]
+    public void TheBadge_SaysRefused_NotUnreachable()
+    {
+        var refused = new Services.Presentation.ConnectionStatusPresenter().Evaluate(ok: false, Refused);
+        var silent  = new Services.Presentation.ConnectionStatusPresenter().Evaluate(ok: false);
+
+        Assert.Contains("401", refused.StatusText);
+        Assert.Equal(Strings.StatusUnreachable, silent.StatusText);                    // reference arm
+    }
+
+    [Fact]
+    public async Task Models_ABackendThatRefused_IsNotCalledUnreachable()
+    {
+        var result = await Services.Commands.ModelsCommandHandler.HandleAsync(
+            RefusingBackend(), AtUrl(), ["/models"], CancellationToken.None);
+
+        Assert.Equal(Strings.MsgBackendRefused("http://127.0.0.1:11434", Refused), result.Message);
+    }
+
+    [Fact]
+    public async Task Hardware_ABackendThatRefused_IsNotCalledUnreachable()
+    {
+        var result = await Services.Commands.HardwareCommandHandler.HandleAsync(
+            AtUrl(), RefusingBackend(), ["/hardware"], CancellationToken.None);
+
+        Assert.Contains(Strings.HardwareLoadedRefused("http://127.0.0.1:11434", Refused), result.Message);
+        Assert.DoesNotContain(Strings.HardwareLoadedUnknown("http://127.0.0.1:11434"), result.Message);
+    }
+
+    [Fact]
+    public void TheSupportBundle_OfVsCode_SaysTheCheckWasRefused()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, "Inferpal.Host", "HostSlashCommands.cs"));
+
+        var at = code.IndexOf("\"unreachable\"", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the bundle's backend line is gone");                                     // WITNESS
+        Assert.Contains("ConnectionRefusal", code.Substring(Math.Max(0, at - 300), 300), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs")]
     [InlineData("Inferpal.Host", "HostServer.cs")]

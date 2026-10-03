@@ -381,6 +381,7 @@ internal static class Strings
     public static string StatusConnecting      => Get(nameof(StatusConnecting));
     public static string StatusConnected       => Get(nameof(StatusConnected));
     public static string StatusUnreachable     => Get(nameof(StatusUnreachable));
+    public static string StatusRefused(string refusal) => string.Format(Get(nameof(StatusRefused)), refusal);
     public static string StatusThinking        => Get(nameof(StatusThinking));
     public static string StatusAgentPlanning   => Get(nameof(StatusAgentPlanning));
     public static string StatusAgentObserving  => Get(nameof(StatusAgentObserving));
@@ -459,6 +460,14 @@ internal static class Strings
 
     public static string MsgUnreachable(string url) =>
         string.Format(Get(nameof(MsgUnreachable)), url);
+
+    /// <summary>The stream broke after the server had answered (crash, out of memory, restart): reached, so not
+    /// "cannot reach… check the URL".</summary>
+    public static string MsgStreamDropped(string url) => string.Format(Get(nameof(MsgStreamDropped)), url);
+
+    /// <summary>The server answered the check with a refusal (<paramref name="refusal"/>): running, so not "cannot reach".</summary>
+    public static string MsgBackendRefused(string url, string refusal) =>
+        string.Format(Get(nameof(MsgBackendRefused)), url, refusal);
 
     public static string MsgServerError(string url, string detail) =>
         string.Format(Get(nameof(MsgServerError)), url, detail);
@@ -1219,6 +1228,8 @@ internal static class Strings
     public static string HardwareCompute(string kind)        => string.Format(Get(nameof(HardwareCompute)), kind);
     public static string HardwareLoadedNone                  => Get(nameof(HardwareLoadedNone));
     public static string HardwareLoadedUnknown(string url)   => string.Format(Get(nameof(HardwareLoadedUnknown)), url);
+    public static string HardwareLoadedRefused(string url, string refusal) =>
+        string.Format(Get(nameof(HardwareLoadedRefused)), url, refusal);
     public static string HardwareLoadedUnreported(int count) => string.Format(Get(nameof(HardwareLoadedUnreported)), count);
     public static string HardwareLoadedModelsTable           => Get(nameof(HardwareLoadedModelsTable));
     public static string HardwareInstalledModelsTable        => Get(nameof(HardwareInstalledModelsTable));

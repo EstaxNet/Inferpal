@@ -194,6 +194,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Conectado</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ No disponible</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ Rechazado — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Pensando…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -231,6 +232,8 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="OnboardContextCut" xml:space="preserve"><value>El borrador se detuvo en el límite de longitud del modelo antes de terminar: no se escribió .inferpal/context.md. Aumenta la longitud de contexto o elige un modelo con una ventana mayor y vuelve a ejecutar /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Tiempo de espera agotado — el backend en {0} dejó de responder (tiempo de inactividad).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>No se puede alcanzar el backend en {0}. Verifica la URL en Configuración.</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>El backend en {0} cerró la conexión en mitad de la respuesta. Se pudo contactar, así que la URL es correcta: el servidor quizá se detuvo, falló o se quedó sin memoria. La respuesta está incompleta: vuelva a preguntar cuando responda.</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>El backend en {0} respondió {1}: está en marcha, pero rechazó la solicitud. Compruebe la clave de API y la URL en la Configuración.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>El servidor de inferencia en {0} devolvió un error:
 
 {1}</value></data>
@@ -853,6 +856,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="HardwareCompute" xml:space="preserve"><value>**Cómputo:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Cargado actualmente:** ninguno</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Cargado actualmente:** desconocido — no se puede contactar con el backend en {0}</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Cargado actualmente:** desconocido — el backend en {0} rechazó la comprobación ({1})</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Cargado actualmente:** {0} modelo(s) — este backend no informa de la VRAM que ocupan (sin total, margen ni GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Modelos cargados
 

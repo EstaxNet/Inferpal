@@ -90,7 +90,7 @@ internal partial class InferpalToolWindowData
 
                 _isBackendReachable = ok; // volatile write — read by SendCoreAsync pre-flight
 
-                var status = presenter.Evaluate(ok);
+                var status = presenter.Evaluate(ok, _client.ConnectionRefusal);
 
                 await RunOnVMContextAsync(() =>
                 {

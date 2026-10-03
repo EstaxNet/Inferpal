@@ -194,6 +194,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Connecté</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Inaccessible</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ Refusé — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Réflexion en cours…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -231,6 +232,8 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="OnboardContextCut" xml:space="preserve"><value>Le brouillon s'est arrêté à la limite de longueur du modèle avant sa fin — .inferpal/context.md n'a pas été écrit. Augmentez la longueur de contexte, ou choisissez un modèle à la fenêtre plus grande, puis relancez /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Délai d'attente dépassé — le backend à {0} ne répond plus (délai d'inactivité).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Impossible de joindre le backend à {0}. Vérifiez l'URL dans les paramètres.</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>Le backend à {0} a fermé la connexion au milieu de la réponse. Il a été joint, l'URL est donc bonne : le serveur s'est peut-être arrêté, planté ou a manqué de mémoire. La réponse est incomplète — reposez la question quand il répond.</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>Le backend à {0} a répondu {1} : il tourne, mais a refusé la requête. Vérifiez la clé d'API et l'URL dans les paramètres.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Le serveur d'inférence à {0} a renvoyé une erreur :
 
 {1}</value></data>
@@ -861,6 +864,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="HardwareCompute" xml:space="preserve"><value>**Calcul :** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Actuellement chargé :** aucun</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Actuellement chargé :** inconnu — le backend à {0} est injoignable</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Actuellement chargé :** inconnu — le backend à {0} a refusé la vérification ({1})</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Actuellement chargé :** {0} modèle(s) — ce backend ne publie pas la VRAM qu'ils occupent (ni total, ni marge, ni GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Modèles chargés
 

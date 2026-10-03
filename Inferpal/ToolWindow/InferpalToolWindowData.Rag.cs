@@ -175,8 +175,11 @@ internal partial class InferpalToolWindowData
         {
             _config.IsFirstRun = false;
             _config.Save();
-            await present(Strings.MsgFirstRunBackendDown(
-                url, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider))).ConfigureAwait(false);
+            // A server that refused the check (a wrong API key) is running: "start it" is the wrong remedy.
+            await present(client.ConnectionRefusal is { } refusal
+                ? Strings.MsgBackendRefused(url, refusal)
+                : Strings.MsgFirstRunBackendDown(
+                    url, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider))).ConfigureAwait(false);
             return;
         }
 

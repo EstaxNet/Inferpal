@@ -119,6 +119,9 @@ export interface BackendStatusResult {
    *  now"; it does not say "it just dropped". The Core decides which edge, and whether the very
    *  first check is silent. */
   edgeNotice?: string | null;
+  /** Not connected, but the server REFUSED the check (a wrong API key: 401): the badge text, already localized.
+   *  A server that answers is running — "unreachable" sends the user to start it. */
+  refused?: string | null;
 }
 
 /** `connection/check` — what the Test button found AT THE URL IT WAS GIVEN.
@@ -127,6 +130,9 @@ export interface BackendStatusResult {
 export interface ConnectionCheckResult {
   ok: boolean;
   provider: string | null;
+  /** Nothing detected, but a server refused the probe (a wrong API key: 401): the line to show instead of
+   *  "unreachable", already in the user's language. */
+  refused?: string | null;
 }
 
 /** One bubble, flattened for `chat/export`. `name` is the model (assistant) or tool name. */

@@ -194,6 +194,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Connesso</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Non raggiungibile</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ Rifiutato — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Elaborazione…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -231,6 +232,8 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="OnboardContextCut" xml:space="preserve"><value>La bozza si è interrotta al limite di lunghezza del modello prima della fine: .inferpal/context.md non è stato scritto. Aumenta la lunghezza del contesto oppure scegli un modello con una finestra più ampia, poi esegui di nuovo /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Timeout connessione — il backend su {0} ha smesso di rispondere (timeout di inattività).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Impossibile raggiungere il backend su {0}. Controlla l'URL nelle impostazioni.</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>Il backend su {0} ha chiuso la connessione a metà della risposta. È stato raggiunto, quindi l'URL è corretto: il server potrebbe essersi fermato, bloccato o aver esaurito la memoria. La risposta è incompleta: chiedi di nuovo quando risponde.</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>Il backend su {0} ha risposto {1}: è attivo, ma ha rifiutato la richiesta. Controlla la chiave API e l'URL nelle Impostazioni.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Il server di inferenza su {0} ha restituito un errore:
 
 {1}</value></data>
@@ -853,6 +856,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="HardwareCompute" xml:space="preserve"><value>**Elaborazione:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Attualmente caricato:** nessuno</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Attualmente caricato:** sconosciuto — il backend su {0} non è raggiungibile</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Attualmente caricato:** sconosciuto — il backend su {0} ha rifiutato il controllo ({1})</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Attualmente caricato:** {0} modello/i — questo backend non riporta la VRAM che occupano (nessun totale, margine o GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Modelli caricati
 

@@ -279,7 +279,11 @@ internal sealed partial class HostServer
                         try { reachable = await s.Client.CheckConnectionAsync(s.Config.BaseUrl, cts.Token); }
                         catch (OperationCanceledException) { throw; }
                         catch (Exception ex) { Diagnostics.Swallow("HostSlashCommands.DiagnosticsBackend", ex); }
-                        backend = (reachable ? "reachable" : "unreachable")
+                        // A refused check is a running server: a report that says "unreachable" for a 401 sends
+                        // whoever reads it to look for a server that is down.
+                        backend = (reachable                                   ? "reachable"
+                                   : s.Client.ConnectionRefusal is { } refusal ? "refused the connection check: " + refusal
+                                   :                                             "unreachable")
                                   + " (" + InferenceProviderFactory.DisplayName(s.Config.Provider) + ")";
                     }
 

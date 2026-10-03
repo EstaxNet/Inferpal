@@ -195,6 +195,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Connected</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Unreachable</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ Refused — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Thinking…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -232,6 +233,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="OnboardContextCut" xml:space="preserve"><value>The draft stopped at the model's length limit before its end — .inferpal/context.md was not written. Increase the context length, or pick a model with a larger window, then run /onboard context again.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Connection timed out — the backend at {0} stopped responding (inactivity timeout).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Cannot reach the backend at {0}. Check the URL in Settings.</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>The backend at {0} closed the connection in the middle of the answer. It was reached, so the URL is fine: the server may have stopped, crashed or run out of memory. The answer is incomplete — ask again once it answers.</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>The backend at {0} answered {1}: it is running but refused the request. Check the API key and the URL in Settings.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>The inference server at {0} returned an error:
 
 {1}</value></data>
@@ -865,6 +868,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="HardwareCompute" xml:space="preserve"><value>**Compute:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Currently loaded:** none</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Currently loaded:** unknown — the backend at {0} cannot be reached</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Currently loaded:** unknown — the backend at {0} refused the check ({1})</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Currently loaded:** {0} model(s) — this backend does not report the VRAM they occupy (no total, headroom or GPU/CPU figure)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Loaded models
 

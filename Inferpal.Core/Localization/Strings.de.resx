@@ -194,6 +194,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Verbunden</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Nicht erreichbar</value></data>
+  <data name="StatusRefused" xml:space="preserve"><value>✗ Abgelehnt — {0}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Denke nach…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
@@ -231,6 +232,8 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="OnboardContextCut" xml:space="preserve"><value>Der Entwurf endete an der Längengrenze des Modells vor seinem Ende — .inferpal/context.md wurde nicht geschrieben. Erhöhen Sie die Kontextlänge oder wählen Sie ein Modell mit größerem Fenster und führen Sie /onboard context erneut aus.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Verbindungstimeout – das Backend unter {0} antwortet nicht mehr (Inaktivitäts-Timeout).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Backend unter {0} nicht erreichbar. Überprüfen Sie die URL in den Einstellungen.</value></data>
+  <data name="MsgStreamDropped" xml:space="preserve"><value>Das Backend unter {0} hat die Verbindung mitten in der Antwort geschlossen. Es war erreichbar, die URL stimmt also: Der Server wurde womöglich beendet, ist abgestürzt oder hatte keinen Speicher mehr. Die Antwort ist unvollständig — fragen Sie erneut, sobald er antwortet.</value></data>
+  <data name="MsgBackendRefused" xml:space="preserve"><value>Das Backend unter {0} hat mit {1} geantwortet: Es läuft, hat die Anfrage aber abgelehnt. Prüfen Sie API-Schlüssel und URL in den Einstellungen.</value></data>
   <data name="MsgServerError" xml:space="preserve"><value>Der Inferenzserver unter {0} hat einen Fehler zurückgegeben:
 
 {1}</value></data>
@@ -853,6 +856,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="HardwareCompute" xml:space="preserve"><value>**Berechnung:** {0}</value></data>
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Aktuell geladen:** keine</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Aktuell geladen:** unbekannt — das Backend unter {0} ist nicht erreichbar</value></data>
+  <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Aktuell geladen:** unbekannt — das Backend unter {0} hat die Prüfung abgelehnt ({1})</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Aktuell geladen:** {0} Modell(e) — dieses Backend meldet nicht, wie viel VRAM sie belegen (keine Summe, kein Spielraum, keine GPU/CPU-Angabe)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Geladene Modelle
 

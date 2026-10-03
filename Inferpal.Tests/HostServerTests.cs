@@ -591,6 +591,46 @@ public partial class HostServerTests
         Assert.NotNull(first.EdgeNotice);
     }
 
+    /// <summary>
+    /// The VS Code badge and send pre-flight said "unreachable" of a server that refused the check (a wrong API key:
+    /// 401) — the Visual Studio badge already said "refused". The host sends the refused text; a silent server sends none.
+    /// </summary>
+    [Theory]
+    [InlineData("HTTP 401 (Unauthorized)", true)]
+    [InlineData(null, false)]                       // reference arm: nothing answered, nothing refused
+    public async Task BackendStatus_ARefusedCheck_IsSentAsRefused(string? refusal, bool refused)
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ConnectionOk      = false;
+        h.Fake.ConnectionRefusal = refusal;
+
+        var status = await h.Client.InvokeAsync<BackendStatusResult>("backend/status")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.False(status.Connected);
+        if (refused) Assert.Contains("401", status.Refused);
+        else         Assert.Null(status.Refused);
+    }
+
+    /// <summary>The extension shows it: the header badge and both send pre-flights.</summary>
+    [Fact]
+    public void TheExtension_ShowsARefusedCheck_AsRefused()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var root = dir!.FullName;
+        var main = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+            File.ReadAllText(Path.Combine(root, "vscode", "src", "webview", "main.ts")));
+        Assert.Contains("status.refused ?? t('statusUnreachable')", main, StringComparison.Ordinal);
+
+        var provider = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+            File.ReadAllText(Path.Combine(root, "vscode", "src", "chatViewProvider.ts")));
+        Assert.Contains("t('The backend is unreachable", provider, StringComparison.Ordinal);            // WITNESS
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(provider, @"this\.status\?\.refused\s*\?").Count);
+    }
+
     // ── chat/export: ONE exporter only, the Core's ────────────────────────────
 
     [Fact]
@@ -854,6 +894,37 @@ public partial class HostServerTests
         var last = h.Server.CurrentSession!.History[^1];
         Assert.Equal("assistant", last.Role);
         Assert.Equal("the answer", last.Content);
+    }
+
+    /// <summary>
+    /// With tools off, a turn whose server reported no token count — a stream the client stopped at a loop or at the
+    /// output bound, or a server that sends no usage — recorded the conversation as ZERO tokens: the measure of a first
+    /// turn, so the next question went without compaction whatever the length, and the VS Code gauge read empty.
+    /// </summary>
+    [Theory]
+    [InlineData(0, false)]      // no count reported: estimated from the history
+    [InlineData(4321, true)]    // reference arm: a reported count is the measure
+    public async Task ChatSend_ToolsOff_ATurnWithoutACount_IsStillMeasured(int reported, bool exact)
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var session = h.Server.CurrentSession!;
+        session.ToolsEnabled = false;
+        session.History = [new ChatMessageDto("system", "sys"),
+                           new ChatMessageDto("user", "earlier " + string.Join(' ', Enumerable.Range(0, 2000))),
+                           new ChatMessageDto("assistant", "noted")];
+
+        h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult("the answer", null, reported, reported));
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        if (exact)
+            Assert.Equal(reported, session.LastPromptTokens);
+        else
+            Assert.Equal(Services.Agent.AgentOrchestrator.EstimateTokens(session.History), session.LastPromptTokens);
+        Assert.True(session.LastPromptTokens > 1000, $"measure: {session.LastPromptTokens}");
     }
 
     /// <summary>

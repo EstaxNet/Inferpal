@@ -156,7 +156,9 @@ internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string
 /// edge, and is the first check silent?) belongs to the Core — <c>ConnectionStatusPresenter</c> —
 /// not to a second state machine written here.
 /// </remarks>
-internal sealed record BackendStatusResult(bool Connected, string VramBadge, string? EdgeNotice = null);
+/// <param name="Refused">Not connected, but the server answered the check with a refusal (a wrong API key: 401): the
+/// badge text to show instead of "unreachable", already localized — and the pre-flight's cue to say "refused".</param>
+internal sealed record BackendStatusResult(bool Connected, string VramBadge, string? EdgeNotice = null, string? Refused = null);
 
 /// <summary>
 /// `connection/check` — what the settings panel's Test button found AT THE URL IT WAS GIVEN.
@@ -173,7 +175,9 @@ internal sealed record BackendStatusResult(bool Connected, string VramBadge, str
 /// window: read the typed value, pre-select the detected backend, then refresh the models from
 /// that url.
 /// </remarks>
-internal sealed record ConnectionCheckResult(bool Ok, string? Provider);
+/// <param name="Refused">When nothing was detected but a server answered with a refusal (a wrong API key: 401), the
+/// status line to show in its place, in the user's language — "unreachable" sends them to check a server that is up.</param>
+internal sealed record ConnectionCheckResult(bool Ok, string? Provider, string? Refused = null);
 
 /// <summary>`connection/check` — the url and API key to probe. Empty = the configured ones.</summary>
 internal sealed record ConnectionCheckParams(string? BaseUrl = null, string? ApiKey = null);

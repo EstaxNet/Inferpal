@@ -22,6 +22,8 @@ export interface WvTranscriptItem {
 export interface WvBackendStatus {
   connected: boolean;
   vramBadge: string;
+  /** The server refused the check (see `BackendStatusResult.refused`). */
+  refused?: string | null;
 }
 
 /** One slash command of the autocomplete popup. */

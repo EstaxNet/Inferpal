@@ -633,6 +633,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; strings?: Record<string, string>;
     schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number; provider?: string | null;
+    refused?: string | null;
   };
   switch (msg.type) {
     case 'init':
@@ -677,8 +678,9 @@ window.addEventListener('message', (event: MessageEvent) => {
           }
         }
       }
+      // A server that refused the probe (a wrong API key) is up: the very thing this button checks.
       setTestStatus(
-        msg.ok ? (named ? `${t('Connected')} — ${named}` : t('Connected')) : t('Backend unreachable'),
+        msg.ok ? (named ? `${t('Connected')} — ${named}` : t('Connected')) : (msg.refused ?? t('Backend unreachable')),
         msg.ok);
       break;
     }

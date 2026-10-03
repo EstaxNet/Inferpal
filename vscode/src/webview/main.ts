@@ -107,7 +107,8 @@ function setBackendStatus(status: WvBackendStatus | null): void {
     return;
   }
   connDot.className = status.connected ? 'ok' : 'ko';
-  connText.textContent = status.connected ? t('statusConnected') : t('statusUnreachable');
+  // A server that refused the check (a wrong API key) is running: the host sends the "refused" text to show instead.
+  connText.textContent = status.connected ? t('statusConnected') : (status.refused ?? t('statusUnreachable'));
   connRetry.hidden = status.connected;
   vramEl.hidden = status.vramBadge.length === 0;
   vramEl.textContent = status.vramBadge ? 'VRAM ' + status.vramBadge : '';

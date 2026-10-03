@@ -283,9 +283,10 @@ internal class OllamaClient : InferenceProviderBase
         catch (AgentHttpException) { throw; } // an in-stream server error already mapped — keep its message
         catch (Exception ex)
         {
-            // Mid-stream network failure (connection reset, Ollama crash…).
+            // Mid-stream network failure (connection reset, Ollama crash…). ⚠ The server WAS reached — it answered and
+            // streamed: "cannot reach… check the URL" sends the user to a URL that is fine.
             RecordFailure();
-            throw new AgentHttpException(Strings.MsgUnreachable(base_) + "\n" + ex.Message, isTimeout: false);
+            throw new AgentHttpException(Strings.MsgStreamDropped(base_) + "\n" + ex.Message, isTimeout: false);
         }
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.

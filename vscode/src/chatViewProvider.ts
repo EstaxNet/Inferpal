@@ -433,7 +433,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     let edgeNotice: string | null = null;
     try {
       const s = await host.backendStatus();
-      this.status = { connected: s.connected, vramBadge: s.vramBadge };
+      this.status = { connected: s.connected, vramBadge: s.vramBadge, refused: s.refused ?? null };
       edgeNotice = s.edgeNotice ?? null;
     } catch {
       this.status = { connected: false, vramBadge: '' };
@@ -1385,7 +1385,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (this.status?.connected === false) {
         this.append({
           role: 'error',
-          text: t('The backend is unreachable — your message was not sent and is back in the input box.'),
+          // A server that refused the check (a wrong API key) is running: "unreachable" would send the user to start it.
+          text: this.status?.refused
+            ? t('The backend refused the connection check — your message was not sent and is back in the input box. Check the API key and the URL in the settings.')
+            : t('The backend is unreachable — your message was not sent and is back in the input box.'),
           timestamp: ChatViewProvider.now(),
         });
         this.hydrate();
@@ -1735,7 +1738,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (this.status?.connected === false) {
         this.append({
           role: 'error',
-          text: t('The backend is unreachable — the last answer was kept and nothing was sent.'),
+          text: this.status?.refused
+            ? t('The backend refused the connection check — the last answer was kept and nothing was sent. Check the API key and the URL in the settings.')
+            : t('The backend is unreachable — the last answer was kept and nothing was sent.'),
           timestamp: ChatViewProvider.now(),
         });
         this.hydrate();

@@ -2184,7 +2184,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
         // Auto-detect the backend from the URL (Ollama / LM Studio / OpenAI-compatible). A successful
         // probe also confirms reachability, so it replaces the provider-specific connection check.
-        var detected     = await ProviderProbe.DetectAsync(url, apiKey, ct);
+        var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, apiKey, ct);
         var ok           = detected is not null;
         var detectedName = detected is not null
             ? ProviderOptions.FirstOrDefault(p => p.Code == detected).Name
@@ -2193,7 +2193,10 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         await RunOnVMContextAsync(() =>
         {
             IsConnectionOk   = ok;
-            ConnectionStatus = ok ? $"{Strings.StatusConnected} — {detectedName}" : Strings.StatusUnreachable;
+            // A server that refused the probe (a wrong API key: 401) is up — the very thing this button checks.
+            ConnectionStatus = ok                        ? $"{Strings.StatusConnected} — {detectedName}"
+                             : refusal is not null       ? Strings.StatusRefused(refusal)
+                             :                             Strings.StatusUnreachable;
             // Auto-select the detected backend; the user can still change it before saving.
             if (!string.IsNullOrEmpty(detectedName)) SelectedProvider = detectedName!;
         });

@@ -30,7 +30,9 @@ internal sealed class ConnectionStatusPresenter
     private bool _previouslyConnected = true;
     private bool _firstCheck          = true;
 
-    public ConnectionStatus Evaluate(bool ok)
+    /// <param name="refusal">The status the server refused the check with, when it answered at all: the badge says
+    /// "refused", not "unreachable" — a server that answers 401 is running.</param>
+    public ConnectionStatus Evaluate(bool ok, string? refusal = null)
     {
         var transition = ok
             ? (!_previouslyConnected && !_firstCheck ? ConnectionTransition.Restored : ConnectionTransition.None)
@@ -41,6 +43,7 @@ internal sealed class ConnectionStatusPresenter
 
         return ok
             ? new ConnectionStatus(Strings.StatusConnected,   "#4EC94E", "#7C4DFF", false, transition)
-            : new ConnectionStatus(Strings.StatusUnreachable, "#F44747", "#555555", true,  transition);
+            : new ConnectionStatus(refusal is null ? Strings.StatusUnreachable : Strings.StatusRefused(refusal),
+                                   "#F44747", "#555555", true, transition);
     }
 }

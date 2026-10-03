@@ -22,18 +22,23 @@ internal sealed class HardwareProfile
     /// nobody answered, not because nothing is loaded. <c>null</c> when the backend answered.</summary>
     public string? UnreachableAt { get; }
 
+    /// <summary>The status the backend refused the check with, when it answered at all: running, not unreachable.</summary>
+    public string? RefusedWith { get; }
+
     public HardwareProfile(
         double budgetGb,
         IReadOnlyList<RunningModelInfo> running,
         IReadOnlyList<InstalledModelInfo> installed,
         ContextWindowAdvice? ctxAdvice = null,
-        string? unreachableAt = null)
+        string? unreachableAt = null,
+        string? refusedWith = null)
     {
         BudgetGb      = budgetGb;
         Running       = running;
         Installed     = installed;
         CtxAdvice     = ctxAdvice;
         UnreachableAt = unreachableAt;
+        RefusedWith   = refusedWith;
     }
 
     /// <summary>False when the backend lists a loaded model without saying what it occupies (LM
@@ -88,7 +93,9 @@ internal sealed class HardwareProfile
         // whose backend is down that it is up with nothing loaded.
         if (UnreachableAt is { } url)
         {
-            sb.AppendLine(Strings.HardwareLoadedUnknown(url));
+            sb.AppendLine(RefusedWith is { } refusal
+                ? Strings.HardwareLoadedRefused(url, refusal)
+                : Strings.HardwareLoadedUnknown(url));
         }
         else if (Running.Count > 0 && !VramReported)
         {
