@@ -25,7 +25,8 @@ internal class GetGitStatusTool : ITool
     public string Description =>
         "Returns the state of the git repository: current branch, status of tracked/untracked files, " +
         "last 20 commits, local branches, and a diff summary of uncommitted changes. " +
-        "Set include_diff=true to also get the full diff of uncommitted changes (can be large). " +
+        "Set include_diff=true to also get the full diff of uncommitted changes (capped; when it is cut, " +
+        "diff_path reads the diff of one file or folder). " +
         "Use this to understand what changed, suggest a commit message, or explain a diff.";
 
     public object Parameters => new
@@ -42,6 +43,12 @@ internal class GetGitStatusTool : ITool
             {
                 type        = "boolean",
                 description = "If true, includes the full unified diff of uncommitted changes. Default: false."
+            },
+            diff_path = new
+            {
+                type        = "string",
+                description = "With include_diff: restrict the diff to this file or folder — the way to read the diff " +
+                              "of a file the full diff cut off."
             }
         },
         required = Array.Empty<string>(),
@@ -51,6 +58,13 @@ internal class GetGitStatusTool : ITool
     {
         var startPath    = args.Str("path");
         var includeDiff  = args.Bool("include_diff", false);
+        var diffPath     = args.Str("diff_path");
+        if (diffPath is not null)
+        {
+            var workspace = _getRoot();
+            diffPath = PathSanitizer.Sanitize(diffPath, workspace);
+            PathSanitizer.AssertUnderRoot(diffPath, workspace);
+        }
 
         // Same confinement contract as every other path-taking tool: an unsanitised path would
         // read the git status of any repository on the machine — read-only, but outside the
@@ -124,11 +138,20 @@ internal class GetGitStatusTool : ITool
         if (includeDiff)
         {
             sb.AppendLine();
-            var diff = await GitAsync("diff HEAD", root, ct);
-            if (!diff.Ok || diff.Output.Length == 0)
-                diff = await GitAsync("diff", root, ct);
+            var pathSpec = string.Empty;
+            if (diffPath is not null)
+            {
+                var relative = Path.GetRelativePath(root, diffPath).Replace('\\', '/');
+                if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
+                    return sb.Append($"Error: diff_path '{diffPath}' is outside the repository {root}.").ToString();
+                pathSpec = $" -- \"{relative}\"";
+            }
 
-            sb.AppendLine("=== git diff HEAD ===");
+            var diff = await GitAsync("diff HEAD" + pathSpec, root, ct);
+            if (!diff.Ok || diff.Output.Length == 0)
+                diff = await GitAsync("diff" + pathSpec, root, ct);
+
+            sb.AppendLine(diffPath is null ? "=== git diff HEAD ===" : $"=== git diff HEAD{pathSpec} ===");
             if (!diff.Ok)
             {
                 sb.AppendLine(Strings.GitCommandFailed("diff", diff.Detail));
@@ -137,18 +160,65 @@ internal class GetGitStatusTool : ITool
             {
                 sb.AppendLine("(no diff)");
             }
-            else if (diff.Output.Length > MaxDiffChars)
-            {
-                sb.AppendLine(diff.Output[..MaxDiffChars]);
-                sb.AppendLine($"... [truncated — {diff.Output.Length - MaxDiffChars} more characters]");
-            }
             else
             {
-                sb.AppendLine(diff.Output);
+                var (shown, note) = CutDiff(diff.Output, MaxDiffChars, restricted: diffPath is not null);
+                if (note is not null) sb.AppendLine(note);   // above the diff: it qualifies what follows
+                sb.AppendLine(shown);
             }
         }
 
         return sb.ToString().TrimEnd();
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex DiffFileHeader = new(
+        @"^diff --git a/.+? b/(?<path>.+?)\r?$",
+        System.Text.RegularExpressions.RegexOptions.Multiline | System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(1));
+
+    /// <summary>
+    /// The diff within <paramref name="max"/> characters, cut on a line end, and the note that says what the cut left
+    /// out: the file it cut short and the files it never reached, by name, with the way to read them.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A cap with no way past it is a wall: the diff is sorted by path, so the files after the cut were never
+    /// visible at all, and "truncated — N more characters" left the model to review what it could see as if it
+    /// were the change. Reading one file's diff (<c>diff_path</c>) is the way past; a single file's diff still
+    /// over the cap leaves the file itself, through read_file.
+    /// </remarks>
+    internal static (string Shown, string? Note) CutDiff(string diff, int max, bool restricted)
+    {
+        if (diff.Length <= max) return (diff, null);
+
+        var cut = diff.LastIndexOf('\n', max - 1);
+        if (cut <= 0) cut = max;
+        var shown = diff[..cut];
+
+        if (restricted)
+            return (shown, $"(diff cut at {cut:N0} of {diff.Length:N0} characters — the rest of these changes is not " +
+                           "shown: read the file itself with read_file)");
+
+        var headers = DiffFileHeader.Matches(diff).Select(m => (m.Index, Path: m.Groups["path"].Value)).ToList();
+        string? cutShort = null;
+        var notShown = new List<string>();
+        for (var i = 0; i < headers.Count; i++)
+        {
+            var end = i + 1 < headers.Count ? headers[i + 1].Index : diff.Length;
+            if (headers[i].Index >= cut) notShown.Add(headers[i].Path);
+            else if (end > cut + 1) cutShort = headers[i].Path;
+        }
+
+        const int MaxNamed = 20;
+        var note = new StringBuilder($"(diff cut at {cut:N0} of {diff.Length:N0} characters.");
+        if (cutShort is not null) note.Append($" Cut short: {cutShort}.");
+        if (notShown.Count > 0)
+        {
+            note.Append($" Not shown at all ({notShown.Count} file(s)): {string.Join(", ", notShown.Take(MaxNamed))}");
+            if (notShown.Count > MaxNamed) note.Append($", +{notShown.Count - MaxNamed} more");
+            note.Append('.');
+        }
+        note.Append(" Read one file's diff with include_diff=true and diff_path=<file>.)");
+        return (shown, note.ToString());
     }
 
     /// <param name="Output">git's stdout, trimmed — empty when it wrote none.</param>

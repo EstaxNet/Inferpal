@@ -175,6 +175,66 @@ public class PublicDocsCoverageTests
     }
 
     /// <summary>
+    /// The parameters <c>docs/tools.md</c> lists for each built-in tool are the ones the tool declares, in both
+    /// directions, and a parameter shown optional (<c>name?</c>) is one the schema does not require.
+    /// </summary>
+    /// <remarks>
+    /// The names were held and the parameters by nobody: the page told <c>snapshot_path</c> for a parameter named
+    /// <c>snapshot</c>, left out the background jobs of <c>run_command</c> and the rescan of
+    /// <c>generate_project_map</c>, and showed as required a <c>content</c> that <c>update_memory clear</c> does
+    /// without — a reader writing a permission rule or a prompt reads this page, not the schema. A parenthesis
+    /// describes a parameter (nested fields, accepted values) and is not read; <c>analyze_code</c>'s row ends on
+    /// <c>…</c> and its other parameters are on the line that names them.
+    /// </remarks>
+    [Fact]
+    public void EveryBuiltInToolsParameters_AreTheOnesTheDocsList()
+    {
+        var config   = new InferpalConfig();
+        var client   = new FakeInferenceProvider();
+        var editor   = new NullEditorSurface();
+        var approval = new NoopApproval();
+        var index    = new ProjectIndexService(client, config, new LspSemanticProvider());
+        var registry = new ToolRegistry(editor, approval, config, index, client,
+                                        new ProjectMapService(editor), new McpToolService(config, approval),
+                                        new DocsIndexService(client, config), new OpenDocumentOverlay(),
+                                        new NullDebugSession());
+
+        var lines = Doc("tools.md").Split('\n').Select(l => l.TrimEnd('\r')).ToList();
+        var paramName = new Regex(@"`(?<n>[a-z_]+)(?:\[\])?(?<opt>\?)?`");
+        var wrong = new List<string>();
+        var compared = 0;
+
+        foreach (var tool in registry.BuiltInTools)
+        {
+            var row = lines.FirstOrDefault(l => l.StartsWith($"| `{tool.Name}` |", StringComparison.Ordinal));
+            if (row is null) continue;                                     // EveryBuiltInTool_IsDocumented says it
+            var cell = Regex.Split(row, @"(?<!\\)\|")[2];
+            if (cell.Contains('…'))
+                cell += " " + lines.FirstOrDefault(l => l.StartsWith("Other parameters", StringComparison.Ordinal));
+            cell = Regex.Replace(cell, @"\([^)]*\)", string.Empty);
+
+            var documented = paramName.Matches(cell).ToDictionary(m => m.Groups["n"].Value, m => m.Groups["opt"].Success);
+            using var schema = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(tool.Parameters));
+            var declared = schema.RootElement.TryGetProperty("properties", out var props)
+                ? props.EnumerateObject().Select(p => p.Name).ToHashSet() : [];
+            var required = schema.RootElement.TryGetProperty("required", out var req)
+                ? req.EnumerateArray().Select(e => e.GetString()!).ToHashSet() : [];
+            compared++;
+
+            foreach (var d in documented.Keys.Where(d => !declared.Contains(d)))
+                wrong.Add($"{tool.Name}: the page lists `{d}`, which the tool does not take");
+            foreach (var d in declared.Where(d => !documented.ContainsKey(d)))
+                wrong.Add($"{tool.Name}: `{d}` is not on the page");
+            foreach (var (d, optional) in documented.Where(kv => declared.Contains(kv.Key)))
+                if (optional == required.Contains(d))
+                    wrong.Add($"{tool.Name}: the page shows `{d}` as {(optional ? "optional" : "required")}, the schema says otherwise");
+        }
+
+        Assert.True(compared > 20, $"Only {compared} tool row(s) compared: the rule compares nothing.");   // WITNESS
+        Assert.True(wrong.Count == 0, string.Join("\n", wrong));
+    }
+
+    /// <summary>
     /// The typed @-mention picker, in both directions, across every page that describes it.
     /// </summary>
     /// <remarks>

@@ -2440,6 +2440,38 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task ModelsPull_TheFirstModelOfAFreshInstall_IsUsedAtOnce()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.OnPull = m => { h.Fake.ModelNames = [m]; return true; };   // nothing installed until the pull
+        var configured = h.Server.CurrentSession!.Config.DefaultModel;
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/models pull qwen3:8b" });
+
+        Assert.Equal(["qwen3:8b"], h.Fake.Pulled);                                                  // witness: pulled
+        Assert.Equal("qwen3:8b", h.Server.CurrentSession!.Config.DefaultModel);
+        Assert.Contains(Strings.MsgModelAdopted(configured, "qwen3:8b"), result.Markdown);
+        var effect = Assert.Single(result.Effects!);
+        Assert.Equal(("stateChange", "qwen3:8b", "model"), (effect.Kind, effect.Value, effect.Name));
+    }
+
+    [Fact]
+    public async Task ModelsPull_LeavesAChosenModelAlone()
+    {
+        using var h = CreateHarness(cfg => cfg.DefaultModel = "my-finetune");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.OnPull = m => { h.Fake.ModelNames = [m]; return true; };
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/models pull qwen3:8b" });
+
+        Assert.Equal(Strings.ModelsPulled("qwen3:8b"), result.Markdown);
+        Assert.Equal("my-finetune", h.Server.CurrentSession!.Config.DefaultModel);
+    }
+
+    [Fact]
     public async Task AdoptDefault_LeavesAChosenModelAlone()
     {
         using var h = CreateHarness(cfg => cfg.DefaultModel = "my-finetune");

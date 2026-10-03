@@ -74,6 +74,27 @@ public class UnchosenDefaultModelTests
         Assert.Contains("IsFirstRun = false", code[pick..]);
     }
 
+    [Fact]
+    public void APull_ChoosesTheModel_AndTheAutomaticFirstRunDoesNotRepeatTheHeartbeat()
+    {
+        var root = RepoRoot();
+        var slash = ConventionCoverageTests.CodeOnly(
+            Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
+        var pull = slash[slash.IndexOf("private async Task PullModelInteractiveAsync", StringComparison.Ordinal)..];
+        Assert.Contains("_client.PullModelAsync(", pull);                                                   // WITNESS
+        // The model just downloaded is used now, not at the next start.
+        Assert.Contains("if (ok) await EnsureChatModelAsync();", pull[..pull.IndexOf("\n    }", StringComparison.Ordinal)]);
+
+        var rag = ConventionCoverageTests.CodeOnly(
+            Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
+        Assert.Contains("RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None, automatic: true)", rag);
+        // The heartbeat's first failed check already says the backend is down: the first run, which resumes at every
+        // start until a model is chosen, said it a second time at every start.
+        var unreachable = rag[rag.IndexOf("if (!reachable)", StringComparison.Ordinal)..];
+        Assert.True(unreachable.IndexOf("if (automatic) return;", StringComparison.Ordinal)
+                    is var at and >= 0 && at < unreachable.IndexOf("await present(", StringComparison.Ordinal));
+    }
+
     // ── VS Code: the extension has no test runner, held on its source ──
 
     /// <summary>The body of the TypeScript method <paramref name="name"/>, comments neutralized.</summary>

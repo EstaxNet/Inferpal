@@ -75,7 +75,52 @@ internal class GetDiagnosticsTool : ITool
     /// A panel answer says what it is: without the line it reads as the build's answer — a list of
     /// errors taken for all of them, when unopened files were never analyzed and nothing compiled.
     /// </summary>
-    private static string FromPanel(string panel) => Strings.DiagFromEditor + "\n\n" + panel;
+    private static string FromPanel(string panel) =>
+        Strings.DiagFromEditor + "\n\n" + ErrorsFirst(panel.Split('\n').Select(l => l.TrimEnd('\r')));
+
+    // The severity of a diagnostic line, in both shapes this tool lists — MSBuild's `file(l,c): error CS0103: …` and
+    // the editor panel's `rel(l,c): error source code: …`. The leftmost match is the line's own severity.
+    private static readonly Regex _severity = new(
+        @":\s*(?<s>error|warning)\s", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    /// <summary>How many diagnostic lines an answer lists; the counts above them are always complete.</summary>
+    internal const int MaxListed = 200;
+
+    /// <summary>
+    /// Diagnostic lines with the errors first, at most <paramref name="max"/> of them, and what was left out counted
+    /// per severity. Other lines (an editor's own notes) follow, as they came.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ In the order a build or an editor reports them, errors sit among the warnings — and a project with hundreds of
+    /// nullable or lint warnings is ordinary. Past the cap (the editor's, or the context's), the summary still said
+    /// "2 errors" while the errors themselves were cut: the model fixed warnings, or concluded the errors were gone.
+    /// </remarks>
+    internal static string ErrorsFirst(IEnumerable<string> lines, int max = MaxListed)
+    {
+        var errors = new List<string>();
+        var warnings = new List<string>();
+        var other = new List<string>();
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            var m = _severity.Match(line);
+            if (!m.Success) other.Add(line);
+            else if (m.Groups["s"].Value.Equals("error", StringComparison.OrdinalIgnoreCase)) errors.Add(line);
+            else warnings.Add(line);
+        }
+
+        var shownErrors   = Math.Min(errors.Count, max);
+        var shownWarnings = Math.Min(warnings.Count, max - shownErrors);
+        var listed = errors.Take(shownErrors).Concat(warnings.Take(shownWarnings)).ToList();
+
+        var left = new List<string>();
+        if (errors.Count > shownErrors) left.Add($"{errors.Count - shownErrors} more error(s)");
+        if (warnings.Count > shownWarnings) left.Add($"{warnings.Count - shownWarnings} more warning(s)");
+        if (left.Count > 0) listed.Add($"… {string.Join(" and ", left)} not listed (errors are listed first).");
+
+        listed.AddRange(other);
+        return string.Join("\n", listed);
+    }
 
     /// <summary>What an answer of this tool says about the build.</summary>
     internal enum BuildVerdict { Clean, Errors, NotBuilt }
@@ -238,8 +283,7 @@ internal class GetDiagnosticsTool : ITool
             var sb = new StringBuilder();
             sb.AppendLine(Strings.DiagSummary(errors, warnings, projectFile));
             sb.AppendLine();
-            foreach (var d in diagnostics)
-                sb.AppendLine(d);
+            sb.AppendLine(ErrorsFirst(diagnostics));
             body = sb.ToString().Trim();
         }
 

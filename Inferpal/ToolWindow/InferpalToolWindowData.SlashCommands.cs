@@ -302,6 +302,9 @@ internal partial class InferpalToolWindowData
         });
 
         await ShowInfoAsync(ok ? Strings.ModelsPulled(model) : Strings.ModelsPullFailed(model));
+        // The first model a fresh install gets: an unfinished first run completes, or the default nobody chose is
+        // replaced — now, not at the next start.
+        if (ok) await EnsureChatModelAsync();
     }
 
     // /bench [model…] — long run (one full micro-eval suite per model): live status bubble

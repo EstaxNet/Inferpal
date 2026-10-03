@@ -1135,6 +1135,28 @@ internal class RunTestsTool : ITool
         return fallback;
     }
 
-    private static string Truncate(string s, int max) =>
-        s.Length <= max ? s : s[..max] + $"\n...[truncated — {s.Length - max} more characters]";
+    /// <summary>
+    /// A runner's raw output within <paramref name="max"/> characters: its first lines (what ran) and, for the larger
+    /// part, its END — the cut said where it is, on line ends.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The head alone dropped what this output is shown for. Every runner prints its failures and its summary last
+    /// — jest's failing suites and counts, pytest's FAILURES section, cargo's and go's failures, MSBuild's error recap
+    /// — so a chatty run reached the model as progress and passing lines, under a verdict saying "the error is below".
+    /// </remarks>
+    internal static string Truncate(string s, int max)
+    {
+        if (s.Length <= max) return s;
+
+        var headEnd = s.LastIndexOf('\n', max / 4);
+        if (headEnd <= 0) headEnd = max / 4;
+        var tailFrom  = s.Length - (max - headEnd);
+        var lineStart = s.IndexOf('\n', tailFrom);
+        var tailStart = lineStart >= 0 && lineStart + 1 < s.Length ? lineStart + 1 : tailFrom;
+        if (char.IsLowSurrogate(s[tailStart])) tailStart++;   // never start on half a pair
+
+        return s[..headEnd]
+             + $"\n...[{tailStart - headEnd} characters cut here — the start and the end of the output are shown]\n"
+             + s[tailStart..];
+    }
 }

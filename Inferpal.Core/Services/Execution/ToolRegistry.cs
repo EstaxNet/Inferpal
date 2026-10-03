@@ -260,6 +260,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// counts and lists. <see cref="Definitions"/> is what the model is offered on this request.</summary>
     internal IReadOnlyCollection<string> BuiltInNames => _tools.Keys;
 
+    /// <summary>The same set as <see cref="BuiltInNames"/>, with what each declares — what the documentation describes.</summary>
+    internal IReadOnlyCollection<ITool> BuiltInTools => _tools.Values;
+
     public IReadOnlyList<ToolDefinition> Definitions =>
         _tools.Values
             .Where(t => t.IsOffered)

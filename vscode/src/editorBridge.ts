@@ -303,9 +303,11 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
   async editorDiagnostics(): Promise<string | null> {
     // Problems panel across all open files — errors and warnings only (info/hint noise
     // would eat the agent's context), workspace-relative paths, hard cap on volume.
+    // ⚠ Errors first, then the cap: in the order the editor holds them, errors sit among the warnings, and a workspace
+    // with hundreds of lint or nullable warnings is ordinary — capped first, the errors were the lines dropped.
     const MAX_LINES = 200;
-    const lines: string[] = [];
-    let dropped = 0;
+    const errors: string[] = [];
+    const warnings: string[] = [];
     for (const [uri, diags] of vscode.languages.getDiagnostics()) {
       if (uri.scheme !== 'file') {
         continue;
@@ -317,23 +319,30 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
         if (d.severity !== vscode.DiagnosticSeverity.Error && d.severity !== vscode.DiagnosticSeverity.Warning) {
           continue;
         }
-        if (lines.length >= MAX_LINES) {
-          dropped++;
-          continue;
-        }
         // ⚠ The host reads `(line,col): error` to decide whether this panel answers instead of a
         // build (GetDiagnosticsTool.PanelReportsErrors): a warnings-only panel still compiles.
-        const sev = d.severity === vscode.DiagnosticSeverity.Error ? 'error' : 'warning';
+        const isError = d.severity === vscode.DiagnosticSeverity.Error;
         const code = typeof d.code === 'object' ? d.code.value : d.code ?? '';
         const src = d.source ? `${d.source} ` : '';
-        lines.push(`${rel}(${d.range.start.line + 1},${d.range.start.character + 1}): ${sev} ${src}${code}: ${d.message.replace(/\s+/g, ' ')}`);
+        (isError ? errors : warnings).push(
+          `${rel}(${d.range.start.line + 1},${d.range.start.character + 1}): ${isError ? 'error' : 'warning'} ${src}${code}: ${d.message.replace(/\s+/g, ' ')}`);
       }
     }
-    if (lines.length === 0) {
+    if (errors.length + warnings.length === 0) {
       return null; // clean panel proves nothing about unopened files — let the host build
     }
-    if (dropped > 0) {
-      lines.push(`… ${dropped} more diagnostics truncated.`);
+    const shownErrors = errors.slice(0, MAX_LINES);
+    const shownWarnings = warnings.slice(0, MAX_LINES - shownErrors.length);
+    const lines = [...shownErrors, ...shownWarnings];
+    const left: string[] = [];
+    if (errors.length > shownErrors.length) {
+      left.push(`${errors.length - shownErrors.length} more error(s)`);
+    }
+    if (warnings.length > shownWarnings.length) {
+      left.push(`${warnings.length - shownWarnings.length} more warning(s)`);
+    }
+    if (left.length > 0) {
+      lines.push(`… ${left.join(' and ')} not listed (errors are listed first).`);
     }
     return lines.join('\n');
   }

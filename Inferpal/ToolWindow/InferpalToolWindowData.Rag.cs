@@ -120,7 +120,7 @@ internal partial class InferpalToolWindowData
             if (!_config.IsFirstRun) return; // guard against re-entry
 
             // First-run posts its bubbles directly (no user turn exists yet to attach a reply to).
-            await RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None).ConfigureAwait(false);
+            await RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None, automatic: true).ConfigureAwait(false);
         }
         // ⚠ The first run is the one moment where silence costs the most: the window opens on an
         // EMPTY conversation, so a swallowed failure leaves someone who has just installed the
@@ -149,10 +149,13 @@ internal partial class InferpalToolWindowData
     /// <summary>
     /// Core setup discovery, shared by the automatic first-run and the manual <c>/setup</c> command:
     /// auto-detects the backend, checks connectivity, discovers and auto-selects chat + embedding
-    /// models, seeds the VRAM budget, and reports the result via <paramref name="present"/>. Always
-    /// clears <see cref="InferpalConfig.IsFirstRun"/>. Re-runnable on demand (no IsFirstRun guard here).
+    /// models, seeds the VRAM budget, and reports the result via <paramref name="present"/>. Clears
+    /// <see cref="InferpalConfig.IsFirstRun"/> once a model is chosen. Re-runnable on demand (no IsFirstRun guard here).
     /// </summary>
-    private async Task RunSetupDiscoveryAsync(Func<string, Task> present, CancellationToken ct)
+    /// <param name="automatic">The first run, not <c>/setup</c>: an unreachable backend is then left to the
+    /// heartbeat, whose first failed check already says it with the same remedies — and the first run, which now
+    /// resumes at every start until a model is chosen, would repeat it at every start.</param>
+    private async Task RunSetupDiscoveryAsync(Func<string, Task> present, CancellationToken ct, bool automatic = false)
     {
         var url = _config.BaseUrl;
 
@@ -179,6 +182,7 @@ internal partial class InferpalToolWindowData
         // connection comes back (heartbeat) or at the next start.
         if (!reachable)
         {
+            if (automatic) return;
             // A server that refused the check (a wrong API key) is running: "start it" is the wrong remedy.
             await present(client.ConnectionRefusal is { } refusal
                 ? Strings.MsgBackendRefused(url, refusal)

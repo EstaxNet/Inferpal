@@ -601,7 +601,13 @@ internal sealed partial class HostServer
             Notify("chat/step", new { text = Strings.ModelsPulling(model) });
             var ok = await s.Client.PullModelAsync(model,
                 status => Notify("chat/step", new { text = Strings.ModelsPullingStatus(model, status) }), ct);
-            return new SlashCommandResult(true, ok ? Strings.ModelsPulled(model) : Strings.ModelsPullFailed(model));
+            if (!ok) return new SlashCommandResult(true, Strings.ModelsPullFailed(model));
+
+            // The first model a fresh install gets: the default nobody chose is replaced now, not at the next start.
+            var adopted = await AdoptDefaultModelAsync(s, ct);
+            return adopted is { Model: { } m, Notice: { } notice }
+                ? new SlashCommandResult(true, Strings.ModelsPulled(model) + "\n\n" + notice, [new SlashEffectDto("stateChange", m, "model")])
+                : new SlashCommandResult(true, Strings.ModelsPulled(model));
         }
 
         var result = await ModelsCommandHandler.HandleAsync(s.Client, s.Config, parts, ct);

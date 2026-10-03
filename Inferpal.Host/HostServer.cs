@@ -792,9 +792,12 @@ internal sealed partial class HostServer : IDisposable
     /// fresh install asked every question of a model that is not there.
     /// </summary>
     [JsonRpcMethod("models/adoptDefault")]
-    public async Task<ModelsAdoptResult> AdoptDefaultModelAsync(CancellationToken ct)
+    public Task<ModelsAdoptResult> AdoptDefaultModelAsync(CancellationToken ct) => AdoptDefaultModelAsync(Session(), ct);
+
+    /// <summary>The adoption itself: also run after a <c>/models pull</c>, the gesture that makes a model installed —
+    /// without it the model just downloaded was not used until the next start.</summary>
+    private static async Task<ModelsAdoptResult> AdoptDefaultModelAsync(HostSession s, CancellationToken ct)
     {
-        var s = Session();
         var listed = await s.Client.ListModelsAsync(ct);
         if (ModelCatalog.FirstModelToAdopt(s.Config, listed) is not { } adopted)
             return new ModelsAdoptResult(null, null);
