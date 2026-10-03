@@ -25,7 +25,11 @@
     "ollama",
     "lm studio",
     "local",
+    "offline",
     "agent",
+    "chat",
+    "autocomplete",
+    "copilot alternative",
     "assistant"
   ],
   "main": "./out/extension.js",

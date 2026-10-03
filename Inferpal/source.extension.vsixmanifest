@@ -25,7 +25,7 @@
     <GettingStartedGuide>https://github.com/EstaxNet/Inferpal/blob/master/docs/getting-started.md</GettingStartedGuide>
     <ReleaseNotes>https://github.com/EstaxNet/Inferpal/releases</ReleaseNotes>
     <Icon>assets\icon.png</Icon>
-    <Tags>AI, LLM, Ollama, LM Studio, Assistant, Code, Local, Agentic, Autocomplete, RAG</Tags>
+    <Tags>AI, LLM, Ollama, LM Studio, Copilot alternative, Local, Offline, Agent, Chat, Autocomplete</Tags>
   </Metadata>
 
   <!-- The Marketplace REFUSES 18.0 as a lower bound, measured on the first submission:
