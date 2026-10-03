@@ -340,7 +340,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
             // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say
             // what the server said instead.
-            RecordFailure();
+            RecordRefusal(ex);
             throw new AgentHttpException(MapServerError(ex.Message, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
         }
         catch (Exception ex)
@@ -537,7 +537,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
             // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say
             // what the server said instead.
-            RecordFailure();
+            RecordRefusal(ex);
             throw new AgentHttpException(MapServerError(ex.Message, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
         }
         catch (Exception ex)
@@ -808,21 +808,24 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             using var req = new HttpRequestMessage(HttpMethod.Get, endpoint);
             AddAuth(req);
             using var response = await _http.SendAsync(req, cts.Token);
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
-                var body = await response.Content.ReadAsStringAsync(cts.Token);
-                if (ConfirmsBackendPayload(endpoint, body, "data", "OpenAiCompatible.CheckConnection", _config.Provider))
-                {
-                    ResetCircuit();
-                    return true;
-                }
+                RecordCheckRefusal(response.StatusCode, response.ReasonPhrase);
+                return false;
+            }
+            ClearCheckRefusal();
+            var body = await response.Content.ReadAsStringAsync(cts.Token);
+            if (ConfirmsBackendPayload(endpoint, body, "data", "OpenAiCompatible.CheckConnection", _config.Provider))
+            {
+                ResetCircuit();
+                return true;
             }
             RecordFailure();
             return false;
         }
         // The caller gave up — not a server failure, so it must not push the breaker toward open.
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { return false; }
-        catch { RecordFailure(); return false; }
+        catch { ClearCheckRefusal(); RecordFailure(); return false; }
     }
 
     /// <inheritdoc/>

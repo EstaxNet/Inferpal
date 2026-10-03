@@ -126,8 +126,8 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 var url = _config.BaseUrl;
-                var msg = ChatMessageItem.NoticeMsg(Strings.MsgConnectionGuardFailed(
-                    url, InferenceProviderFactory.DisplayName(_config.Provider)));
+                var msg = ChatMessageItem.NoticeMsg(Strings.MsgConnectionLost(
+                    url, InferenceProviderFactory.DisplayName(_config.Provider), _client.ConnectionRefusal));
                 ApplyItemTheme(msg);
                 Messages.Insert(Messages.Count - 2, msg);
                 ScrollToBottom();

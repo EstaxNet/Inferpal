@@ -225,7 +225,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Done — {0}</value></data>
   <data name="MsgAgentToolsCalled" xml:space="preserve"><value>Tools called — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  session : {1}</value></data>
-  <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL not configured. Open Settings to set it.</value></data>
+  <data name="MsgNoUrl" xml:space="preserve"><value>Server URL not configured. Open Settings to set it.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>The model **{0}** produced no text. The server ({1}) accepted the request and closed the stream without a single token, and without reporting an error — so this is not a connection problem. `/diagnostics` carries what the stream contained.</value></data>
   <data name="MsgOnlyReasoningFrom" xml:space="preserve"><value>The model **{0}** spent its whole reply reasoning and wrote no answer — its reasoning is not used as one. A larger context, or a model that does not reason first, avoids it.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>The answer stopped at the model's length limit before the end of the code — nothing was applied. Select a smaller part of the file, or increase the context length.</value></data>
@@ -258,8 +258,13 @@ Troubleshooting steps:
   4. Check that the port is not blocked by a firewall or antivirus
 
 Click ↻ Retry in the header once {1} is running.</value></data>
-  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconnected to Ollama — ready.</value></data>
-  <data name="TooltipRetryConnection" xml:space="preserve"><value>Check connection to Ollama now</value></data>
+  <data name="MsgConnectionRefused" xml:space="preserve"><value>{1} at {0} answered the connection check with {2}: the server is running, but it refused the request.
+
+If it needs an API key, check the key in Settings; otherwise check that the URL points at {1}'s API.
+
+Click ↻ Retry in the header once it is fixed.</value></data>
+  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconnected to {0} — ready.</value></data>
+  <data name="TooltipRetryConnection" xml:space="preserve"><value>Check connection to {0} now</value></data>
 
   <!-- Approval dialog -->
   <data name="ApprovalMessage" xml:space="preserve"><value>Inferpal wants to execute: {0}
@@ -569,22 +574,16 @@ Edit the file or ask the agent to use `update_memory`. It is read again before e
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **First launch** — {0} available. Auto-selected **{1}** as default model.
 
 Open **Settings** to change the model or configure a dedicated model for code actions and inline completions.</value></data>
-  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **First launch** — Ollama is running but no chat models were found.
+  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **First launch** — {0} is running but has no chat model yet.
 
-Pull a model to get started:
-```
-ollama pull llama3.1
-```
-Then restart Visual Studio (or open Settings and click **Test**).</value></data>
+Get one — the models measured with Inferpal, for each graphics card, are listed in [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) — then restart Visual Studio (or open Settings and click **Test**).</value></data>
+  <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;name&gt;` downloads one without leaving Visual Studio.</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal's first-run setup could not complete: {0}
 
 Type `/setup` to try again.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **First launch** — the model server is not reachable at **{0}**.
+  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **First launch** — {1} is not reachable at **{0}**.
 
-Start Ollama and click **↻ Retry** in the header:
-```
-ollama serve
-```</value></data>
+Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a terminal).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — the selected models need about **{0} GB** together, more than your **{1} GB** budget. They may spill to system RAM and run slowly. Consider a smaller model, or run `/hardware` to review.</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>MCP servers</value></data>
   <data name="LabelMcpEnabled" xml:space="preserve"><value>Enable MCP servers</value></data>

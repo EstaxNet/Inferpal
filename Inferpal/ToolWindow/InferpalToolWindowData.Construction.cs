@@ -126,7 +126,8 @@ internal partial class InferpalToolWindowData
         MenuBrowseFile           = Strings.MenuBrowseFile;
         MenuPinFile              = Strings.MenuPinFile;
         TooltipPinChip           = Strings.TooltipPinChip;
-        TooltipRetryConnection   = Strings.TooltipRetryConnection;
+        TooltipRetryConnection   = Strings.TooltipRetryConnection(
+            Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider));
         TooltipSearchConversation = Strings.TooltipSearchConversation;
         TooltipCloseSearch        = Strings.TooltipCloseSearch;
         TooltipSaveSnippet        = Strings.TooltipSaveSnippet;

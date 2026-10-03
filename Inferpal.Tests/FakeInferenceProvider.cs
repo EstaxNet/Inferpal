@@ -128,6 +128,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     }
 
     public Task<bool> CheckConnectionAsync(string url, CancellationToken ct) => Task.FromResult(ConnectionOk);
+    public string? ConnectionRefusal { get; set; }
 
     /// <summary>The URL the last <see cref="ListModelsAsync"/> received — the settings panel
     /// must list the models of the FORM's URL, not of the saved one, and without

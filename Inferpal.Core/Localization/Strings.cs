@@ -482,11 +482,25 @@ internal static class Strings
     public static string ContextPartLast(int tokens) =>
         string.Format(Get(nameof(ContextPartLast)), tokens);
 
-    public static string MsgConnectionGuardFailed(string url, string backend) =>
+    /// <summary>
+    /// The backend is not usable — one reader for the heartbeat, the send pre-flight and the regenerate guard of both
+    /// front-ends. ⚠ A server that ANSWERED the check with a refusal (<paramref name="refusal"/>: 401 for a wrong key,
+    /// 404 for a URL at the wrong path) is running: "cannot reach… start it… check the firewall" sent its user to four
+    /// remedies for a server that was up.
+    /// </summary>
+    public static string MsgConnectionLost(string url, string backend, string? refusal) =>
+        refusal is null ? MsgConnectionGuardFailed(url, backend) : MsgConnectionRefused(url, backend, refusal);
+
+    internal static string MsgConnectionGuardFailed(string url, string backend) =>
         string.Format(Get(nameof(MsgConnectionGuardFailed)), url, backend);
 
-    public static string MsgHeartbeatRestored    => Get(nameof(MsgHeartbeatRestored));
-    public static string TooltipRetryConnection  => Get(nameof(TooltipRetryConnection));
+    internal static string MsgConnectionRefused(string url, string backend, string refusal) =>
+        string.Format(Get(nameof(MsgConnectionRefused)), url, backend, refusal);
+
+    /// <summary>⚠ Name the CONFIGURED backend, like <see cref="MsgConnectionGuardFailed"/>: "Reconnected to Ollama"
+    /// was said to every LM Studio user.</summary>
+    public static string MsgHeartbeatRestored(string backend)   => string.Format(Get(nameof(MsgHeartbeatRestored)), backend);
+    public static string TooltipRetryConnection(string backend) => string.Format(Get(nameof(TooltipRetryConnection)), backend);
 
     public static string MsgToolOutput(string input, string output) =>
         string.Format(Get(nameof(MsgToolOutput)), input, output);
@@ -889,14 +903,20 @@ internal static class Strings
     // ── First-Run Auto-Discovery ───────────────────────────────────────────────
     public static string MsgFirstRunWelcome(string models, string selected) =>
         string.Format(Get(nameof(MsgFirstRunWelcome)), models, selected);
-    public static string MsgFirstRunNoModels => Get(nameof(MsgFirstRunNoModels));
+    /// <summary>The backend answered with no chat model: named (it is not always Ollama), with the slash command that
+    /// downloads one when the backend can (<paramref name="canPull"/>), and no model of our own choosing — the measured
+    /// ones live in docs/models.md, where they are kept current.</summary>
+    public static string MsgFirstRunNoModels(string backend, bool canPull) =>
+        string.Format(Get(nameof(MsgFirstRunNoModels)), backend)
+        + (canPull ? "\n\n" + MsgFirstRunPullHint : string.Empty);
+    private static string MsgFirstRunPullHint => Get(nameof(MsgFirstRunPullHint));
 
     /// <summary>The first run could not complete — said in the conversation, which is empty
     /// and waiting, and naming the gesture that re-runs it.</summary>
     public static string FirstRunFailed(string detail) =>
         string.Format(Get(nameof(FirstRunFailed)), detail);
-    public static string MsgFirstRunBackendDown(string url) =>
-        string.Format(Get(nameof(MsgFirstRunBackendDown)), url);
+    public static string MsgFirstRunBackendDown(string url, string backend) =>
+        string.Format(Get(nameof(MsgFirstRunBackendDown)), url, backend);
     public static string MsgFirstRunVramWarning(string neededGb, string budgetGb) =>
         string.Format(Get(nameof(MsgFirstRunVramWarning)), neededGb, budgetGb);
 

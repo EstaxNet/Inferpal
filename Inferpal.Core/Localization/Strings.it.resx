@@ -224,7 +224,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Fatto — {0}</value></data>
   <data name="MsgAgentToolsCalled" xml:space="preserve"><value>Strumenti chiamati — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} tok  ·  sessione: {1}</value></data>
-  <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama non configurato. Apri le impostazioni per impostarlo.</value></data>
+  <data name="MsgNoUrl" xml:space="preserve"><value>URL del server non configurato. Apri le impostazioni per impostarlo.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Il modello **{0}** non ha prodotto alcun testo. Il server ({1}) ha accettato la richiesta e ha chiuso il flusso senza un solo token e senza segnalare errori: non è quindi un problema di connessione. `/diagnostics` riporta cosa conteneva il flusso.</value></data>
   <data name="MsgOnlyReasoningFrom" xml:space="preserve"><value>Il modello **{0}** ha passato tutta la risposta a ragionare senza scrivere una risposta: il suo ragionamento non viene usato come tale. Un contesto più ampio, o un modello che non ragiona prima, lo evita.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>La risposta si è interrotta al limite di lunghezza del modello prima della fine del codice: non è stato applicato nulla. Seleziona una parte più piccola del file oppure aumenta la lunghezza del contesto.</value></data>
@@ -257,8 +257,13 @@ Procedura di risoluzione dei problemi:
   4. Verifica che la porta non sia bloccata da un firewall o antivirus
 
 Clicca su ↻ Riprova nell'intestazione una volta avviato {1}.</value></data>
-  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Riconnesso a Ollama — pronto.</value></data>
-  <data name="TooltipRetryConnection" xml:space="preserve"><value>Verifica la connessione a Ollama ora</value></data>
+  <data name="MsgConnectionRefused" xml:space="preserve"><value>{1} su {0} ha risposto al controllo di connessione con {2}: il server è attivo, ma ha rifiutato la richiesta.
+
+Se richiede una chiave API, controllala nelle Impostazioni; altrimenti verifica che l'URL punti all'API di {1}.
+
+Clicca su ↻ Riprova nell'intestazione una volta corretto.</value></data>
+  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Riconnesso a {0} — pronto.</value></data>
+  <data name="TooltipRetryConnection" xml:space="preserve"><value>Verifica la connessione a {0} ora</value></data>
 
   <!-- Approval dialog -->
   <data name="ApprovalMessage" xml:space="preserve"><value>Inferpal vuole eseguire: {0}
@@ -540,22 +545,16 @@ Modifica il file o chiedi all'agente di usare `update_memory`. Viene riletto pri
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Primo avvio** — {0} disponibile/i. **{1}** selezionato automaticamente come modello predefinito.
 
 Apri **Impostazioni** per cambiare il modello o configurare un modello dedicato per le azioni sul codice e i completamenti inline.</value></data>
-  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Primo avvio** — Ollama è in esecuzione ma non sono stati trovati modelli di chat.
+  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Primo avvio** — {0} è in esecuzione ma non ha ancora alcun modello di chat.
 
-Scarica un modello per iniziare:
-```
-ollama pull llama3.1
-```
-Riavvia Visual Studio (oppure apri le Impostazioni e clicca su **Test**).</value></data>
+Scaricane uno — i modelli misurati con Inferpal, per scheda grafica, sono elencati in [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) — poi riavvia Visual Studio (oppure apri le Impostazioni e clicca su **Test**).</value></data>
+  <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;nome&gt;` ne scarica uno senza uscire da Visual Studio.</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ La configurazione iniziale di Inferpal non è riuscita: {0}
 
 Digita `/setup` per riprovare.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Primo avvio** — il server dei modelli non è raggiungibile all'indirizzo **{0}**.
+  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Primo avvio** — {1} non è raggiungibile all'indirizzo **{0}**.
 
-Avvia Ollama e clicca su **↻ Riprova** nell'intestazione:
-```
-ollama serve
-```</value></data>
+Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama serve` in un terminale).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — i modelli selezionati richiedono circa **{0} GB** insieme, più del tuo budget di **{1} GB**. Potrebbero riversarsi nella RAM di sistema ed essere lenti. Valuta un modello più piccolo o esegui `/hardware` per controllare.</value></data>
 
   <!-- Agent Mode -->

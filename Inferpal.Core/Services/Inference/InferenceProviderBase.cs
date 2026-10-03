@@ -96,6 +96,44 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         }
     }
 
+    /// <summary>
+    /// A chat request the server refused with an HTTP status. ⚠ A 4xx is an ANSWER about this request — a context it
+    /// overflows, a model name the server does not have, a parameter it rejects — so the server is reachable, which is
+    /// all this breaker guards: counted as failures, five refusals in a row (the user retrying the question that is too
+    /// long) locked the chat for five minutes, after the request was fixed too. A 5xx is the server failing on its side.
+    /// </summary>
+    protected void RecordRefusal(HttpRequestException ex)
+    {
+        if (ex.StatusCode is { } code && (int)code < 500) RecordSuccess();
+        else RecordFailure();
+    }
+
+    /// <inheritdoc/>
+    public string? ConnectionRefusal => Volatile.Read(ref _connectionRefusal);
+    private string? _connectionRefusal;
+
+    /// <summary>
+    /// A connection check the server answered with a status other than success: a refusal (4xx) is named for the badge
+    /// and is not a failure of the chat's breaker — the server is up, and the chat's own request will get its own words
+    /// ("invalid API key") instead of "circuit breaker open". A 5xx counts, as for a chat request.
+    /// </summary>
+    protected void RecordCheckRefusal(System.Net.HttpStatusCode status, string? reason)
+    {
+        if ((int)status is >= 400 and < 500)
+        {
+            Volatile.Write(ref _connectionRefusal, $"HTTP {(int)status} ({reason})");
+            RecordSuccess();
+        }
+        else
+        {
+            Volatile.Write(ref _connectionRefusal, null);
+            RecordFailure();
+        }
+    }
+
+    /// <summary>The check got a usable answer, or no answer at all: no refusal to name.</summary>
+    protected void ClearCheckRefusal() => Volatile.Write(ref _connectionRefusal, null);
+
     /// <summary>Resets the chat circuit breaker immediately (e.g. on manual Retry).</summary>
     public void ResetCircuit()
     {
@@ -275,11 +313,12 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             if (read > ErrorDetailChars) detail += "…";
         }
         catch { detail = string.Empty; } // best-effort: the status line alone still surfaces
-        var status = $"{(int)response.StatusCode} ({response.ReasonPhrase})";
+        var code   = response.StatusCode;
+        var status = $"{(int)code} ({response.ReasonPhrase})";
         response.Dispose(); // release the connection on HTTP errors
         throw new HttpRequestException(detail.Length > 0
             ? $"HTTP {status}: {detail}"
-            : $"HTTP {status}.");
+            : $"HTTP {status}.", inner: null, code);
     }
 
     private const int ErrorDetailChars = 600;

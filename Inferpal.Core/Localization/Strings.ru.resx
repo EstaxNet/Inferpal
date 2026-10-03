@@ -224,7 +224,7 @@
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ Готово — {0}</value></data>
   <data name="MsgAgentToolsCalled" xml:space="preserve"><value>Вызванные инструменты — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} тк  ·  сессия: {1}</value></data>
-  <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama не настроен. Откройте настройки для его указания.</value></data>
+  <data name="MsgNoUrl" xml:space="preserve"><value>URL сервера не настроен. Откройте настройки для его указания.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Модель **{0}** не выдала ни одного фрагмента текста. Сервер ({1}) принял запрос и закрыл поток без единого токена и без сообщения об ошибке — значит, дело не в соединении. Подробности о содержимом потока — в `/diagnostics`.</value></data>
   <data name="MsgOnlyReasoningFrom" xml:space="preserve"><value>Модель **{0}** потратила весь ответ на рассуждения и не написала ответа — её рассуждения не используются вместо него. Избежать этого помогает больший контекст или модель, которая не рассуждает перед ответом.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>Ответ остановился на ограничении длины модели до конца кода — ничего не применено. Выделите меньшую часть файла или увеличьте длину контекста.</value></data>
@@ -257,8 +257,13 @@
   4. Убедитесь, что порт не заблокирован брандмауэром или антивирусом
 
 После запуска {1} нажмите ↻ Повторить в заголовке.</value></data>
-  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Соединение с Ollama восстановлено — готово.</value></data>
-  <data name="TooltipRetryConnection" xml:space="preserve"><value>Проверить соединение с Ollama сейчас</value></data>
+  <data name="MsgConnectionRefused" xml:space="preserve"><value>{1} по адресу {0} ответил на проверку соединения кодом {2}: сервер работает, но отклонил запрос.
+
+Если он требует ключ API, проверьте ключ в Настройках; иначе проверьте, что URL указывает на API {1}.
+
+После исправления нажмите ↻ Повторить в заголовке.</value></data>
+  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Соединение с {0} восстановлено — готово.</value></data>
+  <data name="TooltipRetryConnection" xml:space="preserve"><value>Проверить соединение с {0} сейчас</value></data>
 
   <!-- Approval dialog -->
   <data name="ApprovalMessage" xml:space="preserve"><value>Inferpal хочет выполнить: {0}
@@ -540,22 +545,16 @@
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Первый запуск** — {0} доступно. Автоматически выбрана модель **{1}**.
 
 Откройте **Настройки** для смены модели или настройки отдельной модели для действий с кодом и встроенных подсказок.</value></data>
-  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Первый запуск** — Ollama запущен, но не найдено ни одной модели чата.
+  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Первый запуск** — {0} запущен, но в нём ещё нет ни одной модели чата.
 
-Загрузите модель для начала работы:
-```
-ollama pull llama3.1
-```
-Перезапустите Visual Studio (или откройте Настройки и нажмите **Test**).</value></data>
+Загрузите модель — модели, измеренные с Inferpal, по видеокартам перечислены в [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) — затем перезапустите Visual Studio (или откройте Настройки и нажмите **Test**).</value></data>
+  <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;имя&gt;` загружает модель, не выходя из Visual Studio.</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Первоначальная настройка Inferpal не завершилась: {0}
 
 Введите `/setup`, чтобы повторить попытку.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Первый запуск** — сервер моделей недоступен по адресу **{0}**.
+  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Первый запуск** — {1} недоступен по адресу **{0}**.
 
-Запустите Ollama и нажмите **↻ Повторить** в заголовке:
-```
-ollama serve
-```</value></data>
+Запустите {1} и нажмите **↻ Повторить** в заголовке (для Ollama: `ollama serve` в терминале).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — выбранным моделям вместе нужно около **{0} ГБ**, больше вашего бюджета в **{1} ГБ**. Они могут выгружаться в системную ОЗУ и работать медленно. Рассмотрите модель поменьше или выполните `/hardware`.</value></data>
 
   <!-- Agent Mode -->

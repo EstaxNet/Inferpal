@@ -101,9 +101,11 @@ internal partial class InferpalToolWindowData
 
                     var edgeMessage = status.Transition switch
                     {
-                        ConnectionTransition.Restored => Strings.MsgHeartbeatRestored,
-                        ConnectionTransition.Lost     => Strings.MsgConnectionGuardFailed(
-                                                             url, InferenceProviderFactory.DisplayName(_config.Provider)),
+                        ConnectionTransition.Restored => Strings.MsgHeartbeatRestored(
+                                                             InferenceProviderFactory.DisplayName(_config.Provider)),
+                        ConnectionTransition.Lost     => Strings.MsgConnectionLost(
+                                                             url, InferenceProviderFactory.DisplayName(_config.Provider),
+                                                             _client.ConnectionRefusal),
                         _                             => null,
                     };
                     if (edgeMessage is not null)

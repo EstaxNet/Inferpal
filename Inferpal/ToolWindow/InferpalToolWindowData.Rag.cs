@@ -175,7 +175,8 @@ internal partial class InferpalToolWindowData
         {
             _config.IsFirstRun = false;
             _config.Save();
-            await present(Strings.MsgFirstRunBackendDown(url)).ConfigureAwait(false);
+            await present(Strings.MsgFirstRunBackendDown(
+                url, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider))).ConfigureAwait(false);
             return;
         }
 
@@ -190,7 +191,10 @@ internal partial class InferpalToolWindowData
         {
             _config.IsFirstRun = false;
             _config.Save();
-            await present(Strings.MsgFirstRunNoModels).ConfigureAwait(false);
+            // The backend DETECTED above, not "Ollama": an LM Studio with nothing downloaded lands here too.
+            await present(Strings.MsgFirstRunNoModels(
+                Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider),
+                client.Capabilities.ModelManagement)).ConfigureAwait(false);
             return;
         }
 

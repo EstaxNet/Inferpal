@@ -834,10 +834,12 @@ internal sealed partial class HostServer : IDisposable
         var status = s.Connection.Evaluate(connected);
         var notice = status.Transition switch
         {
-            ConnectionTransition.Restored => Strings.MsgHeartbeatRestored,
-            ConnectionTransition.Lost     => Strings.MsgConnectionGuardFailed(
-                                                 s.Config.BaseUrl,
+            ConnectionTransition.Restored => Strings.MsgHeartbeatRestored(
                                                  InferenceProviderFactory.DisplayName(s.Config.Provider)),
+            ConnectionTransition.Lost     => Strings.MsgConnectionLost(
+                                                 s.Config.BaseUrl,
+                                                 InferenceProviderFactory.DisplayName(s.Config.Provider),
+                                                 s.Client.ConnectionRefusal),
             _                             => null,
         };
         return new BackendStatusResult(connected, badge, notice);

@@ -224,7 +224,7 @@
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 完成 — {0}</value></data>
   <data name="MsgAgentToolsCalled" xml:space="preserve"><value>已调用的工具 — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 令牌 · 会话：{1}</value></data>
-  <data name="MsgNoUrl" xml:space="preserve"><value>未配置 Ollama URL，请打开设置进行配置。</value></data>
+  <data name="MsgNoUrl" xml:space="preserve"><value>未配置服务器 URL，请打开设置进行配置。</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>模型 **{0}** 没有生成任何文本。服务器（{1}）接受了请求，未返回任何 token，也没有报告错误就关闭了数据流 —— 因此这不是连接问题。数据流的详情见 `/diagnostics`。</value></data>
   <data name="MsgOnlyReasoningFrom" xml:space="preserve"><value>模型 **{0}** 把整个回复都用于推理，没有写出回答 — 推理内容不会被当作回答。更大的上下文，或不先推理的模型，可以避免。</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>回答在代码结束前就达到了模型的长度限制——未应用任何更改。请选择文件中较小的部分，或增大上下文长度。</value></data>
@@ -257,8 +257,13 @@
   4. 检查防火墙或防病毒软件是否阻止了该端口
 
 {1} 启动后，点击标题栏的 ↻ 重试按钮。</value></data>
-  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ 已重新连接到 Ollama — 就绪。</value></data>
-  <data name="TooltipRetryConnection" xml:space="preserve"><value>立即检查与 Ollama 的连接</value></data>
+  <data name="MsgConnectionRefused" xml:space="preserve"><value>{0} 上的 {1} 以 {2} 响应了连接检查：服务器正在运行，但拒绝了该请求。
+
+如果它需要 API 密钥，请在设置中检查密钥；否则请检查 URL 是否指向 {1} 的 API。
+
+修正后点击标题栏中的 ↻ 重试。</value></data>
+  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ 已重新连接到 {0} — 就绪。</value></data>
+  <data name="TooltipRetryConnection" xml:space="preserve"><value>立即检查与 {0} 的连接</value></data>
 
   <!-- Approval dialog -->
   <data name="ApprovalMessage" xml:space="preserve"><value>Inferpal 想要执行：{0}
@@ -540,22 +545,16 @@
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **首次启动** — 共 {0} 个可用模型。已自动选择 **{1}** 作为默认模型。
 
 打开**设置**更改模型，或为代码操作和内联补全配置专用模型。</value></data>
-  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **首次启动** — Ollama 正在运行，但未找到任何聊天模型。
+  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **首次启动** — {0} 正在运行，但还没有任何聊天模型。
 
-请拉取模型以开始使用：
-```
-ollama pull llama3.1
-```
-然后重启 Visual Studio（或打开设置并点击 **Test**）。</value></data>
+请获取一个 — 用 Inferpal 测量过的模型按显卡列在 [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) 中 — 然后重启 Visual Studio（或打开设置并点击 **Test**）。</value></data>
+  <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;名称&gt;` 可在不离开 Visual Studio 的情况下下载模型。</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal 的首次设置未能完成：{0}
 
 输入 `/setup` 可重试。</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **首次启动** — 无法连接到 **{0}** 上的模型服务器。
+  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **首次启动** — 无法连接到 **{0}** 上的 {1}。
 
-请启动 Ollama 并点击标题栏中的 **↻ 重试**：
-```
-ollama serve
-```</value></data>
+请启动 {1} 并点击标题栏中的 **↻ 重试**（Ollama：在终端中运行 `ollama serve`）。</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — 所选模型合计约需 **{0} GB**，超过你的 **{1} GB** 预算。它们可能溢出到系统内存并运行缓慢。请考虑更小的模型，或运行 `/hardware` 查看。</value></data>
 
   <!-- Agent Mode -->

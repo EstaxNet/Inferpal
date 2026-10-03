@@ -224,7 +224,7 @@
   <data name="MsgAgentDone" xml:space="preserve"><value>✓ 완료 — {0}</value></data>
   <data name="MsgAgentToolsCalled" xml:space="preserve"><value>호출한 도구 — {0}</value></data>
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 토큰  ·  세션: {1}</value></data>
-  <data name="MsgNoUrl" xml:space="preserve"><value>Ollama URL이 구성되지 않았습니다. 설정을 열어 설정하세요.</value></data>
+  <data name="MsgNoUrl" xml:space="preserve"><value>서버 URL이 구성되지 않았습니다. 설정을 열어 설정하세요.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>모델 **{0}** 이(가) 텍스트를 생성하지 않았습니다. 서버({1})는 요청을 수락했고, 토큰을 하나도 보내지 않은 채 오류도 알리지 않고 스트림을 닫았습니다 — 연결 문제가 아닙니다. 스트림의 내용은 `/diagnostics`에 있습니다.</value></data>
   <data name="MsgOnlyReasoningFrom" xml:space="preserve"><value>모델 **{0}**이(가) 응답 전체를 추론에 쓰고 답을 작성하지 않았습니다. 추론은 답으로 사용되지 않습니다. 더 큰 컨텍스트나 먼저 추론하지 않는 모델로 피할 수 있습니다.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>코드가 끝나기 전에 응답이 모델의 길이 제한에서 멈췄습니다. 아무것도 적용되지 않았습니다. 파일의 더 작은 부분을 선택하거나 컨텍스트 길이를 늘리세요.</value></data>
@@ -257,8 +257,13 @@
   4. 방화벽이나 바이러스 백신 소프트웨어가 포트를 차단하고 있지 않은지 확인하세요
 
 {1}이(가) 실행되면 헤더의 ↻ 다시 시도를 클릭하세요.</value></data>
-  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Ollama에 다시 연결되었습니다 — 준비 완료.</value></data>
-  <data name="TooltipRetryConnection" xml:space="preserve"><value>지금 Ollama 연결 확인</value></data>
+  <data name="MsgConnectionRefused" xml:space="preserve"><value>{0}의 {1}이(가) 연결 확인에 {2}(으)로 응답했습니다. 서버는 실행 중이지만 요청을 거부했습니다.
+
+API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다면 URL이 {1}의 API를 가리키는지 확인하세요.
+
+수정한 뒤 헤더의 ↻ 다시 시도를 클릭하세요.</value></data>
+  <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ {0}에 다시 연결되었습니다 — 준비 완료.</value></data>
+  <data name="TooltipRetryConnection" xml:space="preserve"><value>지금 {0} 연결 확인</value></data>
 
   <!-- Approval dialog -->
   <data name="ApprovalMessage" xml:space="preserve"><value>Inferpal가 실행하려고 합니다: {0}
@@ -540,22 +545,16 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **첫 실행** — {0}개의 모델이 사용 가능합니다. **{1}**이(가) 기본 모델로 자동 선택되었습니다.
 
 **설정**을 열어 모델을 변경하거나 코드 작업 및 인라인 완성을 위한 전용 모델을 구성하세요.</value></data>
-  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **첫 실행** — Ollama가 실행 중이지만 채팅 모델을 찾을 수 없습니다.
+  <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **첫 실행** — {0}이(가) 실행 중이지만 아직 채팅 모델이 없습니다.
 
-시작하려면 모델을 다운로드하세요:
-```
-ollama pull llama3.1
-```
-Visual Studio를 다시 시작하거나, 설정을 열고 **Test**를 클릭하세요.</value></data>
+모델을 받으세요 — Inferpal로 측정한 모델은 그래픽 카드별로 [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card)에 있습니다 — 그런 다음 Visual Studio를 다시 시작하거나, 설정을 열고 **Test**를 클릭하세요.</value></data>
+  <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;이름&gt;`으로 Visual Studio를 떠나지 않고 다운로드할 수 있습니다.</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal 초기 설정을 완료하지 못했습니다: {0}
 
 다시 시도하려면 `/setup`을 입력하세요.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **첫 실행** — **{0}**에서 모델 서버에 연결할 수 없습니다.
+  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **첫 실행** — **{0}**의 {1}에 연결할 수 없습니다.
 
-Ollama를 시작하고 헤더의 **↻ 다시 시도**를 클릭하세요:
-```
-ollama serve
-```</value></data>
+{1}을(를) 시작하고 헤더의 **↻ 다시 시도**를 클릭하세요 (Ollama의 경우: 터미널에서 `ollama serve`).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — 선택한 모델들이 합쳐서 약 **{0} GB**가 필요하며 예산 **{1} GB**를 초과합니다. 시스템 RAM으로 넘쳐 느려질 수 있습니다. 더 작은 모델을 고려하거나 `/hardware`로 확인하세요.</value></data>
 
   <!-- Agent Mode -->

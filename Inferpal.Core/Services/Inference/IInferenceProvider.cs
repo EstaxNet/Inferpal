@@ -48,6 +48,12 @@ internal interface IInferenceProvider : IOllamaChatClient
     /// <inheritdoc cref="OllamaClient.CheckConnectionAsync"/>
     Task<bool> CheckConnectionAsync(string url, CancellationToken ct);
 
+    /// <summary>
+    /// The status line the server answered the LAST connection check with when it refused it (401, 403, 404…), or
+    /// <c>null</c> — no refusal, or no answer at all. A server that answers is running: it is not "unreachable".
+    /// </summary>
+    string? ConnectionRefusal { get; }
+
     /// <inheritdoc cref="OllamaClient.ListModelsAsync"/>
     Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct, string? url = null);
 
