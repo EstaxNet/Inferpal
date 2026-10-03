@@ -217,6 +217,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="AgentLastCheckFailed" xml:space="preserve"><value>⚠ Le dernier test ou build de ce tour a échoué — quoi qu'en dise la réponse.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ La réponse du modèle s'est arrêtée à sa limite de longueur : le message proposé est peut-être incomplet. Relisez-le avant de commiter.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Cette réponse s'est arrêtée à la limite de longueur du modèle — elle est incomplète.*</value></data>
+  <data name="ArenaAnswerOnlyReasoning" xml:space="preserve"><value>*⚠ Ce modèle n'a écrit aucune réponse — il a passé toute sa réponse à raisonner.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Cette relecture s'est arrêtée à la limite de longueur du modèle : les constats au-delà manquent, donc l'absence d'un constat ne prouve rien. Augmentez la longueur de contexte, ou relisez moins de changements à la fois (indexez-en une partie).</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(boucle détectée — appels d'outils identiques répétés, arrêt)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(disjoncteur ouvert — tentatives suspendues 5 min après des échecs répétés)</value></data>

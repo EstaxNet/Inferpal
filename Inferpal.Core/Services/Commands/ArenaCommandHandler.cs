@@ -54,7 +54,7 @@ internal static class ArenaCommandHandler
 
         try
         {
-            (string Text, double Seconds, bool Cut) answerA, answerB;
+            (string Text, double Seconds, bool Cut, bool OnlyReasoning) answerA, answerB;
             using (GpuScheduler.AcquireChatLease())
             {
                 onProgress?.Invoke(Strings.ArenaRunning("A"));
@@ -158,28 +158,34 @@ internal static class ArenaCommandHandler
     }
 
     /// <summary>One plain chat call (no tools), timed for the answer header.</summary>
-    private static async Task<(string Text, double Seconds, bool Cut)> AskAsync(
+    private static async Task<(string Text, double Seconds, bool Cut, bool OnlyReasoning)> AskAsync(
         IInferenceProvider client, string model, string prompt, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var result = await client.SendChatAsync(
             model, [new("user", prompt)], EmptyToolRegistry.Instance, null, ct);
         sw.Stop();
+        // A reply the client promoted from the model's reasoning is a draft, not an answer: it does not compete.
+        if (result.AnswerIsReasoning)
+            return (string.Empty, sw.Elapsed.TotalSeconds, result.CutAtLimit, OnlyReasoning: true);
         // Inline reasoning comes off per answer: left in the duel, an unclosed tag in the first answer reads as
         // reasoning up to the end of the message — the second answer included.
-        return (MarkdownParser.WithoutLeadingReasoning(result.TextContent), sw.Elapsed.TotalSeconds, result.CutAtLimit);
+        return (MarkdownParser.WithoutLeadingReasoning(result.TextContent), sw.Elapsed.TotalSeconds, result.CutAtLimit, false);
     }
 
     // ⚠ A vote is a verdict: an answer that stopped at the length limit reads as a curt one, and the voter
-    // compares a fragment with a whole without knowing it. The mark goes under the answer it qualifies.
-    private static void AppendAnswer(System.Text.StringBuilder sb, string label, (string Text, double Seconds, bool Cut) answer)
+    // compares a fragment with a whole without knowing it; an empty answer reads as a model that had nothing to say.
+    // The mark goes under the answer it qualifies.
+    private static void AppendAnswer(System.Text.StringBuilder sb, string label,
+                                     (string Text, double Seconds, bool Cut, bool OnlyReasoning) answer)
     {
         sb.Append("#### ")
           .AppendLine(Strings.ArenaAnswerHeader(label, answer.Seconds.ToString("0.0", CultureInfo.CurrentUICulture)))
           .AppendLine()
           .AppendLine(string.IsNullOrWhiteSpace(answer.Text) ? "*(∅)*" : answer.Text.Trim())
           .AppendLine();
-        if (answer.Cut) sb.AppendLine(Strings.ArenaAnswerCut).AppendLine();
+        if (answer.OnlyReasoning) sb.AppendLine(Strings.ArenaAnswerOnlyReasoning).AppendLine();
+        else if (answer.Cut)      sb.AppendLine(Strings.ArenaAnswerCut).AppendLine();
     }
 
     /// <summary>Cumulative standings table. Pure — unit-tested directly.</summary>

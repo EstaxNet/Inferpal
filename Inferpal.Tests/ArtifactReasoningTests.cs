@@ -30,7 +30,7 @@ public sealed class ArtifactReasoningTests : IDisposable
     }
 
     private static CodeActionRun Finish(string reply, string original = "int x = 1;") =>
-        CodeActionPipeline.Finish(reply, original, original, reindent: false, "m", "http://x", cutAtLimit: false);
+        CodeActionPipeline.Finish(new ChatTurnResult(reply, null, 0, 0), original, original, reindent: false, "m", "http://x");
 
     // ── In-place code actions ────────────────────────────────────────────────
 

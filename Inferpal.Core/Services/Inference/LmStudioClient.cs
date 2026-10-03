@@ -380,7 +380,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         string? model = null)
     {
         var base_ = BaseV1;
-        if (string.IsNullOrWhiteSpace(base_) || IsInCooldown()) return;
+        if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
 
         // Yield the shared GPU to an in-flight chat/agent request: a delayed, now-stale ghost-text
         // suggestion is worse than none. FIM resumes once the chat turn ends. In-process lease
@@ -401,8 +401,14 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             http = await PostForStreamingAsync($"{base_}/completions", request, sendCts.Token, AuthHeaders());
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { RecordFailure(); return; }
-        catch { RecordFailure(); return; }
+        catch (OperationCanceledException) { RecordFimFailure(); return; }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        {
+            NoteFimRefusal(m, ex.Message);
+            RecordFimFailure();
+            return;
+        }
+        catch { RecordFimFailure(); return; }
 
         using var response = http;
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -432,8 +438,8 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
                 // sent the same failing request again.
                 if (TryExtractError(ParseErrorElement(payload)) is { } serverError)
                 {
-                    RecordFailure();
-                    Diagnostics.Record("Fim", "The server reported an error inside the stream: " + serverError);
+                    RecordFimFailure();
+                    NoteFimRefusal(m, serverError);
                     return;
                 }
 
@@ -445,7 +451,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
                 if (!string.IsNullOrEmpty(text)) onToken(text);
             }
             // Success is a stream that ended cleanly, not headers that arrived.
-            RecordSuccess();
+            RecordFimSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { return; }

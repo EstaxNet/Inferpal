@@ -217,6 +217,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="AgentLastCheckFailed" xml:space="preserve"><value>⚠ Ostatnie uruchomienie testów lub kompilacji w tej turze nie powiodło się — niezależnie od tego, co mówi odpowiedź.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ Odpowiedź modelu zatrzymała się na limicie długości: proponowany komunikat może być niekompletny. Przeczytaj go przed commitem.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Ta odpowiedź zatrzymała się na limicie długości modelu — jest niekompletna.*</value></data>
+  <data name="ArenaAnswerOnlyReasoning" xml:space="preserve"><value>*⚠ Ten model nie napisał odpowiedzi — całą odpowiedź poświęcił na rozumowanie.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Ten przegląd zatrzymał się na limicie długości modelu: brakuje uwag dalej, więc brak uwagi niczego nie dowodzi. Zwiększ długość kontekstu albo przeglądaj mniej zmian naraz (dodaj do indeksu tylko ich część).</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(wykryto pętlę — identyczne wywołania narzędzi powtórzono, zatrzymanie)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(bezpiecznik otwarty — ponowne próby wstrzymane na 5 min po powtarzających się błędach)</value></data>

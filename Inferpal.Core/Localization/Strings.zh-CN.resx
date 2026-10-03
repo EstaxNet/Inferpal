@@ -217,6 +217,7 @@
   <data name="AgentLastCheckFailed" xml:space="preserve"><value>⚠ 本轮最后一次测试或构建运行失败了——无论回答怎么说。</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ 模型的回复在其长度限制处中断：建议的提交信息可能不完整。提交前请先阅读。</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ 此回答在模型的长度限制处中断——内容不完整。*</value></data>
+  <data name="ArenaAnswerOnlyReasoning" xml:space="preserve"><value>*⚠ 此模型没有写出回答——整个回复都用在了推理上。*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ 本次审查在模型的长度限制处中断：之后的问题缺失，因此没有发现问题并不能证明什么。请增大上下文长度，或一次审查更少的更改（只暂存其中一部分）。</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>（检测到循环 — 重复相同的工具调用，已停止）</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>（熔断器已开启 — 多次连接失败后暂停重试 5 分钟）</value></data>

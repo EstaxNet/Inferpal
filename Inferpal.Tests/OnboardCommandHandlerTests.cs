@@ -281,6 +281,21 @@ public class OnboardCommandHandlerTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_root, ".inferpal", "context.md")));
     }
 
+    /// <summary>A draft the client promoted from the model's reasoning is thinking prose about the brief — it would
+    /// become the system prompt of every following session.</summary>
+    [Fact]
+    public async Task Context_ADraftThatIsOnlyReasoning_IsNeverWritten()
+    {
+        _client.ChatResult = new ChatTurnResult("The user wants a project description. The brief lists…", null, 0, 0,
+                                                AnswerIsReasoning: true);
+
+        var result = await Run(new InferpalConfig(), "context", "force");
+
+        Assert.Null(result.Write);
+        Assert.Equal(Strings.MsgOnlyReasoningFrom(ModelRouter.Resolve(new InferpalConfig(), ModelRole.Chat)), result.Message);
+        Assert.False(File.Exists(Path.Combine(_root, ".inferpal", "context.md")));
+    }
+
     [Fact]
     public async Task Context_KeepsTheExistingFileWhenTheModelAnswersNothing()
     {

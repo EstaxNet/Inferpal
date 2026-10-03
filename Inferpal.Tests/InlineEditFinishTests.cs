@@ -1,4 +1,5 @@
 using System.IO;
+using Inferpal.Models;
 using Inferpal.Services.CodeActions;
 using Xunit;
 
@@ -35,7 +36,7 @@ public class InlineEditFinishTests
     private const string Server = "http://localhost:11434";
 
     private static CodeActionRun Finish(string reply, string original, string doc, bool reindent = true) =>
-        CodeActionPipeline.Finish(reply, original, doc, reindent, Model, Server, cutAtLimit: false);
+        CodeActionPipeline.Finish(new ChatTurnResult(reply, null, 0, 0), original, doc, reindent, Model, Server);
 
     // ── The line ending the selection carried ────────────────────────────────
 

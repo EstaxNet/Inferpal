@@ -87,10 +87,11 @@ Gemma's thought channel, gpt-oss's `analysis` and `final` channels, and Cohere's
 (edits, tests, commit messages) carry the answer only.
 
 **Chat templates that cannot write tools.** A model's chat template sometimes fails as soon as a request carries tool
-definitions — the server then refuses every such request with *"Error rendering prompt with jinja template"*. Inferpal
-recognises that refusal, asks again with the tools described in the system prompt and the tool calls and results
-written as text, and keeps doing so for that model for the rest of the session. The model works as an agent; only the
-transport changes.
+definitions — the server then refuses every such request with *"Error rendering prompt with jinja template"* (LM
+Studio) — or declares no tools at all, and Ollama refuses the request with *"… does not support tools"* (Gemma 3, for
+instance). Inferpal recognises both refusals, asks again with the tools described in the system prompt and the tool
+calls and results written as text, and keeps doing so for that model for the rest of the session. The model works as
+an agent; only the transport changes.
 
 **Constraints Inferpal respects.** The templates of Qwen3.8, Bonsai and Devstral refuse a system message anywhere but
 first; Inferpal never sends one elsewhere. A response that loops (the same passage, or the same tool call, again and
@@ -262,7 +263,9 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 Inline completion (ghost text) asks the model to fill the gap between the code before and after the cursor. For the
 families below, Inferpal builds the prompt with their fill-in-the-middle tokens when the server does not (LM Studio;
 Ollama applies the model's template itself). Any other model completes from the code before the cursor only — it
-still works, without seeing what follows.
+still works, without seeing what follows. On Ollama, a model whose template has no fill-in-the-middle slot — most chat
+models — is refused with *"… does not support insert"*: Inferpal then builds the prompt itself, as for LM Studio, and
+the refusal is noted once in `/diagnostics`. A completion that fails never blocks the chat.
 
 Having the tokens in its vocabulary does not make a model good at the task: every Qwen model has them, and measured on
 what reaches the editor (12 gaps to fill, 3 attempts each), Qwen3.8 fills 27 in 36 with them and 12 without — but

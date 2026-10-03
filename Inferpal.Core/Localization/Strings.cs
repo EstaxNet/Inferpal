@@ -413,6 +413,9 @@ internal static class Strings
     public static string CheckReviewCut             => Get(nameof(CheckReviewCut));
     public static string CommitProposalCut          => Get(nameof(CommitProposalCut));
     public static string ArenaAnswerCut             => Get(nameof(ArenaAnswerCut));
+    /// <summary>Under an /arena answer the model never wrote: its reasoning is not shown in its place — a draft would
+    /// compete with a written answer in a blind vote, and the model's name stays hidden until the vote.</summary>
+    public static string ArenaAnswerOnlyReasoning   => Get(nameof(ArenaAnswerOnlyReasoning));
     public static string MsgLoopDetected      => Get(nameof(MsgLoopDetected));
     public static string MsgCircuitOpen       => Get(nameof(MsgCircuitOpen));
     public static string TokenUsage(string last, string session) =>

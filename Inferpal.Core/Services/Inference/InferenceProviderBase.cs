@@ -101,6 +101,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     {
         Interlocked.Exchange(ref _consecutiveFailures, 0);
         Interlocked.Exchange(ref _cooldownUntilTicks,  0);
+        Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
+        Interlocked.Exchange(ref _fimCooldownUntilTicks,  0);
     }
 
     // ── Embedding circuit breaker ──────────────────────────────────────────────
@@ -140,6 +142,34 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             Interlocked.Exchange(ref _embConsecutiveFailures, 0);
         }
     }
+
+    // ── Inline-completion circuit breaker ──────────────────────────────────────
+    // ⚠ Independent of the chat's, like the embedding one: ghost text fires on every pause in typing, and in VS Code it
+    // shares this client with the chat — five completions refused by a model that does not do them (its template has no
+    // insert slot, it does not do completions) opened the CHAT's breaker for five minutes, and the next question failed
+    // with "circuit breaker open" although the chat had never failed. Same thresholds as the chat's.
+    private int  _fimConsecutiveFailures = 0;
+    private long _fimCooldownUntilTicks  = 0; // UTC ticks; 0 = no cooldown
+
+    protected bool IsFimInCooldown()  => DateTime.UtcNow.Ticks < Interlocked.Read(ref _fimCooldownUntilTicks);
+    protected void RecordFimSuccess() => Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
+
+    protected void RecordFimFailure()
+    {
+        if (Interlocked.Increment(ref _fimConsecutiveFailures) >= MaxConsecutiveFailures)
+        {
+            Interlocked.Exchange(ref _fimCooldownUntilTicks, (DateTime.UtcNow + CooldownDuration).Ticks);
+            Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
+        }
+    }
+
+    /// <summary>
+    /// An inline completion the server refused, said once per model and cause: ghost text has no other place to say why
+    /// it never appears.
+    /// </summary>
+    protected static void NoteFimRefusal(string model, string serverError) =>
+        Diagnostics.RecordOnce("Fim",
+            $"Inline completion with \"{model}\" was refused by the server: {serverError}", model + "|" + serverError);
 
     /// <summary>
     /// <c>true</c> when the embedding circuit breaker is open (cooldown in effect).

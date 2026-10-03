@@ -42,13 +42,13 @@ internal class OllamaClient : InferenceProviderBase
     // user has set a context window size, num_ctx is forwarded so Ollama caps the
     // KV-cache (keeping the model in VRAM); 0 means "let Ollama use the model default".
     // With it, the sampling the model's vendor recommends (ModelProfiles), when the user leaves that on.
-    private ChatOptions? ComputeOptions(string model)
+    private ChatOptions? ComputeOptions(string model, IReadOnlyList<string>? stop = null)
     {
         var numCtx = _config.ContextWindowSize > 0 ? _config.ContextWindowSize : (int?)null;
         var s      = ModelProfiles.SamplingFor(model, _config);
-        return numCtx is null && s is null
+        return numCtx is null && s is null && stop is null
             ? null
-            : new ChatOptions(numCtx, s?.Temperature, s?.TopP, s?.TopK, s?.MinP, s?.RepeatPenalty);
+            : new ChatOptions(numCtx, s?.Temperature, s?.TopP, s?.TopK, s?.MinP, s?.RepeatPenalty, stop);
     }
 
     /// <summary>
@@ -88,11 +88,30 @@ internal class OllamaClient : InferenceProviderBase
         using var gpuLease = GpuScheduler.AcquireChatLease();
 
         var defs    = tools.Definitions.Count > 0 ? tools.Definitions.ToList() : null;
+        // A model whose template declares no tools is refused by Ollama ("does not support tools") before it loads:
+        // its tools then go in the system prompt (PromptedTools), for this request and every later one to it.
+        var promptedKey = base_ + "|" + model;
+        var prompted    = defs is not null && PromptedTools.Models.ContainsKey(promptedKey);
+        bool FallsBackToPromptedTools(string error)
+        {
+            if (defs is null || prompted || !PromptedTools.IsToolRefusal(error)) return false;
+            PromptedTools.Models.TryAdd(promptedKey, 0);
+            Diagnostics.Record("OllamaClient.PromptedTools",
+                $"{base_} refused tools for \"{model}\" (its template declares none): its tools are described in the "
+                + "system prompt instead, for the rest of this session.");
+            return true;
+        }
         // tool_choice is only meaningful when tools are exposed; drop it otherwise.
-        var effectiveToolChoice = defs is not null ? toolChoice : null;
+        var effectiveToolChoice = defs is not null && !prompted ? toolChoice : null;
         // Merge consecutive same-role turns. Ollama's Go templates tolerate them, but it keeps the
         // history clean (better KV-cache reuse) and guards any model whose template is strict.
-        var request = new ChatRequest(model, CoalesceConsecutiveRoles(messages), defs, Stream: true, KeepAlive: ComputeKeepAlive(), Options: ComputeOptions(model), ToolChoice: effectiveToolChoice);
+        var request = new ChatRequest(
+            model,
+            prompted ? PromptedTools.Rewrite(messages, defs!) : CoalesceConsecutiveRoles(messages),
+            prompted ? null : defs,
+            Stream: true, KeepAlive: ComputeKeepAlive(),
+            Options: ComputeOptions(model, prompted ? PromptedTools.ResponseMarkers : null),
+            ToolChoice: effectiveToolChoice);
 
         // The complexity deadline bounds time-to-first-byte (connection, queue, model load,
         // prompt eval) and then acts as an INACTIVITY timeout between streamed chunks —
@@ -113,6 +132,11 @@ internal class OllamaClient : InferenceProviderBase
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
+                                              && FallsBackToPromptedTools(ex.Message))
+        {
+            return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
+        }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
@@ -129,10 +153,15 @@ internal class OllamaClient : InferenceProviderBase
 
         using var response = http; // ensure the HttpResponseMessage is disposed on exit
 
-        var contentBuilder = new System.Text.StringBuilder();
+        var contentBuilder   = new System.Text.StringBuilder();
+        // The `thinking` field, plus what a channel envelope carried in the content: what a turn that wrote nothing
+        // else still holds (ReasoningOnlyTurn).
+        var reasoningBuilder = new System.Text.StringBuilder();
         List<ToolCallDto>? toolCalls = null;
-        int tokensUsed = 0, promptTokens = 0;
+        int tokensUsed = 0, promptTokens = 0, chunkCount = 0;
+        string? doneReason = null;
         var cut = false;   // the answer stopped at the length limit (done_reason "length")
+        var bounded = false;   // the client stopped reading at OutputBound
         // Ollama is loaded with num_ctx = the configured window (ComputeOptions); past OutputBound the client stops
         // reading — its context shift would otherwise let a looping model generate for as long as it likes.
         var size     = RequestSize.Of(messages, defs);
@@ -163,9 +192,13 @@ internal class OllamaClient : InferenceProviderBase
                 try   { chunk = JsonSerializer.Deserialize<ChatResponse>(line); }
                 catch (JsonException) { continue; } // skip malformed lines (partial TCP, model crash)
                 if (chunk is null) continue;
+                chunkCount++;
 
                 if (TryExtractError(chunk.Error) is { } serverError)
                 {
+                    // The same refusal as an error line in a 200 stream: nothing generated yet, so asked again.
+                    if (chunkCount == 1 && FallsBackToPromptedTools(serverError))
+                        return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
                     RecordFailure();
                     throw new AgentHttpException(MapServerError(serverError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                 }
@@ -181,6 +214,7 @@ internal class OllamaClient : InferenceProviderBase
                     var think = chunk.Message.Thinking;
                     if (!string.IsNullOrEmpty(think))
                     {
+                        reasoningBuilder.Append(think);
                         onThinking?.Invoke(think);
                         received += think.Length;
                         looping = thinkingLoop.Repeats(think);
@@ -189,11 +223,22 @@ internal class OllamaClient : InferenceProviderBase
                     if (!string.IsNullOrEmpty(token))
                     {
                         var (answerPart, thoughtPart) = envelope.Push(token);
-                        if (thoughtPart.Length > 0) onThinking?.Invoke(thoughtPart);
+                        if (thoughtPart.Length > 0)
+                        {
+                            reasoningBuilder.Append(thoughtPart);
+                            onThinking?.Invoke(thoughtPart);
+                        }
                         if (answerPart.Length > 0)
                         {
                             contentBuilder.Append(answerPart);
                             onToken?.Invoke(answerPart);
+                            // Tools in the prompt: a model that opens the tool's response is waiting for it — whatever
+                            // follows is invented. Stops here, for a server that ignored the request's stop.
+                            if (prompted && PromptedTools.ResponseStart(contentBuilder, answerPart.Length) is var at and >= 0)
+                            {
+                                contentBuilder.Length = at;
+                                break;
+                            }
                         }
                         received += token.Length;
                         looping |= contentLoop.Repeats(token);
@@ -213,7 +258,7 @@ internal class OllamaClient : InferenceProviderBase
                 // Leaving the loop disposes the stream: the connection closes, and Ollama stops generating.
                 if (received > maxChars)
                 {
-                    cut = true;
+                    cut = bounded = true;
                     Diagnostics.Record("OllamaClient.SendChat", OutputBound.Note(model, received, _config.ContextWindowSize, size.Total));
                     break;
                 }
@@ -222,6 +267,7 @@ internal class OllamaClient : InferenceProviderBase
                 {
                     promptTokens = chunk.PromptEvalCount ?? 0;
                     tokensUsed   = promptTokens + (chunk.EvalCount ?? 0);
+                    doneReason   = chunk.DoneReason;
                     cut          = chunk.DoneReason == "length";
                     break;
                 }
@@ -244,7 +290,11 @@ internal class OllamaClient : InferenceProviderBase
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.
         var (lastAnswer, lastThought) = envelope.Flush();
-        if (lastThought.Length > 0) onThinking?.Invoke(lastThought);
+        if (lastThought.Length > 0)
+        {
+            reasoningBuilder.Append(lastThought);
+            onThinking?.Invoke(lastThought);
+        }
         if (lastAnswer.Length > 0)
         {
             contentBuilder.Append(lastAnswer);
@@ -262,7 +312,25 @@ internal class OllamaClient : InferenceProviderBase
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }
 
-        return new ChatTurnResult(contentBuilder.ToString(), toolCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
+        var contentText      = contentBuilder.ToString();
+        var noCall           = toolCalls is null || toolCalls.Count == 0;
+        var contentPrintable = MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(contentText));
+
+        // Nothing written outside the reasoning: its call or its answer is in there — a thinking model cut by the bound
+        // or a loop always ends this way. Returned empty, the user who watched it reason reads "not a single token".
+        if (noCall && !contentPrintable && reasoningBuilder.Length > 0)
+            return ReasoningOnlyTurn.Recover(reasoningBuilder.ToString(), tokensUsed, promptTokens, cut, looping,
+                                             stoppedEarly: bounded || looping);
+
+        // ⚠ The empty-reply message sends the user to /diagnostics for what the stream contained: it has to be there.
+        if (noCall && !contentPrintable)
+            Diagnostics.Swallow(
+                $"Empty turn — model \"{model}\", server {base_}, {chunkCount} chunk(s) received, "
+                + $"done_reason \"{doneReason ?? "(none)"}\", {contentText.Length} char(s) of non-printable content, "
+                + $"{(defs?.Count ?? 0)} tool(s) declared, {promptTokens} prompt token(s)",
+                new InvalidOperationException("no content, no tool call, no server error"));
+
+        return new ChatTurnResult(contentText, toolCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
     }
 
     /// <summary>Pings <c>/api/tags</c> with a 5-second timeout to verify Ollama is reachable.
@@ -535,6 +603,10 @@ internal class OllamaClient : InferenceProviderBase
         catch { return false; }
     }
 
+    /// <summary>"server|model" pairs Ollama refused a <c>suffix</c> for (no insert slot in the template): completed from a
+    /// prompt built here, sent raw.</summary>
+    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> RawFimModels = new();
+
     /// <summary>
     /// Streams a Fill-in-the-Middle completion via <c>POST /api/generate</c>.
     /// Ollama 0.5+ applies the model's native FIM template when <c>suffix</c> is provided.
@@ -550,20 +622,33 @@ internal class OllamaClient : InferenceProviderBase
         string?        model = null)
     {
         var base_ = _config.BaseUrl.TrimEnd('/');
-        if (string.IsNullOrWhiteSpace(base_) || IsInCooldown()) return;
+        if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
 
         // Yield the shared GPU to an in-flight chat/agent request: a delayed, now-stale ghost-text
         // suggestion is worse than none. FIM resumes once the chat turn ends. In-process lease
         // first (exact, no I/O), cross-process marker second (other editors, one GPU).
         if (GpuScheduler.ShouldFimYield()) return;
 
-        var request = new GenerateRequest(
-            Model:     string.IsNullOrEmpty(model) ? _config.DefaultModel : model,
-            Prompt:    prefix,
-            Suffix:    suffix,
-            Stream:    true,
-            Options:   new GenerateOptions(temperature, maxTokens, Stop: ["\n\n\n"]),
-            KeepAlive: ComputeKeepAlive());
+        var m      = string.IsNullOrEmpty(model) ? _config.DefaultModel : model;
+        var rawKey = base_ + "|" + m;
+        GenerateRequest request;
+        if (RawFimModels.ContainsKey(rawKey))
+        {
+            // The model's template has no insert slot: the prompt is built here, as for LM Studio (FimTemplate) — the
+            // family's FIM tokens when measured better, the prefix alone otherwise — and sent past the template.
+            var spec = FimTemplate.Build(m, prefix, suffix);
+            request = new GenerateRequest(m, spec.Prompt, Suffix: null, Stream: true,
+                                          new GenerateOptions(temperature, maxTokens, Stop: spec.Stop),
+                                          ComputeKeepAlive(), Raw: true);
+        }
+        else
+            request = new GenerateRequest(
+                Model:     m,
+                Prompt:    prefix,
+                Suffix:    suffix,
+                Stream:    true,
+                Options:   new GenerateOptions(temperature, maxTokens, Stop: ["\n\n\n"]),
+                KeepAlive: ComputeKeepAlive());
 
         // 60 s bounds time-to-first-byte, then chunk inactivity (see SendChatAsync).
         var deadline = TimeSpan.FromSeconds(60);
@@ -576,8 +661,22 @@ internal class OllamaClient : InferenceProviderBase
             http = await PostForStreamingAsync($"{base_}/api/generate", request, sendCts.Token);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { RecordFailure(); return; } // internal 60-s timeout expired
-        catch { RecordFailure(); return; }
+        catch (OperationCanceledException) { RecordFimFailure(); return; } // internal 60-s timeout expired
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        {
+            NoteFimRefusal(m, ex.Message);
+            // Ollama refuses a suffix for a model whose template has no insert slot — most chat models — before loading
+            // it: completed from a prompt built here instead, for this request and every later one to this model.
+            if (request.Raw is null && ex.Message.Contains("does not support insert", StringComparison.OrdinalIgnoreCase)
+                && RawFimModels.TryAdd(rawKey, 0))
+            {
+                await StreamFimAsync(prefix, suffix, maxTokens, temperature, onToken, ct, model);
+                return;
+            }
+            RecordFimFailure();
+            return;
+        }
+        catch { RecordFimFailure(); return; }
 
         using var response = http; // ensure the HttpResponseMessage is disposed on exit
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -599,8 +698,8 @@ internal class OllamaClient : InferenceProviderBase
                 // sent the same failing request again.
                 if (TryExtractError(ParseErrorElement(line)) is { } serverError)
                 {
-                    RecordFailure();
-                    Diagnostics.Record("Fim", "The server reported an error inside the stream: " + serverError);
+                    RecordFimFailure();
+                    NoteFimRefusal(m, serverError);
                     return;
                 }
 
@@ -610,7 +709,7 @@ internal class OllamaClient : InferenceProviderBase
                 if (chunk.Done) break;
             }
             // Success is a stream that ended cleanly, not headers that arrived.
-            RecordSuccess();
+            RecordFimSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { return; } // stream hung — ghost text simply stops

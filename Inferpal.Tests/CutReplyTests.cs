@@ -81,7 +81,8 @@ public class CutReplyTests
     public void TheFunnel_RefusesACutReply_WhateverItsShape()
     {
         // "Edit with AI" calls the funnel directly: the verdict must not depend on which caller ran the model.
-        var run = CodeActionPipeline.Finish(CutRewrite, Document, Document, reindent: false, "m", "server", cutAtLimit: true);
+        var run = CodeActionPipeline.Finish(new ChatTurnResult(CutRewrite, null, 0, 0, CutAtLimit: true),
+                                            Document, Document, reindent: false, "m", "server");
 
         Assert.Equal(CodeActionOutcome.Failed, run.Outcome);
         Assert.Equal(Strings.CodeActionReplyCut, run.FailureDetail);

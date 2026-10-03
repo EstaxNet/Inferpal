@@ -1,6 +1,7 @@
 using System.IO;
 using System.Security.AccessControl;
 using System.Security.Principal;
+using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services.CodeActions;
 using Xunit;
@@ -168,7 +169,29 @@ public sealed class TestGenerationClobberTests : IDisposable
 
         Assert.True(plan.Extended);                  // witness: the dangerous branch
         Assert.False(plan.Ok);
-        Assert.True(plan.Cut);
+        Assert.Equal(Strings.CodeActionReplyCut, plan.Refusal);
+        Assert.Empty(plan.Content);
+    }
+
+    /// <summary>
+    /// A reply the client promoted from the model's reasoning is thinking prose: written as the test file, it would land
+    /// in the project as source — or, extending, replace every existing test.
+    /// </summary>
+    [Fact]
+    public async Task AReplyThatIsOnlyReasoning_NeverBecomesTheTestFile()
+    {
+        var (source, _) = Fixture("public class WidgetTests { void A() { } }");
+        var reasoning = new FakeInferenceProvider
+        {
+            ChatResult = new ChatTurnResult("The user wants tests for Widget. I should add a case for B…", null, 0, 0,
+                                            AnswerIsReasoning: true),
+        };
+
+        var plan = await TestGenerationPlanner.PlanAsync(reasoning, "m", source, "public class Widget { }", CancellationToken.None);
+
+        Assert.True(plan.Extended);                  // witness: the dangerous branch
+        Assert.False(plan.Ok);
+        Assert.Equal(Strings.MsgOnlyReasoningFrom("m"), plan.Refusal);
         Assert.Empty(plan.Content);
     }
 
@@ -177,12 +200,12 @@ public sealed class TestGenerationClobberTests : IDisposable
     [InlineData("Inferpal.Host", "HostSlashCommands.cs")]
     [InlineData("Inferpal", "Commands", "AddTestsSelectionCommand.cs")]
     [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs")]
-    public void EveryFrontEndSaysACutAnswerWasNotWritten(params string[] parts)
+    public void EveryFrontEndSaysWhyAnAnswerWasNotWritten(params string[] parts)
     {
         var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), Path.Combine(parts)));
 
         Assert.Contains("TestsNoChange", code, StringComparison.Ordinal);        // WITNESS: a /test screen
-        Assert.Contains("CodeActionReplyCut", code, StringComparison.Ordinal);
+        Assert.Contains(".Refusal is { } why", code, StringComparison.Ordinal);
     }
 
     // ── The reference arms: the three other outcomes ─────────────────────────

@@ -217,11 +217,13 @@ internal static class OnboardCommandHandler
         string answer;
         try
         {
-            var result = await client.SendChatAsync(
-                ModelRouter.Resolve(config, ModelRole.Chat), history, EmptyToolRegistry.Instance, null, ct);
+            var model  = ModelRouter.Resolve(config, ModelRole.Chat);
+            var result = await client.SendChatAsync(model, history, EmptyToolRegistry.Instance, null, ct);
             // A draft that stopped at the length limit ends mid-sentence, and it would become the system
             // prompt of every following session — in place of the user's own file under `force`.
             if (result.CutAtLimit) return new(Strings.OnboardContextCut);
+            // Same destination for promoted reasoning: thinking prose about the brief, not a description of the project.
+            if (result.AnswerIsReasoning) return new(Strings.MsgOnlyReasoningFrom(model));
             // Reasoning a server sends inline would become part of every following session's system prompt.
             answer = MarkdownParser.WithoutLeadingReasoning(result.TextContent);
         }

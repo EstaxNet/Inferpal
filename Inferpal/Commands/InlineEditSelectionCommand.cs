@@ -158,8 +158,8 @@ internal class InlineEditSelectionCommand : Command
         // `Clean` trims it, and the next line moved up against the one just edited; the unchanged
         // echo, differing by that single byte, was applied instead of being reported.
         var finished = CodeActionPipeline.Finish(
-            result.TextContent, originalCode, view.Document.Text.CopyToString(),
-            reindent: true, model, _client.ServerAddress, result.CutAtLimit);
+            result, originalCode, view.Document.Text.CopyToString(),
+            reindent: true, model, _client.ServerAddress);
 
         if (finished.Outcome == CodeActionOutcome.NoChangeNeeded)
         {

@@ -1,4 +1,5 @@
 using System.IO;
+using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services.Execution;
 using Inferpal.Services.Inference;
@@ -23,9 +24,13 @@ namespace Inferpal.Services.CodeActions;
 /// the branch that applies it writes a brand-new file straight over the old one — on the VS side
 /// with no snapshot and no undoable edit. Refused, and the cause named.
 /// </param>
+/// <param name="Refusal">
+/// The model's reply is not a test file, and the sentence that says why — the three screens of <c>/test</c> print it
+/// as is, so a new reason is one factory here, not three branches.
+/// </param>
 internal sealed record TestGenerationPlan(
     bool Ok, string TestPath, string TestFileName, bool Extended, bool NoChange, string Content,
-    bool Unreadable = false, bool Cut = false)
+    bool Unreadable = false, string? Refusal = null)
 {
     public static TestGenerationPlan Failed(string testPath = "", bool extended = false) =>
         new(false, testPath, Path.GetFileName(testPath), extended, false, string.Empty);
@@ -40,7 +45,16 @@ internal sealed record TestGenerationPlan(
     /// REWRITES the whole test file — applied, it would delete every test past the cut. Nothing is written.
     /// </summary>
     public static TestGenerationPlan CutAtLimit(string testPath, bool extended) =>
-        new(false, testPath, Path.GetFileName(testPath), extended, NoChange: false, string.Empty, Cut: true);
+        new(false, testPath, Path.GetFileName(testPath), extended, NoChange: false, string.Empty,
+            Refusal: Strings.CodeActionReplyCut);
+
+    /// <summary>
+    /// The model wrote only reasoning, promoted by the client as its reply: thinking prose, not a test file — written,
+    /// it would land in the project as source.
+    /// </summary>
+    public static TestGenerationPlan OnlyReasoning(string testPath, bool extended, string model) =>
+        new(false, testPath, Path.GetFileName(testPath), extended, NoChange: false, string.Empty,
+            Refusal: Strings.MsgOnlyReasoningFrom(model));
 }
 
 /// <summary>
@@ -127,6 +141,8 @@ internal static class TestGenerationPlanner
 
         if (result.CutAtLimit)
             return TestGenerationPlan.CutAtLimit(testPath, extend);
+        if (result.AnswerIsReasoning)
+            return TestGenerationPlan.OnlyReasoning(testPath, extend, model);
 
         var content = InlineEditResponse.Clean(result.TextContent);
 

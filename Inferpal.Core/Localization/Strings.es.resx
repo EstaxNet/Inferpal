@@ -217,6 +217,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="AgentLastCheckFailed" xml:space="preserve"><value>⚠ La última ejecución de pruebas o compilación de este turno falló, diga lo que diga la respuesta.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ La respuesta del modelo se detuvo en su límite de longitud: el mensaje propuesto puede estar incompleto. Léelo antes de hacer el commit.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Esta respuesta se detuvo en el límite de longitud del modelo: está incompleta.*</value></data>
+  <data name="ArenaAnswerOnlyReasoning" xml:space="preserve"><value>*⚠ Este modelo no escribió ninguna respuesta: dedicó toda su respuesta a razonar.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Esta revisión se detuvo en el límite de longitud del modelo: faltan los hallazgos posteriores, así que la ausencia de un hallazgo no prueba nada. Aumenta la longitud de contexto o revisa menos cambios a la vez (prepara solo una parte).</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(bucle detectado — llamadas de herramientas idénticas repetidas, deteniéndose)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(disyuntor abierto — reintentos pausados 5 min tras fallos repetidos)</value></data>

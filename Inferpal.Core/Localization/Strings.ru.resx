@@ -217,6 +217,7 @@
   <data name="AgentLastCheckFailed" xml:space="preserve"><value>⚠ Последний запуск тестов или сборки в этом ходе завершился неудачей — что бы ни говорил ответ.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ Ответ модели остановился на ограничении длины: предложенное сообщение может быть неполным. Прочитайте его перед коммитом.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ Этот ответ остановился на ограничении длины модели — он неполный.*</value></data>
+  <data name="ArenaAnswerOnlyReasoning" xml:space="preserve"><value>*⚠ Эта модель не написала ответа — весь ответ ушёл на рассуждения.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ Эта проверка остановилась на ограничении длины модели: замечания дальше этого места отсутствуют, поэтому отсутствие замечания ничего не доказывает. Увеличьте длину контекста или проверяйте меньше изменений за раз (проиндексируйте только часть).</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(обнаружена петля — одинаковые вызовы инструментов повторяются, остановка)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(автоматический выключатель открыт — повторные попытки приостановлены на 5 мин)</value></data>

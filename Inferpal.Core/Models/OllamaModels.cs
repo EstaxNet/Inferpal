@@ -42,7 +42,9 @@ record ChatOptions(
     [property: JsonPropertyName("top_p")]          double? TopP          = null,
     [property: JsonPropertyName("top_k")]          int?    TopK          = null,
     [property: JsonPropertyName("min_p")]          double? MinP          = null,
-    [property: JsonPropertyName("repeat_penalty")] double? RepeatPenalty = null);
+    [property: JsonPropertyName("repeat_penalty")] double? RepeatPenalty = null,
+    /// <summary>Where the server stops generating (PromptedTools: the opening of a tool response).</summary>
+    [property: JsonPropertyName("stop")]           IReadOnlyList<string>? Stop = null);
 
 /// <summary>
 /// A single message in the conversation history.
@@ -152,7 +154,9 @@ record GenerateRequest(
     [property: JsonPropertyName("suffix")]     string?         Suffix,
     [property: JsonPropertyName("stream")]     bool            Stream,
     [property: JsonPropertyName("options")]    GenerateOptions Options,
-    [property: JsonPropertyName("keep_alive")] string?         KeepAlive = null);
+    [property: JsonPropertyName("keep_alive")] string?         KeepAlive = null,
+    /// <summary>The prompt goes to the model as is, without its template — a fill-in-the-middle prompt Inferpal built.</summary>
+    [property: JsonPropertyName("raw")]        bool?           Raw = null);
 
 /// <summary>Sampling options for <c>/api/generate</c>.</summary>
 record GenerateOptions(

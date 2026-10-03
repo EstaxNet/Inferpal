@@ -218,6 +218,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="AgentLastCheckFailed" xml:space="preserve"><value>⚠ The last test or build run of this turn failed — whatever the answer says.</value></data>
   <data name="CommitProposalCut" xml:space="preserve"><value>⚠ The model's reply stopped at its length limit: the proposed message may be incomplete. Read it before you commit.</value></data>
   <data name="ArenaAnswerCut" xml:space="preserve"><value>*⚠ This answer stopped at the model's length limit — it is incomplete.*</value></data>
+  <data name="ArenaAnswerOnlyReasoning" xml:space="preserve"><value>*⚠ This model wrote no answer — it spent its whole reply reasoning.*</value></data>
   <data name="CheckReviewCut" xml:space="preserve"><value>⚠ This review stopped at the model's length limit: the findings past that point are missing, so the absence of a finding proves nothing. Increase the context length, or review fewer changes at once (stage part of them).</value></data>
   <data name="MsgLoopDetected" xml:space="preserve"><value>(loop detected — identical tool calls repeated, stopping)</value></data>
   <data name="MsgCircuitOpen" xml:space="preserve"><value>(circuit breaker open — retries paused for 5 min after repeated failures)</value></data>

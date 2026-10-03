@@ -48,6 +48,20 @@ internal static class PromptedTools
     internal static bool IsTemplateRefusal(string serverMessage) =>
         serverMessage.Contains("Error rendering prompt with jinja template", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Whether a server refused the request because of its tools: a template that fails on them (LM Studio), or a model
+    /// whose template declares none — Ollama's "&lt;model&gt; does not support tools", decided before the model loads,
+    /// through its native API and its <c>/v1</c> surface alike.
+    /// </summary>
+    /// <remarks>⚠ Ollama words its other capability refusals the same way ("does not support thinking", "… chat"):
+    /// only the tools one is answered by moving the tools into the prompt.</remarks>
+    internal static bool IsToolRefusal(string serverMessage) =>
+        IsTemplateRefusal(serverMessage)
+        || serverMessage.Contains("does not support tools", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>"server|model" pairs whose server refused tools: their tools go in the prompt, in both clients.</summary>
+    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> Models = new();
+
     private static readonly JsonSerializerOptions Compact = new() { WriteIndented = false };
 
     /// <summary>The system-prompt block that declares <paramref name="tools"/> and how to call them.</summary>
@@ -113,6 +127,12 @@ internal static class PromptedTools
         }
         return merged;
     }
+
+    /// <summary>The same rewrite in Ollama's native message shape: only roles and text are left.</summary>
+    internal static List<ChatMessageDto> Rewrite(List<ChatMessageDto> messages, IReadOnlyList<ToolDefinition> tools) =>
+        Rewrite(OpenAiCompatibleClient.MapMessages(messages), tools)
+            .Select(m => new ChatMessageDto(m.Role, m.Content))
+            .ToList();
 
     /// <summary>The call's arguments as a JSON object; the raw text quoted when it is not one.</summary>
     private static string ArgumentsObject(string arguments)

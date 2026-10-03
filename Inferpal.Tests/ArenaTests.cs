@@ -105,6 +105,33 @@ public class ArenaTests : IDisposable
         Assert.Equal(mark, message.LastIndexOf(Strings.ArenaAnswerCut, StringComparison.Ordinal));   // the whole answer carries none
     }
 
+    /// <summary>
+    /// A reply the client promoted from a model's reasoning is its draft ("We need to answer…"): shown as its answer, it
+    /// competes with a written one in a blind vote. It is not shown, and the mark says why the answer is empty.
+    /// </summary>
+    [Fact]
+    public async Task ADuel_NeverShowsAReasoningDraftAsAnAnswer()
+    {
+        int calls = 0;
+        var fake = new FakeInferenceProvider
+        {
+            Installed = [new InstalledModelInfo("big:latest", 1), new InstalledModelInfo("small:latest", 1)],
+            OnChatRequest = (_, _, _, _) => Task.FromResult(Interlocked.Increment(ref calls) == 1
+                ? new ChatTurnResult("We need to explain why the sky is blue. Let me recall", null, 0, 0, AnswerIsReasoning: true)
+                : new ChatTurnResult("Rayleigh scattering.", null, 0, 0)),
+        };
+
+        var message = (await ArenaCommandHandler.HandleAsync(
+            fake, Config(), ["/arena", "why", "blue"], onProgress: null, CancellationToken.None, swapOrder: () => false)).Message;
+
+        Assert.DoesNotContain("We need to explain", message, StringComparison.Ordinal);
+        var mark = message.IndexOf(Strings.ArenaAnswerOnlyReasoning, StringComparison.Ordinal);
+        Assert.True(mark >= 0, "the empty answer does not say why");
+        Assert.True(mark < message.IndexOf("Rayleigh scattering.", StringComparison.Ordinal), "the mark is not under answer A");
+        Assert.Contains("Rayleigh scattering.", message, StringComparison.Ordinal);   // reference arm: the written answer
+        Assert.DoesNotContain(Strings.ArenaAnswerCut, message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Battle_AutoPair_UsesChatAndUtilityModels_AndStoresPendingMapping()
     {

@@ -4,6 +4,7 @@ using System.Text.Json;
 using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
+using Inferpal.Services;
 using Inferpal.Services.Agent;
 using Inferpal.Services.Commands;
 using Inferpal.Services.Inference;
@@ -71,6 +72,110 @@ public class ReasoningOnlyArtifactTests : IDisposable
 
         Assert.Equal("The summary.", result.TextContent);
         Assert.False(result.AnswerIsReasoning);
+    }
+
+    // ── Ollama: the same turn, in `message.thinking` ─────────────────────────────────────────────
+    // ⚠ The recovery lived in the OpenAI-compatible client only. On Ollama a thinking-only turn came back EMPTY: the call
+    // written in the reasoning never ran, and the user who had just watched the model reason read "the server closed the
+    // stream without a single token — /diagnostics carries what the stream contained", where nothing had been recorded.
+
+    private static string OllamaStream(string thinking, string content, string doneReason = "stop")
+    {
+        var sb = new StringBuilder();
+        void Line(object o) => sb.Append(JsonSerializer.Serialize(o)).Append('\n');
+        foreach (var piece in thinking.Chunk(40).Select(c => new string(c)))
+            Line(new { message = new { role = "assistant", content = "", thinking = piece }, done = false });
+        if (content.Length > 0)
+            Line(new { message = new { role = "assistant", content }, done = false });
+        Line(new { message = new { role = "assistant", content = "" }, done = true, done_reason = doneReason,
+                   prompt_eval_count = 10, eval_count = 20 });
+        return sb.ToString();
+    }
+
+    private sealed class ReadFileOnly : IToolRegistry
+    {
+        public IReadOnlyList<ToolDefinition> Definitions { get; } =
+            [new ToolDefinition("function", new ToolFunction("read_file", "Reads a file.",
+                                new { type = "object", properties = new { path = new { type = "string" } } }))];
+        public DiffInfo? ConsumeDiff() => null;
+        public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct) => Task.FromResult("");
+    }
+
+    private static async Task<ChatTurnResult> SendOllamaAsync(string body, IToolRegistry? tools = null, string model = "m")
+    {
+        using var server = new LoopbackHttpServer(path => path.StartsWith("/api/chat", StringComparison.Ordinal) ? body : null);
+        var client = new OllamaClient(new InferpalConfig { Provider = "ollama", BaseUrl = server.BaseUrl, ContextWindowSize = 8192 });
+        return await client.SendChatAsync(model, [new ChatMessageDto("user", "summarize")], tools ?? new NoTools(),
+                                          onToken: null, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Ollama_AReplyThatIsOnlyThinking_IsPromoted_AndSaysSo()
+    {
+        var result = await SendOllamaAsync(OllamaStream(Draft, ""));
+
+        Assert.Equal(Draft, result.TextContent);
+        Assert.True(result.AnswerIsReasoning);
+    }
+
+    [Fact]
+    public async Task Ollama_ACallWrittenInTheThinking_IsRun()
+    {
+        var thinking = "I should read the file first. <tool_call>{\"name\": \"read_file\", \"arguments\": {\"path\": \"a.cs\"}}</tool_call>";
+
+        var result = await SendOllamaAsync(OllamaStream(thinking, ""), new ReadFileOnly());
+
+        var call = Assert.Single(result.ToolCalls!);
+        Assert.Equal("read_file", call.Function.Name);
+        Assert.False(result.AnswerIsReasoning);
+    }
+
+    [Fact]
+    public async Task Ollama_AReplyWithAnAnswer_IsNotMarked()
+    {
+        // Reference arm: thinking, then an answer — the answer is the answer, and the thinking stays out of it.
+        var result = await SendOllamaAsync(OllamaStream(Draft, "The summary."));
+
+        Assert.Equal("The summary.", result.TextContent);
+        Assert.False(result.AnswerIsReasoning);
+    }
+
+    [Fact]
+    public async Task Ollama_ATurnThatSaysNothingAtAll_LeavesTheTraceTheMessagePromises()
+    {
+        // A model name of its own: the ring is shared by the suite, and an empty turn of another test must not count.
+        var model = "silent-" + Guid.NewGuid().ToString("N")[..8];
+
+        var result = await SendOllamaAsync(OllamaStream("", ""), model: model);
+
+        Assert.Equal(string.Empty, result.TextContent);
+        Assert.False(result.AnswerIsReasoning);
+        Assert.Contains(Diagnostics.Snapshot(), e => e.Context.StartsWith($"Empty turn — model \"{model}\"", StringComparison.Ordinal));
+    }
+
+    // ── The artifacts a promoted reply must never become ─────────────────────────────────────────
+
+    [Fact]
+    public void AnInPlaceEdit_NeverAppliesTheReasoning()
+    {
+        var reply = new ChatTurnResult("The user wants x renamed. I will write int y = 1;", null, 0, 0, AnswerIsReasoning: true);
+
+        var run = Services.CodeActions.CodeActionPipeline.Finish(reply, "int x = 1;", "int x = 1;", reindent: false, "m", "server");
+
+        Assert.Equal(Services.CodeActions.CodeActionOutcome.Failed, run.Outcome);
+        Assert.Equal(Strings.MsgOnlyReasoningFrom("m"), run.FailureDetail);
+        Assert.Null(run.EditedCode);
+    }
+
+    [Fact]
+    public void AnInPlaceEdit_StillAppliesAWrittenReply()
+    {
+        // Reference arm: the same text, written as the answer, is an edit.
+        var reply = new ChatTurnResult("int y = 1;", null, 0, 0);
+
+        var run = Services.CodeActions.CodeActionPipeline.Finish(reply, "int x = 1;", "int x = 1;", reindent: false, "m", "server");
+
+        Assert.Equal(Services.CodeActions.CodeActionOutcome.Edited, run.Outcome);
     }
 
     [Fact]

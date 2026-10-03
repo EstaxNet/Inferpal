@@ -58,7 +58,9 @@ internal static class BenchRunner
                     ttfts.Add(ttftMs);
                     samples.Add((tokens, seconds));
                     attempted++;
-                    if (task.Score(result.TextContent)) passed++;
+                    // A reply promoted from the model's reasoning is a draft, not an answer — and a draft that names the
+                    // right fix passes a scorer looking for words, in the score that ranks models for auto-routing.
+                    if (!result.AnswerIsReasoning && task.Score(result.TextContent)) passed++;
                 }
 
                 // Tool-call task — same timing, but the fake tool is exposed and the score reads the calls.

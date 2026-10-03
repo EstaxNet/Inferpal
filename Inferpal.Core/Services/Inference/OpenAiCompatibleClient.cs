@@ -53,9 +53,6 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             foreach (var kv in headers) req.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
     }
 
-    /// <summary>"server|model" pairs whose chat template cannot be rendered with tools: their tools go in the prompt.</summary>
-    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> PromptedToolModels = new();
-
     // ── Message mapping (internal ChatMessageDto → OpenAI wire shape) ───────────
     // OpenAI requires: each assistant tool_call carries an id + type; arguments are a JSON *string*;
     // each tool result carries the matching tool_call_id. The agent loop emits tool results in the
@@ -288,18 +285,18 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
         // A model whose chat template the server cannot render with tools gets them in its system prompt (PromptedTools).
         var promptedKey = base_ + "|" + model;
-        var prompted    = defs is not null && PromptedToolModels.ContainsKey(promptedKey);
+        var prompted    = defs is not null && PromptedTools.Models.ContainsKey(promptedKey);
         // ⚠ The refusal comes through any of the three doors a server refuses by — an HTTP status, an error event in
         // the stream (LM Studio answers 200 and streams "event: error"), a bare error object — and nothing has been
         // generated yet in any of them, so each one retries.
         bool FallsBackToPromptedTools(string error)
         {
-            if (defs is null || prompted || !PromptedTools.IsTemplateRefusal(error)) return false;
-            // The server cannot write this model's prompt with tools in it — its chat template fails on them. Asked
-            // again with the tools in the system prompt, for this request and every later one to this model.
-            PromptedToolModels.TryAdd(promptedKey, 0);
+            if (defs is null || prompted || !PromptedTools.IsToolRefusal(error)) return false;
+            // The server cannot write this model's prompt with tools in it — its chat template fails on them, or has
+            // none (Ollama's /v1). Asked again with the tools in the system prompt, for this request and every later one.
+            PromptedTools.Models.TryAdd(promptedKey, 0);
             Diagnostics.Record("OpenAiCompatible.PromptedTools",
-                $"The chat template of \"{model}\" could not be rendered with tools by {base_}: its tools are described "
+                $"{base_} refused tools for \"{model}\" (its chat template cannot carry them): its tools are described "
                 + "in the system prompt instead, for the rest of this session.");
             return true;
         }
@@ -592,25 +589,11 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // channel empty (or with only non-printable scaffolding) and the structured tool_calls empty —
         // which would otherwise dead-end as an empty response. Only probe reasoning when the turn has
         // no printable content, so normal reasoning prose is never mistaken for a call (the structured
-        // path always wins when present).
+        // path always wins when present). Without a call there, the final answer itself can be in the
+        // reasoning channel, and is promoted rather than dropped — the UI already streamed it as "💭".
         if (toolCalls is null && !contentPrintable && reasoningBuilder.Length > 0)
-        {
-            var (reasoningCalls, _) = InlineToolCallParser.TryParse(reasoningBuilder.ToString());
-            // Stopped by the bound or at a repeat, the reasoning is a model going round in circles: the first call it
-            // wrote is its intent, and every later one is the loop — or its decay (a path it no longer spells right).
-            if ((bounded || repeated || looping) && reasoningCalls is { Count: > 1 })
-                reasoningCalls = reasoningCalls.Take(1).ToList();
-            if (reasoningCalls is { Count: > 0 })
-                return new ChatTurnResult(string.Empty, reasoningCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
-
-            // No tool call either: a reasoning model (e.g. Qwen3 on LM Studio) can route its whole
-            // turn — final answer included — into the reasoning channel, leaving content empty. Without
-            // this the answer is dropped: the UI streamed it as a live "💭" thinking preview, but the
-            // turn returns "" → an empty answer bubble. Surface the reasoning text as the answer so the
-            // user keeps what they already saw, rather than dead-ending on an empty turn.
-            return new ChatTurnResult(reasoningBuilder.ToString().Trim(), null, tokensUsed, promptTokens, cut,
-                                      StoppedRepeating: looping, AnswerIsReasoning: true);
-        }
+            return ReasoningOnlyTurn.Recover(reasoningBuilder.ToString(), tokensUsed, promptTokens, cut, looping,
+                                             stoppedEarly: bounded || repeated || looping);
 
         // Empty turn under tool_choice:"required": some models/runtimes (e.g. devstral/Mistral on
         // LM Studio) return *nothing at all* — no content, no structured tool_calls, no reasoning —

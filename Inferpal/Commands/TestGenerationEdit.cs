@@ -27,7 +27,7 @@ internal static class TestGenerationEdit
     /// <paramref name="Cancelled"/> is true when the user closed the spinner — nothing was written either.
     /// </summary>
     public sealed record Result(bool Ok, string TestFileName, bool Extended, bool NoChange = false,
-                                bool Cancelled = false, bool Unreadable = false, bool Cut = false);
+                                bool Cancelled = false, bool Unreadable = false, string? Refusal = null);
 
     public static async Task<Result> RunAsync(
         VisualStudioExtensibility vs,
@@ -78,7 +78,7 @@ internal static class TestGenerationEdit
 
         if (plan.NoChange)   return new Result(false, plan.TestFileName, plan.Extended, NoChange: true);
         if (plan.Unreadable) return new Result(false, plan.TestFileName, plan.Extended, Unreadable: true);
-        if (plan.Cut)        return new Result(false, plan.TestFileName, plan.Extended, Cut: true);
+        if (plan.Refusal is { } why) return new Result(false, plan.TestFileName, plan.Extended, Refusal: why);
         if (!plan.Ok)        return new Result(false, plan.TestFileName, plan.Extended);
 
         try

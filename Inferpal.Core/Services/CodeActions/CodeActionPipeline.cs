@@ -117,8 +117,7 @@ internal static class CodeActionPipeline
             return new CodeActionRun(CodeActionOutcome.Failed, FailureDetail: ex.Message);
         }
 
-        var finished = Finish(result.TextContent, originalCode, docText, hasSelection,
-                              model, client.ServerAddress, result.CutAtLimit);
+        var finished = Finish(result, originalCode, docText, hasSelection, model, client.ServerAddress);
         if (finished.Outcome != CodeActionOutcome.Edited)
             return finished;
 
@@ -147,17 +146,20 @@ internal static class CodeActionPipeline
     /// </para>
     /// </remarks>
     internal static CodeActionRun Finish(
-        string? reply, string originalCode, string docText, bool reindent,
-        string model, string serverAddress, bool cutAtLimit)
+        ChatTurnResult reply, string originalCode, string docText, bool reindent,
+        string model, string serverAddress)
     {
         // ⚠ An answer that stopped at the length limit is the FIRST part of the rewrite — the window
         // fills up exactly when the whole file goes in and the whole file is expected out. Applied, it
         // replaces the code with its beginning and the rest of the file is gone; the server says so
         // (finish_reason / done_reason "length"), so nothing is applied and the cause is named.
-        if (cutAtLimit)
+        if (reply.CutAtLimit)
             return new CodeActionRun(CodeActionOutcome.Failed, FailureDetail: Strings.CodeActionReplyCut);
+        // A reply that is the model's promoted reasoning is thinking prose, not code: applied, it lands in the file.
+        if (reply.AnswerIsReasoning)
+            return new CodeActionRun(CodeActionOutcome.Failed, FailureDetail: Strings.MsgOnlyReasoningFrom(model));
 
-        var cleaned = InlineEditResponse.Clean(reply ?? string.Empty);
+        var cleaned = InlineEditResponse.Clean(reply.TextContent ?? string.Empty);
 
         // The model signalled the action would bring nothing — leave the document untouched.
         if (CodeActionSentinel.IsNoChange(cleaned))

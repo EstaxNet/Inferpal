@@ -131,6 +131,32 @@ public class BenchTests : IDisposable
         Assert.Equal(5, fake.ChatModels.Count);    // warm-up + 3 chat tasks + tool task
     }
 
+    /// <summary>
+    /// A model that wrote only reasoning answered nothing — but its draft ("the fix is i &lt; items.Length…") passes a
+    /// scorer that looks for the right words, and /bench recommends models by that score. Its chat tasks do not pass.
+    /// </summary>
+    [Fact]
+    public async Task Runner_AReasoningDraft_IsNotAnAnswer()
+    {
+        var perfect = PerfectProvider();
+        var drafts  = new FakeInferenceProvider
+        {
+            OnFim         = perfect.OnFim,
+            Running       = perfect.Running,
+            OnChatRequest = async (model, messages, tools, onToken) =>
+            {
+                var turn = await perfect.OnChatRequest!(model, messages, tools, onToken);
+                // Same words, reached by reasoning: the tool call stays a call (the product runs it).
+                return turn.ToolCalls is { Count: > 0 } ? turn : turn with { AnswerIsReasoning = true };
+            },
+        };
+
+        var result = await BenchRunner.RunModelAsync(drafts, "small", CancellationToken.None);
+
+        Assert.Equal(5, result.QualityMax);
+        Assert.Equal(2, result.QualityScore);     // the tool call and FIM — no chat task
+    }
+
     [Fact]
     public async Task Runner_NoFimCapability_ScoresOutOfFour()
     {
