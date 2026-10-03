@@ -56,6 +56,8 @@ internal static class SessionTitleGenerator
 
             // A failed run returns its error as the reply: the session would be named after the refusal.
             if (result.Failed) return fallback;
+            // Nor is its reasoning, promoted to the reply when it wrote none: the session would be named after a draft.
+            if (result.AnswerIsReasoning) return fallback;
             // The basic loop returns the reply whole: a reasoning model's chain of thought is not the title.
             return SessionManager.SanitizeTitle(MarkdownParser.StripThinkTags(result.FinalResponse), fallback);
         }

@@ -144,6 +144,7 @@
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Сжатие контекста не удалось — выполнено принудительное усечение. Причина: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ Модель вернула пустую сводку — выполнено принудительное усечение.</value></data>
   <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ Сводка оказалась слишком длинной и не оставляла места в контексте — выполнено принудительное усечение.</value></data>
+  <data name="MsgContextCompactionOnlyReasoning" xml:space="preserve"><value>⚠ Модель израсходовала весь контекст на рассуждения и не написала сводку — выполнено принудительное усечение. Этого позволяет избежать вспомогательная модель, отвечающая без предварительных рассуждений (`utilityModel`), или больший контекст.</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Модель зациклилась при составлении сводки и была остановлена — выполнено принудительное усечение.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Сводка остановилась на ограничении длины модели: часть предыдущего разговора в ней отсутствует.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ Предыдущий разговор был слишком длинным, чтобы сжать его одним запросом: первые {0} из {1} сообщений в сводку не вошли.</value></data>
@@ -224,6 +225,7 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} тк  ·  сессия: {1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>URL Ollama не настроен. Откройте настройки для его указания.</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>Модель **{0}** не выдала ни одного фрагмента текста. Сервер ({1}) принял запрос и закрыл поток без единого токена и без сообщения об ошибке — значит, дело не в соединении. Подробности о содержимом потока — в `/diagnostics`.</value></data>
+  <data name="MsgOnlyReasoningFrom" xml:space="preserve"><value>Модель **{0}** потратила весь ответ на рассуждения и не написала ответа — её рассуждения не используются вместо него. Избежать этого помогает больший контекст или модель, которая не рассуждает перед ответом.</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>Ответ остановился на ограничении длины модели до конца кода — ничего не применено. Выделите меньшую часть файла или увеличьте длину контекста.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>Черновик остановился на ограничении длины модели, не дойдя до конца, — .inferpal/context.md не записан. Увеличьте длину контекста или выберите модель с большим окном, затем снова выполните /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Таймаут подключения — бэкенд по адресу {0} перестал отвечать (таймаут бездействия).</value></data>
@@ -479,6 +481,7 @@
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Ты — дотошный, полностью локальный ревьюер кода. Проверь приведённый ниже git-дифф ТОЛЬКО по предоставленным проверкам. Сообщай о каждом нарушении отдельной строкой строго в таком формате: `- [severity] путь/к/файлу.ext:СТРОКА - что не так и как исправить`, где severity — blocker, warning или nit, а СТРОКА — номер строки, встречающийся в диффе. Одно замечание на строку, без вложенности и подпунктов. Никогда не указывай на файл, которого нет в диффе, не выдумывай проблем и не комментируй ничего вне проверок или диффа. Одним коротким предложением вне строк замечаний укажи, какие проверки пройдены. Если пройдены все, скажи об этом прямо и не сообщай ни одного замечания.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Нет проверки с именем «{0}». Выполните `/checks`, чтобы вывести список.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Ни одного привязанного замечания — проверки ничего не нашли в этом диффе.</value></data>
+  <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Проверки нет: **{0}** потратила весь ответ на рассуждения и не написала ни одного замечания. Это ничего не говорит о диффе — это не чистый результат. Избежать этого помогает больший контекст или модель, которая не рассуждает перед ответом.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Проверены только первые {0} символов диффа из {1}. Всё ниже относится к этой части, а не ко всему изменению — проверьте остальное отдельно или добавляйте в индекс частями.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**Замечаний: {0}**, привязаны к диффу:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**блокер**</value></data>

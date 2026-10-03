@@ -103,6 +103,9 @@ internal static class CommitCommandHandler
             // ⚠ A FAILED run returns its error as the reply: pre-filled, the refusal would sit one Enter away from
             // becoming a commit message. The message says why nothing is proposed.
             if (result.Failed) return new(result.FinalResponse, notice, null);
+            // ⚠ Nor is the model's reasoning, promoted to the reply when it wrote none: pre-filled, the draft ("We need a
+            // commit message for…") would be one Enter away from history.
+            if (result.AnswerIsReasoning) return new(Strings.MsgOnlyReasoningFrom(model), notice, null);
 
             // ⚠ A reply that stopped at the length limit is pre-filled into `/commit-exec` all the same — a
             // subject cut mid-word reads as a terse one, and sent as is it becomes history. The notice is

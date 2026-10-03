@@ -173,7 +173,12 @@ internal record ChatTurnResult(
     /// <summary>The client stopped the response because the model was repeating itself. <see cref="CutAtLimit"/> is
     /// then true too — the text is incomplete, and every reader that refuses a cut answer must refuse this one — and
     /// this says why, so the notice names the remedy that works instead of "increase the context length".</summary>
-    bool               StoppedRepeating = false);
+    bool               StoppedRepeating = false,
+    /// <summary>The model wrote no answer, only reasoning, and <see cref="TextContent"/> IS that reasoning — promoted so
+    /// a chat bubble keeps what the user saw streaming by. ⚠ A reader that turns the reply into an ARTIFACT (a summary
+    /// that replaces turns, a review's verdict) must not take it: it is a draft ("We need to summarize…"), often stopped
+    /// at the length limit because the reasoning used the whole context.</summary>
+    bool               AnswerIsReasoning = false);
 
 /// <summary>Thrown by <c>OllamaClient.SendChatAsync</c> on HTTP / network failure.</summary>
 internal sealed class AgentHttpException(string message, bool isTimeout)

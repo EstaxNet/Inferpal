@@ -608,7 +608,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             // this the answer is dropped: the UI streamed it as a live "💭" thinking preview, but the
             // turn returns "" → an empty answer bubble. Surface the reasoning text as the answer so the
             // user keeps what they already saw, rather than dead-ending on an empty turn.
-            return new ChatTurnResult(reasoningBuilder.ToString().Trim(), null, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
+            return new ChatTurnResult(reasoningBuilder.ToString().Trim(), null, tokensUsed, promptTokens, cut,
+                                      StoppedRepeating: looping, AnswerIsReasoning: true);
         }
 
         // Empty turn under tool_choice:"required": some models/runtimes (e.g. devstral/Mistral on

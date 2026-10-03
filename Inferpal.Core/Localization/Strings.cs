@@ -328,6 +328,7 @@ internal static class Strings
         string.Format(Get(nameof(MsgContextCompactionFailed)), cause);
     public static string MsgContextCompactionEmpty => Get(nameof(MsgContextCompactionEmpty));
     public static string MsgContextSummaryTooLong  => Get(nameof(MsgContextSummaryTooLong));
+    public static string MsgContextCompactionOnlyReasoning => Get(nameof(MsgContextCompactionOnlyReasoning));
     public static string MsgContextCompactionRepeating => Get(nameof(MsgContextCompactionRepeating));
     public static string MsgContextSummaryCut => Get(nameof(MsgContextSummaryCut));
     public static string MsgContextSummaryPartial(int omitted, int total) =>
@@ -439,6 +440,7 @@ internal static class Strings
     /// </remarks>
     public static string MsgEmptyResponseFrom(string model, string server) =>
         string.Format(Get(nameof(MsgEmptyResponseFrom)), model, server);
+    public static string MsgOnlyReasoningFrom(string model) => string.Format(Get(nameof(MsgOnlyReasoningFrom)), model);
 
     /// <summary>An in-place rewrite that stopped at the model's length limit: nothing was applied.</summary>
     public static string CodeActionReplyCut => Get(nameof(CodeActionReplyCut));
@@ -852,6 +854,7 @@ internal static class Strings
     public static string CheckReviewSystemPrompt => Get(nameof(CheckReviewSystemPrompt));
     public static string CheckUnknownName(string name) => string.Format(Get(nameof(CheckUnknownName)), name);
     public static string CheckNoFindings         => Get(nameof(CheckNoFindings));
+    public static string CheckReviewOnlyReasoning(string model) => string.Format(Get(nameof(CheckReviewOnlyReasoning)), model);
     /// <summary>The verdict below covers only what fit — said above the findings, which it qualifies.</summary>
     public static string CheckDiffTruncated(int kept, int total) =>
         string.Format(Get(nameof(CheckDiffTruncated)), kept, total);

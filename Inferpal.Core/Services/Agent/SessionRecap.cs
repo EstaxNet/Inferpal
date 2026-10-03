@@ -52,6 +52,9 @@ internal static class SessionRecap
         // previous recap stays.
         if (result.AnswerRepeating)
             return new SessionRecapResult(null, "the model kept repeating the same passage and was stopped.");
+        // ⚠ Nor its reasoning promoted to the answer: a draft ("We need to recap…") in every following system prompt.
+        if (result.AnswerIsReasoning)
+            return new SessionRecapResult(null, "the model reasoned through its whole reply and wrote no recap.");
 
         // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
         var recap = MarkdownParser.StripThinkTags(result.FinalResponse);

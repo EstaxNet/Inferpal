@@ -55,6 +55,9 @@ export interface ChatSendResult {
   /** The window this turn was measured against — the loaded one when the server reports a smaller one
    *  than configured. The context gauge shows this, not the setting. 0 = unknown. */
   contextWindow?: number;
+  /** What the next question will send (conversation + tool definitions) — the gauge's fill, the X-Ray's
+   *  figure. Not `promptTokens`, which measured this turn's last request, the run's own transcript included. */
+  nextTurnTokens?: number;
 }
 
 export interface ToolNotice {

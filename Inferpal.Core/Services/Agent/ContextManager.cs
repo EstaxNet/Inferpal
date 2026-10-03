@@ -236,6 +236,10 @@ internal static class ContextManager
             // it was asked to summarize — and a model shown a loop resumes it. Unlike a reply cut at the length limit,
             // which is a summary missing its end.
             if (turn.StoppedRepeating) return (null, false, 0, Strings.MsgContextCompactionRepeating);
+            // ⚠ No summary was written, only reasoning — kept, the model's draft ("We need to summarize…") would replace
+            // the turns. The cause is named: the reasoning used the context, so a model that does not reason first, or a
+            // larger context, is what works — not "the model returned an empty summary".
+            if (turn.AnswerIsReasoning) return (null, false, 0, Strings.MsgContextCompactionOnlyReasoning);
 
             return (MarkdownParser.StripThinkTags(turn.TextContent).Trim(), turn.CutAtLimit, request.Omitted, null);
         }

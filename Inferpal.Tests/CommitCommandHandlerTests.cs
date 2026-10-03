@@ -239,4 +239,26 @@ public class CommitCommandHandlerTests
 
         Assert.Null(result.Notice);
     }
+
+    /// <summary>
+    /// A reasoning model that spent its whole reply thinking wrote no message, and the client promoted its reasoning to
+    /// the reply: pre-filled, the draft ("We need a commit message for…") was one Enter away from history.
+    /// </summary>
+    [Fact]
+    public async Task Propose_AReplyThatIsOnlyReasoning_IsNeverPrefilled()
+    {
+        var git = new FakeGit();
+        git.Answers["diff --staged"] = "diff --git a/A.cs b/A.cs" + "\n" + "+added";
+        var client = new FakeInferenceProvider
+        {
+            RunAgentThroughChat = true,
+            ChatResult = new ChatTurnResult("We need a commit message for the change to A.cs", [], 0, 0,
+                                            CutAtLimit: true, AnswerIsReasoning: true),
+        };
+
+        var result = await CommitCommandHandler.ProposeAsync(client, new InferpalConfig(), git.Runner, null, CancellationToken.None);
+
+        Assert.Null(result.Proposal);
+        Assert.Equal(Strings.MsgOnlyReasoningFrom(client.AgentRuns.Single().Model), result.Message);
+    }
 }

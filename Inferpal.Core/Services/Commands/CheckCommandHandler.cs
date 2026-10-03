@@ -107,17 +107,23 @@ internal static class CheckCommandHandler
         };
 
         string answer;
-        bool   cut;
+        bool   cut, reasoningOnly;
+        var    model = ModelRouter.Resolve(config, ModelRole.Chat);
         try
         {
-            var result = await client.SendChatAsync(
-                ModelRouter.Resolve(config, ModelRole.Chat), history, EmptyToolRegistry.Instance, null, ct);
+            var result = await client.SendChatAsync(model, history, EmptyToolRegistry.Instance, null, ct);
             // A finding drafted while the model reasons is not one it gave — inline reasoning comes off first.
-            answer = MarkdownParser.WithoutLeadingReasoning(result.TextContent);
-            cut    = result.CutAtLimit;
+            answer        = MarkdownParser.WithoutLeadingReasoning(result.TextContent);
+            cut           = result.CutAtLimit;
+            reasoningOnly = result.AnswerIsReasoning;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { return new(Strings.MsgError(ex.Message)); }
+
+        // ⚠ An empty reply, or one that is only the model's reasoning, is not a review. Rendered, it read "no anchored
+        // finding — the checks turned up nothing on this diff": a clean verdict nobody gave.
+        if (reasoningOnly) return new(Named(Strings.CheckReviewOnlyReasoning(model)));
+        if (string.IsNullOrWhiteSpace(answer)) return new(Named(Strings.MsgEmptyResponseFrom(model, client.ServerAddress)));
 
         // Anchors come from the very text the model was shown, so a location is checked against
         // what the model could actually see — not against the working tree, which may have moved.

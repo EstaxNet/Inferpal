@@ -206,6 +206,20 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("chat/send", UseSingleObjectParameterDeserialization = true)]
     public async Task<ChatSendResult> ChatSendAsync(ChatSendParams p, CancellationToken ct)
     {
+        var result = await SendTurnAsync(p, ct);
+        // Every way out of the turn reports what the NEXT question will send: the context gauge shows it, and it is the
+        // figure of the X-Ray the gauge opens. The turn's own prompt measure includes the run's internal transcript, which
+        // the next question does not carry — read as the fill, the gauge said 88 % where the X-Ray said 56 %.
+        var s = Session();
+        return result with
+        {
+            NextTurnTokens = ContextManager.NextTurnLoad(
+                s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode)),
+        };
+    }
+
+    private async Task<ChatSendResult> SendTurnAsync(ChatSendParams p, CancellationToken ct)
+    {
         var s   = Session();
         var cts = AcquireTurn(ct);
 

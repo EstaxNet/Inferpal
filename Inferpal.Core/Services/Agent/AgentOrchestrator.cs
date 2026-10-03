@@ -408,7 +408,7 @@ internal sealed class AgentOrchestrator
         onStep(Strings.StatusCompacting);
 
         string summary;
-        bool   cut, repeating;
+        bool   cut, repeating, reasoningOnly;
         int    omitted;
         try
         {
@@ -432,6 +432,7 @@ internal sealed class AgentOrchestrator
             summary   = MarkdownParser.StripThinkTags(turn.TextContent);
             cut       = turn.CutAtLimit;
             repeating = turn.StoppedRepeating;
+            reasoningOnly = turn.AnswerIsReasoning;
             omitted   = request.Omitted;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } // user cancelled
@@ -443,6 +444,14 @@ internal sealed class AgentOrchestrator
         }
 
         if (string.IsNullOrWhiteSpace(summary)) return RunSummaryOutcome.Failed;
+        // A reply that is only the model's reasoning is a draft, not a summary: in place of the run's earlier context
+        // it would hold "We need to summarize…". Elision instead.
+        if (reasoningOnly)
+        {
+            Diagnostics.Record("Agent.RunSummary", "The summary of the run's earlier context came back as reasoning only, "
+                + "with no summary written: the old turns were elided instead.");
+            return RunSummaryOutcome.Failed;
+        }
         // ⚠ A summary stopped because the model kept repeating itself is a loop, not a summary: in place of the turns
         // it would hold the loop, and a model shown a loop resumes it. Elision instead.
         if (repeating)

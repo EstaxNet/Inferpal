@@ -642,7 +642,10 @@ internal record AgentResult(
     /// </summary>
     bool                 Failed          = false,
     /// <summary>The cut answer was stopped because the model was repeating itself (<see cref="ChatTurnResult.StoppedRepeating"/>).</summary>
-    bool                 AnswerRepeating = false);
+    bool                 AnswerRepeating = false,
+    /// <summary>The final answer is the model's promoted reasoning, no answer written (<see cref="ChatTurnResult.AnswerIsReasoning"/>):
+    /// fine for a bubble, never content — a recap folded into every following system prompt, a commit message, a name.</summary>
+    bool                 AnswerIsReasoning = false);
 
 /// <summary>A single tool invocation within an agentic loop run.</summary>
 internal record ToolExecution(

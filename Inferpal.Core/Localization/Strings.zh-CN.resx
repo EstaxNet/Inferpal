@@ -147,6 +147,7 @@
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ 上下文压缩失败 — 已回退到强制截断。原因：{0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ 模型返回了空摘要 — 已回退到强制截断。</value></data>
   <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ 摘要过长，上下文中没有剩余空间 — 已回退到强制截断。</value></data>
+  <data name="MsgContextCompactionOnlyReasoning" xml:space="preserve"><value>⚠ 模型把整个上下文都用于推理，没有写出摘要 — 已回退到强制截断。使用不先推理就直接回答的辅助模型（`utilityModel`），或更大的上下文，可以避免。</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ 模型在生成摘要时不断重复同一内容，已被停止 — 已回退到强制截断。</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 摘要在模型的长度限制处中断：其中缺少部分先前的对话。</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ 先前的对话太长，无法在一次请求中摘要：摘要中缺少其 {1} 条消息中的前 {0} 条。</value></data>
@@ -224,6 +225,7 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} 令牌 · 会话：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>未配置 Ollama URL，请打开设置进行配置。</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>模型 **{0}** 没有生成任何文本。服务器（{1}）接受了请求，未返回任何 token，也没有报告错误就关闭了数据流 —— 因此这不是连接问题。数据流的详情见 `/diagnostics`。</value></data>
+  <data name="MsgOnlyReasoningFrom" xml:space="preserve"><value>模型 **{0}** 把整个回复都用于推理，没有写出回答 — 推理内容不会被当作回答。更大的上下文，或不先推理的模型，可以避免。</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>回答在代码结束前就达到了模型的长度限制——未应用任何更改。请选择文件中较小的部分，或增大上下文长度。</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>草稿在结束前就达到了模型的长度限制——未写入 .inferpal/context.md。请增大上下文长度，或选择窗口更大的模型，然后重新运行 /onboard context。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>连接超时 — {0} 的后端已停止响应（空闲超时）。</value></data>
@@ -479,6 +481,7 @@
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>你是一位细致且完全本地运行的代码审查者。仅依据所提供的审查检查项，审阅下面的 git diff。每条违规单独占一行，严格采用以下格式：`- [severity] path/to/file.ext:行号 - 问题是什么以及如何修复`，其中 severity 为 blocker、warning 或 nit，行号必须是 diff 中出现的行号。每行一条，不要嵌套或使用子项。绝不要指向 diff 未涉及的文件，不要编造问题，也不要评论检查项或 diff 之外的内容。用一句简短的话在问题行之外说明哪些检查通过。若全部通过，请明确说明，并且不报告任何问题。</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>没有名为「{0}」的检查项。运行 `/checks` 查看列表。</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>没有可定位的问题 — 检查项在此 diff 中未发现任何内容。</value></data>
+  <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ 没有审查结果：**{0}** 把整个回复都用于推理，没有写出任何问题。这并不说明 diff 没有问题 — 这不是干净的结果。更大的上下文，或不先推理的模型，可以避免。</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 仅审阅了差异的前 {0} 个字符（共 {1} 个）。以下内容针对该部分，而非您的整个变更 —— 请单独审阅其余部分，或分批暂存。</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} 条问题**，已定位到 diff：</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**阻断**</value></data>

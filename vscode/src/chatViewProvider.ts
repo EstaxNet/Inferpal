@@ -1639,7 +1639,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       });
       // A stopped turn's partial answer is the host's: empty when nothing visible had come (reasoning only).
       const finalText = result.cancelled ? result.text : result.text || this.streamText;
-      this.promptTokens = result.promptTokens || this.promptTokens;
+      // The gauge shows what the NEXT question sends, as the X-Ray it opens does: the turn's own prompt measure
+      // includes the agent run's internal transcript, which the next question does not carry.
+      this.promptTokens = result.nextTurnTokens || result.promptTokens || this.promptTokens;
       if (result.error) {
         this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now() });
       } else if (result.cancelled) {

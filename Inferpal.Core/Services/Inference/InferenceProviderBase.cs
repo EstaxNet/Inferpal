@@ -548,7 +548,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             else
             {
                 return new AgentResult(turn.TextContent, executions, messages, totalTokens, lastPromptEval,
-                                       AnswerCut: turn.CutAtLimit, AnswerRepeating: turn.StoppedRepeating);
+                                       AnswerCut: turn.CutAtLimit, AnswerRepeating: turn.StoppedRepeating,
+                                       AnswerIsReasoning: turn.AnswerIsReasoning);
             }
         }
 

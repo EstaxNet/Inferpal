@@ -60,7 +60,11 @@ internal sealed record ChatSendResult(
     string? EndNotice = null,
     /// <summary>The window this turn was measured against — the loaded one when the server reports a
     /// smaller one than configured. The adapter's context gauge shows this, not the setting. 0 = unknown.</summary>
-    int     ContextWindow = 0);
+    int     ContextWindow = 0,
+    /// <summary>What the next question will send, in tokens: the conversation plus the tool definitions
+    /// (<c>ContextManager.NextTurnLoad</c>) — the fill the context gauge shows, the X-Ray's figure. Not
+    /// <see cref="PromptTokens"/>, which measured this turn's last request, the run's own transcript included.</summary>
+    int     NextTurnTokens = 0);
 
 /// <summary>`chat/tool` notification — one executed tool call (uncapped output, like the VS bubble).</summary>
 internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors);

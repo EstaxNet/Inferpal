@@ -144,6 +144,7 @@
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ コンテキストの圧縮に失敗しました — 強制切り捨てにフォールバックしました。原因：{0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ モデルが空の要約を返しました — 強制切り捨てにフォールバックしました。</value></data>
   <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ 要約が長すぎてコンテキストに余裕が残りませんでした — 強制切り捨てにフォールバックしました。</value></data>
+  <data name="MsgContextCompactionOnlyReasoning" xml:space="preserve"><value>⚠ モデルがコンテキスト全体を推論に使い切り、要約を書きませんでした — 強制切り捨てにフォールバックしました。推論せずに答える補助モデル（`utilityModel`）か、より大きなコンテキストで回避できます。</value></data>
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ モデルが要約中に同じ内容を繰り返したため停止しました — 強制切り捨てにフォールバックしました。</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 要約がモデルの長さ制限で止まりました。以前の会話の一部が含まれていません。</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ 以前の会話が長すぎて 1 回のリクエストで要約できませんでした。{1} 件中、最初の {0} 件のメッセージは要約に含まれていません。</value></data>
@@ -224,6 +225,7 @@
   <data name="TokenUsage" xml:space="preserve"><value>⚡ {0} トークン  ·  セッション：{1}</value></data>
   <data name="MsgNoUrl" xml:space="preserve"><value>Ollama の URL が設定されていません。設定を開いて設定してください。</value></data>
   <data name="MsgEmptyResponseFrom" xml:space="preserve"><value>モデル **{0}** はテキストを生成しませんでした。サーバー ({1}) はリクエストを受け付け、トークンを 1 つも返さず、エラーも報告せずにストリームを閉じました — 接続の問題ではありません。ストリームの内容は `/diagnostics` にあります。</value></data>
+  <data name="MsgOnlyReasoningFrom" xml:space="preserve"><value>モデル **{0}** は回答全体を推論に費やし、回答を書きませんでした。推論は回答として使われません。より大きなコンテキストか、先に推論しないモデルで回避できます。</value></data>
   <data name="CodeActionReplyCut" xml:space="preserve"><value>コードの終わりに達する前に、応答がモデルの長さ制限で止まりました。何も適用されていません。ファイルのより小さい部分を選択するか、コンテキスト長を増やしてください。</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>下書きが終わる前にモデルの長さ制限で止まりました。.inferpal/context.md は書き込まれていません。コンテキスト長を増やすか、より大きなウィンドウのモデルを選んでから、/onboard context を再実行してください。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>接続タイムアウト — {0} のバックエンドが応答しなくなりました（無通信タイムアウト）。</value></data>
@@ -479,6 +481,7 @@
   <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>あなたは綿密で完全にローカルなコードレビュアーです。以下の git 差分を、提供されたレビューチェックの観点のみで確認してください。違反は 1 行につき 1 件、次の形式で厳密に報告します: `- [severity] path/to/file.ext:行番号 - 何が問題で、どう直すか`。severity は blocker、warning、nit のいずれかで、行番号は差分に現れる番号にしてください。入れ子や小見出しは使わないこと。差分に含まれないファイルを指してはならず、問題を捏造したり、チェックや差分の外について述べたりしないでください。どのチェックが通ったかは、指摘行とは別に短い一文で述べます。すべて通った場合はその旨を明確に述べ、指摘は 1 件も報告しないでください。</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>「{0}」という名前のチェックはありません。`/checks` で一覧を表示してください。</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>差分に紐づく指摘はありません — チェックは何も検出しませんでした。</value></data>
+  <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ レビューなし: **{0}** は回答全体を推論に費やし、指摘を書きませんでした。これは差分について何も示しておらず、問題なしという結果ではありません。より大きなコンテキストか、先に推論しないモデルで回避できます。</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 差分全体 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、変更全体についてではありません。残りは別途レビューするか、小さく分けてステージしてください。</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>差分に紐づく指摘 **{0} 件**:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**ブロッカー**</value></data>
