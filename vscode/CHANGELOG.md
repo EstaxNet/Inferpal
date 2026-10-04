@@ -3,6 +3,27 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.0
+
+A new interface, the same as in Visual Studio: a chat that shows what the agent did and lets you
+undo it, approvals inside the conversation, and a settings window that shows what Inferpal knows.
+
+- **A new chat**: one button for the model (its server, what sits in graphics memory, whether the
+  server answers); an agent run's steps fold into one line, and the answer ends on a result bar —
+  files changed, the last build or test check, and **Undo run**.
+- **Approvals in the conversation**: a card with the first lines of the change, **Allow once**
+  (Enter), **Always this session**, **Deny** (Esc) and *Open diff*.
+- **The composer**: one switch for Chat, Agent and Plan, a ring that shows how full the context
+  window is, and a send button that becomes Stop. The welcome screen offers the open file's actions.
+- **A new settings window** in seven pages, with a search box, an explanation under every setting
+  and a count of unsaved changes. It shows the state of the code index and your `@Docs` sites,
+  how full the conversation is, MCP servers as cards with **Retry**, approval rules as a table,
+  and a **Density** setting. You can now sign in to an MCP server from the settings, and edit
+  slash commands, agent tools and pinned files as lists.
+- **Real icons** in the theme's colors, with names for screen readers.
+- **Fixes**: `@Docs` sites are found after a restart, a repository with a `.inferpal/project.json`
+  no longer switches the language, and a fresh install picks the measured model of a family.
+
 ## 1.6.29
 
 A fresh install works with the model you already have, the agent reads its tools' answers whole,
