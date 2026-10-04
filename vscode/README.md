@@ -4,6 +4,10 @@ Inferpal brings a **fully autonomous AI agent** into VS Code, powered by local L
 
 **No account. No telemetry. With a local model server (Ollama or LM Studio), your code never leaves your machine.**
 
+![Inferpal in VS Code: asked to add argument validation to a C# method and cover it with xUnit tests, the agent plans, edits the method, creates the test file and runs the tests behind approval cards, and ends on its answer and a result bar with Undo run — on a local model](https://raw.githubusercontent.com/EstaxNet/Inferpal/211c21968b4ec213ff44845645c702123643e37b/docs/assets/demo-vscode.gif)
+
+*A real run, sped up: Devstral Small 2 on a self-hosted LM Studio server, every write and command approved in the chat.*
+
 The extension bundles its own self-contained backend — **no .NET installation required**.
 
 ---
