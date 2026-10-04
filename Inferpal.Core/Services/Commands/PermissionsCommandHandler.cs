@@ -97,6 +97,14 @@ internal static class PermissionsCommandHandler
         return sb.ToString();
     }
 
+    /// <summary>
+    /// The team file of <paramref name="projectRoot"/>, as <c>/permissions</c> reads it: <c>null</c> when there is no
+    /// workspace or no file, <c>"{}"</c> (unusable) when the file is there and cannot be read. One reader for the
+    /// command and the settings table of both editors.
+    /// </summary>
+    internal static string? ReadOverlayFile(string? projectRoot) =>
+        string.IsNullOrEmpty(projectRoot) ? null : ReadFileOrNull(OverlayPath(projectRoot));
+
     private static string? ReadFileOrNull(string path)
     {
         try { return File.Exists(path) ? File.ReadAllText(path) : null; }

@@ -20,6 +20,21 @@ internal class VsContextHolder
     /// <summary>Current VS client context; set by <c>ActiveDocumentTracker</c> on each editor activation.</summary>
     public IClientContext? Context { get; set; }
 
+    /// <summary>The chat window's X-Ray counts as they are now — what the settings' Context page shows. Set by the chat
+    /// window; <c>null</c> while none exists (the page then says the conversation is counted once it opens).</summary>
+    public Func<Task<Services.Presentation.XRayPanelModel?>>? ConversationUsage { get; set; }
+
+    /// <summary>Opens the chat window's X-Ray panel — the settings' "Open Context X-Ray". Set by the chat window.</summary>
+    public Func<Task>? OpenXray { get; set; }
+
+    /// <summary>
+    /// Asks an approval as a card in the chat, while a turn runs there; answers <c>null</c> when no turn is running,
+    /// and the approval then keeps its dialog. Set by the chat window. The second argument opens the full diff (the
+    /// dialog), <c>null</c> when the approval has none; its answer, when it gives one, answers the card.
+    /// </summary>
+    public Func<Services.Presentation.ApprovalCardModel, Func<CancellationToken, Task<ApprovalDecision?>>?, CancellationToken,
+                Task<ApprovalDecision?>>? InlineApproval { get; set; }
+
     private ITextViewSnapshot? _latestView;
     private volatile string    _activeFilePath = string.Empty;
 

@@ -47,6 +47,12 @@ internal sealed class DocsIndexService
     /// <summary><c>true</c> while a crawl/embed pass is running.</summary>
     public bool   IsIndexing { get; private set; }
 
+    /// <summary>The source the running pass indexes; <c>null</c> when none runs. Sources queued behind it are not named.</summary>
+    public string? IndexingSiteId
+    {
+        get { lock (_passGate) return _pass?.SiteId; }
+    }
+
     /// <summary>Number of documentation chunks currently held in memory.</summary>
     public int    ChunkCount { get; private set; }
 

@@ -44,23 +44,26 @@ public class HintDefaultsTests
     public void EveryNumericHintThatStatesADefault_StatesTheRealOne()
     {
         var resources = EnglishResources();
-        var checkedHints = 0;
+        var readHints = 0;
         var wrong = new List<string>();
 
         foreach (var field in SettingsSchema.AllFields.Where(f => f.Kind == SettingKind.Int && f.Hint is not null))
         {
             if (!resources.TryGetValue(field.Hint!, out var hint)) continue;
+            readHints++;
             var stated = StatedDefault.Matches(hint)
                 .Select(m => int.Parse(m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value)).ToList();
             if (stated.Count == 0) continue;
 
-            checkedHints++;
             var actual = Convert.ToInt32(DefaultOf(field.Key));
             if (stated.Any(n => n != actual))
                 wrong.Add($"{field.Hint} states {string.Join(", ", stated)}, {field.Key} defaults to {actual}");
         }
 
-        Assert.True(checkedHints >= 5, $"only {checkedHints} hint(s) state a default: the reading is broken"); // WITNESS
+        // WITNESSES: the hints are read, and both forms are recognized. The current hints state no default
+        // (the box shows the value in force), so the rule holds for the next hint that does.
+        Assert.True(readHints >= 10, $"only {readHints} numeric hint(s) read: the reading is broken");
+        Assert.Equal(2, StatedDefault.Matches("Default: 20, or 4096 (default)").Count);
         Assert.True(wrong.Count == 0, string.Join("\n", wrong));
     }
 

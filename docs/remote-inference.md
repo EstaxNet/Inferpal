@@ -112,7 +112,7 @@ does locally; the requests just travel over the network.
 
 > **Latency note.** Inline ghost-text completions are latency-sensitive. Over a fast LAN
 > this is usually fine; over Wi-Fi or a VPN you may want to raise the completion preset to
-> *Default* or *High Accuracy* (longer debounce) so fewer in-flight requests are cancelled.
+> *Balanced* or *Accurate* (longer debounce) so fewer in-flight requests are cancelled.
 
 ---
 
@@ -134,7 +134,8 @@ The VRAM budget powers three things:
 
 Set it either way:
 
-- **Settings → Context → VRAM budget** — enter the remote GPU's total VRAM in GB (e.g. `24`).
+- **Settings → Server and models → *Show advanced settings* → Graphics memory** — enter the remote
+  GPU's total VRAM in GB (e.g. `24`).
   Leave it empty to keep auto-detection (local hosts only).
 - **`/hardware <gb>`** in the chat — e.g. `/hardware 24`. Persists to config immediately.
 

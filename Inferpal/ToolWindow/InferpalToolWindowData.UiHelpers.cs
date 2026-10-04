@@ -43,6 +43,7 @@ internal partial class InferpalToolWindowData
     {
         var budget = Services.Presentation.ContextBudgetGauge.Compute(
             Services.Agent.ContextManager.NextTurnLoad(_lastPromptTokens, NextTurnToolTokens()), ContextWindowInUse);
+        UpdateContextRing(budget);
         if (budget is null)
         {
             HasContextBudget = false;
@@ -243,8 +244,9 @@ internal partial class InferpalToolWindowData
     private void ApplyThemeColors(bool isDark)
     {
         _isDark          = isDark;
+        _isHighContrast  = VsThemeDetector.HighContrastOn();
         VsThemeDetector.CurrentIsDark = isDark;
-        var p            = ThemePalette.For(isDark);
+        var p            = ThemePalette.For(isDark, _isHighContrast);
         ThemeWindowBg    = p.WindowBg;
         ThemeText        = p.Text;
         ThemeSubtleText  = p.SubtleText;
@@ -257,6 +259,7 @@ internal partial class InferpalToolWindowData
         ThemeInputBg     = p.InputBg;
         ThemeInputBorder = p.InputBorder;
         ThemeHoverBg     = p.HoverBg;
+        ApplyChromeTheme(p);
         UpdateMessageBubbles();
     }
 
@@ -283,9 +286,10 @@ internal partial class InferpalToolWindowData
 
     private void ApplyItemTheme(ChatMessageItem item)
     {
-        var p = ThemePalette.For(_isDark);
+        var p = ThemePalette.For(_isDark, _isHighContrast);
 
         item.BubbleBackground = p.BubbleBackground(item.Role);
+        item.BubbleBorder     = item.Role == "user" ? p.UserBubbleBorder : "Transparent";
         item.ThemeText        = p.Text;
         item.ThemeSubtleText  = p.BubbleSubtleText;
         item.ThemeToolText    = p.BubbleToolText;
@@ -305,6 +309,7 @@ internal partial class InferpalToolWindowData
 
         // Diff viewer: green-background additions / red-background deletions per the active theme.
         DiffLine.ApplyTheme(item.DiffLines, p);
+        DiffLine.ApplyTheme(item.CardLines, p);
     }
 
     private void UpdateMessageBubbles()

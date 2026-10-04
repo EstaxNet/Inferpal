@@ -665,12 +665,15 @@ public class WebviewRebuildTests
             "The extension never reads the language saved in Inferpal's settings.");
     }
 
-    /// <summary>The translator loads bundle.l10n.&lt;code&gt;.json for the Inferpal language: every code offered has one.</summary>
+    /// <summary>
+    /// The translator loads bundle.l10n.&lt;code&gt;.json for the Inferpal language: every code offered has one. The
+    /// codes offered are the Core's — the settings panel renders the schema's language list.
+    /// </summary>
     [Fact]
     public void EveryInferpalLanguage_HasTheBundleTheTranslatorLoads()
     {
-        var codes = System.Text.RegularExpressions.Regex.Matches(TsCode("webview/settings.ts"), @"value: '([A-Za-z-]*)', text")
-            .Select(m => m.Groups[1].Value)
+        var codes = Services.Presentation.SettingsSchema.Languages
+            .Select(o => o.Value)
             .Where(code => code.Length > 0 && code != "en")
             .ToList();
         Assert.True(codes.Count >= 9, $"{codes.Count} language codes read — the rule measures nothing.");

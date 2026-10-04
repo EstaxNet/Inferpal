@@ -2843,13 +2843,13 @@ public partial class HostServerTests
         Assert.True(strings.Count > 50);
         Assert.Contains("LabelProvider", strings.Keys);
         Assert.Contains("HintProvider", strings.Keys);
-        Assert.Contains("SectionRag", strings.Keys);
+        Assert.Contains("SectionMcp", strings.Keys);
         Assert.All(strings.Values, v => Assert.False(string.IsNullOrWhiteSpace(v)));
     }
 
     /// <summary>
-    /// `settings/strings` is a hand-written list: a name the schema references but the list does not serve is
-    /// shown as a raw key in the VS Code panel ("UnitTurns"). No test held the inclusion.
+    /// A name the schema references but `settings/strings` does not serve is shown as a raw key in the VS Code
+    /// panel ("UnitTurns"). The list is now read from the schema; this holds it if it is ever written by hand again.
     /// </summary>
     [Fact]
     public async Task SettingsStrings_ServeEveryNameTheSchemaReferences()
@@ -2859,15 +2859,7 @@ public partial class HostServerTests
 
         var strings = await h.Client.InvokeAsync<Dictionary<string, string>>("settings/strings");
 
-        var local = new[] { Services.Presentation.SettingsSchema.LocalLabelInlineDiff,
-                            Services.Presentation.SettingsSchema.LocalLabelTabTools };
-        var names = Services.Presentation.SettingsSchema.AllFields
-            .SelectMany(f => new[] { f.Label, f.Hint, f.Unit })
-            .Concat(Services.Presentation.SettingsSchema.Tabs.SelectMany(t => t.Sections)
-                .SelectMany(s => new[] { s.Title, s.ToggleLabel, s.ToggleHint }))
-            .Where(n => !string.IsNullOrEmpty(n) && !local.Contains(n))
-            .Distinct()
-            .ToList();
+        var names = Services.Presentation.SettingsSchema.ResourceNames.ToList();
 
         // Witness: the schema does reference dozens of names.
         Assert.True(names.Count > 50, $"only {names.Count} name(s) read from the schema");
@@ -2876,6 +2868,87 @@ public partial class HostServerTests
         Assert.True(missing.Count == 0,
             "Names the settings schema references but settings/strings does not serve (rendered as raw keys):\n  "
             + string.Join("\n  ", missing));
+    }
+
+    /// <summary>
+    /// The structured editors of the list settings reach their texts through tables and defaults, not only through
+    /// <c>res('…')</c> calls: every resource name quoted in the panel's sources must be served, or it is rendered
+    /// as its raw key ("RulesColEffect" as a column header).
+    /// </summary>
+    [Fact]
+    public async Task SettingsStrings_ServeEveryNameThePanelAsksFor()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var strings = await h.Client.InvokeAsync<Dictionary<string, string>>("settings/strings");
+
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var resources = System.Xml.Linq.XDocument.Load(Path.Combine(dir!.FullName, "Inferpal.Core", "Localization", "Strings.resx"))
+            .Root!.Elements("data").Select(d => (string)d.Attribute("name")!).ToHashSet(StringComparer.Ordinal);
+
+        var quoted = new[] { "settings.ts", "settingsEditors.ts" }
+            .Select(f => SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+                File.ReadAllText(Path.Combine(dir.FullName, "vscode", "src", "webview", f))))
+            .SelectMany(code => System.Text.RegularExpressions.Regex.Matches(code, @"['""]([A-Z][A-Za-z]{3,})['""]"))
+            .Select(m => m.Groups[1].Value)
+            .Where(resources.Contains)
+            .Distinct()
+            .ToList();
+
+        // Witness: the cards, the table and the lists name dozens of resources.
+        Assert.True(quoted.Count >= 40, $"only {quoted.Count} resource name(s) found in the panel's sources");
+
+        var missing = quoted.Where(n => !strings.ContainsKey(n)).Order().ToList();
+        Assert.True(missing.Count == 0,
+            "Resource names the settings panel asks for but settings/strings does not serve (rendered as raw keys):\n  "
+            + string.Join("\n  ", missing));
+    }
+
+    /// <summary>The rules table reads the team file of the workspace and the rules the panel HOLDS (unsaved).</summary>
+    [Fact]
+    public async Task PermissionsTable_ListsTheTeamFile_ThenTheFormsRules()
+    {
+        using var h = CreateHarness();
+        Directory.CreateDirectory(Path.Combine(h.RootDir, ".inferpal"));
+        File.WriteAllText(Path.Combine(h.RootDir, ".inferpal", "permissions.json"),
+            """{ "rules": ["deny run_command git push", "allow read_file .*"] }""");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var table = await h.Client.InvokeWithParameterObjectAsync<ApprovalRuleTableDto>(
+            "permissions/table", new { rules = "allow run_command ^dotnet\ndeny write_file *.env" });
+
+        Assert.False(table.TeamUnusable);
+        Assert.Equal(["team", "team", "machine", "machine"], table.Rows.Select(r => r.Source));
+        Assert.Equal(["inForce", "ignoredAllow", "inForce", "unreadable"], table.Rows.Select(r => r.Status));
+        Assert.Equal(1, table.Rows[3].MachineLine);
+    }
+
+    /// <summary>
+    /// The cards come from the SAVED servers; a server switched off says so, one that has not run yet says that. And
+    /// a sign-in that fails is an answer the card shows, not an RPC error the panel would read as "the host failed".
+    /// </summary>
+    [Fact]
+    public async Task McpCards_SayWhatEachServerIsDoing_AndAFailedSignInIsAnAnswer()
+    {
+        using var h = CreateHarness(cfg =>
+        {
+            cfg.McpEnabled = false;
+            cfg.McpServersJson = """{ "fs": { "command": "npx", "args": ["-y", "server-fs"] }, "old": { "command": "uvx", "disabled": true } }""";
+        });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var cards = await h.Client.InvokeAsync<McpCardsDto>("mcp/cards");
+        Assert.Equal(["fs", "old"], cards.Cards.Select(c => c.Name));
+        Assert.Equal(["notStarted", "off"], cards.Cards.Select(c => c.State));
+        Assert.Equal("npx -y server-fs", cards.Cards[0].Target);
+        Assert.False(string.IsNullOrWhiteSpace(cards.Summary));
+
+        // "fs" is a stdio server: there is nothing to sign in to, and the answer says why.
+        var signIn = await h.Client.InvokeWithParameterObjectAsync<McpCardsDto>("mcp/authorize", new { name = "fs" });
+        Assert.False(string.IsNullOrWhiteSpace(signIn.Error));
+        Assert.Null(cards.Error);                                   // reference arm: a plain read reports no error
     }
 
     // ── config round trip (settings panel contract) ────────────────────────────

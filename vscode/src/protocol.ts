@@ -58,6 +58,12 @@ export interface ChatSendResult {
   /** What the next question will send (conversation + tool definitions) — the gauge's fill, the X-Ray's
    *  figure. Not `promptTokens`, which measured this turn's last request, the run's own transcript included. */
   nextTurnTokens?: number;
+  /** The turn's run — its steps, the files it changed, its last check; absent when no tool ran. */
+  run?: RunSummary | null;
+  /** How long the turn took ("21 s"), localized by the host. */
+  duration?: string | null;
+  /** The model that answered. */
+  model?: string | null;
 }
 
 export interface ToolNotice {
@@ -119,6 +125,8 @@ export interface BackendStatusResult {
    *  now"; it does not say "it just dropped". The Core decides which edge, and whether the very
    *  first check is silent. */
   edgeNotice?: string | null;
+  /** The configured backend, as the chat header names it ("LM Studio"). */
+  server?: string | null;
   /** Not connected, but the server REFUSED the check (a wrong API key: 401): the badge text, already localized.
    *  A server that answers is running — "unreachable" sends the user to start it. */
   refused?: string | null;
@@ -270,6 +278,46 @@ export interface XRayPanel {
 
 export interface ApprovalNote {
   message: string;
+  /** The card the chat draws; absent from an older host, which only sends the message. */
+  card?: ApprovalCard | null;
+}
+
+/** One line of an approval card's preview. */
+export interface ApprovalPreviewLine {
+  kind: 'add' | 'del' | 'ctx' | 'gap';
+  text: string;
+}
+
+/** An approval as a card (`ApprovalCard` in the Core): what will happen, to what, the start of the change. */
+export interface ApprovalCard {
+  title: string;
+  subject: string;
+  meta: string;
+  preview: ApprovalPreviewLine[];
+  more: string;
+  alwaysTooltip: string;
+  message: string;
+}
+
+/** One file a run changed. */
+export interface RunFileLine {
+  path: string;
+  name: string;
+  added: number;
+  removed: number;
+  created: boolean;
+  gone: boolean;
+}
+
+/** A turn's run as the chat shows it under the answer (`RunSummary` in the Core). */
+export interface RunSummary {
+  steps: number;
+  title: string;
+  detail: string;
+  files: RunFileLine[];
+  check: 'none' | 'buildPassed' | 'buildFailed' | 'testsPassed' | 'testsFailed';
+  checkText: string;
+  runId: string;
 }
 
 export interface SavedMessage {
@@ -340,6 +388,8 @@ export const enum ApprovalAnswer {
 export interface SettingsOption {
   value: string;
   text: string;
+  /** The sentence under the option's name when it is drawn as a card. */
+  description?: string | null;
 }
 
 /** An editable setting. `label`/`hint` are resource names resolved via `settings/strings`. */
@@ -349,31 +399,162 @@ export interface SettingsField {
   label: string;
   hint?: string | null;
   unit?: string | null;
-  gate?: string | null;
   button?: string | null;
   options?: SettingsOption[] | null;
-  /** Factory value of a numeric field: clearing the box restores it, as in the VS window. */
+  /** Factory value of a numeric field (clearing the box restores it, as in the VS window), and of a
+   *  field that opens the advanced fold ("true"/"false" for a boolean). */
   defaultValue?: string | null;
+  /** A check box showing the opposite of the stored boolean. */
+  inverted?: boolean;
+  /** A value other than `defaultValue` opens the page with its advanced sections shown. */
+  opensFold?: boolean;
+  /** Resource name of the hint shown instead when the selected server is not Ollama. */
+  hintNotOllama?: string | null;
+  /** The structured editor drawn over a list setting's text. */
+  editor?: 'pinnedFiles' | 'mcpServers' | 'approvalRules' | 'nameValue' | 'cards' | 'segmented' | null;
+  /** A numeric box whose 0 means "not set": shown empty, and empty saves 0. */
+  zeroIsEmpty?: boolean;
+  /** Resource name of what an optional model list shows for its empty value ("Same as chat"). */
+  emptyChoice?: string | null;
+  /** Resource names of a nameValue table's column headers. */
+  columns?: string[] | null;
+}
+
+/** `settings/indexCard`: the code index as the Code search page shows it. */
+export interface IndexCard {
+  state: 'noWorkspace' | 'indexing' | 'failed' | 'stopped' | 'notBuilt' | 'ready';
+  title: string;
+  detail: string;
+  notes: string[];
+  oversizeNote: string;
+  oversizeFiles: string[];
+  modelLine: string;
+  buttonLabel: string;
+  canRebuild: boolean;
+}
+
+/** `settings/exclusions`: the patterns of .inferpal/project.json the index applies. */
+export interface SettingsExclusions {
+  patterns: string[];
+  file: string;
+  exists: boolean;
+}
+
+/** One @Docs site of the Code search page. */
+export interface DocsSiteRow {
+  id: string;
+  title: string;
+  address: string;
+  state: 'indexing' | 'notIndexed' | 'partial' | 'indexed';
+  status: string;
+  holeNote: string;
+  busy: boolean;
+  removeLabel: string;
+}
+
+/** `settings/docsSites` and `settings/docsAction`: the sites, and what the command said. */
+export interface SettingsDocs {
+  sites: DocsSiteRow[];
+  message?: string | null;
+}
+
+/** One share of the conversation's window. */
+export interface ContextUsagePart {
+  key: 'instructions' | 'tools' | 'conversation';
+  label: string;
+  amount: string;
+  percent: number;
+}
+
+/** `settings/contextUsage`: how full the conversation's window is, and with what. */
+export interface ContextUsage {
+  summary: string;
+  parts: ContextUsagePart[];
+}
+
+/** One of the project's files the prompt reads (`settings/projectFiles`). */
+export interface ProjectFileRow {
+  name: string;
+  description: string;
+  fullPath: string;
+  exists: boolean;
+}
+
+/** What one pinned file costs the prompt (`settings/pinSizes`). */
+export interface PinnedFileSize {
+  path: string;
+  size: string;
+  missing: boolean;
+}
+
+/** One MCP server card (`mcp/cards`, `mcp/retry`, `mcp/authorize`). */
+export interface McpCard {
+  name: string;
+  transport: string;
+  target: string;
+  enabled: boolean;
+  state: 'connected' | 'signIn' | 'failed' | 'off' | 'notStarted';
+  statusText: string;
+  cause?: string | null;
+  toolCount: number;
+}
+
+export interface McpCardsResult {
+  summary: string;
+  cards: McpCard[];
+  /** Why a sign-in failed. */
+  error?: string | null;
+}
+
+/** One row of the approval rules table (`permissions/table`). */
+export interface ApprovalRuleRow {
+  source: 'team' | 'machine';
+  allow?: boolean | null;
+  tool: string;
+  pattern: string;
+  status: 'inForce' | 'ignoredAllow' | 'unreadable';
+  effectText: string;
+  fromText: string;
+  noteText?: string | null;
+  /** Index of the line in the machine setting; -1 for a team rule. */
+  machineLine: number;
+}
+
+export interface ApprovalRuleTable {
+  teamUnusable: boolean;
+  rows: ApprovalRuleRow[];
 }
 
 export interface SettingsSection {
+  /** Resource name of the heading; empty = no heading. */
   title: string;
   fields: SettingsField[];
-  toggleGate?: string | null;
-  toggleLabel?: string | null;
-  toggleHint?: string | null;
+  description?: string | null;
+  /** `advanced`: shown only when the page's "Show advanced settings" box is checked. */
+  gate?: string | null;
+  /** Rendered folded under its title. */
+  collapsible?: boolean;
+  /** Resource name of a sentence under the fields. */
+  note?: string | null;
+  /** Fields in two columns. */
+  grid?: boolean;
+  /** A live summary under the fields: `approvalRules`. */
+  widget?: string | null;
 }
 
+/** One page of the settings window, reached from the side navigation. */
 export interface SettingsTab {
   key: string;
   title: string;
+  description: string;
   sections: SettingsSection[];
+  /** Resource name of the page's "Show advanced settings" box. */
+  advancedToggle?: string | null;
 }
 
 /** `settings/schema` answer: the form the webview renders, declared once in the Core. */
 export interface SettingsSchema {
   tabs: SettingsTab[];
-  headerFields: SettingsField[];
 }
 
 // ── Reverse `debug/*` DTOs (host → editor) ───────────────────────────────────

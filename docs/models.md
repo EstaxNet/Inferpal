@@ -37,7 +37,7 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 | [Qwen2.5 Coder 7B](#qwen-coder) | Superseded for autocomplete by Mellum2; not the agent (3/14) | Uses its fill-in-the-middle tokens | A 2024 model, no longer benched |
 
 Embedding models (semantic search) are **optional**: with none installed, the search runs on keywords. With the field
-left empty in *Settings → RAG*, Inferpal uses the best embedding model installed — EmbeddingGemma first. Measured on
+left empty in *Settings → Server and models → Code search*, Inferpal uses the best embedding model installed — EmbeddingGemma first. Measured on
 192 change descriptions taken from the history of five open-source projects (C#, Python, TypeScript) — how often the
 right file is among the 5 results: **EmbeddingGemma 300M**, **109** (29 of 50 in French); keyword search alone, 103
 (25); **Nomic Embed Text v1.5**, 96 (21); **Qwen3 Embedding 0.6B**, 92 (20). Inferpal sends EmbeddingGemma and Qwen3
@@ -106,8 +106,9 @@ set `"useRecommendedSampling": false` in the configuration.
 
 **The model is recognised by its name, and the name only chooses.** Inferpal recognises a family from the model id
 (`qwen3.8`, `devstral`…) for two decisions: the model it picks on first run — a family measured as a good agent
-first, in the order of the table above, then a model Inferpal does not know, and a family measured to fail as the
-agent last — and the autocomplete prompt, which uses fill-in-the-middle tokens only for the families measured to
+first, in the order of the table above (within a family, its newest release first: Qwen3.8 before an older Qwen3.5,
+whatever the size), then a model Inferpal does not know, and a family measured to fail as the agent last; a base model
+(`…-base`, not trained to chat) comes after all of them — and the autocomplete prompt, which uses fill-in-the-middle tokens only for the families measured to
 complete better with them ([below](#fim-models)). How a reply is *read* never depends on the name: every call form and every reasoning form
 above is read for every model, so a renamed or fine-tuned model keeps working.
 

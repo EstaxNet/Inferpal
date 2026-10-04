@@ -50,7 +50,7 @@ internal sealed class ApprovalDialogData : NotifyPropertyChangedObject
         BtnAlwaysAllow = Strings.ApprovalAlwaysAllow;
         BtnDeny        = Strings.ApprovalDeny;
 
-        var palette = ThemePalette.For(VsThemeDetector.CurrentIsDark);
+        var palette = ThemePalette.For(VsThemeDetector.CurrentIsDark, VsThemeDetector.HighContrastOn());
         ThemeText       = palette.Text;
         ThemeSubtleText = palette.SubtleText;
         ThemeBorder     = palette.Border;

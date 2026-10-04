@@ -1,75 +1,77 @@
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Inferpal.Config;
-using Inferpal.Services.Inference;
 using Inferpal.Services.Presentation;
 using Xunit;
 
 namespace Inferpal.Tests;
 
 /// <summary>
-/// Issue #8: "Use a separate model per role" unchecked promised the chat model everywhere and
-/// only folded the role pickers away — the overrides stayed, the router used them, and the switch
-/// came back checked.
+/// The "Show advanced settings" box of the Server and models page only folds. What it must never do
+/// is hide a setting in effect: issue #8 was per-role models the router kept using behind a folded
+/// switch — a name the backend did not have, a 404 on every agent turn, and nothing on screen.
 /// </summary>
 public class ModelRoleSettingsTests
 {
-    private static List<SettingField> RoleFields()
+    /// <summary>The per-task models and the routing switch folded under the box, read from the schema.</summary>
+    private static List<SettingField> FoldedRoleFields()
     {
-        var fields = SettingsSchema.AllFields.Where(f => f.Gate == ModelRoleSettings.Gate).ToList();
-        // Witness: agent, code actions, FIM, inline edit, utility, automatic routing.
-        Assert.True(fields.Count >= 6, $"Only {fields.Count} field(s) behind the '{ModelRoleSettings.Gate}' gate — this test checks nothing.");
+        var fields = SettingsSchema.Tabs.SelectMany(t => t.Sections)
+            .Where(s => s.Gate == ModelRoleSettings.Gate)
+            .SelectMany(s => s.Fields)
+            .Where(f => f.Kind == SettingKind.Model || f.Key == "modelRouterAuto")
+            .ToList();
+        // Witness: agent, code actions, inline edit, utility, automatic routing.
+        Assert.True(fields.Count >= 5, $"Only {fields.Count} role field(s) behind the '{ModelRoleSettings.Gate}' gate — this test checks nothing.");
         return fields;
     }
 
     /// <summary>
-    /// Driven by the schema, not by a list copied here: a role added behind the gate and forgotten by
-    /// <see cref="ModelRoleSettings.UseChatModelEverywhere"/> fails this test.
+    /// Driven by the schema, not by a list copied here: a per-task model added behind the fold and
+    /// forgotten by <see cref="ModelRoleSettings.OpensAdvanced"/> fails this test.
     /// </summary>
     [Fact]
-    public void Unchecked_ResetsEveryFieldBehindTheRolesGate()
+    public void EveryFoldedRole_InEffect_OpensThePageWithTheFoldShown()
     {
-        var json = JsonSerializer.SerializeToNode(new InferpalConfig { DefaultModel = "chat-model" })!.AsObject();
-        foreach (var field in RoleFields())
+        foreach (var field in FoldedRoleFields())
+        {
+            var json = JsonSerializer.SerializeToNode(new InferpalConfig { DefaultModel = "chat-model" })!.AsObject();
             json[field.Key] = field.Kind == SettingKind.Bool ? JsonValue.Create(true) : JsonValue.Create("role-model");
-        var config = json.Deserialize<InferpalConfig>()!;
-        Assert.True(ModelRoleSettings.HasRoleOverride(config));
+            var config = json.Deserialize<InferpalConfig>()!;
 
-        ModelRoleSettings.UseChatModelEverywhere(config);
-
-        var after = JsonSerializer.SerializeToNode(config)!.AsObject();
-        foreach (var field in RoleFields())
-        {
-            var node = after[field.Key];
-            if (field.Kind == SettingKind.Bool)
-                Assert.False(node?.GetValue<bool>() ?? false, $"{field.Key} is still on.");
-            else
-                Assert.True(string.IsNullOrEmpty(node?.GetValue<string>()), $"{field.Key} still names a model.");
+            Assert.True(ModelRoleSettings.OpensAdvanced(config), $"{field.Key} is in effect behind a closed fold.");
         }
-        Assert.False(ModelRoleSettings.HasRoleOverride(config));
-        Assert.Equal("chat-model", config.DefaultModel);
     }
 
     [Fact]
-    public void Unchecked_RoutesEveryRoleToTheChatModel()
+    public void TheModelMakersSamplingTurnedOff_OpensThePageWithTheFoldShown() =>
+        Assert.True(ModelRoleSettings.OpensAdvanced(new InferpalConfig { UseRecommendedSampling = false }));
+
+    /// <summary>The autocomplete model is shown outside the fold: setting it is no reason to open it.</summary>
+    [Fact]
+    public void TheAutocompleteModel_IsNotAReasonToOpenTheFold() =>
+        Assert.False(ModelRoleSettings.OpensAdvanced(new InferpalConfig { InlineCompletionModel = "mellum2" }));
+
+    [Fact]
+    public void AFreshConfiguration_OpensWithTheFoldClosed() =>
+        Assert.False(ModelRoleSettings.OpensAdvanced(new InferpalConfig()));
+
+    /// <summary>
+    /// The box folds, it never writes: the Visual Studio window's save no longer clears the per-task
+    /// models behind it. A source assertion — the save runs inside the Remote UI view model.
+    /// </summary>
+    [Fact]
+    public void TheVisualStudioWindow_SavesTheFoldedSettings_WhateverTheBoxSays()
     {
-        // The reporter's state: an Ollama-style name left in the agent, utility and FIM fields while
-        // connected to LM Studio, which has no such model.
-        var config = new InferpalConfig
-        {
-            DefaultModel          = "qwen/qwen2.5-coder-14b",
-            AgentModel            = "qwen3-coder:latest",
-            UtilityModel          = "qwen3-coder:latest",
-            InlineCompletionModel = "qwen3-coder:latest",
-        };
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(dir!.FullName, "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
 
-        ModelRoleSettings.UseChatModelEverywhere(config);
-
-        foreach (var role in Enum.GetValues<ModelRole>())
-            Assert.Equal("qwen/qwen2.5-coder-14b", ModelRouter.Resolve(config, role));
+        Assert.Contains("edited.AgentModel", code, StringComparison.Ordinal);             // WITNESS: the save is read
+        Assert.DoesNotContain("UseChatModelEverywhere", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("if (separateRoleModels)", code, StringComparison.Ordinal);
     }
-
-    [Fact]
-    public void AFreshConfiguration_StartsWithTheSwitchUnchecked() =>
-        Assert.False(ModelRoleSettings.HasRoleOverride(new InferpalConfig()));
 }

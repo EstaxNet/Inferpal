@@ -3,6 +3,7 @@
 // survives toggle-driven re-renders.
 import type { XRayPanel } from '../protocol';
 import { t } from './l10n';
+import { setIcon } from './icons';
 
 const xrayEl = document.createElement('div');
 xrayEl.id = 'xray';
@@ -23,13 +24,15 @@ export function renderXray(panel: XRayPanel): void {
   header.className = 'xray-header';
   const title = document.createElement('span');
   title.className = 'xray-title';
-  title.textContent = t('xrayTitle', panel.totalTokens.toLocaleString());
+  setIcon(title, 'xray', t('xrayTitle', panel.totalTokens.toLocaleString()), 14);
   const copyBtn = document.createElement('button');
   copyBtn.textContent = t('xrayCopyPrompt');
   copyBtn.title = t('xrayCopyPromptTitle');
   copyBtn.addEventListener('click', () => post({ type: 'copyText', text: panel.rawPrompt }));
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = '✕';
+  setIcon(closeBtn, 'close', undefined, 14);
+  closeBtn.title = t('close');
+  closeBtn.setAttribute('aria-label', t('close'));
   closeBtn.addEventListener('click', () => { xrayEl.hidden = true; });
   header.appendChild(title);
   header.appendChild(copyBtn);
@@ -58,7 +61,7 @@ export function renderXray(panel: XRayPanel): void {
     tokens.textContent = '~' + s.tokens.toLocaleString();
     const chevron = document.createElement('button');
     chevron.className = 'xray-chevron';
-    chevron.textContent = expanded.has(s.id) ? '▾' : '▸';
+    setIcon(chevron, expanded.has(s.id) ? 'chevronDown' : 'chevronRight', undefined, 13);
     const toggleContent = () => {
       if (expanded.has(s.id)) { expanded.delete(s.id); } else { expanded.add(s.id); }
       renderXray(panel);
@@ -94,7 +97,7 @@ export function renderXray(panel: XRayPanel): void {
   if (panel.overheadWarning) {
     const warn = document.createElement('div');
     warn.className = 'xray-warning';
-    warn.textContent = t('xrayWarning');
+    setIcon(warn, 'warning', t('xrayWarning'), 14);
     footer.appendChild(warn);
   }
   const info = document.createElement('div');

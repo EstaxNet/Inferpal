@@ -130,7 +130,7 @@ internal partial class InferpalToolWindowData
         _mentionCts?.Dispose();
         _mentionCts = null;
 
-        var palette = ThemePalette.For(_isDark);
+        var palette = ThemePalette.For(_isDark, _isHighContrast);
         var text    = palette.Text;
         var sub     = palette.SuggestionSubtleText;
 
@@ -449,7 +449,7 @@ internal partial class InferpalToolWindowData
         var matches = SlashCommandRouter.MatchCommands(text, GetUserTemplates());
         if (matches.Count > 0 || (text.StartsWith('/') && !text.Contains(' ')))
         {
-            var palette   = ThemePalette.For(_isDark);
+            var palette   = ThemePalette.For(_isDark, _isHighContrast);
             var textColor = palette.Text;
             var subColor  = palette.SuggestionSubtleText;
             SlashSuggestions.Clear();

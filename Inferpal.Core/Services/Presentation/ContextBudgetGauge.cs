@@ -46,4 +46,21 @@ internal static class ContextBudgetGauge
 
         return new ContextBudget(pct, color, tooltip);
     }
+
+    /// <summary>
+    /// The gauge as a ring (the chat's composer): path data for the arc of a 7-px circle centred on (9, 9), from the
+    /// top, clockwise, for a share of 100 — empty at 0, just short of closing at 100 and past it.
+    /// </summary>
+    /// <remarks>⚠ An arc whose two ends meet draws nothing, and the end point is written to two decimals: closer to a
+    /// full turn than 99.5 %, it rounds onto the start and a full window would show an EMPTY ring.</remarks>
+    public static string RingArc(double percent)
+    {
+        var share = Math.Clamp(percent, 0, 99.5) / 100.0;
+        if (share <= 0) return "M 9,2";
+        var angle = share * 2 * Math.PI;
+        var x = 9 + 7 * Math.Sin(angle);
+        var y = 9 - 7 * Math.Cos(angle);
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M 9,2 A 7,7 0 {(share > 0.5 ? 1 : 0)} 1 {x:0.##},{y:0.##}");
+    }
 }

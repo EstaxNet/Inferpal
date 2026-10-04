@@ -7,38 +7,30 @@
 
   <!-- Settings section headers -->
   <data name="SectionConnection" xml:space="preserve"><value>接続</value></data>
-  <data name="SettingsTabConnection" xml:space="preserve"><value>接続</value></data>
-  <data name="SettingsTabBehavior" xml:space="preserve"><value>動作</value></data>
-  <data name="SettingsTabContext" xml:space="preserve"><value>コンテキスト</value></data>
-  <data name="SettingsTabTools" xml:space="preserve"><value>ツール</value></data>
-  <data name="SectionBehavior" xml:space="preserve"><value>動作</value></data>
-  <data name="SectionInlineCompletions" xml:space="preserve"><value>インライン補完</value></data>
-  <data name="LabelInlineCompletionMode" xml:space="preserve"><value>パフォーマンスモード：</value></data>
-  <data name="FimModeFast" xml:space="preserve"><value>高速 (128 tok · 300 ms)</value></data>
-  <data name="FimModeDefault" xml:space="preserve"><value>既定 (256 tok · 600 ms)</value></data>
-  <data name="FimModeHighAccuracy" xml:space="preserve"><value>高精度 (512 tok · 1 s)</value></data>
-  <data name="HintInlineCompletionMode" xml:space="preserve"><value>高速：128トークン、遅延300ms — 低遅延・短い提案。デフォルト：256トークン、遅延600ms — バランス。高精度：512トークン、遅延1s — 最高品質・低速。</value></data>
-  <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>ゴーストテキスト補完を有効にする</value></data>
-  <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>有効にすると、Inferpal は入力中に AI 生成のコード提案をインライン表示します（ゴーストテキスト）。Tab で承認、Escape で却下。</value></data>
-  <data name="LabelInlineCompletionModel" xml:space="preserve"><value>FIM モデル（空 = チャットモデル）：</value></data>
-  <data name="HintInlineCompletionModel" xml:space="preserve"><value>Fill-in-the-Middle 補完に使用するモデル。空のままにするとチャットモデルを再利用します。より高速またはコード専用モデル（例: qwen2.5-coder）を設定すると補完精度が向上します。</value></data>
-  <data name="LabelCodeActionsModel" xml:space="preserve"><value>コードアクションモデル（空 = チャットモデル）：</value></data>
-  <data name="HintCodeActionsModel" xml:space="preserve"><value>説明・修正・リファクタリングコマンドで使用するモデル。空のままにするとチャットモデルを使用します。より高性能なモデルを指定するとコード分析の精度が向上します。</value></data>
-  <data name="LabelInlineEditModel" xml:space="preserve"><value>インライン編集モデル（空 = コードアクションモデル）：</value></data>
-  <data name="HintInlineEditModel" xml:space="preserve"><value>インライン編集機能（Ctrl+Shift+I）に使用するモデル。空のままにするとコードアクションモデル、チャットモデルの順でフォールバックします。高速なコード専用モデル（例: qwen2.5-coder）を推奨します。</value></data>
+  <data name="LabelInlineCompletionMode" xml:space="preserve"><value>速度</value></data>
+  <data name="FimModeFast" xml:space="preserve"><value>高速</value></data>
+  <data name="FimModeDefault" xml:space="preserve"><value>バランス</value></data>
+  <data name="FimModeHighAccuracy" xml:space="preserve"><value>高精度</value></data>
+  <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>入力中にコードを提案する</value></data>
+  <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>Tab で確定、Esc で破棄。チャットでモデルが回答している間は止まります。</value></data>
+  <data name="LabelInlineCompletionModel" xml:space="preserve"><value>オートコンプリート</value></data>
+  <data name="HintInlineCompletionModel" xml:space="preserve"><value>入力中のゴースト テキスト。</value></data>
+  <data name="LabelCodeActionsModel" xml:space="preserve"><value>説明・修正・リファクタリング</value></data>
+  <data name="HintCodeActionsModel" xml:space="preserve"><value>エディターのメニューのアクション。</value></data>
+  <data name="LabelInlineEditModel" xml:space="preserve"><value>AI で編集</value></data>
+  <data name="HintInlineEditModel" xml:space="preserve"><value>選択範囲をその場で書き換えます。</value></data>
   <data name="InlineEditDlgTitle" xml:space="preserve"><value>Inferpal — AIで編集</value></data>
   <data name="InlineEditDlgHeader" xml:space="preserve"><value>✏  編集内容を入力  (Enter で適用、Esc でキャンセル)</value></data>
   <data name="InlineEditDlgHint" xml:space="preserve"><value>例：「Nullチェックを追加」、「非同期に変換」、「コメントを日本語に翻訳」</value></data>
   <data name="InlineEditWorking" xml:space="preserve"><value>AI が生成中…</value></data>
   <data name="BtnApply" xml:space="preserve"><value>適用</value></data>
-  <data name="SectionRag" xml:space="preserve"><value>RAG / セマンティック インデックス</value></data>
-  <data name="LabelRagEnabled" xml:space="preserve"><value>バックグラウンド インデックス作成を有効にする (RAG)</value></data>
-  <data name="LabelRagAutoContext" xml:space="preserve"><value>ターンごとに関連コードを自動挿入</value></data>
-  <data name="HintRagAutoContext" xml:space="preserve"><value>有効にすると、コードに関する質問ごとに最も関連性の高いインデックス済みスニペットを取得してプロンプトに追加します（既に添付済みのものは除外）。バックグラウンド インデックス作成が必要です。</value></data>
-  <data name="HintRagEnabled" xml:space="preserve"><value>有効にすると、Inferpal はバックグラウンドでソリューション内のすべてのソース ファイルにインデックスを付け、セマンティック検索を使用して AI に関連するコード コンテキストを提供します。大規模なリポジトリでメモリや CPU を節約するには無効にしてください。</value></data>
-  <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>埋め込みモデル：</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>セマンティック検索の埋め込みを計算するモデル。専用の埋め込みモデルのみ表示されます（embeddinggemma、qwen3-embedding、nomic-embed-text など）。空欄の場合はインストール済みの最適なもの（embeddinggemma が優先）を使い、1 つもなければキーワード検索のみになります。</value></data>
-  <data name="LabelRagTopK" xml:space="preserve"><value>クエリごとの結果数 (トップ K)：</value></data>
+  <data name="LabelRagEnabled" xml:space="preserve"><value>このワークスペースをバックグラウンドでインデックス作成する</value></data>
+  <data name="LabelRagAutoContext" xml:space="preserve"><value>質問ごとに関連するコードを添える</value></data>
+  <data name="HintRagAutoContext" xml:space="preserve"><value>近い断片をいくつか添えるだけで、完全な検索ではありません。自分でファイルを添付したときは省きます。</value></data>
+  <data name="HintRagEnabled" xml:space="preserve"><value>意味で検索するためのものです。モデルが回答している間は一時停止します。オフでもエージェントはテキストでファイルを検索します。</value></data>
+  <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>コード検索</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>任意: なければキーワードで検索します。</value></data>
+  <data name="LabelRagTopK" xml:space="preserve"><value>1 回の検索の結果数</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>秒</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>分</value></data>
   <data name="UnitHours" xml:space="preserve"><value>時間</value></data>
@@ -49,27 +41,25 @@
   <data name="UnitChunks" xml:space="preserve"><value>チャンク</value></data>
   <data name="UnitIterations" xml:space="preserve"><value>回</value></data>
   <data name="UnitRangeZeroToOne" xml:space="preserve"><value>0–1</value></data>
-  <data name="HintRagTopK" xml:space="preserve"><value>セマンティック検索ツールが返すコード チャンクの最大数。値が高いほどコンテキストが増えますが、トークン使用量が増加します。推奨: 3～10。</value></data>
-  <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>類似度しきい値 (0–1)：</value></data>
-  <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>チャンクが検索結果に含まれるための最小コサイン類似度スコアです。このしきい値を下回るチャンクは低品質な一致として除外されます。推奨値：0.20。</value></data>
-  <data name="LabelLspEnabled" xml:space="preserve"><value>LSP セマンティック チャンキング (TypeScript、Python、Go、Rust)</value></data>
-  <data name="HintLspEnabled" xml:space="preserve"><value>有効にすると、Inferpal はインストール済みの言語サーバー (typescript-language-server、pylsp/pyright-langserver、gopls、rust-analyzer) を使用して RAG インデックス作成時に非 C# ファイルから正確なシンボル境界を抽出します。対応するサーバーが PATH に存在する必要があります。</value></data>
-  <data name="LabelModelAutoUnload" xml:space="preserve"><value>アイドル時にモデルを自動アンロード</value></data>
-  <data name="HintModelAutoUnload" xml:space="preserve"><value>有効にすると、Inferpal は非アクティブ期間後に Ollama へモデルを VRAM からアンロードするよう指示します。AI が使用されていない間の GPU メモリを解放します。読み込み済みモデルの VRAM 使用量はチャットヘッダーに表示されます。</value></data>
-  <data name="LabelModelIdleTimeout" xml:space="preserve"><value>アンロードまでの時間（分）：</value></data>
-  <data name="HintModelIdleTimeout" xml:space="preserve"><value>Ollama が VRAM からモデルをアンロードするまでの非アクティブ分数。低い値は GPU メモリを早く解放し、高い値は次回リクエスト時の再読み込み時間を短縮します。最小：1 分。</value></data>
-  <data name="SectionContext" xml:space="preserve"><value>コンテキストとメモリ</value></data>
-  <data name="SectionPersona" xml:space="preserve"><value>ペルソナ</value></data>
+  <data name="HintRagTopK" xml:space="preserve"><value>多いほど文脈もトークンも増えます。3〜10 がおすすめです。</value></data>
+  <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>最小類似度</value></data>
+  <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>意味の近さが低い一致は除外します。正確な名前はキーワードで必ず見つかります。</value></data>
+  <data name="LabelLspEnabled" xml:space="preserve"><value>TypeScript、Python、Go、Rust に言語サーバーを使う</value></data>
+  <data name="HintLspEnabled" xml:space="preserve"><value>実際の関数やクラスでファイルを分割します。サーバーが PATH にある必要があります: typescript-language-server、pyright または pylsp、gopls、rust-analyzer。</value></data>
+  <data name="LabelModelAutoUnload" xml:space="preserve"><value>使っていないモデルをアンロード (Ollama)</value></data>
+  <data name="HintModelAutoUnload" xml:space="preserve"><value>セッションの合間にグラフィックス メモリを解放します。</value></data>
+  <data name="LabelModelIdleTimeout" xml:space="preserve"><value>アンロードまでの時間</value></data>
+  <data name="HintModelIdleTimeout" xml:space="preserve"><value>リクエストがない時間 (分)。短いほど早くメモリを解放し、長いほど再読み込みが減ります。</value></data>
 
   <!-- UI labels -->
-  <data name="LabelProvider" xml:space="preserve"><value>推論バックエンド：</value></data>
-  <data name="HintProvider" xml:space="preserve"><value>使用するローカルモデルサーバー：Ollama（ハードウェア対応機能をフル装備）または LM Studio、llama.cpp、vLLM などの OpenAI 互換サーバー。エディターの再読み込み後に有効になります。</value></data>
-  <data name="LabelApiKey" xml:space="preserve"><value>API キー（任意）：</value></data>
-  <data name="HintApiKey" xml:space="preserve"><value>認証が必要な OpenAI 互換サーバーに Bearer トークンとして送信されます。Ollama と LM Studio では空のままにしてください（キー不要）。</value></data>
-  <data name="LabelUrl" xml:space="preserve"><value>サーバー URL：</value></data>
-  <data name="HintUrl" xml:space="preserve"><value>モデルサーバーのベース URL です。Ollama（既定 http://localhost:11434）、LM Studio（http://localhost:1234）、または任意の OpenAI 互換サーバー。Test ボタンで応答するサーバーを検出します。</value></data>
-  <data name="LabelChatModel" xml:space="preserve"><value>チャットモデル：</value></data>
-  <data name="HintChatModel" xml:space="preserve"><value>すべての会話に使用するデフォルトモデルです。このフィールドは必須です。セッション中にモデルを切り替えるには /model &lt;名前&gt; を使用してください。</value></data>
+  <data name="LabelProvider" xml:space="preserve"><value>サーバーの種類</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>Ollama、LM Studio、または OpenAI 互換。テストで自動的に入ります。エディターの再読み込み後に有効になります。</value></data>
+  <data name="LabelApiKey" xml:space="preserve"><value>API キー</value></data>
+  <data name="HintApiKey" xml:space="preserve"><value>サーバーが求める場合のみ。Ollama と LM Studio には不要です。</value></data>
+  <data name="LabelUrl" xml:space="preserve"><value>サーバーのアドレス</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434)、LM Studio (:1234)、または OpenAI 互換サーバー。テストで応答したサーバーがわかります。</value></data>
+  <data name="LabelChatModel" xml:space="preserve"><value>チャットとエージェント</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>質問に答え、タスクを実行します。/model でこのセッションだけ切り替えられます。</value></data>
   <data name="BtnTest" xml:space="preserve"><value>テスト</value></data>
   <data name="BtnLoadSession" xml:space="preserve"><value>読込 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ キャンセル</value></data>
@@ -78,8 +68,6 @@
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ 権限ルール {0} 件を読み取れず、適用されていません。/diagnostics を確認してください。</value></data>
   <data name="BtnSend" xml:space="preserve"><value>送信 →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>モデル一覧を更新</value></data>
-  <data name="TooltipExport" xml:space="preserve"><value>会話を .md または .txt にエクスポート</value></data>
-  <data name="TooltipClear" xml:space="preserve"><value>会話を保存してクリア</value></data>
   <data name="TooltipSessionPicker" xml:space="preserve"><value>復元する過去のセッションを選択</value></data>
   <data name="TooltipLoadSession" xml:space="preserve"><value>選択したセッションを読み込む（未選択の場合は最後のセッション）</value></data>
   <data name="TooltipDeleteSession" xml:space="preserve"><value>選択したセッションを削除</value></data>
@@ -89,12 +77,8 @@
   <data name="TooltipCopy" xml:space="preserve"><value>メッセージをコピー</value></data>
   <data name="LabelCopyCode" xml:space="preserve"><value>コピー</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>AIで修正</value></data>
-  <data name="BtnRestoreAll" xml:space="preserve"><value>↩ すべて復元</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ 再生成</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ 再開</value></data>
-  <data name="TooltipStepMode" xml:space="preserve"><value>ステップモード — 各ツール呼び出し後にエージェントを一時停止（切り替え）</value></data>
-  <data name="TooltipPlanMode" xml:space="preserve"><value>プランモード — 読み取り専用：エージェントはファイルを変更せずに探索し、計画を提案します（切り替え）</value></data>
-  <data name="MultiFileRecapTitle" xml:space="preserve"><value>**{0} ファイルを変更しました：** {1}</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>次のビルドエラーを修正してください：
 
 {0}</value></data>
@@ -119,28 +103,36 @@
 各問題について行またはシンボルを引用し、リスクを説明し、具体的な修正を提案してください。
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>コマンドタイムアウト：</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>単一のツール呼び出し（シェルコマンドやビルドなど）の最大待機時間です。AI の応答時間には影響しません。ビルドに時間がかかる場合は増やしてください。</value></data>
-  <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>ツール呼び出しをデフォルトで展開</value></data>
-  <data name="HintToolBubblesExpanded" xml:space="preserve"><value>オンにすると、ツール呼び出しの詳細（入力と出力）がチャットで展開して表示されます。デフォルトで折りたたむにはオフにしてください。</value></data>
-  <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>セキュリティアラートを無効化（全ツール呼び出しを自動承認）</value></data>
-  <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>オンにすると、すべてのツール呼び出し（ファイル書き込み、シェルコマンドなど）が確認なしで自動的に承認されます。信頼できる環境でのみ使用してください。</value></data>
-  <data name="LabelContextWindowSize" xml:space="preserve"><value>コンテキストウィンドウ（トークン数、0 = 無効）：</value></data>
-  <data name="HintContextWindowSize" xml:space="preserve"><value>コンテキストウィンドウ（トークン数）。Ollama では Inferpal がこのサイズ（num_ctx）でモデルを読み込みます。LM Studio などのサーバーでは、この値とモデルの読み込み時のウィンドウの小さい方が使われます。既定値：8192。会話がその 80% に達すると、古いメッセージが要約されます（要約がオフまたは失敗した場合は削除）。その旨が通知されます。0 = モデル既定値、削除なし。</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>LM Studio / OpenAI 互換サーバーでは、コンテキスト長はリクエストごとではなくモデルのロード時に固定されます。この値はクライアント側のトリミングのみを制御するため、モデルがロードされているコンテキスト以下に保ってください。会話がこの制限の 80% に達すると、古いメッセージが自動的に削除され警告が表示されます。</value></data>
-  <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>切り捨て時に常に保持するターン数：</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>切り捨て時に保持する最近のユーザー/アシスタントのやり取りの数です。システムプロンプトは常に保持されます。モデルが一貫性を保つためにより多くの最近のコンテキストが必要な場合は増やしてください。 これは上限です。ツール定義と一緒に収まらないほど長いやり取りは、残りと一緒に要約されます。</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>コマンドまたはビルド</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>1 回のツール呼び出しにかけられる最長時間。ビルドが長いなら増やしてください。</value></data>
+  <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>各ステップを展開して表示する</value></data>
+  <data name="HintToolBubblesExpanded" xml:space="preserve"><value>オフなら 1 ステップ 1 行。クリックすると入力と出力が見られます。失敗したステップは常に開きます。</value></data>
+  <data name="LabelDensity" xml:space="preserve"><value>表示密度</value></data>
+  <data name="HintDensity" xml:space="preserve"><value>コンパクトにすると、狭いパネルでも会話をより多く表示できます。</value></data>
+  <data name="DensityComfortable" xml:space="preserve"><value>ゆったり</value></data>
+  <data name="DensityCompact" xml:space="preserve"><value>コンパクト</value></data>
+  <data name="SettingsSectionTheme" xml:space="preserve"><value>テーマ</value></data>
+  <data name="SettingsThemeNote" xml:space="preserve"><value>エディターのテーマ (ハイコントラストを含む) に従います。変更はエディター自体の設定で行います。</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>ライト</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>ダーク</value></data>
+  <data name="ThemeHighContrast" xml:space="preserve"><value>ハイコントラスト</value></data>
+  <data name="ThemeInUse" xml:space="preserve"><value>{0} — 使用中</value></data>
+  <data name="LabelContextWindowSize" xml:space="preserve"><value>コンテキスト ウィンドウ</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama はこのサイズでモデルを読み込みます。80 % を超えると古いメッセージを要約します。0 はモデル既定値。</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>サーバーが読み込んだウィンドウのほうが小さければ、そちらが使われます。80 % を超えると古いメッセージを要約します。0 はモデル既定値。</value></data>
+  <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>常にそのまま残す</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>直近のターン。要約も削除もされません。</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ コンテキストウィンドウ：古いメッセージ {0} 件を削除 — 最後の {1} ターンを保持。古いコンテキストは失われました。</value></data>
-  <data name="LabelCompactionEnabled" xml:space="preserve"><value>スマートコンテキスト圧縮（切り捨てではなく要約）</value></data>
-  <data name="HintCompactionEnabled" xml:space="preserve"><value>有効にすると、古いメッセージは削除前にモデルによって要約され、重要な情報が保持されます。要約の呼び出しが長すぎる場合は安全ヒューズが作動し、ハードトランケーションにフォールバックします。</value></data>
-  <data name="LabelCompactionTimeout" xml:space="preserve"><value>圧縮タイムアウト（安全ヒューズ）：</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>要約が何も出力しないまま待てる秒数（推論の出力も含む）。要約対象を読み込む時間（100 トークンあたり約 1 秒）に加算されます。超えると安全ヒューズが作動し、代わりにハードトランケーションが使用されます。デフォルト：45。</value></data>
-  <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KVキャッシュアンカーメッセージ：</value></data>
-  <data name="HintKvCacheAnchor" xml:space="preserve"><value>圧縮後のコンテキストの先頭に変更せず保持する冒頭メッセージ数（システムプロンプト除く）。OllamaはこれらのトークンのKVキャッシュを再利用でき、再計算時間を節約します。0 = 無効。デフォルト：3。</value></data>
+  <data name="LabelCompactionEnabled" xml:space="preserve"><value>古いメッセージを削除せずに要約する</value></data>
+  <data name="HintCompactionEnabled" xml:space="preserve"><value>ウィンドウの 80 % を超えたとき。要約できなければ削除し、チャットでそう伝えます。</value></data>
+  <data name="LabelCompactionTimeout" xml:space="preserve"><value>要約をあきらめるまでの時間</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>要約対象を読む時間に加えた、無応答の秒数。思考も出力として数えます。</value></data>
+  <data name="LabelKvCacheAnchor" xml:space="preserve"><value>そのまま残す冒頭のメッセージ</value></data>
+  <data name="HintKvCacheAnchor" xml:space="preserve"><value>サーバーがキャッシュを再利用できます。0 は無効。</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} 件のKVアンカーメッセージを保持)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>コンテキストを圧縮中…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 コンテキストを圧縮しました：{0} 件のメッセージを要約 — 最後の {1} ターンを保持。</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ コンテキスト圧縮がタイムアウトしました — ハードトランケーションにフォールバック。 モデルにもっと時間が必要な場合は、設定の「圧縮タイムアウト」を増やしてください。</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ コンテキスト圧縮がタイムアウトしました — ハードトランケーションにフォールバック。 モデルにもっと時間が必要な場合は、設定の「{0}」（{1}）を増やしてください。</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ コンテキストの圧縮に失敗しました — 強制切り捨てにフォールバックしました。原因：{0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ モデルが空の要約を返しました — 強制切り捨てにフォールバックしました。</value></data>
   <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ 要約が長すぎてコンテキストに余裕が残りませんでした — 強制切り捨てにフォールバックしました。</value></data>
@@ -151,39 +143,36 @@
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>以下は私たちの会話の冒頭です。主要な決定事項、事実、修正したファイル、今後のメッセージに必要なコンテキストをすべて保持しながら、密に要約してください。簡潔でありながら完全に — この要約が元のメッセージを置き換えます：
 
 {0}</value></data>
-  <data name="LabelCustomSystemPrompt" xml:space="preserve"><value>カスタムシステムプロンプト（ベースプロンプトの後、プロジェクトコンテキストの前に追加）：</value></data>
-  <data name="HintCustomSystemPrompt" xml:space="preserve"><value>組み込みのシステムプロンプトに追加する追加指示です。アシスタントのトーンを設定したり、範囲を制限したり、プロジェクト固有のドメイン知識を追加するために使用してください。</value></data>
-  <data name="LabelPinnedContextFiles" xml:space="preserve"><value>固定コンテキストファイル（1行に1パス、最大3件 — 常にプロンプトに注入）：</value></data>
-  <data name="HintPinnedContextFiles" xml:space="preserve"><value>各リクエスト前にシステムプロンプトへ常に挿入される絶対ファイルパス。重要なアーキテクチャ文書、インターフェースやスキーマを常にコンテキストに維持するのに役立ちます。</value></data>
-  <data name="LabelPromptTemplates" xml:space="preserve"><value>カスタムスラッシュコマンド（1行に1つ：/名前=テキスト、{args}で追加ワードを使用）：</value></data>
-  <data name="HintPromptTemplates" xml:space="preserve"><value>独自のスラッシュコマンドを定義します。形式：/mycommand=詳しく説明してください：{args}。{args}はコマンド名の後に入力した単語に置き換えられます。テンプレートはオートコンプリートの候補に表示されます。</value></data>
-  <data name="LabelPermissionRules" xml:space="preserve"><value>権限ルール（1行に1つ：allow|deny &lt;ツール|*&gt; &lt;正規表現&gt;）：</value></data>
-  <data name="HintPermissionRules" xml:space="preserve"><value>承認プロンプトの前に評価されるルール。「allow」は一致するツール呼び出しを自動承認し、「deny」はブロック、一致しなければプロンプトを表示します。最初に一致したものが優先されます。正規表現はコマンドまたはファイルパスと照合されます。コミット可能なオーバーレイ .inferpal/permissions.json に加えて適用され、さらに回避不可能な組み込みの破壊的コマンド拒否リストが常に適用されます。例：allow run_command ^dotnet</value></data>
-  <data name="LabelCustomTools" xml:space="preserve"><value>カスタムエージェントツール（1行に1つ：名前=シェルコマンド）：</value></data>
-  <data name="HintCustomTools" xml:space="preserve"><value>エージェントが呼び出せるシェルツールを定義します。形式：my_tool=dotnet test。名前はsnake_caseである必要があります。モデルが引数を提供する場合、オプションの{args}パラメータが追加されます。実行前に承認が必要です。</value></data>
-  <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>言語に応じてペルソナを自動切替</value></data>
-  <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>有効にすると、アクティブなドキュメントが切り替わった際に、言語固有のヒント（C#、Python、TypeScript…）でシステムプロンプトが自動的に補完されます。</value></data>
-  <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>OODA セッション要約（N ターンごと、0 = 無効）：</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>N 回の会話ターンごとに、モデルがセッションの簡潔な要約（目標・進捗・未解決事項）を生成し、システムプロンプトに挿入することで、長いセッションでのコンテキスト健忘を防ぎます。0 に設定すると無効になります。推奨値：10。</value></data>
+  <data name="LabelCustomSystemPrompt" xml:space="preserve"><value>すべての会話に追加</value></data>
+  <data name="HintCustomSystemPrompt" xml:space="preserve"><value>組み込みの指示の後に加わるあなたの指示。このマシン用です。プロジェクト全体の指示は .inferpal/context.md に置きます。</value></data>
+  <data name="LabelPinnedContextFiles" xml:space="preserve"><value>ピン留めしたファイル</value></data>
+  <data name="HintPinnedContextFiles" xml:space="preserve"><value>質問のたびに読む最大 3 つのファイル (設計メモ、インターフェイス、スキーマなど)。1 行に 1 つの完全パス。</value></data>
+  <data name="LabelPromptTemplates" xml:space="preserve"><value>コマンド (1 行に 1 つ)</value></data>
+  <data name="HintPromptTemplates" xml:space="preserve"><value>/名前=テキスト。{args} はコマンドの後に入力した内容に置き換わります。</value></data>
+  <data name="LabelPermissionRules" xml:space="preserve"><value>ルール (1 行に 1 つ)</value></data>
+  <data name="HintPermissionRules" xml:space="preserve"><value>allow または deny、ツール名または *、そしてコマンドまたはパスに照合する正規表現。例: allow run_command ^dotnet</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>ツール (1 行に 1 つ)</value></data>
+  <data name="HintCustomTools" xml:space="preserve"><value>名前=コマンド (名前は snake_case)。{args} にはエージェントが加えた内容が入ります。</value></data>
+  <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>開いているファイルの言語に合わせる</value></data>
+  <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>ファイルを切り替えると、C#、Python、TypeScript 向けのヒントを加えます。</value></data>
+  <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>セッションの振り返り間隔</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>目的・進捗・未解決の質問を指示に残します。0 は無効。</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>セッション要約を生成中…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA セッション要約**（ターン {0}）</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>これまでの会話を要約してください。OODA スタイルのリキャップを3つのセクションで作成してください — 目標（ユーザーが達成したいこと）、進捗（完了した手順）、未解決（残っているタスクまたは未解決の質問）。150 語以内でお願いします。</value></data>
-  <data name="LabelLanguage" xml:space="preserve"><value>インターフェイス言語（エディターの設定を上書き）：</value></data>
-  <data name="HintLanguage" xml:space="preserve"><value>Visual Studio の言語に関係なく表示言語を強制します。「自動」は Visual Studio の言語を使用します。</value></data>
-  <data name="LangAuto" xml:space="preserve"><value>自動（Visual Studio）</value></data>
-  <data name="HintSend" xml:space="preserve"><value>Enter で送信  ·  Shift+Enter で改行  ·  Shift+↑↓ 履歴</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>言語</value></data>
+  <data name="HintLanguage" xml:space="preserve"><value>パネル、設定、モデルの回答の言語です。English, Français, Deutsch, Español, Italiano, Русский, 日本語, 한국어, Polski, 中文.</value></data>
+  <data name="LangAuto" xml:space="preserve"><value>自動 — エディターと同じ ({0})</value></data>
   <data name="TooltipAttachFile" xml:space="preserve"><value>次のメッセージにアクティブなファイルを添付</value></data>
   <data name="TooltipAttachSelection" xml:space="preserve"><value>次のメッセージに選択範囲を添付（選択がない場合はファイル全体）</value></data>
   <data name="TooltipBrowseFile" xml:space="preserve"><value>ディスクからファイルを参照して添付</value></data>
   <data name="TooltipPinFile" xml:space="preserve"><value>アクティブなファイルを固定 — 常にコンテキストに保持</value></data>
-  <data name="MenuAddContext" xml:space="preserve"><value>プロンプトにコンテキストを追加</value></data>
   <data name="MenuAttachFile" xml:space="preserve"><value>アクティブなファイル</value></data>
   <data name="MenuAttachSelection" xml:space="preserve"><value>選択範囲</value></data>
   <data name="MenuBrowseFile" xml:space="preserve"><value>ディスクから参照…</value></data>
   <data name="MenuPinFile" xml:space="preserve"><value>アクティブなファイルをピン留め</value></data>
   <data name="TooltipPinChip" xml:space="preserve"><value>このファイルを常に固定</value></data>
   <data name="PinLimitReached" xml:space="preserve"><value>⚠ 固定ファイルの上限に達しました（最大 {0}）。先に1つ解除してください。</value></data>
-  <data name="TooltipSearchConversation" xml:space="preserve"><value>会話を検索（Ctrl+F）</value></data>
   <data name="TooltipCloseSearch" xml:space="preserve"><value>検索を閉じる</value></data>
   <data name="TooltipSaveSnippet" xml:space="preserve"><value>スニペットライブラリに保存（/snippets で表示）</value></data>
 
@@ -454,8 +443,8 @@ API キーが必要な場合は設定でキーを確認してください。そ�
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: ビルド確認がタイムアウト (60 秒) — 手動で確認してください。</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: ビルドチェックはエラーを一つも示さずに失敗しました — 理由を確認するにはご自身で実行してください。</value></data>
-  <data name="LabelSmartFixEnabled" xml:space="preserve"><value>書き込み後の自動ビルド検証 (Smart Fix)</value></data>
-  <data name="HintSmartFixEnabled" xml:space="preserve"><value>チェックすると、C#/プロジェクトファイルへの write_file または apply_diff の後に自動的に高速ビルドが実行されます。コンパイルエラーはインラインで返されるため、エージェントが即座に修正できます。</value></data>
+  <data name="LabelSmartFixEnabled" xml:space="preserve"><value>編集のたびにビルドを確認する</value></data>
+  <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET、TypeScript、Rust、Go にすぐ対応。エラーはそのままエージェントに返されます。</value></data>
 
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ git の変更が検出されませんでした。</value></data>
@@ -561,25 +550,20 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — 選択したモデルは合計で約 **{0} GB** 必要で、予算の **{1} GB** を超えています。システム RAM にあふれて動作が遅くなる可能性があります。より小さいモデルを検討するか、`/hardware` で確認してください。</value></data>
 
   <!-- Agent Mode -->
-  <data name="LabelAgentModeEnabled" xml:space="preserve"><value>自律エージェントモードを有効にする（計画 → 実行 → 観察）</value></data>
-  <data name="HintAgentModeEnabled" xml:space="preserve"><value>有効にすると、Inferpal はツールを使用する前に明示的なステップ計画を生成し、ライブ進捗追跡付きの構造化された計画 → 実行 → 観察ループを実行します。複雑な多ステップタスクに最適です。シンプルで高速なクエリには無効にしてください。</value></data>
-  <data name="LabelAgentModel" xml:space="preserve"><value>エージェント／ツール用モデル（空＝チャットモデル）:</value></data>
-  <data name="HintAgentModel" xml:space="preserve"><value>ツールが有効なときに使用されるモデル — エージェント（Plan → Act → Observe）ループと基本のツール呼び出しループ。空のままにするとチャットモデルを使用します。プロンプトキャッシュを再利用できる、より小さい非マルチモーダルモデル（例: qwen2.5-coder）は、毎ターン全プロンプトを再処理する大きなマルチモーダルモデルよりも、多ターンのツールループを大幅に高速に実行します。</value></data>
-  <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>役割ごとに別のモデルを使用（詳細）</value></data>
-  <data name="LabelAdvancedBehavior" xml:space="preserve"><value>詳細設定を表示（タイムアウト、反復回数）</value></data>
-  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>デフォルトではチャットモデルがすべてに使われます。これを有効にすると、エージェント、コードアクション、インライン補完（FIM）、インライン編集、ユーティリティタスク（タイトル、コミット、要約）に別々のモデルを割り当てられます。</value></data>
-  <data name="LabelUtilityModel" xml:space="preserve"><value>ユーティリティモデル（空 = チャットモデルを使用）：</value></data>
-  <data name="HintUtilityModel" xml:space="preserve"><value>バックグラウンドタスク（セッションタイトル、/commit メッセージの提案、履歴コンパクションの要約）に使う小型で高速なモデル。空のままにするとチャットモデルを再利用します。3〜7B のモデルなら数秒で応答し、keep-alive により呼び出し間もロードされたままになります。</value></data>
-  <data name="LabelModelRouterAuto" xml:space="preserve"><value>ユーティリティタスクの自動ルーティング（/bench 由来）</value></data>
-  <data name="HintModelRouterAuto" xml:space="preserve"><value>ユーティリティモデルが未設定の場合、バックグラウンドタスクは /bench がユーティリティ役割に推奨したモデルを使います — ただし、すでに VRAM にロードされている場合のみ。タイトルやコミットメッセージのためにコールドなモデルをロードすることはありません（スワップのコストが利得を上回るため）。その場合はチャットモデルを使用します。</value></data>
-  <data name="LabelAgentMaxIterations" xml:space="preserve"><value>最大イテレーション数</value></data>
-  <data name="HintAgentMaxIterations" xml:space="preserve"><value>リクエストごとの計画 → 実行 → 観察サイクルの最大回数。0 はデフォルト値（20）になります。デフォルト：20。</value></data>
-  <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>クイックタスクのタイムアウト（アクション、インライン編集）</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>短いタスクの制限時間：説明、修正、文書化、インライン編集、エージェント計画。デフォルト：120秒。</value></data>
-  <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>通常タスクのタイムアウト（エージェントターン）</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>ツール付きチャットとオーケストレーターのエージェントターンごとの制限時間。デフォルト：300秒。</value></data>
-  <data name="LabelTaskTimeoutDeep" xml:space="preserve"><value>ディープタスクのタイムアウト（予約済み）</value></data>
-  <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>拡張推論タスク用に予約済み。デフォルト：600秒。</value></data>
+  <data name="LabelAgentModeEnabled" xml:space="preserve"><value>行動する前に計画する</value></data>
+  <data name="HintAgentModeEnabled" xml:space="preserve"><value>まず手順を書き、進捗を表示しながら実行します。オフなら直接ツールを使います。</value></data>
+  <data name="LabelAgentModel" xml:space="preserve"><value>ツールを使うエージェント</value></data>
+  <data name="HintAgentModel" xml:space="preserve"><value>ツール呼び出しと複数ステップのタスク。</value></data>
+  <data name="LabelUtilityModel" xml:space="preserve"><value>バックグラウンド タスク</value></data>
+  <data name="HintUtilityModel" xml:space="preserve"><value>セッション タイトル、コミット メッセージ、要約。小さなモデルなら数秒で答えます。</value></data>
+  <data name="LabelModelRouterAuto" xml:space="preserve"><value>バックグラウンド用モデルを /bench に選ばせる</value></data>
+  <data name="HintModelRouterAuto" xml:space="preserve"><value>読み込み済みのモデルだけを使います。タイトルを書くためだけに読み込むことはありません。</value></data>
+  <data name="LabelAgentMaxIterations" xml:space="preserve"><value>1 回の依頼あたりのステップ数</value></data>
+  <data name="HintAgentMaxIterations" xml:space="preserve"><value>使い切ると、タスクが終わっていないことが回答に示されます。0 は既定値。</value></data>
+  <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>説明・修正・AI で編集</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>短いアクションと、エージェントの計画。</value></data>
+  <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>エージェントの 1 ターン</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>ツールを使う会話の各ラウンド。</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 計画中…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 観察中…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>リクエストを実行する</value></data>
@@ -587,24 +571,23 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 エージェント計画</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ 回答を作成中…</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>MCP サーバー</value></data>
-  <data name="LabelMcpEnabled" xml:space="preserve"><value>MCP サーバーを有効にする</value></data>
-  <data name="HintMcpEnabled" xml:space="preserve"><value>有効にすると、設定された Model Context Protocol (MCP) サーバーが起動時に実行され、そのツールがエージェントで利用可能になります。サーバーのコマンド（例: npx、uvx）がこのマシンにインストールされている必要があります。</value></data>
-  <data name="LabelMcpServers" xml:space="preserve"><value>MCP サーバー (JSON):</value></data>
-  <data name="HintMcpServers" xml:space="preserve"><value>サーバー名をキーとする JSON オブジェクトとしての MCP サーバー定義（Claude Desktop / Continue 形式）。それぞれ command、args、env を持ちます。stdio トランスポートのみ。検出されたツールは mcp__ プレフィックス付きでエージェントに公開されます。</value></data>
-  <data name="McpNoServers" xml:space="preserve"><value>MCP サーバーが設定されていません。</value></data>
+  <data name="LabelMcpEnabled" xml:space="preserve"><value>MCP サーバーを使う</value></data>
+  <data name="HintMcpEnabled" xml:space="preserve"><value>サーバーのツールがエージェントに加わり、同じ承認を経ます。コマンド (npx、uvx など) はこのマシンにインストールされている必要があります。</value></data>
+  <data name="LabelMcpServers" xml:space="preserve"><value>MCP サーバー</value></data>
+  <data name="HintMcpServers" xml:space="preserve"><value>Claude Desktop 形式: ローカル コマンド (stdio) またはアドレス (HTTP、ヘッダーとサインイン付き)。ツールは mcp__server__tool としてエージェントに届きます。</value></data>
   <data name="McpCancelled" xml:space="preserve"><value>MCP ツール呼び出しがユーザーによってキャンセルされました。</value></data>
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>1回だけ許可</value></data>
-  <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>このツールを常に許可</value></data>
-  <data name="ApprovalDeny" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>このセッション中は常に</value></data>
+  <data name="ApprovalDeny" xml:space="preserve"><value>拒否</value></data>
   <data name="ApprovalDialogTitle" xml:space="preserve"><value>承認が必要です</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>権限ルール（deny）によりブロックされました：{0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>組み込みの安全拒否リスト（破壊的コマンド）によりブロックされました：{0}</value></data>
-  <data name="McpAddServer" xml:space="preserve"><value>+ サーバーを追加</value></data>
+  <data name="McpAddServer" xml:space="preserve"><value>サーバーを追加</value></data>
   <data name="McpAddTitle" xml:space="preserve"><value>サーバーを追加</value></data>
   <data name="McpEditTitle" xml:space="preserve"><value>編集: {0}</value></data>
   <data name="LabelMcpName" xml:space="preserve"><value>名前</value></data>
   <data name="LabelMcpCommand" xml:space="preserve"><value>コマンド</value></data>
-  <data name="LabelMcpArgs" xml:space="preserve"><value>引数（スペース区切り）</value></data>
+  <data name="LabelMcpArgs" xml:space="preserve"><value>引数 (1 行に 1 つ)</value></data>
   <data name="LabelMcpEnv" xml:space="preserve"><value>環境変数（KEY=値、1行に1つ）</value></data>
   <data name="LabelMcpHttpServer" xml:space="preserve"><value>HTTP サーバー (コマンドの代わりに URL を使用)</value></data>
   <data name="LabelMcpUrl" xml:space="preserve"><value>URL (Streamable HTTP エンドポイント)</value></data>
@@ -613,12 +596,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>キャンセル</value></data>
   <data name="McpAdvancedJson" xml:space="preserve"><value>詳細 (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ JSON をリストにインポート</value></data>
-  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>⚠ MCP サーバーの JSON を完全には読み取れなかったため、一覧は読み取り専用です。書き直すと読み取れなかった部分が失われます。JSON を修正してから一覧にインポートしてください。</value></data>
-  <data name="McpServerDisabled" xml:space="preserve"><value>— 無効</value></data>
+  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>MCP サーバーの JSON をすべて読み取れませんでした。一覧は読み取れない部分を失うため、JSON を直すまで読み取り専用です。</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>名前とコマンドは必須です。</value></data>
   <data name="McpValidationNameUrl" xml:space="preserve"><value>名前と URL は必須です。</value></data>
-  <data name="BtnMcpAuthorize" xml:space="preserve"><value>承認…</value></data>
-  <data name="McpAuthRequired" xml:space="preserve"><value>🔒 承認が必要です</value></data>
   <data name="McpValidationDuplicate" xml:space="preserve"><value>この名前のサーバーは既に存在します。</value></data>
   <data name="HintMcpEditServer" xml:space="preserve"><value>この MCP サーバーの設定（名前、コマンド、引数、環境変数）を編集します。</value></data>
   <data name="HintMcpDeleteServer" xml:space="preserve"><value>この MCP サーバーを一覧から削除します。</value></data>
@@ -627,23 +607,23 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="LabelRowAdvanced" xml:space="preserve"><value>詳細 (生テキスト)</value></data>
   <data name="BtnRowImport" xml:space="preserve"><value>⟳ 一覧に取り込む</value></data>
   <data name="RowEditTitle" xml:space="preserve"><value>編集中: {0}</value></data>
-  <data name="PinnedAddFile" xml:space="preserve"><value>+ ファイルを追加</value></data>
+  <data name="PinnedAddFile" xml:space="preserve"><value>ファイルを追加</value></data>
   <data name="PinnedAddTitle" xml:space="preserve"><value>ピン留めファイルを追加</value></data>
   <data name="LabelPinnedPath" xml:space="preserve"><value>ファイルパス (絶対パス)</value></data>
   <data name="PinnedBrowse" xml:space="preserve"><value>参照…</value></data>
   <data name="PinnedPickerTitle" xml:space="preserve"><value>ピン留めするファイルを選択</value></data>
   <data name="PinnedValidationPath" xml:space="preserve"><value>ファイルパスが必要です。</value></data>
   <data name="PinnedValidationDuplicate" xml:space="preserve"><value>このファイルは既にピン留めされています。</value></data>
-  <data name="SlashAddCmd" xml:space="preserve"><value>+ コマンドを追加</value></data>
+  <data name="SlashAddCmd" xml:space="preserve"><value>コマンドを追加</value></data>
   <data name="SlashAddTitle" xml:space="preserve"><value>スラッシュコマンドを追加</value></data>
   <data name="LabelSlashName" xml:space="preserve"><value>名前 (例: /refactor)</value></data>
   <data name="LabelSlashText" xml:space="preserve"><value>プロンプトテキスト — 追加の語句には {args} を使用</value></data>
   <data name="SlashValidationNameText" xml:space="preserve"><value>/ で始まる名前とプロンプトテキストが必要です。</value></data>
   <data name="SlashValidationDuplicate" xml:space="preserve"><value>この名前のコマンドは既に存在します。</value></data>
-  <data name="ToolAddTool" xml:space="preserve"><value>+ ツールを追加</value></data>
+  <data name="ToolAddTool" xml:space="preserve"><value>ツールを追加</value></data>
   <data name="ToolAddTitle" xml:space="preserve"><value>カスタムツールを追加</value></data>
   <data name="LabelToolName" xml:space="preserve"><value>名前 (snake_case)</value></data>
-  <data name="LabelToolCommand" xml:space="preserve"><value>PowerShell コマンド (引数には {args} を使用)</value></data>
+  <data name="LabelToolCommand" xml:space="preserve"><value>シェル コマンド (引数には {args} を使用)</value></data>
   <data name="ToolValidationNameCommand" xml:space="preserve"><value>ツール名とコマンドが必要です。</value></data>
   <data name="ToolValidationDuplicate" xml:space="preserve"><value>この名前のツールは既に存在します。</value></data>
 
@@ -874,19 +854,15 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ num_ctx ({0}) が VRAM バジェットに収まる範囲を超えています — KV-cache がシステム RAM にあふれ、生成が遅くなる可能性があります。{1} に下げることを検討してください。</value></data>
   <data name="HardwareCtxNoVramRecommendation" xml:space="preserve"><value>**`{0}` のモデル上限:** {1} — VRAM の推奨値は算出できませんでした（重みが既に予算を超えている、またはアーキテクチャのメタデータがありません）。</value></data>
   <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ num_ctx ({0}) はこのモデルが受け付けられる上限 ({1}) を超えています。バックエンドはこれより長いプロンプトを処理できず、会話の最も古い部分（システムプロンプトを含む）を無言で切り捨てます。Inferpal 側の圧縮も設定値を基準にするため作動しません。{1} 以下に設定してください。</value></data>
-  <data name="LabelVramBudget" xml:space="preserve"><value>VRAM バジェット</value></data>
-  <data name="HintVramBudget" xml:space="preserve"><value>Ollama ホストで利用可能な総 VRAM（GB）。安全な num_ctx の推奨と、選択したモデルが収まらない場合の警告に使われます。ローカルホストでは空のままにすると自動検出されます。リモートホストでは手動の値が必要です。`/hardware &lt;gb&gt;` でも設定できます。</value></data>
-  <data name="TooltipAgentMode" xml:space="preserve"><value>チャットモードとエージェントモードを切り替えます（自律的な Plan → Act → Observe）。「自律エージェントモードを有効にする」設定に連動します。</value></data>
+  <data name="LabelVramBudget" xml:space="preserve"><value>グラフィックス メモリ</value></data>
+  <data name="HintVramBudget" xml:space="preserve"><value>コンテキスト ウィンドウを安全な大きさにするために使います。空欄なら、サーバーがこのマシンで動くときは自動検出。別のマシンなら入力が必要です。</value></data>
   <data name="LabelModeChat" xml:space="preserve"><value>💬 チャット</value></data>
   <data name="LabelModeAgent" xml:space="preserve"><value>🤖 エージェント</value></data>
-  <data name="WelcomeSubtitle" xml:space="preserve"><value>コードについて何でも質問できます</value></data>
   <data name="WelcomeCardExplain" xml:space="preserve"><value>選択範囲を説明</value></data>
   <data name="WelcomeCardFix" xml:space="preserve"><value>エラーを修正</value></data>
   <data name="WelcomeCardTest" xml:space="preserve"><value>テストを生成</value></data>
   <data name="WelcomeCardHelp" xml:space="preserve"><value>すべてのコマンドを表示</value></data>
-  <data name="BuildBannerTitle" xml:space="preserve"><value>ビルド失敗</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>閉じる</value></data>
-  <data name="BuildBannerFix" xml:space="preserve"><value>AI で修正</value></data>
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>このコマンドはこのエディターではまだ利用できません — Visual Studio から使用してください。</value>
   </data>
@@ -903,12 +879,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 `{0}` に切り替えました。</value></data>
   <data name="McpEmptyTitle" xml:space="preserve"><value>MCP サーバーが未設定です</value></data>
   <data name="PinnedEmptyTitle" xml:space="preserve"><value>ピン留めされたファイルはありません</value></data>
-  <data name="SectionCommandsTools" xml:space="preserve"><value>コマンドとツール</value></data>
   <data name="SlashEmptyTitle" xml:space="preserve"><value>カスタムコマンドはありません</value></data>
   <data name="ToolEmptyTitle" xml:space="preserve"><value>カスタムツールはありません</value></data>
-  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
-  <data name="ViewList" xml:space="preserve"><value>≡ リスト</value></data>
-  <data name="ViewText" xml:space="preserve"><value>✎ テキスト</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ 部分的な解析です: {1} 件中 {0} 件のソースファイルのみを走査しました（上限）。結果は不完全な可能性があります。</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ {0} 件のソースファイルを読み取れず、解析できませんでした（権限、ロック、または削除）。結果は不完全な可能性があります。</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ フォルダー「{0}」の一覧を取得できなかったため、その下のファイルは一つも解析されていません（権限）。結果は不完全な可能性があります。</value></data>
@@ -1034,4 +1006,220 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>ブレークポイントは設定されていません。</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>ブレークポイント:</value></data>
   <data name="DebugUsage" xml:space="preserve"><value>**/debug** — 実行時にプログラムが実際に何をしているかを調べます。&#10;&#10;- `/debug &lt;仮説&gt;` — ブレークポイントを置き、実行し、状態を読んで判定します&#10;- `/debug` — デバッガーの現在の状態を表示します&#10;- `/debug stop` — デバッグ セッションを終了します</value></data>
+  <data name="SettingsPageServer" xml:space="preserve"><value>サーバーとモデル</value></data>
+  <data name="SettingsPageServerDesc" xml:space="preserve"><value>モデルがどこで動くか、どのモデルが何を担当するか。</value></data>
+  <data name="SettingsPageAgent" xml:space="preserve"><value>エージェントと承認</value></data>
+  <data name="SettingsPageAgentDesc" xml:space="preserve"><value>エージェントが自分でどう動き、いつ止まってあなたに確認するか。</value></data>
+  <data name="SettingsPageContext" xml:space="preserve"><value>コンテキストと記憶</value></data>
+  <data name="SettingsPageContextDesc" xml:space="preserve"><value>モデルが覚えておくこと、そして会話が長くなったときに起きること。</value></data>
+  <data name="SettingsPageSearch" xml:space="preserve"><value>コード検索</value></data>
+  <data name="SettingsPageSearchDesc" xml:space="preserve"><value>Inferpal が質問に答えるコードをどう見つけるか。</value></data>
+  <data name="SettingsPageAutocomplete" xml:space="preserve"><value>オートコンプリート</value></data>
+  <data name="SettingsPageAutocompleteDesc" xml:space="preserve"><value>入力中の提案と、その場で依頼する編集。</value></data>
+  <data name="SettingsPageTools" xml:space="preserve"><value>ツールと MCP サーバー</value></data>
+  <data name="SettingsPageToolsDesc" xml:space="preserve"><value>エージェントが使えるもの、先に確認すべきもの。</value></data>
+  <data name="SettingsPageAppearance" xml:space="preserve"><value>言語と外観</value></data>
+  <data name="SettingsPageAppearanceDesc" xml:space="preserve"><value>パネルの言語と表示量。</value></data>
+  <data name="SettingsSearchPlaceholder" xml:space="preserve"><value>設定を検索</value></data>
+  <data name="SettingsSearchNoMatch" xml:space="preserve"><value>一致する設定はありません。</value></data>
+  <data name="SettingsUnsavedChanges" xml:space="preserve"><value>未保存の変更: {0}</value></data>
+  <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>未保存の変更はありません</value></data>
+  <data name="SettingsCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>詳細設定を表示 — タスクごとのモデル、サンプリング、GPU、接続</value></data>
+  <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>承認ルール: {0}</value></data>
+  <data name="SettingsEditRules" xml:space="preserve"><value>ルールを編集</value></data>
+  <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>タスクごとのモデル</value></data>
+  <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>「チャットと同じ」のままなら、チャット モデルが担当します。</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>サンプリング</value></data>
+  <data name="SettingsSectionGpu" xml:space="preserve"><value>GPU</value></data>
+  <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>動作</value></data>
+  <data name="SettingsSectionApprovals" xml:space="preserve"><value>承認</value></data>
+  <data name="SettingsSectionInstructions" xml:space="preserve"><value>指示</value></data>
+  <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>制限時間</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>最後の 2 つは無応答の時間を測ります。書き続けているモデルは止めず、応答しなくなったサーバーだけを止めます。</value></data>
+  <data name="SettingsSectionLongConversations" xml:space="preserve"><value>長い会話</value></data>
+  <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>常にプロンプトに含めるもの</value></data>
+  <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>質問のたびに読み直すので、編集はすぐに反映されます。</value></data>
+  <data name="SettingsSectionYourCode" xml:space="preserve"><value>あなたのコード</value></data>
+  <data name="SettingsSectionEditWithAi" xml:space="preserve"><value>AI で編集</value></data>
+  <data name="SettingsSectionEditWithAiDesc" xml:space="preserve"><value>コードを選択して変更内容を伝えると、その場で書き換えます。</value></data>
+  <data name="SettingsSectionRules" xml:space="preserve"><value>承認ルール</value></data>
+  <data name="SettingsSectionRulesDesc" xml:space="preserve"><value>上から順に確認し、最初に一致したルールが決めます。それ以外はあなたに確認します。チームのルール (.inferpal/permissions.json) は拒否しかできず、壊滅的なコマンドはルールにかかわらず拒否されます。</value></data>
+  <data name="SettingsSectionSlash" xml:space="preserve"><value>あなたのスラッシュ コマンド</value></data>
+  <data name="SettingsSectionSlashDesc" xml:space="preserve"><value>よく入力するプロンプトのショートカット。/ の一覧に表示されます。</value></data>
+  <data name="SettingsSectionAgentTools" xml:space="preserve"><value>あなたのエージェント ツール</value></data>
+  <data name="SettingsSectionAgentToolsDesc" xml:space="preserve"><value>エージェントが呼び出せるシェル コマンド。実行のたびに確認します。</value></data>
+  <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>エージェントの実行</value></data>
+  <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>各モデル開発元の推奨設定を使う</value></data>
+  <data name="HintUseRecommendedSampling" xml:space="preserve"><value>モデル ファミリー向けに公開された温度や top-p を使います。オフならサーバーの設定が適用されます。</value></data>
+  <data name="LabelAskBeforeActions" xml:space="preserve"><value>ファイルの変更、コマンドの実行、オンライン アクセスの前に確認する</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>実際の差分や正確なコマンドを確認できます。オフにすると、すべて黙って承認されます (壊滅的なコマンドは引き続き拒否されます)。</value></data>
+  <data name="LabelInlineDiffPreview" xml:space="preserve"><value>適用する前に変更を表示する</value></data>
+  <data name="HintInlineDiffPreview" xml:space="preserve"><value>エディターに追加行と削除行を表示し、変更ごとに、またはまとめて採用・破棄できます。オフならすぐに適用され、Ctrl+Z で元に戻せます。</value></data>
+  <data name="McpCardConnected" xml:space="preserve"><value>接続済み · ツール {0} 個</value></data>
+  <data name="McpCardSignIn" xml:space="preserve"><value>サインインが必要</value></data>
+  <data name="McpCardDidNotStart" xml:space="preserve"><value>起動しませんでした</value></data>
+  <data name="McpCardNotStarted" xml:space="preserve"><value>まだ起動していません</value></data>
+  <data name="McpCardOff" xml:space="preserve"><value>オフ</value></data>
+  <data name="McpCardRetry" xml:space="preserve"><value>再試行</value></data>
+  <data name="McpCardSignInButton" xml:space="preserve"><value>サインイン</value></data>
+  <data name="McpCardsSummary" xml:space="preserve"><value>{0} 個を設定済み</value></data>
+  <data name="McpCardsSummaryAttention" xml:space="preserve"><value>{0} 個を設定済み · {1} 個に対応が必要</value></data>
+  <data name="SettingsEditAsJson" xml:space="preserve"><value>JSON で編集</value></data>
+  <data name="SettingsEditAsText" xml:space="preserve"><value>テキストで編集</value></data>
+  <data name="SettingsEditAsList" xml:space="preserve"><value>一覧に戻る</value></data>
+  <data name="RuleAllow" xml:space="preserve"><value>許可</value></data>
+  <data name="RuleDeny" xml:space="preserve"><value>拒否</value></data>
+  <data name="RuleFromTeam" xml:space="preserve"><value>チーム (.inferpal)</value></data>
+  <data name="RuleFromMachine" xml:space="preserve"><value>このマシン</value></data>
+  <data name="RuleIgnoredTeamAllow" xml:space="preserve"><value>適用されません: チームのルールは拒否しかできません</value></data>
+  <data name="RuleUnreadable" xml:space="preserve"><value>適用されません: 行の形式が不正か、パターンが無効です</value></data>
+  <data name="RulesColEffect" xml:space="preserve"><value>効果</value></data>
+  <data name="RulesColTool" xml:space="preserve"><value>ツール</value></data>
+  <data name="RulesColPattern" xml:space="preserve"><value>コマンドまたはパスが一致する条件</value></data>
+  <data name="RulesColFrom" xml:space="preserve"><value>出所</value></data>
+  <data name="RulesAddRule" xml:space="preserve"><value>ルールを追加</value></data>
+  <data name="RulesTeamUnusable" xml:space="preserve"><value>チームのファイル .inferpal/permissions.json を読み取れません。そのルールはどれも適用されません。</value></data>
+  <data name="RulesEmpty" xml:space="preserve"><value>ルールはまだありません。</value></data>
+  <data name="RulesPatternPlaceholder" xml:space="preserve"><value>正規表現</value></data>
+  <data name="RulesNewInvalid" xml:space="preserve"><value>このルールは読み取られません: パターンが有効な正規表現ではありません。</value></data>
+  <data name="ListLineNotRead" xml:space="preserve"><value>適用されません: 行は 名前=値 の形式にしてください</value></data>
+  <data name="PinnedOverCap" xml:space="preserve"><value>読み込まれません: プロンプトに入るのは最初の 3 ファイルだけです</value></data>
+  <data name="SettingsApprovalRulesFrom" xml:space="preserve"><value>このマシンから {0}、チームから {1}。最初に一致したルールが決めます。</value></data>
+  <data name="SettingsSameAsChat" xml:space="preserve"><value>チャットと同じ</value></data>
+  <data name="SettingsSameAsCodeActions" xml:space="preserve"><value>説明・修正・リファクタリングと同じ</value></data>
+  <data name="SettingsAutomaticBest" xml:space="preserve"><value>自動 — インストール済みで最適なもの</value></data>
+  <data name="FimModeFastDesc" xml:space="preserve"><value>短い提案、300 ms 後。</value></data>
+  <data name="FimModeDefaultDesc" xml:space="preserve"><value>長めの提案、600 ms 後。</value></data>
+  <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>ブロック全体、1 s 後。</value></data>
+  <data name="SettingsModelUsed" xml:space="preserve"><value>モデル: {0}。</value></data>
+  <data name="SettingsChangeInServer" xml:space="preserve"><value>サーバーとモデルで変更</value></data>
+  <data name="SlashColCommand" xml:space="preserve"><value>コマンド</value></data>
+  <data name="SlashColSends" xml:space="preserve"><value>送信内容</value></data>
+  <data name="ToolColName" xml:space="preserve"><value>ツール名</value></data>
+  <data name="ToolColRuns" xml:space="preserve"><value>実行内容</value></data>
+  <data name="SettingsSectionAsYouType" xml:space="preserve"><value>入力中の提案</value></data>
+  <data name="SettingsSectionDocs" xml:space="preserve"><value>ドキュメント</value></data>
+  <data name="SettingsSectionDocsDesc" xml:space="preserve"><value>エージェントが @Docs で検索するサイト。各サイト最大 50 ページ。</value></data>
+  <data name="SettingsDocsNote" xml:space="preserve"><value>このマシンやローカル ネットワーク上のアドレスは拒否されます。エージェントがそれらを Web サイトとして読むことはありません。</value></data>
+  <data name="SettingsSectionThisConversation" xml:space="preserve"><value>この会話</value></data>
+  <data name="IndexCardReady" xml:space="preserve"><value>インデックスは最新です</value></data>
+  <data name="IndexCardIndexing" xml:space="preserve"><value>インデックス作成中…</value></data>
+  <data name="IndexCardNotBuilt" xml:space="preserve"><value>まだインデックスがありません</value></data>
+  <data name="IndexCardStopped" xml:space="preserve"><value>インデックス作成が中断されました</value></data>
+  <data name="IndexCardFailed" xml:space="preserve"><value>インデックス作成に失敗しました</value></data>
+  <data name="IndexCardNoWorkspace" xml:space="preserve"><value>ワークスペースが開かれていません</value></data>
+  <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>ソリューションかフォルダーを開いてください。そのためのインデックスが作成されます。</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0} ファイル · {1} に更新</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>{1} ファイル中 {0} を読み込み済み</value></data>
+  <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>バックグラウンドのインデックス作成はオフです。エージェントはキーワードで検索します。</value></data>
+  <data name="IndexCardStoppedDetail" xml:space="preserve"><value>前回の処理が完了していないため、インデックスは不完全です。</value></data>
+  <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}。詳細は /diagnostics にあります。</value></data>
+  <data name="IndexCardRebuild" xml:space="preserve"><value>再構築</value></data>
+  <data name="IndexCardBuild" xml:space="preserve"><value>今すぐ作成</value></data>
+  <data name="IndexCardOversize" xml:space="preserve"><value>{1} KB を超えるため除外されたファイル: {0}。</value></data>
+  <data name="IndexCardShowThem" xml:space="preserve"><value>表示</value></data>
+  <data name="IndexCardHideThem" xml:space="preserve"><value>非表示</value></data>
+  <data name="IndexCardMoreFiles" xml:space="preserve"><value>…ほか {0} 件。</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>ベクトルがないため、{1} 件中 {0} 件のスニペットはキーワードでしか見つかりません。再構築で補完されます。</value></data>
+  <data name="IndexCardModelSemantic" xml:space="preserve"><value>{0} による意味検索に加え、正確な名前とキーワードでも検索します。</value></data>
+  <data name="IndexCardModelKeywords" xml:space="preserve"><value>キーワード検索のみ: 埋め込みモデルが設定もインストールもされていません。</value></data>
+  <data name="IndexCardModelOff" xml:space="preserve"><value>キーワード検索のみ: 意味検索はオフです。</value></data>
+  <data name="IndexCardEmbeddingDown" xml:space="preserve"><value>埋め込みモデルが応答しません。復帰するまでキーワードで検索します。</value></data>
+  <data name="IndexExclusionsTitle" xml:space="preserve"><value>インデックスから除外</value></data>
+  <data name="IndexExclusionsFrom" xml:space="preserve"><value>.inferpal/project.json から(チームと共有)</value></data>
+  <data name="IndexExclusionsHowTo" xml:space="preserve"><value>ビルドと依存関係のフォルダーは常に除外されます。さらに除外するには、.inferpal/project.json の indexExclude にパターンを列挙します(/onboard init で作成されます)。</value></data>
+  <data name="SettingsEditFile" xml:space="preserve"><value>編集</value></data>
+  <data name="SettingsOpenFile" xml:space="preserve"><value>開く</value></data>
+  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} ページ · インデックス済み</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} ページ · 意味検索なし {1}</value></data>
+  <data name="DocsSiteHolesNote" xml:space="preserve"><value>埋め込みモデルが応答しない間に {0} 件の文章を読み込みました。再インデックスするまでキーワードでしか見つかりません。</value></data>
+  <data name="DocsSiteIndexing" xml:space="preserve"><value>インデックス作成中…</value></data>
+  <data name="DocsReindex" xml:space="preserve"><value>再インデックス</value></data>
+  <data name="DocsAddSite" xml:space="preserve"><value>サイトを追加</value></data>
+  <data name="DocsAddUrlLabel" xml:space="preserve"><value>ドキュメントの最初のページのアドレス</value></data>
+  <data name="DocsAddButton" xml:space="preserve"><value>追加してインデックス作成</value></data>
+  <data name="DocsRemoveSite" xml:space="preserve"><value>{0} を削除</value></data>
+  <data name="DocsNoSitesYet" xml:space="preserve"><value>サイトはまだありません。使っているライブラリのドキュメントを追加してください。</value></data>
+  <data name="ContextUsageTokens" xml:space="preserve"><value>{1} トークン中 {0}</value></data>
+  <data name="ContextUsageOpenXray" xml:space="preserve"><value>コンテキスト X 線を開く</value></data>
+  <data name="ContextUsageInstructions" xml:space="preserve"><value>指示とプロジェクト ファイル</value></data>
+  <data name="ContextUsageTools" xml:space="preserve"><value>ツールの説明</value></data>
+  <data name="ContextUsageConversation" xml:space="preserve"><value>会話</value></data>
+  <data name="ContextUsageChangeWindow" xml:space="preserve"><value>ウィンドウ サイズはサーバーとモデルで変更</value></data>
+  <data name="ContextUsageNoChat" xml:space="preserve"><value>チャット ウィンドウが開いていません。開くと会話が集計されます。</value></data>
+  <data name="PinnedFilesCount" xml:space="preserve"><value>{1} 件中 {0}</value></data>
+  <data name="PinnedFileTokens" xml:space="preserve"><value>{0} トークン</value></data>
+  <data name="PinnedFileMissing" xml:space="preserve"><value>見つかりません</value></data>
+  <data name="ProjectFilesTitle" xml:space="preserve"><value>このプロジェクトから</value></data>
+  <data name="ProjectFileContext" xml:space="preserve"><value>プロジェクトの概要</value></data>
+  <data name="ProjectFileMemory" xml:space="preserve"><value>エージェントが覚えていること</value></data>
+  <data name="ProjectFileNotes" xml:space="preserve"><value>あなたのメモ</value></data>
+  <data name="ProjectFileRules" xml:space="preserve"><value>ファイル別ルール: {0}</value></data>
+  <data name="ProjectFileNotYet" xml:space="preserve"><value>まだ作成されていません</value></data>
+  <data name="RunSteps1" xml:space="preserve"><value>1 ステップ</value></data>
+  <data name="RunSteps" xml:space="preserve"><value>{0} ステップ</value></data>
+  <data name="RunRead1" xml:space="preserve"><value>1 ファイルを読み込み</value></data>
+  <data name="RunRead" xml:space="preserve"><value>{0} ファイルを読み込み</value></data>
+  <data name="RunSearched1" xml:space="preserve"><value>1 回検索</value></data>
+  <data name="RunSearched" xml:space="preserve"><value>{0} 回検索</value></data>
+  <data name="RunEdited1" xml:space="preserve"><value>1 件編集</value></data>
+  <data name="RunEdited" xml:space="preserve"><value>{0} 件編集</value></data>
+  <data name="RunCommand1" xml:space="preserve"><value>1 コマンドを実行</value></data>
+  <data name="RunCommands" xml:space="preserve"><value>{0} コマンドを実行</value></data>
+  <data name="RunBuildPassed" xml:space="preserve"><value>ビルド成功</value></data>
+  <data name="RunBuildFailed" xml:space="preserve"><value>ビルド失敗</value></data>
+  <data name="RunTestsPassed" xml:space="preserve"><value>テスト成功</value></data>
+  <data name="RunTestsFailed" xml:space="preserve"><value>テスト失敗</value></data>
+  <data name="TurnSeconds" xml:space="preserve"><value>{0} 秒</value></data>
+  <data name="TurnMinutes" xml:space="preserve"><value>{0} 分 {1} 秒</value></data>
+  <data name="ApprovalCreateFile" xml:space="preserve"><value>ファイルを作成</value></data>
+  <data name="ApprovalChangeFile" xml:space="preserve"><value>ファイルを変更</value></data>
+  <data name="ApprovalDeleteFile" xml:space="preserve"><value>ファイルを削除</value></data>
+  <data name="ApprovalRunCommand" xml:space="preserve"><value>コマンドを実行</value></data>
+  <data name="ApprovalReadPage" xml:space="preserve"><value>Web ページを読む</value></data>
+  <data name="ApprovalSearchWeb" xml:space="preserve"><value>Web を検索</value></data>
+  <data name="ApprovalUseTool" xml:space="preserve"><value>{0} を使用</value></data>
+  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} 行</value></data>
+  <data name="ApprovalMoreLines" xml:space="preserve"><value>… ほか {0} 行</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>エディターを再起動するまで、確認せずに {0} を許可します。</value></data>
+  <data name="ApprovalOpenDiff" xml:space="preserve"><value>差分を開く</value></data>
+  <data name="ChatNewConversation" xml:space="preserve"><value>新しい会話</value></data>
+  <data name="ChatConversations" xml:space="preserve"><value>会話</value></data>
+  <data name="ChatMore" xml:space="preserve"><value>その他</value></data>
+  <data name="ChatMenuSearch" xml:space="preserve"><value>会話内を検索</value></data>
+  <data name="ChatMenuExport" xml:space="preserve"><value>会話をエクスポート</value></data>
+  <data name="ChatMenuXray" xml:space="preserve"><value>コンテキスト X 線</value></data>
+  <data name="ChatMenuSettings" xml:space="preserve"><value>設定</value></data>
+  <data name="ChatMenuStepMode" xml:space="preserve"><value>ツール呼び出しごとに一時停止</value></data>
+  <data name="ChatNoModelListed" xml:space="preserve"><value>モデルが一覧にありません — バックエンドに接続できますか?</value></data>
+  <data name="ChatModelButton" xml:space="preserve"><value>モデルとサーバー: {0}</value></data>
+  <data name="ModeChat" xml:space="preserve"><value>チャット</value></data>
+  <data name="ModeAgent" xml:space="preserve"><value>エージェント</value></data>
+  <data name="ModePlan" xml:space="preserve"><value>計画</value></data>
+  <data name="ModeChatTip" xml:space="preserve"><value>ツールを使わずに回答</value></data>
+  <data name="ModeAgentTip" xml:space="preserve"><value>ツールを使用し、変更前に確認します</value></data>
+  <data name="ModePlanTip" xml:space="preserve"><value>読み取りと計画のみ。何も変更しません</value></data>
+  <data name="ComposerPlaceholder" xml:space="preserve"><value>質問するか、@ で添付、/ でコマンド</value></data>
+  <data name="ChatAttach" xml:space="preserve"><value>ファイル、選択範囲、問題を添付</value></data>
+  <data name="ContextRingTip" xml:space="preserve"><value>コンテキスト: {1} トークンのウィンドウの {0}% — クリックで X 線</value></data>
+  <data name="TurnWorking" xml:space="preserve"><value>作業中 · ステップ {0}</value></data>
+  <data name="TurnWaiting" xml:space="preserve"><value>あなたの操作待ち</value></data>
+  <data name="RunUndo" xml:space="preserve"><value>実行を元に戻す</value></data>
+  <data name="WelcomeTitle" xml:space="preserve"><value>何に取り組みますか?</value></data>
+  <data name="WelcomeLine" xml:space="preserve"><value>{1} 上の {0}。コードはこのマシンから出ません。</value></data>
+  <data name="WelcomeLocal" xml:space="preserve"><value>コードはこのマシンから出ません。</value></data>
+  <data name="WelcomeForFile" xml:space="preserve"><value>エディターで開いている {0} について</value></data>
+  <data name="WelcomeExplainFile" xml:space="preserve"><value>このファイルを説明</value></data>
+  <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>何をしていて、各部分がどうつながるか</value></data>
+  <data name="WelcomeTestsFile" xml:space="preserve"><value>テストを書く</value></data>
+  <data name="WelcomeTestsFileDesc" xml:space="preserve"><value>テスト ランナーが見つけられる場所に配置</value></data>
+  <data name="WelcomeUsagesFile" xml:space="preserve"><value>使用箇所を探す</value></data>
+  <data name="WelcomeUsagesFileDesc" xml:space="preserve"><value>ワークスペース全体の呼び出し元と依存先</value></data>
+  <data name="WelcomeUsagesPrompt" xml:space="preserve"><value>{0} はどこで使われていますか? 呼び出し元と依存しているものを挙げてください。</value></data>
+  <data name="WelcomeBuildFailed" xml:space="preserve"><value>前回のビルドが失敗しました — エラー {0} 件</value></data>
+  <data name="WelcomeFixThem" xml:space="preserve"><value>修正する</value></data>
+  <data name="WelcomeHintAttach" xml:space="preserve"><value>ファイルを添付</value></data>
+  <data name="WelcomeHintCommands" xml:space="preserve"><value>コマンド</value></data>
+  <data name="WelcomeHintNewLine" xml:space="preserve"><value>改行</value></data>
 </root>

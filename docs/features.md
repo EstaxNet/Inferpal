@@ -15,8 +15,8 @@ exists.
 - **Headless slash commands** — ~40 commands are served by the host over JSON-RPC with the
   same approval/permission pipeline; long commands are cancellable. VS-only: `/fix-build` and
   `/setup`, coupled to Visual Studio by construction (MSBuild banner, live model-pull bubble).
-- **Settings panel in VS Code** — an "Inferpal Settings" webview mirroring the four VS tabs
-  (Connection / Behavior / Context / Tools), backed by the shared config.
+- **Settings panel in VS Code** — an "Inferpal Settings" webview with the same seven pages as the
+  Visual Studio window, read from the same description in the Core, backed by the shared config.
 - **Typed @-mentions, `/plan` and `/agent-step` modes, and per-turn RAG auto-context** all
   work in VS Code too.
 
@@ -45,8 +45,14 @@ exists.
   Nothing is ever executed from a plan file: it arrives with any clone, so its text steers the
   model exactly as a rules file does and grants nothing, and every action it leads to goes
   through the usual approval prompt. There is deliberately no "run the whole plan".
-- **Multi-file approval pass** *(Visual Studio)* — after ≥2 file writes in one run, a
-  **Restore All** button rolls everything back at once (`/undo-run` does it in both editors).
+- **A run you can read at a glance** *(both editors)* — a run's steps show as they come, then
+  fold into one line (`3 steps · read 1 file · edited 1 · build passed`, a ✗ when its last check
+  failed). Under the answer, a **result bar** lists the files it changed with their lines added and
+  removed, the last build or test check, and **Undo run** (`/undo-run`), offered on the latest run.
+- **Approvals in the conversation** *(both editors)* — during a turn, an approval is a card under
+  the steps: what will happen, to what, the first lines of the change, then **Allow once**
+  (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. Outside
+  a turn (a code action, a slash command), the dialog asks as before.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
   (restores edited files, deletes files created that run); `/undo-run list` shows the
   session's tracked runs.
@@ -124,8 +130,8 @@ exists.
 ## Inline completions
 
 - **Ghost-text Fill-in-the-Middle** as you type — **Tab** to accept, **Esc** to dismiss.
-- Three presets: **Fast** (128 tok / 0.4 / 300 ms) · **Default** (256 / 0.2 / 600 ms) ·
-  **High Accuracy** (512 / 0.1 / 1 000 ms).
+- Three speeds, picked as cards in the settings: **Fast** (128 tok / 0.4 / 300 ms) · **Balanced** (256 / 0.2 /
+  600 ms) · **Accurate** (512 / 0.1 / 1 000 ms).
 - Suppressed while IntelliSense triggers are active. Supported on Ollama and LM Studio.
 
 ## Search & knowledge
@@ -148,8 +154,8 @@ exists.
 - **Persistent project context** — `.inferpal/context.md`, injected into every prompt.
 - **Agent memory** — `.inferpal/memory.md`, updated by the `update_memory` tool / `/memory`.
 - **Project notes** — `/note` appends timestamped notes to `.inferpal/notes.md`.
-- **Pinned context files** — up to 3 files always injected (📌 toolbar button or a promoted
-  chip).
+- **Pinned context files** — up to 3 files always injected (the composer's attach menu, or a
+  promoted chip).
 - **Context compaction** — old messages are summarized by the LLM instead of being
   hard-truncated, triggered at ~80 % of the context budget; **KV-cache anchor** preserves
   the first N messages verbatim. The summary request is sized to the window of the model
@@ -175,14 +181,15 @@ exists.
 ## Conversation experience
 
 - **Real-time streaming** — tokens appear as generated; Markdown renders once complete.
-- **Real-time context & token gauge** — the header token counter and context-fill bar update
-  live during generation (provisional `~` values), then snap to the exact
-  `prompt_eval_count + eval_count`. Fill colour ramps green → amber → orange → red at
-  50 / 80 / 95 %.
+- **Real-time context ring** — the composer's ring (share of the window; token counts in its
+  tooltip) updates live during generation (provisional `~` values), then snaps to the exact
+  `prompt_eval_count + eval_count`. Its colour ramps amber → orange → red at 50 / 80 / 95 %; a
+  click opens the Context X-Ray.
 - **Markdown rendering** — headings (H1–H3), selectable code blocks with a copy button,
   lists, **bold**, *italic*, `inline code`; `<think>` tags are stripped automatically.
 - **Regenerate** the last assistant reply in one click.
-- **Conversation search** — 🔍 header button; non-matching messages dim to 20 % opacity.
+- **Conversation search** — *More › Search in the conversation*; non-matching messages dim to
+  20 % opacity.
 - **Session persistence & export** — sessions auto-save with a 4–5 word AI-generated title;
   export to `.md` / `.txt` with a stats header (model, turns, tool calls, tokens, duration).
 - **Conversation branching** — `/branch <n>` forks the conversation at turn *n*: the branch keeps
@@ -271,7 +278,8 @@ exists.
 ## Localization & theming
 
 - **10 UI languages**, following Visual Studio or overridden independently.
-- **VS theme awareness** — colors adapt to Light / Dark / Blue automatically.
+- **Theme awareness** — colors follow the editor's Light / Dark / Blue themes and Windows high
+  contrast; **Density** (*Language and appearance*) draws the conversation comfortable or compact.
 
 ## Keyboard shortcuts
 

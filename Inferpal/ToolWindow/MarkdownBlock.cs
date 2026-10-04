@@ -11,6 +11,7 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
     [DataMember] public string Type     { get; init; } = "";
     [DataMember] public string Text     { get; init; } = "";
     [DataMember] public string Language { get; init; } = "";
+    [DataMember] public string Marker   { get; init; } = "";
 
     private bool _hasInlines;
     [DataMember] public ObservableCollection<InlineRun> Inlines    { get; } = [];
@@ -18,11 +19,11 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
 
     [DataMember] public ObservableCollection<TableCell> Cells { get; } = [];
 
-    private string _themeText        = "#D4D4D4";
-    private string _themeCodeText    = "#CE9178";
-    private string _themeCodeBg      = "#161616";
-    private string _themeCodeBorder  = "#333333";
-    private string _themeTableBorder = "#3F3F46";
+    private string _themeText        = "#E8E8EC";
+    private string _themeCodeText    = "#E8E8EC";
+    private string _themeCodeBg      = "#18181C";
+    private string _themeCodeBorder  = "#34343C";
+    private string _themeTableBorder = "#34343C";
 
     [DataMember] public string ThemeText        { get => _themeText;        set => SetProperty(ref _themeText,        value); }
     [DataMember] public string ThemeCodeText    { get => _themeCodeText;    set => SetProperty(ref _themeCodeText,    value); }
@@ -51,10 +52,16 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
             Type       = model.Type,
             Text       = model.Text,
             Language   = model.Language,
+            Marker     = model.Marker,
             HasInlines = model.HasInlines,
         };
-        foreach (var run in model.Inlines)
-            block.Inlines.Add(new InlineRun { Text = run.Text, IsBold = run.IsBold, IsItalic = run.IsItalic, IsCode = run.IsCode });
+        // One child per word: the WrapPanel that lays them out only ends a line between two children.
+        foreach (var piece in InlineFlow.Pieces(model.Inlines))
+            block.Inlines.Add(new InlineRun
+            {
+                Text = piece.Text, IsBold = piece.IsBold, IsItalic = piece.IsItalic, IsCode = piece.IsCode,
+                IsBreak = piece.IsBreak, StartsSpan = piece.StartsSpan, EndsSpan = piece.EndsSpan,
+            });
         foreach (var cell in model.Cells)
             block.Cells.Add(new TableCell { Text = cell.Text, IsHeader = cell.IsHeader });
         return block;

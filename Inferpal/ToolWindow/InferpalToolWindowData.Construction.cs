@@ -55,7 +55,6 @@ internal partial class InferpalToolWindowData
 
         SendCommand               = new AsyncCommand(SendAsync);
         CancelCommand             = new AsyncCommand(CancelAsync);
-        ExportCommand             = new AsyncCommand(ExportAsync);
         ClearCommand              = new AsyncCommand(ClearAsync);
         LoadSessionCommand        = new AsyncCommand(LoadSessionAsync);
         DeleteSessionCommand      = new AsyncCommand(DeleteSessionAsync) { CanExecute = false };
@@ -66,11 +65,7 @@ internal partial class InferpalToolWindowData
         BrowseFileCommand         = new AsyncCommand(BrowseFileAsync);
         PinFileCommand            = new AsyncCommand(PinFileAsync);
         ToggleAttachMenuCommand   = new AsyncCommand((_, _) => { IsAttachMenuOpen = !IsAttachMenuOpen; return Task.CompletedTask; });
-        ToggleSearchCommand        = new AsyncCommand(ToggleSearchAsync);
         ClearSearchCommand         = new AsyncCommand(ClearSearchAsync);
-        ToggleStepModeCommand      = new AsyncCommand((_, _) => ToggleStepModeAsync());
-        TogglePlanModeCommand      = new AsyncCommand((_, _) => TogglePlanModeAsync());
-        ToggleAgentModeCommand     = new AsyncCommand((_, _) => ToggleAgentModeAsync());
         RunSuggestionCommand       = new AsyncCommand(RunSuggestionAsync);
         HistoryUpCommand          = new AsyncCommand(HistoryUpAsync)   { CanExecute = false };
         HistoryDownCommand        = new AsyncCommand(HistoryDownAsync) { CanExecute = false };
@@ -79,6 +74,7 @@ internal partial class InferpalToolWindowData
         CopyXrayPromptCommand     = new AsyncCommand(CopyXrayPromptAsync);
         DismissBuildBannerCommand = new AsyncCommand(DismissBuildBannerAsync);
         FixBuildBannerCommand     = new AsyncCommand(FixBuildBannerAsync);
+        InitChrome();
 
         ApplyThemeColors(VsThemeDetector.OsDarkMode());
         LoadPinnedFilesFromConfig();
@@ -100,6 +96,9 @@ internal partial class InferpalToolWindowData
         _ = StartHeartbeatAsync();
         _ = StartRagIndexingAsync();
         _ = _docsIndex.LoadAsync(CancellationToken.None);
+        // The settings window's Context page reads the conversation from here, and opens the X-Ray panel through here.
+        _contextHolder.ConversationUsage = CurrentXrayModelAsync;
+        _contextHolder.OpenXray          = OpenXrayFromSettingsAsync;
         _ = StartFirstRunDiscoveryAsync();
         _ = _buildMonitor.InitializeAsync();
     }
@@ -109,18 +108,14 @@ internal partial class InferpalToolWindowData
         BtnLoadSession       = Strings.BtnLoadSession;
         BtnCancel            = Strings.BtnCancel;
         BtnSend              = Strings.BtnSend;
-        TooltipExport        = Strings.TooltipExport;
-        TooltipClear         = Strings.TooltipClear;
         TooltipCopy          = Strings.TooltipCopy;
         TooltipSessionPicker = Strings.TooltipSessionPicker;
         TooltipLoadSession       = Strings.TooltipLoadSession;
         TooltipDeleteSession     = Strings.TooltipDeleteSession;
-        HintSend                 = Strings.HintSend;
         TooltipAttachFile        = Strings.TooltipAttachFile;
         TooltipAttachSelection   = Strings.TooltipAttachSelection;
         TooltipBrowseFile        = Strings.TooltipBrowseFile;
         TooltipPinFile           = Strings.TooltipPinFile;
-        MenuAddContext           = Strings.MenuAddContext;
         MenuAttachFile           = Strings.MenuAttachFile;
         MenuAttachSelection      = Strings.MenuAttachSelection;
         MenuBrowseFile           = Strings.MenuBrowseFile;
@@ -128,27 +123,20 @@ internal partial class InferpalToolWindowData
         TooltipPinChip           = Strings.TooltipPinChip;
         TooltipRetryConnection   = Strings.TooltipRetryConnection(
             Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider));
-        TooltipSearchConversation = Strings.TooltipSearchConversation;
         TooltipCloseSearch        = Strings.TooltipCloseSearch;
         TooltipSaveSnippet        = Strings.TooltipSaveSnippet;
         LabelCopyCode             = Strings.LabelCopyCode;
-        TooltipStepMode           = Strings.TooltipStepMode;
-        TooltipPlanMode           = Strings.TooltipPlanMode;
-        TooltipAgentMode          = Strings.TooltipAgentMode;
-        AgentModeLabel            = _agentMode ? Strings.LabelModeAgent : Strings.LabelModeChat;
-        WelcomeSubtitle           = Strings.WelcomeSubtitle;
         WelcomeCardExplain        = Strings.WelcomeCardExplain;
         WelcomeCardFix            = Strings.WelcomeCardFix;
         WelcomeCardTest           = Strings.WelcomeCardTest;
         WelcomeCardHelp           = Strings.WelcomeCardHelp;
-        BuildBannerTitle          = Strings.BuildBannerTitle;
         BuildBannerDismiss        = Strings.BuildBannerDismiss;
-        BuildBannerFix            = Strings.BuildBannerFix;
         ActiveModelLabel          = _config.DefaultModel;
         XrayPanelHint             = Strings.XrayPanelHint;
         XrayPanelWarning          = Strings.XrayPanelWarning;
         BtnXrayCopy               = Strings.XrayPanelCopy;
         TooltipXrayClose          = Strings.TooltipXrayClose;
+        ApplyChromeLabels();
     }
 
     /// <summary>Welcome-card handler: drops the card's slash command into the prompt and sends it,
@@ -188,25 +176,18 @@ internal partial class InferpalToolWindowData
     [DataMember] public string BtnLoadSession       { get => _btnLoadSession;       set => SetProperty(ref _btnLoadSession,       value); }
     [DataMember] public string BtnCancel            { get => _btnCancel;            set => SetProperty(ref _btnCancel,            value); }
     [DataMember] public string BtnSend              { get => _btnSend;              set => SetProperty(ref _btnSend,              value); }
-    [DataMember] public string TooltipExport           { get => _tooltipExport;           set => SetProperty(ref _tooltipExport,           value); }
-    [DataMember] public string TooltipClear            { get => _tooltipClear;            set => SetProperty(ref _tooltipClear,            value); }
     [DataMember] public string TooltipCopy             { get => _tooltipCopy;             set => SetProperty(ref _tooltipCopy,             value); }
     [DataMember] public string TooltipSessionPicker    { get => _tooltipSessionPicker;    set => SetProperty(ref _tooltipSessionPicker,    value); }
     [DataMember] public string TooltipLoadSession      { get => _tooltipLoadSession;      set => SetProperty(ref _tooltipLoadSession,      value); }
     [DataMember] public string TooltipDeleteSession    { get => _tooltipDeleteSession;    set => SetProperty(ref _tooltipDeleteSession,    value); }
-    [DataMember] public string HintSend                { get => _hintSend;                set => SetProperty(ref _hintSend,                value); }
     [DataMember] public string TooltipAttachFile       { get => _tooltipAttachFile;       set => SetProperty(ref _tooltipAttachFile,       value); }
     [DataMember] public string TooltipAttachSelection  { get => _tooltipAttachSelection;  set => SetProperty(ref _tooltipAttachSelection,  value); }
     [DataMember] public string TooltipBrowseFile       { get => _tooltipBrowseFile;       set => SetProperty(ref _tooltipBrowseFile,       value); }
     [DataMember] public string TooltipPinFile          { get => _tooltipPinFile;          set => SetProperty(ref _tooltipPinFile,          value); }
     [DataMember] public string TooltipPinChip          { get => _tooltipPinChip;          set => SetProperty(ref _tooltipPinChip,          value); }
-    [DataMember] public string TooltipSearchConversation { get => _tooltipSearchConversation; set => SetProperty(ref _tooltipSearchConversation, value); }
     [DataMember] public string TooltipCloseSearch        { get => _tooltipCloseSearch;        set => SetProperty(ref _tooltipCloseSearch,        value); }
     [DataMember] public string TooltipSaveSnippet        { get => _tooltipSaveSnippet;        set => SetProperty(ref _tooltipSaveSnippet,        value); }
     [DataMember] public string LabelCopyCode             { get => _labelCopyCode;             set => SetProperty(ref _labelCopyCode,             value); }
-    [DataMember] public string TooltipStepMode           { get => _tooltipStepMode;           set => SetProperty(ref _tooltipStepMode,           value); }
-    [DataMember] public string TooltipPlanMode           { get => _tooltipPlanMode;           set => SetProperty(ref _tooltipPlanMode,           value); }
-    [DataMember] public string TooltipAgentMode          { get => _tooltipAgentMode;          set => SetProperty(ref _tooltipAgentMode,          value); }
 
     // ── Build Failed banner ────────────────────────────────────────────────────
     /// <summary>
@@ -278,8 +259,6 @@ internal partial class InferpalToolWindowData
     [DataMember] public ChatMessageItem? ScrollTarget  { get => _scrollTarget;            set => SetProperty(ref _scrollTarget,            value); }
 
     // ── Connection Guard ───────────────────────────────────────────────────────
-    [DataMember] public string ConnectionStatusText  { get => _connectionStatusText;  set => SetProperty(ref _connectionStatusText,  value); }
-    [DataMember] public string ConnectionStatusColor { get => _connectionStatusColor; set => SetProperty(ref _connectionStatusColor, value); }
     [DataMember] public bool   ShowRetryButton       { get => _showRetryButton;       set => SetProperty(ref _showRetryButton,       value); }
     [DataMember] public string TooltipRetryConnection{ get => _tooltipRetryConnection; set => SetProperty(ref _tooltipRetryConnection, value); }
     /// <summary>
@@ -295,12 +274,11 @@ internal partial class InferpalToolWindowData
     /// </summary>
     [DataMember] public string VramStatus    { get => _vramStatus;    set => SetProperty(ref _vramStatus,    value); }
     /// <summary><c>true</c> when <see cref="VramStatus"/> is non-empty and should be shown.</summary>
-    [DataMember] public bool   HasVramStatus { get => _hasVramStatus; set => SetProperty(ref _hasVramStatus, value); }
+    [DataMember] public bool   HasVramStatus { get => _hasVramStatus; set { SetProperty(ref _hasVramStatus, value); RefreshModelButton(); } }
 
     // ── Commandes ──────────────────────────────────────────────────────────────
     [DataMember] public AsyncCommand SendCommand               { get; }
     [DataMember] public AsyncCommand CancelCommand             { get; }
-    [DataMember] public AsyncCommand ExportCommand             { get; }
     [DataMember] public AsyncCommand ClearCommand              { get; }
     [DataMember] public AsyncCommand LoadSessionCommand        { get; }
     [DataMember] public AsyncCommand DeleteSessionCommand      { get; }
@@ -311,14 +289,7 @@ internal partial class InferpalToolWindowData
     [DataMember] public AsyncCommand BrowseFileCommand          { get; }
     [DataMember] public AsyncCommand PinFileCommand             { get; }
     [DataMember] public AsyncCommand ToggleAttachMenuCommand    { get; }
-    [DataMember] public AsyncCommand ToggleSearchCommand        { get; }
     [DataMember] public AsyncCommand ClearSearchCommand         { get; }
-    /// <summary>Toolbar toggle for agent step mode (equivalent to <c>/agent-step</c>).</summary>
-    [DataMember] public AsyncCommand ToggleStepModeCommand      { get; }
-    /// <summary>Toolbar toggle for plan mode (equivalent to <c>/plan</c>).</summary>
-    [DataMember] public AsyncCommand TogglePlanModeCommand      { get; }
-    /// <summary>Main-window switch between Chat and Agent mode (wired to <see cref="InferpalConfig.AgentModeEnabled"/>).</summary>
-    [DataMember] public AsyncCommand ToggleAgentModeCommand     { get; }
     /// <summary>Welcome-screen suggestion card: the CommandParameter (a slash command like <c>/explain</c>)
     /// is dropped into the prompt and sent, so a new user has one-click entry points.</summary>
     [DataMember] public AsyncCommand RunSuggestionCommand       { get; }

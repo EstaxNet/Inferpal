@@ -1,113 +1,228 @@
-/* Inferpal Settings panel — theme-aware via --vscode-* variables, like the chat. */
+/* Inferpal Settings panel — the validated mockup, theme-aware via --vscode-* variables, like the chat:
+   a side navigation with search, one page at a time, hints under each field, a footer that counts the
+   unsaved changes. */
 
 /* Keep the `hidden` attribute authoritative over any author `display` rule. */
 [hidden] {
   display: none !important;
 }
+
+:root {
+  --ip-line: var(--vscode-editorWidget-border, var(--vscode-panel-border, rgba(128, 128, 128, 0.35)));
+  --ip-muted: var(--vscode-descriptionForeground);
+  --ip-surface: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  --ip-nav: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  --ip-accent: var(--vscode-focusBorder, #7c4dff);
+}
+
 html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
+  line-height: 1.45;
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
 }
 
 #app {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 12px 16px 60px;
-}
-
-#tabbar {
+  height: 100%;
   display: flex;
-  gap: 14px;
-  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  margin-bottom: 14px;
+  flex-direction: column;
 }
 
-.tab {
-  background: transparent;
-  color: var(--vscode-foreground);
-  border: none;
-  padding: 8px 2px;
-  cursor: pointer;
-  opacity: 0.7;
-  border-bottom: 2px solid transparent;
+/* ── Layout: navigation · page ─────────────────────────────────────────────── */
+#layout {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
 }
 
-.tab.active {
-  opacity: 1;
-  font-weight: 600;
-  border-bottom-color: var(--vscode-focusBorder, #7c4dff);
+#nav {
+  width: 220px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--ip-line);
+  background: var(--ip-nav);
+  overflow-y: auto;
 }
 
-/* Language selector row on top, like the VS window. */
-#langrow {
+.search {
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 30px;
+  padding: 0 8px;
   margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-input-border, var(--ip-line));
+  background: var(--vscode-input-background);
+  color: var(--ip-muted);
 }
 
-#langrow select {
-  flex: 1;
-  max-width: 320px;
+.search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--vscode-input-foreground);
+  font: inherit;
 }
 
-/* Section header: bold with the accent bar, like the VS window. */
-.section {
+.navitem {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  opacity: 0.85;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.navitem:hover {
+  background: var(--vscode-list-hoverBackground);
+  opacity: 1;
+}
+
+.navitem[aria-current="page"] {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
   font-weight: 600;
-  margin: 18px 0 10px;
-  padding-left: 8px;
-  border-left: 3px solid var(--vscode-focusBorder, #7c4dff);
+  opacity: 1;
 }
 
+.nomatch {
+  margin: 8px 10px;
+  color: var(--ip-muted);
+}
+
+#main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px 32px 32px;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 720px;
+}
+
+.page h1 {
+  margin: 0;
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.pagedesc {
+  margin: 4px 0 0;
+  color: var(--ip-muted);
+}
+
+/* ── Sections ──────────────────────────────────────────────────────────────── */
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.block h2,
+.block summary {
+  margin: 0;
+  font-size: 1.08em;
+  font-weight: 600;
+}
+
+.block summary {
+  cursor: pointer;
+}
+
+details.block[open] summary {
+  margin-bottom: 4px;
+}
+
+.sectiondesc,
+.note {
+  margin: 0;
+  color: var(--ip-muted);
+  font-size: 0.92em;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fields.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px 20px;
+}
+
+.foldtoggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ip-line);
+}
+
+.fold {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Fields ────────────────────────────────────────────────────────────────── */
 .field {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-bottom: 12px;
+  gap: 5px;
+  min-width: 0;
 }
 
-.field.inline {
+.field > label {
+  font-weight: 600;
+}
+
+.field.check {
   flex-direction: row;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-/* VS layout for numbers: label left, compact right-aligned field + unit on one line. */
-.field.compact {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
+.field.check input[type="checkbox"] {
+  margin: 2px 0 0;
+  flex: none;
 }
 
-.field.compact .labelline {
-  flex: 1;
-}
-
-input.num {
-  width: 90px;
-  text-align: right;
-}
-
-.unit {
-  opacity: 0.65;
-  font-size: 0.9em;
-  min-width: 42px;
-}
-
-.labelline {
+.checktext {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.info {
-  opacity: 0.55;
-  cursor: help;
-  font-size: 0.9em;
+.checktext label {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hint {
+  color: var(--ip-muted);
+  font-size: 0.92em;
 }
 
 .inputline {
@@ -116,22 +231,71 @@ input.num {
   gap: 6px;
 }
 
-.inputline input {
-  flex: 1;
+.inputline input:not(.num),
+.inputline select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+input.num {
+  width: 90px;
+  text-align: right;
+}
+
+.unit {
+  color: var(--ip-muted);
+  font-size: 0.92em;
+}
+
+input[type="text"], input[type="password"], select, textarea {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+textarea {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.95em;
+  resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ip-accent);
 }
 
 .sidebtn {
   background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
   color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
   border: none;
-  border-radius: 3px;
-  padding: 5px 14px;
+  border-radius: 4px;
+  padding: 5px 12px;
   cursor: pointer;
+  font: inherit;
+}
+
+.sidebtn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-hoverBackground));
+}
+
+.sidebtn.caret {
+  padding: 5px 8px;
+  line-height: 1;
 }
 
 .teststatus {
-  font-size: 0.9em;
-  opacity: 0.85;
+  font-size: 0.92em;
+  color: var(--ip-muted);
 }
 
 .teststatus.ok {
@@ -142,76 +306,88 @@ input.num {
   color: var(--vscode-errorForeground, #f44747);
 }
 
-.field label {
-  font-size: 0.9em;
-  opacity: 0.9;
-}
-
-input[type="text"], input[type="password"], select, textarea {
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 3px;
-  padding: 5px 7px;
-  font-family: inherit;
-  font-size: inherit;
-}
-
-textarea {
-  font-family: var(--vscode-editor-font-family, monospace);
-  resize: vertical;
-}
-
-input:focus, select:focus, textarea:focus {
-  outline: 1px solid var(--vscode-focusBorder);
-}
-
-details {
-  margin: 10px 0;
-  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  border-radius: 4px;
-  padding: 6px 10px;
-}
-
-details summary {
-  cursor: pointer;
-  opacity: 0.85;
-  margin-bottom: 6px;
-}
-
-#footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+/* A live summary: "Approval rules: 3" with the link that edits them. */
+.summarycard {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
-  background: var(--vscode-editor-background);
-  border-top: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
 }
 
-#save {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: 4px;
-  padding: 6px 18px;
+.summarycard span {
+  flex: 1 1 auto;
+}
+
+.linkbtn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--vscode-textLink-foreground);
+  font: inherit;
   cursor: pointer;
 }
 
-#save:hover {
-  background: var(--vscode-button-hoverBackground);
+.linkbtn:hover {
+  color: var(--vscode-textLink-activeForeground);
+  text-decoration: underline;
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────────── */
+#footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 24px;
+  border-top: 1px solid var(--ip-line);
+  background: var(--ip-nav);
+}
+
+#unsaved,
+#status {
+  color: var(--ip-muted);
+  font-size: 0.92em;
 }
 
 #status {
-  font-size: 0.9em;
-  opacity: 0.8;
+  flex: 1 1 auto;
+}
+
+#footer button {
+  border-radius: 4px;
+  padding: 6px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+
+#footer .secondary {
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+
+#save {
+  border: 0;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  font-weight: 600;
+}
+
+#save:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+
+#save:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* ──────────────────── Model picker ────────────────────────────────────────────
-   One popup, shared by the six model fields, anchored on whichever has focus.
+   One popup, shared by the model fields, anchored on whichever has focus.
    It replaces a <datalist> whose options the browser filtered against what the
    field already contained: a filled field offered nothing but itself. */
 #modelpop {
@@ -220,8 +396,8 @@ details summary {
   max-height: 260px;
   overflow-y: auto;
   background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
-  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  border-radius: 3px;
+  border: 1px solid var(--ip-line);
+  border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
@@ -252,7 +428,792 @@ details summary {
   background: transparent;
 }
 
-.sidebtn.caret {
-  padding: 5px 8px;
-  line-height: 1;
+/* ── Narrow panel: the navigation goes on top ──────────────────────────────── */
+@media (max-width: 640px) {
+  #layout {
+    flex-direction: column;
+  }
+
+  #nav {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--ip-line);
+  }
+
+  .search {
+    flex: 1 1 100%;
+  }
+
+  #main {
+    padding: 16px;
+  }
+}
+
+/* ──────────────────── Structured editors of the list settings ─────────────────
+   Pinned files, MCP servers, approval rules, slash commands, agent tools — drawn over the setting's
+   text box, which stays what is saved ("Edit as text" shows it). */
+.editorwrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editorbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.listeditor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.listeditor button,
+.ruleadd button,
+.statuscard button:not(.linkbtn),
+.docsites button:not(.linkbtn):not(.icon-button) {
+  border-radius: 4px;
+  padding: 4px 12px;
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.listeditor button.secondary,
+.ruleadd button.secondary,
+.statuscard button.secondary,
+.docsites button.secondary {
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+
+.listeditor button:disabled,
+.statuscard button:disabled,
+.docsites button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.listeditor .icon-button,
+.ruleseditor .icon-button,
+.docsites .icon-button {
+  border: 0;
+  background: transparent;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  padding: 4px;
+  border-radius: 4px;
+  line-height: 0;
+}
+
+.listeditor .icon-button:hover,
+.docsites .icon-button:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.2));
+}
+
+.listeditor .icon-button.danger:hover {
+  color: var(--vscode-errorForeground, #f44747);
+}
+
+.with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.addbtn {
+  align-self: flex-start;
+}
+
+.lrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+}
+
+.lrow.unread {
+  border-style: dashed;
+}
+
+.lmain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lname {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lsub {
+  color: var(--ip-muted);
+  font-size: 0.92em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lnote {
+  display: block;
+  color: var(--vscode-editorWarning-foreground, var(--ip-muted));
+  font-size: 0.9em;
+}
+
+.lempty {
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--ip-line);
+  color: var(--ip-muted);
+  text-align: center;
+}
+
+.mono,
+.listeditor code,
+.ruleseditor code {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.95em;
+}
+
+.warn {
+  margin: 0;
+  color: var(--vscode-editorWarning-foreground, var(--vscode-foreground));
+}
+
+/* The inline add/edit form. */
+.editform {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+}
+
+.editformtitle {
+  font-weight: 600;
+}
+
+.editfield {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.editfield > span,
+.editcheck > span {
+  font-size: 0.92em;
+  color: var(--ip-muted);
+}
+
+.editcheck {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editerror {
+  margin: 0;
+  color: var(--vscode-errorForeground, #f44747);
+  font-size: 0.92em;
+}
+
+.editerror:empty {
+  display: none;
+}
+
+.editactions {
+  display: flex;
+  gap: 8px;
+}
+
+/* MCP server cards: a dot for the state, the cause under a server that does not run. */
+.mcpsummary {
+  margin: 0;
+  color: var(--ip-muted);
+  font-size: 0.92em;
+}
+
+.mcpcard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mcpcard .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--ip-muted);
+}
+
+.mcpcard.state-connected .dot { background: var(--vscode-testing-iconPassed, #4ec94e); }
+.mcpcard.state-signIn .dot    { background: var(--vscode-editorWarning-foreground, #e3b341); }
+.mcpcard.state-failed .dot    { background: var(--vscode-errorForeground, #f44747); }
+.mcpcard.state-failed .lrow   { border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground, #f44747)); }
+
+.mcpstatus {
+  color: var(--ip-muted);
+  font-size: 0.92em;
+  white-space: nowrap;
+}
+
+.mcpcard.state-failed .mcpstatus { color: var(--vscode-errorForeground, #f44747); }
+.mcpcard.state-signIn .mcpstatus { color: var(--vscode-editorWarning-foreground, var(--ip-muted)); }
+
+.mcpcause {
+  display: block;
+  margin: 0 0 0 18px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--vscode-textCodeBlock-background, var(--ip-surface));
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Approval rules table: every rule written, in evaluation order. */
+table.rules {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+table.rules th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ip-muted);
+  padding: 6px 8px;
+}
+
+table.rules td {
+  padding: 7px 8px;
+  border-top: 1px solid var(--ip-line);
+  vertical-align: top;
+}
+
+table.rules tr.status-ignoredAllow td,
+table.rules tr.status-unreadable td {
+  opacity: 0.75;
+}
+
+.rfrom {
+  color: var(--ip-muted);
+  white-space: nowrap;
+}
+
+.ractions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.92em;
+  border: 1px solid currentColor;
+}
+
+.pill.allow { color: var(--vscode-testing-iconPassed, #4ec94e); }
+.pill.deny  { color: var(--vscode-errorForeground, #f44747); }
+
+.ruleadd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ruleadd input[type="text"] {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+/* ── Live blocks of the pages: index card, @Docs sites, usage, project files ─── */
+.summarycard .summarytext {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.summarycard .summarytitle {
+  font-weight: 600;
+}
+
+.summarycard > svg {
+  flex: none;
+  color: var(--vscode-textLink-foreground);
+}
+
+.statuscard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+}
+
+.cardhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardtitles {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardtitles h2 {
+  margin: 0;
+  font-size: 1.08em;
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--ip-muted);
+}
+
+.statuscard[data-state="ready"] .dot,
+.dot.ok    { background: var(--vscode-testing-iconPassed, #4ec94e); }
+.statuscard[data-state="indexing"] .dot,
+.dot.busy  { background: var(--vscode-textLink-foreground, #3794ff); }
+.statuscard[data-state="stopped"] .dot,
+.dot.warn  { background: var(--vscode-editorWarning-foreground, #e3b341); }
+.statuscard[data-state="failed"] .dot { background: var(--vscode-errorForeground, #f44747); }
+
+.cardnote {
+  margin: 0;
+  color: var(--vscode-editorWarning-foreground, var(--ip-muted));
+}
+
+.statuscard p.hint {
+  margin: 0;
+}
+
+.filelist {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ip-muted);
+}
+
+.sublabel {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.exclusions,
+.projectfiles,
+.docsites,
+.usage {
+  margin-top: 4px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip {
+  padding: 1px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.92em;
+}
+
+.docsites {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.blockhead {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.blockhead .hint {
+  flex: 1 1 auto;
+}
+
+.siterow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+}
+
+.sitestatus {
+  white-space: nowrap;
+}
+
+.sitenote {
+  padding-left: 28px;
+  font-size: 0.92em;
+}
+
+.usage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.usagehead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.usagesum {
+  flex: 1 1 auto;
+  color: var(--ip-muted);
+}
+
+.usagebar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--vscode-input-background, var(--ip-surface));
+  border: 1px solid var(--ip-line);
+}
+
+.usagebar .seg { height: 100%; }
+.seg.instructions, .swatch.instructions { background: var(--vscode-charts-purple, #b180d7); }
+.seg.tools,        .swatch.tools        { background: var(--vscode-charts-blue, #3794ff); }
+.seg.conversation, .swatch.conversation { background: var(--vscode-charts-green, #89d185); }
+
+.usagelegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--ip-muted);
+}
+
+.legenditem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.usage > .linkbtn,
+.modelline .linkbtn {
+  align-self: flex-start;
+}
+
+.filerows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filerows li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.filerows li .hint {
+  flex: 1 1 auto;
+}
+
+.filerows li .hint.notyet {
+  flex: none;
+}
+
+.lsize {
+  color: var(--ip-muted);
+  white-space: nowrap;
+  font-size: 0.92em;
+}
+
+.lsize.warn {
+  color: var(--vscode-editorWarning-foreground, var(--ip-muted));
+}
+
+/* A name=value table: header, then name and value side by side. */
+.listeditor.table .lhead {
+  border: 0;
+  background: transparent;
+  padding-top: 0;
+  padding-bottom: 0;
+  color: var(--ip-muted);
+  font-weight: 600;
+}
+
+.listeditor.table .lhead .lcol:first-child,
+.listeditor.table .lcols .lname {
+  flex: 0 0 26%;
+}
+
+.listeditor.table .lhead .lcol:first-child {
+  margin-left: 23px;
+}
+
+.listeditor.table .lcols {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.listeditor.table .lcols .lsub {
+  flex: 1 1 auto;
+  font-size: 1em;
+  color: var(--vscode-foreground);
+}
+
+/* Speed as cards, under a sample of what a suggestion looks like. */
+fieldset.cards {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+fieldset.cards legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+/* ── A segmented switch (Density) ── */
+fieldset.segmented {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+fieldset.segmented legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.segments {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+}
+
+.segment {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: var(--ip-muted);
+  cursor: pointer;
+}
+
+.segment input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segment:has(input:checked) {
+  background: var(--vscode-list-activeSelectionBackground, var(--ip-line));
+  color: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
+  font-weight: 600;
+}
+
+.segment:has(input:focus-visible) {
+  outline: 1px solid var(--vscode-focusBorder);
+}
+
+body.vscode-high-contrast .segment:has(input:checked),
+body.vscode-high-contrast-light .segment:has(input:checked) {
+  outline: 1px solid var(--vscode-contrastActiveBorder, var(--vscode-focusBorder));
+}
+
+/* ── The theme cards: each theme in its own colours, whatever the panel's ── */
+.themecards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 680px;
+}
+
+.themecard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #34343c;
+}
+
+.themecard .bar {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.themecard .b1 {
+  width: 60%;
+}
+
+.themecard .b2 {
+  width: 85%;
+}
+
+.themecard .b3 {
+  width: 45%;
+  align-self: flex-end;
+}
+
+.themecard .caption {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.themecard.light {
+  background: #f5f5f7;
+  color: #1b1b1f;
+}
+
+.themecard.light .b1 {
+  background: #d9d9e0;
+}
+
+.themecard.light .b2 {
+  background: #e6e6eb;
+}
+
+.themecard.dark {
+  background: #1b1b1f;
+  color: #e8e8ec;
+}
+
+.themecard.dark .b1 {
+  background: #34343c;
+}
+
+.themecard.dark .b2 {
+  background: #2a2a31;
+}
+
+.themecard.light .b3,
+.themecard.dark .b3 {
+  background: #7c4dff;
+}
+
+.themecard.hc {
+  background: #000;
+  color: #fff;
+  border-color: #fff;
+}
+
+.themecard.hc .b1,
+.themecard.hc .b2 {
+  border: 1px solid #fff;
+}
+
+.themecard.hc .b3 {
+  background: #ff0;
+}
+
+.themecard.inuse {
+  border: 2px solid #7c4dff;
+}
+
+.themecard.hc.inuse {
+  border-color: #ff0;
+}
+
+.cardgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.choicecard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+  cursor: pointer;
+}
+
+.choicecard:has(input:checked) {
+  border-color: var(--ip-accent);
+  box-shadow: inset 0 0 0 1px var(--ip-accent);
+}
+
+.choicename {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.choicename input {
+  margin: 0;
+  accent-color: var(--ip-accent);
+}
+
+.ghostpreview {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--vscode-textCodeBlock-background, var(--ip-surface));
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, 0.92em);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.ghostpreview .ghost {
+  color: var(--vscode-editorGhostText-foreground, var(--ip-muted));
+  font-style: italic;
+}
+
+.modelline {
+  margin: 6px 0 0;
 }

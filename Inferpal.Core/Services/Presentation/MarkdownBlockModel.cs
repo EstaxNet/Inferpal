@@ -18,6 +18,13 @@ internal sealed class MarkdownBlockModel
     /// <summary>Fence info string for code blocks ("cs", "json", …), empty otherwise.</summary>
     public string Language { get; init; } = "";
 
+    /// <summary>
+    /// A list item's marker with its nesting indent ("•", "2.", led by non-breaking spaces), empty for any other
+    /// block. Kept out of <see cref="Inlines"/>: the view gives it a column of its own, so the item's wrapped lines
+    /// align under its text instead of under the marker.
+    /// </summary>
+    public string Marker { get; init; } = "";
+
     /// <summary>Formatted inline runs for paragraphs and list items.</summary>
     public List<InlineRunModel> Inlines { get; } = [];
 

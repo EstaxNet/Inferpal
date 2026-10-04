@@ -68,6 +68,15 @@ internal class InferpalConfig
     [JsonPropertyName("toolBubblesExpanded")]
     public bool ToolBubblesExpanded { get; set; } = false;
 
+    /// <summary>How much space the chat leaves around its turns: <c>comfortable</c> (the default) or <c>compact</c>,
+    /// which fits more of the conversation in a narrow panel. Anything else reads as comfortable.</summary>
+    [JsonPropertyName("chatDensity")]
+    public string ChatDensity { get; set; } = "comfortable";
+
+    /// <summary>The chat is drawn compact (<see cref="ChatDensity"/>).</summary>
+    [JsonIgnore]
+    public bool IsCompactChat => string.Equals(ChatDensity, "compact", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>When <c>true</c>, <c>write_file</c> and <c>run_command</c> skip the approval dialog.</summary>
     [JsonPropertyName("securityAlertsDisabled")]
     public bool SecurityAlertsDisabled { get; set; } = false;
@@ -571,7 +580,7 @@ internal class InferpalConfig
                                    ?? cfg.InlineCompletionMode;
 
         // "fr-FR" names "fr": trailing subtags are dropped until an offered language matches.
-        var languages = Services.Presentation.SettingsSchema.HeaderFields.Single(f => f.Key == "language").Options!;
+        var languages = Services.Presentation.SettingsSchema.Languages;
         var code = cfg.Language.Trim();
         while (code.Length > 0)
         {

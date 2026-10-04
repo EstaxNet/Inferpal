@@ -47,6 +47,16 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// it via <c>DiffComputer.ComputeText</c>, rich ones show the colored diff viewer.</param>
     protected abstract Task<ApprovalDecision> PromptUserAsync(string message, Services.CodeActions.DiffInfo? diff, CancellationToken ct);
 
+    /// <summary>
+    /// The prompt with everything it knows — tool, subject, change — for an editor that draws an approval card
+    /// (<see cref="Services.Presentation.ApprovalCard"/>). By default, the one-sentence prompt.
+    /// </summary>
+    protected virtual Task<ApprovalDecision> PromptUserAsync(Services.Presentation.ApprovalPrompt prompt, CancellationToken ct) =>
+        PromptUserAsync(prompt.Message, prompt.Diff, ct);
+
+    /// <summary>The workspace root approval cards show paths relative to.</summary>
+    protected string? RootDir => _rootDir();
+
     public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false)
     {
         // The value the rules match against: the explicit subject (raw path for file tools) when
@@ -108,7 +118,8 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
         var message = Strings.ApprovalMessage(toolName, details);
 
-        var promptDecision = await PromptUserAsync(message, diff, ct);
+        var promptDecision = await PromptUserAsync(
+            new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message), ct);
         if (promptDecision == ApprovalDecision.Always)
             _sessionAllowed[toolName] = 0;
 

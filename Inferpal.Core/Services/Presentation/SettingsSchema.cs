@@ -20,10 +20,13 @@ internal enum SettingKind { Text, Password, Bool, Int, Float, Model, Select, Tex
 /// <see cref="SettingsSchema.Tabs"/> is a property initialised once, so a text resolved in there
 /// would freeze the language of the first access.
 /// </remarks>
-internal sealed record SettingOption(string Value, string Text, Func<string>? Localized = null)
+internal sealed record SettingOption(string Value, string Text, Func<string>? Localized = null, Func<string>? Describe = null)
 {
     /// <summary>Display text in the language in force <i>now</i>.</summary>
     internal string Display => Localized?.Invoke() ?? Text;
+
+    /// <summary>The sentence under the option's name when it is drawn as a card; empty when it has none.</summary>
+    internal string Description => Describe?.Invoke() ?? string.Empty;
 }
 
 /// <summary>
@@ -32,28 +35,68 @@ internal sealed record SettingOption(string Value, string Text, Func<string>? Lo
 /// shared .resx (so both editors show the same wording in all 10 languages).
 /// </summary>
 /// <param name="Unit">Resource name of the suffix after a compact numeric field (<c>UnitSeconds</c>, <c>UnitGigabytes</c>, …) — resolved like Label and Hint.</param>
-/// <param name="Gate">Reveal group: <c>roles</c> (distinct model per role) or <c>advanced</c>.</param>
 /// <param name="Button">Companion button: <c>test</c> or <c>refreshModels</c>.</param>
+/// <param name="Inverted">A check box that shows the opposite of the stored value: the key says what is
+/// turned OFF (<c>securityAlertsDisabled</c>), the box says what happens (ask before acting).</param>
+/// <param name="OpensFold">A value other than the factory one opens the page with its advanced sections
+/// shown: a setting in effect is never hidden behind the fold.</param>
+/// <param name="HintNotOllama">Resource name of the hint shown instead of <paramref name="Hint"/> when the
+/// selected server is not Ollama.</param>
+/// <param name="Editor">The structured editor of a list setting — <c>pinnedFiles</c>, <c>mcpServers</c>,
+/// <c>approvalRules</c> or <c>nameValue</c> — drawn over its text, which stays what is saved and stays
+/// reachable ("Edit as text"): a line the editor cannot read is never lost.</param>
+/// <param name="ZeroIsEmpty">A numeric box whose 0 means "not set" (the GPU's memory, detected when empty): it shows
+/// empty, as its hint says, and empty saves 0.</param>
+/// <param name="EmptyChoice">Resource name of what an optional model list shows for its empty value — the model
+/// that does the work then ("Same as chat"): an empty entry says nothing, and the hint had to explain it.</param>
+/// <param name="Columns">Resource names of the column headers of a <c>nameValue</c> table (name, then value).</param>
 internal sealed record SettingField(
     string  Key,
     SettingKind Kind,
     string  Label,
     string? Hint    = null,
     string? Unit    = null,
-    string? Gate    = null,
     string? Button  = null,
-    IReadOnlyList<SettingOption>? Options = null);
+    IReadOnlyList<SettingOption>? Options = null,
+    bool    Inverted = false,
+    bool    OpensFold = false,
+    string? HintNotOllama = null,
+    string? Editor = null,
+    bool    ZeroIsEmpty = false,
+    string? EmptyChoice = null,
+    IReadOnlyList<string>? Columns = null);
 
-/// <summary>A group of fields under a title, with an optional reveal toggle.</summary>
+/// <summary>A group of fields under a title (empty = no heading), with an optional description.</summary>
+/// <param name="Gate">Reveal group the section belongs to: <c>advanced</c> sections show only when the page's
+/// "Show advanced settings" box is checked.</param>
+/// <param name="Collapsible">Rendered folded under its title, opened on demand.</param>
+/// <param name="Note">Resource name of a sentence shown under the fields.</param>
+/// <param name="Grid">Fields laid out in two columns.</param>
+/// <param name="Widget">A live block rendered under the fields, from what the product knows now rather than from the
+/// configuration: <c>approvalRules</c> (the rules in effect and where they come from, with a link to the page that edits
+/// them), <c>indexCard</c> (the code index: state, counts, what it left out, its model), <c>indexExclusions</c> (the
+/// project's own exclusions), <c>docsSites</c> (the @Docs sites), <c>contextUsage</c> (how full the conversation's
+/// window is, and with what), <c>projectFiles</c> (the project's files the prompt reads), <c>fimModel</c> and
+/// <c>editModel</c> (the model a page's feature uses, set on another page).</param>
 internal sealed record SettingSection(
     string Title,
     IReadOnlyList<SettingField> Fields,
-    string? ToggleGate  = null,
-    string? ToggleLabel = null,
-    string? ToggleHint  = null);
+    string? Description = null,
+    string? Gate        = null,
+    bool    Collapsible = false,
+    string? Note        = null,
+    bool    Grid        = false,
+    string? Widget      = null);
 
-/// <summary>One tab of the settings window.</summary>
-internal sealed record SettingTab(string Key, string Title, IReadOnlyList<SettingSection> Sections);
+/// <summary>One page of the settings window, reached from the side navigation.</summary>
+/// <param name="AdvancedToggle">Resource name of the page's "Show advanced settings" box, when some of its
+/// sections are gated <c>advanced</c>.</param>
+internal sealed record SettingTab(
+    string Key,
+    string Title,
+    string Description,
+    IReadOnlyList<SettingSection> Sections,
+    string? AdvancedToggle = null);
 
 /// <summary>
 /// The declarative description of the settings surface — which keys are editable, in which tab and
@@ -75,9 +118,9 @@ internal static class SettingsSchema
     /// those lists, it must not be modifiable from outside.</summary>
     public static readonly IReadOnlyList<SettingOption> FimModes =
     [
-        new("Fast",         "Fast (128 tok · 300 ms)",     () => Strings.FimModeFast),
-        new("Default",      "Default (256 tok · 600 ms)",  () => Strings.FimModeDefault),
-        new("HighAccuracy", "High Accuracy (512 tok · 1 s)", () => Strings.FimModeHighAccuracy),
+        new("Fast",         "Fast",     () => Strings.FimModeFast,         () => Strings.FimModeFastDesc),
+        new("Default",      "Balanced", () => Strings.FimModeDefault,      () => Strings.FimModeDefaultDesc),
+        new("HighAccuracy", "Accurate", () => Strings.FimModeHighAccuracy, () => Strings.FimModeHighAccuracyDesc),
     ];
 
     /// <summary>Backend names - never translated. Public for the same reason as
@@ -90,111 +133,11 @@ internal static class SettingsSchema
         new("openai-compatible", "OpenAI-compatible (generic)"),
     ];
 
-    /// <summary>Label the adapter resolves itself (not a .resx resource).</summary>
-    public const string LocalLabelInlineDiff = "__inlineDiffPreview";
-    /// <inheritdoc cref="LocalLabelInlineDiff"/>
-    public const string LocalLabelTabTools   = "__tabTools";
-
-    public static IReadOnlyList<SettingTab> Tabs { get; } =
-    [
-        new("connection", "SectionConnection",
-        [
-            new("SectionConnection",
-            [
-                new("provider",     SettingKind.Select, "LabelProvider",   "HintProvider",   Options: Providers),
-                new("baseUrl",      SettingKind.Text,   "LabelUrl",        "HintUrl",        Button: "test"),
-                new("apiKey",       SettingKind.Password, "LabelApiKey",   "HintApiKey"),
-                new("defaultModel", SettingKind.Model,  "LabelChatModel",  "HintChatModel",  Button: "refreshModels"),
-            ]),
-            new("",
-            [
-                new("agentModel",             SettingKind.Model, "LabelAgentModel",             "HintAgentModel",             Gate: "roles"),
-                new("codeActionsModel",       SettingKind.Model, "LabelCodeActionsModel",       "HintCodeActionsModel",       Gate: "roles"),
-                new("inlineCompletionModel",  SettingKind.Model, "LabelInlineCompletionModel",  "HintInlineCompletionModel",  Gate: "roles"),
-                new("inlineEditModel",        SettingKind.Model, "LabelInlineEditModel",        "HintInlineEditModel",        Gate: "roles"),
-                new("utilityModel",           SettingKind.Model, "LabelUtilityModel",           "HintUtilityModel",           Gate: "roles"),
-                new("modelRouterAuto",        SettingKind.Bool,  "LabelModelRouterAuto",        "HintModelRouterAuto",        Gate: "roles"),
-                new("ragEmbeddingModel",      SettingKind.Model, "LabelRagEmbeddingModel",      "HintRagEmbeddingModel"),
-            ],
-            ToggleGate: "roles", ToggleLabel: "LabelModelRolesAdvanced", ToggleHint: "HintModelRolesAdvanced"),
-        ]),
-
-        new("behavior", "SectionBehavior",
-        [
-            new("SectionBehavior",
-            [
-                new("commandTimeoutSeconds",   SettingKind.Int,      "LabelCommandTimeout",         "HintCommandTimeout",         Unit: "UnitSeconds",   Gate: "advanced"),
-                new("quickTimeoutSeconds",     SettingKind.Int,      "LabelTaskTimeoutQuick",       "HintTaskTimeoutQuick",       Unit: "UnitSeconds",   Gate: "advanced"),
-                new("normalTimeoutSeconds",    SettingKind.Int,      "LabelTaskTimeoutNormal",      "HintTaskTimeoutNormal",      Unit: "UnitSeconds",   Gate: "advanced"),
-                new("deepTimeoutSeconds",      SettingKind.Int,      "LabelTaskTimeoutDeep",        "HintTaskTimeoutDeep",        Unit: "UnitSeconds",   Gate: "advanced"),
-                new("agentMaxIterations",      SettingKind.Int,      "LabelAgentMaxIterations",     "HintAgentMaxIterations",     Gate: "advanced"),
-                new("modelAutoUnloadEnabled",  SettingKind.Bool,     "LabelModelAutoUnload",        "HintModelAutoUnload",        Gate: "advanced"),
-                new("modelIdleTimeoutMinutes", SettingKind.Int,      "LabelModelIdleTimeout",       "HintModelIdleTimeout",       Unit: "UnitMinutes", Gate: "advanced"),
-                new("toolBubblesExpanded",     SettingKind.Bool,     "LabelToolBubblesExpanded",    "HintToolBubblesExpanded"),
-                new("securityAlertsDisabled",  SettingKind.Bool,     "LabelSecurityAlertsDisabled", "HintSecurityAlertsDisabled"),
-                new("permissionRules",         SettingKind.TextArea, "LabelPermissionRules",        "HintPermissionRules"),
-                new("smartFixEnabled",         SettingKind.Bool,     "LabelSmartFixEnabled",        "HintSmartFixEnabled"),
-                new("agentModeEnabled",        SettingKind.Bool,     "LabelAgentModeEnabled",       "HintAgentModeEnabled"),
-            ],
-            ToggleGate: "advanced", ToggleLabel: "LabelAdvancedBehavior"),
-
-            new("SectionInlineCompletions",
-            [
-                new("inlineCompletionEnabled", SettingKind.Bool,   "LabelInlineCompletionEnabled", "HintInlineCompletionEnabled"),
-                new("inlineCompletionMode",    SettingKind.Select, "LabelInlineCompletionMode",    "HintInlineCompletionMode", Options: FimModes),
-            ]),
-
-            new("SectionPersona",
-            [
-                new("personaAutoSwitch",    SettingKind.Bool,     "LabelPersonaAutoSwitch",   "HintPersonaAutoSwitch"),
-                new("customSystemPrompt",   SettingKind.TextArea, "LabelCustomSystemPrompt",  "HintCustomSystemPrompt"),
-            ]),
-        ]),
-
-        new("context", "SectionContext",
-        [
-            new("SectionRag",
-            [
-                new("ragEnabled",             SettingKind.Bool,  "LabelRagEnabled",             "HintRagEnabled"),
-                new("ragAutoContextEnabled",  SettingKind.Bool,  "LabelRagAutoContext",         "HintRagAutoContext"),
-                new("ragTopK",                SettingKind.Int,   "LabelRagTopK",                "HintRagTopK",                Unit: "UnitChunks"),
-                new("ragSimilarityThreshold", SettingKind.Float, "LabelRagSimilarityThreshold", "HintRagSimilarityThreshold", Unit: "UnitRangeZeroToOne"),
-                new("lspEnabled",             SettingKind.Bool,  "LabelLspEnabled",             "HintLspEnabled"),
-            ]),
-
-            new("SectionContext",
-            [
-                new("vramBudgetGb",             SettingKind.Float,    "LabelVramBudget",            "HintVramBudget",            Unit: "UnitGigabytes"),
-                new("contextWindowSize",        SettingKind.Int,      "LabelContextWindowSize",     "HintContextWindowSize",     Unit: "UnitTokens"),
-                new("contextWindowKeepTurns",   SettingKind.Int,      "LabelContextWindowKeepTurns","HintContextWindowKeepTurns",Unit: "UnitTurns"),
-                new("compactionEnabled",        SettingKind.Bool,     "LabelCompactionEnabled",     "HintCompactionEnabled"),
-                new("compactionTimeoutSeconds", SettingKind.Int,      "LabelCompactionTimeout",     "HintCompactionTimeout",     Unit: "UnitSeconds"),
-                new("kvCacheAnchorMessages",    SettingKind.Int,      "LabelKvCacheAnchor",         "HintKvCacheAnchor",         Unit: "UnitMessages"),
-                new("oodaTurnThreshold",        SettingKind.Int,      "LabelOodaTurnThreshold",     "HintOodaTurnThreshold",     Unit: "UnitTurns"),
-                new("inlineDiffPreviewEnabled", SettingKind.Bool,     LocalLabelInlineDiff),
-                new("pinnedContextFiles",       SettingKind.TextArea, "LabelPinnedContextFiles",    "HintPinnedContextFiles"),
-            ]),
-        ]),
-
-        new("tools", LocalLabelTabTools,
-        [
-            new("SectionMcp",
-            [
-                new("mcpEnabled",     SettingKind.Bool,     "LabelMcpEnabled", "HintMcpEnabled"),
-                new("mcpServersJson", SettingKind.TextArea, "LabelMcpServers", "HintMcpServers"),
-            ]),
-
-            new("SectionCommandsTools",
-            [
-                new("promptTemplates", SettingKind.TextArea, "LabelPromptTemplates", "HintPromptTemplates"),
-                new("customTools",     SettingKind.TextArea, "LabelCustomTools",     "HintCustomTools"),
-            ]),
-        ]),
-    ];
-
+    // ⚠ Above Tabs: static initializers run in textual order. Declared below it, the list is still
+    // null when the language field captures it - a language box with no option, and no error.
     /// <summary>UI languages. Names are deliberately never localized (a French speaker looking for
     /// their language looks for "Français", not for its German name).</summary>
-    private static readonly SettingOption[] Languages =
+    public static readonly IReadOnlyList<SettingOption> Languages =
     [
         new("",      "Auto"),
         new("en",    "English"),  new("fr",    "Français"),
@@ -205,16 +148,235 @@ internal static class SettingsSchema
     ];
 
     /// <summary>
-    /// Fields rendered outside the tabs — today only the language selector, which sits in the
-    /// header because switching it re-renders every label around it.
+    /// The name of the language "automatic" resolves to for an editor in <paramref name="culture"/>: the first culture
+    /// of its parent chain that is one of ours, English otherwise — the resource manager's own fallback, so the name
+    /// is the language the panel actually speaks (<c>fr-CA</c> → Français, <c>zh-TW</c> → English).
     /// </summary>
-    public static IReadOnlyList<SettingField> HeaderFields { get; } =
+    public static string AutoLanguageName(System.Globalization.CultureInfo culture)
+    {
+        for (var c = culture; !string.IsNullOrEmpty(c.Name); c = c.Parent)
+            if (Languages.FirstOrDefault(l => l.Value.Length > 0
+                                            && string.Equals(l.Value, c.Name, StringComparison.OrdinalIgnoreCase)) is { } match)
+                return match.Text;
+        return "English";
+    }
+
+    /// <summary>The gate of the sections a page's "Show advanced settings" box reveals.</summary>
+    public const string AdvancedGate = "advanced";
+
+    /// <summary>How much space the chat leaves around its turns: two options, drawn as a segmented switch.
+    /// ⚠ Above <see cref="Tabs"/>: a static initialiser reads the fields declared before it, and one declared after is still
+    /// null there, and the switch shows no option.</summary>
+    public static readonly IReadOnlyList<SettingOption> Densities =
     [
-        new("language", SettingKind.Select, "LabelLanguage", Options: Languages),
+        new("comfortable", "Comfortable", () => Strings.DensityComfortable),
+        new("compact",     "Compact",     () => Strings.DensityCompact),
     ];
 
-    /// <summary>Every editable field, flattened — for validation and for the adapters. Header
-    /// fields come last, matching the order the panel saves them in.</summary>
+    /// <summary>
+    /// The seven pages, in the order of the side navigation. Labels and hints say what a setting
+    /// DOES, in the user's words; the configuration key keeps its technical name.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A setting that nothing reads does not get a box: <c>deepTimeoutSeconds</c> stays in the
+    /// configuration file and out of the form, since no request is ever made with that budget.
+    /// </remarks>
+    public static IReadOnlyList<SettingTab> Tabs { get; } =
+    [
+        new("server", "SettingsPageServer", "SettingsPageServerDesc",
+        [
+            new("",
+            [
+                new("baseUrl",               SettingKind.Text,  "LabelUrl",                   "HintUrl",                   Button: "test"),
+            ]),
+            new("",
+            [
+                new("defaultModel",          SettingKind.Model, "LabelChatModel",             "HintChatModel",             Button: "refreshModels"),
+                new("inlineCompletionModel", SettingKind.Model, "LabelInlineCompletionModel", "HintInlineCompletionModel",
+                    EmptyChoice: "SettingsSameAsChat"),
+                new("ragEmbeddingModel",     SettingKind.Model, "LabelRagEmbeddingModel",     "HintRagEmbeddingModel",
+                    EmptyChoice: "SettingsAutomaticBest"),
+                new("contextWindowSize",     SettingKind.Int,   "LabelContextWindowSize",     "HintContextWindowSize",     Unit: "UnitTokens",
+                    HintNotOllama: "HintContextWindowSizeClientTrim"),
+            ],
+            Grid: true),
+            new("SettingsSectionModelPerTask",
+            [
+                new("agentModel",       SettingKind.Model, "LabelAgentModel",       "HintAgentModel",       OpensFold: true,
+                    EmptyChoice: "SettingsSameAsChat"),
+                new("codeActionsModel", SettingKind.Model, "LabelCodeActionsModel", "HintCodeActionsModel", OpensFold: true,
+                    EmptyChoice: "SettingsSameAsChat"),
+                new("inlineEditModel",  SettingKind.Model, "LabelInlineEditModel",  "HintInlineEditModel",  OpensFold: true,
+                    EmptyChoice: "SettingsSameAsCodeActions"),
+                new("utilityModel",     SettingKind.Model, "LabelUtilityModel",     "HintUtilityModel",     OpensFold: true,
+                    EmptyChoice: "SettingsSameAsChat"),
+                new("modelRouterAuto",  SettingKind.Bool,  "LabelModelRouterAuto",  "HintModelRouterAuto",  OpensFold: true),
+            ],
+            Description: "SettingsSectionModelPerTaskDesc", Gate: AdvancedGate, Grid: true),
+            new("SettingsSectionSampling",
+            [
+                new("useRecommendedSampling", SettingKind.Bool, "LabelUseRecommendedSampling", "HintUseRecommendedSampling", OpensFold: true),
+            ],
+            Gate: AdvancedGate),
+            new("SettingsSectionGpu",
+            [
+                new("vramBudgetGb",            SettingKind.Float, "LabelVramBudget",       "HintVramBudget",       Unit: "UnitGigabytes",
+                    ZeroIsEmpty: true),
+                new("modelAutoUnloadEnabled",  SettingKind.Bool,  "LabelModelAutoUnload",  "HintModelAutoUnload"),
+                new("modelIdleTimeoutMinutes", SettingKind.Int,   "LabelModelIdleTimeout", "HintModelIdleTimeout", Unit: "UnitMinutes"),
+            ],
+            Gate: AdvancedGate),
+            new("SectionConnection",
+            [
+                new("provider", SettingKind.Select,   "LabelProvider", "HintProvider", Options: Providers),
+                new("apiKey",   SettingKind.Password, "LabelApiKey",   "HintApiKey"),
+            ],
+            Gate: AdvancedGate, Grid: true),
+        ],
+        AdvancedToggle: "SettingsShowAdvanced"),
+
+        new("agent", "SettingsPageAgent", "SettingsPageAgentDesc",
+        [
+            new("SettingsSectionHowItWorks",
+            [
+                new("agentModeEnabled",   SettingKind.Bool, "LabelAgentModeEnabled",   "HintAgentModeEnabled"),
+                new("smartFixEnabled",    SettingKind.Bool, "LabelSmartFixEnabled",    "HintSmartFixEnabled"),
+                new("agentMaxIterations", SettingKind.Int,  "LabelAgentMaxIterations", "HintAgentMaxIterations", Unit: "UnitIterations"),
+            ]),
+            new("SettingsSectionApprovals",
+            [
+                new("securityAlertsDisabled", SettingKind.Bool, "LabelAskBeforeActions", "HintAskBeforeActions", Inverted: true),
+            ],
+            Widget: "approvalRules"),
+            new("SettingsSectionInstructions",
+            [
+                new("customSystemPrompt", SettingKind.TextArea, "LabelCustomSystemPrompt", "HintCustomSystemPrompt"),
+                new("personaAutoSwitch",  SettingKind.Bool,     "LabelPersonaAutoSwitch",  "HintPersonaAutoSwitch"),
+            ]),
+            new("SettingsSectionTimeLimits",
+            [
+                new("commandTimeoutSeconds", SettingKind.Int, "LabelCommandTimeout",    "HintCommandTimeout",    Unit: "UnitSeconds"),
+                new("quickTimeoutSeconds",   SettingKind.Int, "LabelTaskTimeoutQuick",  "HintTaskTimeoutQuick",  Unit: "UnitSeconds"),
+                new("normalTimeoutSeconds",  SettingKind.Int, "LabelTaskTimeoutNormal", "HintTaskTimeoutNormal", Unit: "UnitSeconds"),
+            ],
+            Collapsible: true, Note: "SettingsTimeLimitsNote"),
+        ]),
+
+        new("context", "SettingsPageContext", "SettingsPageContextDesc",
+        [
+            new("SettingsSectionThisConversation", [], Widget: "contextUsage"),
+            new("SettingsSectionLongConversations",
+            [
+                new("compactionEnabled",        SettingKind.Bool, "LabelCompactionEnabled",      "HintCompactionEnabled"),
+            ]),
+            new("",
+            [
+                new("contextWindowKeepTurns",   SettingKind.Int,  "LabelContextWindowKeepTurns", "HintContextWindowKeepTurns", Unit: "UnitTurns"),
+                new("oodaTurnThreshold",        SettingKind.Int,  "LabelOodaTurnThreshold",      "HintOodaTurnThreshold",      Unit: "UnitTurns"),
+                new("compactionTimeoutSeconds", SettingKind.Int,  "LabelCompactionTimeout",      "HintCompactionTimeout",      Unit: "UnitSeconds"),
+                new("kvCacheAnchorMessages",    SettingKind.Int,  "LabelKvCacheAnchor",          "HintKvCacheAnchor",          Unit: "UnitMessages"),
+            ],
+            Grid: true),
+            new("SettingsSectionAlwaysInPrompt",
+            [
+                new("pinnedContextFiles", SettingKind.TextArea, "LabelPinnedContextFiles", "HintPinnedContextFiles", Editor: "pinnedFiles"),
+            ],
+            Description: "SettingsSectionAlwaysInPromptDesc", Widget: "projectFiles"),
+        ]),
+
+        new("search", "SettingsPageSearch", "SettingsPageSearchDesc",
+        [
+            new("", [], Widget: "indexCard"),
+            new("SettingsSectionYourCode",
+            [
+                new("ragEnabled",             SettingKind.Bool,  "LabelRagEnabled",             "HintRagEnabled"),
+                new("ragAutoContextEnabled",  SettingKind.Bool,  "LabelRagAutoContext",         "HintRagAutoContext"),
+                new("lspEnabled",             SettingKind.Bool,  "LabelLspEnabled",             "HintLspEnabled"),
+            ]),
+            new("",
+            [
+                new("ragTopK",                SettingKind.Int,   "LabelRagTopK",                "HintRagTopK",                Unit: "UnitChunks"),
+                new("ragSimilarityThreshold", SettingKind.Float, "LabelRagSimilarityThreshold", "HintRagSimilarityThreshold", Unit: "UnitRangeZeroToOne"),
+            ],
+            Grid: true, Widget: "indexExclusions"),
+            new("SettingsSectionDocs", [], Description: "SettingsSectionDocsDesc", Note: "SettingsDocsNote", Widget: "docsSites"),
+        ]),
+
+        new("autocomplete", "SettingsPageAutocomplete", "SettingsPageAutocompleteDesc",
+        [
+            new("SettingsSectionAsYouType",
+            [
+                new("inlineCompletionEnabled", SettingKind.Bool,   "LabelInlineCompletionEnabled", "HintInlineCompletionEnabled"),
+                new("inlineCompletionMode",    SettingKind.Select, "LabelInlineCompletionMode",    Options: FimModes, Editor: "cards"),
+            ],
+            Widget: "fimModel"),
+            new("SettingsSectionEditWithAi",
+            [
+                new("inlineDiffPreviewEnabled", SettingKind.Bool, "LabelInlineDiffPreview", "HintInlineDiffPreview"),
+            ],
+            Description: "SettingsSectionEditWithAiDesc", Widget: "editModel"),
+        ]),
+
+        new("tools", "SettingsPageTools", "SettingsPageToolsDesc",
+        [
+            new("SectionMcp",
+            [
+                new("mcpEnabled",     SettingKind.Bool,     "LabelMcpEnabled", "HintMcpEnabled"),
+                new("mcpServersJson", SettingKind.TextArea, "LabelMcpServers", "HintMcpServers", Editor: "mcpServers"),
+            ]),
+            new("SettingsSectionRules",
+            [
+                new("permissionRules", SettingKind.TextArea, "LabelPermissionRules", "HintPermissionRules", Editor: "approvalRules"),
+            ],
+            Description: "SettingsSectionRulesDesc"),
+            new("SettingsSectionSlash",
+            [
+                new("promptTemplates", SettingKind.TextArea, "LabelPromptTemplates", "HintPromptTemplates", Editor: "nameValue",
+                    Columns: ["SlashColCommand", "SlashColSends"]),
+            ],
+            Description: "SettingsSectionSlashDesc"),
+            new("SettingsSectionAgentTools",
+            [
+                new("customTools", SettingKind.TextArea, "LabelCustomTools", "HintCustomTools", Editor: "nameValue",
+                    Columns: ["ToolColName", "ToolColRuns"]),
+            ],
+            Description: "SettingsSectionAgentToolsDesc"),
+        ]),
+
+        new("appearance", "SettingsPageAppearance", "SettingsPageAppearanceDesc",
+        [
+            new("",
+            [
+                new("language", SettingKind.Select, "LabelLanguage", "HintLanguage", Options: Languages),
+            ]),
+            // The editor's theme, shown, never set here: the panel follows it, high contrast included.
+            new("SettingsSectionTheme", [], Note: "SettingsThemeNote", Widget: "themeCards"),
+            new("",
+            [
+                new("chatDensity", SettingKind.Select, "LabelDensity", "HintDensity", Options: Densities, Editor: "segmented"),
+            ]),
+            new("SettingsSectionAgentRuns",
+            [
+                new("toolBubblesExpanded", SettingKind.Bool, "LabelToolBubblesExpanded", "HintToolBubblesExpanded"),
+            ]),
+        ]),
+    ];
+
+    /// <summary>Every editable field, flattened — for validation and for the adapters.</summary>
     public static IEnumerable<SettingField> AllFields =>
-        Tabs.SelectMany(t => t.Sections).SelectMany(s => s.Fields).Concat(HeaderFields);
+        Tabs.SelectMany(t => t.Sections).SelectMany(s => s.Fields);
+
+    /// <summary>
+    /// Every resource name the form displays — page titles and descriptions, section titles,
+    /// descriptions and notes, field labels, hints and units. What `settings/strings` serves and
+    /// what the Visual Studio window resolves.
+    /// </summary>
+    public static IEnumerable<string> ResourceNames =>
+        Tabs.SelectMany(t => new[] { t.Title, t.Description, t.AdvancedToggle }
+                .Concat(t.Sections.SelectMany(s => new[] { s.Title, s.Description, s.Note }))
+                .Concat(t.Sections.SelectMany(s => s.Fields).SelectMany(f =>
+                    new[] { f.Label, f.Hint, f.Unit, f.HintNotOllama, f.EmptyChoice }.Concat(f.Columns ?? []))))
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Select(n => n!)
+            .Distinct(StringComparer.Ordinal);
 }

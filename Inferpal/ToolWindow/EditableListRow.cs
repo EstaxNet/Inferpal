@@ -53,6 +53,18 @@ internal sealed class EditableListRow : NotifyPropertyChangedObject
     /// <summary>Secondary one-line preview shown under the title (full path / prompt / command).</summary>
     [DataMember] public string Summary { get => _summary; set => SetProperty(ref _summary, value); }
 
+    /// <summary>Why this entry does not take effect (a pinned file past the first three), or empty.</summary>
+    [DataMember] public string Note { get => _note; set { if (SetProperty(ref _note, value)) HasNote = value.Length > 0; } }
+
+    [DataMember] public bool HasNote { get => _hasNote; private set => SetProperty(ref _hasNote, value); }
+
+    /// <summary>What the entry costs the prompt ("0.9k tokens" for a pinned file), or empty.</summary>
+    [DataMember] public string Size { get => _size; set => SetProperty(ref _size, value); }
+
     [DataMember] public AsyncCommand EditCommand   { get; }
     [DataMember] public AsyncCommand DeleteCommand { get; }
+
+    private string _note = string.Empty;
+    private bool   _hasNote;
+    private string _size = string.Empty;
 }

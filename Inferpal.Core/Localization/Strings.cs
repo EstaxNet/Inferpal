@@ -31,10 +31,17 @@ internal static class Strings
         catch { return key; }
     }
 
+    /// <summary>
+    /// A resource by its name, for the names a declarative description carries as data (the settings
+    /// schema's labels, hints and titles). Everything else reads its typed accessor.
+    /// </summary>
+    internal static string ByName(string key) => Get(key);
+
     // ── UI Labels ──────────────────────────────────────────────────────────────
     public static string LabelLanguage        => Get(nameof(LabelLanguage));
     public static string HintLanguage         => Get(nameof(HintLanguage));
-    public static string LangAuto             => Get(nameof(LangAuto));
+    /// <summary>The automatic language entry, naming the language it resolves to — {0}=that language's own name.</summary>
+    public static string LangAuto(string language) => string.Format(Get(nameof(LangAuto)), language);
     public static string LabelProvider        => Get(nameof(LabelProvider));
     public static string HintProvider         => Get(nameof(HintProvider));
     public static string LabelApiKey          => Get(nameof(LabelApiKey));
@@ -46,6 +53,244 @@ internal static class Strings
     public static string BtnTest              => Get(nameof(BtnTest));
     public static string BtnLoadSession       => Get(nameof(BtnLoadSession));
     public static string BtnSave              => Get(nameof(BtnSave));
+    // ── Settings panel: pages, sections, chrome ─────────────────────────────────
+    public static string SettingsPageServer => Get(nameof(SettingsPageServer));
+    public static string SettingsPageServerDesc => Get(nameof(SettingsPageServerDesc));
+    public static string SettingsPageAgent => Get(nameof(SettingsPageAgent));
+    public static string SettingsPageAgentDesc => Get(nameof(SettingsPageAgentDesc));
+    public static string SettingsPageContext => Get(nameof(SettingsPageContext));
+    public static string SettingsPageContextDesc => Get(nameof(SettingsPageContextDesc));
+    public static string SettingsPageSearch => Get(nameof(SettingsPageSearch));
+    public static string SettingsPageSearchDesc => Get(nameof(SettingsPageSearchDesc));
+    public static string SettingsPageAutocomplete => Get(nameof(SettingsPageAutocomplete));
+    public static string SettingsPageAutocompleteDesc => Get(nameof(SettingsPageAutocompleteDesc));
+    public static string SettingsPageTools => Get(nameof(SettingsPageTools));
+    public static string SettingsPageToolsDesc => Get(nameof(SettingsPageToolsDesc));
+    public static string SettingsPageAppearance => Get(nameof(SettingsPageAppearance));
+    public static string SettingsPageAppearanceDesc => Get(nameof(SettingsPageAppearanceDesc));
+    public static string SettingsSearchPlaceholder => Get(nameof(SettingsSearchPlaceholder));
+    public static string SettingsSearchNoMatch => Get(nameof(SettingsSearchNoMatch));
+    /// <summary>How many fields differ from the saved configuration — {0}=count.</summary>
+    public static string SettingsUnsavedChanges(int count) => string.Format(Get(nameof(SettingsUnsavedChanges)), count);
+    /// <summary>The raw template of <see cref="SettingsUnsavedChanges"/>, filled by the VS Code panel.</summary>
+    public static string SettingsUnsavedChangesTemplate => Get(nameof(SettingsUnsavedChanges));
+    public static string SettingsNoUnsavedChanges => Get(nameof(SettingsNoUnsavedChanges));
+    public static string SettingsCancel => Get(nameof(SettingsCancel));
+    public static string SettingsShowAdvanced => Get(nameof(SettingsShowAdvanced));
+    /// <summary>The approval rules in effect, counted — {0}=count.</summary>
+    public static string SettingsApprovalRulesCount(int count) => string.Format(Get(nameof(SettingsApprovalRulesCount)), count);
+    /// <summary>The raw template of <see cref="SettingsApprovalRulesCount"/>, filled by the VS Code panel.</summary>
+    public static string SettingsApprovalRulesCountTemplate => Get(nameof(SettingsApprovalRulesCount));
+    /// <summary>Where the rules in effect come from — {0}=this machine's, {1}=the team's.</summary>
+    public static string SettingsApprovalRulesFrom(int machine, int team) =>
+        string.Format(Get(nameof(SettingsApprovalRulesFrom)), machine, team);
+    public static string SettingsEditRules => Get(nameof(SettingsEditRules));
+    public static string SettingsEditAsJson => Get(nameof(SettingsEditAsJson));
+    public static string SettingsEditAsText => Get(nameof(SettingsEditAsText));
+    public static string SettingsEditAsList => Get(nameof(SettingsEditAsList));
+
+    // ── Settings: MCP server cards ───────────────────────────────────────────
+    public static string McpCardConnected(int tools) => string.Format(Get(nameof(McpCardConnected)), tools);
+    public static string McpCardSignIn => Get(nameof(McpCardSignIn));
+    public static string McpCardDidNotStart => Get(nameof(McpCardDidNotStart));
+    public static string McpCardNotStarted => Get(nameof(McpCardNotStarted));
+    public static string McpCardOff => Get(nameof(McpCardOff));
+    public static string McpCardRetry => Get(nameof(McpCardRetry));
+    public static string McpCardSignInButton => Get(nameof(McpCardSignInButton));
+    public static string McpCardsSummary(int count) => string.Format(Get(nameof(McpCardsSummary)), count);
+    public static string McpCardsSummaryAttention(int count, int attention) =>
+        string.Format(Get(nameof(McpCardsSummaryAttention)), count, attention);
+
+    // ── Settings: approval rules table ───────────────────────────────────────
+    public static string RuleAllow => Get(nameof(RuleAllow));
+    public static string RuleDeny => Get(nameof(RuleDeny));
+    public static string RuleFromTeam => Get(nameof(RuleFromTeam));
+    public static string RuleFromMachine => Get(nameof(RuleFromMachine));
+    public static string RuleIgnoredTeamAllow => Get(nameof(RuleIgnoredTeamAllow));
+    public static string RuleUnreadable => Get(nameof(RuleUnreadable));
+    public static string RulesColEffect => Get(nameof(RulesColEffect));
+    public static string RulesColTool => Get(nameof(RulesColTool));
+    public static string RulesColPattern => Get(nameof(RulesColPattern));
+    public static string RulesColFrom => Get(nameof(RulesColFrom));
+    public static string RulesAddRule => Get(nameof(RulesAddRule));
+    public static string RulesTeamUnusable => Get(nameof(RulesTeamUnusable));
+    public static string RulesEmpty => Get(nameof(RulesEmpty));
+    public static string RulesPatternPlaceholder => Get(nameof(RulesPatternPlaceholder));
+    public static string RulesNewInvalid => Get(nameof(RulesNewInvalid));
+    public static string ListLineNotRead => Get(nameof(ListLineNotRead));
+    public static string PinnedOverCap => Get(nameof(PinnedOverCap));
+
+    // ── Chat panel: run summary, approval card, header, composer, welcome ────────
+    public static string RunSteps1 => Get(nameof(RunSteps1));
+    public static string RunSteps(int count) => string.Format(Get(nameof(RunSteps)), count);
+    public static string RunRead1 => Get(nameof(RunRead1));
+    public static string RunRead(int count) => string.Format(Get(nameof(RunRead)), count);
+    public static string RunSearched1 => Get(nameof(RunSearched1));
+    public static string RunSearched(int count) => string.Format(Get(nameof(RunSearched)), count);
+    public static string RunEdited1 => Get(nameof(RunEdited1));
+    public static string RunEdited(int count) => string.Format(Get(nameof(RunEdited)), count);
+    public static string RunCommand1 => Get(nameof(RunCommand1));
+    public static string RunCommands(int count) => string.Format(Get(nameof(RunCommands)), count);
+    public static string RunBuildPassed => Get(nameof(RunBuildPassed));
+    public static string RunBuildFailed => Get(nameof(RunBuildFailed));
+    public static string RunTestsPassed => Get(nameof(RunTestsPassed));
+    public static string RunTestsFailed => Get(nameof(RunTestsFailed));
+    public static string TurnSeconds(int seconds) => string.Format(Get(nameof(TurnSeconds)), seconds);
+    public static string TurnMinutes(int minutes, string seconds) => string.Format(Get(nameof(TurnMinutes)), minutes, seconds);
+    public static string ApprovalCreateFile => Get(nameof(ApprovalCreateFile));
+    public static string ApprovalChangeFile => Get(nameof(ApprovalChangeFile));
+    public static string ApprovalDeleteFile => Get(nameof(ApprovalDeleteFile));
+    public static string ApprovalRunCommand => Get(nameof(ApprovalRunCommand));
+    public static string ApprovalReadPage => Get(nameof(ApprovalReadPage));
+    public static string ApprovalSearchWeb => Get(nameof(ApprovalSearchWeb));
+    public static string ApprovalUseTool(string tool) => string.Format(Get(nameof(ApprovalUseTool)), tool);
+    public static string ApprovalLineCount(int count) => string.Format(Get(nameof(ApprovalLineCount)), count);
+    public static string ApprovalMoreLines(int count) => string.Format(Get(nameof(ApprovalMoreLines)), count);
+    public static string ApprovalAlwaysTooltip(string tool) => string.Format(Get(nameof(ApprovalAlwaysTooltip)), tool);
+    public static string ApprovalOpenDiff => Get(nameof(ApprovalOpenDiff));
+    public static string ChatNewConversation => Get(nameof(ChatNewConversation));
+    public static string ChatConversations => Get(nameof(ChatConversations));
+    public static string ChatMore => Get(nameof(ChatMore));
+    public static string ChatMenuSearch => Get(nameof(ChatMenuSearch));
+    public static string ChatMenuExport => Get(nameof(ChatMenuExport));
+    public static string ChatMenuXray => Get(nameof(ChatMenuXray));
+    public static string ChatMenuSettings => Get(nameof(ChatMenuSettings));
+    public static string ChatMenuStepMode => Get(nameof(ChatMenuStepMode));
+    public static string ChatNoModelListed => Get(nameof(ChatNoModelListed));
+    public static string ChatModelButton(string model) => string.Format(Get(nameof(ChatModelButton)), model);
+    public static string ModeChat => Get(nameof(ModeChat));
+    public static string ModeAgent => Get(nameof(ModeAgent));
+    public static string ModePlan => Get(nameof(ModePlan));
+    public static string ModeChatTip => Get(nameof(ModeChatTip));
+    public static string ModeAgentTip => Get(nameof(ModeAgentTip));
+    public static string ModePlanTip => Get(nameof(ModePlanTip));
+    public static string ComposerPlaceholder => Get(nameof(ComposerPlaceholder));
+    public static string ChatAttach => Get(nameof(ChatAttach));
+    public static string ContextRingTip(int percent, string window) => string.Format(Get(nameof(ContextRingTip)), percent, window);
+    public static string TurnWorking(int step) => string.Format(Get(nameof(TurnWorking)), step);
+    public static string TurnWaiting => Get(nameof(TurnWaiting));
+    public static string RunUndo => Get(nameof(RunUndo));
+    public static string WelcomeTitle => Get(nameof(WelcomeTitle));
+    public static string WelcomeLine(string model, string server) => string.Format(Get(nameof(WelcomeLine)), model, server);
+    public static string WelcomeLocal => Get(nameof(WelcomeLocal));
+    public static string WelcomeForFile(string file) => string.Format(Get(nameof(WelcomeForFile)), file);
+    public static string WelcomeExplainFile => Get(nameof(WelcomeExplainFile));
+    public static string WelcomeExplainFileDesc => Get(nameof(WelcomeExplainFileDesc));
+    public static string WelcomeTestsFile => Get(nameof(WelcomeTestsFile));
+    public static string WelcomeTestsFileDesc => Get(nameof(WelcomeTestsFileDesc));
+    public static string WelcomeUsagesFile => Get(nameof(WelcomeUsagesFile));
+    public static string WelcomeUsagesFileDesc => Get(nameof(WelcomeUsagesFileDesc));
+    public static string WelcomeUsagesPrompt(string file) => string.Format(Get(nameof(WelcomeUsagesPrompt)), file);
+    public static string WelcomeBuildFailed(int errors) => string.Format(Get(nameof(WelcomeBuildFailed)), errors);
+    public static string WelcomeFixThem => Get(nameof(WelcomeFixThem));
+    public static string WelcomeHintAttach => Get(nameof(WelcomeHintAttach));
+    public static string WelcomeHintCommands => Get(nameof(WelcomeHintCommands));
+    public static string WelcomeHintNewLine => Get(nameof(WelcomeHintNewLine));
+
+    // ── Settings: what an empty model choice means, and the model a page uses ─
+    public static string SettingsSameAsChat => Get(nameof(SettingsSameAsChat));
+    public static string SettingsSameAsCodeActions => Get(nameof(SettingsSameAsCodeActions));
+    public static string SettingsAutomaticBest => Get(nameof(SettingsAutomaticBest));
+    public static string SettingsModelUsed(string model) => string.Format(Get(nameof(SettingsModelUsed)), model);
+    public static string SettingsChangeInServer => Get(nameof(SettingsChangeInServer));
+    public static string SlashColCommand => Get(nameof(SlashColCommand));
+    public static string SlashColSends => Get(nameof(SlashColSends));
+    public static string ToolColName => Get(nameof(ToolColName));
+    public static string ToolColRuns => Get(nameof(ToolColRuns));
+    public static string SettingsSectionAsYouType => Get(nameof(SettingsSectionAsYouType));
+    public static string SettingsSectionDocs => Get(nameof(SettingsSectionDocs));
+    public static string SettingsSectionDocsDesc => Get(nameof(SettingsSectionDocsDesc));
+    public static string SettingsDocsNote => Get(nameof(SettingsDocsNote));
+    public static string SettingsSectionThisConversation => Get(nameof(SettingsSectionThisConversation));
+    public static string SettingsEditFile => Get(nameof(SettingsEditFile));
+    public static string SettingsOpenFile => Get(nameof(SettingsOpenFile));
+
+    // ── Settings: the index card (Code search) ───────────────────────────────
+    public static string IndexCardReady => Get(nameof(IndexCardReady));
+    public static string IndexCardIndexing => Get(nameof(IndexCardIndexing));
+    public static string IndexCardNotBuilt => Get(nameof(IndexCardNotBuilt));
+    public static string IndexCardStopped => Get(nameof(IndexCardStopped));
+    public static string IndexCardFailed => Get(nameof(IndexCardFailed));
+    public static string IndexCardNoWorkspace => Get(nameof(IndexCardNoWorkspace));
+    public static string IndexCardNoWorkspaceDetail => Get(nameof(IndexCardNoWorkspaceDetail));
+    public static string IndexCardFilesUpdated(string files, string at) => string.Format(Get(nameof(IndexCardFilesUpdated)), files, at);
+    public static string IndexCardProgress(string done, string total) => string.Format(Get(nameof(IndexCardProgress)), done, total);
+    public static string IndexCardNotBuiltDetail => Get(nameof(IndexCardNotBuiltDetail));
+    public static string IndexCardStoppedDetail => Get(nameof(IndexCardStoppedDetail));
+    public static string IndexCardFailedDetail(string cause) => string.Format(Get(nameof(IndexCardFailedDetail)), cause);
+    public static string IndexCardRebuild => Get(nameof(IndexCardRebuild));
+    public static string IndexCardBuild => Get(nameof(IndexCardBuild));
+    public static string IndexCardOversize(int count, int kilobytes) => string.Format(Get(nameof(IndexCardOversize)), count, kilobytes);
+    public static string IndexCardShowThem => Get(nameof(IndexCardShowThem));
+    public static string IndexCardHideThem => Get(nameof(IndexCardHideThem));
+    public static string IndexCardMoreFiles(int count) => string.Format(Get(nameof(IndexCardMoreFiles)), count);
+    public static string IndexCardHoles(string holes, string total) => string.Format(Get(nameof(IndexCardHoles)), holes, total);
+    public static string IndexCardModelSemantic(string model) => string.Format(Get(nameof(IndexCardModelSemantic)), model);
+    public static string IndexCardModelKeywords => Get(nameof(IndexCardModelKeywords));
+    public static string IndexCardModelOff => Get(nameof(IndexCardModelOff));
+    public static string IndexCardEmbeddingDown => Get(nameof(IndexCardEmbeddingDown));
+    public static string IndexExclusionsTitle => Get(nameof(IndexExclusionsTitle));
+    public static string IndexExclusionsFrom => Get(nameof(IndexExclusionsFrom));
+    public static string IndexExclusionsHowTo => Get(nameof(IndexExclusionsHowTo));
+
+    // ── Settings: @Docs sites ────────────────────────────────────────────────
+    public static string DocsSiteIndexed(int pages) => string.Format(Get(nameof(DocsSiteIndexed)), pages);
+    public static string DocsSiteHoles(int pages, int holes) => string.Format(Get(nameof(DocsSiteHoles)), pages, holes);
+    public static string DocsSiteHolesNote(int holes) => string.Format(Get(nameof(DocsSiteHolesNote)), holes);
+    public static string DocsSiteIndexing => Get(nameof(DocsSiteIndexing));
+    public static string DocsReindex => Get(nameof(DocsReindex));
+    public static string DocsAddSite => Get(nameof(DocsAddSite));
+    public static string DocsAddUrlLabel => Get(nameof(DocsAddUrlLabel));
+    public static string DocsAddButton => Get(nameof(DocsAddButton));
+    public static string DocsRemoveSite(string title) => string.Format(Get(nameof(DocsRemoveSite)), title);
+    public static string DocsNoSitesYet => Get(nameof(DocsNoSitesYet));
+
+    // ── Settings: this conversation, pinned files, the project's files ───────
+    public static string ContextUsageTokens(string used, string window) => string.Format(Get(nameof(ContextUsageTokens)), used, window);
+    public static string ContextUsageOpenXray => Get(nameof(ContextUsageOpenXray));
+    public static string ContextUsageInstructions => Get(nameof(ContextUsageInstructions));
+    public static string ContextUsageTools => Get(nameof(ContextUsageTools));
+    public static string ContextUsageConversation => Get(nameof(ContextUsageConversation));
+    public static string ContextUsageChangeWindow => Get(nameof(ContextUsageChangeWindow));
+    public static string ContextUsageNoChat => Get(nameof(ContextUsageNoChat));
+    public static string PinnedFilesCount(int count, int cap) => string.Format(Get(nameof(PinnedFilesCount)), count, cap);
+    public static string PinnedFileTokens(string tokens) => string.Format(Get(nameof(PinnedFileTokens)), tokens);
+    public static string PinnedFileMissing => Get(nameof(PinnedFileMissing));
+    public static string ProjectFilesTitle => Get(nameof(ProjectFilesTitle));
+    public static string ProjectFileContext => Get(nameof(ProjectFileContext));
+    public static string ProjectFileMemory => Get(nameof(ProjectFileMemory));
+    public static string ProjectFileNotes => Get(nameof(ProjectFileNotes));
+    public static string ProjectFileRules(int count) => string.Format(Get(nameof(ProjectFileRules)), count);
+    public static string ProjectFileNotYet => Get(nameof(ProjectFileNotYet));
+
+    public static string SettingsSectionModelPerTask => Get(nameof(SettingsSectionModelPerTask));
+    public static string SettingsSectionModelPerTaskDesc => Get(nameof(SettingsSectionModelPerTaskDesc));
+    public static string SettingsSectionSampling => Get(nameof(SettingsSectionSampling));
+    public static string SettingsSectionGpu => Get(nameof(SettingsSectionGpu));
+    public static string SettingsSectionHowItWorks => Get(nameof(SettingsSectionHowItWorks));
+    public static string SettingsSectionApprovals => Get(nameof(SettingsSectionApprovals));
+    public static string SettingsSectionInstructions => Get(nameof(SettingsSectionInstructions));
+    public static string SettingsSectionTimeLimits => Get(nameof(SettingsSectionTimeLimits));
+    public static string SettingsTimeLimitsNote => Get(nameof(SettingsTimeLimitsNote));
+    public static string SettingsSectionLongConversations => Get(nameof(SettingsSectionLongConversations));
+    public static string SettingsSectionAlwaysInPrompt => Get(nameof(SettingsSectionAlwaysInPrompt));
+    public static string SettingsSectionAlwaysInPromptDesc => Get(nameof(SettingsSectionAlwaysInPromptDesc));
+    public static string SettingsSectionYourCode => Get(nameof(SettingsSectionYourCode));
+    public static string SettingsSectionEditWithAi => Get(nameof(SettingsSectionEditWithAi));
+    public static string SettingsSectionEditWithAiDesc => Get(nameof(SettingsSectionEditWithAiDesc));
+    public static string SettingsSectionRules => Get(nameof(SettingsSectionRules));
+    public static string SettingsSectionRulesDesc => Get(nameof(SettingsSectionRulesDesc));
+    public static string SettingsSectionSlash => Get(nameof(SettingsSectionSlash));
+    public static string SettingsSectionSlashDesc => Get(nameof(SettingsSectionSlashDesc));
+    public static string SettingsSectionAgentTools => Get(nameof(SettingsSectionAgentTools));
+    public static string SettingsSectionAgentToolsDesc => Get(nameof(SettingsSectionAgentToolsDesc));
+    public static string SettingsSectionAgentRuns => Get(nameof(SettingsSectionAgentRuns));
+    public static string LabelUseRecommendedSampling => Get(nameof(LabelUseRecommendedSampling));
+    public static string HintUseRecommendedSampling => Get(nameof(HintUseRecommendedSampling));
+    public static string LabelAskBeforeActions => Get(nameof(LabelAskBeforeActions));
+    public static string HintAskBeforeActions => Get(nameof(HintAskBeforeActions));
+    public static string LabelInlineDiffPreview => Get(nameof(LabelInlineDiffPreview));
+    public static string HintInlineDiffPreview => Get(nameof(HintInlineDiffPreview));
 
     /// <summary>What the save could not read, named — {0}=count, {1}=field labels.</summary>
     public static string SettingsFieldsIgnored(int count, string labels) =>
@@ -70,16 +315,11 @@ internal static class Strings
     public static string BtnCancel            => Get(nameof(BtnCancel));
     public static string BtnSend              => Get(nameof(BtnSend));
     public static string TooltipRefreshModels => Get(nameof(TooltipRefreshModels));
-    public static string TooltipExport        => Get(nameof(TooltipExport));
-    public static string TooltipClear         => Get(nameof(TooltipClear));
     public static string TooltipCopy              => Get(nameof(TooltipCopy));
     public static string LabelCopyCode            => Get(nameof(LabelCopyCode));
     public static string BtnFixWithAi             => Get(nameof(BtnFixWithAi));
-    public static string BtnRestoreAll            => Get(nameof(BtnRestoreAll));
     public static string BtnRegenerate            => Get(nameof(BtnRegenerate));
     public static string BtnResume                => Get(nameof(BtnResume));
-    public static string MultiFileRecapTitle(int count, string files) =>
-        string.Format(Get(nameof(MultiFileRecapTitle)), count, files);
 
     public static string PromptFixErrors(string errors) =>
         string.Format(Get(nameof(PromptFixErrors)), errors);
@@ -118,8 +358,16 @@ internal static class Strings
     public static string HintCommandTimeout       => Get(nameof(HintCommandTimeout));
     public static string LabelToolBubblesExpanded      => Get(nameof(LabelToolBubblesExpanded));
     public static string HintToolBubblesExpanded       => Get(nameof(HintToolBubblesExpanded));
-    public static string LabelSecurityAlertsDisabled   => Get(nameof(LabelSecurityAlertsDisabled));
-    public static string HintSecurityAlertsDisabled    => Get(nameof(HintSecurityAlertsDisabled));
+    public static string LabelDensity                  => Get(nameof(LabelDensity));
+    public static string HintDensity                   => Get(nameof(HintDensity));
+    public static string DensityComfortable            => Get(nameof(DensityComfortable));
+    public static string DensityCompact                => Get(nameof(DensityCompact));
+    public static string SettingsSectionTheme          => Get(nameof(SettingsSectionTheme));
+    public static string SettingsThemeNote             => Get(nameof(SettingsThemeNote));
+    public static string ThemeLight                    => Get(nameof(ThemeLight));
+    public static string ThemeDark                     => Get(nameof(ThemeDark));
+    public static string ThemeHighContrast             => Get(nameof(ThemeHighContrast));
+    public static string ThemeInUse(string theme)      => string.Format(Get(nameof(ThemeInUse)), theme);
     public static string LabelContextWindowSize      => Get(nameof(LabelContextWindowSize));
     public static string HintContextWindowSize       => Get(nameof(HintContextWindowSize));
     public static string HintContextWindowSizeClientTrim => Get(nameof(HintContextWindowSizeClientTrim));
@@ -173,25 +421,16 @@ internal static class Strings
     public static string LabelKvCacheAnchor          => Get(nameof(LabelKvCacheAnchor));
     public static string HintKvCacheAnchor           => Get(nameof(HintKvCacheAnchor));
     public static string SectionConnection              => Get(nameof(SectionConnection));
-    public static string SettingsTabConnection          => Get(nameof(SettingsTabConnection));
-    public static string SettingsTabBehavior            => Get(nameof(SettingsTabBehavior));
-    public static string SettingsTabContext             => Get(nameof(SettingsTabContext));
-    public static string SettingsTabTools               => Get(nameof(SettingsTabTools));
-    public static string SectionBehavior                => Get(nameof(SectionBehavior));
-    public static string SectionContext                 => Get(nameof(SectionContext));
-    public static string SectionPersona                 => Get(nameof(SectionPersona));
-    public static string SectionInlineCompletions            => Get(nameof(SectionInlineCompletions));
     public static string LabelInlineCompletionMode           => Get(nameof(LabelInlineCompletionMode));
-    // The three choices of that dropdown. They were hardcoded — "Fast", "Default", "High Accuracy"
-    // — under a SettingOption comment claiming an option's text is "a product name or a fixed
-    // technical label, never localized": true of the backend names and of the language names, false
-    // of these three, which are ordinary adjectives in a panel whose every other word is translated.
-    // The technical suffix ("128 tok · 300 ms") stays identical in all ten languages —
-    // SettingsSchemaDriftTests checks it language by language.
+    // The three speed cards: a name, translated like every other word of the panel, and a description that
+    // carries the preset's delay — the promise the card makes. SettingsSchemaDriftTests checks the delay is in the
+    // description, language by language.
     public static string FimModeFast                         => Get(nameof(FimModeFast));
     public static string FimModeDefault                      => Get(nameof(FimModeDefault));
     public static string FimModeHighAccuracy                 => Get(nameof(FimModeHighAccuracy));
-    public static string HintInlineCompletionMode            => Get(nameof(HintInlineCompletionMode));
+    public static string FimModeFastDesc                     => Get(nameof(FimModeFastDesc));
+    public static string FimModeDefaultDesc                  => Get(nameof(FimModeDefaultDesc));
+    public static string FimModeHighAccuracyDesc             => Get(nameof(FimModeHighAccuracyDesc));
     public static string LabelInlineCompletionEnabled        => Get(nameof(LabelInlineCompletionEnabled));
     public static string HintInlineCompletionEnabled         => Get(nameof(HintInlineCompletionEnabled));
     public static string LabelInlineCompletionModel          => Get(nameof(LabelInlineCompletionModel));
@@ -206,20 +445,14 @@ internal static class Strings
     public static string HintUtilityModel                    => Get(nameof(HintUtilityModel));
     public static string LabelModelRouterAuto                => Get(nameof(LabelModelRouterAuto));
     public static string HintModelRouterAuto                 => Get(nameof(HintModelRouterAuto));
-    public static string LabelModelRolesAdvanced             => Get(nameof(LabelModelRolesAdvanced));
-    public static string HintModelRolesAdvanced              => Get(nameof(HintModelRolesAdvanced));
-    public static string LabelAdvancedBehavior               => Get(nameof(LabelAdvancedBehavior));
-    public static string TooltipAgentMode                    => Get(nameof(TooltipAgentMode));
+    // The setting is quoted by its CURRENT label, passed in: a copy of the label drifts when the label is reworded.
     public static string LabelModeChat                       => Get(nameof(LabelModeChat));
     public static string LabelModeAgent                      => Get(nameof(LabelModeAgent));
-    public static string WelcomeSubtitle                     => Get(nameof(WelcomeSubtitle));
     public static string WelcomeCardExplain                  => Get(nameof(WelcomeCardExplain));
     public static string WelcomeCardFix                      => Get(nameof(WelcomeCardFix));
     public static string WelcomeCardTest                     => Get(nameof(WelcomeCardTest));
     public static string WelcomeCardHelp                     => Get(nameof(WelcomeCardHelp));
-    public static string BuildBannerTitle                    => Get(nameof(BuildBannerTitle));
     public static string BuildBannerDismiss                  => Get(nameof(BuildBannerDismiss));
-    public static string BuildBannerFix                      => Get(nameof(BuildBannerFix));
     public static string InlineEditDlgTitle                  => Get(nameof(InlineEditDlgTitle));
     public static string InlineEditDlgHeader                 => Get(nameof(InlineEditDlgHeader));
     public static string InlineEditDlgHint                   => Get(nameof(InlineEditDlgHint));
@@ -227,7 +460,6 @@ internal static class Strings
     public static string BtnApply                            => Get(nameof(BtnApply));
 
     // ── Settings — RAG section ───────────────────────────────────────────────────
-    public static string SectionRag             => Get(nameof(SectionRag));
     public static string LabelRagEnabled        => Get(nameof(LabelRagEnabled));
     public static string HintRagEnabled         => Get(nameof(HintRagEnabled));
     public static string LabelRagAutoContext    => Get(nameof(LabelRagAutoContext));
@@ -265,7 +497,6 @@ internal static class Strings
     public static string HintMcpEnabled         => Get(nameof(HintMcpEnabled));
     public static string LabelMcpServers        => Get(nameof(LabelMcpServers));
     public static string HintMcpServers         => Get(nameof(HintMcpServers));
-    public static string McpNoServers           => Get(nameof(McpNoServers));
     public static string McpCancelled           => Get(nameof(McpCancelled));
     public static string McpAddServer                => Get(nameof(McpAddServer));
     public static string McpAddTitle                 => Get(nameof(McpAddTitle));
@@ -282,23 +513,16 @@ internal static class Strings
     public static string McpAdvancedJson             => Get(nameof(McpAdvancedJson));
     public static string McpImportJson               => Get(nameof(McpImportJson));
     public static string McpJsonNotEditableAsList    => Get(nameof(McpJsonNotEditableAsList));
-    public static string McpServerDisabled           => Get(nameof(McpServerDisabled));
     public static string McpValidationNameCommand    => Get(nameof(McpValidationNameCommand));
     public static string McpValidationNameUrl        => Get(nameof(McpValidationNameUrl));
-    public static string BtnMcpAuthorize             => Get(nameof(BtnMcpAuthorize));
-    public static string McpAuthRequired             => Get(nameof(McpAuthRequired));
     public static string McpValidationDuplicate      => Get(nameof(McpValidationDuplicate));
     public static string HintMcpEditServer           => Get(nameof(HintMcpEditServer));
     public static string HintMcpDeleteServer         => Get(nameof(HintMcpDeleteServer));
     // List view-mode toggle, empty-state titles, and the relocated "Commands & tools" section header.
-    public static string ViewList                    => Get(nameof(ViewList));
-    public static string ViewJson                    => Get(nameof(ViewJson));
-    public static string ViewText                    => Get(nameof(ViewText));
     public static string McpEmptyTitle               => Get(nameof(McpEmptyTitle));
     public static string PinnedEmptyTitle            => Get(nameof(PinnedEmptyTitle));
     public static string SlashEmptyTitle             => Get(nameof(SlashEmptyTitle));
     public static string ToolEmptyTitle              => Get(nameof(ToolEmptyTitle));
-    public static string SectionCommandsTools        => Get(nameof(SectionCommandsTools));
     public static string DocsListHeader              => Get(nameof(DocsListHeader));
     public static string DocsNoSites                 => Get(nameof(DocsNoSites));
     public static string DocsSourcesUnreadable(string detail) =>
@@ -323,7 +547,9 @@ internal static class Strings
     public static string MsgKvCacheAnchorNote(int count) =>
         string.Format(Get(nameof(MsgKvCacheAnchorNote)), count);
 
-    public static string MsgContextCompactionFallback => Get(nameof(MsgContextCompactionFallback));
+    /// <summary>Names the setting by its current label and its page, both passed in (a copy drifts).</summary>
+    public static string MsgContextCompactionFallback =>
+        string.Format(Get(nameof(MsgContextCompactionFallback)), LabelCompactionTimeout, SettingsPageContext);
     public static string MsgContextCompactionFailed(string cause) =>
         string.Format(Get(nameof(MsgContextCompactionFailed)), cause);
     public static string MsgContextCompactionEmpty => Get(nameof(MsgContextCompactionEmpty));
@@ -342,22 +568,17 @@ internal static class Strings
     public static string TooltipLoadSession    => Get(nameof(TooltipLoadSession));
     public static string TooltipDeleteSession  => Get(nameof(TooltipDeleteSession));
     public static string DeleteSessionConfirm(string name) => string.Format(Get(nameof(DeleteSessionConfirm)), name);
-    public static string HintSend                => Get(nameof(HintSend));
     public static string TooltipAttachFile       => Get(nameof(TooltipAttachFile));
     public static string TooltipAttachSelection  => Get(nameof(TooltipAttachSelection));
     public static string TooltipBrowseFile       => Get(nameof(TooltipBrowseFile));
     public static string TooltipPinFile          => Get(nameof(TooltipPinFile));
-    public static string MenuAddContext          => Get(nameof(MenuAddContext));
     public static string MenuAttachFile          => Get(nameof(MenuAttachFile));
     public static string MenuAttachSelection     => Get(nameof(MenuAttachSelection));
     public static string MenuBrowseFile          => Get(nameof(MenuBrowseFile));
     public static string MenuPinFile             => Get(nameof(MenuPinFile));
     public static string TooltipPinChip          => Get(nameof(TooltipPinChip));
-    public static string TooltipSearchConversation => Get(nameof(TooltipSearchConversation));
     public static string TooltipCloseSearch        => Get(nameof(TooltipCloseSearch));
     public static string TooltipSaveSnippet        => Get(nameof(TooltipSaveSnippet));
-    public static string TooltipStepMode           => Get(nameof(TooltipStepMode));
-    public static string TooltipPlanMode           => Get(nameof(TooltipPlanMode));
 
     // ── Settings — VRAM / Model lifetime ──────────────────────────────────────
     public static string LabelModelAutoUnload     => Get(nameof(LabelModelAutoUnload));
@@ -374,8 +595,6 @@ internal static class Strings
     public static string HintTaskTimeoutQuick     => Get(nameof(HintTaskTimeoutQuick));
     public static string LabelTaskTimeoutNormal   => Get(nameof(LabelTaskTimeoutNormal));
     public static string HintTaskTimeoutNormal    => Get(nameof(HintTaskTimeoutNormal));
-    public static string LabelTaskTimeoutDeep     => Get(nameof(LabelTaskTimeoutDeep));
-    public static string HintTaskTimeoutDeep      => Get(nameof(HintTaskTimeoutDeep));
 
     // ── ViewModel ──────────────────────────────────────────────────────────────
     public static string StatusConnecting      => Get(nameof(StatusConnecting));

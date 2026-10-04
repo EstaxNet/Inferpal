@@ -1,7 +1,7 @@
 // Typed postMessage protocol between the extension host (chatViewProvider.ts) and the
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
-import type { XRayPanel } from './protocol';
+import type { ApprovalCard, RunSummary, XRayPanel } from './protocol';
 
 /** One rendered transcript entry (the extension host owns the list). */
 export interface WvTranscriptItem {
@@ -16,6 +16,10 @@ export interface WvTranscriptItem {
   /** An 'assistant' entry that is a NOTICE (an end notice, a slash command's output, a failed save), not an answer
    *  the model gave: same bubble, but a restored conversation must not hand it back to the model as one. */
   notice?: boolean;
+  /** An answer's model, duration and run, kept for this session's redraws (a saved session does not carry them). */
+  model?: string;
+  duration?: string;
+  run?: RunSummary | null;
 }
 
 /** Header connection badge (mirror of `backend/status`). */
@@ -24,6 +28,8 @@ export interface WvBackendStatus {
   vramBadge: string;
   /** The server refused the check (see `BackendStatusResult.refused`). */
   refused?: string | null;
+  /** The configured backend, for the header ("LM Studio"). */
+  server?: string | null;
 }
 
 /** One slash command of the autocomplete popup. */
@@ -85,10 +91,20 @@ export interface WvHydrate {
   history: string[];
   /** Default expansion of tool bubbles (host config ToolBubblesExpanded). */
   toolBubblesExpanded: boolean;
+  /** The conversation drawn compact (host config ChatDensity). */
+  compact: boolean;
   mentionCategories: WvMentionCategory[];
   chips: WvChip[];
   /** Files pinned into every request (full paths). */
   pins: string[];
+  /** Read-only plan mode (the Plan segment of the mode switch). */
+  planMode: boolean;
+  /** The file open in the editor, by name, for the welcome screen's cards; null when none. */
+  editorFile: string | null;
+  /** Errors in the Problems panel, for the welcome screen's banner. */
+  problems: number;
+  /** The line naming a question's attachments ("📎 Attached: {0}"), so its names can be drawn as chips. */
+  attachedRecap: string;
 }
 
 export type ExtToWebview =
@@ -102,14 +118,17 @@ export type ExtToWebview =
   | { type: 'assistant'; text: string; timestamp: string }
   | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; timestamp: string; expanded: boolean }
   | { type: 'plan'; plan: WvPlan }
-  | { type: 'approval'; id: number; message: string }
+  | { type: 'approval'; id: number; message: string; card?: ApprovalCard | null }
   | { type: 'approvalDismiss'; id: number }
   | { type: 'mentionSuggestions'; items: string[]; query: string }
   | { type: 'xrayPanel'; panel: XRayPanel }
   | { type: 'streamReset' }
-  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; contextWindow?: number }
+  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null }
+  | { type: 'editorContext'; file: string | null; problems: number }
+  | { type: 'planMode'; enabled: boolean }
   | { type: 'backendStatus'; status: WvBackendStatus }
   | { type: 'agentMode'; enabled: boolean }
+  | { type: 'density'; compact: boolean }
   | { type: 'setPrompt'; text: string }
   /** `category` and `query` name the request answered: only the latest one is shown. */
   | { type: 'mentionResults'; category: string; query: string; items: WvMentionItem[] }
@@ -141,4 +160,11 @@ export type WebviewToExt =
   | { type: 'attachActive' }
   | { type: 'attachSelection' }
   | { type: 'attachBrowse' }
-  | { type: 'resumeStep' };
+  | { type: 'resumeStep' }
+  /** The header's buttons: the saved conversations, and the "More" menu. */
+  | { type: 'openSessions' }
+  | { type: 'menu'; action: 'export' | 'settings' }
+  /** The composer's mode switch: chat (no tools), agent, or read-only plan. */
+  | { type: 'setMode'; mode: 'chat' | 'agent' | 'plan' }
+  /** A file of a run's result bar. */
+  | { type: 'openFile'; path: string };

@@ -46,6 +46,24 @@ internal static class VsThemeDetector
         return OsDarkMode();
     }
 
+    /// <summary>
+    /// Windows' high contrast is on — Visual Studio then draws its own high-contrast theme, and the chat follows with
+    /// its high-contrast palette. Read from the setting every high-contrast change writes
+    /// (<c>HighContrast\Flags</c>, bit 1); unreadable reads as off.
+    /// </summary>
+    internal static bool HighContrastOn()
+    {
+        try
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Control Panel\Accessibility\HighContrast");
+            return key?.GetValue("Flags") is string flags && int.TryParse(flags, out var bits) && (bits & 1) != 0;
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or System.IO.IOException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Reads the Windows app theme as a last-resort fallback (dark when unset/unreadable).</summary>
     internal static bool OsDarkMode()
     {

@@ -234,16 +234,21 @@ internal static class ChatTurnPolicy
     }
 
     /// <summary>
-    /// Distinct file paths written by <c>write_file</c>/<c>apply_diff</c> during the run —
-    /// drives the multi-file recap bubble (shown when ≥ 2 files were modified).
+    /// The inverse of <see cref="BuildBubbleText"/>: the question, and the names of what went with it — so the chat
+    /// draws them as chips under the question while the saved text keeps the sentence.
     /// </summary>
-    public static List<string> ModifiedFilePaths(IEnumerable<ToolExecution> executions) =>
-        executions
-            .Where(e => (e.Name == "write_file" || e.Name == "apply_diff")
-                     && e.Diff is not null && !string.IsNullOrEmpty(e.Diff.FilePath))
-            .Select(e => e.Diff!.FilePath)
-            .Distinct()
-            .ToList();
+    /// <remarks>A recap written in another language (a session saved before a language change) is not recognised:
+    /// the bubble then shows its text whole, sentence included — never a name cut out of it.</remarks>
+    public static (string Text, IReadOnlyList<string> Attachments) SplitBubbleText(string bubble)
+    {
+        var prefix = Strings.MsgAttachedRecap("\0").Split('\0')[0];
+        if (prefix.Length == 0) return (bubble, []);
+        var at = bubble.LastIndexOf(prefix, StringComparison.Ordinal);
+        if (at < 0 || bubble.IndexOf('\n', at) >= 0) return (bubble, []);
+        if (at > 0 && !bubble[..at].EndsWith("\n\n", StringComparison.Ordinal)) return (bubble, []);
+        var names = bubble[(at + prefix.Length)..].Split(" · ", StringSplitOptions.RemoveEmptyEntries);
+        return names.Length == 0 ? (bubble, []) : (bubble[..at].TrimEnd('\n'), names);
+    }
 
     /// <summary>
     /// The assistant text persisted in the durable history: the bubble actually shown to

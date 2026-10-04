@@ -38,8 +38,17 @@ internal partial class InferpalToolWindowData
         if (IsLoading)
         {
             // Marshalled for the same reason as CancelAsync: the finally disposes _currentCts on
-            // the VM context, and cancelling from here raced it.
-            await RunOnVMContextAsync(() => _currentCts?.Cancel());
+            // the VM context, and cancelling from here raced it. An approval card waiting with an
+            // empty prompt takes Enter as "Allow once", the key the card names.
+            await RunOnVMContextAsync(() =>
+            {
+                if (_pendingApproval is { IsAnswered: false } card)
+                {
+                    if (string.IsNullOrWhiteSpace(Prompt)) card.Answer(ApprovalDecision.Once);
+                    return;
+                }
+                _currentCts?.Cancel();
+            });
             return;
         }
 
@@ -301,6 +310,13 @@ internal partial class InferpalToolWindowData
                     ? oneTimeModel
                     : ModelRouter.Resolve(_config, useOrchestrator ? ModelRole.Agent : ModelRole.Chat);
 
+            // The turn's header line names the model that answers, then what the turn is doing, then how long it took.
+            await RunOnVMContextAsync(() =>
+            {
+                _runLine  = null;
+                _turnHead = InsertThemed(ChatMessageItem.TurnMsg(effectiveModel));
+            });
+
             // After the model is known: the context check measures against the window the server
             // really loaded THIS model with, when that is smaller than the configured one.
             // A code action (one-time model) sends no tool; every other turn sends the registry chosen below.
@@ -360,10 +376,11 @@ internal partial class InferpalToolWindowData
 
             // Decorators when tools are enabled: plan mode filters to read-only tools
             // first, then step mode wraps whatever remains.
+            string? turnRunId = null;
             if (ReferenceEquals(effectiveTools, _tools))
             {
                 // Start a change-tracking run so this turn's file writes can be reverted via /undo-run.
-                _tools.History.BeginRun();
+                turnRunId = _tools.History.BeginRun();
                 if (_planMode)      effectiveTools = new Services.Execution.PlanModeToolRegistry(_tools);
                 if (_agentStepMode) effectiveTools = new Services.Execution.StepModeToolRegistry(effectiveTools, PauseForStepAsync);
             }
@@ -389,7 +406,11 @@ internal partial class InferpalToolWindowData
             ChatMessageItem BuildToolBubble(ToolExecution exec)
             {
                 var preview  = Services.Agent.ChatTurnPolicy.BuildToolPreview(exec.Output);
-                var toolItem = ChatMessageItem.ToolMsg(exec.Name, Strings.MsgToolOutput(exec.Input, preview), _config.ToolBubblesExpanded);
+                // Errors start open: the red output is the point of the step.
+                var toolItem = ChatMessageItem.ToolMsg(exec.Name, Strings.MsgToolOutput(exec.Input, preview),
+                                                       _config.ToolBubblesExpanded || exec.HasErrors);
+                toolItem.StepSubject = Services.Presentation.RunSummary.Subject(exec.Input);
+                toolItem.HasErrors   = exec.HasErrors;
                 if (exec.Diff is not null)
                     toolItem.InitDiff(exec.Diff);
                 if (exec.HasErrors)
@@ -403,12 +424,11 @@ internal partial class InferpalToolWindowData
             void StreamToolBubble(ToolExecution exec) => Post(() =>
             {
                 liveToolBubbles = true;
-                var toolItem = BuildToolBubble(exec);
                 int idx = Messages.Count - 2;
                 if (statusBubble is not null) { var i = Messages.IndexOf(statusBubble); if (i >= 0) idx = Math.Min(idx, i); }
                 if (streamingMsg  is not null) { var i = Messages.IndexOf(streamingMsg);  if (i >= 0) idx = Math.Min(idx, i); }
                 if (idx < 0) idx = 0;
-                Messages.Insert(idx, toolItem);
+                InsertStep(idx, BuildToolBubble(exec));
                 ScrollToBottom();
             });
 
@@ -552,20 +572,7 @@ internal partial class InferpalToolWindowData
                 // here when no live streaming happened (e.g. a path that didn't wire the callback).
                 if (!liveToolBubbles)
                     foreach (var exec in agentExecutions)
-                        Messages.Insert(insertIdx++, BuildToolBubble(exec));
-
-                // Multi-file recap: if ≥2 files were written/patched, add a summary bubble with "Restore All"
-                var modifiedPaths = Services.Agent.ChatTurnPolicy.ModifiedFilePaths(agentExecutions);
-                if (modifiedPaths.Count >= 2)
-                {
-                    var fileNames    = modifiedPaths.Select(Path.GetFileName).ToList();
-                    var recapContent = Strings.MultiFileRecapTitle(modifiedPaths.Count, string.Join(", ", fileNames));
-                    var recapItem    = ChatMessageItem.NoticeMsg(recapContent);
-                    var capturedPaths = modifiedPaths;
-                    recapItem.InitRestoreCallback(() => Post(() => _ = RestoreAllFilesAsync(capturedPaths)));
-                    ApplyItemTheme(recapItem);
-                    Messages.Insert(insertIdx, recapItem);
-                }
+                        insertIdx = InsertStep(insertIdx, BuildToolBubble(exec));
 
                 ChatMessageItem? lastAssistant = null;
 
@@ -633,6 +640,18 @@ internal partial class InferpalToolWindowData
                 // read.
                 if (agentEndNotice.Length > 0)
                     InsertThemed(ChatMessageItem.NoticeMsg(agentEndNotice));
+
+                // The run line says what the run did; its result bar names the files it changed, its last check, and
+                // offers Undo — what the multi-file recap used to say for two files or more, for every run.
+                var summary = Services.Presentation.RunSummary.Build(agentExecutions,
+                    turnRunId is null ? null : _tools.History.Runs.LastOrDefault(r => r.Id == turnRunId));
+                _runLine?.EndRun(summary);
+                // Ended, the run folds into its line — unless the user keeps tool calls open, or a step failed (its
+                // red output is the point).
+                if (_runLine is { } ended && !_config.ToolBubblesExpanded && !ended.Steps.Exists(s => s.HasErrors))
+                    ended.SetRunOpen(false);
+                if (summary is not null && (summary.Files.Count > 0 || summary.Check != Services.Presentation.RunCheck.None))
+                    InsertResultBar(summary);
 
                 if (lastAssistant is not null)
                     MarkRegeneratable(lastAssistant);
@@ -708,6 +727,11 @@ internal partial class InferpalToolWindowData
                 // after the turn (a /restore, a tool launched by a slash command) still attached to
                 // it, and /undo-run reverted that along with the run we had just watched.
                 _tools.History.EndRun();
+                // The header line ends on how long the turn took; a run stopped before its end still gets its glyph.
+                if (_runLine is { RunGlyph: Glyphs.Tool }) _runLine.EndRun(null);
+                if (_turnHead is not null) _turnHead.TurnState = Services.Presentation.RunSummary.Duration(DateTime.UtcNow - sendStart);
+                _turnHead = null;
+                _runLine  = null;
                 // Only the turn that still owns the state releases it (see EndOwnedTurn).
                 EndOwnedTurn(localCts);
             });

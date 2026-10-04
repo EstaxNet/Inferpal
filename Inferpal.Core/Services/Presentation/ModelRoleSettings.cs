@@ -1,45 +1,38 @@
+using System.Reflection;
 using Inferpal.Config;
 
 namespace Inferpal.Services.Presentation;
 
 /// <summary>
-/// The "Use a separate model per role (advanced)" switch of both settings panels.
+/// The "Show advanced settings" box of the Server and models page, in both settings panels.
 /// </summary>
 /// <remarks>
-/// <para>
-/// The switch is not stored: a panel shows it checked when a role override is set. Unchecked, its
-/// hint promises that the chat model is used everywhere — so saving with it off must clear the
-/// overrides. Folding them away was not enough: the router kept using models the user could no
-/// longer see (a name the backend does not have means a 404 on every agent turn), and the switch
-/// came back checked at the next opening.
-/// </para>
-/// <para>
-/// The fields concerned are those of the settings schema's <see cref="Gate"/>. The VS Code panel
-/// reads that gate from the served schema; <c>ModelRoleSettingsTests</c> holds this class to it.
-/// </para>
+/// The box only folds: checking or unchecking it never changes a value. What it must not do is hide a
+/// setting in effect — a per-task model the router keeps using while nobody can see it reads, at the
+/// next 404, as a backend that lost its model. So the page opens with the box checked whenever a field
+/// the schema marks <see cref="SettingField.OpensFold"/> departs from its factory value. The VS Code
+/// panel applies the same rule to the same flag, with the factory values the host serves.
 /// </remarks>
 internal static class ModelRoleSettings
 {
-    /// <summary>The schema gate the switch reveals.</summary>
-    internal const string Gate = "roles";
+    /// <summary>The schema gate the box reveals.</summary>
+    internal const string Gate = SettingsSchema.AdvancedGate;
 
-    /// <summary>Whether any per-role setting departs from "the chat model everywhere".</summary>
-    internal static bool HasRoleOverride(InferpalConfig config) =>
-        !string.IsNullOrWhiteSpace(config.AgentModel)
-        || !string.IsNullOrWhiteSpace(config.CodeActionsModel)
-        || !string.IsNullOrWhiteSpace(config.InlineCompletionModel)
-        || !string.IsNullOrWhiteSpace(config.InlineEditModel)
-        || !string.IsNullOrWhiteSpace(config.UtilityModel)
-        || config.ModelRouterAuto;
+    private static readonly InferpalConfig Factory = new();
 
-    /// <summary>What an unchecked switch means: no role override, no automatic routing.</summary>
-    internal static void UseChatModelEverywhere(InferpalConfig config)
+    /// <summary>Whether the page must open with its advanced sections shown.</summary>
+    internal static bool OpensAdvanced(InferpalConfig config) =>
+        SettingsSchema.AllFields.Where(f => f.OpensFold).Any(f => Differs(f.Key, config));
+
+    private static bool Differs(string key, InferpalConfig config)
     {
-        config.AgentModel            = string.Empty;
-        config.CodeActionsModel      = string.Empty;
-        config.InlineCompletionModel = string.Empty;
-        config.InlineEditModel       = string.Empty;
-        config.UtilityModel          = string.Empty;
-        config.ModelRouterAuto       = false;
+        var property = typeof(InferpalConfig).GetProperty(
+            key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+        if (property is null) return false;
+        var now     = property.GetValue(config);
+        var factory = property.GetValue(Factory);
+        return now is string s
+            ? !string.Equals(s.Trim(), ((string?)factory ?? string.Empty).Trim(), StringComparison.Ordinal)
+            : !Equals(now, factory);
     }
 }

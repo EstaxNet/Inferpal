@@ -57,7 +57,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
   private host: HostClient | undefined;
   private approvalCard:
-    | ((message: string, token?: CancellationToken) => Promise<number | undefined>)
+    | ((note: ApprovalNote, token?: CancellationToken) => Promise<number | undefined>)
     | undefined;
 
   constructor(private readonly secrets?: vscode.SecretStorage) {
@@ -97,7 +97,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
 
   /** Preferred approval UI (chat webview card); modal dialog stays as the fallback. */
   setApprovalCard(
-    handler: (message: string, token?: CancellationToken) => Promise<number | undefined>,
+    handler: (note: ApprovalNote, token?: CancellationToken) => Promise<number | undefined>,
   ): void {
     this.approvalCard = handler;
   }
@@ -217,7 +217,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     // Chat card first (Continue/Cline style) — inline, keeps the flow readable.
     if (this.approvalCard) {
       try {
-        const answer = await this.approvalCard(note.message, token);
+        const answer = await this.approvalCard(note, token);
         if (answer !== undefined) {
           return answer;
         }
@@ -229,7 +229,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     // A native modal cannot be closed programmatically: on cancellation the wait ends (deny) —
     // the dialog lingers until the user closes it, cosmetic only, its answer is ignored.
     const once = t('Allow once');
-    const always = t('Always allow (session)');
+    const always = t('Always this session');
     let cancelSub: { dispose(): void } | undefined;
     try {
       const cancelled = new Promise<undefined>((resolve) => {

@@ -11,16 +11,50 @@ namespace Inferpal.Services.VsIntegration;
 /// <summary>
 /// Visual Studio flavor of the approval pipeline: all decision logic lives in
 /// <see cref="ApprovalServiceBase"/>; this class only renders the user-facing prompt.
-/// File mutations (structured diff available) get a modal dialog with the colored diff
-/// viewer; everything else keeps the lightweight three-choice VS prompt.
+/// During a chat turn the prompt is a card in the conversation (<see cref="VsContextHolder.InlineApproval"/>), whose
+/// "Open diff" opens the dialog; outside a turn, file mutations (structured diff available) get a modal dialog with
+/// the colored diff viewer, and everything else keeps the lightweight three-choice VS prompt.
 /// </summary>
 internal class VsApprovalService : ApprovalServiceBase
 {
     private readonly VisualStudioExtensibility _vs;
+    private readonly VsContextHolder _context;
 
-    public VsApprovalService(VisualStudioExtensibility vs, InferpalConfig config, ProjectIndexService index)
+    public VsApprovalService(VisualStudioExtensibility vs, InferpalConfig config, ProjectIndexService index, VsContextHolder context)
         : base(config, () => index.RootDir)
-        => _vs = vs;
+    {
+        _vs      = vs;
+        _context = context;
+    }
+
+    protected override async Task<ApprovalDecision> PromptUserAsync(ApprovalPrompt prompt, CancellationToken ct)
+    {
+        if (_context.InlineApproval is { } inline)
+        {
+            try
+            {
+                var card = ApprovalCard.Build(prompt, RootDir);
+                // The dialog the card's "Open diff" shows closes when the card is answered from the chat.
+                Func<CancellationToken, Task<ApprovalDecision?>>? openDiff = prompt.Diff is { } d
+                    ? async answered =>
+                    {
+                        using var both = CancellationTokenSource.CreateLinkedTokenSource(ct, answered);
+                        try { return await ShowDiffDialogAsync(prompt.Message, d, both.Token); }
+                        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return null; }
+                    }
+                    : null;
+                if (await inline(card, openDiff, ct) is { } answer)
+                    return answer;
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                // The card could not be shown: the dialog asks instead — never an approval nobody is asked.
+                Diagnostics.Swallow("VsApprovalService.InlineCard", ex);
+            }
+        }
+        return await PromptUserAsync(prompt.Message, prompt.Diff, ct);
+    }
 
     protected override async Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct)
     {
@@ -28,7 +62,8 @@ internal class VsApprovalService : ApprovalServiceBase
         {
             try
             {
-                return await ShowDiffDialogAsync(message, diff, ct);
+                // Dismissed (Esc / close box) → fail closed.
+                return await ShowDiffDialogAsync(message, diff, ct) ?? ApprovalDecision.Deny;
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
@@ -49,8 +84,9 @@ internal class VsApprovalService : ApprovalServiceBase
 
     /// <summary>Modal dialog with the colored diff viewer and the three in-content choices.
     /// Built-in dialog buttons are hidden; a content button completes <c>Decision</c> and the
-    /// linked token then closes the dialog. Dismissing the dialog denies (fail closed).</summary>
-    private async Task<ApprovalDecision> ShowDiffDialogAsync(string message, DiffInfo diff, CancellationToken ct)
+    /// linked token then closes the dialog. <c>null</c> when the dialog was dismissed: the prompt denies (fail closed),
+    /// a card opened from the chat keeps waiting.</summary>
+    private async Task<ApprovalDecision?> ShowDiffDialogAsync(string message, DiffInfo diff, CancellationToken ct)
     {
         var data = new ApprovalDialogData(message, diff);
         using var control = new ApprovalDialogControl(data);
@@ -64,7 +100,7 @@ internal class VsApprovalService : ApprovalServiceBase
         if (first == dialogTask)
         {
             await dialogTask;                      // surface faults; normal completion = dismissed
-            return ApprovalDecision.Deny;
+            return null;
         }
 
         var decision = await data.Decision;

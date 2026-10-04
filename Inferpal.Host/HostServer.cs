@@ -110,6 +110,10 @@ internal sealed partial class HostServer : IDisposable
             : new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect);
         var mcp      = new McpToolService(config, approval, clientFactory: null, tokenStore: tokens);
         var docs     = new DocsIndexService(client, config);
+        // ⚠ The documentation index only ever HYDRATES: nothing re-crawls it at start, so a host that does not load it
+        // serves none of the sites indexed in an earlier session — search_docs not even offered, /docs listing them with
+        // no page. Visual Studio loads it when its window opens. Never awaited: docs.db can be large.
+        _ = docs.LoadAsync(CancellationToken.None);
         // Registered only when the adapter declared `debug/*` support: an unimplemented handler
         // would answer "method not found" to every call, and the model would spend tokens each turn
         // on two tools that can only fail.
@@ -206,6 +210,7 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("chat/send", UseSingleObjectParameterDeserialization = true)]
     public async Task<ChatSendResult> ChatSendAsync(ChatSendParams p, CancellationToken ct)
     {
+        var clock  = System.Diagnostics.Stopwatch.StartNew();
         var result = await SendTurnAsync(p, ct);
         // Every way out of the turn reports what the NEXT question will send: the context gauge shows it, and it is the
         // figure of the X-Ray the gauge opens. The turn's own prompt measure includes the run's internal transcript, which
@@ -215,6 +220,7 @@ internal sealed partial class HostServer : IDisposable
         {
             NextTurnTokens = ContextManager.NextTurnLoad(
                 s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode)),
+            Duration = Services.Presentation.RunSummary.Duration(clock.Elapsed),
         };
     }
 
@@ -328,7 +334,7 @@ internal sealed partial class HostServer : IDisposable
                 var durable = new List<ChatMessageDto>(s.History);
 
                 // Group this run's file snapshots so the adapter can offer /undo-run semantics.
-                s.Tools.History.BeginRun();
+                var runId = s.Tools.History.BeginRun();
                 var result = await s.Orchestrator.RunAsync(
                     model, s.History, effectiveTools,
                     onStep:         step => Notify("chat/step", new { text = step }),
@@ -372,7 +378,9 @@ internal sealed partial class HostServer : IDisposable
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, endNotice, model, s),
-                    false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice, ContextWindow: ctxDecision.Window);
+                    false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice, ContextWindow: ctxDecision.Window,
+                    Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(result.Executions, RunOf(s, runId))),
+                    Model: model);
             }
 
             if (s.ToolsEnabled)
@@ -385,7 +393,7 @@ internal sealed partial class HostServer : IDisposable
 
                 // Same durable history as the agent path: the question and the answer the user saw.
                 var durable = new List<ChatMessageDto>(s.History);
-                s.Tools.History.BeginRun();
+                var runId = s.Tools.History.BeginRun();
                 var run = await s.Client.RunAgentAsync(
                     model, s.History, chatTools,
                     onStep:         step => Notify("chat/step", new { text = step }),
@@ -417,7 +425,9 @@ internal sealed partial class HostServer : IDisposable
                     FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, runEndNotice, model, s),
                     false, run.TokensUsed, run.PromptTokens,
                     EndNotice: runEndNotice,
-                    ContextWindow: ctxDecision.Window);
+                    ContextWindow: ctxDecision.Window,
+                    Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(run.Executions, RunOf(s, runId))),
+                    Model: model);
             }
 
             var turn = await s.Client.SendChatAsync(
@@ -440,7 +450,8 @@ internal sealed partial class HostServer : IDisposable
                 false, turn.TokensUsed, turn.PromptTokens,
                 EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit,
                                                                  answerRepeating: turn.StoppedRepeating)),
-                ContextWindow: ctxDecision.Window);
+                ContextWindow: ctxDecision.Window,
+                Model: model);
         }
         catch (OperationCanceledException)
         {
@@ -839,6 +850,27 @@ internal sealed partial class HostServer : IDisposable
     /// <summary>Connection badge for the adapter's header: reachability + the compact VRAM line
     /// (only when the provider supports <c>/api/ps</c>). Best-effort — failures degrade to
     /// "unreachable", never an RPC fault (this is polled).</summary>
+    /// <summary>The file-history run a turn opened, by the id <c>BeginRun</c> gave it.</summary>
+    private static Services.Execution.HistoryRun? RunOf(HostSession s, string runId) =>
+        s.Tools.History.Runs.LastOrDefault(r => r.Id == runId);
+
+    /// <summary>`plan/mode` — read-only plan mode on or off, as bare <c>/plan</c> toggles it; answers the state now.</summary>
+    /// <remarks>Slot-held: it rewrites the system message a running loop reads.</remarks>
+    [JsonRpcMethod("plan/mode", UseSingleObjectParameterDeserialization = true)]
+    public bool PlanModeSet(PlanModeParams p)
+    {
+        var s = Session();
+        return WithTurnSlotFunc("plan/mode", () =>
+        {
+            if (s.PlanMode != p.Enabled)
+            {
+                s.PlanMode = p.Enabled;
+                RefreshSystemMessage(s);
+            }
+            return s.PlanMode;
+        });
+    }
+
     [JsonRpcMethod("backend/status")]
     public async Task<BackendStatusResult> BackendStatusAsync(CancellationToken ct)
     {
@@ -872,7 +904,8 @@ internal sealed partial class HostServer : IDisposable
             _                             => null,
         };
         return new BackendStatusResult(connected, badge, notice,
-                                       !connected && s.Client.ConnectionRefusal is not null ? status.StatusText : null);
+                                       !connected && s.Client.ConnectionRefusal is not null ? status.StatusText : null,
+                                       InferenceProviderFactory.DisplayName(s.Config.Provider));
     }
 
     [JsonRpcMethod("fim/complete", UseSingleObjectParameterDeserialization = true)]

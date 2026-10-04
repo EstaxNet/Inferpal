@@ -637,9 +637,9 @@ public class LocalizationCompletenessTests
     /// this class exists to hold.
     /// </para>
     /// <para>
-    /// Measured at zero divergence across the 828 accessors, with two
-    /// <b>nominative</b> exemptions: the <c>…Template</c> members return the format string itself,
-    /// for the caller to format. ⚠ The first measurement counted the method's <i>parameters</i> and
+    /// Measured at zero divergence across the 828 accessors. Exempt by <b>shape</b>, not by name: a
+    /// member called <c>&lt;Resource&gt;Template</c> returns that resource's format string itself,
+    /// for the caller to format (a list of their names forgot the next one). ⚠ The first measurement counted the method's <i>parameters</i> and
     /// produced eight false positives — <c>PromptExplain(fileName)</c> passes
     /// <c>fileName, string.Empty</c>: it is the <b>arguments</b> that count.
     /// </para>
@@ -647,9 +647,6 @@ public class LocalizationCompletenessTests
     [Fact]
     public void EveryAccessor_PassesAsManyArgumentsAsItsResourceExpects()
     {
-        // These return the format string, not formatted text: the caller supplies the arguments.
-        string[] rawTemplates = ["SettingsFieldsIgnoredTemplate", "SettingsPermissionRulesIgnoredTemplate"];
-
         var dir = LocalizationDir();
         var needed = XDocument.Load(Path.Combine(dir, "Strings.resx")).Root!
             .Elements("data")
@@ -672,13 +669,15 @@ public class LocalizationCompletenessTests
                     => (p.Identifier.Text, p.ExpressionBody?.Expression),
                 _ => (null, null),
             };
-            if (name is null || body is null || rawTemplates.Contains(name)) continue;
+            if (name is null || body is null) continue;
 
             // The resource this member reads: Get(nameof(X)) or Get("X").
             var key = Regex.Match(body.ToString(), @"nameof\((\w+)\)|Get\(""(\w+)""");
             if (!key.Success) continue;
             var resource = key.Groups[1].Success ? key.Groups[1].Value : key.Groups[2].Value;
             if (!needed.TryGetValue(resource, out var expects)) continue;
+            // The raw format string, not formatted text: the caller supplies the arguments.
+            if (name == resource + "Template") continue;
 
             // The arguments actually passed to string.Format, minus the format string itself.
             var format = body.DescendantNodesAndSelf()

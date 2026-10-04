@@ -6,20 +6,24 @@ command). A few values are also settable from the chat via slash commands (`/mod
 
 ## Settings window
 
-The Settings window is organized into collapsible sections:
+The Settings window has seven pages, listed on the left, with a search box above them that keeps the
+pages holding a matching setting. Visual Studio and VS Code show the same pages, with the same words:
+both read them from one description in the Core. Each field has a short hint under it; the footer
+counts the unsaved changes, and **Cancel** puts the form back as it was saved.
 
-| Section | Contains |
+| Page | Contains |
 |---|---|
-| **Connection** | Provider, Server URL, API key, Chat model, Code Actions model, FIM model, Embedding model, model roles (Agent model, Utility model, Model Router auto), **Test** |
-| **Behavior** | Command timeout, expand tool bubbles, disable security alerts, permission rules, Smart Fix |
-| **Inline Completions** | Enable ghost text, preset (Fast / Default / High Accuracy) |
-| **RAG / Semantic Index** | Enable semantic indexing, auto-inject context per turn, Top-K |
-| **Context & Memory** | VRAM budget, context window, keep turns, compaction (+ timeout), OODA threshold, KV-cache anchor |
-| **Persona** | Custom system prompt |
-| **MCP** | Enable MCP servers, server map (JSON), per-server status |
-| **Advanced (collapsible editors)** | Pinned context files, prompt templates, custom shell tools — editable as raw text |
+| **Server and models** | Server address and **Test**, chat model, autocomplete model, code search model, context window. *Show advanced settings* adds: a model per task (agent, explain/fix/refactor, edit with AI, background tasks, `/bench` routing), sampling, your GPU (graphics memory, unloading idle models), connection (server type, API key) |
+| **Agent and approvals** | Plan before acting, check the build after each edit, steps per request; *Ask me before changing files, running commands or going online*, with the number of approval rules; custom instructions, language persona; time limits (folded) |
+| **Context and memory** | Long conversations (summarizing, turns kept whole, session recap, summary time limit, opening messages kept as is); pinned files |
+| **Code search** | Background indexing, relevant code added to each question, language servers, results per search, minimum similarity |
+| **Autocomplete** | Ghost text and its speed; the change shown before applying it (*Edit with AI*) |
+| **Tools and MCP servers** | MCP servers as cards that say whether each one runs, and why not; the approval rules as a table, team file first, each rule saying whether it applies; your slash commands; your agent tools. Every list keeps an *Edit as text* (or JSON) view |
+| **Language and appearance** | Interface language (independent of the editor's), the theme in use (Inferpal follows the editor's, high contrast included), density, agent steps shown open |
 
-Language is selected at the top, independently of Visual Studio's UI language.
+The *Show advanced settings* box only folds: it never changes a value, and it opens by itself when a
+model per task or the sampling setting is no longer at its factory value — the settings that change,
+without a word on screen, which model answers or how are never hidden.
 
 > [!TIP]
 > The system prompt is rebuilt before every question: an edit to the custom system prompt or to
@@ -51,8 +55,9 @@ Every persisted setting, its type, and default value.
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `commandTimeoutSeconds` | int | `120` | `run_command` timeout (seconds) |
-| `toolBubblesExpanded` | bool | `false` | Expand tool-call bubbles by default |
-| `securityAlertsDisabled` | bool | `false` | Auto-approve the calls that would otherwise prompt (the built-in catastrophic-command denylist still applies) |
+| `toolBubblesExpanded` | bool | `false` | Show each step of an agent run open (its arguments and output). Off: one line per step, opened on a click; a step that failed always opens. Either way, a run's steps show while it works and fold into one line when it ends |
+| `chatDensity` | string | `"comfortable"` | `comfortable` or `compact`: how much space the chat leaves around its turns. Compact fits more of the conversation in a narrow panel |
+| `securityAlertsDisabled` | bool | `false` | Auto-approve the calls that would otherwise prompt (the built-in catastrophic-command denylist still applies). Shown inverted in the Settings window: *Ask me before changing files, running commands or going online* |
 | `permissionRules` | string | `""` | Allow/deny rules, one per line: `allow\|deny <tool\|*> <regex>` (see [Tools → Permission rules](tools.md)) |
 | `smartFixEnabled` | bool | `true` | Auto build/typecheck after `write_file`/`apply_diff`/`apply_edits` — .NET / TypeScript / Rust / Go (see workspace overlays) |
 | `inlineDiffPreviewEnabled` | bool | `true` | Inline diff preview for in-place code actions (`/fix` `/refactor` `/doc`): per-hunk ✓/✗ accept/reject in the editor (VS adornment; native Refactor Preview in VS Code) instead of an immediate rewrite. Falls back to direct apply when no renderer is available; orthogonal to tool approval |
@@ -62,7 +67,7 @@ Every persisted setting, its type, and default value.
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `inlineCompletionEnabled` | bool | `true` | Enable ghost-text completions |
-| `inlineCompletionMode` | string | `"Default"` | FIM preset: `Fast` / `Default` / `HighAccuracy` |
+| `inlineCompletionMode` | string | `"Default"` | FIM speed: `Fast` / `Default` (shown *Balanced*) / `HighAccuracy` (shown *Accurate*) |
 
 ### RAG / semantic index
 
@@ -102,7 +107,7 @@ Every persisted setting, its type, and default value.
 |---|---|---|---|
 | `quickTimeoutSeconds` | int | `120` | Quick tasks (explain/fix/doc/inline edit/plan) |
 | `normalTimeoutSeconds` | int | `300` | Per-turn timeout for tooled chat and the orchestrator |
-| `deepTimeoutSeconds` | int | `600` | Extended-reasoning timeout |
+| `deepTimeoutSeconds` | int | `600` | Extended-reasoning timeout. Not in the Settings window: no request uses this budget today |
 
 These budgets wait for the model. Connecting to the backend has its own fixed budget of 15 s: a backend that never
 answers the connection (machine switched off, firewall, Ollama not started under WSL's mirrored networking) is
@@ -139,7 +144,7 @@ They layer on top of the per-machine settings above.
 | File | Purpose |
 |---|---|
 | `.inferpal/permissions.json` | **Deny** rules pushed to everyone on the repo: `{ "rules": ["deny run_command ^curl", "deny * \\.env$"] }`. `allow` rules are ignored here — a cloned repository must not be able to auto-approve itself; auto-approval lives in the per-machine setting. See [Tools → Permission rules](tools.md). |
-| `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. ⚠ This file is committed, so it arrives with any clone: a command defined here is **always shown for approval before it runs** (asked once per session, and no `allow` rule or *Disable security alerts* can auto-approve it). The built-in validators are unaffected. |
+| `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. ⚠ This file is committed, so it arrives with any clone: a command defined here is **always shown for approval before it runs** (asked once per session, and no `allow` rule, nor unticking *Ask me before changing files, running commands or going online*, can auto-approve it). The built-in validators are unaffected. |
 | `.inferpal/project.json` | **Project profile** — how a repository likes to be worked on. `/onboard init` writes a commented example; `/onboard` shows what it asked for and what it got. |
 
 When it indexes a git repository, Inferpal adds only `.inferpal/history/` — its local snapshots of

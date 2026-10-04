@@ -56,11 +56,11 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
 
     private IDisposable? _themeSubscription;
     private bool _isDark = true;
+    /// <summary>Windows' high contrast is on: the palette is the high-contrast one, whatever the theme's darkness.</summary>
+    private bool _isHighContrast;
 
     // ── Connection Guard / Heartbeat ───────────────────────────────────────────
     private CancellationTokenSource _heartbeatCts        = new();
-    private string _connectionStatusText  = "● …";
-    private string _connectionStatusColor = "#A0A0A0";
     private bool   _showRetryButton       = false;
     private string _tooltipRetryConnection = string.Empty;
     // Volatile: written on VM context, read from SendAsync thread-pool path (pre-flight check).
@@ -72,12 +72,12 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _vramStatus    = string.Empty;
     private bool   _hasVramStatus = false;
 
-    private string _themeWindowBg    = "#1E1E1E";
-    private string _themeText        = "#D4D4D4";
-    private string _themeSubtleText  = "#A0A0A0";
-    private string _themeCodeBg      = "#161616";
-    private string _themeCodeText    = "#CE9178";
-    private string _themeCodeBorder  = "#333333";
+    private string _themeWindowBg    = "#1B1B1F";
+    private string _themeText        = "#E8E8EC";
+    private string _themeSubtleText  = "#A3A3AD";
+    private string _themeCodeBg      = "#18181C";
+    private string _themeCodeText    = "#E8E8EC";
+    private string _themeCodeBorder  = "#34343C";
     private string _themeBorder      = "#3F3F46";
     private string _themeSessionBg   = "#1E1E28";
     private string _themePanelBg     = "#2D2D30";
@@ -152,9 +152,6 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     /// <summary>Bindable mirror of <see cref="InferpalConfig.AgentModeEnabled"/> for the main-window
     /// chat/agent switch. Toggling persists the config (see <see cref="ToggleAgentModeAsync"/>).</summary>
     [DataMember] public bool IsAgentMode { get => _agentMode; set => SetProperty(ref _agentMode, value); }
-    private string           _agentModeLabel = string.Empty;
-    /// <summary>"💬 Chat" / "🤖 Agent" — the switch's current-mode caption (recomputed on toggle and language change).</summary>
-    [DataMember] public string AgentModeLabel { get => _agentModeLabel; set => SetProperty(ref _agentModeLabel, value); }
     private bool             _attachMenuOpen;
     /// <summary><c>true</c> while the single "＋ add context" toolbar menu is expanded — replaces the old row of
     /// four separate attach glyphs (attach file / selection / browse / pin) with one labelled menu.</summary>
@@ -168,9 +165,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _activeModelLabel = string.Empty;
     /// <summary>The chat model currently in use (<see cref="InferpalConfig.DefaultModel"/>), surfaced in
     /// the header + welcome screen so the active model is never ambiguous (the VRAM badge is separate).</summary>
-    [DataMember] public string ActiveModelLabel { get => _activeModelLabel; set => SetProperty(ref _activeModelLabel, value); }
-    private string _welcomeSubtitle    = string.Empty;
-    [DataMember] public string WelcomeSubtitle    { get => _welcomeSubtitle;    set => SetProperty(ref _welcomeSubtitle,    value); }
+    [DataMember] public string ActiveModelLabel { get => _activeModelLabel; set { SetProperty(ref _activeModelLabel, value); RefreshModelButton(); } }
     private string _welcomeCardExplain = string.Empty;
     [DataMember] public string WelcomeCardExplain { get => _welcomeCardExplain; set => SetProperty(ref _welcomeCardExplain, value); }
     private string _welcomeCardFix     = string.Empty;
@@ -179,14 +174,8 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     [DataMember] public string WelcomeCardTest    { get => _welcomeCardTest;    set => SetProperty(ref _welcomeCardTest,    value); }
     private string _welcomeCardHelp    = string.Empty;
     [DataMember] public string WelcomeCardHelp    { get => _welcomeCardHelp;    set => SetProperty(ref _welcomeCardHelp,    value); }
-    private string _buildBannerTitle   = string.Empty;
-    [DataMember] public string BuildBannerTitle   { get => _buildBannerTitle;   set => SetProperty(ref _buildBannerTitle,   value); }
     private string _buildBannerDismiss = string.Empty;
     [DataMember] public string BuildBannerDismiss { get => _buildBannerDismiss; set => SetProperty(ref _buildBannerDismiss, value); }
-    private string _buildBannerFix     = string.Empty;
-    [DataMember] public string BuildBannerFix     { get => _buildBannerFix;     set => SetProperty(ref _buildBannerFix,     value); }
-    private string _menuAddContext      = string.Empty;
-    [DataMember] public string MenuAddContext      { get => _menuAddContext;      set => SetProperty(ref _menuAddContext,      value); }
     private string _menuAttachFile      = string.Empty;
     [DataMember] public string MenuAttachFile      { get => _menuAttachFile;      set => SetProperty(ref _menuAttachFile,      value); }
     private string _menuAttachSelection = string.Empty;
@@ -224,25 +213,18 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _btnLoadSession          = string.Empty;
     private string _btnCancel               = string.Empty;
     private string _btnSend                 = string.Empty;
-    private string _tooltipExport           = string.Empty;
-    private string _tooltipClear            = string.Empty;
     private string _tooltipCopy             = string.Empty;
     private string _tooltipSessionPicker    = string.Empty;
     private string _tooltipLoadSession      = string.Empty;
     private string _tooltipDeleteSession    = string.Empty;
-    private string _hintSend                = string.Empty;
     private string _tooltipAttachFile       = string.Empty;
     private string _tooltipAttachSelection  = string.Empty;
     private string _tooltipBrowseFile       = string.Empty;
     private string _tooltipPinFile          = string.Empty;
     private string _tooltipPinChip          = string.Empty;
-    private string _tooltipSearchConversation = string.Empty;
     private string _tooltipCloseSearch        = string.Empty;
     private string _tooltipSaveSnippet        = string.Empty;
     private string _labelCopyCode             = string.Empty;
-    private string _tooltipStepMode           = string.Empty;
-    private string _tooltipPlanMode           = string.Empty;
-    private string _tooltipAgentMode          = string.Empty;
 
     // ── Context X-Ray panel (V2) ───────────────────────────────────────────────
     private bool   _isXrayPanelOpen;

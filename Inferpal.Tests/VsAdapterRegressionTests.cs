@@ -313,16 +313,20 @@ public class VsAdapterRegressionTests
     }
 
     /// <summary>
-    /// "Use a separate model per role" unchecked promises the chat model everywhere — its own hint
-    /// says so. It only folded the pickers away: the role overrides stayed in the configuration, the
-    /// router kept using them, and the box came back checked at the next opening (issue #8).
+    /// Issue #8 was per-role models in effect behind a folded switch. The window opens its "Show advanced
+    /// settings" fold by the Core's rule, the one the VS Code panel follows: at construction AND when it
+    /// reloads the configuration (Cancel), or a cancel closes the fold over a setting in effect.
     /// </summary>
     [Fact]
-    public void SavingWithSeparateRoleModelsOff_UsesTheChatModelEverywhere()
+    public void TheAdvancedFold_OpensByTheCoreRule_AtLoadAndAtReload()
     {
-        var save = Method(Vm + "InferpalSettingsData.cs", "SaveCoreAsync");
-        Assert.True(Calls(save, "UseChatModelEverywhere"),
-            "SaveCoreAsync keeps the per-role models when \"Use a separate model per role\" is unchecked.");
+        var construct = Vm + "InferpalSettingsData.cs";
+        var ctor = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), construct));
+        Assert.Matches(@"_showAdvanced\s*=\s*ModelRoleSettings\.OpensAdvanced\(", ctor);
+
+        var reload = Method(Vm + "InferpalSettingsData.Pages.cs", "ReloadFromConfig");
+        Assert.True(Calls(reload, "OpensAdvanced"),
+            "ReloadFromConfig restores the settings without reopening the fold over the ones in effect.");
     }
 
     /// <summary>

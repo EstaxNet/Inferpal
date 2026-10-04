@@ -156,12 +156,6 @@ internal partial class InferpalToolWindowData
         await SendCoreAsync(userText, oneTimeModel: null, attachments: [], ct: CancellationToken.None, clearPrompt: false);
     }
 
-    private async Task RestoreAllFilesAsync(List<string> paths)
-    {
-        foreach (var path in paths)
-            await InvokeToolAsync("restore_file", new { path }, CancellationToken.None);
-    }
-
     private Task ShowToolResultAsync(string toolName, string result) =>
         RunOnVMContextAsync(() =>
         {

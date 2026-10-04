@@ -9,7 +9,7 @@ import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostS
 import { resolveMention } from './mentionPaths';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
-import { CodeActionResult, SavedMessage, SlashEffect } from './protocol';
+import { ApprovalCard, CodeActionResult, SavedMessage, SlashEffect } from './protocol';
 import {
   WebviewToExt,
   WvBackendStatus,
@@ -41,7 +41,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private approvalSeq = 0;
   /** The message is kept with the answer: a rehydration rebuilds the webview from the transcript,
    *  which carries no card, so every card still waiting is posted again (see hydrate). */
-  private readonly pendingApprovals = new Map<number, { message: string; resolve: (answer: number) => void }>();
+  private readonly pendingApprovals = new Map<number, { message: string; card: ApprovalCard | null; resolve: (answer: number) => void }>();
+  /** Read-only plan mode, as the host holds it (the Plan segment of the mode switch). */
+  private planMode = false;
+  /** Whether the editor listeners feeding the welcome screen are set (once per extension life). */
+  private editorWatch = false;
+  private editorContextTimer: NodeJS.Timeout | undefined;
 
   // ── VS-parity state pushed to the webview ───────────────────────────────────
   private status: WvBackendStatus | null = null;
@@ -49,6 +54,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private plan: WvPlan | null = null;
   private contextWindow = 0;
   private toolBubblesExpanded = false;
+  /** The conversation drawn compact: Language and appearance › Density, in the host config. */
+  private compact = false;
   private promptTokens = 0;
   private lastTokens = 0;
   /** Running token total for the thread and the time of its first turn — the export's statistics
@@ -89,6 +96,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     };
     view.webview.html = renderChatHtml(view.webview, this.context.extensionUri);
     this.log('[chat] webview html set');
+    this.watchEditorContext();
     // Nobody awaits this promise: a handler that throws past its own guards would be an unhandled
     // rejection, absent from the output channel and invisible to the user.
     view.webview.onDidReceiveMessage((msg: WebviewToExt) =>
@@ -121,7 +129,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * (0 deny / 1 once / 2 always). Returns undefined when the card cannot be
    * shown (no resolved view) — the caller then falls back to a modal dialog.
    */
-  async requestApproval(message: string, token?: CancellationToken): Promise<number | undefined> {
+  async requestApproval(message: string, token?: CancellationToken, card: ApprovalCard | null = null): Promise<number | undefined> {
     if (!this.view) {
       return undefined;
     }
@@ -137,11 +145,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     }
     const id = ++this.approvalSeq;
-    const answer = new Promise<number>((resolve) => this.pendingApprovals.set(id, { message, resolve }));
+    const answer = new Promise<number>((resolve) => this.pendingApprovals.set(id, { message, card, resolve }));
     // §27.5 — turn cancelled while the card is up: deny, and retire the card in the webview so
     // it cannot be answered into a run that no longer exists (ghost card).
     const cancelSub = token?.onCancellationRequested(() => this.dismissApproval(id));
-    this.post({ type: 'approval', id, message });
+    this.post({ type: 'approval', id, message, card });
     try {
       return await answer;
     } finally {
@@ -292,9 +300,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const cfg = JSON.parse(await host.configGet()) as {
         contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
+        chatDensity?: string;
       };
       this.contextWindow = cfg.contextWindowSize ?? 0;
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
+      this.compact = cfg.chatDensity === 'compact';
       this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
     } catch (err) {
       this.log(`[chat] config/get failed: ${String(err)}`);
@@ -361,9 +371,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const cfg = JSON.parse(await host.configGet()) as {
         contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
+        chatDensity?: string;
       };
       this.contextWindow = cfg.contextWindowSize ?? 0;
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
+      // The open conversation follows a new density at once.
+      this.compact = cfg.chatDensity === 'compact';
+      this.post({ type: 'density', compact: this.compact });
       // The chat sends its own model and agent mode on every turn (workspace settings): what the settings panel
       // CHANGED is adopted here, or it changed nothing. Only a change is adopted, so a model picked for this
       // workspace survives a save that did not touch it.
@@ -436,7 +450,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     let edgeNotice: string | null = null;
     try {
       const s = await host.backendStatus();
-      this.status = { connected: s.connected, vramBadge: s.vramBadge, refused: s.refused ?? null };
+      this.status = { connected: s.connected, vramBadge: s.vramBadge, refused: s.refused ?? null, server: s.server ?? null };
       edgeNotice = s.edgeNotice ?? null;
     } catch {
       this.status = { connected: false, vramBadge: '' };
@@ -985,6 +999,28 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'retryConnection':
         await this.pollBackendStatus();
         return;
+      case 'openSessions':
+        await this.loadSessionCommand();
+        return;
+      case 'menu':
+        if (msg.action === 'export') {
+          await this.exportCommand();
+        } else {
+          await vscode.commands.executeCommand('inferpal.openSettings');
+        }
+        return;
+      case 'setMode':
+        await this.setMode(msg.mode);
+        return;
+      case 'openFile':
+        try {
+          await vscode.window.showTextDocument(vscode.Uri.file(msg.path), { preview: false });
+        } catch (err) {
+          // A file of the result bar that no longer opens (deleted since): said, not a dead link.
+          this.log(`[chat] open ${msg.path} failed: ${String(err)}`);
+          void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+        }
+        return;
       case 'openXray':
         await this.openXray();
         return;
@@ -1181,6 +1217,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.log(`[chat] mention ${category} failed: ${String(err)}`);
       void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
     }
+  }
+
+  /** Shows the chat and its Context X-Ray panel — the settings' "Open Context X-Ray" link. */
+  async revealXray(): Promise<void> {
+    await vscode.commands.executeCommand('inferpal.chat.focus');
+    await this.openXray();
   }
 
   private async openXray(): Promise<void> {
@@ -1567,6 +1609,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           rehydrate = true;
           break;
         case 'stateChange':
+          // Bare /plan toggles the host's plan mode: the mode switch shows it.
+          if (e.name === 'planMode') {
+            this.planMode = e.value === 'on';
+            this.post({ type: 'planMode', enabled: this.planMode });
+          }
           if (e.name === 'model' && e.value) {
             this.model = e.value;
             this.sharedEcho.defaultModel = e.value;
@@ -1698,7 +1745,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         this.append({ role: 'error', text: t('Cancelled.'), timestamp: ChatViewProvider.now() });
       } else {
-        this.append({ role: 'assistant', text: finalText, timestamp: ChatViewProvider.now() });
+        this.append({
+          role: 'assistant', text: finalText, timestamp: ChatViewProvider.now(),
+          model: result.model ?? undefined, duration: result.duration ?? undefined, run: result.run ?? null,
+        });
       }
       // The answer STAYS: this is added after it. Without it, a run cut short at its iteration
       // limit returned fluent text, indistinguishable from a task carried to its end - the fact
@@ -1724,6 +1774,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         timestamp: ChatViewProvider.now(),
         endNotice: result.endNotice ?? null,
         contextWindow: this.contextWindow,
+        run: result.run ?? null,
+        duration: result.duration ?? null,
+        model: result.model ?? null,
       });
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {
@@ -2057,14 +2110,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       plan: this.busy ? this.plan : null,
       history: this.historyEntries(),
       toolBubblesExpanded: this.toolBubblesExpanded,
+      compact: this.compact,
       mentionCategories: this.mentionCats,
       chips: this.pendingAttachments.map((a) => ({ name: a.name })),
       pins: this.pins,
+      planMode: this.planMode,
+      ...this.editorContext(),
+      attachedRecap: t('📎 Attached: {0}'),
     });
     // The transcript carries no card and the webview just rebuilt from it: a card still waiting
     // would vanish while the host keeps waiting for its answer, with no timeout.
     for (const [id, pending] of this.pendingApprovals) {
-      this.post({ type: 'approval', id, message: pending.message });
+      this.post({ type: 'approval', id, message: pending.message, card: pending.card });
     }
     if (this.busy && this.stepPaused) {
       this.post({ type: 'stepPaused' });
@@ -2073,6 +2130,73 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   private post(message: unknown): void {
     void this.view?.webview.postMessage(message);
+  }
+
+  /** The file open in the editor and the errors of the Problems panel — the welcome screen's cards and banner. */
+  private editorContext(): { editorFile: string | null; problems: number } {
+    const editor = this.getActiveEditor();
+    const file = editor && editor.document.uri.scheme === 'file'
+      ? editor.document.uri.path.split('/').pop() ?? null
+      : null;
+    let problems = 0;
+    for (const [, diagnostics] of vscode.languages.getDiagnostics()) {
+      problems += diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error).length;
+    }
+    return { editorFile: file, problems };
+  }
+
+  /** Follows the editor for the welcome screen; debounced, the Problems panel changes on every keystroke. */
+  private watchEditorContext(): void {
+    if (this.editorWatch) {
+      return;
+    }
+    this.editorWatch = true;
+    const push = (): void => {
+      if (this.editorContextTimer) {
+        clearTimeout(this.editorContextTimer);
+      }
+      this.editorContextTimer = setTimeout(() => {
+        const c = this.editorContext();
+        this.post({ type: 'editorContext', file: c.editorFile, problems: c.problems });
+      }, 400);
+    };
+    this.context.subscriptions.push(
+      vscode.window.onDidChangeActiveTextEditor(push),
+      vscode.languages.onDidChangeDiagnostics(push),
+    );
+  }
+
+  /** The mode switch: agent mode is a setting, plan mode is the host's — Plan is agent mode, read-only. */
+  private async setMode(mode: 'chat' | 'agent' | 'plan'): Promise<void> {
+    const agent = mode !== 'chat';
+    const config = vscode.workspace.getConfiguration('inferpal');
+    if (config.get<boolean>('agentMode', false) !== agent) {
+      try {
+        await config.update('agentMode', agent, vscode.ConfigurationTarget.Workspace);
+      } catch (err) {
+        // The mode is read from the settings on every turn: unsaved, it did not change — the switch stays.
+        this.log(`[chat] agent mode not saved: ${String(err)}`);
+        void vscode.window.showWarningMessage(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
+        this.post({ type: 'agentMode', enabled: !agent });
+        return;
+      }
+      this.post({ type: 'agentMode', enabled: agent });
+      await this.pushAgentModeToHost(agent);
+    }
+    const plan = mode === 'plan';
+    if (this.planMode !== plan) {
+      const host = this.hostForGesture();
+      if (!host) {
+        this.post({ type: 'planMode', enabled: this.planMode });
+        return;
+      }
+      try {
+        this.planMode = await host.planMode(plan);
+      } catch (err) {
+        this.gestureFailed('plan/mode', err);
+      }
+      this.post({ type: 'planMode', enabled: this.planMode });
+    }
   }
 
   private static now(): string {

@@ -1,5 +1,5 @@
 // "Inferpal Settings" panel: a singleton WebviewPanel mirroring the VS settings window
-// (4 tabs — Connection / Behavior / Context / Tools). The form is rendered by
+// (the seven pages of the Core schema, side navigation). The form is rendered by
 // src/webview/settings.ts from the host's config JSON (config/get); Save round-trips the
 // FULL JSON through config/update (absent fields would reset — the webview mutates the
 // parsed original object, never rebuilds it).
@@ -11,8 +11,27 @@ import { SettingsSchema } from './protocol';
 import { setLanguage, t } from './i18n';
 
 interface SettingsInbound {
-  type: 'ready' | 'save' | 'testConnection' | 'refreshModels';
+  type: 'ready' | 'save' | 'testConnection' | 'refreshModels'
+    | 'mcpCards' | 'mcpRetry' | 'mcpAuthorize' | 'rulesTable' | 'newRule' | 'browsePinned'
+    | 'indexCard' | 'indexRebuild' | 'exclusions' | 'docsSites' | 'docsAction' | 'contextUsage' | 'projectFiles'
+    | 'pinSizes' | 'openFile' | 'openXray';
   json?: string;
+  /** docsAction: add | reindex | remove, and the URL or the site's id. */
+  verb?: 'add' | 'reindex' | 'remove';
+  arg?: string;
+  /** openFile: the file or folder to open. */
+  path?: string;
+  /** pinSizes: the pinned paths the form holds. */
+  pins?: string;
+  /** mcpAuthorize: the server. */
+  name?: string;
+  /** rulesTable: the machine rules the form holds; newRule: the rule being added. */
+  rules?: string;
+  allow?: boolean;
+  tool?: string;
+  pattern?: string;
+  /** Echoed back so the webview applies only the answer to its LAST request. */
+  requestId?: number;
   // ⚠ What the FORM holds, not what is saved. The webview was already sending `baseUrl` and the
   // handler never read it: Test answered about the saved URL, so it could report "Connected" about
   // a different one. A field declared and never read is worse than a missing field - it makes you
@@ -33,6 +52,7 @@ export class SettingsPanel {
     private readonly getHost: () => HostClient | undefined,
     private readonly onSaved: () => void,
     private readonly onLanguageChanged: () => void,
+    private readonly openXray: () => void,
     private readonly log: (line: string) => void,
   ) {
     panel.webview.html = this.renderHtml(panel.webview);
@@ -49,6 +69,7 @@ export class SettingsPanel {
     getHost: () => HostClient | undefined,
     onSaved: () => void,
     onLanguageChanged: () => void,
+    openXray: () => void,
     log: (line: string) => void,
   ): void {
     if (SettingsPanel.current) {
@@ -67,7 +88,7 @@ export class SettingsPanel {
         retainContextWhenHidden: true,
       },
     );
-    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, onSaved, onLanguageChanged, log);
+    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, onSaved, onLanguageChanged, openXray, log);
   }
 
   private async onMessage(msg: SettingsInbound): Promise<void> {
@@ -160,6 +181,111 @@ export class SettingsPanel {
         }
         return;
       }
+      case 'mcpCards':
+      case 'mcpRetry':
+      case 'mcpAuthorize': {
+        if (!host?.isRunning) {
+          this.post({ type: 'error', message: hostUnavailableMessage() });
+          return;
+        }
+        try {
+          const result = msg.type === 'mcpRetry' ? await host.mcpRetry()
+            : msg.type === 'mcpAuthorize' ? await host.mcpAuthorize(msg.name ?? '')
+            : await host.mcpCards();
+          this.post({ type: 'mcpCards', result });
+        } catch (err) {
+          // The cards would otherwise keep their last state, which reads as "nothing changed".
+          this.log(`[settings] ${msg.type} failed: ${String(err)}`);
+          this.post({ type: 'error', message: hostErrorText(err) });
+        }
+        return;
+      }
+      case 'rulesTable': {
+        if (!host?.isRunning) {
+          return;   // the text editor stays usable; 'ready' already said the host is gone
+        }
+        try {
+          this.post({ type: 'rulesTable', table: await host.permissionsTable(msg.rules ?? ''), requestId: msg.requestId });
+        } catch (err) {
+          this.log(`[settings] permissions/table failed: ${String(err)}`);
+          this.post({ type: 'error', message: hostErrorText(err) });
+        }
+        return;
+      }
+      case 'newRule': {
+        if (!host?.isRunning) {
+          this.post({ type: 'error', message: hostUnavailableMessage() });
+          return;
+        }
+        try {
+          const line = await host.permissionsNewRule(msg.allow === true, msg.tool ?? '', msg.pattern ?? '');
+          this.post({ type: 'newRule', line, requestId: msg.requestId });
+        } catch (err) {
+          this.post({ type: 'error', message: hostErrorText(err) });
+        }
+        return;
+      }
+      case 'indexCard':
+      case 'indexRebuild':
+      case 'exclusions':
+      case 'docsSites':
+      case 'docsAction':
+      case 'contextUsage':
+      case 'projectFiles':
+      case 'pinSizes': {
+        // The live blocks of the pages: each asks the host for what it shows, through the Core presenters.
+        if (!host?.isRunning) {
+          this.post({ type: 'error', message: hostUnavailableMessage() });
+          return;
+        }
+        try {
+          switch (msg.type) {
+            case 'indexCard':    this.post({ type: 'indexCard', card: await host.settingsIndexCard() }); break;
+            case 'indexRebuild': this.post({ type: 'indexCard', card: await host.settingsIndexRebuild() }); break;
+            case 'exclusions':   this.post({ type: 'exclusions', exclusions: await host.settingsExclusions() }); break;
+            case 'docsSites':    this.post({ type: 'docsSites', docs: await host.settingsDocsSites() }); break;
+            case 'docsAction':
+              this.post({ type: 'docsSites', docs: await host.settingsDocsAction(msg.verb ?? 'reindex', msg.arg ?? '') });
+              break;
+            case 'contextUsage': this.post({ type: 'contextUsage', usage: await host.settingsContextUsage() }); break;
+            case 'projectFiles': this.post({ type: 'projectFiles', files: await host.settingsProjectFiles() }); break;
+            case 'pinSizes':     this.post({ type: 'pinSizes', sizes: await host.settingsPinSizes(msg.pins ?? '') }); break;
+          }
+        } catch (err) {
+          this.log(`[settings] ${msg.type} failed: ${String(err)}`);
+          this.post({ type: 'error', message: hostErrorText(err) });
+        }
+        return;
+      }
+      case 'openFile': {
+        // A project file opens in the editor; a folder (the rules) is shown in the explorer.
+        if (!msg.path) {
+          return;
+        }
+        const uri = vscode.Uri.file(msg.path);
+        try {
+          const stat = await vscode.workspace.fs.stat(uri);
+          if (stat.type & vscode.FileType.Directory) {
+            await vscode.commands.executeCommand('revealInExplorer', uri);
+          } else {
+            await vscode.window.showTextDocument(uri, { preview: false });
+          }
+        } catch (err) {
+          this.log(`[settings] open ${msg.path} failed: ${String(err)}`);
+          this.post({ type: 'error', message: String(err instanceof Error ? err.message : err) });
+        }
+        return;
+      }
+      case 'openXray':
+        this.openXray();
+        return;
+      case 'browsePinned': {
+        const picked = await vscode.window.showOpenDialog({ canSelectMany: false, canSelectFiles: true, canSelectFolders: false });
+        if (picked?.[0]) {
+          this.post({ type: 'pinnedPicked', path: picked[0].fsPath });
+        }
+        return;
+      }
       case 'save': {
         if (!host?.isRunning || !msg.json) {
           // Clicking Save cannot say nothing: with no host nothing is written, and the panel kept
@@ -222,8 +348,6 @@ export class SettingsPanel {
    * labels/hints/sections come from the host instead (`settings/strings`, same .resx as VS). */
   private static strings(): Record<string, string> {
     return {
-      'Tools': t('Tools'),
-      'Save': t('Save'),
       'Settings saved.': t('Settings saved.'),
       'Loading settings…': t('Loading settings…'),
       'Connected': t('Connected'),
@@ -231,7 +355,6 @@ export class SettingsPanel {
       'Refresh models': t('Refresh models'),
       'Show all models': t('Show all models'),
       'No model listed — is the backend reachable?': t('No model listed — is the backend reachable?'),
-      'Inline diff preview for code actions': t('Inline diff preview for code actions'),
     };
   }
 

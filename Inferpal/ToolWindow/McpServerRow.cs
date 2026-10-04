@@ -40,16 +40,22 @@ internal sealed class McpServerRow : NotifyPropertyChangedObject
     private string _summary    = string.Empty;
     private string _statusText = string.Empty;
     private bool   _authRequired;
+    private string _stateKey   = "notStarted";
+    private string _cause      = string.Empty;
+    private bool   _showRetry;
+    private bool   _hasCause;
 
     internal Action<McpServerRow>? OnEdit;
     internal Action<McpServerRow>? OnDelete;
     internal Func<McpServerRow, Task>? OnAuthorize;
+    internal Func<Task>? OnRetry;
 
     public McpServerRow()
     {
         EditCommand      = new AsyncCommand((_, _) => { OnEdit?.Invoke(this);   return Task.CompletedTask; });
         DeleteCommand    = new AsyncCommand((_, _) => { OnDelete?.Invoke(this); return Task.CompletedTask; });
         AuthorizeCommand = new AsyncCommand((_, _) => OnAuthorize?.Invoke(this) ?? Task.CompletedTask);
+        RetryCommand     = new AsyncCommand((_, _) => OnRetry?.Invoke() ?? Task.CompletedTask);
     }
 
     /// <summary>
@@ -63,7 +69,8 @@ internal sealed class McpServerRow : NotifyPropertyChangedObject
     /// <summary>Executable / command launched for the stdio transport.</summary>
     [DataMember] public string Command  { get => _command; set { if (SetProperty(ref _command, value)) RefreshSummary(); } }
 
-    /// <summary>Command arguments, one per space (display/edit form).</summary>
+    /// <summary>Command arguments, one per LINE: split on spaces, <c>C:\My Projects</c> became two arguments
+    /// the first time the server was edited.</summary>
     [DataMember] public string ArgsText { get => _argsText; set { if (SetProperty(ref _argsText, value)) RefreshSummary(); } }
 
     /// <summary>Environment variables, one <c>KEY=value</c> per line.</summary>
@@ -82,11 +89,22 @@ internal sealed class McpServerRow : NotifyPropertyChangedObject
     /// <summary>One-line "command + first args" preview shown next to the name.</summary>
     [DataMember] public string Summary  { get => _summary;  set => SetProperty(ref _summary, value); }
 
-    /// <summary>Connection result for this server (✓ N tools / ✗ error / — disabled / 🔒 auth).</summary>
+    /// <summary>What the server is doing, from <see cref="Services.Presentation.McpServerCards"/>.</summary>
     [DataMember] public string StatusText { get => _statusText; set => SetProperty(ref _statusText, value); }
 
-    /// <summary>True when this (HTTP) server awaits OAuth authorization — shows the Authorize button.</summary>
+    /// <summary>True when this (HTTP) server awaits OAuth authorization — shows the Sign in button.</summary>
     [DataMember] public bool AuthRequired { get => _authRequired; set => SetProperty(ref _authRequired, value); }
+
+    /// <summary>The card state — connected | signIn | failed | off | notStarted — which picks the dot's color.</summary>
+    [DataMember] public string StateKey { get => _stateKey; set => SetProperty(ref _stateKey, value); }
+
+    /// <summary>Why the server does not run (its stderr, the refusal): what the user needs to fix it.</summary>
+    [DataMember] public string Cause { get => _cause; set { if (SetProperty(ref _cause, value)) HasCause = value.Length > 0; } }
+
+    [DataMember] public bool HasCause { get => _hasCause; private set => SetProperty(ref _hasCause, value); }
+
+    /// <summary>True when the server did not start: shows Retry.</summary>
+    [DataMember] public bool ShowRetry { get => _showRetry; set => SetProperty(ref _showRetry, value); }
 
     /// <summary>
     /// The definition this row was read from. Not a data member: it carries what the row does not show
@@ -97,12 +115,16 @@ internal sealed class McpServerRow : NotifyPropertyChangedObject
     [DataMember] public AsyncCommand EditCommand      { get; }
     [DataMember] public AsyncCommand DeleteCommand    { get; }
     [DataMember] public AsyncCommand AuthorizeCommand { get; }
+    [DataMember] public AsyncCommand RetryCommand     { get; }
 
+    /// <summary>"stdio · command args" or "HTTP · url", as the VS Code card reads — an argument with a space
+    /// quoted so the line reads as typed.</summary>
     private void RefreshSummary()
     {
-        var s = !string.IsNullOrWhiteSpace(Url)
-            ? Url
-            : string.IsNullOrWhiteSpace(ArgsText) ? Command : $"{Command} {ArgsText}";
-        Summary = s.Length > 70 ? s[..70] + "…" : s;
+        var args = ArgsText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                           .Select(a => a.Contains(' ') ? $"\"{a}\"" : a);
+        Summary = !string.IsNullOrWhiteSpace(Url)
+            ? $"HTTP · {Url}"
+            : $"stdio · {string.Join(' ', new[] { Command }.Concat(args)).Trim()}";
     }
 }

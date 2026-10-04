@@ -40,17 +40,38 @@ internal partial class InferpalToolWindowData
     private Task CopyXrayPromptAsync(object? _, CancellationToken __) => RunOnVMContextAsync(() =>
         ClipboardHelper.TrySet(_xrayRawPrompt, "Xray.CopyPrompt"));
 
-    /// <summary>Rebuilds the panel rows from the current prompt composition. VM thread only.</summary>
-    private void RefreshXrayPanel()
+    /// <summary>The prompt's composition as the next turn would send it, counted. VM thread only: the history lives there.</summary>
+    private XRayPanelModel BuildXrayModel()
     {
         var root     = FindProjectRoot();
         var sections = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir).BuildSections(
             ModelPrompts.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root),
             _xrayDisabledSections);
-        var model = XRayPanelPresenter.Build(
+        return XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
             toolTokens: NextTurnToolTokens());
+    }
+
+    /// <summary>The counts the settings' Context page shows, read on the VM context.</summary>
+    private async Task<XRayPanelModel?> CurrentXrayModelAsync()
+    {
+        XRayPanelModel? model = null;
+        await RunOnVMContextAsync(() => model = BuildXrayModel());
+        return model;
+    }
+
+    /// <summary>The settings' "Open Context X-Ray": the panel opens with the counts of now.</summary>
+    private Task OpenXrayFromSettingsAsync() => RunOnVMContextAsync(() =>
+    {
+        RefreshXrayPanel();
+        IsXrayPanelOpen = true;
+    });
+
+    /// <summary>Rebuilds the panel rows from the current prompt composition. VM thread only.</summary>
+    private void RefreshXrayPanel()
+    {
+        var model = BuildXrayModel();
 
         _xrayRawPrompt  = model.RawPrompt;
         XrayTotalText   = Strings.XrayHeader($"~{model.TotalTokens:N0}");
@@ -58,7 +79,7 @@ internal partial class InferpalToolWindowData
                         + (model.ToolTokens > 0 ? "\n" + Strings.XrayTools($"~{model.ToolTokens:N0}") : "");
         HasXrayWarning  = model.OverheadWarning;
 
-        var palette = ThemePalette.For(_isDark);
+        var palette = ThemePalette.For(_isDark, _isHighContrast);
         XraySections.Clear();
         foreach (var s in model.Sections)
             XraySections.Add(new XRaySectionItem(s, palette, OnXraySectionToggled));
@@ -79,14 +100,7 @@ internal partial class InferpalToolWindowData
     // Recomputes header totals + raw prompt without rebuilding the rows (keeps expansion state).
     private void RefreshXrayTotals()
     {
-        var root     = FindProjectRoot();
-        var sections = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir).BuildSections(
-            ModelPrompts.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root),
-            _xrayDisabledSections);
-        var model = XRayPanelPresenter.Build(
-            sections, _xrayDisabledSections,
-            AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
-            toolTokens: NextTurnToolTokens());
+        var model = BuildXrayModel();
 
         _xrayRawPrompt  = model.RawPrompt;
         XrayTotalText   = Strings.XrayHeader($"~{model.TotalTokens:N0}");

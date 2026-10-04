@@ -430,8 +430,10 @@ internal static class MarkdownParser
             var blockType = list.IsOrdered ? "numbered_item" : "bullet_item";
             var prefix    = list.IsOrdered ? $"{idx++}." : "•";
 
-            var lb = new MarkdownBlockModel { Type = blockType, Text = $"{indent}{prefix} {GetListItemPlainText(item)}" };
-            lb.Inlines.Add(new InlineRunModel { Text = $"{indent}{prefix} " });
+            var lb = new MarkdownBlockModel
+            {
+                Type = blockType, Marker = $"{indent}{prefix}", Text = $"{indent}{prefix} {GetListItemPlainText(item)}",
+            };
 
             // Item's own line: inlines from its paragraph(s), separated by a soft break when the
             // item is "loose" (multiple paragraphs).

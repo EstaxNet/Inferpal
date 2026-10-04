@@ -243,15 +243,46 @@ internal static class ModelCatalog
         return PickBestChatModel(chat);
     }
 
+    /// <remarks>
+    /// ⚠ A profile names a FAMILY, and its measured fit was measured on its newest release: within one family, the
+    /// release the profile lists first comes first (Qwen3.8 before a Qwen3.5 4B), never the server's list order — the
+    /// notice that announces the choice says "the best of the installed models". Size does not decide: within Gemma 4
+    /// the 12B did better than the 26B. A base model is not trained to chat: it comes after every other.
+    /// </remarks>
     public static string PickBestChatModel(IReadOnlyList<string> models)
     {
-        var profiled = models
+        var chat = models.Where(m => !IsBaseModel(m)).ToList();
+        if (chat.Count == 0) chat = [.. models];
+
+        var profiled = chat
             .Select((model, index) => (Model: model, Index: index, Profile: ModelProfiles.For(model)))
             .Where(m => m.Profile is { Agent: not AgentFit.NotRecommended, ToolCalls: not null })
-            .OrderBy(m => m.Profile!.Agent).ThenBy(m => m.Profile!.Rank).ThenBy(m => m.Index)
+            .OrderBy(m => m.Profile!.Agent).ThenBy(m => m.Profile!.Rank)
+            .ThenBy(m => ReleaseOrder(m.Profile!, m.Model)).ThenBy(m => m.Index)
             .Select(m => m.Model)
             .FirstOrDefault();
         if (profiled is not null) return profiled;
+
+        return PickUnprofiled(chat);
+    }
+
+    /// <summary>A pretrained model without chat tuning: <c>base</c> is one of the words of its name
+    /// (<c>qwen3.5-2b-base</c>, <c>ministral-3-8b-base-2512</c>) — never <c>database-coder</c>.</summary>
+    public static bool IsBaseModel(string name) =>
+        name.ToLowerInvariant().Split(NameSeparators, StringSplitOptions.RemoveEmptyEntries).Contains("base");
+
+    private static readonly char[] NameSeparators = ['-', '_', '.', ':', '/', ' '];
+
+    /// <summary>The position, in its profile's list, of the fragment that names this model (its release).</summary>
+    private static int ReleaseOrder(ModelProfile profile, string model)
+    {
+        var id = model.ToLowerInvariant();
+        var at = Array.FindIndex(profile.Ids, fragment => id.Contains(fragment, StringComparison.Ordinal));
+        return at < 0 ? int.MaxValue : at;
+    }
+
+    private static string PickUnprofiled(IReadOnlyList<string> models)
+    {
 
         foreach (var pref in UnprofiledChatPreference)
         {

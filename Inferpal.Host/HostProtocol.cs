@@ -64,7 +64,26 @@ internal sealed record ChatSendResult(
     /// <summary>What the next question will send, in tokens: the conversation plus the tool definitions
     /// (<c>ContextManager.NextTurnLoad</c>) — the fill the context gauge shows, the X-Ray's figure. Not
     /// <see cref="PromptTokens"/>, which measured this turn's last request, the run's own transcript included.</summary>
-    int     NextTurnTokens = 0);
+    int     NextTurnTokens = 0,
+    /// <summary>The run of the turn — its steps, the files it changed, its last check — for the line under the answer
+    /// and the result bar; <c>null</c> when no tool ran.</summary>
+    RunSummaryDto? Run = null,
+    /// <summary>How long the turn took, as the answer's header shows it ("21 s").</summary>
+    string? Duration = null,
+    /// <summary>The model that answered.</summary>
+    string? Model = null);
+
+/// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
+/// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>
+/// <param name="RunId">What <c>/undo-run</c> takes; empty when the run changed no file.</param>
+internal sealed record RunSummaryDto(
+    int Steps, string Title, string Detail, List<Services.Presentation.RunFileLine> Files, string Check, string CheckText,
+    string RunId)
+{
+    public static RunSummaryDto? Of(Services.Presentation.RunSummaryModel? m) => m is null ? null : new(
+        m.Steps, m.Title, m.Detail, [.. m.Files],
+        char.ToLowerInvariant(m.Check.ToString()[0]) + m.Check.ToString()[1..], m.CheckText, m.RunId);
+}
 
 /// <summary>`chat/tool` notification — one executed tool call (uncapped output, like the VS bubble).</summary>
 internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors);
@@ -158,7 +177,9 @@ internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string
 /// </remarks>
 /// <param name="Refused">Not connected, but the server answered the check with a refusal (a wrong API key: 401): the
 /// badge text to show instead of "unreachable", already localized — and the pre-flight's cue to say "refused".</param>
-internal sealed record BackendStatusResult(bool Connected, string VramBadge, string? EdgeNotice = null, string? Refused = null);
+/// <param name="Server">The configured backend, as the chat header names it ("LM Studio").</param>
+internal sealed record BackendStatusResult(bool Connected, string VramBadge, string? EdgeNotice = null, string? Refused = null,
+                                           string? Server = null);
 
 /// <summary>
 /// `connection/check` — what the settings panel's Test button found AT THE URL IT WAS GIVEN.
@@ -402,24 +423,65 @@ internal sealed record SessionTitleResult(string Title, string FileName);
 // ── Settings schema (`settings/schema`) ──────────────────────────────────────
 
 /// <summary>One choice of a select field. Texts are product names — never localized.</summary>
-internal sealed record SettingsOptionDto(string Value, string Text);
+/// <summary>One choice of a select. <c>Description</c>: the sentence under its name when drawn as a card.</summary>
+internal sealed record SettingsOptionDto(string Value, string Text, string? Description = null);
 
 /// <summary>An editable setting: <paramref name="Label"/>/<paramref name="Hint"/> are resource
 /// names the adapter resolves against `settings/strings`.</summary>
 internal sealed record SettingsFieldDto(
-    string Key, string Kind, string Label, string? Hint, string? Unit, string? Gate, string? Button,
+    string Key, string Kind, string Label, string? Hint, string? Unit, string? Button,
     List<SettingsOptionDto>? Options,
     /// <summary>Factory value of a numeric field, so the panel can honour "clearing the box restores
     /// the default" - the affordance the Visual Studio window applies and this one ignored.</summary>
-    string? DefaultValue = null);
+    string? DefaultValue = null,
+    /// <summary>A check box showing the opposite of the stored boolean.</summary>
+    bool Inverted = false,
+    /// <summary>A value other than <paramref name="DefaultValue"/> opens the page's advanced sections.</summary>
+    bool OpensFold = false,
+    /// <summary>Resource name of the hint shown instead when the selected server is not Ollama.</summary>
+    string? HintNotOllama = null,
+    /// <summary>The structured editor of a list setting: pinnedFiles | mcpServers | approvalRules | nameValue.</summary>
+    string? Editor = null,
+    /// <summary>A numeric box whose 0 means "not set": shown empty.</summary>
+    bool ZeroIsEmpty = false,
+    /// <summary>Resource name of what an optional model list shows for its empty value ("Same as chat").</summary>
+    string? EmptyChoice = null,
+    /// <summary>Resource names of a nameValue table's column headers.</summary>
+    List<string>? Columns = null);
 
-/// <summary>A titled group of fields, with an optional reveal toggle.</summary>
+/// <summary>A group of fields under a title (empty = no heading).</summary>
 internal sealed record SettingsSectionDto(
     string Title, List<SettingsFieldDto> Fields,
-    string? ToggleGate, string? ToggleLabel, string? ToggleHint);
+    string? Description, string? Gate, bool Collapsible, string? Note, bool Grid, string? Widget);
 
-/// <summary>One tab of the settings window.</summary>
-internal sealed record SettingsTabDto(string Key, string Title, List<SettingsSectionDto> Sections);
+/// <summary>One page of the settings window.</summary>
+internal sealed record SettingsTabDto(
+    string Key, string Title, string Description, List<SettingsSectionDto> Sections, string? AdvancedToggle);
 
-/// <summary>`settings/schema` answer: the tabs plus the fields rendered outside them.</summary>
-internal sealed record SettingsSchemaDto(List<SettingsTabDto> Tabs, List<SettingsFieldDto> HeaderFields);
+/// <summary>`settings/schema` answer: the pages, in the order of the side navigation.</summary>
+internal sealed record SettingsSchemaDto(List<SettingsTabDto> Tabs);
+
+// ── Settings: structured editors of the Tools page ──────────────────────────────
+
+/// <summary>One MCP server card. <c>State</c>: connected | signIn | failed | off | notStarted.</summary>
+internal sealed record McpCardDto(
+    string Name, string Transport, string Target, bool Enabled,
+    string State, string StatusText, string? Cause, int ToolCount);
+
+/// <summary>`mcp/cards` (and `mcp/retry`, `mcp/authorize`) answer. <c>Error</c>: why a sign-in failed.</summary>
+internal sealed record McpCardsDto(string Summary, List<McpCardDto> Cards, string? Error);
+
+internal sealed record McpServerNameParams(string Name);
+
+internal sealed record PermissionsTableParams(string? Rules);
+
+internal sealed record PlanModeParams(bool Enabled);
+
+/// <summary>One approval rule. <c>Source</c>: team | machine. <c>Status</c>: inForce | ignoredAllow | unreadable.</summary>
+internal sealed record ApprovalRuleRowDto(
+    string Source, bool? Allow, string Tool, string Pattern, string Status,
+    string EffectText, string FromText, string? NoteText, int MachineLine);
+
+internal sealed record ApprovalRuleTableDto(bool TeamUnusable, List<ApprovalRuleRowDto> Rows);
+
+internal sealed record NewRuleParams(bool Allow, string? Tool, string? Pattern);

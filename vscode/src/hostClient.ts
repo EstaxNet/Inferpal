@@ -8,6 +8,14 @@ import type { DebugDelegate } from './debugBridge';
 import {
   ActiveDocumentDto,
   ApprovalNote,
+  ApprovalRuleTable,
+  McpCardsResult,
+  ContextUsage,
+  IndexCard,
+  PinnedFileSize,
+  ProjectFileRow,
+  SettingsDocs,
+  SettingsExclusions,
   DebugBreakpointParams,
   DebugCaptureTestParams,
   DebugEvaluateParams,
@@ -491,6 +499,76 @@ export class HostClient {
    * Visual Studio settings window (keys = resx resource names). */
   settingsStrings(): Promise<Record<string, string>> {
     return this.connection().sendRequest<Record<string, string>>('settings/strings');
+  }
+
+  /** The MCP server cards of the settings panel: the saved servers and what each one is doing. */
+  mcpCards(): Promise<McpCardsResult> {
+    return this.connection().sendRequest<McpCardsResult>('mcp/cards');
+  }
+
+  /** Restarts the MCP servers, then answers with their cards. */
+  mcpRetry(): Promise<McpCardsResult> {
+    return this.connection().sendRequest<McpCardsResult>('mcp/retry');
+  }
+
+  /** The OAuth sign-in of an HTTP MCP server; a failure comes back in `error`, not as a throw. */
+  mcpAuthorize(name: string): Promise<McpCardsResult> {
+    return this.connection().sendRequest<McpCardsResult>('mcp/authorize', { name });
+  }
+
+  /** The approval rules table: the team file and the machine rules the panel holds (unsaved included). */
+  permissionsTable(rules: string): Promise<ApprovalRuleTable> {
+    return this.connection().sendRequest<ApprovalRuleTable>('permissions/table', { rules });
+  }
+
+  /** The line for a new machine rule, or null when the host would not read it. */
+  permissionsNewRule(allow: boolean, tool: string, pattern: string): Promise<string | null> {
+    return this.connection().sendRequest<string | null>('permissions/newRule', { allow, tool, pattern });
+  }
+
+  /** Read-only plan mode on or off (the chat's Plan segment); answers the state now. */
+  planMode(enabled: boolean): Promise<boolean> {
+    return this.connection().sendRequest<boolean>('plan/mode', { enabled });
+  }
+
+  /** The code index as the settings' Code search page shows it. */
+  settingsIndexCard(): Promise<IndexCard> {
+    return this.connection().sendRequest<IndexCard>('settings/indexCard');
+  }
+
+  /** `/index rebuild`, from the page's button; answers with the card. */
+  settingsIndexRebuild(): Promise<IndexCard> {
+    return this.connection().sendRequest<IndexCard>('settings/indexRebuild');
+  }
+
+  /** The exclusion patterns of .inferpal/project.json the index applies. */
+  settingsExclusions(): Promise<SettingsExclusions> {
+    return this.connection().sendRequest<SettingsExclusions>('settings/exclusions');
+  }
+
+  /** The @Docs sites, with what each crawl did. */
+  settingsDocsSites(): Promise<SettingsDocs> {
+    return this.connection().sendRequest<SettingsDocs>('settings/docsSites');
+  }
+
+  /** Adds, reindexes or removes a @Docs site through `/docs`; the crawl runs on. */
+  settingsDocsAction(verb: 'add' | 'reindex' | 'remove', arg: string): Promise<SettingsDocs> {
+    return this.connection().sendRequest<SettingsDocs>('settings/docsAction', { verb, arg });
+  }
+
+  /** How full the conversation's window is, and with what. */
+  settingsContextUsage(): Promise<ContextUsage> {
+    return this.connection().sendRequest<ContextUsage>('settings/contextUsage');
+  }
+
+  /** The project's files the prompt reads. */
+  settingsProjectFiles(): Promise<ProjectFileRow[]> {
+    return this.connection().sendRequest<ProjectFileRow[]>('settings/projectFiles');
+  }
+
+  /** What each pinned file the panel holds costs the prompt. */
+  settingsPinSizes(pins: string): Promise<PinnedFileSize[]> {
+    return this.connection().sendRequest<PinnedFileSize[]>('settings/pinSizes', { pins });
   }
 
   /** Returns what the save could not use. The count is computed BY THE HOST: the permission DSL

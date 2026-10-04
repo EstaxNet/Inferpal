@@ -2,7 +2,7 @@
 
 Inferpal talks to a model server over HTTP through a provider abstraction
 (`IInferenceProvider`, resolved at startup by `InferenceProviderFactory`). You pick the
-provider in **Settings → Connection**.
+provider in **Settings → Server and models**: **Test** names the server that answers and selects its type.
 
 ## Supported providers
 
@@ -35,11 +35,12 @@ capability is missing.
 
 ## Configuring a provider
 
-1. **Settings → Connection → Provider** — choose Ollama / LM Studio / OpenAI-compatible.
-2. **Server URL** — e.g. `http://localhost:11434` (Ollama), `http://localhost:1234`
-   (LM Studio — a trailing `/v1` is accepted), or your `/v1` base URL (OpenAI-compatible).
-3. **API key** — only needed for OpenAI-compatible endpoints that require auth.
-4. **Test** — verifies connectivity and lists models.
+1. **Settings → Server and models → Server address** — e.g. `http://localhost:11434` (Ollama),
+   `http://localhost:1234` (LM Studio — a trailing `/v1` is accepted), or your `/v1` base URL
+   (OpenAI-compatible).
+2. **Test** — names the server that answers, selects its type and lists its models.
+3. **Server type** and **API key** — under *Show advanced settings → Connection*. The key is only
+   needed for OpenAI-compatible endpoints that require auth.
 
 ## VRAM budget
 
@@ -47,7 +48,7 @@ The hardware-aware features (first-run fit-check, `/hardware`, recommended `num_
 to know the GPU's **total** VRAM. On a local Ollama host this is auto-detected via
 `nvidia-smi`; otherwise set it manually:
 
-- **Settings → Context → VRAM budget** (in GB), or
+- **Settings → Server and models → *Show advanced settings* → Graphics memory** (in GB), or
 - `/hardware <gb>` in the chat (e.g. `/hardware 24`).
 
 Run `/hardware` with no argument for the full profile. When live monitoring isn't available

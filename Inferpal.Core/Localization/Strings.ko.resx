@@ -7,38 +7,30 @@
 
   <!-- Settings section headers -->
   <data name="SectionConnection" xml:space="preserve"><value>연결</value></data>
-  <data name="SettingsTabConnection" xml:space="preserve"><value>연결</value></data>
-  <data name="SettingsTabBehavior" xml:space="preserve"><value>동작</value></data>
-  <data name="SettingsTabContext" xml:space="preserve"><value>컨텍스트</value></data>
-  <data name="SettingsTabTools" xml:space="preserve"><value>도구</value></data>
-  <data name="SectionBehavior" xml:space="preserve"><value>동작</value></data>
-  <data name="SectionInlineCompletions" xml:space="preserve"><value>인라인 완성</value></data>
-  <data name="LabelInlineCompletionMode" xml:space="preserve"><value>성능 모드:</value></data>
-  <data name="FimModeFast" xml:space="preserve"><value>빠름 (128 tok · 300 ms)</value></data>
-  <data name="FimModeDefault" xml:space="preserve"><value>기본 (256 tok · 600 ms)</value></data>
-  <data name="FimModeHighAccuracy" xml:space="preserve"><value>고정밀 (512 tok · 1 s)</value></data>
-  <data name="HintInlineCompletionMode" xml:space="preserve"><value>빠름: 128토큰, 지연 300ms — 낮은 지연, 짧은 제안. 기본: 256토큰, 지연 600ms — 균형. 높은 정확도: 512토큰, 지연 1s — 최고 품질, 느림.</value></data>
-  <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>고스트 텍스트 완성 활성화</value></data>
-  <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>활성화하면 Inferpal가 입력 중에 AI가 생성한 코드 제안을 인라인으로 표시합니다(고스트 텍스트). Tab으로 수락, Escape로 닫기.</value></data>
-  <data name="LabelInlineCompletionModel" xml:space="preserve"><value>FIM 모델 (비어 있으면 채팅 모델 사용):</value></data>
-  <data name="HintInlineCompletionModel" xml:space="preserve"><value>Fill-in-the-Middle 완성에 사용할 모델. 비워 두면 채팅 모델을 재사용합니다. 더 빠르거나 전용 코드 모델(예: qwen2.5-coder)을 설정하면 인라인 제안이 향상됩니다.</value></data>
-  <data name="LabelCodeActionsModel" xml:space="preserve"><value>코드 액션 모델 (비어 있으면 채팅 모델 사용):</value></data>
-  <data name="HintCodeActionsModel" xml:space="preserve"><value>설명, 수정, 리팩터링 명령에 사용할 모델입니다. 비워 두면 채팅 모델을 재사용합니다. 더 강력한 모델을 지정하면 코드 분석 품질이 향상됩니다.</value></data>
-  <data name="LabelInlineEditModel" xml:space="preserve"><value>인라인 편집 모델 (비어 있으면 코드 액션 모델 사용):</value></data>
-  <data name="HintInlineEditModel" xml:space="preserve"><value>인라인 편집 기능(Ctrl+Shift+I)에 사용할 모델입니다. 비워 두면 코드 액션 모델, 채팅 모델 순으로 대체됩니다. 빠른 코드 전용 모델(예: qwen2.5-coder)을 권장합니다.</value></data>
+  <data name="LabelInlineCompletionMode" xml:space="preserve"><value>속도</value></data>
+  <data name="FimModeFast" xml:space="preserve"><value>빠름</value></data>
+  <data name="FimModeDefault" xml:space="preserve"><value>균형</value></data>
+  <data name="FimModeHighAccuracy" xml:space="preserve"><value>정확</value></data>
+  <data name="LabelInlineCompletionEnabled" xml:space="preserve"><value>입력 중 코드 제안</value></data>
+  <data name="HintInlineCompletionEnabled" xml:space="preserve"><value>Tab으로 수락, Esc로 닫기. 채팅에서 모델이 답하는 동안은 멈춥니다.</value></data>
+  <data name="LabelInlineCompletionModel" xml:space="preserve"><value>자동 완성</value></data>
+  <data name="HintInlineCompletionModel" xml:space="preserve"><value>입력 중 고스트 텍스트.</value></data>
+  <data name="LabelCodeActionsModel" xml:space="preserve"><value>설명, 수정, 리팩터링</value></data>
+  <data name="HintCodeActionsModel" xml:space="preserve"><value>편집기 메뉴의 작업.</value></data>
+  <data name="LabelInlineEditModel" xml:space="preserve"><value>AI로 편집</value></data>
+  <data name="HintInlineEditModel" xml:space="preserve"><value>선택 영역을 그 자리에서 다시 씁니다.</value></data>
   <data name="InlineEditDlgTitle" xml:space="preserve"><value>Inferpal — AI로 편집</value></data>
   <data name="InlineEditDlgHeader" xml:space="preserve"><value>✏  편집 내용 설명  (Enter로 적용, Esc로 취소)</value></data>
   <data name="InlineEditDlgHint" xml:space="preserve"><value>예: "null 검사 추가", "async로 변환", "주석을 한국어로 번역"</value></data>
   <data name="InlineEditWorking" xml:space="preserve"><value>AI 생성 중…</value></data>
   <data name="BtnApply" xml:space="preserve"><value>적용</value></data>
-  <data name="SectionRag" xml:space="preserve"><value>RAG / 의미 인덱스</value></data>
-  <data name="LabelRagEnabled" xml:space="preserve"><value>백그라운드 인덱싱 활성화 (RAG)</value></data>
-  <data name="LabelRagAutoContext" xml:space="preserve"><value>턴마다 관련 코드 자동 삽입</value></data>
-  <data name="HintRagAutoContext" xml:space="preserve"><value>활성화하면 코드 질문마다 가장 관련 있는 인덱싱된 스니펫을 가져와 프롬프트에 추가합니다(이미 첨부된 항목은 제외). 백그라운드 인덱싱이 필요합니다.</value></data>
-  <data name="HintRagEnabled" xml:space="preserve"><value>활성화하면 Inferpal가 백그라운드에서 솔루션의 모든 소스 파일을 인덱싱하고 의미 검색을 사용하여 AI에 관련 코드 컨텍스트를 제공합니다. 대규모 리포지토리에서 메모리 또는 CPU를 절약하려면 비활성화하세요.</value></data>
-  <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>임베딩 모델:</value></data>
-  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>의미 검색의 임베딩을 계산하는 모델입니다. 전용 임베딩 모델만 표시됩니다(embeddinggemma, qwen3-embedding, nomic-embed-text 등). 비워 두면 설치된 것 중 가장 적합한 모델(embeddinggemma 우선)을 사용하고, 하나도 없으면 키워드 검색만 합니다.</value></data>
-  <data name="LabelRagTopK" xml:space="preserve"><value>쿼리당 결과 수 (top-K):</value></data>
+  <data name="LabelRagEnabled" xml:space="preserve"><value>이 작업 영역을 백그라운드에서 인덱싱</value></data>
+  <data name="LabelRagAutoContext" xml:space="preserve"><value>질문마다 관련 코드 추가</value></data>
+  <data name="HintRagAutoContext" xml:space="preserve"><value>가까운 코드 조각 몇 개일 뿐 전체 검색이 아닙니다. 파일을 직접 첨부했으면 건너뜁니다.</value></data>
+  <data name="HintRagEnabled" xml:space="preserve"><value>의미로 검색하기 위한 것입니다. 모델이 답하는 동안 잠시 멈춥니다. 끄더라도 에이전트는 텍스트로 파일을 검색합니다.</value></data>
+  <data name="LabelRagEmbeddingModel" xml:space="preserve"><value>코드 검색</value></data>
+  <data name="HintRagEmbeddingModel" xml:space="preserve"><value>선택 사항: 없으면 키워드로 검색합니다.</value></data>
+  <data name="LabelRagTopK" xml:space="preserve"><value>검색당 결과 수</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>초</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>분</value></data>
   <data name="UnitHours" xml:space="preserve"><value>시간</value></data>
@@ -49,27 +41,25 @@
   <data name="UnitChunks" xml:space="preserve"><value>청크</value></data>
   <data name="UnitIterations" xml:space="preserve"><value>회</value></data>
   <data name="UnitRangeZeroToOne" xml:space="preserve"><value>0–1</value></data>
-  <data name="HintRagTopK" xml:space="preserve"><value>의미 검색 도구가 반환하는 최대 코드 청크 수입니다. 값이 높을수록 더 많은 컨텍스트를 제공하지만 토큰 사용량이 증가합니다. 권장: 3–10.</value></data>
-  <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>유사도 임계값 (0–1):</value></data>
-  <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>청크가 검색 결과에 포함되기 위한 최소 코사인 유사도 점수입니다. 이 임계값 미만의 청크는 저품질 일치로 제외됩니다. 권장값: 0.20.</value></data>
-  <data name="LabelLspEnabled" xml:space="preserve"><value>LSP 시맨틱 청킹 (TypeScript, Python, Go, Rust)</value></data>
-  <data name="HintLspEnabled" xml:space="preserve"><value>활성화하면 Inferpal는 설치된 언어 서버(typescript-language-server, pylsp/pyright-langserver, gopls, rust-analyzer)를 사용하여 RAG 인덱싱 중 C# 이외의 파일에서 정확한 기호 경계를 추출합니다. PATH에 해당 서버가 있어야 합니다.</value></data>
-  <data name="LabelModelAutoUnload" xml:space="preserve"><value>유휴 모델 자동 언로드</value></data>
-  <data name="HintModelAutoUnload" xml:space="preserve"><value>활성화하면 Inferpal가 비활성 기간 후 모델을 VRAM에서 언로드하도록 Ollama에 지시합니다. AI가 사용되지 않을 때 GPU 메모리를 해제합니다. 로드된 모델의 VRAM 사용량은 채팅 헤더에 표시됩니다.</value></data>
-  <data name="LabelModelIdleTimeout" xml:space="preserve"><value>언로드까지 시간 (분):</value></data>
-  <data name="HintModelIdleTimeout" xml:space="preserve"><value>Ollama가 VRAM에서 모델을 언로드하기 전 비활성 분 수입니다. 낮은 값은 GPU 메모리를 더 빨리 해제하고, 높은 값은 다음 요청 시 재로드 시간을 줄입니다. 최소: 1분.</value></data>
-  <data name="SectionContext" xml:space="preserve"><value>컨텍스트 및 메모리</value></data>
-  <data name="SectionPersona" xml:space="preserve"><value>페르소나</value></data>
+  <data name="HintRagTopK" xml:space="preserve"><value>많을수록 맥락과 토큰이 늘어납니다. 3~10이 적당합니다.</value></data>
+  <data name="LabelRagSimilarityThreshold" xml:space="preserve"><value>최소 유사도</value></data>
+  <data name="HintRagSimilarityThreshold" xml:space="preserve"><value>의미 유사도가 낮은 결과는 뺍니다. 정확한 이름은 어차피 키워드로 찾습니다.</value></data>
+  <data name="LabelLspEnabled" xml:space="preserve"><value>TypeScript, Python, Go, Rust에 언어 서버 사용</value></data>
+  <data name="HintLspEnabled" xml:space="preserve"><value>실제 함수와 클래스 단위로 파일을 나눕니다. 서버가 PATH에 있어야 합니다: typescript-language-server, pyright 또는 pylsp, gopls, rust-analyzer.</value></data>
+  <data name="LabelModelAutoUnload" xml:space="preserve"><value>유휴 모델 언로드 (Ollama)</value></data>
+  <data name="HintModelAutoUnload" xml:space="preserve"><value>세션 사이에 그래픽 메모리를 비웁니다.</value></data>
+  <data name="LabelModelIdleTimeout" xml:space="preserve"><value>언로드 시점</value></data>
+  <data name="HintModelIdleTimeout" xml:space="preserve"><value>요청이 없는 시간(분). 짧으면 메모리를 일찍 비우고, 길면 덜 자주 다시 불러옵니다.</value></data>
 
   <!-- UI labels -->
-  <data name="LabelProvider" xml:space="preserve"><value>추론 백엔드:</value></data>
-  <data name="HintProvider" xml:space="preserve"><value>사용할 로컬 모델 서버: Ollama(전체 하드웨어 인식 기능) 또는 LM Studio, llama.cpp, vLLM 같은 OpenAI 호환 서버. 편집기를 다시 로드한 후 적용됩니다.</value></data>
-  <data name="LabelApiKey" xml:space="preserve"><value>API 키(선택 사항):</value></data>
-  <data name="HintApiKey" xml:space="preserve"><value>인증이 필요한 OpenAI 호환 서버에 Bearer 토큰으로 전송됩니다. Ollama와 LM Studio에서는 비워 두세요(키 불필요).</value></data>
-  <data name="LabelUrl" xml:space="preserve"><value>서버 URL:</value></data>
-  <data name="HintUrl" xml:space="preserve"><value>모델 서버의 기본 URL입니다. Ollama(기본값 http://localhost:11434), LM Studio(http://localhost:1234) 또는 OpenAI 호환 서버. Test 버튼이 응답하는 서버를 감지합니다.</value></data>
-  <data name="LabelChatModel" xml:space="preserve"><value>채팅 모델:</value></data>
-  <data name="HintChatModel" xml:space="preserve"><value>모든 대화에 사용되는 기본 모델입니다. 이 필드는 필수입니다. /model &lt;이름&gt;을 사용하여 세션 중 모델을 전환하세요.</value></data>
+  <data name="LabelProvider" xml:space="preserve"><value>서버 종류</value></data>
+  <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio 또는 OpenAI 호환. 테스트하면 채워집니다. 편집기를 다시 불러온 뒤 적용됩니다.</value></data>
+  <data name="LabelApiKey" xml:space="preserve"><value>API 키</value></data>
+  <data name="HintApiKey" xml:space="preserve"><value>서버가 요구할 때만 필요합니다. Ollama와 LM Studio에는 필요 없습니다.</value></data>
+  <data name="LabelUrl" xml:space="preserve"><value>서버 주소</value></data>
+  <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) 또는 OpenAI 호환 서버. 테스트하면 어느 쪽이 응답하는지 알려 줍니다.</value></data>
+  <data name="LabelChatModel" xml:space="preserve"><value>채팅 및 에이전트</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>질문에 답하고 작업을 수행합니다. /model로 이번 세션에서 바꿀 수 있습니다.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>테스트</value></data>
   <data name="BtnLoadSession" xml:space="preserve"><value>불러오기 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 취소</value></data>
@@ -78,8 +68,6 @@
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ 권한 규칙 {0}개를 읽지 못해 적용되지 않았습니다. /diagnostics 를 확인하세요.</value></data>
   <data name="BtnSend" xml:space="preserve"><value>보내기 →</value></data>
   <data name="TooltipRefreshModels" xml:space="preserve"><value>모델 목록 새로 고침</value></data>
-  <data name="TooltipExport" xml:space="preserve"><value>대화를 .md 또는 .txt로 내보내기</value></data>
-  <data name="TooltipClear" xml:space="preserve"><value>대화를 저장하고 지우기</value></data>
   <data name="TooltipSessionPicker" xml:space="preserve"><value>복원할 이전 세션 선택</value></data>
   <data name="TooltipLoadSession" xml:space="preserve"><value>선택한 세션 불러오기 (없으면 마지막 세션)</value></data>
   <data name="TooltipDeleteSession" xml:space="preserve"><value>선택한 세션 삭제</value></data>
@@ -89,12 +77,8 @@
   <data name="TooltipCopy" xml:space="preserve"><value>메시지 복사</value></data>
   <data name="LabelCopyCode" xml:space="preserve"><value>복사</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>AI로 수정</value></data>
-  <data name="BtnRestoreAll" xml:space="preserve"><value>↩ 모두 복원</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ 재생성</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ 재개</value></data>
-  <data name="TooltipStepMode" xml:space="preserve"><value>단계별 모드 — 각 도구 호출 후 에이전트 일시 중지(토글)</value></data>
-  <data name="TooltipPlanMode" xml:space="preserve"><value>플랜 모드 — 읽기 전용: 에이전트가 파일을 수정하지 않고 탐색하며 계획을 제안합니다(토글)</value></data>
-  <data name="MultiFileRecapTitle" xml:space="preserve"><value>**{0}개 파일 수정됨:** {1}</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>다음 빌드 오류를 수정해 주세요:
 
 {0}</value></data>
@@ -119,28 +103,36 @@
 각 문제에 대해 줄 또는 기호를 인용하고 위험을 설명하며 구체적인 수정 사항을 제안하세요.
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>명령 시간 초과:</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>단일 도구 호출(예: 셸 명령 또는 빌드)의 최대 대기 시간입니다. AI 응답 시간에는 영향을 주지 않습니다. 빌드 시간이 오래 걸리는 경우 늘리세요.</value></data>
-  <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>도구 호출을 기본적으로 펼치기</value></data>
-  <data name="HintToolBubblesExpanded" xml:space="preserve"><value>활성화하면 도구 호출 세부 정보(입력 및 출력)가 채팅에서 펼쳐진 상태로 표시됩니다. 기본적으로 접힌 상태로 유지하려면 비활성화하세요.</value></data>
-  <data name="LabelSecurityAlertsDisabled" xml:space="preserve"><value>보안 경고 비활성화 (모든 도구 호출 자동 승인)</value></data>
-  <data name="HintSecurityAlertsDisabled" xml:space="preserve"><value>활성화하면 모든 도구 호출(파일 쓰기, 셸 명령 등)이 확인 없이 자동으로 승인됩니다. 신뢰할 수 있는 환경에서만 사용하세요.</value></data>
-  <data name="LabelContextWindowSize" xml:space="preserve"><value>컨텍스트 창 (토큰, 0 = 비활성화):</value></data>
-  <data name="HintContextWindowSize" xml:space="preserve"><value>컨텍스트 창(토큰). Ollama에서는 Inferpal이 이 크기(num_ctx)로 모델을 로드합니다. LM Studio나 다른 서버에서는 이 값과 모델이 로드된 창 중 작은 값이 사용됩니다. 기본값: 8192. 대화가 80%에 이르면 오래된 메시지를 요약하고(요약이 꺼져 있거나 실패하면 잘라냄) 알림으로 알려 줍니다. 0 = 모델 기본값, 잘라내지 않음.</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>LM Studio / OpenAI 호환 서버에서는 컨텍스트 길이가 요청마다가 아니라 모델 로드 시 고정됩니다. 이 값은 클라이언트 측 자르기만 제어하므로 모델이 로드된 컨텍스트 이하로 유지하세요. 대화가 이 제한의 80%에 도달하면 오래된 메시지가 자동으로 제거되고 경고가 표시됩니다.</value></data>
-  <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>잘라낼 때 항상 유지할 턴 수:</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>잘라낼 때 보존할 최근 사용자/어시스턴트 교환 횟수입니다. 시스템 프롬프트는 항상 유지됩니다. 모델이 일관성을 유지하기 위해 더 많은 최근 컨텍스트가 필요한 경우 늘리세요. 최댓값입니다. 도구 정의와 함께 들어가기에 너무 긴 교환은 나머지와 함께 요약됩니다.</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>명령 또는 빌드</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>도구 호출 한 번에 허용되는 최대 시간. 빌드가 더 오래 걸리면 늘리세요.</value></data>
+  <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>각 단계를 펼쳐서 표시</value></data>
+  <data name="HintToolBubblesExpanded" xml:space="preserve"><value>끄면 단계마다 한 줄. 누르면 들어간 것과 나온 것을 볼 수 있습니다. 실패한 단계는 항상 열립니다.</value></data>
+  <data name="LabelDensity" xml:space="preserve"><value>밀도</value></data>
+  <data name="HintDensity" xml:space="preserve"><value>간결하게를 선택하면 좁은 패널에서도 대화를 더 많이 볼 수 있습니다.</value></data>
+  <data name="DensityComfortable" xml:space="preserve"><value>넉넉하게</value></data>
+  <data name="DensityCompact" xml:space="preserve"><value>간결하게</value></data>
+  <data name="SettingsSectionTheme" xml:space="preserve"><value>테마</value></data>
+  <data name="SettingsThemeNote" xml:space="preserve"><value>고대비를 포함해 편집기의 테마를 따릅니다. 편집기 자체 설정에서 변경하세요.</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>밝게</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>어둡게</value></data>
+  <data name="ThemeHighContrast" xml:space="preserve"><value>고대비</value></data>
+  <data name="ThemeInUse" xml:space="preserve"><value>{0} — 사용 중</value></data>
+  <data name="LabelContextWindowSize" xml:space="preserve"><value>컨텍스트 창</value></data>
+  <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama는 이 크기로 모델을 불러옵니다. 80 %를 넘으면 오래된 메시지를 요약합니다. 0: 모델 기본값.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>서버가 불러온 창이 더 작으면 그 크기를 따릅니다. 80 %를 넘으면 오래된 메시지를 요약합니다. 0: 모델 기본값.</value></data>
+  <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>항상 그대로 유지</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>최근 차례들. 요약하지도 버리지도 않습니다.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ 컨텍스트 창: 오래된 메시지 {0}개 제거 — 마지막 {1}개 턴 유지. 이전 컨텍스트는 손실되었습니다.</value></data>
-  <data name="LabelCompactionEnabled" xml:space="preserve"><value>스마트 컨텍스트 압축(잘라내기 대신 요약)</value></data>
-  <data name="HintCompactionEnabled" xml:space="preserve"><value>활성화하면 오래된 메시지가 삭제되기 전에 모델에 의해 요약되어 핵심 정보가 보존됩니다. 요약 호출이 너무 오래 걸리면 안전 퓨즈가 작동하여 하드 자르기로 폴백됩니다.</value></data>
-  <data name="LabelCompactionTimeout" xml:space="preserve"><value>압축 타임아웃(안전 퓨즈):</value></data>
-  <data name="HintCompactionTimeout" xml:space="preserve"><value>요약이 아무것도 출력하지 않고 기다릴 수 있는 시간(초)으로(추론 출력도 포함), 요약할 내용을 읽는 시간(100토큰당 약 1초)에 더해집니다. 초과하면 안전 퓨즈가 작동하여 하드 자르기가 대신 사용됩니다. 기본값: 45.</value></data>
-  <data name="LabelKvCacheAnchor" xml:space="preserve"><value>KV 캐시 앵커 메시지:</value></data>
-  <data name="HintKvCacheAnchor" xml:space="preserve"><value>압축된 컨텍스트 시작 부분에 변경 없이 유지되는 첫 메시지 수(시스템 프롬프트 제외). Ollama는 이 토큰들에 대한 KV 캐시를 재사용하여 재계산 시간을 절약합니다. 0 = 비활성화. 기본값: 3.</value></data>
+  <data name="LabelCompactionEnabled" xml:space="preserve"><value>오래된 메시지를 버리지 않고 요약</value></data>
+  <data name="HintCompactionEnabled" xml:space="preserve"><value>창의 80 %를 넘었을 때. 요약할 수 없으면 버리고 채팅에서 알려 줍니다.</value></data>
+  <data name="LabelCompactionTimeout" xml:space="preserve"><value>요약을 포기하는 시점</value></data>
+  <data name="HintCompactionTimeout" xml:space="preserve"><value>요약할 내용을 읽는 시간에 더해지는 침묵 시간(초). 생각하는 동안도 쓰는 것으로 셉니다.</value></data>
+  <data name="LabelKvCacheAnchor" xml:space="preserve"><value>그대로 유지하는 첫 메시지</value></data>
+  <data name="HintKvCacheAnchor" xml:space="preserve"><value>서버가 캐시를 다시 쓸 수 있게 합니다. 0: 사용 안 함.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0}개 KV 앵커 메시지 보존됨)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>컨텍스트 압축 중…</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 컨텍스트 압축됨: {0}개 메시지 요약 — 마지막 {1}턴 유지.</value></data>
-  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 컨텍스트 압축 타임아웃 — 하드 자르기로 폴백. 모델에 더 많은 시간이 필요하면 설정에서 '압축 타임아웃'을 늘리세요.</value></data>
+  <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 컨텍스트 압축 타임아웃 — 하드 자르기로 폴백. 모델에 더 많은 시간이 필요하면 설정에서 '{0}' ({1})을 늘리세요.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ 컨텍스트 압축에 실패했습니다 — 강제 잘라내기로 대체했습니다. 원인: {0}</value></data>
   <data name="MsgContextCompactionEmpty" xml:space="preserve"><value>⚠ 모델이 빈 요약을 반환했습니다 — 강제 잘라내기로 대체했습니다.</value></data>
   <data name="MsgContextSummaryTooLong" xml:space="preserve"><value>⚠ 요약이 너무 길어 컨텍스트에 여유가 남지 않았습니다 — 강제 잘라내기로 대체했습니다.</value></data>
@@ -151,39 +143,36 @@
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>다음은 우리 대화의 시작 부분입니다. 향후 메시지에 필요한 모든 주요 결정, 사실, 수정된 파일 및 컨텍스트를 보존하면서 밀도 있게 요약하세요. 간결하지만 완전하게 — 이 요약이 원본 메시지를 대체합니다:
 
 {0}</value></data>
-  <data name="LabelCustomSystemPrompt" xml:space="preserve"><value>사용자 지정 시스템 프롬프트 (기본 프롬프트 뒤, 프로젝트 컨텍스트 앞에 추가):</value></data>
-  <data name="HintCustomSystemPrompt" xml:space="preserve"><value>내장 시스템 프롬프트에 추가되는 추가 지침입니다. 어시스턴트의 어조를 설정하거나 범위를 제한하거나 프로젝트별 도메인 지식을 추가하는 데 사용하세요.</value></data>
-  <data name="LabelPinnedContextFiles" xml:space="preserve"><value>고정 컨텍스트 파일(줄당 경로 1개, 최대 3개 — 항상 프롬프트에 주입):</value></data>
-  <data name="HintPinnedContextFiles" xml:space="preserve"><value>모든 요청 전에 시스템 프롬프트에 항상 삽입되는 절대 파일 경로입니다. 중요한 아키텍처 문서, 인터페이스 또는 스키마를 항상 컨텍스트에 유지하는 데 유용합니다.</value></data>
-  <data name="LabelPromptTemplates" xml:space="preserve"><value>사용자 정의 슬래시 명령(줄당 1개: /이름=텍스트, {args}로 추가 단어 사용):</value></data>
-  <data name="HintPromptTemplates" xml:space="preserve"><value>나만의 슬래시 명령을 정의하세요. 형식: /mycommand=자세히 설명해주세요: {args}. {args}는 명령 이름 뒤에 입력한 단어로 대체됩니다. 템플릿은 자동 완성 제안에 표시됩니다.</value></data>
-  <data name="LabelPermissionRules" xml:space="preserve"><value>권한 규칙(줄당 1개: allow|deny &lt;도구|*&gt; &lt;정규식&gt;):</value></data>
-  <data name="HintPermissionRules" xml:space="preserve"><value>승인 프롬프트 전에 평가되는 규칙입니다. 'allow'는 일치하는 도구 호출을 자동 승인하고 'deny'는 차단하며, 일치하지 않으면 프롬프트로 돌아갑니다. 첫 번째 일치가 우선합니다. 정규식은 명령 또는 파일 경로와 대조됩니다. 커밋 가능한 오버레이 .inferpal/permissions.json에 더해 적용되며, 우회할 수 없는 내장 치명적 명령 차단 목록이 항상 적용됩니다. 예: allow run_command ^dotnet</value></data>
-  <data name="LabelCustomTools" xml:space="preserve"><value>사용자 정의 에이전트 도구(줄당 1개: 이름=셸_명령):</value></data>
-  <data name="HintCustomTools" xml:space="preserve"><value>에이전트가 호출할 수 있는 셸 도구를 정의하세요. 형식: my_tool=dotnet test. 이름은 snake_case여야 합니다. 모델이 인수를 제공하면 선택적 {args} 매개변수가 추가됩니다. 실행 전 승인이 필요합니다.</value></data>
-  <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>파일 언어에 따라 페르소나 자동 전환</value></data>
-  <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>활성화하면, 활성 문서가 변경될 때 언어별 힌트(C#, Python, TypeScript…)로 시스템 프롬프트가 자동으로 보강됩니다.</value></data>
-  <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>OODA 세션 요약 (N 턴마다, 0 = 비활성화):</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>N 번의 대화 턴마다 모델이 세션 요약(목표, 진행 상황, 미해결 질문)을 생성하여 시스템 프롬프트에 주입함으로써 긴 세션에서의 컨텍스트 건망증을 방지합니다. 비활성화하려면 0으로 설정하세요. 권장값: 10.</value></data>
+  <data name="LabelCustomSystemPrompt" xml:space="preserve"><value>모든 대화에 추가</value></data>
+  <data name="HintCustomSystemPrompt" xml:space="preserve"><value>기본 지침 뒤에 붙는 내 지침. 이 컴퓨터용이며, 프로젝트 전체 지침은 .inferpal/context.md에 둡니다.</value></data>
+  <data name="LabelPinnedContextFiles" xml:space="preserve"><value>고정한 파일</value></data>
+  <data name="HintPinnedContextFiles" xml:space="preserve"><value>질문할 때마다 읽는 최대 3개의 파일: 아키텍처 메모, 인터페이스, 스키마. 한 줄에 전체 경로 하나.</value></data>
+  <data name="LabelPromptTemplates" xml:space="preserve"><value>명령(한 줄에 하나)</value></data>
+  <data name="HintPromptTemplates" xml:space="preserve"><value>/이름=텍스트. {args}는 명령 뒤에 입력한 내용으로 바뀝니다.</value></data>
+  <data name="LabelPermissionRules" xml:space="preserve"><value>규칙(한 줄에 하나)</value></data>
+  <data name="HintPermissionRules" xml:space="preserve"><value>allow 또는 deny, 도구 이름 또는 *, 그리고 명령이나 경로와 비교할 정규식. 예: allow run_command ^dotnet</value></data>
+  <data name="LabelCustomTools" xml:space="preserve"><value>도구(한 줄에 하나)</value></data>
+  <data name="HintCustomTools" xml:space="preserve"><value>이름=명령, 이름은 snake_case. {args}에는 에이전트가 덧붙인 내용이 들어갑니다.</value></data>
+  <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>열린 파일의 언어에 맞추기</value></data>
+  <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>파일을 바꾸면 C#, Python, TypeScript용 힌트를 더합니다.</value></data>
+  <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>세션 요약 주기</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>목표, 진행 상황, 남은 질문을 지침에 남깁니다. 0: 사용 안 함.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>세션 요약 생성 중…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA 세션 요약** (턴 {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>지금까지의 대화를 요약해 주세요. OODA 스타일 요약을 세 섹션으로 작성하세요 — 목표(사용자가 달성하려는 것), 진행(이미 완료된 단계), 미해결(남은 작업 또는 해결되지 않은 질문). 총 150단어 이내로 작성하세요.</value></data>
-  <data name="LabelLanguage" xml:space="preserve"><value>인터페이스 언어 (편집기 설정 재정의):</value></data>
-  <data name="HintLanguage" xml:space="preserve"><value>Visual Studio 언어와 관계없이 표시 언어를 강제합니다. «자동»은 Visual Studio 언어를 사용합니다.</value></data>
-  <data name="LangAuto" xml:space="preserve"><value>자동 (Visual Studio)</value></data>
-  <data name="HintSend" xml:space="preserve"><value>Enter로 보내기  ·  Shift+Enter로 줄바꿈  ·  Shift+↑↓ 기록</value></data>
+  <data name="LabelLanguage" xml:space="preserve"><value>언어</value></data>
+  <data name="HintLanguage" xml:space="preserve"><value>패널, 설정, 모델 답변의 언어입니다. English, Français, Deutsch, Español, Italiano, Русский, 日本語, 한국어, Polski, 中文.</value></data>
+  <data name="LangAuto" xml:space="preserve"><value>자동 — 편집기와 동일 ({0})</value></data>
   <data name="TooltipAttachFile" xml:space="preserve"><value>다음 메시지에 활성 파일 첨부</value></data>
   <data name="TooltipAttachSelection" xml:space="preserve"><value>다음 메시지에 선택 영역 첨부 (선택 없으면 전체 파일)</value></data>
   <data name="TooltipBrowseFile" xml:space="preserve"><value>디스크에서 파일을 찾아 첨부</value></data>
   <data name="TooltipPinFile" xml:space="preserve"><value>활성 파일 고정 — 항상 컨텍스트에 유지</value></data>
-  <data name="MenuAddContext" xml:space="preserve"><value>프롬프트에 컨텍스트 추가</value></data>
   <data name="MenuAttachFile" xml:space="preserve"><value>활성 파일</value></data>
   <data name="MenuAttachSelection" xml:space="preserve"><value>선택 영역</value></data>
   <data name="MenuBrowseFile" xml:space="preserve"><value>디스크에서 찾아보기…</value></data>
   <data name="MenuPinFile" xml:space="preserve"><value>활성 파일 고정</value></data>
   <data name="TooltipPinChip" xml:space="preserve"><value>이 파일을 영구적으로 고정</value></data>
   <data name="PinLimitReached" xml:space="preserve"><value>⚠ 고정 파일 한도에 도달했습니다(최대 {0}). 먼저 하나를 고정 해제하세요.</value></data>
-  <data name="TooltipSearchConversation" xml:space="preserve"><value>대화 검색 (Ctrl+F)</value></data>
   <data name="TooltipCloseSearch" xml:space="preserve"><value>검색 닫기</value></data>
   <data name="TooltipSaveSnippet" xml:space="preserve"><value>스니펫 라이브러리에 저장 (/snippets 로 보기)</value></data>
 
@@ -454,8 +443,8 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: 빌드 확인 시간 초과 (60초) — 수동으로 확인하세요.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: 빌드 검사가 오류를 하나도 알리지 않고 실패했습니다 — 이유를 보려면 직접 실행하세요.</value></data>
-  <data name="LabelSmartFixEnabled" xml:space="preserve"><value>쓰기 후 자동 빌드 검사 (Smart Fix)</value></data>
-  <data name="HintSmartFixEnabled" xml:space="preserve"><value>체크하면 C#/프로젝트 파일에 대한 write_file 또는 apply_diff 후 자동으로 빠른 빌드가 실행됩니다. 컴파일 오류는 인라인으로 반환되어 에이전트가 즉시 수정할 수 있습니다.</value></data>
+  <data name="LabelSmartFixEnabled" xml:space="preserve"><value>편집할 때마다 빌드 확인</value></data>
+  <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust, Go를 바로 지원합니다. 오류는 곧바로 에이전트에게 돌아갑니다.</value></data>
 
   <!-- Git commit assistant -->
   <data name="CommitNothingToCommit" xml:space="preserve"><value>⚠ git 변경 사항이 감지되지 않았습니다.</value></data>
@@ -561,25 +550,20 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — 선택한 모델들이 합쳐서 약 **{0} GB**가 필요하며 예산 **{1} GB**를 초과합니다. 시스템 RAM으로 넘쳐 느려질 수 있습니다. 더 작은 모델을 고려하거나 `/hardware`로 확인하세요.</value></data>
 
   <!-- Agent Mode -->
-  <data name="LabelAgentModeEnabled" xml:space="preserve"><value>자율 에이전트 모드 활성화 (계획 → 실행 → 관찰)</value></data>
-  <data name="HintAgentModeEnabled" xml:space="preserve"><value>활성화하면 Inferpal가 도구를 사용하기 전에 명시적인 단계별 계획을 생성한 후, 실시간 단계 추적과 함께 구조화된 계획 → 실행 → 관찰 루프를 실행합니다. 복잡한 다단계 작업에 적합합니다. 간단하고 빠른 쿼리에는 비활성화하세요.</value></data>
-  <data name="LabelAgentModel" xml:space="preserve"><value>에이전트 / 도구 모델 (비움 = 채팅 모델):</value></data>
-  <data name="HintAgentModel" xml:space="preserve"><value>도구가 활성화될 때 사용되는 모델 — 에이전트(Plan → Act → Observe) 루프와 기본 도구 호출 루프. 비워 두면 채팅 모델을 사용합니다. 프롬프트 캐시를 재사용하는 더 작은 비멀티모달 모델(예: qwen2.5-coder)은 매 턴마다 전체 프롬프트를 다시 처리하는 대형 멀티모달 모델보다 다중 턴 도구 루프를 훨씬 빠르게 실행합니다.</value></data>
-  <data name="LabelModelRolesAdvanced" xml:space="preserve"><value>역할별로 별도 모델 사용(고급)</value></data>
-  <data name="LabelAdvancedBehavior" xml:space="preserve"><value>고급 설정 표시(시간 초과, 반복 횟수)</value></data>
-  <data name="HintModelRolesAdvanced" xml:space="preserve"><value>기본적으로 채팅 모델이 모든 곳에 사용됩니다. 이 옵션을 켜면 에이전트, 코드 작업, 인라인 완성(FIM), 인라인 편집, 유틸리티 작업(제목, 커밋, 요약)에 다른 모델을 지정할 수 있습니다.</value></data>
-  <data name="LabelUtilityModel" xml:space="preserve"><value>유틸리티 모델(비워 두면 채팅 모델 사용):</value></data>
-  <data name="HintUtilityModel" xml:space="preserve"><value>백그라운드 작업(세션 제목, /commit 메시지 제안, 히스토리 압축 요약)에 사용하는 작고 빠른 모델입니다. 비워 두면 채팅 모델을 재사용합니다. 3~7B 모델이면 몇 초 안에 응답하며 keep-alive가 호출 사이에 모델을 로드된 상태로 유지합니다.</value></data>
-  <data name="LabelModelRouterAuto" xml:space="preserve"><value>유틸리티 작업 자동 라우팅(/bench 기반)</value></data>
-  <data name="HintModelRouterAuto" xml:space="preserve"><value>유틸리티 모델이 설정되지 않은 경우 백그라운드 작업은 /bench가 유틸리티 역할로 추천한 모델을 사용합니다 — 단, 이미 VRAM에 로드되어 있을 때만입니다. 제목이나 커밋 메시지를 위해 콜드 모델을 로드하지 않습니다(스왑 비용이 이득보다 큼). 대신 채팅 모델을 사용합니다.</value></data>
-  <data name="LabelAgentMaxIterations" xml:space="preserve"><value>최대 반복 횟수</value></data>
-  <data name="HintAgentMaxIterations" xml:space="preserve"><value>요청당 계획 → 실행 → 관찰 사이클의 최대 횟수. 0은 기본값(20)을 사용합니다. 기본값: 20.</value></data>
-  <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>빠른 작업 타임아웃 (액션, 인라인 편집)</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>짧은 작업 제한 시간: 설명, 수정, 문서화, 인라인 편집, 에이전트 계획. 기본값: 120초.</value></data>
-  <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>일반 작업 타임아웃 (에이전트 턴)</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>도구가 있는 채팅 및 오케스트레이터의 에이전트 턴당 제한 시간. 기본값: 300초.</value></data>
-  <data name="LabelTaskTimeoutDeep" xml:space="preserve"><value>딥 작업 타임아웃 (예약됨)</value></data>
-  <data name="HintTaskTimeoutDeep" xml:space="preserve"><value>확장 추론 작업을 위해 예약됨. 기본값: 600초.</value></data>
+  <data name="LabelAgentModeEnabled" xml:space="preserve"><value>실행 전에 계획하기</value></data>
+  <data name="HintAgentModeEnabled" xml:space="preserve"><value>먼저 단계를 쓰고 진행 상황을 보여 주며 실행합니다. 끄면 바로 도구를 씁니다.</value></data>
+  <data name="LabelAgentModel" xml:space="preserve"><value>도구를 쓰는 에이전트</value></data>
+  <data name="HintAgentModel" xml:space="preserve"><value>도구 호출과 여러 단계 작업.</value></data>
+  <data name="LabelUtilityModel" xml:space="preserve"><value>백그라운드 작업</value></data>
+  <data name="HintUtilityModel" xml:space="preserve"><value>세션 제목, 커밋 메시지, 요약. 작은 모델이면 몇 초 만에 답합니다.</value></data>
+  <data name="LabelModelRouterAuto" xml:space="preserve"><value>/bench가 백그라운드 모델을 고르게 하기</value></data>
+  <data name="HintModelRouterAuto" xml:space="preserve"><value>이미 불러온 모델만 씁니다. 제목 하나를 쓰려고 모델을 불러오지 않습니다.</value></data>
+  <data name="LabelAgentMaxIterations" xml:space="preserve"><value>요청당 단계 수</value></data>
+  <data name="HintAgentMaxIterations" xml:space="preserve"><value>다 쓰면 작업이 끝나지 않았다고 답변에 표시됩니다. 0: 기본값.</value></data>
+  <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>설명, 수정, AI로 편집</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>짧은 작업과 에이전트의 계획.</value></data>
+  <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>에이전트 한 차례</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>도구를 쓰는 대화의 각 차례.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 계획 중…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 관찰 중…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>요청 실행</value></data>
@@ -587,24 +571,23 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="AgentPlanLabel" xml:space="preserve"><value>🗂 에이전트 계획</value></data>
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ 답변 작성 중…</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>MCP 서버</value></data>
-  <data name="LabelMcpEnabled" xml:space="preserve"><value>MCP 서버 활성화</value></data>
-  <data name="HintMcpEnabled" xml:space="preserve"><value>활성화하면 구성된 Model Context Protocol(MCP) 서버가 시작 시 실행되고 해당 도구를 에이전트에서 사용할 수 있습니다. 서버 명령(예: npx, uvx)이 이 컴퓨터에 설치되어 있어야 합니다.</value></data>
-  <data name="LabelMcpServers" xml:space="preserve"><value>MCP 서버 (JSON):</value></data>
-  <data name="HintMcpServers" xml:space="preserve"><value>서버 이름을 키로 하는 JSON 객체 형식의 MCP 서버 정의(Claude Desktop / Continue 형식)이며 각각 command, args, env를 가집니다. stdio 전송만 지원합니다. 발견된 도구는 mcp__ 접두사로 에이전트에 노출됩니다.</value></data>
-  <data name="McpNoServers" xml:space="preserve"><value>구성된 MCP 서버가 없습니다.</value></data>
+  <data name="LabelMcpEnabled" xml:space="preserve"><value>MCP 서버 사용</value></data>
+  <data name="HintMcpEnabled" xml:space="preserve"><value>서버의 도구가 에이전트 도구에 더해지며, 같은 승인 절차를 거칩니다. 명령(npx, uvx 등)은 이 컴퓨터에 설치되어 있어야 합니다.</value></data>
+  <data name="LabelMcpServers" xml:space="preserve"><value>MCP 서버</value></data>
+  <data name="HintMcpServers" xml:space="preserve"><value>Claude Desktop 형식: 로컬 명령(stdio) 또는 주소(HTTP, 헤더와 로그인 포함). 도구는 mcp__server__tool 형태로 에이전트에 전달됩니다.</value></data>
   <data name="McpCancelled" xml:space="preserve"><value>사용자가 MCP 도구 호출을 취소했습니다.</value></data>
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>한 번 허용</value></data>
-  <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>이 도구 항상 허용</value></data>
-  <data name="ApprovalDeny" xml:space="preserve"><value>취소</value></data>
+  <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>이 세션 동안 항상</value></data>
+  <data name="ApprovalDeny" xml:space="preserve"><value>거부</value></data>
   <data name="ApprovalDialogTitle" xml:space="preserve"><value>승인 필요</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>권한 규칙(deny)에 의해 차단됨: {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>내장 보안 차단 목록(치명적 명령)에 의해 차단됨: {0}</value></data>
-  <data name="McpAddServer" xml:space="preserve"><value>+ 서버 추가</value></data>
+  <data name="McpAddServer" xml:space="preserve"><value>서버 추가</value></data>
   <data name="McpAddTitle" xml:space="preserve"><value>서버 추가</value></data>
   <data name="McpEditTitle" xml:space="preserve"><value>편집: {0}</value></data>
   <data name="LabelMcpName" xml:space="preserve"><value>이름</value></data>
   <data name="LabelMcpCommand" xml:space="preserve"><value>명령</value></data>
-  <data name="LabelMcpArgs" xml:space="preserve"><value>인수(공백으로 구분)</value></data>
+  <data name="LabelMcpArgs" xml:space="preserve"><value>인수 (한 줄에 하나)</value></data>
   <data name="LabelMcpEnv" xml:space="preserve"><value>환경 변수(KEY=값, 한 줄에 하나)</value></data>
   <data name="LabelMcpHttpServer" xml:space="preserve"><value>HTTP 서버 (명령 대신 URL 사용)</value></data>
   <data name="LabelMcpUrl" xml:space="preserve"><value>URL (Streamable HTTP 엔드포인트)</value></data>
@@ -613,12 +596,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>취소</value></data>
   <data name="McpAdvancedJson" xml:space="preserve"><value>고급 (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ JSON을 목록으로 가져오기</value></data>
-  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>⚠ MCP 서버 JSON을 모두 읽지 못해 목록이 읽기 전용입니다. 다시 쓰면 읽지 못한 내용이 사라집니다. JSON을 고친 다음 목록으로 가져오세요.</value></data>
-  <data name="McpServerDisabled" xml:space="preserve"><value>— 비활성화됨</value></data>
+  <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>MCP 서버 JSON을 모두 읽을 수 없습니다. 목록이 읽지 못한 부분을 잃게 되므로 JSON을 고칠 때까지 읽기 전용입니다.</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>이름과 명령은 필수입니다.</value></data>
   <data name="McpValidationNameUrl" xml:space="preserve"><value>이름과 URL은 필수입니다.</value></data>
-  <data name="BtnMcpAuthorize" xml:space="preserve"><value>인증…</value></data>
-  <data name="McpAuthRequired" xml:space="preserve"><value>🔒 인증 필요</value></data>
   <data name="McpValidationDuplicate" xml:space="preserve"><value>같은 이름의 서버가 이미 있습니다.</value></data>
   <data name="HintMcpEditServer" xml:space="preserve"><value>이 MCP 서버의 설정(이름, 명령, 인수, 환경 변수)을 편집합니다.</value></data>
   <data name="HintMcpDeleteServer" xml:space="preserve"><value>이 MCP 서버를 목록에서 제거합니다.</value></data>
@@ -627,23 +607,23 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="LabelRowAdvanced" xml:space="preserve"><value>고급 (원시 텍스트)</value></data>
   <data name="BtnRowImport" xml:space="preserve"><value>⟳ 목록으로 가져오기</value></data>
   <data name="RowEditTitle" xml:space="preserve"><value>편집 중: {0}</value></data>
-  <data name="PinnedAddFile" xml:space="preserve"><value>+ 파일 추가</value></data>
+  <data name="PinnedAddFile" xml:space="preserve"><value>파일 추가</value></data>
   <data name="PinnedAddTitle" xml:space="preserve"><value>고정 파일 추가</value></data>
   <data name="LabelPinnedPath" xml:space="preserve"><value>파일 경로 (절대 경로)</value></data>
   <data name="PinnedBrowse" xml:space="preserve"><value>찾아보기…</value></data>
   <data name="PinnedPickerTitle" xml:space="preserve"><value>고정할 파일 선택</value></data>
   <data name="PinnedValidationPath" xml:space="preserve"><value>파일 경로가 필요합니다.</value></data>
   <data name="PinnedValidationDuplicate" xml:space="preserve"><value>이 파일은 이미 고정되어 있습니다.</value></data>
-  <data name="SlashAddCmd" xml:space="preserve"><value>+ 명령 추가</value></data>
+  <data name="SlashAddCmd" xml:space="preserve"><value>명령 추가</value></data>
   <data name="SlashAddTitle" xml:space="preserve"><value>슬래시 명령 추가</value></data>
   <data name="LabelSlashName" xml:space="preserve"><value>이름 (예: /refactor)</value></data>
   <data name="LabelSlashText" xml:space="preserve"><value>프롬프트 텍스트 — 추가 단어에는 {args} 사용</value></data>
   <data name="SlashValidationNameText" xml:space="preserve"><value>/로 시작하는 이름과 프롬프트 텍스트가 필요합니다.</value></data>
   <data name="SlashValidationDuplicate" xml:space="preserve"><value>이 이름의 명령이 이미 있습니다.</value></data>
-  <data name="ToolAddTool" xml:space="preserve"><value>+ 도구 추가</value></data>
+  <data name="ToolAddTool" xml:space="preserve"><value>도구 추가</value></data>
   <data name="ToolAddTitle" xml:space="preserve"><value>사용자 지정 도구 추가</value></data>
   <data name="LabelToolName" xml:space="preserve"><value>이름 (snake_case)</value></data>
-  <data name="LabelToolCommand" xml:space="preserve"><value>PowerShell 명령 (인수에는 {args} 사용)</value></data>
+  <data name="LabelToolCommand" xml:space="preserve"><value>셸 명령 (인수에는 {args} 사용)</value></data>
   <data name="ToolValidationNameCommand" xml:space="preserve"><value>도구 이름과 명령이 필요합니다.</value></data>
   <data name="ToolValidationDuplicate" xml:space="preserve"><value>이 이름의 도구가 이미 있습니다.</value></data>
 
@@ -874,19 +854,15 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ num_ctx ({0})가 VRAM 예산에 맞는 범위를 초과합니다 — KV-cache가 시스템 RAM으로 넘쳐 생성 속도가 느려질 수 있습니다. {1}(으)로 낮추는 것을 고려하세요.</value></data>
   <data name="HardwareCtxNoVramRecommendation" xml:space="preserve"><value>**`{0}` 모델 한도:** {1} — VRAM 권장값을 계산할 수 없습니다(가중치가 이미 예산을 초과했거나 아키텍처 메타데이터가 없습니다).</value></data>
   <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ num_ctx({0})가 이 모델이 허용하는 한도({1})를 넘습니다. 백엔드는 더 긴 프롬프트를 처리할 수 없어 시스템 프롬프트를 포함한 대화의 가장 오래된 부분을 아무 말 없이 잘라냅니다. Inferpal의 압축도 설정값을 기준으로 하므로 작동하지 않습니다. {1} 이하로 설정하세요.</value></data>
-  <data name="LabelVramBudget" xml:space="preserve"><value>VRAM 예산</value></data>
-  <data name="HintVramBudget" xml:space="preserve"><value>Ollama 호스트에서 사용 가능한 총 VRAM(GB). 안전한 num_ctx를 권장하고 선택한 모델이 맞지 않을 때 경고하는 데 사용됩니다. 로컬 호스트에서는 비워 두면 자동 감지됩니다. 원격 호스트에서는 수동 값이 필요합니다. `/hardware &lt;gb&gt;`로도 설정할 수 있습니다.</value></data>
-  <data name="TooltipAgentMode" xml:space="preserve"><value>채팅 모드와 에이전트 모드를 전환합니다(자율 Plan → Act → Observe). '자율 에이전트 모드 활성화' 설정과 연동됩니다.</value></data>
+  <data name="LabelVramBudget" xml:space="preserve"><value>그래픽 메모리</value></data>
+  <data name="HintVramBudget" xml:space="preserve"><value>컨텍스트 창 크기를 안전하게 정하는 데 씁니다. 비우면 서버가 이 컴퓨터에서 실행될 때 자동 감지되며, 다른 컴퓨터라면 입력해야 합니다.</value></data>
   <data name="LabelModeChat" xml:space="preserve"><value>💬 채팅</value></data>
   <data name="LabelModeAgent" xml:space="preserve"><value>🤖 에이전트</value></data>
-  <data name="WelcomeSubtitle" xml:space="preserve"><value>코드에 대해 무엇이든 물어보세요</value></data>
   <data name="WelcomeCardExplain" xml:space="preserve"><value>선택 영역 설명</value></data>
   <data name="WelcomeCardFix" xml:space="preserve"><value>오류 수정</value></data>
   <data name="WelcomeCardTest" xml:space="preserve"><value>테스트 생성</value></data>
   <data name="WelcomeCardHelp" xml:space="preserve"><value>모든 명령 보기</value></data>
-  <data name="BuildBannerTitle" xml:space="preserve"><value>빌드 실패</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>닫기</value></data>
-  <data name="BuildBannerFix" xml:space="preserve"><value>AI로 수정</value></data>
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
     <value>이 명령은 아직 이 편집기에서 사용할 수 없습니다 — Visual Studio에서 사용하세요.</value>
   </data>
@@ -903,12 +879,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="BranchSwitched" xml:space="preserve"><value>🌿 이제 `{0}` 입니다.</value></data>
   <data name="McpEmptyTitle" xml:space="preserve"><value>구성된 MCP 서버가 없습니다</value></data>
   <data name="PinnedEmptyTitle" xml:space="preserve"><value>고정된 파일이 없습니다</value></data>
-  <data name="SectionCommandsTools" xml:space="preserve"><value>명령 및 도구</value></data>
   <data name="SlashEmptyTitle" xml:space="preserve"><value>사용자 지정 명령이 없습니다</value></data>
   <data name="ToolEmptyTitle" xml:space="preserve"><value>사용자 지정 도구가 없습니다</value></data>
-  <data name="ViewJson" xml:space="preserve"><value>{ } JSON</value></data>
-  <data name="ViewList" xml:space="preserve"><value>≡ 목록</value></data>
-  <data name="ViewText" xml:space="preserve"><value>✎ 텍스트</value></data>
   <data name="ScanPartial" xml:space="preserve"><value>⚠ 부분 분석: 소스 파일 {1}개 중 {0}개만 검사했습니다(상한). 결과가 불완전할 수 있습니다.</value></data>
   <data name="ScanUnreadable" xml:space="preserve"><value>⚠ 소스 파일 {0}개를 읽을 수 없어 분석하지 못했습니다(권한, 잠김 또는 삭제됨). 결과가 불완전할 수 있습니다.</value></data>
   <data name="ScanFolderSkipped" xml:space="preserve"><value>⚠ 폴더 '{0}'의 목록을 읽지 못해 그 안의 파일을 하나도 분석하지 못했습니다(권한). 결과가 불완전할 수 있습니다.</value></data>
@@ -1034,4 +1006,220 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>설정된 중단점이 없습니다.</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>중단점:</value></data>
   <data name="DebugUsage" xml:space="preserve"><value>**/debug** — 프로그램이 실행 중에 실제로 무엇을 하는지 조사합니다.&#10;&#10;- `/debug &lt;가설&gt;` — 중단점을 설정하고 실행한 뒤 상태를 읽어 판단합니다&#10;- `/debug` — 디버거가 지금 무엇을 하고 있는지 표시합니다&#10;- `/debug stop` — 디버깅 세션을 종료합니다</value></data>
+  <data name="SettingsPageServer" xml:space="preserve"><value>서버 및 모델</value></data>
+  <data name="SettingsPageServerDesc" xml:space="preserve"><value>모델이 실행되는 곳과 각 모델이 맡는 일.</value></data>
+  <data name="SettingsPageAgent" xml:space="preserve"><value>에이전트 및 승인</value></data>
+  <data name="SettingsPageAgentDesc" xml:space="preserve"><value>에이전트가 스스로 일하는 방식과 멈춰서 묻는 시점.</value></data>
+  <data name="SettingsPageContext" xml:space="preserve"><value>컨텍스트 및 기억</value></data>
+  <data name="SettingsPageContextDesc" xml:space="preserve"><value>모델이 기억하는 것과 대화가 길어질 때 일어나는 일.</value></data>
+  <data name="SettingsPageSearch" xml:space="preserve"><value>코드 검색</value></data>
+  <data name="SettingsPageSearchDesc" xml:space="preserve"><value>Inferpal이 질문에 답하는 코드를 찾는 방법.</value></data>
+  <data name="SettingsPageAutocomplete" xml:space="preserve"><value>자동 완성</value></data>
+  <data name="SettingsPageAutocompleteDesc" xml:space="preserve"><value>입력 중 제안과 그 자리에서 요청하는 편집.</value></data>
+  <data name="SettingsPageTools" xml:space="preserve"><value>도구 및 MCP 서버</value></data>
+  <data name="SettingsPageToolsDesc" xml:space="preserve"><value>에이전트가 쓸 수 있는 것과 먼저 물어야 하는 것.</value></data>
+  <data name="SettingsPageAppearance" xml:space="preserve"><value>언어 및 모양</value></data>
+  <data name="SettingsPageAppearanceDesc" xml:space="preserve"><value>패널의 언어와 표시하는 양.</value></data>
+  <data name="SettingsSearchPlaceholder" xml:space="preserve"><value>설정 검색</value></data>
+  <data name="SettingsSearchNoMatch" xml:space="preserve"><value>일치하는 설정이 없습니다.</value></data>
+  <data name="SettingsUnsavedChanges" xml:space="preserve"><value>저장되지 않은 변경: {0}</value></data>
+  <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>저장되지 않은 변경 없음</value></data>
+  <data name="SettingsCancel" xml:space="preserve"><value>취소</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>고급 설정 표시 — 작업별 모델, 샘플링, GPU, 연결</value></data>
+  <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>승인 규칙: {0}</value></data>
+  <data name="SettingsEditRules" xml:space="preserve"><value>규칙 편집</value></data>
+  <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>작업별 모델</value></data>
+  <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>'채팅과 동일'로 두면 채팅 모델이 맡습니다.</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>샘플링</value></data>
+  <data name="SettingsSectionGpu" xml:space="preserve"><value>GPU</value></data>
+  <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>작동 방식</value></data>
+  <data name="SettingsSectionApprovals" xml:space="preserve"><value>승인</value></data>
+  <data name="SettingsSectionInstructions" xml:space="preserve"><value>지침</value></data>
+  <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>시간 제한</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>마지막 두 항목은 침묵을 잽니다. 계속 쓰는 모델은 끊지 않고, 응답을 멈춘 서버만 끊습니다.</value></data>
+  <data name="SettingsSectionLongConversations" xml:space="preserve"><value>긴 대화</value></data>
+  <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>항상 프롬프트에 포함</value></data>
+  <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>질문할 때마다 다시 읽으므로 수정이 바로 반영됩니다.</value></data>
+  <data name="SettingsSectionYourCode" xml:space="preserve"><value>내 코드</value></data>
+  <data name="SettingsSectionEditWithAi" xml:space="preserve"><value>AI로 편집</value></data>
+  <data name="SettingsSectionEditWithAiDesc" xml:space="preserve"><value>코드를 선택하고 바꿀 내용을 말하면 그 자리에서 다시 씁니다.</value></data>
+  <data name="SettingsSectionRules" xml:space="preserve"><value>승인 규칙</value></data>
+  <data name="SettingsSectionRulesDesc" xml:space="preserve"><value>순서대로 확인하며 처음 일치하는 규칙이 결정하고, 나머지는 사용자에게 묻습니다. 팀 규칙(.inferpal/permissions.json)은 거부만 할 수 있으며, 치명적인 명령은 규칙과 관계없이 거부됩니다.</value></data>
+  <data name="SettingsSectionSlash" xml:space="preserve"><value>내 슬래시 명령</value></data>
+  <data name="SettingsSectionSlashDesc" xml:space="preserve"><value>자주 입력하는 프롬프트의 바로 가기. / 목록에 나타납니다.</value></data>
+  <data name="SettingsSectionAgentTools" xml:space="preserve"><value>내 에이전트 도구</value></data>
+  <data name="SettingsSectionAgentToolsDesc" xml:space="preserve"><value>에이전트가 호출할 수 있는 셸 명령. 실행할 때마다 묻습니다.</value></data>
+  <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>에이전트 실행</value></data>
+  <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>각 모델 제작사의 설정 사용</value></data>
+  <data name="HintUseRecommendedSampling" xml:space="preserve"><value>모델 계열에 공개된 temperature와 top-p를 씁니다. 끄면 서버 설정이 적용됩니다.</value></data>
+  <data name="LabelAskBeforeActions" xml:space="preserve"><value>파일 변경, 명령 실행, 온라인 접근 전에 묻기</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>실제 diff나 정확한 명령을 보여 줍니다. 끄면 모든 것이 조용히 승인됩니다. 치명적인 명령은 여전히 거부됩니다.</value></data>
+  <data name="LabelInlineDiffPreview" xml:space="preserve"><value>적용하기 전에 변경 내용 보기</value></data>
+  <data name="HintInlineDiffPreview" xml:space="preserve"><value>편집기에 추가·삭제된 줄을 보여 주고, 변경을 하나씩 또는 한꺼번에 유지하거나 버릴 수 있습니다. 끄면 바로 적용되며 Ctrl+Z로 되돌립니다.</value></data>
+  <data name="McpCardConnected" xml:space="preserve"><value>연결됨 · 도구 {0}개</value></data>
+  <data name="McpCardSignIn" xml:space="preserve"><value>로그인 필요</value></data>
+  <data name="McpCardDidNotStart" xml:space="preserve"><value>시작되지 않음</value></data>
+  <data name="McpCardNotStarted" xml:space="preserve"><value>아직 시작 안 됨</value></data>
+  <data name="McpCardOff" xml:space="preserve"><value>꺼짐</value></data>
+  <data name="McpCardRetry" xml:space="preserve"><value>다시 시도</value></data>
+  <data name="McpCardSignInButton" xml:space="preserve"><value>로그인</value></data>
+  <data name="McpCardsSummary" xml:space="preserve"><value>{0}개 구성됨</value></data>
+  <data name="McpCardsSummaryAttention" xml:space="preserve"><value>{0}개 구성됨 · {1}개 확인 필요</value></data>
+  <data name="SettingsEditAsJson" xml:space="preserve"><value>JSON으로 편집</value></data>
+  <data name="SettingsEditAsText" xml:space="preserve"><value>텍스트로 편집</value></data>
+  <data name="SettingsEditAsList" xml:space="preserve"><value>목록으로 돌아가기</value></data>
+  <data name="RuleAllow" xml:space="preserve"><value>허용</value></data>
+  <data name="RuleDeny" xml:space="preserve"><value>거부</value></data>
+  <data name="RuleFromTeam" xml:space="preserve"><value>팀 (.inferpal)</value></data>
+  <data name="RuleFromMachine" xml:space="preserve"><value>이 컴퓨터</value></data>
+  <data name="RuleIgnoredTeamAllow" xml:space="preserve"><value>적용 안 됨: 팀 규칙은 거부만 할 수 있습니다</value></data>
+  <data name="RuleUnreadable" xml:space="preserve"><value>적용 안 됨: 잘못된 줄 또는 잘못된 패턴</value></data>
+  <data name="RulesColEffect" xml:space="preserve"><value>효과</value></data>
+  <data name="RulesColTool" xml:space="preserve"><value>도구</value></data>
+  <data name="RulesColPattern" xml:space="preserve"><value>명령이나 경로가 일치할 때</value></data>
+  <data name="RulesColFrom" xml:space="preserve"><value>출처</value></data>
+  <data name="RulesAddRule" xml:space="preserve"><value>규칙 추가</value></data>
+  <data name="RulesTeamUnusable" xml:space="preserve"><value>팀 파일 .inferpal/permissions.json을 읽을 수 없습니다. 그 규칙은 하나도 적용되지 않습니다.</value></data>
+  <data name="RulesEmpty" xml:space="preserve"><value>아직 규칙이 없습니다.</value></data>
+  <data name="RulesPatternPlaceholder" xml:space="preserve"><value>정규식</value></data>
+  <data name="RulesNewInvalid" xml:space="preserve"><value>이 규칙은 읽히지 않습니다. 패턴이 올바른 정규식이 아닙니다.</value></data>
+  <data name="ListLineNotRead" xml:space="preserve"><value>적용 안 됨: 줄은 이름=값 형식이어야 합니다</value></data>
+  <data name="PinnedOverCap" xml:space="preserve"><value>읽지 않음: 프롬프트에는 처음 3개 파일만 들어갑니다</value></data>
+  <data name="SettingsApprovalRulesFrom" xml:space="preserve"><value>이 컴퓨터 {0}개, 팀 {1}개. 처음 일치한 규칙이 결정합니다.</value></data>
+  <data name="SettingsSameAsChat" xml:space="preserve"><value>채팅과 동일</value></data>
+  <data name="SettingsSameAsCodeActions" xml:space="preserve"><value>설명, 수정, 리팩터링과 동일</value></data>
+  <data name="SettingsAutomaticBest" xml:space="preserve"><value>자동 — 설치된 것 중 최적</value></data>
+  <data name="FimModeFastDesc" xml:space="preserve"><value>짧은 제안, 300 ms 후.</value></data>
+  <data name="FimModeDefaultDesc" xml:space="preserve"><value>더 긴 제안, 600 ms 후.</value></data>
+  <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>블록 전체, 1 s 후.</value></data>
+  <data name="SettingsModelUsed" xml:space="preserve"><value>모델: {0}.</value></data>
+  <data name="SettingsChangeInServer" xml:space="preserve"><value>서버 및 모델에서 변경</value></data>
+  <data name="SlashColCommand" xml:space="preserve"><value>명령</value></data>
+  <data name="SlashColSends" xml:space="preserve"><value>보내는 내용</value></data>
+  <data name="ToolColName" xml:space="preserve"><value>도구 이름</value></data>
+  <data name="ToolColRuns" xml:space="preserve"><value>실행 내용</value></data>
+  <data name="SettingsSectionAsYouType" xml:space="preserve"><value>입력 중 제안</value></data>
+  <data name="SettingsSectionDocs" xml:space="preserve"><value>문서</value></data>
+  <data name="SettingsSectionDocsDesc" xml:space="preserve"><value>에이전트가 @Docs로 검색하는 사이트. 사이트당 최대 50페이지.</value></data>
+  <data name="SettingsDocsNote" xml:space="preserve"><value>이 컴퓨터나 로컬 네트워크의 주소는 거부됩니다. 에이전트는 이를 웹사이트로 읽지 않습니다.</value></data>
+  <data name="SettingsSectionThisConversation" xml:space="preserve"><value>이 대화</value></data>
+  <data name="IndexCardReady" xml:space="preserve"><value>인덱스 최신 상태</value></data>
+  <data name="IndexCardIndexing" xml:space="preserve"><value>인덱싱 중…</value></data>
+  <data name="IndexCardNotBuilt" xml:space="preserve"><value>아직 인덱싱되지 않음</value></data>
+  <data name="IndexCardStopped" xml:space="preserve"><value>인덱싱 중단됨</value></data>
+  <data name="IndexCardFailed" xml:space="preserve"><value>인덱싱 실패</value></data>
+  <data name="IndexCardNoWorkspace" xml:space="preserve"><value>열린 작업 영역 없음</value></data>
+  <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>솔루션이나 폴더를 여세요. 그에 대한 인덱스가 만들어집니다.</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>파일 {0}개 · {1}에 업데이트</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>파일 {1}개 중 {0}개 읽음</value></data>
+  <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>백그라운드 인덱싱이 꺼져 있습니다. 에이전트는 키워드로 검색합니다.</value></data>
+  <data name="IndexCardStoppedDetail" xml:space="preserve"><value>마지막 작업이 끝나지 않아 인덱스가 불완전합니다.</value></data>
+  <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}. 자세한 내용은 /diagnostics에 있습니다.</value></data>
+  <data name="IndexCardRebuild" xml:space="preserve"><value>다시 빌드</value></data>
+  <data name="IndexCardBuild" xml:space="preserve"><value>지금 빌드</value></data>
+  <data name="IndexCardOversize" xml:space="preserve"><value>{1}KB를 넘어 제외된 파일: {0}개.</value></data>
+  <data name="IndexCardShowThem" xml:space="preserve"><value>보기</value></data>
+  <data name="IndexCardHideThem" xml:space="preserve"><value>숨기기</value></data>
+  <data name="IndexCardMoreFiles" xml:space="preserve"><value>…외 {0}개.</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>벡터가 없어 조각 {1}개 중 {0}개는 키워드로만 찾을 수 있습니다. 다시 빌드하면 채워집니다.</value></data>
+  <data name="IndexCardModelSemantic" xml:space="preserve"><value>{0}(으)로 의미 검색, 그리고 정확한 이름과 키워드 검색.</value></data>
+  <data name="IndexCardModelKeywords" xml:space="preserve"><value>키워드 검색만 가능: 임베딩 모델이 설정되거나 설치되어 있지 않습니다.</value></data>
+  <data name="IndexCardModelOff" xml:space="preserve"><value>키워드 검색만 가능: 의미 검색이 꺼져 있습니다.</value></data>
+  <data name="IndexCardEmbeddingDown" xml:space="preserve"><value>임베딩 모델이 응답하지 않습니다. 돌아올 때까지 키워드로 검색합니다.</value></data>
+  <data name="IndexExclusionsTitle" xml:space="preserve"><value>인덱스에서 제외</value></data>
+  <data name="IndexExclusionsFrom" xml:space="preserve"><value>.inferpal/project.json에서, 팀과 공유됨</value></data>
+  <data name="IndexExclusionsHowTo" xml:space="preserve"><value>빌드 및 종속성 폴더는 항상 제외됩니다. 더 제외하려면 .inferpal/project.json의 indexExclude에 패턴을 나열하세요. /onboard init이 파일을 만듭니다.</value></data>
+  <data name="SettingsEditFile" xml:space="preserve"><value>편집</value></data>
+  <data name="SettingsOpenFile" xml:space="preserve"><value>열기</value></data>
+  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0}페이지 · 인덱싱됨</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0}페이지 · 의미 검색 불가 {1}</value></data>
+  <data name="DocsSiteHolesNote" xml:space="preserve"><value>임베딩 모델이 응답하지 않는 동안 {0}개 구절을 읽었습니다. 다시 인덱싱할 때까지 키워드로만 찾을 수 있습니다.</value></data>
+  <data name="DocsSiteIndexing" xml:space="preserve"><value>인덱싱 중…</value></data>
+  <data name="DocsReindex" xml:space="preserve"><value>다시 인덱싱</value></data>
+  <data name="DocsAddSite" xml:space="preserve"><value>사이트 추가</value></data>
+  <data name="DocsAddUrlLabel" xml:space="preserve"><value>문서 첫 페이지의 주소</value></data>
+  <data name="DocsAddButton" xml:space="preserve"><value>추가 후 인덱싱</value></data>
+  <data name="DocsRemoveSite" xml:space="preserve"><value>{0} 제거</value></data>
+  <data name="DocsNoSitesYet" xml:space="preserve"><value>아직 사이트가 없습니다. 사용하는 라이브러리의 문서를 추가하세요.</value></data>
+  <data name="ContextUsageTokens" xml:space="preserve"><value>{1} 토큰 중 {0}</value></data>
+  <data name="ContextUsageOpenXray" xml:space="preserve"><value>컨텍스트 엑스레이 열기</value></data>
+  <data name="ContextUsageInstructions" xml:space="preserve"><value>지침 및 프로젝트 파일</value></data>
+  <data name="ContextUsageTools" xml:space="preserve"><value>도구 설명</value></data>
+  <data name="ContextUsageConversation" xml:space="preserve"><value>대화</value></data>
+  <data name="ContextUsageChangeWindow" xml:space="preserve"><value>창 크기는 서버 및 모델에서 변경</value></data>
+  <data name="ContextUsageNoChat" xml:space="preserve"><value>채팅 창이 열려 있지 않습니다. 열리면 대화가 집계됩니다.</value></data>
+  <data name="PinnedFilesCount" xml:space="preserve"><value>{1}개 중 {0}</value></data>
+  <data name="PinnedFileTokens" xml:space="preserve"><value>{0} 토큰</value></data>
+  <data name="PinnedFileMissing" xml:space="preserve"><value>찾을 수 없음</value></data>
+  <data name="ProjectFilesTitle" xml:space="preserve"><value>이 프로젝트에서</value></data>
+  <data name="ProjectFileContext" xml:space="preserve"><value>프로젝트 개요</value></data>
+  <data name="ProjectFileMemory" xml:space="preserve"><value>에이전트가 기억하는 내용</value></data>
+  <data name="ProjectFileNotes" xml:space="preserve"><value>내 메모</value></data>
+  <data name="ProjectFileRules" xml:space="preserve"><value>파일별 규칙: {0}개</value></data>
+  <data name="ProjectFileNotYet" xml:space="preserve"><value>아직 만들어지지 않음</value></data>
+  <data name="RunSteps1" xml:space="preserve"><value>1단계</value></data>
+  <data name="RunSteps" xml:space="preserve"><value>{0}단계</value></data>
+  <data name="RunRead1" xml:space="preserve"><value>파일 1개 읽음</value></data>
+  <data name="RunRead" xml:space="preserve"><value>파일 {0}개 읽음</value></data>
+  <data name="RunSearched1" xml:space="preserve"><value>검색 1회</value></data>
+  <data name="RunSearched" xml:space="preserve"><value>검색 {0}회</value></data>
+  <data name="RunEdited1" xml:space="preserve"><value>1개 수정</value></data>
+  <data name="RunEdited" xml:space="preserve"><value>{0}개 수정</value></data>
+  <data name="RunCommand1" xml:space="preserve"><value>명령 1개 실행</value></data>
+  <data name="RunCommands" xml:space="preserve"><value>명령 {0}개 실행</value></data>
+  <data name="RunBuildPassed" xml:space="preserve"><value>빌드 성공</value></data>
+  <data name="RunBuildFailed" xml:space="preserve"><value>빌드 실패</value></data>
+  <data name="RunTestsPassed" xml:space="preserve"><value>테스트 통과</value></data>
+  <data name="RunTestsFailed" xml:space="preserve"><value>테스트 실패</value></data>
+  <data name="TurnSeconds" xml:space="preserve"><value>{0}초</value></data>
+  <data name="TurnMinutes" xml:space="preserve"><value>{0}분 {1}초</value></data>
+  <data name="ApprovalCreateFile" xml:space="preserve"><value>파일 만들기</value></data>
+  <data name="ApprovalChangeFile" xml:space="preserve"><value>파일 변경</value></data>
+  <data name="ApprovalDeleteFile" xml:space="preserve"><value>파일 삭제</value></data>
+  <data name="ApprovalRunCommand" xml:space="preserve"><value>명령 실행</value></data>
+  <data name="ApprovalReadPage" xml:space="preserve"><value>웹 페이지 읽기</value></data>
+  <data name="ApprovalSearchWeb" xml:space="preserve"><value>웹 검색</value></data>
+  <data name="ApprovalUseTool" xml:space="preserve"><value>{0} 사용</value></data>
+  <data name="ApprovalLineCount" xml:space="preserve"><value>{0}줄</value></data>
+  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0}줄 더</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>편집기를 다시 시작할 때까지 묻지 않고 {0}을(를) 허용합니다.</value></data>
+  <data name="ApprovalOpenDiff" xml:space="preserve"><value>차이 열기</value></data>
+  <data name="ChatNewConversation" xml:space="preserve"><value>새 대화</value></data>
+  <data name="ChatConversations" xml:space="preserve"><value>대화 목록</value></data>
+  <data name="ChatMore" xml:space="preserve"><value>더 보기</value></data>
+  <data name="ChatMenuSearch" xml:space="preserve"><value>대화에서 검색</value></data>
+  <data name="ChatMenuExport" xml:space="preserve"><value>대화 내보내기</value></data>
+  <data name="ChatMenuXray" xml:space="preserve"><value>컨텍스트 엑스레이</value></data>
+  <data name="ChatMenuSettings" xml:space="preserve"><value>설정</value></data>
+  <data name="ChatMenuStepMode" xml:space="preserve"><value>도구 호출마다 일시 중지</value></data>
+  <data name="ChatNoModelListed" xml:space="preserve"><value>나열된 모델이 없습니다 — 백엔드에 연결할 수 있나요?</value></data>
+  <data name="ChatModelButton" xml:space="preserve"><value>모델과 서버: {0}</value></data>
+  <data name="ModeChat" xml:space="preserve"><value>채팅</value></data>
+  <data name="ModeAgent" xml:space="preserve"><value>에이전트</value></data>
+  <data name="ModePlan" xml:space="preserve"><value>계획</value></data>
+  <data name="ModeChatTip" xml:space="preserve"><value>도구 없이 답변</value></data>
+  <data name="ModeAgentTip" xml:space="preserve"><value>도구를 사용하며 무엇이든 바꾸기 전에 묻습니다</value></data>
+  <data name="ModePlanTip" xml:space="preserve"><value>읽고 계획만 합니다. 아무것도 바꾸지 않습니다</value></data>
+  <data name="ComposerPlaceholder" xml:space="preserve"><value>질문하거나 @로 첨부, /로 명령</value></data>
+  <data name="ChatAttach" xml:space="preserve"><value>파일, 선택 영역, 문제 첨부</value></data>
+  <data name="ContextRingTip" xml:space="preserve"><value>컨텍스트: {1}토큰 창의 {0}% — 클릭하면 엑스레이</value></data>
+  <data name="TurnWorking" xml:space="preserve"><value>작업 중 · {0}단계</value></data>
+  <data name="TurnWaiting" xml:space="preserve"><value>응답 대기 중</value></data>
+  <data name="RunUndo" xml:space="preserve"><value>실행 되돌리기</value></data>
+  <data name="WelcomeTitle" xml:space="preserve"><value>무엇을 작업할까요?</value></data>
+  <data name="WelcomeLine" xml:space="preserve"><value>{1}의 {0}. 코드는 이 컴퓨터를 벗어나지 않습니다.</value></data>
+  <data name="WelcomeLocal" xml:space="preserve"><value>코드는 이 컴퓨터를 벗어나지 않습니다.</value></data>
+  <data name="WelcomeForFile" xml:space="preserve"><value>편집기에 열린 {0}</value></data>
+  <data name="WelcomeExplainFile" xml:space="preserve"><value>이 파일 설명</value></data>
+  <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>무엇을 하는지, 각 부분이 어떻게 연결되는지</value></data>
+  <data name="WelcomeTestsFile" xml:space="preserve"><value>테스트 작성</value></data>
+  <data name="WelcomeTestsFileDesc" xml:space="preserve"><value>테스트 실행기가 찾는 위치에 배치</value></data>
+  <data name="WelcomeUsagesFile" xml:space="preserve"><value>사용 위치 찾기</value></data>
+  <data name="WelcomeUsagesFileDesc" xml:space="preserve"><value>작업 영역 전체의 호출자와 종속 항목</value></data>
+  <data name="WelcomeUsagesPrompt" xml:space="preserve"><value>{0}은(는) 어디에서 사용되나요? 호출자와 이에 의존하는 항목을 나열하세요.</value></data>
+  <data name="WelcomeBuildFailed" xml:space="preserve"><value>마지막 빌드 실패 — 오류 {0}개</value></data>
+  <data name="WelcomeFixThem" xml:space="preserve"><value>수정하기</value></data>
+  <data name="WelcomeHintAttach" xml:space="preserve"><value>파일 첨부</value></data>
+  <data name="WelcomeHintCommands" xml:space="preserve"><value>명령</value></data>
+  <data name="WelcomeHintNewLine" xml:space="preserve"><value>줄 바꿈</value></data>
 </root>

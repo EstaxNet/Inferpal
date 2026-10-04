@@ -91,7 +91,7 @@ deny  * \.env$                                       # never touch secrets, any 
   auto-approve. `deny` rules from the overlay are honoured — a project tightening its own
   restrictions is always safe.
 - A built-in denylist of catastrophic shell commands (recursive root deletes, disk
-  formatting, fork bombs, …) always applies — even with security alerts disabled. It is an
+  formatting, fork bombs, …) always applies — even with approvals switched off. It is an
   **accident guard, not a security boundary**: it matches submitted text, so obfuscation
   defeats it by construction. The actual boundary is the approval prompt, where the raw
   command is visible.
@@ -99,19 +99,19 @@ deny  * \.env$                                       # never touch secrets, any 
   `FromBase64String`, `[scriptblock]::Create`, `& $var`) and POSIX (`eval`, piping into a
   shell, `base64 -d`, `sh -c "$var"`, `source`/`exec` on a variable) alike: what runs is
   not the text the rules read, so no auto-approval path applies (allow rule, session grant,
-  security alerts disabled) — the call is never blocked, it simply always reaches the
+  approvals switched off) — the call is never blocked, it simply always reaches the
   approval prompt.
 
 See **[Configuration → Permission rules](configuration.md)**.
 
 > [!NOTE]
-> Setting **Disable security alerts** auto-approves the calls that would otherwise prompt. The
-> built-in catastrophic-command denylist still applies.
+> Unticking *Ask me before changing files, running commands or going online* (Settings → Agent and approvals) auto-approves the calls that
+> would otherwise prompt. The built-in catastrophic-command denylist still applies.
 
 ## Custom shell tools
 
-Expose your own shell commands as agent tools in **Settings → Custom agent tools**, one per
-line:
+Expose your own shell commands as agent tools in **Settings → Tools and MCP servers → Your agent
+tools**, one per line:
 
 ```
 name=command

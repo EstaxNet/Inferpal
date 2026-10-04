@@ -21,10 +21,6 @@ namespace Inferpal.Tests;
 /// </remarks>
 public class SettingsSchemaDriftTests
 {
-    /// <summary>Labels the adapter resolves itself rather than from the .resx.</summary>
-    private static readonly string[] LocalLabels =
-        [SettingsSchema.LocalLabelInlineDiff, SettingsSchema.LocalLabelTabTools];
-
     private static HashSet<string> ResourceNames()
     {
         var resx = Path.Combine(RepoRoot(), "Inferpal.Core", "Localization", "Strings.resx");
@@ -39,7 +35,7 @@ public class SettingsSchemaDriftTests
     public void TheSchemaCoversTheWholeForm()
     {
         // Guards the guard: an empty or gutted schema must not make the checks below vacuous.
-        Assert.Equal(4, SettingsSchema.Tabs.Count);
+        Assert.Equal(7, SettingsSchema.Tabs.Count);
         Assert.InRange(SettingsSchema.AllFields.Count(), 30, 200);
     }
 
@@ -81,15 +77,13 @@ public class SettingsSchemaDriftTests
     {
         var resources = ResourceNames();
 
-        var missing = SettingsSchema.AllFields
-            .SelectMany(f => new[] { f.Label, f.Hint })
-            .Concat(SettingsSchema.Tabs.Select(t => t.Title))
-            .Concat(SettingsSchema.Tabs.SelectMany(t => t.Sections).SelectMany(sec =>
-                new[] { sec.Title, sec.ToggleLabel, sec.ToggleHint }))
-            .Where(n => !string.IsNullOrEmpty(n))
-            .Where(n => !LocalLabels.Contains(n!))
-            .Where(n => !resources.Contains(n!))
-            .Distinct()
+        var names = SettingsSchema.ResourceNames.ToList();
+
+        // Witness: page titles and descriptions, sections, labels, hints — well over a hundred names.
+        Assert.True(names.Count > 100, $"only {names.Count} name(s) read from the schema");
+
+        var missing = names
+            .Where(n => !resources.Contains(n))
             .Order()
             .ToList();
 
@@ -120,20 +114,20 @@ public class SettingsSchemaDriftTests
     [Fact]
     public void FimModeOptionTexts_MatchTheActualPresets()
     {
-        // §27.6 - the labels promise "128 tok / 300 ms" literally: if the preset table of
-        // FimContextBuilder moves, the form lies silently on both sides.
+        // Each speed card promises its delay literally ("after 300 ms"), and "short / longer / whole blocks" in order:
+        // if the preset table of FimContextBuilder moves, the form lies silently on both sides.
         var field = SettingsSchema.AllFields.Single(f => f.Key == "inlineCompletionMode");
         Assert.NotNull(field.Options);
 
         foreach (var opt in field.Options!)
         {
             var preset = FimContextBuilder.GetSettings(opt.Value);
-            // .Display, not .Text: it is the RENDERED text that makes the promise. Now that these
-            // three are translated, checking the English literal would let a translation lose the
-            // figures without any test moving.
-            Assert.Contains($"{preset.MaxTokens} tok", opt.Display);
-            Assert.Contains(DelayText(preset.DebounceMs), opt.Display);
+            // .Description, the RENDERED sentence: it is the one that makes the promise. Checking an English literal
+            // would let a translation lose the figure without any test moving.
+            Assert.Contains(DelayText(preset.DebounceMs), opt.Description);
         }
+        var lengths = field.Options!.Select(o => FimContextBuilder.GetSettings(o.Value).MaxTokens).ToList();
+        Assert.Equal(lengths.Order(), lengths);
 
         // GetSettings falls back to Default on an unknown code: pairwise-distinct presets prove
         // every option of the form is a real preset, not the fallback.
@@ -142,9 +136,8 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
-    /// The technical suffix of the three FIM modes survives in <b>all ten</b> languages. Translating
-    /// "Fast" is the point; losing "128 tok · 300 ms" while doing it would be the same failure as
-    /// before, the other way round — a form that lies about what it promises.
+    /// The delay of each speed card survives in <b>all ten</b> languages. Translating "Fast" is the point; losing
+    /// "300 ms" while doing it would be the same failure the other way round — a form that lies about what it promises.
     /// </summary>
     [Fact]
     public void FimModeLabels_KeepTheirNumbers_InEveryLanguage()
@@ -165,15 +158,14 @@ public class SettingsSchemaDriftTests
 
             foreach (var opt in field.Options!)
             {
-                var key = "FimMode" + opt.Value;
+                var key = "FimMode" + opt.Value + "Desc";
                 if (!values.TryGetValue(key, out var text))
                 {
                     offenders.Add($"{Path.GetFileName(file)} : {key} absente");
                     continue;
                 }
                 var preset = FimContextBuilder.GetSettings(opt.Value);
-                if (!text.Contains($"{preset.MaxTokens} tok", StringComparison.Ordinal)
-                 || !text.Contains(DelayText(preset.DebounceMs), StringComparison.Ordinal))
+                if (!text.Contains(DelayText(preset.DebounceMs), StringComparison.Ordinal))
                     offenders.Add($"{Path.GetFileName(file)} : {key} = \"{text}\"");
             }
         }
@@ -346,10 +338,14 @@ public class SettingsSchemaDriftTests
 
         var source = TsCode("webview/settings.ts");
         Assert.Matches(new Regex(@"field\.kind === 'model'[\s\S]{0,400}?\.readOnly = true"), source);
-        Assert.False(source.Contains("addEventListener('input'", StringComparison.Ordinal),
+        // The subject is the MODEL field: the form as a whole listens to its edits to count them.
+        // Either line ending: a Windows checkout (core.autocrlf) gives the source CRLF.
+        var modelBranch = Regex.Match(source, @"if \(field\.kind === 'model'\) \{[\s\S]*?\r?\n      \}\r?\n");
+        Assert.True(modelBranch.Success, "settings.ts no longer has a model-field branch — the rule guards nothing.");
+        Assert.False(modelBranch.Value.Contains("addEventListener('input'", StringComparison.Ordinal),
             "A model field still filters as you type: it therefore accepts free text.");
-        // Optional roles keep their empty entry, like the leading "" of AvailableOptionalModels.
-        Assert.Contains("field.gate === 'roles'", source, StringComparison.Ordinal);
+        // Every model but the chat model keeps its empty entry, like the leading "" of AvailableOptionalModels.
+        Assert.Contains("field.key !== 'defaultModel'", modelBranch.Value, StringComparison.Ordinal);
 
         // Read-only, the keyboard has nothing but the list to pick from: the arrow keys move through it and
         // Enter picks the highlighted row. Without that, the list opens from the keyboard and nothing can be picked.
@@ -385,9 +381,13 @@ public class SettingsSchemaDriftTests
         var source = TsCode("webview/settings.ts");
 
         Assert.Matches(new Regex(@"function fillSelect\([\s\S]{0,1500}?if \(!match\)[\s\S]{0,400}?\.selected = true"), source);
-        // Both lists — the language at the top and the schema fields — go through this filling.
-        Assert.True(Regex.Matches(source, @"\bfillSelect\(").Count >= 3,
-            "A drop-down list is still filled without going through fillSelect.");
+        // Every drop-down list the panel builds goes through this filling (the language is a schema
+        // field like the others).
+        var selects = Regex.Matches(source, @"createElement\('select'\)").Count;
+        var fills   = Regex.Matches(source, @"\bfillSelect\(").Count - 1;   // minus the definition
+        Assert.True(selects >= 1, "settings.ts builds no drop-down list — the rule guards nothing.");
+        Assert.True(fills >= selects,
+            $"{selects} drop-down list(s) built for {fills} fillSelect call(s): one is filled without it.");
         Assert.DoesNotContain(".selected = String(", source, StringComparison.Ordinal);
     }
 
@@ -834,13 +834,13 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
-    /// Issue #8. "Use a separate model per role" unchecked promises the chat model everywhere — its
-    /// tooltip says so. The panel only collapsed the fields: the per-role models stayed in the
-    /// configuration, the router kept using them, and the box came back checked on the next opening
-    /// (it is inferred from the filled fields).
+    /// Issue #8 was a setting in effect hidden behind a folded switch. The "Show advanced settings" box
+    /// only folds: it never writes a value (a box that clears what it hides deletes the user's choices
+    /// for having been unticked), and it opens by itself when a setting behind it departs from its
+    /// factory value — read from the schema's <c>opensFold</c>, never from a list of keys copied here.
     /// </summary>
     [Fact]
-    public void VsCodePanel_SavingWithSeparateRoleModelsOff_ClearsTheRoleFields()
+    public void VsCodePanel_TheAdvancedFold_NeverWrites_AndOpensOnASettingInEffect()
     {
         var source = TsCode("webview/settings.ts");
 
@@ -849,11 +849,12 @@ public class SettingsSchemaDriftTests
         var end  = source.IndexOf("\nfunction ", start + 1, StringComparison.Ordinal);
         var body = end < 0 ? source[start..] : source[start..end];
 
-        // The fallback is read from the schema (the "roles" gate), not from a list of keys copied
-        // here: a role added to the schema must be covered without anyone thinking about it.
-        Assert.True(body.Contains("gateOn.roles", StringComparison.Ordinal)
-                    && body.Contains("'roles'", StringComparison.Ordinal),
-            "onSave saves the per-role models even when 'Use a separate model per role' is unchecked.");
+        Assert.Contains("config[field.key]", body, StringComparison.Ordinal);      // WITNESS: the save is read
+        foreach (var gate in new[] { "foldOpen", "gateOn", "advanced" })
+            Assert.False(body.Contains(gate, StringComparison.Ordinal),
+                $"onSave reads '{gate}': the fold decides what is saved, and unticking it erases settings.");
+
+        Assert.Matches(new Regex(@"foldOpen\.set\([^;]*f\.opensFold\s*&&\s*departsFromDefault\(f\)"), source);
     }
 
     [Fact]

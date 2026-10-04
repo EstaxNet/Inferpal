@@ -473,58 +473,91 @@ internal sealed class PermissionPolicy
 
     public static IReadOnlyList<PermissionRule> ParseJsonOverlay(string? json) => ReadOverlay(json).Rules;
 
-    /// <summary>Same, reporting what did not take. See <see cref="OverlayReport"/>.</summary>
-    internal static OverlayReport ReadOverlay(string? json)
+    /// <summary>One entry of the overlay's <c>rules</c> array, as written and as parsed.</summary>
+    /// <param name="Text">The entry's text, or its JSON kind when it is not a string.</param>
+    /// <param name="Rule">The parsed rule; <c>null</c> when the entry is not a readable rule.</param>
+    /// <param name="IsString">Whether the entry is a string at all.</param>
+    internal readonly record struct OverlayEntry(string Text, PermissionRule? Rule, bool IsString);
+
+    /// <summary>
+    /// The overlay entry by entry, recording NOTHING: the reader of a screen that redraws (the settings
+    /// table) must not write to <c>/diagnostics</c> on every redraw. <see cref="ReadOverlay"/> is built on
+    /// it and records — one reading of the file, two ways to report it.
+    /// </summary>
+    /// <param name="unusable">Invalid JSON, or no <c>rules</c> array: none of the file applies.</param>
+    /// <param name="error">The JSON error when the file is not valid JSON; <c>null</c> otherwise (an unusable
+    /// file with no error has no <c>rules</c> array).</param>
+    internal static IReadOnlyList<OverlayEntry> OverlayEntries(string? json, out bool unusable, out string? error)
     {
-        if (string.IsNullOrWhiteSpace(json)) return new([], Unusable: false, 0, 0);
+        unusable = false;
+        error = null;
+        if (string.IsNullOrWhiteSpace(json)) return [];
         try
         {
             using var doc = JsonDocument.Parse(json);
             if (!doc.RootElement.TryGetProperty("rules", out var arr) || arr.ValueKind != JsonValueKind.Array)
             {
-                Diagnostics.Record("Permission",
-                    "Workspace overlay has no \"rules\" array: none of its restrictions are in force.");
-                return new([], Unusable: true, 0, 0);
+                unusable = true;
+                return [];
             }
-            var rules = new List<PermissionRule>();
-            var malformed = 0;
-            var allowIgnored = 0;
+            var entries = new List<OverlayEntry>();
             foreach (var item in arr.EnumerateArray())
-            {
-                if (item.ValueKind != JsonValueKind.String)
-                {
-                    Diagnostics.Record("Permission",
-                        $"Workspace overlay: ignored a non-string entry in \"rules\" ({item.ValueKind}).");
-                    malformed++;
-                    continue;
-                }
-                var rule = ParseLine(item.GetString());
-                if (rule is null)
-                {
-                    Diagnostics.DroppedLine("Permission",
-                        "Workspace overlay: rule ignored (malformed line or invalid regex)", item.GetString());
-                    malformed++;
-                    continue;
-                }
-                if (rule.Decision == PermissionDecision.Allow)
-                {
-                    Diagnostics.Record("Permission",
-                        $"Ignored an 'allow' rule from the workspace overlay (deny-only): {item.GetString()}");
-                    allowIgnored++;
-                    continue;
-                }
-                rules.Add(rule);
-            }
-            return new(rules, Unusable: false, malformed, allowIgnored);
+                entries.Add(item.ValueKind == JsonValueKind.String
+                    ? new OverlayEntry(item.GetString() ?? string.Empty, ParseLine(item.GetString()), IsString: true)
+                    : new OverlayEntry(item.ValueKind.ToString(), null, IsString: false));
+            return entries;
         }
         catch (JsonException ex)
         {
-            // The worse of the two silences: an overlay with broken JSON produced ZERO deny rules.
-            // A project shipping its permissions.json to restrict itself lost every restriction,
-            // and nothing - not even reading the file, which succeeded - said so.
-            Diagnostics.Record("Permission",
-                $"Workspace overlay is not valid JSON: none of its deny rules are in force ({ex.Message}).");
+            unusable = true;
+            error = ex.Message;
+            return [];
+        }
+    }
+
+    /// <summary>Same, reporting what did not take. See <see cref="OverlayReport"/>.</summary>
+    internal static OverlayReport ReadOverlay(string? json)
+    {
+        var entries = OverlayEntries(json, out var unusable, out var error);
+        if (unusable)
+        {
+            // The worse of the silences: an overlay with broken JSON produced ZERO deny rules. A project
+            // shipping its permissions.json to restrict itself lost every restriction, and nothing - not
+            // even reading the file, which succeeded - said so.
+            Diagnostics.Record("Permission", error is null
+                ? "Workspace overlay has no \"rules\" array: none of its restrictions are in force."
+                : $"Workspace overlay is not valid JSON: none of its deny rules are in force ({error}).");
             return new([], Unusable: true, 0, 0);
         }
+
+        var rules = new List<PermissionRule>();
+        var malformed = 0;
+        var allowIgnored = 0;
+        foreach (var entry in entries)
+        {
+            if (!entry.IsString)
+            {
+                Diagnostics.Record("Permission",
+                    $"Workspace overlay: ignored a non-string entry in \"rules\" ({entry.Text}).");
+                malformed++;
+                continue;
+            }
+            if (entry.Rule is null)
+            {
+                Diagnostics.DroppedLine("Permission",
+                    "Workspace overlay: rule ignored (malformed line or invalid regex)", entry.Text);
+                malformed++;
+                continue;
+            }
+            if (entry.Rule.Decision == PermissionDecision.Allow)
+            {
+                Diagnostics.Record("Permission",
+                    $"Ignored an 'allow' rule from the workspace overlay (deny-only): {entry.Text}");
+                allowIgnored++;
+                continue;
+            }
+            rules.Add(entry.Rule);
+        }
+        return new(rules, Unusable: false, malformed, allowIgnored);
     }
 }

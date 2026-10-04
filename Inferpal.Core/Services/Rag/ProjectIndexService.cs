@@ -131,6 +131,13 @@ internal sealed class ProjectIndexService : IDisposable
     /// </remarks>
     public int SkippedBySize { get; private set; }
 
+    /// <summary>The files <see cref="SkippedBySize"/> counts, relative to the root, at most <see cref="OversizeNamesCap"/>:
+    /// the settings card can name them, so the user can split or exclude one on purpose.</summary>
+    public IReadOnlyList<string> OversizeFiles { get; private set; } = [];
+
+    /// <summary>How many names <see cref="OversizeFiles"/> keeps; the count stays exact beyond it.</summary>
+    internal const int OversizeNamesCap = 50;
+
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
 
@@ -142,6 +149,9 @@ internal sealed class ProjectIndexService : IDisposable
     // root is pinned rather than per file: this sits in the enumeration loop. Additive only — the
     // profile can lengthen the built-in list, never shorten it (see IndexExclusions).
     private volatile IReadOnlyList<string> _profileExcludes = [];
+
+    /// <summary>The exclusion patterns of <c>.inferpal/project.json</c> the index applies — what the settings page lists.</summary>
+    public IReadOnlyList<string> ProfileExcludes => _profileExcludes;
 
     // ── Construction ──────────────────────────────────────────────────────────
 
@@ -398,6 +408,9 @@ internal sealed class ProjectIndexService : IDisposable
     {
         IsIndexing     = true;
         _passCompleted = false;   // a re-index must not write "✅" over a pass that is running, or failed
+        _failure       = null;
+        _stopped       = false;
+        (_progressDone, _progressTotal) = (0, 0);
         Status         = "RAG: starting indexer…";
         // A full pass reads every file again; a change made DURING it re-enters through the watcher.
         lock (_notYetReindexed) _notYetReindexed.Clear();
@@ -451,7 +464,8 @@ internal sealed class ProjectIndexService : IDisposable
             // file not listed yet, under a "✅". The index stays as loaded instead.
             if (EnumerateSourceFiles(rootDir) is not { } files)
             {
-                Status = "RAG: could not list the project files — the index was left as it was (see /diagnostics).";
+                Status   = "RAG: could not list the project files — the index was left as it was (see /diagnostics).";
+                _failure = "could not list the project files";
                 return;
             }
             if (files.Count == 0)
@@ -476,6 +490,7 @@ internal sealed class ProjectIndexService : IDisposable
             {
                 ct.ThrowIfCancellationRequested();
                 Status = $"RAG: {fi + 1}/{files.Count} — {Path.GetFileName(files[fi])}";
+                (_progressDone, _progressTotal) = (fi, files.Count);
 
                 try
                 {
@@ -562,6 +577,7 @@ internal sealed class ProjectIndexService : IDisposable
 
             _passFileCount = files.Count;
             _passCompleted = true;
+            _updatedAt     = DateTime.Now;
             Status = await ReadyStatusAsync(ct);
 
             // ── Drain the backlog accumulated during the pass ─────────────────
@@ -580,7 +596,8 @@ internal sealed class ProjectIndexService : IDisposable
         }
         catch (OperationCanceledException)
         {
-            Status = "RAG: indexing cancelled.";
+            Status   = "RAG: indexing cancelled.";
+            _stopped = true;
         }
         catch (Exception ex)
         {
@@ -588,7 +605,8 @@ internal sealed class ProjectIndexService : IDisposable
             // bundle carried not a line of it. And `ex.Message` of a WRAPPER exception — which is
             // what a failure to load the native SQLite library produces — names nothing at all.
             Diagnostics.Swallow("ProjectIndexService.IndexingPass", ex);
-            Status = $"RAG: error — {Diagnostics.RootMessage(ex)}";
+            Status   = $"RAG: error — {Diagnostics.RootMessage(ex)}";
+            _failure = Diagnostics.RootMessage(ex);
         }
         finally
         {
@@ -797,6 +815,28 @@ internal sealed class ProjectIndexService : IDisposable
     private int  _passFileCount;
     private bool _passCompleted;
 
+    // What the settings card reads (Snapshot): the pass's progress, when the published index last changed, and how
+    // the last pass ended when it did not complete. Status carries the same facts as an English sentence.
+    private int       _progressDone, _progressTotal;
+    private DateTime? _updatedAt;
+    private string?   _failure;
+    private bool      _stopped;
+
+    /// <summary>The index as the settings card shows it: state, counts, holes, and what was left out.</summary>
+    /// <remarks>Read under the chunk lock, like <see cref="ReadyStatusAsync"/>: the holes are counted on the index as
+    /// it is now, re-indexed files included.</remarks>
+    public async Task<IndexSnapshot> SnapshotAsync(CancellationToken ct)
+    {
+        int unembedded;
+        await _chunkLock.WaitAsync(ct);
+        try { unembedded = _chunksByFile.Values.Sum(l => l.Count(c => c.Embedding is not { Length: > 0 })); }
+        finally { _chunkLock.Release(); }
+        return new IndexSnapshot(
+            RootDir, IsIndexing, _progressDone, _progressTotal, _passCompleted, _passFileCount, ChunkCount, unembedded,
+            SkippedBySize, OversizeFiles, SkippedFolder, QueryEmbeddingModel, _client.IsEmbeddingCircuitOpen,
+            _updatedAt, _failure, _stopped);
+    }
+
     /// <summary>
     /// The "✅" status, from the index as it is NOW: its chunks, the ones without a vector, the embedding breaker.
     /// </summary>
@@ -942,7 +982,11 @@ internal sealed class ProjectIndexService : IDisposable
         }
 
         // The status is recounted from the index as it now is: holes made or filled by these files included.
-        if (_passCompleted) Status = await ReadyStatusAsync(ct);
+        if (_passCompleted)
+        {
+            _updatedAt = DateTime.Now;
+            Status     = await ReadyStatusAsync(ct);
+        }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -988,8 +1032,9 @@ internal sealed class ProjectIndexService : IDisposable
     /// not reach the pass's final replaceAll.</returns>
     private List<string>? EnumerateSourceFiles(string rootDir)
     {
-        var result = new List<string>();
-        var tooBig = 0;
+        var result   = new List<string>();
+        var tooBig   = 0;
+        var tooBigAt = new List<string>();
         // ⚠ Once per pass, BEFORE the walk: `IgnoreInaccessible` skips an unlistable folder without
         // throwing, so the `catch` below never sees it and the `null` it returns — "partial list,
         // does not replace the index" — does not fire either. The pass is legitimate (nothing better
@@ -1008,7 +1053,7 @@ internal sealed class ProjectIndexService : IDisposable
                 try
                 {
                     if (new FileInfo(f).Length < CodeChunker.MaxFileSizeBytes) result.Add(f);
-                    else tooBig++;
+                    else if (++tooBig <= OversizeNamesCap) tooBigAt.Add(Path.GetRelativePath(rootDir, f));
                 }
                 // ⚠ Per file: a file deleted between the walk and the stat (a git pull, a generator) threw
                 // out of the WHOLE enumeration, and the pass replaced the index with what had been listed.
@@ -1028,6 +1073,7 @@ internal sealed class ProjectIndexService : IDisposable
         // mean "partial list, keep the previous index", so a count taken from them would describe a
         // pass whose result was thrown away.
         SkippedBySize = tooBig;
+        OversizeFiles = tooBigAt;
         return result;
     }
 
@@ -1102,3 +1148,13 @@ internal sealed class ProjectIndexService : IDisposable
         // into an ObjectDisposedException in a detached task. They die with the process.
     }
 }
+
+/// <summary>The index as <see cref="ProjectIndexService.SnapshotAsync"/> reads it — what the settings card renders.</summary>
+/// <param name="Done">Files the running pass has read; with <paramref name="Total"/>, its progress.</param>
+/// <param name="Completed">The last full pass reached its end: only then are the counts the index's.</param>
+/// <param name="Model">The model the index's vectors came from; <c>null</c> = keyword search only.</param>
+/// <param name="Failure">Why the last pass stopped, when it failed (in the system's language: an exception message).</param>
+internal sealed record IndexSnapshot(
+    string RootDir, bool IsIndexing, int Done, int Total, bool Completed, int Files, int Chunks, int Unembedded,
+    int Oversize, IReadOnlyList<string> OversizeFiles, WorkspaceScan.WalkGap? SkippedFolder, string? Model,
+    bool EmbeddingDown, DateTime? UpdatedAt, string? Failure, bool Stopped);

@@ -574,7 +574,7 @@ internal partial class InferpalToolWindowData
         // from this process (the chat works) and the user had no way to find out.
         var result = Services.Commands.DiagnosticsCommandHandler.Handle(parts,
             new Services.Commands.DiagnosticsExportContext(
-                _config, "Visual Studio", ConnectionStatusText, FindProjectRoot(),
+                _config, "Visual Studio", ConnectionBadgeText(), FindProjectRoot(),
                 Services.Signals.InProcAliveSignal.DescribeForBundle(),
                 _tools.DescribeMcpForBundle(),
                 WindowInUse: ContextWindowInUse),

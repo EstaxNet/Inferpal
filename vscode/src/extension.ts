@@ -37,7 +37,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     () => bridge?.editorDiagnostics() ?? Promise.resolve(null),
     log,
   );
-  bridge.setApprovalCard((message, token) => chatView.requestApproval(message, token));
+  bridge.setApprovalCard((note, token) => chatView.requestApproval(note.message, token, note.card ?? null));
   context.subscriptions.push(
     chatView,
     vscode.window.registerWebviewViewProvider(ChatViewProvider.viewId, chatView, {
@@ -62,6 +62,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         () => host,
         () => void followPanelModelRouterSettings(log).then(() => chatView.configSaved()),
         () => chatView.relocalize(),
+        () => void chatView.revealXray(),
         log,
       )),
     // Editor context menu → same pipeline as typing the slash command in the chat.

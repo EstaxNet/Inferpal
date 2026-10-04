@@ -2,6 +2,7 @@
 // state pushed via postMessage and reports user intents back. It must survive being
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
+import type { ApprovalCard, RunSummary } from '../protocol';
 import type {
   ExtToWebview,
   WebviewToExt,
@@ -16,6 +17,7 @@ import type {
 import { t } from './l10n';
 import { renderMarkdownInto, setCopySink, stripThinkTags } from './markdown';
 import { renderXray, setXraySink } from './xray';
+import { icon, iconButton, setIcon, type IconName } from './icons';
 
 const vscode = window.__vsapi ?? acquireVsCodeApi();
 const post = (msg: WebviewToExt) => vscode.postMessage(msg);
@@ -42,29 +44,163 @@ let slashCommands: WvSlashCommand[] = [];
 let toolBubblesExpanded = false;
 let contextWindow = 0;
 
-// ── Topbar: connection badge + VRAM + search toggle ─────────────────────────
-const connDot = document.createElement('span');
-connDot.id = 'connDot';
-const connText = document.createElement('span');
-connText.id = 'connText';
-const connRetry = document.createElement('button');
-connRetry.id = 'connRetry';
-connRetry.textContent = '↻';
-connRetry.title = t('retry');
-connRetry.hidden = true;
-connRetry.addEventListener('click', () => post({ type: 'retryConnection' }));
-const vramEl = document.createElement('span');
-vramEl.id = 'vram';
-vramEl.hidden = true;
-const topSpacer = document.createElement('span');
-topSpacer.className = 'spacer';
-const searchToggle = document.createElement('button');
-searchToggle.id = 'searchToggle';
-searchToggle.textContent = '🔍';
-searchToggle.title = t('searchTitle');
-topbarEl.append(connDot, connText, connRetry, vramEl, topSpacer, searchToggle);
+// ── Header: model and server · new conversation · conversations · more ──────
+// One button names the model and the server it runs on, with the connection's dot; it opens the model list.
+let models: string[] = [];
+let connection: WvBackendStatus | null = null;
+let planMode = false;
+let editorFile: string | null = null;
+let problems = 0;
+/** The line naming a question's attachments, as the extension writes it ("📎 Attached: {0}"). */
+let attachedRecap = '';
 
-// Search bar: dims non-matching bubbles (VS parity: dimmed, not hidden).
+const modelBtn = document.createElement('button');
+modelBtn.id = 'modelbtn';
+const modelDot = document.createElement('span');
+modelDot.className = 'dot';
+const modelName = document.createElement('span');
+modelName.className = 'mname';
+const modelMeta = document.createElement('span');
+modelMeta.className = 'mmeta';
+modelBtn.append(modelDot, modelName, modelMeta, icon('chevronDown', 12));
+const modelPop = document.createElement('div');
+modelPop.id = 'modelpop';
+modelPop.className = 'menu';
+modelPop.hidden = true;
+
+const newBtn = iconButton('plus', t('chatNewConversation'), 15);
+newBtn.addEventListener('click', () => post({ type: 'reset' }));
+const historyBtn = iconButton('history', t('chatConversations'), 15);
+historyBtn.addEventListener('click', () => post({ type: 'openSessions' }));
+const moreBtn = iconButton('more', t('chatMore'), 15);
+const moreMenu = document.createElement('div');
+moreMenu.id = 'moremenu';
+moreMenu.className = 'menu';
+moreMenu.hidden = true;
+topbarEl.append(modelBtn, newBtn, historyBtn, moreBtn);
+document.body.append(modelPop, moreMenu);
+
+function placeMenu(menu: HTMLElement, anchor: HTMLElement, alignRight: boolean): void {
+  const r = anchor.getBoundingClientRect();
+  menu.style.top = `${r.bottom + 4}px`;
+  if (alignRight) {
+    menu.style.left = '';
+    menu.style.right = `${Math.max(4, document.documentElement.clientWidth - r.right)}px`;
+  } else {
+    menu.style.right = '';
+    menu.style.left = `${r.left}px`;
+    menu.style.minWidth = `${r.width}px`;
+  }
+}
+
+function menuItem(label: string, onPick: () => void, checked = false): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'menu-item' + (checked ? ' checked' : '');
+  item.setAttribute('role', 'menuitem');
+  item.tabIndex = -1;
+  const mark = document.createElement('span');
+  mark.className = 'menu-mark';
+  if (checked) {
+    mark.appendChild(icon('check', 12));
+  }
+  const text = document.createElement('span');
+  text.textContent = label;
+  item.append(mark, text);
+  item.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    closeMenus();
+    onPick();
+  });
+  return item;
+}
+
+function closeMenus(): void {
+  modelPop.hidden = true;
+  moreMenu.hidden = true;
+  plusMenu.hidden = true;
+}
+
+function openModelMenu(): void {
+  modelPop.textContent = '';
+  if (connection && !connection.connected) {
+    modelPop.appendChild(menuItem(t('retry'), () => post({ type: 'retryConnection' })));
+  }
+  if (models.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'menu-note';
+    empty.textContent = t('noModelListed');
+    modelPop.appendChild(empty);
+  }
+  for (const name of models) {
+    modelPop.appendChild(menuItem(name, () => {
+      currentModel = name;
+      renderModelButton();
+      renderWelcomeLine();
+      post({ type: 'pickModel', model: name });
+    }, name === currentModel));
+  }
+  placeMenu(modelPop, modelBtn, false);
+  modelPop.hidden = false;
+}
+
+modelBtn.addEventListener('click', () => {
+  const open = modelPop.hidden;
+  closeMenus();
+  if (open) {
+    openModelMenu();
+  }
+});
+
+moreBtn.addEventListener('click', () => {
+  const open = moreMenu.hidden;
+  closeMenus();
+  if (!open) {
+    return;
+  }
+  moreMenu.textContent = '';
+  moreMenu.append(
+    menuItem(t('chatMenuSearch'), () => toggleSearch(true)),
+    menuItem(t('chatMenuExport'), () => post({ type: 'menu', action: 'export' })),
+    menuItem(t('chatMenuXray'), () => post({ type: 'openXray' })),
+    menuItem(t('chatMenuSettings'), () => post({ type: 'menu', action: 'settings' })),
+  );
+  placeMenu(moreMenu, moreBtn, true);
+  moreMenu.hidden = false;
+});
+
+document.addEventListener('mousedown', (e) => {
+  const target = e.target as Node;
+  if (![modelBtn, moreBtn, plusBtn, modelPop, moreMenu, plusMenu].some((el) => el.contains(target))) {
+    closeMenus();
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeMenus();
+  }
+});
+
+/** The button: dot, model, then server and the models in graphics memory. */
+function renderModelButton(): void {
+  const status = connection;
+  modelDot.className = 'dot ' + (status === null ? '' : status.connected ? 'ok' : status.refused ? 'warn' : 'ko');
+  modelName.textContent = currentModel || '—';
+  // A server that refused the check (a wrong API key) is running: the host's sentence names it.
+  const state = status && !status.connected ? (status.refused ?? t('statusUnreachable')) : '';
+  const parts = [status?.server ?? '', state, status?.connected && status.vramBadge ? 'VRAM ' + status.vramBadge : '']
+    .filter((p) => p);
+  modelMeta.textContent = parts.join(' · ');
+  modelBtn.title = t('chatModelButton', [currentModel, ...parts].filter((p) => p).join(' · '));
+  modelBtn.setAttribute('aria-label', modelBtn.title);
+}
+
+function setBackendStatus(status: WvBackendStatus | null): void {
+  connection = status;
+  renderModelButton();
+  renderWelcomeLine();
+}
+
+// Search bar: dims the turns that do not match (VS parity: dimmed, not hidden).
 const searchBar = document.createElement('div');
 searchBar.id = 'searchbar';
 searchBar.hidden = true;
@@ -72,99 +208,131 @@ const searchInput = document.createElement('input');
 searchInput.id = 'searchInput';
 searchInput.placeholder = t('searchPlaceholder');
 const searchClear = document.createElement('button');
-searchClear.textContent = '✕';
+setIcon(searchClear, 'close', undefined, 14);
+searchClear.title = t('close');
+searchClear.setAttribute('aria-label', t('close'));
 searchBar.append(searchInput, searchClear);
 topbarEl.insertAdjacentElement('afterend', searchBar);
 
 function applySearch(): void {
   const q = searchInput.value.trim().toLowerCase();
-  for (const el of messagesEl.querySelectorAll<HTMLElement>('.bubble')) {
+  for (const el of messagesEl.querySelectorAll<HTMLElement>('.user-row, .turn')) {
     el.classList.toggle('search-dim', q.length > 0 && !(el.textContent ?? '').toLowerCase().includes(q));
   }
 }
-searchToggle.addEventListener('click', () => {
-  searchBar.hidden = !searchBar.hidden;
-  if (!searchBar.hidden) {
+function toggleSearch(open: boolean): void {
+  searchBar.hidden = !open;
+  if (open) {
     searchInput.focus();
   } else {
     searchInput.value = '';
     applySearch();
   }
-});
-searchClear.addEventListener('click', () => {
-  searchInput.value = '';
-  applySearch();
-  searchInput.focus();
-});
+}
+searchClear.addEventListener('click', () => toggleSearch(false));
 searchInput.addEventListener('input', applySearch);
 
-function setBackendStatus(status: WvBackendStatus | null): void {
-  if (!status) {
-    connDot.className = '';
-    connText.textContent = '';
-    connRetry.hidden = true;
-    vramEl.hidden = true;
-    return;
-  }
-  connDot.className = status.connected ? 'ok' : 'ko';
-  // A server that refused the check (a wrong API key) is running: the host sends the "refused" text to show instead.
-  connText.textContent = status.connected ? t('statusConnected') : (status.refused ?? t('statusUnreachable'));
-  connRetry.hidden = status.connected;
-  vramEl.hidden = status.vramBadge.length === 0;
-  vramEl.textContent = status.vramBadge ? 'VRAM ' + status.vramBadge : '';
-  vramEl.title = status.vramBadge;
-}
-
-// ── Toolbar: attach menu + model picker + mode toggle + send/stop ───────────
-const plusBtn = document.createElement('button');
+// ── Composer: chips · prompt · attach · mode · context ring · send ──────────
+const plusBtn = iconButton('attach', t('chatAttach'), 15);
 plusBtn.id = 'plus';
-plusBtn.textContent = '+';
 const plusMenu = document.createElement('div');
 plusMenu.id = 'plusmenu';
+plusMenu.className = 'menu';
 plusMenu.hidden = true;
-
-function buildPlusMenu(): void {
+document.body.appendChild(plusMenu);
+plusBtn.addEventListener('click', () => {
+  const open = plusMenu.hidden;
+  closeMenus();
+  if (!open) {
+    return;
+  }
   plusMenu.textContent = '';
-  const entries: { label: string; msg: WebviewToExt }[] = [
-    { label: t('attachActiveFile'), msg: { type: 'attachActive' } },
-    { label: t('attachSelection'), msg: { type: 'attachSelection' } },
-    { label: t('attachBrowse'), msg: { type: 'attachBrowse' } },
-    { label: t('pinActiveFile'), msg: { type: 'pinActive' } },
-  ];
-  for (const entry of entries) {
-    const item = document.createElement('div');
-    item.className = 'popup-item';
-    item.textContent = entry.label;
-    item.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      plusMenu.hidden = true;
-      post(entry.msg);
-    });
-    plusMenu.appendChild(item);
+  plusMenu.append(
+    menuItem(t('attachActiveFile'), () => post({ type: 'attachActive' })),
+    menuItem(t('attachSelection'), () => post({ type: 'attachSelection' })),
+    menuItem(t('attachBrowse'), () => post({ type: 'attachBrowse' })),
+    menuItem(t('pinActiveFile'), () => post({ type: 'pinActive' })),
+  );
+  // The composer is at the bottom: the menu opens upwards, over the conversation.
+  const r = plusBtn.getBoundingClientRect();
+  plusMenu.style.left = `${r.left}px`;
+  plusMenu.style.right = '';
+  plusMenu.style.top = '';
+  plusMenu.style.bottom = `${document.documentElement.clientHeight - r.top + 4}px`;
+  plusMenu.hidden = false;
+});
+
+/** Chat, Agent or Plan: one switch for what the turn may do. */
+const modeGroup = document.createElement('div');
+modeGroup.id = 'modes';
+modeGroup.setAttribute('role', 'radiogroup');
+modeGroup.setAttribute('aria-label', t('modeAgent') + ' / ' + t('modeChat') + ' / ' + t('modePlan'));
+const modeButtons = new Map<'chat' | 'agent' | 'plan', HTMLButtonElement>();
+for (const [mode, label, tip] of [
+  ['chat', t('modeChat'), t('modeChatTip')],
+  ['agent', t('modeAgent'), t('modeAgentTip')],
+  ['plan', t('modePlan'), t('modePlanTip')],
+] as const) {
+  const b = document.createElement('button');
+  b.setAttribute('role', 'radio');
+  b.textContent = label;
+  b.title = tip;
+  b.addEventListener('click', () => {
+    applyModeTo(mode);
+    post({ type: 'setMode', mode });
+  });
+  modeButtons.set(mode, b);
+  modeGroup.appendChild(b);
+}
+
+function currentMode(): 'chat' | 'agent' | 'plan' {
+  return planMode ? 'plan' : agentMode ? 'agent' : 'chat';
+}
+
+function applyModeTo(mode: 'chat' | 'agent' | 'plan'): void {
+  for (const [m, b] of modeButtons) {
+    b.setAttribute('aria-checked', String(m === mode));
+    b.classList.toggle('on', m === mode);
   }
 }
-plusBtn.addEventListener('click', () => {
-  plusMenu.hidden = !plusMenu.hidden;
-  if (!plusMenu.hidden) {
-    buildPlusMenu();
-  }
-});
-document.addEventListener('mousedown', (e) => {
-  if (!plusMenu.hidden && e.target !== plusBtn && !plusMenu.contains(e.target as Node)) {
-    plusMenu.hidden = true;
-  }
-});
 
-const modelEl = document.createElement('select');
-modelEl.id = 'model';
-modelEl.title = t('modelTitle');
-modelEl.addEventListener('change', () => {
-  currentModel = modelEl.value;
-  post({ type: 'pickModel', model: modelEl.value });
-});
-const modeBtn = document.createElement('button');
-modeBtn.id = 'mode';
-modeBtn.addEventListener('click', () => post({ type: 'toggleAgentMode' }));
+function applyAgentMode(enabled: boolean): void {
+  agentMode = enabled;
+  applyModeTo(currentMode());
+}
+
+function applyPlanMode(enabled: boolean): void {
+  planMode = enabled;
+  applyModeTo(currentMode());
+}
+
+/** How full the next question's window is, as a ring; it opens the X-Ray. */
+const ring = document.createElement('button');
+ring.id = 'ring';
+ring.hidden = true;
+const SVG = 'http://www.w3.org/2000/svg';
+const ringSvg = document.createElementNS(SVG, 'svg');
+ringSvg.setAttribute('viewBox', '0 0 20 20');
+ringSvg.setAttribute('width', '16');
+ringSvg.setAttribute('height', '16');
+ringSvg.setAttribute('aria-hidden', 'true');
+const ringTrack = document.createElementNS(SVG, 'circle');
+const ringFill = document.createElementNS(SVG, 'circle');
+for (const c of [ringTrack, ringFill]) {
+  c.setAttribute('cx', '10');
+  c.setAttribute('cy', '10');
+  c.setAttribute('r', '8');
+  c.setAttribute('fill', 'none');
+  c.setAttribute('stroke-width', '3');
+}
+ringTrack.setAttribute('class', 'ring-track');
+ringFill.setAttribute('class', 'ring-fill');
+ringFill.setAttribute('transform', 'rotate(-90 10 10)');
+ringSvg.append(ringTrack, ringFill);
+const ringText = document.createElement('span');
+ring.append(ringSvg, ringText);
+ring.addEventListener('click', () => post({ type: 'openXray' }));
+
 const sendBtn = document.createElement('button');
 sendBtn.id = 'send';
 sendBtn.addEventListener('click', () => {
@@ -174,22 +342,16 @@ sendBtn.addEventListener('click', () => {
     send();
   }
 });
-plusBtn.title = t('attachMenuTitle');
-toolbarEl.append(plusBtn, modelEl, modeBtn, sendBtn);
-composerEl.insertBefore(plusMenu, promptEl);
-
-function applyAgentMode(enabled: boolean): void {
-  agentMode = enabled;
-  modeBtn.textContent = enabled ? t('modeAgent') : t('modeChat');
-  modeBtn.title = t('modeToggleTitle');
-  modeBtn.classList.toggle('agent', enabled);
-  renderWelcomeFooter();
-}
+const toolSpacer = document.createElement('span');
+toolSpacer.className = 'spacer';
+toolbarEl.append(plusBtn, modeGroup, toolSpacer, ring, sendBtn);
+footerEl.hidden = true;
 
 function setBusy(value: boolean): void {
   busy = value;
-  sendBtn.textContent = value ? '■' : '↑';
+  setIcon(sendBtn, value ? 'stop' : 'send', undefined, 15);
   sendBtn.title = value ? t('cancelTitle') : t('sendTitle');
+  sendBtn.setAttribute('aria-label', sendBtn.title);
   sendBtn.classList.toggle('stop', value);
   if (!value) {
     statusEl.hidden = true;
@@ -197,65 +359,27 @@ function setBusy(value: boolean): void {
   }
 }
 
-// ── Footer: hint · token info · context gauge (clickable → X-Ray) ───────────
-const hintEl = document.createElement('span');
-hintEl.id = 'hint';
-hintEl.textContent = t('hintBar');
-const tokensEl = document.createElement('span');
-tokensEl.id = 'tokens';
-const ctxBar = document.createElement('div');
-ctxBar.id = 'ctxbar';
-ctxBar.hidden = true;
-const ctxFill = document.createElement('div');
-ctxFill.id = 'ctxfill';
-ctxBar.appendChild(ctxFill);
-ctxBar.addEventListener('click', () => post({ type: 'openXray' }));
-footerEl.append(hintEl, tokensEl, ctxBar);
-
-/** Same thresholds/colors as the VS ContextBudgetGauge (50/80/95%). */
+/** Same thresholds as the Visual Studio gauge (50/80/95 %), the theme's chart colours. */
 function updateGauge(promptTokens: number, lastTokens: number): void {
-  tokensEl.textContent = lastTokens > 0 ? t('tokensInfo', lastTokens.toLocaleString()) : '';
   if (contextWindow <= 0 || promptTokens <= 0) {
-    ctxBar.hidden = true;
+    ring.hidden = true;
     return;
   }
   const pct = Math.min(100, (promptTokens * 100) / contextWindow);
-  ctxFill.style.width = pct + '%';
-  ctxFill.style.background = pct < 50 ? '#606060' : pct < 80 ? '#C0A000' : pct < 95 ? '#D06000' : '#CC2222';
-  ctxBar.title = t('contextTooltip', promptTokens.toLocaleString(), contextWindow.toLocaleString(), pct.toFixed(0));
-  ctxBar.hidden = false;
+  const circumference = 2 * Math.PI * 8;
+  ringFill.setAttribute('stroke-dasharray', `${(circumference * pct) / 100} ${circumference}`);
+  ringFill.style.stroke = pct < 50 ? 'var(--vscode-descriptionForeground)'
+    : pct < 80 ? 'var(--vscode-charts-yellow)'
+    : pct < 95 ? 'var(--vscode-charts-orange)'
+    : 'var(--vscode-charts-red)';
+  ringText.textContent = `${pct.toFixed(0)}%`;
+  ring.title = t('contextRingTip', pct.toFixed(0), contextWindow.toLocaleString())
+    + (lastTokens > 0 ? ' · ' + t('tokensInfo', lastTokens.toLocaleString()) : '');
+  ring.setAttribute('aria-label', ring.title);
+  ring.hidden = false;
 }
 
-// ── Status line / plan block ─────────────────────────────────────────────────
-function setStatus(text: string): void {
-  statusEl.textContent = text;
-  statusEl.hidden = !text;
-}
-
-function renderPlan(plan: WvPlan | null): void {
-  planEl.textContent = '';
-  planEl.hidden = !plan;
-  if (!plan) {
-    return;
-  }
-  const goal = document.createElement('div');
-  goal.className = 'plan-goal';
-  goal.textContent = '◈ ' + plan.goal;
-  planEl.appendChild(goal);
-  for (const step of plan.steps) {
-    const row = document.createElement('div');
-    const s = step.status.toLowerCase();
-    const icon = s.includes('done') || s.includes('completed') ? '✓'
-      : s.includes('running') || s.includes('progress') || s.includes('active') ? '▸'
-      : s.includes('fail') || s.includes('error') || s.includes('skip') ? '✗'
-      : '○';
-    row.className = 'plan-step ' + (icon === '✓' ? 'done' : icon === '▸' ? 'running' : icon === '✗' ? 'failed' : 'pending');
-    row.textContent = icon + ' ' + step.text;
-    planEl.appendChild(row);
-  }
-}
-
-// ── Bubbles ──────────────────────────────────────────────────────────────────
+// ── Turns: the question on the right, the answer below it — steps, text, result ──
 // Follows the stream only while the user is at the bottom, like the Visual Studio window
 // (ChatAutoScroller, same 50 px): scrolling up to reread stops the follow, coming back resumes it.
 const FOLLOW_THRESHOLD_PX = 50;
@@ -270,6 +394,85 @@ function scrollToBottom(): void {
   }
 }
 
+interface TurnView {
+  el: HTMLElement;
+  who: HTMLElement;
+  when: HTMLElement;
+  plan: HTMLElement;
+  run: HTMLElement | null;
+  runGlyph: HTMLElement | null;
+  runTitle: HTMLElement | null;
+  runDetail: HTMLElement | null;
+  runList: HTMLElement | null;
+  steps: number;
+  body: HTMLElement;
+}
+
+/** The answer being written; null between a question and its first output. */
+let turn: TurnView | null = null;
+
+function newTurn(model: string): TurnView {
+  hideWelcome();
+  const el = document.createElement('section');
+  el.className = 'turn';
+  const head = document.createElement('div');
+  head.className = 'turn-head';
+  const who = document.createElement('span');
+  who.className = 'who';
+  who.textContent = model;
+  const when = document.createElement('span');
+  when.className = 'when';
+  head.append(who, when);
+  const plan = document.createElement('div');
+  plan.className = 'turn-plan';
+  plan.hidden = true;
+  const body = document.createElement('div');
+  body.className = 'turn-body';
+  el.append(head, plan, body);
+  messagesEl.appendChild(el);
+  turn = { el, who, when, plan, run: null, runGlyph: null, runTitle: null, runDetail: null, runList: null, steps: 0, body };
+  return turn;
+}
+
+function ensureTurn(): TurnView {
+  return turn ?? newTurn('');
+}
+
+function setStatus(text: string): void {
+  if (turn && busy) {
+    turn.when.textContent = text;
+  }
+}
+
+function renderPlan(plan: WvPlan | null): void {
+  const target = turn?.plan;
+  planEl.hidden = true;
+  if (!target) {
+    return;
+  }
+  target.textContent = '';
+  target.hidden = !plan;
+  if (!plan) {
+    return;
+  }
+  const goal = document.createElement('div');
+  goal.className = 'plan-goal';
+  setIcon(goal, 'goal', plan.goal, 13);
+  target.appendChild(goal);
+  for (const step of plan.steps) {
+    const row = document.createElement('div');
+    const s = step.status.toLowerCase();
+    const state = s.includes('done') || s.includes('completed') ? 'done'
+      : s.includes('running') || s.includes('progress') || s.includes('active') ? 'running'
+      : s.includes('fail') || s.includes('error') || s.includes('skip') ? 'failed'
+      : 'pending';
+    const glyph: IconName = state === 'done' ? 'check' : state === 'running' ? 'running' : state === 'failed' ? 'failed' : 'pending';
+    row.className = 'plan-step ' + state;
+    setIcon(row, glyph, step.text, 13);
+    target.appendChild(row);
+  }
+}
+
 function metaRow(item: { text: string; timestamp?: string }, copyText?: string): HTMLElement {
   const meta = document.createElement('div');
   meta.className = 'bubble-meta';
@@ -281,64 +484,185 @@ function metaRow(item: { text: string; timestamp?: string }, copyText?: string):
   }
   const copy = document.createElement('button');
   copy.className = 'bubble-action';
-  copy.textContent = '⧉';
+  setIcon(copy, 'copy', undefined, 13);
   copy.title = t('copy');
+  copy.setAttribute('aria-label', t('copy'));
   copy.addEventListener('click', () => post({ type: 'copyText', text: copyText ?? item.text }));
   meta.appendChild(copy);
   return meta;
 }
 
-function addBubble(role: string, item: WvTranscriptItem): HTMLElement {
+/** The attachments named under a question ("📎 Attached: a · b"): drawn as chips, the text kept without them. */
+function splitAttachments(text: string): { text: string; names: string[] } {
+  const prefix = attachedRecap.split('{0}')[0];
+  if (!prefix) {
+    return { text, names: [] };
+  }
+  const at = text.lastIndexOf(prefix);
+  if (at < 0 || text.slice(at).includes('\n')) {
+    return { text, names: [] };
+  }
+  return { text: text.slice(0, at).trimEnd(), names: text.slice(at + prefix.length).split(' · ').filter((n) => n) };
+}
+
+function addUser(item: WvTranscriptItem): void {
   hideWelcome();
+  turn = null;
+  const row = document.createElement('div');
+  row.className = 'user-row';
+  const { text, names } = splitAttachments(item.text);
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble user';
+  const body = document.createElement('div');
+  body.className = 'bubble-body';
+  renderMarkdownInto(body, text);
+  // A question is copied whole (it may quote a reasoning tag); only an answer's hidden reasoning stays out.
+  bubble.append(body, metaRow(item, item.role === 'assistant' ? stripThinkTags(item.text) : undefined));
+  row.appendChild(bubble);
+  if (names.length > 0) {
+    const chips = document.createElement('div');
+    chips.className = 'user-chips';
+    for (const name of names) {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      setIcon(chip, 'file', name, 11);
+      chips.appendChild(chip);
+    }
+    row.appendChild(chips);
+  }
+  messagesEl.appendChild(row);
+  scrollToBottom();
+}
+
+/** An answer, a notice or an error, in the current turn. */
+function addAnswer(role: string, item: WvTranscriptItem): HTMLElement {
+  const target = ensureTurn();
   const el = document.createElement('div');
-  el.className = 'bubble ' + role;
+  el.className = 'bubble ' + role + (item.notice ? ' notice' : '');
   const body = document.createElement('div');
   body.className = 'bubble-body';
   renderMarkdownInto(body, item.text);
   el.appendChild(body);
-  // Copy what the bubble shows: an answer keeps the model's inline reasoning in its text. A question is copied whole.
+  // Copy what the answer shows: it keeps the model's inline reasoning in its text. A question is copied whole.
   el.appendChild(metaRow(item, role === 'assistant' ? stripThinkTags(item.text) : undefined));
-  messagesEl.appendChild(el);
+  target.body.appendChild(el);
   scrollToBottom();
   return el;
 }
 
-/** Collapsible tool bubble: header 🔧 name (+ error badge), body input+output. */
-function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
-  hideWelcome();
-  const el = document.createElement('div');
-  el.className = 'bubble tool' + (item.hasErrors ? ' tool-error' : '');
+function addBubble(role: string, item: WvTranscriptItem): HTMLElement | null {
+  if (role === 'user') {
+    addUser(item);
+    return null;
+  }
+  return addAnswer(role, item);
+}
 
-  const header = document.createElement('div');
-  header.className = 'tool-header';
+/** The "N steps · …" line of a turn, folded by default; a failed step opens it. */
+function ensureRun(target: TurnView): HTMLElement {
+  if (target.runList) {
+    return target.runList;
+  }
+  const run = document.createElement('div');
+  run.className = 'run';
+  const head = document.createElement('button');
+  head.className = 'run-head';
   const chevron = document.createElement('span');
-  chevron.className = 'tool-chevron';
+  chevron.className = 'run-chevron';
+  // A tool while the run works; a check, or a cross, once it has ended (renderRunSummary).
+  const glyph = document.createElement('span');
+  glyph.className = 'run-glyph';
+  setIcon(glyph, 'tool', undefined, 13);
+  const title = document.createElement('span');
+  title.className = 'run-title';
+  const detail = document.createElement('span');
+  detail.className = 'run-detail';
+  head.append(glyph, title, detail, chevron);
+  const list = document.createElement('div');
+  list.className = 'run-list';
+  let open = busy || toolBubblesExpanded;
+  const apply = (): void => {
+    list.hidden = !open;
+    head.setAttribute('aria-expanded', String(open));
+    setIcon(chevron, open ? 'chevronDown' : 'chevronRight', undefined, 12);
+  };
+  head.addEventListener('click', () => {
+    open = !open;
+    apply();
+  });
+  apply();
+  run.append(head, list);
+  target.el.insertBefore(run, target.body);
+  target.run = run;
+  target.runGlyph = glyph;
+  target.runTitle = title;
+  target.runDetail = detail;
+  target.runList = list;
+  (run as HTMLElement & { openRun?: () => void }).openRun = () => {
+    open = true;
+    apply();
+  };
+  (run as HTMLElement & { foldRun?: () => void }).foldRun = () => {
+    open = false;
+    apply();
+  };
+  return list;
+}
+
+/** What a step acted on: the path, command, query or address its arguments name. */
+function stepSubject(input: string | undefined): string {
+  if (!input) {
+    return '';
+  }
+  try {
+    const args = JSON.parse(input) as Record<string, unknown>;
+    for (const key of ['path', 'file_path', 'command', 'query', 'url', 'symbol', 'pattern']) {
+      const value = args[key];
+      if (typeof value === 'string' && value) {
+        return value.length > 80 ? value.slice(0, 80) + '…' : value;
+      }
+    }
+  } catch {
+    // Not JSON (a custom tool's raw arguments): the name alone says enough.
+  }
+  return '';
+}
+
+/** One tool call: a line of the run, its arguments and output folded under it. */
+function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
+  const target = ensureTurn();
+  const list = ensureRun(target);
+  target.steps++;
+  if (target.runTitle) {
+    target.runTitle.textContent = target.steps === 1 ? t('stepsOne') : t('stepsMany', target.steps);
+  }
+  if (busy) {
+    target.when.textContent = t('turnWorking', target.steps + 1);
+  }
+
+  const step = document.createElement('div');
+  step.className = 'step' + (item.hasErrors ? ' failed' : '');
+  const line = document.createElement('button');
+  line.className = 'step-line';
   const name = document.createElement('code');
   name.textContent = item.text;
-  header.append(chevron, document.createTextNode('🔧 '), name);
+  const subject = document.createElement('span');
+  subject.className = 'step-subject';
+  subject.textContent = stepSubject(item.toolInput);
+  line.append(icon(item.hasErrors ? 'failed' : 'check', 13), name, subject);
+  step.appendChild(line);
+
   if (item.hasErrors) {
-    const err = document.createElement('span');
-    err.className = 'tool-errbadge';
-    err.textContent = t('toolError');
-    header.appendChild(err);
     // "Fix with AI": pre-fills the prompt with the failing output (VS parity).
     const fix = document.createElement('button');
     fix.className = 'bubble-action';
-    fix.textContent = '🛠 ' + t('fixWithAi');
-    fix.addEventListener('click', (e) => {
-      e.stopPropagation(); // don't toggle the bubble
+    setIcon(fix, 'tool', t('fixWithAi'), 13);
+    fix.addEventListener('click', () => {
       promptEl.value = t('fixPrompt') + '\n\n```\n' + (item.toolOutput ?? '') + '\n```';
       promptEl.focus();
     });
-    header.appendChild(fix);
+    step.appendChild(fix);
   }
-  if (item.timestamp) {
-    const time = document.createElement('span');
-    time.className = 'bubble-time';
-    time.textContent = item.timestamp;
-    header.appendChild(time);
-  }
-  el.appendChild(header);
 
   const body = document.createElement('div');
   body.className = 'tool-body';
@@ -354,33 +678,100 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
     out.textContent = item.toolOutput;
     body.appendChild(out);
   }
-  el.appendChild(body);
-
-  // Errors always start expanded — the red output is the point of the bubble.
+  // Errors always start expanded — the red output is the point of the step.
   let open = expanded || item.hasErrors === true;
-  const apply = () => {
-    body.hidden = !open;
-    chevron.textContent = open ? '▾' : '▸';
-  };
-  apply();
-  header.addEventListener('click', () => {
+  body.hidden = !open;
+  line.addEventListener('click', () => {
     open = !open;
-    apply();
+    body.hidden = !open;
   });
-
-  messagesEl.appendChild(el);
+  step.appendChild(body);
+  list.appendChild(step);
+  if (item.hasErrors) {
+    (target.run as HTMLElement & { openRun?: () => void }).openRun?.();
+  }
   scrollToBottom();
+}
+
+/** The run's line and result bar, once the turn has ended: what it did, the files it changed, the last check. */
+function renderRunSummary(target: TurnView, run: RunSummary | null | undefined): void {
+  if (!run) {
+    return;
+  }
+  ensureRun(target);
+  if (target.runTitle) {
+    target.runTitle.textContent = run.title;
+  }
+  if (target.runDetail) {
+    target.runDetail.textContent = run.detail;
+  }
+  const stepFailed = target.runList?.querySelector('.step.failed') != null;
+  // Its steps showed while it worked; ended, the run folds into its line — unless the user keeps tool calls open,
+  // or a step failed (its red output is the point).
+  if (!toolBubblesExpanded && !stepFailed) {
+    (target.run as HTMLElement & { foldRun?: () => void }).foldRun?.();
+  }
+  if (target.runGlyph) {
+    // Failed: its last check failed, or, with no check, one of its steps did.
+    const failed = run.check === 'buildFailed' || run.check === 'testsFailed' || (run.check === 'none' && stepFailed);
+    setIcon(target.runGlyph, failed ? 'failed' : 'check', undefined, 13);
+    target.runGlyph.classList.toggle('ok', !failed);
+    target.runGlyph.classList.toggle('failed', failed);
+  }
+  if (run.files.length === 0 && run.check === 'none') {
+    return;
+  }
+  const bar = document.createElement('div');
+  bar.className = 'result';
+  for (const f of run.files) {
+    const file = document.createElement('button');
+    file.className = 'result-file';
+    file.title = f.path;
+    file.append(icon('file', 13));
+    const label = document.createElement('span');
+    label.textContent = f.name;
+    const plus = document.createElement('span');
+    plus.className = 'plus';
+    plus.textContent = `+${f.added}`;
+    const minus = document.createElement('span');
+    minus.className = 'minus';
+    minus.textContent = `−${f.removed}`;
+    file.append(label, plus, minus);
+    if (!f.gone) {
+      file.addEventListener('click', () => post({ type: 'openFile', path: f.path }));
+    }
+    bar.appendChild(file);
+  }
+  if (run.check !== 'none') {
+    const check = document.createElement('span');
+    const failed = run.check === 'buildFailed' || run.check === 'testsFailed';
+    check.className = 'result-check' + (failed ? ' failed' : '');
+    setIcon(check, failed ? 'failed' : 'check', run.checkText, 13);
+    bar.appendChild(check);
+  }
+  if (run.runId) {
+    // Undo reverts the most recent run that changed files (/undo-run): only that run's bar offers it.
+    for (const old of messagesEl.querySelectorAll('.result .undo')) {
+      old.remove();
+    }
+    const undo = document.createElement('button');
+    undo.className = 'undo';
+    setIcon(undo, 'regenerate', t('runUndo'), 13);
+    undo.addEventListener('click', () => post({ type: 'send', text: '/undo-run' }));
+    bar.appendChild(undo);
+  }
+  target.el.appendChild(bar);
 }
 
 function ensureStreamBubble(): HTMLElement {
   if (!streamEl) {
-    hideWelcome();
+    const target = ensureTurn();
     streamEl = document.createElement('div');
     streamEl.className = 'bubble assistant streaming';
     const body = document.createElement('div');
     body.className = 'bubble-body';
     streamEl.appendChild(body);
-    messagesEl.appendChild(streamEl);
+    target.body.appendChild(streamEl);
     streamRaw = '';
   }
   return streamEl;
@@ -395,7 +786,7 @@ let mentionQueryTimer: ReturnType<typeof setTimeout> | undefined;
 let latestMentionSearch = { category: '', query: '' };
 
 /**
- * Renders the streaming bubble at most once per frame. Re-parsing the whole Markdown for every token
+ * Renders the streaming answer at most once per frame. Re-parsing the whole Markdown for every token
  * made a long answer cost quadratic work — thousands of full renders for a single reply.
  */
 function scheduleStreamRender(): void {
@@ -421,24 +812,24 @@ function finishStream(): void {
   }
 }
 
-/** Offers a regenerate button under the newest assistant bubble only. */
+/** Offers a regenerate button under the newest answer only. */
 function refreshRegenerate(): void {
   for (const old of messagesEl.querySelectorAll('.bubble-regen')) {
     old.remove();
   }
-  const bubbles = messagesEl.querySelectorAll<HTMLElement>('.bubble.assistant');
-  const last = bubbles.length > 0 ? bubbles[bubbles.length - 1] : null;
+  const answers = messagesEl.querySelectorAll<HTMLElement>('.bubble.assistant');
+  const last = answers.length > 0 ? answers[answers.length - 1] : null;
   if (!last || busy) {
     return;
   }
   const btn = document.createElement('button');
   btn.className = 'bubble-action bubble-regen';
-  btn.textContent = '↺ ' + t('regenerate');
+  setIcon(btn, 'regenerate', t('regenerate'), 13);
   btn.addEventListener('click', () => post({ type: 'regenerate' }));
   last.querySelector('.bubble-meta')?.appendChild(btn);
 }
 
-// ── Approval card (unchanged behavior: 3-way answer + open-as-diff) ─────────
+// ── Approval card: what will happen, to what, the start of the change — Allow once, Always, Deny ──
 function renderApprovalMessage(message: string): HTMLElement {
   const pre = document.createElement('pre');
   pre.className = 'approval-text';
@@ -458,45 +849,97 @@ function renderApprovalMessage(message: string): HTMLElement {
 // Cards still awaiting an answer, by id — so a host-side cancellation can retire its card.
 const approvalCards = new Map<number, HTMLElement>();
 
-function addApprovalCard(id: number, message: string): void {
+function kbd(text: string): HTMLElement {
+  const k = document.createElement('kbd');
+  k.textContent = text;
+  return k;
+}
+
+function addApprovalCard(id: number, message: string, card?: ApprovalCard | null): void {
   finishStream();
-  hideWelcome();
-  const card = document.createElement('div');
-  card.className = 'bubble approval';
-  approvalCards.set(id, card);
-  const text = document.createElement('div');
-  text.className = 'approval-message';
-  text.appendChild(renderApprovalMessage(message));
+  const target = ensureTurn();
+  target.when.textContent = t('turnWaiting');
+  const el = document.createElement('div');
+  el.className = 'approval';
+  el.setAttribute('role', 'group');
+  approvalCards.set(id, el);
+
+  const head = document.createElement('div');
+  head.className = 'approval-head';
+  const title = document.createElement('span');
+  title.className = 'approval-title';
+  title.textContent = card?.title ?? '';
+  const subject = document.createElement('span');
+  subject.className = 'approval-subject';
+  subject.textContent = [card?.subject, card?.meta].filter((p) => p).join(' · ');
+  const openDiff = document.createElement('button');
+  openDiff.className = 'linkbtn';
+  openDiff.textContent = t('approvalOpenDiff');
+  openDiff.addEventListener('click', () => post({ type: 'openApprovalDiff', text: card?.message ?? message }));
+  head.append(icon('edit', 14), title, subject, openDiff);
+  el.setAttribute('aria-label', [card?.title, card?.subject].filter((p) => p).join(' — ') || message);
+
+  let preview: HTMLElement;
+  if (card && card.preview.length > 0) {
+    preview = document.createElement('pre');
+    preview.className = 'approval-preview';
+    for (const line of card.preview) {
+      const span = document.createElement('span');
+      span.className = 'pl ' + line.kind;
+      span.textContent = (line.kind === 'add' ? '+ ' : line.kind === 'del' ? '- ' : '  ') + line.text;
+      preview.appendChild(span);
+    }
+    if (card.more) {
+      const more = document.createElement('span');
+      more.className = 'pl gap';
+      more.textContent = '  ' + card.more;
+      preview.appendChild(more);
+    }
+  } else {
+    preview = renderApprovalMessage(card ? card.message : message);
+  }
+
   const actions = document.createElement('div');
   actions.className = 'approval-actions';
-  const buttons = [
-    { label: t('deny'), answer: 0, cls: 'deny' },
-    { label: t('allowOnce'), answer: 1, cls: 'allow' },
-    { label: t('allowAlways'), answer: 2, cls: 'allow' },
-  ];
-  for (const spec of buttons) {
-    const btn = document.createElement('button');
-    btn.textContent = spec.label;
-    btn.className = spec.cls;
-    btn.addEventListener('click', () => {
-      approvalCards.delete(id);
-      post({ type: 'approvalAnswer', id, answer: spec.answer });
-      card.classList.add('answered');
-      for (const b of actions.querySelectorAll('button')) {
-        (b as HTMLButtonElement).disabled = true;
-      }
-      btn.classList.add('chosen');
-    });
-    actions.appendChild(btn);
-  }
-  const openBtn = document.createElement('button');
-  openBtn.textContent = '⧉';
-  openBtn.title = t('openInEditor');
-  openBtn.addEventListener('click', () => post({ type: 'openApprovalDiff', text: message }));
-  actions.appendChild(openBtn);
-  card.appendChild(text);
-  card.appendChild(actions);
-  messagesEl.appendChild(card);
+  const answer = (value: number, chosen: HTMLButtonElement): void => {
+    if (!approvalCards.has(id)) {
+      return;
+    }
+    approvalCards.delete(id);
+    post({ type: 'approvalAnswer', id, answer: value });
+    el.classList.add('answered');
+    for (const b of actions.querySelectorAll('button')) {
+      (b as HTMLButtonElement).disabled = true;
+    }
+    chosen.classList.add('chosen');
+    if (busy && turn) {
+      turn.when.textContent = t('turnWorking', turn.steps + 1);
+    }
+  };
+  const allow = document.createElement('button');
+  allow.className = 'primary';
+  allow.append(document.createTextNode(t('allowOnce')), kbd('Enter'));
+  allow.addEventListener('click', () => answer(1, allow));
+  const always = document.createElement('button');
+  always.textContent = t('allowAlways');
+  always.title = card?.alwaysTooltip ?? '';
+  always.addEventListener('click', () => answer(2, always));
+  const deny = document.createElement('button');
+  deny.className = 'deny';
+  deny.append(document.createTextNode(t('deny')), kbd('Esc'));
+  deny.addEventListener('click', () => answer(0, deny));
+  actions.append(allow, always, deny);
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      answer(0, deny);
+    }
+  });
+
+  el.append(card ? head : document.createElement('span'), preview, actions);
+  target.el.appendChild(el);
+  // Enter answers "Allow once", Esc "Deny": the card takes the keyboard while it waits.
+  allow.focus({ preventScroll: true });
   scrollToBottom();
 }
 
@@ -514,53 +957,100 @@ function dismissApprovalCard(id: number): void {
   }
 }
 
-// ── Welcome screen (VS parity: ◇ Inferpal + 4 action cards) ─────────────────
+// ── Welcome: what to work on — the open file's actions, the errors, the keys ──
 const welcomeEl = document.createElement('div');
 welcomeEl.id = 'welcome';
 welcomeEl.hidden = true;
 messagesEl.appendChild(welcomeEl);
-const welcomeFooter = document.createElement('div');
+const welcomeLine = document.createElement('p');
+welcomeLine.className = 'welcome-line';
+
+function renderWelcomeLine(): void {
+  welcomeLine.textContent = currentModel && connection?.server
+    ? t('welcomeLine', currentModel, connection.server)
+    : t('welcomeLocal');
+}
+
+function welcomeCard(glyph: IconName, title: string, desc: string, onPick: () => void): HTMLElement {
+  const card = document.createElement('button');
+  card.className = 'welcome-card';
+  const box = document.createElement('span');
+  box.className = 'welcome-icon';
+  box.appendChild(icon(glyph, 16));
+  const text = document.createElement('span');
+  text.className = 'welcome-text';
+  const t1 = document.createElement('span');
+  t1.className = 'welcome-card-title';
+  t1.textContent = title;
+  text.appendChild(t1);
+  if (desc) {
+    const t2 = document.createElement('span');
+    t2.className = 'welcome-card-desc';
+    t2.textContent = desc;
+    text.appendChild(t2);
+  }
+  card.append(box, text);
+  card.addEventListener('click', onPick);
+  return card;
+}
 
 function buildWelcome(): void {
   welcomeEl.textContent = '';
-  const title = document.createElement('div');
+  const title = document.createElement('h1');
   title.className = 'welcome-title';
-  title.textContent = '◇ Inferpal';
-  const subtitle = document.createElement('div');
-  subtitle.className = 'welcome-subtitle';
-  subtitle.textContent = t('welcomeSubtitle');
-  welcomeEl.append(title, subtitle);
+  title.textContent = t('welcomeTitle');
+  renderWelcomeLine();
+  welcomeEl.append(title, welcomeLine);
 
   const cards = document.createElement('div');
   cards.className = 'welcome-cards';
-  const specs = [
-    { emoji: '⚡', label: t('cardExplain'), cmd: '/explain' },
-    { emoji: '🐛', label: t('cardFix'), cmd: '/fix' },
-    { emoji: '🧪', label: t('cardTest'), cmd: '/test' },
-    { emoji: '❓', label: t('cardHelp'), cmd: '/help' },
-  ];
-  for (const spec of specs) {
-    const card = document.createElement('button');
-    card.className = 'welcome-card';
-    const emoji = document.createElement('div');
-    emoji.className = 'welcome-emoji';
-    emoji.textContent = spec.emoji;
-    const label = document.createElement('div');
-    label.textContent = spec.label;
-    card.append(emoji, label);
-    card.addEventListener('click', () => post({ type: 'send', text: spec.cmd }));
-    cards.appendChild(card);
+  if (editorFile) {
+    const forFile = document.createElement('div');
+    forFile.className = 'welcome-for';
+    forFile.textContent = t('welcomeForFile', editorFile);
+    const file = editorFile;
+    cards.append(
+      forFile,
+      welcomeCard('explain', t('welcomeExplainFile'), t('welcomeExplainFileDesc'), () => post({ type: 'send', text: '/explain' })),
+      welcomeCard('test', t('welcomeTestsFile'), t('welcomeTestsFileDesc'), () => post({ type: 'send', text: '/test' })),
+      welcomeCard('search', t('welcomeUsagesFile'), t('welcomeUsagesFileDesc'),
+        () => post({ type: 'send', text: t('welcomeUsagesPrompt', file) })),
+    );
+  } else {
+    cards.append(
+      welcomeCard('explain', t('cardExplain'), '', () => post({ type: 'send', text: '/explain' })),
+      welcomeCard('bug', t('cardFix'), '', () => post({ type: 'send', text: '/fix' })),
+      welcomeCard('test', t('cardTest'), '', () => post({ type: 'send', text: '/test' })),
+      welcomeCard('help', t('cardHelp'), '', () => post({ type: 'send', text: '/help' })),
+    );
   }
   welcomeEl.appendChild(cards);
 
-  welcomeFooter.className = 'welcome-footer';
-  welcomeEl.appendChild(welcomeFooter);
-  renderWelcomeFooter();
-}
+  if (problems > 0) {
+    const banner = document.createElement('div');
+    banner.className = 'welcome-banner';
+    const text = document.createElement('span');
+    text.textContent = t('welcomeProblems', problems);
+    const fix = document.createElement('button');
+    fix.textContent = t('welcomeFixThem');
+    fix.addEventListener('click', () => post({ type: 'send', text: '@problems ' + t('welcomeFixPrompt') }));
+    banner.append(icon('warning', 14), text, fix);
+    welcomeEl.appendChild(banner);
+  }
 
-function renderWelcomeFooter(): void {
-  welcomeFooter.textContent =
-    (currentModel ? currentModel + ' · ' : '') + (agentMode ? t('modeAgent') : t('modeChat'));
+  const hints = document.createElement('div');
+  hints.className = 'welcome-hints';
+  const hint = (keys: string[], label: string): HTMLElement => {
+    const span = document.createElement('span');
+    for (const k of keys) {
+      span.appendChild(kbd(k));
+    }
+    span.appendChild(document.createTextNode(' ' + label));
+    return span;
+  };
+  hints.append(hint(['@'], t('welcomeHintAttach')), hint(['/'], t('welcomeHintCommands')),
+    hint(['Shift', 'Enter'], t('welcomeHintNewLine')));
+  welcomeEl.appendChild(hints);
 }
 
 function showWelcomeIfEmpty(): void {
@@ -647,7 +1137,7 @@ function detectMention(): void {
     if (category === 'code') {
       // Semantic search has no intermediate hits: one action row running the query.
       openMentionRows(query.trim().length === 0 ? [] : [{
-        build: (row) => { row.textContent = '🔮 ' + t('mentionSearchCode', query); },
+        build: (row) => { setIcon(row, 'search', t('mentionSearchCode', query), 13); },
         action: () => {
           stripMentionToken();
           post({ type: 'resolveMention', category: 'code', value: query.trim() });
@@ -819,10 +1309,11 @@ function renderPins(pins: string[]): void {
     el.className = 'chip pinned';
     el.title = path;
     const name = document.createElement('span');
-    name.textContent = '📌 ' + (path.split(/[\\/]/).pop() ?? path);
+    setIcon(name, 'pin', path.split(/[\\/]/).pop() ?? path, 12);
     const close = document.createElement('button');
-    close.textContent = '✕';
+    setIcon(close, 'close', undefined, 11);
     close.title = t('unpin');
+    close.setAttribute('aria-label', t('unpin'));
     close.addEventListener('click', () => post({ type: 'unpin', path }));
     el.append(name, close);
     pinsEl.appendChild(el);
@@ -836,10 +1327,11 @@ function renderChips(chips: WvChip[]): void {
     const el = document.createElement('span');
     el.className = 'chip';
     const name = document.createElement('span');
-    name.textContent = chip.name;
+    setIcon(name, 'file', chip.name, 12);
     const close = document.createElement('button');
-    close.textContent = '✕';
+    setIcon(close, 'close', undefined, 11);
     close.title = t('chipRemove');
+    close.setAttribute('aria-label', t('chipRemove'));
     close.addEventListener('click', () => post({ type: 'removeChip', index: i }));
     el.append(name, close);
     chipsEl.appendChild(el);
@@ -969,7 +1461,7 @@ function send(): void {
   post({ type: 'send', text });
 }
 
-promptEl.placeholder = t('promptPlaceholder');
+promptEl.placeholder = t('composerPlaceholder');
 promptEl.addEventListener('input', () => {
   detectMention();
   detectSlash();
@@ -1033,14 +1525,27 @@ function renderTranscript(transcript: WvTranscriptItem[]): void {
   messagesEl.textContent = '';
   messagesEl.appendChild(welcomeEl);
   streamEl = null;
+  turn = null;
   transcriptEmpty = true;
   for (const item of transcript) {
     if (item.role === 'tool') {
       addToolBubble(item, toolBubblesExpanded);
     } else if (item.role === 'user' || item.role === 'assistant' || item.role === 'error') {
       addBubble(item.role, item);
+      // An answer of this session keeps its model, duration and run; a saved one comes back without them.
+      if (item.role === 'assistant' && turn) {
+        const view: TurnView = turn;
+        if (item.model) {
+          view.who.textContent = item.model;
+        }
+        if (item.duration) {
+          view.when.textContent = item.duration;
+        }
+        renderRunSummary(view, item.run);
+      }
     }
   }
+  turn = null;
   transcriptEmpty = transcript.length === 0;
   showWelcomeIfEmpty();
   refreshRegenerate();
@@ -1054,49 +1559,28 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       // Defensive defaults: survive a stale extension↔webview pair (in-place update).
       slashCommands = msg.commands ?? [];
       toolBubblesExpanded = msg.toolBubblesExpanded === true;
+      document.body.classList.toggle('ip-compact', msg.compact === true);
       contextWindow = msg.contextWindow ?? 0;
       historyEntries = msg.history ?? [];
       currentModel = msg.model ?? '';
+      models = msg.models ?? [];
+      planMode = msg.planMode === true;
+      editorFile = msg.editorFile ?? null;
+      problems = msg.problems ?? 0;
+      attachedRecap = msg.attachedRecap ?? '';
       mentionCategories = msg.mentionCategories ?? [];
       renderChips(msg.chips ?? []);
       renderPins(msg.pins ?? []);
       renderTranscript(msg.transcript ?? []);
 
-      // ⚠ The one field in this block without its defensive default, while the comment above
-      // makes it a rule — and this is an iteration, so `undefined` killed the whole handler and
-      // left the view half rendered.
-      const models = msg.models ?? [];
-      modelEl.textContent = '';
-      for (const name of models) {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        opt.selected = name === msg.model;
-        modelEl.appendChild(opt);
-      }
-      if (msg.model && !models.includes(msg.model)) {
-        const opt = document.createElement('option');
-        opt.value = msg.model;
-        opt.textContent = msg.model;
-        opt.selected = true;
-        modelEl.appendChild(opt);
-      }
-      if (models.length === 0) {
-        // ⚠ "the host listed NO model" and "the backend serves one" rendered the SAME thing:
-        // a one-entry list — the entry added just above, which is the CONFIGURED model, not a
-        // served one: under LM Studio a server exposing only the
-        // OpenAI-compatible surface answered green badge + zero models, and nothing on screen
-        // told that case apart from a backend with a single model.
-        const warn = document.createElement('option');
-        warn.disabled = true;
-        warn.textContent = t('noModelListed');
-        modelEl.appendChild(warn);
-      }
+      // The model list opens from the header; an empty list says the backend listed nothing (openModelMenu), never a
+      // one-entry list that would read as a backend serving one model.
       applyAgentMode(msg.agentMode);
       setBackendStatus(msg.status);
       updateGauge(msg.promptTokens, msg.lastTokens);
       renderPlan(msg.plan);
       setBusy(msg.busy);
+      renderModelButton();
       if (msg.busy && msg.stream) {
         const el = ensureStreamBubble();
         streamRaw = msg.stream;
@@ -1109,8 +1593,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       // The question just sent must be visible, wherever the user had scrolled to.
       following = true;
       addBubble('user', { role: 'user', text: msg.prompt, timestamp: msg.timestamp });
-      renderPlan(null);
       setBusy(true);
+      newTurn(currentModel).when.textContent = t('turnWorking', 1);
+      renderPlan(null);
       refreshRegenerate();
       break;
     case 'token': {
@@ -1128,8 +1613,14 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'assistant':
       // Out-of-turn assistant bubble (e.g. a background /task finishing) — persistent, unlike a
-      // status line the next setBusy wipes.
+      // status line the next setBusy wipes. Its own section, never inside the turn being written.
+      if (!busy) {
+        turn = null;
+      }
       addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp });
+      if (!busy) {
+        turn = null;
+      }
       break;
     case 'tool':
       finishStream();
@@ -1149,7 +1640,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       renderPlan(msg.plan);
       break;
     case 'approval':
-      addApprovalCard(msg.id, msg.message);
+      addApprovalCard(msg.id, msg.message, msg.card);
       break;
     case 'approvalDismiss':
       dismissApprovalCard(msg.id);
@@ -1175,6 +1666,19 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
     case 'agentMode':
       applyAgentMode(msg.enabled);
       break;
+    case 'density':
+      document.body.classList.toggle('ip-compact', msg.compact);
+      break;
+    case 'planMode':
+      applyPlanMode(msg.enabled);
+      break;
+    case 'editorContext':
+      editorFile = msg.file;
+      problems = msg.problems;
+      if (!welcomeEl.hidden) {
+        buildWelcome();
+      }
+      break;
     case 'setPrompt':
       promptEl.value = msg.text;
       promptEl.focus();
@@ -1195,16 +1699,16 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       finishStream();
       hideWelcome();
       const pause = document.createElement('div');
-      pause.className = 'bubble assistant step-pause';
+      pause.className = 'bubble step-pause';
       const body = document.createElement('div');
       body.className = 'bubble-body';
-      body.textContent = t('stepPaused');
+      setIcon(body, 'pause', t('stepPaused'), 14);
       const resume = document.createElement('button');
       resume.className = 'bubble-action';
-      resume.textContent = '▶ ' + t('resume');
+      setIcon(resume, 'play', t('resume'), 12);
       resume.addEventListener('click', () => post({ type: 'resumeStep' }));
       pause.append(body, resume);
-      messagesEl.appendChild(pause);
+      ensureTurn().body.appendChild(pause);
       scrollToBottom();
       break;
     }
@@ -1239,6 +1743,16 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       }
       renderPlan(null);
       setBusy(false);
+      // The answer's header: the model that answered and how long it took; under it, the run.
+      if (turn) {
+        const view: TurnView = turn;
+        if (msg.model) {
+          view.who.textContent = msg.model;
+        }
+        view.when.textContent = msg.duration ?? '';
+        renderRunSummary(view, msg.run);
+      }
+      turn = null;
       if (typeof msg.contextWindow === 'number' && msg.contextWindow > 0) {
         contextWindow = msg.contextWindow;
       }

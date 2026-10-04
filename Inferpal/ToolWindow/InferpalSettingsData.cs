@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Threading;
 namespace Inferpal.ToolWindow;
 
 [DataContract]
-internal class InferpalSettingsData : NotifyPropertyChangedObject
+internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 {
     private readonly InferpalConfig _config;
     private readonly IInferenceProvider _client;
@@ -32,21 +32,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private static (string Code, string Name)[] InlineModeOptions =>
         [.. Services.Presentation.SettingsSchema.FimModes.Select(o => (o.Value, o.Display))];
 
-    // ── Language list (code → display name, fixed — never localized so always readable) ───
-    private static readonly (string Code, string Name)[] LanguageOptions =
-    [
-        ("",      ""),          // placeholder: filled from LangAuto at ApplyLabels time
-        ("en",    "English"),
-        ("fr",    "Français"),
-        ("de",    "Deutsch"),
-        ("it",    "Italiano"),
-        ("es",    "Español"),
-        ("ru",    "Русский"),
-        ("ja",    "日本語"),
-        ("ko",    "한국어"),
-        ("zh-CN", "中文 (简体)"),
-        ("pl",    "Polski"),
-    ];
+    // ── Language list (code → display name, never localized so always readable) — the schema's, in its order.
+    // Entry 0 is "automatic": its text names the language it resolves to, filled at ApplyLabels time.
+    private static (string Code, string Name)[] LanguageOptions =>
+        [.. Services.Presentation.SettingsSchema.Languages.Select(o => (o.Value, o.Text))];
+
+    /// <summary>The automatic entry: "Automatic — same as your editor (Français)", the language the resources resolve
+    /// to for Visual Studio's own UI culture.</summary>
+    private static string AutoLanguageEntry =>
+        Strings.LangAuto(Services.Presentation.SettingsSchema.AutoLanguageName(System.Globalization.CultureInfo.CurrentUICulture));
 
     private string _baseUrl;
     private string? _selectedProvider = string.Empty;
@@ -77,8 +71,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _hintCommandTimeout           = string.Empty;
     private string _labelToolBubblesExpanded     = string.Empty;
     private string _hintToolBubblesExpanded      = string.Empty;
-    private string _labelSecurityAlertsDisabled  = string.Empty;
-    private string _hintSecurityAlertsDisabled   = string.Empty;
     private bool   _smartFixEnabled;
     private string _labelSmartFixEnabled         = string.Empty;
     private string _hintSmartFixEnabled          = string.Empty;
@@ -98,11 +90,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _normalTimeoutSecondsText     = string.Empty;
     private string _labelTaskTimeoutNormal       = string.Empty;
     private string _hintTaskTimeoutNormal        = string.Empty;
-    private string _deepTimeoutHoursText         = string.Empty;
-    private string _deepTimeoutMinutesText       = string.Empty;
-    private string _deepTimeoutSecondsText       = string.Empty;
-    private string _labelTaskTimeoutDeep         = string.Empty;
-    private string _hintTaskTimeoutDeep          = string.Empty;
     private bool   _modelAutoUnloadEnabled;
     private string _labelModelAutoUnload         = string.Empty;
     private string _hintModelAutoUnload          = string.Empty;
@@ -129,42 +116,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelPinnedContextFiles      = string.Empty;
     private string _hintPinnedContextFiles       = string.Empty;
 
-    // ── Collapsible section state (Connection stays always expanded) ──
-    private bool _sectionBehaviorExpanded;
-    private bool _sectionInlineExpanded;
-    private bool _sectionRagExpanded;
-    private bool _sectionMcpExpanded;
-    private bool _sectionContextExpanded;
-    private bool _sectionPersonaExpanded;
-    private string _sectionBehaviorChevron = "▶";
-    private string _sectionInlineChevron   = "▶";
-    private string _sectionRagChevron      = "▶";
-    private string _sectionMcpChevron      = "▶";
-    private string _sectionContextChevron  = "▶";
-    private string _sectionPersonaChevron  = "▶";
-    // ── Settings tabs: which group is shown + per-tab active styling (theme-aware) ──
-    // Lateral-tab navigation over the existing accordion sections: one tab visible at a time,
-    // its sections force-expanded on select. Each section block stays where it is in the XAML
-    // and is wrapped in a Visibility StackPanel bound to its tab flag (non-contiguous blocks may
-    // share a flag — Visibility binding does not require adjacency).
-    private const string TabAccent = "#7C4DFF";   // brand accent for the active tab
-    private string _activeSettingsTab = "connection";
-    private bool   _tabConnectionVisible = true;
-    private bool   _tabBehaviorVisible;
-    private bool   _tabContextVisible;
-    private bool   _tabToolsVisible;
-    private string _tabConnectionFg = TabAccent;
-    private string _tabBehaviorFg   = "#9D9D9D";
-    private string _tabContextFg    = "#9D9D9D";
-    private string _tabToolsFg       = "#9D9D9D";
-    private string _tabConnectionUnderline = TabAccent;
-    private string _tabBehaviorUnderline   = "#00000000";
-    private string _tabContextUnderline    = "#00000000";
-    private string _tabToolsUnderline       = "#00000000";
-    private string _labelTabConnection = string.Empty;
-    private string _labelTabBehavior   = string.Empty;
-    private string _labelTabContext    = string.Empty;
-    private string _labelTabTools      = string.Empty;
     private bool   _mcpEnabled;
     private string _mcpServersJson                      = string.Empty;
     /// <summary>False when the saved server JSON did not read in full: the list is then read-only.</summary>
@@ -199,9 +150,11 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _secondaryButtonBg                    = "#3F3F46";
     private string _secondaryButtonHover                 = "#505050";
     private string _secondaryButtonFg                    = "#FFFFFF";
+    private string _linkForeground                       = "#B39DFF";
+    private string _warningForeground                    = "#D9A21B";
+    private string _mcpSummaryText                       = string.Empty;
     // MCP server list / editor
     private bool   _sectionMcpJsonExpanded;
-    private string _sectionMcpJsonChevron               = "▶";
     private bool   _isEditingServer;
     private string _editingTitle                        = string.Empty;
     private string _editServerName                      = string.Empty;
@@ -223,7 +176,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelMcpHttpServer                  = string.Empty;
     private string _labelMcpUrl                         = string.Empty;
     private string _labelMcpHeaders                     = string.Empty;
-    private string _labelMcpAuthorize                   = string.Empty;
     private string _btnMcpSaveServer                    = string.Empty;
     private string _btnMcpCancelServer                  = string.Empty;
     private string _labelMcpAdvancedJson                = string.Empty;
@@ -242,13 +194,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _hintKvCacheAnchor              = string.Empty;
     private string _kvCacheAnchorMessagesText;
     private string _labelSectionConnection              = string.Empty;
-    private string _labelSectionBehavior                = string.Empty;
-    private string _labelSectionContext                 = string.Empty;
-    private string _labelSectionPersona                 = string.Empty;
-    private string _labelSectionInlineCompletions       = string.Empty;
     private string? _selectedInlineMode                 = string.Empty;
     private string _labelInlineCompletionMode           = string.Empty;
-    private string _hintInlineCompletionMode            = string.Empty;
     private bool   _inlineCompletionEnabled;
     private string? _inlineCompletionModel              = string.Empty;
     private string _labelInlineCompletionEnabled        = string.Empty;
@@ -270,20 +217,16 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private bool   _modelRouterAuto;
     private string _labelModelRouterAuto                = string.Empty;
     private string _hintModelRouterAuto                 = string.Empty;
-    // Simple vs per-role models: collapse the 4 chat-derived role pickers (agent, code actions, FIM,
-    // inline edit) behind a toggle so the default view shows just the chat + embedding models.
-    private bool   _showModelRoles;
-    private string _labelModelRolesAdvanced             = string.Empty;
-    private string _hintModelRolesAdvanced              = string.Empty;
-    // Fold the "config-file-as-UI" timing knobs (command timeout, agent iterations, task timeouts)
-    // behind a toggle — sensible defaults mean most users never touch them.
-    private bool   _showAdvancedBehavior;
-    private string _labelAdvancedBehavior               = string.Empty;
+    // The Server and models page folds its advanced sections (a model per task, sampling, GPU,
+    // connection) behind one box; it opens shown when one of them holds a setting in effect.
+    private bool   _showAdvanced;
+    private bool   _timeLimitsExpanded;
+    private bool   _useRecommendedSampling;
+    private bool   _inlineDiffPreviewEnabled;
     private bool   _ragEnabled;
     private bool   _ragAutoContextEnabled;
     private string? _ragEmbeddingModel                  = string.Empty;
     private string _ragTopKText;
-    private string _labelSectionRag                     = string.Empty;
     private string _labelRagEnabled                     = string.Empty;
     private string _hintRagEnabled                      = string.Empty;
     private string _labelRagAutoContext                 = string.Empty;
@@ -309,7 +252,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _timeoutMinutesText;
     private string _timeoutSecondsText;
     private bool   _toolBubblesExpanded;
-    private bool   _securityAlertsDisabled;
+    private bool   _askBeforeActions;
     private string _contextWindowSizeText;
     private string _contextWindowKeepTurnsText;
     private string _vramBudgetText;
@@ -342,7 +285,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelPinnedPath      = string.Empty;
     private string _labelPinnedBrowse    = string.Empty;
     private bool   _sectionPinnedRawExpanded;
-    private string _sectionPinnedRawChevron = "▶";
     // Slash commands
     private bool   _isEditingSlash;
     private string _slashEditingTitle    = string.Empty;
@@ -354,7 +296,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelSlashName       = string.Empty;
     private string _labelSlashText       = string.Empty;
     private bool   _sectionSlashRawExpanded;
-    private string _sectionSlashRawChevron = "▶";
     // Custom tools
     private bool   _isEditingTool;
     private string _toolEditingTitle     = string.Empty;
@@ -366,7 +307,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelToolName        = string.Empty;
     private string _labelToolCommand     = string.Empty;
     private bool   _sectionToolRawExpanded;
-    private string _sectionToolRawChevron = "▶";
 
     // ── List view-mode (Liste ⇄ JSON/Texte), count badges and empty states ───────
     // Each list shows EITHER the editable rows OR the raw editor — two views of one
@@ -394,17 +334,21 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private string _pinnedEmptyTitle      = string.Empty;
     private string _slashEmptyTitle       = string.Empty;
     private string _toolEmptyTitle        = string.Empty;
-    private string _labelSectionCommandsTools = string.Empty;
 
     internal NonConcurrentSynchronizationContext SynchronizationContext { get; } =
         new NonConcurrentSynchronizationContext(sticky: true);
 
-    public InferpalSettingsData(InferpalConfig config, IInferenceProvider client, VisualStudioExtensibility extensibility, Services.Mcp.McpToolService mcp)
+    public InferpalSettingsData(InferpalConfig config, IInferenceProvider client, VisualStudioExtensibility extensibility,
+                                Services.Mcp.McpToolService mcp, Func<string?>? workspaceRoot = null,
+                                SettingsLiveSources? live = null)
     {
         _config               = config;
         _opened               = config.SnapshotNow();
         _client               = client;
         _mcp                  = mcp;
+        InitEditors(workspaceRoot);
+        InitWidgets(live);
+        InitAppearance(config);
         _baseUrl              = config.BaseUrl;
         _selectedProvider     = ProviderOptions.FirstOrDefault(p => p.Code == config.Provider).Name
                                     is { Length: > 0 } pn ? pn : ProviderOptions[0].Name;
@@ -418,14 +362,13 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _timeoutMinutesText = ts.Minutes.ToString("D2");
         _timeoutSecondsText = ts.Seconds.ToString("D2");
         _toolBubblesExpanded         = config.ToolBubblesExpanded;
-        _securityAlertsDisabled      = config.SecurityAlertsDisabled;
+        _askBeforeActions            = !config.SecurityAlertsDisabled;
         _smartFixEnabled             = config.SmartFixEnabled;
         _agentModeEnabled            = config.AgentModeEnabled;
         _config.AgentModeEnabledChanged += OnAgentModeConfigChanged;   // live-sync with the toolbar switch
         _agentMaxIterationsText      = config.AgentMaxIterations.ToString();
         (_quickTimeoutHoursText,  _quickTimeoutMinutesText,  _quickTimeoutSecondsText)  = SplitDuration(config.QuickTimeoutSeconds);
         (_normalTimeoutHoursText, _normalTimeoutMinutesText, _normalTimeoutSecondsText) = SplitDuration(config.NormalTimeoutSeconds);
-        (_deepTimeoutHoursText,   _deepTimeoutMinutesText,   _deepTimeoutSecondsText)   = SplitDuration(config.DeepTimeoutSeconds);
         _modelAutoUnloadEnabled      = config.ModelAutoUnloadEnabled;
         _modelIdleTimeoutText        = config.ModelIdleTimeoutMinutes.ToString();
         _contextWindowSizeText       = config.ContextWindowSize.ToString();
@@ -453,9 +396,11 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         _agentModel              = config.AgentModel;
         _utilityModel            = config.UtilityModel;
         _modelRouterAuto         = config.ModelRouterAuto;
-        // Start expanded only when a power user has already assigned a per-role model — otherwise the
-        // simple view (chat + embeddings) is the default and the 4 role pickers stay folded.
-        _showModelRoles          = ModelRoleSettings.HasRoleOverride(config);
+        // The advanced sections open shown when one of them holds a setting in effect: a per-task
+        // model the router keeps using must never sit behind a closed fold.
+        _showAdvanced            = ModelRoleSettings.OpensAdvanced(config);
+        _useRecommendedSampling  = config.UseRecommendedSampling;
+        _inlineDiffPreviewEnabled = config.InlineDiffPreviewEnabled;
         _ragEnabled              = config.RagEnabled;
         _ragAutoContextEnabled   = config.RagAutoContextEnabled;
         _ragEmbeddingModel       = config.RagEmbeddingModel;
@@ -473,22 +418,22 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         SaveCommand           = new AsyncCommand(SaveAsync);
         TestConnectionCommand = new AsyncCommand(TestConnectionAsync);
         RefreshModelsCommand  = new AsyncCommand(RefreshModelsAsync);
-        ToggleSectionBehaviorCommand = new AsyncCommand((_, _) => { SectionBehaviorExpanded = !SectionBehaviorExpanded; return Task.CompletedTask; });
-        ToggleSectionInlineCommand   = new AsyncCommand((_, _) => { SectionInlineExpanded   = !SectionInlineExpanded;   return Task.CompletedTask; });
-        ToggleSectionRagCommand      = new AsyncCommand((_, _) => { SectionRagExpanded      = !SectionRagExpanded;      return Task.CompletedTask; });
-        ToggleSectionMcpCommand      = new AsyncCommand((_, _) => { SectionMcpExpanded      = !SectionMcpExpanded;      return Task.CompletedTask; });
         ToggleSectionMcpJsonCommand  = new AsyncCommand((_, _) => { SectionMcpJsonExpanded  = !SectionMcpJsonExpanded;  return Task.CompletedTask; });
         AddServerCommand             = new AsyncCommand((_, _) => { BeginAddServer();   return Task.CompletedTask; });
         SaveServerCommand            = new AsyncCommand((_, _) => { CommitServer();     return Task.CompletedTask; });
         CancelEditServerCommand      = new AsyncCommand((_, _) => { IsEditingServer = false; return Task.CompletedTask; });
         ImportJsonCommand            = new AsyncCommand((_, _) => { BuildRowsFromConfigJson(McpServersJson); McpStatusText = BuildMcpStatus(); return Task.CompletedTask; });
-        ToggleSectionContextCommand  = new AsyncCommand((_, _) => { SectionContextExpanded  = !SectionContextExpanded;  return Task.CompletedTask; });
-        ToggleSectionPersonaCommand  = new AsyncCommand((_, _) => { SectionPersonaExpanded  = !SectionPersonaExpanded;  return Task.CompletedTask; });
 
-        SelectTabConnectionCommand = new AsyncCommand((_, _) => { SelectTab("connection"); return Task.CompletedTask; });
-        SelectTabBehaviorCommand   = new AsyncCommand((_, _) => { SelectTab("behavior");   return Task.CompletedTask; });
-        SelectTabContextCommand    = new AsyncCommand((_, _) => { SelectTab("context");    return Task.CompletedTask; });
-        SelectTabToolsCommand      = new AsyncCommand((_, _) => { SelectTab("tools");      return Task.CompletedTask; });
+        SelectPageServerCommand       = new AsyncCommand((_, _) => { SelectPage("server");       return Task.CompletedTask; });
+        SelectPageAgentCommand        = new AsyncCommand((_, _) => { SelectPage("agent");        return Task.CompletedTask; });
+        SelectPageContextCommand      = new AsyncCommand((_, _) => { SelectPage("context");      return Task.CompletedTask; });
+        SelectPageSearchCommand       = new AsyncCommand((_, _) => { SelectPage("search");       return Task.CompletedTask; });
+        SelectPageAutocompleteCommand = new AsyncCommand((_, _) => { SelectPage("autocomplete"); return Task.CompletedTask; });
+        SelectPageToolsCommand        = new AsyncCommand((_, _) => { SelectPage("tools");        return Task.CompletedTask; });
+        SelectPageAppearanceCommand   = new AsyncCommand((_, _) => { SelectPage("appearance");   return Task.CompletedTask; });
+        EditRulesCommand              = new AsyncCommand((_, _) => { SelectPage("tools");        return Task.CompletedTask; });
+        ToggleTimeLimitsCommand       = new AsyncCommand((_, _) => { TimeLimitsExpanded = !TimeLimitsExpanded; return Task.CompletedTask; });
+        CancelCommand                 = new AsyncCommand((_, _) => { ReloadFromConfig(); return Task.CompletedTask; });
 
         AddPinnedCommand            = new AsyncCommand((_, _) => { BeginAddPinned();   return Task.CompletedTask; });
         BrowsePinnedCommand         = new AsyncCommand(async (_, _) => await BrowsePinnedAsync());
@@ -510,6 +455,20 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         ToggleSectionToolRawCommand = new AsyncCommand((_, _) => { SectionToolRawExpanded = !SectionToolRawExpanded; return Task.CompletedTask; });
 
         ApplyTheme(VsThemeDetector.OsDarkMode());   // placeholder until the VS-theme subscription resolves
+        UpdatePageState();
+        UpdateApprovalRulesSummary();
+        SyncSecondsBoxes();
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is { } name && FormProperties.Contains(name)) RefreshUnsaved();
+            if (e.PropertyName is { } part && DurationParts.Contains(part)) SyncSecondsBoxes();
+            if (e.PropertyName == nameof(PermissionRules)) UpdateApprovalRulesSummary();
+            // The Autocomplete page follows the form: its speed cards, and the model each feature would use.
+            if (e.PropertyName == nameof(SelectedInlineMode)) SyncInlineModeCards();
+            if (e.PropertyName is nameof(SelectedModel) or nameof(InlineCompletionModel) or nameof(InlineEditModel)
+                                   or nameof(CodeActionsModel))
+                UpdateModelLines();
+        };
         _ = RefreshModelsAsync(null, CancellationToken.None);
         _ = InitThemeAsync(extensibility);
     }
@@ -536,6 +495,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         IsDarkTheme    = isDark;
         TextForeground = isDark ? "#F1F1F1" : "#1E1E1E";
         ApplyRowTheme();
+        RefreshThemeCards();
     }
 
     internal void ApplyLabels()
@@ -547,7 +507,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
 
         // Update the language list in place — never Clear(), which triggers a TwoWay
         // write-back from RemoteUI that would reset SelectedLanguage to empty.
-        var autoName = Strings.LangAuto;
+        var autoName = AutoLanguageEntry;
         var currentCode = _config.Language;
         if (AvailableLanguages.Count == 0)
         {
@@ -581,8 +541,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         HintCommandTimeout           = Strings.HintCommandTimeout;
         LabelToolBubblesExpanded     = Strings.LabelToolBubblesExpanded;
         HintToolBubblesExpanded      = Strings.HintToolBubblesExpanded;
-        LabelSecurityAlertsDisabled  = Strings.LabelSecurityAlertsDisabled;
-        HintSecurityAlertsDisabled   = Strings.HintSecurityAlertsDisabled;
+        ApplyAppearanceLabels();
         LabelSmartFixEnabled         = Strings.LabelSmartFixEnabled;
         HintSmartFixEnabled          = Strings.HintSmartFixEnabled;
         LabelAgentModeEnabled        = Strings.LabelAgentModeEnabled;
@@ -593,8 +552,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         HintTaskTimeoutQuick         = Strings.HintTaskTimeoutQuick;
         LabelTaskTimeoutNormal       = Strings.LabelTaskTimeoutNormal;
         HintTaskTimeoutNormal        = Strings.HintTaskTimeoutNormal;
-        LabelTaskTimeoutDeep         = Strings.LabelTaskTimeoutDeep;
-        HintTaskTimeoutDeep          = Strings.HintTaskTimeoutDeep;
         LabelModelAutoUnload         = Strings.LabelModelAutoUnload;
         HintModelAutoUnload          = Strings.HintModelAutoUnload;
         LabelModelIdleTimeout        = Strings.LabelModelIdleTimeout;
@@ -648,16 +605,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         LabelKvCacheAnchor           = Strings.LabelKvCacheAnchor;
         HintKvCacheAnchor            = Strings.HintKvCacheAnchor;
         LabelSectionConnection          = Strings.SectionConnection;
-        LabelSectionBehavior            = Strings.SectionBehavior;
-        LabelSectionContext             = Strings.SectionContext;
-        LabelTabConnection              = Strings.SettingsTabConnection;
-        LabelTabBehavior                = Strings.SettingsTabBehavior;
-        LabelTabContext                 = Strings.SettingsTabContext;
-        LabelTabTools                   = Strings.SettingsTabTools;
-        LabelSectionPersona             = Strings.SectionPersona;
-        LabelSectionInlineCompletions   = Strings.SectionInlineCompletions;
         LabelInlineCompletionMode       = Strings.LabelInlineCompletionMode;
-        HintInlineCompletionMode        = Strings.HintInlineCompletionMode;
         LabelInlineCompletionEnabled    = Strings.LabelInlineCompletionEnabled;
         HintInlineCompletionEnabled     = Strings.HintInlineCompletionEnabled;
         LabelInlineCompletionModel      = Strings.LabelInlineCompletionModel;
@@ -672,10 +620,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         HintUtilityModel                = Strings.HintUtilityModel;
         LabelModelRouterAuto            = Strings.LabelModelRouterAuto;
         HintModelRouterAuto             = Strings.HintModelRouterAuto;
-        LabelModelRolesAdvanced         = Strings.LabelModelRolesAdvanced;
-        HintModelRolesAdvanced          = Strings.HintModelRolesAdvanced;
-        LabelAdvancedBehavior           = Strings.LabelAdvancedBehavior;
-        LabelSectionRag                 = Strings.SectionRag;
         LabelRagEnabled                 = Strings.LabelRagEnabled;
         HintRagEnabled                  = Strings.HintRagEnabled;
         LabelRagAutoContext             = Strings.LabelRagAutoContext;
@@ -703,22 +647,20 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         LabelMcpHttpServer              = Strings.LabelMcpHttpServer;
         LabelMcpUrl                     = Strings.LabelMcpUrl;
         LabelMcpHeaders                 = Strings.LabelMcpHeaders;
-        LabelMcpAuthorize               = Strings.BtnMcpAuthorize;
         BtnMcpSaveServer                = Strings.BtnMcpSaveServer;
         BtnMcpCancelServer              = Strings.BtnMcpCancelServer;
         LabelMcpAdvancedJson            = Strings.McpAdvancedJson;
         BtnMcpImportJson                = Strings.McpImportJson;
 
         // List view-mode toggle captions (offer the OTHER view), empty-state titles, new section header.
-        McpViewLabel        = SectionMcpJsonExpanded    ? Strings.ViewList : Strings.ViewJson;
-        PinnedViewLabel     = SectionPinnedRawExpanded  ? Strings.ViewList : Strings.ViewText;
-        SlashViewLabel      = SectionSlashRawExpanded   ? Strings.ViewList : Strings.ViewText;
-        ToolViewLabel       = SectionToolRawExpanded    ? Strings.ViewList : Strings.ViewText;
+        McpViewLabel        = SectionMcpJsonExpanded    ? Strings.SettingsEditAsList : Strings.SettingsEditAsJson;
+        PinnedViewLabel     = SectionPinnedRawExpanded  ? Strings.SettingsEditAsList : Strings.SettingsEditAsText;
+        SlashViewLabel      = SectionSlashRawExpanded   ? Strings.SettingsEditAsList : Strings.SettingsEditAsText;
+        ToolViewLabel       = SectionToolRawExpanded    ? Strings.SettingsEditAsList : Strings.SettingsEditAsText;
         McpEmptyTitle       = Strings.McpEmptyTitle;
         PinnedEmptyTitle    = Strings.PinnedEmptyTitle;
         SlashEmptyTitle     = Strings.SlashEmptyTitle;
         ToolEmptyTitle      = Strings.ToolEmptyTitle;
-        LabelSectionCommandsTools = Strings.SectionCommandsTools;
 
         if (AvailableProviders.Count == 0)
             foreach (var (_, name) in ProviderOptions)
@@ -745,6 +687,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             is { Length: > 0 } mn2 ? mn2 : inlineModes[1].Name;
         BtnTest                  = Strings.BtnTest;
         BtnSave                  = Strings.BtnSave;
+        ApplyPageLabels();
+        ApplyWidgetLabels();
         TooltipRefreshModels     = Strings.TooltipRefreshModels;
 
         ApplyProviderCapabilities();   // gate capability-specific options + pick the right num_ctx hint
@@ -842,8 +786,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintCommandTimeout        { get => _hintCommandTimeout;        set => SetProperty(ref _hintCommandTimeout,        value); }
     [DataMember] public string LabelToolBubblesExpanded  { get => _labelToolBubblesExpanded;  set => SetProperty(ref _labelToolBubblesExpanded,  value); }
     [DataMember] public string HintToolBubblesExpanded   { get => _hintToolBubblesExpanded;   set => SetProperty(ref _hintToolBubblesExpanded,   value); }
-    [DataMember] public string LabelSecurityAlertsDisabled { get => _labelSecurityAlertsDisabled; set => SetProperty(ref _labelSecurityAlertsDisabled, value); }
-    [DataMember] public string HintSecurityAlertsDisabled  { get => _hintSecurityAlertsDisabled;  set => SetProperty(ref _hintSecurityAlertsDisabled,  value); }
     [DataMember] public bool   SmartFixEnabled             { get => _smartFixEnabled;             set => SetProperty(ref _smartFixEnabled,             value); }
     [DataMember] public string LabelSmartFixEnabled        { get => _labelSmartFixEnabled;        set => SetProperty(ref _labelSmartFixEnabled,        value); }
     [DataMember] public string HintSmartFixEnabled         { get => _hintSmartFixEnabled;         set => SetProperty(ref _hintSmartFixEnabled,         value); }
@@ -863,11 +805,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string NormalTimeoutSecondsText    { get => _normalTimeoutSecondsText;    set => SetProperty(ref _normalTimeoutSecondsText,    ClampDurationField(value, 59)); }
     [DataMember] public string LabelTaskTimeoutNormal      { get => _labelTaskTimeoutNormal;      set => SetProperty(ref _labelTaskTimeoutNormal,      value); }
     [DataMember] public string HintTaskTimeoutNormal       { get => _hintTaskTimeoutNormal;       set => SetProperty(ref _hintTaskTimeoutNormal,       value); }
-    [DataMember] public string DeepTimeoutHoursText        { get => _deepTimeoutHoursText;        set => SetProperty(ref _deepTimeoutHoursText,        ClampDurationField(value, 99)); }
-    [DataMember] public string DeepTimeoutMinutesText      { get => _deepTimeoutMinutesText;      set => SetProperty(ref _deepTimeoutMinutesText,      ClampDurationField(value, 59)); }
-    [DataMember] public string DeepTimeoutSecondsText      { get => _deepTimeoutSecondsText;      set => SetProperty(ref _deepTimeoutSecondsText,      ClampDurationField(value, 59)); }
-    [DataMember] public string LabelTaskTimeoutDeep        { get => _labelTaskTimeoutDeep;        set => SetProperty(ref _labelTaskTimeoutDeep,        value); }
-    [DataMember] public string HintTaskTimeoutDeep         { get => _hintTaskTimeoutDeep;         set => SetProperty(ref _hintTaskTimeoutDeep,         value); }
     [DataMember] public bool   ModelAutoUnloadEnabled      { get => _modelAutoUnloadEnabled;      set => SetProperty(ref _modelAutoUnloadEnabled,      value); }
     [DataMember] public string LabelModelAutoUnload        { get => _labelModelAutoUnload;        set => SetProperty(ref _labelModelAutoUnload,        value); }
     [DataMember] public string HintModelAutoUnload         { get => _hintModelAutoUnload;         set => SetProperty(ref _hintModelAutoUnload,         value); }
@@ -912,71 +849,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintKvCacheAnchor        { get => _hintKvCacheAnchor;        set => SetProperty(ref _hintKvCacheAnchor,        value); }
     [DataMember] public string LabelSectionConnection        { get => _labelSectionConnection;        set => SetProperty(ref _labelSectionConnection,        value); }
 
-    // ── Collapsible sections: expanded flag + chevron glyph (set together) ──
-    [DataMember] public bool SectionBehaviorExpanded
-    {
-        get => _sectionBehaviorExpanded;
-        set { if (SetProperty(ref _sectionBehaviorExpanded, value)) SectionBehaviorChevron = value ? "▼" : "▶"; }
-    }
-    [DataMember] public bool SectionInlineExpanded
-    {
-        get => _sectionInlineExpanded;
-        set { if (SetProperty(ref _sectionInlineExpanded, value)) SectionInlineChevron = value ? "▼" : "▶"; }
-    }
-    [DataMember] public bool SectionRagExpanded
-    {
-        get => _sectionRagExpanded;
-        set { if (SetProperty(ref _sectionRagExpanded, value)) SectionRagChevron = value ? "▼" : "▶"; }
-    }
-    [DataMember] public bool SectionMcpExpanded
-    {
-        get => _sectionMcpExpanded;
-        set { if (SetProperty(ref _sectionMcpExpanded, value)) SectionMcpChevron = value ? "▼" : "▶"; }
-    }
-    [DataMember] public bool SectionContextExpanded
-    {
-        get => _sectionContextExpanded;
-        set { if (SetProperty(ref _sectionContextExpanded, value)) SectionContextChevron = value ? "▼" : "▶"; }
-    }
-    [DataMember] public bool SectionPersonaExpanded
-    {
-        get => _sectionPersonaExpanded;
-        set { if (SetProperty(ref _sectionPersonaExpanded, value)) SectionPersonaChevron = value ? "▼" : "▶"; }
-    }
-    [DataMember] public string SectionBehaviorChevron { get => _sectionBehaviorChevron; set => SetProperty(ref _sectionBehaviorChevron, value); }
-    [DataMember] public string SectionInlineChevron   { get => _sectionInlineChevron;   set => SetProperty(ref _sectionInlineChevron,   value); }
-    [DataMember] public string SectionRagChevron      { get => _sectionRagChevron;      set => SetProperty(ref _sectionRagChevron,      value); }
-    [DataMember] public string SectionMcpChevron      { get => _sectionMcpChevron;      set => SetProperty(ref _sectionMcpChevron,      value); }
-    [DataMember] public string SectionContextChevron  { get => _sectionContextChevron;  set => SetProperty(ref _sectionContextChevron,  value); }
-    [DataMember] public string SectionPersonaChevron  { get => _sectionPersonaChevron;  set => SetProperty(ref _sectionPersonaChevron,  value); }
-    [DataMember] public AsyncCommand ToggleSectionBehaviorCommand { get; }
-    [DataMember] public AsyncCommand ToggleSectionInlineCommand   { get; }
-    [DataMember] public AsyncCommand ToggleSectionRagCommand      { get; }
-    [DataMember] public AsyncCommand ToggleSectionMcpCommand      { get; }
-    [DataMember] public AsyncCommand ToggleSectionContextCommand  { get; }
-    [DataMember] public AsyncCommand ToggleSectionPersonaCommand  { get; }
-
-    // ── Settings tabs ────────────────────────────────────────────────────────
-    [DataMember] public bool   TabConnectionVisible   { get => _tabConnectionVisible;   set => SetProperty(ref _tabConnectionVisible,   value); }
-    [DataMember] public bool   TabBehaviorVisible     { get => _tabBehaviorVisible;     set => SetProperty(ref _tabBehaviorVisible,     value); }
-    [DataMember] public bool   TabContextVisible      { get => _tabContextVisible;      set => SetProperty(ref _tabContextVisible,      value); }
-    [DataMember] public bool   TabToolsVisible        { get => _tabToolsVisible;        set => SetProperty(ref _tabToolsVisible,        value); }
-    [DataMember] public string TabConnectionFg        { get => _tabConnectionFg;        set => SetProperty(ref _tabConnectionFg,        value); }
-    [DataMember] public string TabBehaviorFg          { get => _tabBehaviorFg;          set => SetProperty(ref _tabBehaviorFg,          value); }
-    [DataMember] public string TabContextFg           { get => _tabContextFg;           set => SetProperty(ref _tabContextFg,           value); }
-    [DataMember] public string TabToolsFg             { get => _tabToolsFg;             set => SetProperty(ref _tabToolsFg,             value); }
-    [DataMember] public string TabConnectionUnderline { get => _tabConnectionUnderline; set => SetProperty(ref _tabConnectionUnderline, value); }
-    [DataMember] public string TabBehaviorUnderline   { get => _tabBehaviorUnderline;   set => SetProperty(ref _tabBehaviorUnderline,   value); }
-    [DataMember] public string TabContextUnderline    { get => _tabContextUnderline;    set => SetProperty(ref _tabContextUnderline,    value); }
-    [DataMember] public string TabToolsUnderline       { get => _tabToolsUnderline;       set => SetProperty(ref _tabToolsUnderline,       value); }
-    [DataMember] public string LabelTabConnection     { get => _labelTabConnection;     set => SetProperty(ref _labelTabConnection,     value); }
-    [DataMember] public string LabelTabBehavior       { get => _labelTabBehavior;       set => SetProperty(ref _labelTabBehavior,       value); }
-    [DataMember] public string LabelTabContext        { get => _labelTabContext;        set => SetProperty(ref _labelTabContext,        value); }
-    [DataMember] public string LabelTabTools          { get => _labelTabTools;          set => SetProperty(ref _labelTabTools,          value); }
-    [DataMember] public AsyncCommand SelectTabConnectionCommand { get; }
-    [DataMember] public AsyncCommand SelectTabBehaviorCommand   { get; }
-    [DataMember] public AsyncCommand SelectTabContextCommand    { get; }
-    [DataMember] public AsyncCommand SelectTabToolsCommand      { get; }
     [DataMember] public bool   McpEnabled               { get => _mcpEnabled;               set => SetProperty(ref _mcpEnabled,               value); }
     [DataMember] public string McpServersJson           { get => _mcpServersJson;           set => SetProperty(ref _mcpServersJson,           value); }
     [DataMember] public string McpStatusText            { get => _mcpStatusText;            set => SetProperty(ref _mcpStatusText,            value); }
@@ -996,15 +868,17 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string SecondaryButtonBg        { get => _secondaryButtonBg;        set => SetProperty(ref _secondaryButtonBg,        value); }
     [DataMember] public string SecondaryButtonHover     { get => _secondaryButtonHover;     set => SetProperty(ref _secondaryButtonHover,     value); }
     [DataMember] public string SecondaryButtonFg        { get => _secondaryButtonFg;        set => SetProperty(ref _secondaryButtonFg,        value); }
+    [DataMember] public string LinkForeground           { get => _linkForeground;           set => SetProperty(ref _linkForeground,           value); }
+    [DataMember] public string WarningForeground        { get => _warningForeground;        set => SetProperty(ref _warningForeground,        value); }
+    [DataMember] public string McpSummaryText           { get => _mcpSummaryText;           set => SetProperty(ref _mcpSummaryText,           value); }
 
     // ── MCP server list + inline editor ──────────────────────────────────────
     [DataMember] public ObservableCollection<McpServerRow> McpServers { get; } = [];
     [DataMember] public bool   SectionMcpJsonExpanded
     {
         get => _sectionMcpJsonExpanded;
-        set { if (SetProperty(ref _sectionMcpJsonExpanded, value)) { SectionMcpJsonChevron = value ? "▼" : "▶"; McpListViewVisible = !value; McpViewLabel = value ? Strings.ViewList : Strings.ViewJson; } }
+        set { if (SetProperty(ref _sectionMcpJsonExpanded, value)) { McpListViewVisible = !value; McpViewLabel = value ? Strings.SettingsEditAsList : Strings.SettingsEditAsJson; } }
     }
-    [DataMember] public string SectionMcpJsonChevron    { get => _sectionMcpJsonChevron;    set => SetProperty(ref _sectionMcpJsonChevron,    value); }
     [DataMember] public bool   IsEditingServer          { get => _isEditingServer;          set => SetProperty(ref _isEditingServer,          value); }
     [DataMember] public string EditingTitle             { get => _editingTitle;             set => SetProperty(ref _editingTitle,             value); }
     [DataMember] public string EditServerName           { get => _editServerName;           set => SetProperty(ref _editServerName,           value); }
@@ -1026,7 +900,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string LabelMcpHttpServer       { get => _labelMcpHttpServer;       set => SetProperty(ref _labelMcpHttpServer,       value); }
     [DataMember] public string LabelMcpUrl              { get => _labelMcpUrl;              set => SetProperty(ref _labelMcpUrl,              value); }
     [DataMember] public string LabelMcpHeaders          { get => _labelMcpHeaders;          set => SetProperty(ref _labelMcpHeaders,          value); }
-    [DataMember] public string LabelMcpAuthorize        { get => _labelMcpAuthorize;        set => SetProperty(ref _labelMcpAuthorize,        value); }
     [DataMember] public string BtnMcpSaveServer         { get => _btnMcpSaveServer;         set => SetProperty(ref _btnMcpSaveServer,         value); }
     [DataMember] public string BtnMcpCancelServer       { get => _btnMcpCancelServer;       set => SetProperty(ref _btnMcpCancelServer,       value); }
     [DataMember] public string LabelMcpAdvancedJson     { get => _labelMcpAdvancedJson;     set => SetProperty(ref _labelMcpAdvancedJson,     value); }
@@ -1036,13 +909,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public AsyncCommand SaveServerCommand          { get; }
     [DataMember] public AsyncCommand CancelEditServerCommand    { get; }
     [DataMember] public AsyncCommand ImportJsonCommand          { get; }
-    [DataMember] public string LabelSectionBehavior          { get => _labelSectionBehavior;          set => SetProperty(ref _labelSectionBehavior,          value); }
-    [DataMember] public string LabelSectionContext           { get => _labelSectionContext;           set => SetProperty(ref _labelSectionContext,           value); }
-    [DataMember] public string LabelSectionPersona           { get => _labelSectionPersona;           set => SetProperty(ref _labelSectionPersona,           value); }
-    [DataMember] public string LabelSectionInlineCompletions { get => _labelSectionInlineCompletions; set => SetProperty(ref _labelSectionInlineCompletions, value); }
     [DataMember] public string? SelectedInlineMode           { get => _selectedInlineMode;            set => SetProperty(ref _selectedInlineMode,            value); }
     [DataMember] public string LabelInlineCompletionMode     { get => _labelInlineCompletionMode;     set => SetProperty(ref _labelInlineCompletionMode,     value); }
-    [DataMember] public string HintInlineCompletionMode      { get => _hintInlineCompletionMode;      set => SetProperty(ref _hintInlineCompletionMode,      value); }
     [DataMember] public bool   InlineCompletionEnabled       { get => _inlineCompletionEnabled;       set => SetProperty(ref _inlineCompletionEnabled,       value); }
     [DataMember] public string? InlineCompletionModel        { get => _inlineCompletionModel;         set => SetProperty(ref _inlineCompletionModel,         value); }
     [DataMember] public string LabelInlineCompletionEnabled  { get => _labelInlineCompletionEnabled;  set => SetProperty(ref _labelInlineCompletionEnabled,  value); }
@@ -1064,16 +932,11 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public bool   ModelRouterAuto               { get => _modelRouterAuto;               set => SetProperty(ref _modelRouterAuto,               value); }
     [DataMember] public string LabelModelRouterAuto          { get => _labelModelRouterAuto;          set => SetProperty(ref _labelModelRouterAuto,          value); }
     [DataMember] public string HintModelRouterAuto           { get => _hintModelRouterAuto;           set => SetProperty(ref _hintModelRouterAuto,           value); }
-    /// <summary>When <c>false</c> (default), only the chat + embedding models show; the 4 per-role
-    /// pickers (agent, code actions, FIM, inline edit) collapse behind the "advanced" toggle.</summary>
-    [DataMember] public bool   ShowModelRoles                { get => _showModelRoles;                set => SetProperty(ref _showModelRoles,                value); }
-    [DataMember] public string LabelModelRolesAdvanced       { get => _labelModelRolesAdvanced;       set => SetProperty(ref _labelModelRolesAdvanced,       value); }
-    [DataMember] public string HintModelRolesAdvanced        { get => _hintModelRolesAdvanced;        set => SetProperty(ref _hintModelRolesAdvanced,        value); }
-    /// <summary>When <c>false</c> (default), the Behavior section's timing knobs (command timeout,
-    /// agent iterations, task timeouts) are folded away behind the "advanced" toggle.</summary>
-    [DataMember] public bool   ShowAdvancedBehavior          { get => _showAdvancedBehavior;          set => SetProperty(ref _showAdvancedBehavior,          value); }
-    [DataMember] public string LabelAdvancedBehavior         { get => _labelAdvancedBehavior;         set => SetProperty(ref _labelAdvancedBehavior,         value); }
-    [DataMember] public string LabelSectionRag               { get => _labelSectionRag;               set => SetProperty(ref _labelSectionRag,               value); }
+    /// <summary>The Server and models page's fold. It only shows or hides: it never changes a value.</summary>
+    [DataMember] public bool   ShowAdvanced                  { get => _showAdvanced;                  set => SetProperty(ref _showAdvanced,                  value); }
+    [DataMember] public bool   TimeLimitsExpanded            { get => _timeLimitsExpanded;            set => SetProperty(ref _timeLimitsExpanded,            value); }
+    [DataMember] public bool   UseRecommendedSampling        { get => _useRecommendedSampling;        set => SetProperty(ref _useRecommendedSampling,        value); }
+    [DataMember] public bool   InlineDiffPreviewEnabled      { get => _inlineDiffPreviewEnabled;      set => SetProperty(ref _inlineDiffPreviewEnabled,      value); }
     [DataMember] public bool   RagEnabled                    { get => _ragEnabled;                    set => SetProperty(ref _ragEnabled,                    value); }
     [DataMember] public string LabelRagEnabled               { get => _labelRagEnabled;               set => SetProperty(ref _labelRagEnabled,               value); }
     [DataMember] public string HintRagEnabled                { get => _hintRagEnabled;                set => SetProperty(ref _hintRagEnabled,                value); }
@@ -1113,7 +976,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string TimeoutMinutesText   { get => _timeoutMinutesText;   set => SetProperty(ref _timeoutMinutesText,   ClampDurationField(value, 59)); }
     [DataMember] public string TimeoutSecondsText   { get => _timeoutSecondsText;   set => SetProperty(ref _timeoutSecondsText,   ClampDurationField(value, 59)); }
     [DataMember] public bool   ToolBubblesExpanded      { get => _toolBubblesExpanded;      set => SetProperty(ref _toolBubblesExpanded,      value); }
-    [DataMember] public bool   SecurityAlertsDisabled       { get => _securityAlertsDisabled;       set => SetProperty(ref _securityAlertsDisabled,       value); }
+    /// <summary>The inverse of <see cref="InferpalConfig.SecurityAlertsDisabled"/>: the box says what happens.</summary>
+    [DataMember] public bool   AskBeforeActions             { get => _askBeforeActions;             set => SetProperty(ref _askBeforeActions,             value); }
     [DataMember] public string ContextWindowSizeText        { get => _contextWindowSizeText;        set => SetProperty(ref _contextWindowSizeText,        value); }
     [DataMember] public string ContextWindowKeepTurnsText   { get => _contextWindowKeepTurnsText;   set => SetProperty(ref _contextWindowKeepTurnsText,   value); }
     [DataMember] public string VramBudgetText               { get => _vramBudgetText;               set => SetProperty(ref _vramBudgetText,               value); }
@@ -1144,9 +1008,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public bool   SectionPinnedRawExpanded
     {
         get => _sectionPinnedRawExpanded;
-        set { if (SetProperty(ref _sectionPinnedRawExpanded, value)) { SectionPinnedRawChevron = value ? "▼" : "▶"; PinnedListViewVisible = !value; PinnedViewLabel = value ? Strings.ViewList : Strings.ViewText; } }
+        set { if (SetProperty(ref _sectionPinnedRawExpanded, value)) { PinnedListViewVisible = !value; PinnedViewLabel = value ? Strings.SettingsEditAsList : Strings.SettingsEditAsText; } }
     }
-    [DataMember] public string SectionPinnedRawChevron { get => _sectionPinnedRawChevron; set => SetProperty(ref _sectionPinnedRawChevron, value); }
     [DataMember] public AsyncCommand AddPinnedCommand              { get; }
     [DataMember] public AsyncCommand BrowsePinnedCommand           { get; }
     [DataMember] public AsyncCommand SavePinnedCommand             { get; }
@@ -1166,9 +1029,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public bool   SectionSlashRawExpanded
     {
         get => _sectionSlashRawExpanded;
-        set { if (SetProperty(ref _sectionSlashRawExpanded, value)) { SectionSlashRawChevron = value ? "▼" : "▶"; SlashListViewVisible = !value; SlashViewLabel = value ? Strings.ViewList : Strings.ViewText; } }
+        set { if (SetProperty(ref _sectionSlashRawExpanded, value)) { SlashListViewVisible = !value; SlashViewLabel = value ? Strings.SettingsEditAsList : Strings.SettingsEditAsText; } }
     }
-    [DataMember] public string SectionSlashRawChevron { get => _sectionSlashRawChevron; set => SetProperty(ref _sectionSlashRawChevron, value); }
     [DataMember] public AsyncCommand AddSlashCommand              { get; }
     [DataMember] public AsyncCommand SaveSlashCommand             { get; }
     [DataMember] public AsyncCommand CancelEditSlashCommand       { get; }
@@ -1187,9 +1049,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public bool   SectionToolRawExpanded
     {
         get => _sectionToolRawExpanded;
-        set { if (SetProperty(ref _sectionToolRawExpanded, value)) { SectionToolRawChevron = value ? "▼" : "▶"; ToolListViewVisible = !value; ToolViewLabel = value ? Strings.ViewList : Strings.ViewText; } }
+        set { if (SetProperty(ref _sectionToolRawExpanded, value)) { ToolListViewVisible = !value; ToolViewLabel = value ? Strings.SettingsEditAsList : Strings.SettingsEditAsText; } }
     }
-    [DataMember] public string SectionToolRawChevron { get => _sectionToolRawChevron; set => SetProperty(ref _sectionToolRawChevron, value); }
     [DataMember] public AsyncCommand AddToolCommand              { get; }
     [DataMember] public AsyncCommand SaveToolCommand             { get; }
     [DataMember] public AsyncCommand CancelEditToolCommand       { get; }
@@ -1217,7 +1078,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string ToolCountText         { get => _toolCountText;         set => SetProperty(ref _toolCountText,         value); }
     [DataMember] public bool   ToolEmpty             { get => _toolEmpty;             set => SetProperty(ref _toolEmpty,             value); }
     [DataMember] public string ToolEmptyTitle        { get => _toolEmptyTitle;        set => SetProperty(ref _toolEmptyTitle,        value); }
-    [DataMember] public string LabelSectionCommandsTools { get => _labelSectionCommandsTools; set => SetProperty(ref _labelSectionCommandsTools, value); }
 
     /// <summary>Recomputes the count badge + empty-state flag for every editable list. Called from each
     /// list's Sync*FromRows() choke point, so it stays fresh on add / edit / delete / enable-toggle / import.</summary>
@@ -1225,7 +1085,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     {
         McpCountText    = FormatCount(McpServers.Count,      McpServers.Count(r => r.Enabled));
         McpEmpty        = McpServers.Count == 0;
-        PinnedCountText = FormatCount(PinnedFileRows.Count,  PinnedFileRows.Count(r => r.Enabled));
+        // "2 of 3": how many reach the prompt, of how many can — the cap is the number that matters here.
+        PinnedCountText = Strings.PinnedFilesCount(Math.Min(PinnedFileRows.Count(r => r.Enabled), PinnedFilesPolicy.MaxPinned),
+                                                   PinnedFilesPolicy.MaxPinned);
         PinnedEmpty     = PinnedFileRows.Count == 0;
         SlashCountText  = FormatCount(SlashCommandRows.Count, SlashCommandRows.Count(r => r.Enabled));
         SlashEmpty      = SlashCommandRows.Count == 0;
@@ -1305,10 +1167,11 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         string ragTopKText = string.Empty, ragSimilarityThresholdText = string.Empty;
         string agentMaxIterationsText = string.Empty;
         // h/min/s composites recombined into total seconds inside the VM-context capture below.
-        int quickTimeoutSec = 0, normalTimeoutSec = 0, deepTimeoutSec = 0, compactTimeoutSec = 0;
+        int quickTimeoutSec = 0, normalTimeoutSec = 0, compactTimeoutSec = 0;
         string modelIdleTimeoutText = string.Empty;
         string mcpServersJson = string.Empty;
-        bool toolExpanded = false, secAlertsDisabled = false, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, mcpEnabled = false, modelRouterAuto = false, separateRoleModels = false;
+        var density = "comfortable";
+        bool toolExpanded = false, askBefore = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
         await RunOnVMContextAsync(() =>
         {
             url                  = BaseUrl.Trim();
@@ -1319,13 +1182,13 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             tm                   = TimeoutMinutesText.Trim();
             ts                   = TimeoutSecondsText.Trim();
             toolExpanded         = ToolBubblesExpanded;
-            secAlertsDisabled    = SecurityAlertsDisabled;
+            density              = ChatDensity;
+            askBefore            = AskBeforeActions;
             smartFixEnabled      = SmartFixEnabled;
             agentModeEnabled         = AgentModeEnabled;
             agentMaxIterationsText   = AgentMaxIterationsText.Trim();
             quickTimeoutSec          = CombineDuration(QuickTimeoutHoursText,  QuickTimeoutMinutesText,  QuickTimeoutSecondsText);
             normalTimeoutSec         = CombineDuration(NormalTimeoutHoursText, NormalTimeoutMinutesText, NormalTimeoutSecondsText);
-            deepTimeoutSec           = CombineDuration(DeepTimeoutHoursText,   DeepTimeoutMinutesText,   DeepTimeoutSecondsText);
             ctxSizeText          = ContextWindowSizeText.Trim();
             ctxKeepText          = ContextWindowKeepTurnsText.Trim();
             vramBudgetText       = VramBudgetText.Trim();
@@ -1352,7 +1215,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             agentModel             = AgentModel;
             utilityModel           = UtilityModel;
             modelRouterAuto        = ModelRouterAuto;
-            separateRoleModels     = ShowModelRoles;
+            useSampling            = UseRecommendedSampling;
+            inlineDiff             = InlineDiffPreviewEnabled;
             ragEnabled             = RagEnabled;
             ragAutoContextEnabled  = RagAutoContextEnabled;
             ragEmbeddingModel      = RagEmbeddingModel;
@@ -1431,7 +1295,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         edited.DefaultModel          = Kept(model, edited.DefaultModel, () => Strings.LabelChatModel);
         edited.CommandTimeoutSeconds = totalSec < 1 ? 1 : totalSec;
         edited.ToolBubblesExpanded      = toolExpanded;
-        edited.SecurityAlertsDisabled   = secAlertsDisabled;
+        edited.ChatDensity              = density;
+        edited.SecurityAlertsDisabled   = !askBefore;
         edited.SmartFixEnabled          = smartFixEnabled;
         edited.AgentModeEnabled         = agentModeEnabled;
         edited.AgentMaxIterations       = ReadInt(agentMaxIterationsText, () => Strings.LabelAgentMaxIterations,
@@ -1440,7 +1305,6 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         // written here turned a two-hour setting into one hour without a word.
         edited.QuickTimeoutSeconds      = DurationFields.TaskTimeout(quickTimeoutSec,  whenCleared: 120);
         edited.NormalTimeoutSeconds     = DurationFields.TaskTimeout(normalTimeoutSec, whenCleared: 300);
-        edited.DeepTimeoutSeconds       = DurationFields.TaskTimeout(deepTimeoutSec,   whenCleared: 600);
         edited.ContextWindowSize        = ReadInt(ctxSizeText, () => Strings.LabelContextWindowSize,
                                                    edited.ContextWindowSize, 0, v => Math.Max(0, v));
         edited.ContextWindowKeepTurns   = ReadInt(ctxKeepText, () => Strings.LabelContextWindowKeepTurns,
@@ -1468,22 +1332,15 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                                                     edited.KvCacheAnchorMessages, 3, v => Math.Clamp(v, 0, 20));
         edited.InlineCompletionMode      = inlineModeCode;
         edited.InlineCompletionEnabled   = inlineEnabled;
-        if (separateRoleModels)
-        {
-            edited.InlineCompletionModel = Kept(inlineModel,      edited.InlineCompletionModel, () => Strings.LabelInlineCompletionModel);
-            edited.CodeActionsModel      = Kept(codeActionsModel, edited.CodeActionsModel,      () => Strings.LabelCodeActionsModel);
-            edited.InlineEditModel       = Kept(inlineEditModel,  edited.InlineEditModel,       () => Strings.LabelInlineEditModel);
-            edited.AgentModel            = Kept(agentModel,       edited.AgentModel,            () => Strings.LabelAgentModel);
-            edited.UtilityModel          = Kept(utilityModel,     edited.UtilityModel,          () => Strings.LabelUtilityModel);
-            edited.ModelRouterAuto       = modelRouterAuto;
-        }
-        else
-        {
-            // Unchecked, the switch promises the chat model everywhere (its hint says so): the
-            // overrides are cleared, not kept behind the fold, where the router went on using them
-            // and from which the switch came back checked at the next opening.
-            ModelRoleSettings.UseChatModelEverywhere(edited);
-        }
+        // The advanced fold never takes part: what it hides is saved like the rest.
+        edited.InlineCompletionModel = Kept(inlineModel,      edited.InlineCompletionModel, () => Strings.LabelInlineCompletionModel);
+        edited.CodeActionsModel      = Kept(codeActionsModel, edited.CodeActionsModel,      () => Strings.LabelCodeActionsModel);
+        edited.InlineEditModel       = Kept(inlineEditModel,  edited.InlineEditModel,       () => Strings.LabelInlineEditModel);
+        edited.AgentModel            = Kept(agentModel,       edited.AgentModel,            () => Strings.LabelAgentModel);
+        edited.UtilityModel          = Kept(utilityModel,     edited.UtilityModel,          () => Strings.LabelUtilityModel);
+        edited.ModelRouterAuto       = modelRouterAuto;
+        edited.UseRecommendedSampling   = useSampling;
+        edited.InlineDiffPreviewEnabled = inlineDiff;
         edited.RagEnabled                = ragEnabled;
         edited.RagAutoContextEnabled     = ragAutoContextEnabled;
         edited.RagEmbeddingModel         = Kept(ragEmbeddingModel, edited.RagEmbeddingModel,    () => Strings.LabelRagEmbeddingModel);
@@ -1538,7 +1395,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             ? string.Empty
             : " " + Strings.SettingsPermissionRulesIgnored(droppedRules.Count);
 
-        await RunOnVMContextAsync(() => { ApplyLabels(); SaveStatus = "✓" + ignoredStatus + rulesStatus; });
+        await RunOnVMContextAsync(() => { ApplyLabels(); SaveStatus = "✓" + ignoredStatus + rulesStatus; RefreshUnsaved(); });
     }
 
     // ── MCP server list management ───────────────────────────────────────────
@@ -1557,7 +1414,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                 Source   = s,
                 ServerName = s.Name,
                 Command  = s.Command ?? string.Empty,
-                ArgsText = string.Join(" ", s.Args),
+                ArgsText = string.Join("\n", s.Args),
                 EnvText  = string.Join("\n", s.Env.Select(kv => $"{kv.Key}={kv.Value}")),
                 Url      = s.Url ?? string.Empty,
                 HeadersText = s.Headers is null ? string.Empty : string.Join("\n", s.Headers.Select(kv => $"{kv.Key}={kv.Value}")),
@@ -1591,42 +1448,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         SecondaryButtonBg   = dark ? "#3F3F46" : "#E0E0E0";   // neutral filled button (Cancel / Import)
         SecondaryButtonHover= dark ? "#505050" : "#D0D0D0";
         SecondaryButtonFg   = dark ? "#FFFFFF" : "#1E1E1E";   // white text only reads on the dark surface
-        UpdateTabState();   // inactive tab labels follow the theme's subtle foreground
-    }
-
-    /// <summary>Switches the visible settings tab and force-expands its sections so content shows
-    /// immediately (the per-section chevrons still collapse within the tab).</summary>
-    private void SelectTab(string tab)
-    {
-        _activeSettingsTab = tab;
-        switch (tab)
-        {
-            case "behavior": SectionBehaviorExpanded = true; SectionInlineExpanded   = true; SectionPersonaExpanded = true; break;
-            case "context":  SectionRagExpanded      = true; SectionContextExpanded  = true; break;
-            case "tools":    SectionMcpExpanded       = true; break;
-        }
-        UpdateTabState();
-    }
-
-    /// <summary>Recomputes per-tab visibility + active styling (accent for the selected tab,
-    /// theme-subtle for the rest). Called on tab select and whenever the theme changes.</summary>
-    private void UpdateTabState()
-    {
-        TabConnectionVisible = _activeSettingsTab == "connection";
-        TabBehaviorVisible   = _activeSettingsTab == "behavior";
-        TabContextVisible    = _activeSettingsTab == "context";
-        TabToolsVisible      = _activeSettingsTab == "tools";
-
-        const string none = "#00000000";
-        var inactive = _mcpSubtleForeground;   // theme-aware subtle, set in ApplyRowTheme
-        TabConnectionFg = TabConnectionVisible ? TabAccent : inactive;
-        TabBehaviorFg   = TabBehaviorVisible   ? TabAccent : inactive;
-        TabContextFg    = TabContextVisible    ? TabAccent : inactive;
-        TabToolsFg      = TabToolsVisible      ? TabAccent : inactive;
-        TabConnectionUnderline = TabConnectionVisible ? TabAccent : none;
-        TabBehaviorUnderline   = TabBehaviorVisible   ? TabAccent : none;
-        TabContextUnderline    = TabContextVisible    ? TabAccent : none;
-        TabToolsUnderline      = TabToolsVisible      ? TabAccent : none;
+        LinkForeground      = dark ? "#B39DFF" : "#5B3FD1";   // the "Edit rules" link, readable on both surfaces
+        WarningForeground   = dark ? "#D9A21B" : "#8A6100";   // notes on what does not apply: amber, dark enough on white
+        UpdatePageState();   // the navigation follows the theme
     }
 
     /// <summary>Hooks a row's Edit/Delete callbacks and re-syncs JSON when its enabled flag flips.</summary>
@@ -1635,40 +1459,44 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         row.OnEdit      = EditServer;
         row.OnDelete    = DeleteServer;
         row.OnAuthorize = AuthorizeServerAsync;
+        row.OnRetry     = ReconnectMcpAsync;
         row.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(McpServerRow.Enabled))
             {
-                if (!row.Enabled) row.StatusText = Strings.McpServerDisabled;
                 PersistMcpServers();
+                RefreshRowStatuses();   // "Off" at once; the reconnect brings the rest
             }
         };
     }
 
-    /// <summary>Applies the latest connection status from <see cref="_mcp"/> onto each row.</summary>
+    /// <summary>
+    /// Applies the latest connection status from <see cref="_mcp"/> onto each row, through the presenter the VS Code
+    /// cards read: same states, same words, and the CAUSE of a server that does not run.
+    /// </summary>
     private void RefreshRowStatuses()
     {
-        var status = _mcp.Status.ToDictionary(s => s.Name, StringComparer.Ordinal);
+        var cards = McpServerCards.Build(McpServers.Select(ToConfig).ToList(), _mcp.Status)
+            .ToDictionary(c => c.Name, StringComparer.Ordinal);
         foreach (var row in McpServers)
         {
-            if (!row.Enabled)
+            if (!cards.TryGetValue(row.ServerName, out var card)) continue;
+            row.StatusText   = card.StatusText;
+            row.StateKey     = card.State switch
             {
-                row.StatusText = Strings.McpServerDisabled;
-                row.AuthRequired = false;
-            }
-            else if (status.TryGetValue(row.ServerName, out var st))
-            {
-                row.AuthRequired = st.AuthRequired;
-                row.StatusText = st.Connected ? $"✓ {st.ToolCount}"
-                               : st.AuthRequired ? Strings.McpAuthRequired
-                               : $"✗ {st.Error}";
-            }
-            else
-            {
-                row.StatusText = string.Empty;
-                row.AuthRequired = false;
-            }
+                McpCardState.Connected   => "connected",
+                McpCardState.NeedsSignIn => "signIn",
+                McpCardState.Failed      => "failed",
+                McpCardState.Off         => "off",
+                _                        => "notStarted",
+            };
+            row.AuthRequired = card.State == McpCardState.NeedsSignIn;
+            row.ShowRetry    = card.State == McpCardState.Failed;
+            row.Cause        = card.Cause ?? string.Empty;
         }
+        McpStatusText  = BuildMcpStatus();
+        McpSummaryText = McpServers.Count == 0 ? string.Empty
+            : McpServerCards.Summary(McpServerCards.Build(McpServers.Select(ToConfig).ToList(), _mcp.Status));
     }
 
     /// <summary>Runs the interactive OAuth flow (browser) for an HTTP server row, then refreshes statuses.</summary>
@@ -1682,7 +1510,9 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         catch (Exception ex)
         {
             row.AuthRequired = true;
-            row.StatusText = $"✗ {ex.Message}";
+            row.StatusText   = Strings.McpCardSignIn;
+            row.Cause        = ex.Message;
+            return;
         }
         RefreshRowStatuses();
     }
@@ -1838,10 +1668,11 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
         catch (Exception ex) { Diagnostics.Swallow("Settings.ReconnectMcp", ex); }
     }
 
+    /// <summary>One argument per line: split on spaces, an argument holding one became two on the first edit.</summary>
     private static IReadOnlyList<string> ParseArgs(string? text) =>
         string.IsNullOrWhiteSpace(text)
             ? []
-            : text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            : text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     private static IReadOnlyDictionary<string, string> ParseEnv(string? text)
     {
@@ -1859,14 +1690,8 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     /// <summary>Renders the MCP connection result (per-server tool count or error) for the settings UI.</summary>
     private string BuildMcpStatus()
     {
-        var notice = _mcpListRebuildable ? null : Strings.McpJsonNotEditableAsList;
-        if (!_config.McpEnabled) return notice ?? string.Empty;
-        var status = _mcp.Status;
-        var lines = status.Count == 0
-            ? Strings.McpNoServers
-            : string.Join("\n", status.Select(s =>
-                s.Connected ? $"✓ {s.Name} — {s.ToolCount}" : $"✗ {s.Name} — {s.Error}"));
-        return notice is null ? lines : notice + "\n" + lines;
+        // The notice only: the summary ("4 configured · 2 need your attention") sits beside the title.
+        return _mcpListRebuildable ? string.Empty : Strings.McpJsonNotEditableAsList;
     }
 
     // ── Editable list management (pinned files / slash commands / custom tools) ──
@@ -1900,14 +1725,18 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
     private void BuildPinnedRowsFrom(string text)
     {
         PinnedFileRows.Clear();
+        var active = 0;
         foreach (var line in SplitListLines(text))
         {
             var (enabled, path) = SplitEntry(line);
             if (path.Length == 0) continue;
             var row = new EditableListRow { Enabled = enabled, Field1 = path, Label = System.IO.Path.GetFileName(path), Summary = path };
+            // The cap drops what the user wrote, in silence otherwise: the prompt reads the first three only.
+            if (enabled && ++active > PinnedFilesPolicy.MaxPinned) row.Note = Strings.PinnedOverCap;
             WireListRow(row, EditPinned, DeletePinned, PersistPinned);
             PinnedFileRows.Add(row);
         }
+        RefreshPinnedSizes();
         SyncPinnedTextFromRows();
     }
 
@@ -2038,6 +1867,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             WireListRow(row, EditSlash, DeleteSlash, PersistSlash);
             SlashCommandRows.Add(row);
         }
+        SlashUnreadText = UnreadLines(_slashUnparsed);
         SyncSlashTextFromRows();
     }
 
@@ -2111,6 +1941,7 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
             WireListRow(row, EditTool, DeleteTool, PersistTool);
             CustomToolRows.Add(row);
         }
+        ToolUnreadText = UnreadLines(_toolUnparsed);
         SyncToolTextFromRows();
     }
 
@@ -2254,12 +2085,12 @@ internal class InferpalSettingsData : NotifyPropertyChangedObject
                     [CodeActionsModel, InlineCompletionModel, InlineEditModel, AgentModel, UtilityModel],
                     leadingEmpty: true);
 
-                // Only the models recognised as embedding models, plus the configured one.
+                // Only the models recognised as embedding models, plus the configured one, after an empty
+                // entry: left empty, the best one installed is used at run time (its hint says so). Nothing
+                // is picked on the user's behalf — a value written by opening the window would read as an
+                // unsaved change nobody made.
                 SelectionPreservingList.Sync(AvailableEmbeddingModels, models.Where(IsEmbeddingModel).ToList(),
-                                             [RagEmbeddingModel]);
-                // Auto-select when nothing is configured yet: the default model's family if installed, else the first.
-                if (string.IsNullOrEmpty(RagEmbeddingModel) && AvailableEmbeddingModels.Count > 0)
-                    RagEmbeddingModel = Services.Inference.EmbeddingModels.PreferredOf(AvailableEmbeddingModels);
+                                             [RagEmbeddingModel], leadingEmpty: true);
             });
         }
         // ⚠ The context names ITS OWN method, not a neighbour: this catch belongs to the model-list

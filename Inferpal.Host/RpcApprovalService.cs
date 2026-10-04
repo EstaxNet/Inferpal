@@ -17,20 +17,30 @@ internal sealed class RpcApprovalService : ApprovalServiceBase
     public RpcApprovalService(InferpalConfig config, Func<string?> rootDir, JsonRpc rpc)
         : base(config, rootDir) => _rpc = rpc;
 
-    protected override async Task<ApprovalDecision> PromptUserAsync(string message, Services.CodeActions.DiffInfo? diff, CancellationToken ct)
+    /// <summary>The card the chat draws (title, subject, the start of the change) goes with the one-sentence prompt.</summary>
+    protected override async Task<ApprovalDecision> PromptUserAsync(Services.Presentation.ApprovalPrompt prompt, CancellationToken ct)
+    {
+        var card = Services.Presentation.ApprovalCard.Build(prompt, RootDir);
+        return await AskAsync(Flatten(prompt.Message, prompt.Diff), card, ct);
+    }
+
+    protected override Task<ApprovalDecision> PromptUserAsync(string message, Services.CodeActions.DiffInfo? diff, CancellationToken ct) =>
+        AskAsync(Flatten(message, diff), card: null, ct);
+
+    /// <summary>The prompt with its change as prefixed text — what "Open diff" opens, and the fallback dialog shows.</summary>
+    private static string Flatten(string message, Services.CodeActions.DiffInfo? diff)
+    {
+        if (diff is null) return message;
+        var diffText = Services.CodeActions.DiffComputer.ComputeText(diff.OldText, diff.NewText);
+        return diffText is null ? message : message + "\n\n" + diffText;
+    }
+
+    private async Task<ApprovalDecision> AskAsync(string message, Services.Presentation.ApprovalCardModel? card, CancellationToken ct)
     {
         try
         {
-            // No rich diff surface over the wire yet: flatten the structured change to the
-            // prefixed text the VS Code approval card already renders.
-            if (diff is not null)
-            {
-                var diffText = Services.CodeActions.DiffComputer.ComputeText(diff.OldText, diff.NewText);
-                if (diffText is not null) message += "\n\n" + diffText;
-            }
-
             var answer = await _rpc.InvokeWithParameterObjectAsync<int>(
-                "approval/request", new { message }, ct);
+                "approval/request", new { message, card }, ct);
             return answer switch
             {
                 1 => ApprovalDecision.Once,

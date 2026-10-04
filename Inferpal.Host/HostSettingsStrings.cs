@@ -13,7 +13,7 @@ namespace Inferpal.Host;
 internal sealed partial class HostServer
 {
     /// <summary>
-    /// `settings/schema` — the declarative description of the settings form (tabs, sections,
+    /// `settings/schema` — the declarative description of the settings form (pages, sections,
     /// fields, control kinds, label resource names) straight from the Core. The webview renders
     /// whatever this returns, so adding a setting no longer means editing a TypeScript table too.
     /// Labels are resource *names*, resolved by the adapter against `settings/strings`.
@@ -23,11 +23,12 @@ internal sealed partial class HostServer
         SettingsSchema.Tabs.Select(t => new SettingsTabDto(
             t.Key,
             t.Title,
+            t.Description,
             t.Sections.Select(sec => new SettingsSectionDto(
                 sec.Title,
                 sec.Fields.Select(ToFieldDto).ToList(),
-                sec.ToggleGate, sec.ToggleLabel, sec.ToggleHint)).ToList())).ToList(),
-        SettingsSchema.HeaderFields.Select(ToFieldDto).ToList());
+                sec.Description, sec.Gate, sec.Collapsible, sec.Note, sec.Grid, sec.Widget)).ToList(),
+            t.AdvancedToggle)).ToList());
 
     private static SettingsFieldDto ToFieldDto(SettingField f) => new(
         f.Key,
@@ -35,12 +36,18 @@ internal sealed partial class HostServer
         f.Label,
         f.Hint,
         f.Unit,
-        f.Gate,
         f.Button,
         // .Display, not .Text: prose options (the three FIM modes) resolve HERE, at request time,
         // in the language in force - the schema itself is built once.
-        f.Options?.Select(o => new SettingsOptionDto(o.Value, o.Display)).ToList(),
-        DefaultFor(f));
+        f.Options?.Select(o => new SettingsOptionDto(o.Value, o.Display, o.Description is { Length: > 0 } d ? d : null)).ToList(),
+        DefaultFor(f),
+        f.Inverted,
+        f.OpensFold,
+        f.HintNotOllama,
+        f.Editor,
+        f.ZeroIsEmpty,
+        f.EmptyChoice,
+        f.Columns?.ToList());
 
     private static readonly Config.InferpalConfig _factoryDefaults = new();
 
@@ -56,151 +63,95 @@ internal sealed partial class HostServer
     /// </remarks>
     private static string? DefaultFor(SettingField f)
     {
-        if (f.Kind is not (SettingKind.Int or SettingKind.Float)) return null;
+        // Numeric boxes (clearing one restores it) and the fields that open the advanced fold (the
+        // panel compares against it). Booleans travel as "true"/"false".
+        if (f.Kind is not (SettingKind.Int or SettingKind.Float) && !f.OpensFold) return null;
 
         var property = typeof(Config.InferpalConfig).GetProperty(
             f.Key, System.Reflection.BindingFlags.Public
                  | System.Reflection.BindingFlags.Instance
                  | System.Reflection.BindingFlags.IgnoreCase);
 
-        return property?.GetValue(_factoryDefaults) is { } value
-            ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)
-            : null;
+        return property?.GetValue(_factoryDefaults) switch
+        {
+            bool flag    => flag ? "true" : "false",
+            { } value    => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture),
+            null         => null,
+        };
     }
 
+    /// <summary>
+    /// Every name the schema displays, resolved in the language in force, plus the panel's own
+    /// chrome. Read from the schema rather than listed here: a label added to a page is served the
+    /// day it is declared — a second list is the one that forgets it.
+    /// </summary>
     [JsonRpcMethod("settings/strings")]
-    public Dictionary<string, string> SettingsStrings() => new()
+    public Dictionary<string, string> SettingsStrings()
     {
+        var strings = SettingsSchema.ResourceNames.ToDictionary(n => n, Strings.ByName, StringComparer.Ordinal);
+
         // ── Save status ──────────────────────────────────────────────────────
         // ⚠ Served here, and not from the adapter's own strings, so that the sentence naming the
         // ignored fields is THE SAME as the Visual Studio window's: it quotes labels that already
         // come from here. Two translations of one sentence would drift.
         // The panel substitutes {0}=count and {1}=labels.
-        [nameof(Strings.SettingsFieldsIgnored)]   = Strings.SettingsFieldsIgnoredTemplate,
-        [nameof(Strings.SettingsPermissionRulesIgnored)] = Strings.SettingsPermissionRulesIgnoredTemplate,
+        strings[nameof(Strings.SettingsFieldsIgnored)]          = Strings.SettingsFieldsIgnoredTemplate;
+        strings[nameof(Strings.SettingsPermissionRulesIgnored)] = Strings.SettingsPermissionRulesIgnoredTemplate;
 
-        // ── Sections ─────────────────────────────────────────────────────────
-        [nameof(Strings.SectionConnection)]        = Strings.SectionConnection,
-        [nameof(Strings.SectionBehavior)]          = Strings.SectionBehavior,
-        [nameof(Strings.SectionInlineCompletions)] = Strings.SectionInlineCompletions,
-        [nameof(Strings.SectionPersona)]           = Strings.SectionPersona,
-        [nameof(Strings.SectionRag)]               = Strings.SectionRag,
-        [nameof(Strings.SectionContext)]           = Strings.SectionContext,
-        [nameof(Strings.SectionMcp)]               = Strings.SectionMcp,
-        [nameof(Strings.SectionCommandsTools)]     = Strings.SectionCommandsTools,
+        // ── Panel chrome: navigation, footer, buttons ────────────────────────
+        strings[nameof(Strings.SettingsSearchPlaceholder)]  = Strings.SettingsSearchPlaceholder;
+        strings[nameof(Strings.SettingsSearchNoMatch)]      = Strings.SettingsSearchNoMatch;
+        strings[nameof(Strings.SettingsUnsavedChanges)]     = Strings.SettingsUnsavedChangesTemplate;
+        strings[nameof(Strings.SettingsNoUnsavedChanges)]   = Strings.SettingsNoUnsavedChanges;
+        strings[nameof(Strings.SettingsCancel)]             = Strings.SettingsCancel;
+        strings[nameof(Strings.SettingsApprovalRulesCount)] = Strings.SettingsApprovalRulesCountTemplate;
+        strings[nameof(Strings.SettingsEditRules)]          = Strings.SettingsEditRules;
+        strings[nameof(Strings.BtnTest)]                    = Strings.BtnTest;
+        strings[nameof(Strings.BtnSave)]                    = Strings.BtnSave;
+        // "Automatic" names the language it resolves to: the editor's, or English when it is not one of ours.
+        strings[nameof(Strings.LangAuto)] = Strings.LangAuto(SettingsSchema.AutoLanguageName(
+            _editorLocale is { } locale ? System.Globalization.CultureInfo.GetCultureInfo(locale)
+                                        : System.Globalization.CultureInfo.CurrentUICulture));
+        strings[nameof(Strings.SettingsApprovalRulesFrom)] = Strings.ByName(nameof(Strings.SettingsApprovalRulesFrom));
 
-        // ── Interface / connection ───────────────────────────────────────────
-        [nameof(Strings.LabelLanguage)]            = Strings.LabelLanguage,
-        [nameof(Strings.HintLanguage)]             = Strings.HintLanguage,
-        [nameof(Strings.LabelProvider)]            = Strings.LabelProvider,
-        [nameof(Strings.HintProvider)]             = Strings.HintProvider,
-        [nameof(Strings.LabelUrl)]                 = Strings.LabelUrl,
-        [nameof(Strings.HintUrl)]                  = Strings.HintUrl,
-        [nameof(Strings.BtnTest)]                  = Strings.BtnTest,
-        [nameof(Strings.LabelApiKey)]              = Strings.LabelApiKey,
-        [nameof(Strings.HintApiKey)]               = Strings.HintApiKey,
-        [nameof(Strings.LabelChatModel)]           = Strings.LabelChatModel,
-        [nameof(Strings.HintChatModel)]            = Strings.HintChatModel,
-        [nameof(Strings.LabelModelRolesAdvanced)]  = Strings.LabelModelRolesAdvanced,
-        [nameof(Strings.HintModelRolesAdvanced)]   = Strings.HintModelRolesAdvanced,
-        [nameof(Strings.LabelAgentModel)]          = Strings.LabelAgentModel,
-        [nameof(Strings.HintAgentModel)]           = Strings.HintAgentModel,
-        [nameof(Strings.LabelCodeActionsModel)]    = Strings.LabelCodeActionsModel,
-        [nameof(Strings.HintCodeActionsModel)]     = Strings.HintCodeActionsModel,
-        [nameof(Strings.LabelInlineCompletionModel)] = Strings.LabelInlineCompletionModel,
-        [nameof(Strings.HintInlineCompletionModel)]  = Strings.HintInlineCompletionModel,
-        [nameof(Strings.LabelInlineEditModel)]     = Strings.LabelInlineEditModel,
-        [nameof(Strings.HintInlineEditModel)]      = Strings.HintInlineEditModel,
-        [nameof(Strings.LabelUtilityModel)]        = Strings.LabelUtilityModel,
-        [nameof(Strings.HintUtilityModel)]         = Strings.HintUtilityModel,
-        [nameof(Strings.LabelModelRouterAuto)]     = Strings.LabelModelRouterAuto,
-        [nameof(Strings.HintModelRouterAuto)]      = Strings.HintModelRouterAuto,
-        [nameof(Strings.LabelRagEmbeddingModel)]   = Strings.LabelRagEmbeddingModel,
-        [nameof(Strings.HintRagEmbeddingModel)]    = Strings.HintRagEmbeddingModel,
+        // ── Structured editors of the list settings (cards, table, lists) ────
+        // Templates ({0}) are served raw: the panel fills them.
+        foreach (var name in EditorStrings)
+            strings[name] = Strings.ByName(name);
+        return strings;
+    }
 
-        // ── Behavior ─────────────────────────────────────────────────────────
-        [nameof(Strings.LabelAdvancedBehavior)]    = Strings.LabelAdvancedBehavior,
-        [nameof(Strings.LabelCommandTimeout)]      = Strings.LabelCommandTimeout,
-        [nameof(Strings.HintCommandTimeout)]       = Strings.HintCommandTimeout,
-        [nameof(Strings.LabelTaskTimeoutQuick)]    = Strings.LabelTaskTimeoutQuick,
-        [nameof(Strings.HintTaskTimeoutQuick)]     = Strings.HintTaskTimeoutQuick,
-        [nameof(Strings.LabelTaskTimeoutNormal)]   = Strings.LabelTaskTimeoutNormal,
-        [nameof(Strings.HintTaskTimeoutNormal)]    = Strings.HintTaskTimeoutNormal,
-        [nameof(Strings.LabelTaskTimeoutDeep)]     = Strings.LabelTaskTimeoutDeep,
-        [nameof(Strings.HintTaskTimeoutDeep)]      = Strings.HintTaskTimeoutDeep,
-        [nameof(Strings.LabelAgentMaxIterations)]  = Strings.LabelAgentMaxIterations,
-        [nameof(Strings.HintAgentMaxIterations)]   = Strings.HintAgentMaxIterations,
-        [nameof(Strings.LabelModelAutoUnload)]     = Strings.LabelModelAutoUnload,
-        [nameof(Strings.HintModelAutoUnload)]      = Strings.HintModelAutoUnload,
-        [nameof(Strings.LabelModelIdleTimeout)]    = Strings.LabelModelIdleTimeout,
-        [nameof(Strings.HintModelIdleTimeout)]     = Strings.HintModelIdleTimeout,
-        [nameof(Strings.LabelToolBubblesExpanded)] = Strings.LabelToolBubblesExpanded,
-        [nameof(Strings.HintToolBubblesExpanded)]  = Strings.HintToolBubblesExpanded,
-        [nameof(Strings.LabelSecurityAlertsDisabled)] = Strings.LabelSecurityAlertsDisabled,
-        [nameof(Strings.HintSecurityAlertsDisabled)]  = Strings.HintSecurityAlertsDisabled,
-        [nameof(Strings.LabelPermissionRules)]     = Strings.LabelPermissionRules,
-        [nameof(Strings.HintPermissionRules)]      = Strings.HintPermissionRules,
-        [nameof(Strings.LabelSmartFixEnabled)]     = Strings.LabelSmartFixEnabled,
-        [nameof(Strings.HintSmartFixEnabled)]      = Strings.HintSmartFixEnabled,
-        [nameof(Strings.LabelAgentModeEnabled)]    = Strings.LabelAgentModeEnabled,
-        [nameof(Strings.HintAgentModeEnabled)]     = Strings.HintAgentModeEnabled,
-        [nameof(Strings.LabelInlineCompletionEnabled)] = Strings.LabelInlineCompletionEnabled,
-        [nameof(Strings.HintInlineCompletionEnabled)]  = Strings.HintInlineCompletionEnabled,
-        [nameof(Strings.LabelInlineCompletionMode)]    = Strings.LabelInlineCompletionMode,
-        [nameof(Strings.HintInlineCompletionMode)]     = Strings.HintInlineCompletionMode,
-        [nameof(Strings.LabelPersonaAutoSwitch)]   = Strings.LabelPersonaAutoSwitch,
-        [nameof(Strings.HintPersonaAutoSwitch)]    = Strings.HintPersonaAutoSwitch,
-        [nameof(Strings.LabelCustomSystemPrompt)]  = Strings.LabelCustomSystemPrompt,
-        [nameof(Strings.HintCustomSystemPrompt)]   = Strings.HintCustomSystemPrompt,
-
-        // ── Context (RAG + memory) ───────────────────────────────────────────
-        [nameof(Strings.LabelRagEnabled)]          = Strings.LabelRagEnabled,
-        [nameof(Strings.HintRagEnabled)]           = Strings.HintRagEnabled,
-        [nameof(Strings.LabelRagAutoContext)]      = Strings.LabelRagAutoContext,
-        [nameof(Strings.HintRagAutoContext)]       = Strings.HintRagAutoContext,
-        [nameof(Strings.LabelRagTopK)]             = Strings.LabelRagTopK,
-        [nameof(Strings.HintRagTopK)]              = Strings.HintRagTopK,
-        [nameof(Strings.LabelRagSimilarityThreshold)] = Strings.LabelRagSimilarityThreshold,
-        [nameof(Strings.HintRagSimilarityThreshold)]  = Strings.HintRagSimilarityThreshold,
-        [nameof(Strings.LabelLspEnabled)]          = Strings.LabelLspEnabled,
-        [nameof(Strings.HintLspEnabled)]           = Strings.HintLspEnabled,
-        [nameof(Strings.LabelVramBudget)]          = Strings.LabelVramBudget,
-        [nameof(Strings.HintVramBudget)]           = Strings.HintVramBudget,
-        [nameof(Strings.LabelContextWindowSize)]   = Strings.LabelContextWindowSize,
-        [nameof(Strings.HintContextWindowSize)]    = Strings.HintContextWindowSize,
-        [nameof(Strings.LabelContextWindowKeepTurns)] = Strings.LabelContextWindowKeepTurns,
-        [nameof(Strings.HintContextWindowKeepTurns)]  = Strings.HintContextWindowKeepTurns,
-        [nameof(Strings.LabelCompactionEnabled)]   = Strings.LabelCompactionEnabled,
-        [nameof(Strings.HintCompactionEnabled)]    = Strings.HintCompactionEnabled,
-        [nameof(Strings.LabelCompactionTimeout)]   = Strings.LabelCompactionTimeout,
-        [nameof(Strings.HintCompactionTimeout)]    = Strings.HintCompactionTimeout,
-        [nameof(Strings.LabelKvCacheAnchor)]       = Strings.LabelKvCacheAnchor,
-        [nameof(Strings.HintKvCacheAnchor)]        = Strings.HintKvCacheAnchor,
-        [nameof(Strings.LabelOodaTurnThreshold)]   = Strings.LabelOodaTurnThreshold,
-        [nameof(Strings.HintOodaTurnThreshold)]    = Strings.HintOodaTurnThreshold,
-        [nameof(Strings.LabelPinnedContextFiles)]  = Strings.LabelPinnedContextFiles,
-        [nameof(Strings.HintPinnedContextFiles)]   = Strings.HintPinnedContextFiles,
-
-        // ── Tools ────────────────────────────────────────────────────────────
-        [nameof(Strings.LabelMcpEnabled)]          = Strings.LabelMcpEnabled,
-        [nameof(Strings.HintMcpEnabled)]           = Strings.HintMcpEnabled,
-        [nameof(Strings.LabelMcpServers)]          = Strings.LabelMcpServers,
-        [nameof(Strings.HintMcpServers)]           = Strings.HintMcpServers,
-        [nameof(Strings.LabelPromptTemplates)]     = Strings.LabelPromptTemplates,
-        [nameof(Strings.HintPromptTemplates)]      = Strings.HintPromptTemplates,
-        [nameof(Strings.LabelCustomTools)]         = Strings.LabelCustomTools,
-        [nameof(Strings.HintCustomTools)]          = Strings.HintCustomTools,
-
-        // ── Units of the numeric fields (resource names from the schema) ────────
-        [nameof(Strings.UnitSeconds)]              = Strings.UnitSeconds,
-        [nameof(Strings.UnitMinutes)]              = Strings.UnitMinutes,
-        [nameof(Strings.UnitHours)]                = Strings.UnitHours,
-        [nameof(Strings.UnitGigabytes)]            = Strings.UnitGigabytes,
-        [nameof(Strings.UnitTokens)]               = Strings.UnitTokens,
-        [nameof(Strings.UnitTurns)]                = Strings.UnitTurns,
-        [nameof(Strings.UnitMessages)]             = Strings.UnitMessages,
-        [nameof(Strings.UnitChunks)]               = Strings.UnitChunks,
-        [nameof(Strings.UnitIterations)]           = Strings.UnitIterations,
-        [nameof(Strings.UnitRangeZeroToOne)]       = Strings.UnitRangeZeroToOne,
-    };
+    /// <summary>The resources the structured editors of <c>webview/settingsEditors.ts</c> display.</summary>
+    /// <remarks>A name the panel asks for and this list does not serve shows as a raw key — held by
+    /// <c>SettingsStrings_ServeEveryNameThePanelAsksFor</c>, which reads the panel's sources.</remarks>
+    private static readonly string[] EditorStrings =
+    [
+        "SettingsEditAsJson", "SettingsEditAsText", "SettingsEditAsList",
+        "HintRowEdit", "HintRowDelete", "RowEditTitle", "ListLineNotRead",
+        // MCP server cards and their form
+        "McpCardRetry", "McpCardSignInButton", "McpCardOff", "McpCardNotStarted", "McpEmptyTitle",
+        "McpAddServer", "McpAddTitle", "McpEditTitle", "LabelMcpName", "LabelMcpCommand", "LabelMcpArgs",
+        "LabelMcpEnv", "LabelMcpHttpServer", "LabelMcpUrl", "LabelMcpHeaders", "BtnMcpSaveServer",
+        "BtnMcpCancelServer", "McpValidationNameCommand", "McpValidationNameUrl", "McpValidationDuplicate",
+        "McpJsonNotEditableAsList", "HintMcpEditServer", "HintMcpDeleteServer",
+        // Approval rules table
+        "RulesColEffect", "RulesColTool", "RulesColPattern", "RulesColFrom", "RuleAllow", "RuleDeny",
+        "RulesAddRule", "RulesTeamUnusable", "RulesEmpty",
+        "RulesPatternPlaceholder", "RulesNewInvalid",
+        // Slash commands and agent tools
+        "SlashAddCmd", "SlashAddTitle", "LabelSlashName", "LabelSlashText", "SlashEmptyTitle",
+        "SlashValidationNameText", "SlashValidationDuplicate",
+        "ToolAddTool", "ToolAddTitle", "LabelToolName", "LabelToolCommand", "ToolEmptyTitle",
+        "ToolValidationNameCommand", "ToolValidationDuplicate",
+        // Pinned files
+        "PinnedAddFile", "PinnedAddTitle", "LabelPinnedPath", "PinnedBrowse", "PinnedValidationPath",
+        "PinnedValidationDuplicate", "PinnedEmptyTitle", "PinnedOverCap", "PinnedFilesCount",
+        // Live blocks of the pages (the facts come localized from their own RPCs; these are the panel's words)
+        "SettingsModelUsed", "SettingsChangeInServer", "SettingsEditFile", "SettingsOpenFile",
+        "IndexCardShowThem", "IndexCardHideThem", "IndexExclusionsTitle", "IndexExclusionsFrom", "IndexExclusionsHowTo",
+        "DocsReindex", "DocsAddSite", "DocsAddUrlLabel", "DocsAddButton", "DocsNoSitesYet",
+        "ContextUsageOpenXray", "ContextUsageChangeWindow", "ProjectFilesTitle", "ProjectFileNotYet",
+        // The theme cards of the Appearance page
+        "ThemeLight", "ThemeDark", "ThemeHighContrast", "ThemeInUse",
+    ];
 }

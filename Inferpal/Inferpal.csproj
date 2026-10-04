@@ -98,11 +98,17 @@
          API of these projects is called from here - they are loaded by devenv and by the sidecar
          itself, not by the out-of-process host. What matters is ordering: their outputs are
          embedded in the VSIX by the <Content> items below, so they must be built first.
-         SkipGetTargetFrameworkProperties: without it MSBuild negotiates the TFM and refuses
-         net8.0-windows -> net472. -->
+         Neither reference negotiates its TFM: MSBuild would refuse net8.0-windows -> net472.
+         The in-process project is multi-targeted, so its reference also NAMES the build it
+         wants (the net472 one, the one the VSIX embeds). Skipping without naming points at
+         the outer, cross-targeting project, which has no GetTargetPath: Visual Studio asks
+         for exactly that target when it builds a project (MSB4057), so this project fails to
+         build in the IDE and every project reference of Inferpal.Tests goes unresolved there
+         (thousands of CS0234 in the editor) - while every command-line build passes, since
+         it asks for Build instead. Locked by VsixProjectReferenceTests. -->
     <ProjectReference Include="..\Inferpal.InProc\Inferpal.InProc.csproj"
                       ReferenceOutputAssembly="false"
-                      SkipGetTargetFrameworkProperties="true"
+                      SetTargetFramework="TargetFramework=net472"
                       Private="false" />
     <ProjectReference Include="..\Inferpal.Fim\Inferpal.Fim.csproj"
                       ReferenceOutputAssembly="false"

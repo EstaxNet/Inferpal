@@ -191,25 +191,6 @@ public class ChatTurnPolicyTests
         finally { Strings.ApplyLanguage(previous); }
     }
 
-    // ── ModifiedFilePaths ──────────────────────────────────────────────────────
-
-    [Fact]
-    public void ModifiedFilePaths_FiltersWriteToolsWithDiff_AndDeduplicates()
-    {
-        var diffA = new DiffInfo("old", "new", @"C:\a.cs");
-        var diffB = new DiffInfo("old", "new", @"C:\b.cs");
-        var paths = ChatTurnPolicy.ModifiedFilePaths(
-        [
-            new ToolExecution("write_file", "a", "ok", Diff: diffA),
-            new ToolExecution("apply_diff", "b", "ok", Diff: diffB),
-            new ToolExecution("write_file", "a", "ok", Diff: diffA),   // duplicate path
-            new ToolExecution("read_file",  "c", "ok"),                // not a write tool
-            new ToolExecution("write_file", "d", "ok"),                // write without diff
-        ]);
-
-        Assert.Equal([@"C:\a.cs", @"C:\b.cs"], paths);
-    }
-
     // ── ChoosePersistedAnswer ──────────────────────────────────────────────────
 
     [Fact]

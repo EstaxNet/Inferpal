@@ -276,7 +276,7 @@ internal partial class InferpalToolWindowData
             Attachments.Remove(item!);
             HasAttachments = Attachments.Count > 0;
         }), sourcePath: sourcePath, onPin: onPin);
-        var chip         = ThemePalette.For(_isDark);
+        var chip         = ThemePalette.For(_isDark, _isHighContrast);
         item.Background  = chip.AttachChipBg;
         item.Foreground  = chip.AttachChipText;
         item.BorderColor = chip.AttachChipBorder;
@@ -348,7 +348,7 @@ internal partial class InferpalToolWindowData
             HasPinnedFiles = PinnedFiles.Count > 0;
             SavePinnedFiles();
         }));
-        var chip         = ThemePalette.For(_isDark);
+        var chip         = ThemePalette.For(_isDark, _isHighContrast);
         item.Background  = chip.PinChipBg;
         item.Foreground  = chip.PinChipText;
         item.BorderColor = chip.PinChipBorder;

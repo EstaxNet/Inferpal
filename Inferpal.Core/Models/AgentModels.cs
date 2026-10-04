@@ -111,22 +111,31 @@ public class AgentPlan
     /// <summary>The plan in the JSON shape the model is asked to write — what <see cref="TryParse"/> reads back.</summary>
     public string ToJson() => JsonSerializer.Serialize(this, JsonOut);
 
-    /// <summary>Formats the plan as a Markdown block for display in the chat UI.</summary>
+    /// <summary>What opens the goal line of <see cref="ToMarkdown"/>.</summary>
+    internal const string GoalPrefix = "**🗂 Plan:**";
+
+    /// <summary>The icon each step state is written with — the table <see cref="Services.Presentation.PlanCard"/> reads back.</summary>
+    internal static readonly IReadOnlyList<(string Icon, AgentStepStatus Status)> StepIcons =
+    [
+        ("🔄", AgentStepStatus.Active),
+        ("✅", AgentStepStatus.Done),
+        ("❌", AgentStepStatus.Failed),
+        ("⏭", AgentStepStatus.Skipped),
+        ("⏳", AgentStepStatus.Pending),
+    ];
+
+    /// <summary>
+    /// The plan as Markdown: what a session saves, what an export writes, and what the plan card is drawn from
+    /// (<see cref="Services.Presentation.PlanCard.Read"/>).
+    /// </summary>
     public string ToMarkdown()
     {
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"**🗂 Plan:** {Goal}");
+        sb.AppendLine($"{GoalPrefix} {Goal}");
         sb.AppendLine();
         foreach (var step in Steps)
         {
-            var icon = step.Status switch
-            {
-                AgentStepStatus.Active  => "🔄",
-                AgentStepStatus.Done    => "✅",
-                AgentStepStatus.Failed  => "❌",
-                AgentStepStatus.Skipped => "⏭",
-                _                      => "⏳",
-            };
+            var icon = StepIcons.FirstOrDefault(i => i.Status == step.Status).Icon ?? "⏳";
             sb.AppendLine($"{icon} {step.Index}. {step.Description}");
         }
         return sb.ToString().TrimEnd();

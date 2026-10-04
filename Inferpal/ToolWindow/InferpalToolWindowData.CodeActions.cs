@@ -97,8 +97,10 @@ internal partial class InferpalToolWindowData
             // The field moves inside the marshalled block: it was written on the watcher thread
             // while "Fix with AI" read it from the command path.
             _buildFailedErrorLines = errorLines;
+            _buildErrorCount       = errorCount;
             BuildFailedFirstError  = firstError;
             HasBuildFailedBanner   = true;
+            RefreshWelcome();
         });
     }
 

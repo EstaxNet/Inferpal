@@ -11,16 +11,16 @@ namespace Inferpal.Tests;
 public class ThemePaletteTests
 {
     [Theory]
-    [InlineData("user", "#1A3A5C")]
-    [InlineData("tool", "#1E1E1E")]
+    [InlineData("user", "#2F2A4A")]
+    [InlineData("tool", "Transparent")]
     [InlineData("assistant", "Transparent")]
     [InlineData(null, "Transparent")]
     public void BubbleBackground_Dark_MapsByRole(string? role, string expected) =>
         Assert.Equal(expected, ThemePalette.For(isDark: true).BubbleBackground(role));
 
     [Theory]
-    [InlineData("user", "#D6EAF8")]
-    [InlineData("tool", "#EBEBEB")]
+    [InlineData("user", "#E8E3FF")]
+    [InlineData("tool", "Transparent")]
     [InlineData("system", "Transparent")]
     public void BubbleBackground_Light_MapsByRole(string role, string expected) =>
         Assert.Equal(expected, ThemePalette.For(isDark: false).BubbleBackground(role));
@@ -31,15 +31,15 @@ public class ThemePaletteTests
         var dark  = ThemePalette.For(isDark: true);
         var light = ThemePalette.For(isDark: false);
 
-        // Attachment chip (blue) and pinned-file chip (gold), consolidated from inline VM ternaries.
-        Assert.Equal("#2D3048", dark.AttachChipBg);
-        Assert.Equal("#D8E4F8", light.AttachChipBg);
+        // Attachment chip (the redesign's chip token) and pinned-file chip (gold), consolidated from inline VM ternaries.
+        Assert.Equal("#2E2B3D", dark.AttachChipBg);
+        Assert.Equal("#ECEAF5", light.AttachChipBg);
         Assert.Equal("#3A2E1A", dark.PinChipBg);
         Assert.Equal("#FBF3DC", light.PinChipBg);
 
         // Suggestion-popup secondary text shared by the mention + slash autocompletes (was duplicated).
-        Assert.Equal("#808080", dark.SuggestionSubtleText);
-        Assert.Equal("#606060", light.SuggestionSubtleText);
+        Assert.Equal("#A3A3AD", dark.SuggestionSubtleText);
+        Assert.Equal("#5C5C66", light.SuggestionSubtleText);
     }
 
     [Fact]
@@ -50,18 +50,18 @@ public class ThemePaletteTests
 
         // Classic diff colouring (green background = addition, red background = deletion),
         // moved here from hardcoded dark-only hex in DiffComputer so both themes render it.
-        Assert.Equal("#1C4428", dark.DiffAddBg);
-        Assert.Equal("#542426", dark.DiffRemoveBg);
-        Assert.Equal("#CFEAD4", light.DiffAddBg);
-        Assert.Equal("#F5D0D4", light.DiffRemoveBg);
+        Assert.Equal("#1C2E22", dark.DiffAddBg);
+        Assert.Equal("#2A1E1F", dark.DiffRemoveBg);
+        Assert.Equal("#E3F4E8", light.DiffAddBg);
+        Assert.Equal("#FBE9E9", light.DiffRemoveBg);
     }
 
     [Fact]
     public void For_ReturnsDistinctPalettes()
     {
         Assert.NotEqual(ThemePalette.For(isDark: true), ThemePalette.For(isDark: false));
-        Assert.Equal("#1E1E1E", ThemePalette.For(isDark: true).WindowBg);
-        Assert.Equal("#F5F5F5", ThemePalette.For(isDark: false).WindowBg);
+        Assert.Equal("#1B1B1F", ThemePalette.For(isDark: true).WindowBg);
+        Assert.Equal("#F5F5F7", ThemePalette.For(isDark: false).WindowBg);
     }
 
     // Every colour string on the record must differ between dark and light — catches a forgotten
@@ -72,9 +72,10 @@ public class ThemePaletteTests
         var dark  = ThemePalette.For(isDark: true);
         var light = ThemePalette.For(isDark: false);
 
+        // OnAccent is the one colour both themes share on purpose: white reads on either accent.
         var stringProps = typeof(ThemePalette)
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.PropertyType == typeof(string));
+            .Where(p => p.PropertyType == typeof(string) && p.Name != nameof(ThemePalette.OnAccent));
 
         foreach (var prop in stringProps)
         {

@@ -6,7 +6,7 @@ server** and expose its tools to the agent — the same servers used by Claude D
 
 ## Enabling MCP
 
-1. **Settings → MCP** — enable MCP servers.
+1. **Settings → Tools and MCP servers** — tick *Use MCP servers*.
 2. Paste a server map in the Claude Desktop / Continue format:
 
 ```json
@@ -28,10 +28,13 @@ server** and expose its tools to the agent — the same servers used by Claude D
    scripts, Inferpal runs them through the `node.exe` installed beside them — never through `cmd.exe`,
    so no `"cmd", "/c"` wrapper is needed.
    Header values support `${ENV_VAR}` expansion (resolved at connection time), so tokens stay out of
-   the stored config. The list editor handles both: tick **“HTTP server”** to switch a row between
-   the command/args/env fields and the url/headers fields (or edit the raw map in the **JSON** view).
+   the stored config. The list editor handles both: tick **“HTTP server”** to switch a server between
+   the command/arguments/environment fields (one argument per line) and the url/headers fields, or
+   edit the raw map with **Edit as JSON**.
 
-3. Save. Each server is spawned and its status is shown (e.g. `✓ filesystem — 11 tools`).
+3. Save. Each server is started and shown as a card: *Connected · 11 tools*, *Needs sign-in*, *Off*,
+   or *Did not start* — then with the server's own error message under it (what it wrote before
+   exiting, or why it was refused) and a **Retry** button.
 
 ## How it works
 
@@ -92,11 +95,11 @@ authorization spec (2025-06-18): discovery of the authorization server (RFC 9728
 **PKCE**, the **`resource`** indicator (RFC 8707), and **dynamic client registration** (RFC 7591)
 when the server supports it.
 
-- The server's row shows **🔒 authorization required** with an **Authorize…** button. Clicking it
+- The server's card shows **Needs sign-in** with a **Sign in** button, in both editors. Clicking it
   opens your browser to the provider's consent page and captures the redirect on a temporary loopback
   listener (`http://127.0.0.1:<port>/callback`). On success the tokens are stored and the server
   reconnects.
-- Tokens are stored **encrypted with Windows DPAPI** (per-user) in `%AppData%/Inferpal/mcp-oauth.dat`
+- Tokens are stored **encrypted** (Windows DPAPI per user, or the editor's secret store elsewhere) in `%AppData%/Inferpal/mcp-oauth.dat`
   — never in the config JSON. Access tokens are refreshed automatically; you only re-authorize when
   the refresh token is rejected.
 - If the authorization server does **not** support dynamic registration, set a pre-registered client

@@ -41,9 +41,9 @@ internal partial class InferpalToolWindowData
         // this prevents a race where the user clicks Send during the 2-second check delay.
         await RunOnVMContextAsync(() =>
         {
-            ConnectionStatusText  = "● …";
-            ConnectionStatusColor = "#A0A0A0";
             ShowRetryButton       = false;
+            _connected            = null;   // the header says "checking" until the next heartbeat answers
+            RefreshModelButton();
         });
         _ = StartHeartbeatAsync(token);
     }
@@ -121,10 +121,11 @@ internal partial class InferpalToolWindowData
 
                 await RunOnVMContextAsync(() =>
                 {
-                    ConnectionStatusText  = status.StatusText;
-                    ConnectionStatusColor = status.StatusColor;
                     SendButtonColor       = status.SendButtonColor;
                     ShowRetryButton       = status.ShowRetry;
+                    _connected            = ok;
+                    _refusal              = ok ? null : _client.ConnectionRefusal;
+                    RefreshModelButton();
 
                     var edgeMessage = status.Transition switch
                     {
@@ -304,6 +305,7 @@ internal partial class InferpalToolWindowData
             ApplyItemTheme(item);
             Messages.Add(item);
         }
+        GroupRestoredSteps();
 
         Messages.Add(_anchor0);
         Messages.Add(_anchor1);
@@ -329,6 +331,7 @@ internal partial class InferpalToolWindowData
         await RunOnVMContextAsync(() =>
         {
             IsPlanMode = !IsPlanMode;   // marshalled like the history it drives
+            ChatMode   = CurrentMode();
             RefreshSystemPrompt();
         });
         // Localised since §17: these two lines were hard-coded English while every other command
@@ -346,7 +349,7 @@ internal partial class InferpalToolWindowData
         await RunOnVMContextAsync(() =>
         {
             IsAgentMode = !IsAgentMode;   // marshalled: commands run off the VM context (revue §2.5)
-            AgentModeLabel = IsAgentMode ? Strings.LabelModeAgent : Strings.LabelModeChat;
+            ChatMode       = CurrentMode();
         });
         _config.AgentModeEnabled = IsAgentMode;
         try
@@ -373,7 +376,7 @@ internal partial class InferpalToolWindowData
     private void OnAgentModeConfigChanged(bool enabled) => Post(() =>
     {
         IsAgentMode    = enabled;
-        AgentModeLabel = enabled ? Strings.LabelModeAgent : Strings.LabelModeChat;
+        ChatMode       = CurrentMode();
     });
 
     /// <summary>The Settings window changed the UI language → re-localize every bound label live

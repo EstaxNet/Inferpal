@@ -102,7 +102,7 @@ Two fully-local, repo-versioned governance features:
 - **AI Checks** (`.inferpal/checks/*.md`) — markdown review criteria. `/check [name]` has the model review your current **git diff** against them locally (reports `file:line` + severity), without anything leaving your machine. Manage with `/checks` and `/checks init`.
 
 ### ✏️ Inline ghost-text completions
-Fill-in-the-Middle suggestions appear as you type in any code file, through VS Code's inline-completion API. Tab to accept, Esc to dismiss, cancellable mid-request. Three presets (Fast 128tok/300ms · Default 256tok/600ms · High Accuracy 512tok/1000ms) and an optional dedicated FIM model.
+Fill-in-the-Middle suggestions appear as you type in any code file, through VS Code's inline-completion API. Tab to accept, Esc to dismiss, cancellable mid-request. Three speeds (Fast 128tok/300ms · Balanced 256tok/600ms · Accurate 512tok/1000ms) and an optional dedicated FIM model.
 
 ### 🎯 Code actions (editor context menu)
 Right-click any selection → **Fix**, **Refactor** or **Add Docstring**, each powered by a dedicated configurable model without tool calling. The rewrite lands **directly in the editor**, re-indented to match, and is undoable with a single Ctrl+Z.
@@ -151,7 +151,7 @@ The top bar shows whether the model server answers — with a retry button when 
 `/clear` `/model` `/tools` `/export` `/restore` `/undo-run` `/replay` `/read` `/ls` `/grep` `/run` `/fetch` `/search-web` `/search-code` `/git` `/diff` `/context` `/xray` `/build` `/tdd` `/solution` `/map` `/index` `/commit` `/commit-exec` `/memory` `/note` `/notes` `/history` `/phistory` `/branch` `/models` `/hardware` `/bench` `/arena` `/snippets` `/template` `/prompts` `/docs` `/check` `/rules` `/checks` `/onboard` `/plan` `/task` `/debug` `/agent-step` `/resume` `/diagnostics` `/help`. Type `/` for the autocomplete popup.
 
 ### ⚙️ Settings
-Language · Provider (Ollama / LM Studio / OpenAI-compatible) · Server URL · API key · Chat model · Code Actions model · FIM model · Embedding model · Command timeout · Tool bubbles · Security alerts · Permission rules · Smart Fix · Ghost-text enable/preset · Semantic indexing · Auto-context · Top-K · Pinned context files · Context window · Keep turns · Compaction · OODA threshold · KV-cache anchor · Custom system prompt · Custom agent tools · Dynamic timeouts · VRAM keep-alive · MCP servers (enable + JSON config)
+Seven pages, the same in Visual Studio and VS Code, with a search box and a short explanation under every setting: **Server and models** (server address and Test, chat, autocomplete and code search models, context window — per-task models, sampling, GPU and connection under *Show advanced settings*) · **Agent and approvals** (planning, build check after each edit, steps per request, approvals, custom instructions, time limits) · **Context and memory** (long conversations, pinned files) · **Code search** (background index, relevant code added to each question, language servers) · **Autocomplete** (ghost text and its speed, change preview) · **Tools and MCP servers** (MCP servers, approval rules, your slash commands and agent tools) · **Language and appearance**
 
 **Settings and sessions are shared with the Visual Studio extension** — same configuration file, same saved conversations. Start a conversation in one editor and finish it in the other.
 

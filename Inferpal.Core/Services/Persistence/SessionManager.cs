@@ -69,13 +69,21 @@ internal static class SessionManager
     // ── Snapshots & restore ───────────────────────────────────────────────────
 
     /// <summary>
-    /// Maps the chat list to persistable messages: drops UI anchors, nulls out empty
-    /// tool names/timestamps so they stay out of the JSON.
+    /// The roles a chat list draws that belong to the screen, never to the conversation: the scroll anchors, the live
+    /// status, a turn's header line ("model · 21 s"), its run line, its result bar and its approval cards. Each is
+    /// rebuilt from the saved turns or has no meaning once the turn has ended.
+    /// </summary>
+    public static readonly IReadOnlySet<string> ScreenOnlyRoles =
+        new HashSet<string>(StringComparer.Ordinal) { "anchor", "status", "turn", "run", "result", "approval" };
+
+    /// <summary>
+    /// Maps the chat list to persistable messages: drops what only the screen holds (<see cref="ScreenOnlyRoles"/>),
+    /// nulls out empty tool names/timestamps so they stay out of the JSON.
     /// </summary>
     public static List<SavedMessage> BuildSnapshot(
         IEnumerable<(string Role, string Content, string ToolName, string Timestamp)> messages) =>
         messages
-            .Where(m => m.Role != "anchor")
+            .Where(m => !ScreenOnlyRoles.Contains(m.Role))
             .Select(m => new SavedMessage(
                 m.Role, m.Content,
                 string.IsNullOrEmpty(m.ToolName)  ? null : m.ToolName,

@@ -33,6 +33,7 @@ internal partial class InferpalToolWindowData
     private void OnActiveFileChanged(object? sender, string filePath)
     {
         _activeFilePath = filePath;
+        Post(RefreshWelcome);   // the welcome screen offers this file's actions
 
         // Rebuild the system prompt when either persona auto-switching is on (existing behaviour)
         // or glob-scoped project rules exist — both depend on the active file. If neither applies,
