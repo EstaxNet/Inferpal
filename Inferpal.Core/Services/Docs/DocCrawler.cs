@@ -107,6 +107,14 @@ internal sealed class DocCrawler
     /// </remarks>
     public IReadOnlyDictionary<int, int> Refusals => _refusals;
 
+    /// <summary>Pages that did not answer within the client's budget during the last crawl.</summary>
+    /// <remarks>⚠ An expiry is not a cancellation: <c>HttpClient</c> reports its timeout as an
+    /// <see cref="OperationCanceledException"/>, and rethrown as one it ended the WHOLE crawl — every page already
+    /// fetched thrown away — under "indexing cancelled", when nobody had cancelled anything.</remarks>
+    public int TimedOut => _timedOut;
+
+    private int _timedOut;
+
     internal static bool IsRefusal(int status) => status is 401 or 403 or 429 || status >= 500;
 
     /// <summary>
@@ -162,6 +170,7 @@ internal sealed class DocCrawler
     {
         var pages = new List<Page>();
         _refusals.Clear();
+        _timedOut = 0;
 
         if (!Uri.TryCreate(startUrl, UriKind.Absolute, out var start) ||
             FetchUrlTool.IsPrivateOrLoopback(startUrl))
@@ -184,7 +193,8 @@ internal sealed class DocCrawler
                 fetched = await FetchPageAsync(url, ct);
                 if (fetched is null) continue;
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (OperationCanceledException) { _timedOut++; continue; }   // the page's budget ran out: skipped, counted
             catch (Exception ex) { Diagnostics.Swallow($"DocCrawler.Fetch({url})", ex); continue; }
 
             var (html, pageUrl) = fetched.Value;

@@ -236,7 +236,7 @@ public class InProcContractTests
         Assert.Matches(
             new System.Text.RegularExpressions.Regex(
                 @"await TaskScheduler\.Default\.SwitchTo\(\);\s*(?:\r?\n\s*)*"
-                + @"Services\.Signals\.DebugCommandSignal\.WriteResponse\(response\);"),
+                + @"(?:if \(response is not null\) )?Services\.Signals\.DebugCommandSignal\.WriteResponse\(response\);"),
             source);
     }
 

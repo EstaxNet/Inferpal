@@ -167,6 +167,7 @@ internal partial class InferpalSettingsData
     {
         _live        = live;
         _docsActions = live is null ? null : new SettingsDocsActions(_config, live.Docs);
+        InitModelBlocks();
 
         RebuildIndexCommand   = new AsyncCommand((_, ct) => RebuildIndexAsync(ct));
         ToggleOversizeCommand = new AsyncCommand((_, _) => RunOnVMContextAsync(() =>
@@ -193,6 +194,7 @@ internal partial class InferpalSettingsData
     /// <summary>The words of the blocks, from <see cref="ApplyLabels"/>.</summary>
     private void ApplyWidgetLabels()
     {
+        ApplyModelBlockLabels();
         LabelSectionAsYouType  = Strings.SettingsSectionAsYouType;
         LabelSectionDocs       = Strings.SettingsSectionDocs;
         DescSectionDocs        = Strings.SettingsSectionDocsDesc;
@@ -268,6 +270,7 @@ internal partial class InferpalSettingsData
         _livePoll = null;
         switch (page)
         {
+            case "server":  _ = RefreshLoadedModelsAsync(CancellationToken.None); break;
             case "search":  _ = RefreshSearchPageAsync(); break;
             case "context": _ = RefreshContextPageAsync(); break;
         }

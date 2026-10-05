@@ -150,12 +150,22 @@ internal sealed class DocsIndexService
     /// otherwise <c>@Docs</c> answers "not in the documentation" about half a site the user
     /// believes is indexed in full.
     /// </remarks>
+    /// <param name="unresolved">The start address names a host that does not resolve: a typo or a name this machine's
+    /// DNS does not know — refused by the same guard as a private address, and not one.</param>
+    /// <param name="timedOut">Pages that did not answer within the crawler's budget.</param>
     internal static string DescribeCrawlOutcome(
-        string startUrl, int pageCount, bool refused, IReadOnlyDictionary<int, int>? siteRefusals = null)
+        string startUrl, int pageCount, bool refused, IReadOnlyDictionary<int, int>? siteRefusals = null,
+        bool unresolved = false, int timedOut = 0)
     {
+        if (unresolved)
+            return $"Docs: the host of {startUrl} could not be resolved — check the address, or this machine's network "
+                 + "and DNS. Nothing was indexed.";
         if (refused)
             return $"Docs: {startUrl} is a private or loopback address — refused on purpose "
                  + "(the same guard that protects fetch_url). Nothing was indexed.";
+        if (pageCount == 0 && timedOut > 0)
+            return $"Docs: {startUrl} did not answer in time ({timedOut} page(s) waited out) — the site may be slow or "
+                 + "down; nothing was indexed. Try /docs reindex later.";
         // ⚠ The same trap from the other side: OUR refusal was named, the SITE's read as an empty
         // site — and a site behind bot protection is full in the user's browser.
         if (pageCount == 0 && siteRefusals is { Count: > 0 })
@@ -175,6 +185,11 @@ internal sealed class DocsIndexService
     /// A site that throttles halfway leaves an index that answers "not in the documentation" about
     /// the pages it withheld, under a ✅ that reads as the whole site.
     /// </remarks>
+    /// <summary>The pages of a crawl that DID index something and that did not answer in time — or nothing.</summary>
+    internal static string TimeoutNote(int timedOut, string siteId) =>
+        timedOut == 0 ? string.Empty
+            : $" (⚠ {timedOut} page(s) did not answer in time: the index is incomplete; /docs reindex {siteId} later)";
+
     internal static string RefusalNote(IReadOnlyDictionary<int, int> siteRefusals, string siteId)
     {
         if (siteRefusals.Count == 0) return string.Empty;
@@ -231,7 +246,14 @@ internal sealed class DocsIndexService
                         : await crawler.CrawlAsync(site.StartUrl, crawlProgress, ct);
             if (pages.Count == 0)
             {
-                Status = DescribeCrawlOutcome(site.StartUrl, 0, refused, crawler.Refusals);
+                // The guard refuses a name that does not resolve as it refuses a private address — two causes, two
+                // remedies: asked again here, on the empty branch only.
+                var host = refused || CrawlForTests is not null
+                    ? Tools.FetchUrlTool.HostCheck.Public
+                    : await Tools.FetchUrlTool.CheckHostAsync(site.StartUrl, ct);
+                Status = DescribeCrawlOutcome(site.StartUrl, 0, refused || host == Tools.FetchUrlTool.HostCheck.Private,
+                                              crawler.Refusals, host == Tools.FetchUrlTool.HostCheck.Unresolved,
+                                              crawler.TimedOut);
                 progress?.Report(Status);
                 return;
             }
@@ -298,6 +320,13 @@ internal sealed class DocsIndexService
             // ── Persist + refresh memory ─────────────────────────────────────────
             var db = new DocsDatabase();
             await db.SaveSiteAsync(site, pages.Count, chunks, ct);
+            // ⚠ ONE model is recorded for the whole corpus, and this pass may change it: the OTHER sites' vectors were made
+            // by the model recorded before. Left in storage, the reload below compared them to the NEW record and brought
+            // them back as valid — reused for good by their next pass, noise or a cosine of 0 under a ✅, the hole counter
+            // at 0. Dropped instead: the hole note names them, and /docs reindex refills them.
+            var recorded = await db.GetMetaAsync(EmbeddingModelMetaKey, ct);
+            if (embModel is not null && recorded is not null && !string.Equals(recorded, embModel, StringComparison.Ordinal))
+                await db.ClearEmbeddingsExceptAsync(site.Id, ct);
             // Recorded with the vectors, and BEFORE reading them back: the model these were embedded
             // with is the one thing a later session cannot infer from the numbers themselves.
             await db.SetMetaAsync(EmbeddingModelMetaKey, embModel ?? string.Empty, ct);
@@ -311,7 +340,7 @@ internal sealed class DocsIndexService
                 ? $" (crawl limit of {DocCrawler.MaxPages} pages reached — the site may have more)"
                 : string.Empty;
             Status = $"Docs: ✅ {site.Title} — {pages.Count} pages, {chunks.Count} chunks{crawlNote}"
-                   + $"{RefusalNote(crawler.Refusals, site.Id)}{embNote}";
+                   + $"{RefusalNote(crawler.Refusals, site.Id)}{TimeoutNote(crawler.TimedOut, site.Id)}{embNote}";
             progress?.Report(Status);
         }
         catch (OperationCanceledException)

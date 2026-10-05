@@ -120,7 +120,7 @@ internal sealed record SolutionExtent(
         {
             var contents = Parsed(full);
             if (contents.Unreadable is not null) return new(Bare(dir), Bare(dir), [], SolutionExtentLimit.None);
-            var extent = Decide(dir, contents.Projects, WorkTreeOf(dir),
+            var extent = Decide(dir, contents.Projects, GitProcess.WorkTreeOf(dir),
                                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), HoldsLayers);
             // The note below is keyed by the path and caused by the file's state: readable again, it may be said again.
             Diagnostics.Forget("SolutionExtent.Of", full);
@@ -222,18 +222,6 @@ internal sealed record SolutionExtent(
         if (!Directory.Exists(folder)) return false;
         return Directory.EnumerateFileSystemEntries(folder)
                         .Any(e => !string.Equals(Path.GetFileName(e), "history", PathComparer.Comparison));
-    }
-
-    /// <summary>The git work tree holding <paramref name="dir"/> — a <c>.git</c> folder, or a <c>.git</c> file for a worktree
-    /// or a submodule — or <c>null</c>.</summary>
-    internal static string? WorkTreeOf(string dir)
-    {
-        for (var d = new DirectoryInfo(dir); d is not null; d = d.Parent)
-        {
-            var dotGit = Path.Combine(d.FullName, ".git");
-            if (Directory.Exists(dotGit) || File.Exists(dotGit)) return d.FullName;
-        }
-        return null;
     }
 
     private static string DirectoryOf(SolutionProject project) =>

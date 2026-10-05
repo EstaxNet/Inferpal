@@ -50,9 +50,7 @@ internal static class RulesService
             var (fm, body) = ParseFrontMatter(text);
             if (string.IsNullOrWhiteSpace(body)) continue;
 
-            var globs = fm.TryGetValue("globs", out var g)
-                ? g.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                : [];
+            var globs = fm.TryGetValue("globs", out var g) ? SplitGlobs(g) : [];
             var always = fm.TryGetValue("alwaysApply", out var a)
                          && a.Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
             var name = fm.TryGetValue("description", out var d) && !string.IsNullOrWhiteSpace(d)
@@ -65,9 +63,35 @@ internal static class RulesService
     }
 
     /// <summary>
+    /// The globs of a rule, written the three ways YAML writes a list: comma-separated, an inline array
+    /// (<c>["**/*.cs", "**/*.ts"]</c>) or a block list (one <c>- item</c> per line, folded by
+    /// <see cref="ParseFrontMatter"/>). A comma inside braces belongs to its pattern (<c>docs/**/*.{md,mdx}</c>).
+    /// </summary>
+    /// <remarks>⚠ Split on every comma, the two YAML list forms silently changed a rule's SCOPE: a block list left
+    /// <c>globs</c> empty — and a rule without globs applies to EVERY file — while an inline array produced
+    /// <c>["**/*.cs"</c> and <c>"**/*.ts"]</c>, which never match: the rule was never applied. Nothing said so.</remarks>
+    internal static IReadOnlyList<string> SplitGlobs(string? value)
+    {
+        var v = (value ?? string.Empty).Trim();
+        if (v.StartsWith('[') && v.EndsWith(']')) v = v[1..^1];
+
+        var parts = new List<string>();
+        int depth = 0, start = 0;
+        for (var i = 0; i < v.Length; i++)
+        {
+            if (v[i] == '{') depth++;
+            else if (v[i] == '}' && depth > 0) depth--;
+            else if (v[i] == ',' && depth == 0) { parts.Add(v[start..i]); start = i + 1; }
+        }
+        parts.Add(v[start..]);
+        return parts.Select(p => p.Trim().Trim('"', '\'').Trim()).Where(p => p.Length > 0).ToList();
+    }
+
+    /// <summary>
     /// Splits a leading <c>---</c>…<c>---</c> frontmatter block (if any) into a key/value map plus
     /// the remaining body. When no frontmatter is present, the map is empty and the body is the
-    /// whole text. Lightweight by design — supports flat <c>key: value</c> lines only.
+    /// whole text. Lightweight by design: flat <c>key: value</c> lines, and a YAML block list under a key with no value
+    /// (<c>- item</c> lines), folded into that key's value as <c>item1, item2</c>.
     /// </summary>
     public static (Dictionary<string, string> FrontMatter, string Body) ParseFrontMatter(string text)
     {
@@ -89,15 +113,23 @@ internal static class RulesService
         var afterFence = normalized.IndexOf('\n', end + 1);
         var body = afterFence >= 0 ? normalized[(afterFence + 1)..] : string.Empty;
 
+        string? listKey = null;   // the key a block list's "- item" lines belong to
         foreach (var line in block.Split('\n'))
         {
             var trimmed = line.Trim();
             if (trimmed.Length == 0 || trimmed.StartsWith('#')) continue;
+            if (listKey is not null && trimmed.StartsWith("- ", StringComparison.Ordinal))
+            {
+                var item = trimmed[2..].Trim().Trim('"', '\'');
+                fm[listKey] = fm[listKey].Length == 0 ? item : fm[listKey] + ", " + item;
+                continue;
+            }
             var colon = trimmed.IndexOf(':');
-            if (colon <= 0) continue;
+            if (colon <= 0) { listKey = null; continue; }
             var key = trimmed[..colon].Trim();
             var val = trimmed[(colon + 1)..].Trim().Trim('"', '\'');
             if (key.Length > 0) fm[key] = val;
+            listKey = key.Length > 0 && val.Length == 0 ? key : null;
         }
         return (fm, body);
     }
@@ -182,6 +214,9 @@ internal static class RulesService
     internal static string GlobToRegex(string glob)
     {
         var sb = new StringBuilder("^");
+        var braces = 0;
+        // Unbalanced braces are literal characters, as before: only a closed {…} is a set of alternatives.
+        var bracesBalanced = glob.Count(ch => ch == '{') == glob.Count(ch => ch == '}');
         for (int i = 0; i < glob.Length; i++)
         {
             var c = glob[i];
@@ -214,6 +249,11 @@ internal static class RulesService
                     }
                     break;
                 case '?': sb.Append("[^/]"); break;
+                // {a,b}: one of the alternatives — the form editors and Continue's rules write (`*.{md,mdx}`).
+                // Escaped as literals, neither half could ever match.
+                case '{' when bracesBalanced: sb.Append("(?:"); braces++; break;
+                case '}' when braces > 0: sb.Append(')'); braces--; break;
+                case ',' when braces > 0: sb.Append('|'); break;
                 default:  sb.Append(Regex.Escape(c.ToString())); break;
             }
         }

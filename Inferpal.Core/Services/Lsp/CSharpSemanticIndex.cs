@@ -426,9 +426,7 @@ internal sealed class CSharpSemanticIndex
         foreach (var (path, tree) in snap.Trees.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
         {
             ct.ThrowIfCancellationRequested();
-            if (declaringFile is not null &&
-                !path.EndsWith(declaringFile.Replace('/', Path.DirectorySeparatorChar),
-                               StringComparison.OrdinalIgnoreCase))
+            if (declaringFile is not null && !IsDeclaringFile(path, declaringFile))
                 continue;
             if (!tree.ToString().Contains(symbolName, StringComparison.Ordinal)) continue;
 
@@ -447,6 +445,24 @@ internal sealed class CSharpSemanticIndex
             .OrderByDescending(f => f.Item1.Kind == SymbolKind.NamedType)
             .ThenByDescending(f => f.Item1.Kind == SymbolKind.Method)
             .ToList();
+    }
+
+    /// <summary>
+    /// Does <paramref name="path"/> designate the file the model named? Relative to the root (<c>src/Cart.cs</c>, with or
+    /// without a leading <c>./</c>, either separator) or absolute.
+    /// </summary>
+    /// <remarks>⚠ A plain suffix test refused <c>./src/Cart.cs</c> — the form a model copies from a listing — and matched
+    /// <c>MyCart.cs</c> for <c>Cart.cs</c>: the suffix must start at a folder boundary.</remarks>
+    internal static bool IsDeclaringFile(string path, string declaringFile)
+    {
+        var sep  = Path.DirectorySeparatorChar;
+        var name = declaringFile.Replace('/', sep).Replace('\\', sep);
+        if (Path.IsPathRooted(name))
+            return Services.PathComparer.Default.Equals(Path.GetFullPath(name), Path.GetFullPath(path));
+        while (name.StartsWith("." + sep, StringComparison.Ordinal)) name = name[2..];
+        var full = path.Replace('/', sep);
+        return full.Equals(name, Services.PathComparer.Comparison)
+            || full.EndsWith(sep + name, Services.PathComparer.Comparison);
     }
 
     private static bool IsDeclarationNamed(SyntaxNode node, string name) => node switch

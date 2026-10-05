@@ -26,6 +26,12 @@ internal interface IMcpClient : IAsyncDisposable
     /// (HTTP only; always false for stdio).</summary>
     bool NeedsAuthorization { get; }
 
+    /// <summary>Where the server said its authorization metadata lives — the <c>resource_metadata</c> of the
+    /// <c>WWW-Authenticate</c> header of a 401 (RFC 9728 §5.1) — or <c>null</c> (HTTP only).</summary>
+    /// <remarks>⚠ The MCP authorization spec has the client use the address the server ANNOUNCES: a server that
+    /// publishes its metadata anywhere but the default well-known path could not be signed in to without it.</remarks>
+    string? ResourceMetadataUrl => null;
+
     /// <summary>Raised when the server signals its advertised tool set changed (live re-discovery).</summary>
     event Action? ToolsChanged;
 

@@ -87,6 +87,16 @@ internal sealed class DocsDatabase
         await cmd.ExecuteNonQueryAsync(ct);
     }
 
+    /// <summary>Drops the vectors of every site but <paramref name="keptDocId"/>: they were made by another model.</summary>
+    public async Task ClearEmbeddingsExceptAsync(string keptDocId, CancellationToken ct)
+    {
+        await using var conn = OpenConnection();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText = "UPDATE doc_chunks SET embedding = NULL WHERE doc_id <> $id";
+        cmd.Parameters.AddWithValue("$id", keptDocId);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
     // ── Chunks ───────────────────────────────────────────────────────────────
 
     /// <summary>Loads every chunk across all documentation sources into memory.</summary>

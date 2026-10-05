@@ -1,5 +1,5 @@
 {
-  "inferpal.description": "面向自托管 LLM 的 AI 开发助手 — Ollama、LM Studio、任何兼容 OpenAI 的服务器。写代码、构建、测试，测试失败时还会挂接真实调试器。100% 本地运行，无遥测。",
+  "inferpal.description": "在你自己的本地模型上运行的私有 AI 编程代理 — Ollama、LM Studio、llama.cpp、vLLM，在你的电脑或 GPU 服务器上。它会规划、编辑、构建并运行你的测试，每次写入前都会征求你的同意。无云端、无遥测、无需 API 密钥。",
   "inferpal.view.chat": "聊天",
   "inferpal.command.restartHost": "Inferpal: 重启主机",
   "inferpal.command.resetChat": "Inferpal: 新建会话",

@@ -1115,8 +1115,9 @@
                                                Foreground="{Binding DataContext.ThemeAccentText, ElementName=root}"/>
                                     <TextBlock DockPanel.Dock="Left" Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold"
                                                Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                    <!-- Wrapped, never trimmed: the card is the only view of what is approved. -->
                                     <TextBlock Text="{Binding CardSubject}" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
-                                               TextTrimming="CharacterEllipsis" Foreground="{Binding ThemeSubtleText}"/>
+                                               TextWrapping="Wrap" Foreground="{Binding ThemeSubtleText}"/>
                                 </DockPanel>
                                 <Border BorderThickness="0,1,0,1" Padding="0,8" Background="{Binding ThemeCodeBg}"
                                         BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
@@ -1132,7 +1133,7 @@
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock Grid.Column="0" Text="{Binding Prefix}" Foreground="{Binding Foreground}"
                                                                    Margin="12,1,8,1"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="NoWrap" Margin="0,1,12,1"
+                                                        <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" Margin="0,1,12,1"
                                                                    Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
                                                     </Grid>
                                                 </DataTemplate>
@@ -1322,45 +1323,32 @@
                             </Style.Triggers>
                         </Style>
                     </UniformGrid.Style>
+                    <!-- Without a file, what works without one: /explain, /fix and /test would only answer "open a file". -->
                     <Button Template="{StaticResource Flat10}" Padding="12,10" Margin="4" Cursor="Hand"
                             Background="{Binding ThemeSurface}" BorderBrush="{Binding ThemeBorder}" BorderThickness="1"
                             HorizontalContentAlignment="Stretch"
-                            Command="{Binding RunSuggestionCommand}" CommandParameter="/explain"
-                            AutomationProperties.Name="{Binding WelcomeCardExplain}">
+                            Command="{Binding RunSuggestionCommand}" CommandParameter="{Binding WelcomeProjectPrompt}"
+                            AutomationProperties.Name="{Binding WelcomeCardProject}">
                         <DockPanel>
                             <Border DockPanel.Dock="Left" Width="28" Height="28" CornerRadius="7" Background="{Binding ThemeChip}" Margin="0,0,10,0">
-                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE946;" FontSize="14" Foreground="{Binding ThemeAccentText}"
+                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8B7;" FontSize="14" Foreground="{Binding ThemeAccentText}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <TextBlock Text="{Binding WelcomeCardExplain}" FontSize="13" Foreground="{Binding ThemeText}"
+                            <TextBlock Text="{Binding WelcomeCardProject}" FontSize="13" Foreground="{Binding ThemeText}"
                                        TextWrapping="Wrap" VerticalAlignment="Center"/>
                         </DockPanel>
                     </Button>
                     <Button Template="{StaticResource Flat10}" Padding="12,10" Margin="4" Cursor="Hand"
                             Background="{Binding ThemeSurface}" BorderBrush="{Binding ThemeBorder}" BorderThickness="1"
                             HorizontalContentAlignment="Stretch"
-                            Command="{Binding RunSuggestionCommand}" CommandParameter="/fix"
-                            AutomationProperties.Name="{Binding WelcomeCardFix}">
+                            Command="{Binding RunSuggestionCommand}" CommandParameter="{Binding WelcomeChangesPrompt}"
+                            AutomationProperties.Name="{Binding WelcomeCardChanges}">
                         <DockPanel>
                             <Border DockPanel.Dock="Left" Width="28" Height="28" CornerRadius="7" Background="{Binding ThemeChip}" Margin="0,0,10,0">
-                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xEBE8;" FontSize="14" Foreground="{Binding ThemeAccentText}"
+                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE81C;" FontSize="14" Foreground="{Binding ThemeAccentText}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <TextBlock Text="{Binding WelcomeCardFix}" FontSize="13" Foreground="{Binding ThemeText}"
-                                       TextWrapping="Wrap" VerticalAlignment="Center"/>
-                        </DockPanel>
-                    </Button>
-                    <Button Template="{StaticResource Flat10}" Padding="12,10" Margin="4" Cursor="Hand"
-                            Background="{Binding ThemeSurface}" BorderBrush="{Binding ThemeBorder}" BorderThickness="1"
-                            HorizontalContentAlignment="Stretch"
-                            Command="{Binding RunSuggestionCommand}" CommandParameter="/test"
-                            AutomationProperties.Name="{Binding WelcomeCardTest}">
-                        <DockPanel>
-                            <Border DockPanel.Dock="Left" Width="28" Height="28" CornerRadius="7" Background="{Binding ThemeChip}" Margin="0,0,10,0">
-                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D5;" FontSize="14" Foreground="{Binding ThemeAccentText}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock Text="{Binding WelcomeCardTest}" FontSize="13" Foreground="{Binding ThemeText}"
+                            <TextBlock Text="{Binding WelcomeCardChanges}" FontSize="13" Foreground="{Binding ThemeText}"
                                        TextWrapping="Wrap" VerticalAlignment="Center"/>
                         </DockPanel>
                     </Button>
@@ -1379,6 +1367,18 @@
                         </DockPanel>
                     </Button>
                 </UniformGrid>
+                <TextBlock Text="{Binding WelcomeOpenFileHint}" FontSize="12" Foreground="{Binding ThemeSubtleText}"
+                           TextWrapping="Wrap" Margin="0,8,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasActiveFile}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
                 <!-- The last build failed: Fix them runs /fix-build -->
                 <Border Margin="0,24,0,0" CornerRadius="10" BorderThickness="1" Padding="12,10"

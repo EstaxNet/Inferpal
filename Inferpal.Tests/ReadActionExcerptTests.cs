@@ -96,6 +96,8 @@ public class ReadActionExcerptTests
         Assert.Contains("codeExcerpt(", body, StringComparison.Ordinal);
         Assert.Contains("nameAttachmentsInQuestion(", body, StringComparison.Ordinal);
         Assert.DoesNotContain("${code}", body, StringComparison.Ordinal);   // the raw text never reaches the prompt
+        // Sent as a code action — no tools, the code-actions model (CodeActionTurnTests holds the host's half).
+        Assert.Contains("host, true, instruction)", body, StringComparison.Ordinal);
     }
 
     private static string RunExplainReviewBody()

@@ -214,6 +214,26 @@ internal static class GitProcess
     }
 
     /// <summary>
+    /// The git work tree holding <paramref name="dir"/> — its nearest folder with a <c>.git</c> — or <c>null</c>.
+    /// </summary>
+    /// <remarks>⚠ <c>.git</c> is a FOLDER in a clone, a FILE in a worktree (<c>git worktree add</c>) and a submodule.
+    /// Looking for the folder only climbs past such a work tree to the repository above it: the status, the diff and
+    /// the snapshot folder of ANOTHER checkout. The one reader of this question.</remarks>
+    internal static string? WorkTreeOf(string dir)
+    {
+        for (var d = new DirectoryInfo(dir); d is not null; d = d.Parent)
+            if (IsWorkTreeRoot(d.FullName)) return d.FullName;
+        return null;
+    }
+
+    /// <summary>Whether <paramref name="dir"/> itself is the top of a git work tree (see <see cref="WorkTreeOf"/>).</summary>
+    internal static bool IsWorkTreeRoot(string dir)
+    {
+        var dotGit = Path.Combine(dir, ".git");
+        return Directory.Exists(dotGit) || File.Exists(dotGit);
+    }
+
+    /// <summary>
     /// The encoding of the working-tree file a path of git's output names — the paths are relative to the repository's
     /// top level, found from <paramref name="workDir"/>; <c>null</c> when there is no repository or no such file.
     /// </summary>
@@ -221,12 +241,8 @@ internal static class GitProcess
     {
         try
         {
-            for (var dir = new DirectoryInfo(string.IsNullOrEmpty(workDir) ? Environment.CurrentDirectory : workDir);
-                 dir is not null; dir = dir.Parent)
+            if (WorkTreeOf(string.IsNullOrEmpty(workDir) ? Environment.CurrentDirectory : workDir) is { } root)
             {
-                var dotGit = Path.Combine(dir.FullName, ".git");
-                if (!Directory.Exists(dotGit) && !File.Exists(dotGit)) continue;
-                var root = dir.FullName;
                 return path =>
                 {
                     var full = Path.Combine(root, path);

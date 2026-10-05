@@ -81,6 +81,65 @@ public class RunWindowCompactionTests
         Assert.Equal(0, (await BasicLoopAsync(loaded: null)).Max());
     }
 
+    /// <summary>
+    /// Tool definitions of ~4,200 tokens — what the built-in tools weigh, about half of an 8,192 window — and reads of
+    /// ~500 tokens: six of them stay under 80 % of the window on their own, and go past it with the definitions every
+    /// request carries.
+    /// </summary>
+    private sealed class HeavyDefinitions : IToolRegistry
+    {
+        public IReadOnlyList<ToolDefinition> Definitions { get; } =
+            [new("function", new ToolFunction("read_file", new string('d', 16_800), new { }))];
+        public DiffInfo? ConsumeDiff() => null;
+        public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct) =>
+            Task.FromResult(new string('x', 2_000));
+    }
+
+    /// <summary>
+    /// ⚠ The in-run check measured the messages alone, where the check between turns adds the tool definitions: a run
+    /// whose results fit only without them was sent whole — refused by a server that reports its window, cut at the
+    /// head by Ollama — while elision waited for a threshold the request had already passed.
+    /// </summary>
+    [Fact]
+    public async Task TheBasicLoop_CountsTheToolDefinitionsItSends()
+    {
+        var client = new Scripted(loaded: null, toolTurns: 7, Config());
+        await client.RunAgentAsync("m", [new ChatMessageDto("system", "s"), new ChatMessageDto("user", "read")],
+                                   new HeavyDefinitions(), onStep: _ => { }, onToken: null, CancellationToken.None);
+
+        Assert.True(client.ElidedPerRequest.Count >= 7, $"only {client.ElidedPerRequest.Count} model turn(s)");   // witness
+        Assert.True(client.ElidedPerRequest.Max() > 0, "the tool definitions were left out of the run's measure");
+    }
+
+    [Fact]
+    public async Task TheOrchestrator_CountsTheToolDefinitionsItSends()
+    {
+        var client = new Scripted(loaded: null, toolTurns: 8, Config());   // the plan, then seven reads
+        await new AgentOrchestrator(client, Config()).RunAsync(
+            model: "m", history: [new ChatMessageDto("system", "s"), new ChatMessageDto("user", "read")],
+            tools: new HeavyDefinitions(), onStep: _ => { }, onToken: null, onPlanReady: null, onStepUpdate: null,
+            onToolExecuted: null, onStreamReset: null, ct: CancellationToken.None);
+
+        Assert.True(client.ElidedPerRequest.Count >= 8, $"only {client.ElidedPerRequest.Count} model turn(s)");
+        Assert.True(client.ElidedPerRequest.Max() > 0, "the tool definitions were left out of the run's measure");
+    }
+
+    [Fact]
+    public void LightDefinitions_ElideNothingTheMessagesDoNotNeed()
+    {
+        // REFERENCE ARM: the same messages with no tool definitions stay whole — the fix counts what is sent, it does
+        // not lower the threshold.
+        var messages = new List<ChatMessageDto> { new("system", "s"), new("user", "read") };
+        for (var i = 0; i < 6; i++) messages.Add(new ChatMessageDto("tool", new string('x', 2_000)));
+        messages.AddRange([new("assistant", "a"), new("user", "u"), new("assistant", "b"), new("user", "v")]);
+
+        AgentOrchestrator.CompactRunContext(messages, anchorCount: 2, budget: 8_192, toolTokens: 0);
+        Assert.DoesNotContain(messages, m => m.Content?.StartsWith(Elided, StringComparison.Ordinal) == true);
+
+        AgentOrchestrator.CompactRunContext(messages, anchorCount: 2, budget: 8_192, toolTokens: 4_200);
+        Assert.Contains(messages, m => m.Content?.StartsWith(Elided, StringComparison.Ordinal) == true);
+    }
+
     [Fact]
     public async Task TheOrchestrator_ElidesAgainstTheLoadedWindow()
     {

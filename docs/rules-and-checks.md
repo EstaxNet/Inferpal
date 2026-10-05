@@ -18,15 +18,18 @@ alwaysApply: false
 - Prefix private fields with an underscore.
 ```
 
-- **Frontmatter keys**: `description` (→ the rule's name, else the filename), `globs` (CSV of
-  glob patterns), `alwaysApply` (bool). Everything after the frontmatter is the rule body.
+- **Frontmatter keys**: `description` (→ the rule's name, else the filename), `globs` (glob
+  patterns, written as a comma-separated list, an inline array `["**/*.cs", "**/*.ts"]` or a YAML
+  block list of `- pattern` lines), `alwaysApply` (bool). Everything after the frontmatter is the
+  rule body.
 - **Scoping**: a rule is injected when its glob matches the **active editor file**, or when
   `alwaysApply: true` / no `globs`. Injected rules appear in the system prompt under a
   `## Rules` section.
 - **Glob dialect** (the same one `indexExclude` uses): `*` matches within one path segment, `?` one
   character in a segment, `**/` any number of whole segments — including none, so `**/Program.cs`
   matches `Program.cs` and `src/Program.cs` but **not** `src/MyProgram.cs` — and a trailing `**`
-  matches everything below. A pattern with no `/` is matched against the file name at any depth.
+  matches everything below; `{md,mdx}` matches one of the alternatives. A pattern with no `/` is
+  matched against the file name at any depth.
 - **Re-scoping**: the system prompt is rebuilt before every question, so rules are re-evaluated
   against the file active at that moment, and an edited rule applies from the next question.
 
@@ -37,7 +40,9 @@ Commands: `/rules` lists them; `/rules init` scaffolds an example (never overwri
 Each markdown file describes review criteria. `/check` reviews your current **git diff**
 against them, **100% locally**:
 
-- The diff is gathered staged → unstaged (plus status), capped to keep the prompt bounded.
+- The diff is gathered staged → unstaged (plus status), capped to keep the prompt bounded. With nothing staged,
+  files git does not track yet are reviewed too, as the diffs they will be once added; a new file that is not
+  read (past the size limit, binary or unreadable) is named above the findings.
 - The model reviews it against every check and reports `file:line`, a severity
   (**blocker** / **warning** / **nit**), and a concrete fix — instructed not to invent
   issues.

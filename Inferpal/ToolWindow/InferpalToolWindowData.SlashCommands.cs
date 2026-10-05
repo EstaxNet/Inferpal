@@ -623,7 +623,5 @@ internal partial class InferpalToolWindowData
     private IReadOnlyList<UserSlashTemplate> GetUserTemplates()
         => SlashTemplates.Load(_config, FindProjectRoot());
 
-    private string PromptsDir() => Path.Combine(FindProjectRoot(), ".inferpal", "prompts");
-
     #endregion
 }

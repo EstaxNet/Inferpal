@@ -13,6 +13,8 @@ import {
   ContextUsage,
   IndexCard,
   PinnedFileSize,
+  LoadedModels,
+  ModelSuggestion,
   ProjectFileRow,
   SettingsDocs,
   SettingsExclusions,
@@ -569,6 +571,23 @@ export class HostClient {
   /** What each pinned file the panel holds costs the prompt. */
   settingsPinSizes(pins: string): Promise<PinnedFileSize[]> {
     return this.connection().sendRequest<PinnedFileSize[]>('settings/pinSizes', { pins });
+  }
+
+  /** What the server holds in memory, and what Inferpal uses each model for. */
+  settingsLoadedModels(): Promise<LoadedModels> {
+    return this.connection().sendRequest<LoadedModels>('settings/loadedModels');
+  }
+
+  /** Unloads the named models (every loaded one without names); answers the block as the server now lists it. */
+  settingsUnloadModels(names?: string[]): Promise<LoadedModels> {
+    return this.connection().sendRequest<LoadedModels>('settings/unloadModels', { names: names ?? null });
+  }
+
+  /** The best installed models for the FORM's server and values — proposed, never saved. */
+  settingsSuggestModels(form: {
+    baseUrl?: string; provider?: string; apiKey?: string; vramBudgetGb?: string; current: Record<string, string>;
+  }): Promise<ModelSuggestion> {
+    return this.connection().sendRequest<ModelSuggestion>('settings/suggestModels', form);
   }
 
   /** Returns what the save could not use. The count is computed BY THE HOST: the permission DSL

@@ -11,14 +11,12 @@ export function webviewStrings(): Record<string, string> {
     sendTitle: t('Send'),
     cancelTitle: t('Cancel'),
     retry: t('Retry the connection'),
-    searchTitle: t('Search in the conversation'),
     searchPlaceholder: t('Search in the conversation…'),
     statusUnreachable: t('Backend unreachable'),
     noModelListed: t('No model listed — is the backend reachable?'),
     modeAgent: t('Agent'),
     modeChat: t('Chat'),
     tokensInfo: t('{0} tokens'),
-    contextTooltip: t('Context: {0} / {1} tokens ({2}%) — click for the X-Ray panel'),
     thinking: t('Thinking…'),
     cancelled: t('Cancelled.'),
     copy: t('Copy'),
@@ -27,11 +25,11 @@ export function webviewStrings(): Record<string, string> {
     deny: t('Deny'),
     allowOnce: t('Allow once'),
     allowAlways: t('Always this session'),
-    openInEditor: t('Open in editor'),
-    toolError: t('error'),
-    cardExplain: t('Explain the selection'),
-    cardFix: t('Fix an error'),
-    cardTest: t('Generate a test'),
+    cardProject: t('Explain this project'),
+    cardChanges: t('Review my changes'),
+    welcomeProjectPrompt: t('Give me an overview of this project: what it does, how it is organized, and where to start reading the code.'),
+    welcomeChangesPrompt: t('Review my uncommitted changes: point out bugs, risks and anything missing, such as tests.'),
+    welcomeOpenFileHint: t('Open a file to explain it, write its tests or find its usages.'),
     cardHelp: t('See all commands'),
     close: t('Close'),
     xrayTitle: t('Context X-Ray — ~{0} tokens'),
@@ -49,7 +47,6 @@ export function webviewStrings(): Record<string, string> {
     fixWithAi: t('Fix with AI'),
     fixPrompt: t('Fix the following errors:'),
     chipRemove: t('Remove'),
-    attachMenuTitle: t('Add context'),
     attachActiveFile: t('Attach the active file'),
     attachSelection: t('Attach the selection'),
     attachBrowse: t('Attach a file from disk'),
@@ -122,11 +119,8 @@ export function renderChatHtml(webview: vscode.Webview, extensionUri: vscode.Uri
 <div id="topbar"></div>
 <div id="messages"></div>
 <div id="composer">
-<div id="plan" hidden></div>
-<div id="statusline" hidden></div>
 <textarea id="prompt" rows="3"></textarea>
 <div id="toolbar"></div>
-<div id="footerbar"></div>
 </div>
 <script nonce="${nonce}">
 window.__l10n = ${l10n};

@@ -51,7 +51,6 @@ internal static class Strings
     public static string LabelChatModel       => Get(nameof(LabelChatModel));
     public static string HintChatModel        => Get(nameof(HintChatModel));
     public static string BtnTest              => Get(nameof(BtnTest));
-    public static string BtnLoadSession       => Get(nameof(BtnLoadSession));
     public static string BtnSave              => Get(nameof(BtnSave));
     // ── Settings panel: pages, sections, chrome ─────────────────────────────────
     public static string SettingsPageServer => Get(nameof(SettingsPageServer));
@@ -182,6 +181,7 @@ internal static class Strings
     public static string WelcomeUsagesFileDesc => Get(nameof(WelcomeUsagesFileDesc));
     public static string WelcomeUsagesPrompt(string file) => string.Format(Get(nameof(WelcomeUsagesPrompt)), file);
     public static string WelcomeBuildFailed(int errors) => string.Format(Get(nameof(WelcomeBuildFailed)), errors);
+    public static string WelcomeBuildFailedUncounted => Get(nameof(WelcomeBuildFailedUncounted));
     public static string WelcomeFixThem => Get(nameof(WelcomeFixThem));
     public static string WelcomeHintAttach => Get(nameof(WelcomeHintAttach));
     public static string WelcomeHintCommands => Get(nameof(WelcomeHintCommands));
@@ -388,7 +388,6 @@ internal static class Strings
     // ── Settings — editable lists (pinned files / slash commands / custom tools) ──
     public static string HintRowEdit                 => Get(nameof(HintRowEdit));
     public static string HintRowDelete               => Get(nameof(HintRowDelete));
-    public static string LabelRowAdvanced            => Get(nameof(LabelRowAdvanced));
     public static string BtnRowImport                => Get(nameof(BtnRowImport));
     public static string RowEditTitle(string name)   => string.Format(Get(nameof(RowEditTitle)), name);
     public static string PinnedAddFile               => Get(nameof(PinnedAddFile));
@@ -445,12 +444,11 @@ internal static class Strings
     public static string HintUtilityModel                    => Get(nameof(HintUtilityModel));
     public static string LabelModelRouterAuto                => Get(nameof(LabelModelRouterAuto));
     public static string HintModelRouterAuto                 => Get(nameof(HintModelRouterAuto));
-    // The setting is quoted by its CURRENT label, passed in: a copy of the label drifts when the label is reworded.
-    public static string LabelModeChat                       => Get(nameof(LabelModeChat));
-    public static string LabelModeAgent                      => Get(nameof(LabelModeAgent));
-    public static string WelcomeCardExplain                  => Get(nameof(WelcomeCardExplain));
-    public static string WelcomeCardFix                      => Get(nameof(WelcomeCardFix));
-    public static string WelcomeCardTest                     => Get(nameof(WelcomeCardTest));
+    public static string WelcomeCardProject => Get(nameof(WelcomeCardProject));
+    public static string WelcomeProjectPrompt => Get(nameof(WelcomeProjectPrompt));
+    public static string WelcomeCardChanges => Get(nameof(WelcomeCardChanges));
+    public static string WelcomeChangesPrompt => Get(nameof(WelcomeChangesPrompt));
+    public static string WelcomeOpenFileHint => Get(nameof(WelcomeOpenFileHint));
     public static string WelcomeCardHelp                     => Get(nameof(WelcomeCardHelp));
     public static string BuildBannerDismiss                  => Get(nameof(BuildBannerDismiss));
     public static string InlineEditDlgTitle                  => Get(nameof(InlineEditDlgTitle));
@@ -471,8 +469,6 @@ internal static class Strings
     public static string UnitSeconds                   => Get(nameof(UnitSeconds));
     /// <inheritdoc cref="UnitSeconds"/>
     public static string UnitMinutes                   => Get(nameof(UnitMinutes));
-    /// <inheritdoc cref="UnitSeconds"/>
-    public static string UnitHours                     => Get(nameof(UnitHours));
     /// <inheritdoc cref="UnitSeconds"/>
     public static string UnitGigabytes                 => Get(nameof(UnitGigabytes));
     /// <inheritdoc cref="UnitSeconds"/>
@@ -510,7 +506,6 @@ internal static class Strings
     public static string LabelMcpHeaders             => Get(nameof(LabelMcpHeaders));
     public static string BtnMcpSaveServer            => Get(nameof(BtnMcpSaveServer));
     public static string BtnMcpCancelServer          => Get(nameof(BtnMcpCancelServer));
-    public static string McpAdvancedJson             => Get(nameof(McpAdvancedJson));
     public static string McpImportJson               => Get(nameof(McpImportJson));
     public static string McpJsonNotEditableAsList    => Get(nameof(McpJsonNotEditableAsList));
     public static string McpValidationNameCommand    => Get(nameof(McpValidationNameCommand));
@@ -896,13 +891,6 @@ internal static class Strings
     public static string PinLimitReached(int max)            => string.Format(Get(nameof(PinLimitReached)),           max);
 
     // ── Export ─────────────────────────────────────────────────────────────────
-    /// <summary>The context gauge's tooltip. ⚠ It was ENGLISH, with invariant separators, in the VS
-    /// window while the VS Code panel said the same thing translated: two editors, two sentences,
-    /// for the same clickable element. The value is lifted <b>verbatim</b> from the extension's
-    /// l10n bundles, so that the two say literally the same thing.</summary>
-    public static string ContextGaugeTooltip(string used, string limit, string percent) =>
-        string.Format(Get(nameof(ContextGaugeTooltip)), used, limit, percent);
-
     /// <summary>Label of the "user" bubble. ⚠ It was hardcoded, in FRENCH (<c>Label = "Vous"</c>),
     /// in ChatMessageItem.UserMsg — and it goes into the exported document, so a Japanese reader
     /// got "Vous" heading every one of their turns.</summary>
@@ -1103,6 +1091,8 @@ internal static class Strings
     /// <summary>The verdict below covers only what fit — said above the findings, which it qualifies.</summary>
     public static string CheckDiffTruncated(int kept, int total) =>
         string.Format(Get(nameof(CheckDiffTruncated)), kept, total);
+    public static string CheckNewFilesNotReviewed(int count, string names) =>
+        string.Format(Get(nameof(CheckNewFilesNotReviewed)), count, names);
     public static string CheckSeverityBlocker    => Get(nameof(CheckSeverityBlocker));
     public static string CheckSeverityWarning    => Get(nameof(CheckSeverityWarning));
     public static string CheckSeverityNit        => Get(nameof(CheckSeverityNit));
@@ -1361,7 +1351,6 @@ internal static class Strings
     public static string XrayPanelHint                       => Get(nameof(XrayPanelHint));
     public static string XrayPanelWarning                    => Get(nameof(XrayPanelWarning));
     public static string XrayPanelCopy                       => Get(nameof(XrayPanelCopy));
-    public static string TooltipXrayGauge                    => Get(nameof(TooltipXrayGauge));
     public static string TooltipXrayClose                    => Get(nameof(TooltipXrayClose));
 
     // ── MCP OAuth ──────────────────────────────────────────────────────────────
@@ -1566,8 +1555,6 @@ internal static class Strings
     public static string StepModeOff         => Get(nameof(StepModeOff));
     public static string AgentPausedForStep  => Get(nameof(AgentPausedForStep));
     public static string NoAgentStepPaused   => Get(nameof(NoAgentStepPaused));
-    /// <summary>Agent-mode toggle banner — {0} = the localized name of the mode.</summary>
-    public static string AgentModeOn(string label) => string.Format(Get(nameof(AgentModeOn)), label);
 
     /// <summary>Titles and filters of the VS window's file dialogs.</summary>
     public static string DialogAttachTitle   => Get(nameof(DialogAttachTitle));
@@ -1634,4 +1621,73 @@ internal static class Strings
         string.Format(Get(nameof(TaskProposalUnusable)), path);
     public static string TaskProposalApplied(string path) =>
         string.Format(Get(nameof(TaskProposalApplied)), path);
+
+    // ── Models page: the suggestion, what is loaded, unloading ─────────────────────────────────────────
+    public static string ModelRoleChat => Get(nameof(ModelRoleChat));
+    public static string ModelRoleAgent => Get(nameof(ModelRoleAgent));
+    public static string ModelRoleCodeActions => Get(nameof(ModelRoleCodeActions));
+    public static string ModelRoleInlineEdit => Get(nameof(ModelRoleInlineEdit));
+    public static string ModelRoleAutocomplete => Get(nameof(ModelRoleAutocomplete));
+    public static string ModelRoleUtility => Get(nameof(ModelRoleUtility));
+    public static string ModelRoleCodeSearch => Get(nameof(ModelRoleCodeSearch));
+    public static string SuggestReview => Get(nameof(SuggestReview));
+    public static string SuggestNoChange => Get(nameof(SuggestNoChange));
+    public static string SuggestOnlyEmbedding => Get(nameof(SuggestOnlyEmbedding));
+    public static string SuggestNothingListed => Get(nameof(SuggestNothingListed));
+    public static string SuggestChatRecommended(string a) =>
+        string.Format(Get(nameof(SuggestChatRecommended)), a);
+    public static string SuggestChatUsable(string a) =>
+        string.Format(Get(nameof(SuggestChatUsable)), a);
+    public static string SuggestChatNotRecommended(string a) =>
+        string.Format(Get(nameof(SuggestChatNotRecommended)), a);
+    public static string SuggestChatUnmeasured(string a) =>
+        string.Format(Get(nameof(SuggestChatUnmeasured)), a);
+    public static string SuggestInstallRecommended(string a) =>
+        string.Format(Get(nameof(SuggestInstallRecommended)), a);
+    public static string SuggestEmbeddingNone => Get(nameof(SuggestEmbeddingNone));
+    public static string SuggestEmbeddingAuto(string a) =>
+        string.Format(Get(nameof(SuggestEmbeddingAuto)), a);
+    public static string SuggestEmbeddingReindex => Get(nameof(SuggestEmbeddingReindex));
+    public static string SuggestFimMeasured(string a) =>
+        string.Format(Get(nameof(SuggestFimMeasured)), a);
+    public static string SuggestFimDoesNotFit(string a, string b, string c) =>
+        string.Format(Get(nameof(SuggestFimDoesNotFit)), a, b, c);
+    public static string SuggestFimChatCompletes => Get(nameof(SuggestFimChatCompletes));
+    public static string SuggestFimSameAsChat => Get(nameof(SuggestFimSameAsChat));
+    public static string SuggestOverrides(string a) =>
+        string.Format(Get(nameof(SuggestOverrides)), a);
+    public static string LoadedModelsUnknown => Get(nameof(LoadedModelsUnknown));
+    public static string LoadedModelsNone => Get(nameof(LoadedModelsNone));
+    public static string LoadedModelsUnreachable => Get(nameof(LoadedModelsUnreachable));
+    public static string LoadedModelsCount(int a) =>
+        string.Format(Get(nameof(LoadedModelsCount)), a);
+    public static string LoadedModelVram(string a) =>
+        string.Format(Get(nameof(LoadedModelVram)), a);
+    public static string LoadedModelCpu => Get(nameof(LoadedModelCpu));
+    public static string LoadedModelDiskSize(string a) =>
+        string.Format(Get(nameof(LoadedModelDiskSize)), a);
+    public static string LoadedModelContext(string a) =>
+        string.Format(Get(nameof(LoadedModelContext)), a);
+    public static string LoadedModelStays => Get(nameof(LoadedModelStays));
+    public static string LoadedModelUnloadsIn(int a) =>
+        string.Format(Get(nameof(LoadedModelUnloadsIn)), a);
+    public static string LoadedModelUses(string a) =>
+        string.Format(Get(nameof(LoadedModelUses)), a);
+    public static string LoadedModelUnused => Get(nameof(LoadedModelUnused));
+    public static string UnloadNotSupported => Get(nameof(UnloadNotSupported));
+    public static string UnloadWhileAnswering => Get(nameof(UnloadWhileAnswering));
+    public static string UnloadNothing => Get(nameof(UnloadNothing));
+    public static string UnloadDone(string a) =>
+        string.Format(Get(nameof(UnloadDone)), a);
+    public static string UnloadKept(string a) =>
+        string.Format(Get(nameof(UnloadKept)), a);
+    public static string UnloadUnverified(string a) =>
+        string.Format(Get(nameof(UnloadUnverified)), a);
+    public static string BtnSuggestModels => Get(nameof(BtnSuggestModels));
+    public static string HintSuggestModels => Get(nameof(HintSuggestModels));
+    public static string SettingsSectionLoadedModels => Get(nameof(SettingsSectionLoadedModels));
+    public static string NoteLoadedModels => Get(nameof(NoteLoadedModels));
+    public static string BtnUnloadModel => Get(nameof(BtnUnloadModel));
+    public static string BtnUnloadAll => Get(nameof(BtnUnloadAll));
+    public static string BtnRefreshLoaded => Get(nameof(BtnRefreshLoaded));
 }

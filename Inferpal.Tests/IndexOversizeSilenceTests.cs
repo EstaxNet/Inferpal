@@ -27,11 +27,6 @@ namespace Inferpal.Tests;
 /// as many words — <i>"what was NOT looked at travels with the result, like in every other scanning
 /// tool"</i>. The pass was the other scanning tool.
 /// </para>
-/// <para>
-/// The third site, <c>WorkspaceSymbolScanner</c>, drops by size in silence too and is deliberately
-/// left alone: its only consumer builds benchmark questions, so it chooses material instead of
-/// answering a question about the repository.
-/// </para>
 /// </remarks>
 public sealed class IndexOversizeSilenceTests : IDisposable
 {

@@ -1,5 +1,5 @@
 {
-  "inferpal.description": "AI developer assistant for self-hosted LLMs — Ollama, LM Studio, any OpenAI-compatible server. It codes, builds, tests, and attaches a real debugger when a test fails. 100% local, no telemetry.",
+  "inferpal.description": "Private AI coding agent on your own local models — Ollama, LM Studio, llama.cpp, vLLM, on your PC or your GPU server. Plans, edits, builds and runs your tests, and asks before every write. No cloud, no telemetry, no API key.",
   "inferpal.view.chat": "Chat",
   "inferpal.command.restartHost": "Inferpal: Restart Host",
   "inferpal.command.resetChat": "Inferpal: New Conversation",

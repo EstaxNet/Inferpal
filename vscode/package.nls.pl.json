@@ -1,5 +1,5 @@
 {
-  "inferpal.description": "Asystent AI dla własnych LLM — Ollama, LM Studio, dowolny serwer zgodny z OpenAI. Pisze kod, buduje, testuje i podłącza prawdziwy debuger, gdy test zawiedzie. 100 % lokalnie, bez telemetrii.",
+  "inferpal.description": "Prywatny agent AI do programowania na Twoich własnych modelach lokalnych — Ollama, LM Studio, llama.cpp, vLLM, na Twoim PC lub serwerze GPU. Planuje, edytuje, buduje i uruchamia Twoje testy, a przed każdym zapisem pyta. Bez chmury, bez telemetrii, bez klucza API.",
   "inferpal.view.chat": "Czat",
   "inferpal.command.restartHost": "Inferpal: Uruchom ponownie hosta",
   "inferpal.command.resetChat": "Inferpal: Nowa rozmowa",

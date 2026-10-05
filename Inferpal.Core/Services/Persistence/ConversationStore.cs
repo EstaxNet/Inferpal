@@ -54,8 +54,6 @@ internal class ConversationStore
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static string SessionsDirectory => _dir;
-
     /// Saves a named session (UI messages + API history).
     /// <param name="parent">Session this one was forked from (<c>/branch</c>); null for a root session.</param>
     /// <param name="forkTurn">Turn the fork happened at, meaningful only with <paramref name="parent"/>.</param>
@@ -106,10 +104,6 @@ internal class ConversationStore
     internal static FileStream OpenSessionForRead(string path) =>
         new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, useAsync: true);
 
-    /// Loads the last auto-saved session.
-    public Task<SessionData?> LoadLastAsync(CancellationToken ct) =>
-        LoadAsync("last_session", ct);
-
     /// Deletes a saved session. Returns true if the file existed.
     public bool Delete(string sessionName)
     {
@@ -151,7 +145,7 @@ internal class ConversationStore
                 // — the other front-end, the user, `/branch` — simply is not there any more, and
                 // reporting it would be an alarm about something that is fine.
                 if (data is null) { if (File.Exists(SessionPath(name))) unreadable.Add(name); continue; }
-                var preview = data.Messages.FirstOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
+                var preview = data.Messages.FirstOrDefault(SessionManager.IsQuestion)?.Content ?? string.Empty;
                 if (preview.Length > 80) preview = preview[..80] + "…";
                 result.Add(new SessionSummary(name, data.SavedAt, data.Messages.Count,
                     preview.Replace('\n', ' '), data.Parent, data.ForkTurn));

@@ -33,7 +33,6 @@
   <data name="LabelRagTopK" xml:space="preserve"><value>Results per search</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
-  <data name="UnitHours" xml:space="preserve"><value>h</value></data>
   <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
   <data name="UnitTokens" xml:space="preserve"><value>tokens</value></data>
   <data name="UnitTurns" xml:space="preserve"><value>turns</value></data>
@@ -64,7 +63,6 @@
   <data name="LabelChatModel" xml:space="preserve"><value>Chat and agent</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>Answers your questions and runs tasks. /model switches it for this session.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Test</value></data>
-  <data name="BtnLoadSession" xml:space="preserve"><value>Load ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Cancel</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Save</value></data>
   <!-- Save status: what was saved is saved, and what could not be read is named — {0}=count, {1}=field labels -->
@@ -341,7 +339,6 @@ Backup: {0}</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Browse error: {0}</value></data>
 
   <!-- Export -->
-  <data name="ContextGaugeTooltip" xml:space="preserve"><value>Context: {0} / {1} tokens ({2}%) — click for the X-Ray panel</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>You</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>Assistant</value></data>
   <data name="ExportTitle" xml:space="preserve"><value>Inferpal — Conversation Export</value></data>
@@ -482,6 +479,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="CheckNoFindings" xml:space="preserve"><value>No anchored finding — the checks turned up nothing on this diff.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ No review: **{0}** spent its whole reply reasoning and wrote no finding. This says nothing about the diff — it is not a clean result. A larger context, or a model that does not reason first, avoids it.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Only the first {0} characters of the diff were reviewed, out of {1}. What follows is about that part, not about your whole change — review the rest separately, or stage it in smaller pieces.</value></data>
+  <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ {0} new file(s) not yet added to git were not reviewed (past the size limit, binary or unreadable): {1}.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} finding(s)** anchored to the diff:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**blocker**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**warning**</value></data>
@@ -596,7 +594,6 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="LabelMcpHeaders" xml:space="preserve"><value>Headers (Key=value, one per line; ${ENV_VAR} expanded)</value></data>
   <data name="BtnMcpSaveServer" xml:space="preserve"><value>Save</value></data>
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>Cancel</value></data>
-  <data name="McpAdvancedJson" xml:space="preserve"><value>Advanced (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ Import JSON into list</value></data>
   <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>The MCP server JSON could not be read in full: the list would drop what it cannot read, so it stays read-only until the JSON is fixed.</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>Name and Command are required.</value></data>
@@ -612,7 +609,6 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <!-- Editable lists (pinned files / slash commands / custom tools) -->
   <data name="HintRowEdit" xml:space="preserve"><value>Edit this entry.</value></data>
   <data name="HintRowDelete" xml:space="preserve"><value>Remove this entry from the list.</value></data>
-  <data name="LabelRowAdvanced" xml:space="preserve"><value>Advanced (raw text)</value></data>
   <data name="BtnRowImport" xml:space="preserve"><value>⟳ Import into list</value></data>
   <data name="RowEditTitle" xml:space="preserve"><value>Editing: {0}</value></data>
   <data name="PinnedAddFile" xml:space="preserve"><value>Add a file</value></data>
@@ -827,7 +823,6 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="XrayPanelHint" xml:space="preserve"><value>Unchecked sections are excluded from the next turn.</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Project layers (rules, memory, notes) take a large share of the context — consider trimming them.</value></data>
   <data name="XrayPanelCopy" xml:space="preserve"><value>Copy prompt</value></data>
-  <data name="TooltipXrayGauge" xml:space="preserve"><value>Context usage — click to open the X-Ray panel</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>Close</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Review the proposed changes in the editor — ✓/✗ on each change (✓✓/✗✗ for all). Typing dismisses the preview.</value></data>
   <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ Preview dismissed (the document changed) — nothing was applied. Run the action again to regenerate it.</value></data>
@@ -864,11 +859,6 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ Your num_ctx ({0}) exceeds what this model accepts at all ({1}). The backend cannot serve a longer prompt: it drops the OLDEST part of the conversation, system prompt included, without saying so — and Inferpal's own compaction will not step in, because it measures against the number you configured. Set it to {1} or less.</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>Graphics memory</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>Used to size the context window safely. Empty: detected when the server runs on this machine; needed when it runs on another one.</value></data>
-  <data name="LabelModeChat" xml:space="preserve"><value>💬 Chat</value></data>
-  <data name="LabelModeAgent" xml:space="preserve"><value>🤖 Agent</value></data>
-  <data name="WelcomeCardExplain" xml:space="preserve"><value>Explain the selection</value></data>
-  <data name="WelcomeCardFix" xml:space="preserve"><value>Fix an error</value></data>
-  <data name="WelcomeCardTest" xml:space="preserve"><value>Generate a test</value></data>
   <data name="WelcomeCardHelp" xml:space="preserve"><value>See all commands</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
@@ -962,7 +952,6 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="StepModeOff" xml:space="preserve"><value>Step mode **OFF**.</value></data>
   <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **Agent paused after tool call.** Click ▶ Resume (or type `/resume`) to continue, or Cancel to abort.</value></data>
   <data name="NoAgentStepPaused" xml:space="preserve"><value>No agent step is currently paused.</value></data>
-  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
   <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 Build {0}/{1}…</value></data>
   <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 Fix {0}</value></data>
   <data name="DialogAttachTitle" xml:space="preserve"><value>Select File to Attach</value></data>
@@ -1222,8 +1211,63 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="WelcomeUsagesFileDesc" xml:space="preserve"><value>Callers and dependants across the workspace</value></data>
   <data name="WelcomeUsagesPrompt" xml:space="preserve"><value>Where is {0} used? List its callers and what depends on it.</value></data>
   <data name="WelcomeBuildFailed" xml:space="preserve"><value>The last build failed — {0} error(s)</value></data>
+  <data name="WelcomeBuildFailedUncounted" xml:space="preserve"><value>The last build failed</value></data>
   <data name="WelcomeFixThem" xml:space="preserve"><value>Fix them</value></data>
   <data name="WelcomeHintAttach" xml:space="preserve"><value>attach a file</value></data>
   <data name="WelcomeHintCommands" xml:space="preserve"><value>commands</value></data>
   <data name="WelcomeHintNewLine" xml:space="preserve"><value>new line</value></data>
+  <data name="ModelRoleChat" xml:space="preserve"><value>chat</value></data>
+  <data name="ModelRoleAgent" xml:space="preserve"><value>agent</value></data>
+  <data name="ModelRoleCodeActions" xml:space="preserve"><value>code actions</value></data>
+  <data name="ModelRoleInlineEdit" xml:space="preserve"><value>inline edit</value></data>
+  <data name="ModelRoleAutocomplete" xml:space="preserve"><value>autocomplete</value></data>
+  <data name="ModelRoleUtility" xml:space="preserve"><value>titles and summaries</value></data>
+  <data name="ModelRoleCodeSearch" xml:space="preserve"><value>code search</value></data>
+  <data name="SuggestReview" xml:space="preserve"><value>The suggested models are in the form: review them, then Save.</value></data>
+  <data name="SuggestNoChange" xml:space="preserve"><value>These are already the best installed models.</value></data>
+  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>The server lists only embedding models: install a chat model first.</value></data>
+  <data name="SuggestNothingListed" xml:space="preserve"><value>The server lists no model: nothing to suggest.</value></data>
+  <data name="SuggestChatRecommended" xml:space="preserve"><value>Chat model: {0} — recommended by Inferpal's tests.</value></data>
+  <data name="SuggestChatUsable" xml:space="preserve"><value>Chat model: {0} — the best installed; usable for agent work in Inferpal's tests.</value></data>
+  <data name="SuggestChatNotRecommended" xml:space="preserve"><value>Chat model: {0} — the only kind installed; it fails most agent tasks in Inferpal's tests.</value></data>
+  <data name="SuggestChatUnmeasured" xml:space="preserve"><value>Chat model: {0} — not measured by Inferpal; the best guess among the installed models.</value></data>
+  <data name="SuggestInstallRecommended" xml:space="preserve"><value>For agent work, Inferpal's tests recommend {0} — none is installed.</value></data>
+  <data name="SuggestEmbeddingNone" xml:space="preserve"><value>Code search: no embedding model installed, so it searches by keywords (EmbeddingGemma is the one measured best).</value></data>
+  <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>Code search: automatic, which uses {0}.</value></data>
+  <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>Changing the code-search model rebuilds the project's index.</value></data>
+  <data name="SuggestFimMeasured" xml:space="preserve"><value>Autocomplete: {0} — the autocomplete model measured best.</value></data>
+  <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>Autocomplete: the chat model. {0} is installed, but with it the models need about {1} GB, more than the {2} GB set for your card.</value></data>
+  <data name="SuggestFimChatCompletes" xml:space="preserve"><value>Autocomplete: the chat model, which also autocompletes well.</value></data>
+  <data name="SuggestFimSameAsChat" xml:space="preserve"><value>Autocomplete: the chat model (Mellum2 is the autocomplete model measured best, if you install it).</value></data>
+  <data name="SuggestOverrides" xml:space="preserve"><value>Left as they are, in the advanced settings: {0}.</value></data>
+  <data name="LoadedModelsUnknown" xml:space="preserve"><value>This server does not say which models are loaded.</value></data>
+  <data name="LoadedModelsNone" xml:space="preserve"><value>No model is loaded right now.</value></data>
+  <data name="LoadedModelsUnreachable" xml:space="preserve"><value>The server did not answer: the loaded models are unknown.</value></data>
+  <data name="LoadedModelsCount" xml:space="preserve"><value>{0} model(s) loaded</value></data>
+  <data name="LoadedModelVram" xml:space="preserve"><value>{0} GB of graphics memory</value></data>
+  <data name="LoadedModelCpu" xml:space="preserve"><value>on the processor</value></data>
+  <data name="LoadedModelDiskSize" xml:space="preserve"><value>about {0} GB (size on disk)</value></data>
+  <data name="LoadedModelContext" xml:space="preserve"><value>{0} tokens of context</value></data>
+  <data name="LoadedModelStays" xml:space="preserve"><value>stays loaded</value></data>
+  <data name="LoadedModelUnloadsIn" xml:space="preserve"><value>unloads in {0} min</value></data>
+  <data name="LoadedModelUses" xml:space="preserve"><value>Used for {0}</value></data>
+  <data name="LoadedModelUnused" xml:space="preserve"><value>Not used by your settings</value></data>
+  <data name="UnloadNotSupported" xml:space="preserve"><value>This server does not let Inferpal unload models.</value></data>
+  <data name="UnloadWhileAnswering" xml:space="preserve"><value>A question is being answered: unload the models once it ends.</value></data>
+  <data name="UnloadNothing" xml:space="preserve"><value>No model was loaded.</value></data>
+  <data name="UnloadDone" xml:space="preserve"><value>Unloaded: {0}.</value></data>
+  <data name="UnloadKept" xml:space="preserve"><value>Still loaded: {0} — the server did not unload it.</value></data>
+  <data name="UnloadUnverified" xml:space="preserve"><value>Unload asked for {0}, but the server did not answer the check afterwards — whether it is still loaded is unknown.</value></data>
+  <data name="BtnSuggestModels" xml:space="preserve"><value>Suggest the best models</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Picks among the installed models, from Inferpal's measurements. Nothing is saved until you click Save.</value></data>
+  <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Loaded now</value></data>
+  <data name="NoteLoadedModels" xml:space="preserve"><value>An unloaded model loads again at the next request that needs it.</value></data>
+  <data name="BtnUnloadModel" xml:space="preserve"><value>Unload</value></data>
+  <data name="BtnUnloadAll" xml:space="preserve"><value>Unload all</value></data>
+  <data name="BtnRefreshLoaded" xml:space="preserve"><value>Refresh</value></data>
+  <data name="WelcomeCardProject" xml:space="preserve"><value>Explain this project</value></data>
+  <data name="WelcomeProjectPrompt" xml:space="preserve"><value>Give me an overview of this project: what it does, how it is organized, and where to start reading the code.</value></data>
+  <data name="WelcomeCardChanges" xml:space="preserve"><value>Review my changes</value></data>
+  <data name="WelcomeChangesPrompt" xml:space="preserve"><value>Review my uncommitted changes: point out bugs, risks and anything missing, such as tests.</value></data>
+  <data name="WelcomeOpenFileHint" xml:space="preserve"><value>Open a file to explain it, write its tests or find its usages.</value></data>
 </root>

@@ -152,18 +152,11 @@ internal partial class InferpalToolWindowData
         {
             if (_history[i].Role == "user") { _history.RemoveRange(i, _history.Count - i); break; }
         }
+        // The workspace block rode with the question taken back: the question asked again carries it again.
+        if (!Services.Prompting.WorkspaceContext.IsIn(_history)) _workspaceContextInjected = false;
 
         await SendCoreAsync(userText, oneTimeModel: null, attachments: [], ct: CancellationToken.None, clearPrompt: false);
     }
-
-    private Task ShowToolResultAsync(string toolName, string result) =>
-        RunOnVMContextAsync(() =>
-        {
-            var item = ChatMessageItem.ToolMsg(toolName, result, expanded: true);
-            ApplyItemTheme(item);
-            Messages.Insert(Messages.Count - 2, item);
-            ScrollToBottom();
-        });
 
     private Task ShowInfoAsync(string markdown) =>
         RunOnVMContextAsync(() =>

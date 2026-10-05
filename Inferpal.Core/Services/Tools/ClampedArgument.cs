@@ -23,6 +23,10 @@ namespace Inferpal.Services.Tools;
 /// </remarks>
 internal static class ClampedArgument
 {
+    /// <summary>How a note placed <see cref="Above"/> a report starts. A reader of the report's VERDICT line skips the
+    /// notes first (<see cref="RunTestsTool.WithoutNotes"/>): a note is not the verdict it qualifies.</summary>
+    internal const string NotePrefix = "Note: ";
+
     /// <param name="fallback">Used when the argument is absent — never reported: nothing was asked for.</param>
     /// <returns>The value to use, and the line to put above the report, or <c>null</c> when the
     /// request was honoured exactly.</returns>
@@ -36,7 +40,7 @@ internal static class ClampedArgument
         // call is the noise that gets the real ones skipped.
         if (used == asked) return (used, null);
 
-        return (used, $"Note: '{name}' was {asked}; this tool accepts {min}-{max}, "
+        return (used, $"{NotePrefix}'{name}' was {asked}; this tool accepts {min}-{max}, "
                     + $"so the report below uses {name}={used}.");
     }
 

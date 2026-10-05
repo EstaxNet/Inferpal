@@ -49,6 +49,8 @@ internal sealed class McpOAuthFlow
     public async Task<McpOAuthState> AuthorizeAsync(McpOAuthServer server, McpOAuthState? existing, CancellationToken ct)
     {
         var resource = McpOAuthMetadata.CanonicalResource(server.Url);
+        // A state obtained for another server (the name now points elsewhere) lends nothing, not even its client id.
+        if (existing is not null && !existing.BelongsTo(resource)) existing = null;
         var asm      = await DiscoverAsync(server, ct).ConfigureAwait(false);
         var scopes   = ResolveScopes(server, asm);
 
@@ -138,9 +140,10 @@ internal sealed class McpOAuthFlow
     private async Task<(string ClientId, string? ClientSecret)> EnsureClientAsync(
         McpOAuthServer server, McpOAuthState? existing, AuthServerMetadata asm, CancellationToken ct)
     {
-        // Reuse a previously registered/configured client where possible.
-        if (!string.IsNullOrEmpty(existing?.ClientId)) return (existing!.ClientId!, existing.ClientSecret);
+        // A client id the user CONFIGURED wins over one registered earlier: written in the settings to fix a sign-in,
+        // it was ignored as long as a stored one existed. Otherwise reuse the registered one.
         if (!string.IsNullOrEmpty(server.ClientId))    return (server.ClientId!, server.ClientSecret);
+        if (!string.IsNullOrEmpty(existing?.ClientId)) return (existing!.ClientId!, existing.ClientSecret);
 
         if (string.IsNullOrEmpty(asm.RegistrationEndpoint))
             throw new InvalidOperationException(

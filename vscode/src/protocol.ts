@@ -41,6 +41,12 @@ export interface ChatSendParams {
   /** Workspace-relative paths of files inlined as attachments — the host's RAG auto-context
    * skips their chunks instead of injecting them a second time (parity with VS). */
   attachedPaths?: string[];
+  /** A read-only code action (/explain, /review): the host answers with the code-actions model and no tools,
+   * whatever the agent-mode switch says — as the Visual Studio window does. */
+  codeAction?: boolean;
+  /** The question as the user wrote it, before the attached files were appended: what the per-turn auto-context
+   * searches for (Visual Studio searches the typed text). */
+  query?: string;
 }
 
 export interface ChatSendResult {
@@ -238,7 +244,7 @@ export interface CodeActionEdit {
 /** `codeAction/run` answer; `newText` is the full rewritten document when edited,
  * `failureDetail` the underlying error message when failed. */
 export interface CodeActionResult {
-  outcome: 'edited' | 'noChange' | 'failed';
+  outcome: 'edited' | 'noChange' | 'failed' | 'cancelled';
   edits: CodeActionEdit[];
   newText?: string | null;
   failureDetail?: string | null;
@@ -349,6 +355,8 @@ export interface SessionListResult {
 export interface SessionLoadResult {
   name: string;
   messages: SavedMessage[];
+  /** What the next question will send: the context gauge's fill for the conversation just loaded. */
+  nextTurnTokens?: number;
 }
 
 /** session/branch answer: the new branch, its parent and the truncated transcript to render. */
@@ -359,6 +367,8 @@ export interface SessionBranchResult {
   messages: SavedMessage[];
   /** Localized confirmation bubble, built host-side from the shared .resx. */
   message: string;
+  /** What the next question will send: the context gauge's fill for the branch. */
+  nextTurnTokens?: number;
 }
 
 /**
@@ -418,6 +428,9 @@ export interface SettingsField {
   emptyChoice?: string | null;
   /** Resource names of a nameValue table's column headers. */
   columns?: string[] | null;
+  /** Bounds of a numeric box (declared once in the Core schema): a value outside them is named, never saved. */
+  min?: number | null;
+  max?: number | null;
 }
 
 /** `settings/indexCard`: the code index as the Code search page shows it. */
@@ -431,6 +444,23 @@ export interface IndexCard {
   modelLine: string;
   buttonLabel: string;
   canRebuild: boolean;
+}
+
+/** `settings/loadedModels` and `settings/unloadModels`: what the server holds in memory, what Inferpal uses each model
+ *  for, and what the last unload did. */
+export interface LoadedModels {
+  summary: string;
+  rows: { name: string; uses: string; details: string }[];
+  canUnload: boolean;
+  message?: string | null;
+}
+
+/** `settings/suggestModels`: the best installed models, proposed into the form — never saved by the host. */
+export interface ModelSuggestion {
+  fields: { key: string; value: string; reason: string; changed: boolean }[];
+  notes: string[];
+  refusal?: string | null;
+  summary: string;
 }
 
 /** `settings/exclusions`: the patterns of .inferpal/project.json the index applies. */

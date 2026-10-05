@@ -310,9 +310,19 @@ internal partial class InferpalToolWindowData
         await RunOnVMContextAsync(() => AddPinnedFile(path!));
     }
 
-    /// <summary>Rebuilds the pinned-chip strip from <c>config.PinnedContextFiles</c> at startup.</summary>
+    /// <summary>
+    /// Rebuilds the pinned-chip strip from <c>config.PinnedContextFiles</c> — at startup, and whenever the
+    /// configuration is saved.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The SETTING is the source, never the chips: built once at startup, the chips went stale as soon as the
+    /// settings window pinned or disabled a file, and the next pin or unpin here wrote the stale strip back — a file
+    /// pinned in Settings silently unpinned, a file disabled there enabled again. The host reads the live setting on
+    /// every edit (<c>pins/add</c>, <c>pins/remove</c>); so does this window now.
+    /// </remarks>
     private void LoadPinnedFilesFromConfig()
     {
+        PinnedFiles.Clear();
         foreach (var path in PinnedFilesPolicy.ParseActive(_config.PinnedContextFiles))
             CreatePinnedChip(path);
         HasPinnedFiles = PinnedFiles.Count > 0;
@@ -323,7 +333,7 @@ internal partial class InferpalToolWindowData
     private void AddPinnedFile(string path)
     {
         path = path.Trim();
-        var current = PinnedFiles.Select(p => p.Path).ToList();
+        var current = PinnedFilesPolicy.ParseActive(_config.PinnedContextFiles);
         switch (PinnedFilesPolicy.Decide(current, path))
         {
             case PinDecision.CapReached:
@@ -334,20 +344,15 @@ internal partial class InferpalToolWindowData
                 return;
         }
 
-        CreatePinnedChip(path);
-        HasPinnedFiles = true;
-        SavePinnedFiles();
+        SavePinnedFiles([.. current, path]);
     }
 
     private void CreatePinnedChip(string path)
     {
         PinnedFileItem? item = null;
         item = new PinnedFileItem(path, Path.GetFileName(path), () => Post(() =>
-        {
-            PinnedFiles.Remove(item!);
-            HasPinnedFiles = PinnedFiles.Count > 0;
-            SavePinnedFiles();
-        }));
+            SavePinnedFiles(PinnedFilesPolicy.ParseActive(_config.PinnedContextFiles)
+                .Where(p => !string.Equals(p, path, PathComparer.Comparison)).ToList())));
         var chip         = ThemePalette.For(_isDark, _isHighContrast);
         item.Background  = chip.PinChipBg;
         item.Foreground  = chip.PinChipText;
@@ -355,10 +360,11 @@ internal partial class InferpalToolWindowData
         PinnedFiles.Add(item);
     }
 
-    private void SavePinnedFiles()
+    /// <param name="active">The pinned set as it is now: the live setting, edited.</param>
+    private void SavePinnedFiles(IReadOnlyList<string> active)
     {
-        _config.PinnedContextFiles = PinnedFilesPolicy.Serialize(
-            PinnedFiles.Select(p => p.Path), _config.PinnedContextFiles);
+        _config.PinnedContextFiles = PinnedFilesPolicy.Serialize(active, _config.PinnedContextFiles);
+        LoadPinnedFilesFromConfig();
         try
         {
             _config.Save();

@@ -173,7 +173,8 @@ internal sealed class DebugControlTool(
         return result.State is { } state
             ? DebugStateFormatter.Format(state, root()) + budget.Trailer
             : "The program ran to completion without stopping. No breakpoint was hit — check that the "
-            + "breakpoint is on a line the run actually reaches.";
+            + "breakpoint is on a line the run actually reaches. The session is over: the breakpoints you set were "
+            + "removed, set them again before the next start.";
     }
 
     private async Task<string> ResumeAsync(DebugStepKind? step, CancellationToken ct)

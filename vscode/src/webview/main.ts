@@ -27,11 +27,8 @@ setXraySink((msg) => post(msg));
 const topbarEl = document.getElementById('topbar')!;
 const messagesEl = document.getElementById('messages')!;
 const composerEl = document.getElementById('composer')!;
-const planEl = document.getElementById('plan')!;
-const statusEl = document.getElementById('statusline')!;
 const promptEl = document.getElementById('prompt') as HTMLTextAreaElement;
 const toolbarEl = document.getElementById('toolbar')!;
-const footerEl = document.getElementById('footerbar')!;
 
 // ── Local state (rebuilt from hydrate) ───────────────────────────────────────
 let busy = false;
@@ -345,7 +342,6 @@ sendBtn.addEventListener('click', () => {
 const toolSpacer = document.createElement('span');
 toolSpacer.className = 'spacer';
 toolbarEl.append(plusBtn, modeGroup, toolSpacer, ring, sendBtn);
-footerEl.hidden = true;
 
 function setBusy(value: boolean): void {
   busy = value;
@@ -353,10 +349,6 @@ function setBusy(value: boolean): void {
   sendBtn.title = value ? t('cancelTitle') : t('sendTitle');
   sendBtn.setAttribute('aria-label', sendBtn.title);
   sendBtn.classList.toggle('stop', value);
-  if (!value) {
-    statusEl.hidden = true;
-    statusEl.textContent = '';
-  }
 }
 
 /** Same thresholds as the Visual Studio gauge (50/80/95 %), the theme's chart colours. */
@@ -365,9 +357,12 @@ function updateGauge(promptTokens: number, lastTokens: number): void {
     ring.hidden = true;
     return;
   }
-  const pct = Math.min(100, (promptTokens * 100) / contextWindow);
+  // ⚠ The clamp belongs to the ARC, never to the value printed: past 100 % the backend is already dropping the head of
+  // the conversation, and "100%" read as "full" where the Visual Studio gauge says 187 % (ContextBudgetGauge.Compute).
+  const pct = (promptTokens * 100) / contextWindow;
+  const arc = Math.min(100, pct);
   const circumference = 2 * Math.PI * 8;
-  ringFill.setAttribute('stroke-dasharray', `${(circumference * pct) / 100} ${circumference}`);
+  ringFill.setAttribute('stroke-dasharray', `${(circumference * arc) / 100} ${circumference}`);
   ringFill.style.stroke = pct < 50 ? 'var(--vscode-descriptionForeground)'
     : pct < 80 ? 'var(--vscode-charts-yellow)'
     : pct < 95 ? 'var(--vscode-charts-orange)'
@@ -446,7 +441,6 @@ function setStatus(text: string): void {
 
 function renderPlan(plan: WvPlan | null): void {
   const target = turn?.plan;
-  planEl.hidden = true;
   if (!target) {
     return;
   }
@@ -937,7 +931,9 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
   });
 
   el.append(card ? head : document.createElement('span'), preview, actions);
-  target.el.appendChild(el);
+  // In the answer flow, in arrival order: the turn's body exists from its start, so a card put after it would
+  // stand BELOW the answer that follows it — the answer then reads above the approvals it depends on, out of view.
+  target.body.appendChild(el);
   // Enter answers "Allow once", Esc "Deny": the card takes the keyboard while it waits.
   allow.focus({ preventScroll: true });
   scrollToBottom();
@@ -1017,14 +1013,20 @@ function buildWelcome(): void {
         () => post({ type: 'send', text: t('welcomeUsagesPrompt', file) })),
     );
   } else {
+    // Without a file, what works without one: /explain, /fix and /test would only answer "open a file".
     cards.append(
-      welcomeCard('explain', t('cardExplain'), '', () => post({ type: 'send', text: '/explain' })),
-      welcomeCard('bug', t('cardFix'), '', () => post({ type: 'send', text: '/fix' })),
-      welcomeCard('test', t('cardTest'), '', () => post({ type: 'send', text: '/test' })),
+      welcomeCard('folder', t('cardProject'), '', () => post({ type: 'send', text: t('welcomeProjectPrompt') })),
+      welcomeCard('history', t('cardChanges'), '', () => post({ type: 'send', text: t('welcomeChangesPrompt') })),
       welcomeCard('help', t('cardHelp'), '', () => post({ type: 'send', text: '/help' })),
     );
   }
   welcomeEl.appendChild(cards);
+  if (!editorFile) {
+    const openHint = document.createElement('div');
+    openHint.className = 'welcome-for';
+    openHint.textContent = t('welcomeOpenFileHint');
+    welcomeEl.appendChild(openHint);
+  }
 
   if (problems > 0) {
     const banner = document.createElement('div');
@@ -1033,7 +1035,9 @@ function buildWelcome(): void {
     text.textContent = t('welcomeProblems', problems);
     const fix = document.createElement('button');
     fix.textContent = t('welcomeFixThem');
-    fix.addEventListener('click', () => post({ type: 'send', text: '@problems ' + t('welcomeFixPrompt') }));
+    // The Problems panel attached as the @problems picker attaches it, then the request: typed, "@problems" names no
+    // file and reached the model as text, without a single error.
+    fix.addEventListener('click', () => post({ type: 'fixProblems', text: t('welcomeFixPrompt') }));
     banner.append(icon('warning', 14), text, fix);
     welcomeEl.appendChild(banner);
   }
@@ -1518,7 +1522,7 @@ promptEl.addEventListener('keydown', (e) => {
 });
 
 // ── State ← extension ────────────────────────────────────────────────────────
-function renderTranscript(transcript: WvTranscriptItem[]): void {
+function renderTranscript(transcript: WvTranscriptItem[], running = false): void {
   // A rebuilt conversation (loaded session, branch, restored view) opens at its end, whatever the
   // previous one was scrolled to.
   following = true;
@@ -1545,8 +1549,19 @@ function renderTranscript(transcript: WvTranscriptItem[]): void {
       }
     }
   }
-  turn = null;
-  transcriptEmpty = transcript.length === 0;
+  // ⚠ A rebuild DURING a turn — the question renamed with the files it carries, a view restored — keeps the running
+  // turn open, under the model's name. Closed, the plan, the status and the header of the answer being written had
+  // nowhere to go: the plan card never appeared, and the next token opened a turn with no name.
+  if (running) {
+    const open = turn ?? newTurn(currentModel);
+    if (!open.who.textContent) {
+      open.who.textContent = currentModel;
+    }
+    open.when.textContent = t('turnWorking', open.steps + 1);
+  } else {
+    turn = null;
+  }
+  transcriptEmpty = transcript.length === 0 && !running;
   showWelcomeIfEmpty();
   refreshRegenerate();
   applySearch();
@@ -1571,7 +1586,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       mentionCategories = msg.mentionCategories ?? [];
       renderChips(msg.chips ?? []);
       renderPins(msg.pins ?? []);
-      renderTranscript(msg.transcript ?? []);
+      renderTranscript(msg.transcript ?? [], msg.busy === true);
 
       // The model list opens from the header; an empty list says the backend listed nothing (openModelMenu), never a
       // one-entry list that would read as a backend serving one model.

@@ -13,7 +13,7 @@ counts the unsaved changes, and **Cancel** puts the form back as it was saved.
 
 | Page | Contains |
 |---|---|
-| **Server and models** | Server address and **Test**, chat model, autocomplete model, code search model, context window. *Show advanced settings* adds: a model per task (agent, explain/fix/refactor, edit with AI, background tasks, `/bench` routing), sampling, your GPU (graphics memory, unloading idle models), connection (server type, API key) |
+| **Server and models** | Server address and **Test**, chat model, autocomplete model, code search model, context window; **Suggest the best models** (picks among the installed models from Inferpal's measurements, fills the form, saves nothing); **Loaded now** (the models in memory, what each is used for, its memory, context and when it unloads, with **Unload** and **Unload all**). *Show advanced settings* adds: a model per task (agent, explain/fix/refactor, edit with AI, background tasks, `/bench` routing), sampling, your GPU (graphics memory, unloading idle models), connection (server type, API key) |
 | **Agent and approvals** | Plan before acting, check the build after each edit, steps per request; *Ask me before changing files, running commands or going online*, with the number of approval rules; custom instructions, language persona; time limits (folded) |
 | **Context and memory** | Long conversations (summarizing, turns kept whole, session recap, summary time limit, opening messages kept as is); pinned files |
 | **Code search** | Background indexing, relevant code added to each question, language servers, results per search, minimum similarity |
@@ -42,7 +42,7 @@ Every persisted setting, its type, and default value.
 | `baseUrl` | string | `"http://localhost:11434"` | Model server URL |
 | `apiKey` | string | `""` | API key for OpenAI-compatible servers (Bearer). ⚠ Stored **in clear text** in this file, unlike MCP OAuth tokens, which are encrypted (`mcp-oauth.dat`, DPAPI or the editor's keychain). The file sits under your user profile with the usual ACLs, but anything that can read your `%AppData%` can read this key |
 | `defaultModel` | string | `"llama3.1"` | Main chat model. Left at this default when the server does not have it, the best installed chat model is used instead, saved here, and a notice says so; a model you chose is never replaced |
-| `codeActionsModel` | string | `""` | Model for Explain/Fix/Refactor (empty = `defaultModel`) |
+| `codeActionsModel` | string | `""` | Model for Explain, Review, Fix, Refactor and Doc, in both editors (empty = the chat model) |
 | `inlineCompletionModel` | string | `""` | Dedicated FIM model (empty = `defaultModel`) |
 | `inlineEditModel` | string | `""` | Inline Edit model (fallback: `codeActionsModel` → `defaultModel`) |
 | `agentModel` | string | `""` | AgentOrchestrator model (empty = `defaultModel`) |
@@ -83,7 +83,7 @@ Every persisted setting, its type, and default value.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `contextWindowSize` | int | `8192` | `num_ctx` + client token budget (0 = model default, trimming off) |
+| `contextWindowSize` | int | `8192` | `num_ctx` + client token budget. 0 = the model's default: the window LM Studio, vLLM or llama-server report loading is then the budget; with Ollama, which reports none, trimming is off |
 | `useRecommendedSampling` | bool | `true` | Send the sampling settings the model's vendor recommends, for the families in [Models](models.md) (`false` = the server's own settings) |
 | `contextWindowKeepTurns` | int | `4` | Recent turns to keep when trimming — at most: turns too long to fit next to the tool definitions are summarized with the rest |
 | `compactionEnabled` | bool | `true` | Summarize old messages (LLM) instead of hard truncation |

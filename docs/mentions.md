@@ -36,6 +36,9 @@ replaced with the corresponding attachment.
 > `@file` to `@tree` are offered in a two-level popup, and resolved mentions appear as
 > context chips in the composer, alongside a "+" attach menu (active file, selection, file
 > from disk, and **pin the active file** — pinned files show above the input box, ✕ unpins one).
+> A path typed after `@` (`@src/app.ts`) attaches the file directly: up to 5 files per question, each up to 40,000
+> characters (a chip, 60,000). A file sent in part, or left out, is named under your question with the counts, and
+> the model is told the same, with `read_file` to read the rest.
 
 ## Related
 

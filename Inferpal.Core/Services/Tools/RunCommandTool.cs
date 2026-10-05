@@ -84,6 +84,12 @@ internal sealed class RunCommandTool : ITool, IDisposable
         // says — never to the process's, which in Visual Studio is the extension host's folder.
         var workDir    = string.IsNullOrWhiteSpace(rawWorkDir) ? null : PathSanitizer.Sanitize(rawWorkDir, _session.CurrentDirectory);
 
+        // ⚠ A folder that does not exist is refused BEFORE the prompt: approved as "[cwd: …]", the command used to run
+        // in the session's folder or the workspace root instead — `git clean -fdx` approved for one folder, run in another.
+        if (workDir is not null && !System.IO.Directory.Exists(workDir))
+            return $"Error: 'working_directory' {workDir} is not an existing folder — nothing ran. Check the path, or omit "
+                 + $"it to run in {_session.CurrentDirectory}.";
+
         // Surface a model-chosen working directory in the prompt: approving "git clean -fdx"
         // reads very differently when it runs outside the session cwd the user has in mind.
         // Permission rules keep matching the raw command (the documented subject for run_command).
@@ -94,12 +100,13 @@ internal sealed class RunCommandTool : ITool, IDisposable
         var background = args.Bool("background", false);
         if (background)
         {
-            var (cwd, env) = _session.Snapshot();
-            var startCwd   = workDir ?? cwd;
+            var (_, env)   = _session.Snapshot();
+            var (startCwd, vanished) = _session.StartDirectory(workDir);
             var (dialect, _) = Shell.ShellLauncher.Resolve();
             var script     = ShellStateProtocol.BuildBackgroundScript(dialect, startCwd, env, command);
             var id         = _background.Start(script, command, startCwd);
-            return $"Started background job '{id}'. Use action='poll' id='{id}' to read its output, action='stop' id='{id}' to terminate it.";
+            return (vanished is null ? "" : ShellSession.VanishedNote(vanished, startCwd))
+                 + $"Started background job '{id}'. Use action='poll' id='{id}' to read its output, action='stop' id='{id}' to terminate it.";
         }
 
         return await _session.RunAsync(command, workDir, ct);

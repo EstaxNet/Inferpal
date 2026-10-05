@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
@@ -37,6 +38,14 @@ internal sealed class GhostTextViewListener : IWpfTextViewCreationListener
     // The handler itself lives in BuildEventsBootstrap (shared with GhostTextPackage).
     private static int _buildEventsInitializing = 0;
 
+    /// <summary>
+    /// The editor's completion broker, so that Tab and Escape go to an open completion list. ⚠ Optional: a required
+    /// import that does not resolve fails the composition of this whole part, and ghost text, the inline diff preview
+    /// and the build bootstrap would all die with it, in silence. Missing, the keys behave as before.
+    /// </summary>
+    [Import(AllowDefault = true)]
+    internal IAsyncCompletionBroker? CompletionBroker { get; set; }
+
     // §22 tranche 2: in-process, this IS devenv — the family-A signal instance key is our own
     // PID. Declared here (and in GhostTextPackage) because this MEF listener is the in-process
     // bootstrap that always loads, and InlineDiffController reads a scoped channel.
@@ -51,7 +60,7 @@ internal sealed class GhostTextViewListener : IWpfTextViewCreationListener
         // ComponentModelCache kept alive for three days).
         Services.Signals.InProcAliveSignal.Record(Services.Signals.InProcAliveSignal.ComponentMef);
 
-        _ = new GhostTextController(textView);
+        _ = new GhostTextController(textView, CompletionBroker);
         _ = new InlineDiffController(textView);   // inline diff preview (self-manages via view.Closed)
 
         // Retry build-event subscription on each new editor until the shared handler exists

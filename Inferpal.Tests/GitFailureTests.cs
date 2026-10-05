@@ -248,7 +248,7 @@ public sealed class GitFailureTests : IDisposable
 
     /// <summary>The localized failure sentence up to where git's own words start.</summary>
     private static string FailurePrefix =>
-        Strings.GitCommandFailed("status", "").Split('')[0];
+        Strings.GitCommandFailed("status", "\u0001").Split('\u0001')[0];
 
     private static bool RunGit(string args, string workDir)
     {

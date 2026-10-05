@@ -6,7 +6,8 @@ namespace Inferpal.Services.Mcp.OAuth;
 /// near expiry. Never launches the interactive browser flow — returns null when re-authorization is
 /// needed, leaving the explicit "Authorize" action to the settings UI.
 /// </summary>
-internal sealed class McpStoredTokenProvider(string serverName, McpTokenStore store, McpOAuthFlow refreshFlow)
+/// <param name="resource">The server's canonical URL: a stored state obtained for another one is never used.</param>
+internal sealed class McpStoredTokenProvider(string serverName, string resource, McpTokenStore store, McpOAuthFlow refreshFlow)
     : IMcpTokenProvider
 {
     private static readonly TimeSpan ExpirySkew = TimeSpan.FromSeconds(60);
@@ -15,7 +16,7 @@ internal sealed class McpStoredTokenProvider(string serverName, McpTokenStore st
     public async Task<string?> GetAccessTokenAsync(CancellationToken ct)
     {
         var state = store.Get(serverName);
-        if (state is null) return null;
+        if (state is null || !state.BelongsTo(resource)) return null;
         if (state.HasUsableAccessToken(ExpirySkew)) return state.AccessToken;
         if (string.IsNullOrEmpty(state.RefreshToken)) return null;
 
@@ -24,7 +25,7 @@ internal sealed class McpStoredTokenProvider(string serverName, McpTokenStore st
         {
             // Re-read under the gate: a concurrent caller may have refreshed already.
             state = store.Get(serverName);
-            if (state is null) return null;
+            if (state is null || !state.BelongsTo(resource)) return null;
             if (state.HasUsableAccessToken(ExpirySkew)) return state.AccessToken;
             if (string.IsNullOrEmpty(state.RefreshToken)) return null;
 

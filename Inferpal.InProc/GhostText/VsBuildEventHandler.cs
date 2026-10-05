@@ -53,11 +53,19 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
     {
         // fSucceeded == 0  →  at least one project failed.
         // fCancelCommand != 0  →  user cancelled; don't offer AI fix.
-        if (fSucceeded != 0 || fCancelCommand != 0) return VSConstants.S_OK;
+        if (fCancelCommand != 0) return VSConstants.S_OK;
 
         // UpdateSolution_Done is called on the VS UI thread — safe to call IVsSolution here.
         var solutionPath = GetSolutionPath();
         if (string.IsNullOrEmpty(solutionPath)) return VSConstants.S_OK;
+
+        // ⚠ A success is said too: the "last build failed" banner of an earlier build otherwise stayed up after the
+        // user fixed the errors and built again — the one moment it is plainly false.
+        if (fSucceeded != 0)
+        {
+            _ = Task.Run(() => BuildSignalFile.Write(solutionPath!, errorLines: null, errorCount: 0, succeeded: true));
+            return VSConstants.S_OK;
+        }
 
         // VS populates the Error List asynchronously after UpdateSolution_Done fires.
         // Collecting errors synchronously here often returns an empty list.
@@ -81,17 +89,18 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
 
             // Error collection via IVsTaskList requires the VS UI thread.
             List<string> errors = new();
+            var errorCount = 0;
             try
             {
 #pragma warning disable VSTHRD010  // SwitchToMainThreadAsync handles the transition
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                errors = CollectBuildErrors();
+                (errors, errorCount) = CollectBuildErrors();
 #pragma warning restore VSTHRD010
             }
             catch { /* non-critical — signal will be written with empty errors */ }
 
             // Write the signal from a background thread (file I/O should not block UI).
-            await Task.Run(() => BuildSignalFile.Write(solutionPath, errors))
+            await Task.Run(() => BuildSignalFile.Write(solutionPath, errors, errorCount))
                       .ConfigureAwait(false);
         }
         catch { /* non-critical */ }
@@ -107,16 +116,19 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
     /// Reads error-level task items from the VS Error List via <c>IVsTaskList</c>.
     /// Must be called on the UI thread (same constraint as <c>UpdateSolution_Done</c>).
     /// Returns an empty list if <c>_taskList</c> is unavailable or an exception occurs.
+    /// ⚠ The lines stop at <see cref="MaxErrorLines"/>, the COUNT does not: announced from the lines, a build with 200
+    /// errors read "30 error(s)".
     /// </summary>
-    private List<string> CollectBuildErrors()
+    private (List<string> Lines, int Count) CollectBuildErrors()
     {
         var result = new List<string>();
-        if (_taskList is null) return result;
+        var count  = 0;
+        if (_taskList is null) return (result, count);
         try
         {
 #pragma warning disable VSTHRD010  // called from UpdateSolution_Done which runs on the UI thread
             if (_taskList.EnumTaskItems(out var enumItems) != VSConstants.S_OK || enumItems is null)
-                return result;
+                return (result, count);
 
             var itemBuf    = new IVsTaskItem[1];
             var fetchedBuf = new uint[1];
@@ -125,8 +137,7 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
             var priArr = new VSTASKPRIORITY[1];
 
             while (enumItems.Next(1, itemBuf, fetchedBuf) == VSConstants.S_OK
-                   && fetchedBuf[0] == 1
-                   && result.Count < 30)
+                   && fetchedBuf[0] == 1)
             {
                 var item = itemBuf[0];
                 if (item is null) continue;
@@ -138,6 +149,9 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
 
                 item.get_Text(out var text);
                 if (string.IsNullOrWhiteSpace(text)) continue;
+
+                count++;
+                if (result.Count >= MaxErrorLines) continue;
 
                 // Build a location prefix if the task carries file/line information.
                 // COM [out] BSTR → C# method named "Document"/"Line" (no get_ prefix).
@@ -155,8 +169,11 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
 #pragma warning restore VSTHRD010
         }
         catch { /* non-critical */ }
-        return result;
+        return (result, count);
     }
+
+    /// <summary>The error lines carried to the out-of-process side — the count is not capped.</summary>
+    private const int MaxErrorLines = 30;
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 

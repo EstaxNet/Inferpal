@@ -1,6 +1,7 @@
 ﻿using System.Windows.Input;
 using System.Windows.Threading;
 using Inferpal.Services.CodeActions;
+using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
@@ -23,6 +24,7 @@ internal sealed class GhostTextController
     private readonly IWpfTextView       _view;
     private readonly GhostTextAdornment _adornment;
     private readonly Dispatcher         _dispatcher;
+    private readonly IAsyncCompletionBroker? _completion;
 
     private readonly object              _gate = new();
     private Timer?                       _debounce;
@@ -33,9 +35,10 @@ internal sealed class GhostTextController
     // Volatile: set on thread-pool (TriggerAsync), read on UI thread (AcceptCompletion).
     private volatile ITextSnapshot? _triggerSnapshot;
 
-    internal GhostTextController(IWpfTextView view)
+    internal GhostTextController(IWpfTextView view, IAsyncCompletionBroker? completion = null)
     {
         _view       = view;
+        _completion = completion;
         _adornment  = new GhostTextAdornment(view);
         _dispatcher = view.VisualElement.Dispatcher;
 
@@ -145,7 +148,8 @@ internal sealed class GhostTextController
     }
 
     /// <summary>How many lines of context the FIM prompt keeps on each side of the caret.</summary>
-    /// <remarks>They bound the READ, rather than trimming after it.</remarks>
+    /// <remarks>They bound the READ, rather than trimming after it. Asymmetric on purpose: the code before the caret is
+    /// what the model continues; the code after it only tells it where to stop.</remarks>
     private const int PrefixLines = 64;
     private const int SuffixLines = 16;
 
@@ -174,8 +178,9 @@ internal sealed class GhostTextController
         var lastLine  = snapshot.GetLineFromLineNumber(
             Math.Min(snapshot.LineCount - 1, caretLine.LineNumber + SuffixLines));
 
-        // Don't fire when IntelliSense trigger chars were just typed.
+        // Don't fire when IntelliSense trigger chars were just typed, nor while its list is open: Tab belongs to it.
         if (cursor > 0 && IsIntelliSenseTrigger(snapshot[cursor - 1])) return null;
+        if (CompletionActive()) return null;
 
         var prefix = snapshot.GetText(Span.FromBounds(firstLine.Start.Position, cursor));
         var suffix = snapshot.GetText(Span.FromBounds(cursor, lastLine.End.Position));
@@ -189,17 +194,30 @@ internal sealed class GhostTextController
     {
         if (_adornment.PendingCompletion is not { } completion) return;
 
-        if (e.Key == Key.Tab)
+        switch (GhostTextKeys.Decide(e.Key, Keyboard.Modifiers, CompletionActive()))
         {
-            AcceptCompletion(completion);
-            e.Handled = true;
+            case GhostKeyAction.Accept:
+                AcceptCompletion(completion);
+                e.Handled = true;
+                break;
+            case GhostKeyAction.Dismiss:
+                _adornment.Hide();
+                lock (_gate) { _cts?.Cancel(); }
+                e.Handled = true;
+                break;
+            case GhostKeyAction.LeaveToCompletion:
+                // The list commits (Tab) or closes (Escape): the suggestion no longer matches either way.
+                _adornment.Hide();
+                lock (_gate) { _cts?.Cancel(); }
+                break;
         }
-        else if (e.Key == Key.Escape)
-        {
-            _adornment.Hide();
-            lock (_gate) { _cts?.Cancel(); }
-            e.Handled = true;
-        }
+    }
+
+    /// <summary>Is the editor's completion list open in this view? <c>false</c> when the broker is unknown.</summary>
+    private bool CompletionActive()
+    {
+        try { return _completion?.IsCompletionActive(_view) == true; }
+        catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.CompletionActive", ex); return false; }
     }
 
     private void AcceptCompletion(string completion)

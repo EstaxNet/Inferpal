@@ -286,6 +286,96 @@
                     </StackPanel>
                 </UniformGrid>
 
+                <!-- Suggest the best models: proposed into the form as unsaved changes, never saved here. -->
+                <StackPanel Margin="0,0,0,18">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="{Binding BtnSuggestModels}" Command="{Binding SuggestModelsCommand}"
+                                IsEnabled="{Binding NotSuggesting}" Padding="12,4"
+                                AutomationProperties.Name="{Binding BtnSuggestModels}"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding HintSuggestModels}" Style="{StaticResource Hint}"/>
+                    <StackPanel Margin="0,6,0,0" Visibility="{Binding HasSuggestion, Converter={StaticResource b2v}}">
+                        <ItemsControl ItemsSource="{Binding SuggestionLines}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,1"
+                                               Foreground="{Binding DataContext.TextForeground, ElementName=root}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ItemsControl ItemsSource="{Binding SuggestionNotes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,1"
+                                               Foreground="{Binding DataContext.WarningForeground, ElementName=root}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding SuggestionSummary}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Foreground="{Binding TextForeground}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Loaded now: what the server holds in memory, what each model is used for, and the unload buttons. -->
+                <TextBlock Text="{Binding LabelLoadedModels}" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{Binding LoadedModelsSummary}" FontWeight="SemiBold" TextWrapping="Wrap"
+                               VerticalAlignment="Center" Foreground="{Binding TextForeground}"/>
+                    <Button Grid.Column="1" FontFamily="Segoe MDL2 Assets" Content="&#xE72C;" Command="{Binding RefreshLoadedCommand}"
+                            ToolTip="{Binding BtnRefreshLoaded}" AutomationProperties.Name="{Binding BtnRefreshLoaded}"
+                            Padding="8,4" Margin="6,0,0,0"/>
+                    <Button Grid.Column="2" Content="{Binding BtnUnloadAll}" Command="{Binding UnloadAllCommand}"
+                            Visibility="{Binding CanUnloadAll, Converter={StaticResource b2v}}" Padding="12,4" Margin="6,0,0,0"/>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding LoadedModelRows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{Binding DataContext.McpRowBackground, ElementName=root}"
+                                    BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="1"
+                                    CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontFamily="Cascadia Mono, Consolas" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{Binding DataContext.TextForeground, ElementName=root}"/>
+                                        <TextBlock Text="{Binding Uses}" TextWrapping="Wrap"
+                                                   Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                                        <TextBlock Text="{Binding Details}" TextWrapping="Wrap"
+                                                   Visibility="{Binding HasDetails, Converter={StaticResource b2v}}"
+                                                   Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="{Binding DataContext.BtnUnloadModel, ElementName=root}"
+                                            Command="{Binding UnloadCommand}" AutomationProperties.Name="{Binding DataContext.BtnUnloadModel, ElementName=root}"
+                                            Visibility="{Binding CanUnload, Converter={StaticResource b2v}}"
+                                            Padding="10,3" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding LoadedModelsMessage}" TextWrapping="Wrap" Margin="0,0,0,4"
+                           Foreground="{Binding WarningForeground}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="{Binding NoteLoadedModels}" Style="{StaticResource Hint}" Margin="0,0,0,18"/>
+
                 <Border BorderBrush="{Binding NavLineBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,0,0,16">
                     <CheckBox IsChecked="{Binding ShowAdvanced, Mode=TwoWay}" Foreground="{Binding TextForeground}">
                         <TextBlock Text="{Binding LabelShowAdvanced}" Foreground="{Binding TextForeground}" TextWrapping="Wrap"/>

@@ -50,6 +50,14 @@ internal sealed record SettingOption(string Value, string Text, Func<string>? Lo
 /// <param name="EmptyChoice">Resource name of what an optional model list shows for its empty value — the model
 /// that does the work then ("Same as chat"): an empty entry says nothing, and the hint had to explain it.</param>
 /// <param name="Columns">Resource names of the column headers of a <c>nameValue</c> table (name, then value).</param>
+/// <param name="Min">Smallest value a numeric box accepts.</param>
+/// <param name="Max">Largest value a numeric box accepts.</param>
+/// <remarks>
+/// ⚠ The bounds are declared HERE, once, and both panels read them: each panel used to hold its own — the Visual
+/// Studio window clamped in silence (50 results saved as 20, the box still showing 50, "1 unsaved change" for ever),
+/// the VS Code panel not at all (50 saved). A value outside them is applied no more than a typo is
+/// (<see cref="SettingsFallback.WasIgnored"/>): the field is named and its saved value kept.
+/// </remarks>
 internal sealed record SettingField(
     string  Key,
     SettingKind Kind,
@@ -64,7 +72,13 @@ internal sealed record SettingField(
     string? Editor = null,
     bool    ZeroIsEmpty = false,
     string? EmptyChoice = null,
-    IReadOnlyList<string>? Columns = null);
+    IReadOnlyList<string>? Columns = null,
+    int?    Min = null,
+    int?    Max = null)
+{
+    /// <summary>Is <paramref name="value"/> within the box's bounds?</summary>
+    public bool Accepts(int value) => (Min is null || value >= Min) && (Max is null || value <= Max);
+}
 
 /// <summary>A group of fields under a title (empty = no heading), with an optional description.</summary>
 /// <param name="Gate">Reveal group the section belongs to: <c>advanced</c> sections show only when the page's
@@ -77,7 +91,9 @@ internal sealed record SettingField(
 /// them), <c>indexCard</c> (the code index: state, counts, what it left out, its model), <c>indexExclusions</c> (the
 /// project's own exclusions), <c>docsSites</c> (the @Docs sites), <c>contextUsage</c> (how full the conversation's
 /// window is, and with what), <c>projectFiles</c> (the project's files the prompt reads), <c>fimModel</c> and
-/// <c>editModel</c> (the model a page's feature uses, set on another page).</param>
+/// <c>editModel</c> (the model a page's feature uses, set on another page), <c>suggestModels</c> (the best installed
+/// models, proposed into the form, never saved) and <c>loadedModels</c> (what the server holds in memory, and the
+/// unload buttons).</param>
 internal sealed record SettingSection(
     string Title,
     IReadOnlyList<SettingField> Fields,
@@ -197,9 +213,10 @@ internal static class SettingsSchema
                 new("ragEmbeddingModel",     SettingKind.Model, "LabelRagEmbeddingModel",     "HintRagEmbeddingModel",
                     EmptyChoice: "SettingsAutomaticBest"),
                 new("contextWindowSize",     SettingKind.Int,   "LabelContextWindowSize",     "HintContextWindowSize",     Unit: "UnitTokens",
-                    HintNotOllama: "HintContextWindowSizeClientTrim"),
+                    HintNotOllama: "HintContextWindowSizeClientTrim", Min: 0),
             ],
-            Grid: true),
+            Grid: true, Widget: "suggestModels"),
+            new("SettingsSectionLoadedModels", [], Note: "NoteLoadedModels", Widget: "loadedModels"),
             new("SettingsSectionModelPerTask",
             [
                 new("agentModel",       SettingKind.Model, "LabelAgentModel",       "HintAgentModel",       OpensFold: true,
@@ -223,7 +240,8 @@ internal static class SettingsSchema
                 new("vramBudgetGb",            SettingKind.Float, "LabelVramBudget",       "HintVramBudget",       Unit: "UnitGigabytes",
                     ZeroIsEmpty: true),
                 new("modelAutoUnloadEnabled",  SettingKind.Bool,  "LabelModelAutoUnload",  "HintModelAutoUnload"),
-                new("modelIdleTimeoutMinutes", SettingKind.Int,   "LabelModelIdleTimeout", "HintModelIdleTimeout", Unit: "UnitMinutes"),
+                new("modelIdleTimeoutMinutes", SettingKind.Int,   "LabelModelIdleTimeout", "HintModelIdleTimeout", Unit: "UnitMinutes",
+                    Min: 1),
             ],
             Gate: AdvancedGate),
             new("SectionConnection",
@@ -241,7 +259,8 @@ internal static class SettingsSchema
             [
                 new("agentModeEnabled",   SettingKind.Bool, "LabelAgentModeEnabled",   "HintAgentModeEnabled"),
                 new("smartFixEnabled",    SettingKind.Bool, "LabelSmartFixEnabled",    "HintSmartFixEnabled"),
-                new("agentMaxIterations", SettingKind.Int,  "LabelAgentMaxIterations", "HintAgentMaxIterations", Unit: "UnitIterations"),
+                new("agentMaxIterations", SettingKind.Int,  "LabelAgentMaxIterations", "HintAgentMaxIterations", Unit: "UnitIterations",
+                    Min: 0),
             ]),
             new("SettingsSectionApprovals",
             [
@@ -271,10 +290,14 @@ internal static class SettingsSchema
             ]),
             new("",
             [
-                new("contextWindowKeepTurns",   SettingKind.Int,  "LabelContextWindowKeepTurns", "HintContextWindowKeepTurns", Unit: "UnitTurns"),
-                new("oodaTurnThreshold",        SettingKind.Int,  "LabelOodaTurnThreshold",      "HintOodaTurnThreshold",      Unit: "UnitTurns"),
-                new("compactionTimeoutSeconds", SettingKind.Int,  "LabelCompactionTimeout",      "HintCompactionTimeout",      Unit: "UnitSeconds"),
-                new("kvCacheAnchorMessages",    SettingKind.Int,  "LabelKvCacheAnchor",          "HintKvCacheAnchor",          Unit: "UnitMessages"),
+                new("contextWindowKeepTurns",   SettingKind.Int,  "LabelContextWindowKeepTurns", "HintContextWindowKeepTurns", Unit: "UnitTurns",
+                    Min: 1),
+                new("oodaTurnThreshold",        SettingKind.Int,  "LabelOodaTurnThreshold",      "HintOodaTurnThreshold",      Unit: "UnitTurns",
+                    Min: 0),
+                new("compactionTimeoutSeconds", SettingKind.Int,  "LabelCompactionTimeout",      "HintCompactionTimeout",      Unit: "UnitSeconds",
+                    Min: 10, Max: 300),
+                new("kvCacheAnchorMessages",    SettingKind.Int,  "LabelKvCacheAnchor",          "HintKvCacheAnchor",          Unit: "UnitMessages",
+                    Min: 0, Max: 20),
             ],
             Grid: true),
             new("SettingsSectionAlwaysInPrompt",
@@ -295,7 +318,8 @@ internal static class SettingsSchema
             ]),
             new("",
             [
-                new("ragTopK",                SettingKind.Int,   "LabelRagTopK",                "HintRagTopK",                Unit: "UnitChunks"),
+                new("ragTopK",                SettingKind.Int,   "LabelRagTopK",                "HintRagTopK",                Unit: "UnitChunks",
+                    Min: 1, Max: 20),
                 new("ragSimilarityThreshold", SettingKind.Float, "LabelRagSimilarityThreshold", "HintRagSimilarityThreshold", Unit: "UnitRangeZeroToOne"),
             ],
             Grid: true, Widget: "indexExclusions"),
@@ -365,6 +389,9 @@ internal static class SettingsSchema
     /// <summary>Every editable field, flattened — for validation and for the adapters.</summary>
     public static IEnumerable<SettingField> AllFields =>
         Tabs.SelectMany(t => t.Sections).SelectMany(s => s.Fields);
+
+    /// <summary>The field of a configuration key (its JSON name).</summary>
+    public static SettingField Field(string key) => AllFields.First(f => f.Key == key);
 
     /// <summary>
     /// Every resource name the form displays — page titles and descriptions, section titles,

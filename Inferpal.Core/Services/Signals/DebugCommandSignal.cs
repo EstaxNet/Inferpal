@@ -66,6 +66,11 @@ internal static class DebugCommandSignal
     /// <summary>Written by the in-process driver while it is able to serve requests.</summary>
     internal static string ReadyPath => SignalFile.ScopedPathFor("debug_ready");
 
+    /// <summary>The id of the last request its caller stopped waiting for.</summary>
+    internal static string WithdrawnPath => SignalFile.ScopedPathFor("debug_withdrawn");
+
+    private sealed record WithdrawnMarker([property: JsonPropertyName("id")] string Id);
+
     /// <summary>A request older than this is ignored (host died between write and read).</summary>
     internal static TimeSpan MaxAge { get; set; } = TimeSpan.FromMinutes(10);
 
@@ -153,12 +158,12 @@ internal static class DebugCommandSignal
                 await Task.Delay(60, ct);
             }
             var last = TryReadResponse(id);
-            if (last is null) DiscardRequest();
+            if (last is null) DiscardRequest(id);
             return last;
         }
         catch (OperationCanceledException)
         {
-            DiscardRequest();
+            DiscardRequest(id);
             throw;
         }
     }
@@ -174,9 +179,24 @@ internal static class DebugCommandSignal
     }
 
     /// <summary>Withdraws an unanswered request so it cannot be executed late.</summary>
-    internal static void DiscardRequest()
+    /// <remarks>
+    /// ⚠ Deleting the file only withdraws a request the driver has not CLAIMED yet — a 100 ms window. Once claimed, a
+    /// <c>start</c> builds for minutes and then launches the user's program, a capture attaches the debugger, long after
+    /// the user pressed Stop or the caller gave up. So the id is also marked withdrawn, and the driver watches the mark
+    /// while it executes (<see cref="IsWithdrawn"/>).
+    /// </remarks>
+    internal static void DiscardRequest(string? id = null)
     {
         SignalFile.Delete(RequestPath);
+        if (id is not null)
+            SignalFile.Write(WithdrawnPath, new WithdrawnMarker(id), "DebugCommandSignal.Withdraw");
+    }
+
+    /// <summary>Driver side: has the caller of <paramref name="id"/> stopped waiting for it?</summary>
+    internal static bool IsWithdrawn(string id)
+    {
+        try { return SignalFile.TryRead<WithdrawnMarker>(WithdrawnPath)?.Id == id; }
+        catch { return false; }
     }
 
     // ── Driver side (devenv, in-process) ────────────────────────────────────────────

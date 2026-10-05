@@ -127,12 +127,9 @@ internal sealed class BackgroundTaskToolRegistry(
         var result = await inner.ExecuteAsync(name, args, ct);
         if (proposals is null || proposals.RequestCount == before) return result;
 
-        // LastOrDefault, not Last: a composite tool can request approval under a subject that
-        // records no proposal carrying THIS registration name — Last then threw out of a loop
-        // whose contract is never-throw.
-        var recorded = proposals.Proposals.LastOrDefault(p =>
-            string.Equals(p.Tool, name, StringComparison.OrdinalIgnoreCase));
-        if (recorded is null) return result;
+        // What THIS request left in the list — never the list's last entry, which a file proposed again (updated in
+        // place) is not; and never a lookup by tool name, which a composite tool asking under another name misses.
+        if (proposals.LastRecorded is not { } recorded) return result;
         return $"Recorded as a proposal for {recorded.Subject} ({proposals.Count} pending in total). "
              + proposals.LastOutcome switch
                {

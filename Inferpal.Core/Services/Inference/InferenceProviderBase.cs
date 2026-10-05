@@ -215,9 +215,6 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// </summary>
     public bool IsEmbeddingCircuitOpen => IsEmbeddingInCooldown();
 
-    /// <summary><c>true</c> when the chat circuit breaker is open (cooldown in effect).</summary>
-    internal bool IsChatCircuitOpen => IsInCooldown();
-
     // ── Task timeout helper ───────────────────────────────────────────────────
     protected int TimeoutFor(TaskComplexity c) => c switch
     {
@@ -539,7 +536,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             // Keep the running context under num_ctx: deterministically elide the oldest tool
             // results so the model never silently truncates the head (system prompt + task).
             // No LLM summary on this basic path — that extra call is the orchestrator's.
-            AgentOrchestrator.CompactRunContext(messages, anchorCount, window);
+            AgentOrchestrator.CompactRunContext(messages, anchorCount, window, RequestSize.ToolTokens(tools.Definitions));
 
             onStep(Strings.StatusThinking);
 

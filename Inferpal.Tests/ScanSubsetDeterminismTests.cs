@@ -146,7 +146,6 @@ public class ScanSubsetDeterminismTests
                      Path.Combine("Inferpal.Core", "Services", "Tools", "AnalyzeImpactTool.cs"),
                      Path.Combine("Inferpal.Core", "Services", "Tools", "TraceDependencyTool.cs"),
                      Path.Combine("Inferpal.Core", "Services", "Tools", "NexusIntelligenceTool.cs"),
-                     Path.Combine("Inferpal.Core", "Services", "Bench", "WorkspaceSymbolScanner.cs"),
                  })
         {
             var code = ConventionCoverageTests.CodeOnly(Path.Combine(root, rel));

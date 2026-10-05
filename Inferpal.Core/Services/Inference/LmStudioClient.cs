@@ -60,9 +60,6 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// <summary>Native REST API root: <c>{host}/api/v1</c> (LM Studio 0.4.0+).</summary>
     private string NativeBase => HostRoot + "/api/v1";
 
-    /// <summary>Legacy native REST API root: <c>{host}/api/v0</c> (pre-0.4.0).</summary>
-    private string LegacyBase => HostRoot + "/api/v0";
-
     /// <summary>Normalized native model entry, shape-agnostic between the v1 and v0 APIs.
     /// <paramref name="MaxContextLength"/> is the model's capability; <paramref name="LoadedContextLength"/>
     /// (only meaningful while <paramref name="Loaded"/>) is the n_ctx the running instance was loaded with —

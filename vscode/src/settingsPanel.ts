@@ -14,7 +14,12 @@ interface SettingsInbound {
   type: 'ready' | 'save' | 'testConnection' | 'refreshModels'
     | 'mcpCards' | 'mcpRetry' | 'mcpAuthorize' | 'rulesTable' | 'newRule' | 'browsePinned'
     | 'indexCard' | 'indexRebuild' | 'exclusions' | 'docsSites' | 'docsAction' | 'contextUsage' | 'projectFiles'
-    | 'pinSizes' | 'openFile' | 'openXray';
+    | 'pinSizes' | 'openFile' | 'openXray' | 'loadedModels' | 'unloadModels' | 'suggestModels';
+  /** unloadModels: the models to unload; absent = every loaded one. */
+  names?: string[];
+  /** suggestModels: the card's memory as typed, and the form's model fields by configuration key. */
+  vramBudgetGb?: string;
+  current?: Record<string, string>;
   json?: string;
   /** docsAction: add | reindex | remove, and the URL or the site's id. */
   verb?: 'add' | 'reindex' | 'remove';
@@ -232,7 +237,10 @@ export class SettingsPanel {
       case 'docsAction':
       case 'contextUsage':
       case 'projectFiles':
-      case 'pinSizes': {
+      case 'pinSizes':
+      case 'loadedModels':
+      case 'unloadModels':
+      case 'suggestModels': {
         // The live blocks of the pages: each asks the host for what it shows, through the Core presenters.
         if (!host?.isRunning) {
           this.post({ type: 'error', message: hostUnavailableMessage() });
@@ -250,6 +258,18 @@ export class SettingsPanel {
             case 'contextUsage': this.post({ type: 'contextUsage', usage: await host.settingsContextUsage() }); break;
             case 'projectFiles': this.post({ type: 'projectFiles', files: await host.settingsProjectFiles() }); break;
             case 'pinSizes':     this.post({ type: 'pinSizes', sizes: await host.settingsPinSizes(msg.pins ?? '') }); break;
+            case 'loadedModels': this.post({ type: 'loadedModels', models: await host.settingsLoadedModels() }); break;
+            case 'unloadModels': this.post({ type: 'loadedModels', models: await host.settingsUnloadModels(msg.names) }); break;
+            case 'suggestModels':
+              // The FORM's server and values, as the refresh button sends them: a suggestion is about what is on screen.
+              this.post({
+                type: 'suggestModels',
+                suggestion: await host.settingsSuggestModels({
+                  baseUrl: msg.baseUrl, provider: msg.provider, apiKey: msg.apiKey,
+                  vramBudgetGb: msg.vramBudgetGb, current: msg.current ?? {},
+                }),
+              });
+              break;
           }
         } catch (err) {
           this.log(`[settings] ${msg.type} failed: ${String(err)}`);
@@ -290,7 +310,7 @@ export class SettingsPanel {
         if (!host?.isRunning || !msg.json) {
           // Clicking Save cannot say nothing: with no host nothing is written, and the panel kept
           // its previous status — so "Settings saved." if you had saved once before.
-          this.post({ type: 'error', message: hostUnavailableMessage() });
+          this.post({ type: 'error', op: 'save', message: hostUnavailableMessage() });
           return;
         }
         try {
@@ -325,7 +345,7 @@ export class SettingsPanel {
           }
         } catch (err) {
           this.log(`[settings] save failed: ${String(err)}`);
-          this.post({ type: 'error', message: hostErrorText(err) });
+          this.post({ type: 'error', op: 'save', message: hostErrorText(err) });
         }
         return;
       }

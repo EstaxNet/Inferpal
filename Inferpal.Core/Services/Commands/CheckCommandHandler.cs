@@ -73,6 +73,7 @@ internal static class CheckCommandHandler
             return new(Named(stagedFailed));
         var staged = stagedRun.Output;
         string diff;
+        List<string> notReviewed = [];
         if (string.IsNullOrWhiteSpace(staged))
         {
             var unstagedRun = await git("diff", ct);
@@ -86,6 +87,17 @@ internal static class CheckCommandHandler
             if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
                 return new(Strings.CheckNoDiff);
             diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
+
+            // ⚠ A NEW file is part of the change under review, and `git diff` never shows one: reviewed from the
+            // status line alone, "?? src/NewService.cs" came back "the checks turned up nothing on this diff" — a clean
+            // verdict on code nobody read. (/commit leaves them out on purpose: /commit-exec commits tracked files only.)
+            var (_, untracked) = GitCommitPolicy.SplitUntracked(status);
+            if (untracked.Count > 0)
+            {
+                var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, ct);
+                diff       += newFiles;
+                notReviewed = notRead;
+            }
         }
         else
         {
@@ -134,6 +146,50 @@ internal static class CheckCommandHandler
             rendered = Strings.CheckReviewCut + "\n\n" + rendered;
         if (capped.IsTruncated)
             rendered = Strings.CheckDiffTruncated(capped.Kept, capped.Total) + "\n\n" + rendered;
+        if (notReviewed.Count > 0)
+            rendered = Strings.CheckNewFilesNotReviewed(notReviewed.Count, GitCommitPolicy.NameList(notReviewed))
+                       + "\n\n" + rendered;
         return new(Named(rendered));
+    }
+
+    /// <summary>
+    /// The files git does not track yet, as the diffs they will be once added, while the review has room — and the
+    /// ones it does not read (past the size limit, binary, unreadable), NAMED: dropped, they read as reviewed.
+    /// </summary>
+    /// <param name="untracked">The status's own list, named whole when git cannot list the files one by one.</param>
+    /// <param name="used">Characters of the review already taken by the status and the diff.</param>
+    private static async Task<(string Diff, List<string> NotRead)> NewFilesAsync(
+        string projectRoot, GitRunner git, IReadOnlyList<string> untracked, int used, CancellationToken ct)
+    {
+        var notRead = new List<string>();
+        // One path per file: the status collapses a new folder into "?? folder/".
+        var (listing, exit) = await git("ls-files --others --exclude-standard", ct);
+        if (exit != 0)
+        {
+            notRead.AddRange(untracked);
+            return ("", notRead);
+        }
+
+        var sb = new System.Text.StringBuilder();
+        var files = listing.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                           .Select(l => l.TrimEnd('\r'))
+                           .Where(l => l.Length > 0)
+                           .OrderBy(l => l, StringComparer.Ordinal);
+        foreach (var relative in files)
+        {
+            if (used + sb.Length >= GitCommitPolicy.MaxDiffChars) { notRead.Add(relative); continue; }
+            var full = Path.Combine(projectRoot, relative);
+            try
+            {
+                if (!File.Exists(full)) continue;   // deleted since the listing: nothing to review
+                if (Tools.TextFileEncoding.IsBinaryFile(full)) { notRead.Add(relative); continue; }
+                sb.Append("\n\n").Append(GitCommitPolicy.NewFileDiff(relative, Tools.TextFileEncoding.ReadText(full)));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                notRead.Add(relative);
+            }
+        }
+        return (sb.Length == 0 ? "" : "\n\ngit diff (new files, not yet added to git):" + sb, notRead);
     }
 }

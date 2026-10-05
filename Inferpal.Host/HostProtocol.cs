@@ -42,11 +42,17 @@ internal sealed record InitializeResult(
 
 /// <summary>`chat/send` — one user turn. Tokens/steps stream back as notifications.</summary>
 /// <param name="AgentMode">Overrides the configured agent-mode switch for this turn; null = config.</param>
+/// <param name="CodeAction">A read-only code action (<c>/explain</c>, <c>/review</c>): answered by the code-actions
+/// model, without tools, as in Visual Studio — whatever the agent-mode switch says.</param>
+/// <param name="Query">The question as the user wrote it, before the adapter appended the attached files: what the
+/// per-turn auto-context searches for, as Visual Studio searches the typed text. Null = <paramref name="Prompt"/>.</param>
 internal sealed record ChatSendParams(
     string Prompt, string? Model = null, bool? AgentMode = null,
     /// <summary>Workspace-relative (or full) paths of files the adapter inlined as attachments —
     /// lets the RAG auto-context skip their chunks (parity with the VS VM, revue lot 4).</summary>
-    List<string>? AttachedPaths = null);
+    List<string>? AttachedPaths = null,
+    bool CodeAction = false,
+    string? Query = null);
 
 /// <summary>Final outcome of a turn. <paramref name="Text"/> holds the partial stream on cancel.</summary>
 internal sealed record ChatSendResult(
@@ -347,8 +353,8 @@ internal sealed record CodeActionResultDto(
 
 /// <summary>`code/excerpt` — the code a read-only action (<c>/explain</c>, <c>/review</c>) is about to
 /// send, with the file it comes from and whether it is a selection (the label says so). <paramref name="Model"/>
-/// is the model the chat will ask — the excerpt is sized for the window it really loaded; null = the chat model of
-/// the settings.</summary>
+/// is the model picked in the chat; the excerpt is sized for the window of the model that answers a code action —
+/// the configured code-actions model, else that pick (null = the chat model of the settings).</summary>
 internal sealed record CodeExcerptParams(string Code, string FileName, bool Selection = false, string? Model = null);
 
 /// <summary>`code/excerpt` answer: <paramref name="Text"/> is what goes into the prompt (the code, or
@@ -396,8 +402,9 @@ internal sealed record SessionSummaryDto(string Name, DateTime SavedAt, int Mess
 /// names still taken), and the sentence naming them — <c>null</c> when every file was read.</summary>
 internal sealed record SessionListResult(List<SessionSummaryDto> Sessions, List<string> Unreadable, string? Notice);
 
-/// <summary>`session/load` answer: the transcript to re-render (host history already rebuilt).</summary>
-internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages);
+/// <summary>`session/load` answer: the transcript to re-render (host history already rebuilt), and what the next
+/// question will send — the context gauge's fill (see <see cref="ChatSendResult"/>'s <c>NextTurnTokens</c>).</summary>
+internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages, int NextTurnTokens = 0);
 
 /// <summary>`session/branch` — fork the adapter's transcript at 1-based <paramref name="Turn"/>.</summary>
 internal sealed record SessionBranchParams(int Turn, List<SavedMessageDto> Messages);
@@ -405,7 +412,7 @@ internal sealed record SessionBranchParams(int Turn, List<SavedMessageDto> Messa
 /// <summary>`session/branch` answer: the new branch (host history already rebuilt from it) plus the
 /// localized confirmation bubble — the adapter has no access to the shared .resx.</summary>
 internal sealed record SessionBranchResult(
-    string Name, string Parent, int ForkTurn, List<SavedMessageDto> Messages, string Message);
+    string Name, string Parent, int ForkTurn, List<SavedMessageDto> Messages, string Message, int NextTurnTokens = 0);
 
 /// <summary>`session/branchCommand` — <c>/branch [args]</c> decided on the adapter's displayed transcript.</summary>
 internal sealed record SessionBranchCommandParams(string? Args, List<SavedMessageDto>? Messages);
@@ -447,7 +454,10 @@ internal sealed record SettingsFieldDto(
     /// <summary>Resource name of what an optional model list shows for its empty value ("Same as chat").</summary>
     string? EmptyChoice = null,
     /// <summary>Resource names of a nameValue table's column headers.</summary>
-    List<string>? Columns = null);
+    List<string>? Columns = null,
+    /// <summary>Bounds of a numeric box: a value outside them is named and not saved, as in the VS window.</summary>
+    int? Min = null,
+    int? Max = null);
 
 /// <summary>A group of fields under a title (empty = no heading).</summary>
 internal sealed record SettingsSectionDto(

@@ -81,7 +81,6 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _themeBorder      = "#3F3F46";
     private string _themeSessionBg   = "#1E1E28";
     private string _themePanelBg     = "#2D2D30";
-    private string _themeInputBg     = "#2A2A32";
     private string _themeInputBorder = "#5A5A72";
     private string _themeHoverBg      = "#3F3F46";
 
@@ -150,7 +149,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     [DataMember] public bool IsPlanMode { get => _planMode; set => SetProperty(ref _planMode, value); }
     private bool             _agentMode;
     /// <summary>Bindable mirror of <see cref="InferpalConfig.AgentModeEnabled"/> for the main-window
-    /// chat/agent switch. Toggling persists the config (see <see cref="ToggleAgentModeAsync"/>).</summary>
+    /// chat/agent switch. Switching persists the config (see <see cref="SetModeAsync"/>).</summary>
     [DataMember] public bool IsAgentMode { get => _agentMode; set => SetProperty(ref _agentMode, value); }
     private bool             _attachMenuOpen;
     /// <summary><c>true</c> while the single "＋ add context" toolbar menu is expanded — replaces the old row of
@@ -166,12 +165,14 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     /// <summary>The chat model currently in use (<see cref="InferpalConfig.DefaultModel"/>), surfaced in
     /// the header + welcome screen so the active model is never ambiguous (the VRAM badge is separate).</summary>
     [DataMember] public string ActiveModelLabel { get => _activeModelLabel; set { SetProperty(ref _activeModelLabel, value); RefreshModelButton(); } }
-    private string _welcomeCardExplain = string.Empty;
-    [DataMember] public string WelcomeCardExplain { get => _welcomeCardExplain; set => SetProperty(ref _welcomeCardExplain, value); }
-    private string _welcomeCardFix     = string.Empty;
-    [DataMember] public string WelcomeCardFix     { get => _welcomeCardFix;     set => SetProperty(ref _welcomeCardFix,     value); }
-    private string _welcomeCardTest    = string.Empty;
-    [DataMember] public string WelcomeCardTest    { get => _welcomeCardTest;    set => SetProperty(ref _welcomeCardTest,    value); }
+    // Without an open file, the cards offer what works without one: a card that answers "open a file" is a dead end.
+    private string _welcomeCardProject = string.Empty, _welcomeProjectPrompt = string.Empty,
+                   _welcomeCardChanges = string.Empty, _welcomeChangesPrompt = string.Empty, _welcomeOpenFileHint = string.Empty;
+    [DataMember] public string WelcomeCardProject   { get => _welcomeCardProject;   set => SetProperty(ref _welcomeCardProject,   value); }
+    [DataMember] public string WelcomeProjectPrompt { get => _welcomeProjectPrompt; set => SetProperty(ref _welcomeProjectPrompt, value); }
+    [DataMember] public string WelcomeCardChanges   { get => _welcomeCardChanges;   set => SetProperty(ref _welcomeCardChanges,   value); }
+    [DataMember] public string WelcomeChangesPrompt { get => _welcomeChangesPrompt; set => SetProperty(ref _welcomeChangesPrompt, value); }
+    [DataMember] public string WelcomeOpenFileHint  { get => _welcomeOpenFileHint;  set => SetProperty(ref _welcomeOpenFileHint,  value); }
     private string _welcomeCardHelp    = string.Empty;
     [DataMember] public string WelcomeCardHelp    { get => _welcomeCardHelp;    set => SetProperty(ref _welcomeCardHelp,    value); }
     private string _buildBannerDismiss = string.Empty;
@@ -184,7 +185,6 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     [DataMember] public string MenuBrowseFile      { get => _menuBrowseFile;      set => SetProperty(ref _menuBrowseFile,      value); }
     private string _menuPinFile         = string.Empty;
     [DataMember] public string MenuPinFile         { get => _menuPinFile;         set => SetProperty(ref _menuPinFile,         value); }
-    private bool             _hasSearchQuery;
     private string           _searchQuery = string.Empty;
     private bool             _hasAttachments;
     private bool             _hasPinnedFiles;
@@ -196,10 +196,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     /// <summary>The window the last context check measured against (0 until one ran): what the gauge shows.</summary>
     private int              _contextWindowInUse;
     private int              _conversationTurnCount;
-    private double           _contextFillPercent;
     private bool             _hasContextBudget;
-    private string           _contextBudgetColor   = "#606060";
-    private string           _contextBudgetTooltip = string.Empty;
     private string           _baseSystemPrompt = string.Empty;
     // Path of the file currently active in the editor — drives glob-scoped project rules
     // (see RulesService) in BuildSystemPrompt. Updated by OnActiveFileChanged.
@@ -210,7 +207,6 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string?          _personaLanguage;
 
     // Label backing fields
-    private string _btnLoadSession          = string.Empty;
     private string _btnCancel               = string.Empty;
     private string _btnSend                 = string.Empty;
     private string _tooltipCopy             = string.Empty;

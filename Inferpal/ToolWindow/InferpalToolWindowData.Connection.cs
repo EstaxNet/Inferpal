@@ -166,11 +166,6 @@ internal partial class InferpalToolWindowData
     private Task ToggleSessionPanelAsync(object? _, CancellationToken ct) =>
         RunOnVMContextAsync(() => IsSessionPanelOpen = !IsSessionPanelOpen);
 
-    // Triggered by SizeChanged on each message Border — fires AFTER WPF layout so ScrollIntoView
-    // sees correct item dimensions. Two separate Posts ensure VS Remote UI sends distinct batches.
-    private Task OnScrollToBottomAsync(object? _, CancellationToken ct) =>
-        RunOnVMContextAsync(ScrollToBottom);
-
     private async Task ClearAsync(object? _, CancellationToken ct)
     {
         // A turn in flight owns _history and the streaming bubble: let it unwind before the
@@ -337,35 +332,6 @@ internal partial class InferpalToolWindowData
         // Localised since §17: these two lines were hard-coded English while every other command
         // message went through Strings — the toolbar button shows them too, in all ten languages.
         await ShowInfoAsync(IsPlanMode ? Strings.PlanModeOn : Strings.PlanModeOff);
-    }
-
-    /// <summary>
-    /// Main-window switch between Chat and Agent mode. Flips the persisted
-    /// <see cref="InferpalConfig.AgentModeEnabled"/> (controls <c>useOrchestrator</c> in
-    /// <see cref="SendCoreAsync"/>) and saves immediately so the next turn picks it up.
-    /// </summary>
-    private async Task ToggleAgentModeAsync()
-    {
-        await RunOnVMContextAsync(() =>
-        {
-            IsAgentMode = !IsAgentMode;   // marshalled: commands run off the VM context (revue §2.5)
-            ChatMode       = CurrentMode();
-        });
-        _config.AgentModeEnabled = IsAgentMode;
-        try
-        {
-            _config.Save();
-        }
-        catch (Exception ex)
-        {
-            // The switch applies to this session; unsaved, it reverts at the next start — said, not silent.
-            Diagnostics.Swallow("Chat.ToggleAgentMode", ex);
-            await ShowInfoAsync(Strings.SettingsSaveFailed(ex.Message));
-            return;
-        }
-        await ShowInfoAsync(IsAgentMode
-            ? Strings.AgentModeOn(Strings.LabelModeAgent)
-            : $"**{Strings.LabelModeChat}**");
     }
 
     /// <summary>

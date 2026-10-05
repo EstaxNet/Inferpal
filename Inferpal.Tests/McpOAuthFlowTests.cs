@@ -121,12 +121,42 @@ public class McpOAuthFlowTests
     {
         var handler = new FlowHandler();
         var flow = new McpOAuthFlow(new FakeReceiver(), handler);
-        var existing = new McpOAuthState { ClientId = "prev-client", ClientSecret = "sek" };
+        var existing = new McpOAuthState { ClientId = "prev-client", ClientSecret = "sek", Resource = "https://mcp.example.com/mcp" };
 
         var state = await flow.AuthorizeAsync(new McpOAuthServer(Server), existing, CancellationToken.None);
 
         Assert.Equal("prev-client", state.ClientId);
         Assert.DoesNotContain(handler.Calls, c => c.Url.EndsWith("/register"));
+    }
+
+    /// <summary>
+    /// ⚠ A client id registered with ANOTHER server's authorization server (the name now points elsewhere) was offered
+    /// to this one: a sign-in that could never succeed, until the user renamed the server or deleted the store by hand.
+    /// </summary>
+    [Fact]
+    public async Task AuthorizeAsync_AStateFromAnotherServer_LendsNoClientId()
+    {
+        var handler  = new FlowHandler();
+        var flow     = new McpOAuthFlow(new FakeReceiver(), handler);
+        var existing = new McpOAuthState { ClientId = "client-of-a", Resource = "https://a.example.com/mcp" };
+
+        var state = await flow.AuthorizeAsync(new McpOAuthServer(Server), existing, CancellationToken.None);
+
+        Assert.Equal("dcr-client-123", state.ClientId);
+        Assert.Contains(handler.Calls, c => c.Url.EndsWith("/register"));
+    }
+
+    /// <summary>A client id the user configured wins over one registered earlier: written to fix a sign-in, it was
+    /// ignored as long as a stored one existed.</summary>
+    [Fact]
+    public async Task AuthorizeAsync_AConfiguredClientId_WinsOverAStoredOne()
+    {
+        var flow     = new McpOAuthFlow(new FakeReceiver(), new FlowHandler());
+        var existing = new McpOAuthState { ClientId = "prev-client", Resource = "https://mcp.example.com/mcp" };
+
+        var state = await flow.AuthorizeAsync(new McpOAuthServer(Server, ClientId: "cfg-client"), existing, CancellationToken.None);
+
+        Assert.Equal("cfg-client", state.ClientId);
     }
 
     [Fact]

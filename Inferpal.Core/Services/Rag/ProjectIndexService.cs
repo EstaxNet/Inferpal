@@ -69,8 +69,10 @@ internal sealed class ProjectIndexService : IDisposable
     // to skip the embedding round-trip when the agent query matches the typed prompt.
     // The three values are bundled in one immutable record and published via a single
     // volatile reference assignment, so a reader never sees a torn (half-updated) cache.
+    // ⚠ The results hold CHUNKS, which go stale when a file is re-indexed — the query's vector does not. Version is the
+    // content version the search ran against: once it moves, the results are no longer served (the vector still is).
     private sealed record ShadowCache(
-        string Query, float[] Embedding, List<RagHit> Results);
+        string Query, float[] Embedding, List<RagHit> Results, int Version);
 
     private volatile ShadowCache? _shadow      = null;
     private readonly SemaphoreSlim _shadowLock = new(1, 1);
@@ -230,8 +232,7 @@ internal sealed class ProjectIndexService : IDisposable
         try
         {
             // Only patch when inside a git repository
-            var gitDir = Path.Combine(rootDir, ".git");
-            if (!Directory.Exists(gitDir)) return;
+            if (!GitProcess.IsWorkTreeRoot(rootDir)) return;
 
             var gitIgnorePath = Path.Combine(rootDir, ".gitignore");
 
@@ -369,6 +370,8 @@ internal sealed class ProjectIndexService : IDisposable
             var embedding = await EmbeddingModels.EmbedCodeQueryAsync(_client, model, query, ct);
             if (embedding is null) return;
 
+            // Read BEFORE the search: a file re-indexed while it runs leaves results that are already stale.
+            var version = Volatile.Read(ref _contentVersion);
             var results = await SearchAsync(embedding, query, Math.Max(1, _config.RagTopK), ct);
 
             // Publish all three values atomically via a single reference assignment — under the
@@ -377,7 +380,7 @@ internal sealed class ProjectIndexService : IDisposable
             try
             {
                 if (generation == _indexGeneration)
-                    _shadow = new ShadowCache(query, embedding, results);
+                    _shadow = new ShadowCache(query, embedding, results, version);
             }
             finally { _chunkLock.Release(); }
         }
@@ -392,13 +395,15 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>
     /// Returns the pre-computed embedding and results if <paramref name="query"/> exactly
     /// matches the last shadow query (case-insensitive); otherwise returns (<c>null</c>, <c>null</c>).
+    /// The results are <c>null</c> once a file has been re-indexed since they were computed: the embedding is
+    /// still returned, and the caller searches again with it.
     /// </summary>
     public (float[]? Embedding, List<RagHit>? Results) TryGetShadow(string query)
     {
         // Single volatile read — the captured reference is immutable, so no tearing.
         var shadow = _shadow;
         if (shadow is not null && string.Equals(shadow.Query, query, StringComparison.OrdinalIgnoreCase))
-            return (shadow.Embedding, shadow.Results);
+            return (shadow.Embedding, shadow.Version == Volatile.Read(ref _contentVersion) ? shadow.Results : null);
         return (null, null);
     }
 
@@ -886,6 +891,32 @@ internal sealed class ProjectIndexService : IDisposable
         finally { _reindexGate.Release(); }
     }
 
+    /// <summary>Whether <paramref name="file"/> is past the size the index takes — the full pass's rule, one reader.</summary>
+    private static bool IsOversize(string file)
+    {
+        try { return new FileInfo(file).Length >= CodeChunker.MaxFileSizeBytes; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    /// <summary>Takes a file out of the index — memory and database — O(1) per file.</summary>
+    private async Task ForgetFileAsync(string file, RagDatabase db, CancellationToken ct)
+    {
+        await _chunkLock.WaitAsync(ct);
+        try
+        {
+            _chunksByFile.Remove(file);
+            ChunkCount = _chunksByFile.Values.Sum(l => l.Count);
+            _contentVersion++;
+        }
+        finally { _chunkLock.Release(); }
+
+        CaughtUp(file);
+
+        try { await db.DeleteFileAsync(file, ct); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.DeleteFile", ex); }
+    }
+
     private async Task ReIndexFilesCoreAsync(string[] changedFiles, string rootDir, CancellationToken ct)
     {
         var db       = new RagDatabase(rootDir);
@@ -899,26 +930,22 @@ internal sealed class ProjectIndexService : IDisposable
         {
             if (!File.Exists(file))
             {
-                // File deleted — O(1) removal from dict + DB
-                await _chunkLock.WaitAsync(ct);
-                try
-                {
-                    _chunksByFile.Remove(file);
-                    ChunkCount = _chunksByFile.Values.Sum(l => l.Count);
-                    _contentVersion++;
-                }
-                finally { _chunkLock.Release(); }
-
-                CaughtUp(file);
-
-                try { await db.DeleteFileAsync(file, ct); }
-                catch (OperationCanceledException) { }
-                catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.DeleteFile", ex); }
+                await ForgetFileAsync(file, db, ct);   // file deleted
                 continue;
             }
 
             if (!CodeChunker.SupportedExtensions.Contains(
                     Path.GetExtension(file))) continue;
+
+            // ⚠ Same size rule as the full pass, which leaves such a file out (and /index says so): without it a 2 MB
+            // bundle saved once was chunked and embedded on the GPU — again at every save — and written to the index
+            // /index still called "too large, not indexed", until the next pass dropped it again. What an earlier,
+            // smaller version left in the index goes with it.
+            if (IsOversize(file))
+            {
+                await ForgetFileAsync(file, db, ct);
+                continue;
+            }
 
             try
             {

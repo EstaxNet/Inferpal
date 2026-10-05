@@ -41,7 +41,6 @@ public sealed class ContextFillOverflowTests
         Assert.NotNull(budget);
         Assert.True(budget!.FillPercent > 100, $"still clamped at {budget.FillPercent}.");
         Assert.Equal(183.0, budget.FillPercent, 0);
-        Assert.Contains("183", budget.Tooltip, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -112,5 +111,19 @@ public sealed class ContextFillOverflowTests
             [Section(new string('x', 2_000))], disabledIds: null, historyTokens: 0, contextWindow: 1_000);
 
         Assert.Equal(50.0, model.FillPercent, 0);
+    }
+
+    // ── The VS Code composer ring (the webview computes its own figure) ──────
+
+    [Fact]
+    public void TheVsCodeRing_ClampsItsArc_NeverTheFigureItPrints()
+    {
+        var gauge = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("webview/main.ts"), "function updateGauge(");
+
+        Assert.Contains("const pct = (promptTokens * 100) / contextWindow;", gauge, StringComparison.Ordinal);
+        Assert.Contains("const arc = Math.min(100, pct);", gauge, StringComparison.Ordinal);
+        Assert.Contains("(circumference * arc) / 100", gauge, StringComparison.Ordinal);   // the arc, clamped
+        Assert.Contains("ringText.textContent = `${pct.toFixed(0)}%`;", gauge, StringComparison.Ordinal);
+        Assert.Contains("t('contextRingTip', pct.toFixed(0)", gauge, StringComparison.Ordinal);
     }
 }

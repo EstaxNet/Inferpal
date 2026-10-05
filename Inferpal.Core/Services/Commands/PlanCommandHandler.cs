@@ -150,8 +150,8 @@ internal static class PlanCommandHandler
         var doc = PlanStore.Load(root, name!);
         if (doc is null) return new(Strings.PlanNotFound(PlanStore.SanitizeName(name)));
 
-        return new(Render(doc, PlanStore.SanitizeName(name)),
-                   SetActivePlan: PlanStore.SanitizeName(name));
+        return new(Render(doc, PlanStore.NameOf(root, name!)),
+                   SetActivePlan: PlanStore.NameOf(root, name!));
     }
 
     private static PlanCommandResult SetDone(string root, string[] parts, string? activePlan, bool done)
@@ -181,8 +181,8 @@ internal static class PlanCommandHandler
             ? Strings.PlanStepTicked(number, after.Steps.First(s => s.Number == number).Text)
             : Strings.PlanStepUnticked(number);
 
-        return new(head + "\n\n" + Render(after, PlanStore.SanitizeName(name)),
-                   SetActivePlan: PlanStore.SanitizeName(name));
+        return new(head + "\n\n" + Render(after, PlanStore.NameOf(root, name!)),
+                   SetActivePlan: PlanStore.NameOf(root, name!));
     }
 
     private static PlanCommandResult Next(string root, string? name)
@@ -201,12 +201,12 @@ internal static class PlanCommandHandler
         // there. The distinction already existed — `Render` states it for `/plan show` — and only
         // one of its two readers held it.
         if (doc.Steps.Count == 0)
-            return new(Strings.PlanNoStepsYet(doc.Title), SetActivePlan: PlanStore.SanitizeName(name));
+            return new(Strings.PlanNoStepsYet(doc.Title), SetActivePlan: PlanStore.NameOf(root, name!));
 
         return new(doc.NextStep is { } step
                        ? Strings.PlanNextStep(step.Number, step.Text)
                        : Strings.PlanComplete(doc.Title),
-                   SetActivePlan: PlanStore.SanitizeName(name));
+                   SetActivePlan: PlanStore.NameOf(root, name!));
     }
 
     // ── Rendering ───────────────────────────────────────────────────────────────

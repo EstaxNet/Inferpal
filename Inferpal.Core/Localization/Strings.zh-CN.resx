@@ -33,7 +33,6 @@
   <data name="LabelRagTopK" xml:space="preserve"><value>每次搜索的结果数</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>秒</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>分钟</value></data>
-  <data name="UnitHours" xml:space="preserve"><value>小时</value></data>
   <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
   <data name="UnitTokens" xml:space="preserve"><value>个令牌</value></data>
   <data name="UnitTurns" xml:space="preserve"><value>轮</value></data>
@@ -64,7 +63,6 @@
   <data name="LabelChatModel" xml:space="preserve"><value>聊天与代理</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>回答您的问题并执行任务。/model 可在本次会话中切换。</value></data>
   <data name="BtnTest" xml:space="preserve"><value>测试</value></data>
-  <data name="BtnLoadSession" xml:space="preserve"><value>加载 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 取消</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>已忽略 {0} 个字段（值无法识别）：{1}</value></data>
@@ -340,7 +338,6 @@
   <data name="BrowseError" xml:space="preserve"><value>⚠ 浏览文件时出错：{0}</value></data>
 
   <!-- Export -->
-  <data name="ContextGaugeTooltip" xml:space="preserve"><value>上下文：{0} / {1} 个令牌（{2}%）— 点击打开 X-Ray 面板</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>你</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>助手</value></data>
   <data name="ExportTitle" xml:space="preserve"><value>Inferpal — 对话导出</value></data>
@@ -481,6 +478,7 @@
   <data name="CheckNoFindings" xml:space="preserve"><value>没有可定位的问题 — 检查项在此 diff 中未发现任何内容。</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ 没有审查结果：**{0}** 把整个回复都用于推理，没有写出任何问题。这并不说明 diff 没有问题 — 这不是干净的结果。更大的上下文，或不先推理的模型，可以避免。</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 仅审阅了差异的前 {0} 个字符（共 {1} 个）。以下内容针对该部分，而非您的整个变更 —— 请单独审阅其余部分，或分批暂存。</value></data>
+  <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ 有 {0} 个尚未添加到 git 的新文件未被审查（超出大小限制、二进制或无法读取）：{1}。</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**{0} 条问题**，已定位到 diff：</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**阻断**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**警告**</value></data>
@@ -594,7 +592,6 @@
   <data name="LabelMcpHeaders" xml:space="preserve"><value>标头（键=值，每行一个；${ENV_VAR} 会被展开）</value></data>
   <data name="BtnMcpSaveServer" xml:space="preserve"><value>保存</value></data>
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>取消</value></data>
-  <data name="McpAdvancedJson" xml:space="preserve"><value>高级 (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ 将 JSON 导入列表</value></data>
   <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>无法完整读取 MCP 服务器的 JSON：列表会丢失它读不懂的内容，因此在修复 JSON 之前保持只读。</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>名称和命令为必填项。</value></data>
@@ -604,7 +601,6 @@
   <data name="HintMcpDeleteServer" xml:space="preserve"><value>从列表中删除此 MCP 服务器。</value></data>
   <data name="HintRowEdit" xml:space="preserve"><value>编辑此条目。</value></data>
   <data name="HintRowDelete" xml:space="preserve"><value>从列表中删除此条目。</value></data>
-  <data name="LabelRowAdvanced" xml:space="preserve"><value>高级（纯文本）</value></data>
   <data name="BtnRowImport" xml:space="preserve"><value>⟳ 导入到列表</value></data>
   <data name="RowEditTitle" xml:space="preserve"><value>正在编辑：{0}</value></data>
   <data name="PinnedAddFile" xml:space="preserve"><value>添加文件</value></data>
@@ -819,7 +815,6 @@
   <data name="XrayPanelHint" xml:space="preserve"><value>取消勾选的部分将从下一轮中排除。</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ 项目层（规则、记忆、笔记）占用了大量上下文 — 建议精简。</value></data>
   <data name="XrayPanelCopy" xml:space="preserve"><value>复制提示词</value></data>
-  <data name="TooltipXrayGauge" xml:space="preserve"><value>上下文使用情况 — 点击打开 X-Ray 面板</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>关闭</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 请在编辑器中查看建议的更改 — 每处更改可 ✓/✗（全部为 ✓✓/✗✗）。输入文字将关闭预览。</value></data>
   <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ 预览已放弃（文档已更改）— 未应用任何更改。请重新运行该操作以重新生成。</value></data>
@@ -856,11 +851,6 @@
   <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ 您的 num_ctx（{0}）超过了该模型本身能接受的上限（{1}）。后端无法处理更长的提示：它会悄悄丢弃对话中最早的部分（包括系统提示），而 Inferpal 自身的压缩也不会介入，因为它以您配置的数值为准。请设为 {1} 或更小。</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>显存</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>用于安全地确定上下文窗口大小。留空：服务器在本机运行时自动检测；在其他机器上运行时需要填写。</value></data>
-  <data name="LabelModeChat" xml:space="preserve"><value>💬 聊天</value></data>
-  <data name="LabelModeAgent" xml:space="preserve"><value>🤖 代理</value></data>
-  <data name="WelcomeCardExplain" xml:space="preserve"><value>解释选中内容</value></data>
-  <data name="WelcomeCardFix" xml:space="preserve"><value>修复错误</value></data>
-  <data name="WelcomeCardTest" xml:space="preserve"><value>生成测试</value></data>
   <data name="WelcomeCardHelp" xml:space="preserve"><value>查看所有命令</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>关闭</value></data>
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
@@ -958,7 +948,6 @@
   <data name="StepModeOff" xml:space="preserve"><value>单步模式**已关闭**。</value></data>
   <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **代理在工具调用后已暂停。** 点击 ▶ 继续（或输入 `/resume`）继续执行，或点击取消中止。</value></data>
   <data name="NoAgentStepPaused" xml:space="preserve"><value>当前没有暂停的代理步骤。</value></data>
-  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
   <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 编译 {0}/{1}…</value></data>
   <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 修复 {0}</value></data>
   <data name="DialogAttachTitle" xml:space="preserve"><value>选择要附加的文件</value></data>
@@ -1218,8 +1207,63 @@
   <data name="WelcomeUsagesFileDesc" xml:space="preserve"><value>整个工作区中的调用方和依赖方</value></data>
   <data name="WelcomeUsagesPrompt" xml:space="preserve"><value>{0} 在哪里被使用？列出它的调用方以及依赖它的内容。</value></data>
   <data name="WelcomeBuildFailed" xml:space="preserve"><value>上次构建失败 — {0} 个错误</value></data>
+  <data name="WelcomeBuildFailedUncounted" xml:space="preserve"><value>上次构建失败</value></data>
   <data name="WelcomeFixThem" xml:space="preserve"><value>修复</value></data>
   <data name="WelcomeHintAttach" xml:space="preserve"><value>附加文件</value></data>
   <data name="WelcomeHintCommands" xml:space="preserve"><value>命令</value></data>
   <data name="WelcomeHintNewLine" xml:space="preserve"><value>换行</value></data>
+  <data name="ModelRoleChat" xml:space="preserve"><value>聊天</value></data>
+  <data name="ModelRoleAgent" xml:space="preserve"><value>智能体</value></data>
+  <data name="ModelRoleCodeActions" xml:space="preserve"><value>代码操作</value></data>
+  <data name="ModelRoleInlineEdit" xml:space="preserve"><value>内联编辑</value></data>
+  <data name="ModelRoleAutocomplete" xml:space="preserve"><value>自动补全</value></data>
+  <data name="ModelRoleUtility" xml:space="preserve"><value>标题和摘要</value></data>
+  <data name="ModelRoleCodeSearch" xml:space="preserve"><value>代码搜索</value></data>
+  <data name="SuggestReview" xml:space="preserve"><value>建议的模型已填入表单：请检查后保存。</value></data>
+  <data name="SuggestNoChange" xml:space="preserve"><value>这些已经是已安装模型中最好的。</value></data>
+  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>服务器只列出嵌入模型：请先安装一个聊天模型。</value></data>
+  <data name="SuggestNothingListed" xml:space="preserve"><value>服务器没有列出任何模型：无可建议。</value></data>
+  <data name="SuggestChatRecommended" xml:space="preserve"><value>聊天模型：{0} — Inferpal 测试推荐。</value></data>
+  <data name="SuggestChatUsable" xml:space="preserve"><value>聊天模型：{0} — 已安装中最好的；在 Inferpal 测试中可用于智能体。</value></data>
+  <data name="SuggestChatNotRecommended" xml:space="preserve"><value>聊天模型：{0} — 唯一已安装的类型；在 Inferpal 测试中大多数智能体任务都失败。</value></data>
+  <data name="SuggestChatUnmeasured" xml:space="preserve"><value>聊天模型：{0} — Inferpal 未测量；已安装模型中的最佳猜测。</value></data>
+  <data name="SuggestInstallRecommended" xml:space="preserve"><value>对于智能体工作，Inferpal 测试推荐 {0} — 均未安装。</value></data>
+  <data name="SuggestEmbeddingNone" xml:space="preserve"><value>代码搜索：未安装嵌入模型，因此按关键词搜索（测量结果最好的是 EmbeddingGemma）。</value></data>
+  <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>代码搜索：自动，即使用 {0}。</value></data>
+  <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>更换代码搜索模型会重建项目索引。</value></data>
+  <data name="SuggestFimMeasured" xml:space="preserve"><value>自动补全：{0} — 测量结果最好的补全模型。</value></data>
+  <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>自动补全：使用聊天模型。{0} 已安装，但加上它模型约需 {1} GB，超过为您的显卡设置的 {2} GB。</value></data>
+  <data name="SuggestFimChatCompletes" xml:space="preserve"><value>自动补全：使用聊天模型，它的补全效果也很好。</value></data>
+  <data name="SuggestFimSameAsChat" xml:space="preserve"><value>自动补全：使用聊天模型（测量结果最好的补全模型是 Mellum2，可安装使用）。</value></data>
+  <data name="SuggestOverrides" xml:space="preserve"><value>高级设置中的保持不变：{0}。</value></data>
+  <data name="LoadedModelsUnknown" xml:space="preserve"><value>此服务器不报告已加载哪些模型。</value></data>
+  <data name="LoadedModelsNone" xml:space="preserve"><value>当前没有已加载的模型。</value></data>
+  <data name="LoadedModelsUnreachable" xml:space="preserve"><value>服务器没有响应：已加载的模型未知。</value></data>
+  <data name="LoadedModelsCount" xml:space="preserve"><value>已加载 {0} 个模型</value></data>
+  <data name="LoadedModelVram" xml:space="preserve"><value>{0} GB 显存</value></data>
+  <data name="LoadedModelCpu" xml:space="preserve"><value>在处理器上</value></data>
+  <data name="LoadedModelDiskSize" xml:space="preserve"><value>约 {0} GB（磁盘大小）</value></data>
+  <data name="LoadedModelContext" xml:space="preserve"><value>上下文 {0} 个令牌</value></data>
+  <data name="LoadedModelStays" xml:space="preserve"><value>保持加载</value></data>
+  <data name="LoadedModelUnloadsIn" xml:space="preserve"><value>{0} 分钟后卸载</value></data>
+  <data name="LoadedModelUses" xml:space="preserve"><value>用于：{0}</value></data>
+  <data name="LoadedModelUnused" xml:space="preserve"><value>您的设置未使用</value></data>
+  <data name="UnloadNotSupported" xml:space="preserve"><value>此服务器不允许 Inferpal 卸载模型。</value></data>
+  <data name="UnloadWhileAnswering" xml:space="preserve"><value>正在回答问题：请在完成后再卸载模型。</value></data>
+  <data name="UnloadNothing" xml:space="preserve"><value>没有已加载的模型。</value></data>
+  <data name="UnloadDone" xml:space="preserve"><value>已卸载：{0}。</value></data>
+  <data name="UnloadKept" xml:space="preserve"><value>仍在加载：{0} — 服务器未将其卸载。</value></data>
+  <data name="UnloadUnverified" xml:space="preserve"><value>已请求卸载 {0}，但服务器未响应随后的检查——无法确定它是否仍处于加载状态。</value></data>
+  <data name="BtnSuggestModels" xml:space="preserve"><value>建议最佳模型</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>根据 Inferpal 的测量从已安装模型中挑选。点击“保存”之前不会保存任何内容。</value></data>
+  <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>当前已加载</value></data>
+  <data name="NoteLoadedModels" xml:space="preserve"><value>已卸载的模型会在下一次需要它的请求时重新加载。</value></data>
+  <data name="BtnUnloadModel" xml:space="preserve"><value>卸载</value></data>
+  <data name="BtnUnloadAll" xml:space="preserve"><value>全部卸载</value></data>
+  <data name="BtnRefreshLoaded" xml:space="preserve"><value>刷新</value></data>
+  <data name="WelcomeCardProject" xml:space="preserve"><value>解释此项目</value></data>
+  <data name="WelcomeProjectPrompt" xml:space="preserve"><value>给我一个这个项目的概览：它做什么、如何组织，以及从哪里开始阅读代码。</value></data>
+  <data name="WelcomeCardChanges" xml:space="preserve"><value>审查我的更改</value></data>
+  <data name="WelcomeChangesPrompt" xml:space="preserve"><value>审查我未提交的更改：指出错误、风险以及缺失的内容（例如测试）。</value></data>
+  <data name="WelcomeOpenFileHint" xml:space="preserve"><value>打开一个文件即可解释它、为其编写测试或查找其用法。</value></data>
 </root>

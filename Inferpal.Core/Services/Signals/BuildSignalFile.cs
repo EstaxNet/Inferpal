@@ -49,7 +49,11 @@ internal static class BuildSignalFile
     /// <see cref="SignalFile.Write{T}"/> documents between a <i>hint</i> channel (re-read next
     /// turn) and the debugger's <i>command</i> channel.
     /// </remarks>
-    internal static void Write(string solutionPath, IReadOnlyList<string>? errorLines = null) =>
+    /// <param name="errorCount">How many errors the build had — the lines are capped, the count is not. Negative when
+    /// unknown: the reader then counts the lines.</param>
+    /// <param name="succeeded">The build SUCCEEDED: the "last build failed" banner of an earlier build goes away.</param>
+    internal static void Write(string solutionPath, IReadOnlyList<string>? errorLines = null, int errorCount = -1,
+                               bool succeeded = false) =>
         SignalFile.Write(FilePath, new
         {
             solutionPath,
@@ -57,6 +61,8 @@ internal static class BuildSignalFile
             errors = (errorLines != null && errorLines.Count > 0)
                          ? errorLines
                          : Array.Empty<string>(),
+            errorCount,
+            succeeded,
         }, "BuildSignal.Write");
 
     // ── Out-of-process side (VsBuildMonitor) ──────────────────────────────────
@@ -64,7 +70,11 @@ internal static class BuildSignalFile
     /// <summary>
     /// Payload returned by <see cref="TryRead"/>.
     /// </summary>
-    internal readonly record struct SignalPayload(string? SolutionPath, string[] ErrorLines);
+    /// <param name="ErrorCount">The build's error count — ⚠ never the number of <paramref name="ErrorLines"/>, which are
+    /// capped: 200 errors read as 30. 0 when nobody could count them (the Error List was not filled in time).</param>
+    /// <param name="Succeeded">The build succeeded.</param>
+    internal readonly record struct SignalPayload(string? SolutionPath, string[] ErrorLines, int ErrorCount = 0,
+                                                  bool Succeeded = false);
 
     /// <summary>
     /// Reads the signal file and returns its payload if the signal is recent (≤ 30 s).
@@ -94,15 +104,16 @@ internal static class BuildSignalFile
                               .ToArray();
             }
 
-            return new SignalPayload(path, errors);
+            // A writer that predates the count (or could not count) leaves -1 or nothing: the lines are then all we know.
+            var count = obj.TryGetProperty("errorCount", out var countEl) && countEl.TryGetInt32(out var c) && c >= 0
+                ? Math.Max(c, errors.Length)
+                : errors.Length;
+            var succeeded = obj.TryGetProperty("succeeded", out var okEl) && okEl.ValueKind == JsonValueKind.True;
+
+            return new SignalPayload(path, errors, count, succeeded);
         }
         catch { return default; }
     }
-
-    /// <summary>
-    /// Reads the signal file and returns only the solution path (backward-compatible helper).
-    /// </summary>
-    internal static string? TryReadSolutionPath() => TryRead().SolutionPath;
 
     /// <summary>Deletes the signal file (safe to call when it doesn't exist).</summary>
     internal static void Clear()

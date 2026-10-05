@@ -35,14 +35,41 @@ public class McpStoredTokenProviderTests : IDisposable
             => throw new InvalidOperationException("should not be called");
     }
 
-    private McpStoredTokenProvider Provider(McpTokenStore store, string tokenJson) =>
-        new("srv", store, new McpOAuthFlow(new ThrowingReceiver(), new TokenHandler(tokenJson)));
+    private const string Res = "https://srv.example.com/mcp";
+
+    private McpStoredTokenProvider Provider(McpTokenStore store, string tokenJson, string resource = Res) =>
+        new("srv", resource, store, new McpOAuthFlow(new ThrowingReceiver(), new TokenHandler(tokenJson)));
+
+    /// <summary>
+    /// ⚠ The store is keyed by the server's NAME. Pointed at another URL — or a deleted server's name reused — the token
+    /// obtained for the first server went to the second as its bearer, and an expired one was refreshed at the first
+    /// server's authorization server and sent there too. A state obtained for another resource is never used.
+    /// </summary>
+    [Fact]
+    public async Task AStateObtainedForAnotherServer_IsNeverSent_NorRefreshed()
+    {
+        var store = Store();
+        store.Save("srv", new McpOAuthState
+        {
+            Resource = "https://a.example.com/mcp", AccessToken = "token-of-a", RefreshToken = "rt-of-a",
+            ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(1), TokenEndpoint = "https://auth.a.example.com/token",
+        });
+        var handler = new TokenHandler("""{ "access_token":"fresh-of-a", "expires_in":3600 }""");
+        var provider = new McpStoredTokenProvider("srv", "https://b.other.com/mcp", store,
+                                                  new McpOAuthFlow(new ThrowingReceiver(), handler));
+
+        Assert.Null(await provider.GetAccessTokenAsync(CancellationToken.None));
+        Assert.Equal(0, handler.Calls);
+
+        // Reference arm: the same state, asked for by its own server, is sent.
+        Assert.Equal("token-of-a", await Provider(store, "{}", "https://a.example.com/mcp").GetAccessTokenAsync(CancellationToken.None));
+    }
 
     [Fact]
     public async Task ReturnsStoredToken_WhenStillValid()
     {
         var store = Store();
-        store.Save("srv", new McpOAuthState { AccessToken = "valid", ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(1) });
+        store.Save("srv", new McpOAuthState { Resource = Res, AccessToken = "valid", ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(1) });
 
         Assert.Equal("valid", await Provider(store, "{}").GetAccessTokenAsync(CancellationToken.None));
     }
@@ -59,7 +86,7 @@ public class McpStoredTokenProviderTests : IDisposable
         var store = Store();
         store.Save("srv", new McpOAuthState
         {
-            ClientId = "c", AccessToken = "old", RefreshToken = "rt",
+            Resource = Res, ClientId = "c", AccessToken = "old", RefreshToken = "rt",
             ExpiresAtUtc = DateTimeOffset.UtcNow.AddSeconds(-10),   // expired
             TokenEndpoint = "https://auth/token",
         });
@@ -75,7 +102,7 @@ public class McpStoredTokenProviderTests : IDisposable
     public async Task ExpiredWithoutRefreshToken_ReturnsNull()
     {
         var store = Store();
-        store.Save("srv", new McpOAuthState { AccessToken = "old", ExpiresAtUtc = DateTimeOffset.UtcNow.AddSeconds(-10) });
+        store.Save("srv", new McpOAuthState { Resource = Res, AccessToken = "old", ExpiresAtUtc = DateTimeOffset.UtcNow.AddSeconds(-10) });
 
         Assert.Null(await Provider(store, "{}").GetAccessTokenAsync(CancellationToken.None));
     }

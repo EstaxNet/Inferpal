@@ -45,6 +45,7 @@ internal partial class InferpalToolWindowData
         _lifetimeService = lifetimeService;
         _buildMonitor    = buildMonitor;
         _buildMonitor.BuildFailed += OnVsBuildFailed;
+        _buildMonitor.BuildSucceeded += OnVsBuildSucceeded;
         _lifetimeService.ModelsRefreshed += OnModelsRefreshed;
         _config.AgentModeEnabledChanged += OnAgentModeConfigChanged;   // live-sync with the Settings checkbox
         _config.LanguageChanged         += OnLanguageChanged;          // re-localize labels when the Settings language changes
@@ -59,7 +60,6 @@ internal partial class InferpalToolWindowData
         LoadSessionCommand        = new AsyncCommand(LoadSessionAsync);
         DeleteSessionCommand      = new AsyncCommand(DeleteSessionAsync) { CanExecute = false };
         ToggleSessionPanelCommand = new AsyncCommand(ToggleSessionPanelAsync);
-        ScrollToBottomCommand     = new AsyncCommand(OnScrollToBottomAsync);
         AttachFileCommand         = new AsyncCommand(AttachFileAsync);
         AttachSelectionCommand    = new AsyncCommand(AttachSelectionAsync);
         BrowseFileCommand         = new AsyncCommand(BrowseFileAsync);
@@ -105,7 +105,6 @@ internal partial class InferpalToolWindowData
 
     internal void ApplyLabels()
     {
-        BtnLoadSession       = Strings.BtnLoadSession;
         BtnCancel            = Strings.BtnCancel;
         BtnSend              = Strings.BtnSend;
         TooltipCopy          = Strings.TooltipCopy;
@@ -126,9 +125,11 @@ internal partial class InferpalToolWindowData
         TooltipCloseSearch        = Strings.TooltipCloseSearch;
         TooltipSaveSnippet        = Strings.TooltipSaveSnippet;
         LabelCopyCode             = Strings.LabelCopyCode;
-        WelcomeCardExplain        = Strings.WelcomeCardExplain;
-        WelcomeCardFix            = Strings.WelcomeCardFix;
-        WelcomeCardTest           = Strings.WelcomeCardTest;
+        WelcomeCardProject        = Strings.WelcomeCardProject;
+        WelcomeProjectPrompt      = Strings.WelcomeProjectPrompt;
+        WelcomeCardChanges        = Strings.WelcomeCardChanges;
+        WelcomeChangesPrompt      = Strings.WelcomeChangesPrompt;
+        WelcomeOpenFileHint       = Strings.WelcomeOpenFileHint;
         WelcomeCardHelp           = Strings.WelcomeCardHelp;
         BuildBannerDismiss        = Strings.BuildBannerDismiss;
         ActiveModelLabel          = _config.DefaultModel;
@@ -158,7 +159,6 @@ internal partial class InferpalToolWindowData
     [DataMember] public string ThemeBorder      { get => _themeBorder;      set => SetProperty(ref _themeBorder,      value); }
     [DataMember] public string ThemeSessionBg   { get => _themeSessionBg;   set => SetProperty(ref _themeSessionBg,   value); }
     [DataMember] public string ThemePanelBg     { get => _themePanelBg;     set => SetProperty(ref _themePanelBg,     value); }
-    [DataMember] public string ThemeInputBg     { get => _themeInputBg;     set => SetProperty(ref _themeInputBg,     value); }
     [DataMember] public string ThemeInputBorder { get => _themeInputBorder; set => SetProperty(ref _themeInputBorder, value); }
     /// <summary>Surface shown behind a chrome icon button on hover; theme-aware so it doesn't flash
     /// dark in the light theme. Bound from trigger Setters via <c>ElementName=root</c>.</summary>
@@ -173,7 +173,6 @@ internal partial class InferpalToolWindowData
     [DataMember] public ObservableCollection<SlashSuggestion>   SlashSuggestions   { get; } = [];
 
     // ── UI Labels ──────────────────────────────────────────────────────────────
-    [DataMember] public string BtnLoadSession       { get => _btnLoadSession;       set => SetProperty(ref _btnLoadSession,       value); }
     [DataMember] public string BtnCancel            { get => _btnCancel;            set => SetProperty(ref _btnCancel,            value); }
     [DataMember] public string BtnSend              { get => _btnSend;              set => SetProperty(ref _btnSend,              value); }
     [DataMember] public string TooltipCopy             { get => _tooltipCopy;             set => SetProperty(ref _tooltipCopy,             value); }
@@ -225,14 +224,10 @@ internal partial class InferpalToolWindowData
     [DataMember] public string CurrentStep           { get => _currentStep;           set => SetProperty(ref _currentStep,           value); }
     [DataMember] public string TokenInfo             { get => _tokenInfo;             set { SetProperty(ref _tokenInfo, value); HasTokenInfo = !string.IsNullOrEmpty(value); } }
     [DataMember] public bool   HasTokenInfo          { get => _hasTokenInfo;          set => SetProperty(ref _hasTokenInfo,          value); }
-    [DataMember] public double ContextFillPercent    { get => _contextFillPercent;    set => SetProperty(ref _contextFillPercent,    value); }
     [DataMember] public bool   HasContextBudget      { get => _hasContextBudget;      set => SetProperty(ref _hasContextBudget,      value); }
-    [DataMember] public string ContextBudgetColor    { get => _contextBudgetColor;    set => SetProperty(ref _contextBudgetColor,    value); }
-    [DataMember] public string ContextBudgetTooltip  { get => _contextBudgetTooltip;  set => SetProperty(ref _contextBudgetTooltip,  value); }
     [DataMember] public bool   IsLoading               { get => _isLoading;               set => SetProperty(ref _isLoading,               value); }
     [DataMember] public bool   IsSessionPanelOpen      { get => _isSessionPanelOpen;      set => SetProperty(ref _isSessionPanelOpen,      value); }
     [DataMember] public bool   IsSearchOpen            { get => _isSearchOpen;            set => SetProperty(ref _isSearchOpen,            value); }
-    [DataMember] public bool   HasSearchQuery          { get => _hasSearchQuery;          set => SetProperty(ref _hasSearchQuery,          value); }
     [DataMember] public string SearchQuery
     {
         get => _searchQuery;
@@ -240,7 +235,6 @@ internal partial class InferpalToolWindowData
         {
             if (!SetProperty(ref _searchQuery, value)) return;
             var q = value?.Trim() ?? string.Empty;
-            HasSearchQuery = q.Length > 0;
             foreach (var msg in Messages)
             {
                 if (msg.Role is "anchor" or "status")
@@ -283,7 +277,6 @@ internal partial class InferpalToolWindowData
     [DataMember] public AsyncCommand LoadSessionCommand        { get; }
     [DataMember] public AsyncCommand DeleteSessionCommand      { get; }
     [DataMember] public AsyncCommand ToggleSessionPanelCommand { get; }
-    [DataMember] public AsyncCommand ScrollToBottomCommand     { get; }
     [DataMember] public AsyncCommand AttachFileCommand          { get; }
     [DataMember] public AsyncCommand AttachSelectionCommand     { get; }
     [DataMember] public AsyncCommand BrowseFileCommand          { get; }

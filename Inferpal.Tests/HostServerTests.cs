@@ -903,7 +903,7 @@ public partial class HostServerTests
     /// </summary>
     [Theory]
     [InlineData(0, false)]      // no count reported: estimated from the history
-    [InlineData(4321, true)]    // reference arm: a reported count is the measure
+    [InlineData(4321, true)]    // reference arm: a reported count is the measure, plus the answer it produced
     public async Task ChatSend_ToolsOff_ATurnWithoutACount_IsStillMeasured(int reported, bool exact)
     {
         using var h = CreateHarness();
@@ -921,9 +921,58 @@ public partial class HostServerTests
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         if (exact)
-            Assert.Equal(reported, session.LastPromptTokens);
+            Assert.Equal(reported + Services.Agent.AgentOrchestrator.EstimateTokens([session.History[^1]]), session.LastPromptTokens);
         else
             Assert.Equal(Services.Agent.AgentOrchestrator.EstimateTokens(session.History), session.LastPromptTokens);
+        Assert.True(session.LastPromptTokens > 1000, $"measure: {session.LastPromptTokens}");
+    }
+
+    /// <summary>
+    /// ⚠ The server's count is the prompt it was SENT: the answer appended after it rides with the next question. A
+    /// long answer measured out left the conversation past the window before compaction looked at it.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_ToolsOff_TheMeasure_IncludesTheAnswerTheNextQuestionCarries()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var session = h.Server.CurrentSession!;
+        session.ToolsEnabled = false;
+
+        var answer = string.Join(' ', Enumerable.Range(0, 2000).Select(i => $"word{i}"));
+        h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult(answer, null, 100, 100));
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "review this", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(answer, session.History[^1].Content);                     // witness: the answer was kept
+        Assert.True(session.LastPromptTokens >= 100 + answer.Length / 4, $"measure: {session.LastPromptTokens}");
+    }
+
+    /// <summary>
+    /// A plain-chat request that throws keeps its question in the history: the next question is measured with it.
+    /// Left as it was, the measure described the conversation before this question.
+    /// </summary>
+    [Fact]
+    public async Task ChatSend_ToolsOff_AFailedRequest_IsMeasuredWithTheQuestionItKept()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var session = h.Server.CurrentSession!;
+        session.ToolsEnabled = false;
+        session.LastPromptTokens = 7;
+
+        var question = "explain " + string.Join(' ', Enumerable.Range(0, 3000));
+        h.Fake.OnChat = (_, _) => throw new HttpRequestException("refused");
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = question, agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.NotNull(result.Error);                                           // witness: the request failed
+        Assert.Equal("user", session.History[^1].Role);
+        Assert.Equal(Services.Agent.AgentOrchestrator.EstimateTokens(session.History), session.LastPromptTokens);
         Assert.True(session.LastPromptTokens > 1000, $"measure: {session.LastPromptTokens}");
     }
 
@@ -1219,6 +1268,34 @@ public partial class HostServerTests
         Assert.True(await Rollback());
         Assert.False(await Rollback());
         Assert.Equal(before, h.Server.CurrentSession!.History.Count);
+    }
+
+    /// <summary>
+    /// ⚠ The workspace block (the solution, the open files) rides with the FIRST question only. Regenerating that
+    /// question took the block back with it while the "already sent" flag stayed set: the question was asked again
+    /// without the workspace it was first asked with — and no later question would ever carry it.
+    /// </summary>
+    [Fact]
+    public async Task Regenerating_TheFirstQuestion_SendsTheWorkspaceBlockAgain()
+    {
+        using var h = CreateHarness();
+        File.WriteAllText(Path.Combine(h.RootDir, "Shop.sln"), "Microsoft Visual Studio Solution File, Format Version 12.00\n");
+        await h.InitializeAsync();
+        var session = h.Server.CurrentSession!;
+        session.ToolsEnabled = false;
+        h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 3, 5));
+
+        Task Ask() => h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "what does this solution do?", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        string FirstQuestion() => session.History.First(m => m.Role == "user").Content!;
+
+        await Ask();
+        Assert.Contains(Services.Prompting.WorkspaceContext.Header, FirstQuestion());   // witness: the block went out
+
+        Assert.True(await h.Client.InvokeAsync<bool>("chat/rollbackLastTurn").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
+        await Ask();
+        Assert.Contains(Services.Prompting.WorkspaceContext.Header, FirstQuestion());
     }
 
     /// <summary>
@@ -2281,6 +2358,43 @@ public partial class HostServerTests
         Assert.Equal(0, edit.Start);
         Assert.Equal(11, edit.End);                 // "int x = 1;\n" replaced
         Assert.Equal("int y = 2;\n", edit.NewText);
+    }
+
+    /// <summary>
+    /// ⚠ /fix, /refactor and /doc ran outside the turn slot, so Stop (chat/cancel cancels the slot) reached nothing: the
+    /// chat stayed busy and the rewrite was offered — or applied, preview off — minutes after the user had stopped it.
+    /// </summary>
+    [Fact]
+    public async Task CodeActionRun_IsStoppedByChatCancel_AndOffersNothing()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        h.Fake.OnChat = async (_, ct) =>
+        {
+            started.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+            return new ChatTurnResult("never", null, 0, 0);
+        };
+
+        var run = h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
+            "codeAction/run", new { kind = "refactor", text = "int x = 1;", selStart = 0, selEnd = 0 });
+        await started.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));          // witness: the model is working
+        await h.Client.InvokeAsync("chat/cancel").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await run.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal("cancelled", result.Outcome);
+        Assert.Empty(result.Edits);
+    }
+
+    [Fact]
+    public void TheAdapter_ShowsACancelledCodeAction_AsStopped_AndAppliesNothing()
+    {
+        var run       = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("chatViewProvider.ts"), "private async runCodeAction(");
+        var cancelled = run.IndexOf("result.outcome === 'cancelled'", StringComparison.Ordinal);
+        var apply     = run.IndexOf("vscode.workspace.applyEdit(", StringComparison.Ordinal);
+        Assert.True(apply > 0, "the apply moved: the rule reads nothing");   // WITNESS
+        Assert.True(cancelled > 0 && cancelled < apply, "a stopped code action still reaches the apply");
     }
 
     [Fact]

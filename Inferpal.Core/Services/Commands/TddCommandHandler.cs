@@ -188,7 +188,7 @@ internal static class TddCommandHandler
     /// </summary>
     internal static bool TestsPassed(string output)
     {
-        var t = output.TrimStart();
+        var t = Tools.RunTestsTool.WithoutNotes(output);
         if (t.StartsWith('✓')) return true;
         if (t.StartsWith('✗')) return false;
         var verdictLine = t.Split('\n')[0];
@@ -208,7 +208,7 @@ internal static class TddCommandHandler
     internal static bool TestsFailed(string output)
     {
         if (NothingRan(output) || StoppedAtBudget(output)) return false;
-        var t = output.TrimStart();
+        var t = Tools.RunTestsTool.WithoutNotes(output);
         if (t.StartsWith('✗')) return true;
         return System.Text.RegularExpressions.Regex.IsMatch(t.Split('\n')[0], @"\b\d+ (failed|error)");
     }
@@ -216,7 +216,7 @@ internal static class TddCommandHandler
     /// <summary>Only "no runner detected" is a non-report — iterating on it is pointless. The
     /// tool's raw fallback dumps still carry the failure text the agent needs, so they loop.</summary>
     internal static bool LooksLikeTestReport(string output) =>
-        !output.TrimStart().StartsWith("No test runner detected", StringComparison.OrdinalIgnoreCase);
+        !Tools.RunTestsTool.WithoutNotes(output).StartsWith("No test runner detected", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The report says no test was <b>executed</b> — neither a pass nor something to fix.

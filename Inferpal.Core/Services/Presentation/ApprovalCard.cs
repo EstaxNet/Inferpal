@@ -44,7 +44,10 @@ internal static class ApprovalCard
             var t                     => Strings.ApprovalUseTool(t),
         };
 
-        var subject = prompt.Subject is { Length: > 0 } path ? Relative(path, root) : FirstLine(prompt.Details);
+        // A file tool's subject is its path; any other tool's is the string its rules match (an MCP call's raw JSON plus
+        // its values), which is not for display: what it runs is in its details.
+        var pathSubject = FileChanges.Contains(prompt.ToolName) || prompt.ToolName == "delete_file";
+        var subject = pathSubject && prompt.Subject is { Length: > 0 } path ? Relative(path, root) : FirstLine(prompt.Details);
         var meta = string.Empty;
         var preview = new List<ApprovalPreviewLine>();
         var more = 0;
@@ -68,13 +71,18 @@ internal static class ApprovalCard
                 more = Math.Max(0, diffLines.Count - PreviewLines);
             }
         }
-        else if (prompt.ToolName == "run_command" || prompt.Details.Contains('\n'))
+        else
         {
-            // The exact command — the one thing the person must read before allowing it.
+            // ⚠ Without a diff, the card is the only view of what will run, and the approval is the boundary: nothing of
+            // it is elided — every line of a command, every character of a tool's arguments. A diff can be capped,
+            // "Open diff" shows the rest; a command cut after eight lines, or an MCP call cut to its first 160
+            // characters, was approved unread in Visual Studio, which has no other view of it.
             var lines = prompt.Details.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
-            preview.AddRange(lines.Take(PreviewLines).Select(l => new ApprovalPreviewLine("ctx", l)));
-            more = Math.Max(0, lines.Length - PreviewLines);
-            if (prompt.ToolName == "run_command") subject = string.Empty;
+            if (prompt.ToolName == "run_command" || lines.Length > 1 || lines[0].Length > SubjectChars)
+            {
+                preview.AddRange(lines.Select(l => new ApprovalPreviewLine("ctx", l)));
+                if (!pathSubject) subject = string.Empty;
+            }
         }
 
         return new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
@@ -92,9 +100,12 @@ internal static class ApprovalCard
         catch (ArgumentException) { return path; }
     }
 
+    /// <summary>The longest single line the card's header shows as its subject; a longer one goes to the preview.</summary>
+    internal const int SubjectChars = 160;
+
     private static string FirstLine(string text)
     {
         var line = text.Replace("\r\n", "\n").Split('\n')[0];
-        return line.Length > 160 ? line[..160] + "…" : line;
+        return line.Length > SubjectChars ? line[..SubjectChars] + "…" : line;
     }
 }

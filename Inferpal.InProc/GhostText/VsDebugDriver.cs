@@ -97,18 +97,35 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 continue;
             }
 
-            Services.Signals.DebugCommandResponse response;
+            // ⚠ One token per request, cancelled when its caller WITHDRAWS it (Stop pressed, budget spent): the request
+            // file is consumed on claim, so deleting it no longer reaches a request being executed — a start built for
+            // minutes and then launched the user's program after they had cancelled.
+            Services.Signals.DebugCommandResponse? response;
+            using var requestCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var watcher = WatchForWithdrawalAsync(request.Id, requestCts);
             try
             {
-                response = await ExecuteAsync(request, ct);
+                response = await ExecuteAsync(request, requestCts.Token);
             }
-            catch (OperationCanceledException) { return; }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
+            // Withdrawn: nothing more is done for it, and nobody reads an answer.
+            catch (OperationCanceledException) when (requestCts.IsCancellationRequested) { response = null; }
             catch (Exception ex)
             {
                 // Every ordinary debugger condition is an answer, not a crash: the host renders the
                 // message as a sentence and the agent moves on.
                 Services.Diagnostics.Swallow("VsDebugDriver.Execute", ex);
                 response = new(request.Id, Ok: false, Error: ex.Message);
+            }
+            finally
+            {
+                // Stops the watcher. CancelAsync is net8 only: the shipped net472 build cancels synchronously.
+#if NET8_0_OR_GREATER
+                await requestCts.CancelAsync();
+#else
+                requestCts.Cancel();
+#endif
+                await watcher;
             }
 
             // ⚠ THE LOOP RETURNS TO THE POOL HERE, on every path. Each operation hops to the UI
@@ -121,9 +138,36 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             // skip.
             await TaskScheduler.Default.SwitchTo();
 
-            Services.Signals.DebugCommandSignal.WriteResponse(response);
+            if (response is not null) Services.Signals.DebugCommandSignal.WriteResponse(response);
         }
     }
+
+    /// <summary>Cancels <paramref name="requestCts"/> when the caller withdraws request <paramref name="id"/>.</summary>
+    private static async Task WatchForWithdrawalAsync(string id, CancellationTokenSource requestCts)
+    {
+        var token = requestCts.Token;
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (Services.Signals.DebugCommandSignal.IsWithdrawn(id))
+                {
+#if NET8_0_OR_GREATER
+                    await requestCts.CancelAsync().ConfigureAwait(false);
+#else
+                    requestCts.Cancel();
+#endif
+                    return;
+                }
+                await Task.Delay(WithdrawalPollMs, token).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.Withdrawal", ex); }
+    }
+
+    /// <summary>How often a request in progress checks whether its caller withdrew it.</summary>
+    private const int WithdrawalPollMs = 200;
 
     private async Task<Services.Signals.DebugCommandResponse> ExecuteAsync(
         Services.Signals.DebugCommandRequest request, CancellationToken ct)

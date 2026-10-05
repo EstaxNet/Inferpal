@@ -171,6 +171,8 @@ internal partial class InferpalToolWindowData
         _isCompact             = _config.IsCompactChat;
         // A save from the settings window can change the density: the open conversation follows at once.
         _config.Saved         += () => Post(() => IsCompact = _config.IsCompactChat);
+        // The pinned chips follow the setting: the settings window pins and disables files too.
+        _config.Saved         += () => Post(LoadPinnedFilesFromConfig);
     }
 
     /// <summary>The chrome's labels, in the interface language; part of <see cref="ApplyLabels"/>.</summary>
@@ -255,7 +257,9 @@ internal partial class InferpalToolWindowData
         var file      = string.IsNullOrEmpty(_activeFilePath) ? null : Path.GetFileName(_activeFilePath);
         HasActiveFile = file is not null;
         WelcomeForFile     = file is null ? string.Empty : Strings.WelcomeForFile(file);
-        WelcomeBuildFailed = Strings.WelcomeBuildFailed(_buildErrorCount);
+        // No count is not zero errors: the Error List was not filled when the build ended. "0 error(s)" under "the
+        // build failed" contradicts itself.
+        WelcomeBuildFailed = _buildErrorCount > 0 ? Strings.WelcomeBuildFailed(_buildErrorCount) : Strings.WelcomeBuildFailedUncounted;
         RefreshWelcomeLine();
     }
 

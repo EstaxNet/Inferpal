@@ -80,6 +80,16 @@ internal sealed class ProposalRecorder : IApprovalService
     }
 
     private ProposalOutcome _lastOutcome;
+    private TaskProposal?   _lastRecorded;
+
+    /// <summary>The proposal the latest request left in the list — added, combined or replacing an earlier one.</summary>
+    /// <remarks>⚠ Not the list's last entry: a file proposed again is updated IN PLACE, so after A, B, A the last entry
+    /// is B's — and the model was told its third edit was "recorded for B, combined with your earlier proposal for this
+    /// file".</remarks>
+    public TaskProposal? LastRecorded
+    {
+        get { lock (_gate) return _lastRecorded; }
+    }
 
     /// <summary>What the latest request did to the proposal list — read by the registry right after
     /// the call, to tell the model.</summary>
@@ -110,13 +120,15 @@ internal sealed class ProposalRecorder : IApprovalService
             if (at < 0)
             {
                 _proposals.Add(proposal);
-                _lastOutcome = ProposalOutcome.Added;
+                _lastOutcome  = ProposalOutcome.Added;
+                _lastRecorded = proposal;
                 return;
             }
 
             var (kept, outcome) = Supersede(_proposals[at], proposal);
             _proposals[at] = kept;
             _lastOutcome   = outcome;
+            _lastRecorded  = kept;
         }
     }
 

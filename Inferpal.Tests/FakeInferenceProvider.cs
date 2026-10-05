@@ -179,9 +179,13 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         return Task.FromResult(LoadedContextWindow);
     }
 
+    /// <summary>Whether an unload takes the model out of <see cref="Running"/>; by default the list does not move.</summary>
+    public Func<string, bool> OnUnload { get; set; } = _ => false;
+
     public Task UnloadModelAsync(string model, CancellationToken ct)
     {
         Unloaded.Add(model);
+        if (OnUnload(model)) Running.RemoveAll(m => m.Name == model);
         return Task.CompletedTask;
     }
 

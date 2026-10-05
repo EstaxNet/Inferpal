@@ -61,7 +61,18 @@ internal sealed class AgentCleaningDebugSession(IDebugSession inner, AgentBreakp
     public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct) => inner.AddBreakpointAsync(file, line, ct);
     public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct) => inner.RemoveBreakpointAsync(file, line, ct);
     public Task<IReadOnlyList<DebugBreakpointInfo>> ListBreakpointsAsync(CancellationToken ct) => inner.ListBreakpointsAsync(ct);
-    public Task<DebugStartResult> StartAsync(CancellationToken ct) => inner.StartAsync(ct);
+    /// <summary>
+    /// ⚠ A program that runs to completion ENDS the session as surely as a stop does — and it is the ordinary outcome of
+    /// a breakpoint on a line the run never reaches. Cleaned only by <see cref="StopAsync"/>, the agent's breakpoints
+    /// stayed in the editor's saved list (the model has no reason to stop a program that already ended), and the user's
+    /// next F5 stopped on a line they never chose.
+    /// </summary>
+    public async Task<DebugStartResult> StartAsync(CancellationToken ct)
+    {
+        var result = await inner.StartAsync(ct);
+        if (result is { State: null, Failure: null }) await agent.RemoveAllAsync(inner, ct);
+        return result;
+    }
     public Task<DebugStopState?> ContinueAsync(CancellationToken ct) => inner.ContinueAsync(ct);
     public Task<DebugStopState?> StepAsync(DebugStepKind kind, CancellationToken ct) => inner.StepAsync(kind, ct);
     public Task<DebugStopState?> GetStateAsync(CancellationToken ct) => inner.GetStateAsync(ct);

@@ -17,21 +17,42 @@
   "categories": [
     "AI",
     "Chat",
-    "Programming Languages"
+    "Programming Languages",
+    "Machine Learning"
   ],
   "keywords": [
     "ai",
+    "ai agent",
+    "coding agent",
+    "agent",
+    "local ai",
+    "local llm",
     "llm",
     "ollama",
     "lm studio",
-    "local",
+    "llama.cpp",
+    "vllm",
+    "openai compatible",
+    "self-hosted",
     "offline",
-    "agent",
-    "chat",
-    "autocomplete",
+    "private",
+    "privacy",
+    "no telemetry",
     "copilot alternative",
-    "assistant"
+    "autocomplete",
+    "code completion",
+    "chat",
+    "mcp",
+    "rag",
+    "debugger",
+    "tdd",
+    "qwen",
+    "devstral"
   ],
+  "galleryBanner": {
+    "color": "#1E1636",
+    "theme": "dark"
+  },
   "main": "./out/extension.js",
   "activationEvents": [
     "onStartupFinished"

@@ -55,6 +55,7 @@
     <Compile Remove="VsThemeDetectorTests.cs" />
     <Compile Remove="ChatAutoScrollerTests.cs" />
     <Compile Remove="BuildEventsBootstrapTests.cs" />
+    <Compile Remove="GhostTextKeysTests.cs" />
     <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 

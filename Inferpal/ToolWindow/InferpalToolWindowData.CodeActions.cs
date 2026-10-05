@@ -104,6 +104,17 @@ internal partial class InferpalToolWindowData
         });
     }
 
+    /// <summary>A build succeeded: the banner of an earlier failure no longer describes the solution.</summary>
+    private void OnVsBuildSucceeded() =>
+        Post(() =>
+        {
+            _buildFailedErrorLines = string.Empty;
+            _buildErrorCount       = 0;
+            BuildFailedFirstError  = string.Empty;
+            HasBuildFailedBanner   = false;
+            RefreshWelcome();
+        });
+
     /// <summary>Closes the "Build Failed" banner without triggering a fix.</summary>
     private Task DismissBuildBannerAsync(object? _, CancellationToken ct) =>
         RunOnVMContextAsync(() => HasBuildFailedBanner = false);

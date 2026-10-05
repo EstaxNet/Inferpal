@@ -42,15 +42,31 @@ internal enum ModelRole
 internal static class ModelRouter
 {
     /// <summary>Resolves the effective model name for <paramref name="role"/>. Never empty.</summary>
-    public static string Resolve(InferpalConfig config, ModelRole role) => role switch
+    public static string Resolve(InferpalConfig config, ModelRole role) => Resolve(config, role, chatModel: null);
+
+    /// <summary>
+    /// Same table, with <paramref name="chatModel"/> — the model the user picked in the chat — as the final fallback
+    /// instead of <see cref="InferpalConfig.DefaultModel"/>.
+    /// </summary>
+    /// <remarks>
+    /// VS Code picks its chat model per window and sends it with each request, so the configured default is not the
+    /// model the user chats with there. A per-role override still wins over the pick, as it does in Visual Studio:
+    /// letting the pick win made <c>agentModel</c> and <c>codeActionsModel</c> unreachable, the adapter always
+    /// sending one.
+    /// </remarks>
+    public static string Resolve(InferpalConfig config, ModelRole role, string? chatModel)
     {
-        ModelRole.Agent       => FirstNonEmpty(config.AgentModel, config.DefaultModel),
-        ModelRole.CodeActions => FirstNonEmpty(config.CodeActionsModel, config.DefaultModel),
-        ModelRole.InlineEdit  => FirstNonEmpty(config.InlineEditModel, config.CodeActionsModel, config.DefaultModel),
-        ModelRole.Fim         => FirstNonEmpty(config.InlineCompletionModel, config.DefaultModel),
-        ModelRole.Utility     => FirstNonEmpty(config.UtilityModel, config.DefaultModel),
-        _                     => config.DefaultModel,
-    };
+        var chat = FirstNonEmpty(chatModel, config.DefaultModel);
+        return role switch
+        {
+            ModelRole.Agent       => FirstNonEmpty(config.AgentModel, chat),
+            ModelRole.CodeActions => FirstNonEmpty(config.CodeActionsModel, chat),
+            ModelRole.InlineEdit  => FirstNonEmpty(config.InlineEditModel, config.CodeActionsModel, chat),
+            ModelRole.Fim         => FirstNonEmpty(config.InlineCompletionModel, chat),
+            ModelRole.Utility     => FirstNonEmpty(config.UtilityModel, chat),
+            _                     => chat,
+        };
+    }
 
     /// <summary>
     /// Auto mode for the utility role, pure core (unit-tested directly): route to the

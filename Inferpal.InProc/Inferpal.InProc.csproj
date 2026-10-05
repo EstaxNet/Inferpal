@@ -83,6 +83,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.14.40264" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.VisualStudio.Text.UI.Wpf" Version="17.14.249" PrivateAssets="all" ExcludeAssets="runtime" />
+    <!-- The editor's completion broker: ghost text leaves Tab and Escape to an open completion list. -->
+    <PackageReference Include="Microsoft.VisualStudio.Language" Version="17.14.249" PrivateAssets="all" ExcludeAssets="runtime" />
     <!-- Same version as the Core: the signal DTOs are serialized on both sides. -->
     <PackageReference Include="System.Text.Json" Version="9.0.0" PrivateAssets="all" ExcludeAssets="runtime" />
     <!-- Security remediation.

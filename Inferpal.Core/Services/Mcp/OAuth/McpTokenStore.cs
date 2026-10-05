@@ -20,6 +20,17 @@ internal sealed class McpOAuthState
     [JsonPropertyName("scopes")]        public List<string>? Scopes { get; set; }
 
     /// <summary>True when an access token exists and isn't within <paramref name="skew"/> of expiry.</summary>
+    /// <summary>
+    /// Was this state obtained for <paramref name="resource"/> (the server's canonical URL)?
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The store is keyed by the server's NAME, which the user can point at another URL (or reuse for another server):
+    /// read by name alone, the token obtained for one server was sent to the other as its bearer, a refresh asked the
+    /// first server's authorization server, and its registered client id was offered to the second one's — a sign-in
+    /// that could never succeed. A state without a recorded resource proves nothing and is not used either.
+    /// </remarks>
+    public bool BelongsTo(string resource) => string.Equals(Resource, resource, StringComparison.Ordinal);
+
     public bool HasUsableAccessToken(TimeSpan skew) =>
         !string.IsNullOrEmpty(AccessToken)
         && (ExpiresAtUtc is null || ExpiresAtUtc.Value - skew > DateTimeOffset.UtcNow);

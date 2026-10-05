@@ -314,11 +314,6 @@ internal class GetGitStatusTool : ITool
     private static string? FindGitRoot(string startPath)
     {
         var dir = Directory.Exists(startPath) ? startPath : Path.GetDirectoryName(startPath);
-        while (dir is not null)
-        {
-            if (Directory.Exists(Path.Combine(dir, ".git"))) return dir;
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-        return null;
+        return dir is null ? null : GitProcess.WorkTreeOf(dir);
     }
 }

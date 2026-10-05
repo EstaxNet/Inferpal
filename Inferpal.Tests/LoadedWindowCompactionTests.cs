@@ -76,6 +76,43 @@ public class LoadedWindowCompactionTests
         Assert.Equal(ContextOutcome.None, decision.Outcome);
     }
 
+    // ── A window of 0: the model's own default, which the server may state ─────
+
+    /// <summary>
+    /// ⚠ 0 means "the model's own default" — and LM Studio, vLLM and llama-server say which window they loaded. Read
+    /// as "no window", it switched compaction off while the client kept refusing every request past the loaded
+    /// window: the conversation was stuck again, through the setting the hint describes as the model's default.
+    /// </summary>
+    [Fact]
+    public async Task NoConfiguredWindow_IsMeasuredAgainstTheWindowTheServerLoaded()
+    {
+        var config = Config();
+        config.ContextWindowSize = 0;
+        var client = new FakeInferenceProvider { LoadedContextWindow = 4_096 };
+
+        var decision = await ContextManager.PrepareAsync(
+            LongHistory(), config, client, LastPrompt, onStep: null, CancellationToken.None, model: "glm");
+
+        Assert.Equal(["glm"], client.LoadedContextQueries);          // witness: the server was asked
+        Assert.Equal(4_096, decision.Window);
+        Assert.NotEqual(ContextOutcome.None, decision.Outcome);
+    }
+
+    [Fact]
+    public async Task NoConfiguredWindow_AndAServerThatCannotSay_StaysUnbounded()
+    {
+        // Reference arm: Ollama reports nothing, so 0 still means "no client-side trimming".
+        var config = Config();
+        config.ContextWindowSize = 0;
+
+        var decision = await ContextManager.PrepareAsync(
+            LongHistory(), config, new FakeInferenceProvider { LoadedContextWindow = null },
+            LastPrompt, onStep: null, CancellationToken.None, model: "glm");
+
+        Assert.Equal(0, decision.Window);
+        Assert.Equal(ContextOutcome.None, decision.Outcome);
+    }
+
     // ── The gauges show the same window ───────────────────────────────────────
 
     [Theory]

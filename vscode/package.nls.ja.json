@@ -1,5 +1,5 @@
 {
-  "inferpal.description": "セルフホスト LLM 向け AI 開発アシスタント — Ollama、LM Studio、任意の OpenAI 互換サーバー。コードを書き、ビルドし、テストし、テストが失敗すれば実際のデバッガーをアタッチします。100% ローカル、テレメトリなし。",
+  "inferpal.description": "自分のローカル モデルで動くプライベートな AI コーディング エージェント — Ollama、LM Studio、llama.cpp、vLLM を、PC でも GPU サーバーでも。計画し、編集し、ビルドしてテストを実行し、書き込みの前に必ず確認します。クラウドなし、テレメトリなし、API キー不要。",
   "inferpal.view.chat": "チャット",
   "inferpal.command.restartHost": "Inferpal: ホストを再起動",
   "inferpal.command.resetChat": "Inferpal: 新しい会話",

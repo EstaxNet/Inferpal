@@ -38,6 +38,12 @@ internal sealed class McpToolService : IAsyncDisposable
     private readonly McpTokenStore _tokenStore;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
+    /// <summary>The authorization metadata address each server announced when it refused us (see
+    /// <see cref="IMcpClient.ResourceMetadataUrl"/>), for the sign-in that follows: by then its client is gone.</summary>
+    /// ⚠ Keyed by name AND address: a name pointed at another server kept the old one's announcement, and the sign-in
+    /// that followed discovered the wrong authorization server.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(string Name, string? Url), string> _announcedMetadata = new();
+
     /// <summary>Per-server state. Mutated only under <see cref="_gate"/> (except the reconnect guard,
     /// which is lock-free so the read-loop thread can claim it without blocking).</summary>
     private sealed class ServerEntry(McpServerConfig config, IMcpClient client)
@@ -86,7 +92,7 @@ internal sealed class McpToolService : IAsyncDisposable
         cfg.IsHttp ? new McpHttpClient(cfg, tokenProvider: TokenProviderFor(cfg)) : new McpStdioClient(cfg);
 
     private McpStoredTokenProvider TokenProviderFor(McpServerConfig cfg) =>
-        new(cfg.Name, _tokenStore, new McpOAuthFlow(new RefreshOnlyReceiver()));
+        new(cfg.Name, McpOAuthMetadata.CanonicalResource(new Uri(cfg.Url!)), _tokenStore, new McpOAuthFlow(new RefreshOnlyReceiver()));
 
     /// <summary>Test seam: injects the client transport (production uses the transport factory above)
     /// and, optionally, a faster reconnect-backoff schedule and token store.</summary>
@@ -234,6 +240,7 @@ internal sealed class McpToolService : IAsyncDisposable
                 Diagnostics.Record("Mcp", client.NeedsAuthorization
                     ? $"Server '{server.Name}' needs authorization: its tools are not available."
                     : $"Server '{server.Name}' did not start: {client.LastError}");
+                if (client.ResourceMetadataUrl is { Length: > 0 } announced) _announcedMetadata[(server.Name, server.Url)] = announced;
                 var failure = new McpServerStatus(server.Name, false, 0, client.LastError, client.NeedsAuthorization);
                 await client.DisposeAsync().ConfigureAwait(false);
                 return (null, failure);
@@ -285,8 +292,7 @@ internal sealed class McpToolService : IAsyncDisposable
             .FirstOrDefault(s => s.IsHttp && string.Equals(s.Name, serverName, StringComparison.Ordinal))
             ?? throw new InvalidOperationException($"'{serverName}' is not a configured HTTP MCP server.");
 
-        var server = new McpOAuthServer(
-            new Uri(cfg.Url!), cfg.OAuth?.ClientId, cfg.OAuth?.ClientSecret, cfg.OAuth?.Scopes);
+        var server = OAuthServerFor(cfg);
 
         var flow  = new McpOAuthFlow(new LoopbackAuthCodeReceiver());
         var state = await flow.AuthorizeAsync(server, _tokenStore.Get(serverName), ct).ConfigureAwait(false);
@@ -294,6 +300,12 @@ internal sealed class McpToolService : IAsyncDisposable
 
         await RefreshAsync().ConfigureAwait(false);
     }
+
+    /// <summary>What the sign-in to <paramref name="cfg"/> starts from — with the metadata address the server announced
+    /// when it refused us, if it did (otherwise the default well-known address is tried).</summary>
+    internal McpOAuthServer OAuthServerFor(McpServerConfig cfg) =>
+        new(new Uri(cfg.Url!), cfg.OAuth?.ClientId, cfg.OAuth?.ClientSecret, cfg.OAuth?.Scopes,
+            _announcedMetadata.TryGetValue((cfg.Name, cfg.Url), out var announced) ? announced : null);
 
     /// <summary>
     /// Handles a server's <c>tools/list_changed</c> notification: re-runs discovery for that one

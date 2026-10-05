@@ -17,13 +17,6 @@ namespace Inferpal.Services.Rag;
 internal static class IndexExclusions
 {
     /// <summary>
-    /// Directory names whose contents are never indexed: build artifacts, VCS/IDE metadata, and
-    /// Inferpal's own data dir — <c>.inferpal/history/</c> holds snapshot COPIES of source files
-    /// (same extensions), which would otherwise pollute the index with stale duplicates.
-    /// </summary>
-    public static string[] BuiltInDirs => WorkspaceScan.ExcludedDirNames;
-
-    /// <summary>
     /// <c>true</c> when <paramref name="path"/> must stay out of the index.
     /// </summary>
     /// <param name="path">Absolute path of the candidate file.</param>

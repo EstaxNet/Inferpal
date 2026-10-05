@@ -81,6 +81,24 @@ internal static class GitCommitPolicy
     public static string NameList(IReadOnlyList<string> paths) =>
         string.Join(", ", paths.Take(5)) + (paths.Count > 5 ? $" (+{paths.Count - 5})" : string.Empty);
 
+    /// <summary>
+    /// A file git does not track yet, as the unified diff it will be once added: the form a review reads, and the one
+    /// its findings anchor to (<c>+++ b/path</c>, a hunk from line 1).
+    /// </summary>
+    public static string NewFileDiff(string relativePath, string content)
+    {
+        var path  = relativePath.Replace('\\', '/');
+        var lines = content.Replace("\r\n", "\n").Split('\n');
+        if (lines.Length > 0 && lines[^1].Length == 0) lines = lines[..^1];
+        var sb = new System.Text.StringBuilder()
+            .Append("diff --git a/").Append(path).Append(" b/").Append(path).Append('\n')
+            .Append("new file mode 100644\n--- /dev/null\n+++ b/").Append(path).Append('\n');
+        if (lines.Length == 0) return sb.ToString();
+        sb.Append("@@ -0,0 +1,").Append(lines.Length).Append(" @@\n");
+        foreach (var line in lines) sb.Append('+').Append(line).Append('\n');
+        return sb.ToString();
+    }
+
     public static string BuildUnstagedContext(string status, string unstagedDiff)
     {
         var ctx = $"git status:\n{status}";

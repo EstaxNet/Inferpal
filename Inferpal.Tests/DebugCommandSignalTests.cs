@@ -35,7 +35,8 @@ public class DebugCommandSignalTests : IDisposable
     {
         foreach (var path in new[] { DebugCommandSignal.RequestPath,
                                      DebugCommandSignal.ResponsePath,
-                                     DebugCommandSignal.ReadyPath })
+                                     DebugCommandSignal.ReadyPath,
+                                     DebugCommandSignal.WithdrawnPath })
             try { File.Delete(path); } catch { }
     }
 
@@ -258,6 +259,58 @@ public class DebugCommandSignalTests : IDisposable
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wait);
         Assert.False(File.Exists(DebugCommandSignal.RequestPath),
             "a cancelled wait must withdraw its request: this one carries op \"start\".");
+    }
+
+    /// <summary>
+    /// ⚠ Deleting the request file only withdraws a request the driver has not CLAIMED — a 100 ms window. Claimed, a
+    /// <c>start</c> built for minutes and then launched the user's program after they pressed Stop. The withdrawal is
+    /// now also a mark the driver watches while it executes, keyed by the request's id.
+    /// </summary>
+    [Fact]
+    public async Task ARequestAlreadyClaimed_IsMarkedWithdrawn_WhenItsCallerCancels()
+    {
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+        DebugCommandSignal.WriteRequest(Request(op: "start", id: "r7"));
+        Assert.NotNull(DebugCommandSignal.ClaimRequest());           // witness: the driver took it
+        Assert.False(DebugCommandSignal.IsWithdrawn("r7"));
+
+        using var cts = new CancellationTokenSource();
+        var wait = DebugCommandSignal.WaitForAnswerAsync("r7", TimeSpan.FromMinutes(2), cts.Token);
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wait);
+
+        Assert.True(DebugCommandSignal.IsWithdrawn("r7"));
+        Assert.False(DebugCommandSignal.IsWithdrawn("r8"));           // reference arm: another request goes on
+    }
+
+    [Fact]
+    public async Task ARequestWhoseBudgetRanOut_IsMarkedWithdrawnToo()
+    {
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+        DebugCommandSignal.WriteRequest(Request(op: "start", id: "r9"));
+        Assert.NotNull(DebugCommandSignal.ClaimRequest());
+
+        Assert.Null(await DebugCommandSignal.WaitForAnswerAsync("r9", TimeSpan.FromMilliseconds(200), CancellationToken.None));
+        Assert.True(DebugCommandSignal.IsWithdrawn("r9"));
+    }
+
+    /// <summary>
+    /// The driver honours the mark: one token per request, cancelled by the withdrawal, and a withdrawn request is
+    /// answered by nobody. Held by the source: the driver runs inside devenv.
+    /// </summary>
+    [Fact]
+    public void TheDriver_ExecutesUnderTheRequestsOwnToken_AndStopsWhenItIsWithdrawn()
+    {
+        var code  = ConventionCoverageTests.CodeOnly(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(),
+                                                                   "Inferpal.InProc", "GhostText", "VsDebugDriver.cs"));
+        var serve = code[code.IndexOf("private async Task ServeAsync(", StringComparison.Ordinal)..];
+        serve     = serve[..serve.IndexOf("private async Task<Services.Signals.DebugCommandResponse> ExecuteAsync(", StringComparison.Ordinal)];
+
+        Assert.Contains("await ExecuteAsync(request, requestCts.Token)", serve, StringComparison.Ordinal);
+        Assert.Contains("WatchForWithdrawalAsync(request.Id, requestCts)", serve, StringComparison.Ordinal);
+        Assert.Contains("DebugCommandSignal.IsWithdrawn(id)", serve, StringComparison.Ordinal);
+        Assert.Contains("if (response is not null) Services.Signals.DebugCommandSignal.WriteResponse(response);", serve,
+                        StringComparison.Ordinal);
     }
 
     /// <summary>

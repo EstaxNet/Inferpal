@@ -43,7 +43,6 @@ internal static class AtomicFile
         $"{path}.{Environment.ProcessId}-{Interlocked.Increment(ref _sequence)}.tmp";
 
     private static readonly UTF8Encoding Utf8WithBom = new(encoderShouldEmitUTF8Identifier: true);
-    private static readonly UTF8Encoding Utf8NoBom   = new(encoderShouldEmitUTF8Identifier: false);
 
     /// <summary>
     /// The encoding a rewrite uses: the <b>destination's own</b> byte-order mark when it already

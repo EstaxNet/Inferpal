@@ -45,8 +45,11 @@ internal static class AgentLoopPolicy
     internal static string Signature(IReadOnlyList<ToolCallDto> calls) =>
         string.Join("|", calls.Select(c => $"{c.Function.Name}:{c.Function.Arguments}"));
 
-    /// <summary>Key prefix of read-only batches in the counts — a character no tool name contains.</summary>
-    private const string ReadOnlyKey = "ro";
+    /// <summary>Key prefix of read-only batches in the counts — control characters, which no tool name contains.</summary>
+    /// <remarks>⚠ Written as escapes: typed raw they are invisible, the key reads as the letters "ro", and "ro" alone
+    /// would also prefix the key of a mutating tool such as "router__deploy" — the reset below would then clear that
+    /// mutation's own count in the call that records it, and its verbatim repeat would never stop the run.</remarks>
+    private const string ReadOnlyKey = "\u0001ro\u0001";
 
     /// <summary>
     /// Records <paramref name="calls"/> in <paramref name="counts"/> and returns <c>true</c> when

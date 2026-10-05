@@ -40,6 +40,9 @@ internal sealed class VsBuildMonitor : IDisposable
     /// </summary>
     public event Action<int, string>? BuildFailed;
 
+    /// <summary>A build succeeded: the banner of an earlier failure describes a solution that builds now.</summary>
+    public event Action? BuildSucceeded;
+
     private FileSystemWatcher? _watcher;
 
     // ── Initialization ─────────────────────────────────────────────────────────
@@ -62,7 +65,7 @@ internal sealed class VsBuildMonitor : IDisposable
         var early = BuildSignalFile.TryRead();
         BuildSignalFile.Clear();
         if (!string.IsNullOrEmpty(early.SolutionPath))
-            FireOrFallback(early);
+            Dispatch(early);
 
         // Watch for future signals from the in-process package.
         try
@@ -91,7 +94,14 @@ internal sealed class VsBuildMonitor : IDisposable
         BuildSignalFile.Clear();
 
         if (!string.IsNullOrEmpty(payload.SolutionPath))
-            FireOrFallback(payload);
+            Dispatch(payload);
+    }
+
+    /// <summary>A success clears, a failure raises the banner.</summary>
+    internal void Dispatch(BuildSignalFile.SignalPayload payload)
+    {
+        if (payload.Succeeded) BuildSucceeded?.Invoke();
+        else                   FireOrFallback(payload);
     }
 
     // ── Fast path vs. fallback ─────────────────────────────────────────────────
@@ -113,8 +123,9 @@ internal sealed class VsBuildMonitor : IDisposable
     {
         if (payload.ErrorLines.Length > 0)
         {
-            // Fast path: errors were captured in-process — use them directly.
-            BuildFailed?.Invoke(payload.ErrorLines.Length, string.Join("\n", payload.ErrorLines));
+            // Fast path: errors were captured in-process — use them directly. The COUNT is the build's, not the number
+            // of lines: those are capped, and 200 errors announced as 30 is worse than no number.
+            BuildFailed?.Invoke(Math.Max(payload.ErrorCount, payload.ErrorLines.Length), string.Join("\n", payload.ErrorLines));
         }
         else
         {

@@ -474,7 +474,9 @@ input[type="checkbox"] {
 .listeditor button,
 .ruleadd button,
 .statuscard button:not(.linkbtn),
-.docsites button:not(.linkbtn):not(.icon-button) {
+.docsites button:not(.linkbtn):not(.icon-button),
+.suggestblock button,
+.loadedmodels button:not(.icon-button) {
   border-radius: 4px;
   padding: 4px 12px;
   font: inherit;
@@ -487,7 +489,9 @@ input[type="checkbox"] {
 .listeditor button.secondary,
 .ruleadd button.secondary,
 .statuscard button.secondary,
-.docsites button.secondary {
+.docsites button.secondary,
+.suggestblock button.secondary,
+.loadedmodels button.secondary {
   border: 1px solid var(--ip-line);
   background: transparent;
   color: var(--vscode-foreground);
@@ -495,14 +499,17 @@ input[type="checkbox"] {
 
 .listeditor button:disabled,
 .statuscard button:disabled,
-.docsites button:disabled {
+.docsites button:disabled,
+.suggestblock button:disabled,
+.loadedmodels button:disabled {
   opacity: 0.6;
   cursor: default;
 }
 
 .listeditor .icon-button,
 .ruleseditor .icon-button,
-.docsites .icon-button {
+.docsites .icon-button,
+.loadedmodels .icon-button {
   border: 0;
   background: transparent;
   color: var(--vscode-icon-foreground, var(--vscode-foreground));
@@ -512,7 +519,8 @@ input[type="checkbox"] {
 }
 
 .listeditor .icon-button:hover,
-.docsites .icon-button:hover {
+.docsites .icon-button:hover,
+.loadedmodels .icon-button:hover {
   background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.2));
 }
 
@@ -1216,4 +1224,48 @@ body.vscode-high-contrast-light .segment:has(input:checked) {
 
 .modelline {
   margin: 6px 0 0;
+}
+
+/* ── Server and models: the suggestion, and what the server holds in memory ── */
+.suggestblock,
+.loadedmodels {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.suggestblock .blockhead {
+  justify-content: flex-start;
+}
+
+.suggestresult {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.suggestresult p {
+  margin: 0;
+}
+
+.suggestline {
+  color: var(--ip-muted);
+}
+
+.suggestline.changed {
+  color: var(--vscode-foreground);
+}
+
+.suggestsummary {
+  font-weight: 600;
+}
+
+.loadedsummary {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+
+.loadedmodels .lname {
+  font-family: var(--vscode-editor-font-family, monospace);
 }

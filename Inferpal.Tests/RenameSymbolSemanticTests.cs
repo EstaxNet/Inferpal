@@ -108,6 +108,61 @@ public class RenameSymbolSemanticTests : IDisposable
         Assert.Contains("public void Handle()", Read("Beta.cs"));
     }
 
+    /// <summary>
+    /// ⚠ The model narrows an ambiguous rename to one declaration — and when its narrowing matched none (a file it named
+    /// with "./", a line taken from the identifier instead of the declaration's start), the tool fell through to the
+    /// text-based path and renamed EVERY symbol of that name, both methods the model had just chosen between.
+    /// </summary>
+    [Fact]
+    public async Task ANarrowingThatMatchesNothing_RenamesNothing()
+    {
+        Write("Alpha.cs", """
+            namespace App;
+            public class Alpha { public void Handle() { } }
+            """);
+        Write("Beta.cs", """
+            namespace App;
+            public class Beta { public void Handle() { } }
+            """);
+
+        var report = await RunAsync("Handle", "Process", dryRun: false, declaringFile: "Gamma.cs");
+
+        Assert.Contains("nothing was renamed", report);
+        Assert.Contains("declaring_file 'Gamma.cs'", report);
+        Assert.Contains("public void Handle()", Read("Alpha.cs"));
+        Assert.Contains("public void Handle()", Read("Beta.cs"));
+    }
+
+    [Fact]
+    public async Task ADeclaringFileWrittenWithALeadingDotSlash_IsThatFile()
+    {
+        Write("Alpha.cs", """
+            namespace App;
+            public class Alpha { public void Handle() { } }
+            """);
+        Write("Beta.cs", """
+            namespace App;
+            public class Beta { public void Handle() { } }
+            """);
+
+        await RunAsync("Handle", "Process", dryRun: false, declaringFile: "./Alpha.cs");
+
+        Assert.Contains("public void Process()", Read("Alpha.cs"));
+        Assert.Contains("public void Handle()", Read("Beta.cs"));   // untouched
+    }
+
+    [Theory]
+    [InlineData("src/Cart.cs", "src/Cart.cs", true)]
+    [InlineData("src/Cart.cs", "./src/Cart.cs", true)]
+    [InlineData("src/Cart.cs", "Cart.cs", true)]
+    [InlineData("src/MyCart.cs", "Cart.cs", false)]                   // a suffix starts at a folder boundary
+    [InlineData("src/Cart.cs", "other/Cart.cs", false)]
+    public void TheDeclaringFile_IsMatchedOnAFolderBoundary(string rel, string named, bool same)
+    {
+        var path = Path.Combine(_root, rel.Replace('/', Path.DirectorySeparatorChar));
+        Assert.Equal(same, Inferpal.Services.Lsp.CSharpSemanticIndex.IsDeclaringFile(path, named));
+    }
+
     [Fact]
     public async Task APartialTypeDeclaredInTwoFiles_IsOneSymbol()
     {

@@ -47,7 +47,9 @@ internal sealed partial class HostServer
         f.Editor,
         f.ZeroIsEmpty,
         f.EmptyChoice,
-        f.Columns?.ToList());
+        f.Columns?.ToList(),
+        f.Min,
+        f.Max);
 
     private static readonly Config.InferpalConfig _factoryDefaults = new();
 
@@ -126,6 +128,8 @@ internal sealed partial class HostServer
     /// <c>SettingsStrings_ServeEveryNameThePanelAsksFor</c>, which reads the panel's sources.</remarks>
     private static readonly string[] EditorStrings =
     [
+        // Server and models: the suggestion and the loaded models (the sentences themselves come with the facts)
+        "BtnSuggestModels", "HintSuggestModels", "BtnUnloadModel", "BtnUnloadAll", "BtnRefreshLoaded",
         "SettingsEditAsJson", "SettingsEditAsText", "SettingsEditAsList",
         "HintRowEdit", "HintRowDelete", "RowEditTitle", "ListLineNotRead",
         // MCP server cards and their form

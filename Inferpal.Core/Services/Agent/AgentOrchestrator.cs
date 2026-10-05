@@ -316,20 +316,24 @@ internal sealed class AgentOrchestrator
     /// results. The full elided output is still recoverable via the dedup cache if the model
     /// re-requests the same call. No-op when no context window is configured (num_ctx = model default).
     /// </summary>
-    internal static void CompactRunContext(List<ChatMessageDto> messages, int anchorCount, int budget)
+    /// <param name="toolTokens">The tool definitions every request of the run carries (<see cref="RequestSize.ToolTokens"/>).
+    /// ⚠ Counted like the conversation, as the check between turns counts them: they weigh about half of an 8 192-token
+    /// window, so a run measured on its messages alone elided only once the backend had already refused the request
+    /// (LM Studio) or cut its head (Ollama).</param>
+    internal static void CompactRunContext(List<ChatMessageDto> messages, int anchorCount, int budget, int toolTokens = 0)
     {
         if (budget <= 0) return;
         // Counted once, then kept current as results are elided: re-estimating the whole list for
         // every message examined was quadratic on a long run.
         var chars = EstimateChars(messages);
-        if (chars / 4 <= budget * 8 / 10) return;                  // under 80% — nothing to do
+        if (chars / 4 + toolTokens <= budget * 8 / 10) return;     // under 80% — nothing to do
 
         var target          = budget * 7 / 10;                     // compact down to ~70%
         var lastCompactable = messages.Count - KeepRecentMessages; // keep the recent tail verbatim
 
         for (int i = anchorCount; i < lastCompactable; i++)
         {
-            if (chars / 4 <= target) break;
+            if (chars / 4 + toolTokens <= target) break;
             var m = messages[i];
             if (m.Role != "tool" || m.Content == ElidedToolResult) continue;
             chars -= (m.Content?.Length ?? 0) - ElidedToolResult.Length;
@@ -354,13 +358,13 @@ internal sealed class AgentOrchestrator
     /// </summary>
     internal async Task<bool> CompactRunContextAsync(
         List<ChatMessageDto> messages, int anchorCount, string model,
-        bool alreadySummarized, Action<string> onStep, CancellationToken ct)
+        bool alreadySummarized, Action<string> onStep, CancellationToken ct, int toolTokens = 0)
     {
         // ⚠ The window the model is really loaded with when the server reports a smaller one: measured
         // against the configured window alone, a run was refused mid-way while elision waited.
         var budget = await RunWindowAsync(model, ct);
         if (budget <= 0) return alreadySummarized;
-        if (EstimateTokens(messages) <= budget * 8 / 10) return alreadySummarized;
+        if (EstimateTokens(messages) + toolTokens <= budget * 8 / 10) return alreadySummarized;
 
         if (!alreadySummarized && _config.CompactionEnabled)
         {
@@ -368,17 +372,17 @@ internal sealed class AgentOrchestrator
             {
                 case RunSummaryOutcome.Summarized:
                     // A summary can still leave the run over budget (a large recent tail): elide on top.
-                    CompactRunContext(messages, anchorCount, budget);
+                    CompactRunContext(messages, anchorCount, budget, toolTokens);
                     return true;
                 case RunSummaryOutcome.NothingToSummarize:
                     // ⚠ Not spent: a later overflow, with more old turns, is worth the one summary.
-                    CompactRunContext(messages, anchorCount, budget);
+                    CompactRunContext(messages, anchorCount, budget, toolTokens);
                     return false;
             }
         }
 
         // No summary (disabled, already spent, or it failed/timed out) → elide.
-        CompactRunContext(messages, anchorCount, budget);
+        CompactRunContext(messages, anchorCount, budget, toolTokens);
         return true;
     }
 
@@ -492,14 +496,14 @@ internal sealed class AgentOrchestrator
     /// strip any tool_calls so the history is consistent with the empty registry. A degenerate refusal
     /// that slips through anyway is caught (<see cref="LooksLikeToolRefusal"/>) and falls back.
     /// </remarks>
-    /// <returns>The answer, and whether it stopped at the model's length limit.</returns>
-    private async Task<(string Answer, bool Cut)> SynthesizeFinalAnswerAsync(
+    /// <returns>The answer, whether it stopped at the model's length limit, and whether it was stopped repeating itself.</returns>
+    private async Task<(string Answer, bool Cut, bool Repeating)> SynthesizeFinalAnswerAsync(
         string model, List<ChatMessageDto> messages, int anchorCount,
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
         Action<string>? onToken, Action? onStreamReset, Action<string> onStep, CancellationToken ct,
         Action<string>? onThinking = null)
     {
-        var (answer, synthesized, cut) = await TrySynthesizeAsync(
+        var (answer, synthesized, cut, repeating) = await TrySynthesizeAsync(
             model, messages, anchorCount, executions, userTask, fallback, onToken, onStreamReset, onStep, ct, onThinking);
 
         // The synthesized answer is what the user read: it must also be what the model reads next
@@ -511,10 +515,10 @@ internal sealed class AgentOrchestrator
             else
                 messages.Add(new ChatMessageDto("assistant", answer));
         }
-        return (answer, cut);
+        return (answer, cut, repeating);
     }
 
-    private async Task<(string Answer, bool Synthesized, bool Cut)> TrySynthesizeAsync(
+    private async Task<(string Answer, bool Synthesized, bool Cut, bool Repeating)> TrySynthesizeAsync(
         string model, List<ChatMessageDto> messages, int anchorCount,
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
         Action<string>? onToken, Action? onStreamReset, Action<string> onStep, CancellationToken ct,
@@ -553,15 +557,17 @@ internal sealed class AgentOrchestrator
             var turn   = await _client.SendChatAsync(
                 model, synth, EmptyToolRegistry.Instance, onToken, ct, TaskComplexity.Normal, onThinking: onThinking);
             var answer = MarkdownParser.StripThinkTags(turn.TextContent);
+            // ⚠ A synthesis the client stopped because it kept repeating is cut AND repeating: carried as a cut alone,
+            // the end notice advised a longer context — the one remedy that does nothing for a loop.
             return MarkdownParser.HasPrintableText(answer) && !LooksLikeToolRefusal(answer) && !LooksLikePlanEcho(answer)
-                ? (turn.TextContent, true, turn.CutAtLimit)
-                : (fallback, false, false);
+                ? (turn.TextContent, true, turn.CutAtLimit, turn.StoppedRepeating)
+                : (fallback, false, false, false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)   // synthesis failed/timed out → keep the existing fallback
         {
             Diagnostics.Swallow("Agent.Synthesis", ex);
-            return (fallback, false, false);
+            return (fallback, false, false, false);
         }
     }
 
@@ -802,7 +808,8 @@ internal sealed class AgentOrchestrator
 
             // Keep the running context under num_ctx so Ollama never truncates the head. First
             // overflow → one LLM summary of the old turns; later overflows → deterministic elision.
-            runSummarized = await CompactRunContextAsync(messages, anchorCount, model, runSummarized, onStep, ct);
+            runSummarized = await CompactRunContextAsync(messages, anchorCount, model, runSummarized, onStep, ct,
+                                                         RequestSize.ToolTokens(tools.Definitions));
 
             // ── ACT ──────────────────────────────────────────────────────────
             onStep(Strings.StatusThinking);
@@ -857,13 +864,13 @@ internal sealed class AgentOrchestrator
                             onStepUpdate?.Invoke(plan.Steps.IndexOf(step), AgentStepStatus.Done);
                         }
 
-                    var (loopMsg, loopCut) = executions.Count > 0
+                    var (loopMsg, loopCut, loopRepeating) = executions.Count > 0
                         ? await SynthesizeFinalAnswerAsync(
                             model, messages, anchorCount, executions, userTask, string.Empty, onToken, onStreamReset, onStep, ct, onThinking)
-                        : (Strings.MsgLoopDetected, false);
+                        : (Strings.MsgLoopDetected, false, false);
                     return new OrchestratorResult(
                         loopMsg, plan, executions, messages,
-                        totalTokens, lastPromptTokens, true, false, loopCut);
+                        totalTokens, lastPromptTokens, true, false, loopCut, AnswerRepeating: loopRepeating);
                 }
 
                 // ── Execute tools ─────────────────────────────────────────────
@@ -1048,11 +1055,11 @@ internal sealed class AgentOrchestrator
                 var degenerate     = LooksLikeToolRefusal(turn.TextContent) || LooksLikePlanEcho(turn.TextContent);
                 if ((!visible || degenerate) && executions.Count > 0)
                 {
-                    (finalText, finalCut) = await SynthesizeFinalAnswerAsync(
+                    // The synthesis replaced the answer: its own cut and repeat are what the end notice reads.
+                    (finalText, finalCut, finalRepeating) = await SynthesizeFinalAnswerAsync(
                         model, messages, anchorCount, executions, userTask,
                         degenerate ? string.Empty : finalText,   // never keep a refusal or a plan as the fallback
                         onToken, onStreamReset, onStep, ct, onThinking);
-                    finalRepeating = false;   // the synthesis replaced the answer that repeated itself
                 }
 
                 return new OrchestratorResult(
@@ -1064,12 +1071,12 @@ internal sealed class AgentOrchestrator
 
         // Hit the iteration cap. If tools ran, synthesise a final answer from what was gathered so
         // the user gets a real reply instead of only the "iteration limit" notice.
-        var (capFinal, capCut) = executions.Count > 0
+        var (capFinal, capCut, capRepeating) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
                 model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit, onToken, onStreamReset, onStep, ct, onThinking)
-            : (Strings.MsgIterationLimit, false);
+            : (Strings.MsgIterationLimit, false, false);
         return new OrchestratorResult(
             capFinal, plan, executions, messages,
-            totalTokens, lastPromptTokens, false, true, capCut);
+            totalTokens, lastPromptTokens, false, true, capCut, AnswerRepeating: capRepeating);
     }
 }

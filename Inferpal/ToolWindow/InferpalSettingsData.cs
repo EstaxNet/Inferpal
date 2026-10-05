@@ -56,7 +56,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelLanguage     = string.Empty;
     private string _hintLanguage      = string.Empty;
     private string _connectionStatus = string.Empty;
-    private bool   _isConnectionOk;
     private string _saveStatus       = string.Empty;
     private bool   _isDarkTheme;
     private string _textForeground   = "#F1F1F1";
@@ -102,7 +101,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _hintContextWindowKeepTurns   = string.Empty;
     private string _unitSeconds = string.Empty;
     private string _unitMinutes = string.Empty;
-    private string _unitHours = string.Empty;
     private string _unitGigabytes = string.Empty;
     private string _unitTokens = string.Empty;
     private string _unitTurns = string.Empty;
@@ -134,7 +132,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelSectionMcp                     = string.Empty;
     private string _labelMcpEnabled                     = string.Empty;
     private string _hintMcpEnabled                      = string.Empty;
-    private string _labelMcpServers                     = string.Empty;
     private string _hintMcpServers                      = string.Empty;
     private string _hintMcpEditServer                   = string.Empty;
     private string _hintMcpDeleteServer                 = string.Empty;
@@ -147,9 +144,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _mcpEditGlyph                        = "#CCCCCC";
     private string _themeHoverBg                         = "#3F3F46";
     private string _editPanelBg                          = "#2D2D30";
-    private string _secondaryButtonBg                    = "#3F3F46";
-    private string _secondaryButtonHover                 = "#505050";
-    private string _secondaryButtonFg                    = "#FFFFFF";
     private string _linkForeground                       = "#B39DFF";
     private string _warningForeground                    = "#D9A21B";
     private string _mcpSummaryText                       = string.Empty;
@@ -178,7 +172,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelMcpHeaders                     = string.Empty;
     private string _btnMcpSaveServer                    = string.Empty;
     private string _btnMcpCancelServer                  = string.Empty;
-    private string _labelMcpAdvancedJson                = string.Empty;
     private string _btnMcpImportJson                    = string.Empty;
     private bool   _personaAutoSwitch;
     private string _labelPersonaAutoSwitch       = string.Empty;
@@ -259,13 +252,11 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _customSystemPrompt;
     private string _pinnedContextFiles;
     private string _promptTemplates;
-    private string _labelPromptTemplates = string.Empty;
     private string _hintPromptTemplates  = string.Empty;
     private string _customTools;
     private string _permissionRules;
     private string _labelPermissionRules = string.Empty;
     private string _hintPermissionRules  = string.Empty;
-    private string _labelCustomTools     = string.Empty;
     private string _hintCustomTools      = string.Empty;
 
     // ── Editable lists (pinned files / slash commands / custom tools) ─────────
@@ -273,7 +264,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     // brushes already on this VM, reused here).
     private string _hintRowEdit          = string.Empty;
     private string _hintRowDelete        = string.Empty;
-    private string _labelRowAdvanced     = string.Empty;
     private string _btnRowImport         = string.Empty;
     // Pinned files
     private bool   _isEditingPinned;
@@ -316,7 +306,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     // *Empty drives the empty-state card shown when a list has no rows.
     private bool   _mcpListViewVisible    = true;
     private string _mcpViewLabel          = string.Empty;
-    private string _mcpCountText          = string.Empty;
     private bool   _mcpEmpty              = true;
     private bool   _pinnedListViewVisible = true;
     private string _pinnedViewLabel       = string.Empty;
@@ -470,6 +459,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                 UpdateModelLines();
         };
         _ = RefreshModelsAsync(null, CancellationToken.None);
+        // The Server page opens first, without SelectPage: its "Loaded now" block reads the server here.
+        _ = RefreshLoadedModelsAsync(CancellationToken.None);
         _ = InitThemeAsync(extensibility);
     }
 
@@ -562,7 +553,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         HintContextWindowKeepTurns   = Strings.HintContextWindowKeepTurns;
         UnitSeconds = Strings.UnitSeconds;
         UnitMinutes = Strings.UnitMinutes;
-        UnitHours = Strings.UnitHours;
         UnitGigabytes = Strings.UnitGigabytes;
         UnitTokens = Strings.UnitTokens;
         UnitTurns = Strings.UnitTurns;
@@ -575,15 +565,12 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         HintCustomSystemPrompt       = Strings.HintCustomSystemPrompt;
         LabelPinnedContextFiles      = Strings.LabelPinnedContextFiles;
         HintPinnedContextFiles       = Strings.HintPinnedContextFiles;
-        LabelPromptTemplates         = Strings.LabelPromptTemplates;
         HintPromptTemplates          = Strings.HintPromptTemplates;
-        LabelCustomTools             = Strings.LabelCustomTools;
         HintCustomTools              = Strings.HintCustomTools;
         LabelPermissionRules         = Strings.LabelPermissionRules;
         HintPermissionRules          = Strings.HintPermissionRules;
         HintRowEdit                  = Strings.HintRowEdit;
         HintRowDelete                = Strings.HintRowDelete;
-        LabelRowAdvanced             = Strings.LabelRowAdvanced;
         BtnRowImport                 = Strings.BtnRowImport;
         LabelPinnedAddFile           = Strings.PinnedAddFile;
         LabelPinnedPath              = Strings.LabelPinnedPath;
@@ -635,7 +622,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         LabelSectionMcp                 = Strings.SectionMcp;
         LabelMcpEnabled                 = Strings.LabelMcpEnabled;
         HintMcpEnabled                  = Strings.HintMcpEnabled;
-        LabelMcpServers                 = Strings.LabelMcpServers;
         HintMcpServers                  = Strings.HintMcpServers;
         HintMcpEditServer               = Strings.HintMcpEditServer;
         HintMcpDeleteServer             = Strings.HintMcpDeleteServer;
@@ -649,7 +635,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         LabelMcpHeaders                 = Strings.LabelMcpHeaders;
         BtnMcpSaveServer                = Strings.BtnMcpSaveServer;
         BtnMcpCancelServer              = Strings.BtnMcpCancelServer;
-        LabelMcpAdvancedJson            = Strings.McpAdvancedJson;
         BtnMcpImportJson                = Strings.McpImportJson;
 
         // List view-mode toggle captions (offer the OTHER view), empty-state titles, new section header.
@@ -817,7 +802,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintContextWindowKeepTurns   { get => _hintContextWindowKeepTurns;  set => SetProperty(ref _hintContextWindowKeepTurns,  value); }
     [DataMember] public string UnitSeconds { get => _unitSeconds; set => SetProperty(ref _unitSeconds, value); }
     [DataMember] public string UnitMinutes { get => _unitMinutes; set => SetProperty(ref _unitMinutes, value); }
-    [DataMember] public string UnitHours { get => _unitHours; set => SetProperty(ref _unitHours, value); }
     [DataMember] public string UnitGigabytes { get => _unitGigabytes; set => SetProperty(ref _unitGigabytes, value); }
     [DataMember] public string UnitTokens { get => _unitTokens; set => SetProperty(ref _unitTokens, value); }
     [DataMember] public string UnitTurns { get => _unitTurns; set => SetProperty(ref _unitTurns, value); }
@@ -830,9 +814,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintCustomSystemPrompt   { get => _hintCustomSystemPrompt;   set => SetProperty(ref _hintCustomSystemPrompt,   value); }
     [DataMember] public string LabelPinnedContextFiles  { get => _labelPinnedContextFiles;  set => SetProperty(ref _labelPinnedContextFiles,  value); }
     [DataMember] public string HintPinnedContextFiles   { get => _hintPinnedContextFiles;   set => SetProperty(ref _hintPinnedContextFiles,   value); }
-    [DataMember] public string LabelPromptTemplates     { get => _labelPromptTemplates;     set => SetProperty(ref _labelPromptTemplates,     value); }
     [DataMember] public string HintPromptTemplates      { get => _hintPromptTemplates;      set => SetProperty(ref _hintPromptTemplates,      value); }
-    [DataMember] public string LabelCustomTools         { get => _labelCustomTools;         set => SetProperty(ref _labelCustomTools,         value); }
     [DataMember] public string HintCustomTools          { get => _hintCustomTools;          set => SetProperty(ref _hintCustomTools,          value); }
     [DataMember] public string LabelPermissionRules     { get => _labelPermissionRules;     set => SetProperty(ref _labelPermissionRules,     value); }
     [DataMember] public string HintPermissionRules      { get => _hintPermissionRules;      set => SetProperty(ref _hintPermissionRules,      value); }
@@ -855,7 +837,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string LabelSectionMcp          { get => _labelSectionMcp;          set => SetProperty(ref _labelSectionMcp,          value); }
     [DataMember] public string LabelMcpEnabled          { get => _labelMcpEnabled;          set => SetProperty(ref _labelMcpEnabled,          value); }
     [DataMember] public string HintMcpEnabled           { get => _hintMcpEnabled;           set => SetProperty(ref _hintMcpEnabled,           value); }
-    [DataMember] public string LabelMcpServers          { get => _labelMcpServers;          set => SetProperty(ref _labelMcpServers,          value); }
     [DataMember] public string HintMcpServers           { get => _hintMcpServers;           set => SetProperty(ref _hintMcpServers,           value); }
     [DataMember] public string HintMcpEditServer        { get => _hintMcpEditServer;        set => SetProperty(ref _hintMcpEditServer,        value); }
     [DataMember] public string HintMcpDeleteServer      { get => _hintMcpDeleteServer;      set => SetProperty(ref _hintMcpDeleteServer,      value); }
@@ -865,9 +846,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string McpEditGlyph             { get => _mcpEditGlyph;             set => SetProperty(ref _mcpEditGlyph,             value); }
     [DataMember] public string ThemeHoverBg             { get => _themeHoverBg;             set => SetProperty(ref _themeHoverBg,             value); }
     [DataMember] public string EditPanelBg              { get => _editPanelBg;              set => SetProperty(ref _editPanelBg,              value); }
-    [DataMember] public string SecondaryButtonBg        { get => _secondaryButtonBg;        set => SetProperty(ref _secondaryButtonBg,        value); }
-    [DataMember] public string SecondaryButtonHover     { get => _secondaryButtonHover;     set => SetProperty(ref _secondaryButtonHover,     value); }
-    [DataMember] public string SecondaryButtonFg        { get => _secondaryButtonFg;        set => SetProperty(ref _secondaryButtonFg,        value); }
     [DataMember] public string LinkForeground           { get => _linkForeground;           set => SetProperty(ref _linkForeground,           value); }
     [DataMember] public string WarningForeground        { get => _warningForeground;        set => SetProperty(ref _warningForeground,        value); }
     [DataMember] public string McpSummaryText           { get => _mcpSummaryText;           set => SetProperty(ref _mcpSummaryText,           value); }
@@ -902,7 +880,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string LabelMcpHeaders          { get => _labelMcpHeaders;          set => SetProperty(ref _labelMcpHeaders,          value); }
     [DataMember] public string BtnMcpSaveServer         { get => _btnMcpSaveServer;         set => SetProperty(ref _btnMcpSaveServer,         value); }
     [DataMember] public string BtnMcpCancelServer       { get => _btnMcpCancelServer;       set => SetProperty(ref _btnMcpCancelServer,       value); }
-    [DataMember] public string LabelMcpAdvancedJson     { get => _labelMcpAdvancedJson;     set => SetProperty(ref _labelMcpAdvancedJson,     value); }
     [DataMember] public string BtnMcpImportJson         { get => _btnMcpImportJson;         set => SetProperty(ref _btnMcpImportJson,         value); }
     [DataMember] public AsyncCommand ToggleSectionMcpJsonCommand { get; }
     [DataMember] public AsyncCommand AddServerCommand           { get; }
@@ -994,7 +971,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
     [DataMember] public string HintRowEdit      { get => _hintRowEdit;      set => SetProperty(ref _hintRowEdit,      value); }
     [DataMember] public string HintRowDelete    { get => _hintRowDelete;    set => SetProperty(ref _hintRowDelete,    value); }
-    [DataMember] public string LabelRowAdvanced { get => _labelRowAdvanced; set => SetProperty(ref _labelRowAdvanced, value); }
     [DataMember] public string BtnRowImport     { get => _btnRowImport;     set => SetProperty(ref _btnRowImport,     value); }
 
     // Pinned files editor
@@ -1060,7 +1036,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     // ── List view-mode / count badge / empty-state (see backing-field comment) ───
     [DataMember] public bool   McpListViewVisible    { get => _mcpListViewVisible;    set => SetProperty(ref _mcpListViewVisible,    value); }
     [DataMember] public string McpViewLabel          { get => _mcpViewLabel;          set => SetProperty(ref _mcpViewLabel,          value); }
-    [DataMember] public string McpCountText          { get => _mcpCountText;          set => SetProperty(ref _mcpCountText,          value); }
     [DataMember] public bool   McpEmpty              { get => _mcpEmpty;              set => SetProperty(ref _mcpEmpty,              value); }
     [DataMember] public string McpEmptyTitle         { get => _mcpEmptyTitle;         set => SetProperty(ref _mcpEmptyTitle,         value); }
     [DataMember] public bool   PinnedListViewVisible { get => _pinnedListViewVisible; set => SetProperty(ref _pinnedListViewVisible, value); }
@@ -1083,7 +1058,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     /// list's Sync*FromRows() choke point, so it stays fresh on add / edit / delete / enable-toggle / import.</summary>
     private void RefreshListMeta()
     {
-        McpCountText    = FormatCount(McpServers.Count,      McpServers.Count(r => r.Enabled));
         McpEmpty        = McpServers.Count == 0;
         // "2 of 3": how many reach the prompt, of how many can — the cap is the number that matters here.
         PinnedCountText = Strings.PinnedFilesCount(Math.Min(PinnedFileRows.Count(r => r.Enabled), PinnedFilesPolicy.MaxPinned),
@@ -1120,7 +1094,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string CompactionTimeoutSecondsText    { get => _compactionTimeoutSecondsText;    set => SetProperty(ref _compactionTimeoutSecondsText,    ClampDurationField(value, 59)); }
     [DataMember] public string KvCacheAnchorMessagesText       { get => _kvCacheAnchorMessagesText;       set => SetProperty(ref _kvCacheAnchorMessagesText,       value); }
     [DataMember] public string ConnectionStatus { get => _connectionStatus; set => SetProperty(ref _connectionStatus, value); }
-    [DataMember] public bool   IsConnectionOk   { get => _isConnectionOk;   set => SetProperty(ref _isConnectionOk,   value); }
     [DataMember] public string SaveStatus       { get => _saveStatus;       set => SetProperty(ref _saveStatus,       value); }
     [DataMember] public bool   IsDarkTheme      { get => _isDarkTheme;      set => SetProperty(ref _isDarkTheme,      value); }
     [DataMember] public string TextForeground   { get => _textForeground;   set => SetProperty(ref _textForeground,   value); }
@@ -1277,14 +1250,17 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             ProviderOptions, index: -1, selectedProviderName, _config.Provider, out var providerOk);
         Note(selectedProviderName, providerOk, () => Strings.LabelProvider);
 
-        // A numeric box: the value if it parses, what the config already carries on a typo, the
-        // default if the box was cleared on purpose — and the field named in the first two cases
-        // only.
-        int ReadInt(string? text, Func<string> label, int current, int whenCleared, Func<int, int> clamp)
+        // A numeric box: the value if it parses and its schema field accepts it, what the config already carries
+        // otherwise (named), the FACTORY value if the box was cleared on purpose. ⚠ Bounds and factory values are read
+        // from the one place the VS Code panel reads them too (SettingsSchema, InferpalConfig): each window holding its
+        // own, a cleared context window saved 0 here and 8192 there, and 50 results per search was cut to 20 here in
+        // silence (the box still showing 50, "1 unsaved change" for ever) and saved as 50 there.
+        var factory = new InferpalConfig();
+        int ReadInt(string? text, string key, Func<string> label, int current, Func<InferpalConfig, int> property)
         {
-            var ok = int.TryParse(text, out var v);
+            var ok = int.TryParse(text, out var v) && SettingsSchema.Field(key).Accepts(v);
             Note(text, ok, label);
-            return ok ? clamp(v) : SettingsFallback.For(text, current, whenCleared);
+            return ok ? v : SettingsFallback.For(text, current, property(factory));
         }
 
         var edited = System.Text.Json.JsonSerializer.Deserialize<InferpalConfig>(_opened.ToJsonString())!;
@@ -1299,16 +1275,16 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.SecurityAlertsDisabled   = !askBefore;
         edited.SmartFixEnabled          = smartFixEnabled;
         edited.AgentModeEnabled         = agentModeEnabled;
-        edited.AgentMaxIterations       = ReadInt(agentMaxIterationsText, () => Strings.LabelAgentMaxIterations,
-                                                   edited.AgentMaxIterations, 20, v => Math.Max(0, v));
+        edited.AgentMaxIterations       = ReadInt(agentMaxIterationsText, "agentMaxIterations", () => Strings.LabelAgentMaxIterations,
+                                                   edited.AgentMaxIterations, c => c.AgentMaxIterations);
         // No upper cap: the boxes accept 99 h and nothing downstream caps a task deadline — the 3600 s
         // written here turned a two-hour setting into one hour without a word.
         edited.QuickTimeoutSeconds      = DurationFields.TaskTimeout(quickTimeoutSec,  whenCleared: 120);
         edited.NormalTimeoutSeconds     = DurationFields.TaskTimeout(normalTimeoutSec, whenCleared: 300);
-        edited.ContextWindowSize        = ReadInt(ctxSizeText, () => Strings.LabelContextWindowSize,
-                                                   edited.ContextWindowSize, 0, v => Math.Max(0, v));
-        edited.ContextWindowKeepTurns   = ReadInt(ctxKeepText, () => Strings.LabelContextWindowKeepTurns,
-                                                   edited.ContextWindowKeepTurns, 4, v => Math.Max(1, v));
+        edited.ContextWindowSize        = ReadInt(ctxSizeText, "contextWindowSize", () => Strings.LabelContextWindowSize,
+                                                   edited.ContextWindowSize, c => c.ContextWindowSize);
+        edited.ContextWindowKeepTurns   = ReadInt(ctxKeepText, "contextWindowKeepTurns", () => Strings.LabelContextWindowKeepTurns,
+                                                   edited.ContextWindowKeepTurns, c => c.ContextWindowKeepTurns);
         // ⚠ Inline, not ReadInt: the culture here is the user's (decimal comma), and the guard is
         // not "it parses" but "it parses AND it is > 0" — a zero or negative budget is applied no
         // more than a typo is, so it is named the same way.
@@ -1324,12 +1300,17 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.CustomTools               = customTools;
         edited.PermissionRules           = permissionRules;
         edited.PersonaAutoSwitch         = personaAutoSwitch;
-        edited.OodaTurnThreshold         = ReadInt(oodaThreshText, () => Strings.LabelOodaTurnThreshold,
-                                                    edited.OodaTurnThreshold, 10, v => Math.Max(0, v));
+        edited.OodaTurnThreshold         = ReadInt(oodaThreshText, "oodaTurnThreshold", () => Strings.LabelOodaTurnThreshold,
+                                                    edited.OodaTurnThreshold, c => c.OodaTurnThreshold);
         edited.CompactionEnabled         = compactionEnabled;
-        edited.CompactionTimeoutSeconds  = compactTimeoutSec > 0 ? Math.Clamp(compactTimeoutSec, 10, 300) : 45;
-        edited.KvCacheAnchorMessages     = ReadInt(kvAnchorText, () => Strings.LabelKvCacheAnchor,
-                                                    edited.KvCacheAnchorMessages, 3, v => Math.Clamp(v, 0, 20));
+        // Three duration boxes, not one number: 0 is the cleared box (the factory value), a total outside the
+        // schema's bounds is named and the saved value kept, like the other numeric fields.
+        var compactOk = compactTimeoutSec <= 0 || SettingsSchema.Field("compactionTimeoutSeconds").Accepts(compactTimeoutSec);
+        if (!compactOk) ignored.Add(() => Strings.LabelCompactionTimeout);
+        edited.CompactionTimeoutSeconds  = compactTimeoutSec <= 0 ? factory.CompactionTimeoutSeconds
+                                         : compactOk ? compactTimeoutSec : edited.CompactionTimeoutSeconds;
+        edited.KvCacheAnchorMessages     = ReadInt(kvAnchorText, "kvCacheAnchorMessages", () => Strings.LabelKvCacheAnchor,
+                                                    edited.KvCacheAnchorMessages, c => c.KvCacheAnchorMessages);
         edited.InlineCompletionMode      = inlineModeCode;
         edited.InlineCompletionEnabled   = inlineEnabled;
         // The advanced fold never takes part: what it hides is saved like the rest.
@@ -1344,8 +1325,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.RagEnabled                = ragEnabled;
         edited.RagAutoContextEnabled     = ragAutoContextEnabled;
         edited.RagEmbeddingModel         = Kept(ragEmbeddingModel, edited.RagEmbeddingModel,    () => Strings.LabelRagEmbeddingModel);
-        edited.RagTopK                   = ReadInt(ragTopKText, () => Strings.LabelRagTopK,
-                                                    edited.RagTopK, 5, v => Math.Clamp(v, 1, 20));
+        edited.RagTopK                   = ReadInt(ragTopKText, "ragTopK", () => Strings.LabelRagTopK,
+                                                    edited.RagTopK, c => c.RagTopK);
         // ⚠ Inline, not ReadInt: invariant culture here (the threshold is written with a dot).
         var rstOk = float.TryParse(ragSimilarityThresholdText, System.Globalization.NumberStyles.Float,
                                    System.Globalization.CultureInfo.InvariantCulture, out var rst);
@@ -1356,8 +1337,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.McpEnabled                = mcpEnabled;
         edited.McpServersJson            = mcpServersJson;
         edited.ModelAutoUnloadEnabled    = modelAutoUnload;
-        edited.ModelIdleTimeoutMinutes   = ReadInt(modelIdleTimeoutText, () => Strings.LabelModelIdleTimeout,
-                                                    edited.ModelIdleTimeoutMinutes, 10, v => Math.Max(1, v));
+        edited.ModelIdleTimeoutMinutes   = ReadInt(modelIdleTimeoutText, "modelIdleTimeoutMinutes", () => Strings.LabelModelIdleTimeout,
+                                                    edited.ModelIdleTimeoutMinutes, c => c.ModelIdleTimeoutMinutes);
         _config.ApplyChangesFrom(edited, _opened);
         _config.Save();
         _opened = edited.SnapshotNow();
@@ -1445,9 +1426,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         McpEditGlyph        = dark ? "#CCCCCC" : "#444444";
         ThemeHoverBg        = dark ? "#3F3F46" : "#D6D6E0";   // ghost-button hover, theme-aware (cf. main window)
         EditPanelBg         = dark ? "#2D2D30" : "#ECECEC";   // inline add/edit form surface
-        SecondaryButtonBg   = dark ? "#3F3F46" : "#E0E0E0";   // neutral filled button (Cancel / Import)
-        SecondaryButtonHover= dark ? "#505050" : "#D0D0D0";
-        SecondaryButtonFg   = dark ? "#FFFFFF" : "#1E1E1E";   // white text only reads on the dark surface
         LinkForeground      = dark ? "#B39DFF" : "#5B3FD1";   // the "Edit rules" link, readable on both surfaces
         WarningForeground   = dark ? "#D9A21B" : "#8A6100";   // notes on what does not apply: amber, dark enough on white
         UpdatePageState();   // the navigation follows the theme
@@ -2023,7 +2001,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
         await RunOnVMContextAsync(() =>
         {
-            IsConnectionOk   = ok;
             // A server that refused the probe (a wrong API key: 401) is up — the very thing this button checks.
             ConnectionStatus = ok                        ? $"{Strings.StatusConnected} — {detectedName}"
                              : refusal is not null       ? Strings.StatusRefused(refusal)

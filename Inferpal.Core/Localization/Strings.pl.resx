@@ -33,7 +33,6 @@
   <data name="LabelRagTopK" xml:space="preserve"><value>Wyniki na wyszukiwanie</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>s</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>min</value></data>
-  <data name="UnitHours" xml:space="preserve"><value>godz.</value></data>
   <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
   <data name="UnitTokens" xml:space="preserve"><value>tokenów</value></data>
   <data name="UnitTurns" xml:space="preserve"><value>tur</value></data>
@@ -61,7 +60,6 @@
   <data name="LabelChatModel" xml:space="preserve"><value>Czat i agent</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>Odpowiada na pytania i wykonuje zadania. /model zmienia go na tę sesję.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Testuj</value></data>
-  <data name="BtnLoadSession" xml:space="preserve"><value>Wczytaj ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Anuluj</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Zapisz</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>Zignorowano pola ({0}) — nieczytelna wartość: {1}</value></data>
@@ -340,7 +338,6 @@ Kopia zapasowa: {0}</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Błąd przeglądania: {0}</value></data>
 
   <!-- Export -->
-  <data name="ContextGaugeTooltip" xml:space="preserve"><value>Kontekst: {0} / {1} tokenów ({2}%) — kliknij, aby otworzyć panel X-Ray</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>Ty</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>Asystent</value></data>
   <data name="ExportTitle" xml:space="preserve"><value>Inferpal — Eksport rozmowy</value></data>
@@ -481,6 +478,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="CheckNoFindings" xml:space="preserve"><value>Brak zakotwiczonych spostrzeżeń — checki nic nie wykryły w tym diffie.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Brak przeglądu: **{0}** poświęcił całą odpowiedź na rozumowanie i nie napisał żadnego spostrzeżenia. To nic nie mówi o diffie — to nie jest czysty wynik. Zapobiega temu większy kontekst lub model, który nie rozumuje najpierw.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Sprawdzono tylko pierwsze {0} znaków diffa, na {1}. To, co niżej, dotyczy tej części, a nie całej zmiany — przejrzyj resztę osobno albo dodawaj do indeksu mniejszymi porcjami.</value></data>
+  <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ Nowe pliki jeszcze niedodane do git ({0}) nie zostały sprawdzone (powyżej limitu rozmiaru, binarne lub nieczytelne): {1}.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>**Spostrzeżenia: {0}**, zakotwiczone w diffie:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**blokujące**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**ostrzeżenie**</value></data>
@@ -594,7 +592,6 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="LabelMcpHeaders" xml:space="preserve"><value>Nagłówki (Klucz=wartość, jeden na wiersz; ${ENV_VAR} jest rozwijany)</value></data>
   <data name="BtnMcpSaveServer" xml:space="preserve"><value>Zapisz</value></data>
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>Anuluj</value></data>
-  <data name="McpAdvancedJson" xml:space="preserve"><value>Zaawansowane (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ Importuj JSON do listy</value></data>
   <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>Nie udało się w całości odczytać JSON serwerów MCP: lista utraciłaby to, czego nie umie odczytać, więc pozostaje tylko do odczytu, dopóki JSON nie zostanie poprawiony.</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>Nazwa i polecenie są wymagane.</value></data>
@@ -604,7 +601,6 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="HintMcpDeleteServer" xml:space="preserve"><value>Usuń ten serwer MCP z listy.</value></data>
   <data name="HintRowEdit" xml:space="preserve"><value>Edytuj ten wpis.</value></data>
   <data name="HintRowDelete" xml:space="preserve"><value>Usuń ten wpis z listy.</value></data>
-  <data name="LabelRowAdvanced" xml:space="preserve"><value>Zaawansowane (tekst surowy)</value></data>
   <data name="BtnRowImport" xml:space="preserve"><value>⟳ Importuj do listy</value></data>
   <data name="RowEditTitle" xml:space="preserve"><value>Edycja: {0}</value></data>
   <data name="PinnedAddFile" xml:space="preserve"><value>Dodaj plik</value></data>
@@ -819,7 +815,6 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="XrayPanelHint" xml:space="preserve"><value>Odznaczone sekcje są wykluczone z następnej tury.</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ Warstwy projektu (reguły, pamięć, notatki) zajmują dużą część kontekstu — rozważ ich skrócenie.</value></data>
   <data name="XrayPanelCopy" xml:space="preserve"><value>Kopiuj prompt</value></data>
-  <data name="TooltipXrayGauge" xml:space="preserve"><value>Użycie kontekstu — kliknij, aby otworzyć panel X-Ray</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>Zamknij</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 Przejrzyj proponowane zmiany w edytorze — ✓/✗ przy każdej zmianie (✓✓/✗✗ dla wszystkich). Pisanie zamyka podgląd.</value></data>
   <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ Podgląd odrzucony (dokument się zmienił) — nic nie zastosowano. Uruchom akcję ponownie, aby ją wygenerować.</value></data>
@@ -856,11 +851,6 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ Twój num_ctx ({0}) przekracza to, co ten model w ogóle przyjmuje ({1}). Backend nie obsłuży dłuższego promptu: ucina NAJSTARSZĄ część rozmowy, łącznie z promptem systemowym, nic nie mówiąc — a kompaktowanie Inferpala nie zadziała, bo mierzy się skonfigurowaną przez Ciebie liczbą. Ustaw {1} lub mniej.</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>Pamięć graficzna</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>Służy do bezpiecznego doboru okna kontekstu. Puste: wykrywane, gdy serwer działa na tym komputerze; wymagane, gdy działa na innym.</value></data>
-  <data name="LabelModeChat" xml:space="preserve"><value>💬 Czat</value></data>
-  <data name="LabelModeAgent" xml:space="preserve"><value>🤖 Agent</value></data>
-  <data name="WelcomeCardExplain" xml:space="preserve"><value>Wyjaśnij zaznaczenie</value></data>
-  <data name="WelcomeCardFix" xml:space="preserve"><value>Napraw błąd</value></data>
-  <data name="WelcomeCardTest" xml:space="preserve"><value>Wygeneruj test</value></data>
   <data name="WelcomeCardHelp" xml:space="preserve"><value>Zobacz wszystkie polecenia</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>Odrzuć</value></data>
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
@@ -958,7 +948,6 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="StepModeOff" xml:space="preserve"><value>Tryb krokowy **WYŁĄCZONY**.</value></data>
   <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **Agent wstrzymany po wywołaniu narzędzia.** Kliknij ▶ Wznów (lub wpisz `/resume`), aby kontynuować, albo Anuluj, aby przerwać.</value></data>
   <data name="NoAgentStepPaused" xml:space="preserve"><value>Żaden krok agenta nie jest obecnie wstrzymany.</value></data>
-  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
   <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 Kompilacja {0}/{1}…</value></data>
   <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 Poprawka {0}</value></data>
   <data name="DialogAttachTitle" xml:space="preserve"><value>Wybierz plik do załączenia</value></data>
@@ -1218,8 +1207,63 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="WelcomeUsagesFileDesc" xml:space="preserve"><value>Wywołujący i zależni w całym obszarze roboczym</value></data>
   <data name="WelcomeUsagesPrompt" xml:space="preserve"><value>Gdzie używany jest {0}? Wypisz wywołujących i to, co od niego zależy.</value></data>
   <data name="WelcomeBuildFailed" xml:space="preserve"><value>Ostatnia kompilacja nie powiodła się — błędy: {0}</value></data>
+  <data name="WelcomeBuildFailedUncounted" xml:space="preserve"><value>Ostatnia kompilacja nie powiodła się</value></data>
   <data name="WelcomeFixThem" xml:space="preserve"><value>Napraw je</value></data>
   <data name="WelcomeHintAttach" xml:space="preserve"><value>dołącz plik</value></data>
   <data name="WelcomeHintCommands" xml:space="preserve"><value>polecenia</value></data>
   <data name="WelcomeHintNewLine" xml:space="preserve"><value>nowy wiersz</value></data>
+  <data name="ModelRoleChat" xml:space="preserve"><value>czat</value></data>
+  <data name="ModelRoleAgent" xml:space="preserve"><value>agent</value></data>
+  <data name="ModelRoleCodeActions" xml:space="preserve"><value>akcje na kodzie</value></data>
+  <data name="ModelRoleInlineEdit" xml:space="preserve"><value>edycja w miejscu</value></data>
+  <data name="ModelRoleAutocomplete" xml:space="preserve"><value>autouzupełnianie</value></data>
+  <data name="ModelRoleUtility" xml:space="preserve"><value>tytuły i podsumowania</value></data>
+  <data name="ModelRoleCodeSearch" xml:space="preserve"><value>wyszukiwanie w kodzie</value></data>
+  <data name="SuggestReview" xml:space="preserve"><value>Sugerowane modele są w formularzu: sprawdź je, a potem zapisz.</value></data>
+  <data name="SuggestNoChange" xml:space="preserve"><value>To już najlepsze zainstalowane modele.</value></data>
+  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Serwer wymienia tylko modele embeddingów: najpierw zainstaluj model czatu.</value></data>
+  <data name="SuggestNothingListed" xml:space="preserve"><value>Serwer nie wymienia żadnego modelu: nie ma czego zasugerować.</value></data>
+  <data name="SuggestChatRecommended" xml:space="preserve"><value>Model czatu: {0} — zalecany przez testy Inferpal.</value></data>
+  <data name="SuggestChatUsable" xml:space="preserve"><value>Model czatu: {0} — najlepszy zainstalowany; w testach Inferpal nadaje się do pracy agenta.</value></data>
+  <data name="SuggestChatNotRecommended" xml:space="preserve"><value>Model czatu: {0} — jedyny zainstalowany rodzaj; w testach Inferpal zawodzi w większości zadań agenta.</value></data>
+  <data name="SuggestChatUnmeasured" xml:space="preserve"><value>Model czatu: {0} — niezmierzony przez Inferpal; najlepszy wybór spośród zainstalowanych modeli.</value></data>
+  <data name="SuggestInstallRecommended" xml:space="preserve"><value>Do pracy agenta testy Inferpal zalecają {0} — żaden nie jest zainstalowany.</value></data>
+  <data name="SuggestEmbeddingNone" xml:space="preserve"><value>Wyszukiwanie w kodzie: brak modelu embeddingów, więc szuka po słowach kluczowych (najlepiej zmierzony jest EmbeddingGemma).</value></data>
+  <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>Wyszukiwanie w kodzie: automatycznie, czyli {0}.</value></data>
+  <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>Zmiana modelu wyszukiwania w kodzie przebudowuje indeks projektu.</value></data>
+  <data name="SuggestFimMeasured" xml:space="preserve"><value>Autouzupełnianie: {0} — najlepiej zmierzony model autouzupełniania.</value></data>
+  <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>Autouzupełnianie: model czatu. {0} jest zainstalowany, ale z nim modele potrzebują około {1} GB, więcej niż {2} GB ustawione dla Twojej karty.</value></data>
+  <data name="SuggestFimChatCompletes" xml:space="preserve"><value>Autouzupełnianie: model czatu, który też dobrze uzupełnia kod.</value></data>
+  <data name="SuggestFimSameAsChat" xml:space="preserve"><value>Autouzupełnianie: model czatu (najlepiej zmierzonym modelem autouzupełniania jest Mellum2, jeśli go zainstalujesz).</value></data>
+  <data name="SuggestOverrides" xml:space="preserve"><value>Pozostawione bez zmian, w ustawieniach zaawansowanych: {0}.</value></data>
+  <data name="LoadedModelsUnknown" xml:space="preserve"><value>Ten serwer nie podaje, które modele są załadowane.</value></data>
+  <data name="LoadedModelsNone" xml:space="preserve"><value>Obecnie żaden model nie jest załadowany.</value></data>
+  <data name="LoadedModelsUnreachable" xml:space="preserve"><value>Serwer nie odpowiedział: załadowane modele są nieznane.</value></data>
+  <data name="LoadedModelsCount" xml:space="preserve"><value>Załadowane modele: {0}</value></data>
+  <data name="LoadedModelVram" xml:space="preserve"><value>{0} GB pamięci graficznej</value></data>
+  <data name="LoadedModelCpu" xml:space="preserve"><value>na procesorze</value></data>
+  <data name="LoadedModelDiskSize" xml:space="preserve"><value>około {0} GB (rozmiar na dysku)</value></data>
+  <data name="LoadedModelContext" xml:space="preserve"><value>{0} tokenów kontekstu</value></data>
+  <data name="LoadedModelStays" xml:space="preserve"><value>pozostaje załadowany</value></data>
+  <data name="LoadedModelUnloadsIn" xml:space="preserve"><value>zwolniony za {0} min</value></data>
+  <data name="LoadedModelUses" xml:space="preserve"><value>Używany do: {0}</value></data>
+  <data name="LoadedModelUnused" xml:space="preserve"><value>Nieużywany przez Twoje ustawienia</value></data>
+  <data name="UnloadNotSupported" xml:space="preserve"><value>Ten serwer nie pozwala Inferpal zwalniać modeli.</value></data>
+  <data name="UnloadWhileAnswering" xml:space="preserve"><value>Trwa odpowiadanie na pytanie: zwolnij modele, gdy się zakończy.</value></data>
+  <data name="UnloadNothing" xml:space="preserve"><value>Żaden model nie był załadowany.</value></data>
+  <data name="UnloadDone" xml:space="preserve"><value>Zwolniono: {0}.</value></data>
+  <data name="UnloadKept" xml:space="preserve"><value>Nadal załadowany: {0} — serwer go nie zwolnił.</value></data>
+  <data name="UnloadUnverified" xml:space="preserve"><value>Zażądano zwolnienia {0}, ale serwer nie odpowiedział na późniejsze sprawdzenie — nie wiadomo, czy nadal jest załadowany.</value></data>
+  <data name="BtnSuggestModels" xml:space="preserve"><value>Zasugeruj najlepsze modele</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Wybiera spośród zainstalowanych modeli na podstawie pomiarów Inferpal. Nic nie zostanie zapisane, dopóki nie klikniesz Zapisz.</value></data>
+  <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Załadowane teraz</value></data>
+  <data name="NoteLoadedModels" xml:space="preserve"><value>Zwolniony model załaduje się ponownie przy następnym żądaniu, które go potrzebuje.</value></data>
+  <data name="BtnUnloadModel" xml:space="preserve"><value>Zwolnij</value></data>
+  <data name="BtnUnloadAll" xml:space="preserve"><value>Zwolnij wszystkie</value></data>
+  <data name="BtnRefreshLoaded" xml:space="preserve"><value>Odśwież</value></data>
+  <data name="WelcomeCardProject" xml:space="preserve"><value>Wyjaśnij ten projekt</value></data>
+  <data name="WelcomeProjectPrompt" xml:space="preserve"><value>Daj mi przegląd tego projektu: co robi, jak jest zorganizowany i od czego zacząć czytanie kodu.</value></data>
+  <data name="WelcomeCardChanges" xml:space="preserve"><value>Przejrzyj moje zmiany</value></data>
+  <data name="WelcomeChangesPrompt" xml:space="preserve"><value>Przejrzyj moje niezatwierdzone zmiany: wskaż błędy, ryzyka i braki, na przykład testy.</value></data>
+  <data name="WelcomeOpenFileHint" xml:space="preserve"><value>Otwórz plik, aby go wyjaśnić, napisać testy lub znaleźć jego użycia.</value></data>
 </root>

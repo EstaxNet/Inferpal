@@ -64,13 +64,16 @@ internal class RunTestsTool : ITool
         var root    = _getRoot();
         var rawPath = args.Trimmed("path");
         var path    = string.IsNullOrWhiteSpace(rawPath) ? null : PathSanitizer.Sanitize(rawPath, root);
+        // ⚠ Confined like every path-taking tool: a test run builds and runs the project's code, and this tool asks no
+        // approval (background /task runs offer it).
+        if (path is not null) PathSanitizer.AssertUnderRoot(path, root);
         var filter  = args.Trimmed("filter");
         var forced  = args.Keyword("runner");
         // ⚠ Bounded, and SAID: 0 — "no limit" to many a model — cancelled the run at once, reported as "stopped at its
         // budget of 0 s", and a negative value threw. There is no unlimited run: 0 or less takes the maximum.
         var asked = args.Int("timeout_seconds", DefaultTimeoutSeconds);
         var (timeout, timeoutNotice) = asked <= 0
-            ? (MaxTimeoutSeconds, (string?)$"Note: 'timeout_seconds' was {asked}; there is no unlimited run, so this one "
+            ? (MaxTimeoutSeconds, (string?)$"{ClampedArgument.NotePrefix}'timeout_seconds' was {asked}; there is no unlimited run, so this one "
                                           + $"uses the maximum, {MaxTimeoutSeconds}.")
             : ClampedArgument.Read(args, "timeout_seconds", DefaultTimeoutSeconds, MinTimeoutSeconds, MaxTimeoutSeconds);
 
@@ -229,14 +232,35 @@ internal class RunTestsTool : ITool
     /// <summary>What run_tests answers for a path that names nothing: nothing ran.</summary>
     internal const string PathNotFound = "Error: 'path' does not exist — nothing ran";
 
+    /// <summary>How the note of a filter Node did not apply starts (a warning, not a plain note); every other note this
+    /// tool writes above its report starts with <see cref="ClampedArgument.NotePrefix"/>.</summary>
+    internal const string FilterNotAppliedPrefix = "⚠ The filter '";
+
+    /// <summary>
+    /// The report under the notes this tool put above it: what a reader of the VERDICT line reads. A note qualifies
+    /// the report, so it comes first — and the readers of the first line read a green run under a note as red, and
+    /// a red one as no verdict at all.
+    /// </summary>
+    internal static string WithoutNotes(string report)
+    {
+        var t = report.TrimStart();
+        while (t.StartsWith(ClampedArgument.NotePrefix, StringComparison.Ordinal) || t.StartsWith(FilterNotAppliedPrefix, StringComparison.Ordinal))
+        {
+            var end = t.IndexOf("\n\n", StringComparison.Ordinal);
+            if (end < 0) return string.Empty;
+            t = t[(end + 2)..].TrimStart();
+        }
+        return t;
+    }
+
     /// <summary>
     /// The note above a report whose runner cannot narrow its run to <paramref name="path"/> — npm, cargo and go run a
     /// project's whole suite. <c>null</c> when the path IS that project.
     /// </summary>
-    private static string? PathDoesNotNarrow(string runner, string? path, string ranIn) =>
+    internal static string? PathDoesNotNarrow(string runner, string? path, string ranIn) =>
         path is null || PathComparer.Default.Equals(Path.TrimEndingDirectorySeparator(path), Path.TrimEndingDirectorySeparator(ranIn))
             ? null
-            : $"Note: {runner} cannot run only '{path}' — the whole test suite of {ranIn} ran. Use 'filter' to narrow it.\n\n";
+            : $"{ClampedArgument.NotePrefix}{runner} cannot run only '{path}' — the whole test suite of {ranIn} ran. Use 'filter' to narrow it.\n\n";
 
     /// <summary>What the pytest runner answers when the interpreter it ran has no pytest: nothing ran.</summary>
     internal const string PytestNotInstalled = "⚠ pytest is not installed for the Python interpreter that ran";
@@ -338,7 +362,7 @@ internal class RunTestsTool : ITool
             if (!NamesAnOperandAfterTest(testScript!))
                 return new(["--", $"--test-name-pattern={filter}"], null);
             return new([], null,
-                $"⚠ The filter '{filter}' was NOT applied: this Node does not accept --test-name-pattern in NODE_OPTIONS, and " +
+                $"{FilterNotAppliedPrefix}{filter}' was NOT applied: this Node does not accept --test-name-pattern in NODE_OPTIONS, and " +
                 "the test script names its test files, after which an argument goes to the tests instead of Node. The " +
                 "whole suite ran; its result is below.\n\n");
         }

@@ -206,9 +206,6 @@ internal sealed class SettingsDocsActions(Config.InferpalConfig config, DocsInde
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _reports =
         new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>The last sentence each crawl started here reported, by site id.</summary>
-    public IReadOnlyDictionary<string, string> Reports => _reports;
-
     /// <summary>Runs <c>/docs verb arg</c>; answers what the command answered (added, unknown id, usage, …).</summary>
     public Task<string> RunAsync(string verb, string arg, CancellationToken ct)
     {

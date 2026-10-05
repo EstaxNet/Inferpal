@@ -212,6 +212,55 @@ public sealed class ChatRedesignTests : IDisposable
         Assert.Equal(("ctx", "dotnet test --filter Counter"), (line.Kind, line.Text));
     }
 
+    /// <summary>
+    /// ⚠ Without a diff the card is the only view of what will run — Visual Studio has no "Open diff" to fall back on.
+    /// A command was cut after eight lines and a tool's arguments to their first 160 characters: approved unread.
+    /// </summary>
+    [Fact]
+    public void ALongCommand_IsShownWhole()
+    {
+        var command = string.Join("\n", Enumerable.Range(1, ApprovalCard.PreviewLines + 4).Select(i => $"echo step {i}"));
+
+        var card = ApprovalCard.Build(new ApprovalPrompt("run_command", command, null, null, "m"), _dir);
+
+        Assert.Equal(ApprovalCard.PreviewLines + 4, card.Preview.Count);
+        Assert.Equal($"echo step {ApprovalCard.PreviewLines + 4}", card.Preview[^1].Text);
+        Assert.Equal("", card.More);
+    }
+
+    [Fact]
+    public void AToolsLongArguments_AreShownWhole_NeverCutInTheHeader()
+    {
+        var json = "{\"path\":\"" + new string('a', 300) + "\",\"mode\":\"overwrite\"}";
+
+        var card = ApprovalCard.Build(
+            new ApprovalPrompt("mcp__fs__write", json, json + "\n" + new string('a', 300), null, "m"), _dir);
+
+        Assert.Equal(json, Assert.Single(card.Preview).Text);
+        Assert.Equal("", card.Subject);
+    }
+
+    [Fact]
+    public void AShortCall_StaysInTheHeader()
+    {
+        // REFERENCE ARM: a one-line call that fits is the card's subject, as before — no preview box for "inferpal".
+        var card = ApprovalCard.Build(new ApprovalPrompt("web_search", "inferpal local agent", null, null, "m"), _dir);
+
+        Assert.Equal("inferpal local agent", card.Subject);
+        Assert.Empty(card.Preview);
+    }
+
+    [Fact]
+    public void TheVisualStudioCard_WrapsWhatItShows_NeverClipsIt()
+    {
+        var xaml = File.ReadAllText(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowContent.xaml"));
+        var card = xaml[xaml.IndexOf("Binding CardSubject", StringComparison.Ordinal)..xaml.IndexOf("Binding CardMore", StringComparison.Ordinal)];
+
+        Assert.Contains("Binding CardLines", card, StringComparison.Ordinal);   // WITNESS: the card's header and lines
+        Assert.DoesNotContain("TextTrimming", card, StringComparison.Ordinal);
+        Assert.DoesNotContain("NoWrap", card, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void APathOutsideTheWorkspace_IsShownWhole()
     {

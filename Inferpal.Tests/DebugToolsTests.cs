@@ -605,6 +605,37 @@ public class DebugToolsTests
         Assert.Equal(1, editor.Stops);
     }
 
+    /// <summary>
+    /// ⚠ A program that runs to completion ends the session too — the ordinary outcome of a breakpoint on a line the run
+    /// never reaches. Cleaned only on an explicit stop, the assistant's breakpoint stayed in the editor, and the user's
+    /// next F5 stopped on a line they never chose.
+    /// </summary>
+    [Fact]
+    public async Task AProgramThatRunsToCompletion_TakesTheAssistantsBreakpointsWithIt()
+    {
+        var (editor, _, tool) = WithUsersBreakpoint();
+        editor.State = null;                                                // the run never stops
+        await tool.ExecuteAsync(Location("set_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+        Assert.Equal(2, editor.Breakpoints.Count);                       // witness: it was set
+
+        var reply = await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        Assert.Contains("ran to completion", reply);
+        Assert.Equal(5, Assert.Single(editor.Breakpoints).Line);          // only the user's is left
+    }
+
+    [Fact]
+    public async Task AProgramThatStops_KeepsTheAssistantsBreakpoints()
+    {
+        // Reference arm: a paused session is still the assistant's to drive.
+        var (editor, _, tool) = WithUsersBreakpoint();
+        await tool.ExecuteAsync(Location("set_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+
+        await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        Assert.Equal(2, editor.Breakpoints.Count);
+    }
+
     [Fact]
     public async Task SlashDebugStop_RemovesThemToo()
     {

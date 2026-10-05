@@ -11,6 +11,15 @@ const MAX_MIRRORED_BYTES = 1024 * 1024;
 /** Full-text didChange is debounced per document to keep typing cheap. */
 const CHANGE_DEBOUNCE_MS = 300;
 
+/**
+ * The Problems panel as Inferpal reads it: the diagnostics of files on disk. ⚠ One reader for the welcome banner's count
+ * and the report "Fix them" attaches: settings.json, an untitled buffer or a virtual document carry diagnostics too, and
+ * a banner that counted them announced errors that the button then answered with "No problems in the Problems panel".
+ */
+export function panelDiagnostics(): [vscode.Uri, readonly vscode.Diagnostic[]][] {
+  return vscode.languages.getDiagnostics().filter(([uri]) => uri.scheme === 'file');
+}
+
 function isMirrorable(doc: vscode.TextDocument): boolean {
   return doc.uri.scheme === 'file' && Buffer.byteLength(doc.getText(), 'utf8') <= MAX_MIRRORED_BYTES;
 }
@@ -308,10 +317,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     const MAX_LINES = 200;
     const errors: string[] = [];
     const warnings: string[] = [];
-    for (const [uri, diags] of vscode.languages.getDiagnostics()) {
-      if (uri.scheme !== 'file') {
-        continue;
-      }
+    for (const [uri, diags] of panelDiagnostics()) {
       // The folder's name first in a multi-root workspace: a path relative to another folder reads as the root's
       // file, and the model would fix the wrong one.
       const rel = vscode.workspace.asRelativePath(uri);

@@ -75,8 +75,30 @@ internal static class PlanStore
     }
 
     /// <summary>Absolute path of a plan, from a name that has already been sanitised here.</summary>
-    public static string PathFor(string workspaceRoot, string name) =>
-        Path.Combine(DirectoryFor(workspaceRoot), SanitizeName(name) + ".md");
+    /// <remarks>
+    /// ⚠ A plan whose FILE is named as typed is that plan: <see cref="List"/> shows the file's own name, and plans are
+    /// hand-written and shared by a team — a committed <c>migration_v2.md</c> was listed as <c>migration_v2</c>, and
+    /// <c>/plan open migration_v2</c> looked for <c>migration-v2.md</c> and answered "no such plan, /plan list shows the
+    /// ones there are". Only files already IN the plans folder are matched, so nothing can point outside it; a name with
+    /// no such file is normalised (<see cref="SanitizeName"/>), as before.
+    /// </remarks>
+    public static string PathFor(string workspaceRoot, string name)
+    {
+        var dir = DirectoryFor(workspaceRoot);
+        var typed = (name ?? string.Empty).Trim();
+        if (typed.Length > 0 && Directory.Exists(dir))
+        {
+            var existing = Directory.EnumerateFiles(dir, "*.md", SearchOption.TopDirectoryOnly)
+                .FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileNameWithoutExtension(f), typed));
+            if (existing is not null) return existing;
+        }
+        return Path.Combine(dir, SanitizeName(name) + ".md");
+    }
+
+    /// <summary>The name a plan goes by: its file's own name when it exists (see <see cref="PathFor"/>), else the
+    /// normalised one — what the active plan is remembered as, so the next command finds the same file.</summary>
+    public static string NameOf(string workspaceRoot, string name) =>
+        Path.GetFileNameWithoutExtension(PathFor(workspaceRoot, name));
 
     /// <summary>Every plan of the workspace, alphabetical. Empty when the directory does not exist.</summary>
     public static IReadOnlyList<PlanSummary> List(string workspaceRoot)

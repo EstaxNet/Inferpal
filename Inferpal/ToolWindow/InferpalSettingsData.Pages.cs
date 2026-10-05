@@ -370,7 +370,7 @@ internal partial class InferpalSettingsData
             (ToolBubblesExpanded.ToString(), saved.ToolBubblesExpanded.ToString()),
             (ChatDensity, saved.IsCompactChat ? "compact" : "comfortable"),
         ];
-        return fields.Count(f => !string.Equals(f.Form, f.Saved.Trim(), StringComparison.Ordinal));
+        return fields.Count(f => !SettingsFallback.SameAsSaved(f.Form, f.Saved));
     }
 
     // ── Cancel ─────────────────────────────────────────────────────────────────

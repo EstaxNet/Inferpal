@@ -29,6 +29,22 @@ public class AgentLoopPolicyTests
         Assert.True(AgentLoopPolicy.IsLoop(counts, batch));  // 2nd → loop
     }
 
+    [Theory]
+    [InlineData("router__deploy")]   // an MCP server called "router"
+    [InlineData("roam__create_page")]
+    [InlineData("rotate_logs")]      // a custom shell tool
+    public void AMutatingToolWhoseNameStartsLikeTheReadOnlyMark_StillStopsOnItsFirstRepeat(string tool)
+    {
+        // ⚠ The read-only mark prefixes keys, and a signature starts with the tool's NAME: a mark a name can start with
+        // would let the reset after a new mutation clear this mutation's own count, in the same call — its verbatim
+        // repeat never seen, the run going on to the iteration cap.
+        var counts = new Dictionary<string, int>();
+        var batch  = Batch((tool, """{"target":"prod"}"""));
+
+        Assert.False(AgentLoopPolicy.IsLoop(counts, batch));
+        Assert.True(AgentLoopPolicy.IsLoop(counts, batch));
+    }
+
     [Fact]
     public void ReadOnlyBatch_ToleratesOneExtraRepeat()
     {

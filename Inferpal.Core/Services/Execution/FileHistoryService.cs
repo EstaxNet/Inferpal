@@ -562,17 +562,7 @@ internal class FileHistoryService
         return Path.Combine(startDir, ".inferpal", "history");
     }
 
-    private static string? FindGitRoot(string startDir)
-    {
-        var dir = new DirectoryInfo(startDir);
-        while (dir != null)
-        {
-            if (Directory.Exists(Path.Combine(dir.FullName, ".git")))
-                return dir.FullName;
-            dir = dir.Parent;
-        }
-        return null;
-    }
+    private static string? FindGitRoot(string startDir) => GitProcess.WorkTreeOf(startDir);
 }
 
 /// <summary>One file touched during a run. <see cref="SnapshotPath"/> is <c>null</c> when the file

@@ -214,7 +214,7 @@ public class SolutionExtentTests : IDisposable
         LayeredRepository(git: false);
         File.WriteAllText(P("repo", ".git"), "gitdir: ../.git/worktrees/repo\n");
 
-        Assert.Equal(P("repo"), SolutionExtent.WorkTreeOf(P("repo", "UI")));
+        Assert.Equal(P("repo"), GitProcess.WorkTreeOf(P("repo", "UI")));
         Assert.Equal(P("repo"), SolutionExtent.RootForDir(P("repo", "UI")));
     }
 

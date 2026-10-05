@@ -44,17 +44,7 @@ internal partial class InferpalToolWindowData
         var budget = Services.Presentation.ContextBudgetGauge.Compute(
             Services.Agent.ContextManager.NextTurnLoad(_lastPromptTokens, NextTurnToolTokens()), ContextWindowInUse);
         UpdateContextRing(budget);
-        if (budget is null)
-        {
-            HasContextBudget = false;
-            return;
-        }
-
-        ContextFillPercent   = budget.FillPercent;
-        ContextBudgetColor   = budget.Color;
-        // Numeric readout + the "click to open the X-Ray panel" affordance (the bar is a button).
-        ContextBudgetTooltip = budget.Tooltip + "\n" + Strings.TooltipXrayGauge;
-        HasContextBudget     = true;
+        HasContextBudget = budget is not null;
     }
 
     /// <summary>
@@ -83,8 +73,6 @@ internal partial class InferpalToolWindowData
         _sessionTokens     = 0;
         _lastPromptTokens  = 0;
         TokenInfo          = string.Empty;
-        ContextFillPercent = 0;
-        ContextBudgetColor = "#606060";
         UpdateContextBudget();   // → HasContextBudget = false until a prompt has been measured
     }
 
@@ -256,7 +244,6 @@ internal partial class InferpalToolWindowData
         ThemeBorder      = p.Border;
         ThemeSessionBg   = p.SessionBg;
         ThemePanelBg     = p.PanelBg;
-        ThemeInputBg     = p.InputBg;
         ThemeInputBorder = p.InputBorder;
         ThemeHoverBg     = p.HoverBg;
         ApplyChromeTheme(p);

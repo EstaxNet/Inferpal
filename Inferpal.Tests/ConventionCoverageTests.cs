@@ -2452,10 +2452,12 @@ public class ConventionCoverageTests
         // `ScanCoverage` renamed, and the rule goes green while reading nothing. The second witness
         // is the other half: if nobody gives their count back any more, it is the recognition of the
         // gesture that is broken, not the repository that is clean.
-        Assert.True(subjects >= 5,
+        // ⚠ Both stay UNDER the real count (four today): set on it, deleting one legitimate subject turned the witness
+        // red in place of the rule, blaming the scan for a file that was simply gone.
+        Assert.True(subjects >= 3,
             $"Only {subjects} file(s) build a scan coverage AND swallow a per-file error: "
             + "the rule judges nothing any more.");
-        Assert.True(counting >= 5,
+        Assert.True(counting >= 3,
             $"Only {counting} file(s) report their loss count back: the gesture has been renamed "
             + "and the rule no longer recognises what it enforces.");
 
@@ -2464,6 +2466,41 @@ public class ConventionCoverageTests
             + "counting them: `Scanned` then announces files nobody read, `IsPartial` stays false, "
             + "and `0 dependants` reads as `nothing depends on this`. Report them back through "
             + "ScanCoverage.WithUnreadable:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 33. A path the model writes is confined to the workspace, or shown to a human ──────
+
+    [Fact]
+    public void ToolPaths_AreConfinedToTheWorkspace_OrShownForApproval()
+    {
+        // A tool that resolves a path the model wrote either checks it under the workspace root
+        // (PathSanitizer.AssertUnderRoot) or puts it in front of a human in an approval prompt. get_diagnostics and
+        // run_tests did neither: given a project OUTSIDE the workspace they ran `dotnet build` on it — MSBuild targets
+        // are code — in plan mode and in background /task runs, with no prompt at all.
+        // ⚠ The subject is the FILE, as for rule 32: the resolution and the check may live in different methods.
+        var exempt = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Its approval prompt names the working directory ("[cwd: …]"): the human reads where the command runs.
+            ["RunCommandTool.cs"] = "approval prompt names the cwd",
+        };
+
+        var offenders  = new List<string>();
+        var sanitizing = 0;
+        foreach (var file in ToolsSources())
+        {
+            var code = CodeOnly(file);
+            if (!code.Contains("PathSanitizer.Sanitize(", StringComparison.Ordinal)) continue;
+            sanitizing++;
+            if (exempt.ContainsKey(Path.GetFileName(file))) continue;
+            if (!code.Contains("PathSanitizer.AssertUnderRoot(", StringComparison.Ordinal)) offenders.Add(Rel(file));
+        }
+
+        // Witness: the path-taking tools really are read (seventeen today), otherwise "no site" means nothing.
+        Assert.True(sanitizing >= 12, $"Only {sanitizing} tool(s) resolving a path read: the scan measures nothing any more.");
+        Assert.True(offenders.Count == 0,
+            "These tools resolve a path the model wrote and neither confine it to the workspace nor show it in an "
+            + "approval prompt. Call PathSanitizer.AssertUnderRoot(path, root). Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 }

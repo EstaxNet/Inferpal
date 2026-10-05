@@ -75,6 +75,9 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     /// must (re-)authorize via the settings UI. Surfaced as a distinct connection status.</summary>
     public bool NeedsAuthorization { get; private set; }
 
+    /// <inheritdoc/>
+    public string? ResourceMetadataUrl { get; private set; }
+
     /// <summary>Raised when the server's GET notification stream delivers <c>tools/list_changed</c>.</summary>
     public event Action? ToolsChanged;
 
@@ -159,6 +162,11 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         // 401 with OAuth configured ⇒ token absent/rejected; surface "authorize required".
         if (resp.StatusCode == HttpStatusCode.Unauthorized && _tokenProvider is not null)
             NeedsAuthorization = true;
+        // And where the sign-in must look: the server may announce its metadata address in the challenge.
+        if (resp.StatusCode == HttpStatusCode.Unauthorized
+            && resp.Headers.TryGetValues("WWW-Authenticate", out var challenges)
+            && OAuth.McpOAuthMetadata.ParseResourceMetadataUrl(string.Join(", ", challenges)) is { } announced)
+            ResourceMetadataUrl = announced;
 
         CaptureSession(resp);
         await ThrowIfRefusedAsync(resp, ct).ConfigureAwait(false);

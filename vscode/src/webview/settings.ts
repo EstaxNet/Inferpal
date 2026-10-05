@@ -46,6 +46,9 @@ let SCHEMA: Schema = { tabs: [] };
 
 const app = document.getElementById('app')!;
 let config: Record<string, unknown> = {};
+/** The configuration as last SAVED, while a Save is on its way: `config` already holds the edits it sends, and the
+ *  unsaved count compares the form against `config`. A Save the host refuses puts this back. */
+let savedBeforeSave: Record<string, unknown> | null = null;
 let models: string[] = [];
 const inputs = new Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
 const fieldsByKey = new Map<string, Field>();
@@ -359,6 +362,14 @@ const widgetHost = {
   formValue: (key: string): string => {
     const input = inputs.get(key);
     return input ? input.value : String(config[key] ?? '');
+  },
+  setFormValue: (key: string, value: string): void => {
+    // As a pick from a model field's list does: the value, then the recount of unsaved changes.
+    const input = inputs.get(key);
+    if (input) {
+      input.value = value;
+      refreshForm();
+    }
   },
   showPage: (page: string, fieldKey?: string): void => {
     // The page that holds the field, when it is not the one named: the field decides.
@@ -967,6 +978,10 @@ function onSave(): void {
   // Mutate the parsed original so fields this form doesn't know about survive the
   // full-JSON round trip (config/update resets absent fields to their defaults).
   // The advanced fold never takes part: a folded section is saved like any other.
+  // ⚠ On a COPY, the saved state kept aside until the host answers: written in place, a Save the host refused (a turn
+  // running, no host) still counted as done — "No unsaved changes", and Cancel redrew the refused values as saved.
+  savedBeforeSave = config;
+  config = JSON.parse(JSON.stringify(config)) as Record<string, unknown>;
   const ignored: string[] = [];
   for (const field of fieldsByKey.values()) {
     const input = inputs.get(field.key);
@@ -985,8 +1000,12 @@ function onSave(): void {
       case 'int': {
         const raw = input.value.trim();
         const ok = /^[+-]?\d+$/.test(raw);
-        if (ok) {
-          config[field.key] = parseInt(raw, 10);
+        const value = ok ? parseInt(raw, 10) : NaN;
+        // ⚠ The bounds come from the Core schema, as the Visual Studio window reads them: a value outside them is
+        // applied no more than a typo is — named, and the saved value kept. Stored as typed, 50 results per search
+        // went to a search the other window caps at 20.
+        if (ok && (field.min == null || value >= field.min) && (field.max == null || value <= field.max)) {
+          config[field.key] = value;
         } else if (raw === '') {
           applyDefault(config, field, parseInt);
         } else {
@@ -1046,7 +1065,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; strings?: Record<string, string>;
     schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number; provider?: string | null;
-    refused?: string | null;
+    refused?: string | null; op?: string;
   };
   // The live blocks and the structured editors take the answers to their own requests (cards, rules table, index…).
   // Every widget sees a message before an editor may consume it: the agent page's rules card counts the table the
@@ -1110,6 +1129,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
     }
     case 'saveDone':
+      savedBeforeSave = null;
       lastRulesIgnored = msg.rulesIgnored ?? 0;
       setStatus(msg.ok ? savedStatus() : '');
       refreshForm();
@@ -1124,6 +1144,12 @@ window.addEventListener('message', (event: MessageEvent) => {
       }
       break;
     case 'error':
+      // A refused Save leaves the saved state as it was: the edits are still unsaved, and say so.
+      if (msg.op === 'save' && savedBeforeSave) {
+        config = savedBeforeSave;
+        savedBeforeSave = null;
+        refreshForm();
+      }
       setStatus(msg.message ?? 'error');
       break;
   }

@@ -135,7 +135,7 @@ internal class GetDiagnosticsTool : ITool
     {
         if (string.IsNullOrEmpty(output)) return BuildVerdict.NotBuilt;
 
-        const string NameSentinel  = "";
+        const string NameSentinel  = "\u0001";
         const int    CountSentinel = 918273645;
         var firstLine = output.Split('\n')[0].TrimEnd('\r');
 
@@ -184,7 +184,12 @@ internal class GetDiagnosticsTool : ITool
         var root = _getRoot();
         string? path = null;
         if (!string.IsNullOrWhiteSpace(rawPath))
+        {
             path = PathSanitizer.Sanitize(rawPath, root);
+            // ⚠ Confined like every path-taking tool: a build runs the project's MSBuild targets — code — and this tool
+            // asks no approval (plan mode and background /task runs offer it as a read).
+            PathSanitizer.AssertUnderRoot(path, root);
+        }
         path ??= FindProjectFile(root);
 
         if (path is null)

@@ -55,6 +55,17 @@ internal static class SettingsFallback
         !applied && !string.IsNullOrWhiteSpace(text);
 
     /// <summary>
+    /// Does a box still show what is saved? Surrounding blanks do not count — on BOTH sides.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Trimmed on the saved side only, a custom prompt saved with a final line break (the ordinary way a multi-line
+    /// box ends) never matched its own box: "1 unsaved change" every time the window opened and after every save. The
+    /// VS Code panel trims both sides.
+    /// </remarks>
+    public static bool SameAsSaved(string? form, string? saved) =>
+        string.Equals((form ?? string.Empty).Trim(), (saved ?? string.Empty).Trim(), StringComparison.Ordinal);
+
+    /// <summary>
     /// A field label as it is <b>quoted inside a sentence</b>: without its trailing colon.
     /// </summary>
     /// <remarks>

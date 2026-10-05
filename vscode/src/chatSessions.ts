@@ -38,8 +38,8 @@ export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptIte
         role: m.role,
         text: m.content,
         timestamp: m.timestamp ?? undefined,
-        // Kept across a reload, or the next save would turn the notice back into an answer.
-        ...(m.role === 'assistant' && m.toolName === NOTICE_MARKER ? { notice: true } : {}),
+        // Kept across a reload, or the next save would turn the notice back into an answer (or a question).
+        ...(m.toolName === NOTICE_MARKER ? { notice: true } : {}),
       });
     }
   }

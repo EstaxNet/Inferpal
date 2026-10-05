@@ -33,7 +33,6 @@
   <data name="LabelRagTopK" xml:space="preserve"><value>검색당 결과 수</value></data>
   <data name="UnitSeconds" xml:space="preserve"><value>초</value></data>
   <data name="UnitMinutes" xml:space="preserve"><value>분</value></data>
-  <data name="UnitHours" xml:space="preserve"><value>시간</value></data>
   <data name="UnitGigabytes" xml:space="preserve"><value>GB</value></data>
   <data name="UnitTokens" xml:space="preserve"><value>토큰</value></data>
   <data name="UnitTurns" xml:space="preserve"><value>턴</value></data>
@@ -61,7 +60,6 @@
   <data name="LabelChatModel" xml:space="preserve"><value>채팅 및 에이전트</value></data>
   <data name="HintChatModel" xml:space="preserve"><value>질문에 답하고 작업을 수행합니다. /model로 이번 세션에서 바꿀 수 있습니다.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>테스트</value></data>
-  <data name="BtnLoadSession" xml:space="preserve"><value>불러오기 ↩</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 취소</value></data>
   <data name="BtnSave" xml:space="preserve"><value>저장</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0}개 필드 무시됨(값을 읽을 수 없음): {1}</value></data>
@@ -340,7 +338,6 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="BrowseError" xml:space="preserve"><value>⚠ 찾아보기 오류: {0}</value></data>
 
   <!-- Export -->
-  <data name="ContextGaugeTooltip" xml:space="preserve"><value>컨텍스트: {0} / {1} 토큰 ({2}%) — 클릭하여 X-Ray 패널 열기</value></data>
   <data name="ChatRoleYou" xml:space="preserve"><value>나</value></data>
   <data name="ChatRoleAssistant" xml:space="preserve"><value>어시스턴트</value></data>
   <data name="ExportTitle" xml:space="preserve"><value>Inferpal — 대화 내보내기</value></data>
@@ -481,6 +478,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="CheckNoFindings" xml:space="preserve"><value>diff에 연결된 지적이 없습니다 — 체크에서 아무것도 발견되지 않았습니다.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ 리뷰 없음: **{0}** 모델이 응답 전체를 추론에 쓰고 지적을 작성하지 않았습니다. 이것은 diff에 대해 아무것도 말해 주지 않으며 문제없음 결과가 아닙니다. 더 큰 컨텍스트나 먼저 추론하지 않는 모델로 피할 수 있습니다.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 전체 {1}자 중 앞쪽 {0}자만 검토되었습니다. 아래 내용은 그 부분에 대한 것이며 변경 전체에 대한 것이 아닙니다. 나머지는 따로 검토하거나 더 작게 나누어 스테이징하세요.</value></data>
+  <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ 아직 git에 추가되지 않은 새 파일 {0}개는 검토되지 않았습니다(크기 제한 초과, 바이너리 또는 읽을 수 없음): {1}.</value></data>
   <data name="CheckFindingsHeader" xml:space="preserve"><value>diff에 연결된 지적 **{0}건**:</value></data>
   <data name="CheckSeverityBlocker" xml:space="preserve"><value>**차단**</value></data>
   <data name="CheckSeverityWarning" xml:space="preserve"><value>**경고**</value></data>
@@ -594,7 +592,6 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="LabelMcpHeaders" xml:space="preserve"><value>헤더 (키=값, 한 줄에 하나씩, ${ENV_VAR} 확장됨)</value></data>
   <data name="BtnMcpSaveServer" xml:space="preserve"><value>저장</value></data>
   <data name="BtnMcpCancelServer" xml:space="preserve"><value>취소</value></data>
-  <data name="McpAdvancedJson" xml:space="preserve"><value>고급 (JSON)</value></data>
   <data name="McpImportJson" xml:space="preserve"><value>⟳ JSON을 목록으로 가져오기</value></data>
   <data name="McpJsonNotEditableAsList" xml:space="preserve"><value>MCP 서버 JSON을 모두 읽을 수 없습니다. 목록이 읽지 못한 부분을 잃게 되므로 JSON을 고칠 때까지 읽기 전용입니다.</value></data>
   <data name="McpValidationNameCommand" xml:space="preserve"><value>이름과 명령은 필수입니다.</value></data>
@@ -604,7 +601,6 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="HintMcpDeleteServer" xml:space="preserve"><value>이 MCP 서버를 목록에서 제거합니다.</value></data>
   <data name="HintRowEdit" xml:space="preserve"><value>이 항목을 편집합니다.</value></data>
   <data name="HintRowDelete" xml:space="preserve"><value>이 항목을 목록에서 제거합니다.</value></data>
-  <data name="LabelRowAdvanced" xml:space="preserve"><value>고급 (원시 텍스트)</value></data>
   <data name="BtnRowImport" xml:space="preserve"><value>⟳ 목록으로 가져오기</value></data>
   <data name="RowEditTitle" xml:space="preserve"><value>편집 중: {0}</value></data>
   <data name="PinnedAddFile" xml:space="preserve"><value>파일 추가</value></data>
@@ -819,7 +815,6 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="XrayPanelHint" xml:space="preserve"><value>선택 해제된 섹션은 다음 턴에서 제외됩니다.</value></data>
   <data name="XrayPanelWarning" xml:space="preserve"><value>⚠ 프로젝트 레이어(규칙, 메모리, 노트)가 컨텍스트의 큰 부분을 차지합니다 — 줄이는 것을 고려하세요.</value></data>
   <data name="XrayPanelCopy" xml:space="preserve"><value>프롬프트 복사</value></data>
-  <data name="TooltipXrayGauge" xml:space="preserve"><value>컨텍스트 사용량 — 클릭하면 X-Ray 패널이 열립니다</value></data>
   <data name="TooltipXrayClose" xml:space="preserve"><value>닫기</value></data>
   <data name="CodeActionPreviewShown" xml:space="preserve"><value>👁 에디터에서 제안된 변경 사항을 검토하세요 — 각 변경에 ✓/✗(전체는 ✓✓/✗✗). 입력하면 미리보기가 닫힙니다.</value></data>
   <data name="InlineDiffPreviewAbandoned" xml:space="preserve"><value>✋ 미리보기가 취소되었습니다(문서가 변경됨) — 아무것도 적용되지 않았습니다. 작업을 다시 실행하세요.</value></data>
@@ -856,11 +851,6 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="HardwareCtxExceedsModel" xml:space="preserve"><value>⚠ num_ctx({0})가 이 모델이 허용하는 한도({1})를 넘습니다. 백엔드는 더 긴 프롬프트를 처리할 수 없어 시스템 프롬프트를 포함한 대화의 가장 오래된 부분을 아무 말 없이 잘라냅니다. Inferpal의 압축도 설정값을 기준으로 하므로 작동하지 않습니다. {1} 이하로 설정하세요.</value></data>
   <data name="LabelVramBudget" xml:space="preserve"><value>그래픽 메모리</value></data>
   <data name="HintVramBudget" xml:space="preserve"><value>컨텍스트 창 크기를 안전하게 정하는 데 씁니다. 비우면 서버가 이 컴퓨터에서 실행될 때 자동 감지되며, 다른 컴퓨터라면 입력해야 합니다.</value></data>
-  <data name="LabelModeChat" xml:space="preserve"><value>💬 채팅</value></data>
-  <data name="LabelModeAgent" xml:space="preserve"><value>🤖 에이전트</value></data>
-  <data name="WelcomeCardExplain" xml:space="preserve"><value>선택 영역 설명</value></data>
-  <data name="WelcomeCardFix" xml:space="preserve"><value>오류 수정</value></data>
-  <data name="WelcomeCardTest" xml:space="preserve"><value>테스트 생성</value></data>
   <data name="WelcomeCardHelp" xml:space="preserve"><value>모든 명령 보기</value></data>
   <data name="BuildBannerDismiss" xml:space="preserve"><value>닫기</value></data>
   <data name="SlashHeadlessUnavailable" xml:space="preserve">
@@ -958,7 +948,6 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="StepModeOff" xml:space="preserve"><value>단계별 모드 **꺼짐**.</value></data>
   <data name="AgentPausedForStep" xml:space="preserve"><value>⏸ **도구 호출 후 에이전트가 일시 중지되었습니다.** ▶ 재개를 클릭(또는 `/resume` 입력)해 계속하거나 취소로 중단하세요.</value></data>
   <data name="NoAgentStepPaused" xml:space="preserve"><value>현재 일시 중지된 에이전트 단계가 없습니다.</value></data>
-  <data name="AgentModeOn" xml:space="preserve"><value>**{0}** — Plan → Act → Observe</value></data>
   <data name="FixBuildBuildingRound" xml:space="preserve"><value>🔨 빌드 {0}/{1}…</value></data>
   <data name="FixBuildFixingRound" xml:space="preserve"><value>🔧 수정 {0}</value></data>
   <data name="DialogAttachTitle" xml:space="preserve"><value>첨부할 파일 선택</value></data>
@@ -1218,8 +1207,63 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="WelcomeUsagesFileDesc" xml:space="preserve"><value>작업 영역 전체의 호출자와 종속 항목</value></data>
   <data name="WelcomeUsagesPrompt" xml:space="preserve"><value>{0}은(는) 어디에서 사용되나요? 호출자와 이에 의존하는 항목을 나열하세요.</value></data>
   <data name="WelcomeBuildFailed" xml:space="preserve"><value>마지막 빌드 실패 — 오류 {0}개</value></data>
+  <data name="WelcomeBuildFailedUncounted" xml:space="preserve"><value>마지막 빌드 실패</value></data>
   <data name="WelcomeFixThem" xml:space="preserve"><value>수정하기</value></data>
   <data name="WelcomeHintAttach" xml:space="preserve"><value>파일 첨부</value></data>
   <data name="WelcomeHintCommands" xml:space="preserve"><value>명령</value></data>
   <data name="WelcomeHintNewLine" xml:space="preserve"><value>줄 바꿈</value></data>
+  <data name="ModelRoleChat" xml:space="preserve"><value>채팅</value></data>
+  <data name="ModelRoleAgent" xml:space="preserve"><value>에이전트</value></data>
+  <data name="ModelRoleCodeActions" xml:space="preserve"><value>코드 작업</value></data>
+  <data name="ModelRoleInlineEdit" xml:space="preserve"><value>인라인 편집</value></data>
+  <data name="ModelRoleAutocomplete" xml:space="preserve"><value>자동 완성</value></data>
+  <data name="ModelRoleUtility" xml:space="preserve"><value>제목과 요약</value></data>
+  <data name="ModelRoleCodeSearch" xml:space="preserve"><value>코드 검색</value></data>
+  <data name="SuggestReview" xml:space="preserve"><value>제안된 모델이 양식에 입력되었습니다. 확인한 뒤 저장하세요.</value></data>
+  <data name="SuggestNoChange" xml:space="preserve"><value>이미 설치된 모델 중 가장 좋은 모델입니다.</value></data>
+  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>서버에 임베딩 모델만 있습니다. 먼저 채팅 모델을 설치하세요.</value></data>
+  <data name="SuggestNothingListed" xml:space="preserve"><value>서버에 모델이 없습니다. 제안할 것이 없습니다.</value></data>
+  <data name="SuggestChatRecommended" xml:space="preserve"><value>채팅 모델: {0} — Inferpal 테스트에서 권장됨.</value></data>
+  <data name="SuggestChatUsable" xml:space="preserve"><value>채팅 모델: {0} — 설치된 것 중 최고이며 Inferpal 테스트에서 에이전트로 사용 가능.</value></data>
+  <data name="SuggestChatNotRecommended" xml:space="preserve"><value>채팅 모델: {0} — 설치된 유일한 종류이며 Inferpal 테스트에서 대부분의 에이전트 작업에 실패합니다.</value></data>
+  <data name="SuggestChatUnmeasured" xml:space="preserve"><value>채팅 모델: {0} — Inferpal에서 측정하지 않음. 설치된 모델 중 가장 나은 추정입니다.</value></data>
+  <data name="SuggestInstallRecommended" xml:space="preserve"><value>에이전트 작업에는 Inferpal 테스트가 {0}을(를) 권장합니다. 설치된 것은 없습니다.</value></data>
+  <data name="SuggestEmbeddingNone" xml:space="preserve"><value>코드 검색: 임베딩 모델이 설치되지 않아 키워드로 검색합니다(측정상 최고는 EmbeddingGemma).</value></data>
+  <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>코드 검색: 자동({0} 사용).</value></data>
+  <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>코드 검색 모델을 바꾸면 프로젝트 색인이 다시 만들어집니다.</value></data>
+  <data name="SuggestFimMeasured" xml:space="preserve"><value>자동 완성: {0} — 측정상 최고의 자동 완성 모델.</value></data>
+  <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>자동 완성: 채팅 모델. {0}이(가) 설치되어 있지만 함께 쓰면 약 {1} GB가 필요해 설정된 카드의 {2} GB를 넘습니다.</value></data>
+  <data name="SuggestFimChatCompletes" xml:space="preserve"><value>자동 완성: 채팅 모델(자동 완성도 잘합니다).</value></data>
+  <data name="SuggestFimSameAsChat" xml:space="preserve"><value>자동 완성: 채팅 모델(측정상 최고의 자동 완성 모델은 Mellum2이며 설치하면 쓸 수 있습니다).</value></data>
+  <data name="SuggestOverrides" xml:space="preserve"><value>고급 설정은 그대로 두었습니다: {0}.</value></data>
+  <data name="LoadedModelsUnknown" xml:space="preserve"><value>이 서버는 어떤 모델이 로드되었는지 알려 주지 않습니다.</value></data>
+  <data name="LoadedModelsNone" xml:space="preserve"><value>지금 로드된 모델이 없습니다.</value></data>
+  <data name="LoadedModelsUnreachable" xml:space="preserve"><value>서버가 응답하지 않았습니다. 로드된 모델을 알 수 없습니다.</value></data>
+  <data name="LoadedModelsCount" xml:space="preserve"><value>로드된 모델 {0}개</value></data>
+  <data name="LoadedModelVram" xml:space="preserve"><value>그래픽 메모리 {0} GB</value></data>
+  <data name="LoadedModelCpu" xml:space="preserve"><value>프로세서에서</value></data>
+  <data name="LoadedModelDiskSize" xml:space="preserve"><value>약 {0} GB(디스크 크기)</value></data>
+  <data name="LoadedModelContext" xml:space="preserve"><value>컨텍스트 {0} 토큰</value></data>
+  <data name="LoadedModelStays" xml:space="preserve"><value>계속 로드됨</value></data>
+  <data name="LoadedModelUnloadsIn" xml:space="preserve"><value>{0}분 후 언로드</value></data>
+  <data name="LoadedModelUses" xml:space="preserve"><value>용도: {0}</value></data>
+  <data name="LoadedModelUnused" xml:space="preserve"><value>설정에서 사용하지 않음</value></data>
+  <data name="UnloadNotSupported" xml:space="preserve"><value>이 서버는 Inferpal이 모델을 언로드하도록 허용하지 않습니다.</value></data>
+  <data name="UnloadWhileAnswering" xml:space="preserve"><value>질문에 답하는 중입니다. 끝난 뒤 모델을 언로드하세요.</value></data>
+  <data name="UnloadNothing" xml:space="preserve"><value>로드된 모델이 없었습니다.</value></data>
+  <data name="UnloadDone" xml:space="preserve"><value>언로드됨: {0}.</value></data>
+  <data name="UnloadKept" xml:space="preserve"><value>아직 로드됨: {0} — 서버가 언로드하지 않았습니다.</value></data>
+  <data name="UnloadUnverified" xml:space="preserve"><value>{0} 언로드를 요청했지만 서버가 이후 확인에 응답하지 않았습니다. 아직 로드되어 있는지는 알 수 없습니다.</value></data>
+  <data name="BtnSuggestModels" xml:space="preserve"><value>가장 좋은 모델 제안</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Inferpal의 측정을 바탕으로 설치된 모델 중에서 고릅니다. 저장을 누르기 전에는 아무것도 저장되지 않습니다.</value></data>
+  <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>현재 로드됨</value></data>
+  <data name="NoteLoadedModels" xml:space="preserve"><value>언로드한 모델은 그 모델이 필요한 다음 요청에서 다시 로드됩니다.</value></data>
+  <data name="BtnUnloadModel" xml:space="preserve"><value>언로드</value></data>
+  <data name="BtnUnloadAll" xml:space="preserve"><value>모두 언로드</value></data>
+  <data name="BtnRefreshLoaded" xml:space="preserve"><value>새로 고침</value></data>
+  <data name="WelcomeCardProject" xml:space="preserve"><value>이 프로젝트 설명</value></data>
+  <data name="WelcomeProjectPrompt" xml:space="preserve"><value>이 프로젝트의 개요를 알려 주세요. 무엇을 하는지, 어떻게 구성되어 있는지, 코드를 어디서부터 읽으면 되는지.</value></data>
+  <data name="WelcomeCardChanges" xml:space="preserve"><value>내 변경 사항 검토</value></data>
+  <data name="WelcomeChangesPrompt" xml:space="preserve"><value>커밋하지 않은 변경 사항을 검토해 주세요. 버그, 위험, 테스트처럼 빠진 것을 지적해 주세요.</value></data>
+  <data name="WelcomeOpenFileHint" xml:space="preserve"><value>파일을 열면 설명, 테스트 작성, 사용처 찾기를 할 수 있습니다.</value></data>
 </root>

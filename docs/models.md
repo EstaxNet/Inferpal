@@ -7,7 +7,8 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 
 > [!TIP]
 > In a hurry? **Qwen3.8 27B** and **Devstral Small 2** are the two models to start with for agent work; see
-> [At a glance](#at-a-glance). Every figure on this page comes from Inferpal's own test battery — real tasks on real
+> [At a glance](#at-a-glance). Already have models installed? *Settings → Server and models → Suggest the best models*
+> picks among them from the figures on this page, and says why. Every figure on this page comes from Inferpal's own test battery — real tasks on real
 > projects, judged on their outcome (the project's tests green), never on the model's wording.
 
 > [!NOTE]

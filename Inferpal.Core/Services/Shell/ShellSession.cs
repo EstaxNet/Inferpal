@@ -38,6 +38,22 @@ internal sealed class ShellSession
     }
 
     /// <summary>The cwd/env overrides a background job should inherit at launch time.</summary>
+    /// <summary>
+    /// Where a command starts: the folder asked for, else the session's — and when that folder no longer exists (deleted
+    /// under the session), the workspace root, with the folder that is gone (<c>Vanished</c>) so the output can say so.
+    /// </summary>
+    internal (string Directory, string? Vanished) StartDirectory(string? workDirOverride)
+    {
+        string dir;
+        lock (_lock) dir = workDirOverride ?? _cwd ?? _root();
+        return System.IO.Directory.Exists(dir) ? (dir, null) : (_root(), dir);
+    }
+
+    /// <summary>The line above a command's output when it did not run where the session was: read as the session's
+    /// folder, its output describes another one.</summary>
+    internal static string VanishedNote(string gone, string ranIn) =>
+        $"[{gone} no longer exists — this ran in {ranIn}]\n";
+
     public (string Cwd, IReadOnlyDictionary<string, string> Env) Snapshot()
     {
         lock (_lock) return (_cwd ?? _root(), new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer));
@@ -50,15 +66,10 @@ internal sealed class ShellSession
     /// </summary>
     public async Task<string> RunAsync(string command, string? workDirOverride, CancellationToken ct)
     {
-        string startCwd;
         IReadOnlyDictionary<string, string> env;
-        lock (_lock)
-        {
-            startCwd = workDirOverride ?? _cwd ?? _root();
-            env      = new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer);
-        }
-        if (!Directory.Exists(startCwd))
-            startCwd = _root();
+        lock (_lock) env = new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer);
+        var (startCwd, vanished) = StartDirectory(workDirOverride);
+        var note = vanished is null ? "" : VanishedNote(vanished, startCwd);
 
         var (dialect, shell) = ShellLauncher.Resolve();
         var marker = ShellStateProtocol.NewMarker();
@@ -96,7 +107,7 @@ internal sealed class ShellSession
                                Task.Delay(ChildProcess.PipeGraceAfterExit, CancellationToken.None));
 
             var salvaged = ShellStateProtocol.TrimLineEnds(ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker).Output);
-            return ChildProcess.TimedOutMessage(_config.CommandTimeoutSeconds, salvaged);
+            return note + ChildProcess.TimedOutMessage(_config.CommandTimeoutSeconds, salvaged);
         }
 
         // The shell exited; a background process it started may still hold the pipes (see
@@ -120,7 +131,7 @@ internal sealed class ShellSession
             output += ShellStateProtocol.ExitNote(dialect, command, rc);
         if (!drained)
             output += ChildProcess.OutputHeldOpenNote;
-        return output;
+        return note + output;
     }
 
     private void ApplyState(ShellRunState state)

@@ -31,8 +31,6 @@ internal sealed record FimRequest(
 /// </remarks>
 internal sealed class FimRpcLoop
 {
-    /// <summary>Framing guard rail: a body larger than this is not a completion request.</summary>
-    internal const int MaxBodyBytes = FrameHeaderReader.MaxBodyBytes;
 
     private readonly Stream _input;
     private readonly Stream _output;

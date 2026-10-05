@@ -181,7 +181,7 @@ internal static class ContextManager
 
     /// <summary>
     /// The window the conversation is measured against: the configured one, or the one the server
-    /// really loaded <paramref name="model"/> with when that is SMALLER.
+    /// really loaded <paramref name="model"/> with when that is SMALLER — or when none is configured.
     /// </summary>
     /// <remarks>
     /// ⚠ LM Studio, vLLM and llama-server load a model with a window of their own choosing and say which
@@ -189,19 +189,23 @@ internal static class ContextManager
     /// configured window alone, a conversation between the two was refused on every request while
     /// compaction waited for a threshold it could never reach — stuck until the user cleared it. A larger
     /// loaded window never raises the configured one: that is the user's budget (and Ollama's num_ctx).
+    /// ⚠ A window of 0 means "the model's own default", and a server that says which window it loaded has just
+    /// said what that default is: answered 0 here, compaction was switched off while the client still refused
+    /// every request past the loaded window — the stuck conversation again, by the other door. 0 stays 0 only
+    /// when no one can say (Ollama, which reports nothing).
     /// </remarks>
     internal static async Task<int> EffectiveWindowAsync(
         InferpalConfig config, IInferenceProvider client, string? model, CancellationToken ct)
     {
         var configured = config.ContextWindowSize;
-        if (configured <= 0 || string.IsNullOrWhiteSpace(model)) return configured;
+        if (string.IsNullOrWhiteSpace(model)) return configured;
 
         int? loaded = null;
         try { loaded = await client.GetLoadedContextWindowAsync(model, ct).ConfigureAwait(false); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("ContextManager.EffectiveWindow", ex); }
 
-        return loaded is > 0 && loaded < configured ? loaded.Value : configured;
+        return loaded is > 0 && (configured <= 0 || loaded < configured) ? loaded.Value : configured;
     }
 
     /// <summary>The summarising call, with its own deadline. <c>Text</c> null on any failure, with <c>Failure</c> the

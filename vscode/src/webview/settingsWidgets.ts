@@ -5,7 +5,7 @@
 import { fill } from './l10n';
 import { icon, iconButton, setIcon } from './icons';
 import type {
-  ApprovalRuleTable, ContextUsage, IndexCard, ProjectFileRow, SettingsDocs, SettingsExclusions,
+  ApprovalRuleTable, ContextUsage, IndexCard, LoadedModels, ModelSuggestion, ProjectFileRow, SettingsDocs, SettingsExclusions,
 } from '../protocol';
 
 export interface WidgetHost {
@@ -14,6 +14,8 @@ export interface WidgetHost {
   post(msg: Record<string, unknown>): void;
   /** The form's current value of a field (unsaved edits included). */
   formValue(key: string): string;
+  /** Writes a field as a pick would: the form counts it as an unsaved change, nothing is saved. */
+  setFormValue(key: string, value: string): void;
   /** Shows a page, and the row of a field on it. */
   showPage(page: string, fieldKey?: string): void;
   /** Whether the page holding this widget is the one shown. */
@@ -41,6 +43,8 @@ export function createWidget(name: string, page: string, host: WidgetHost): Live
     case 'fimModel':        return modelLine(host, ['inlineCompletionModel', 'defaultModel']);
     case 'editModel':       return modelLine(host, ['inlineEditModel', 'codeActionsModel', 'defaultModel']);
     case 'themeCards':      return themeCards(host);
+    case 'suggestModels':   return suggestModels(host);
+    case 'loadedModels':    return loadedModels(host);
     default:                return null;
   }
 }
@@ -92,6 +96,126 @@ function themeCards(host: WidgetHost): LiveWidget {
   draw();
   new MutationObserver(draw).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   return { el: grid };
+}
+
+// ── Server and models page: the best installed models, and what is loaded ────
+
+/** The model fields the suggestion reads: the three it may fill, and the advanced ones it only names. */
+const SUGGESTION_KEYS = ['defaultModel', 'inlineCompletionModel', 'ragEmbeddingModel',
+  'agentModel', 'codeActionsModel', 'inlineEditModel', 'utilityModel'];
+
+/** "Suggest the best models": the host picks among the installed models and says why; the picks land in the form as
+ *  unsaved changes — Save stays the user's. */
+function suggestModels(host: WidgetHost): LiveWidget {
+  const block = el('div', 'suggestblock');
+  const button = el('button', 'secondary', host.res('BtnSuggestModels'));
+  button.type = 'button';
+  const head = el('div', 'blockhead');
+  head.append(button, el('span', 'hint', host.res('HintSuggestModels')));
+  const result = el('div', 'suggestresult');
+  result.setAttribute('aria-live', 'polite');
+  block.append(head, result);
+  button.addEventListener('click', () => {
+    button.disabled = true;
+    result.textContent = '…';
+    const current: Record<string, string> = {};
+    for (const key of SUGGESTION_KEYS) {
+      current[key] = host.formValue(key).trim();
+    }
+    // The form's server and card, as the refresh button sends them.
+    host.post({
+      type: 'suggestModels', current, vramBudgetGb: host.formValue('vramBudgetGb'),
+      baseUrl: host.formValue('baseUrl'), provider: host.formValue('provider'), apiKey: host.formValue('apiKey'),
+    });
+  });
+  return {
+    el: block,
+    onMessage(msg) {
+      if (msg.type === 'error') {
+        button.disabled = false;   // the panel shows the error itself
+        result.textContent = '';
+        return false;
+      }
+      if (msg.type !== 'suggestModels') {
+        return false;
+      }
+      button.disabled = false;
+      const s = msg.suggestion as ModelSuggestion;
+      result.textContent = '';
+      if (!s.refusal) {
+        for (const f of s.fields) {
+          if (f.changed) {
+            host.setFormValue(f.key, f.value);
+          }
+          result.append(el('p', 'suggestline' + (f.changed ? ' changed' : ''), f.reason));
+        }
+        for (const note of s.notes) {
+          result.append(el('p', 'cardnote', note));
+        }
+      }
+      result.append(el('p', 'suggestsummary', s.summary));
+      return true;
+    },
+  };
+}
+
+/** "Loaded now": what the server holds in memory, what Inferpal uses each model for, and the unload buttons. The
+ *  facts and the sentence of an unload come from the host; a button only asks. */
+function loadedModels(host: WidgetHost): LiveWidget {
+  const block = el('div', 'loadedmodels');
+  const draw = (m: LoadedModels): void => {
+    block.textContent = '';
+    const head = el('div', 'blockhead');
+    head.append(el('span', 'loadedsummary', m.summary));
+    const refresh = iconButton('retry', host.res('BtnRefreshLoaded'), 14);
+    refresh.addEventListener('click', () => host.post({ type: 'loadedModels' }));
+    head.append(refresh);
+    if (m.canUnload && m.rows.length > 0) {
+      const all = el('button', 'secondary', host.res('BtnUnloadAll'));
+      all.type = 'button';
+      all.addEventListener('click', () => {
+        all.disabled = true;
+        host.post({ type: 'unloadModels' });
+      });
+      head.append(all);
+    }
+    block.append(head);
+    for (const r of m.rows) {
+      const row = el('div', 'siterow');
+      const main = el('div', 'lmain');
+      main.append(el('code', 'lname mono', r.name), el('span', 'lsub', r.uses));
+      if (r.details) {
+        main.append(el('span', 'lsub hint', r.details));
+      }
+      row.append(main);
+      if (m.canUnload) {
+        const unload = el('button', 'secondary', host.res('BtnUnloadModel'));
+        unload.type = 'button';
+        unload.setAttribute('aria-label', `${host.res('BtnUnloadModel')} ${r.name}`);
+        unload.addEventListener('click', () => {
+          unload.disabled = true;
+          host.post({ type: 'unloadModels', names: [r.name] });
+        });
+        row.append(unload);
+      }
+      block.append(row);
+    }
+    if (m.message) {
+      block.append(el('p', 'cardnote', m.message));
+    }
+  };
+  host.post({ type: 'loadedModels' });
+  return {
+    el: block,
+    onShown: () => host.post({ type: 'loadedModels' }),
+    onMessage(msg) {
+      if (msg.type !== 'loadedModels') {
+        return false;
+      }
+      draw(msg.models as LoadedModels);
+      return true;
+    },
+  };
 }
 
 // ── Agent page: the approval rules in effect ─────────────────────────────────

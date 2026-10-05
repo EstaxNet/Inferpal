@@ -51,10 +51,6 @@ public class AgentPlanStep
     /// <summary>Execution status — updated live as the orchestrator runs.</summary>
     [JsonIgnore]
     public AgentStepStatus Status { get; set; } = AgentStepStatus.Pending;
-
-    /// <summary>Brief observation text added after the step's tools execute.</summary>
-    [JsonIgnore]
-    public string? Observation { get; set; }
 }
 
 /// <summary>

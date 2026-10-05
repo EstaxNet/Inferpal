@@ -14,7 +14,8 @@ export interface WvTranscriptItem {
   /** Pre-formatted local time (HH:MM), stamped when the entry was pushed. */
   timestamp?: string;
   /** An 'assistant' entry that is a NOTICE (an end notice, a slash command's output, a failed save), not an answer
-   *  the model gave: same bubble, but a restored conversation must not hand it back to the model as one. */
+   *  the model gave — or a 'user' entry that is a slash command served without the model, not a question: same bubble,
+   *  but a restored conversation must not hand it back to the model as one. */
   notice?: boolean;
   /** An answer's model, duration and run, kept for this session's redraws (a saved session does not carry them). */
   model?: string;
@@ -140,6 +141,8 @@ export type ExtToWebview =
 export type WebviewToExt =
   | { type: 'ready' }
   | { type: 'send'; text: string }
+  /** The welcome banner's "Fix them": the Problems panel attached, then `text` sent. */
+  | { type: 'fixProblems'; text: string }
   | { type: 'cancel' }
   | { type: 'reset' }
   | { type: 'pickModel'; model: string }
@@ -149,7 +152,6 @@ export type WebviewToExt =
   | { type: 'xrayToggle'; id: string; enabled: boolean }
   | { type: 'copyText'; text: string }
   | { type: 'regenerate' }
-  | { type: 'toggleAgentMode' }
   | { type: 'retryConnection' }
   | { type: 'openXray' }
   | { type: 'mentionSearch'; category: string; query: string }

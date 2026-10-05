@@ -1,3 +1,4 @@
+using Inferpal.Config;
 using Inferpal.Services.Agent;
 using Inferpal.Services.Presentation;
 using Inferpal.Services.Prompting;
@@ -79,6 +80,45 @@ internal sealed partial class HostServer
         SettingsWidgets.PinnedSizes((p.Pins ?? string.Empty).Split('\n')
             .Select(l => l.Trim().TrimStart('#').Trim()).Where(l => l.Length > 0));
 
+    /// <summary>`settings/loadedModels` — what the server holds in memory, and what Inferpal uses each model for.</summary>
+    [JsonRpcMethod("settings/loadedModels")]
+    public async Task<LoadedModelsModel> SettingsLoadedModels(CancellationToken ct)
+    {
+        var s = Session();
+        return await LoadedModelsCard.ReadAsync(s.Client, s.Config, (await s.Index.SnapshotAsync(ct)).Model, ct);
+    }
+
+    /// <summary>`settings/unloadModels` — unloads the named models (every loaded one without names), then the block as
+    /// the server now answers it, with what the unload did.</summary>
+    [JsonRpcMethod("settings/unloadModels", UseSingleObjectParameterDeserialization = true)]
+    public async Task<LoadedModelsModel> SettingsUnloadModels(SettingsUnloadParams p, CancellationToken ct)
+    {
+        var s = Session();
+        var message = await ModelUnloader.UnloadAsync(s.Client, s.Config, p.Names is { Count: > 0 } ? p.Names : null, ct);
+        return await LoadedModelsCard.ReadAsync(s.Client, s.Config, (await s.Index.SnapshotAsync(ct)).Model, ct, message);
+    }
+
+    /// <summary>
+    /// `settings/suggestModels` — the best installed models for the form, from the server the FORM names (as
+    /// <c>models/list</c>); proposed, never saved.
+    /// </summary>
+    [JsonRpcMethod("settings/suggestModels", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ModelSuggestion> SettingsSuggestModels(SettingsSuggestParams p, CancellationToken ct)
+    {
+        var s = Session();
+        var draft = new InferpalConfig
+        {
+            Provider = string.IsNullOrWhiteSpace(p.Provider) ? s.Config.Provider : p.Provider.Trim(),
+            BaseUrl  = string.IsNullOrWhiteSpace(p.BaseUrl) ? s.Config.BaseUrl : p.BaseUrl.Trim(),
+            ApiKey   = p.ApiKey ?? s.Config.ApiKey,
+        };
+        var budget = double.TryParse(p.VramBudgetGb, System.Globalization.NumberStyles.Float,
+                                     System.Globalization.CultureInfo.InvariantCulture, out var gb) && gb > 0
+            ? gb : s.Config.VramBudgetGb;
+        return await ModelAdvisor.SuggestAsync(_providerFactory(draft), draft, budget,
+                                               p.Current ?? new Dictionary<string, string>(), ct);
+    }
+
     private SettingsDocsActions DocsActions()
     {
         var s = Session();
@@ -96,3 +136,12 @@ internal sealed record SettingsDocsDto(List<DocsSiteRow> Sites, string? Message)
 internal sealed record SettingsDocsActionParams(string Verb, string Arg);
 
 internal sealed record SettingsPinSizesParams(string? Pins);
+
+/// <summary><c>Names</c>: the models to unload; <c>null</c> or empty = every loaded one.</summary>
+internal sealed record SettingsUnloadParams(List<string>? Names);
+
+/// <summary>The form's server (as <c>models/list</c>), its card's memory as typed (invariant number; empty = the saved
+/// one), and the form's model fields by configuration key.</summary>
+internal sealed record SettingsSuggestParams(
+    string? BaseUrl = null, string? Provider = null, string? ApiKey = null, string? VramBudgetGb = null,
+    Dictionary<string, string>? Current = null);

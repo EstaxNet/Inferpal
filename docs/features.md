@@ -204,8 +204,10 @@ exists.
 - **Session & prompt templates** — `/template` loads a preconfigured context; user prompt
   templates support `{args}`.
 - **Prompt history** — persistent; search with `/phistory`.
-- **Welcome screen** — an empty session shows one-click suggestion cards (Explain the
-  selection, Fix an error, Generate a test, See all commands) plus the active model and mode.
+- **Welcome screen** — an empty session shows one-click cards for what can be done now: with a
+  file open, explain it, write its tests, find its usages; without one, explain the project, review
+  your uncommitted changes, see all commands. When the last build failed (Visual Studio) or the
+  Problems panel has errors (VS Code), **Fix them** sends those errors to the agent.
 - **Attach file / selection** — 📎 toolbar buttons attach a file or the current editor
   selection as a context chip (the same context you can add with `/read` or `@file`).
   The message bubble names what went with it, so the transcript — on screen, exported, or

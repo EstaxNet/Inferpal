@@ -37,7 +37,7 @@ public class WebviewRebuildTests
         return dir!.FullName;
     }
 
-    private static string TsCode(string relative)
+    internal static string TsCode(string relative)
     {
         var path = Path.Combine(RepoRoot(), "vscode", "src",
                                 relative.Replace('/', Path.DirectorySeparatorChar));
@@ -58,7 +58,7 @@ public class WebviewRebuildTests
     }
 
     /// <summary>Body of a TypeScript function, by brace matching from its signature.</summary>
-    private static string Body(string source, string signature)
+    internal static string Body(string source, string signature)
     {
         var at = source.IndexOf(signature, StringComparison.Ordinal);
         Assert.True(at >= 0, $"\"{signature}\" not found — the rule no longer measures anything.");
@@ -418,7 +418,10 @@ public class WebviewRebuildTests
         var reset    = Body(provider, "async resetConversation(");
         var apply    = Body(provider, "private applySession(");
 
-        foreach (var counter in new[] { "this.promptTokens = 0", "this.lastTokens = 0", "this.sessionTokens = 0", "this.sessionStart = null" })
+        // The fill is the loaded conversation's own measure, never the previous one's (nor zero: ReloadedRingTests).
+        Assert.Contains("this.promptTokens = 0", reset, StringComparison.Ordinal);
+        Assert.Contains("this.promptTokens = nextTurnTokens;", apply, StringComparison.Ordinal);
+        foreach (var counter in new[] { "this.lastTokens = 0", "this.sessionTokens = 0", "this.sessionStart = null" })
         {
             Assert.Contains(counter, reset, StringComparison.Ordinal);   // witness: a new conversation resets it
             Assert.True(apply.Contains(counter, StringComparison.Ordinal),
@@ -430,19 +433,21 @@ public class WebviewRebuildTests
     /// A chat message sent while the backend is known to be down is refused before anything is consumed,
     /// as in the Visual Studio window: no user bubble, nothing in the host's history, the text back in
     /// the input box. VS Code sent it anyway — the box was cleared, the question entered the host's
-    /// history, and a long prompt was lost. Slash commands, served by the host, still run.
+    /// history, and a long prompt was lost. Slash commands served by the host alone still run (the ones that ask the
+    /// model are refused too: <see cref="BackendDownModelCommandTests"/>).
     /// </summary>
     [Fact]
     public void AMessageSentWhileTheBackendIsDown_IsRefused_AndGoesBackToTheInputBox()
     {
         var send  = Body(TsCode("chatViewProvider.ts"), "private async send(");
-        var guard = send.IndexOf("this.status?.connected === false", StringComparison.Ordinal);
+        var guard = send.IndexOf("await this.refusedWhileBackendDown(text)", StringComparison.Ordinal);
         var busy  = send.IndexOf("this.busy = true", StringComparison.Ordinal);
 
         Assert.True(busy >= 0, "send() no longer marks the turn busy: the rule measures nothing.");
         Assert.True(guard >= 0 && guard < busy, "send() consumes the message before checking the backend.");
 
-        var check = send[guard..busy];
+        var check = Body(TsCode("chatViewProvider.ts"), "private async refusedWhileBackendDown(");
+        Assert.Contains("this.status?.connected !== false", check, StringComparison.Ordinal);
         Assert.Contains("await this.pollBackendStatus()", check, StringComparison.Ordinal);
         Assert.Contains("type: 'setPrompt'", check, StringComparison.Ordinal);
         Assert.Contains("startsWith('/')", send[..busy], StringComparison.Ordinal);
@@ -784,7 +789,6 @@ public class WebviewRebuildTests
     /// </summary>
     [Theory]
     [InlineData("pickModel")]
-    [InlineData("toggleAgentMode")]
     // The `/model <name>` effect: the host has already switched the model when the workspace write refuses.
     [InlineData("stateChange")]
     public void ASettingTheWorkspaceRefuses_IsSaid(string message)
@@ -800,6 +804,18 @@ public class WebviewRebuildTests
         Assert.True(block.Contains("catch", StringComparison.Ordinal)
                     && block.Contains("t('Inferpal could not save this setting: {0}'", StringComparison.Ordinal),
             $"'{message}' stops in silence when the workspace settings refuse the write.");
+    }
+
+    /// <summary>The mode switch (Chat / Agent / Plan) writes the same setting: a refusal is said, and the switch moves
+    /// back to what is really saved.</summary>
+    [Fact]
+    public void TheModeSwitch_SaysWhenTheWorkspaceRefuses()
+    {
+        var setMode = Body(TsCode("chatViewProvider.ts"), "private async setMode(");
+        Assert.Contains("update('agentMode'", setMode, StringComparison.Ordinal);   // witness: it writes the setting
+        Assert.True(setMode.Contains("catch", StringComparison.Ordinal)
+                    && setMode.Contains("t('Inferpal could not save this setting: {0}'", StringComparison.Ordinal),
+            "the mode switch stops in silence when the workspace settings refuse the write.");
     }
 
     /// <summary>
@@ -866,11 +882,8 @@ public class WebviewRebuildTests
         Assert.Contains("update('model'", saved, StringComparison.Ordinal);
         Assert.Contains("update('agentMode'", saved, StringComparison.Ordinal);
 
-        var at = source.IndexOf("case 'toggleAgentMode':", StringComparison.Ordinal);
-        Assert.True(at >= 0, "case 'toggleAgentMode' moved — the rule measures nothing.");
-        var next  = source.IndexOf("case '", at + 6, StringComparison.Ordinal);
-        var block = source[at..(next < 0 ? source.Length : next)];
-        Assert.Contains("pushAgentModeToHost(", block, StringComparison.Ordinal);
+        // The chat's own switch pushes the mode to the host too.
+        Assert.Contains("pushAgentModeToHost(", Body(source, "private async setMode("), StringComparison.Ordinal);
     }
 
     /// <summary>

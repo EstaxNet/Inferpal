@@ -218,8 +218,7 @@ internal sealed partial class HostServer : IDisposable
         var s = Session();
         return result with
         {
-            NextTurnTokens = ContextManager.NextTurnLoad(
-                s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode)),
+            NextTurnTokens = NextTurnTokens(s),
             Duration = Services.Presentation.RunSummary.Duration(clock.Elapsed),
         };
     }
@@ -264,7 +263,11 @@ internal sealed partial class HostServer : IDisposable
                     s.WorkspaceContextSent = true;
             }
 
-            var autoCtx    = await BuildRagAutoContextAsync(s, p.Prompt, p.AttachedPaths, cts.Token);
+            // ⚠ The question, not the expanded prompt: searched with the attached files' bodies, retrieval follows the
+            // attachment, the shadow pre-computed on the typed text never matches, and a small embedding model is sent
+            // the whole of it.
+            var autoCtx    = await BuildRagAutoContextAsync(s, string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query,
+                                                            p.AttachedPaths, cts.Token);
             var promptText = ChatTurnPolicy.WithInjectedContext(p.Prompt, autoCtx, workspace);
 
             // The system prompt follows the active file (glob-scoped rules, persona), which the adapter reports by
@@ -273,19 +276,19 @@ internal sealed partial class HostServer : IDisposable
             s.History.Add(new ChatMessageDto("user", promptText));
 
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
-            var agentMode = (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
+            // ⚠ A code action answers from the code it was given, without tools — as in Visual Studio. Sent with
+            // them, `/explain` planned, called tools and raised approval prompts.
+            var agentMode = !p.CodeAction && (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
+            var useTools  = !p.CodeAction && s.ToolsEnabled;
             // The reasoning tail is step progress only on the orchestrated path.
             showReasoningTail = agentMode;
-            // The model picked in the chat is the CHAT model: the agent loop still routes to the
-            // configured AgentModel first, as in Visual Studio. Letting the per-request model win made
-            // agentModel unreachable — the adapter always sends one. Resolved BEFORE the context
-            // check, which needs the window the server really loaded this model with.
-            var chatModel = !string.IsNullOrWhiteSpace(p.Model)
-                ? p.Model!
-                : ModelRouter.Resolve(s.Config, ModelRole.Chat);
-            var model     = agentMode && !string.IsNullOrWhiteSpace(s.Config.AgentModel)
-                ? s.Config.AgentModel
-                : chatModel;
+            // The model picked in the chat is the CHAT model: the agent loop and the code actions still route to their
+            // configured model first, as in Visual Studio. Resolved BEFORE the context check, which needs the window
+            // the server really loaded this model with.
+            var model = ModelRouter.Resolve(
+                s.Config,
+                p.CodeAction ? ModelRole.CodeActions : agentMode ? ModelRole.Agent : ModelRole.Chat,
+                p.Model);
 
             // Pre-send context check.
             // It did not exist here. The history was never bounded: it grew until it went past the
@@ -298,7 +301,7 @@ internal sealed partial class HostServer : IDisposable
                 s.History, s.Config, s.Client, s.LastPromptTokens,
                 onStep: step => Notify("chat/step", new { text = step }),
                 ct: cts.Token, model: model,
-                toolTokens: Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
+                toolTokens: Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode));
             s.LastContextWindow = ctxDecision.Window;
             // The prompt was built above, against the window known then: when this check reveals another one — the
             // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
@@ -383,10 +386,10 @@ internal sealed partial class HostServer : IDisposable
                     Model: model);
             }
 
-            if (s.ToolsEnabled)
+            if (useTools)
             {
                 // Chat mode keeps its tools, as in Visual Studio: the basic tool loop, without the
-                // plan. Only `/tools off` is chat without tools.
+                // plan. Only `/tools off` and a code action are chat without tools.
                 IToolRegistry chatTools = s.Tools;
                 if (s.PlanMode) chatTools = new PlanModeToolRegistry(chatTools);
                 if (s.StepMode) chatTools = new StepModeToolRegistry(chatTools, tok => PauseForStepAsync(s, tok));
@@ -441,8 +444,11 @@ internal sealed partial class HostServer : IDisposable
             // ends before the chunk that carries the usage, and some servers never send one. Zero reads as a first
             // turn — no compaction before the next question, however long the conversation — so it is estimated,
             // as the two paths above and Visual Studio do.
+            // ⚠ And a reported count is the prompt that was SENT: the answer just appended is not in it, and the next
+            // question carries it. Measured without it, a long answer (a /review, an /explain) left the conversation
+            // past the window before compaction looked — refused, or its head cut by the server.
             s.LastPromptTokens = turn.PromptTokens > 0
-                ? turn.PromptTokens
+                ? turn.PromptTokens + (said.Length > 0 ? Services.Agent.AgentOrchestrator.EstimateTokens([s.History[^1]]) : 0)
                 : Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
             await CountTurnAsync(s, cts.Token);
             return new ChatSendResult(
@@ -464,6 +470,10 @@ internal sealed partial class HostServer : IDisposable
             // Plain-chat network failures (the agent loop never throws them) become a
             // structured error the adapter can render, not a generic RPC fault.
             Diagnostics.Swallow("HostServer.ChatSend", ex);
+            // The question stays in the history: the next one is measured with it, as the failed run paths above do
+            // through the History setter. Left as it was — or 0 after a compaction earlier in this turn — the measure
+            // described the conversation before this question.
+            s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
             return new ChatSendResult(streamed.ToString(), false, 0, 0, ex.Message);
         }
         finally
@@ -652,6 +662,8 @@ internal sealed partial class HostServer : IDisposable
             var at = s.History.FindLastIndex(m => m.Role == "user");
             if (at < 0) return;
             s.History.RemoveRange(at, s.History.Count - at);
+            // The workspace block rode with the question taken back: the question asked again carries it again.
+            if (!Services.Prompting.WorkspaceContext.IsIn(s.History)) s.WorkspaceContextSent = false;
             // The last call measured the exchange that is gone.
             s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
             removed = true;
@@ -685,9 +697,11 @@ internal sealed partial class HostServer : IDisposable
     public async Task<CodeExcerptResult> CodeExcerptOfAsync(CodeExcerptParams p, CancellationToken ct)
     {
         var s = Session();
-        // Sized for the window the answering model REALLY loaded: the excerpt goes into a chat turn, and read from the
-        // setting (100 000 under LM Studio loading 4 096) the budget sent whole files that were then refused.
-        var model   = !string.IsNullOrWhiteSpace(p.Model) ? p.Model! : ModelRouter.Resolve(s.Config, ModelRole.Chat);
+        // Sized for the window the answering model REALLY loaded: the excerpt goes into a code-action turn, and read
+        // from the setting (100 000 under LM Studio loading 4 096) the budget sent whole files that were then refused.
+        // The model is the one chat/send resolves for that turn — the same call, or the excerpt is sized for one
+        // model and read by another.
+        var model   = ModelRouter.Resolve(s.Config, ModelRole.CodeActions, p.Model);
         var window  = await Services.Agent.ContextManager.EffectiveWindowAsync(s.Config, s.Client, model, ct);
         var excerpt = CodeExcerpt.Of(p.Code ?? string.Empty, CodeExcerpt.BudgetFor(window));
         return new(excerpt.Text, excerpt.Label(CodeExcerpt.SourceLabel(p.FileName ?? string.Empty, p.Selection)),
@@ -714,14 +728,28 @@ internal sealed partial class HostServer : IDisposable
             "doc"      => SlashCodeActionKind.Doc,
             _          => throw new ArgumentException($"Unknown code action kind '{p.Kind}'."),
         };
-        var (system, instruction) = await InPlaceCodeActionPrompts.BuildAsync(kind, p.Path, p.Text, ct);
+        // ⚠ Inside the turn slot, like /test: outside it, Stop (chat/cancel cancels the slot) reached nothing — the chat
+        // stayed busy, and minutes later the rewrite was offered, or applied straight to the file with the preview off.
+        var cts = AcquireTurn(ct);
+        CodeActionRun run;
+        try
+        {
+            var (system, instruction) = await InPlaceCodeActionPrompts.BuildAsync(kind, p.Path, p.Text, cts.Token);
 
-        var model = string.IsNullOrWhiteSpace(p.Model)
-            ? ModelRouter.Resolve(s.Config, ModelRole.CodeActions)
-            : p.Model!;
-        var run   = await CodeActionPipeline.RunAsync(
-            s.Client, model, system, instruction,
-            p.Text, p.SelStart, p.SelEnd, selectionEmpty: p.SelStart == p.SelEnd, ct);
+            // The pick is the CHAT model: a configured code-actions model wins over it, as in Visual Studio.
+            var model = ModelRouter.Resolve(s.Config, ModelRole.CodeActions, p.Model);
+            run = await CodeActionPipeline.RunAsync(
+                s.Client, model, system, instruction,
+                p.Text, p.SelStart, p.SelEnd, selectionEmpty: p.SelStart == p.SelEnd, cts.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return new("cancelled", []);
+        }
+        finally
+        {
+            ReleaseTurn(cts);
+        }
 
         if (run.Outcome == CodeActionOutcome.NoChangeNeeded) return new("noChange", []);
         if (run.Outcome != CodeActionOutcome.Edited)         return new("failed",   [], FailureDetail: run.FailureDetail);
@@ -1096,8 +1124,18 @@ internal sealed partial class HostServer : IDisposable
             s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;
             return new SessionLoadResult(
                 p.Name,
-                data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList());
+                data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList(),
+                NextTurnTokens(s));
         });
+
+    /// <summary>
+    /// What the next question will send — the conversation as measured plus the tool definitions: the context gauge's
+    /// fill and the X-Ray's figure. ⚠ Also after a load or a branch: the restored history is measured on arrival
+    /// (<see cref="HostSession.History"/>), and without this figure VS Code's gauge disappeared on every reload until
+    /// the next question, where Visual Studio shows the restored conversation's fill at once.
+    /// </summary>
+    private static int NextTurnTokens(HostSession s) =>
+        ContextManager.NextTurnLoad(s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
 
     [JsonRpcMethod("session/delete", UseSingleObjectParameterDeserialization = true)]
     public bool SessionDelete(SessionRefParams p) => Session().Store.Delete(p.Name);
@@ -1137,7 +1175,8 @@ internal sealed partial class HostServer : IDisposable
             return new SessionBranchResult(
                 plan.BranchName, plan.ParentName, plan.ForkTurn,
                 plan.BranchMessages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList(),
-                Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
+                Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName),
+                NextTurnTokens(s));
         });
 
     /// <summary>

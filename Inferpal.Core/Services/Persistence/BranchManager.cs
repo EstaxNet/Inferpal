@@ -67,8 +67,10 @@ internal static class BranchManager
         var turns  = new List<ConversationTurn>();
         var starts = new List<int>();
 
+        // A slash command served without the model is not a turn (Visual Studio shows no question for one): counted, the
+        // same session numbered its turns differently in each editor.
         for (var i = 0; i < messages.Count; i++)
-            if (messages[i].Role == "user") starts.Add(i);
+            if (SessionManager.IsQuestion(messages[i])) starts.Add(i);
 
         for (var t = 0; t < starts.Count; t++)
         {
@@ -113,7 +115,7 @@ internal static class BranchManager
     /// <summary>Name a session gets when branching forces the unsaved parent to disk.</summary>
     public static string MakeParentName(IReadOnlyList<SavedMessage> messages, DateTime localNow)
     {
-        var first = messages.FirstOrDefault(m => m.Role == "user")?.Content ?? string.Empty;
+        var first = messages.FirstOrDefault(SessionManager.IsQuestion)?.Content ?? string.Empty;
         return SessionManager.SessionFileName(localNow, SessionManager.MakeSnippet(first));
     }
 

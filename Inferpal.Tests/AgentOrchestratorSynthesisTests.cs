@@ -105,6 +105,32 @@ public class AgentOrchestratorSynthesisTests
             m => m.Content != null && m.Content.EndsWith(ModelPrompts.AgentSynthesizePrompt("Give me the leek pie recipe")));
     }
 
+    /// <summary>
+    /// ⚠ A synthesis the client stopped for repeating itself is a cut AND a repeat. Carried as a cut alone, the end
+    /// notice told the user to increase the context length — the one remedy that does nothing for a loop.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]     // stopped repeating: the notice must say so
+    [InlineData(false)]    // reference arm: a synthesis cut at the length limit is a plain cut
+    public async Task ASynthesis_StoppedForRepeating_IsCarriedAsRepeating(bool repeating)
+    {
+        var script = new[]
+        {
+            PlanReply(),
+            ToolCallReply("web_search", """{"query":"leek pie"}"""),
+            ToolCallReply("web_search", """{"query":"leek pie"}"""),
+            ToolCallReply("web_search", """{"query":"leek pie"}"""),   // loop → synthesis
+            new ChatTurnResult("The recipe: leeks, cream, leeks, cream", null, 0, 0, CutAtLimit: true, StoppedRepeating: repeating),
+        };
+        var result = await RunAsync(new AgentOrchestrator(new ScriptedChatClient(script), Config()), new SingleToolRegistry());
+
+        Assert.StartsWith("The recipe", result.FinalResponse);   // witness: the synthesis is the answer
+        Assert.True(result.AnswerCut);
+        Assert.Equal(repeating, result.AnswerRepeating);
+        Assert.Equal(repeating ? Strings.AnswerStoppedRepeating : Strings.AnswerCutAtLimit,
+                     ChatTurnPolicy.EndNotice(result.ReachedIterationLimit, false, result.AnswerCut, answerRepeating: result.AnswerRepeating));
+    }
+
     [Fact]
     public async Task EmptyFinalTurn_WithWork_SynthesisesFinalAnswer()
     {

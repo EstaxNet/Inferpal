@@ -186,6 +186,28 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
     }
 
     [Fact]
+    public async Task AFileSavedPastTheSizeCap_LeavesTheIndex_LikeTheFullPassLeavesIt()
+    {
+        // The full pass leaves a file at or above CodeChunker.MaxFileSizeBytes out (and /index says so); the re-index on
+        // save applied no cap: a file grown past it was chunked, embedded and written to the index /index called "too
+        // large, not indexed", until the next pass dropped it again.
+        var grown = Path.Combine(_root, "Grown.cs");
+        await File.WriteAllTextAsync(grown, SampleClass("Grown"));
+        var svc = NewService(new FakeInferenceProvider { Embedding = [0.1f, 0.2f] });
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the pass is finished", () => svc.Status);
+        Assert.NotEmpty(await svc.GetFileChunksAsync(grown, _root, CancellationToken.None));   // WITNESS: indexed small
+
+        var big = new System.Text.StringBuilder();
+        for (var i = 0; big.Length < Inferpal.Services.Rag.CodeChunker.MaxFileSizeBytes + 1_000; i++)
+            big.Append(SampleClass($"Grown{i}")).Append('\n');
+        await File.WriteAllTextAsync(grown, big.ToString());
+
+        await WaitUntilAsync(async () => (await svc.GetFileChunksAsync(grown, _root, CancellationToken.None)).Count == 0,
+                             "the oversize file leaves the index", () => svc.Status);
+    }
+
+    [Fact]
     public async Task AFileSavedWhileEmbeddingsFail_IsCountedAsAHole()
     {
         // The count was taken at the end of the FULL pass only: a file saved later, re-indexed while the embedding

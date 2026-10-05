@@ -133,7 +133,7 @@ public class VsAdapterRegressionTests
     /// </summary>
     [Theory]
     [InlineData("InferpalToolWindowData.Attachments.cs", "SavePinnedFiles")]
-    [InlineData("InferpalToolWindowData.Connection.cs", "ToggleAgentModeAsync")]
+    [InlineData("InferpalToolWindowData.Chrome.cs", "SetModeAsync")]
     [InlineData("InferpalToolWindowData.PendingPrompt.cs", "DeleteSessionAsync")]
     public void AChatWindowGestureThatWritesAFile_SaysWhenItCannot(string file, string method)
     {

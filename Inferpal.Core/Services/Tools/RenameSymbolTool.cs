@@ -136,6 +136,11 @@ internal sealed class RenameSymbolTool : ITool
         var plan          = TryPlanRename(oldName, root, declaringFile, declaringLine, ct);
         if (plan is { Candidates.Count: > 1 })
             return Ambiguous(oldName, plan.Candidates);
+        // ⚠ A narrowing that designates nothing is refused, never dropped: falling through to the text-based path
+        // renamed EVERY symbol spelled `old_name` — both Handle methods the model had just picked between — because the
+        // file it named was written "./src/Cart.cs" or the line was the identifier's, not the declaration's.
+        if ((declaringFile is not null || declaringLine is not null) && plan is not { Spans.Count: > 0 })
+            return NarrowingMatchedNothing(oldName, declaringFile, declaringLine, indexAvailable: plan is not null);
         var semanticSpans = plan is { Spans.Count: > 0 } ? plan.Spans : null;
 
         var hits            = new List<(string FilePath, int Count, string OldContent, string NewContent)>();
@@ -320,6 +325,22 @@ internal sealed class RenameSymbolTool : ITool
     /// The refusal when <paramref name="oldName"/> names several symbols: each one, and how to say which — nothing
     /// renamed.
     /// </summary>
+    /// <summary>The model narrowed the rename to a declaration, and none matches: nothing is renamed.</summary>
+    private static string NarrowingMatchedNothing(string oldName, string? declaringFile, int? declaringLine, bool indexAvailable)
+    {
+        var asked = string.Join(" and ", new[]
+        {
+            declaringFile is null ? null : $"declaring_file '{declaringFile}'",
+            declaringLine is null ? null : $"declaring_line {declaringLine}",
+        }.Where(s => s is not null));
+        return indexAvailable
+            ? $"Error: no declaration of `{oldName}` matches {asked}; nothing was renamed. The line is the one where the "
+              + "declaration starts, attributes included. Call again without them to list the declarations of "
+              + $"`{oldName}` with their files and lines."
+            : $"Error: {asked} need the C# compiler's view of the workspace, which is not available here; nothing was "
+              + $"renamed. Without them, every identifier spelled `{oldName}` would be renamed — check that preview first.";
+    }
+
     internal static string Ambiguous(string oldName, IReadOnlyList<(string Symbol, Lsp.SymbolLocation Location)> candidates)
     {
         var sb = new StringBuilder(

@@ -69,21 +69,13 @@ internal partial class InferpalToolWindowData
         finally { _navigatingHistory = false; }
     });
 
-    private async Task HandleContextCommandAsync(CancellationToken ct)
-    {
-        var dir = FindProjectRoot();
-        // VS-specific pre-check: without a solution the root is meaningless here.
-        // ⚠ Goes through SolutionFiles, like every other site: a private `*.sln` test here answers
-        // "No .sln file found — cannot find .inferpal/context.md" on a .slnx solution.
-        if (!Services.SolutionFiles.DirectoryHasSolution(dir))
-        {
-            await ShowInfoAsync(Strings.SlashContextNoSln);
-            return;
-        }
-
+    // The root the system prompt reads `.inferpal/context.md` from (BuildSystemPrompt → FindProjectRoot): /context shows
+    // what the model is given, like /memory and the host's /context. ⚠ No ".sln at the top" pre-check: a root widened
+    // to the folder that holds the solution's projects (SolutionExtent) has none there, and /context answered "No .sln
+    // file found" while the prompt was reading that very root's context.md.
+    private async Task HandleContextCommandAsync(CancellationToken ct) =>
         await ShowInfoAsync(await Services.Commands.ProjectFileCommandHandler.HandleAsync(
-            dir, "context.md", Strings.SlashContextNotFound, Strings.SlashContextLoaded, ct));
-    }
+            FindProjectRoot(), "context.md", Strings.SlashContextNotFound, Strings.SlashContextLoaded, ct));
 
     // /branch          → branch points of this conversation + the family tree
     // /branch <n>       → fork at turn n (the conversation continues in the branch)
@@ -252,7 +244,10 @@ internal partial class InferpalToolWindowData
 
                 // ── Fix iteration ──────────────────────────────────────────────
                 tok.ThrowIfCancellationRequested();
-                await RunFixIterationAsync(buildOutput, round, tok);
+                // ⚠ A failed run is not a fix attempt (the /tdd rule): going on rebuilt the solution round after round
+                // against a backend that had already said no, then blamed the code ("still failing after 5 attempts").
+                // The error, already shown, is the answer.
+                if (!await RunFixIterationAsync(buildOutput, round, tok)) return;
             }
         }
         catch (OperationCanceledException)
@@ -282,7 +277,8 @@ internal partial class InferpalToolWindowData
         }
     }
 
-    private async Task RunFixIterationAsync(string buildOutput, int round, CancellationToken ct)
+    /// <returns><c>false</c> when the model run failed (its error is shown): there was no fix attempt.</returns>
+    private async Task<bool> RunFixIterationAsync(string buildOutput, int round, CancellationToken ct)
     {
         var fixHistory = new List<ChatMessageDto>
         {
@@ -306,8 +302,9 @@ internal partial class InferpalToolWindowData
         try
         {
             using var sink = new ThrottledTokenSink(chunk => Post(() => { if (streamItem is not null) streamItem.Content += chunk; }));
+            // The agent role's model, as /tdd: a fix loop is tool work, and the chat model may not call tools.
             result = await _client.RunAgentAsync(
-                model:   _config.DefaultModel,
+                model:   ModelRouter.Resolve(_config, ModelRole.Agent),
                 history: fixHistory,
                 tools:   _tools,
                 onStep:  step  => Post(() => CurrentStep = step),
@@ -355,6 +352,7 @@ internal partial class InferpalToolWindowData
 
             ScrollToBottom();
         });
+        return !result.Failed;
     }
 
     // ── Git commit assistant ───────────────────────────────────────────────────

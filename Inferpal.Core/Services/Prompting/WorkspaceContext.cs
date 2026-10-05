@@ -10,6 +10,14 @@ internal static class WorkspaceContext
 {
     public const string Header = "## Workspace context (auto-injected on session start)";
 
+    /// <summary>
+    /// Does a question of <paramref name="history"/> still carry the block? It rides with ONE question, the first one
+    /// sent: when Regenerate takes that question back, the block goes with it, and the flag that says "already sent"
+    /// must follow — left set, the question was asked again without the solution and the open files.
+    /// </summary>
+    public static bool IsIn(IEnumerable<Models.ChatMessageDto> history) =>
+        history.Any(m => m.Role == "user" && m.Content?.Contains(Header, StringComparison.Ordinal) == true);
+
     /// <summary>What the block may take, both sections together.</summary>
     public const int BudgetChars = 4000;
 

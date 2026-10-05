@@ -24,6 +24,14 @@ internal static class SessionManager
     /// </summary>
     public const string NoticeMarker = "notice";
 
+    /// <summary>
+    /// Whether a saved message is a QUESTION the model was asked. A <c>user</c> message marked as a notice is a slash
+    /// command an editor served without the model (VS Code shows what was typed; Visual Studio shows nothing): restored
+    /// as a question, the model read "/models" as something it was asked and never answered, and two questions in a
+    /// row are refused by a strict chat template. Every reader that counts, names or replays questions asks this.
+    /// </summary>
+    public static bool IsQuestion(SavedMessage m) => m.Role == "user" && m.ToolName != NoticeMarker;
+
     // ── /template presets ─────────────────────────────────────────────────────
 
     // A property, not a field: labels and greetings are read in the interface language of the moment.
@@ -110,7 +118,7 @@ internal static class SessionManager
         var history = new List<ChatMessageDto> { new("system", systemPrompt) };
         foreach (var m in messages)
         {
-            if (m.Role == "user")
+            if (IsQuestion(m))
                 history.Add(new ChatMessageDto(m.Role, m.Content));
             // A notice is an assistant bubble on screen, never an answer: live, a turn keeps one (see NoticeMarker).
             else if (m.Role == "assistant" && m.ToolName != NoticeMarker)
